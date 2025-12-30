@@ -44,7 +44,7 @@
 		<div class="logo-container">
 			<img src="/logos/optikt-original.png" alt="Optikt Logo" class="logo" />
 			<h1 class="brand-name">Optikt</h1>
-			<p class="tagline">Sistema de Gestión Óptica</p>
+			<p class="tagline">Sistema de Gestión Interna</p>
 		</div>
 
 		<!-- Login Form Component -->
