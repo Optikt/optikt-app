@@ -9,10 +9,14 @@ const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export const sessionCookieName = 'auth-session';
 
-export function generateSessionToken() {
+export function generateSessionToken(): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(18));
 	const token = encodeBase64url(bytes);
 	return token;
+}
+
+export function getTokenHash(token: string): string {
+	return encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 }
 
 export async function createSession(
@@ -20,7 +24,7 @@ export async function createSession(
 	userId: string,
 	options?: { ipAddress?: string; userAgent?: string }
 ) {
-	const tokenHash = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const tokenHash = getTokenHash(token);
 	const now = new Date();
 	const session = {
 		id: crypto.randomUUID(),
@@ -39,7 +43,7 @@ export async function createSession(
 }
 
 export async function validateSessionToken(token: string) {
-	const tokenHash = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const tokenHash = getTokenHash(token);
 
 	const [result] = await db
 		.select({
