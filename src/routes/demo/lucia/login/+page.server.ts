@@ -29,14 +29,14 @@ export const actions: Actions = {
 			return fail(400, { message: 'Invalid password (min 6, max 255 characters)' });
 		}
 
-		const results = await db.select().from(table.user).where(eq(table.user.username, username));
+		const results = await db.select().from(table.users).where(eq(table.users.username, username));
 
 		const existingUser = results.at(0);
 		if (!existingUser) {
 			return fail(400, { message: 'Incorrect username or password' });
 		}
 
-		const validPassword = await verify(existingUser.passwordHash, password, {
+		const validPassword = await verify(existingUser.hashedPassword, password, {
 			memoryCost: 19456,
 			timeCost: 2,
 			outputLen: 32,
@@ -64,8 +64,7 @@ export const actions: Actions = {
 			return fail(400, { message: 'Invalid password' });
 		}
 
-		const userId = generateUserId();
-		const passwordHash = await hash(password, {
+		const hashedPassword = await hash(password, {
 			// recommended minimum parameters
 			memoryCost: 19456,
 			timeCost: 2,
@@ -74,10 +73,19 @@ export const actions: Actions = {
 		});
 
 		try {
-			await db.insert(table.user).values({ id: userId, username, passwordHash });
+			const [newUser] = await db
+				.insert(table.users)
+				.values({
+					username,
+					email: `${username}@demo.local`,
+					fullName: username,
+					hashedPassword,
+					role: 'VIEWER'
+				})
+				.returning({ id: table.users.id });
 
 			const sessionToken = auth.generateSessionToken();
-			const session = await auth.createSession(sessionToken, userId);
+			const session = await auth.createSession(sessionToken, newUser.id);
 			auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
 		} catch {
 			return fail(500, { message: 'An error has occurred' });

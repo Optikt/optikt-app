@@ -1,2 +1,301 @@
+/* ============================================================================
+   OPTIKT DESIGN SYSTEM
+   Premium optical management system styling
+   ============================================================================ */
+
+/* Google Fonts - Inter (must be first) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
+
+@theme {
+	/* Primary Brand Colors */
+	--color-brand-blue: #4eb5c5;
+	--color-brand-blue-light: #7fcbd7;
+	--color-brand-blue-dark: #3a9aa9;
+	--color-brand-yellow: #f5c842;
+	--color-brand-yellow-light: #f9db7a;
+	--color-brand-yellow-dark: #e0b530;
+	--color-brand-navy: #2c3e50;
+
+	/* UI Colors */
+	--color-surface: #ffffff;
+	--color-surface-elevated: #f8fafc;
+	--color-surface-dark: #0f172a;
+	--color-surface-dark-elevated: #1e293b;
+
+	/* Gradients */
+	--gradient-brand: linear-gradient(
+		135deg,
+		var(--color-brand-blue) 0%,
+		var(--color-brand-navy) 100%
+	);
+	--gradient-brand-yellow: linear-gradient(
+		135deg,
+		var(--color-brand-yellow) 0%,
+		var(--color-brand-blue) 100%
+	);
+	--gradient-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+
+	/* Typography */
+	--font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+	/* Shadows */
+	--shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
+	--shadow-glass-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+	--shadow-glow-blue: 0 0 40px rgba(78, 181, 197, 0.3);
+	--shadow-glow-yellow: 0 0 40px rgba(245, 200, 66, 0.3);
+
+	/* Border Radius */
+	--radius-glass: 16px;
+	--radius-card: 12px;
+	--radius-button: 8px;
+}
+
+/* Base Styles */
+html {
+	font-family: var(--font-family-sans);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	background-color: var(--color-surface);
+	color: var(--color-brand-navy);
+	line-height: 1.6;
+}
+
+/* ============================================================================
+   GLASSMORPHISM COMPONENTS
+   ============================================================================ */
+
+.glass-card {
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	border-radius: var(--radius-glass);
+	box-shadow: var(--shadow-glass);
+}
+
+.glass-card-dark {
+	background: rgba(30, 41, 59, 0.85);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: var(--radius-glass);
+	box-shadow: var(--shadow-glass-dark);
+}
+
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
+
+.btn-primary {
+	background: var(--gradient-brand);
+	color: white;
+	font-weight: 600;
+	padding: 0.75rem 1.5rem;
+	border-radius: var(--radius-button);
+	border: none;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 14px rgba(78, 181, 197, 0.4);
+}
+
+.btn-primary:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(78, 181, 197, 0.5);
+}
+
+.btn-primary:active {
+	transform: translateY(0);
+}
+
+.btn-secondary {
+	background: transparent;
+	color: var(--color-brand-blue);
+	font-weight: 600;
+	padding: 0.75rem 1.5rem;
+	border-radius: var(--radius-button);
+	border: 2px solid var(--color-brand-blue);
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+	background: var(--color-brand-blue);
+	color: white;
+}
+
+/* ============================================================================
+   INPUT STYLES
+   ============================================================================ */
+
+.input-field {
+	width: 100%;
+	padding: 0.875rem 1rem;
+	border: 2px solid #e2e8f0;
+	border-radius: var(--radius-button);
+	font-size: 1rem;
+	transition: all 0.3s ease;
+	background: white;
+}
+
+.input-field:focus {
+	outline: none;
+	border-color: var(--color-brand-blue);
+	box-shadow: 0 0 0 4px rgba(78, 181, 197, 0.15);
+}
+
+.input-field::placeholder {
+	color: #94a3b8;
+}
+
+.input-label {
+	display: block;
+	font-weight: 500;
+	margin-bottom: 0.5rem;
+	color: var(--color-brand-navy);
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateX(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes pulse-glow {
+	0%,
+	100% {
+		box-shadow: 0 0 20px rgba(78, 181, 197, 0.3);
+	}
+	50% {
+		box-shadow: 0 0 40px rgba(78, 181, 197, 0.5);
+	}
+}
+
+.animate-fade-in {
+	animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+	animation: slideIn 0.4s ease-out forwards;
+}
+
+.animate-pulse-glow {
+	animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================================================
+   ROLE BADGES
+   ============================================================================ */
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.25rem 0.75rem;
+	border-radius: 9999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.badge-superadmin {
+	background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+	color: white;
+}
+
+.badge-admin {
+	background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+	color: white;
+}
+
+.badge-manager {
+	background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+	color: white;
+}
+
+.badge-seller {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+	color: white;
+}
+
+.badge-viewer {
+	background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+	color: white;
+}
+
+/* ============================================================================
+   SIDEBAR NAVIGATION
+   ============================================================================ */
+
+.sidebar {
+	background: var(--gradient-dark);
+	width: 280px;
+	min-height: 100vh;
+	color: white;
+}
+
+.sidebar-link {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.875rem 1.25rem;
+	color: #94a3b8;
+	text-decoration: none;
+	transition: all 0.2s ease;
+	border-radius: 8px;
+	margin: 0.25rem 0.75rem;
+}
+
+.sidebar-link:hover {
+	background: rgba(255, 255, 255, 0.1);
+	color: white;
+}
+
+.sidebar-link.active {
+	background: rgba(78, 181, 197, 0.2);
+	color: var(--color-brand-blue);
+}
+
+/* ============================================================================
+   UTILITIES
+   ============================================================================ */
+
+.text-gradient {
+	background: var(--gradient-brand);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+.bg-brand-gradient {
+	background: var(--gradient-brand);
+}
+
+.bg-dark-gradient {
+	background: var(--gradient-dark);
+}

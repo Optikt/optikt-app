@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
 import { db } from '$lib/server/db';
@@ -15,47 +15,89 @@ export function generateSessionToken() {
 	return token;
 }
 
-export async function createSession(token: string, userId: string) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const session: table.Session = {
-		id: sessionId,
+export async function createSession(
+	token: string,
+	userId: string,
+	options?: { ipAddress?: string; userAgent?: string }
+) {
+	const tokenHash = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const now = new Date();
+	const session = {
+		id: crypto.randomUUID(),
 		userId,
-		expiresAt: new Date(Date.now() + DAY_IN_MS * 30)
+		tokenHash,
+		expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
+		isActive: true,
+		ipAddress: options?.ipAddress ?? null,
+		userAgent: options?.userAgent ?? null,
+		createdAt: now,
+		updatedAt: now
 	};
-	await db.insert(table.session).values(session);
-	return session;
+
+	const [result] = await db.insert(table.userSessions).values(session).returning();
+	return result;
 }
 
 export async function validateSessionToken(token: string) {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	const tokenHash = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+
 	const [result] = await db
 		.select({
-			// Adjust user table here to tweak returned data
-			user: { id: table.user.id, username: table.user.username },
-			session: table.session
+			user: {
+				id: table.users.id,
+				email: table.users.email,
+				username: table.users.username,
+				fullName: table.users.fullName,
+				role: table.users.role,
+				isActive: table.users.isActive,
+				isSuperuser: table.users.isSuperuser
+			},
+			session: {
+				id: table.userSessions.id,
+				userId: table.userSessions.userId,
+				tokenHash: table.userSessions.tokenHash,
+				expiresAt: table.userSessions.expiresAt,
+				isActive: table.userSessions.isActive
+			}
 		})
-		.from(table.session)
-		.innerJoin(table.user, eq(table.session.userId, table.user.id))
-		.where(eq(table.session.id, sessionId));
+		.from(table.userSessions)
+		.innerJoin(table.users, eq(table.userSessions.userId, table.users.id))
+		.where(and(eq(table.userSessions.tokenHash, tokenHash), eq(table.userSessions.isActive, true)));
 
 	if (!result) {
 		return { session: null, user: null };
 	}
+
 	const { session, user } = result;
 
-	const sessionExpired = Date.now() >= session.expiresAt.getTime();
-	if (sessionExpired) {
-		await db.delete(table.session).where(eq(table.session.id, session.id));
+	// Check if user is active
+	if (!user.isActive) {
+		await db
+			.update(table.userSessions)
+			.set({ isActive: false })
+			.where(eq(table.userSessions.id, session.id));
 		return { session: null, user: null };
 	}
 
+	// Check if session expired
+	const sessionExpired = Date.now() >= session.expiresAt.getTime();
+	if (sessionExpired) {
+		await db
+			.update(table.userSessions)
+			.set({ isActive: false })
+			.where(eq(table.userSessions.id, session.id));
+		return { session: null, user: null };
+	}
+
+	// Renew session if it's older than 15 days
 	const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15;
 	if (renewSession) {
-		session.expiresAt = new Date(Date.now() + DAY_IN_MS * 30);
+		const newExpiresAt = new Date(Date.now() + DAY_IN_MS * 30);
 		await db
-			.update(table.session)
-			.set({ expiresAt: session.expiresAt })
-			.where(eq(table.session.id, session.id));
+			.update(table.userSessions)
+			.set({ expiresAt: newExpiresAt, updatedAt: new Date() })
+			.where(eq(table.userSessions.id, session.id));
+		session.expiresAt = newExpiresAt;
 	}
 
 	return { session, user };
@@ -64,13 +106,26 @@ export async function validateSessionToken(token: string) {
 export type SessionValidationResult = Awaited<ReturnType<typeof validateSessionToken>>;
 
 export async function invalidateSession(sessionId: string) {
-	await db.delete(table.session).where(eq(table.session.id, sessionId));
+	await db
+		.update(table.userSessions)
+		.set({ isActive: false, updatedAt: new Date() })
+		.where(eq(table.userSessions.id, sessionId));
+}
+
+export async function invalidateAllUserSessions(userId: string) {
+	await db
+		.update(table.userSessions)
+		.set({ isActive: false, updatedAt: new Date() })
+		.where(eq(table.userSessions.userId, userId));
 }
 
 export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
 	event.cookies.set(sessionCookieName, token, {
 		expires: expiresAt,
-		path: '/'
+		path: '/',
+		httpOnly: true,
+		secure: true,
+		sameSite: 'lax'
 	});
 }
 
@@ -78,4 +133,16 @@ export function deleteSessionTokenCookie(event: RequestEvent) {
 	event.cookies.delete(sessionCookieName, {
 		path: '/'
 	});
+}
+
+// Helper to find user by username or email (case-insensitive)
+export async function findUserByIdentifier(identifier: string) {
+	const lowercased = identifier.toLowerCase();
+
+	const [user] = await db
+		.select()
+		.from(table.users)
+		.where(or(eq(table.users.email, lowercased), eq(table.users.username, lowercased)));
+
+	return user ?? null;
 }
