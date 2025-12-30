@@ -1,5 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { verify } from '@node-rs/argon2';
+import { superValidate, message } from 'sveltekit-superforms';
+import { zod4 } from 'sveltekit-superforms/adapters';
+import { loginSchema } from '$lib/schemas/auth';
 import * as auth from '$lib/server/auth';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -8,34 +11,35 @@ export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
 		redirect(302, '/dashboard');
 	}
-	return {};
+
+	// Initialize empty form
+	const form = await superValidate(zod4(loginSchema));
+	return { form };
 };
 
 export const actions: Actions = {
 	default: async (event) => {
-		const formData = await event.request.formData();
-		const identifier = formData.get('identifier');
-		const password = formData.get('password');
+		const form = await superValidate(event.request, zod4(loginSchema));
 
-		// Validate inputs
-		if (!identifier || typeof identifier !== 'string' || identifier.length < 3) {
-			return fail(400, { message: 'Usuario o email inválido' });
+		// Return validation errors
+		if (!form.valid) {
+			return fail(400, { form });
 		}
 
-		if (!password || typeof password !== 'string' || password.length < 6) {
-			return fail(400, { message: 'Contraseña inválida (mínimo 6 caracteres)' });
-		}
+		const { identifier, password } = form.data;
 
 		// Find user by email or username (case-insensitive)
-		const user = await auth.findUserByIdentifier(identifier.trim());
+		const user = await auth.findUserByIdentifier(identifier);
 
 		if (!user) {
-			return fail(400, { message: 'Credenciales incorrectas' });
+			return message(form, 'Credenciales incorrectas', { status: 400 });
 		}
 
 		// Check if user is active
 		if (!user.isActive) {
-			return fail(400, { message: 'Tu cuenta está desactivada. Contacta al administrador.' });
+			return message(form, 'Tu cuenta está desactivada. Contacta al administrador.', {
+				status: 400
+			});
 		}
 
 		// Verify password
@@ -47,7 +51,7 @@ export const actions: Actions = {
 		});
 
 		if (!validPassword) {
-			return fail(400, { message: 'Credenciales incorrectas' });
+			return message(form, 'Credenciales incorrectas', { status: 400 });
 		}
 
 		// Create session with IP and user agent
