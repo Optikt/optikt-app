@@ -8,6 +8,7 @@ import {
 	boolean
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { UserRole } from '$lib/shared/enums';
 
 export const users = pgTable(
 	'users',
@@ -19,7 +20,7 @@ export const users = pgTable(
 		hashedPassword: varchar('hashed_password').notNull(),
 		isActive: boolean('is_active').notNull().default(true),
 		isSuperuser: boolean('is_superuser').notNull().default(false),
-		role: varchar().notNull().default('VIEWER'),
+		role: varchar().notNull().default(UserRole.VIEWER).$type<UserRole>(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
@@ -32,6 +33,6 @@ export const users = pgTable(
 	]
 );
 
-export type User = typeof users.$inferSelect;
+type DrizzleUser = typeof users.$inferSelect;
+export type User = Omit<DrizzleUser, 'role'> & { role: UserRole };
 export type NewUser = typeof users.$inferInsert;
-export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'MANAGER' | 'SELLER' | 'VIEWER';

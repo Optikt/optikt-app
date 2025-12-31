@@ -1,6 +1,7 @@
 import { eq, and } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { userSessions, users, type Session } from '$lib/server/db/schema';
+import { UserRole } from '$lib/shared/enums';
 
 // Session validation result type
 export type SessionWithUser = {
@@ -16,7 +17,7 @@ export type SessionWithUser = {
 		email: string;
 		username: string;
 		fullName: string;
-		role: string;
+		role: UserRole;
 		isActive: boolean;
 		isSuperuser: boolean;
 	};

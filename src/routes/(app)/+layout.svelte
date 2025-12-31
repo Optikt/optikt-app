@@ -15,6 +15,7 @@
 		LogOut
 	} from 'lucide-svelte';
 	import type { ComponentType } from 'svelte';
+	import { UserRole, isAdminRole } from '$lib/shared/enums';
 
 	let { children, data } = $props();
 
@@ -50,22 +51,20 @@
 		{ href: '/users', label: 'Usuarios', icon: 'shield' }
 	] as const;
 
-	const isAdmin = $derived(
-		user.role === 'SUPERADMIN' || user.role === 'ADMIN' || user.role === 'MANAGER'
-	);
+	const isAdmin = $derived(isAdminRole(user.role));
 
 	// Role badge colors - Tailwind classes
-	function getRoleBadgeClass(role: string) {
+	function getRoleBadgeClass(role: UserRole) {
 		const base =
 			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.65rem] font-semibold uppercase tracking-wide';
 		switch (role) {
-			case 'SUPERADMIN':
+			case UserRole.SUPERADMIN:
 				return `${base} text-white bg-gradient-to-r from-amber-500 to-amber-600`;
-			case 'ADMIN':
+			case UserRole.ADMIN:
 				return `${base} text-white bg-gradient-to-r from-violet-500 to-violet-600`;
-			case 'MANAGER':
+			case UserRole.MANAGER:
 				return `${base} text-white bg-gradient-to-r from-blue-500 to-blue-600`;
-			case 'SELLER':
+			case UserRole.SELLER:
 				return `${base} text-white bg-gradient-to-r from-emerald-500 to-emerald-600`;
 			default:
 				return `${base} text-white bg-gradient-to-r from-gray-500 to-gray-600`;
@@ -140,7 +139,7 @@
 				{#if sidebarOpen}
 					<div class="flex min-w-0 flex-col">
 						<span class="truncate text-sm font-medium text-white">{user?.fullName}</span>
-						<span class={getRoleBadgeClass(user?.role ?? 'VIEWER')}>{user?.role}</span>
+						<span class={getRoleBadgeClass(user?.role ?? UserRole.VIEWER)}>{user?.role}</span>
 					</div>
 				{/if}
 			</div>

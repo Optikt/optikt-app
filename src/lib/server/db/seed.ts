@@ -2,6 +2,7 @@ import { hash } from '@node-rs/argon2';
 import { db } from './index';
 import * as table from './schema';
 import { eq } from 'drizzle-orm';
+import { UserRole } from '$lib/shared/enums';
 
 const ARGON2_OPTIONS = {
 	memoryCost: 19456,
@@ -39,7 +40,7 @@ export async function seedSuperAdmin() {
 			hashedPassword,
 			isActive: true,
 			isSuperuser: true,
-			role: 'SUPERADMIN'
+			role: UserRole.SUPERADMIN
 		})
 		.returning();
 

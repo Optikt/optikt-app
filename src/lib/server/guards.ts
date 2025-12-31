@@ -4,6 +4,7 @@
  */
 import { error } from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
+import { UserRole } from '$lib/shared/enums';
 
 /**
  * Get current user from request (via hooks.server.ts)
@@ -36,12 +37,19 @@ export function requireAuth() {
  * Require specific role(s) - throws 403 if user doesn't have required role
  * @param allowedRoles - List of roles that are allowed
  */
-export function requireRole(...allowedRoles: string[]) {
+export function requireRole(...allowedRoles: UserRole[]) {
 	const user = requireAuth();
 	if (!allowedRoles.includes(user.role)) {
 		error(403, 'No tienes permisos para esta acción');
 	}
 	return user;
+}
+
+/**
+ * Require admin role (SUPERADMIN, ADMIN, or MANAGER)
+ */
+export function requireAdmin() {
+	return requireRole(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER);
 }
 
 /**
