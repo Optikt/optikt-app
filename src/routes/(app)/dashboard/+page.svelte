@@ -29,7 +29,7 @@
 <div class="dashboard">
 	<header class="dashboard-header">
 		<div class="welcome">
-			<h1 class="greeting">{greeting()}, <span class="text-gradient">{user?.fullName}</span></h1>
+			<h1 class="greeting">{greeting()}, <span class="text-gradient">{user.fullName}</span></h1>
 			<p class="subtitle">Bienvenido al sistema de gestión Optikt</p>
 		</div>
 		<div class="header-actions">

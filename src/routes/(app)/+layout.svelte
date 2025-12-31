@@ -134,12 +134,12 @@
 				<div
 					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-blue to-brand-navy font-semibold text-white"
 				>
-					{user?.fullName?.charAt(0) ?? 'U'}
+					{user.fullName?.charAt(0) ?? 'U'}
 				</div>
 				{#if sidebarOpen}
 					<div class="flex min-w-0 flex-col">
-						<span class="truncate text-sm font-medium text-white">{user?.fullName}</span>
-						<span class={getRoleBadgeClass(user?.role ?? UserRole.VIEWER)}>{user?.role}</span>
+						<span class="truncate text-sm font-medium text-white">{user.fullName}</span>
+						<span class={getRoleBadgeClass(user.role)}>{user.role}</span>
 					</div>
 				{/if}
 			</div>
