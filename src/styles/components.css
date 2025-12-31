@@ -1,0 +1,64 @@
+/* ============================================================================
+   GLOBAL COMPONENTS - Custom component classes using Tailwind @apply
+   ============================================================================ */
+
+/* Glassmorphism Cards */
+.glass-card {
+	@apply rounded-2xl border border-white/30 bg-white/90 backdrop-blur-xl;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card-dark {
+	@apply rounded-2xl border border-white/10 bg-slate-800/85 text-white backdrop-blur-xl;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Primary Button */
+.btn-primary {
+	@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border-none px-4 py-2 font-semibold text-white transition-all duration-200;
+	background: linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-navy) 100%);
+	box-shadow: 0 4px 14px rgba(78, 181, 197, 0.4);
+}
+
+.btn-primary:hover:not(:disabled) {
+	@apply -translate-y-0.5;
+	box-shadow: 0 6px 20px rgba(78, 181, 197, 0.5);
+}
+
+.btn-primary:disabled {
+	@apply cursor-not-allowed opacity-60;
+}
+
+/* Secondary Button */
+.btn-secondary {
+	@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 bg-transparent px-4 py-2 font-semibold transition-all duration-200;
+	color: var(--color-brand-blue);
+	border-color: var(--color-brand-blue);
+}
+
+.btn-secondary:hover:not(:disabled) {
+	@apply text-white;
+	background: var(--color-brand-blue);
+}
+
+/* Ghost Button */
+.btn-ghost {
+	@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border-none bg-transparent px-4 py-2 font-semibold transition-all duration-200;
+	color: var(--color-brand-navy);
+}
+
+.btn-ghost:hover:not(:disabled) {
+	@apply bg-black/5;
+}
+
+/* Danger Button */
+.btn-danger {
+	@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border-none px-4 py-2 font-semibold text-white transition-all duration-200;
+	background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+	box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover:not(:disabled) {
+	@apply -translate-y-0.5;
+	box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}

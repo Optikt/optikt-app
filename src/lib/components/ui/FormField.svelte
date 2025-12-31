@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
 	interface Props extends Omit<HTMLInputAttributes, 'class'> {
@@ -14,16 +15,18 @@
 		error,
 		hint,
 		class: className = '',
-		id: inputId = `input-${Math.random().toString(36).slice(2)}`,
+		id,
 		value = $bindable(''),
 		...restProps
 	}: Props = $props();
 
+	// Using untrack - inputId is stable and shouldn't react to id prop changes
+	const inputId = untrack(() => id ?? `input-${Math.random().toString(36).slice(2)}`);
 	const errorMessage = $derived(Array.isArray(error) ? error[0] : error);
 	const hasError = $derived(!!errorMessage);
 </script>
 
-<div class="form-field {className}">
+<div class="flex flex-col gap-2 {className}">
 	{#if label}
 		<label for={inputId} class="form-label">
 			{label}
@@ -32,8 +35,7 @@
 
 	<input
 		id={inputId}
-		class="input-field"
-		class:input-error={hasError}
+		class="input-field {hasError ? 'input-error' : ''}"
 		aria-invalid={hasError}
 		aria-describedby={hasError ? `${inputId}-error` : undefined}
 		bind:value
@@ -41,44 +43,10 @@
 	/>
 
 	{#if hasError}
-		<p id="{inputId}-error" class="error-message">
+		<p id="{inputId}-error" class="m-0 text-[0.8125rem] text-red-500">
 			{errorMessage}
 		</p>
 	{:else if hint}
-		<p class="hint-message">{hint}</p>
+		<p class="m-0 text-[0.8125rem] text-slate-500">{hint}</p>
 	{/if}
 </div>
-
-<style>
-	.form-field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.form-label {
-		font-weight: 500;
-		color: var(--color-brand-navy);
-		font-size: 0.875rem;
-	}
-
-	.input-error {
-		border-color: #ef4444 !important;
-	}
-
-	.input-error:focus {
-		box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15) !important;
-	}
-
-	.error-message {
-		color: #ef4444;
-		font-size: 0.8125rem;
-		margin: 0;
-	}
-
-	.hint-message {
-		color: #64748b;
-		font-size: 0.8125rem;
-		margin: 0;
-	}
-</style>

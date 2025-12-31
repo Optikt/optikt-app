@@ -22,7 +22,7 @@
 </script>
 
 <FormAlert message={$message}>
-	<form method="POST" use:enhance class="login-form">
+	<form method="POST" use:enhance class="flex flex-col gap-5">
 		<FormField
 			label="Usuario o Email"
 			name="identifier"
@@ -44,7 +44,7 @@
 			disabled={$delayed}
 		/>
 
-		<Button type="submit" loading={$delayed} class="submit-btn">
+		<Button type="submit" loading={$delayed} class="mt-2 w-full">
 			{#if $delayed}
 				Iniciando sesión...
 			{:else}
@@ -53,16 +53,3 @@
 		</Button>
 	</form>
 </FormAlert>
-
-<style>
-	.login-form {
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
-	}
-
-	:global(.submit-btn) {
-		width: 100%;
-		margin-top: 0.5rem;
-	}
-</style>

@@ -11,9 +11,9 @@
 	let { children, class: className = '', variant = 'default', padding = 'md' }: Props = $props();
 
 	const variantClasses = {
-		default: 'bg-white border border-slate-200 shadow-sm',
+		default: 'bg-white border border-slate-200 shadow-sm rounded-xl',
 		glass: 'glass-card',
-		dark: 'glass-card-dark text-white'
+		dark: 'glass-card-dark'
 	};
 
 	const paddingClasses = {
@@ -24,12 +24,6 @@
 	};
 </script>
 
-<div class="card {variantClasses[variant]} {paddingClasses[padding]} {className}">
+<div class="{variantClasses[variant]} {paddingClasses[padding]} {className}">
 	{@render children()}
 </div>
-
-<style>
-	.card {
-		border-radius: var(--radius-card, 12px);
-	}
-</style>

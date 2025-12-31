@@ -31,137 +31,39 @@
 	<meta name="description" content="Sign in to Optikt Optical Management System" />
 </svelte:head>
 
-<div class="login-container">
+<div
+	class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 p-4"
+>
 	<!-- Background decoration -->
-	<div class="bg-decoration">
-		<div class="circle circle-1"></div>
-		<div class="circle circle-2"></div>
-		<div class="circle circle-3"></div>
+	<div class="pointer-events-none absolute inset-0">
+		<div
+			class="absolute -top-[100px] -right-[100px] h-[400px] w-[400px] rounded-full bg-[var(--color-brand-blue)] opacity-40 blur-[80px]"
+		></div>
+		<div
+			class="absolute -bottom-[50px] -left-[50px] h-[300px] w-[300px] rounded-full bg-[var(--color-brand-yellow)] opacity-40 blur-[80px]"
+		></div>
+		<div
+			class="absolute top-1/2 left-1/2 h-[200px] w-[200px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-brand-blue-light)] opacity-40 blur-[80px]"
+		></div>
 	</div>
 
-	<Card variant="glass" padding="lg" class="login-card animate-fade-in">
+	<Card variant="glass" padding="lg" class="animate-fade-in relative z-10 w-full max-w-[420px]">
 		<!-- Logo -->
-		<div class="logo-container">
-			<img src="/logos/optikt-original.png" alt="Optikt Logo" class="logo" />
-			<h1 class="brand-name">Optikt</h1>
-			<p class="tagline">Sistema de Gestión Interna</p>
+		<div class="mb-8 text-center">
+			<img
+				src="/logos/optikt-original.png"
+				alt="Optikt Logo"
+				class="mx-auto mb-4 h-20 w-20 object-contain"
+			/>
+			<h1 class="text-gradient m-0 text-2xl font-extrabold">Optikt</h1>
+			<p class="mt-1 text-sm text-slate-500">Sistema de Gestión Interna</p>
 		</div>
 
 		<!-- Login Form Component -->
 		<LoginForm {form} />
 
-		<p class="footer-text">
+		<p class="mt-8 text-center text-xs text-slate-400">
 			&copy; {new Date().getFullYear()} Optikt. Todos los derechos reservados.
 		</p>
 	</Card>
 </div>
-
-<style>
-	.login-container {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
-		background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Background decoration circles */
-	.bg-decoration {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-	}
-
-	.circle {
-		position: absolute;
-		border-radius: 50%;
-		filter: blur(80px);
-		opacity: 0.4;
-	}
-
-	.circle-1 {
-		width: 400px;
-		height: 400px;
-		background: var(--color-brand-blue);
-		top: -100px;
-		right: -100px;
-	}
-
-	.circle-2 {
-		width: 300px;
-		height: 300px;
-		background: var(--color-brand-yellow);
-		bottom: -50px;
-		left: -50px;
-	}
-
-	.circle-3 {
-		width: 200px;
-		height: 200px;
-		background: var(--color-brand-blue-light);
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-	}
-
-	:global(.login-card) {
-		width: 100%;
-		max-width: 420px;
-		position: relative;
-		z-index: 10;
-	}
-
-	.logo-container {
-		text-align: center;
-		margin-bottom: 2rem;
-	}
-
-	.logo {
-		width: 80px;
-		height: 80px;
-		object-fit: contain;
-		margin-bottom: 1rem;
-	}
-
-	.brand-name {
-		font-size: 2rem;
-		font-weight: 800;
-		background: linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-navy) 100%);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		margin: 0;
-	}
-
-	.tagline {
-		color: #64748b;
-		font-size: 0.875rem;
-		margin-top: 0.25rem;
-	}
-
-	.footer-text {
-		text-align: center;
-		color: #94a3b8;
-		font-size: 0.75rem;
-		margin-top: 2rem;
-	}
-
-	/* Responsiveness */
-	@media (max-width: 480px) {
-		:global(.login-card) {
-			padding: 1.5rem !important;
-		}
-
-		.logo {
-			width: 60px;
-			height: 60px;
-		}
-
-		.brand-name {
-			font-size: 1.5rem;
-		}
-	}
-</style>

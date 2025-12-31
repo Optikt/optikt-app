@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
 	interface Props extends Omit<HTMLInputAttributes, 'class' | 'type'> {
@@ -12,30 +13,31 @@
 		label,
 		error,
 		class: className = '',
-		id:inputId = `password-${Math.random().toString(36).slice(2)}`,
+		id,
 		value = $bindable(''),
 		...restProps
 	}: Props = $props();
 
+	// Using untrack - inputId is stable and shouldn't react to id prop changes
+	const inputId = untrack(() => id ?? `password-${Math.random().toString(36).slice(2)}`);
 	const errorMessage = $derived(Array.isArray(error) ? error[0] : error);
 	const hasError = $derived(!!errorMessage);
 
 	let showPassword = $state(false);
 </script>
 
-<div class="form-field {className}">
+<div class="flex flex-col gap-2 {className}">
 	{#if label}
 		<label for={inputId} class="form-label">
 			{label}
 		</label>
 	{/if}
 
-	<div class="password-wrapper">
+	<div class="relative">
 		<input
 			id={inputId}
 			type={showPassword ? 'text' : 'password'}
-			class="input-field"
-			class:input-error={hasError}
+			class="input-field pr-12 {hasError ? 'input-error' : ''}"
 			aria-invalid={hasError}
 			aria-describedby={hasError ? `${inputId}-error` : undefined}
 			bind:value
@@ -43,7 +45,7 @@
 		/>
 		<button
 			type="button"
-			class="toggle-btn"
+			class="absolute top-1/2 right-3 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-slate-400 transition-colors hover:text-[var(--color-brand-blue)]"
 			onclick={() => (showPassword = !showPassword)}
 			aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
 		>
@@ -84,60 +86,8 @@
 	</div>
 
 	{#if hasError}
-		<p id="{inputId}-error" class="error-message">
+		<p id="{inputId}-error" class="m-0 text-[0.8125rem] text-red-500">
 			{errorMessage}
 		</p>
 	{/if}
 </div>
-
-<style>
-	.form-field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.form-label {
-		font-weight: 500;
-		color: var(--color-brand-navy);
-		font-size: 0.875rem;
-	}
-
-	.password-wrapper {
-		position: relative;
-	}
-
-	.password-wrapper :global(.input-field) {
-		padding-right: 3rem;
-	}
-
-	.toggle-btn {
-		position: absolute;
-		right: 0.75rem;
-		top: 50%;
-		transform: translateY(-50%);
-		background: none;
-		border: none;
-		color: #94a3b8;
-		cursor: pointer;
-		padding: 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: color 0.2s ease;
-	}
-
-	.toggle-btn:hover {
-		color: var(--color-brand-blue);
-	}
-
-	.input-error {
-		border-color: #ef4444 !important;
-	}
-
-	.error-message {
-		color: #ef4444;
-		font-size: 0.8125rem;
-		margin: 0;
-	}
-</style>

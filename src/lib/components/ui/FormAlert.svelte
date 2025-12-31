@@ -11,7 +11,9 @@
 </script>
 
 {#if message}
-	<div class="alert alert-error {className}">
+	<div
+		class="mb-4 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-600 {className}"
+	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			width="20"
@@ -22,6 +24,7 @@
 			stroke-width="2"
 			stroke-linecap="round"
 			stroke-linejoin="round"
+			class="flex-shrink-0"
 		>
 			<circle cx="12" cy="12" r="10"></circle>
 			<line x1="12" y1="8" x2="12" y2="12"></line>
@@ -32,21 +35,3 @@
 {/if}
 
 {@render children()}
-
-<style>
-	.alert {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.875rem 1rem;
-		border-radius: 8px;
-		font-size: 0.875rem;
-		margin-bottom: 1rem;
-	}
-
-	.alert-error {
-		background: #fef2f2;
-		border: 1px solid #fecaca;
-		color: #dc2626;
-	}
-</style>
