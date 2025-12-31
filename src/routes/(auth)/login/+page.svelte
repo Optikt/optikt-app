@@ -1,17 +1,10 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { superForm, type Infer, type SuperValidated } from 'sveltekit-superforms';
-	import type { loginSchema } from '$lib/schemas/auth';
+	import { superForm } from 'sveltekit-superforms';
 	import { Card } from '$lib/components/ui';
 	import { LoginForm } from '$lib/components/forms';
 
-	interface Props {
-		data: {
-			form: SuperValidated<Infer<typeof loginSchema>>;
-		};
-	}
-
-	let { data }: Props = $props();
+	let { data } = $props();
 
 	/**
 	 * Using untrack() to intentionally capture the initial form value.
