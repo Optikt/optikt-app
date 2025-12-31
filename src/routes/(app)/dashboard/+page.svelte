@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	let { data } = $props();
 
 	const user = $derived(data.user);
@@ -106,7 +107,7 @@
 	<section class="quick-actions-section">
 		<h2 class="section-title">Acciones Rápidas</h2>
 		<div class="actions-grid">
-			<a href="/customers" class="action-card">
+			<a href={resolve('/customers')} class="action-card">
 				<div class="action-icon blue">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +128,7 @@
 				</div>
 				<span>Nuevo Cliente</span>
 			</a>
-			<a href="/products" class="action-card">
+			<a href={resolve('/products')} class="action-card">
 				<div class="action-icon purple">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -149,7 +150,7 @@
 				</div>
 				<span>Agregar Producto</span>
 			</a>
-			<a href="/sales" class="action-card">
+			<a href={resolve('/sales')} class="action-card">
 				<div class="action-icon green">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -171,7 +172,7 @@
 				</div>
 				<span>Registrar Venta</span>
 			</a>
-			<a href="/lenses" class="action-card">
+			<a href={resolve('/lenses')} class="action-card">
 				<div class="action-icon teal">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

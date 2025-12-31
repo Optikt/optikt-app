@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { logout } from '$lib/remote/auth.remote';
+	import { resolve } from '$app/paths';
 
 	let { children, data } = $props();
 
@@ -15,13 +16,13 @@
 		{ href: '/lenses', label: 'Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },
 		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' }
-	];
+	] as const;
 
 	// Only show reports and users for admins
 	const adminItems = [
 		{ href: '/reports', label: 'Reportes', icon: 'bar-chart' },
 		{ href: '/users', label: 'Usuarios', icon: 'shield' }
-	];
+	] as const;
 
 	const isAdmin = $derived(
 		user?.role === 'SUPERADMIN' || user?.role === 'ADMIN' || user?.role === 'MANAGER'
@@ -66,7 +67,7 @@
 		<nav class="flex-1 overflow-y-auto py-4">
 			{#each navItems as item, index (index)}
 				<a
-					href={item.href}
+					href={resolve(item.href)}
 					class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
 					class:bg-[rgba(78,181,197,0.2)]={page.url.pathname === item.href ||
 						page.url.pathname.startsWith(item.href + '/')}
@@ -135,7 +136,7 @@
 				<div class="mx-4 my-3 h-px bg-white/10"></div>
 				{#each adminItems as item, index (index)}
 					<a
-						href={item.href}
+						href={resolve(item.href)}
 						class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
 						class:bg-[rgba(78,181,197,0.2)]={page.url.pathname === item.href}
 						class:text-[var(--color-brand-blue)]={page.url.pathname === item.href}
