@@ -1,16 +1,21 @@
-import { z } from 'zod';
+import * as v from 'valibot';
 
 // ============================================================================
 // LOGIN SCHEMA
 // ============================================================================
 
-export const loginSchema = z.object({
-	identifier: z
-		.string()
-		.min(4, 'Mínimo 4 caracteres')
-		.max(255, 'Máximo 255 caracteres')
-		.transform((v) => v.trim().toLowerCase()),
-	password: z.string().min(6, 'Mínimo 6 caracteres').max(24, 'Máximo 24 caracteres')
+export const loginSchema = v.object({
+	identifier: v.pipe(
+		v.string('Requerido'),
+		v.minLength(4, 'Mínimo 4 caracteres'),
+		v.maxLength(255, 'Máximo 255 caracteres'),
+		v.transform((s) => s.trim().toLowerCase())
+	),
+	password: v.pipe(
+		v.string('Requerido'),
+		v.minLength(6, 'Mínimo 6 caracteres'),
+		v.maxLength(24, 'Máximo 24 caracteres')
+	)
 });
 
-export type LoginInput = z.infer<typeof loginSchema>;
+export type LoginInput = v.InferOutput<typeof loginSchema>;
