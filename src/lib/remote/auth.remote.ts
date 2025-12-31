@@ -5,9 +5,9 @@
 import { redirect, error } from '@sveltejs/kit';
 import { form, getRequestEvent } from '$app/server';
 import { verify } from '@node-rs/argon2';
-import { loginSchema } from './schemas/auth';
-import * as auth from './server/auth';
-import { findUserByIdentifier } from './server/db/queries/users';
+import { loginSchema } from '$lib/schemas/auth';
+import * as auth from '$lib/server/auth';
+import { findUserByIdentifier } from '$lib/server/db/queries/users';
 
 /**
  * LOGIN - Public form (no guard required)
