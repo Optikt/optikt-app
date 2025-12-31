@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { enhance } from '$app/forms';
+	import { logout } from '$lib/auth.remote';
 
 	let { children, data } = $props();
 
@@ -167,7 +167,7 @@
 					</div>
 				{/if}
 			</div>
-			<form method="POST" action="/logout" use:enhance>
+			<form {...logout} class="contents">
 				<button type="submit" class="logout-btn" title="Cerrar sesión">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
