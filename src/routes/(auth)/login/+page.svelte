@@ -1,22 +1,6 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
-	import { superForm } from 'sveltekit-superforms';
 	import { Card } from '$lib/components/ui';
 	import { LoginForm } from '$lib/components/forms';
-
-	let { data } = $props();
-
-	/**
-	 * Using untrack() to intentionally capture the initial form value.
-	 * SuperForms manages its own internal reactive state - it doesn't need
-	 * to re-initialize when data.form changes. Making this reactive would
-	 * incorrectly reset the form on every server response.
-	 *
-	 * This addresses the Svelte 5.45.3+ state_referenced_locally warning
-	 * introduced in sveltejs/svelte#17266, which now applies to props.
-	 * The warning is a false positive for this legitimate pattern.
-	 */
-	const form = superForm(untrack(() => data.form));
 </script>
 
 <svelte:head>
@@ -53,7 +37,7 @@
 		</div>
 
 		<!-- Login Form Component -->
-		<LoginForm {form} />
+		<LoginForm />
 
 		<p class="mt-8 text-center text-xs text-slate-400">
 			&copy; {new Date().getFullYear()} Optikt. Todos los derechos reservados.
