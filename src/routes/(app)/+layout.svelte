@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { enhance } from '$app/forms';
+	import { logout } from '$lib/remote/auth.remote';
 
 	let { children, data } = $props();
 
@@ -27,40 +27,50 @@
 		user?.role === 'SUPERADMIN' || user?.role === 'ADMIN' || user?.role === 'MANAGER'
 	);
 
+	// Role badge colors - Tailwind classes
 	function getRoleBadgeClass(role: string) {
+		const base =
+			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.65rem] font-semibold uppercase tracking-wide';
 		switch (role) {
 			case 'SUPERADMIN':
-				return 'badge-superadmin';
+				return `${base} text-white bg-gradient-to-r from-amber-500 to-amber-600`;
 			case 'ADMIN':
-				return 'badge-admin';
+				return `${base} text-white bg-gradient-to-r from-violet-500 to-violet-600`;
 			case 'MANAGER':
-				return 'badge-manager';
+				return `${base} text-white bg-gradient-to-r from-blue-500 to-blue-600`;
 			case 'SELLER':
-				return 'badge-seller';
+				return `${base} text-white bg-gradient-to-r from-emerald-500 to-emerald-600`;
 			default:
-				return 'badge-viewer';
+				return `${base} text-white bg-gradient-to-r from-gray-500 to-gray-600`;
 		}
 	}
 
 	let sidebarOpen = $state(true);
 </script>
 
-<div class="app-layout">
+<div class="flex min-h-screen">
 	<!-- Sidebar -->
-	<aside class="sidebar" class:collapsed={!sidebarOpen}>
-		<div class="sidebar-header">
-			<img src="/logos/optikt-blue.png" alt="Optikt" class="sidebar-logo" />
+	<aside
+		class="flex w-64 flex-col bg-gradient-to-b from-slate-800 to-slate-900 transition-all duration-300"
+		class:w-20={!sidebarOpen}
+	>
+		<!-- Header -->
+		<div class="flex items-center gap-3 border-b border-white/10 p-6">
+			<img src="/logos/optikt-blue.png" alt="Optikt" class="h-10 w-10 object-contain" />
 			{#if sidebarOpen}
-				<span class="sidebar-brand">Optikt</span>
+				<span class="text-xl font-bold text-white">Optikt</span>
 			{/if}
 		</div>
 
-		<nav class="sidebar-nav">
+		<!-- Navigation -->
+		<nav class="flex-1 overflow-y-auto py-4">
 			{#each navItems as item}
 				<a
 					href={item.href}
-					class="sidebar-link"
-					class:active={page.url.pathname === item.href ||
+					class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
+					class:bg-[rgba(78,181,197,0.2)]={page.url.pathname === item.href ||
+						page.url.pathname.startsWith(item.href + '/')}
+					class:text-[var(--color-brand-blue)]={page.url.pathname === item.href ||
 						page.url.pathname.startsWith(item.href + '/')}
 				>
 					<svg
@@ -122,9 +132,14 @@
 			{/each}
 
 			{#if isAdmin}
-				<div class="sidebar-divider"></div>
+				<div class="mx-4 my-3 h-px bg-white/10"></div>
 				{#each adminItems as item}
-					<a href={item.href} class="sidebar-link" class:active={page.url.pathname === item.href}>
+					<a
+						href={item.href}
+						class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
+						class:bg-[rgba(78,181,197,0.2)]={page.url.pathname === item.href}
+						class:text-[var(--color-brand-blue)]={page.url.pathname === item.href}
+					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="20"
@@ -154,21 +169,27 @@
 			{/if}
 		</nav>
 
-		<!-- User section at bottom -->
-		<div class="sidebar-footer">
-			<div class="user-info">
-				<div class="user-avatar">
+		<!-- User section -->
+		<div class="flex items-center justify-between gap-3 border-t border-white/10 p-4">
+			<div class="flex min-w-0 flex-1 items-center gap-3">
+				<div
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-brand-blue)] to-[var(--color-brand-navy)] font-semibold text-white"
+				>
 					{user?.fullName?.charAt(0) ?? 'U'}
 				</div>
 				{#if sidebarOpen}
-					<div class="user-details">
-						<span class="user-name">{user?.fullName}</span>
-						<span class="badge {getRoleBadgeClass(user?.role ?? 'VIEWER')}">{user?.role}</span>
+					<div class="flex min-w-0 flex-col">
+						<span class="truncate text-sm font-medium text-white">{user?.fullName}</span>
+						<span class={getRoleBadgeClass(user?.role ?? 'VIEWER')}>{user?.role}</span>
 					</div>
 				{/if}
 			</div>
-			<form method="POST" action="/logout" use:enhance>
-				<button type="submit" class="logout-btn" title="Cerrar sesión">
+			<form {...logout} class="contents">
+				<button
+					type="submit"
+					class="flex cursor-pointer items-center justify-center rounded-lg border-none bg-white/10 p-2 text-slate-400 transition-all duration-200 hover:bg-red-500/20 hover:text-red-500"
+					title="Cerrar sesión"
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="20"
@@ -190,144 +211,7 @@
 	</aside>
 
 	<!-- Main content -->
-	<main class="main-content">
+	<main class="min-h-screen flex-1 overflow-y-auto bg-slate-50">
 		{@render children()}
 	</main>
 </div>
-
-<style>
-	.app-layout {
-		display: flex;
-		min-height: 100vh;
-	}
-
-	.sidebar {
-		display: flex;
-		flex-direction: column;
-		transition: width 0.3s ease;
-	}
-
-	.sidebar.collapsed {
-		width: 80px;
-	}
-
-	.sidebar-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 1.5rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-	}
-
-	.sidebar-logo {
-		width: 40px;
-		height: 40px;
-		object-fit: contain;
-	}
-
-	.sidebar-brand {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: white;
-	}
-
-	.sidebar-nav {
-		flex: 1;
-		padding: 1rem 0;
-		overflow-y: auto;
-	}
-
-	.sidebar-divider {
-		height: 1px;
-		background: rgba(255, 255, 255, 0.1);
-		margin: 0.75rem 1rem;
-	}
-
-	.sidebar-footer {
-		padding: 1rem;
-		border-top: 1px solid rgba(255, 255, 255, 0.1);
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-	}
-
-	.user-info {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.user-avatar {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		background: linear-gradient(135deg, var(--color-brand-blue) 0%, var(--color-brand-navy) 100%);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: white;
-		font-weight: 600;
-		font-size: 1rem;
-		flex-shrink: 0;
-	}
-
-	.user-details {
-		display: flex;
-		flex-direction: column;
-		min-width: 0;
-	}
-
-	.user-name {
-		color: white;
-		font-weight: 500;
-		font-size: 0.875rem;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.logout-btn {
-		background: rgba(255, 255, 255, 0.1);
-		border: none;
-		border-radius: 8px;
-		padding: 0.5rem;
-		color: #94a3b8;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.logout-btn:hover {
-		background: rgba(239, 68, 68, 0.2);
-		color: #ef4444;
-	}
-
-	.main-content {
-		flex: 1;
-		background: #f8fafc;
-		min-height: 100vh;
-		overflow-y: auto;
-	}
-
-	/* Responsive */
-	@media (max-width: 768px) {
-		.sidebar {
-			position: fixed;
-			z-index: 50;
-			transform: translateX(-100%);
-		}
-
-		.sidebar:not(.collapsed) {
-			transform: translateX(0);
-		}
-
-		.main-content {
-			margin-left: 0;
-		}
-	}
-</style>

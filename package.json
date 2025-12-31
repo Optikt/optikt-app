@@ -12,8 +12,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run && npm run test:e2e",
+		"test:unit": "vitest --run",
+		"test": "pnpm run test:unit && pnpm run test:e2e",
 		"test:e2e": "playwright test",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
@@ -56,7 +56,8 @@
 	},
 	"dependencies": {
 		"@node-rs/argon2": "^2.0.2",
-		"postgres": "^3.4.7"
+		"postgres": "^3.4.7",
+		"valibot": "^1.2.0"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
