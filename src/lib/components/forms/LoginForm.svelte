@@ -10,14 +10,7 @@
 
 	let { form: superform }: Props = $props();
 
-	/**
-	 * Using untrack() to capture form methods at component creation.
-	 * SuperForms manages its own reactive state internally - these methods
-	 * don't need to be reactive to prop changes.
-	 *
-	 * This addresses the Svelte 5.45.3+ state_referenced_locally warning
-	 * (sveltejs/svelte#17266) which is a false positive for this pattern.
-	 */
+	// Using untrack() because we know that the super form is not reactive to prop
 	const { form, errors, enhance, delayed, message } = untrack(() => superform);
 </script>
 
