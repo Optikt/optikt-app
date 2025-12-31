@@ -13,16 +13,16 @@
 		ChartColumn,
 		Shield,
 		LogOut
-	} from 'lucide-svelte';
-	import type { ComponentType } from 'svelte';
+	} from '@lucide/svelte';
 	import { UserRole, isAdminRole } from '$lib/shared/enums';
+	import type { LucideIcon } from '$lib/types/index.js';
 
 	let { children, data } = $props();
 
 	const user = $derived(data.user);
 
 	// Icon mapping
-	const iconMap: Record<string, ComponentType> = {
+	const iconMap: Record<string, LucideIcon> = {
 		home: House,
 		users: Users,
 		package: Package,
