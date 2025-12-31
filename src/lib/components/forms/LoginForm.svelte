@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { login } from '$lib/auth.remote';
+	import { login } from '$lib/remote/auth.remote';
 	import { Button } from '$lib/components/ui';
 
 	// Check if form is loading (pending is a timestamp, 0 when not pending)

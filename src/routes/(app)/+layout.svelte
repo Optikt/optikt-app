@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { logout } from '$lib/auth.remote';
+	import { logout } from '$lib/remote/auth.remote';
 
 	let { children, data } = $props();
 
