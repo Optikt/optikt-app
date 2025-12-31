@@ -3,7 +3,7 @@
 	import { logout } from '$lib/remote/auth.remote';
 	import { resolve } from '$app/paths';
 	import {
-		Home,
+		House,
 		Users,
 		Package,
 		ShoppingCart,
@@ -23,7 +23,7 @@
 
 	// Icon mapping
 	const iconMap: Record<string, ComponentType> = {
-		home: Home,
+		home: House,
 		users: Users,
 		package: Package,
 		shopping: ShoppingCart,
