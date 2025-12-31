@@ -51,7 +51,7 @@
 	] as const;
 
 	const isAdmin = $derived(
-		user?.role === 'SUPERADMIN' || user?.role === 'ADMIN' || user?.role === 'MANAGER'
+		user.role === 'SUPERADMIN' || user.role === 'ADMIN' || user.role === 'MANAGER'
 	);
 
 	// Role badge colors - Tailwind classes
