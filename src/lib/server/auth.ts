@@ -3,6 +3,7 @@ import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
 import * as sessionQueries from '$lib/server/db/queries/sessions';
 import * as userQueries from '$lib/server/db/queries/users';
+import { dev } from '$app/environment';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
@@ -83,7 +84,7 @@ export function setSessionTokenCookie(event: RequestEvent, token: string, expire
 		expires: expiresAt,
 		path: '/',
 		httpOnly: true,
-		secure: import.meta.env.PROD,
+		secure: !dev,
 		sameSite: 'lax'
 	});
 }
@@ -91,7 +92,7 @@ export function setSessionTokenCookie(event: RequestEvent, token: string, expire
 export function deleteSessionTokenCookie(event: RequestEvent) {
 	event.cookies.delete(sessionCookieName, {
 		path: '/',
-		secure: import.meta.env.PROD
+		secure: !dev
 	});
 }
 
