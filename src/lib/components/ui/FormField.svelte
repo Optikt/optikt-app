@@ -15,13 +15,11 @@
 		error,
 		hint,
 		class: className = '',
-		id,
+		id: inputId = `input-${Math.random().toString(36).slice(2)}`,
 		value = $bindable(''),
 		...restProps
 	}: Props = $props();
 
-	// Using untrack - inputId is stable and shouldn't react to id prop changes
-	const inputId = untrack(() => id ?? `input-${Math.random().toString(36).slice(2)}`);
 	const errorMessage = $derived(Array.isArray(error) ? error[0] : error);
 	const hasError = $derived(!!errorMessage);
 </script>
