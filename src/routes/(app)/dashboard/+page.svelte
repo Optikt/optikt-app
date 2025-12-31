@@ -54,7 +54,7 @@
 
 	<!-- Quick Stats -->
 	<section class="stats-grid">
-		{#each stats as stat}
+		{#each stats as stat, index (index)}
 			<div class="stat-card glass-card">
 				<div class="stat-icon {stat.color}">
 					<svg

@@ -51,7 +51,7 @@
 <div class="flex min-h-screen">
 	<!-- Sidebar -->
 	<aside
-		class="flex w-64 flex-col bg-gradient-to-b from-slate-800 to-slate-900 transition-all duration-300"
+		class="flex w-64 flex-col bg-linear-to-b from-slate-800 to-slate-900 transition-all duration-300"
 		class:w-20={!sidebarOpen}
 	>
 		<!-- Header -->
@@ -64,7 +64,7 @@
 
 		<!-- Navigation -->
 		<nav class="flex-1 overflow-y-auto py-4">
-			{#each navItems as item}
+			{#each navItems as item, index (index)}
 				<a
 					href={item.href}
 					class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
@@ -133,7 +133,7 @@
 
 			{#if isAdmin}
 				<div class="mx-4 my-3 h-px bg-white/10"></div>
-				{#each adminItems as item}
+				{#each adminItems as item, index (index)}
 					<a
 						href={item.href}
 						class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
@@ -173,7 +173,7 @@
 		<div class="flex items-center justify-between gap-3 border-t border-white/10 p-4">
 			<div class="flex min-w-0 flex-1 items-center gap-3">
 				<div
-					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-brand-blue)] to-[var(--color-brand-navy)] font-semibold text-white"
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-blue to-brand-navy font-semibold text-white"
 				>
 					{user?.fullName?.charAt(0) ?? 'U'}
 				</div>
