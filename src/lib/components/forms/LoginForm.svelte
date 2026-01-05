@@ -31,7 +31,7 @@
 			stroke-width="2"
 			stroke-linecap="round"
 			stroke-linejoin="round"
-			class="flex-shrink-0"
+			class="shrink-0"
 		>
 			<circle cx="12" cy="12" r="10"></circle>
 			<line x1="12" y1="8" x2="12" y2="12"></line>
@@ -60,13 +60,13 @@
 	class="flex flex-col gap-5"
 >
 	<div class="flex flex-col gap-2">
-		<label for="identifier" class="block text-sm font-medium text-[var(--color-brand-navy)]">
+		<label for="identifier" class="block text-sm font-medium text-brand-navy">
 			Usuario o Email
 		</label>
 		<input
 			{...login.fields.identifier.as('text')}
 			id="identifier"
-			class="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-base transition-all duration-200 placeholder:text-slate-400 focus:border-[var(--color-brand-blue)] focus:ring-4 focus:ring-[var(--color-brand-blue)]/15 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-70"
+			class="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 text-base transition-all duration-200 placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-70"
 			placeholder="usuario@email.com o usuario"
 			autocomplete="username"
 			disabled={isLoading}
@@ -75,14 +75,14 @@
 	</div>
 
 	<div class="flex flex-col gap-2">
-		<label for="password" class="block text-sm font-medium text-[var(--color-brand-navy)]">
+		<label for="password" class="block text-sm font-medium text-brand-navy">
 			Contraseña
 		</label>
 		<div class="relative">
 			<input
 				{...login.fields.password.as(showPassword ? 'text' : 'password')}
 				id="password"
-				class="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 pr-12 text-base transition-all duration-200 placeholder:text-slate-400 focus:border-[var(--color-brand-blue)] focus:ring-4 focus:ring-[var(--color-brand-blue)]/15 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-70"
+				class="w-full rounded-lg border-2 border-slate-200 bg-white px-4 py-3 pr-12 text-base transition-all duration-200 placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-70"
 				placeholder="••••••••"
 				autocomplete="current-password"
 				disabled={isLoading}
@@ -90,7 +90,7 @@
 			/>
 			<button
 				type="button"
-				class="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-slate-400 transition-colors hover:text-[var(--color-brand-blue)]"
+				class="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-slate-400 transition-colors hover:text-brand-blue"
 				onclick={() => (showPassword = !showPassword)}
 				aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
 			>
