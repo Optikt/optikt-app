@@ -12,8 +12,10 @@
 		Shield,
 		LogOut,
 		PanelLeftClose,
-		PanelLeftOpen
+		PanelLeftOpen,
+		Settings
 	} from '@lucide/svelte';
+	import { Dropdown, DropdownItem, DropdownHeader, DropdownDivider } from 'flowbite-svelte';
 	import { UserRole, isAdminRole } from '$lib/shared/enums';
 	import type { LucideIcon } from '$lib/types/index.js';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
@@ -81,13 +83,18 @@
 	]}
 >
 	<!-- Header -->
-	<div class="flex items-center justify-between border-b border-white/10 p-4">
-		<div class="flex items-center gap-3">
-			<img src="/logos/optikt-blue.png" alt="Optikt" class="h-10 w-10 object-contain" />
-			{#if !collapsed}
+	<div
+		class={[
+			'flex items-center border-b border-white/10 p-4',
+			collapsed ? 'justify-center' : 'justify-between'
+		]}
+	>
+		{#if !collapsed}
+			<div class="flex items-center gap-3">
+				<img src="/logos/optikt-blue.png" alt="Optikt" class="h-10 w-10 object-contain" />
 				<span class="text-xl font-bold text-white">Optikt</span>
-			{/if}
-		</div>
+			</div>
+		{/if}
 		<button
 			type="button"
 			class="flex cursor-pointer items-center justify-center rounded-lg border-none bg-white/10 p-2 text-slate-400 transition-all duration-200 hover:bg-white/20 hover:text-white"
@@ -122,29 +129,48 @@
 		{/if}
 	</nav>
 
-	<!-- User section -->
-	<div class="flex items-center justify-between gap-3 border-t border-white/10 p-4">
-		<div class="flex min-w-0 flex-1 items-center gap-3">
+	<!-- User section with dropdown -->
+	<div class={['border-t border-white/10 p-4', collapsed ? 'flex justify-center' : '']}>
+		<button
+			id="user-menu-button"
+			type="button"
+			class="flex w-full cursor-pointer items-center gap-3 rounded-lg border-none bg-transparent p-2 transition-all duration-200 hover:bg-white/10"
+		>
 			<div
 				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-blue to-brand-navy font-semibold text-white"
 			>
 				{user.fullName?.charAt(0) ?? 'U'}
 			</div>
 			{#if !collapsed}
-				<div class="flex min-w-0 flex-col">
+				<div class="flex min-w-0 flex-1 flex-col text-left">
 					<span class="truncate text-sm font-medium text-white">{user.fullName}</span>
 					<span class={getRoleBadgeClass(user.role)}>{user.role}</span>
 				</div>
 			{/if}
-		</div>
-		<form {...logout} class="contents">
-			<button
-				type="submit"
-				class="flex cursor-pointer items-center justify-center rounded-lg border-none bg-white/10 p-2 text-slate-400 transition-all duration-200 hover:bg-red-500/20 hover:text-red-500"
-				title="Cerrar sesión"
-			>
-				<LogOut size={20} />
-			</button>
-		</form>
+		</button>
+
+		<Dropdown triggeredBy="#user-menu-button" placement="top" class="w-56">
+			<DropdownHeader>
+				<span class="block text-sm font-semibold text-gray-900 dark:text-white"
+					>{user.fullName}</span
+				>
+				<span class="block truncate text-sm text-gray-500 dark:text-gray-400">{user.email}</span>
+			</DropdownHeader>
+			<DropdownItem class="flex items-center gap-2">
+				<Settings size={16} />
+				Configuración
+			</DropdownItem>
+			<DropdownDivider />
+			<form {...logout} class="contents">
+				<DropdownItem
+					tag="button"
+					type="submit"
+					class="flex w-full items-center gap-2 text-red-600 hover:text-red-700"
+				>
+					<LogOut size={16} />
+					Cerrar sesión
+				</DropdownItem>
+			</form>
+		</Dropdown>
 	</div>
 </aside>
