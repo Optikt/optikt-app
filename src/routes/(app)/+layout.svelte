@@ -56,7 +56,7 @@
 	// Role badge colors - Tailwind classes
 	function getRoleBadgeClass(role: UserRole) {
 		const base =
-			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.65rem] font-semibold uppercase tracking-wide';
+			'inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.65rem] font-semibold uppercase tracking-wide justify-center';
 		switch (role) {
 			case UserRole.SUPERADMIN:
 				return `${base} text-white bg-gradient-to-r from-amber-500 to-amber-600`;
