@@ -155,25 +155,25 @@
 			{/if}
 		</button>
 
-		<Dropdown triggeredBy="#user-menu-button" placement="top" class="w-56">
-			<DropdownHeader>
-				<span class="block text-sm font-semibold text-gray-900 dark:text-white"
-					>{user.fullName}</span
-				>
-				<span class="block truncate text-sm text-gray-500 dark:text-gray-400">{user.email}</span>
+		<Dropdown triggeredBy="#user-menu-button" placement="top" class="w-56 bg-white shadow-lg">
+			<DropdownHeader class="border-b border-gray-100">
+				<span class="block text-sm font-semibold text-gray-900">{user.fullName}</span>
+				<span class="block truncate text-sm text-gray-600">{user.email}</span>
 			</DropdownHeader>
 			<DropdownGroup>
-				<DropdownItem class="flex items-center gap-2">
+				<DropdownItem
+					class="flex cursor-pointer items-center gap-2 text-gray-700 hover:bg-gray-100! hover:text-gray-900!"
+				>
 					<Settings size={16} />
 					Configuración
 				</DropdownItem>
 			</DropdownGroup>
-			<DropdownDivider />
+			<DropdownDivider class="border-gray-200" />
 			<DropdownGroup>
 				<form {...logout} class="contents">
 					<button
 						type="submit"
-						class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 hover:text-red-700 dark:hover:bg-gray-600"
+						class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700"
 					>
 						<LogOut size={16} />
 						Cerrar sesión
