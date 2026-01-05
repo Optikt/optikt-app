@@ -24,7 +24,7 @@
 
 <a
 	href={resolve(href)}
-	class="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 font-medium text-brand-navy no-underline transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-[0_4px_12px_rgba(78,181,197,0.15)]"
+	class="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 font-medium text-brand-navy no-underline shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-blue hover:shadow-md hover:shadow-brand-blue/15"
 >
 	<div class="flex h-12 w-12 items-center justify-center rounded-xl {colorMap[color]}">
 		<Icon size={24} />

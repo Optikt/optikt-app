@@ -13,8 +13,8 @@
 	const variantClasses = {
 		default: 'bg-white border border-slate-200 shadow-sm rounded-xl',
 		glass:
-			'bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.1)]',
-		dark: 'bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] text-white'
+			'bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-lg shadow-black/10',
+		dark: 'bg-slate-800/85 backdrop-blur-xl border border-white/10 rounded-2xl shadow-lg shadow-black/30 text-white'
 	};
 
 	const paddingClasses = {

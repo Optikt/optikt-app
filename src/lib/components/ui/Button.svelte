@@ -27,12 +27,12 @@
 	// Variant-specific styles
 	const variantClasses = {
 		primary:
-			'text-white bg-gradient-to-br from-[var(--color-brand-blue)] to-[var(--color-brand-navy)] shadow-[0_4px_14px_rgba(78,181,197,0.4)] hover:enabled:-translate-y-0.5 hover:enabled:shadow-[0_6px_20px_rgba(78,181,197,0.5)]',
+			'text-white bg-gradient-to-br from-brand-blue to-brand-navy shadow-lg shadow-brand-blue/40 hover:enabled:-translate-y-0.5 hover:enabled:shadow-xl hover:enabled:shadow-brand-blue/50',
 		secondary:
-			'text-[var(--color-brand-blue)] bg-transparent border-2 !border-[var(--color-brand-blue)] hover:enabled:text-white hover:enabled:bg-[var(--color-brand-blue)]',
-		ghost: 'text-[var(--color-brand-navy)] bg-transparent hover:enabled:bg-black/5',
+			'text-brand-blue bg-transparent border-2 !border-brand-blue hover:enabled:text-white hover:enabled:bg-brand-blue',
+		ghost: 'text-brand-navy bg-transparent hover:enabled:bg-black/5',
 		danger:
-			'text-white bg-gradient-to-br from-red-500 to-red-600 shadow-[0_4px_14px_rgba(239,68,68,0.3)] hover:enabled:-translate-y-0.5 hover:enabled:shadow-[0_6px_20px_rgba(239,68,68,0.4)]'
+			'text-white bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30 hover:enabled:-translate-y-0.5 hover:enabled:shadow-xl hover:enabled:shadow-red-500/40'
 	};
 
 	const sizeClasses = {

@@ -22,7 +22,7 @@
 	<div class="flex items-center gap-4">
 		<a
 			href={resolve('/sales/new')}
-			class="flex items-center gap-2 rounded-lg border-none bg-linear-to-br from-brand-blue to-brand-navy px-4 py-2.5 font-semibold text-white no-underline shadow-[0_4px_14px_rgba(78,181,197,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(78,181,197,0.5)]"
+			class="flex items-center gap-2 rounded-lg border-none bg-linear-to-br from-brand-blue to-brand-navy px-4 py-2.5 font-semibold text-white no-underline shadow-lg shadow-brand-blue/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-blue/50"
 		>
 			<Plus size={20} />
 			Nueva Venta
