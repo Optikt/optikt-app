@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { logout } from '$lib/remote/auth.remote';
 	import {
 		House,
@@ -162,6 +163,7 @@
 			</DropdownHeader>
 			<DropdownGroup>
 				<DropdownItem
+					href={resolve('/config')}
 					class="flex cursor-pointer items-center gap-2 text-gray-700 hover:bg-gray-100! hover:text-gray-900!"
 				>
 					<Settings size={16} />
