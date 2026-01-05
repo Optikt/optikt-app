@@ -92,14 +92,15 @@
 		<nav class="flex-1 overflow-y-auto py-4">
 			{#each navItems as item, index (index)}
 				{@const Icon = iconMap[item.icon]}
+				{@const isActive =
+					page.url.pathname === item.href || page.url.pathname.startsWith(item.href + '/')}
 				<a
 					title={item.label}
 					href={resolve(item.href)}
-					class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
-					class:bg-[rgba(78,181,197,0.2)]={page.url.pathname === item.href ||
-						page.url.pathname.startsWith(item.href + '/')}
-					class:text-[var(--color-brand-blue)]={page.url.pathname === item.href ||
-						page.url.pathname.startsWith(item.href + '/')}
+					class={[
+						'mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white',
+						isActive ? 'bg-brand-blue/20 text-brand-blue' : 'text-slate-400'
+					]}
 				>
 					<Icon size={20} />
 					{#if sidebarOpen}
@@ -112,12 +113,14 @@
 				<div class="mx-4 my-3 h-px bg-white/10"></div>
 				{#each adminItems as item, index (index)}
 					{@const Icon = iconMap[item.icon]}
+					{@const isActive = page.url.pathname === item.href}
 					<a
 						title={item.label}
 						href={resolve(item.href)}
-						class="mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white"
-						class:bg-[rgba(78,181,197,0.2)]={page.url.pathname === item.href}
-						class:text-[var(--color-brand-blue)]={page.url.pathname === item.href}
+						class={[
+							'mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white ',
+							isActive ? 'bg-brand-blue/20 text-brand-blue' : 'text-slate-400'
+						]}
 					>
 						<Icon size={20} />
 						{#if sidebarOpen}
