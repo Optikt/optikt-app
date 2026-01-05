@@ -15,7 +15,13 @@
 		PanelLeftOpen,
 		Settings
 	} from '@lucide/svelte';
-	import { Dropdown, DropdownItem, DropdownHeader, DropdownDivider } from 'flowbite-svelte';
+	import {
+		Dropdown,
+		DropdownItem,
+		DropdownHeader,
+		DropdownDivider,
+		DropdownGroup
+	} from 'flowbite-svelte';
 	import { UserRole, isAdminRole } from '$lib/shared/enums';
 	import type { LucideIcon } from '$lib/types/index.js';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
@@ -156,21 +162,24 @@
 				>
 				<span class="block truncate text-sm text-gray-500 dark:text-gray-400">{user.email}</span>
 			</DropdownHeader>
-			<DropdownItem class="flex items-center gap-2">
-				<Settings size={16} />
-				Configuración
-			</DropdownItem>
-			<DropdownDivider />
-			<form {...logout} class="contents">
-				<DropdownItem
-					tag="button"
-					type="submit"
-					class="flex w-full items-center gap-2 text-red-600 hover:text-red-700"
-				>
-					<LogOut size={16} />
-					Cerrar sesión
+			<DropdownGroup>
+				<DropdownItem class="flex items-center gap-2">
+					<Settings size={16} />
+					Configuración
 				</DropdownItem>
-			</form>
+			</DropdownGroup>
+			<DropdownDivider />
+			<DropdownGroup>
+				<form {...logout} class="contents">
+					<button
+						type="submit"
+						class="flex w-full cursor-pointer items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 hover:text-red-700 dark:hover:bg-gray-600"
+					>
+						<LogOut size={16} />
+						Cerrar sesión
+					</button>
+				</form>
+			</DropdownGroup>
 		</Dropdown>
 	</div>
 </aside>
