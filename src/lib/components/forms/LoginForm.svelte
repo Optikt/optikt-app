@@ -41,6 +41,7 @@
 	</div>
 {/if}
 
+<!-- TODO: Create a custom form with error handling -->
 <form
 	{...login.enhance(async ({ submit, form }) => {
 		errorMessage = null;
