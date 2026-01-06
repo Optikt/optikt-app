@@ -253,7 +253,6 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 	}
 
 	// Prepare update data
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const updateData: Record<string, any> = { ...rest };
 
 	if (email) {
@@ -273,23 +272,7 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 		});
 	}
 
-	// Update the user
-	const [updatedUser] = await db
-		.update(users)
-		.set({ ...updateData, updatedAt: new Date() })
-		.where(eq(users.id, id))
-		.returning({
-			id: users.id,
-			email: users.email,
-			username: users.username,
-			fullName: users.fullName,
-			role: users.role,
-			isActive: users.isActive,
-			isSuperuser: users.isSuperuser,
-			createdAt: users.createdAt
-		});
-
-	return updatedUser as UserListItem;
+	return await dbUpdateUser(id, updateData);
 });
 
 /**
