@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
-import { isNull, eq, desc, count } from 'drizzle-orm';
+import { isNull, desc, count } from 'drizzle-orm';
 
 /**
  * Load initial users data for SSR
