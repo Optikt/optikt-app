@@ -11,7 +11,7 @@
 	} from 'flowbite-svelte';
 	import { Edit, Trash2, Power } from '@lucide/svelte';
 	import { UserRole } from '$lib/shared/enums';
-	import type { UserListItem } from '$lib/remote/users.remote';
+	import type { UserListItem } from '$lib/types';
 
 	interface Props {
 		users: UserListItem[];

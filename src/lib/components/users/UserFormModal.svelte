@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Modal, Label, Input, Select, Button, Spinner } from 'flowbite-svelte';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import type { UserListItem } from '$lib/remote/users.remote';
+	import type { UserListItem } from '$lib/types/users';
 
 	interface Props {
 		open: boolean;

@@ -7,12 +7,11 @@
 		createUser,
 		updateUser,
 		toggleUserActive,
-		deleteUserById,
-		type UserListItem,
-		type PaginatedUsers
+		deleteUserById
 	} from '$lib/remote/users.remote';
 	import { UsersTable, UserFormModal, DeleteConfirmModal } from '$lib/components/users';
 	import { untrack } from 'svelte';
+	import type { UserListItem, PaginatedUsers } from '$lib/types/users';
 
 	// SSR initial data
 	let { data } = $props();
