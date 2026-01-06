@@ -5,9 +5,8 @@
 import { error } from '@sveltejs/kit';
 import { command } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import * as v from 'valibot';
-import { requireAdmin } from '$lib/server/guards';
-import { UserRole, ALL_ROLES } from '$lib/shared/enums';
+import { getCurrentUser, requireAdmin } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
 import {
@@ -19,79 +18,15 @@ import {
 } from '$lib/server/db/queries/users';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
-// ==================== SCHEMAS ====================
+// Import schemas
+import {
+	ListUsersSchema,
+	CreateUserSchema,
+	UpdateUserSchema,
+	UserIdSchema
+} from '$lib/schemas/users';
 
-const ListUsersSchema = v.object({
-	page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
-	perPage: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 10),
-	search: v.optional(v.string()),
-	role: v.optional(v.picklist(ALL_ROLES)),
-	includeInactive: v.optional(v.boolean(), false)
-});
-
-const CreateUserSchema = v.object({
-	email: v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255)),
-	username: v.pipe(
-		v.string(),
-		v.minLength(3, 'Username debe tener al menos 3 caracteres'),
-		v.maxLength(50),
-		v.regex(/^[a-zA-Z0-9_]+$/, 'Username solo puede contener letras, números y guiones bajos')
-	),
-	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
-	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
-	role: v.optional(v.picklist(ALL_ROLES), UserRole.VIEWER),
-	isActive: v.optional(v.boolean(), true)
-});
-
-const UpdateUserSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	email: v.optional(v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255))),
-	username: v.optional(
-		v.pipe(
-			v.string(),
-			v.minLength(3, 'Username debe tener al menos 3 caracteres'),
-			v.maxLength(50),
-			v.regex(/^[a-zA-Z0-9_]+$/, 'Username solo puede contener letras, números y guiones bajos')
-		)
-	),
-	fullName: v.optional(v.pipe(v.string(), v.minLength(2), v.maxLength(255))),
-	password: v.optional(
-		v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres'))
-	),
-	role: v.optional(v.picklist(ALL_ROLES)),
-	isActive: v.optional(v.boolean())
-});
-
-const UserIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid())
-});
-
-// ==================== TYPES ====================
-
-export type ListUsersInput = v.InferOutput<typeof ListUsersSchema>;
-export type CreateUserInput = v.InferOutput<typeof CreateUserSchema>;
-export type UpdateUserInput = v.InferOutput<typeof UpdateUserSchema>;
-
-export interface UserListItem {
-	id: string;
-	email: string;
-	username: string;
-	fullName: string;
-	role: UserRole;
-	isActive: boolean;
-	isSuperuser: boolean;
-	createdAt: Date;
-}
-
-export interface PaginatedUsers {
-	users: UserListItem[];
-	total: number;
-	page: number;
-	perPage: number;
-	totalPages: number;
-}
-
-// ==================== REMOTE FUNCTIONS ====================
+import type { UserListItem, PaginatedUsers } from '$lib/types/users';
 
 /**
  * List users with pagination, search, and filtering
@@ -253,6 +188,7 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
 	}
 
 	// Prepare update data
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const updateData: Record<string, any> = { ...rest };
 
 	if (email) {
@@ -287,10 +223,10 @@ export const toggleUserActive = command(UserIdSchema, async (input): Promise<Use
 	}
 
 	// Prevent deactivating oneself
-	// const currentUser = getCurrentUser();
-	// if (currentUser && currentUser.id === user.id) {
-	// 	error(400, 'No puedes desactivar tu propia cuenta');
-	// }
+	const currentUser = getCurrentUser();
+	if (currentUser && currentUser.id === user.id) {
+		error(400, 'No puedes desactivar tu propia cuenta');
+	}
 
 	const [updatedUser] = await db
 		.update(users)
