@@ -1,20 +1,6 @@
 import { isHttpError } from '@sveltejs/kit';
 
 /**
- * Error handling utilities for remote functions
- */
-
-/**
- * Error response structure from SvelteKit's error() function
- */
-interface HttpError {
-	status: number;
-	body: {
-		message: string;
-	};
-}
-
-/**
  * Extract error message from various error types
  * Handles:
  * - Standard Error instances
