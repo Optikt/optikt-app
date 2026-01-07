@@ -30,3 +30,8 @@ export interface PaginatedUsers {
 	perPage: number;
 	totalPages: number;
 }
+
+// Create user result - can indicate a reactivation candidate
+export type CreateUserResult =
+	| { success: true; user: UserListItem }
+	| { success: false; reactivationCandidate: UserListItem; message: string };
