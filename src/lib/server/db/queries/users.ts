@@ -1,4 +1,4 @@
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { users, type User, type NewUser } from '$lib/server/db/schema';
 
@@ -25,18 +25,24 @@ export async function findUserById(id: string): Promise<User | null> {
 }
 
 /**
- * Find a user by their email
+ * Find a user by their email (excludes soft-deleted users)
  */
 export async function findUserByEmail(email: string): Promise<User | null> {
-	const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+	const [user] = await db
+		.select()
+		.from(users)
+		.where(and(eq(users.email, email.toLowerCase()), isNull(users.deletedAt)));
 	return user ?? null;
 }
 
 /**
- * Find a user by their username
+ * Find a user by their username (excludes soft-deleted users)
  */
 export async function findUserByUsername(username: string): Promise<User | null> {
-	const [user] = await db.select().from(users).where(eq(users.username, username.toLowerCase()));
+	const [user] = await db
+		.select()
+		.from(users)
+		.where(and(eq(users.username, username.toLowerCase()), isNull(users.deletedAt)));
 	return user ?? null;
 }
 
