@@ -5,6 +5,12 @@
 import * as v from 'valibot';
 import { UserRole, ALL_ROLES } from '$lib/shared/enums';
 
+// Helper to coerce string to boolean for form inputs
+const BooleanFromString = v.pipe(
+	v.union([v.boolean(), v.picklist(['true', 'false'])]),
+	v.transform((val) => (typeof val === 'boolean' ? val : val === 'true'))
+);
+
 export const ListUsersSchema = v.object({
 	page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
 	perPage: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 10),
@@ -24,7 +30,7 @@ export const CreateUserSchema = v.object({
 	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
 	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
 	role: v.optional(v.picklist(ALL_ROLES), UserRole.VIEWER),
-	isActive: v.optional(v.boolean(), true)
+	isActive: v.optional(BooleanFromString, true)
 });
 
 export const UpdateUserSchema = v.object({
@@ -47,7 +53,7 @@ export const UpdateUserSchema = v.object({
 		])
 	),
 	role: v.optional(v.picklist(ALL_ROLES)),
-	isActive: v.optional(v.boolean())
+	isActive: v.optional(BooleanFromString)
 });
 
 export const UserIdSchema = v.object({
@@ -66,5 +72,5 @@ export const ReactivateUserSchema = v.object({
 	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
 	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
 	role: v.optional(v.picklist(ALL_ROLES), UserRole.VIEWER),
-	isActive: v.optional(v.boolean(), true)
+	isActive: v.optional(BooleanFromString, true)
 });
