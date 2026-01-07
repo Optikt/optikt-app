@@ -29,6 +29,7 @@ trigger: always_on
 - No duplicar clases si se puede extraer un componente
 - Priorizar legibilidad frente a micro-optimizaciones visuales
 - Accesibilidad no es opcional: HTML semántico, roles ARIA cuando aplique y foco gestionado
+- Cuando crees los componentes, crea el tipo de los props en el propio componente para tener la legibilidad cuando se hace destructuring al `$props`
 
 ## Testing y calidad
 
