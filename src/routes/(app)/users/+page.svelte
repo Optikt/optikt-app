@@ -3,6 +3,7 @@
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
+	import { getErrorMessage } from '$lib/utils';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import {
 		listUsers,
@@ -124,7 +125,9 @@
 			showFormModal = false;
 			await fetchUsers(usersData.page);
 		} catch (e) {
-			formError = e instanceof Error ? e.message : 'Error guardando usuario';
+			const message = getErrorMessage(e, 'Error guardando usuario');
+			formError = message;
+			toast.error(message);
 		} finally {
 			formLoading = false;
 		}
@@ -136,7 +139,7 @@
 			toast.success(user.isActive ? 'Usuario desactivado' : 'Usuario activado');
 			await fetchUsers(usersData.page);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Error cambiando estado');
+			toast.error(getErrorMessage(e, 'Error cambiando estado'));
 		}
 	}
 
@@ -149,7 +152,7 @@
 			toast.success('Usuario eliminado exitosamente');
 			await fetchUsers(usersData.page);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Error eliminando usuario');
+			toast.error(getErrorMessage(e, 'Error eliminando usuario'));
 		} finally {
 			formLoading = false;
 		}
