@@ -13,8 +13,11 @@ import {
 	findUserByEmail,
 	findUserByUsername,
 	findUserById,
+	findDeletedUserByEmail,
+	findDeletedUserByUsername,
 	updateUser as dbUpdateUser,
-	deleteUser as dbDeleteUser
+	deleteUser as dbDeleteUser,
+	restoreUser as dbRestoreUser
 } from '$lib/server/db/queries/users';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
@@ -23,10 +26,11 @@ import {
 	ListUsersSchema,
 	CreateUserSchema,
 	UpdateUserSchema,
-	UserIdSchema
+	UserIdSchema,
+	ReactivateUserSchema
 } from '$lib/schemas/users';
 
-import type { UserListItem, PaginatedUsers } from '$lib/types/users';
+import type { UserListItem, PaginatedUsers, CreateUserResult } from '$lib/types/users';
 
 /**
  * List users with pagination, search, and filtering
@@ -101,25 +105,61 @@ export const listUsers = command(ListUsersSchema, async (input): Promise<Paginat
 
 /**
  * Create a new user
+ * Returns either a success with user, or a reactivation candidate for confirmation
  */
-export const createUser = command(CreateUserSchema, async (input): Promise<UserListItem> => {
+export const createUser = command(CreateUserSchema, async (input): Promise<CreateUserResult> => {
 	requireAdmin();
 
 	const { email, username, password, fullName, role, isActive } = input;
 
-	// Check for existing email
-	const existingEmail = await findUserByEmail(email);
-	if (existingEmail) {
+	// Check for existing ACTIVE email
+	const existingActiveEmail = await findUserByEmail(email);
+	if (existingActiveEmail) {
 		error(400, 'El email ya está registrado');
 	}
 
-	// Check for existing username
-	const existingUsername = await findUserByUsername(username);
-	if (existingUsername) {
+	// Check for existing ACTIVE username
+	const existingActiveUsername = await findUserByUsername(username);
+	if (existingActiveUsername) {
 		error(400, 'El nombre de usuario ya está en uso');
 	}
 
-	// Hash the password
+	// Check for DELETED user with same email (reactivation candidate)
+	const deletedUserByEmail = await findDeletedUserByEmail(email);
+	if (deletedUserByEmail) {
+		// Check if the username is available OR belongs to this same deleted user
+		const deletedUserByUsername = await findDeletedUserByUsername(username);
+
+		if (deletedUserByUsername && deletedUserByUsername.id !== deletedUserByEmail.id) {
+			// Username belongs to a DIFFERENT deleted user - not allowed
+			error(400, 'El nombre de usuario está en uso por otro usuario eliminado');
+		}
+
+		// Can reactivate! Return candidate for confirmation
+		return {
+			success: false,
+			reactivationCandidate: {
+				id: deletedUserByEmail.id,
+				email: deletedUserByEmail.email,
+				username: deletedUserByEmail.username,
+				fullName: deletedUserByEmail.fullName,
+				role: deletedUserByEmail.role,
+				isActive: deletedUserByEmail.isActive,
+				isSuperuser: deletedUserByEmail.isSuperuser,
+				createdAt: deletedUserByEmail.createdAt
+			},
+			message:
+				'Este email pertenece a un usuario eliminado. ¿Desea reactivarlo con los nuevos datos?'
+		};
+	}
+
+	// Check if username is used by a DELETED user (email is free)
+	const deletedByUsername = await findDeletedUserByUsername(username);
+	if (deletedByUsername) {
+		error(400, 'El nombre de usuario está en uso. Por favor elija otro.');
+	}
+
+	// All clear - create new user
 	const hashedPassword = await hash(password, {
 		memoryCost: 19456,
 		timeCost: 2,
@@ -127,7 +167,6 @@ export const createUser = command(CreateUserSchema, async (input): Promise<UserL
 		parallelism: 1
 	});
 
-	// Create the user
 	const now = new Date();
 	const [newUser] = await db
 		.insert(users)
@@ -154,8 +193,55 @@ export const createUser = command(CreateUserSchema, async (input): Promise<UserL
 			createdAt: users.createdAt
 		});
 
-	return newUser as UserListItem;
+	return { success: true, user: newUser as UserListItem };
 });
+
+/**
+ * Reactivate a deleted user with new data
+ */
+export const reactivateUser = command(
+	ReactivateUserSchema,
+	async (input): Promise<UserListItem> => {
+		requireAdmin();
+
+		const { deletedUserId, email, username, password, fullName, role, isActive } = input;
+
+		// Verify the user exists and is deleted
+		const deletedUser = await findUserById(deletedUserId);
+		if (!deletedUser || !deletedUser.deletedAt) {
+			error(404, 'Usuario eliminado no encontrado');
+		}
+
+		// Hash the new password
+		const hashedPassword = await hash(password, {
+			memoryCost: 19456,
+			timeCost: 2,
+			outputLen: 32,
+			parallelism: 1
+		});
+
+		// Restore the user with new data
+		const restoredUser = await dbRestoreUser(deletedUserId, {
+			email: email.toLowerCase(),
+			username: username.toLowerCase(),
+			fullName,
+			hashedPassword,
+			role: role ?? UserRole.VIEWER,
+			isActive: isActive ?? true
+		});
+
+		return {
+			id: restoredUser.id,
+			email: restoredUser.email,
+			username: restoredUser.username,
+			fullName: restoredUser.fullName,
+			role: restoredUser.role,
+			isActive: restoredUser.isActive,
+			isSuperuser: restoredUser.isSuperuser,
+			createdAt: restoredUser.createdAt
+		};
+	}
+);
 
 /**
  * Update an existing user
@@ -262,6 +348,12 @@ export const deleteUserById = command(
 		// Prevent deleting superusers
 		if (user.isSuperuser) {
 			error(400, 'No se puede eliminar un superadministrador');
+		}
+
+		// Prevent deleting oneself
+		const currentUser = getCurrentUser();
+		if (currentUser && currentUser.id === user.id) {
+			error(400, 'No puedes eliminar tu propia cuenta');
 		}
 
 		const deleted = await dbDeleteUser(input.id);
