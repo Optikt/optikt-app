@@ -5,30 +5,16 @@
 	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import {
-		listUsers,
-		createUser,
-		updateUser,
-		toggleUserActive,
-		deleteUserById,
-		reactivateUser
-	} from '$lib/remote/users.remote';
-	import {
-		UsersTable,
-		UserFormModal,
-		DeleteConfirmModal,
-		ReactivateConfirmModal,
-		ToggleActiveModal
-	} from '$lib/components/users';
+	import { listUsers, createUser, updateUser } from '$lib/remote/users.remote';
+	import { UsersTable, UserFormModal, ReactivateConfirmModal } from '$lib/components/users';
 	import { untrack } from 'svelte';
 	import type { UserListItem, PaginatedUsers } from '$lib/types/users';
 
-	// SSR initial data
+	// SSR initial data (untrack since is initial data)
 	let { data } = $props();
-
 	let { initialUsers, totalCount } = untrack(() => data);
 
-	// Data state - start with SSR data
+	// Data state
 	let usersData = $state<PaginatedUsers>({
 		users: initialUsers,
 		total: totalCount,
@@ -43,16 +29,14 @@
 	let roleFilter = $state<UserRole | ''>('');
 	let includeInactive = $state(false);
 
-	// Modal state
+	// Form modal state
 	let showFormModal = $state(false);
-	let showDeleteModal = $state(false);
-	let showReactivateModal = $state(false);
-	let showToggleActiveModal = $state(false);
 	let selectedUser = $state<UserListItem | null>(null);
 	let formLoading = $state(false);
 	let formError = $state<string | null>(null);
 
-	// Reactivation state
+	// Reactivation modal state
+	let showReactivateModal = $state(false);
 	let pendingFormData = $state<FormData | null>(null);
 	let reactivationCandidate = $state<UserListItem | null>(null);
 
@@ -85,10 +69,6 @@
 		fetchUsers(1);
 	}
 
-	function goToPage(page: number) {
-		fetchUsers(page);
-	}
-
 	// Modal handlers
 	function openCreate() {
 		selectedUser = null;
@@ -102,12 +82,6 @@
 		showFormModal = true;
 	}
 
-	function openDelete(user: UserListItem) {
-		selectedUser = user;
-		showDeleteModal = true;
-	}
-
-	// CRUD handlers using remote functions
 	async function handleFormSubmit(formData: FormData) {
 		formLoading = true;
 		formError = null;
@@ -156,72 +130,12 @@
 		}
 	}
 
-	async function handleReactivateConfirm() {
-		if (!pendingFormData || !reactivationCandidate) return;
-
-		formLoading = true;
-		try {
-			await reactivateUser({
-				deletedUserId: reactivationCandidate.id,
-				fullName: pendingFormData.get('fullName') as string,
-				username: pendingFormData.get('username') as string,
-				email: pendingFormData.get('email') as string,
-				password: pendingFormData.get('password') as string,
-				role: pendingFormData.get('role') as UserRole,
-				isActive: pendingFormData.get('isActive') === 'true'
-			});
-			toast.success('Usuario reactivado exitosamente');
-			showReactivateModal = false;
-			showFormModal = false;
-			pendingFormData = null;
-			reactivationCandidate = null;
-			await fetchUsers(usersData.page);
-		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error reactivando usuario'));
-		} finally {
-			formLoading = false;
-		}
-	}
-
-	function handleReactivateCancel() {
+	function handleReactivateSuccess() {
 		showReactivateModal = false;
+		showFormModal = false;
 		pendingFormData = null;
 		reactivationCandidate = null;
-	}
-
-	function openToggleActive(user: UserListItem) {
-		selectedUser = user;
-		showToggleActiveModal = true;
-	}
-
-	async function handleToggleActiveConfirm() {
-		if (!selectedUser) return;
-		formLoading = true;
-		try {
-			await toggleUserActive({ id: selectedUser.id });
-			toast.success(selectedUser.isActive ? 'Usuario desactivado' : 'Usuario activado');
-			showToggleActiveModal = false;
-			await fetchUsers(usersData.page);
-		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error cambiando estado'));
-		} finally {
-			formLoading = false;
-		}
-	}
-
-	async function handleDelete() {
-		if (!selectedUser) return;
-		formLoading = true;
-		try {
-			await deleteUserById({ id: selectedUser.id });
-			showDeleteModal = false;
-			toast.success('Usuario eliminado exitosamente');
-			await fetchUsers(usersData.page);
-		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error eliminando usuario'));
-		} finally {
-			formLoading = false;
-		}
+		fetchUsers(usersData.page);
 	}
 </script>
 
@@ -266,8 +180,7 @@
 		users={usersData.users}
 		{loading}
 		onEdit={openEdit}
-		onToggleActive={openToggleActive}
-		onDelete={openDelete}
+		onRefresh={() => fetchUsers(usersData.page)}
 	/>
 
 	<!-- Pagination -->
@@ -276,11 +189,11 @@
 		perPage={usersData.perPage}
 		total={usersData.total}
 		totalPages={usersData.totalPages}
-		onPageChange={goToPage}
+		onPageChange={(p) => fetchUsers(p)}
 	/>
 </div>
 
-<!-- Modals -->
+<!-- Create/Update Form Modal -->
 <UserFormModal
 	bind:open={showFormModal}
 	user={selectedUser}
@@ -290,27 +203,10 @@
 	onClose={() => (showFormModal = false)}
 />
 
-<DeleteConfirmModal
-	bind:open={showDeleteModal}
-	userName={selectedUser?.fullName ?? ''}
-	loading={formLoading}
-	onConfirm={handleDelete}
-	onCancel={() => (showDeleteModal = false)}
-/>
-
+<!-- Reactivate Modal -->
 <ReactivateConfirmModal
 	bind:open={showReactivateModal}
-	user={reactivationCandidate}
-	loading={formLoading}
-	onConfirm={handleReactivateConfirm}
-	onCancel={handleReactivateCancel}
-/>
-
-<ToggleActiveModal
-	bind:open={showToggleActiveModal}
-	userName={selectedUser?.fullName ?? ''}
-	isActive={selectedUser?.isActive ?? true}
-	loading={formLoading}
-	onConfirm={handleToggleActiveConfirm}
-	onCancel={() => (showToggleActiveModal = false)}
+	candidate={reactivationCandidate}
+	formData={pendingFormData}
+	onSuccess={handleReactivateSuccess}
 />
