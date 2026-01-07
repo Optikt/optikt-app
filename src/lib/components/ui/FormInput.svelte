@@ -1,11 +1,10 @@
 <script lang="ts">
-	import { Input, Helper } from 'flowbite-svelte';
-	import type { Snippet } from 'svelte';
+	import { Input, Helper, Label } from 'flowbite-svelte';
 
 	interface Props {
 		value: string;
 		error?: string | null;
-		label?: Snippet;
+		label?: string;
 		id?: string;
 		name?: string;
 		type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search';
@@ -31,13 +30,16 @@
 		size = 'md',
 		class: className
 	}: Props = $props();
+
+	// Use name as fallback for id (for the label's "for" attribute)
+	const inputId = $derived(id ?? name);
 </script>
 
 {#if label}
-	{@render label()}
+	<Label for={inputId} color={error ? 'red' : undefined}>{label}</Label>
 {/if}
 <Input
-	{id}
+	id={inputId}
 	{name}
 	{type}
 	{placeholder}
