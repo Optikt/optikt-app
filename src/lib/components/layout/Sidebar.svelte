@@ -16,13 +16,7 @@
 		PanelLeftOpen,
 		Settings
 	} from '@lucide/svelte';
-	import {
-		Dropdown,
-		DropdownItem,
-		DropdownHeader,
-		DropdownDivider,
-		DropdownGroup
-	} from 'flowbite-svelte';
+	import { Dropdown, DropdownItem, DropdownHeader, DropdownGroup } from 'flowbite-svelte';
 	import { UserRole, isAdminRole } from '$lib/shared/enums';
 	import type { LucideIcon } from '$lib/types/index.js';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
