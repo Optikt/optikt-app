@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { Button, Select } from 'flowbite-svelte';
-	import { Plus, Search } from '@lucide/svelte';
+	import { Button, Select, Checkbox } from 'flowbite-svelte';
+	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { SearchInput } from '$lib/components/ui';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import {
 		listUsers,
@@ -174,26 +175,21 @@
 
 	<!-- Filters -->
 	<div class="mb-4 flex flex-wrap items-center gap-4">
-		<div class="relative flex-1">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-			<input
-				type="search"
-				placeholder="Buscar por nombre, email o usuario..."
-				bind:value={search}
-				oninput={handleSearch}
-				class="w-full max-w-md rounded-lg border border-gray-300 py-2 pr-4 pl-10 focus:border-blue-500 focus:ring-blue-500"
-			/>
-		</div>
+		<SearchInput
+			bind:value={search}
+			placeholder="Buscar por nombre, email o usuario..."
+			oninput={handleSearch}
+			class="max-w-md flex-1"
+		/>
 		<Select bind:value={roleFilter} onchange={handleFilterChange} class="w-40">
 			<option value="">Todos los roles</option>
 			{#each ALL_ROLES as role, index (`${role}-${index}`)}
 				<option value={role}>{role}</option>
 			{/each}
 		</Select>
-		<label class="flex items-center gap-2 text-sm text-gray-600">
-			<input type="checkbox" bind:checked={includeInactive} onchange={handleFilterChange} />
+		<Checkbox bind:checked={includeInactive} onchange={handleFilterChange}>
 			Incluir inactivos
-		</label>
+		</Checkbox>
 	</div>
 
 	<!-- Table -->
