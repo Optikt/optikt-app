@@ -12,9 +12,45 @@ trigger: always_on
 If a component performs a specific action (like toggle, delete, reactivate), it should import and call the remote function internally. Pass only the data needed and emit events (like onSuccess, onError) for parent coordination. Generic components (like ConfirmModal) take callbacks; domain-specific components call their own remotes.
 
 # Remote Function Usage Pattern
-| Function | Use Case |
-|----------|----------|
-| **`query`** | Read data (GET operations) |
-| **`query.batch`** | Multiple queries, avoid N+1 |
-| **`form`** | Form submissions with validation |
-| **`command`** | Button clicks, non-form actions |
+
+| Function          | Use Case                         |
+| ----------------- | -------------------------------- |
+| **`query`**       | Read data (GET operations)       |
+| **`query.batch`** | Multiple queries, avoid N+1      |
+| **`form`**        | Form submissions with validation |
+| **`command`**     | Button clicks, non-form actions  |
+
+# Form Modal Reset Pattern
+
+When using `form` remote functions inside modals, validation issues persist after the modal closes. This is a known SvelteKit limitation (see [#15054](https://github.com/sveltejs/kit/issues/15054), [#14210](https://github.com/sveltejs/kit/issues/14210)).
+
+**Solution:** Use `.for(id)` with a unique ID that changes each time the modal opens:
+
+```svelte
+import { untrack } from 'svelte';
+let formInstanceId = $state(crypto.randomUUID());
+$effect(() => {
+  if (open) {
+    // Use untrack to avoid infinite loop
+    untrack(() => {
+      formInstanceId = crypto.randomUUID();
+    });
+  }
+});
+const currentForm = $derived(myForm.for(formInstanceId));
+<form {...currentForm.enhance(...)}>
+  <!-- Use currentForm.fields.X.issues() for validation errors -->
+</form>
+```
+
+## For update forms with existing IDs:
+
+```ts
+const currentUpdateForm = $derived(myForm.for(`${item.id}-${formInstanceId}`));
+```
+
+## Key points:
+
+- `untrack()` prevents the effect from re-triggering when updating state.
+- Each modal open creates a fresh form instance with cleared validation.
+- Use crypto.randomUUID() for collision-free IDs (or some UUID specific library)
