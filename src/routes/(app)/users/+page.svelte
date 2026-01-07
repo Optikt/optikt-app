@@ -2,7 +2,7 @@
 	import { Button, Select, Checkbox } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SearchInput } from '$lib/components/ui';
+	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import {
 		listUsers,
@@ -202,41 +202,13 @@
 	/>
 
 	<!-- Pagination -->
-	{#if usersData.totalPages > 1}
-		<div class="mt-4 flex items-center justify-between">
-			<p class="text-sm text-gray-600">
-				Mostrando {(usersData.page - 1) * 10 + 1} - {Math.min(usersData.page * 10, usersData.total)} de
-				{usersData.total}
-			</p>
-			<div class="flex items-center gap-1">
-				<Button
-					size="sm"
-					color="light"
-					disabled={usersData.page === 1}
-					onclick={() => goToPage(usersData.page - 1)}
-				>
-					Anterior
-				</Button>
-				{#each Array.from({ length: Math.min(5, usersData.totalPages) }, (_, i) => Math.max(1, usersData.page - 2) + i).filter((p) => p <= usersData.totalPages) as pageNum, index (`${pageNum}-${index}`)}
-					<Button
-						size="sm"
-						color={pageNum === usersData.page ? 'blue' : 'light'}
-						onclick={() => goToPage(pageNum)}
-					>
-						{pageNum}
-					</Button>
-				{/each}
-				<Button
-					size="sm"
-					color="light"
-					disabled={usersData.page === usersData.totalPages}
-					onclick={() => goToPage(usersData.page + 1)}
-				>
-					Siguiente
-				</Button>
-			</div>
-		</div>
-	{/if}
+	<TablePagination
+		page={usersData.page}
+		perPage={usersData.perPage}
+		total={usersData.total}
+		totalPages={usersData.totalPages}
+		onPageChange={goToPage}
+	/>
 </div>
 
 <!-- Modals -->
