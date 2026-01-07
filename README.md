@@ -36,3 +36,23 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## Bundle Size Analysis & Optimization
+
+This document explains how to measure bundle sizes, understand minification, and make informed decisions about dependencies.
+
+### Quick Commands
+
+```bash
+# Build production bundle
+pnpm build
+
+# Analyze client bundle size
+du -sh .svelte-kit/output/client
+
+# Find largest JS chunks
+find .svelte-kit/output/client -name "*.js" -exec du -sh {} \; | sort -h | tail -10
+
+# Check gzipped size of a file
+gzip -c <
+```
