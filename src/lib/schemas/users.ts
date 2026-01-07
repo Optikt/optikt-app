@@ -17,9 +17,9 @@ export const CreateUserSchema = v.object({
 	email: v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255)),
 	username: v.pipe(
 		v.string(),
-		v.minLength(3, 'Username debe tener al menos 3 caracteres'),
+		v.minLength(3, 'Usuario debe tener al menos 3 caracteres'),
 		v.maxLength(50),
-		v.regex(/^[a-zA-Z0-9_]+$/, 'Username solo puede contener letras, números y guiones bajos')
+		v.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
 	),
 	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
 	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
@@ -33,9 +33,9 @@ export const UpdateUserSchema = v.object({
 	username: v.optional(
 		v.pipe(
 			v.string(),
-			v.minLength(3, 'Username debe tener al menos 3 caracteres'),
+			v.minLength(3, 'Usuario debe tener al menos 3 caracteres'),
 			v.maxLength(50),
-			v.regex(/^[a-zA-Z0-9_]+$/, 'Username solo puede contener letras, números y guiones bajos')
+			v.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
 		)
 	),
 	fullName: v.optional(v.pipe(v.string(), v.minLength(2), v.maxLength(255))),
