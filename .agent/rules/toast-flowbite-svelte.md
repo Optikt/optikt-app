@@ -27,7 +27,7 @@ Use this simple toast component with an icon, message, and dismissable close but
 <Toast>
 	{#snippet icon()}
 		<FireOutline
-			class="text-primary-500 bg-primary-100 dark:bg-primary-800 dark:text-primary-200 h-6 w-6"
+			class="h-6 w-6 bg-primary-100 text-primary-500 dark:bg-primary-800 dark:text-primary-200"
 		/>
 	{/snippet}
 	Set yourself free.
@@ -224,7 +224,7 @@ This component can be used to show simple messages and notifications without the
 
 <Toast dismissable={false}>
 	{#snippet icon()}
-		<PaperPlaneOutline class="text-primary-600 dark:text-primary-500 h-5 w-5 rotate-45" />
+		<PaperPlaneOutline class="h-5 w-5 rotate-45 text-primary-600 dark:text-primary-500" />
 	{/snippet}
 	<div class="ps-4 text-sm font-normal">Message sent successfully.</div>
 </Toast>
