@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { Modal, Label, Input, Select, Button, Spinner, Helper } from 'flowbite-svelte';
+	import { Modal, Label, Select, Button, Spinner, Checkbox } from 'flowbite-svelte';
 	import * as v from 'valibot';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
+	import { FormInput } from '$lib/components/ui';
 	import type { UserListItem } from '$lib/types/users';
 
 	interface Props {
@@ -131,7 +132,7 @@
 </script>
 
 <Modal bind:open size="md" {title}>
-	<form onsubmit={handleSubmit} class="space-y-4">
+	<form onsubmit={handleSubmit} autocomplete="off" class="space-y-4">
 		{#if error}
 			<div class="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
 		{/if}
@@ -141,70 +142,63 @@
 				<Label for="fullName" color={fieldErrors['fullName'] ? 'red' : undefined}>
 					Nombre Completo
 				</Label>
-				<Input
+				<FormInput
 					id="fullName"
+					name="fullName"
+					autocomplete="off"
 					bind:value={formData.fullName}
-					color={fieldErrors['fullName'] ? 'red' : undefined}
+					error={fieldErrors['fullName']}
 				/>
-				{#if fieldErrors['fullName']}
-					<Helper color="red">{fieldErrors['fullName']}</Helper>
-				{/if}
 			</div>
 			<div>
 				<Label for="username" color={fieldErrors['username'] ? 'red' : undefined}>Usuario</Label>
-				<Input
+				<FormInput
 					id="username"
+					name="new-username"
+					autocomplete="new-password"
 					bind:value={formData.username}
-					color={fieldErrors['username'] ? 'red' : undefined}
+					error={fieldErrors['username']}
 				/>
-				{#if fieldErrors['username']}
-					<Helper color="red">{fieldErrors['username']}</Helper>
-				{/if}
 			</div>
 		</div>
 
 		<div>
 			<Label for="email" color={fieldErrors['email'] ? 'red' : undefined}>Email</Label>
-			<Input
+			<FormInput
 				id="email"
+				name="email"
 				type="email"
+				autocomplete="off"
 				bind:value={formData.email}
-				color={fieldErrors['email'] ? 'red' : undefined}
+				error={fieldErrors['email']}
 			/>
-			{#if fieldErrors['email']}
-				<Helper color="red">{fieldErrors['email']}</Helper>
-			{/if}
 		</div>
 
 		<div>
 			<Label for="password" color={fieldErrors['password'] ? 'red' : undefined}>
 				{isEditMode ? 'Nueva Contraseña (dejar vacío para mantener)' : 'Contraseña'}
 			</Label>
-			<Input
+			<FormInput
 				id="password"
+				name="new-password"
 				type="password"
+				autocomplete="new-password"
 				bind:value={formData.password}
-				color={fieldErrors['password'] ? 'red' : undefined}
+				error={fieldErrors['password']}
 			/>
-			{#if fieldErrors['password']}
-				<Helper color="red">{fieldErrors['password']}</Helper>
-			{/if}
 		</div>
 
 		<div class="grid grid-cols-2 gap-4">
 			<div>
 				<Label for="role">Rol</Label>
-				<Select id="role" bind:value={formData.role}>
+				<Select id="role" name="role" bind:value={formData.role}>
 					{#each ALL_ROLES as role, index (`${role}-${index}`)}
 						<option value={role}>{role}</option>
 					{/each}
 				</Select>
 			</div>
 			<div class="flex items-end">
-				<label class="flex items-center gap-2">
-					<input type="checkbox" bind:checked={formData.isActive} />
-					<span class="text-sm">Usuario activo</span>
-				</label>
+				<Checkbox bind:checked={formData.isActive}>Usuario activo</Checkbox>
 			</div>
 		</div>
 
