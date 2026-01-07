@@ -1,4 +1,4 @@
-import { eq, or, and, isNull } from 'drizzle-orm';
+import { eq, or, and, isNull, isNotNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { users, type User, type NewUser } from '$lib/server/db/schema';
 
@@ -47,6 +47,28 @@ export async function findUserByUsername(username: string): Promise<User | null>
 }
 
 /**
+ * Find a DELETED user by their email
+ */
+export async function findDeletedUserByEmail(email: string): Promise<User | null> {
+	const [user] = await db
+		.select()
+		.from(users)
+		.where(and(eq(users.email, email.toLowerCase()), isNotNull(users.deletedAt)));
+	return user ?? null;
+}
+
+/**
+ * Find a DELETED user by their username
+ */
+export async function findDeletedUserByUsername(username: string): Promise<User | null> {
+	const [user] = await db
+		.select()
+		.from(users)
+		.where(and(eq(users.username, username.toLowerCase()), isNotNull(users.deletedAt)));
+	return user ?? null;
+}
+
+/**
  * Create a new user
  */
 export async function createUser(data: NewUser): Promise<User> {
@@ -89,4 +111,24 @@ export async function deleteUser(id: string): Promise<boolean> {
 		.set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
 		.where(eq(users.id, id));
 	return result.count > 0;
+}
+
+/**
+ * Restore a soft-deleted user with new data
+ */
+export async function restoreUser(
+	id: string,
+	data: Partial<Omit<User, 'id' | 'createdAt' | 'deletedAt'>>
+): Promise<User> {
+	const [user] = await db
+		.update(users)
+		.set({
+			...data,
+			deletedAt: null,
+			isActive: true,
+			updatedAt: new Date()
+		})
+		.where(eq(users.id, id))
+		.returning();
+	return user;
 }
