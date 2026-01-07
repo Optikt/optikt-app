@@ -5,7 +5,7 @@
 	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import { listUsers, createUser, updateUser } from '$lib/remote/users.remote';
+	import { listUsers } from '$lib/remote/users.remote';
 	import { UsersTable, UserFormModal, ReactivateConfirmModal } from '$lib/components/users';
 	import { untrack } from 'svelte';
 	import type { UserListItem, PaginatedUsers } from '$lib/types/users';
@@ -32,8 +32,6 @@
 	// Form modal state
 	let showFormModal = $state(false);
 	let selectedUser = $state<UserListItem | null>(null);
-	let formLoading = $state(false);
-	let formError = $state<string | null>(null);
 
 	// Reactivation modal state
 	let showReactivateModal = $state(false);
@@ -72,62 +70,23 @@
 	// Modal handlers
 	function openCreate() {
 		selectedUser = null;
-		formError = null;
 		showFormModal = true;
 	}
 
 	function openEdit(user: UserListItem) {
 		selectedUser = user;
-		formError = null;
 		showFormModal = true;
 	}
 
-	async function handleFormSubmit(formData: FormData) {
-		formLoading = true;
-		formError = null;
-		try {
-			const isEdit = formData.has('id') && formData.get('id');
-			if (isEdit) {
-				await updateUser({
-					id: formData.get('id') as string,
-					fullName: formData.get('fullName') as string,
-					username: formData.get('username') as string,
-					email: formData.get('email') as string,
-					password: (formData.get('password') as string) || undefined,
-					role: formData.get('role') as UserRole,
-					isActive: formData.get('isActive') === 'true'
-				});
-				toast.success('Usuario actualizado exitosamente');
-				showFormModal = false;
-				await fetchUsers(usersData.page);
-			} else {
-				const result = await createUser({
-					fullName: formData.get('fullName') as string,
-					username: formData.get('username') as string,
-					email: formData.get('email') as string,
-					password: formData.get('password') as string,
-					role: formData.get('role') as UserRole,
-					isActive: formData.get('isActive') === 'true'
-				});
+	function handleFormSuccess() {
+		showFormModal = false;
+		fetchUsers(usersData.page);
+	}
 
-				if (result.success) {
-					toast.success('Usuario creado exitosamente');
-					showFormModal = false;
-					await fetchUsers(usersData.page);
-				} else {
-					// Reactivation candidate found
-					pendingFormData = formData;
-					reactivationCandidate = result.reactivationCandidate;
-					showReactivateModal = true;
-				}
-			}
-		} catch (e) {
-			const message = getErrorMessage(e, 'Error guardando usuario');
-			formError = message;
-			toast.error(message);
-		} finally {
-			formLoading = false;
-		}
+	function handleReactivate(candidate: UserListItem, formData: FormData) {
+		reactivationCandidate = candidate;
+		pendingFormData = formData;
+		showReactivateModal = true;
 	}
 
 	function handleReactivateSuccess() {
@@ -197,9 +156,8 @@
 <UserFormModal
 	bind:open={showFormModal}
 	user={selectedUser}
-	loading={formLoading}
-	error={formError}
-	onSubmit={handleFormSubmit}
+	onSuccess={handleFormSuccess}
+	onReactivate={handleReactivate}
 	onClose={() => (showFormModal = false)}
 />
 
