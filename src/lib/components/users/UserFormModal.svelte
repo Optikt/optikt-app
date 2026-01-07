@@ -1,6 +1,8 @@
 <script lang="ts">
-	import { Modal, Label, Input, Select, Button, Spinner } from 'flowbite-svelte';
+	import { Modal, Label, Input, Select, Button, Spinner, Helper } from 'flowbite-svelte';
+	import * as v from 'valibot';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
+	import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
 	import type { UserListItem } from '$lib/types/users';
 
 	interface Props {
@@ -26,13 +28,17 @@
 		username: '',
 		email: '',
 		password: '',
-		role: UserRole.VIEWER as UserRole,
+		role: UserRole.VIEWER,
 		isActive: true
 	});
+
+	// Field-level validation errors
+	let fieldErrors = $state<Record<string, string>>({});
 
 	// Reset form when modal opens or user changes
 	$effect(() => {
 		if (open) {
+			fieldErrors = {};
 			if (user) {
 				formData = {
 					fullName: user.fullName,
@@ -55,8 +61,59 @@
 		}
 	});
 
+	function validateForm(): boolean {
+		fieldErrors = {};
+		const isEditMode = !!user;
+
+		try {
+			if (isEditMode) {
+				// For edit mode, only validate provided fields
+				const dataToValidate: Record<string, unknown> = {
+					id: user!.id,
+					fullName: formData.fullName,
+					username: formData.username,
+					email: formData.email,
+					role: formData.role,
+					isActive: formData.isActive
+				};
+				// Only include password if provided
+				if (formData.password) {
+					dataToValidate.password = formData.password;
+				}
+				v.parse(UpdateUserSchema, dataToValidate);
+			} else {
+				v.parse(CreateUserSchema, {
+					fullName: formData.fullName,
+					username: formData.username,
+					email: formData.email,
+					password: formData.password,
+					role: formData.role,
+					isActive: formData.isActive
+				});
+			}
+			return true;
+		} catch (err) {
+			if (v.isValiError(err)) {
+				// Extract field-level errors from Valibot
+				for (const issue of err.issues) {
+					const path = issue.path?.map((p) => p.key).join('.') || 'general';
+					if (!fieldErrors[path]) {
+						fieldErrors[path] = issue.message;
+					}
+				}
+			}
+			return false;
+		}
+	}
+
 	function handleSubmit(e: Event) {
 		e.preventDefault();
+
+		// Client-side validation
+		if (!validateForm()) {
+			return;
+		}
+
 		const data = new FormData();
 		if (user) data.set('id', user.id);
 		data.set('fullName', formData.fullName);
@@ -81,31 +138,57 @@
 
 		<div class="grid grid-cols-2 gap-4">
 			<div>
-				<Label for="fullName">Nombre Completo</Label>
-				<Input id="fullName" bind:value={formData.fullName} required />
+				<Label for="fullName" color={fieldErrors['fullName'] ? 'red' : undefined}>
+					Nombre Completo
+				</Label>
+				<Input
+					id="fullName"
+					bind:value={formData.fullName}
+					color={fieldErrors['fullName'] ? 'red' : undefined}
+				/>
+				{#if fieldErrors['fullName']}
+					<Helper color="red">{fieldErrors['fullName']}</Helper>
+				{/if}
 			</div>
 			<div>
-				<Label for="username">Usuario</Label>
-				<Input id="username" bind:value={formData.username} required />
+				<Label for="username" color={fieldErrors['username'] ? 'red' : undefined}>Usuario</Label>
+				<Input
+					id="username"
+					bind:value={formData.username}
+					color={fieldErrors['username'] ? 'red' : undefined}
+				/>
+				{#if fieldErrors['username']}
+					<Helper color="red">{fieldErrors['username']}</Helper>
+				{/if}
 			</div>
 		</div>
 
 		<div>
-			<Label for="email">Email</Label>
-			<Input id="email" type="email" bind:value={formData.email} required />
+			<Label for="email" color={fieldErrors['email'] ? 'red' : undefined}>Email</Label>
+			<Input
+				id="email"
+				type="email"
+				bind:value={formData.email}
+				color={fieldErrors['email'] ? 'red' : undefined}
+			/>
+			{#if fieldErrors['email']}
+				<Helper color="red">{fieldErrors['email']}</Helper>
+			{/if}
 		</div>
 
 		<div>
-			<Label for="password">
+			<Label for="password" color={fieldErrors['password'] ? 'red' : undefined}>
 				{isEditMode ? 'Nueva Contraseña (dejar vacío para mantener)' : 'Contraseña'}
 			</Label>
 			<Input
 				id="password"
 				type="password"
 				bind:value={formData.password}
-				required={!isEditMode}
-				minlength={8}
+				color={fieldErrors['password'] ? 'red' : undefined}
 			/>
+			{#if fieldErrors['password']}
+				<Helper color="red">{fieldErrors['password']}</Helper>
+			{/if}
 		</div>
 
 		<div class="grid grid-cols-2 gap-4">
