@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button, Select } from 'flowbite-svelte';
 	import { Plus, Search } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import {
 		listUsers,
@@ -27,7 +28,6 @@
 		totalPages: Math.ceil(totalCount / 10)
 	});
 	let loading = $state(false);
-	let error = $state<string | null>(null);
 
 	// Filter state
 	let search = $state('');
@@ -44,7 +44,6 @@
 	// Fetch users with current filters (for interactions after initial load)
 	async function fetchUsers(page = 1) {
 		loading = true;
-		error = null;
 		try {
 			usersData = await listUsers({
 				page,
@@ -54,7 +53,7 @@
 				includeInactive
 			});
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error cargando usuarios';
+			toast.error(e instanceof Error ? e.message : 'Error cargando usuarios');
 		} finally {
 			loading = false;
 		}
@@ -109,6 +108,7 @@
 					role: formData.get('role') as UserRole,
 					isActive: formData.get('isActive') === 'true'
 				});
+				toast.success('Usuario actualizado exitosamente');
 			} else {
 				await createUser({
 					fullName: formData.get('fullName') as string,
@@ -118,6 +118,7 @@
 					role: formData.get('role') as UserRole,
 					isActive: formData.get('isActive') === 'true'
 				});
+				toast.success('Usuario creado exitosamente');
 			}
 			showFormModal = false;
 			await fetchUsers(usersData.page);
@@ -131,9 +132,10 @@
 	async function handleToggleActive(user: UserListItem) {
 		try {
 			await toggleUserActive({ id: user.id });
+			toast.success(user.isActive ? 'Usuario desactivado' : 'Usuario activado');
 			await fetchUsers(usersData.page);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error cambiando estado';
+			toast.error(e instanceof Error ? e.message : 'Error cambiando estado');
 		}
 	}
 
@@ -143,9 +145,10 @@
 		try {
 			await deleteUserById({ id: selectedUser.id });
 			showDeleteModal = false;
+			toast.success('Usuario eliminado exitosamente');
 			await fetchUsers(usersData.page);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error eliminando usuario';
+			toast.error(e instanceof Error ? e.message : 'Error eliminando usuario');
 		} finally {
 			formLoading = false;
 		}
@@ -168,11 +171,6 @@
 			Agregar Usuario
 		</Button>
 	</div>
-
-	<!-- Error message -->
-	{#if error}
-		<div class="mb-4 rounded-lg bg-red-50 p-4 text-red-600">{error}</div>
-	{/if}
 
 	<!-- Filters -->
 	<div class="mb-4 flex flex-wrap items-center gap-4">
