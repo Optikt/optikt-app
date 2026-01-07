@@ -1,8 +1,8 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { Modal, Select, Button, Spinner, Checkbox, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	// import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
 	import { createUserForm, updateUserForm } from '$lib/remote/users.remote';
 	import { FormInput } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
@@ -31,9 +31,18 @@
 	// Local loading state
 	let isSubmitting = $state(false);
 
+	// Form instance ID - changes on each modal open to create fresh form instance
+	// This clears validation issues by creating a new form instance via .for(id)
+	let formInstanceId = $state(crypto.randomUUID());
+
 	// Reset form when modal opens or user changes
 	$effect(() => {
 		if (open) {
+			// Generate new form ID to create a fresh form instance (untracked to avoid loop)
+			untrack(() => {
+				formInstanceId = crypto.randomUUID();
+			});
+
 			if (user) {
 				formData = {
 					fullName: user.fullName,
@@ -60,15 +69,19 @@
 	const title = $derived(isEditMode ? 'Editar Usuario' : 'Agregar Usuario');
 	const submitText = $derived(isEditMode ? 'Guardar Cambios' : 'Crear Usuario');
 
+	// Create fresh form instances using .for(id) - changes when formInstanceId changes
+	const currentCreateForm = $derived(createUserForm.for(formInstanceId));
+	const currentUpdateForm = $derived(updateUserForm.for(`${user?.id ?? 'new'}-${formInstanceId}`));
+
 	// Shared form content
 	function handleCreateResult(formEl: HTMLFormElement) {
 		// Check for validation issues first
-		const allIssues = createUserForm.fields.allIssues?.();
+		const allIssues = currentCreateForm.fields.allIssues?.();
 		if (allIssues && allIssues.length > 0) {
 			return;
 		}
 
-		const result = createUserForm.result as CreateUserResult | undefined;
+		const result = currentCreateForm.result as CreateUserResult | undefined;
 
 		if (result && result.success === false && result.reactivationCandidate) {
 			// Reactivation candidate found - pass to parent
@@ -84,7 +97,7 @@
 
 	function handleUpdateResult(formEl: HTMLFormElement) {
 		// Check for validation issues first
-		const allIssues = updateUserForm.fields.allIssues?.();
+		const allIssues = currentUpdateForm.fields.allIssues?.();
 		if (allIssues && allIssues.length > 0) {
 			return;
 		}
@@ -100,7 +113,7 @@
 	{#if isEditMode && user}
 		<!-- UPDATE FORM -->
 		<form
-			{...updateUserForm.enhance(async ({ form: formEl, submit }) => {
+			{...currentUpdateForm.enhance(async ({ form: formEl, submit }) => {
 				isSubmitting = true;
 				try {
 					await submit();
@@ -123,7 +136,7 @@
 						label="Nombre Completo"
 						autocomplete="off"
 						bind:value={formData.fullName}
-						issues={updateUserForm.fields.fullName.issues()}
+						issues={currentUpdateForm.fields.fullName.issues()}
 					/>
 				</div>
 				<div>
@@ -132,7 +145,7 @@
 						label="Usuario"
 						autocomplete="new-password"
 						bind:value={formData.username}
-						issues={updateUserForm.fields.username.issues()}
+						issues={currentUpdateForm.fields.username.issues()}
 					/>
 				</div>
 			</div>
@@ -144,7 +157,7 @@
 					type="email"
 					autocomplete="off"
 					bind:value={formData.email}
-					issues={updateUserForm.fields.email.issues()}
+					issues={currentUpdateForm.fields.email.issues()}
 				/>
 			</div>
 
@@ -155,7 +168,7 @@
 					type="password"
 					autocomplete="new-password"
 					bind:value={formData.password}
-					issues={updateUserForm.fields.password.issues()}
+					issues={currentUpdateForm.fields.password.issues()}
 				/>
 			</div>
 
@@ -184,7 +197,7 @@
 	{:else}
 		<!-- CREATE FORM -->
 		<form
-			{...createUserForm.enhance(async ({ form: formEl, submit }) => {
+			{...currentCreateForm.enhance(async ({ form: formEl, submit }) => {
 				isSubmitting = true;
 				try {
 					await submit();
@@ -205,7 +218,7 @@
 						label="Nombre Completo"
 						autocomplete="off"
 						bind:value={formData.fullName}
-						issues={createUserForm.fields.fullName.issues()}
+						issues={currentCreateForm.fields.fullName.issues()}
 					/>
 				</div>
 				<div>
@@ -214,7 +227,7 @@
 						label="Usuario"
 						autocomplete="new-password"
 						bind:value={formData.username}
-						issues={createUserForm.fields.username.issues()}
+						issues={currentCreateForm.fields.username.issues()}
 					/>
 				</div>
 			</div>
@@ -226,7 +239,7 @@
 					type="email"
 					autocomplete="off"
 					bind:value={formData.email}
-					issues={createUserForm.fields.email.issues()}
+					issues={currentCreateForm.fields.email.issues()}
 				/>
 			</div>
 
@@ -237,7 +250,7 @@
 					type="password"
 					autocomplete="new-password"
 					bind:value={formData.password}
-					issues={createUserForm.fields.password.issues()}
+					issues={currentCreateForm.fields.password.issues()}
 				/>
 			</div>
 
