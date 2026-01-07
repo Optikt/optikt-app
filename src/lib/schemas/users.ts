@@ -49,3 +49,18 @@ export const UpdateUserSchema = v.object({
 export const UserIdSchema = v.object({
 	id: v.pipe(v.string(), v.uuid())
 });
+
+export const ReactivateUserSchema = v.object({
+	deletedUserId: v.pipe(v.string(), v.uuid()),
+	email: v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255)),
+	username: v.pipe(
+		v.string(),
+		v.minLength(3, 'Usuario debe tener al menos 3 caracteres'),
+		v.maxLength(50),
+		v.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
+	),
+	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
+	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
+	role: v.optional(v.picklist(ALL_ROLES), UserRole.VIEWER),
+	isActive: v.optional(v.boolean(), true)
+});
