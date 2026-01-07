@@ -17,7 +17,8 @@
 		UsersTable,
 		UserFormModal,
 		DeleteConfirmModal,
-		ReactivateConfirmModal
+		ReactivateConfirmModal,
+		ToggleActiveModal
 	} from '$lib/components/users';
 	import { untrack } from 'svelte';
 	import type { UserListItem, PaginatedUsers } from '$lib/types/users';
@@ -46,6 +47,7 @@
 	let showFormModal = $state(false);
 	let showDeleteModal = $state(false);
 	let showReactivateModal = $state(false);
+	let showToggleActiveModal = $state(false);
 	let selectedUser = $state<UserListItem | null>(null);
 	let formLoading = $state(false);
 	let formError = $state<string | null>(null);
@@ -187,13 +189,23 @@
 		reactivationCandidate = null;
 	}
 
-	async function handleToggleActive(user: UserListItem) {
+	function openToggleActive(user: UserListItem) {
+		selectedUser = user;
+		showToggleActiveModal = true;
+	}
+
+	async function handleToggleActiveConfirm() {
+		if (!selectedUser) return;
+		formLoading = true;
 		try {
-			await toggleUserActive({ id: user.id });
-			toast.success(user.isActive ? 'Usuario desactivado' : 'Usuario activado');
+			await toggleUserActive({ id: selectedUser.id });
+			toast.success(selectedUser.isActive ? 'Usuario desactivado' : 'Usuario activado');
+			showToggleActiveModal = false;
 			await fetchUsers(usersData.page);
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cambiando estado'));
+		} finally {
+			formLoading = false;
 		}
 	}
 
@@ -254,7 +266,7 @@
 		users={usersData.users}
 		{loading}
 		onEdit={openEdit}
-		onToggleActive={handleToggleActive}
+		onToggleActive={openToggleActive}
 		onDelete={openDelete}
 	/>
 
@@ -292,4 +304,13 @@
 	loading={formLoading}
 	onConfirm={handleReactivateConfirm}
 	onCancel={handleReactivateCancel}
+/>
+
+<ToggleActiveModal
+	bind:open={showToggleActiveModal}
+	userName={selectedUser?.fullName ?? ''}
+	isActive={selectedUser?.isActive ?? true}
+	loading={formLoading}
+	onConfirm={handleToggleActiveConfirm}
+	onCancel={() => (showToggleActiveModal = false)}
 />
