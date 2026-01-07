@@ -156,8 +156,12 @@
 			{/if}
 		</button>
 
-		<Dropdown triggeredBy="#user-menu-button" placement="top" class="w-56 bg-white shadow-lg">
-			<DropdownHeader class="border-b border-gray-100">
+		<Dropdown
+			triggeredBy="#user-menu-button"
+			placement="top"
+			class={['w-56 bg-white shadow-lg', { 'ml-2': collapsed }]}
+		>
+			<DropdownHeader class="border-b border-gray-200">
 				<span class="block text-sm font-semibold text-gray-900">{user.fullName}</span>
 				<span class="block truncate text-sm text-gray-600">{user.email}</span>
 			</DropdownHeader>
@@ -170,7 +174,6 @@
 					Configuración
 				</DropdownItem>
 			</DropdownGroup>
-			<DropdownDivider class="border-gray-200" />
 			<DropdownGroup>
 				<form {...logout} class="contents">
 					<button
