@@ -62,6 +62,12 @@
 
 	// Shared form content
 	function handleCreateResult(formEl: HTMLFormElement) {
+		// Check for validation issues first
+		const allIssues = createUserForm.fields.allIssues?.();
+		if (allIssues && allIssues.length > 0) {
+			return;
+		}
+
 		const result = createUserForm.result as CreateUserResult | undefined;
 
 		if (result && result.success === false && result.reactivationCandidate) {
@@ -77,6 +83,12 @@
 	}
 
 	function handleUpdateResult(formEl: HTMLFormElement) {
+		// Check for validation issues first
+		const allIssues = updateUserForm.fields.allIssues?.();
+		if (allIssues && allIssues.length > 0) {
+			return;
+		}
+
 		toast.success('Usuario actualizado');
 		formEl.reset();
 		open = false;
