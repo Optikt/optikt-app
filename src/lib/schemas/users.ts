@@ -39,8 +39,12 @@ export const UpdateUserSchema = v.object({
 		)
 	),
 	fullName: v.optional(v.pipe(v.string(), v.minLength(2), v.maxLength(255))),
+	// Password can be empty (keep current) or valid password (min 8 chars)
 	password: v.optional(
-		v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres'))
+		v.union([
+			v.literal(''),
+			v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres'))
+		])
 	),
 	role: v.optional(v.picklist(ALL_ROLES)),
 	isActive: v.optional(v.boolean())
