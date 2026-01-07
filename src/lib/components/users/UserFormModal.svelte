@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Modal, Select, Button, Spinner, Checkbox, Label } from 'flowbite-svelte';
+	import { Modal, Select, Button, Spinner, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import { createUserForm, updateUserForm } from '$lib/remote/users.remote';
@@ -181,8 +181,17 @@
 						{/each}
 					</Select>
 				</div>
-				<div class="flex items-end">
-					<Checkbox name="b:isActive" bind:checked={formData.isActive}>Usuario activo</Checkbox>
+				<div>
+					<Label for="isActive" class="mb-2">Estado</Label>
+					<Select
+						id="isActive"
+						name="isActive"
+						value={formData.isActive ? 'true' : 'false'}
+						onchange={(e) => (formData.isActive = e.currentTarget.value === 'true')}
+					>
+						<option value="true">Activo</option>
+						<option value="false">Inactivo</option>
+					</Select>
 				</div>
 			</div>
 
@@ -263,8 +272,17 @@
 						{/each}
 					</Select>
 				</div>
-				<div class="flex items-end">
-					<Checkbox name="b:isActive" bind:checked={formData.isActive}>Usuario activo</Checkbox>
+				<div>
+					<Label for="isActive" class="mb-2">Estado</Label>
+					<Select
+						id="isActive"
+						name="isActive"
+						value={formData.isActive ? 'true' : 'false'}
+						onchange={(e) => (formData.isActive = e.currentTarget.value === 'true')}
+					>
+						<option value="true">Activo</option>
+						<option value="false">Inactivo</option>
+					</Select>
 				</div>
 			</div>
 
