@@ -7,3 +7,4 @@ export { default as PasswordField } from './PasswordField.svelte';
 export { default as FormAlert } from './FormAlert.svelte';
 export { default as SearchInput } from './SearchInput.svelte';
 export { default as TablePagination } from './TablePagination.svelte';
+export { default as ConfirmModal } from './ConfirmModal.svelte';
