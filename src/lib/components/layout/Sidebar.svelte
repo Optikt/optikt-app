@@ -22,7 +22,11 @@
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
 	import NavLink from './NavLink.svelte';
 
-	let { user }: { user: SessionWithUser['user'] } = $props();
+	type SidebarProps = {
+		user: SessionWithUser['user'];
+	};
+
+	let { user }: SidebarProps = $props();
 
 	// Icon mapping
 	const iconMap: Record<string, LucideIcon> = {
