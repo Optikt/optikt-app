@@ -134,39 +134,47 @@
 		{/if}
 
 		<div class="grid grid-cols-2 gap-4">
+			<div>
+				<FormInput
+					name="fullName"
+					label="Nombre Completo"
+					autocomplete="off"
+					bind:value={formData.fullName}
+					error={fieldErrors['fullName']}
+				/>
+			</div>
+			<div>
+				<FormInput
+					name="username"
+					label="Usuario"
+					autocomplete="new-password"
+					bind:value={formData.username}
+					error={fieldErrors['username']}
+				/>
+			</div>
+		</div>
+
+		<div>
 			<FormInput
-				name="fullName"
-				label="Nombre Completo"
+				name="email"
+				label="Email"
+				type="email"
 				autocomplete="off"
-				bind:value={formData.fullName}
-				error={fieldErrors['fullName']}
-			/>
-			<FormInput
-				name="username"
-				label="Usuario"
-				autocomplete="new-password"
-				bind:value={formData.username}
-				error={fieldErrors['username']}
+				bind:value={formData.email}
+				error={fieldErrors['email']}
 			/>
 		</div>
 
-		<FormInput
-			name="email"
-			label="Email"
-			type="email"
-			autocomplete="off"
-			bind:value={formData.email}
-			error={fieldErrors['email']}
-		/>
-
-		<FormInput
-			name="password"
-			label={isEditMode ? 'Nueva Contraseña (dejar vacío para mantener)' : 'Contraseña'}
-			type="password"
-			autocomplete="new-password"
-			bind:value={formData.password}
-			error={fieldErrors['password']}
-		/>
+		<div>
+			<FormInput
+				name="password"
+				label={isEditMode ? 'Nueva Contraseña (dejar vacío para mantener)' : 'Contraseña'}
+				type="password"
+				autocomplete="new-password"
+				bind:value={formData.password}
+				error={fieldErrors['password']}
+			/>
+		</div>
 
 		<div class="grid grid-cols-2 gap-4">
 			<div>
