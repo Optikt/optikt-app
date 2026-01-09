@@ -54,3 +54,7 @@ const currentUpdateForm = $derived(myForm.for(`${item.id}-${formInstanceId}`));
 - `untrack()` prevents the effect from re-triggering when updating state.
 - Each modal open creates a fresh form instance with cleared validation.
 - Use crypto.randomUUID() for collision-free IDs (or some UUID specific library)
+
+## Wizard steps:
+
+If found useful for the wizard creation, you can use the step indicator from Flowbite Svelte in https://flowbite-svelte.com/docs/extend/step-indicator . But do not stick on this if not fit into other ruling!
