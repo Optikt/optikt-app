@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Button } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 
@@ -20,12 +21,9 @@
 		<p class="mt-1 text-slate-500">Bienvenido al sistema de gestión Optikt</p>
 	</div>
 	<div class="flex items-center gap-4">
-		<a
-			href={resolve('/sales/new')}
-			class="flex items-center gap-2 rounded-lg border-none bg-linear-to-br from-brand-blue to-brand-navy px-4 py-2.5 font-semibold text-white no-underline shadow-lg shadow-brand-blue/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-brand-blue/50"
-		>
-			<Plus size={20} />
+		<Button href={resolve('/sales/new')} color="blue">
+			<Plus class="mr-2 h-5 w-5" />
 			Nueva Venta
-		</a>
+		</Button>
 	</div>
 </header>

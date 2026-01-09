@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { login } from '$lib/remote/auth.remote';
-	import { Button } from '$lib/components/ui';
+	import { Button, Spinner } from 'flowbite-svelte';
 	import { CircleAlert, Eye, EyeOff } from '@lucide/svelte';
 
 	// Check if form is loading (pending is a timestamp, 0 when not pending)
@@ -88,11 +88,8 @@
 		</div>
 	</div>
 
-	<Button type="submit" loading={isLoading} class="mt-2 w-full">
-		{#if isLoading}
-			Iniciando sesión...
-		{:else}
-			Iniciar Sesión
-		{/if}
+	<Button type="submit" color="blue" disabled={isLoading} class="mt-2 w-full">
+		{#if isLoading}<Spinner size="4" class="mr-2" />{/if}
+		{isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
 	</Button>
 </form>
