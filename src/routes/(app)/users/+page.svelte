@@ -106,8 +106,8 @@
 	<!-- Header -->
 	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 		<div>
-			<h1 class="text-3xl font-bold text-slate-900">Usuarios</h1>
-			<p class="text-slate-600">Gestiona los usuarios del sistema</p>
+			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Usuarios</h1>
+			<p class="text-slate-500">Gestiona los usuarios del sistema</p>
 		</div>
 		<Button color="blue" onclick={openCreate}>
 			<Plus class="mr-2 h-5 w-5" />
@@ -116,12 +116,14 @@
 	</div>
 
 	<!-- Filters -->
-	<div class="mb-4 flex flex-wrap items-center gap-4">
+	<div
+		class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4"
+	>
 		<SearchInput
 			bind:value={search}
 			placeholder="Buscar por nombre, email o usuario..."
 			oninput={handleSearch}
-			class="max-w-md flex-1"
+			class="min-w-64 flex-1"
 		/>
 		<Select bind:value={roleFilter} onchange={handleFilterChange} class="w-40">
 			<option value="">Todos los roles</option>

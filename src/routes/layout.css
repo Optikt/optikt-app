@@ -47,6 +47,37 @@
 	--font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+/* Design System Tokens (per design-ui.md) */
+/* NOTE: Using 'ds-' prefix to avoid conflicting with Tailwind's built-in tokens */
+@theme {
+	/* Spacing Scale (4px base grid) */
+	--ds-spacing-xs: 4px; /* micro - icon gaps */
+	--ds-spacing-sm: 8px; /* tight - within components */
+	--ds-spacing-md: 12px; /* standard - between related elements */
+	--ds-spacing-lg: 16px; /* comfortable - section padding */
+	--ds-spacing-xl: 24px; /* generous - between sections */
+	--ds-spacing-2xl: 32px; /* major separation */
+
+	/* Layered Shadows (premium depth approach) */
+	--ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--ds-shadow-md: 0 1px 3px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+	--ds-shadow-lg:
+		0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 8px rgba(0, 0, 0, 0.03),
+		0 8px 16px rgba(0, 0, 0, 0.02);
+
+	/* Border Radius Scale (consistent 4px grid) */
+	--ds-radius-sm: 4px;
+	--ds-radius-md: 8px;
+	--ds-radius-lg: 12px;
+	--ds-radius-xl: 16px;
+
+	/* Animation Timing */
+	--ds-ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+	--ds-duration-fast: 150ms;
+	--ds-duration-normal: 200ms;
+	--ds-duration-slow: 250ms;
+}
+
 @source '../../node_modules/flowbite-svelte/dist';
 @source '../../node_modules/flowbite-svelte-icons/dist';
 
@@ -104,4 +135,10 @@ body {
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+}
+
+/* Glass Card (premium card effect) */
+.glass-card {
+	@apply rounded-xl border border-slate-200 bg-white shadow-sm;
+	box-shadow: var(--ds-shadow-md);
 }

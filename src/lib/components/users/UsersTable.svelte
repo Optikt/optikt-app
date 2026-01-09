@@ -9,7 +9,7 @@
 		Badge,
 		Spinner
 	} from 'flowbite-svelte';
-	import { SquarePen, Trash2, Power } from '@lucide/svelte';
+	import { SquarePen, Trash2, Power, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteUserById } from '$lib/remote/users.remote';
 	import { getErrorMessage } from '$lib/utils';
@@ -94,7 +94,9 @@
 				<TableBodyRow>
 					<TableBodyCell class="font-medium">{user.fullName}</TableBodyCell>
 					<TableBodyCell>{user.email}</TableBodyCell>
-					<TableBodyCell>@{user.username}</TableBodyCell>
+					<TableBodyCell
+						><span class="font-mono text-sm text-slate-600">@{user.username}</span></TableBodyCell
+					>
 					<TableBodyCell>
 						<Badge color={getRoleBadgeColor(user.role)}>{user.role}</Badge>
 					</TableBodyCell>
@@ -104,19 +106,22 @@
 						</Badge>
 					</TableBodyCell>
 					<TableBodyCell>
-						<div class="flex items-center gap-2">
+						<div class="flex items-center gap-1">
 							<button
 								onclick={() => onEdit(user)}
-								class="text-blue-600 hover:text-blue-800"
+								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600"
 								title="Editar"
 							>
 								<SquarePen class="h-4 w-4" />
 							</button>
 							<button
 								onclick={() => openToggle(user)}
-								class={user.isActive
-									? 'text-yellow-600 hover:text-yellow-800'
-									: 'text-green-600 hover:text-green-800'}
+								class={[
+									'flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-150',
+									user.isActive
+										? 'text-slate-500 hover:bg-amber-50 hover:text-amber-600'
+										: 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
+								]}
 								title={user.isActive ? 'Desactivar' : 'Activar'}
 							>
 								<Power class="h-4 w-4" />
@@ -124,7 +129,7 @@
 							{#if !user.isSuperuser}
 								<button
 									onclick={() => openDelete(user)}
-									class="text-red-600 hover:text-red-800"
+									class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
 									title="Eliminar"
 								>
 									<Trash2 class="h-4 w-4" />
@@ -137,7 +142,13 @@
 		</TableBody>
 	</Table>
 {:else}
-	<div class="rounded-lg bg-gray-50 p-8 text-center text-gray-500">No se encontraron usuarios</div>
+	<div
+		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/50 py-12 text-center"
+	>
+		<Users class="mb-3 h-10 w-10 text-slate-400" />
+		<p class="text-sm font-medium text-slate-600">No se encontraron usuarios</p>
+		<p class="mt-1 text-xs text-slate-400">Intenta ajustar los filtros de búsqueda</p>
+	</div>
 {/if}
 
 <!-- Toggle Active Modal -->

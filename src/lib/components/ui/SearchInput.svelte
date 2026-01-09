@@ -23,6 +23,6 @@
 		{placeholder}
 		bind:value
 		{oninput}
-		class="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-10 focus:border-blue-500 focus:ring-blue-500"
+		class="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-10 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
 	/>
 </div>
