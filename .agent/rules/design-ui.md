@@ -3,8 +3,10 @@ trigger: always_on
 ---
 
 ---
+
 name: design-principles
 description: Enforce a precise, minimal design system inspired by Linear, Notion, and Stripe. Use this skill when building dashboards, admin interfaces, or any UI that needs Jony Ive-level precision - clean, modern, minimalist with taste. Every pixel matters.
+
 ---
 
 # Design Principles
@@ -79,7 +81,9 @@ Typography sets tone. Don't always default:
 These apply regardless of design direction. This is the quality floor.
 
 ### The 4px Grid
+
 All spacing uses a 4px base grid:
+
 - `4px` - micro spacing (icon gaps)
 - `8px` - tight spacing (within components)
 - `12px` - standard spacing (between related elements)
@@ -88,6 +92,7 @@ All spacing uses a 4px base grid:
 - `32px` - major separation
 
 ### Symmetrical Padding
+
 **TLBR must match.** If top padding is 16px, left/bottom/right must also be 16px. Exception: when content naturally creates visual balance.
 
 ```css
@@ -100,6 +105,7 @@ padding: 24px 16px 12px 16px;
 ```
 
 ### Border Radius Consistency
+
 Stick to the 4px grid. Sharper corners feel technical, rounder corners feel friendly. Pick a system and commit:
 
 - Sharp: 4px, 6px, 8px
@@ -133,20 +139,20 @@ border: 0.5px solid var(--border);
 
 /* Layered shadow approach (when appropriate) */
 --shadow-layered:
-  0 0 0 0.5px rgba(0, 0, 0, 0.05),
-  0 1px 2px rgba(0, 0, 0, 0.04),
-  0 2px 4px rgba(0, 0, 0, 0.03),
-  0 4px 8px rgba(0, 0, 0, 0.02);
+	0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03),
+	0 4px 8px rgba(0, 0, 0, 0.02);
 ```
 
 **The craft is in the choice, not the complexity.** A flat interface with perfect spacing and typography is more polished than a shadow-heavy interface with sloppy details.
 
 ### Card Layouts Vary, Surface Treatment Stays Consistent
+
 Monotonous card layouts are lazy design. A metric card doesn't have to look like a plan card doesn't have to look like a settings card. One might have a sparkline, another an avatar stack, another a progress ring, another a two-column split.
 
 Design each card's internal structure for its specific content — but keep the surface treatment consistent: same border weight, shadow depth, corner radius, padding scale, typography. Cohesion comes from the container chrome, not from forcing every card into the same layout template.
 
 ### Isolated Controls
+
 UI controls deserve container treatment. Date pickers, filters, dropdowns — these should feel like crafted objects sitting on the page, not plain text with click handlers.
 
 **Never use native form elements for styled UI.** Native `<select>`, `<input type="date">`, and similar elements render OS-native dropdowns and pickers that cannot be styled. Build custom components instead:
@@ -158,28 +164,34 @@ UI controls deserve container treatment. Date pickers, filters, dropdowns — th
 **Custom select triggers must use `display: inline-flex` with `white-space: nowrap`** to keep text and chevron icons on the same row. Without this, flex children can wrap to new lines.
 
 ### Typography Hierarchy
+
 - Headlines: 600 weight, tight letter-spacing (-0.02em)
 - Body: 400-500 weight, standard tracking
 - Labels: 500 weight, slight positive tracking for uppercase
 - Scale: 11px, 12px, 13px, 14px (base), 16px, 18px, 24px, 32px
 
 ### Monospace for Data
+
 Numbers, IDs, codes, timestamps belong in monospace. Use `tabular-nums` for columnar alignment. Mono signals "this is data."
 
 ### Iconography
+
 Use **Lucide Svelte Icons** (`@lucide/svelte`). Icons clarify, not decorate — if removing an icon loses no meaning, remove it.
 
 Give standalone icons presence with subtle background containers.
 
 ### Animation
+
 - 150ms for micro-interactions, 200-250ms for larger transitions
 - Easing: `cubic-bezier(0.25, 1, 0.5, 1)`
 - No spring/bouncy effects in enterprise UI
 
 ### Contrast Hierarchy
+
 Build a four-level system: foreground (primary) → secondary → muted → faint. Use all four consistently.
 
 ### Color for Meaning Only
+
 Gray builds structure. Color only appears when it communicates: status, action, error, success. Decorative color is noise.
 
 When building data-heavy interfaces, ask whether each use of color is earning its place. Score bars don't need to be color-coded by performance — a single muted color works. Grade badges don't need traffic-light colors — typography can do the hierarchy work. Look at how GitHub renders tables and lists: almost entirely monochrome, with color reserved for status indicators and actionable elements.
@@ -213,6 +225,7 @@ Dark interfaces have different needs:
 ## Anti-Patterns
 
 ### Never Do This
+
 - Dramatic drop shadows (`box-shadow: 0 25px 50px...`)
 - Large border radius (16px+) on small elements
 - Asymmetric padding without clear reason
@@ -224,6 +237,7 @@ Dark interfaces have different needs:
 - Multiple accent colors in one interface
 
 ### Always Question
+
 - "Did I think about what this product needs, or did I default?"
 - "Does this direction fit the context and users?"
 - "Does this element feel crafted?"
@@ -234,7 +248,7 @@ Dark interfaces have different needs:
 
 ## The Standard
 
-Every interface should look designed by a team that obsesses over 1-pixel differences. Not stripped — *crafted*. And designed for its specific context.
+Every interface should look designed by a team that obsesses over 1-pixel differences. Not stripped — _crafted_. And designed for its specific context.
 
 Different products want different things. A developer tool wants precision and density. A collaborative product wants warmth and space. A financial product wants trust and sophistication. Let the product context guide the aesthetic.
 
