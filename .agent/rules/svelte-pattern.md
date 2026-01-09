@@ -2,6 +2,12 @@
 trigger: always_on
 ---
 
+# Load initial data
+
+- To load initial data for pages, use a `+page.server.ts` file for a `+page.svelte` file to load the initial data needed.
+- Use a `load` function on the `+page.server.ts` (a `PageServerLoad` type function) to load that initial data. Do not use `$effect` or `onMount` hook in the pages to load this initial data. 
+- To future loads (as filtering and other stuff), you can use the remote functions. ONLY use the `PageServerLoad` function for the initial data.
+
 # Manejo de Errorres con remote functions
 
 - El server con las remote functions puede realizar las validaciones con valibot, pero es necesario hacer client-side validations para poder mostrar correctamente los errores al usuario.
