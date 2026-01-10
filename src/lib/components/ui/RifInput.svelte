@@ -93,6 +93,7 @@
 			oninput={handleInput}
 			onblur={handleBlur}
 			{disabled}
+			maxlength={9}
 			color={hasError ? 'red' : undefined}
 			class="placeholder:text-slate-400"
 		/>
