@@ -2,16 +2,28 @@
 trigger: always_on
 ---
 
+# Eslint rules
+Try to follow our eslint rules, because we can avoid most of them. If it's too complicate to solve, ask the user. If you can solve it, do it. Only try to solve these listed rules, if there are new ones that cannot be solve, it's too complicate or make the code complex, ask the user.
+
+## Listed rules
+
+- `no-navigation-without-resolve` rule: If the url/link is external you can use `rel="external"`. If it's app internal, you should use the Svelte Typing. You can import `Pathname` from `$app/types` on somecases, but if it's too specific you should use the right typing like `/sales` or whatever you wanted to make.
+
+- `svelte/require-each-key` rule: when using `each` block, we should add the ID for the elements.
+
+- `state_referenced_locally` svelte rule: This is a svelte rule/warning. This should treated carefuly, but if it's happening from a `+page.svelte` file, exactly coming after destructuring the `$props.data` you should the `untrack` (since data will not do a reactive change). OR when use `data` from the `$props`, generally you should destructure the values use from `data` so can use `untrack`. Only for this case, other scenarios should be handled differently and in a intelligent way after user decision.
+
 # Load initial data
 
 - To load initial data for pages, use a `+page.server.ts` file for a `+page.svelte` file to load the initial data needed.
-- Use a `load` function on the `+page.server.ts` (a `PageServerLoad` type function) to load that initial data. Do not use `$effect` or `onMount` hook in the pages to load this initial data. 
+- Use a `load` function on the `+page.server.ts` (a `PageServerLoad` type function) to load that initial data. Do not use `$effect` or `onMount` hook in the pages to load this initial data.
 - To future loads (as filtering and other stuff), you can use the remote functions. ONLY use the `PageServerLoad` function for the initial data.
 
 # Manejo de Errorres con remote functions
 
 - El server con las remote functions puede realizar las validaciones con valibot, pero es necesario hacer client-side validations para poder mostrar correctamente los errores al usuario.
 - Usa toast si es posible. En el caso de que use modal, entonces puedes usar el toast y un pequeño recuadro en el modal (ya que el toast tiende a quedarse de fondo)
+- Cuando se use el `try/catch` block y se use el toast para mostrar que hubo un error de manera user friendly, de ser posible, en interacciones, hacer un `console.error` con el `error` obtenido para future debugging.
 
 # Component Self-Containment Rule:
 
