@@ -143,13 +143,14 @@
 				<FormInput
 					label="Nombre *"
 					name="name"
+					required
 					bind:value={formData.name}
 					placeholder="Ej: OptiVision"
 					issues={currentUpdateForm.fields.name?.issues()}
 				/>
 				<div>
 					<Label for="type" class="mb-2">Tipo *</Label>
-					<Select id="type" name="type" bind:value={formData.type}>
+					<Select id="type" name="type" bind:value={formData.type} required>
 						{#each ALL_SUPPLIER_TYPES as t (t)}
 							<option value={t}>{SUPPLIER_TYPE_LABELS[t]}</option>
 						{/each}
@@ -169,6 +170,7 @@
 					label="Teléfono Principal *"
 					name="primaryPhone"
 					type="tel"
+					required
 					bind:value={formData.primaryPhone}
 					placeholder="0414-1234567"
 					issues={currentUpdateForm.fields.primaryPhone?.issues()}
@@ -279,6 +281,7 @@
 			<div class="grid grid-cols-2 gap-4">
 				<FormInput
 					label="Nombre *"
+					required
 					name="name"
 					bind:value={formData.name}
 					placeholder="Ej: OptiVision"
@@ -286,7 +289,7 @@
 				/>
 				<div>
 					<Label for="type" class="mb-2">Tipo *</Label>
-					<Select id="type" name="type" bind:value={formData.type}>
+					<Select id="type" name="type" bind:value={formData.type} required>
 						{#each ALL_SUPPLIER_TYPES as t (t)}
 							<option value={t}>{SUPPLIER_TYPE_LABELS[t]}</option>
 						{/each}
@@ -306,6 +309,7 @@
 					label="Teléfono Principal *"
 					name="primaryPhone"
 					type="tel"
+					required
 					bind:value={formData.primaryPhone}
 					placeholder="0414-1234567"
 					issues={currentCreateForm.fields.primaryPhone?.issues()}
