@@ -9,11 +9,12 @@
 		Spinner,
 		Badge
 	} from 'flowbite-svelte';
-	import { SquarePen, Trash2, Truck } from '@lucide/svelte';
+	import { SquarePen, Trash2, Truck, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { ConfirmModal } from '$lib/components/ui';
+	import { SupplierViewModal } from '$lib/components/suppliers';
 	import { SupplierType, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
 
@@ -28,8 +29,14 @@
 
 	// Modal state
 	let showDeleteModal = $state(false);
+	let showViewModal = $state(false);
 	let selectedSupplier = $state<Supplier | null>(null);
 	let deleteLoading = $state(false);
+
+	function openView(supplier: Supplier) {
+		selectedSupplier = supplier;
+		showViewModal = true;
+	}
 
 	function openDelete(supplier: Supplier) {
 		selectedSupplier = supplier;
@@ -106,6 +113,13 @@
 					<TableBodyCell>
 						<div class="flex items-center gap-1">
 							<button
+								onclick={() => openView(supplier)}
+								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-700"
+								title="Ver detalles"
+							>
+								<Eye class="h-4 w-4" />
+							</button>
+							<button
 								onclick={() => onEdit(supplier)}
 								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600"
 								title="Editar"
@@ -144,4 +158,14 @@
 	confirmColor="red"
 	loading={deleteLoading}
 	onConfirm={handleDelete}
+/>
+
+<!-- View Details Modal -->
+<SupplierViewModal
+	bind:open={showViewModal}
+	supplier={selectedSupplier}
+	onClose={() => (selectedSupplier = null)}
+	onEdit={() => {
+		if (selectedSupplier) onEdit(selectedSupplier);
+	}}
 />
