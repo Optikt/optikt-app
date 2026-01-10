@@ -2,6 +2,8 @@
  * Form utility functions
  */
 
+import type { RemoteFormIssue } from '@sveltejs/kit';
+
 /**
  * Scrolls to the first form input with an error.
  * Finds the first element with Flowbite's error border styling and scrolls to it.
@@ -20,4 +22,18 @@ export function scrollToFirstError(): void {
 			firstError.focus();
 		}
 	}, 50);
+}
+
+/**
+ * Normalizes error input to a displayable string.
+ * Accepts string, RemoteFormIssue[], or null/undefined.
+ * Used in custom inputs to handle multiple error formats.
+ */
+export function getErrorMessage(
+	error: RemoteFormIssue[] | string | null | undefined
+): string | null {
+	if (!error) return null;
+	if (typeof error === 'string') return error;
+	if (error.length > 0) return error[0].message;
+	return null;
 }
