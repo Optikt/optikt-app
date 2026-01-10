@@ -1,0 +1,118 @@
+/**
+ * Brands Remote Functions
+ * Server-side functions for brand management
+ */
+import { query, form, command } from '$app/server';
+import { invalid } from '@sveltejs/kit';
+import {
+	ListBrandsSchema,
+	CreateBrandSchema,
+	UpdateBrandSchema,
+	BrandIdSchema
+} from '$lib/schemas/brands';
+import {
+	getAllBrands,
+	findBrandById,
+	findBrandByName,
+	createBrand,
+	updateBrand,
+	deleteBrand
+} from '$lib/server/db/queries/brands';
+import type { Brand } from '$lib/server/db/schema';
+
+// Types for paginated response
+export interface PaginatedBrands {
+	brands: Brand[];
+	total: number;
+	page: number;
+	perPage: number;
+	totalPages: number;
+}
+
+/**
+ * List brands with pagination and search
+ */
+export const listBrands = query(ListBrandsSchema, async (data): Promise<PaginatedBrands> => {
+	const { page, perPage, search } = data;
+
+	// TODO: Get all brands (we'll filter in memory for now, optimize with SQL later)
+	let allBrands = await getAllBrands();
+
+	// Apply search filter
+	if (search) {
+		const searchLower = search.toLowerCase();
+		allBrands = allBrands.filter(
+			(brand) =>
+				brand.name.toLowerCase().includes(searchLower) ||
+				brand.country?.toLowerCase().includes(searchLower)
+		);
+	}
+
+	// Calculate pagination
+	const total = allBrands.length;
+	const totalPages = Math.ceil(total / perPage);
+	const offset = (page - 1) * perPage;
+	const brands = allBrands.slice(offset, offset + perPage);
+
+	return { brands, total, page, perPage, totalPages };
+});
+
+/**
+ * Create a new brand with form validation
+ */
+export const createBrandForm = form(CreateBrandSchema, async (data, issue): Promise<Brand> => {
+	const { name, ...rest } = data;
+
+	// Check for duplicate name
+	const existing = await findBrandByName(name);
+	if (existing) {
+		invalid(issue.name('Ya existe una marca con este nombre'));
+	}
+
+	// Create brand
+	const brand = await createBrand({ name, ...rest });
+	return brand;
+});
+
+/**
+ * Update an existing brand with form validation
+ */
+export const updateBrandForm = form(UpdateBrandSchema, async (data, issue): Promise<Brand> => {
+	const { id, name, ...rest } = data;
+
+	// Check if brand exists
+	const existing = await findBrandById(id);
+	if (!existing) {
+		invalid('Marca no encontrada');
+	}
+
+	// Check for duplicate name if name is being changed
+	if (name && name !== existing.name) {
+		const duplicate = await findBrandByName(name);
+		if (duplicate) {
+			invalid(issue.name('Ya existe una marca con este nombre'));
+		}
+	}
+
+	// Update brand
+	const updated = await updateBrand(id, { name, ...rest });
+	if (!updated) {
+		invalid('Error actualizando marca');
+	}
+
+	return updated;
+});
+
+/**
+ * Delete a brand (soft delete)
+ */
+export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void> => {
+	const { id } = data;
+
+	const existing = await findBrandById(id);
+	if (!existing) {
+		throw new Error('Marca no encontrada');
+	}
+
+	await deleteBrand(id);
+});
