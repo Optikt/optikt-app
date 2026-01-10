@@ -16,7 +16,8 @@ import {
 	findBrandByName,
 	createBrand,
 	updateBrand,
-	deleteBrand
+	deleteBrand,
+	countProductsByBrand
 } from '$lib/server/db/queries/brands';
 import type { Brand } from '$lib/server/db/schema';
 
@@ -115,4 +116,32 @@ export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void
 	}
 
 	await deleteBrand(id);
+});
+
+// Types for delete check
+export interface BrandDeleteCheck {
+	canDelete: boolean;
+	productCount: number;
+	brandName: string;
+}
+
+/**
+ * Check if a brand can be safely deleted
+ * Returns product count for confirmation modal
+ */
+export const checkBrandCanDelete = query(BrandIdSchema, async (data): Promise<BrandDeleteCheck> => {
+	const { id } = data;
+
+	const brand = await findBrandById(id);
+	if (!brand) {
+		throw new Error('Marca no encontrada');
+	}
+
+	const productCount = await countProductsByBrand(id);
+
+	return {
+		canDelete: productCount === 0,
+		productCount,
+		brandName: brand.name
+	};
 });
