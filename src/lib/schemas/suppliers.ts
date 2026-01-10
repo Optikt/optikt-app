@@ -3,6 +3,7 @@
  * Valibot schemas for validation in remote functions
  */
 import * as v from 'valibot';
+import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import { ALL_SUPPLIER_TYPES } from '$lib/shared/enums';
 
 /** RIF validation schema - V/E/J/G-12345678-9 format */
@@ -11,8 +12,65 @@ const RifSchema = v.pipe(
 	v.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: V/E/J/G-12345678-9)')
 );
 
-/** Phone validation - basic format */
-const PhoneSchema = v.pipe(v.string(), v.minLength(7, 'Teléfono debe tener al menos 7 dígitos'));
+/**
+ * Phone validation using libphonenumber-js
+ * Validates phone numbers, defaulting to Venezuela (VE)
+ */
+const PhoneSchema = v.pipe(
+	v.string(),
+	v.minLength(7, 'Teléfono debe tener al menos 7 dígitos'),
+	v.check((value: string) => {
+		if (!value) return true;
+		const phone = parsePhoneNumberFromString(value, 'VE');
+		return phone?.isValid() ?? false;
+	}, 'Número de teléfono inválido')
+);
+
+/**
+ * Optional phone validation - allows empty or valid phone
+ */
+const OptionalPhoneSchema = v.optional(
+	v.union([
+		v.literal(''),
+		v.pipe(
+			v.string(),
+			v.check((value: string) => {
+				if (!value) return true;
+				const phone = parsePhoneNumberFromString(value, 'VE');
+				return phone?.isValid() ?? false;
+			}, 'Número de teléfono inválido')
+		)
+	])
+);
+
+/**
+ * WhatsApp validation - international format with country code
+ * Format: +XXNNNNNNN
+ */
+const WhatsAppSchema = v.optional(
+	v.union([
+		v.literal(''),
+		v.pipe(
+			v.string(),
+			v.check((value: string) => {
+				if (!value) return true;
+				// WhatsApp numbers should start with + and country code
+				const phone = parsePhoneNumberFromString(value);
+				return phone?.isValid() ?? false;
+			}, 'Número de WhatsApp inválido')
+		)
+	])
+);
+
+/**
+ * Instagram validation - should start with @
+ */
+const InstagramSchema = v.optional(
+	v.union([
+		v.literal(''),
+		v.pipe(v.string(), v.regex(/^@[\w.]+$/, 'Usuario de Instagram inválido'))
+	])
+);
 
 export const ListSuppliersSchema = v.object({
 	page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
@@ -29,11 +87,11 @@ export const CreateSupplierSchema = v.object({
 	primaryPhone: PhoneSchema,
 	email: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.email('Email inválido'))])),
 	address: v.optional(v.string()),
-	instagram: v.optional(v.string()),
-	whatsapp: v.optional(v.string()),
+	instagram: InstagramSchema,
+	whatsapp: WhatsAppSchema,
 	website: v.optional(v.string()),
 	contactName: v.optional(v.string()),
-	contactPhone: v.optional(v.string()),
+	contactPhone: OptionalPhoneSchema,
 	contactRole: v.optional(v.string()),
 	notes: v.optional(v.string())
 });
@@ -46,11 +104,11 @@ export const UpdateSupplierSchema = v.object({
 	primaryPhone: v.optional(PhoneSchema),
 	email: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.email('Email inválido'))])),
 	address: v.optional(v.string()),
-	instagram: v.optional(v.string()),
-	whatsapp: v.optional(v.string()),
+	instagram: InstagramSchema,
+	whatsapp: WhatsAppSchema,
 	website: v.optional(v.string()),
 	contactName: v.optional(v.string()),
-	contactPhone: v.optional(v.string()),
+	contactPhone: OptionalPhoneSchema,
 	contactRole: v.optional(v.string()),
 	notes: v.optional(v.string())
 });

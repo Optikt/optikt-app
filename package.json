@@ -59,6 +59,7 @@
 	"dependencies": {
 		"@lucide/svelte": "^0.562.0",
 		"@node-rs/argon2": "^2.0.2",
+		"libphonenumber-js": "^1.12.33",
 		"postgres": "^3.4.7",
 		"svelte-sonner": "^1.0.7",
 		"valibot": "^1.2.0"
