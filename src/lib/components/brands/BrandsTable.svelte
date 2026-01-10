@@ -12,10 +12,11 @@
 		Input,
 		Label
 	} from 'flowbite-svelte';
-	import { SquarePen, Trash2, Tag, TriangleAlert } from '@lucide/svelte';
+	import { SquarePen, Trash2, Tag, TriangleAlert, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { BrandViewModal } from '$lib/components/brands';
 	import type { Brand } from '$lib/server/db/schema';
 
 	interface Props {
@@ -29,6 +30,7 @@
 
 	// Modal state
 	let showDeleteModal = $state(false);
+	let showViewModal = $state(false);
 	let selectedBrand = $state<Brand | null>(null);
 	let deleteLoading = $state(false);
 	let checkingDelete = $state(false);
@@ -38,6 +40,11 @@
 	// For safety, user must type brand name to confirm
 	const canConfirm = $derived(confirmInput === selectedBrand?.name);
 	const hasProducts = $derived(productCount > 0);
+
+	function openView(brand: Brand) {
+		selectedBrand = brand;
+		showViewModal = true;
+	}
 
 	async function openDelete(brand: Brand) {
 		selectedBrand = brand;
@@ -114,6 +121,13 @@
 					</TableBodyCell>
 					<TableBodyCell>
 						<div class="flex items-center gap-1">
+							<button
+								onclick={() => openView(brand)}
+								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-700"
+								title="Ver detalles"
+							>
+								<Eye class="h-4 w-4" />
+							</button>
 							<button
 								onclick={() => onEdit(brand)}
 								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600"
@@ -193,3 +207,13 @@
 		</div>
 	{/if}
 </Modal>
+
+<!-- View Details Modal -->
+<BrandViewModal
+	bind:open={showViewModal}
+	brand={selectedBrand}
+	onClose={() => (selectedBrand = null)}
+	onEdit={() => {
+		if (selectedBrand) onEdit(selectedBrand);
+	}}
+/>
