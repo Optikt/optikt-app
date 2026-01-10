@@ -5,11 +5,16 @@
 import * as v from 'valibot';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import { ALL_SUPPLIER_TYPES } from '$lib/shared/enums';
+import { validateRif } from '$lib/utils';
 
-/** RIF validation schema - V/E/J/G-12345678-9 format */
+/**
+ * RIF validation schema - V/E/J/G-XXXXXXXX-X format
+ * Uses Module 11 algorithm to validate check digit
+ */
 const RifSchema = v.pipe(
 	v.string(),
-	v.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: V/E/J/G-12345678-9)')
+	v.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: X-12345678-9)'),
+	v.check((value: string) => validateRif(value), 'RIF inválido: dígito verificador incorrecto')
 );
 
 /**
