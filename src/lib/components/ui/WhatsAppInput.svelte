@@ -92,20 +92,13 @@
 	{/if}
 
 	<div class="flex gap-2">
-		<Select
-			name="{name}-code"
-			bind:value={countryCode}
-			{disabled}
-			class="w-28 shrink-0"
-			onchange={handleCodeChange}
-		>
+		<Select bind:value={countryCode} {disabled} class="w-28 shrink-0" onchange={handleCodeChange}>
 			{#each COUNTRY_CODES as country (country.code)}
 				<option value={country.code}>{country.label}</option>
 			{/each}
 		</Select>
 
 		<Input
-			name="{name}-number"
 			type="tel"
 			{placeholder}
 			bind:value={phoneNumber}
