@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Input, Helper, Label } from 'flowbite-svelte';
+	import { Input, Helper, Label, type InputProps } from 'flowbite-svelte';
 
-	interface Props {
+	interface Props extends InputProps {
 		value: string;
 		// TODO: Make error and issues one prop, can combine them into a single field prop
 		error?: string | null;
@@ -32,7 +32,8 @@
 		readonly = false,
 		autocomplete,
 		size = 'md',
-		class: className
+		class: className,
+		required = false
 	}: Props = $props();
 
 	// Use name as fallback for id (for the label's "for" attribute)
@@ -43,22 +44,26 @@
 	const hasError = $derived(!!displayError);
 </script>
 
-{#if label}
-	<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
-{/if}
-<Input
-	id={inputId}
-	{name}
-	{type}
-	{placeholder}
-	{disabled}
-	{readonly}
-	{autocomplete}
-	{size}
-	class={['placeholder:text-slate-400', className]}
-	bind:value
-	color={hasError ? 'red' : undefined}
-/>
-{#if displayError}
-	<Helper color="red">{displayError}</Helper>
-{/if}
+<!-- Wrapper div ensures this is a single item when used -->
+<div>
+	{#if label}
+		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
+	{/if}
+	<Input
+		id={inputId}
+		{name}
+		{type}
+		{placeholder}
+		{disabled}
+		{readonly}
+		{autocomplete}
+		{size}
+		class={['placeholder:text-slate-400', className]}
+		bind:value
+		color={hasError ? 'red' : undefined}
+		{required}
+	/>
+	{#if displayError}
+		<Helper color="red">{displayError}</Helper>
+	{/if}
+</div>

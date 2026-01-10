@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Textarea, Helper, Label } from 'flowbite-svelte';
+	import { Textarea, Helper, Label, type TextareaProps } from 'flowbite-svelte';
 
-	interface Props {
+	interface Props extends TextareaProps {
 		value: string;
 		error?: string | null;
 		issues?: RemoteFormIssue[]; // From form fields.X.issues()
@@ -27,7 +27,8 @@
 		disabled = false,
 		readonly = false,
 		rows = 3,
-		class: className
+		class: className,
+		required = false
 	}: Props = $props();
 
 	// Use name as fallback for id (for the label's "for" attribute)
@@ -38,19 +39,23 @@
 	const hasError = $derived(!!displayError);
 </script>
 
-{#if label}
-	<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
-{/if}
-<Textarea
-	id={inputId}
-	{name}
-	{placeholder}
-	{disabled}
-	{readonly}
-	{rows}
-	class={['w-full placeholder:text-slate-400', className]}
-	bind:value
-/>
-{#if displayError}
-	<Helper color="red">{displayError}</Helper>
-{/if}
+<!-- Wrapper div ensures this is a single item when used -->
+<div>
+	{#if label}
+		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
+	{/if}
+	<Textarea
+		id={inputId}
+		{name}
+		{placeholder}
+		{disabled}
+		{readonly}
+		{rows}
+		class={['w-full placeholder:text-slate-400', className]}
+		bind:value
+		{required}
+	/>
+	{#if displayError}
+		<Helper color="red">{displayError}</Helper>
+	{/if}
+</div>
