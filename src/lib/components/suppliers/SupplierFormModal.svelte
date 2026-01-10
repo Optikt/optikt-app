@@ -4,7 +4,13 @@
 	import { untrack } from 'svelte';
 	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
 	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
-	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import {
+		FormInput,
+		FormTextarea,
+		RifInput,
+		WhatsAppInput,
+		InstagramInput
+	} from '$lib/components/ui';
 	import { scrollToFirstError } from '$lib/utils';
 	import type { Supplier } from '$lib/server/db/schema';
 
@@ -159,12 +165,11 @@
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
-				<FormInput
+				<RifInput
 					label="RIF"
 					name="rif"
 					bind:value={formData.rif}
-					placeholder="V/E/J/G-12345678-9"
-					issues={currentUpdateForm.fields.rif?.issues()}
+					error={currentUpdateForm.fields.rif?.issues()?.[0]?.message}
 				/>
 				<FormInput
 					label="Teléfono Principal *"
@@ -204,17 +209,17 @@
 
 			<!-- Social Media -->
 			<div class="grid grid-cols-2 gap-4">
-				<FormInput
+				<InstagramInput
 					label="Instagram"
 					name="instagram"
 					bind:value={formData.instagram}
-					placeholder="@usuario"
+					error={currentUpdateForm.fields.instagram?.issues()?.[0]?.message}
 				/>
-				<FormInput
+				<WhatsAppInput
 					label="WhatsApp"
 					name="whatsapp"
 					bind:value={formData.whatsapp}
-					placeholder="+58 414 1234567"
+					error={currentUpdateForm.fields.whatsapp?.issues()?.[0]?.message}
 				/>
 			</div>
 
@@ -298,12 +303,11 @@
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
-				<FormInput
+				<RifInput
 					label="RIF"
 					name="rif"
 					bind:value={formData.rif}
-					placeholder="V/E/J/G-12345678-9"
-					issues={currentCreateForm.fields.rif?.issues()}
+					error={currentCreateForm.fields.rif?.issues()?.[0]?.message}
 				/>
 				<FormInput
 					label="Teléfono Principal *"
@@ -343,17 +347,17 @@
 
 			<!-- Social Media -->
 			<div class="grid grid-cols-2 gap-4">
-				<FormInput
+				<InstagramInput
 					label="Instagram"
 					name="instagram"
 					bind:value={formData.instagram}
-					placeholder="@usuario"
+					error={currentCreateForm.fields.instagram?.issues()?.[0]?.message}
 				/>
-				<FormInput
+				<WhatsAppInput
 					label="WhatsApp"
 					name="whatsapp"
 					bind:value={formData.whatsapp}
-					placeholder="+58 414 1234567"
+					error={currentCreateForm.fields.whatsapp?.issues()?.[0]?.message}
 				/>
 			</div>
 
