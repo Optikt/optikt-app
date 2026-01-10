@@ -79,20 +79,13 @@
 	{/if}
 
 	<div class="flex gap-2">
-		<Select
-			name="{name}-type"
-			bind:value={rifType}
-			{disabled}
-			class="w-20 shrink-0"
-			onchange={handleTypeChange}
-		>
+		<Select bind:value={rifType} {disabled} class="w-20 shrink-0" onchange={handleTypeChange}>
 			{#each RIF_TYPES as type (type)}
 				<option value={type}>{type}</option>
 			{/each}
 		</Select>
 
 		<Input
-			name="{name}-number"
 			type="text"
 			inputmode="numeric"
 			placeholder="12345678-9"
