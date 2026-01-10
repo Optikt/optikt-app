@@ -3,6 +3,7 @@ trigger: always_on
 ---
 
 # Eslint rules
+
 Try to follow our eslint rules, because we can avoid most of them. If it's too complicate to solve, ask the user. If you can solve it, do it. Only try to solve these listed rules, if there are new ones that cannot be solve, it's too complicate or make the code complex, ask the user.
 
 ## Listed rules
