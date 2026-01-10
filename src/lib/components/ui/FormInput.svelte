@@ -55,7 +55,7 @@
 	{readonly}
 	{autocomplete}
 	{size}
-	class={className}
+	class={['placeholder:text-slate-400', className]}
 	bind:value
 	color={hasError ? 'red' : undefined}
 />

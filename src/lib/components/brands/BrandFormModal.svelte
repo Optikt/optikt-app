@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { Modal, Button, Label, Input, Spinner, Textarea } from 'flowbite-svelte';
+	import { Modal, Button, Spinner, Textarea, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createBrandForm, updateBrandForm } from '$lib/remote/brands.remote';
+	import { FormInput } from '$lib/components/ui';
 	import type { Brand } from '$lib/server/db/schema';
 
 	interface Props {
@@ -101,18 +102,32 @@
 		>
 			<input type="hidden" name="id" value={brand.id} />
 
-			<div>
-				<Label for="name" class="mb-2">Nombre *</Label>
-				<Input
-					id="name"
-					name="name"
-					bind:value={formData.name}
-					placeholder="Ej: Ray-Ban"
-					required
-				/>
-				{#each currentUpdateForm.fields.name?.issues() ?? [] as issue, index (`issue-update-${index}`)}
-					<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-				{/each}
+			<FormInput
+				label="Nombre *"
+				name="name"
+				bind:value={formData.name}
+				placeholder="Ej: Ray-Ban"
+				issues={currentUpdateForm.fields.name?.issues()}
+			/>
+
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<FormInput
+						label="País"
+						name="country"
+						bind:value={formData.country}
+						placeholder="Ej: Italia"
+					/>
+				</div>
+				<div>
+					<FormInput
+						label="Sitio Web"
+						name="website"
+						type="url"
+						bind:value={formData.website}
+						placeholder="https://..."
+					/>
+				</div>
 			</div>
 
 			<div>
@@ -120,31 +135,11 @@
 				<Textarea
 					id="description"
 					name="description"
+					class="w-full placeholder:text-slate-400"
 					bind:value={formData.description}
 					placeholder="Descripción de la marca"
 					rows={3}
 				/>
-			</div>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="country" class="mb-2">País</Label>
-					<Input
-						id="country"
-						name="country"
-						bind:value={formData.country}
-						placeholder="Ej: Italia"
-					/>
-				</div>
-				<div>
-					<Label for="website" class="mb-2">Sitio Web</Label>
-					<Input
-						id="website"
-						name="website"
-						bind:value={formData.website}
-						placeholder="https://..."
-					/>
-				</div>
 			</div>
 
 			<div class="flex justify-end gap-2 pt-4">
@@ -172,18 +167,32 @@
 			})}
 			class="flex flex-col gap-4"
 		>
-			<div>
-				<Label for="name" class="mb-2">Nombre *</Label>
-				<Input
-					id="name"
-					name="name"
-					bind:value={formData.name}
-					placeholder="Ej: Ray-Ban"
-					required
-				/>
-				{#each currentCreateForm.fields.name?.issues() ?? [] as issue, index (`issue-create-${index}`)}
-					<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-				{/each}
+			<FormInput
+				label="Nombre *"
+				name="name"
+				bind:value={formData.name}
+				placeholder="Ej: Ray-Ban"
+				issues={currentCreateForm.fields.name?.issues()}
+			/>
+
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<FormInput
+						label="País"
+						name="country"
+						bind:value={formData.country}
+						placeholder="Ej: Italia"
+					/>
+				</div>
+				<div>
+					<FormInput
+						label="Sitio Web"
+						name="website"
+						type="url"
+						bind:value={formData.website}
+						placeholder="https://..."
+					/>
+				</div>
 			</div>
 
 			<div>
@@ -191,31 +200,11 @@
 				<Textarea
 					id="description"
 					name="description"
+					class="w-full placeholder:text-slate-400"
 					bind:value={formData.description}
 					placeholder="Descripción de la marca"
 					rows={3}
 				/>
-			</div>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="country" class="mb-2">País</Label>
-					<Input
-						id="country"
-						name="country"
-						bind:value={formData.country}
-						placeholder="Ej: Italia"
-					/>
-				</div>
-				<div>
-					<Label for="website" class="mb-2">Sitio Web</Label>
-					<Input
-						id="website"
-						name="website"
-						bind:value={formData.website}
-						placeholder="https://..."
-					/>
-				</div>
 			</div>
 
 			<div class="flex justify-end gap-2 pt-4">

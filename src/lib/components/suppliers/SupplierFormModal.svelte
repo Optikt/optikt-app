@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Modal, Button, Label, Input, Spinner, Textarea, Select } from 'flowbite-svelte';
+	import { Modal, Button, Spinner, Textarea, Select, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
 	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
+	import { FormInput } from '$lib/components/ui';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -91,7 +92,7 @@
 	function handleCreateResult(formEl: HTMLFormElement) {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
-			return; // Stay open, show errors
+			return;
 		}
 
 		toast.success('Proveedor creado exitosamente');
@@ -104,7 +105,7 @@
 	function handleUpdateResult(formEl: HTMLFormElement) {
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
-			return; // Stay open, show errors
+			return;
 		}
 
 		toast.success('Proveedor actualizado');
@@ -136,19 +137,13 @@
 
 			<!-- Basic Info -->
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="name" class="mb-2">Nombre *</Label>
-					<Input
-						id="name"
-						name="name"
-						bind:value={formData.name}
-						placeholder="Ej: OptiVision"
-						required
-					/>
-					{#each currentUpdateForm.fields.name?.issues() ?? [] as issue, i (`update-name-${i}`)}
-						<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-					{/each}
-				</div>
+				<FormInput
+					label="Nombre *"
+					name="name"
+					bind:value={formData.name}
+					placeholder="Ej: OptiVision"
+					issues={currentUpdateForm.fields.name?.issues()}
+				/>
 				<div>
 					<Label for="type" class="mb-2">Tipo *</Label>
 					<Select id="type" name="type" bind:value={formData.type}>
@@ -160,48 +155,38 @@
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="rif" class="mb-2">RIF</Label>
-					<Input id="rif" name="rif" bind:value={formData.rif} placeholder="V/E/J/G-12345678-9" />
-					{#each currentUpdateForm.fields.rif?.issues() ?? [] as issue, i (`update-rif-${i}`)}
-						<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-					{/each}
-				</div>
-				<div>
-					<Label for="primaryPhone" class="mb-2">Teléfono Principal *</Label>
-					<Input
-						id="primaryPhone"
-						name="primaryPhone"
-						bind:value={formData.primaryPhone}
-						placeholder="0414-1234567"
-						required
-					/>
-					{#each currentUpdateForm.fields.primaryPhone?.issues() ?? [] as issue, i (`update-phone-${i}`)}
-						<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-					{/each}
-				</div>
+				<FormInput
+					label="RIF"
+					name="rif"
+					bind:value={formData.rif}
+					placeholder="V/E/J/G-12345678-9"
+					issues={currentUpdateForm.fields.rif?.issues()}
+				/>
+				<FormInput
+					label="Teléfono Principal *"
+					name="primaryPhone"
+					type="tel"
+					bind:value={formData.primaryPhone}
+					placeholder="0414-1234567"
+					issues={currentUpdateForm.fields.primaryPhone?.issues()}
+				/>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="email" class="mb-2">Email</Label>
-					<Input
-						id="email"
-						name="email"
-						type="email"
-						bind:value={formData.email}
-						placeholder="contacto@empresa.com"
-					/>
-				</div>
-				<div>
-					<Label for="website" class="mb-2">Sitio Web</Label>
-					<Input
-						id="website"
-						name="website"
-						bind:value={formData.website}
-						placeholder="https://..."
-					/>
-				</div>
+				<FormInput
+					label="Email"
+					name="email"
+					type="email"
+					bind:value={formData.email}
+					placeholder="contacto@empresa.com"
+				/>
+				<FormInput
+					label="Sitio Web"
+					name="website"
+					type="url"
+					bind:value={formData.website}
+					placeholder="https://..."
+				/>
 			</div>
 
 			<div>
@@ -212,62 +197,49 @@
 					bind:value={formData.address}
 					rows={2}
 					placeholder="Dirección completa"
+					class="w-full placeholder:text-slate-400"
 				/>
 			</div>
 
 			<!-- Social Media -->
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="instagram" class="mb-2">Instagram</Label>
-					<Input
-						id="instagram"
-						name="instagram"
-						bind:value={formData.instagram}
-						placeholder="@usuario"
-					/>
-				</div>
-				<div>
-					<Label for="whatsapp" class="mb-2">WhatsApp</Label>
-					<Input
-						id="whatsapp"
-						name="whatsapp"
-						bind:value={formData.whatsapp}
-						placeholder="+58 414 1234567"
-					/>
-				</div>
+				<FormInput
+					label="Instagram"
+					name="instagram"
+					bind:value={formData.instagram}
+					placeholder="@usuario"
+				/>
+				<FormInput
+					label="WhatsApp"
+					name="whatsapp"
+					bind:value={formData.whatsapp}
+					placeholder="+58 414 1234567"
+				/>
 			</div>
 
 			<!-- Contact Person -->
 			<div class="border-t border-slate-200 pt-4">
 				<p class="mb-3 text-sm font-medium text-slate-700">Persona de Contacto</p>
 				<div class="grid grid-cols-3 gap-4">
-					<div>
-						<Label for="contactName" class="mb-2">Nombre</Label>
-						<Input
-							id="contactName"
-							name="contactName"
-							bind:value={formData.contactName}
-							placeholder="Nombre"
-						/>
-					</div>
-					<div>
-						<Label for="contactPhone" class="mb-2">Teléfono</Label>
-						<Input
-							id="contactPhone"
-							name="contactPhone"
-							bind:value={formData.contactPhone}
-							placeholder="Teléfono"
-						/>
-					</div>
-					<div>
-						<Label for="contactRole" class="mb-2">Cargo</Label>
-						<Input
-							id="contactRole"
-							name="contactRole"
-							bind:value={formData.contactRole}
-							placeholder="Cargo"
-						/>
-					</div>
+					<FormInput
+						label="Nombre"
+						name="contactName"
+						bind:value={formData.contactName}
+						placeholder="Nombre"
+					/>
+					<FormInput
+						label="Teléfono"
+						name="contactPhone"
+						type="tel"
+						bind:value={formData.contactPhone}
+						placeholder="Teléfono"
+					/>
+					<FormInput
+						label="Cargo"
+						name="contactRole"
+						bind:value={formData.contactRole}
+						placeholder="Cargo"
+					/>
 				</div>
 			</div>
 
@@ -279,6 +251,7 @@
 					bind:value={formData.notes}
 					rows={2}
 					placeholder="Notas adicionales"
+					class="w-full placeholder:text-slate-400"
 				/>
 			</div>
 
@@ -309,19 +282,13 @@
 		>
 			<!-- Basic Info -->
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="name" class="mb-2">Nombre *</Label>
-					<Input
-						id="name"
-						name="name"
-						bind:value={formData.name}
-						placeholder="Ej: OptiVision"
-						required
-					/>
-					{#each currentCreateForm.fields.name?.issues() ?? [] as issue, i (`create-name-${i}`)}
-						<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-					{/each}
-				</div>
+				<FormInput
+					label="Nombre *"
+					name="name"
+					bind:value={formData.name}
+					placeholder="Ej: OptiVision"
+					issues={currentCreateForm.fields.name?.issues()}
+				/>
 				<div>
 					<Label for="type" class="mb-2">Tipo *</Label>
 					<Select id="type" name="type" bind:value={formData.type}>
@@ -333,48 +300,38 @@
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="rif" class="mb-2">RIF</Label>
-					<Input id="rif" name="rif" bind:value={formData.rif} placeholder="V/E/J/G-12345678-9" />
-					{#each currentCreateForm.fields.rif?.issues() ?? [] as issue, i (`create-rif-${i}`)}
-						<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-					{/each}
-				</div>
-				<div>
-					<Label for="primaryPhone" class="mb-2">Teléfono Principal *</Label>
-					<Input
-						id="primaryPhone"
-						name="primaryPhone"
-						bind:value={formData.primaryPhone}
-						placeholder="0414-1234567"
-						required
-					/>
-					{#each currentCreateForm.fields.primaryPhone?.issues() ?? [] as issue, i (`create-phone-${i}`)}
-						<p class="mt-1 text-sm text-red-600">{issue.message}</p>
-					{/each}
-				</div>
+				<FormInput
+					label="RIF"
+					name="rif"
+					bind:value={formData.rif}
+					placeholder="V/E/J/G-12345678-9"
+					issues={currentCreateForm.fields.rif?.issues()}
+				/>
+				<FormInput
+					label="Teléfono Principal *"
+					name="primaryPhone"
+					type="tel"
+					bind:value={formData.primaryPhone}
+					placeholder="0414-1234567"
+					issues={currentCreateForm.fields.primaryPhone?.issues()}
+				/>
 			</div>
 
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="email" class="mb-2">Email</Label>
-					<Input
-						id="email"
-						name="email"
-						type="email"
-						bind:value={formData.email}
-						placeholder="contacto@empresa.com"
-					/>
-				</div>
-				<div>
-					<Label for="website" class="mb-2">Sitio Web</Label>
-					<Input
-						id="website"
-						name="website"
-						bind:value={formData.website}
-						placeholder="https://..."
-					/>
-				</div>
+				<FormInput
+					label="Email"
+					name="email"
+					type="email"
+					bind:value={formData.email}
+					placeholder="contacto@empresa.com"
+				/>
+				<FormInput
+					label="Sitio Web"
+					name="website"
+					type="url"
+					bind:value={formData.website}
+					placeholder="https://..."
+				/>
 			</div>
 
 			<div>
@@ -385,62 +342,49 @@
 					bind:value={formData.address}
 					rows={2}
 					placeholder="Dirección completa"
+					class="w-full placeholder:text-slate-400"
 				/>
 			</div>
 
 			<!-- Social Media -->
 			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="instagram" class="mb-2">Instagram</Label>
-					<Input
-						id="instagram"
-						name="instagram"
-						bind:value={formData.instagram}
-						placeholder="@usuario"
-					/>
-				</div>
-				<div>
-					<Label for="whatsapp" class="mb-2">WhatsApp</Label>
-					<Input
-						id="whatsapp"
-						name="whatsapp"
-						bind:value={formData.whatsapp}
-						placeholder="+58 414 1234567"
-					/>
-				</div>
+				<FormInput
+					label="Instagram"
+					name="instagram"
+					bind:value={formData.instagram}
+					placeholder="@usuario"
+				/>
+				<FormInput
+					label="WhatsApp"
+					name="whatsapp"
+					bind:value={formData.whatsapp}
+					placeholder="+58 414 1234567"
+				/>
 			</div>
 
 			<!-- Contact Person -->
 			<div class="border-t border-slate-200 pt-4">
 				<p class="mb-3 text-sm font-medium text-slate-700">Persona de Contacto</p>
 				<div class="grid grid-cols-3 gap-4">
-					<div>
-						<Label for="contactName" class="mb-2">Nombre</Label>
-						<Input
-							id="contactName"
-							name="contactName"
-							bind:value={formData.contactName}
-							placeholder="Nombre"
-						/>
-					</div>
-					<div>
-						<Label for="contactPhone" class="mb-2">Teléfono</Label>
-						<Input
-							id="contactPhone"
-							name="contactPhone"
-							bind:value={formData.contactPhone}
-							placeholder="Teléfono"
-						/>
-					</div>
-					<div>
-						<Label for="contactRole" class="mb-2">Cargo</Label>
-						<Input
-							id="contactRole"
-							name="contactRole"
-							bind:value={formData.contactRole}
-							placeholder="Cargo"
-						/>
-					</div>
+					<FormInput
+						label="Nombre"
+						name="contactName"
+						bind:value={formData.contactName}
+						placeholder="Nombre"
+					/>
+					<FormInput
+						label="Teléfono"
+						name="contactPhone"
+						type="tel"
+						bind:value={formData.contactPhone}
+						placeholder="Teléfono"
+					/>
+					<FormInput
+						label="Cargo"
+						name="contactRole"
+						bind:value={formData.contactRole}
+						placeholder="Cargo"
+					/>
 				</div>
 			</div>
 
@@ -452,6 +396,7 @@
 					bind:value={formData.notes}
 					rows={2}
 					placeholder="Notas adicionales"
+					class="w-full placeholder:text-slate-400"
 				/>
 			</div>
 
