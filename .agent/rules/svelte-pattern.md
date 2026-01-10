@@ -28,7 +28,7 @@ Try to follow our eslint rules, because we can avoid most of them. If it's too c
 
 # Component Self-Containment Rule:
 
-If a component performs a specific action (like toggle, delete, reactivate), it should import and call the remote function internally. Pass only the data needed and emit events (like onSuccess, onError) for parent coordination. Generic components (like ConfirmModal) take callbacks; domain-specific components call their own remotes.
+If a component performs a specific action (like toggle, delete, reactivate), it should import and call the remote function internally. Pass only the data needed and emit events (like onSuccess, onError) for parent coordination. Generic components (like ConfirmModal) take callbacks; domain-specific components call their own remotes. If creating forms with inputs, use the `FormInput` component because allow to use `Labels` and `Inputs`.
 
 # Remote Function Usage Pattern
 
