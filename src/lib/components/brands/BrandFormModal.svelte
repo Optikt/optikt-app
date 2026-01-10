@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Modal, Button, Spinner, Textarea, Label } from 'flowbite-svelte';
+	import { Modal, Button, Spinner } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createBrandForm, updateBrandForm } from '$lib/remote/brands.remote';
-	import { FormInput } from '$lib/components/ui';
+	import { FormInput, FormTextarea } from '$lib/components/ui';
 	import type { Brand } from '$lib/server/db/schema';
 
 	interface Props {
@@ -130,17 +130,13 @@
 				</div>
 			</div>
 
-			<div>
-				<Label for="description" class="mb-2">Descripción</Label>
-				<Textarea
-					id="description"
-					name="description"
-					class="w-full placeholder:text-slate-400"
-					bind:value={formData.description}
-					placeholder="Descripción de la marca"
-					rows={3}
-				/>
-			</div>
+			<FormTextarea
+				label="Descripción"
+				name="description"
+				bind:value={formData.description}
+				placeholder="Descripción de la marca"
+				rows={3}
+			/>
 
 			<div class="flex justify-end gap-2 pt-4">
 				<Button color="light" onclick={onClose}>Cancelar</Button>
@@ -195,17 +191,13 @@
 				</div>
 			</div>
 
-			<div>
-				<Label for="description" class="mb-2">Descripción</Label>
-				<Textarea
-					id="description"
-					name="description"
-					class="w-full placeholder:text-slate-400"
-					bind:value={formData.description}
-					placeholder="Descripción de la marca"
-					rows={3}
-				/>
-			</div>
+			<FormTextarea
+				label="Descripción"
+				name="description"
+				bind:value={formData.description}
+				placeholder="Descripción de la marca"
+				rows={3}
+			/>
 
 			<div class="flex justify-end gap-2 pt-4">
 				<Button color="light" onclick={onClose}>Cancelar</Button>

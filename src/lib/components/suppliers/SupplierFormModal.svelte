@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Modal, Button, Spinner, Textarea, Select, Label } from 'flowbite-svelte';
+	import { Modal, Button, Spinner, Select, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
 	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
-	import { FormInput } from '$lib/components/ui';
+	import { FormInput, FormTextarea } from '$lib/components/ui';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -189,17 +189,13 @@
 				/>
 			</div>
 
-			<div>
-				<Label for="address" class="mb-2">Dirección</Label>
-				<Textarea
-					id="address"
-					name="address"
-					bind:value={formData.address}
-					rows={2}
-					placeholder="Dirección completa"
-					class="w-full placeholder:text-slate-400"
-				/>
-			</div>
+			<FormTextarea
+				label="Dirección"
+				name="address"
+				bind:value={formData.address}
+				rows={2}
+				placeholder="Dirección completa"
+			/>
 
 			<!-- Social Media -->
 			<div class="grid grid-cols-2 gap-4">
@@ -243,17 +239,13 @@
 				</div>
 			</div>
 
-			<div>
-				<Label for="notes" class="mb-2">Notas</Label>
-				<Textarea
-					id="notes"
-					name="notes"
-					bind:value={formData.notes}
-					rows={2}
-					placeholder="Notas adicionales"
-					class="w-full placeholder:text-slate-400"
-				/>
-			</div>
+			<FormTextarea
+				label="Notas"
+				name="notes"
+				bind:value={formData.notes}
+				rows={2}
+				placeholder="Notas adicionales"
+			/>
 
 			<div class="flex justify-end gap-2 pt-4">
 				<Button color="light" onclick={onClose}>Cancelar</Button>
@@ -334,17 +326,13 @@
 				/>
 			</div>
 
-			<div>
-				<Label for="address" class="mb-2">Dirección</Label>
-				<Textarea
-					id="address"
-					name="address"
-					bind:value={formData.address}
-					rows={2}
-					placeholder="Dirección completa"
-					class="w-full placeholder:text-slate-400"
-				/>
-			</div>
+			<FormTextarea
+				label="Dirección"
+				name="address"
+				bind:value={formData.address}
+				rows={2}
+				placeholder="Dirección completa"
+			/>
 
 			<!-- Social Media -->
 			<div class="grid grid-cols-2 gap-4">
@@ -388,17 +376,13 @@
 				</div>
 			</div>
 
-			<div>
-				<Label for="notes" class="mb-2">Notas</Label>
-				<Textarea
-					id="notes"
-					name="notes"
-					bind:value={formData.notes}
-					rows={2}
-					placeholder="Notas adicionales"
-					class="w-full placeholder:text-slate-400"
-				/>
-			</div>
+			<FormTextarea
+				label="Notas"
+				name="notes"
+				bind:value={formData.notes}
+				rows={2}
+				placeholder="Notas adicionales"
+			/>
 
 			<div class="flex justify-end gap-2 pt-4">
 				<Button color="light" onclick={onClose}>Cancelar</Button>
