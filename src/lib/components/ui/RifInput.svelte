@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Select, Input, Helper, Label } from 'flowbite-svelte';
-	import { getErrorMessage } from '$lib/utils';
+	import { getFormErrorMessage } from '$lib/utils';
 
 	interface Props {
 		value: string;
@@ -68,7 +68,7 @@
 		updateValue();
 	}
 
-	const displayError = $derived(getErrorMessage(error));
+	const displayError = $derived(getFormErrorMessage(error));
 	const hasError = $derived(!!displayError);
 	const displayNumber = $derived(formatRifNumber(rifNumber));
 </script>

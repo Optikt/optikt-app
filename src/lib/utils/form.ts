@@ -25,11 +25,11 @@ export function scrollToFirstError(): void {
 }
 
 /**
- * Normalizes error input to a displayable string.
+ * Normalizes form error input to a displayable string.
  * Accepts string, RemoteFormIssue[], or null/undefined.
  * Used in custom inputs to handle multiple error formats.
  */
-export function getErrorMessage(
+export function getFormErrorMessage(
 	error: RemoteFormIssue[] | string | null | undefined
 ): string | null {
 	if (!error) return null;
