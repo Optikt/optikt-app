@@ -8,7 +8,7 @@ import {
 	boolean
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { UserRole } from '$lib/shared/enums';
+import { UserRole } from '../../../shared/enums';
 
 export const users = pgTable(
 	'users',
