@@ -15,6 +15,13 @@
       "when": 1736510000000,
       "tag": "0002_fix_suppliers_contact_name",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1736540000000,
+      "tag": "0003_suppliers_partial_unique_rif",
+      "breakpoints": true
     }
   ]
 }
