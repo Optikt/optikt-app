@@ -5,6 +5,7 @@
 	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
 	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
 	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import { scrollToFirstError } from '$lib/utils';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -92,6 +93,7 @@
 	function handleCreateResult(formEl: HTMLFormElement) {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			scrollToFirstError();
 			return;
 		}
 
@@ -105,6 +107,7 @@
 	function handleUpdateResult(formEl: HTMLFormElement) {
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			scrollToFirstError();
 			return;
 		}
 
