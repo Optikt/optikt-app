@@ -8,6 +8,13 @@
       "when": 1736480000000,
       "tag": "0001_brands_partial_unique_name",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1736510000000,
+      "tag": "0002_fix_suppliers_contact_name",
+      "breakpoints": true
     }
   ]
 }
