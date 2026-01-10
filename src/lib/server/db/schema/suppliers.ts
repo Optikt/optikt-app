@@ -5,7 +5,9 @@ export const suppliers = pgTable(
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		name: varchar().notNull(),
+		/** Type: DISTRIBUTOR, LABORATORY, BOTH */
 		type: varchar().notNull(),
+		/** RIF format: V/E/J/G-12345678-9 */
 		rif: varchar(),
 		primaryPhone: varchar('primary_phone').notNull(),
 		email: varchar(),
@@ -14,8 +16,10 @@ export const suppliers = pgTable(
 		instagram: varchar(),
 		whatsapp: varchar(),
 		website: varchar(),
-		contactPersons:
-			json('contact_persons').$type<{ name: string; phone: string; role?: string }[]>(),
+		/** Single contact person (expandable to multiple later) */
+		contactName: varchar('contact_name'),
+		contactPhone: varchar('contact_phone'),
+		contactRole: varchar('contact_role'),
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
