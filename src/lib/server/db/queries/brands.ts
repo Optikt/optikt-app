@@ -1,6 +1,6 @@
-import { eq, isNull, and, ilike } from 'drizzle-orm';
+import { eq, isNull, and, ilike, count } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { brands, type Brand, type NewBrand } from '$lib/server/db/schema';
+import { brands, products, type Brand, type NewBrand } from '$lib/server/db/schema';
 
 /**
  * Get all brands (excluding soft-deleted)
@@ -72,4 +72,15 @@ export async function deleteBrand(id: string): Promise<boolean> {
 		.set({ deletedAt: new Date(), updatedAt: new Date() })
 		.where(eq(brands.id, id));
 	return result.count > 0;
+}
+
+/**
+ * Count products associated with a brand
+ */
+export async function countProductsByBrand(brandId: string): Promise<number> {
+	const [result] = await db
+		.select({ count: count() })
+		.from(products)
+		.where(and(eq(products.brandId, brandId), isNull(products.deletedAt)));
+	return result?.count ?? 0;
 }
