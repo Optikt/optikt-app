@@ -4,7 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import { createUserForm, updateUserForm } from '$lib/remote/users.remote';
-	import { FormInput } from '$lib/components/ui';
+	import { FormInput, PasswordField } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import type { UserListItem, CreateUserResult } from '$lib/types/users';
 
@@ -162,10 +162,9 @@
 			</div>
 
 			<div>
-				<FormInput
+				<PasswordField
 					name="password"
 					label="Nueva Contraseña (dejar vacío para mantener)"
-					type="password"
 					autocomplete="new-password"
 					bind:value={formData.password}
 					issues={currentUpdateForm.fields.password.issues()}
@@ -253,10 +252,9 @@
 			</div>
 
 			<div>
-				<FormInput
+				<PasswordField
 					name="password"
 					label="Contraseña"
-					type="password"
 					autocomplete="new-password"
 					bind:value={formData.password}
 					issues={currentCreateForm.fields.password.issues()}
