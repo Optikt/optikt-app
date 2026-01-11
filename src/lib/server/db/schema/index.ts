@@ -6,6 +6,7 @@ export * from './users';
 export * from './brands';
 export * from './suppliers';
 export * from './customers';
+export * from './settings';
 
 // Dependent tables
 export * from './sessions';
