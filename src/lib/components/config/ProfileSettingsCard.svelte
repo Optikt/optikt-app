@@ -1,34 +1,27 @@
 <script lang="ts">
-	import { Button, Label, Input, Helper, Spinner } from 'flowbite-svelte';
+	import { Button, Spinner } from 'flowbite-svelte';
 	import { User, Lock, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateProfileForm } from '$lib/remote/profile.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { FormInput } from '$lib/components/ui';
 	import ChangePasswordModal from './ChangePasswordModal.svelte';
-	import type { UserRole } from '$lib/shared/enums';
-
-	interface UserInfo {
-		id: string;
-		email: string;
-		username: string;
-		fullName: string;
-		role: UserRole;
-		isActive: boolean;
-		isSuperuser: boolean;
-	}
+	import { untrack } from 'svelte';
+	import type { UserListItem } from '$lib/types';
 
 	interface Props {
-		user: UserInfo;
+		user: Omit<UserListItem, 'createdAt'>;
 		onUpdate?: () => void;
 	}
 
 	let { user, onUpdate }: Props = $props();
 
-	import { untrack } from 'svelte';
+	// Destructure with untrack since user is loaded once and won't change reactively
+	const { fullName: initialFullName, email: initialEmail, username } = untrack(() => user);
 
-	// Form state - use untrack because user is loaded once and won't change reactively
-	let fullName = $state(untrack(() => user.fullName));
-	let email = $state(untrack(() => user.email));
+	// Form state
+	let fullName = $state(initialFullName);
+	let email = $state(initialEmail);
 	let loading = $state(false);
 	let showPasswordModal = $state(false);
 
@@ -74,49 +67,36 @@
 		class="space-y-4"
 	>
 		<div class="grid gap-4 sm:grid-cols-2">
-			<!-- Name -->
-			<div>
-				<Label for="fullName" class="mb-2">Nombre Completo</Label>
-				<Input
-					id="fullName"
-					name="fullName"
-					bind:value={fullName}
-					placeholder="Tu nombre"
-					color={currentForm.fields.fullName?.issues()?.length ? 'red' : undefined}
-				/>
-				{#if currentForm.fields.fullName?.issues()?.length}
-					<Helper color="red" class="mt-1">
-						{currentForm.fields.fullName?.issues()?.[0]?.message}
-					</Helper>
-				{/if}
-			</div>
+			<FormInput
+				label="Nombre Completo"
+				name="fullName"
+				bind:value={fullName}
+				placeholder="Tu nombre"
+				issues={currentForm.fields.fullName?.issues()}
+			/>
 
-			<!-- Email -->
+			<FormInput
+				label="Email"
+				type="email"
+				name="email"
+				bind:value={email}
+				placeholder="tu@email.com"
+				issues={currentForm.fields.email?.issues()}
+			/>
 			<div>
-				<Label for="email" class="mb-2">Email</Label>
-				<Input
-					type="email"
-					id="email"
-					name="email"
-					bind:value={email}
-					placeholder="tu@email.com"
-					color={currentForm.fields.email?.issues()?.length ? 'red' : undefined}
+				<FormInput
+					title="El nombre de usuario no se puede cambiar"
+					label="Usuario"
+					name="username"
+					value={username}
+					disabled
+					class="bg-slate-50"
 				/>
-				{#if currentForm.fields.email?.issues()?.length}
-					<Helper color="red" class="mt-1"
-						>{currentForm.fields.email?.issues()?.[0]?.message}</Helper
-					>
-				{/if}
+				<p class="mt-2 text-xs text-slate-400">El nombre de usuario no se puede cambiar</p>
 			</div>
 		</div>
 
 		<!-- Username (read-only) -->
-		<div>
-			<Label for="username" class="mb-2">Usuario</Label>
-			<Input id="username" value={user.username} disabled class="bg-slate-50" />
-			<p class="mt-1 text-xs text-slate-400">El nombre de usuario no se puede cambiar</p>
-		</div>
-
 		<div class="flex items-center justify-between pt-4">
 			<Button color="light" onclick={() => (showPasswordModal = true)}>
 				<Lock class="mr-2 h-4 w-4" />
