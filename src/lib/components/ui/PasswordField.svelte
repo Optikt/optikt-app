@@ -1,66 +1,80 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
-	import type { HTMLInputAttributes } from 'svelte/elements';
+	import type { RemoteFormIssue } from '@sveltejs/kit';
+	import { Input, Helper, Label } from 'flowbite-svelte';
 	import { Eye, EyeOff } from '@lucide/svelte';
 
-	interface Props extends Omit<HTMLInputAttributes, 'class' | 'type'> {
+	interface Props {
+		value: string;
+		error?: string | null;
+		issues?: RemoteFormIssue[]; // From form fields.X.issues()
 		label?: string;
-		error?: string | string[];
+		id?: string;
+		name?: string;
+		placeholder?: string;
+		disabled?: boolean;
+		autocomplete?: 'off' | 'on' | 'new-password' | 'current-password';
+		size?: 'sm' | 'md' | 'lg';
 		class?: string;
-		value?: string;
+		required?: boolean;
 	}
 
 	let {
-		label,
-		error,
-		class: className = '',
-		id,
 		value = $bindable(''),
-		...restProps
+		error = null,
+		issues,
+		label,
+		id,
+		name,
+		placeholder = '••••••••',
+		disabled = false,
+		autocomplete,
+		size = 'md',
+		class: className,
+		required = false
 	}: Props = $props();
 
-	// Using untrack - inputId is stable and shouldn't react to id prop changes
-	const inputId = untrack(() => id ?? `password-${Math.random().toString(36).slice(2)}`);
-	const errorMessage = $derived(Array.isArray(error) ? error[0] : error);
-	const hasError = $derived(!!errorMessage);
+	// Use name as fallback for id (for the label's "for" attribute)
+	const inputId = $derived(id ?? name);
+
+	// Combine error string and issues array
+	const displayError = $derived(error || (issues && issues.length > 0 ? issues[0].message : null));
+	const hasError = $derived(!!displayError);
 
 	let showPassword = $state(false);
 </script>
 
-<div class="flex flex-col gap-2 {className}">
+<div class={className}>
 	{#if label}
-		<label for={inputId} class="form-label">
-			{label}
-		</label>
+		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
 	{/if}
-
 	<div class="relative">
-		<input
-			id={inputId}
+		<Input
 			type={showPassword ? 'text' : 'password'}
-			class="input-field pr-12 {hasError ? 'input-error' : ''}"
-			aria-invalid={hasError}
-			aria-describedby={hasError ? `${inputId}-error` : undefined}
+			id={inputId}
+			{name}
+			{placeholder}
+			{disabled}
+			{autocomplete}
+			{size}
+			class="pr-10 placeholder:text-slate-400"
 			bind:value
-			{...restProps}
+			color={hasError ? 'red' : undefined}
+			{required}
 		/>
 		<button
 			type="button"
-			class="absolute top-1/2 right-3 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-slate-400 transition-colors hover:text-brand-blue"
 			onclick={() => (showPassword = !showPassword)}
+			class="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0 text-slate-400 transition-colors hover:text-slate-600"
 			aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
 		>
 			{#if showPassword}
-				<EyeOff size={20} />
+				<EyeOff size={18} />
 			{:else}
-				<Eye size={20} />
+				<Eye size={18} />
 			{/if}
 		</button>
 	</div>
-
-	{#if hasError}
-		<p id="{inputId}-error" class="m-0 text-[0.8125rem] text-red-500">
-			{errorMessage}
-		</p>
+	{#if displayError}
+		<Helper color="red">{displayError}</Helper>
 	{/if}
 </div>
