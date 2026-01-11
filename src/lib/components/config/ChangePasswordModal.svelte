@@ -21,6 +21,10 @@
 			untrack(() => {
 				formInstanceId = crypto.randomUUID();
 			});
+			// Blur any focused element to prevent browser password dropdown
+			setTimeout(() => {
+				(document.activeElement as HTMLElement)?.blur();
+			}, 50);
 		}
 	});
 
