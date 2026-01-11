@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { Modal, Button, Label, Input, Helper, Spinner } from 'flowbite-svelte';
-	import { Eye, EyeOff, Lock } from '@lucide/svelte';
+	import { Modal, Button, Spinner } from 'flowbite-svelte';
+	import { Lock } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { changePasswordForm } from '$lib/remote/profile.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { PasswordField } from '$lib/components/ui';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -12,11 +14,13 @@
 
 	let { open = $bindable(), onClose }: Props = $props();
 
-	// Form state
+	// Form reset pattern for modals
 	let formInstanceId = $state(crypto.randomUUID());
 	$effect(() => {
 		if (open) {
-			formInstanceId = crypto.randomUUID();
+			untrack(() => {
+				formInstanceId = crypto.randomUUID();
+			});
 		}
 	});
 
@@ -25,16 +29,12 @@
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let confirmPassword = $state('');
-	let showCurrentPassword = $state(false);
-	let showNewPassword = $state(false);
 	let loading = $state(false);
 
 	function resetForm() {
 		currentPassword = '';
 		newPassword = '';
 		confirmPassword = '';
-		showCurrentPassword = false;
-		showNewPassword = false;
 	}
 
 	function handleClose() {
@@ -64,85 +64,29 @@
 		})}
 		class="space-y-4"
 	>
-		<!-- Current Password -->
-		<div>
-			<Label for="currentPassword" class="mb-2">Contraseña Actual</Label>
-			<div class="relative">
-				<Input
-					type={showCurrentPassword ? 'text' : 'password'}
-					id="currentPassword"
-					name="currentPassword"
-					bind:value={currentPassword}
-					placeholder="••••••••"
-					color={currentForm.fields.currentPassword?.issues()?.length ? 'red' : undefined}
-				/>
-				<button
-					type="button"
-					onclick={() => (showCurrentPassword = !showCurrentPassword)}
-					class="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-				>
-					{#if showCurrentPassword}
-						<EyeOff class="h-4 w-4" />
-					{:else}
-						<Eye class="h-4 w-4" />
-					{/if}
-				</button>
-			</div>
-			{#if currentForm.fields.currentPassword?.issues()?.length}
-				<Helper color="red" class="mt-1">
-					{currentForm.fields.currentPassword?.issues()?.[0]?.message}
-				</Helper>
-			{/if}
-		</div>
+		<PasswordField
+			label="Contraseña Actual"
+			name="currentPassword"
+			bind:value={currentPassword}
+			placeholder="••••••••"
+			error={currentForm.fields.currentPassword?.issues()?.map((i) => i.message)}
+		/>
 
-		<!-- New Password -->
-		<div>
-			<Label for="newPassword" class="mb-2">Nueva Contraseña</Label>
-			<div class="relative">
-				<Input
-					type={showNewPassword ? 'text' : 'password'}
-					id="newPassword"
-					name="newPassword"
-					bind:value={newPassword}
-					placeholder="••••••••"
-					color={currentForm.fields.newPassword?.issues()?.length ? 'red' : undefined}
-				/>
-				<button
-					type="button"
-					onclick={() => (showNewPassword = !showNewPassword)}
-					class="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-				>
-					{#if showNewPassword}
-						<EyeOff class="h-4 w-4" />
-					{:else}
-						<Eye class="h-4 w-4" />
-					{/if}
-				</button>
-			</div>
-			{#if currentForm.fields.newPassword?.issues()?.length}
-				<Helper color="red" class="mt-1">
-					{currentForm.fields.newPassword?.issues()?.[0]?.message}
-				</Helper>
-			{/if}
-		</div>
+		<PasswordField
+			label="Nueva Contraseña"
+			name="newPassword"
+			bind:value={newPassword}
+			placeholder="••••••••"
+			error={currentForm.fields.newPassword?.issues()?.map((i) => i.message)}
+		/>
 
-		<!-- Confirm Password -->
-		<div>
-			<Label for="confirmPassword" class="mb-2">Confirmar Contraseña</Label>
-			<Input
-				type="password"
-				id="confirmPassword"
-				name="confirmPassword"
-				bind:value={confirmPassword}
-				placeholder="••••••••"
-				color={currentForm.fields.confirmPassword?.issues()?.length ? 'red' : undefined}
-			/>
-			{#if currentForm.fields.confirmPassword?.issues()?.length}
-				<Helper color="red" class="mt-1">
-					{currentForm.fields.confirmPassword?.issues()?.[0]?.message}
-				</Helper>
-			{/if}
-		</div>
+		<PasswordField
+			label="Confirmar Contraseña"
+			name="confirmPassword"
+			bind:value={confirmPassword}
+			placeholder="••••••••"
+			error={currentForm.fields.confirmPassword?.issues()?.map((i) => i.message)}
+		/>
 
 		<div class="flex justify-end gap-3 pt-4">
 			<Button color="alternative" onclick={handleClose}>Cancelar</Button>
