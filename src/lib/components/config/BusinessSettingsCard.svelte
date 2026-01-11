@@ -1,28 +1,27 @@
 <script lang="ts">
-	import { Button, Label, Input, Helper, Spinner, Textarea } from 'flowbite-svelte';
+	import { Button, Spinner } from 'flowbite-svelte';
 	import { Building2, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSettingsForm } from '$lib/remote/settings.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { RifInput } from '$lib/components/ui';
+	import { FormInput, FormTextarea, RifInput } from '$lib/components/ui';
 	import type { Settings } from '$lib/server/db/schema';
+	import { untrack } from 'svelte';
 
 	interface Props {
-		settings: Settings | null;
+		settings: Settings;
 		onUpdate?: () => void;
 	}
 
 	let { settings, onUpdate }: Props = $props();
 
-	import { untrack } from 'svelte';
-
 	// Form state - use untrack because settings is loaded once and won't change reactively
-	let businessName = $state(untrack(() => settings?.businessName ?? ''));
-	let businessRif = $state(untrack(() => settings?.businessRif ?? ''));
-	let businessPhone = $state(untrack(() => settings?.businessPhone ?? ''));
-	let businessEmail = $state(untrack(() => settings?.businessEmail ?? ''));
-	let businessAddress = $state(untrack(() => settings?.businessAddress ?? ''));
-	let businessWebsite = $state(untrack(() => settings?.businessWebsite ?? ''));
+	let businessName = $state(untrack(() => settings.businessName ?? ''));
+	let businessRif = $state(untrack(() => settings.businessRif ?? ''));
+	let businessPhone = $state(untrack(() => settings.businessPhone ?? ''));
+	let businessEmail = $state(untrack(() => settings.businessEmail ?? ''));
+	let businessAddress = $state(untrack(() => settings.businessAddress ?? ''));
+	let businessWebsite = $state(untrack(() => settings.businessWebsite ?? ''));
 	let loading = $state(false);
 
 	// Form instance
@@ -30,12 +29,12 @@
 	const currentForm = $derived(updateSettingsForm.for(formInstanceId));
 
 	function resetForm() {
-		businessName = settings?.businessName ?? '';
-		businessRif = settings?.businessRif ?? '';
-		businessPhone = settings?.businessPhone ?? '';
-		businessEmail = settings?.businessEmail ?? '';
-		businessAddress = settings?.businessAddress ?? '';
-		businessWebsite = settings?.businessWebsite ?? '';
+		businessName = settings.businessName ?? '';
+		businessRif = settings.businessRif ?? '';
+		businessPhone = settings.businessPhone ?? '';
+		businessEmail = settings.businessEmail ?? '';
+		businessAddress = settings.businessAddress ?? '';
+		businessWebsite = settings.businessWebsite ?? '';
 		formInstanceId = crypto.randomUUID();
 	}
 </script>
@@ -71,24 +70,14 @@
 		class="space-y-4"
 	>
 		<div class="grid gap-4 sm:grid-cols-2">
-			<!-- Business Name -->
-			<div>
-				<Label for="businessName" class="mb-2">Nombre del Negocio</Label>
-				<Input
-					id="businessName"
-					name="businessName"
-					bind:value={businessName}
-					placeholder="Óptica Central"
-					color={currentForm.fields.businessName?.issues()?.length ? 'red' : undefined}
-				/>
-				{#if currentForm.fields.businessName?.issues()?.length}
-					<Helper color="red" class="mt-1">
-						{currentForm.fields.businessName?.issues()?.[0]?.message}
-					</Helper>
-				{/if}
-			</div>
+			<FormInput
+				label="Nombre del Negocio"
+				name="businessName"
+				bind:value={businessName}
+				placeholder="Óptica Central"
+				issues={currentForm.fields.businessName?.issues()}
+			/>
 
-			<!-- Business RIF -->
 			<RifInput
 				label="RIF del Negocio"
 				name="businessRif"
@@ -98,60 +87,39 @@
 		</div>
 
 		<div class="grid gap-4 sm:grid-cols-2">
-			<!-- Phone -->
-			<div>
-				<Label for="businessPhone" class="mb-2">Teléfono</Label>
-				<Input
-					type="tel"
-					id="businessPhone"
-					name="businessPhone"
-					bind:value={businessPhone}
-					placeholder="+58 412-1234567"
-				/>
-			</div>
+			<FormInput
+				label="Teléfono"
+				type="tel"
+				name="businessPhone"
+				bind:value={businessPhone}
+				placeholder="+58 412-1234567"
+			/>
 
-			<!-- Email -->
-			<div>
-				<Label for="businessEmail" class="mb-2">Email</Label>
-				<Input
-					type="email"
-					id="businessEmail"
-					name="businessEmail"
-					bind:value={businessEmail}
-					placeholder="contacto@optica.com"
-					color={currentForm.fields.businessEmail?.issues()?.length ? 'red' : undefined}
-				/>
-				{#if currentForm.fields.businessEmail?.issues()?.length}
-					<Helper color="red" class="mt-1">
-						{currentForm.fields.businessEmail?.issues()?.[0]?.message}
-					</Helper>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Website -->
-		<div>
-			<Label for="businessWebsite" class="mb-2">Sitio Web</Label>
-			<Input
-				type="url"
-				id="businessWebsite"
-				name="businessWebsite"
-				bind:value={businessWebsite}
-				placeholder="https://www.optica.com"
+			<FormInput
+				label="Email"
+				type="email"
+				name="businessEmail"
+				bind:value={businessEmail}
+				placeholder="contacto@optica.com"
+				issues={currentForm.fields.businessEmail?.issues()}
 			/>
 		</div>
 
-		<!-- Address -->
-		<div>
-			<Label for="businessAddress" class="mb-2">Dirección</Label>
-			<Textarea
-				id="businessAddress"
-				name="businessAddress"
-				bind:value={businessAddress}
-				placeholder="Av. Principal, Centro Comercial..."
-				rows={2}
-			/>
-		</div>
+		<FormInput
+			label="Sitio Web"
+			type="url"
+			name="businessWebsite"
+			bind:value={businessWebsite}
+			placeholder="https://www.optica.com"
+		/>
+
+		<FormTextarea
+			label="Dirección"
+			name="businessAddress"
+			bind:value={businessAddress}
+			placeholder="Av. Principal, Centro Comercial..."
+			rows={2}
+		/>
 
 		<div class="flex justify-end gap-2 pt-4">
 			<Button color="alternative" onclick={resetForm}>Restablecer</Button>
