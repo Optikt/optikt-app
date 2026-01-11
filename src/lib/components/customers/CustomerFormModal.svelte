@@ -1,0 +1,305 @@
+<script lang="ts">
+	import { Modal, Button, Spinner } from 'flowbite-svelte';
+	import { toast } from 'svelte-sonner';
+	import { untrack } from 'svelte';
+	import { createCustomerForm, updateCustomerForm } from '$lib/remote/customers.remote';
+	import type { CreateCustomerResult } from '$lib/remote/customers.remote';
+	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import { scrollToFirstError, getErrorMessage } from '$lib/utils';
+	import type { Customer } from '$lib/server/db/schema';
+
+	interface Props {
+		open: boolean;
+		customer?: Customer | null;
+		onSuccess?: () => void;
+		onReactivate?: (candidate: Customer, formData: FormData) => void;
+		onClose: () => void;
+	}
+
+	let { open = $bindable(), customer = null, onSuccess, onReactivate, onClose }: Props = $props();
+
+	// Form state
+	let isSubmitting = $state(false);
+	const isEditMode = $derived(!!customer);
+	const title = $derived(isEditMode ? 'Editar Cliente' : 'Agregar Cliente');
+	const submitText = $derived(isEditMode ? 'Guardar Cambios' : 'Crear Cliente');
+
+	// Form data
+	let formData = $state({
+		firstName: '',
+		lastName: '',
+		idNumber: '',
+		birthDate: '',
+		primaryPhone: '',
+		email: '',
+		address: '',
+		notes: ''
+	});
+
+	// Reset form when modal opens or customer changes
+	let formInstanceId = $state(crypto.randomUUID());
+	$effect(() => {
+		if (open) {
+			untrack(() => {
+				formInstanceId = crypto.randomUUID();
+				if (customer) {
+					formData = {
+						firstName: customer.firstName ?? '',
+						lastName: customer.lastName ?? '',
+						idNumber: customer.idNumber ?? '',
+						birthDate: customer.birthDate
+							? new Date(customer.birthDate).toISOString().split('T')[0]
+							: '',
+						primaryPhone: customer.primaryPhone ?? '',
+						email: customer.email ?? '',
+						address: customer.address ?? '',
+						notes: customer.notes ?? ''
+					};
+				} else {
+					formData = {
+						firstName: '',
+						lastName: '',
+						idNumber: '',
+						birthDate: '',
+						primaryPhone: '',
+						email: '',
+						address: '',
+						notes: ''
+					};
+				}
+			});
+		}
+	});
+
+	// Form instances
+	const currentCreateForm = $derived(createCustomerForm.for(formInstanceId));
+	const currentUpdateForm = $derived(
+		updateCustomerForm.for(`${customer?.id ?? 'new'}-${formInstanceId}`)
+	);
+
+	// Handle create result
+	function handleCreateResult(formEl: HTMLFormElement) {
+		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
+		if (allIssues.length > 0) {
+			scrollToFirstError();
+			return;
+		}
+
+		const result = currentCreateForm.result as CreateCustomerResult | undefined;
+
+		if (result && result.success === false && result.reactivationCandidate) {
+			// Reactivation candidate found - pass to parent
+			const fd = new FormData(formEl);
+			onReactivate?.(result.reactivationCandidate, fd);
+		} else {
+			toast.success('Cliente creado exitosamente');
+			formEl.reset();
+			open = false;
+			onSuccess?.();
+		}
+	}
+
+	// Handle update result
+	function handleUpdateResult(formEl: HTMLFormElement) {
+		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
+		if (allIssues.length > 0) {
+			scrollToFirstError();
+			return;
+		}
+
+		toast.success('Cliente actualizado exitosamente');
+		formEl.reset();
+		open = false;
+		onSuccess?.();
+	}
+</script>
+
+<Modal bind:open size="lg" {title} outsideclose onclose={onClose}>
+	{#if isEditMode && customer}
+		<!-- UPDATE FORM -->
+		<form
+			{...currentUpdateForm.enhance(async ({ form: formEl, submit }) => {
+				isSubmitting = true;
+				try {
+					await submit();
+					handleUpdateResult(formEl);
+				} catch (e) {
+					console.error(e);
+					toast.error(getErrorMessage(e, 'Error actualizando cliente'));
+				} finally {
+					isSubmitting = false;
+				}
+			})}
+			class="space-y-5"
+		>
+			<input type="hidden" name="id" value={customer.id} />
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormInput
+					name="firstName"
+					label="Nombre"
+					bind:value={formData.firstName}
+					issues={currentUpdateForm.fields.firstName?.issues()}
+				/>
+				<FormInput
+					name="lastName"
+					label="Apellido"
+					bind:value={formData.lastName}
+					issues={currentUpdateForm.fields.lastName?.issues()}
+				/>
+			</div>
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormInput
+					name="idNumber"
+					label="Cédula"
+					placeholder="V-12345678"
+					bind:value={formData.idNumber}
+					issues={currentUpdateForm.fields.idNumber?.issues()}
+				/>
+				<FormInput
+					name="birthDate"
+					label="Fecha de Nacimiento"
+					type="text"
+					placeholder="YYYY-MM-DD"
+					bind:value={formData.birthDate}
+					issues={currentUpdateForm.fields.birthDate?.issues()}
+				/>
+			</div>
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormInput
+					name="primaryPhone"
+					label="Teléfono"
+					type="tel"
+					placeholder="+58 412-1234567"
+					bind:value={formData.primaryPhone}
+					issues={currentUpdateForm.fields.primaryPhone?.issues()}
+				/>
+				<FormInput
+					name="email"
+					label="Email"
+					type="email"
+					placeholder="cliente@email.com"
+					bind:value={formData.email}
+					issues={currentUpdateForm.fields.email?.issues()}
+				/>
+			</div>
+
+			<FormInput
+				name="address"
+				label="Dirección"
+				placeholder="Av. Principal, Centro..."
+				bind:value={formData.address}
+			/>
+
+			<FormTextarea
+				name="notes"
+				label="Notas"
+				placeholder="Observaciones sobre el cliente..."
+				rows={2}
+				bind:value={formData.notes}
+			/>
+
+			<div class="flex justify-end gap-3 border-t pt-4">
+				<Button color="light" onclick={onClose}>Cancelar</Button>
+				<Button type="submit" color="blue" disabled={isSubmitting}>
+					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
+					{submitText}
+				</Button>
+			</div>
+		</form>
+	{:else}
+		<!-- CREATE FORM -->
+		<form
+			{...currentCreateForm.enhance(async ({ form: formEl, submit }) => {
+				isSubmitting = true;
+				try {
+					await submit();
+					handleCreateResult(formEl);
+				} catch (e) {
+					console.error(e);
+					toast.error(getErrorMessage(e, 'Error creando cliente'));
+				} finally {
+					isSubmitting = false;
+				}
+			})}
+			class="space-y-5"
+		>
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormInput
+					name="firstName"
+					label="Nombre"
+					bind:value={formData.firstName}
+					issues={currentCreateForm.fields.firstName?.issues()}
+				/>
+				<FormInput
+					name="lastName"
+					label="Apellido"
+					bind:value={formData.lastName}
+					issues={currentCreateForm.fields.lastName?.issues()}
+				/>
+			</div>
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormInput
+					name="idNumber"
+					label="Cédula"
+					placeholder="V-12345678"
+					bind:value={formData.idNumber}
+					issues={currentCreateForm.fields.idNumber?.issues()}
+				/>
+				<FormInput
+					name="birthDate"
+					label="Fecha de Nacimiento"
+					type="text"
+					placeholder="YYYY-MM-DD"
+					bind:value={formData.birthDate}
+					issues={currentCreateForm.fields.birthDate?.issues()}
+				/>
+			</div>
+
+			<div class="grid gap-4 sm:grid-cols-2">
+				<FormInput
+					name="primaryPhone"
+					label="Teléfono"
+					type="tel"
+					placeholder="+58 412-1234567"
+					bind:value={formData.primaryPhone}
+					issues={currentCreateForm.fields.primaryPhone?.issues()}
+				/>
+				<FormInput
+					name="email"
+					label="Email"
+					type="email"
+					placeholder="cliente@email.com"
+					bind:value={formData.email}
+					issues={currentCreateForm.fields.email?.issues()}
+				/>
+			</div>
+
+			<FormInput
+				name="address"
+				label="Dirección"
+				placeholder="Av. Principal, Centro..."
+				bind:value={formData.address}
+			/>
+
+			<FormTextarea
+				name="notes"
+				label="Notas"
+				placeholder="Observaciones sobre el cliente..."
+				rows={2}
+				bind:value={formData.notes}
+			/>
+
+			<div class="flex justify-end gap-3 border-t pt-4">
+				<Button color="light" onclick={onClose}>Cancelar</Button>
+				<Button type="submit" color="blue" disabled={isSubmitting}>
+					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
+					{submitText}
+				</Button>
+			</div>
+		</form>
+	{/if}
+</Modal>
