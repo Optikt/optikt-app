@@ -17,6 +17,7 @@
 		autocomplete?: 'off' | 'on' | 'new-password' | 'current-password' | 'email' | 'username';
 		size?: 'sm' | 'md' | 'lg';
 		class?: string;
+		title?: string;
 	}
 
 	let {
@@ -33,7 +34,8 @@
 		autocomplete,
 		size = 'md',
 		class: className,
-		required = false
+		required = false,
+		title
 	}: Props = $props();
 
 	// Use name as fallback for id (for the label's "for" attribute)
@@ -62,6 +64,7 @@
 		bind:value
 		color={hasError ? 'red' : undefined}
 		{required}
+		{title}
 	/>
 	{#if displayError}
 		<Helper color="red">{displayError}</Helper>
