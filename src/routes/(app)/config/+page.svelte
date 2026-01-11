@@ -1,11 +1,10 @@
 <script lang="ts">
-	import type { PageData } from './$types';
 	import { invalidateAll } from '$app/navigation';
 	import { isAdminRole } from '$lib/shared/enums';
 	import { ProfileSettingsCard, BusinessSettingsCard } from '$lib/components/config';
 	import { untrack } from 'svelte';
 
-	let { data }: { data: PageData } = $props();
+	let { data } = $props();
 
 	// Get user from parent layout
 	const user = $derived(data.user);
@@ -42,7 +41,7 @@
 		{/if}
 
 		<!-- Business Settings (admin only) -->
-		{#if isAdmin}
+		{#if isAdmin && settings}
 			<BusinessSettingsCard {settings} onUpdate={handleUpdate} />
 		{/if}
 	</div>
