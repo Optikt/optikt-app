@@ -1,4 +1,4 @@
-import { eq, isNull, and, ilike, desc } from 'drizzle-orm';
+import { eq, isNull, and, ilike, desc, not } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	customers,
@@ -110,6 +110,32 @@ export async function deleteCustomer(id: string): Promise<boolean> {
 		.set({ deletedAt: new Date(), updatedAt: new Date() })
 		.where(eq(customers.id, id));
 	return result.count > 0;
+}
+
+/**
+ * Find a soft-deleted customer by ID number (for reactivation)
+ */
+export async function findDeletedCustomerByIdNumber(idNumber: string): Promise<Customer | null> {
+	const [customer] = await db
+		.select()
+		.from(customers)
+		.where(and(eq(customers.idNumber, idNumber), not(isNull(customers.deletedAt))));
+	return customer ?? null;
+}
+
+/**
+ * Restore a soft-deleted customer
+ */
+export async function restoreCustomer(
+	id: string,
+	data?: Partial<Omit<Customer, 'id' | 'createdAt' | 'deletedAt'>>
+): Promise<Customer | null> {
+	const [customer] = await db
+		.update(customers)
+		.set({ ...data, deletedAt: null, updatedAt: new Date() })
+		.where(eq(customers.id, id))
+		.returning();
+	return customer ?? null;
 }
 
 // ============================================================================
