@@ -83,6 +83,12 @@
 @source '../../node_modules/flowbite-svelte-icons/dist';
 
 @layer base {
+	/* Prevent overscroll bounce (elastic effect at scroll edges) */
+	html,
+	body {
+		overscroll-behavior: none;
+	}
+
 	/* Ensure interactive elements have pointer cursor */
 	button,
 	[role='button'],
