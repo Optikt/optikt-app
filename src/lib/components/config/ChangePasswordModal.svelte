@@ -68,6 +68,7 @@
 			label="Contraseña Actual"
 			name="currentPassword"
 			bind:value={currentPassword}
+			autocomplete="new-password"
 			issues={currentForm.fields.currentPassword?.issues()}
 		/>
 
@@ -75,6 +76,7 @@
 			label="Nueva Contraseña"
 			name="newPassword"
 			bind:value={newPassword}
+			autocomplete="new-password"
 			issues={currentForm.fields.newPassword?.issues()}
 		/>
 
@@ -82,6 +84,7 @@
 			label="Confirmar Contraseña"
 			name="confirmPassword"
 			bind:value={confirmPassword}
+			autocomplete="new-password"
 			issues={currentForm.fields.confirmPassword?.issues()}
 		/>
 
