@@ -68,24 +68,21 @@
 			label="Contraseña Actual"
 			name="currentPassword"
 			bind:value={currentPassword}
-			placeholder="••••••••"
-			error={currentForm.fields.currentPassword?.issues()?.map((i) => i.message)}
+			issues={currentForm.fields.currentPassword?.issues()}
 		/>
 
 		<PasswordField
 			label="Nueva Contraseña"
 			name="newPassword"
 			bind:value={newPassword}
-			placeholder="••••••••"
-			error={currentForm.fields.newPassword?.issues()?.map((i) => i.message)}
+			issues={currentForm.fields.newPassword?.issues()}
 		/>
 
 		<PasswordField
 			label="Confirmar Contraseña"
 			name="confirmPassword"
 			bind:value={confirmPassword}
-			placeholder="••••••••"
-			error={currentForm.fields.confirmPassword?.issues()?.map((i) => i.message)}
+			issues={currentForm.fields.confirmPassword?.issues()}
 		/>
 
 		<div class="flex justify-end gap-3 pt-4">
