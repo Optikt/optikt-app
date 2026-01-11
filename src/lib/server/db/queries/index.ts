@@ -9,3 +9,4 @@ export * from './products';
 export * from './customers';
 export * from './lenses';
 export * from './sales';
+export * from './settings';
