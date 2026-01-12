@@ -22,6 +22,20 @@
 			day: 'numeric'
 		}).format(new Date(date));
 	}
+
+	function calculateAge(birthDate: Date | null): number | null {
+		if (!birthDate) return null;
+		const today = new Date();
+		const birth = new Date(birthDate);
+		let age = today.getFullYear() - birth.getFullYear();
+		const monthDiff = today.getMonth() - birth.getMonth();
+		if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+			age--;
+		}
+		return age;
+	}
+
+	const age = $derived(calculateAge(customer.birthDate));
 </script>
 
 <Modal bind:open size="md" title="Detalles del Cliente" outsideclose>
@@ -79,7 +93,12 @@
 				</div>
 				<div>
 					<p class="text-xs font-medium text-slate-500">Fecha de Nacimiento</p>
-					<p class="text-sm text-slate-900">{formatDate(customer.birthDate)}</p>
+					<p class="text-sm text-slate-900">
+						{formatDate(customer.birthDate)}
+						{#if age !== null}
+							<span class="ml-1 font-medium text-green-600">({age} años)</span>
+						{/if}
+					</p>
 				</div>
 			</div>
 		</div>
