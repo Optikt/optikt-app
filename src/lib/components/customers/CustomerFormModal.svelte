@@ -4,7 +4,7 @@
 	import { untrack } from 'svelte';
 	import { createCustomerForm, updateCustomerForm } from '$lib/remote/customers.remote';
 	import type { CreateCustomerResult } from '$lib/remote/customers.remote';
-	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
 	import { scrollToFirstError, getErrorMessage } from '$lib/utils';
 	import type { Customer } from '$lib/server/db/schema';
 
@@ -29,12 +29,15 @@
 		firstName: '',
 		lastName: '',
 		idNumber: '',
-		birthDate: '',
+		birthDate: undefined as Date | undefined,
 		primaryPhone: '',
 		email: '',
 		address: '',
 		notes: ''
 	});
+
+	// Max date for birth date picker (no future dates)
+	const today = new Date();
 
 	// Reset form when modal opens or customer changes
 	let formInstanceId = $state(crypto.randomUUID());
@@ -47,9 +50,7 @@
 						firstName: customer.firstName ?? '',
 						lastName: customer.lastName ?? '',
 						idNumber: customer.idNumber ?? '',
-						birthDate: customer.birthDate
-							? new Date(customer.birthDate).toISOString().split('T')[0]
-							: '',
+						birthDate: customer.birthDate ? new Date(customer.birthDate) : undefined,
 						primaryPhone: customer.primaryPhone ?? '',
 						email: customer.email ?? '',
 						address: customer.address ?? '',
@@ -60,7 +61,7 @@
 						firstName: '',
 						lastName: '',
 						idNumber: '',
-						birthDate: '',
+						birthDate: undefined,
 						primaryPhone: '',
 						email: '',
 						address: '',
@@ -138,32 +139,33 @@
 				<FormInput
 					name="firstName"
 					label="Nombre"
+					required
 					bind:value={formData.firstName}
 					issues={currentUpdateForm.fields.firstName?.issues()}
 				/>
 				<FormInput
 					name="lastName"
 					label="Apellido"
+					required
 					bind:value={formData.lastName}
 					issues={currentUpdateForm.fields.lastName?.issues()}
 				/>
 			</div>
 
 			<div class="grid gap-4 sm:grid-cols-2">
-				<FormInput
+				<IdInput
 					name="idNumber"
 					label="Cédula"
-					placeholder="V-12345678"
 					bind:value={formData.idNumber}
 					issues={currentUpdateForm.fields.idNumber?.issues()}
 				/>
-				<FormInput
+				<FormDatepicker
 					name="birthDate"
 					label="Fecha de Nacimiento"
-					type="text"
-					placeholder="YYYY-MM-DD"
+					required
 					bind:value={formData.birthDate}
-					issues={currentUpdateForm.fields.birthDate?.issues()}
+					availableTo={today}
+					error={currentUpdateForm.fields.birthDate?.issues()}
 				/>
 			</div>
 
@@ -172,6 +174,7 @@
 					name="primaryPhone"
 					label="Teléfono"
 					type="tel"
+					required
 					placeholder="+58 412-1234567"
 					bind:value={formData.primaryPhone}
 					issues={currentUpdateForm.fields.primaryPhone?.issues()}
@@ -230,32 +233,33 @@
 				<FormInput
 					name="firstName"
 					label="Nombre"
+					required
 					bind:value={formData.firstName}
 					issues={currentCreateForm.fields.firstName?.issues()}
 				/>
 				<FormInput
 					name="lastName"
 					label="Apellido"
+					required
 					bind:value={formData.lastName}
 					issues={currentCreateForm.fields.lastName?.issues()}
 				/>
 			</div>
 
 			<div class="grid gap-4 sm:grid-cols-2">
-				<FormInput
+				<IdInput
 					name="idNumber"
 					label="Cédula"
-					placeholder="V-12345678"
 					bind:value={formData.idNumber}
 					issues={currentCreateForm.fields.idNumber?.issues()}
 				/>
-				<FormInput
+				<FormDatepicker
 					name="birthDate"
 					label="Fecha de Nacimiento"
-					type="text"
-					placeholder="YYYY-MM-DD"
+					required
 					bind:value={formData.birthDate}
-					issues={currentCreateForm.fields.birthDate?.issues()}
+					availableTo={today}
+					error={currentCreateForm.fields.birthDate?.issues()}
 				/>
 			</div>
 
@@ -264,6 +268,7 @@
 					name="primaryPhone"
 					label="Teléfono"
 					type="tel"
+					required
 					placeholder="+58 412-1234567"
 					bind:value={formData.primaryPhone}
 					issues={currentCreateForm.fields.primaryPhone?.issues()}
