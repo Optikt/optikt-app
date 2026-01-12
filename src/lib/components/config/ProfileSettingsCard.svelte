@@ -72,7 +72,7 @@
 				name="fullName"
 				bind:value={fullName}
 				placeholder="Tu nombre"
-				issues={currentForm.fields.fullName?.issues()}
+				error={currentForm.fields.fullName?.issues()}
 			/>
 
 			<FormInput
@@ -81,7 +81,7 @@
 				name="email"
 				bind:value={email}
 				placeholder="tu@email.com"
-				issues={currentForm.fields.email?.issues()}
+				error={currentForm.fields.email?.issues()}
 			/>
 			<div>
 				<FormInput

@@ -107,7 +107,7 @@
 				name="name"
 				bind:value={formData.name}
 				placeholder="Ej: Ray-Ban"
-				issues={currentUpdateForm.fields.name?.issues()}
+				error={currentUpdateForm.fields.name?.issues()}
 			/>
 
 			<div class="grid grid-cols-2 gap-4">
@@ -168,7 +168,7 @@
 				name="name"
 				bind:value={formData.name}
 				placeholder="Ej: Ray-Ban"
-				issues={currentCreateForm.fields.name?.issues()}
+				error={currentCreateForm.fields.name?.issues()}
 			/>
 
 			<div class="grid grid-cols-2 gap-4">

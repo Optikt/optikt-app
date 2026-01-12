@@ -75,7 +75,7 @@
 				name="businessName"
 				bind:value={businessName}
 				placeholder="Óptica Central"
-				issues={currentForm.fields.businessName?.issues()}
+				error={currentForm.fields.businessName?.issues()}
 			/>
 
 			<RifInput
@@ -101,7 +101,7 @@
 				name="businessEmail"
 				bind:value={businessEmail}
 				placeholder="contacto@optica.com"
-				issues={currentForm.fields.businessEmail?.issues()}
+				error={currentForm.fields.businessEmail?.issues()}
 			/>
 		</div>
 

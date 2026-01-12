@@ -141,14 +141,14 @@
 					label="Nombre"
 					required
 					bind:value={formData.firstName}
-					issues={currentUpdateForm.fields.firstName?.issues()}
+					error={currentUpdateForm.fields.firstName?.issues()}
 				/>
 				<FormInput
 					name="lastName"
 					label="Apellido"
 					required
 					bind:value={formData.lastName}
-					issues={currentUpdateForm.fields.lastName?.issues()}
+					error={currentUpdateForm.fields.lastName?.issues()}
 				/>
 			</div>
 
@@ -157,7 +157,7 @@
 					name="idNumber"
 					label="Cédula"
 					bind:value={formData.idNumber}
-					issues={currentUpdateForm.fields.idNumber?.issues()}
+					error={currentUpdateForm.fields.idNumber?.issues()}
 				/>
 				<FormDatepicker
 					name="birthDate"
@@ -177,7 +177,7 @@
 					required
 					placeholder="+58 412-1234567"
 					bind:value={formData.primaryPhone}
-					issues={currentUpdateForm.fields.primaryPhone?.issues()}
+					error={currentUpdateForm.fields.primaryPhone?.issues()}
 				/>
 				<FormInput
 					name="email"
@@ -185,7 +185,7 @@
 					type="email"
 					placeholder="cliente@email.com"
 					bind:value={formData.email}
-					issues={currentUpdateForm.fields.email?.issues()}
+					error={currentUpdateForm.fields.email?.issues()}
 				/>
 			</div>
 
@@ -235,14 +235,14 @@
 					label="Nombre"
 					required
 					bind:value={formData.firstName}
-					issues={currentCreateForm.fields.firstName?.issues()}
+					error={currentCreateForm.fields.firstName?.issues()}
 				/>
 				<FormInput
 					name="lastName"
 					label="Apellido"
 					required
 					bind:value={formData.lastName}
-					issues={currentCreateForm.fields.lastName?.issues()}
+					error={currentCreateForm.fields.lastName?.issues()}
 				/>
 			</div>
 
@@ -251,7 +251,7 @@
 					name="idNumber"
 					label="Cédula"
 					bind:value={formData.idNumber}
-					issues={currentCreateForm.fields.idNumber?.issues()}
+					error={currentCreateForm.fields.idNumber?.issues()}
 				/>
 				<FormDatepicker
 					name="birthDate"
@@ -271,7 +271,7 @@
 					required
 					placeholder="+58 412-1234567"
 					bind:value={formData.primaryPhone}
-					issues={currentCreateForm.fields.primaryPhone?.issues()}
+					error={currentCreateForm.fields.primaryPhone?.issues()}
 				/>
 				<FormInput
 					name="email"
@@ -279,7 +279,7 @@
 					type="email"
 					placeholder="cliente@email.com"
 					bind:value={formData.email}
-					issues={currentCreateForm.fields.email?.issues()}
+					error={currentCreateForm.fields.email?.issues()}
 				/>
 			</div>
 

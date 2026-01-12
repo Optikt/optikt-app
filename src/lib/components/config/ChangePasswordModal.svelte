@@ -73,7 +73,7 @@
 			name="currentPassword"
 			bind:value={currentPassword}
 			autocomplete="new-password"
-			issues={currentForm.fields.currentPassword?.issues()}
+			error={currentForm.fields.currentPassword?.issues()}
 		/>
 
 		<PasswordField
@@ -81,7 +81,7 @@
 			name="newPassword"
 			bind:value={newPassword}
 			autocomplete="new-password"
-			issues={currentForm.fields.newPassword?.issues()}
+			error={currentForm.fields.newPassword?.issues()}
 		/>
 
 		<PasswordField
@@ -89,7 +89,7 @@
 			name="confirmPassword"
 			bind:value={confirmPassword}
 			autocomplete="new-password"
-			issues={currentForm.fields.confirmPassword?.issues()}
+			error={currentForm.fields.confirmPassword?.issues()}
 		/>
 
 		<div class="flex justify-end gap-3 pt-4">

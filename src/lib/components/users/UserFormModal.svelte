@@ -136,7 +136,7 @@
 						label="Nombre Completo"
 						autocomplete="off"
 						bind:value={formData.fullName}
-						issues={currentUpdateForm.fields.fullName.issues()}
+						error={currentUpdateForm.fields.fullName.issues()}
 					/>
 				</div>
 				<div>
@@ -145,7 +145,7 @@
 						label="Usuario"
 						autocomplete="new-password"
 						bind:value={formData.username}
-						issues={currentUpdateForm.fields.username.issues()}
+						error={currentUpdateForm.fields.username.issues()}
 					/>
 				</div>
 			</div>
@@ -157,7 +157,7 @@
 					type="email"
 					autocomplete="off"
 					bind:value={formData.email}
-					issues={currentUpdateForm.fields.email.issues()}
+					error={currentUpdateForm.fields.email.issues()}
 				/>
 			</div>
 
@@ -167,7 +167,7 @@
 					label="Nueva Contraseña (dejar vacío para mantener)"
 					autocomplete="new-password"
 					bind:value={formData.password}
-					issues={currentUpdateForm.fields.password.issues()}
+					error={currentUpdateForm.fields.password.issues()}
 				/>
 			</div>
 
@@ -226,7 +226,7 @@
 						label="Nombre Completo"
 						autocomplete="off"
 						bind:value={formData.fullName}
-						issues={currentCreateForm.fields.fullName.issues()}
+						error={currentCreateForm.fields.fullName.issues()}
 					/>
 				</div>
 				<div>
@@ -235,7 +235,7 @@
 						label="Usuario"
 						autocomplete="new-password"
 						bind:value={formData.username}
-						issues={currentCreateForm.fields.username.issues()}
+						error={currentCreateForm.fields.username.issues()}
 					/>
 				</div>
 			</div>
@@ -247,7 +247,7 @@
 					type="email"
 					autocomplete="off"
 					bind:value={formData.email}
-					issues={currentCreateForm.fields.email.issues()}
+					error={currentCreateForm.fields.email.issues()}
 				/>
 			</div>
 
@@ -257,7 +257,7 @@
 					label="Contraseña"
 					autocomplete="new-password"
 					bind:value={formData.password}
-					issues={currentCreateForm.fields.password.issues()}
+					error={currentCreateForm.fields.password.issues()}
 				/>
 			</div>
 

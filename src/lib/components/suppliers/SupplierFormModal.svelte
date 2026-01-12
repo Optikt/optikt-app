@@ -152,7 +152,7 @@
 					required
 					bind:value={formData.name}
 					placeholder="Ej: OptiVision"
-					issues={currentUpdateForm.fields.name?.issues()}
+					error={currentUpdateForm.fields.name?.issues()}
 				/>
 				<div>
 					<Label for="type" class="mb-2">Tipo *</Label>
@@ -178,7 +178,7 @@
 					required
 					bind:value={formData.primaryPhone}
 					placeholder="0414-1234567"
-					issues={currentUpdateForm.fields.primaryPhone?.issues()}
+					error={currentUpdateForm.fields.primaryPhone?.issues()}
 				/>
 			</div>
 
@@ -290,7 +290,7 @@
 					name="name"
 					bind:value={formData.name}
 					placeholder="Ej: OptiVision"
-					issues={currentCreateForm.fields.name?.issues()}
+					error={currentCreateForm.fields.name?.issues()}
 				/>
 				<div>
 					<Label for="type" class="mb-2">Tipo *</Label>
@@ -316,7 +316,7 @@
 					required
 					bind:value={formData.primaryPhone}
 					placeholder="0414-1234567"
-					issues={currentCreateForm.fields.primaryPhone?.issues()}
+					error={currentCreateForm.fields.primaryPhone?.issues()}
 				/>
 			</div>
 
