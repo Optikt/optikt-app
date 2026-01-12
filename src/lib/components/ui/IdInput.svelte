@@ -27,14 +27,23 @@
 
 	let idType = $state<IdType>('V');
 	let idNumber = $state('');
+	let previousValue = $state('');
 
-	// Parse initial value (e.g., "V-12345678")
+	// Parse value whenever it changes from outside
 	$effect(() => {
-		if (value && !idNumber) {
-			const match = value.match(/^([VE])-(\d+)$/);
-			if (match) {
-				idType = match[1] as IdType;
-				idNumber = match[2];
+		// Only parse if value changed from external source (not from our own updateValue)
+		if (value !== previousValue) {
+			previousValue = value;
+			if (value) {
+				const match = value.match(/^([VE])-(\d+)$/);
+				if (match) {
+					idType = match[1] as IdType;
+					idNumber = match[2];
+				}
+			} else {
+				// Reset when value is cleared
+				idType = 'V';
+				idNumber = '';
 			}
 		}
 	});
@@ -43,8 +52,10 @@
 	function updateValue() {
 		if (idNumber.length > 0) {
 			value = `${idType}-${idNumber}`;
+			previousValue = value;
 		} else {
 			value = '';
+			previousValue = '';
 		}
 	}
 
