@@ -36,6 +36,7 @@
 	let reactivateCandidate = $state<Customer | null>(null);
 	let reactivateFormData = $state<FormData | null>(null);
 	let reactivateLoading = $state(false);
+	let preserveFormData = $state(false);
 
 	// Fetch customers (for filtering/pagination)
 	async function fetchCustomers(page = 1) {
@@ -115,7 +116,8 @@
 
 	function cancelReactivate() {
 		showReactivateModal = false;
-		// Reopen form modal to let user correct
+		// Reopen form modal and preserve the data
+		preserveFormData = true;
 		showFormModal = true;
 	}
 </script>
@@ -174,6 +176,7 @@
 <CustomerFormModal
 	bind:open={showFormModal}
 	customer={selectedCustomer}
+	bind:preserveData={preserveFormData}
 	onSuccess={handleFormSuccess}
 	onReactivate={handleReactivate}
 	onClose={() => (showFormModal = false)}
