@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
-	import { Plus } from '@lucide/svelte';
+	import { Button, Modal } from 'flowbite-svelte';
+	import { Plus, TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SearchInput, TablePagination, ConfirmModal } from '$lib/components/ui';
+	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { listCustomers, reactivateCustomer } from '$lib/remote/customers.remote';
 	import { CustomersTable, CustomerFormModal } from '$lib/components/customers';
@@ -95,7 +95,7 @@
 				firstName: reactivateFormData.get('firstName') as string,
 				lastName: reactivateFormData.get('lastName') as string,
 				idNumber: (reactivateFormData.get('idNumber') as string) || undefined,
-				birthDate: (reactivateFormData.get('birthDate') as string) || undefined,
+				birthDate: reactivateFormData.get('birthDate') as string,
 				primaryPhone: reactivateFormData.get('primaryPhone') as string,
 				email: (reactivateFormData.get('email') as string) || undefined,
 				address: (reactivateFormData.get('address') as string) || undefined,
@@ -111,6 +111,12 @@
 		} finally {
 			reactivateLoading = false;
 		}
+	}
+
+	function cancelReactivate() {
+		showReactivateModal = false;
+		// Reopen form modal to let user correct
+		showFormModal = true;
 	}
 </script>
 
@@ -173,13 +179,43 @@
 	onClose={() => (showFormModal = false)}
 />
 
-<!-- Reactivate Confirmation -->
-<ConfirmModal
-	bind:open={showReactivateModal}
-	title="Reactivar Cliente"
-	message="Ya existe un cliente eliminado con esta cédula: {reactivateCandidate?.firstName} {reactivateCandidate?.lastName}. ¿Deseas reactivarlo con los nuevos datos?"
-	confirmLabel="Reactivar"
-	confirmColor="blue"
-	loading={reactivateLoading}
-	onConfirm={confirmReactivate}
-/>
+<!-- Reactivation Confirmation Modal -->
+<Modal bind:open={showReactivateModal} size="md" title="Cédula ya registrada" outsideclose={false}>
+	<div class="space-y-4">
+		<div
+			class="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-yellow-800"
+		>
+			<TriangleAlert class="h-5 w-5 shrink-0" />
+			<span class="font-medium">Conflicto de cédula detectado</span>
+		</div>
+
+		<p class="text-slate-700">
+			La cédula <strong class="font-mono">{reactivateCandidate?.idNumber}</strong> ya está registrada
+			en el sistema y pertenece a un cliente que fue eliminado anteriormente:
+		</p>
+
+		<div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+			<p class="font-medium text-amber-900">
+				{reactivateCandidate?.firstName}
+				{reactivateCandidate?.lastName}
+			</p>
+			<p class="mt-1 text-sm text-amber-700">
+				Cliente eliminado previamente con la cédula {reactivateCandidate?.idNumber}
+			</p>
+		</div>
+
+		<p class="text-slate-600">
+			¿Deseas <strong>reactivar</strong> este cliente con los datos que acabas de ingresar? El cliente
+			volverá a estar activo y sus datos se actualizarán.
+		</p>
+	</div>
+
+	<div class="mt-6 flex justify-end gap-3">
+		<Button color="light" onclick={cancelReactivate} disabled={reactivateLoading}>
+			Cancelar y corregir
+		</Button>
+		<Button color="blue" onclick={confirmReactivate} disabled={reactivateLoading}>
+			{#if reactivateLoading}Reactivando...{:else}Reactivar cliente{/if}
+		</Button>
+	</div>
+</Modal>
