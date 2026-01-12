@@ -11,12 +11,20 @@
 	interface Props {
 		open: boolean;
 		customer?: Customer | null;
+		preserveData?: boolean; // When true, don't reset form data on open
 		onSuccess?: () => void;
 		onReactivate?: (candidate: Customer, formData: FormData) => void;
 		onClose: () => void;
 	}
 
-	let { open = $bindable(), customer = null, onSuccess, onReactivate, onClose }: Props = $props();
+	let {
+		open = $bindable(),
+		customer = null,
+		preserveData = $bindable(false),
+		onSuccess,
+		onReactivate,
+		onClose
+	}: Props = $props();
 
 	// Form state
 	let isSubmitting = $state(false);
@@ -39,11 +47,17 @@
 	// Max date for birth date picker (no future dates)
 	const today = new Date();
 
-	// Reset form when modal opens or customer changes
+	// Reset form when modal opens (unless preserveData is true)
 	let formInstanceId = $state(crypto.randomUUID());
 	$effect(() => {
 		if (open) {
 			untrack(() => {
+				// If preserveData is true, skip the reset and clear the flag
+				if (preserveData) {
+					preserveData = false;
+					return;
+				}
+
 				formInstanceId = crypto.randomUUID();
 				if (customer) {
 					formData = {
