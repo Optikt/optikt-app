@@ -2,11 +2,11 @@
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Input, Helper, Label } from 'flowbite-svelte';
 	import { Eye, EyeOff } from '@lucide/svelte';
+	import { getFormErrorMessage } from '$lib/utils';
 
 	interface Props {
 		value: string;
-		error?: string | null;
-		issues?: RemoteFormIssue[]; // From form fields.X.issues()
+		error?: RemoteFormIssue[] | string | null;
 		label?: string;
 		id?: string;
 		name?: string;
@@ -21,7 +21,6 @@
 	let {
 		value = $bindable(''),
 		error = null,
-		issues,
 		label,
 		id,
 		name,
@@ -36,8 +35,8 @@
 	// Use name as fallback for id (for the label's "for" attribute)
 	const inputId = $derived(id ?? name);
 
-	// Combine error string and issues array
-	const displayError = $derived(error || (issues && issues.length > 0 ? issues[0].message : null));
+	// Use unified error handling
+	const displayError = $derived(getFormErrorMessage(error));
 	const hasError = $derived(!!displayError);
 
 	let showPassword = $state(false);

@@ -8,7 +8,6 @@
 		label?: string;
 		name?: string;
 		error?: RemoteFormIssue[] | string | null;
-		issues?: RemoteFormIssue[];
 		disabled?: boolean;
 		required?: boolean;
 	}
@@ -18,7 +17,6 @@
 		label,
 		name,
 		error = null,
-		issues,
 		disabled = false,
 		required = false
 	}: Props = $props();
@@ -62,8 +60,8 @@
 		updateValue();
 	}
 
-	// Compute error from either error prop or issues prop
-	const displayError = $derived(getFormErrorMessage(error) || (issues?.[0]?.message ?? null));
+	// Use unified error handling
+	const displayError = $derived(getFormErrorMessage(error));
 	const hasError = $derived(!!displayError);
 </script>
 

@@ -1,12 +1,11 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Input, Helper, Label, type InputProps } from 'flowbite-svelte';
+	import { getFormErrorMessage } from '$lib/utils';
 
 	interface Props extends InputProps {
 		value: string;
-		// TODO: Make error and issues one prop, can combine them into a single field prop
-		error?: string | null;
-		issues?: RemoteFormIssue[]; // From form fields.X.issues()
+		error?: RemoteFormIssue[] | string | null;
 		label?: string;
 		id?: string;
 		name?: string;
@@ -23,7 +22,6 @@
 	let {
 		value = $bindable(),
 		error = null,
-		issues,
 		label,
 		id,
 		name,
@@ -41,8 +39,8 @@
 	// Use name as fallback for id (for the label's "for" attribute)
 	const inputId = $derived(id ?? name);
 
-	// Combine error string and issues array
-	const displayError = $derived(error || (issues && issues.length > 0 ? issues[0].message : null));
+	// Use unified error handling
+	const displayError = $derived(getFormErrorMessage(error));
 	const hasError = $derived(!!displayError);
 </script>
 
