@@ -11,3 +11,4 @@ export { default as ConfirmModal } from './ConfirmModal.svelte';
 export { default as RifInput } from './RifInput.svelte';
 export { default as WhatsAppInput } from './WhatsAppInput.svelte';
 export { default as InstagramInput } from './InstagramInput.svelte';
+export { default as IdInput } from './IdInput.svelte';
