@@ -118,7 +118,7 @@
 	<nav class="flex-1 overflow-y-auto py-4">
 		{#each navItems as item (item.href)}
 			<NavLink
-				href={item.href}
+				href={resolve(item.href)}
 				label={item.label}
 				icon={iconMap[item.icon]}
 				{collapsed}

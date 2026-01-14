@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { resolve } from '$app/paths';
 	import type { Component } from 'svelte';
-	import type { Pathname } from '$app/types';
+	import type { ResolvedPathname } from '$app/types';
 
 	let {
 		href,
@@ -11,7 +10,7 @@
 		collapsed = false,
 		matchSubPaths = false
 	}: {
-		href: Pathname;
+		href: ResolvedPathname;
 		label: string;
 		icon: Component;
 		collapsed?: boolean;
@@ -27,7 +26,7 @@
 
 <a
 	title={label}
-	href={resolve(href)}
+	{href}
 	class={[
 		'mx-3 my-1 flex items-center gap-3 rounded-lg px-4 py-3 no-underline transition-all duration-200 hover:bg-white/10 hover:text-white',
 		isActive ? 'bg-brand-blue/20 text-brand-blue' : 'text-slate-400'
