@@ -2,10 +2,12 @@
 	import { Button, Select } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { SearchInput, TablePagination, ConfirmModal } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { listProducts, deleteProductById } from '$lib/remote/products.remote';
-	import { ProductsTable, ProductFormModal, ProductViewModal } from '$lib/components/products';
+	import { ProductsTable } from '$lib/components/products';
 	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS, ProductType } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { PaginatedProducts } from '$lib/remote/products.remote';
@@ -30,14 +32,6 @@
 	let typeFilter = $state<ProductType | ''>('');
 	let brandFilter = $state('');
 	let supplierFilter = $state('');
-
-	// Form modal state
-	let showFormModal = $state(false);
-	let selectedProduct = $state<ProductWithRelations | null>(null);
-
-	// View modal state
-	let showViewModal = $state(false);
-	let viewProduct = $state<ProductWithRelations | null>(null);
 
 	// Delete modal state
 	let showDeleteModal = $state(false);
@@ -75,30 +69,20 @@
 		fetchProducts(1);
 	}
 
-	// Modal handlers
-	function openCreate() {
-		selectedProduct = null;
-		showFormModal = true;
+	// Navigate to product detail
+	function handleRowClick(product: ProductWithRelations) {
+		goto(resolve(`/(app)/products/[id]`, { id: product.id }));
 	}
 
-	function openEdit(product: ProductWithRelations) {
-		selectedProduct = product;
-		showFormModal = true;
+	// Navigate to edit page
+	function handleEdit(product: ProductWithRelations) {
+		goto(resolve(`/(app)/products/[id]/update`, { id: product.id }));
 	}
 
-	function openView(product: ProductWithRelations) {
-		viewProduct = product;
-		showViewModal = true;
-	}
-
+	// Open delete confirmation
 	function openDelete(product: ProductWithRelations) {
 		deleteProduct = product;
 		showDeleteModal = true;
-	}
-
-	function handleFormSuccess() {
-		showFormModal = false;
-		fetchProducts(productsData.page);
 	}
 
 	async function confirmDelete() {
@@ -130,7 +114,7 @@
 			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Productos</h1>
 			<p class="text-slate-500">Gestiona el inventario de productos</p>
 		</div>
-		<Button color="blue" onclick={openCreate}>
+		<Button color="blue" href="/products/create">
 			<Plus class="mr-2 h-5 w-5" />
 			Agregar Producto
 		</Button>
@@ -170,8 +154,8 @@
 	<ProductsTable
 		products={productsData.products}
 		{loading}
-		onView={openView}
-		onEdit={openEdit}
+		onView={handleRowClick}
+		onEdit={handleEdit}
 		onDelete={openDelete}
 	/>
 
@@ -185,25 +169,13 @@
 	/>
 </div>
 
-<!-- Create/Update Form Modal -->
-<ProductFormModal
-	bind:open={showFormModal}
-	product={selectedProduct}
-	{brands}
-	{suppliers}
-	onSuccess={handleFormSuccess}
-	onClose={() => (showFormModal = false)}
-/>
-
-<!-- View Modal -->
-<ProductViewModal bind:open={showViewModal} product={viewProduct} />
-
 <!-- Delete Confirmation Modal -->
 <ConfirmModal
 	bind:open={showDeleteModal}
 	title="Eliminar Producto"
 	message="¿Estás seguro de que deseas eliminar este producto? Esta acción puede ser revertida."
 	confirmLabel="Eliminar"
+	confirmColor="red"
 	loading={deleteLoading}
 	onConfirm={confirmDelete}
 	onCancel={() => (showDeleteModal = false)}
