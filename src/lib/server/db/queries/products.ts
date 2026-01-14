@@ -98,13 +98,21 @@ export async function findProductByIdWithRelations(
 }
 
 /**
- * Find a product by SKU
+ * Find a product by SKU (only active, non-deleted)
  */
 export async function findProductBySku(sku: string): Promise<Product | null> {
 	const [product] = await db
 		.select()
 		.from(products)
 		.where(and(eq(products.sku, sku), isNull(products.deletedAt)));
+	return product ?? null;
+}
+
+/**
+ * Find a product by SKU including soft-deleted (for duplicate check)
+ */
+export async function findProductBySkuIncludingDeleted(sku: string): Promise<Product | null> {
+	const [product] = await db.select().from(products).where(eq(products.sku, sku));
 	return product ?? null;
 }
 

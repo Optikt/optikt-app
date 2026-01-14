@@ -14,6 +14,7 @@ import {
 	getAllProductsWithRelations,
 	findProductById,
 	findProductBySku,
+	findProductBySkuIncludingDeleted,
 	findProductBySkuExcluding,
 	createProduct,
 	updateProduct,
@@ -95,13 +96,28 @@ export const createProductForm = form(
 	async (data, issue): Promise<Product> => {
 		const { sku, brandId, supplierId, ...rest } = data;
 
-		// Check for duplicate SKU
-		const existingSku = await findProductBySku(sku);
+		// Check for duplicate SKU (including soft-deleted)
+		const existingSku = await findProductBySkuIncludingDeleted(sku);
 		if (existingSku) {
+			// If it's soft-deleted, we can reactivate it with new data
+			if (existingSku.deletedAt) {
+				const reactivated = await updateProduct(existingSku.id, {
+					...rest,
+					brandId: brandId && brandId.trim() !== '' ? brandId : null,
+					supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
+					deletedAt: null,
+					isActive: true
+				});
+				if (!reactivated) {
+					invalid('Error reactivando producto');
+				}
+				return reactivated;
+			}
+			// Otherwise it's an active product with same SKU
 			invalid(issue.sku('Ya existe un producto con este SKU'));
 		}
 
-		// Create product
+		// Create new product
 		const product = await createProduct({
 			sku,
 			brandId: brandId && brandId.trim() !== '' ? brandId : null,
