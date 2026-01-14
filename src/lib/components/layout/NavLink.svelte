@@ -24,6 +24,8 @@
 	);
 </script>
 
+<!-- disable rule here since we already resolved the path name after passing it -->
+<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
 	title={label}
 	{href}
@@ -37,3 +39,4 @@
 		<span>{label}</span>
 	{/if}
 </a>
+<!-- eslint-enable svelte/no-navigation-without-resolve -->
