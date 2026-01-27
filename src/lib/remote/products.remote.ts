@@ -13,7 +13,6 @@ import {
 import {
 	getAllProductsWithRelations,
 	findProductById,
-	findProductBySku,
 	findProductBySkuIncludingDeleted,
 	findProductBySkuExcluding,
 	createProduct,
