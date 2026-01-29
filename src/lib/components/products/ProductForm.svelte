@@ -4,24 +4,36 @@
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { createProductForm, updateProductForm } from '$lib/remote/products.remote';
-	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import { quickCreateBrand } from '$lib/remote/brands.remote';
+	import { quickCreateSupplier } from '$lib/remote/suppliers.remote';
+	import { quickCreateMaterial } from '$lib/remote/materials.remote';
+	import { FormInput, FormTextarea, CreatableSelect } from '$lib/components/ui';
 	import { scrollToFirstError } from '$lib/utils';
-	import type { Product } from '$lib/server/db/schema';
 	import {
 		ProductType,
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
 		requiresStockTracking
 	} from '$lib/shared/enums';
+	import { generateSku, ProductGender, PRODUCT_GENDER_LABELS } from '$lib/utils/sku';
+	import { Checkbox } from 'flowbite-svelte';
+	import type { Product } from '$lib/server/db/schema';
 
 	interface Props {
 		product?: Product | null;
 		brands: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
+		materials: { id: string; name: string }[];
 		cancelHref?: string;
 	}
 
-	let { product = null, brands = [], suppliers = [], cancelHref = '/products' }: Props = $props();
+	let {
+		product = null,
+		brands = [],
+		suppliers = [],
+		materials = [],
+		cancelHref = '/products'
+	}: Props = $props();
 
 	// Form state
 	let isSubmitting = $state(false);
@@ -35,6 +47,9 @@
 		type: ProductType.FRAME as string,
 		brandId: '',
 		supplierId: '',
+		materialId: '',
+		gender: ProductGender.NO_APLICA as string,
+		personalCode: '',
 		color: '',
 		size: '',
 		description: '',
@@ -44,6 +59,40 @@
 		minStock: 0,
 		imageUrl: ''
 	});
+
+	let isAutoSku = $state(true);
+
+	// Track locally created options (to add to the lists after inline creation)
+	let localBrands = $state<{ id: string; name: string }[]>([]);
+	let localSuppliers = $state<{ id: string; name: string }[]>([]);
+	let localMaterials = $state<{ id: string; name: string }[]>([]);
+
+	// Merged options (original + locally created)
+	const allBrands = $derived([...brands, ...localBrands]);
+	const allSuppliers = $derived([...suppliers, ...localSuppliers]);
+	const allMaterials = $derived([...materials, ...localMaterials]);
+
+	// Quick create handlers
+	async function handleCreateBrand(name: string) {
+		const result = await quickCreateBrand({ name });
+		localBrands = [...localBrands, result];
+		toast.success(`Marca "${name}" creada`);
+		return result;
+	}
+
+	async function handleCreateSupplier(name: string) {
+		const result = await quickCreateSupplier({ name });
+		localSuppliers = [...localSuppliers, result];
+		toast.success(`Proveedor "${name}" creado`);
+		return result;
+	}
+
+	async function handleCreateMaterial(name: string) {
+		const result = await quickCreateMaterial({ name });
+		localMaterials = [...localMaterials, result];
+		toast.success(`Material "${name}" creado`);
+		return result;
+	}
 
 	// Computed: show stock fields?
 	const showStockFields = $derived(requiresStockTracking(formData.type as ProductType));
@@ -60,12 +109,16 @@
 		untrack(() => {
 			formInstanceId = crypto.randomUUID();
 			if (product) {
+				isAutoSku = false; // Disable auto SKU when editing existing product
 				formData = {
 					sku: product.sku ?? '',
 					name: product.name ?? '',
 					type: product.type ?? ProductType.FRAME,
 					brandId: product.brandId ?? '',
 					supplierId: product.supplierId ?? '',
+					materialId: product.materialId ?? '',
+					gender: product.gender ?? ProductGender.NO_APLICA,
+					personalCode: '', // Normally we don't have this in DB, maybe we should extract it from SKU if needed? But let's leave empty for now.
 					color: product.color ?? '',
 					size: product.size ?? '',
 					description: product.description ?? '',
@@ -77,6 +130,27 @@
 				};
 			}
 		});
+	});
+
+	// Reactive SKU generation
+	$effect(() => {
+		if (isAutoSku) {
+			const brandName = allBrands.find((b) => b.id === formData.brandId)?.name;
+			const materialName = allMaterials.find((m) => m.id === formData.materialId)?.name;
+
+			const sku = generateSku({
+				type: formData.type as ProductType,
+				gender: formData.gender as ProductGender,
+				materialName,
+				brandName,
+				color: formData.color,
+				personalCode: formData.personalCode
+			});
+
+			untrack(() => {
+				formData.sku = sku;
+			});
+		}
 	});
 
 	// Form instances
@@ -137,172 +211,223 @@
 			<!-- Basic Info -->
 			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 				<h3 class="mb-4 text-lg font-semibold text-slate-800">Información Básica</h3>
-				<div class="grid gap-4 md:grid-cols-2">
-					<FormInput
-						label="SKU *"
-						name="sku"
-						required
-						bind:value={formData.sku}
-						placeholder="MT-23-C1"
-						error={currentUpdateForm.fields.sku?.issues()}
-					/>
-					<FormInput
-						label="Nombre *"
-						name="name"
-						required
-						bind:value={formData.name}
-						placeholder="Nombre del producto"
-						error={currentUpdateForm.fields.name?.issues()}
-					/>
-				</div>
-
-				<div class="mt-4 grid gap-4 md:grid-cols-3">
-					<div>
-						<Label for="type" class="mb-2">Tipo *</Label>
-						<Select id="type" name="type" bind:value={formData.type} required>
-							{#each ALL_PRODUCT_TYPES as t (t)}
-								<option value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
-							{/each}
-						</Select>
-					</div>
-					<div>
-						<Label for="brandId" class="mb-2">Marca</Label>
-						<Select id="brandId" name="brandId" bind:value={formData.brandId}>
-							<option value="">Sin marca</option>
-							{#each brands as brand (brand.id)}
-								<option value={brand.id}>{brand.name}</option>
-							{/each}
-						</Select>
-					</div>
-					<div>
-						<Label for="supplierId" class="mb-2">Proveedor</Label>
-						<Select id="supplierId" name="supplierId" bind:value={formData.supplierId}>
-							<option value="">Sin proveedor</option>
-							{#each suppliers as supplier (supplier.id)}
-								<option value={supplier.id}>{supplier.name}</option>
-							{/each}
-						</Select>
-					</div>
-				</div>
-			</div>
-
-			<!-- Physical Properties -->
-			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h3 class="mb-4 text-lg font-semibold text-slate-800">Características</h3>
-				<div class="grid gap-4 md:grid-cols-2">
-					<FormInput
-						label="Color"
-						name="color"
-						bind:value={formData.color}
-						placeholder="Negro, Dorado"
-					/>
-					<FormInput
-						label="Tamaño"
-						name="size"
-						bind:value={formData.size}
-						placeholder="52-18-140"
-					/>
-				</div>
-				<div class="mt-4">
-					<FormTextarea
-						label="Descripción"
-						name="description"
-						bind:value={formData.description}
-						placeholder="Descripción del producto..."
-						rows={3}
-					/>
-				</div>
-			</div>
-
-			<!-- Pricing -->
-			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios</h3>
-				<div class="grid gap-4 md:grid-cols-2">
-					<div>
-						<Label for="purchasePrice" class="mb-2">Precio compra ($) *</Label>
-						<input
-							type="number"
-							id="purchasePrice"
-							name="purchasePrice"
-							bind:value={formData.purchasePrice}
-							step="0.01"
-							min="0"
+				<div class="grid gap-6">
+					<!-- Row 1: Name and Gender -->
+					<div class="grid gap-4 md:grid-cols-2">
+						<FormInput
+							label="Nombre *"
+							name="name"
 							required
-							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+							bind:value={formData.name}
+							placeholder="Nombre del producto"
+							error={currentUpdateForm.fields.name?.issues()}
 						/>
+						<div>
+							<Label for="gender_u" class="mb-2">Género</Label>
+							<Select id="gender_u" name="gender" bind:value={formData.gender}>
+								{#each Object.entries(PRODUCT_GENDER_LABELS) as [value, label] (value)}
+									<option {value}>{label}</option>
+								{/each}
+							</Select>
+						</div>
 					</div>
-					<div>
-						<Label for="salePrice" class="mb-2">Precio venta ($) *</Label>
-						<input
-							type="number"
-							id="salePrice"
-							name="salePrice"
-							bind:value={formData.salePrice}
-							step="0.01"
-							min="0"
-							required
-							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
-						/>
-						{#if formData.purchasePrice > 0}
-							<p class="mt-1 text-sm text-slate-500">
-								Margen: <span class:text-green-600={profitMargin() > 0}
-									>{profitMargin().toFixed(1)}%</span
+
+					<!-- SKU Section -->
+					<div class="border-t border-slate-100 pt-4">
+						<div class="mb-3 w-fit">
+							<Checkbox bind:checked={isAutoSku}>Autogenerar SKU</Checkbox>
+						</div>
+						<div class="grid items-end gap-4 md:grid-cols-2">
+							{#if isAutoSku}
+								<FormInput
+									label="Código Propio"
+									name="personalCode"
+									bind:value={formData.personalCode}
+									placeholder="Ej: 1234"
+								/>
+								<div
+									class="flex min-h-14 flex-col justify-center rounded-lg border border-slate-200 bg-slate-50 p-2"
 								>
-							</p>
-						{/if}
+									<span class="mb-1 text-[10px] leading-none font-bold text-slate-500 uppercase"
+										>SKU Generado</span
+									>
+									<div class="no-scrollbar overflow-x-auto">
+										<span
+											class="font-mono text-sm font-semibold whitespace-nowrap text-blue-600 select-all"
+										>
+											{formData.sku || '(vacío)'}
+										</span>
+									</div>
+									<input type="hidden" name="sku" value={formData.sku} />
+								</div>
+							{:else}
+								<FormInput
+									label="SKU *"
+									name="sku"
+									required
+									bind:value={formData.sku}
+									placeholder="MT-23-C1"
+									error={currentUpdateForm.fields.sku?.issues()}
+								/>
+							{/if}
+						</div>
+					</div>
+
+					<!-- Other Metadata -->
+					<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div>
+							<Label for="type_u" class="mb-2">Tipo *</Label>
+							<Select id="type_u" name="type" bind:value={formData.type} required>
+								{#each ALL_PRODUCT_TYPES as t (t)}
+									<option value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
+								{/each}
+							</Select>
+						</div>
+						<CreatableSelect
+							label="Material"
+							name="materialId"
+							placeholder="Buscar material..."
+							bind:value={formData.materialId}
+							options={allMaterials}
+							oncreate={handleCreateMaterial}
+						/>
+						<CreatableSelect
+							label="Marca"
+							name="brandId"
+							placeholder="Buscar marca..."
+							bind:value={formData.brandId}
+							options={allBrands}
+							oncreate={handleCreateBrand}
+						/>
+						<CreatableSelect
+							label="Proveedor"
+							name="supplierId"
+							placeholder="Buscar proveedor..."
+							bind:value={formData.supplierId}
+							options={allSuppliers}
+							oncreate={handleCreateSupplier}
+						/>
 					</div>
 				</div>
-			</div>
 
-			<!-- Stock -->
-			{#if showStockFields}
+				<!-- Physical Properties -->
 				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<h3 class="mb-4 text-lg font-semibold text-slate-800">Inventario</h3>
+					<h3 class="mb-4 text-lg font-semibold text-slate-800">Características</h3>
+					<div class="grid gap-4 md:grid-cols-2">
+						<FormInput
+							label="Color"
+							name="color"
+							bind:value={formData.color}
+							placeholder="Negro, Dorado"
+						/>
+						<FormInput
+							label="Tamaño"
+							name="size"
+							bind:value={formData.size}
+							placeholder="52-18-140"
+						/>
+					</div>
+					<div class="mt-4">
+						<FormTextarea
+							label="Descripción"
+							name="description"
+							bind:value={formData.description}
+							placeholder="Descripción del producto..."
+							rows={3}
+						/>
+					</div>
+				</div>
+
+				<!-- Pricing -->
+				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+					<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios</h3>
 					<div class="grid gap-4 md:grid-cols-2">
 						<div>
-							<Label for="stock" class="mb-2">Stock actual</Label>
+							<Label for="purchasePrice" class="mb-2">Precio compra ($) *</Label>
 							<input
 								type="number"
-								id="stock"
-								name="stock"
-								bind:value={formData.stock}
+								id="purchasePrice"
+								name="purchasePrice"
+								bind:value={formData.purchasePrice}
+								step="0.01"
 								min="0"
+								required
 								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
 							/>
 						</div>
 						<div>
-							<Label for="minStock" class="mb-2">Stock mínimo (alertas)</Label>
+							<Label for="salePrice" class="mb-2">Precio venta ($) *</Label>
 							<input
 								type="number"
-								id="minStock"
-								name="minStock"
-								bind:value={formData.minStock}
+								id="salePrice"
+								name="salePrice"
+								bind:value={formData.salePrice}
+								step="0.01"
 								min="0"
+								required
 								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
 							/>
+							{#if formData.purchasePrice > 0}
+								<p class="mt-1 text-sm text-slate-500">
+									Margen: <span class:text-green-600={profitMargin() > 0}
+										>{profitMargin().toFixed(1)}%</span
+									>
+								</p>
+							{/if}
 						</div>
 					</div>
 				</div>
-			{/if}
 
-			<!-- Image -->
-			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h3 class="mb-4 text-lg font-semibold text-slate-800">Imagen</h3>
-				<FormInput
-					label="URL de imagen"
-					name="imageUrl"
-					bind:value={formData.imageUrl}
-					placeholder="https://..."
-				/>
-			</div>
+				<!-- Stock -->
+				{#if showStockFields}
+					<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+						<h3 class="mb-4 text-lg font-semibold text-slate-800">Inventario</h3>
+						<div class="grid gap-4 md:grid-cols-2">
+							<div>
+								<Label for="stock" class="mb-2">Stock actual</Label>
+								<input
+									type="number"
+									id="stock"
+									name="stock"
+									bind:value={formData.stock}
+									min="0"
+									class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+								/>
+							</div>
+							<div>
+								<Label for="minStock" class="mb-2">Stock mínimo (alertas)</Label>
+								<input
+									type="number"
+									id="minStock"
+									name="minStock"
+									bind:value={formData.minStock}
+									min="0"
+									class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+								/>
+							</div>
+						</div>
+					</div>
+				{/if}
 
-			<!-- Actions -->
-			<div class="flex justify-end gap-3">
-				<Button color="alternative" href={cancelHref} disabled={isSubmitting}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
+				<!-- Image -->
+				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+					<h3 class="mb-4 text-lg font-semibold text-slate-800">Imagen</h3>
+					<FormInput
+						label="URL de imagen"
+						name="imageUrl"
+						bind:value={formData.imageUrl}
+						placeholder="https://..."
+					/>
+				</div>
+
+				<!-- Actions -->
+				<div class="flex justify-end gap-3">
+					<Button color="alternative" href={cancelHref} disabled={isSubmitting}>Cancelar</Button>
+					<Button type="submit" color="blue" disabled={isSubmitting}>
+						{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
+						{submitText}
+					</Button>
+				</div>
 			</div>
 		</form>
 	{:else}
@@ -325,51 +450,102 @@
 			<!-- Basic Info -->
 			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 				<h3 class="mb-4 text-lg font-semibold text-slate-800">Información Básica</h3>
-				<div class="grid gap-4 md:grid-cols-2">
-					<FormInput
-						label="SKU *"
-						name="sku"
-						required
-						bind:value={formData.sku}
-						placeholder="MT-23-C1"
-						error={currentCreateForm.fields.sku?.issues()}
-					/>
-					<FormInput
-						label="Nombre *"
-						name="name"
-						required
-						bind:value={formData.name}
-						placeholder="Nombre del producto"
-						error={currentCreateForm.fields.name?.issues()}
-					/>
-				</div>
+				<div class="grid gap-6">
+					<!-- Row 1: Name and Gender -->
+					<div class="grid gap-4 md:grid-cols-2">
+						<FormInput
+							label="Nombre *"
+							name="name"
+							required
+							bind:value={formData.name}
+							placeholder="Nombre del producto"
+							error={currentCreateForm.fields.name?.issues()}
+						/>
+						<div>
+							<Label for="gender_c" class="mb-2">Género</Label>
+							<Select id="gender_c" name="gender" bind:value={formData.gender}>
+								{#each Object.entries(PRODUCT_GENDER_LABELS) as [value, label] (value)}
+									<option {value}>{label}</option>
+								{/each}
+							</Select>
+						</div>
+					</div>
 
-				<div class="mt-4 grid gap-4 md:grid-cols-3">
-					<div>
-						<Label for="type" class="mb-2">Tipo *</Label>
-						<Select id="type" name="type" bind:value={formData.type} required>
-							{#each ALL_PRODUCT_TYPES as t (t)}
-								<option value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
-							{/each}
-						</Select>
+					<!-- SKU Section -->
+					<div class="border-t border-slate-100 pt-4">
+						<div class="mb-3 w-fit">
+							<Checkbox bind:checked={isAutoSku}>Autogenerar SKU</Checkbox>
+						</div>
+						<div class="grid items-end gap-4 md:grid-cols-2">
+							{#if isAutoSku}
+								<FormInput
+									label="Código Propio"
+									name="personalCode"
+									bind:value={formData.personalCode}
+									placeholder="Ej: 1234"
+								/>
+								<div
+									class="flex min-h-14 flex-col justify-center rounded-lg border border-slate-200 bg-slate-50 p-2"
+								>
+									<span class="mb-1 text-[10px] leading-none font-bold text-slate-500 uppercase"
+										>SKU Generado</span
+									>
+									<div class="no-scrollbar overflow-x-auto">
+										<span
+											class="font-mono text-sm font-semibold whitespace-nowrap text-blue-600 select-all"
+										>
+											{formData.sku || '(vacío)'}
+										</span>
+									</div>
+									<input type="hidden" name="sku" value={formData.sku} />
+								</div>
+							{:else}
+								<FormInput
+									label="SKU *"
+									name="sku"
+									required
+									bind:value={formData.sku}
+									placeholder="MT-23-C1"
+									error={currentCreateForm.fields.sku?.issues()}
+								/>
+							{/if}
+						</div>
 					</div>
-					<div>
-						<Label for="brandId" class="mb-2">Marca</Label>
-						<Select id="brandId" name="brandId" bind:value={formData.brandId}>
-							<option value="">Sin marca</option>
-							{#each brands as brand (brand.id)}
-								<option value={brand.id}>{brand.name}</option>
-							{/each}
-						</Select>
-					</div>
-					<div>
-						<Label for="supplierId" class="mb-2">Proveedor</Label>
-						<Select id="supplierId" name="supplierId" bind:value={formData.supplierId}>
-							<option value="">Sin proveedor</option>
-							{#each suppliers as supplier (supplier.id)}
-								<option value={supplier.id}>{supplier.name}</option>
-							{/each}
-						</Select>
+
+					<!-- Other Metadata -->
+					<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+						<div>
+							<Label for="type_c" class="mb-2">Tipo *</Label>
+							<Select id="type_c" name="type" bind:value={formData.type} required>
+								{#each ALL_PRODUCT_TYPES as t (t)}
+									<option value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
+								{/each}
+							</Select>
+						</div>
+						<CreatableSelect
+							label="Material"
+							name="materialId"
+							placeholder="Buscar material..."
+							bind:value={formData.materialId}
+							options={allMaterials}
+							oncreate={handleCreateMaterial}
+						/>
+						<CreatableSelect
+							label="Marca"
+							name="brandId"
+							placeholder="Buscar marca..."
+							bind:value={formData.brandId}
+							options={allBrands}
+							oncreate={handleCreateBrand}
+						/>
+						<CreatableSelect
+							label="Proveedor"
+							name="supplierId"
+							placeholder="Buscar proveedor..."
+							bind:value={formData.supplierId}
+							options={allSuppliers}
+							oncreate={handleCreateSupplier}
+						/>
 					</div>
 				</div>
 			</div>

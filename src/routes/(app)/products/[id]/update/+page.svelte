@@ -16,7 +16,6 @@
 	<div class="mx-auto mb-8 max-w-4xl">
 		<a
 			href={`/products/${product.id}`}
-			rel="external"
 			class="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
 		>
 			<ArrowLeft class="h-4 w-4" />
