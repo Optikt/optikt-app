@@ -8,7 +8,8 @@ import {
 	ListSuppliersSchema,
 	CreateSupplierSchema,
 	UpdateSupplierSchema,
-	SupplierIdSchema
+	SupplierIdSchema,
+	QuickCreateSupplierSchema
 } from '$lib/schemas/suppliers';
 import {
 	getAllSuppliers,
@@ -156,3 +157,27 @@ export const deleteSupplierById = command(SupplierIdSchema, async (data): Promis
 
 	await deleteSupplier(id);
 });
+
+/**
+ * Quick create a supplier with minimal info (for inline creation in forms)
+ * Uses defaults for required fields, user can complete later
+ */
+export const quickCreateSupplier = command(
+	QuickCreateSupplierSchema,
+	async (data): Promise<{ id: string; name: string }> => {
+		const { name } = data;
+
+		// Check for duplicate
+		const existing = await findSupplierByName(name);
+		if (existing) {
+			throw new Error('Ya existe un proveedor con este nombre');
+		}
+
+		const supplier = await createSupplier({
+			name,
+			type: 'DISTRIBUTOR',
+			primaryPhone: '0000-0000000'
+		});
+		return { id: supplier.id, name: supplier.name };
+	}
+);

@@ -8,7 +8,8 @@ import {
 	ListBrandsSchema,
 	CreateBrandSchema,
 	UpdateBrandSchema,
-	BrandIdSchema
+	BrandIdSchema,
+	QuickCreateBrandSchema
 } from '$lib/schemas/brands';
 import {
 	getAllBrands,
@@ -145,3 +146,23 @@ export const checkBrandCanDelete = query(BrandIdSchema, async (data): Promise<Br
 		brandName: brand.name
 	};
 });
+
+/**
+ * Quick create a brand with minimal info (for inline creation in forms)
+ * Returns only the id and name for the select component
+ */
+export const quickCreateBrand = command(
+	QuickCreateBrandSchema,
+	async (data): Promise<{ id: string; name: string }> => {
+		const { name } = data;
+
+		// Check for duplicate
+		const existing = await findBrandByName(name);
+		if (existing) {
+			throw new Error('Ya existe una marca con este nombre');
+		}
+
+		const brand = await createBrand({ name });
+		return { id: brand.id, name: brand.name };
+	}
+);
