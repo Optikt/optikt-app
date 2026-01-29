@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { brands } from './brands';
 import { suppliers } from './suppliers';
+import { lensMaterials } from './lenses';
 
 export const products = pgTable(
 	'products',
@@ -24,6 +25,8 @@ export const products = pgTable(
 		supplierId: uuid('supplier_id'),
 		color: varchar(),
 		size: varchar(),
+		gender: varchar({ length: 20 }),
+		materialId: uuid('material_id'),
 		description: varchar(),
 		purchasePrice: doublePrecision('purchase_price').notNull(),
 		salePrice: doublePrecision('sale_price').notNull(),
@@ -45,6 +48,10 @@ export const products = pgTable(
 			table.supplierId.asc().nullsLast().op('uuid_ops')
 		),
 		index('ix_products_type').using('btree', table.type.asc().nullsLast().op('text_ops')),
+		index('ix_products_material_id').using(
+			'btree',
+			table.materialId.asc().nullsLast().op('uuid_ops')
+		),
 		foreignKey({
 			columns: [table.brandId],
 			foreignColumns: [brands.id],
@@ -54,6 +61,11 @@ export const products = pgTable(
 			columns: [table.supplierId],
 			foreignColumns: [suppliers.id],
 			name: 'products_supplier_id_fkey'
+		}).onDelete('set null'),
+		foreignKey({
+			columns: [table.materialId],
+			foreignColumns: [lensMaterials.id],
+			name: 'products_material_id_fkey'
 		}).onDelete('set null')
 	]
 );

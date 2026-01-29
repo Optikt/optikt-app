@@ -93,7 +93,7 @@ export const listProducts = query(ListProductsSchema, async (data): Promise<Pagi
 export const createProductForm = form(
 	CreateProductSchema,
 	async (data, issue): Promise<Product> => {
-		const { sku, brandId, supplierId, ...rest } = data;
+		const { sku, brandId, supplierId, materialId, ...rest } = data;
 
 		// Check for duplicate SKU (including soft-deleted)
 		const existingSku = await findProductBySkuIncludingDeleted(sku);
@@ -104,6 +104,7 @@ export const createProductForm = form(
 					...rest,
 					brandId: brandId && brandId.trim() !== '' ? brandId : null,
 					supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
+					materialId: materialId && materialId.trim() !== '' ? materialId : null,
 					deletedAt: null,
 					isActive: true
 				});
@@ -121,6 +122,7 @@ export const createProductForm = form(
 			sku,
 			brandId: brandId && brandId.trim() !== '' ? brandId : null,
 			supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
+			materialId: materialId && materialId.trim() !== '' ? materialId : null,
 			...rest
 		});
 		return product;
@@ -133,7 +135,7 @@ export const createProductForm = form(
 export const updateProductForm = form(
 	UpdateProductSchema,
 	async (data, issue): Promise<Product> => {
-		const { id, sku, brandId, supplierId, ...rest } = data;
+		const { id, sku, brandId, supplierId, materialId, ...rest } = data;
 
 		// Check if product exists
 		const existing = await findProductById(id);
@@ -158,6 +160,12 @@ export const updateProductForm = form(
 				supplierId !== undefined
 					? supplierId && supplierId.trim() !== ''
 						? supplierId
+						: null
+					: undefined,
+			materialId:
+				materialId !== undefined
+					? materialId && materialId.trim() !== ''
+						? materialId
 						: null
 					: undefined,
 			...rest
