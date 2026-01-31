@@ -6,6 +6,7 @@
 	import type { CreateCustomerResult } from '$lib/remote/customers.remote';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
 	import { scrollToFirstError, getErrorMessage } from '$lib/utils';
+	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Customer } from '$lib/server/db/schema';
 
 	interface Props {
@@ -48,7 +49,7 @@
 	const today = new Date();
 
 	// Reset form when modal opens (unless preserveData is true)
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	$effect(() => {
 		if (open) {
 			untrack(() => {
@@ -58,7 +59,7 @@
 					return;
 				}
 
-				formInstanceId = crypto.randomUUID();
+				formInstanceId = generateUUID();
 				if (customer) {
 					formData = {
 						firstName: customer.firstName ?? '',

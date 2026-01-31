@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Svelecte from 'svelecte';
+	import { generateUUID } from '$lib/utils/generateUUID';
 
 	export type SelectOption = {
 		id: string;
@@ -98,7 +99,7 @@
 		} else {
 			// Default: create with temp ID
 			newOption = {
-				id: `pending_${crypto.randomUUID()}`,
+				id: `pending_${generateUUID()}`,
 				name: inputValue,
 				isPending: true
 			};

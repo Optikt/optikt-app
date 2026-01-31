@@ -7,6 +7,7 @@
 	import { FormInput, FormTextarea, RifInput } from '$lib/components/ui';
 	import type { Settings } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
+	import { generateUUID } from '$lib/utils/generateUUID';
 
 	interface Props {
 		settings: Settings;
@@ -25,7 +26,7 @@
 	let loading = $state(false);
 
 	// Form instance
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	const currentForm = $derived(updateSettingsForm.for(formInstanceId));
 
 	function resetForm() {
@@ -35,7 +36,7 @@
 		businessEmail = settings.businessEmail ?? '';
 		businessAddress = settings.businessAddress ?? '';
 		businessWebsite = settings.businessWebsite ?? '';
-		formInstanceId = crypto.randomUUID();
+		formInstanceId = generateUUID();
 	}
 </script>
 

@@ -13,6 +13,7 @@
 	} from '$lib/components/ui';
 	import { scrollToFirstError } from '$lib/utils';
 	import type { Supplier } from '$lib/server/db/schema';
+	import { generateUUID } from '$lib/utils/generateUUID';
 
 	interface Props {
 		open: boolean;
@@ -47,11 +48,11 @@
 	});
 
 	// Reset form when modal opens or supplier changes
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	$effect(() => {
 		if (open) {
 			untrack(() => {
-				formInstanceId = crypto.randomUUID();
+				formInstanceId = generateUUID();
 				if (supplier) {
 					formData = {
 						name: supplier.name ?? '',

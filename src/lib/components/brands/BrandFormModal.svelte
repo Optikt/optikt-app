@@ -4,6 +4,7 @@
 	import { untrack } from 'svelte';
 	import { createBrandForm, updateBrandForm } from '$lib/remote/brands.remote';
 	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Brand } from '$lib/server/db/schema';
 
 	interface Props {
@@ -30,11 +31,11 @@
 	});
 
 	// Reset form when modal opens or brand changes
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	$effect(() => {
 		if (open) {
 			untrack(() => {
-				formInstanceId = crypto.randomUUID();
+				formInstanceId = generateUUID();
 				if (brand) {
 					formData = {
 						name: brand.name ?? '',

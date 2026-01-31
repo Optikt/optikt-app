@@ -13,6 +13,7 @@
 		requiresStockTracking
 	} from '$lib/shared/enums';
 	import { generateSku, ProductGender, PRODUCT_GENDER_LABELS } from '$lib/utils/sku';
+	import { generateUUID } from '$lib/utils/generateUUID';
 	import { Checkbox } from 'flowbite-svelte';
 	import type { Product } from '$lib/server/db/schema';
 
@@ -116,19 +117,19 @@
 
 	// Handlers for creating pending items (no DB call yet!)
 	function handleCreatePendingBrand(name: string): SelectOption {
-		const pendingId = `pending_brand_${crypto.randomUUID()}`;
+		const pendingId = `pending_brand_${generateUUID()}`;
 		pendingBrands = [...pendingBrands, { pendingId, name }];
 		return { id: pendingId, name, isPending: true };
 	}
 
 	function handleCreatePendingSupplier(name: string): SelectOption {
-		const pendingId = `pending_supplier_${crypto.randomUUID()}`;
+		const pendingId = `pending_supplier_${generateUUID()}`;
 		pendingSuppliers = [...pendingSuppliers, { pendingId, name }];
 		return { id: pendingId, name, isPending: true };
 	}
 
 	function handleCreatePendingMaterial(name: string): SelectOption {
-		const pendingId = `pending_material_${crypto.randomUUID()}`;
+		const pendingId = `pending_material_${generateUUID()}`;
 		const productType = formData.type; // Associate with current product type
 		pendingMaterials = [...pendingMaterials, { pendingId, name, productType }];
 		return { id: pendingId, name, isPending: true };
@@ -189,10 +190,10 @@
 	});
 
 	// Initialize form data
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	$effect(() => {
 		untrack(() => {
-			formInstanceId = crypto.randomUUID();
+			formInstanceId = generateUUID();
 			if (product) {
 				isAutoSku = false; // Disable auto SKU when editing existing product
 				formData = {
