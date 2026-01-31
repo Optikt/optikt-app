@@ -69,6 +69,18 @@ export async function createSupplier(data: NewSupplier): Promise<Supplier> {
 }
 
 /**
+ * Quick create a supplier with minimal info (for inline creation)
+ * Defaults type to 'DISTRIBUTOR' and primaryPhone to empty string
+ */
+export async function quickCreateSupplier(name: string): Promise<Supplier> {
+	return createSupplier({
+		name,
+		type: 'DISTRIBUTOR',
+		primaryPhone: ''
+	});
+}
+
+/**
  * Update a supplier by ID
  */
 export async function updateSupplier(
