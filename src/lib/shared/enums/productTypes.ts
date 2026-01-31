@@ -41,3 +41,30 @@ export const STOCK_REQUIRED_TYPES: ProductType[] = [
 export function requiresStockTracking(type: ProductType): boolean {
 	return STOCK_REQUIRED_TYPES.includes(type);
 }
+
+// ============================================================================
+// MATERIAL PRODUCT TYPES
+// ============================================================================
+
+/**
+ * Valid product types for materials.
+ * Note: SUNGLASSES is excluded because sunglasses and frames share materials.
+ * Use toMaterialProductType() to convert a ProductType to its material equivalent.
+ */
+export const MATERIAL_PRODUCT_TYPES = [
+	ProductType.FRAME,
+	ProductType.LENS,
+	ProductType.CONTACT_LENS,
+	ProductType.ACCESSORY,
+	'ALL'
+] as const;
+export type MaterialProductType = (typeof MATERIAL_PRODUCT_TYPES)[number];
+
+/**
+ * Convert a ProductType to its MaterialProductType equivalent.
+ * SUNGLASSES → FRAME (they share materials)
+ * All others map 1:1
+ */
+export function toMaterialProductType(type: ProductType): MaterialProductType {
+	return type === ProductType.SUNGLASSES ? ProductType.FRAME : type;
+}
