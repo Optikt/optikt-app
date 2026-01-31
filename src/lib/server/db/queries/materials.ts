@@ -2,13 +2,26 @@
  * Materials database queries
  */
 import { eq, isNull, and, or } from 'drizzle-orm';
+import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { materials, type Material } from '$lib/server/db/schema';
 
 /**
  * Get all materials (excluding soft-deleted)
+ * @param columns - Optional columns to select (default: all columns)
  */
-export async function getAllMaterials(): Promise<Material[]> {
+export async function getAllMaterials(): Promise<Material[]>;
+export async function getAllMaterials<T extends SelectedFields>(
+	columns: T
+): Promise<{ [K in keyof T]: T[K] extends { _: { data: infer D } } ? D : never }[]>;
+export async function getAllMaterials<T extends SelectedFields>(columns?: T) {
+	if (columns) {
+		return await db
+			.select(columns)
+			.from(materials)
+			.where(and(isNull(materials.deletedAt), eq(materials.isActive, true)))
+			.orderBy(materials.name);
+	}
 	return await db
 		.select()
 		.from(materials)
