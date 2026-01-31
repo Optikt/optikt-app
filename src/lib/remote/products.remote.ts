@@ -116,6 +116,9 @@ export const createProductForm = form(
 		} = data;
 		let { brandId, supplierId, materialId } = data;
 
+		// TODO: Validate existing products SKUs maybe? For not duplicates? Even soft-deleted?
+		// TODO: Validate deleted brands/suppliers/materials too?
+
 		// Use a transaction for atomicity - all or nothing
 		// IMPORTANT: All db operations inside must use `tx`, not `db`
 		return await db.transaction(async (tx) => {
