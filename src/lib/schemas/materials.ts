@@ -3,14 +3,19 @@
  * Valibot schemas for validation in remote functions
  */
 import * as v from 'valibot';
+import {
+	MATERIAL_PRODUCT_TYPES,
+	ProductType,
+	type MaterialProductType
+} from '$lib/shared/enums/productTypes';
 
-// Valid product types for materials
-export const MaterialProductTypes = ['FRAME', 'LENS', 'CONTACT_LENS', 'ACCESSORY', 'ALL'] as const;
-export type MaterialProductType = (typeof MaterialProductTypes)[number];
+// Re-export for backward compatibility
+export const MaterialProductTypes = MATERIAL_PRODUCT_TYPES;
+export type { MaterialProductType };
 
 export const ListMaterialsSchema = v.object({
 	includeDeleted: v.optional(v.boolean(), false),
-	productType: v.optional(v.picklist(MaterialProductTypes))
+	productType: v.optional(v.picklist(MATERIAL_PRODUCT_TYPES))
 });
 
 export const MaterialIdSchema = v.object({
@@ -23,5 +28,5 @@ export const MaterialIdSchema = v.object({
  */
 export const QuickCreateMaterialSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
-	productType: v.optional(v.picklist(MaterialProductTypes), 'FRAME')
+	productType: v.optional(v.picklist(MATERIAL_PRODUCT_TYPES), ProductType.FRAME)
 });
