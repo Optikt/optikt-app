@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { brands } from './brands';
 import { suppliers } from './suppliers';
-import { lensMaterials } from './lenses';
+import { materials } from './materials';
 
 export const products = pgTable(
 	'products',
@@ -64,7 +64,7 @@ export const products = pgTable(
 		}).onDelete('set null'),
 		foreignKey({
 			columns: [table.materialId],
-			foreignColumns: [lensMaterials.id],
+			foreignColumns: [materials.id],
 			name: 'products_material_id_fkey'
 		}).onDelete('set null')
 	]
