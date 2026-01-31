@@ -59,8 +59,14 @@
 	let allOptions = $derived([...options, ...localOptions]);
 
 	// Internal state for Svelecte (the selected ID as a string)
-	// Using writable derived to sync with external value
-	let internalValue = $derived.by(() => value);
+	// We need $state here because we mutate it in handleChange
+	// eslint-disable-next-line svelte/prefer-writable-derived
+	let internalValue = $state(value);
+
+	// Sync external value changes to internal state
+	$effect(() => {
+		internalValue = value;
+	});
 
 	/**
 	 * Handle creation of a new option.
