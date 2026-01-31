@@ -20,8 +20,24 @@ import {
 	deleteProduct,
 	reactivateProduct
 } from '$lib/server/db/queries/products';
+import { quickCreateBrand } from '$lib/remote/brands.remote';
+import { quickCreateSupplier } from '$lib/remote/suppliers.remote';
+import { quickCreateMaterial } from '$lib/remote/materials.remote';
+import type { MaterialProductType } from '$lib/schemas/materials';
 import type { Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
+
+/**
+ * Maps a ProductType to MaterialProductType
+ * SUNGLASSES maps to FRAME since sunglasses are essentially frames
+ */
+function toMaterialProductType(type: string | undefined): MaterialProductType {
+	if (!type || type === 'SUNGLASSES') return 'FRAME';
+	if (type === 'FRAME' || type === 'LENS' || type === 'CONTACT_LENS' || type === 'ACCESSORY') {
+		return type;
+	}
+	return 'FRAME';
+}
 
 // Types for paginated response
 export interface PaginatedProducts {
@@ -93,7 +109,36 @@ export const listProducts = query(ListProductsSchema, async (data): Promise<Pagi
 export const createProductForm = form(
 	CreateProductSchema,
 	async (data, issue): Promise<Product> => {
-		const { sku, brandId, supplierId, materialId, ...rest } = data;
+		const {
+			sku,
+			pendingBrandName,
+			pendingSupplierName,
+			pendingMaterialName,
+			pendingMaterialProductType,
+			...rest
+		} = data;
+		let { brandId, supplierId, materialId } = data;
+
+		// Handle pending brand
+		if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
+			const result = await quickCreateBrand({ name: pendingBrandName });
+			brandId = result.id;
+		}
+
+		// Handle pending supplier
+		if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+			const result = await quickCreateSupplier({ name: pendingSupplierName });
+			supplierId = result.id;
+		}
+
+		// Handle pending material
+		if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+			const result = await quickCreateMaterial({
+				name: pendingMaterialName,
+				productType: pendingMaterialProductType ?? toMaterialProductType(rest.type)
+			});
+			materialId = result.id;
+		}
 
 		// Check for duplicate SKU (including soft-deleted)
 		const existingSku = await findProductBySkuIncludingDeleted(sku);
@@ -118,14 +163,13 @@ export const createProductForm = form(
 		}
 
 		// Create new product
-		const product = await createProduct({
+		return await createProduct({
 			sku,
 			brandId: brandId && brandId.trim() !== '' ? brandId : null,
 			supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
 			materialId: materialId && materialId.trim() !== '' ? materialId : null,
 			...rest
 		});
-		return product;
 	}
 );
 
@@ -135,7 +179,37 @@ export const createProductForm = form(
 export const updateProductForm = form(
 	UpdateProductSchema,
 	async (data, issue): Promise<Product> => {
-		const { id, sku, brandId, supplierId, materialId, ...rest } = data;
+		const {
+			id,
+			sku,
+			pendingBrandName,
+			pendingSupplierName,
+			pendingMaterialName,
+			pendingMaterialProductType,
+			...rest
+		} = data;
+		let { brandId, supplierId, materialId } = data;
+
+		// Handle pending brand
+		if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
+			const result = await quickCreateBrand({ name: pendingBrandName });
+			brandId = result.id;
+		}
+
+		// Handle pending supplier
+		if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+			const result = await quickCreateSupplier({ name: pendingSupplierName });
+			supplierId = result.id;
+		}
+
+		// Handle pending material
+		if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+			const result = await quickCreateMaterial({
+				name: pendingMaterialName,
+				productType: pendingMaterialProductType ?? toMaterialProductType(rest.type)
+			});
+			materialId = result.id;
+		}
 
 		// Check if product exists
 		const existing = await findProductById(id);
