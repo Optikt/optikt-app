@@ -1,9 +1,11 @@
 <script lang="ts">
 	import Svelecte from 'svelecte';
 
-	type SelectOption = {
+	export type SelectOption = {
 		id: string;
 		name: string;
+		/** Marks this as a pending/virtual option not yet saved to DB */
+		isPending?: boolean;
 	};
 
 	type Props = {
@@ -21,10 +23,20 @@
 		required?: boolean;
 		/** Disable the select */
 		disabled?: boolean;
-		/** Callback when a new option is created */
-		oncreate?: (name: string) => Promise<SelectOption>;
+		/**
+		 * Enable creation of new options.
+		 * When true, typing a non-existent value shows "Crear: X" option.
+		 * New options are stored locally with isPending=true until form submit.
+		 */
+		creatable?: boolean;
+		/**
+		 * Callback when a NEW option is created (deferred mode).
+		 * Called with the new name, should return a pending option.
+		 * This does NOT save to DB - that happens on form submit.
+		 */
+		onCreatePending?: (name: string) => SelectOption;
 		/** Callback when value changes */
-		onchange?: (id: string) => void;
+		onchange?: (option: SelectOption | null) => void;
 	};
 
 	let {
@@ -35,42 +47,99 @@
 		name,
 		required = false,
 		disabled = false,
-		oncreate,
+		creatable = false,
+		onCreatePending,
 		onchange
 	}: Props = $props();
 
-	// Track local options to add newly created ones
+	// Track local options (newly created pending ones)
 	let localOptions = $state<SelectOption[]>([]);
-	let isCreating = $state(false);
 
 	// Merge options with locally created ones
 	let allOptions = $derived([...options, ...localOptions]);
 
-	// Find selected option by value
-	let selectedOption = $derived(allOptions.find((opt) => opt.id === value) ?? null);
+	// Internal state for Svelecte (the selected ID as a string)
+	// Using writable derived to sync with external value
+	let internalValue = $derived.by(() => value);
 
-	async function handleCreate(inputValue: string) {
-		if (!oncreate || isCreating) return null;
+	/**
+	 * Handle creation of a new option.
+	 * This creates a PENDING option with a temporary ID.
+	 * The actual DB save happens on form submit.
+	 */
+	function handleCreate(props: {
+		inputValue: string;
+		valueField: string;
+		labelField: string;
+		prefix: string;
+	}): SelectOption | Promise<SelectOption> | object {
+		if (!creatable) return {};
 
-		isCreating = true;
-		try {
-			const newOption = await oncreate(inputValue);
-			localOptions = [...localOptions, newOption];
-			value = newOption.id;
-			onchange?.(newOption.id);
-			return newOption;
-		} catch (error) {
-			console.error('Error creating option:', error);
-			return null;
-		} finally {
-			isCreating = false;
+		const inputValue = props.inputValue.trim();
+
+		// Check if already exists in ALL options (case insensitive)
+		const exists = allOptions.some((opt) => opt.name.toLowerCase() === inputValue.toLowerCase());
+		if (exists) {
+			// Return the existing option instead of creating a duplicate
+			return allOptions.find((opt) => opt.name.toLowerCase() === inputValue.toLowerCase())!;
+		}
+
+		let newOption: SelectOption;
+
+		if (onCreatePending) {
+			// Use custom handler
+			newOption = onCreatePending(inputValue);
+		} else {
+			// Default: create with temp ID
+			newOption = {
+				id: `pending_${crypto.randomUUID()}`,
+				name: inputValue,
+				isPending: true
+			};
+		}
+
+		// Add to local options
+		localOptions = [...localOptions, newOption];
+		return newOption;
+	}
+
+	/**
+	 * Handle selection change from Svelecte
+	 */
+	function handleChange(selected: SelectOption | null) {
+		const newValue = selected?.id ?? '';
+		value = newValue;
+		internalValue = newValue;
+		onchange?.(selected);
+	}
+
+	/**
+	 * Get all pending options that need to be saved.
+	 * Call this before form submit to get items to create.
+	 */
+	export function getPendingOptions(): SelectOption[] {
+		return localOptions.filter((opt) => opt.isPending);
+	}
+
+	/**
+	 * Update a pending option with real data after saving to DB.
+	 * Call this after creating in DB to update the ID.
+	 */
+	export function resolvePendingOption(pendingId: string, realOption: SelectOption) {
+		localOptions = localOptions.map((opt) =>
+			opt.id === pendingId ? { ...realOption, isPending: false } : opt
+		);
+		// Update value if this was the selected option
+		if (value === pendingId) {
+			value = realOption.id;
 		}
 	}
 
-	function handleChange(event: CustomEvent<SelectOption | null>) {
-		const selected = event.detail;
-		value = selected?.id ?? '';
-		onchange?.(value);
+	/**
+	 * Clear all pending options (e.g., on form reset)
+	 */
+	export function clearPending() {
+		localOptions = localOptions.filter((opt) => !opt.isPending);
 	}
 </script>
 
@@ -86,20 +155,16 @@
 		{placeholder}
 		{disabled}
 		options={allOptions}
-		value={selectedOption}
+		bind:value={internalValue}
 		valueField="id"
 		labelField="name"
-		creatable={!!oncreate}
+		{creatable}
 		createHandler={handleCreate}
 		creatablePrefix="Crear: "
 		keepCreated={false}
-		on:change={handleChange}
+		onChange={handleChange}
 		class="creatable-select"
 	/>
-
-	{#if name}
-		<input type="hidden" {name} {value} />
-	{/if}
 </div>
 
 <style>
