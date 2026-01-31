@@ -1,41 +1,70 @@
 /**
  * Materials Remote Functions
- * Server-side functions for lens materials management
+ * Server-side functions for unified materials management
  */
 import { query, command } from '$app/server';
 import { QuickCreateMaterialSchema, ListMaterialsSchema } from '$lib/schemas/materials';
-import { getAllLensMaterials, createLensMaterial } from '$lib/server/db/queries/lenses';
-import { ilike, and, isNull } from 'drizzle-orm';
+import { eq, ilike, and, isNull, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { lensMaterials, type LensMaterial } from '$lib/server/db/schema';
+import { materials, type Material } from '$lib/server/db/schema';
 
 /**
- * List all active materials
+ * List all active materials, optionally filtered by product type
  */
-export const listMaterials = query(ListMaterialsSchema, async (): Promise<LensMaterial[]> => {
-	return await getAllLensMaterials();
+export const listMaterials = query(ListMaterialsSchema, async (params): Promise<Material[]> => {
+	const { includeDeleted, productType } = params;
+
+	const conditions = [];
+
+	if (!includeDeleted) {
+		conditions.push(isNull(materials.deletedAt));
+	}
+
+	conditions.push(eq(materials.isActive, true));
+
+	if (productType) {
+		// Include materials for the specific type AND universal materials (ALL)
+		conditions.push(or(eq(materials.productType, productType), eq(materials.productType, 'ALL')));
+	}
+
+	return await db
+		.select()
+		.from(materials)
+		.where(and(...conditions))
+		.orderBy(materials.name);
 });
 
 /**
- * Find a material by name (case-insensitive)
+ * Find a material by name and product type (case-insensitive)
  */
-async function findMaterialByName(name: string): Promise<LensMaterial | null> {
+async function findMaterialByNameAndType(
+	name: string,
+	productType: string
+): Promise<Material | null> {
 	const [material] = await db
 		.select()
-		.from(lensMaterials)
-		.where(and(ilike(lensMaterials.name, name), isNull(lensMaterials.deletedAt)));
+		.from(materials)
+		.where(
+			and(
+				ilike(materials.name, name),
+				eq(materials.productType, productType),
+				isNull(materials.deletedAt)
+			)
+		);
 	return material ?? null;
 }
 
 /**
- * Generate a unique code from material name
+ * Generate a unique code from material name and product type
  */
-function generateMaterialCode(name: string): string {
-	return name
+function generateMaterialCode(name: string, productType: string): string {
+	const prefix = productType.slice(0, 2).toUpperCase();
+	const nameCode = name
 		.toUpperCase()
 		.replace(/\s+/g, '_')
 		.replace(/[^A-Z0-9_]/g, '')
 		.slice(0, 10);
+	return `${prefix}_${nameCode}`;
 }
 
 /**
@@ -44,22 +73,32 @@ function generateMaterialCode(name: string): string {
  */
 export const quickCreateMaterial = command(
 	QuickCreateMaterialSchema,
-	async (data): Promise<{ id: string; name: string }> => {
-		const { name } = data;
+	async (data): Promise<{ id: string; name: string; productType: string }> => {
+		const { name, productType = 'FRAME' } = data;
 
-		// Check for duplicate
-		const existing = await findMaterialByName(name);
+		// Check for duplicate (same name + productType)
+		const existing = await findMaterialByNameAndType(name, productType);
 		if (existing) {
-			throw new Error('Ya existe un material con este nombre');
+			// Return existing instead of throwing error
+			return {
+				id: existing.id,
+				name: existing.name,
+				productType: existing.productType ?? 'FRAME'
+			};
 		}
 
-		const code = generateMaterialCode(name);
+		const code = generateMaterialCode(name, productType);
 
-		const material = await createLensMaterial({
-			name,
-			code,
-			isActive: true
-		});
-		return { id: material.id, name: material.name };
+		const [material] = await db
+			.insert(materials)
+			.values({
+				name,
+				code,
+				productType,
+				isActive: true
+			})
+			.returning();
+
+		return { id: material.id, name: material.name, productType: material.productType };
 	}
 );
