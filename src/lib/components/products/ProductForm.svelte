@@ -4,10 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { createProductForm, updateProductForm } from '$lib/remote/products.remote';
-	import { quickCreateBrand } from '$lib/remote/brands.remote';
-	import { quickCreateSupplier } from '$lib/remote/suppliers.remote';
-	import { quickCreateMaterial } from '$lib/remote/materials.remote';
-	import { FormInput, FormTextarea, CreatableSelect } from '$lib/components/ui';
+	import { FormInput, FormTextarea, CreatableSelect, type SelectOption } from '$lib/components/ui';
 	import { scrollToFirstError } from '$lib/utils';
 	import {
 		ProductType,
@@ -19,11 +16,15 @@
 	import { Checkbox } from 'flowbite-svelte';
 	import type { Product } from '$lib/server/db/schema';
 
+	interface MaterialOption extends SelectOption {
+		productType?: string;
+	}
+
 	interface Props {
 		product?: Product | null;
 		brands: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
-		materials: { id: string; name: string }[];
+		materials: { id: string; name: string; productType?: string }[];
 		cancelHref?: string;
 	}
 
@@ -62,37 +63,121 @@
 
 	let isAutoSku = $state(true);
 
-	// Track locally created options (to add to the lists after inline creation)
-	let localBrands = $state<{ id: string; name: string }[]>([]);
-	let localSuppliers = $state<{ id: string; name: string }[]>([]);
-	let localMaterials = $state<{ id: string; name: string }[]>([]);
+	// ============================================================================
+	// PENDING ITEMS (DEFERRED CREATION)
+	// These track new items typed by the user that will be created on form submit
+	// ============================================================================
 
-	// Merged options (original + locally created)
-	const allBrands = $derived([...brands, ...localBrands]);
-	const allSuppliers = $derived([...suppliers, ...localSuppliers]);
-	const allMaterials = $derived([...materials, ...localMaterials]);
+	type PendingItem = {
+		pendingId: string;
+		name: string;
+		productType?: string; // Only for materials
+	};
 
-	// Quick create handlers
-	async function handleCreateBrand(name: string) {
-		const result = await quickCreateBrand({ name });
-		localBrands = [...localBrands, result];
-		toast.success(`Marca "${name}" creada`);
-		return result;
+	let pendingBrands = $state<PendingItem[]>([]);
+	let pendingSuppliers = $state<PendingItem[]>([]);
+	let pendingMaterials = $state<PendingItem[]>([]);
+
+	// Merged options: original + pending
+	const allBrands = $derived<SelectOption[]>([
+		...brands,
+		...pendingBrands.map((p) => ({ id: p.pendingId, name: p.name, isPending: true }))
+	]);
+
+	const allSuppliers = $derived<SelectOption[]>([
+		...suppliers,
+		...pendingSuppliers.map((p) => ({ id: p.pendingId, name: p.name, isPending: true }))
+	]);
+
+	// Materials filtered by current product type
+	const allMaterials = $derived.by<MaterialOption[]>(() => {
+		const type = formData.type;
+		// Map materials to include pending status
+		const baseMaterials = materials
+			.filter((m) => {
+				// Show materials that match the product type or are universal (ALL)
+				// For SUNGLASSES, also show FRAME materials since they share materials
+				const materialType = m.productType ?? 'ALL';
+				if (materialType === 'ALL') return true;
+				if (type === ProductType.SUNGLASSES) {
+					return materialType === 'FRAME' || materialType === 'SUNGLASSES';
+				}
+				return materialType === type;
+			})
+			.map((m) => ({ ...m, isPending: false }));
+
+		// Add pending materials for this product type
+		const pendingForType = pendingMaterials
+			.filter((p) => p.productType === type || p.productType === 'ALL')
+			.map((p) => ({ id: p.pendingId, name: p.name, isPending: true, productType: p.productType }));
+
+		return [...baseMaterials, ...pendingForType];
+	});
+
+	// Handlers for creating pending items (no DB call yet!)
+	function handleCreatePendingBrand(name: string): SelectOption {
+		const pendingId = `pending_brand_${crypto.randomUUID()}`;
+		pendingBrands = [...pendingBrands, { pendingId, name }];
+		return { id: pendingId, name, isPending: true };
 	}
 
-	async function handleCreateSupplier(name: string) {
-		const result = await quickCreateSupplier({ name });
-		localSuppliers = [...localSuppliers, result];
-		toast.success(`Proveedor "${name}" creado`);
-		return result;
+	function handleCreatePendingSupplier(name: string): SelectOption {
+		const pendingId = `pending_supplier_${crypto.randomUUID()}`;
+		pendingSuppliers = [...pendingSuppliers, { pendingId, name }];
+		return { id: pendingId, name, isPending: true };
 	}
 
-	async function handleCreateMaterial(name: string) {
-		const result = await quickCreateMaterial({ name });
-		localMaterials = [...localMaterials, result];
-		toast.success(`Material "${name}" creado`);
-		return result;
+	function handleCreatePendingMaterial(name: string): SelectOption {
+		const pendingId = `pending_material_${crypto.randomUUID()}`;
+		const productType = formData.type; // Associate with current product type
+		pendingMaterials = [...pendingMaterials, { pendingId, name, productType }];
+		return { id: pendingId, name, isPending: true };
 	}
+
+	/**
+	 * Helper functions to get pending entity names by ID
+	 * Used to send pending names to backend via hidden inputs
+	 */
+	function getPendingName(pendingId: string): string | null {
+		if (!pendingId.startsWith('pending_')) return null;
+
+		const brand = pendingBrands.find((b) => b.pendingId === pendingId);
+		if (brand) return brand.name;
+
+		const supplier = pendingSuppliers.find((s) => s.pendingId === pendingId);
+		if (supplier) return supplier.name;
+
+		const material = pendingMaterials.find((m) => m.pendingId === pendingId);
+		if (material) return material.name;
+
+		return null;
+	}
+
+	function getPendingMaterialProductType(pendingId: string): string | null {
+		if (!pendingId.startsWith('pending_material_')) return null;
+		const material = pendingMaterials.find((m) => m.pendingId === pendingId);
+		return material?.productType ?? null;
+	}
+
+	// Clear material when product type changes (since materials are type-specific)
+	$effect(() => {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		formData.type; // Track type changes
+		untrack(() => {
+			// Only clear if current material doesn't match new type
+			const currentMaterial = allMaterials.find((m) => m.id === formData.materialId);
+			if (currentMaterial && currentMaterial.productType) {
+				const type = formData.type;
+				const materialType = currentMaterial.productType;
+				if (materialType !== 'ALL' && materialType !== type) {
+					// For sunglasses, keep FRAME materials
+					if (!(type === ProductType.SUNGLASSES && materialType === 'FRAME')) {
+						formData.materialId = '';
+					}
+				}
+			}
+		});
+	});
 
 	// Computed: show stock fields?
 	const showStockFields = $derived(requiresStockTracking(formData.type as ProductType));
@@ -199,7 +284,7 @@
 					handleUpdateResult(formEl);
 				} catch (e) {
 					console.error(e);
-					toast.error('Error actualizando producto');
+					toast.error(e instanceof Error ? e.message : 'Error actualizando producto');
 				} finally {
 					isSubmitting = false;
 				}
@@ -207,6 +292,34 @@
 			class="space-y-6"
 		>
 			<input type="hidden" name="id" value={product.id} />
+
+			<!-- Hidden inputs for pending entities (if IDs are pending_*) -->
+			{#if formData.brandId?.startsWith('pending_')}
+				<input
+					type="hidden"
+					name="pendingBrandName"
+					value={getPendingName(formData.brandId) ?? ''}
+				/>
+			{/if}
+			{#if formData.supplierId?.startsWith('pending_')}
+				<input
+					type="hidden"
+					name="pendingSupplierName"
+					value={getPendingName(formData.supplierId) ?? ''}
+				/>
+			{/if}
+			{#if formData.materialId?.startsWith('pending_material_')}
+				<input
+					type="hidden"
+					name="pendingMaterialName"
+					value={getPendingName(formData.materialId) ?? ''}
+				/>
+				<input
+					type="hidden"
+					name="pendingMaterialProductType"
+					value={getPendingMaterialProductType(formData.materialId) ?? formData.type}
+				/>
+			{/if}
 
 			<!-- Basic Info -->
 			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -289,7 +402,8 @@
 							placeholder="Buscar material..."
 							bind:value={formData.materialId}
 							options={allMaterials}
-							oncreate={handleCreateMaterial}
+							creatable
+							onCreatePending={handleCreatePendingMaterial}
 						/>
 						<CreatableSelect
 							label="Marca"
@@ -297,7 +411,8 @@
 							placeholder="Buscar marca..."
 							bind:value={formData.brandId}
 							options={allBrands}
-							oncreate={handleCreateBrand}
+							creatable
+							onCreatePending={handleCreatePendingBrand}
 						/>
 						<CreatableSelect
 							label="Proveedor"
@@ -305,7 +420,8 @@
 							placeholder="Buscar proveedor..."
 							bind:value={formData.supplierId}
 							options={allSuppliers}
-							oncreate={handleCreateSupplier}
+							creatable
+							onCreatePending={handleCreatePendingSupplier}
 						/>
 					</div>
 				</div>
@@ -440,13 +556,41 @@
 					handleCreateResult(formEl);
 				} catch (e) {
 					console.error(e);
-					toast.error('Error creando producto');
+					toast.error(e instanceof Error ? e.message : 'Error creando producto');
 				} finally {
 					isSubmitting = false;
 				}
 			})}
 			class="space-y-6"
 		>
+			<!-- Hidden inputs for pending entities (if IDs are pending_*) -->
+			{#if formData.brandId?.startsWith('pending_')}
+				<input
+					type="hidden"
+					name="pendingBrandName"
+					value={getPendingName(formData.brandId) ?? ''}
+				/>
+			{/if}
+			{#if formData.supplierId?.startsWith('pending_')}
+				<input
+					type="hidden"
+					name="pendingSupplierName"
+					value={getPendingName(formData.supplierId) ?? ''}
+				/>
+			{/if}
+			{#if formData.materialId?.startsWith('pending_material_')}
+				<input
+					type="hidden"
+					name="pendingMaterialName"
+					value={getPendingName(formData.materialId) ?? ''}
+				/>
+				<input
+					type="hidden"
+					name="pendingMaterialProductType"
+					value={getPendingMaterialProductType(formData.materialId) ?? formData.type}
+				/>
+			{/if}
+
 			<!-- Basic Info -->
 			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 				<h3 class="mb-4 text-lg font-semibold text-slate-800">Información Básica</h3>
@@ -528,7 +672,8 @@
 							placeholder="Buscar material..."
 							bind:value={formData.materialId}
 							options={allMaterials}
-							oncreate={handleCreateMaterial}
+							creatable
+							onCreatePending={handleCreatePendingMaterial}
 						/>
 						<CreatableSelect
 							label="Marca"
@@ -536,7 +681,8 @@
 							placeholder="Buscar marca..."
 							bind:value={formData.brandId}
 							options={allBrands}
-							oncreate={handleCreateBrand}
+							creatable
+							onCreatePending={handleCreatePendingBrand}
 						/>
 						<CreatableSelect
 							label="Proveedor"
@@ -544,7 +690,8 @@
 							placeholder="Buscar proveedor..."
 							bind:value={formData.supplierId}
 							options={allSuppliers}
-							oncreate={handleCreateSupplier}
+							creatable
+							onCreatePending={handleCreatePendingSupplier}
 						/>
 					</div>
 				</div>
