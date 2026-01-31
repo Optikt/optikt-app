@@ -1,18 +1,17 @@
-
 /**
  * Generates a UUID v4 string for frontend use only.
- * 
+ *
  * @remarks
  * This function is designed exclusively for client-side environments and should NOT be used
  * for security-critical operations. It generates temporary, non-cryptographic UUIDs suitable for:
  * - Form field identifiers
  * - Temporary pending IDs
  * - UI component keys that will be discarded
- * 
+ *
  * For server-side operations, use Node.js's native `crypto.randomUUID()` directly instead.
- * 
+ *
  * @returns A UUID v4 string in the format `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`
- * 
+ *
  * @example
  * ```typescript
  * const tempId = generateUUID(); // "550e8400-e29b-41d4-a716-446655440000"
