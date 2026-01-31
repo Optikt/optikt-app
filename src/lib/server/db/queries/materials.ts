@@ -1,10 +1,10 @@
 /**
  * Materials database queries
  */
-import { eq, isNull, and, or } from 'drizzle-orm';
+import { eq, isNull, and, or, ilike } from 'drizzle-orm';
 import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
-import { materials, type Material } from '$lib/server/db/schema';
+import { materials, type Material, type NewMaterial } from '$lib/server/db/schema';
 
 /**
  * Get all materials (excluding soft-deleted)
@@ -56,4 +56,43 @@ export async function findMaterialById(id: string): Promise<Material | null> {
 		.from(materials)
 		.where(and(eq(materials.id, id), isNull(materials.deletedAt)));
 	return material ?? null;
+}
+
+/**
+ * Find a material by name and product type (case-insensitive)
+ */
+export async function findMaterialByName(
+	name: string,
+	productType?: string
+): Promise<Material | null> {
+	const conditions = [ilike(materials.name, name), isNull(materials.deletedAt)];
+
+	if (productType) {
+		conditions.push(or(eq(materials.productType, productType), eq(materials.productType, 'ALL'))!);
+	}
+
+	const [material] = await db
+		.select()
+		.from(materials)
+		.where(and(...conditions));
+	return material ?? null;
+}
+
+/**
+ * Create a new material
+ */
+export async function createMaterial(
+	data: Omit<NewMaterial, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<Material> {
+	const now = new Date();
+	const [material] = await db
+		.insert(materials)
+		.values({
+			...data,
+			id: crypto.randomUUID(),
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return material;
 }
