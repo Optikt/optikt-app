@@ -18,22 +18,10 @@ import {
 	deleteProduct,
 	reactivateProduct
 } from '$lib/server/db/queries/products';
+import { ProductType, toMaterialProductType } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
 import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
-import type { MaterialProductType } from '$lib/schemas/materials';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-
-/**
- * Maps a ProductType to MaterialProductType
- * SUNGLASSES maps to FRAME since sunglasses are essentially frames
- */
-function toMaterialProductType(type: string | undefined): MaterialProductType {
-	if (!type || type === 'SUNGLASSES') return 'FRAME';
-	if (type === 'FRAME' || type === 'LENS' || type === 'CONTACT_LENS' || type === 'ACCESSORY') {
-		return type;
-	}
-	return 'FRAME';
-}
 
 // Types for paginated response
 export interface PaginatedProducts {
@@ -327,7 +315,9 @@ export const updateProductForm = form(
 
 			// Handle pending material
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-				const productType = pendingMaterialProductType ?? toMaterialProductType(rest.type);
+				const productType =
+					pendingMaterialProductType ?? toMaterialProductType(rest.type ?? ProductType.FRAME);
+
 				const [existing] = await tx
 					.select()
 					.from(materials)
