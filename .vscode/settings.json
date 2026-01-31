@@ -3,5 +3,9 @@
 		"*.css": "tailwindcss"
 	},
 	"cSpell.language": "en,es-ES",
-	"cSpell.words": ["Optikt"]
+	"cSpell.words": [
+		"Optikt",
+		"Policarbonato",
+		"Trivex"
+	]
 }
