@@ -4,7 +4,7 @@ import {
 	products,
 	brands,
 	suppliers,
-	lensMaterials,
+	materials,
 	type Product,
 	type NewProduct
 } from '$lib/server/db/schema';
@@ -32,12 +32,12 @@ export async function getAllProductsWithRelations(): Promise<ProductWithRelation
 			product: products,
 			brand: { id: brands.id, name: brands.name },
 			supplier: { id: suppliers.id, name: suppliers.name },
-			material: { id: lensMaterials.id, name: lensMaterials.name, code: lensMaterials.code }
+			material: { id: materials.id, name: materials.name, code: materials.code }
 		})
 		.from(products)
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-		.leftJoin(lensMaterials, eq(products.materialId, lensMaterials.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(isNull(products.deletedAt));
 
 	return results.map((r) => ({
@@ -57,18 +57,19 @@ export async function getActiveProductsWithRelations(): Promise<ProductWithRelat
 			product: products,
 			brand: { id: brands.id, name: brands.name },
 			supplier: { id: suppliers.id, name: suppliers.name },
-			material: { id: lensMaterials.id, name: lensMaterials.name, code: lensMaterials.code }
+			material: { id: materials.id, name: materials.name, code: materials.code }
 		})
 		.from(products)
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-		.leftJoin(lensMaterials, eq(products.materialId, lensMaterials.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(and(isNull(products.deletedAt), eq(products.isActive, true)));
 
 	return results.map((r) => ({
 		...r.product,
 		brand: r.brand?.id ? r.brand : null,
-		supplier: r.supplier?.id ? r.supplier : null
+		supplier: r.supplier?.id ? r.supplier : null,
+		material: r.material?.id ? r.material : null
 	}));
 }
 
@@ -94,12 +95,12 @@ export async function findProductByIdWithRelations(
 			product: products,
 			brand: { id: brands.id, name: brands.name },
 			supplier: { id: suppliers.id, name: suppliers.name },
-			material: { id: lensMaterials.id, name: lensMaterials.name, code: lensMaterials.code }
+			material: { id: materials.id, name: materials.name, code: materials.code }
 		})
 		.from(products)
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-		.leftJoin(lensMaterials, eq(products.materialId, lensMaterials.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(and(eq(products.id, id), isNull(products.deletedAt)));
 
 	if (results.length === 0) return null;
