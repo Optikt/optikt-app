@@ -5,7 +5,7 @@
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();
-	const { product, brands, suppliers } = untrack(() => data);
+	const { product, brands, suppliers, materials } = untrack(() => data);
 </script>
 
 <svelte:head>
@@ -27,5 +27,5 @@
 	</div>
 
 	<!-- Form - uses parent data -->
-	<ProductForm {product} {brands} {suppliers} cancelHref={`/products/${product.id}`} />
+	<ProductForm {product} {brands} {suppliers} {materials} cancelHref={`/products/${product.id}`} />
 </div>
