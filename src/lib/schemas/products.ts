@@ -4,6 +4,7 @@
  */
 import * as v from 'valibot';
 import { ALL_PRODUCT_TYPES } from '$lib/shared/enums';
+import { MaterialProductTypes } from './materials';
 
 // Helper to coerce string to number for form inputs
 const CoercedNumber = v.pipe(
@@ -65,7 +66,7 @@ export const CreateProductSchema = v.object({
 	pendingBrandName: v.optional(v.string()),
 	pendingSupplierName: v.optional(v.string()),
 	pendingMaterialName: v.optional(v.string()),
-	pendingMaterialProductType: v.optional(v.string()),
+	pendingMaterialProductType: v.optional(v.picklist(MaterialProductTypes)),
 	gender: v.optional(v.string()),
 	color: v.optional(v.string()),
 	size: v.optional(v.string()),
@@ -118,7 +119,7 @@ export const UpdateProductSchema = v.object({
 	pendingBrandName: v.optional(v.string()),
 	pendingSupplierName: v.optional(v.string()),
 	pendingMaterialName: v.optional(v.string()),
-	pendingMaterialProductType: v.optional(v.string()),
+	pendingMaterialProductType: v.optional(v.picklist(MaterialProductTypes)),
 	gender: v.optional(v.string()),
 	color: v.optional(v.string()),
 	size: v.optional(v.string()),
