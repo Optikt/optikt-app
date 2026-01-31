@@ -227,11 +227,11 @@ export const createProductForm = form(
 				.insert(products)
 				.values({
 					id: crypto.randomUUID(),
+					...rest,
 					sku,
 					brandId: brandId && brandId.trim() !== '' ? brandId : null,
 					supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
 					materialId: materialId && materialId.trim() !== '' ? materialId : null,
-					...rest,
 					createdAt: now,
 					updatedAt: now
 				})
@@ -372,6 +372,7 @@ export const updateProductForm = form(
 			const [updated] = await tx
 				.update(products)
 				.set({
+					...rest,
 					...(sku && { sku }),
 					brandId:
 						brandId !== undefined ? (brandId && brandId.trim() !== '' ? brandId : null) : undefined,
@@ -387,7 +388,6 @@ export const updateProductForm = form(
 								? materialId
 								: null
 							: undefined,
-					...rest,
 					updatedAt: now
 				})
 				.where(eq(products.id, id))
