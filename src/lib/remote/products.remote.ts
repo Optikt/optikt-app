@@ -4,6 +4,7 @@
  */
 import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
+import { eq, isNull, and, ilike } from 'drizzle-orm';
 import {
 	ListProductsSchema,
 	CreateProductSchema,
@@ -13,18 +14,13 @@ import {
 import {
 	getAllProductsWithRelations,
 	findProductById,
-	findProductBySkuIncludingDeleted,
-	findProductBySkuExcluding,
-	createProduct,
 	updateProduct,
 	deleteProduct,
 	reactivateProduct
 } from '$lib/server/db/queries/products';
-import { quickCreateBrand } from '$lib/remote/brands.remote';
-import { quickCreateSupplier } from '$lib/remote/suppliers.remote';
-import { quickCreateMaterial } from '$lib/remote/materials.remote';
+import { db } from '$lib/server/db';
+import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
 import type { MaterialProductType } from '$lib/schemas/materials';
-import type { Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 
 /**
@@ -105,6 +101,7 @@ export const listProducts = query(ListProductsSchema, async (data): Promise<Pagi
 
 /**
  * Create a new product with form validation
+ * All pending entity creation and product creation happen in a single transaction
  */
 export const createProductForm = form(
 	CreateProductSchema,
@@ -119,62 +116,144 @@ export const createProductForm = form(
 		} = data;
 		let { brandId, supplierId, materialId } = data;
 
-		// Handle pending brand
-		if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
-			const result = await quickCreateBrand({ name: pendingBrandName });
-			brandId = result.id;
-		}
+		// Use a transaction for atomicity - all or nothing
+		// IMPORTANT: All db operations inside must use `tx`, not `db`
+		return await db.transaction(async (tx) => {
+			const now = new Date();
 
-		// Handle pending supplier
-		if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-			const result = await quickCreateSupplier({ name: pendingSupplierName });
-			supplierId = result.id;
-		}
+			// TODO: Check whenever we found the "pending" things were deleted previously, this could fail.
+			// So we should check for that and maybe reactivate them instead of creating new ones.
 
-		// Handle pending material
-		if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-			const result = await quickCreateMaterial({
-				name: pendingMaterialName,
-				productType: pendingMaterialProductType ?? toMaterialProductType(rest.type)
-			});
-			materialId = result.id;
-		}
+			// Handle pending brand
+			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
+				// Check if brand already exists (case-insensitive)
+				const [existing] = await tx
+					.select()
+					.from(brands)
+					.where(and(ilike(brands.name, pendingBrandName), isNull(brands.deletedAt)));
 
-		// Check for duplicate SKU (including soft-deleted)
-		const existingSku = await findProductBySkuIncludingDeleted(sku);
-		if (existingSku) {
-			// If it's soft-deleted, we can reactivate it with new data
-			if (existingSku.deletedAt) {
-				const reactivated = await updateProduct(existingSku.id, {
-					...rest,
+				if (existing) {
+					brandId = existing.id;
+				} else {
+					const [newBrand] = await tx
+						.insert(brands)
+						.values({
+							id: crypto.randomUUID(),
+							name: pendingBrandName,
+							createdAt: now,
+							updatedAt: now
+						})
+						.returning();
+					brandId = newBrand.id;
+				}
+			}
+
+			// Handle pending supplier
+			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+				const [existing] = await tx
+					.select()
+					.from(suppliers)
+					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
+
+				if (existing) {
+					supplierId = existing.id;
+				} else {
+					const [newSupplier] = await tx
+						.insert(suppliers)
+						.values({
+							id: crypto.randomUUID(),
+							name: pendingSupplierName,
+							type: 'DISTRIBUTOR',
+							primaryPhone: '',
+							createdAt: now,
+							updatedAt: now
+						})
+						.returning();
+					supplierId = newSupplier.id;
+				}
+			}
+
+			// Handle pending material
+			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+				const productType = pendingMaterialProductType ?? toMaterialProductType(rest.type);
+				const [existing] = await tx
+					.select()
+					.from(materials)
+					.where(
+						and(
+							ilike(materials.name, pendingMaterialName),
+							eq(materials.productType, productType),
+							isNull(materials.deletedAt)
+						)
+					);
+
+				if (existing) {
+					materialId = existing.id;
+				} else {
+					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
+					const [newMaterial] = await tx
+						.insert(materials)
+						.values({
+							id: crypto.randomUUID(),
+							name: pendingMaterialName,
+							code,
+							productType,
+							createdAt: now,
+							updatedAt: now
+						})
+						.returning();
+					materialId = newMaterial.id;
+				}
+			}
+
+			// Check for duplicate SKU (including soft-deleted)
+			const [existingSku] = await tx.select().from(products).where(eq(products.sku, sku));
+
+			if (existingSku) {
+				// If it's soft-deleted, we can reactivate it with new data
+				if (existingSku.deletedAt) {
+					const [reactivated] = await tx
+						.update(products)
+						.set({
+							...rest,
+							brandId: brandId && brandId.trim() !== '' ? brandId : null,
+							supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
+							materialId: materialId && materialId.trim() !== '' ? materialId : null,
+							deletedAt: null,
+							isActive: true,
+							updatedAt: now
+						})
+						.where(eq(products.id, existingSku.id))
+						.returning();
+					return reactivated;
+				}
+				// Otherwise it's an active product with same SKU
+				invalid(issue.sku('Ya existe un producto con este SKU'));
+			}
+
+			// Create new product
+			const [newProduct] = await tx
+				.insert(products)
+				.values({
+					id: crypto.randomUUID(),
+					sku,
 					brandId: brandId && brandId.trim() !== '' ? brandId : null,
 					supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
 					materialId: materialId && materialId.trim() !== '' ? materialId : null,
-					deletedAt: null,
-					isActive: true
-				});
-				if (!reactivated) {
-					invalid('Error reactivando producto');
-				}
-				return reactivated;
-			}
-			// Otherwise it's an active product with same SKU
-			invalid(issue.sku('Ya existe un producto con este SKU'));
-		}
+					...rest,
+					createdAt: now,
+					updatedAt: now
+				})
+				.returning();
 
-		// Create new product
-		return await createProduct({
-			sku,
-			brandId: brandId && brandId.trim() !== '' ? brandId : null,
-			supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
-			materialId: materialId && materialId.trim() !== '' ? materialId : null,
-			...rest
+			return newProduct;
 		});
 	}
 );
 
 /**
  * Update an existing product with form validation
+ * All pending entity creation and product update happen in a single transaction
  */
 export const updateProductForm = form(
 	UpdateProductSchema,
@@ -190,65 +269,143 @@ export const updateProductForm = form(
 		} = data;
 		let { brandId, supplierId, materialId } = data;
 
-		// Handle pending brand
-		if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
-			const result = await quickCreateBrand({ name: pendingBrandName });
-			brandId = result.id;
-		}
+		// Use a transaction for atomicity - all or nothing
+		// IMPORTANT: All db operations inside must use `tx`, not `db`
+		return await db.transaction(async (tx) => {
+			const now = new Date();
 
-		// Handle pending supplier
-		if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-			const result = await quickCreateSupplier({ name: pendingSupplierName });
-			supplierId = result.id;
-		}
+			// Handle pending brand
+			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
+				const [existing] = await tx
+					.select()
+					.from(brands)
+					.where(and(ilike(brands.name, pendingBrandName), isNull(brands.deletedAt)));
 
-		// Handle pending material
-		if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-			const result = await quickCreateMaterial({
-				name: pendingMaterialName,
-				productType: pendingMaterialProductType ?? toMaterialProductType(rest.type)
-			});
-			materialId = result.id;
-		}
-
-		// Check if product exists
-		const existing = await findProductById(id);
-		if (!existing) {
-			invalid('Producto no encontrado');
-		}
-
-		// Check for duplicate SKU if SKU is being changed
-		if (sku && sku !== existing.sku) {
-			const duplicate = await findProductBySkuExcluding(sku, id);
-			if (duplicate) {
-				invalid(issue.sku('Ya existe un producto con este SKU'));
+				if (existing) {
+					brandId = existing.id;
+				} else {
+					const [newBrand] = await tx
+						.insert(brands)
+						.values({
+							id: crypto.randomUUID(),
+							name: pendingBrandName,
+							createdAt: now,
+							updatedAt: now
+						})
+						.returning();
+					brandId = newBrand.id;
+				}
 			}
-		}
 
-		// Update product
-		const updated = await updateProduct(id, {
-			...(sku && { sku }),
-			brandId:
-				brandId !== undefined ? (brandId && brandId.trim() !== '' ? brandId : null) : undefined,
-			supplierId:
-				supplierId !== undefined
-					? supplierId && supplierId.trim() !== ''
-						? supplierId
-						: null
-					: undefined,
-			materialId:
-				materialId !== undefined
-					? materialId && materialId.trim() !== ''
-						? materialId
-						: null
-					: undefined,
-			...rest
+			// Handle pending supplier
+			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+				const [existing] = await tx
+					.select()
+					.from(suppliers)
+					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
+
+				if (existing) {
+					supplierId = existing.id;
+				} else {
+					const [newSupplier] = await tx
+						.insert(suppliers)
+						.values({
+							id: crypto.randomUUID(),
+							name: pendingSupplierName,
+							type: 'DISTRIBUTOR',
+							primaryPhone: '',
+							createdAt: now,
+							updatedAt: now
+						})
+						.returning();
+					supplierId = newSupplier.id;
+				}
+			}
+
+			// Handle pending material
+			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+				const productType = pendingMaterialProductType ?? toMaterialProductType(rest.type);
+				const [existing] = await tx
+					.select()
+					.from(materials)
+					.where(
+						and(
+							ilike(materials.name, pendingMaterialName),
+							eq(materials.productType, productType),
+							isNull(materials.deletedAt)
+						)
+					);
+
+				if (existing) {
+					materialId = existing.id;
+				} else {
+					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
+					const [newMaterial] = await tx
+						.insert(materials)
+						.values({
+							id: crypto.randomUUID(),
+							name: pendingMaterialName,
+							code,
+							productType,
+							createdAt: now,
+							updatedAt: now
+						})
+						.returning();
+					materialId = newMaterial.id;
+				}
+			}
+
+			// Check if product exists
+			const [existing] = await tx
+				.select()
+				.from(products)
+				.where(and(eq(products.id, id), isNull(products.deletedAt)));
+			if (!existing) {
+				throw new Error('Producto no encontrado');
+			}
+
+			// Check for duplicate SKU if SKU is being changed
+			if (sku && sku !== existing.sku) {
+				const [duplicate] = await tx
+					.select()
+					.from(products)
+					.where(and(eq(products.sku, sku), isNull(products.deletedAt)));
+				if (duplicate && duplicate.id !== id) {
+					invalid(issue.sku('Ya existe un producto con este SKU'));
+				}
+			}
+
+			// Update product
+			const [updated] = await tx
+				.update(products)
+				.set({
+					...(sku && { sku }),
+					brandId:
+						brandId !== undefined ? (brandId && brandId.trim() !== '' ? brandId : null) : undefined,
+					supplierId:
+						supplierId !== undefined
+							? supplierId && supplierId.trim() !== ''
+								? supplierId
+								: null
+							: undefined,
+					materialId:
+						materialId !== undefined
+							? materialId && materialId.trim() !== ''
+								? materialId
+								: null
+							: undefined,
+					...rest,
+					updatedAt: now
+				})
+				.where(eq(products.id, id))
+				.returning();
+
+			if (!updated) {
+				throw new Error('Error actualizando producto');
+			}
+
+			return updated;
 		});
-		if (!updated) {
-			invalid('Error actualizando producto');
-		}
-
-		return updated;
 	}
 );
 
