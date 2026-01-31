@@ -170,7 +170,8 @@ export const quickCreateSupplier = command(
 		// Check for duplicate
 		const existing = await findSupplierByName(name);
 		if (existing) {
-			throw new Error('Ya existe un proveedor con este nombre');
+			// Return existing instead of throwing error
+			return { id: existing.id, name: existing.name };
 		}
 
 		const supplier = await createSupplier({

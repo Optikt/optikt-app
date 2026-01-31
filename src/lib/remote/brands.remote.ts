@@ -159,7 +159,8 @@ export const quickCreateBrand = command(
 		// Check for duplicate
 		const existing = await findBrandByName(name);
 		if (existing) {
-			throw new Error('Ya existe una marca con este nombre');
+			// Return existing instead of throwing error
+			return { id: existing.id, name: existing.name };
 		}
 
 		const brand = await createBrand({ name });
