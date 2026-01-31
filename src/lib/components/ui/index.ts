@@ -14,3 +14,4 @@ export { default as WhatsAppInput } from './WhatsAppInput.svelte';
 export { default as InstagramInput } from './InstagramInput.svelte';
 export { default as IdInput } from './IdInput.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
+export type { SelectOption } from './CreatableSelect.svelte';
