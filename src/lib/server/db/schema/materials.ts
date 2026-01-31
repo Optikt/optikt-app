@@ -8,7 +8,6 @@ import {
 	boolean,
 	doublePrecision
 } from 'drizzle-orm/pg-core';
-import { ProductType } from '$lib/shared/enums/productTypes';
 
 /**
  * Unified Materials Table
@@ -20,10 +19,8 @@ import { ProductType } from '$lib/shared/enums/productTypes';
  *
  * The `productType` field indicates which product type(s) this material applies to.
  * Use 'ALL' for materials that can be used across all product types.
+ * Note: SUNGLASSES materials are stored as FRAME type (they share materials).
  */
-
-// Product type categories for materials (derived from ProductType + ALL)
-export type MaterialProductType = ProductType | 'ALL';
 
 export const materials = pgTable(
 	'materials',
