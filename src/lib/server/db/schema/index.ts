@@ -15,3 +15,6 @@ export * from './products';
 export * from './lenses';
 export * from './prescriptions';
 export * from './sales';
+
+// Audit / History
+export * from './changeHistory';
