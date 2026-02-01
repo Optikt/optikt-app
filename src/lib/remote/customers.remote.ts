@@ -162,8 +162,7 @@ export const deleteCustomerById = command(CustomerIdSchema, async (data): Promis
  */
 export const reactivateCustomerForm = form(
 	ReactivateCustomerSchema,
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	async (data, _issue): Promise<Customer> => {
+	async (data): Promise<Customer> => {
 		const { id, birthDate, ...rest } = data;
 
 		// Check if customer exists and is deleted
@@ -174,7 +173,6 @@ export const reactivateCustomerForm = form(
 
 		if (!customer) {
 			invalid('Cliente no encontrado o no está eliminado');
-			throw new Error('Customer not found');
 		}
 
 		return customer;
