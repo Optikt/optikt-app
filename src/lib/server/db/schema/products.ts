@@ -22,11 +22,11 @@ export const products = pgTable(
 		name: varchar().notNull(),
 		type: varchar().notNull(),
 		brandId: uuid('brand_id'),
-		supplierId: uuid('supplier_id'),
+		supplierId: uuid('supplier_id').notNull(),
 		color: varchar(),
 		size: varchar(),
 		gender: varchar({ length: 20 }),
-		materialId: uuid('material_id'),
+		materialId: uuid('material_id').notNull(),
 		description: varchar(),
 		purchasePrice: doublePrecision('purchase_price').notNull(),
 		salePrice: doublePrecision('sale_price').notNull(),
@@ -61,12 +61,12 @@ export const products = pgTable(
 			columns: [table.supplierId],
 			foreignColumns: [suppliers.id],
 			name: 'products_supplier_id_fkey'
-		}).onDelete('set null'),
+		}).onDelete('restrict'),
 		foreignKey({
 			columns: [table.materialId],
 			foreignColumns: [materials.id],
 			name: 'products_material_id_fkey'
-		}).onDelete('set null')
+		}).onDelete('restrict')
 	]
 );
 
