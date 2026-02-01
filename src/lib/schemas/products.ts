@@ -40,7 +40,7 @@ export const CreateProductSchema = v.object({
 	),
 	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
 	type: v.picklist(ALL_PRODUCT_TYPES, 'Tipo de producto requerido'),
-	// Allow pending IDs (starting with "pending_") or UUIDs or empty strings
+	// brandId is optional and can be null
 	brandId: v.optional(
 		v.union([
 			v.literal(''),
@@ -48,19 +48,15 @@ export const CreateProductSchema = v.object({
 			v.pipe(v.string(), v.startsWith('pending_'))
 		])
 	),
-	supplierId: v.optional(
-		v.union([
-			v.literal(''),
-			v.pipe(v.string(), v.uuid()),
-			v.pipe(v.string(), v.startsWith('pending_'))
-		])
+	// supplierId is REQUIRED - must be a valid UUID or pending ID
+	supplierId: v.union(
+		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))],
+		'Proveedor es requerido'
 	),
-	materialId: v.optional(
-		v.union([
-			v.literal(''),
-			v.pipe(v.string(), v.uuid()),
-			v.pipe(v.string(), v.startsWith('pending_material_'))
-		])
+	// materialId is REQUIRED - must be a valid UUID or pending material ID
+	materialId: v.union(
+		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))],
+		'Material es requerido'
 	),
 	// Pending entity names (sent when ID is pending_*)
 	pendingBrandName: v.optional(v.string()),
@@ -93,7 +89,7 @@ export const UpdateProductSchema = v.object({
 	),
 	name: v.optional(v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255))),
 	type: v.optional(v.picklist(ALL_PRODUCT_TYPES)),
-	// Allow pending IDs (starting with "pending_") or UUIDs or empty strings
+	// brandId is optional and can be set to null (empty string)
 	brandId: v.optional(
 		v.union([
 			v.literal(''),
@@ -101,19 +97,13 @@ export const UpdateProductSchema = v.object({
 			v.pipe(v.string(), v.startsWith('pending_'))
 		])
 	),
+	// supplierId is required (cannot be null), but optional to update - cannot be empty string
 	supplierId: v.optional(
-		v.union([
-			v.literal(''),
-			v.pipe(v.string(), v.uuid()),
-			v.pipe(v.string(), v.startsWith('pending_'))
-		])
+		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))])
 	),
+	// materialId is required (cannot be null), but optional to update - cannot be empty string
 	materialId: v.optional(
-		v.union([
-			v.literal(''),
-			v.pipe(v.string(), v.uuid()),
-			v.pipe(v.string(), v.startsWith('pending_material_'))
-		])
+		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))])
 	),
 	// Pending entity names (sent when ID is pending_*)
 	pendingBrandName: v.optional(v.string()),
