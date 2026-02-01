@@ -4,6 +4,7 @@
  */
 import * as v from 'valibot';
 import { ALL_PRODUCT_TYPES } from '$lib/shared/enums';
+import { MaterialProductTypes } from './materials';
 
 // Helper to coerce string to number for form inputs
 const CoercedNumber = v.pipe(
@@ -39,8 +40,30 @@ export const CreateProductSchema = v.object({
 	),
 	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
 	type: v.picklist(ALL_PRODUCT_TYPES, 'Tipo de producto requerido'),
-	brandId: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.uuid())])),
-	supplierId: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.uuid())])),
+	// brandId is optional and can be null
+	brandId: v.optional(
+		v.union([
+			v.literal(''),
+			v.pipe(v.string(), v.uuid()),
+			v.pipe(v.string(), v.startsWith('pending_'))
+		])
+	),
+	// supplierId is REQUIRED - must be a valid UUID or pending ID
+	supplierId: v.union(
+		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))],
+		'Proveedor es requerido'
+	),
+	// materialId is REQUIRED - must be a valid UUID or pending material ID
+	materialId: v.union(
+		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))],
+		'Material es requerido'
+	),
+	// Pending entity names (sent when ID is pending_*)
+	pendingBrandName: v.optional(v.string()),
+	pendingSupplierName: v.optional(v.string()),
+	pendingMaterialName: v.optional(v.string()),
+	pendingMaterialProductType: v.optional(v.picklist(MaterialProductTypes)),
+	gender: v.optional(v.string()),
 	color: v.optional(v.string()),
 	size: v.optional(v.string()),
 	description: v.optional(v.string()),
@@ -66,8 +89,28 @@ export const UpdateProductSchema = v.object({
 	),
 	name: v.optional(v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255))),
 	type: v.optional(v.picklist(ALL_PRODUCT_TYPES)),
-	brandId: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.uuid())])),
-	supplierId: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.uuid())])),
+	// brandId is optional and can be set to null (empty string)
+	brandId: v.optional(
+		v.union([
+			v.literal(''),
+			v.pipe(v.string(), v.uuid()),
+			v.pipe(v.string(), v.startsWith('pending_'))
+		])
+	),
+	// supplierId is required (cannot be null), but optional to update - cannot be empty string
+	supplierId: v.optional(
+		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))])
+	),
+	// materialId is required (cannot be null), but optional to update - cannot be empty string
+	materialId: v.optional(
+		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))])
+	),
+	// Pending entity names (sent when ID is pending_*)
+	pendingBrandName: v.optional(v.string()),
+	pendingSupplierName: v.optional(v.string()),
+	pendingMaterialName: v.optional(v.string()),
+	pendingMaterialProductType: v.optional(v.picklist(MaterialProductTypes)),
+	gender: v.optional(v.string()),
 	color: v.optional(v.string()),
 	size: v.optional(v.string()),
 	description: v.optional(v.string()),

@@ -6,6 +6,7 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { PasswordField } from '$lib/components/ui';
 	import { untrack } from 'svelte';
+	import { generateUUID } from '$lib/utils/generateUUID';
 
 	interface Props {
 		open: boolean;
@@ -15,11 +16,11 @@
 	let { open = $bindable(), onClose }: Props = $props();
 
 	// Form reset pattern for modals
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	$effect(() => {
 		if (open) {
 			untrack(() => {
-				formInstanceId = crypto.randomUUID();
+				formInstanceId = generateUUID();
 			});
 			// Blur any focused element to prevent browser password dropdown
 			setTimeout(() => {

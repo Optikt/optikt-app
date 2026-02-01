@@ -2,9 +2,10 @@
 	import { ArrowLeft } from '@lucide/svelte';
 	import { untrack } from 'svelte';
 	import { ProductForm } from '$lib/components/products';
+	import { resolve } from '$app/paths';
 
 	let { data } = $props();
-	const { product, brands, suppliers } = untrack(() => data);
+	const { product, brands, suppliers, materials } = untrack(() => data);
 </script>
 
 <svelte:head>
@@ -15,8 +16,7 @@
 	<!-- Header -->
 	<div class="mx-auto mb-8 max-w-4xl">
 		<a
-			href={`/products/${product.id}`}
-			rel="external"
+			href={resolve(`/products/${product.id}`)}
 			class="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
 		>
 			<ArrowLeft class="h-4 w-4" />
@@ -27,5 +27,5 @@
 	</div>
 
 	<!-- Form - uses parent data -->
-	<ProductForm {product} {brands} {suppliers} cancelHref={`/products/${product.id}`} />
+	<ProductForm {product} {brands} {suppliers} {materials} cancelHref={`/products/${product.id}`} />
 </div>

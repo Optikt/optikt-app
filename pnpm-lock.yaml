@@ -20,6 +20,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
+      svelecte:
+        specifier: ^5.3.0
+        version: 5.3.0(svelte@5.46.1)
       svelte-sonner:
         specifier: ^1.0.7
         version: 1.0.7(svelte@5.46.1)
@@ -2102,6 +2105,11 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
+  svelecte@5.3.0:
+    resolution: {integrity: sha512-9WKD6KxPf31CweyZtObTetGtkq1TncBA2E+aSHcT+bfjALgP+LUGMMQUU+2qhlfSoGpw9JYmLfxphGjb0q350g==}
+    peerDependencies:
+      svelte: ^5.2.7
+
   svelte-check@4.3.5:
     resolution: {integrity: sha512-e4VWZETyXaKGhpkxOXP+B/d0Fp/zKViZoJmneZWe/05Y2aqSKj3YN2nLfYPJBQ87WEiY4BQCQ9hWGu9mPT1a1Q==}
     engines: {node: '>= 18.0.0'}
@@ -3978,6 +3986,10 @@ snapshots:
       has-flag: 4.0.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  svelecte@5.3.0(svelte@5.46.1):
+    dependencies:
+      svelte: 5.46.1
 
   svelte-check@4.3.5(picomatch@4.0.3)(svelte@5.46.1)(typescript@5.9.3):
     dependencies:

@@ -1,12 +1,23 @@
 import type { PageServerLoad } from './$types';
 import { getAllBrands } from '$lib/server/db/queries/brands';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { getAllMaterials } from '$lib/server/db/queries/materials';
+import { brands, suppliers, materials } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async () => {
-	const [brands, suppliers] = await Promise.all([getAllBrands(), getAllSuppliers()]);
+	const [brandsList, suppliersList, materialsList] = await Promise.all([
+		getAllBrands({ id: brands.id, name: brands.name }),
+		getAllSuppliers({ id: suppliers.id, name: suppliers.name }),
+		getAllMaterials({
+			id: materials.id,
+			name: materials.name,
+			productType: materials.productType
+		})
+	]);
 
 	return {
-		brands: brands.map((b) => ({ id: b.id, name: b.name })),
-		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name }))
+		brands: brandsList,
+		suppliers: suppliersList,
+		materials: materialsList
 	};
 };

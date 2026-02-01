@@ -1,11 +1,20 @@
 import { eq, isNull, and, ilike, count } from 'drizzle-orm';
+import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { brands, products, type Brand, type NewBrand } from '$lib/server/db/schema';
 
 /**
  * Get all brands (excluding soft-deleted)
+ * @param columns - Optional columns to select (default: all columns)
  */
-export async function getAllBrands(): Promise<Brand[]> {
+export async function getAllBrands(): Promise<Brand[]>;
+export async function getAllBrands<T extends SelectedFields>(
+	columns: T
+): Promise<{ [K in keyof T]: T[K] extends { _: { data: infer D } } ? D : never }[]>;
+export async function getAllBrands<T extends SelectedFields>(columns?: T) {
+	if (columns) {
+		return await db.select(columns).from(brands).where(isNull(brands.deletedAt));
+	}
 	return await db.select().from(brands).where(isNull(brands.deletedAt));
 }
 

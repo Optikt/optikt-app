@@ -1,11 +1,20 @@
 import { eq, isNull, and, ilike } from 'drizzle-orm';
+import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { suppliers, type Supplier, type NewSupplier } from '$lib/server/db/schema';
 
 /**
  * Get all suppliers (excluding soft-deleted)
+ * @param columns - Optional columns to select (default: all columns)
  */
-export async function getAllSuppliers(): Promise<Supplier[]> {
+export async function getAllSuppliers(): Promise<Supplier[]>;
+export async function getAllSuppliers<T extends SelectedFields>(
+	columns: T
+): Promise<{ [K in keyof T]: T[K] extends { _: { data: infer D } } ? D : never }[]>;
+export async function getAllSuppliers<T extends SelectedFields>(columns?: T) {
+	if (columns) {
+		return await db.select(columns).from(suppliers).where(isNull(suppliers.deletedAt));
+	}
 	return await db.select().from(suppliers).where(isNull(suppliers.deletedAt));
 }
 
@@ -57,6 +66,18 @@ export async function createSupplier(data: NewSupplier): Promise<Supplier> {
 		})
 		.returning();
 	return supplier;
+}
+
+/**
+ * Quick create a supplier with minimal info (for inline creation)
+ * Defaults type to 'DISTRIBUTOR' and primaryPhone to empty string
+ */
+export async function quickCreateSupplier(name: string): Promise<Supplier> {
+	return createSupplier({
+		name,
+		type: 'DISTRIBUTOR',
+		primaryPhone: ''
+	});
 }
 
 /**

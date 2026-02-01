@@ -1,11 +1,19 @@
 import { eq, isNull, and, ilike, lte, ne, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { products, brands, suppliers, type Product, type NewProduct } from '$lib/server/db/schema';
+import {
+	products,
+	brands,
+	suppliers,
+	materials,
+	type Product,
+	type NewProduct
+} from '$lib/server/db/schema';
 
 // Product with related brand and supplier data
 export type ProductWithRelations = Product & {
 	brand: { id: string; name: string } | null;
 	supplier: { id: string; name: string } | null;
+	material: { id: string; name: string; code: string } | null;
 };
 
 /**
@@ -23,17 +31,20 @@ export async function getAllProductsWithRelations(): Promise<ProductWithRelation
 		.select({
 			product: products,
 			brand: { id: brands.id, name: brands.name },
-			supplier: { id: suppliers.id, name: suppliers.name }
+			supplier: { id: suppliers.id, name: suppliers.name },
+			material: { id: materials.id, name: materials.name, code: materials.code }
 		})
 		.from(products)
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(isNull(products.deletedAt));
 
 	return results.map((r) => ({
 		...r.product,
 		brand: r.brand?.id ? r.brand : null,
-		supplier: r.supplier?.id ? r.supplier : null
+		supplier: r.supplier?.id ? r.supplier : null,
+		material: r.material?.id ? r.material : null
 	}));
 }
 
@@ -45,17 +56,20 @@ export async function getActiveProductsWithRelations(): Promise<ProductWithRelat
 		.select({
 			product: products,
 			brand: { id: brands.id, name: brands.name },
-			supplier: { id: suppliers.id, name: suppliers.name }
+			supplier: { id: suppliers.id, name: suppliers.name },
+			material: { id: materials.id, name: materials.name, code: materials.code }
 		})
 		.from(products)
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(and(isNull(products.deletedAt), eq(products.isActive, true)));
 
 	return results.map((r) => ({
 		...r.product,
 		brand: r.brand?.id ? r.brand : null,
-		supplier: r.supplier?.id ? r.supplier : null
+		supplier: r.supplier?.id ? r.supplier : null,
+		material: r.material?.id ? r.material : null
 	}));
 }
 
@@ -80,11 +94,13 @@ export async function findProductByIdWithRelations(
 		.select({
 			product: products,
 			brand: { id: brands.id, name: brands.name },
-			supplier: { id: suppliers.id, name: suppliers.name }
+			supplier: { id: suppliers.id, name: suppliers.name },
+			material: { id: materials.id, name: materials.name, code: materials.code }
 		})
 		.from(products)
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+		.leftJoin(materials, eq(products.materialId, materials.id))
 		.where(and(eq(products.id, id), isNull(products.deletedAt)));
 
 	if (results.length === 0) return null;
@@ -93,7 +109,8 @@ export async function findProductByIdWithRelations(
 	return {
 		...r.product,
 		brand: r.brand?.id ? r.brand : null,
-		supplier: r.supplier?.id ? r.supplier : null
+		supplier: r.supplier?.id ? r.supplier : null,
+		material: r.material?.id ? r.material : null
 	};
 }
 

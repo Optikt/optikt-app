@@ -12,6 +12,7 @@
 		PRODUCT_TYPE_LABELS,
 		requiresStockTracking
 	} from '$lib/shared/enums';
+	import { generateUUID } from '$lib/utils/generateUUID';
 
 	interface Props {
 		open: boolean;
@@ -64,11 +65,11 @@
 	});
 
 	// Reset form when modal opens
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	$effect(() => {
 		if (open) {
 			untrack(() => {
-				formInstanceId = crypto.randomUUID();
+				formInstanceId = generateUUID();
 				if (product) {
 					formData = {
 						sku: product.sku ?? '',

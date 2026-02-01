@@ -56,3 +56,13 @@ export const UpdateSupplierSchema = v.object({
 export const SupplierIdSchema = v.object({
 	id: v.pipe(v.string(), v.uuid())
 });
+
+/**
+ * Quick create schema - minimal fields for inline creation
+ * Uses defaults for required fields, user can complete later
+ */
+export const QuickCreateSupplierSchema = v.object({
+	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
+	type: v.optional(v.picklist(ALL_SUPPLIER_TYPES)),
+	primaryPhone: v.optional(v.string())
+});

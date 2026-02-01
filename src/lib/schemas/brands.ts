@@ -29,3 +29,10 @@ export const UpdateBrandSchema = v.object({
 export const BrandIdSchema = v.object({
 	id: v.pipe(v.string(), v.uuid())
 });
+
+/**
+ * Quick create schema - minimal fields for inline creation
+ */
+export const QuickCreateBrandSchema = v.object({
+	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255))
+});

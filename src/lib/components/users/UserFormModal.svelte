@@ -6,6 +6,7 @@
 	import { createUserForm, updateUserForm } from '$lib/remote/users.remote';
 	import { FormInput, PasswordField } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
+	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { UserListItem, CreateUserResult } from '$lib/types/users';
 
 	interface Props {
@@ -33,14 +34,14 @@
 
 	// Form instance ID - changes on each modal open to create fresh form instance
 	// This clears validation issues by creating a new form instance via .for(id)
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 
 	// Reset form when modal opens or user changes
 	$effect(() => {
 		if (open) {
 			// Generate new form ID to create a fresh form instance (untracked to avoid loop)
 			untrack(() => {
-				formInstanceId = crypto.randomUUID();
+				formInstanceId = generateUUID();
 			});
 
 			if (user) {

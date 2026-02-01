@@ -25,5 +25,10 @@
 	</div>
 
 	<!-- Form -->
-	<ProductForm brands={data.brands} suppliers={data.suppliers} cancelHref="/products" />
+	<ProductForm
+		brands={data.brands}
+		suppliers={data.suppliers}
+		materials={data.materials}
+		cancelHref="/products"
+	/>
 </div>

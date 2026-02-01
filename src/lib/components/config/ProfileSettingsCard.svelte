@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { updateProfileForm } from '$lib/remote/profile.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { generateUUID } from '$lib/utils/generateUUID';
 	import { FormInput } from '$lib/components/ui';
 	import ChangePasswordModal from './ChangePasswordModal.svelte';
 	import { untrack } from 'svelte';
@@ -26,13 +27,13 @@
 	let showPasswordModal = $state(false);
 
 	// Form instance
-	let formInstanceId = $state(crypto.randomUUID());
+	let formInstanceId = $state(generateUUID());
 	const currentForm = $derived(updateProfileForm.for(formInstanceId));
 
 	function resetForm() {
 		fullName = user.fullName;
 		email = user.email;
-		formInstanceId = crypto.randomUUID();
+		formInstanceId = generateUUID();
 	}
 </script>
 
