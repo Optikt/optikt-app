@@ -208,8 +208,8 @@ export const createProductForm = form(
 						.set({
 							...rest,
 							brandId: brandId && brandId.trim() !== '' ? brandId : null,
-							supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
-							materialId: materialId && materialId.trim() !== '' ? materialId : null,
+							supplierId, // Required, already resolved from pending or passed as UUID
+							materialId, // Required, already resolved from pending or passed as UUID
 							deletedAt: null,
 							isActive: true,
 							updatedAt: now
@@ -230,8 +230,8 @@ export const createProductForm = form(
 					...rest,
 					sku,
 					brandId: brandId && brandId.trim() !== '' ? brandId : null,
-					supplierId: supplierId && supplierId.trim() !== '' ? supplierId : null,
-					materialId: materialId && materialId.trim() !== '' ? materialId : null,
+					supplierId, // Required, already resolved from pending or passed as UUID
+					materialId, // Required, already resolved from pending or passed as UUID
 					createdAt: now,
 					updatedAt: now
 				})
@@ -376,18 +376,9 @@ export const updateProductForm = form(
 					...(sku && { sku }),
 					brandId:
 						brandId !== undefined ? (brandId && brandId.trim() !== '' ? brandId : null) : undefined,
-					supplierId:
-						supplierId !== undefined
-							? supplierId && supplierId.trim() !== ''
-								? supplierId
-								: null
-							: undefined,
-					materialId:
-						materialId !== undefined
-							? materialId && materialId.trim() !== ''
-								? materialId
-								: null
-							: undefined,
+					// supplierId and materialId are required - only update if provided, never set to null
+					...(supplierId !== undefined && { supplierId }),
+					...(materialId !== undefined && { materialId }),
 					updatedAt: now
 				})
 				.where(eq(products.id, id))
