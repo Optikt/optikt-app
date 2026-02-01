@@ -7,7 +7,8 @@ import {
 	date,
 	integer,
 	doublePrecision,
-	foreignKey
+	foreignKey,
+	boolean
 } from 'drizzle-orm/pg-core';
 import { customers } from './customers';
 
@@ -35,6 +36,8 @@ export const prescriptions = pgTable(
 		recommendedLensType: varchar('recommended_lens_type'),
 		notes: varchar(),
 		doctorName: varchar('doctor_name'),
+		// Current prescription flag
+		isCurrent: boolean('is_current').notNull().default(false),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
