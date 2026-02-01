@@ -43,6 +43,13 @@
       "when": 1738310400000,
       "tag": "0006_products_require_supplier_material",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1738368000000,
+      "tag": "0007_create_change_history",
+      "breakpoints": true
     }
   ]
 }
