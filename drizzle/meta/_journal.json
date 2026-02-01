@@ -29,6 +29,20 @@
       "when": 1736570000000,
       "tag": "0004_create_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1736600000000,
+      "tag": "0005_create_materials",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1738310400000,
+      "tag": "0006_products_require_supplier_material",
+      "breakpoints": true
     }
   ]
 }
