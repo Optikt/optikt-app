@@ -10,3 +10,4 @@ export * from './customers';
 export * from './lenses';
 export * from './sales';
 export * from './settings';
+export * from './changeHistory';
