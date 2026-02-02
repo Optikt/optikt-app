@@ -33,10 +33,6 @@ INSERT INTO "materials" ("name", "code", "product_type", "description", "is_acti
     ('Acetato', 'ACETATO', 'FRAME', 'Plástico derivado de celulosa, hipoalergénico', true),
     ('TR90', 'TR90', 'FRAME', 'Polímero termoplástico flexible y resistente', true),
     ('Metal', 'METAL', 'FRAME', 'Aleación metálica estándar', true),
-    ('Acero Inoxidable', 'ACERO', 'FRAME', 'Acero inoxidable resistente', true),
-    ('Aluminio', 'ALUMINIO', 'FRAME', 'Aluminio ligero', true),
-    ('Madera', 'MADERA', 'FRAME', 'Madera natural o laminada', true),
-    ('Carbono', 'CARBONO', 'FRAME', 'Fibra de carbono ultraligera', true),
     ('Policarbonato', 'PC_FRAME', 'FRAME', 'Plástico resistente a impactos', true)
 ON CONFLICT DO NOTHING;
 
