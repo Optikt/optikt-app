@@ -373,6 +373,11 @@
 										</span>
 									</div>
 									<input type="hidden" name="sku" value={formData.sku} />
+									{#if currentUpdateForm.fields.sku?.issues()}
+										<p class="mt-1 text-xs text-red-600">
+											{currentUpdateForm.fields.sku.issues()}
+										</p>
+									{/if}
 								</div>
 							{:else}
 								<FormInput
@@ -643,6 +648,11 @@
 										</span>
 									</div>
 									<input type="hidden" name="sku" value={formData.sku} />
+									{#if currentCreateForm.fields.sku?.issues()}
+										<p class="mt-1 text-xs text-red-600">
+											{currentCreateForm.fields.sku.issues()}
+										</p>
+									{/if}
 								</div>
 							{:else}
 								<FormInput
