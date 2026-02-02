@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { Badge, Button } from 'flowbite-svelte';
-	import { ArrowLeft, Pencil, Trash2, AlertTriangle } from '@lucide/svelte';
+	import { ArrowLeft, Pencil, Trash2, TriangleAlert, History } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { ConfirmModal } from '$lib/components/ui';
+	import { ChangeHistoryModal } from '$lib/components/history';
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { ProductType, PRODUCT_TYPE_LABELS, requiresStockTracking } from '$lib/shared/enums';
@@ -16,6 +17,16 @@
 	// Delete modal state
 	let showDeleteModal = $state(false);
 	let deleteLoading = $state(false);
+
+	// History modal state
+	let showHistoryModal = $state(false);
+
+	// Build related names map for displaying references
+	const relatedNames = $derived({
+		...(product.brand ? { [product.brand.id]: product.brand.name } : {}),
+		...(product.supplier ? { [product.supplier.id]: product.supplier.name } : {}),
+		...(product.material ? { [product.material.id]: product.material.name } : {})
+	});
 
 	// Product type badge colors
 	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow' | 'indigo'> = {
@@ -106,6 +117,10 @@
 				</div>
 
 				<div class="flex gap-2">
+					<Button color="light" onclick={() => (showHistoryModal = true)}>
+						<History class="mr-2 h-4 w-4" />
+						Historial
+					</Button>
 					<Button color="alternative" href={`/products/${product.id}/update`}>
 						<Pencil class="mr-2 h-4 w-4" />
 						Editar
@@ -193,7 +208,7 @@
 								>
 									{#if isLowStock()}
 										<span class="inline-flex items-center gap-2">
-											<AlertTriangle class="h-5 w-5" />
+											<TriangleAlert class="h-5 w-5" />
 											{product.stock}
 										</span>
 									{:else}
@@ -247,4 +262,13 @@
 	loading={deleteLoading}
 	onConfirm={confirmDelete}
 	onCancel={() => (showDeleteModal = false)}
+/>
+
+<!-- History Modal -->
+<ChangeHistoryModal
+	bind:open={showHistoryModal}
+	title={product.name}
+	entityType="product"
+	entityId={product.id}
+	{relatedNames}
 />
