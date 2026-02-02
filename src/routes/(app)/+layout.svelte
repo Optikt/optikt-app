@@ -1,9 +1,15 @@
 <script lang="ts">
+	import { setUiConfig } from '$lib/context';
 	import { Sidebar } from '$lib/components/layout';
 
 	let { children, data } = $props();
 
 	const user = $derived(data.user);
+
+	// Provide UI config via type-safe context
+	setUiConfig({
+		sidebarCollapsed: () => data.sidebarCollapsed
+	});
 </script>
 
 <div class="flex min-h-screen">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getUiConfig } from '$lib/context';
 	import { resolve } from '$app/paths';
 	import { logout } from '$lib/remote/auth.remote';
 	import {
@@ -27,6 +28,9 @@
 	};
 
 	let { user }: SidebarProps = $props();
+
+	// Get UI config from type-safe context
+	const uiConfig = getUiConfig();
 
 	// Icon mapping
 	const iconMap: Record<string, LucideIcon> = {
@@ -80,16 +84,25 @@
 
 	const STORAGE_KEY = 'sidebar.collapsed';
 
-	// Read from localStorage immediately on client
-	let collapsed = $state(
-		typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) === 'true' : false
-	);
+	let collapsed = $state(uiConfig?.sidebarCollapsed() ?? false);
 
 	function toggleCollapsed() {
 		collapsed = !collapsed;
+		const value = String(collapsed);
+
+		// Save to localStorage for fast client-side access on navigation
+		// (no need to parse cookies, faster than cookie access)
 		if (typeof localStorage !== 'undefined') {
 			try {
-				localStorage.setItem(STORAGE_KEY, String(collapsed));
+				localStorage.setItem(STORAGE_KEY, value);
+			} catch (e) {}
+		}
+
+		// Save to cookie so SSR can render the correct initial state on page reload
+		// (prevents flash of wrong state on full page loads)
+		if (typeof document !== 'undefined') {
+			try {
+				document.cookie = `${STORAGE_KEY}=${value}; path=/; max-age=31536000; SameSite=Lax`;
 			} catch (e) {}
 		}
 	}
