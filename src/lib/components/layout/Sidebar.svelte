@@ -78,7 +78,21 @@
 		}
 	}
 
-	let collapsed = $state(false);
+	const STORAGE_KEY = 'sidebar.collapsed';
+
+	// Read from localStorage immediately on client
+	let collapsed = $state(
+		typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) === 'true' : false
+	);
+
+	function toggleCollapsed() {
+		collapsed = !collapsed;
+		if (typeof localStorage !== 'undefined') {
+			try {
+				localStorage.setItem(STORAGE_KEY, String(collapsed));
+			} catch (e) {}
+		}
+	}
 </script>
 
 <aside
@@ -104,7 +118,7 @@
 			type="button"
 			class="flex cursor-pointer items-center justify-center rounded-lg border-none bg-white/10 p-2 text-slate-400 transition-all duration-200 hover:bg-white/20 hover:text-white"
 			title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-			onclick={() => (collapsed = !collapsed)}
+			onclick={toggleCollapsed}
 		>
 			{#if collapsed}
 				<PanelLeftOpen size={18} />
