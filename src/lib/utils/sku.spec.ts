@@ -49,7 +49,7 @@ describe('generateSku', () => {
 			color: 'Azul cielo',
 			personalCode: '101'
 		};
-		expect(generateSku(options)).toBe('MODA-ACE-FLE-AZUL_CIELO-101');
+		expect(generateSku(options)).toBe('MODA-ACE-FLE-AZULCIELO-101');
 	});
 
 	it('should ignore gender if NO_APLICA', () => {
