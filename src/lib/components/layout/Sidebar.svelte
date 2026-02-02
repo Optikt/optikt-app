@@ -95,7 +95,9 @@
 		if (typeof localStorage !== 'undefined') {
 			try {
 				localStorage.setItem(STORAGE_KEY, value);
-			} catch (e) {}
+			} catch (e) {
+				console.log('Error saving sidebar state to localStorage', e);
+			}
 		}
 
 		// Save to cookie so SSR can render the correct initial state on page reload
@@ -103,7 +105,9 @@
 		if (typeof document !== 'undefined') {
 			try {
 				document.cookie = `${STORAGE_KEY}=${value}; path=/; max-age=31536000; SameSite=Lax`;
-			} catch (e) {}
+			} catch (e) {
+				console.log('Error saving sidebar state to cookie', e);
+			}
 		}
 	}
 </script>
