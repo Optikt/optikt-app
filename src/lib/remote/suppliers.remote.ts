@@ -2,7 +2,7 @@
  * Suppliers Remote Functions
  * Server-side functions for supplier management
  */
-import { query, form, command } from '$app/server';
+import { query, form, command, getRequestEvent } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListSuppliersSchema,
@@ -21,6 +21,19 @@ import {
 	deleteSupplier
 } from '$lib/server/db/queries/suppliers';
 import type { Supplier } from '$lib/server/db/schema';
+import { auditService, type AuditContext } from '$lib/server/audit';
+
+/**
+ * Helper to get audit context from the current request
+ */
+function getAuditContext(): AuditContext {
+	const event = getRequestEvent();
+	return {
+		userId: event.locals.user?.id ?? null,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent')
+	};
+}
 
 // Types for paginated response
 export interface PaginatedSuppliers {
@@ -96,6 +109,10 @@ export const createSupplierForm = form(
 			rif: rif && rif.trim() !== '' ? rif : null,
 			...rest
 		});
+
+		// Log audit
+		await auditService.logCreate('supplier', supplier, getAuditContext());
+
 		return supplier;
 	}
 );
@@ -140,6 +157,9 @@ export const updateSupplierForm = form(
 			invalid('Error actualizando proveedor');
 		}
 
+		// Log audit
+		await auditService.logUpdate('supplier', id, existing, updated, getAuditContext());
+
 		return updated;
 	}
 );
@@ -156,6 +176,9 @@ export const deleteSupplierById = command(SupplierIdSchema, async (data): Promis
 	}
 
 	await deleteSupplier(id);
+
+	// Log audit
+	await auditService.logDelete('supplier', existing, getAuditContext());
 });
 
 /**
@@ -179,6 +202,10 @@ export const quickCreateSupplier = command(
 			type: 'DISTRIBUTOR',
 			primaryPhone: '0000-0000000'
 		});
+
+		// Log audit
+		await auditService.logCreate('supplier', supplier, getAuditContext());
+
 		return { id: supplier.id, name: supplier.name };
 	}
 );

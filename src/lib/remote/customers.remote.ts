@@ -2,7 +2,7 @@
  * Customers Remote Functions
  * Server-side functions for customer management
  */
-import { query, form, command } from '$app/server';
+import { query, form, command, getRequestEvent } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListCustomersSchema,
@@ -22,6 +22,19 @@ import {
 	restoreCustomer
 } from '$lib/server/db/queries/customers';
 import type { Customer } from '$lib/server/db/schema';
+import { auditService, type AuditContext } from '$lib/server/audit';
+
+/**
+ * Helper to build audit context from the request event
+ */
+function getAuditContext(): AuditContext {
+	const event = getRequestEvent();
+	return {
+		userId: event.locals.user?.id ?? null,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent')
+	};
+}
 
 // Types for paginated response
 export interface PaginatedCustomers {
@@ -104,6 +117,9 @@ export const createCustomerForm = form(
 			birthDate: birthDate ? new Date(birthDate) : null
 		});
 
+		// Log the creation
+		await auditService.logCreate('customer', customer, getAuditContext());
+
 		return { success: true, customer };
 	}
 );
@@ -142,6 +158,9 @@ export const updateCustomerForm = form(
 			throw new Error('Update failed');
 		}
 
+		// Log the update
+		await auditService.logUpdate('customer', id, existing, updated, getAuditContext());
+
 		return updated;
 	}
 );
@@ -150,9 +169,16 @@ export const updateCustomerForm = form(
  * Delete a customer (soft delete)
  */
 export const deleteCustomerById = command(CustomerIdSchema, async (data): Promise<boolean> => {
-	const success = await deleteCustomer(data.id);
-	if (!success) {
+	const existing = await findCustomerById(data.id);
+	if (!existing) {
 		invalid('Cliente no encontrado');
+		return false;
+	}
+
+	const success = await deleteCustomer(data.id);
+	if (success) {
+		// Log the deletion
+		await auditService.logDelete('customer', existing, getAuditContext());
 	}
 	return success;
 });
@@ -175,6 +201,9 @@ export const reactivateCustomerForm = form(
 			invalid('Cliente no encontrado o no está eliminado');
 		}
 
+		// Log the restoration
+		await auditService.logRestore('customer', customer, getAuditContext());
+
 		return customer;
 	}
 );
@@ -196,6 +225,9 @@ export const reactivateCustomer = command(
 			invalid('Cliente no encontrado o no está eliminado');
 			throw new Error('Customer not found');
 		}
+
+		// Log the restoration
+		await auditService.logRestore('customer', customer, getAuditContext());
 
 		return customer;
 	}

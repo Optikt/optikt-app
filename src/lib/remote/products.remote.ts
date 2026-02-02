@@ -2,7 +2,7 @@
  * Products Remote Functions
  * Server-side functions for product management
  */
-import { query, form, command } from '$app/server';
+import { query, form, command, getRequestEvent } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { eq, isNull, and, ilike } from 'drizzle-orm';
 import {
@@ -22,6 +22,19 @@ import { ProductType, toMaterialProductType } from '$lib/shared/enums/productTyp
 import { db } from '$lib/server/db';
 import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
+import { auditService, type AuditContext } from '$lib/server/audit';
+
+/**
+ * Helper to build audit context from the request event
+ */
+function getAuditContext(): AuditContext {
+	const event = getRequestEvent();
+	return {
+		userId: event.locals.user?.id ?? null,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent')
+	};
+}
 
 // Types for paginated response
 export interface PaginatedProducts {
@@ -109,7 +122,7 @@ export const createProductForm = form(
 
 		// Use a transaction for atomicity - all or nothing
 		// IMPORTANT: All db operations inside must use `tx`, not `db`
-		return await db.transaction(async (tx) => {
+		const product = await db.transaction(async (tx) => {
 			const now = new Date();
 
 			// TODO: Check whenever we found the "pending" things were deleted previously, this could fail.
@@ -239,6 +252,11 @@ export const createProductForm = form(
 
 			return newProduct;
 		});
+
+		// Log the creation after transaction succeeds
+		await auditService.logCreate('product', product, getAuditContext());
+
+		return product;
 	}
 );
 
@@ -262,7 +280,7 @@ export const updateProductForm = form(
 
 		// Use a transaction for atomicity - all or nothing
 		// IMPORTANT: All db operations inside must use `tx`, not `db`
-		return await db.transaction(async (tx) => {
+		const { oldProduct, updatedProduct } = await db.transaction(async (tx) => {
 			const now = new Date();
 
 			// Handle pending brand
@@ -348,17 +366,17 @@ export const updateProductForm = form(
 				}
 			}
 
-			// Check if product exists
-			const [existing] = await tx
+			// Check if product exists - also captures the old state for audit
+			const [oldProduct] = await tx
 				.select()
 				.from(products)
 				.where(and(eq(products.id, id), isNull(products.deletedAt)));
-			if (!existing) {
+			if (!oldProduct) {
 				throw new Error('Producto no encontrado');
 			}
 
 			// Check for duplicate SKU if SKU is being changed
-			if (sku && sku !== existing.sku) {
+			if (sku && sku !== oldProduct.sku) {
 				const [duplicate] = await tx
 					.select()
 					.from(products)
@@ -388,8 +406,13 @@ export const updateProductForm = form(
 				throw new Error('Error actualizando producto');
 			}
 
-			return updated;
+			return { oldProduct, updatedProduct: updated };
 		});
+
+		// Log the update after transaction succeeds
+		await auditService.logUpdate('product', id, oldProduct, updatedProduct, getAuditContext());
+
+		return updatedProduct;
 	}
 );
 
@@ -405,6 +428,9 @@ export const deleteProductById = command(ProductIdSchema, async (data): Promise<
 	}
 
 	await deleteProduct(id);
+
+	// Log the deletion
+	await auditService.logDelete('product', existing, getAuditContext());
 });
 
 /**
@@ -425,6 +451,9 @@ export const toggleProductActive = command(
 			throw new Error('Error actualizando producto');
 		}
 
+		// Log the status change
+		await auditService.logUpdate('product', id, existing, updated, getAuditContext());
+
 		return { isActive: updated.isActive };
 	}
 );
@@ -435,9 +464,17 @@ export const toggleProductActive = command(
 export const reactivateProductById = command(ProductIdSchema, async (data): Promise<Product> => {
 	const { id } = data;
 
+	// Get the product before reactivation (it's soft-deleted so we need to find it differently)
+	const [existing] = await db.select().from(products).where(eq(products.id, id));
+
 	const product = await reactivateProduct(id);
 	if (!product) {
 		throw new Error('Producto no encontrado');
+	}
+
+	// Log the restoration
+	if (existing) {
+		await auditService.logRestore('product', product, getAuditContext());
 	}
 
 	return product;

@@ -2,7 +2,7 @@
  * Brands Remote Functions
  * Server-side functions for brand management
  */
-import { query, form, command } from '$app/server';
+import { query, form, command, getRequestEvent } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListBrandsSchema,
@@ -21,6 +21,19 @@ import {
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
 import type { Brand } from '$lib/server/db/schema';
+import { auditService, type AuditContext } from '$lib/server/audit';
+
+/**
+ * Helper to build audit context from the request event
+ */
+function getAuditContext(): AuditContext {
+	const event = getRequestEvent();
+	return {
+		userId: event.locals.user?.id ?? null,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent')
+	};
+}
 
 // Types for paginated response
 export interface PaginatedBrands {
@@ -73,6 +86,10 @@ export const createBrandForm = form(CreateBrandSchema, async (data, issue): Prom
 
 	// Create brand
 	const brand = await createBrand({ name, ...rest });
+
+	// Log the creation
+	await auditService.logCreate('brand', brand, getAuditContext());
+
 	return brand;
 });
 
@@ -102,6 +119,9 @@ export const updateBrandForm = form(UpdateBrandSchema, async (data, issue): Prom
 		invalid('Error actualizando marca');
 	}
 
+	// Log the update
+	await auditService.logUpdate('brand', id, existing, updated, getAuditContext());
+
 	return updated;
 });
 
@@ -117,6 +137,9 @@ export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void
 	}
 
 	await deleteBrand(id);
+
+	// Log the deletion
+	await auditService.logDelete('brand', existing, getAuditContext());
 });
 
 // Types for delete check
@@ -164,6 +187,10 @@ export const quickCreateBrand = command(
 		}
 
 		const brand = await createBrand({ name });
+
+		// Log the creation
+		await auditService.logCreate('brand', brand, getAuditContext());
+
 		return { id: brand.id, name: brand.name };
 	}
 );
