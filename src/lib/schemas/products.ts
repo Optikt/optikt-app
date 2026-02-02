@@ -6,6 +6,15 @@ import * as v from 'valibot';
 import { ALL_PRODUCT_TYPES } from '$lib/shared/enums';
 import { MaterialProductTypes } from './materials';
 
+// Single source of truth for SKU validation
+// SKU format: only uppercase letters, numbers, hyphens (no spaces, no special chars)
+const SkuSchema = v.pipe(
+	v.string(),
+	v.minLength(1, 'SKU requerido'),
+	v.maxLength(50, 'SKU muy largo (máximo 50 caracteres)'),
+	v.regex(/^[A-Z0-9-]+$/, 'SKU inválido: solo mayúsculas, números y guiones')
+);
+
 // Helper to coerce string to number for form inputs
 const CoercedNumber = v.pipe(
 	v.union([v.string(), v.number()]),
@@ -32,12 +41,7 @@ export const ListProductsSchema = v.object({
 });
 
 export const CreateProductSchema = v.object({
-	sku: v.pipe(
-		v.string(),
-		v.minLength(1, 'SKU requerido'),
-		v.maxLength(50, 'SKU muy largo'),
-		v.regex(/^[A-Za-z0-9\-_]+$/, 'SKU solo puede contener letras, números, guiones y guiones bajos')
-	),
+	sku: SkuSchema,
 	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
 	type: v.picklist(ALL_PRODUCT_TYPES, 'Tipo de producto requerido'),
 	// brandId is optional and can be null
@@ -79,14 +83,7 @@ export const CreateProductSchema = v.object({
 
 export const UpdateProductSchema = v.object({
 	id: v.pipe(v.string(), v.uuid()),
-	sku: v.optional(
-		v.pipe(
-			v.string(),
-			v.minLength(1, 'SKU requerido'),
-			v.maxLength(50),
-			v.regex(/^[A-Za-z0-9\-_]+$/, 'SKU inválido')
-		)
-	),
+	sku: v.optional(SkuSchema),
 	name: v.optional(v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255))),
 	type: v.optional(v.picklist(ALL_PRODUCT_TYPES)),
 	// brandId is optional and can be set to null (empty string)
