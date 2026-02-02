@@ -2,7 +2,7 @@
  * Server-side Audit Types
  * Types used by the audit service for logging changes.
  */
-import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
+import type { ActionType } from '$lib/server/db/schema';
 
 // ============================================================================
 // AUDIT CONTEXT
@@ -26,22 +26,6 @@ export interface AuditContext {
 // ============================================================================
 // CHANGE HISTORY TYPES
 // ============================================================================
-
-export interface ChangeHistoryEntry {
-	id: string;
-	entityType: EntityType;
-	entityId: string;
-	action: ActionType;
-	changedAt: Date;
-	changedById: string | null;
-	changedByName?: string | null; // Populated when fetching with user info
-	changes: ChangeRecord;
-	snapshot: Record<string, unknown> | null;
-	reason: string | null;
-	ipAddress: string | null;
-	userAgent: string | null;
-	createdAt: Date;
-}
 
 export interface ChangeHistoryOptions {
 	limit?: number;
