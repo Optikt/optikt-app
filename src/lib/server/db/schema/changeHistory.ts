@@ -66,6 +66,7 @@ export type EntityType =
 	| 'lens_catalog_item'
 	| 'supplier'
 	| 'brand'
+	| 'material'
 	| 'lens_material'
 	| 'lens_treatment';
 
