@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import * as schema from '../src/lib/server/db/schema';
 import { hash } from '@node-rs/argon2';
 import { eq } from 'drizzle-orm';
+import { UserRole } from '../src/lib/shared/enums';
 
 const ARGON2_OPTIONS = {
 	memoryCost: 19456,
@@ -19,6 +20,7 @@ async function main() {
 		console.error('❌ DATABASE_URL is not set in environment');
 		console.log('   Run with: DATABASE_URL="your_url" pnpm tsx scripts/seed-db.ts');
 		console.log('   Or use:   source .env && pnpm tsx scripts/seed-db.ts');
+		console.log('   Or use:   DATABASE_URL="your_url" pnpm tsx scripts/seed-db.ts');
 		process.exit(1);
 	}
 
@@ -59,7 +61,7 @@ async function main() {
 			hashedPassword,
 			isActive: true,
 			isSuperuser: true,
-			role: 'SUPERADMIN'
+			role: UserRole.SUPERADMIN
 		})
 		.returning();
 
