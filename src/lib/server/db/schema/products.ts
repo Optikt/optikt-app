@@ -8,8 +8,10 @@ import {
 	boolean,
 	integer,
 	doublePrecision,
-	foreignKey
+	foreignKey,
+	date
 } from 'drizzle-orm/pg-core';
+
 import { brands } from './brands';
 import { suppliers } from './suppliers';
 import { materials } from './materials';
@@ -28,7 +30,19 @@ export const products = pgTable(
 		gender: varchar({ length: 20 }),
 		materialId: uuid('material_id').notNull(),
 		description: varchar(),
+		// Price fields
 		purchasePrice: doublePrecision('purchase_price').notNull(),
+		/** Currency code used for purchase (CurrencyCode enum) */
+		purchaseCurrency: varchar('purchase_currency'),
+		/** Exchange rate of the purchase currency to VES on purchase date */
+		purchaseCurrencyRate: doublePrecision('purchase_currency_rate'),
+		/** USD BCV rate to VES on the same purchase date (for differential calculation) */
+		purchaseUsdBcvRate: doublePrecision('purchase_usd_bcv_rate'),
+		/** Date when the purchase was made / rates were recorded */
+		purchaseDate: date('purchase_date'),
+		/** Normalized cost in USD BCV = purchasePrice * (purchaseCurrencyRate / purchaseUsdBcvRate) */
+		normalizedCostUsd: doublePrecision('normalized_cost_usd'),
+		/** Sale price in USD BCV */
 		salePrice: doublePrecision('sale_price').notNull(),
 		stock: integer(),
 		minStock: integer('min_stock'),
