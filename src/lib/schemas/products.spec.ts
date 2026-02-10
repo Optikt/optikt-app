@@ -11,7 +11,12 @@ const baseCreatePayload = {
 	supplierId: '00000000-0000-4000-8000-000000000001',
 	materialId: '00000000-0000-4000-8000-000000000002',
 	purchasePrice: 10,
-	salePrice: 25
+	salePrice: 25,
+	purchaseCurrency: 'USD_BCV',
+	purchaseCurrencyRate: 382.73,
+	purchaseUsdBcvRate: 382.73,
+	purchaseDate: '2025-01-15',
+	normalizedCostUsd: 10
 };
 
 describe('CreateProductSchema', () => {
