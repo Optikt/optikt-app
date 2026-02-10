@@ -10,7 +10,7 @@
 		Button,
 		Spinner
 	} from 'flowbite-svelte';
-	import { Eye, Pencil, Trash2, AlertTriangle } from '@lucide/svelte';
+	import { Eye, Pencil, Trash2, TriangleAlert } from '@lucide/svelte';
 	import { ProductType, PRODUCT_TYPE_LABELS } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 
@@ -96,7 +96,7 @@
 									class:text-slate-700={!isLowStock(product)}
 								>
 									{#if isLowStock(product)}
-										<AlertTriangle class="h-4 w-4" />
+										<TriangleAlert class="h-4 w-4" />
 									{/if}
 									{product.stock}
 								</span>
