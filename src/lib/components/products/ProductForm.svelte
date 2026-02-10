@@ -4,13 +4,20 @@
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { createProductForm, updateProductForm } from '$lib/remote/products.remote';
-	import { FormInput, FormTextarea, CreatableSelect, type SelectOption } from '$lib/components/ui';
+	import {
+		FormInput,
+		FormTextarea,
+		CreatableSelect,
+		PurchaseCurrencyInput,
+		type SelectOption
+	} from '$lib/components/ui';
 	import { scrollToFirstError } from '$lib/utils';
 	import {
 		ProductType,
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
-		requiresStockTracking
+		requiresStockTracking,
+		CurrencyCode
 	} from '$lib/shared/enums';
 	import { generateSku, ProductGender, PRODUCT_GENDER_LABELS } from '$lib/utils/sku';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -57,6 +64,11 @@
 		description: '',
 		purchasePrice: 0,
 		salePrice: 0,
+		// Currency fields
+		purchaseCurrency: CurrencyCode.USD_BCV,
+		purchaseCurrencyRate: 0,
+		purchaseUsdBcvRate: 0,
+		purchaseDate: new Date().toISOString().split('T')[0],
 		stock: 0,
 		minStock: 0,
 		imageUrl: ''
@@ -183,12 +195,6 @@
 	// Computed: show stock fields?
 	const showStockFields = $derived(requiresStockTracking(formData.type as ProductType));
 
-	// Computed: profit margin
-	const profitMargin = $derived(() => {
-		if (formData.purchasePrice === 0) return 0;
-		return ((formData.salePrice - formData.purchasePrice) / formData.purchasePrice) * 100;
-	});
-
 	// Initialize form data
 	let formInstanceId = $state(generateUUID());
 	$effect(() => {
@@ -204,12 +210,16 @@
 					supplierId: product.supplierId ?? '',
 					materialId: product.materialId ?? '',
 					gender: product.gender ?? ProductGender.NO_APLICA,
-					personalCode: '', // Normally we don't have this in DB, maybe we should extract it from SKU if needed? But let's leave empty for now.
+					personalCode: '',
 					color: product.color ?? '',
 					size: product.size ?? '',
 					description: product.description ?? '',
 					purchasePrice: product.purchasePrice ?? 0,
 					salePrice: product.salePrice ?? 0,
+					purchaseCurrency: (product.purchaseCurrency as CurrencyCode) ?? CurrencyCode.USD_BCV,
+					purchaseCurrencyRate: product.purchaseCurrencyRate ?? 0,
+					purchaseUsdBcvRate: product.purchaseUsdBcvRate ?? 0,
+					purchaseDate: product.purchaseDate ?? new Date().toISOString().split('T')[0],
 					stock: product.stock ?? 0,
 					minStock: product.minStock ?? 0,
 					imageUrl: product.imageUrl ?? ''
@@ -462,41 +472,47 @@
 
 				<!-- Pricing -->
 				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios</h3>
+					<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios y Moneda de Compra</h3>
 					<div class="grid gap-4 md:grid-cols-2">
 						<div>
-							<Label for="purchasePrice" class="mb-2">Precio compra ($) *</Label>
+							<Label for="purchasePrice_u" class="mb-2">Precio compra *</Label>
 							<input
 								type="number"
-								id="purchasePrice"
+								id="purchasePrice_u"
 								name="purchasePrice"
 								bind:value={formData.purchasePrice}
 								step="0.01"
 								min="0"
 								required
-								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
 							/>
 						</div>
 						<div>
-							<Label for="salePrice" class="mb-2">Precio venta ($) *</Label>
+							<Label for="salePrice_u" class="mb-2">Precio venta (USD BCV) *</Label>
 							<input
 								type="number"
-								id="salePrice"
+								id="salePrice_u"
 								name="salePrice"
 								bind:value={formData.salePrice}
 								step="0.01"
 								min="0"
 								required
-								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
 							/>
-							{#if formData.purchasePrice > 0}
-								<p class="mt-1 text-sm text-slate-500">
-									Margen: <span class:text-green-600={profitMargin() > 0}
-										>{profitMargin().toFixed(1)}%</span
-									>
-								</p>
-							{/if}
 						</div>
+					</div>
+
+					<!-- Currency & Exchange Rate Section -->
+					<div class="mt-6 border-t border-slate-100 pt-4">
+						<PurchaseCurrencyInput
+							bind:purchaseCurrency={formData.purchaseCurrency}
+							bind:purchaseCurrencyRate={formData.purchaseCurrencyRate}
+							bind:purchaseUsdBcvRate={formData.purchaseUsdBcvRate}
+							bind:purchaseDate={formData.purchaseDate}
+							purchasePrice={formData.purchasePrice}
+							salePrice={formData.salePrice}
+							idPrefix="u_"
+						/>
 					</div>
 				</div>
 
@@ -738,41 +754,47 @@
 
 			<!-- Pricing -->
 			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios</h3>
+				<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios y Moneda de Compra</h3>
 				<div class="grid gap-4 md:grid-cols-2">
 					<div>
-						<Label for="purchasePrice" class="mb-2">Precio compra ($) *</Label>
+						<Label for="purchasePrice_c" class="mb-2">Precio compra *</Label>
 						<input
 							type="number"
-							id="purchasePrice"
+							id="purchasePrice_c"
 							name="purchasePrice"
 							bind:value={formData.purchasePrice}
 							step="0.01"
 							min="0"
 							required
-							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
 						/>
 					</div>
 					<div>
-						<Label for="salePrice" class="mb-2">Precio venta ($) *</Label>
+						<Label for="salePrice_c" class="mb-2">Precio venta (USD BCV) *</Label>
 						<input
 							type="number"
-							id="salePrice"
+							id="salePrice_c"
 							name="salePrice"
 							bind:value={formData.salePrice}
 							step="0.01"
 							min="0"
 							required
-							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
 						/>
-						{#if formData.purchasePrice > 0}
-							<p class="mt-1 text-sm text-slate-500">
-								Margen: <span class:text-green-600={profitMargin() > 0}
-									>{profitMargin().toFixed(1)}%</span
-								>
-							</p>
-						{/if}
 					</div>
+				</div>
+
+				<!-- Currency & Exchange Rate Section -->
+				<div class="mt-6 border-t border-slate-100 pt-4">
+					<PurchaseCurrencyInput
+						bind:purchaseCurrency={formData.purchaseCurrency}
+						bind:purchaseCurrencyRate={formData.purchaseCurrencyRate}
+						bind:purchaseUsdBcvRate={formData.purchaseUsdBcvRate}
+						bind:purchaseDate={formData.purchaseDate}
+						purchasePrice={formData.purchasePrice}
+						salePrice={formData.salePrice}
+						idPrefix="c_"
+					/>
 				</div>
 			</div>
 
