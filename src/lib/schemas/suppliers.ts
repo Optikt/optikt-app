@@ -3,7 +3,7 @@
  * Valibot schemas for validation in remote functions
  */
 import * as v from 'valibot';
-import { ALL_SUPPLIER_TYPES } from '$lib/shared/enums';
+import { ALL_SUPPLIER_TYPES, ALL_CURRENCY_CODES } from '$lib/shared/enums';
 import {
 	PhoneSchema,
 	OptionalPhoneSchema,
@@ -33,7 +33,8 @@ export const CreateSupplierSchema = v.object({
 	contactName: v.optional(v.string()),
 	contactPhone: OptionalPhoneSchema,
 	contactRole: v.optional(v.string()),
-	notes: v.optional(v.string())
+	notes: v.optional(v.string()),
+	defaultCurrency: v.optional(v.picklist(ALL_CURRENCY_CODES))
 });
 
 export const UpdateSupplierSchema = v.object({
@@ -50,7 +51,8 @@ export const UpdateSupplierSchema = v.object({
 	contactName: v.optional(v.string()),
 	contactPhone: OptionalPhoneSchema,
 	contactRole: v.optional(v.string()),
-	notes: v.optional(v.string())
+	notes: v.optional(v.string()),
+	defaultCurrency: v.optional(v.picklist(ALL_CURRENCY_CODES))
 });
 
 export const SupplierIdSchema = v.object({

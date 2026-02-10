@@ -3,7 +3,7 @@
  * Valibot schemas for validation in remote functions
  */
 import * as v from 'valibot';
-import { ALL_PRODUCT_TYPES } from '$lib/shared/enums';
+import { ALL_PRODUCT_TYPES, ALL_CURRENCY_CODES } from '$lib/shared/enums';
 import { MaterialProductTypes } from './materials';
 
 // Single source of truth for SKU validation
@@ -76,6 +76,15 @@ export const CreateProductSchema = v.object({
 		v.minValue(0, 'Precio de compra debe ser mayor o igual a 0')
 	),
 	salePrice: v.pipe(CoercedNumber, v.minValue(0, 'Precio de venta debe ser mayor o igual a 0')),
+	// Currency purchase fields
+	purchaseCurrency: v.picklist(ALL_CURRENCY_CODES, 'Moneda de compra requerida'),
+	purchaseCurrencyRate: v.pipe(
+		CoercedNumber,
+		v.minValue(0.01, 'Tasa de moneda de compra requerida')
+	),
+	purchaseUsdBcvRate: v.pipe(CoercedNumber, v.minValue(0.01, 'Tasa USD BCV requerida')),
+	purchaseDate: v.pipe(v.string(), v.minLength(1, 'Fecha de compra requerida')),
+	normalizedCostUsd: v.pipe(CoercedNumber, v.minValue(0)),
 	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	minStock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	imageUrl: v.optional(v.string())
@@ -113,6 +122,12 @@ export const UpdateProductSchema = v.object({
 	description: v.optional(v.string()),
 	purchasePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
 	salePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
+	// Currency purchase fields
+	purchaseCurrency: v.optional(v.picklist(ALL_CURRENCY_CODES)),
+	purchaseCurrencyRate: v.optional(v.pipe(CoercedNumber, v.minValue(0.01))),
+	purchaseUsdBcvRate: v.optional(v.pipe(CoercedNumber, v.minValue(0.01))),
+	purchaseDate: v.optional(v.pipe(v.string(), v.minLength(1))),
+	normalizedCostUsd: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
 	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	minStock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	imageUrl: v.optional(v.string()),
