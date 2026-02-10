@@ -21,6 +21,8 @@ export const suppliers = pgTable(
 		contactPhone: varchar('contact_phone'),
 		contactRole: varchar('contact_role'),
 		notes: varchar(),
+		/** Default currency this supplier uses (CurrencyCode enum) */
+		defaultCurrency: varchar('default_currency'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
