@@ -8,6 +8,7 @@ export * from './suppliers';
 export * from './customers';
 export * from './settings';
 export * from './materials';
+export * from './exchangeRates';
 
 // Dependent tables
 export * from './sessions';
