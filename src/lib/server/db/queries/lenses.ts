@@ -1,4 +1,4 @@
-import { eq, isNull, and } from 'drizzle-orm';
+import { eq, isNull, and, ilike, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	lensMaterials,
@@ -41,6 +41,14 @@ export async function findLensMaterialByCode(code: string): Promise<LensMaterial
 	return material ?? null;
 }
 
+export async function findLensMaterialByName(name: string): Promise<LensMaterial | null> {
+	const [material] = await db
+		.select()
+		.from(lensMaterials)
+		.where(and(ilike(lensMaterials.name, name), isNull(lensMaterials.deletedAt)));
+	return material ?? null;
+}
+
 export async function createLensMaterial(data: NewLensMaterial): Promise<LensMaterial> {
 	const now = new Date();
 	const [material] = await db
@@ -48,6 +56,27 @@ export async function createLensMaterial(data: NewLensMaterial): Promise<LensMat
 		.values({ ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now })
 		.returning();
 	return material;
+}
+
+export async function updateLensMaterial(
+	id: string,
+	data: Partial<NewLensMaterial>
+): Promise<LensMaterial | null> {
+	const [updated] = await db
+		.update(lensMaterials)
+		.set({ ...data, updatedAt: new Date() })
+		.where(and(eq(lensMaterials.id, id), isNull(lensMaterials.deletedAt)))
+		.returning();
+	return updated ?? null;
+}
+
+export async function deleteLensMaterial(id: string): Promise<boolean> {
+	const [deleted] = await db
+		.update(lensMaterials)
+		.set({ deletedAt: new Date() })
+		.where(and(eq(lensMaterials.id, id), isNull(lensMaterials.deletedAt)))
+		.returning({ id: lensMaterials.id });
+	return !!deleted;
 }
 
 // ============================================================================
@@ -77,6 +106,14 @@ export async function findLensTreatmentByCode(code: string): Promise<LensTreatme
 	return treatment ?? null;
 }
 
+export async function findLensTreatmentByName(name: string): Promise<LensTreatment | null> {
+	const [treatment] = await db
+		.select()
+		.from(lensTreatments)
+		.where(and(ilike(lensTreatments.name, name), isNull(lensTreatments.deletedAt)));
+	return treatment ?? null;
+}
+
 export async function createLensTreatment(data: NewLensTreatment): Promise<LensTreatment> {
 	const now = new Date();
 	const [treatment] = await db
@@ -84,6 +121,27 @@ export async function createLensTreatment(data: NewLensTreatment): Promise<LensT
 		.values({ ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now })
 		.returning();
 	return treatment;
+}
+
+export async function updateLensTreatment(
+	id: string,
+	data: Partial<NewLensTreatment>
+): Promise<LensTreatment | null> {
+	const [updated] = await db
+		.update(lensTreatments)
+		.set({ ...data, updatedAt: new Date() })
+		.where(and(eq(lensTreatments.id, id), isNull(lensTreatments.deletedAt)))
+		.returning();
+	return updated ?? null;
+}
+
+export async function deleteLensTreatment(id: string): Promise<boolean> {
+	const [deleted] = await db
+		.update(lensTreatments)
+		.set({ deletedAt: new Date() })
+		.where(and(eq(lensTreatments.id, id), isNull(lensTreatments.deletedAt)))
+		.returning({ id: lensTreatments.id });
+	return !!deleted;
 }
 
 // ============================================================================
@@ -102,7 +160,32 @@ export async function getAllLensCatalogItems(): Promise<LensCatalogItem[]> {
 		.where(and(isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)));
 }
 
-export async function getLensCatalogItemsWithRelations(): Promise<LensCatalogItemWithRelations[]> {
+export async function getLensCatalogItemsWithRelations(options?: {
+	search?: string;
+	source?: string;
+	supplierId?: string;
+	materialId?: string;
+	type?: string;
+	technology?: string;
+}): Promise<LensCatalogItemWithRelations[]> {
+	const conditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
+
+	if (options?.source) {
+		conditions.push(eq(lensCatalogItems.source, options.source as 'FINISHED' | 'LAB'));
+	}
+	if (options?.supplierId) {
+		conditions.push(eq(lensCatalogItems.supplierId, options.supplierId));
+	}
+	if (options?.materialId) {
+		conditions.push(eq(lensCatalogItems.materialId, options.materialId));
+	}
+	if (options?.type) {
+		conditions.push(eq(lensCatalogItems.type, options.type));
+	}
+	if (options?.technology) {
+		conditions.push(ilike(lensCatalogItems.technology, `%${options.technology}%`));
+	}
+
 	const results = await db
 		.select({
 			item: lensCatalogItems,
@@ -112,13 +195,29 @@ export async function getLensCatalogItemsWithRelations(): Promise<LensCatalogIte
 		.from(lensCatalogItems)
 		.leftJoin(lensMaterials, eq(lensCatalogItems.materialId, lensMaterials.id))
 		.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
-		.where(and(isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)));
+		.where(and(...conditions))
+		.orderBy(desc(lensCatalogItems.createdAt));
 
-	return results.map((r) => ({
+	let items = results.map((r) => ({
 		...r.item,
 		material: r.material,
 		supplier: r.supplier
 	}));
+
+	// Text search in memory (name, brand, supplier name, material name)
+	if (options?.search) {
+		const searchLower = options.search.toLowerCase();
+		items = items.filter(
+			(item) =>
+				item.name.toLowerCase().includes(searchLower) ||
+				item.brand?.toLowerCase().includes(searchLower) ||
+				item.technology?.toLowerCase().includes(searchLower) ||
+				item.supplier?.name.toLowerCase().includes(searchLower) ||
+				item.material?.name.toLowerCase().includes(searchLower)
+		);
+	}
+
+	return items;
 }
 
 export async function findLensCatalogItemById(id: string): Promise<LensCatalogItem | null> {
@@ -136,6 +235,27 @@ export async function createLensCatalogItem(data: NewLensCatalogItem): Promise<L
 		.values({ ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now })
 		.returning();
 	return item;
+}
+
+export async function updateLensCatalogItem(
+	id: string,
+	data: Partial<NewLensCatalogItem>
+): Promise<LensCatalogItem | null> {
+	const [updated] = await db
+		.update(lensCatalogItems)
+		.set({ ...data, updatedAt: new Date() })
+		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
+		.returning();
+	return updated ?? null;
+}
+
+export async function deleteLensCatalogItem(id: string): Promise<boolean> {
+	const [deleted] = await db
+		.update(lensCatalogItems)
+		.set({ deletedAt: new Date() })
+		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
+		.returning({ id: lensCatalogItems.id });
+	return !!deleted;
 }
 
 // ============================================================================
@@ -158,4 +278,55 @@ export async function getSupplierTreatments(supplierId: string) {
 				isNull(supplierLensTreatments.deletedAt)
 			)
 		);
+}
+
+export async function upsertSupplierTreatment(data: {
+	supplierId: string;
+	treatmentId: string;
+	price: number;
+	isAvailable?: boolean;
+}) {
+	// Try to find existing
+	const [existing] = await db
+		.select()
+		.from(supplierLensTreatments)
+		.where(
+			and(
+				eq(supplierLensTreatments.supplierId, data.supplierId),
+				eq(supplierLensTreatments.treatmentId, data.treatmentId),
+				isNull(supplierLensTreatments.deletedAt)
+			)
+		);
+
+	const now = new Date();
+
+	if (existing) {
+		const [updated] = await db
+			.update(supplierLensTreatments)
+			.set({ price: data.price, isAvailable: data.isAvailable ?? true, updatedAt: now })
+			.where(eq(supplierLensTreatments.id, existing.id))
+			.returning();
+		return updated;
+	}
+
+	const [created] = await db
+		.insert(supplierLensTreatments)
+		.values({
+			...data,
+			id: crypto.randomUUID(),
+			isAvailable: data.isAvailable ?? true,
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created;
+}
+
+export async function deleteSupplierTreatment(id: string): Promise<boolean> {
+	const [deleted] = await db
+		.update(supplierLensTreatments)
+		.set({ deletedAt: new Date() })
+		.where(and(eq(supplierLensTreatments.id, id), isNull(supplierLensTreatments.deletedAt)))
+		.returning({ id: supplierLensTreatments.id });
+	return !!deleted;
 }
