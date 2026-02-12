@@ -1,5 +1,6 @@
 import {
 	pgTable,
+	pgEnum,
 	varchar,
 	index,
 	uniqueIndex,
@@ -13,6 +14,13 @@ import {
 	unique
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
+
+// ============================================================================
+// LENS CATALOG SOURCE ENUM
+// ============================================================================
+
+/** Cristales terminados (en stock del proveedor) vs laboratorio (pedido a medida) */
+export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', ['FINISHED', 'LAB']);
 
 // ============================================================================
 // LENS MATERIALS
@@ -81,9 +89,11 @@ export const lensCatalogItems = pgTable(
 	'lens_catalog_items',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
+		source: lensCatalogSourceEnum().notNull().default('LAB'),
 		supplierId: uuid('supplier_id').notNull(),
 		name: varchar().notNull(),
 		brand: varchar(),
+		technology: varchar(),
 		type: varchar().notNull(),
 		materialId: uuid('material_id').notNull(),
 		sphereMin: doublePrecision('sphere_min').notNull(),
@@ -94,7 +104,10 @@ export const lensCatalogItems = pgTable(
 		additionMax: doublePrecision('addition_max'),
 		baseFeatures: json('base_features').$type<string[]>(),
 		isPhotochromic: boolean('is_photochromic').notNull().default(false),
+		isBlueCut: boolean('is_blue_cut').notNull().default(false),
+		isAR: boolean('is_ar').notNull().default(false),
 		basePrice: doublePrecision('base_price').notNull(),
+		salePrice: doublePrecision('sale_price'),
 		deliveryDays: integer('delivery_days'),
 		stock: integer(),
 		refractiveIndex: doublePrecision('refractive_index'),
