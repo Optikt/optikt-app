@@ -25,12 +25,11 @@
 	let { products, loading = false, onView, onEdit, onDelete }: Props = $props();
 
 	// Product type badge colors
-	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow' | 'indigo'> = {
+	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
 		[ProductType.FRAME]: 'blue',
 		[ProductType.SUNGLASSES]: 'green',
 		[ProductType.CONTACT_LENS]: 'purple',
-		[ProductType.ACCESSORY]: 'yellow',
-		[ProductType.LENS]: 'indigo'
+		[ProductType.ACCESSORY]: 'yellow'
 	};
 
 	function isLowStock(product: ProductWithRelations): boolean {
