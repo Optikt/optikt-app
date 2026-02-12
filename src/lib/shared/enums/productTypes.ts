@@ -11,9 +11,7 @@ export enum ProductType {
 	/** Contact lenses */
 	CONTACT_LENS = 'CONTACT_LENS',
 	/** Accessories (cases, cloths, cleaning solutions) */
-	ACCESSORY = 'ACCESSORY',
-	/** Pre-made/finished lenses in stock */
-	LENS = 'LENS'
+	ACCESSORY = 'ACCESSORY'
 }
 
 export const ALL_PRODUCT_TYPES = Object.values(ProductType) as ProductType[];
@@ -23,11 +21,10 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 	[ProductType.FRAME]: 'Montura',
 	[ProductType.SUNGLASSES]: 'Lentes de sol',
 	[ProductType.CONTACT_LENS]: 'Lentes de contacto',
-	[ProductType.ACCESSORY]: 'Accesorio',
-	[ProductType.LENS]: 'Cristal terminado'
+	[ProductType.ACCESSORY]: 'Accesorio'
 };
 
-/** Types that require stock tracking */
+/** All product types require stock tracking */
 export const STOCK_REQUIRED_TYPES: ProductType[] = [
 	ProductType.FRAME,
 	ProductType.SUNGLASSES,
@@ -53,7 +50,6 @@ export function requiresStockTracking(type: ProductType): boolean {
  */
 export const MATERIAL_PRODUCT_TYPES = [
 	ProductType.FRAME,
-	ProductType.LENS,
 	ProductType.CONTACT_LENS,
 	ProductType.ACCESSORY,
 	'ALL'
