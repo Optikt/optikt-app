@@ -1,7 +1,7 @@
 /**
  * Exchange Rates Remote Functions
  * Server-side functions for managing currencies and exchange rates
- * 
+ *
  * TODO: Single server for all exchange rates operations
  */
 import { query, command } from '$app/server';
