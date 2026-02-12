@@ -104,14 +104,14 @@
 </script>
 
 <svelte:head>
-	<title>Productos - Optikt</title>
+	<title>Inventario - Optikt</title>
 </svelte:head>
 
 <div class="p-8">
 	<!-- Header -->
 	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Productos</h1>
+			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Inventario</h1>
 			<p class="text-slate-500">Gestiona el inventario de productos</p>
 		</div>
 		<Button color="blue" href="/products/create">
