@@ -79,7 +79,8 @@
 		}).format(value);
 	}
 
-	function formatRate(value: number): string {
+	// TODO: Evaluate if this is needed
+	function _formatRate(value: number): string {
 		return new Intl.NumberFormat('es-VE', {
 			style: 'decimal',
 			minimumFractionDigits: 2,
