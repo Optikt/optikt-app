@@ -49,9 +49,9 @@
 	const navItems = [
 		{ href: '/dashboard', label: 'Dashboard', icon: 'home' },
 		{ href: '/customers', label: 'Clientes', icon: 'users' },
-		{ href: '/products', label: 'Productos', icon: 'package' },
+		{ href: '/products', label: 'Inventario', icon: 'package' },
 		{ href: '/sales', label: 'Ventas', icon: 'shopping' },
-		{ href: '/lenses', label: 'Lentes', icon: 'eye' },
+		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },
 		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' }
 	] as const;
