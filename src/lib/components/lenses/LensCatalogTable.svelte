@@ -2,9 +2,14 @@
 	import { Button, Badge, Spinner } from 'flowbite-svelte';
 	import { Pencil, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import { LENS_TYPE_LABELS, LENS_SOURCE_LABELS } from '$lib/schemas/lenses';
+	import {
+		LensType,
+		LensCatalogSource,
+		LENS_TYPE_LABELS,
+		LENS_SOURCE_LABELS
+	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { resolve } from '$app/paths';
 
@@ -26,13 +31,13 @@
 
 	function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
 		switch (type) {
-			case 'MONOFOCAL':
+			case LensType.MONOFOCAL:
 				return 'blue';
-			case 'BIFOCAL':
+			case LensType.BIFOCAL:
 				return 'green';
-			case 'PROGRESSIVE':
+			case LensType.PROGRESSIVE:
 				return 'purple';
-			case 'OCCUPATIONAL':
+			case LensType.OCCUPATIONAL:
 				return 'yellow';
 			default:
 				return 'blue';
@@ -57,7 +62,7 @@
 		<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
 			<tr>
 				<th class="px-4 py-3">Nombre</th>
-				<th class="px-4 py-3">Fuente</th>
+				<th class="px-4 py-3">Origen</th>
 				<th class="px-4 py-3">Proveedor</th>
 				<th class="px-4 py-3">Tipo</th>
 				<th class="px-4 py-3">Material</th>
@@ -92,10 +97,13 @@
 							</div>
 						</td>
 						<td class="px-4 py-3">
-							<Badge color={item.source === 'FINISHED' ? 'indigo' : 'gray'} class="text-xs">
+							<Badge
+								color={item.source === LensCatalogSource.FINISHED ? 'indigo' : 'gray'}
+								class="text-xs"
+							>
 								{LENS_SOURCE_LABELS[item.source] ?? item.source}
 							</Badge>
-							{#if item.source === 'FINISHED' && item.stock !== null}
+							{#if item.source === LensCatalogSource.FINISHED && item.stock !== null}
 								<span class="ml-1 font-mono text-xs text-slate-500">
 									({item.stock} uds)
 								</span>
@@ -106,7 +114,7 @@
 						</td>
 						<td class="px-4 py-3">
 							<Badge color={getLensTypeBadgeColor(item.type)} class="text-xs">
-								{LENS_TYPE_LABELS[item.type as keyof typeof LENS_TYPE_LABELS] ?? item.type}
+								{LENS_TYPE_LABELS[item.type as LensType] ?? item.type}
 							</Badge>
 							{#if item.isPhotochromic}
 								<Badge color="yellow" class="ml-1 text-xs">Foto</Badge>
@@ -131,7 +139,7 @@
 							{formatRange(item.sphereMin, item.sphereMax)}
 						</td>
 						<td class="px-4 py-3 text-right font-mono font-medium text-slate-800">
-							${item.basePrice.toFixed(2)}
+							{formatPrice(item.basePrice)}
 						</td>
 						<td class="px-4 py-3">
 							<div class="flex justify-end gap-1">
