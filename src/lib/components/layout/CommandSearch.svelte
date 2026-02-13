@@ -2,7 +2,7 @@
 	import { Search, Package, Microscope, X } from '@lucide/svelte';
 	import { universalSearch } from '$lib/remote/search.remote';
 	import type { SearchResults } from '$lib/remote/search.remote';
-	import { LENS_TYPE_LABELS } from '$lib/schemas/lenses';
+	import { LensType, LENS_TYPE_LABELS } from '$lib/shared/enums';
 	import { resolve } from '$app/paths';
 
 	let searchQuery = $state('');
@@ -167,7 +167,8 @@
 									{#if lens.brand}<span class="text-slate-500"> · {lens.brand}</span>{/if}
 								</p>
 								<p class="truncate text-xs text-slate-500">
-									{LENS_TYPE_LABELS[lens.type as keyof typeof LENS_TYPE_LABELS] ?? lens.type}
+									<!-- TODO: Create getter function for this -->
+									{LENS_TYPE_LABELS[lens.type as LensType] ?? lens.type}
 									{#if lens.materialName}· {lens.materialName}{/if}
 									· Esf {fmtRange(lens.sphereMin, lens.sphereMax)}
 									{#if lens.cylinderMin !== null}
