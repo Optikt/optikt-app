@@ -1,10 +1,11 @@
-import { eq, isNull, and, ilike, desc } from 'drizzle-orm';
+import { eq, isNull, and, ilike, desc, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import {
 	lensMaterials,
 	lensTreatments,
 	lensCatalogItems,
+	lensOpticalRanges,
 	supplierLensTreatments,
 	suppliers,
 	type LensMaterial,
@@ -12,7 +13,9 @@ import {
 	type LensTreatment,
 	type NewLensTreatment,
 	type LensCatalogItem,
-	type NewLensCatalogItem
+	type NewLensCatalogItem,
+	type LensOpticalRange,
+	type NewLensOpticalRange
 } from '$lib/server/db/schema';
 
 // ============================================================================
@@ -152,6 +155,7 @@ export async function deleteLensTreatment(id: string): Promise<boolean> {
 export type LensCatalogItemWithRelations = LensCatalogItem & {
 	material: { id: string; name: string; code: string } | null;
 	supplier: { id: string; name: string } | null;
+	ranges: LensOpticalRange[];
 };
 
 export async function getAllLensCatalogItems(): Promise<LensCatalogItem[]> {
@@ -202,7 +206,8 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	let items = results.map((r) => ({
 		...r.item,
 		material: r.material,
-		supplier: r.supplier
+		supplier: r.supplier,
+		ranges: [] as LensOpticalRange[]
 	}));
 
 	// Text search in memory (name, brand, supplier name, material name)
@@ -218,36 +223,117 @@ export async function getLensCatalogItemsWithRelations(options?: {
 		);
 	}
 
+	// Load ranges for each item
+	if (items.length > 0) {
+		const itemIds = items.map((i) => i.id);
+		const ranges = await db
+			.select()
+			.from(lensOpticalRanges)
+			.where(inArray(lensOpticalRanges.lensCatalogItemId, itemIds));
+		const rangeMap = new Map<string, LensOpticalRange[]>();
+		for (const r of ranges) {
+			const arr = rangeMap.get(r.lensCatalogItemId) ?? [];
+			arr.push(r);
+			rangeMap.set(r.lensCatalogItemId, arr);
+		}
+		for (const item of items) {
+			item.ranges = rangeMap.get(item.id) ?? [];
+		}
+	}
+
 	return items;
 }
 
-export async function findLensCatalogItemById(id: string): Promise<LensCatalogItem | null> {
+export async function findLensCatalogItemById(
+	id: string
+): Promise<(LensCatalogItem & { ranges: LensOpticalRange[] }) | null> {
 	const [item] = await db
 		.select()
 		.from(lensCatalogItems)
 		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)));
-	return item ?? null;
+	if (!item) return null;
+
+	const ranges = await db
+		.select()
+		.from(lensOpticalRanges)
+		.where(eq(lensOpticalRanges.lensCatalogItemId, id));
+
+	return { ...item, ranges };
 }
 
-export async function createLensCatalogItem(data: NewLensCatalogItem): Promise<LensCatalogItem> {
+export async function createLensCatalogItem(
+	data: NewLensCatalogItem,
+	ranges: Omit<NewLensOpticalRange, 'id' | 'lensCatalogItemId' | 'createdAt' | 'updatedAt'>[]
+): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> {
 	const now = new Date();
-	const [item] = await db
-		.insert(lensCatalogItems)
-		.values({ ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now })
-		.returning();
-	return item;
+	const itemId = crypto.randomUUID();
+
+	return db.transaction(async (tx) => {
+		const [item] = await tx
+			.insert(lensCatalogItems)
+			.values({ ...data, id: itemId, createdAt: now, updatedAt: now })
+			.returning();
+
+		const rangeValues = ranges.map((r) => ({
+			...r,
+			id: crypto.randomUUID(),
+			lensCatalogItemId: itemId,
+			createdAt: now,
+			updatedAt: now
+		}));
+
+		const insertedRanges =
+			rangeValues.length > 0
+				? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
+				: [];
+
+		return { ...item, ranges: insertedRanges };
+	});
 }
 
 export async function updateLensCatalogItem(
 	id: string,
-	data: Partial<NewLensCatalogItem>
-): Promise<LensCatalogItem | null> {
-	const [updated] = await db
-		.update(lensCatalogItems)
-		.set({ ...data, updatedAt: new Date() })
-		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
-		.returning();
-	return updated ?? null;
+	data: Partial<NewLensCatalogItem>,
+	ranges?: Omit<NewLensOpticalRange, 'id' | 'lensCatalogItemId' | 'createdAt' | 'updatedAt'>[]
+): Promise<(LensCatalogItem & { ranges: LensOpticalRange[] }) | null> {
+	const now = new Date();
+
+	return db.transaction(async (tx) => {
+		const [updated] = await tx
+			.update(lensCatalogItems)
+			.set({ ...data, updatedAt: now })
+			.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
+			.returning();
+
+		if (!updated) return null;
+
+		let insertedRanges: LensOpticalRange[] = [];
+		if (ranges) {
+			// Delete existing ranges and replace
+			await tx.delete(lensOpticalRanges).where(eq(lensOpticalRanges.lensCatalogItemId, id));
+
+			const rangeValues = ranges.map((r) => ({
+				...r,
+				id: crypto.randomUUID(),
+				lensCatalogItemId: id,
+				createdAt: now,
+				updatedAt: now
+			}));
+
+			insertedRanges =
+				rangeValues.length > 0
+					? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
+					: [];
+		} else {
+			// No range change — fetch current
+			insertedRanges = await tx
+				.select()
+				.from(lensOpticalRanges)
+				.where(eq(lensOpticalRanges.lensCatalogItemId, id));
+		}
+
+		return { ...updated, ranges: insertedRanges };
+	});
 }
 
 export async function deleteLensCatalogItem(id: string): Promise<boolean> {
