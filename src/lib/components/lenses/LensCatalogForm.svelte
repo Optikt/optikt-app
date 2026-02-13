@@ -13,18 +13,38 @@
 	} from '$lib/shared/enums';
 	import { scrollToFirstError } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
-	import type { LensCatalogItem } from '$lib/server/db/schema';
+	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 
 	type MaterialOption = SelectOption & { refractiveIndex?: number | null };
 
+	/** UI-level range entry (before expansion) */
+	type RangeEntry = {
+		symmetric: boolean;
+		absMin: string;
+		absMax: string;
+		sphereMin: string;
+		sphereMax: string;
+		cylinderMin: string;
+		cylinderMax: string;
+		additionMin: string;
+		additionMax: string;
+	};
+
 	type Props = {
 		item?: LensCatalogItem | null;
+		existingRanges?: LensOpticalRange[];
 		materials: { id: string; name: string; refractiveIndex?: number | null }[];
 		suppliers: { id: string; name: string }[];
 		cancelHref?: string;
 	};
 
-	let { item = null, materials = [], suppliers = [], cancelHref = '/lenses' }: Props = $props();
+	let {
+		item = null,
+		existingRanges = [],
+		materials = [],
+		suppliers = [],
+		cancelHref = '/lenses'
+	}: Props = $props();
 
 	let isSubmitting = $state(false);
 	const isEdit = $derived(!!item);
@@ -56,12 +76,6 @@
 		technology: '',
 		type: LensType.MONOFOCAL as LensType,
 		materialId: '',
-		sphereMin: '-6.00',
-		sphereMax: '6.00',
-		cylinderMin: '-4.00',
-		cylinderMax: '0.00',
-		additionMin: '',
-		additionMax: '',
 		isPhotochromic: false,
 		isBlueCut: false,
 		isAR: false,
@@ -72,6 +86,23 @@
 		refractiveIndex: '',
 		notes: ''
 	});
+
+	// Dynamic optical ranges
+	function createEmptyRange(): RangeEntry {
+		return {
+			symmetric: true,
+			absMin: '0.00',
+			absMax: '6.00',
+			sphereMin: '-6.00',
+			sphereMax: '6.00',
+			cylinderMin: '',
+			cylinderMax: '',
+			additionMin: '',
+			additionMax: ''
+		};
+	}
+
+	let ranges = $state<RangeEntry[]>([createEmptyRange()]);
 
 	// Initialize when editing
 	$effect(() => {
@@ -85,12 +116,6 @@
 					technology: item!.technology ?? '',
 					type: item!.type as LensType,
 					materialId: item!.materialId,
-					sphereMin: item!.sphereMin.toString(),
-					sphereMax: item!.sphereMax.toString(),
-					cylinderMin: item!.cylinderMin?.toString() ?? '',
-					cylinderMax: item!.cylinderMax?.toString() ?? '',
-					additionMin: item!.additionMin?.toString() ?? '',
-					additionMax: item!.additionMax?.toString() ?? '',
 					isPhotochromic: item!.isPhotochromic,
 					isBlueCut: item!.isBlueCut,
 					isAR: item!.isAR,
@@ -101,6 +126,21 @@
 					refractiveIndex: item!.refractiveIndex?.toString() ?? '',
 					notes: item!.notes ?? ''
 				};
+
+				// Load existing ranges
+				if (existingRanges.length > 0) {
+					ranges = existingRanges.map((r) => ({
+						symmetric: false,
+						absMin: '0',
+						absMax: '0',
+						sphereMin: r.sphereMin.toString(),
+						sphereMax: r.sphereMax.toString(),
+						cylinderMin: r.cylinderMin?.toString() ?? '',
+						cylinderMax: r.cylinderMax?.toString() ?? '',
+						additionMin: r.additionMin?.toString() ?? '',
+						additionMax: r.additionMax?.toString() ?? ''
+					}));
+				}
 			});
 		}
 	});
@@ -175,6 +215,76 @@
 			});
 		}
 	});
+
+	// ── Range helpers ────────────────────────────────────────────
+	function addRange() {
+		ranges = [...ranges, createEmptyRange()];
+	}
+
+	function removeRange(index: number) {
+		if (ranges.length <= 1) return;
+		ranges = ranges.filter((_, i) => i !== index);
+	}
+
+	/**
+	 * Expand UI range entries into flat DB range objects.
+	 * When symmetric (±) is ON:
+	 *   - If absMin is 0: one continuous range from -absMax to +absMax
+	 *   - Otherwise: two ranges (negative side and positive side)
+	 */
+	function expandRanges(): {
+		sphereMin: number;
+		sphereMax: number;
+		cylinderMin?: number;
+		cylinderMax?: number;
+		additionMin?: number;
+		additionMax?: number;
+	}[] {
+		const result: {
+			sphereMin: number;
+			sphereMax: number;
+			cylinderMin?: number;
+			cylinderMax?: number;
+			additionMin?: number;
+			additionMax?: number;
+		}[] = [];
+
+		for (const r of ranges) {
+			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : undefined;
+			const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : undefined;
+			const addMin = r.additionMin ? parseFloat(r.additionMin) : undefined;
+			const addMax = r.additionMax ? parseFloat(r.additionMax) : undefined;
+
+			const base = {
+				...(cylMin !== undefined && !isNaN(cylMin) && { cylinderMin: cylMin }),
+				...(cylMax !== undefined && !isNaN(cylMax) && { cylinderMax: cylMax }),
+				...(addMin !== undefined && !isNaN(addMin) && { additionMin: addMin }),
+				...(addMax !== undefined && !isNaN(addMax) && { additionMax: addMax })
+			};
+
+			if (r.symmetric) {
+				const absMin = parseFloat(r.absMin) || 0;
+				const absMax = parseFloat(r.absMax) || 0;
+
+				if (absMin === 0) {
+					// Continuous range: -absMax to +absMax (includes 0)
+					result.push({ sphereMin: -absMax, sphereMax: absMax, ...base });
+				} else {
+					// Two sub-ranges: negative and positive sides
+					result.push({ sphereMin: -absMax, sphereMax: -absMin, ...base });
+					result.push({ sphereMin: absMin, sphereMax: absMax, ...base });
+				}
+			} else {
+				const sphMin = parseFloat(r.sphereMin) || 0;
+				const sphMax = parseFloat(r.sphereMax) || 0;
+				result.push({ sphereMin: sphMin, sphereMax: sphMax, ...base });
+			}
+		}
+		return result;
+	}
+
+	/** Serialized ranges for the hidden input */
+	const serializedRanges = $derived(JSON.stringify(expandRanges()));
 
 	// ── Pending entity handlers ──────────────────────────────────
 	function handleCreatePendingSupplier(name: string): SelectOption {
@@ -434,98 +544,207 @@
 		</div>
 	</div>
 
-	<!-- Optical ranges -->
+	<!-- Optical ranges (dynamic) -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h3 class="mb-4 text-lg font-semibold text-slate-800">Rangos Ópticos</h3>
-		<div class="grid gap-4 md:grid-cols-2">
-			<div>
-				<Label class="mb-2">Esfera (mín / máx) *</Label>
-				<div class="flex items-center gap-2">
-					<Input
-						name="sphereMin"
-						bind:value={formData.sphereMin}
-						type="number"
-						step="0.25"
-						placeholder="-6.00"
-						size="sm"
-						class="font-mono"
-						required
-					/>
-					<span class="text-slate-400">a</span>
-					<Input
-						name="sphereMax"
-						bind:value={formData.sphereMax}
-						type="number"
-						step="0.25"
-						placeholder="+6.00"
-						size="sm"
-						class="font-mono"
-						required
-					/>
-				</div>
-				<p class="mt-1 text-xs text-slate-400">
-					Ej: -6.00 a +6.00 · Positivo, negativo o mixto · Pasos 0.25
-				</p>
-			</div>
-			<div>
-				<Label class="mb-2">Cilindro (mín / máx)</Label>
-				<div class="flex items-center gap-2">
-					<Input
-						name="cylinderMin"
-						bind:value={formData.cylinderMin}
-						type="number"
-						step="0.25"
-						max="0"
-						placeholder="-4.00"
-						size="sm"
-						class="font-mono"
-					/>
-					<span class="text-slate-400">a</span>
-					<Input
-						name="cylinderMax"
-						bind:value={formData.cylinderMax}
-						type="number"
-						step="0.25"
-						max="0"
-						placeholder="0.00"
-						size="sm"
-						class="font-mono"
-					/>
-				</div>
-				<p class="mt-1 text-xs text-slate-400">Siempre ≤ 0 · Pasos de 0.25</p>
-			</div>
+		<div class="mb-4 flex items-center justify-between">
+			<h3 class="text-lg font-semibold text-slate-800">Rangos Ópticos</h3>
+			<button
+				type="button"
+				class="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+				onclick={addRange}
+			>
+				+ Agregar rango
+			</button>
 		</div>
 
-		{#if showAddition}
-			<div class="mt-4">
-				<Label class="mb-2">Adición (mín / máx)</Label>
-				<div class="flex items-center gap-2" style="max-width: 50%;">
-					<Input
-						name="additionMin"
-						bind:value={formData.additionMin}
-						type="number"
-						step="0.25"
-						min="0"
-						max="4.00"
-						placeholder="0.75"
-						size="sm"
-						class="font-mono"
-					/>
-					<span class="text-slate-400">a</span>
-					<Input
-						name="additionMax"
-						bind:value={formData.additionMax}
-						type="number"
-						step="0.25"
-						min="0"
-						max="4.00"
-						placeholder="3.50"
-						size="sm"
-						class="font-mono"
-					/>
+		<input type="hidden" name="ranges" value={serializedRanges} />
+
+		{#each ranges as range, i (i)}
+			<div
+				class="relative mb-4 rounded-lg border border-slate-200 bg-slate-50/50 p-4 {ranges.length >
+				1
+					? 'pr-10'
+					: ''}"
+			>
+				{#if ranges.length > 1}
+					<button
+						type="button"
+						class="absolute top-2 right-2 rounded p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+						onclick={() => removeRange(i)}
+						title="Eliminar rango"
+					>
+						<svg
+							class="h-4 w-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+					</button>
+				{/if}
+
+				<div class="mb-1 text-xs font-medium text-slate-500 uppercase">Rango {i + 1}</div>
+
+				<!-- Sphere with ± toggle -->
+				<div class="grid gap-4 md:grid-cols-2">
+					<div>
+						<div class="mb-2 flex items-center gap-2">
+							<Label>Esfera *</Label>
+							<button
+								type="button"
+								class="rounded-md border px-2 py-0.5 text-xs font-semibold transition-colors {range.symmetric
+									? 'border-blue-300 bg-blue-50 text-blue-700'
+									: 'border-slate-300 bg-white text-slate-500 hover:border-slate-400'}"
+								onclick={() => {
+									range.symmetric = !range.symmetric;
+									if (range.symmetric) {
+										// Convert explicit to symmetric
+										const sMin = Math.abs(parseFloat(range.sphereMin) || 0);
+										const sMax = Math.abs(parseFloat(range.sphereMax) || 0);
+										range.absMin = Math.min(sMin, sMax).toFixed(2);
+										range.absMax = Math.max(sMin, sMax).toFixed(2);
+									} else {
+										// Convert symmetric to explicit
+										// const absMin = parseFloat(range.absMin) || 0;
+										const absMax = parseFloat(range.absMax) || 0;
+										range.sphereMin = (-absMax).toFixed(2);
+										range.sphereMax = absMax.toFixed(2);
+									}
+								}}
+								title={range.symmetric
+									? 'Modo ±: positivo y negativo'
+									: 'Modo explícito: min a max'}
+							>
+								±
+							</button>
+						</div>
+
+						{#if range.symmetric}
+							<!-- Symmetric mode: ±absMin to ±absMax -->
+							<div class="flex items-center gap-2">
+								<span class="text-sm font-medium text-blue-600">±</span>
+								<Input
+									bind:value={range.absMin}
+									type="number"
+									step="0.25"
+									min="0"
+									placeholder="0.00"
+									size="sm"
+									class="font-mono"
+								/>
+								<span class="text-slate-400">a</span>
+								<span class="text-sm font-medium text-blue-600">±</span>
+								<Input
+									bind:value={range.absMax}
+									type="number"
+									step="0.25"
+									min="0"
+									placeholder="6.00"
+									size="sm"
+									class="font-mono"
+								/>
+							</div>
+							<p class="mt-1 text-xs text-blue-500">
+								{#if parseFloat(range.absMin) === 0}
+									Genera: {-(parseFloat(range.absMax) || 0).toFixed(2)} a +{(
+										parseFloat(range.absMax) || 0
+									).toFixed(2)}
+								{:else}
+									Genera: -{(parseFloat(range.absMax) || 0).toFixed(2)} a -{(
+										parseFloat(range.absMin) || 0
+									).toFixed(2)} y +{(parseFloat(range.absMin) || 0).toFixed(2)} a +{(
+										parseFloat(range.absMax) || 0
+									).toFixed(2)}
+								{/if}
+							</p>
+						{:else}
+							<!-- Explicit mode: sphereMin to sphereMax -->
+							<div class="flex items-center gap-2">
+								<Input
+									bind:value={range.sphereMin}
+									type="number"
+									step="0.25"
+									placeholder="-6.00"
+									size="sm"
+									class="font-mono"
+								/>
+								<span class="text-slate-400">a</span>
+								<Input
+									bind:value={range.sphereMax}
+									type="number"
+									step="0.25"
+									placeholder="+6.00"
+									size="sm"
+									class="font-mono"
+								/>
+							</div>
+							<p class="mt-1 text-xs text-slate-400">Rango explícito · Pasos 0.25</p>
+						{/if}
+					</div>
+
+					<div>
+						<Label class="mb-2">Cilindro</Label>
+						<div class="flex items-center gap-2">
+							<Input
+								bind:value={range.cylinderMin}
+								type="number"
+								step="0.25"
+								max="0"
+								placeholder="-4.00"
+								size="sm"
+								class="font-mono"
+							/>
+							<span class="text-slate-400">a</span>
+							<Input
+								bind:value={range.cylinderMax}
+								type="number"
+								step="0.25"
+								max="0"
+								placeholder="0.00"
+								size="sm"
+								class="font-mono"
+							/>
+						</div>
+						<p class="mt-1 text-xs text-slate-400">Siempre ≤ 0 · Pasos de 0.25</p>
+					</div>
 				</div>
-				<p class="mt-1 text-xs text-slate-400">Siempre ≥ 0 · Pasos de 0.25</p>
+
+				{#if showAddition}
+					<div class="mt-3">
+						<Label class="mb-2">Adición</Label>
+						<div class="flex items-center gap-2" style="max-width: 50%;">
+							<Input
+								bind:value={range.additionMin}
+								type="number"
+								step="0.25"
+								min="0"
+								max="4.00"
+								placeholder="0.75"
+								size="sm"
+								class="font-mono"
+							/>
+							<span class="text-slate-400">a</span>
+							<Input
+								bind:value={range.additionMax}
+								type="number"
+								step="0.25"
+								min="0"
+								max="4.00"
+								placeholder="3.50"
+								size="sm"
+								class="font-mono"
+							/>
+						</div>
+						<p class="mt-1 text-xs text-slate-400">Siempre ≥ 0 · Pasos de 0.25</p>
+					</div>
+				{/if}
 			</div>
+		{/each}
+
+		{#if activeForm.fields.ranges?.issues()}
+			<p class="mt-1 text-xs text-red-500">{activeForm.fields.ranges.issues()}</p>
 		{/if}
 	</div>
 
