@@ -9,6 +9,7 @@ import { db } from '$lib/server/db';
 import {
 	products,
 	lensCatalogItems,
+	lensOpticalRanges,
 	lensMaterials,
 	suppliers,
 	brands
@@ -35,10 +36,6 @@ export interface LensCatalogResult {
 	source: string;
 	materialName: string | null;
 	supplierName: string | null;
-	sphereMin: number;
-	sphereMax: number;
-	cylinderMin: number | null;
-	cylinderMax: number | null;
 	basePrice: number;
 }
 
@@ -108,20 +105,44 @@ async function searchLenses(
 ): Promise<LensCatalogResult[]> {
 	const baseConditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
 
-	// If optical params detected, search by sphere/cylinder range
+	// If optical params detected, join via lens_optical_ranges and use containment
 	if (optical?.sphere !== undefined) {
-		baseConditions.push(lte(lensCatalogItems.sphereMin, optical.sphere));
-		baseConditions.push(gte(lensCatalogItems.sphereMax, optical.sphere));
+		const rangeConditions = [
+			eq(lensOpticalRanges.lensCatalogItemId, lensCatalogItems.id),
+			lte(lensOpticalRanges.sphereMin, optical.sphere),
+			gte(lensOpticalRanges.sphereMax, optical.sphere)
+		];
 
 		if (optical.cylinder !== undefined && optical.cylinder < 0) {
-			baseConditions.push(lte(lensCatalogItems.cylinderMin, optical.cylinder));
+			rangeConditions.push(lte(lensOpticalRanges.cylinderMin, optical.cylinder));
+			rangeConditions.push(gte(lensOpticalRanges.cylinderMax, optical.cylinder));
 		}
-	} else {
-		// Text search on name/brand
-		baseConditions.push(
-			or(ilike(lensCatalogItems.name, `%${search}%`), ilike(lensCatalogItems.brand, `%${search}%`))!
-		);
+
+		const results = await db
+			.selectDistinctOn([lensCatalogItems.id], {
+				id: lensCatalogItems.id,
+				name: lensCatalogItems.name,
+				brand: lensCatalogItems.brand,
+				type: lensCatalogItems.type,
+				source: lensCatalogItems.source,
+				materialName: lensMaterials.name,
+				supplierName: suppliers.name,
+				basePrice: lensCatalogItems.basePrice
+			})
+			.from(lensCatalogItems)
+			.innerJoin(lensOpticalRanges, and(...rangeConditions))
+			.leftJoin(lensMaterials, eq(lensCatalogItems.materialId, lensMaterials.id))
+			.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
+			.where(and(...baseConditions))
+			.limit(MAX_RESULTS);
+
+		return results;
 	}
+
+	// Text search fallback
+	baseConditions.push(
+		or(ilike(lensCatalogItems.name, `%${search}%`), ilike(lensCatalogItems.brand, `%${search}%`))!
+	);
 
 	const results = await db
 		.select({
@@ -132,10 +153,6 @@ async function searchLenses(
 			source: lensCatalogItems.source,
 			materialName: lensMaterials.name,
 			supplierName: suppliers.name,
-			sphereMin: lensCatalogItems.sphereMin,
-			sphereMax: lensCatalogItems.sphereMax,
-			cylinderMin: lensCatalogItems.cylinderMin,
-			cylinderMax: lensCatalogItems.cylinderMax,
 			basePrice: lensCatalogItems.basePrice
 		})
 		.from(lensCatalogItems)
