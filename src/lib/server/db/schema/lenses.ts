@@ -102,6 +102,7 @@ export const lensCatalogItems = pgTable(
 		isAR: boolean('is_ar').notNull().default(false),
 		basePrice: doublePrecision('base_price').notNull(),
 		salePrice: doublePrecision('sale_price'),
+		mountingPrice: doublePrecision('mounting_price'),
 		deliveryDays: integer('delivery_days'),
 		stock: integer(),
 		refractiveIndex: doublePrecision('refractive_index'),
