@@ -303,12 +303,14 @@
 			const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
 			const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
 
-			const cylPart = cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
-				? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
-				: '';
-			const addPart = addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
-				? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
-				: '';
+			const cylPart =
+				cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
+					? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
+					: '';
+			const addPart =
+				addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
+					? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
+					: '';
 
 			if (absMin === 0) {
 				lines.push(`Esf ${fmt(-absMax)} a ${fmt(absMax)}${cylPart}${addPart}`);
@@ -325,12 +327,14 @@
 			const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
 			const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
 
-			const cylPart = cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
-				? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
-				: '';
-			const addPart = addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
-				? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
-				: '';
+			const cylPart =
+				cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
+					? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
+					: '';
+			const addPart =
+				addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
+					? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
+					: '';
 
 			lines.push(`Esf ${fmt(sMin)} a ${fmt(sMax)}${cylPart}${addPart}`);
 		}
@@ -506,6 +510,7 @@
 					name="name"
 					bind:value={formData.name}
 					placeholder="Ej: Novak · CR39 · Monofocal"
+					class="placeholder:text-slate-400"
 					required
 					disabled={autoNameEnabled}
 				/>
@@ -525,6 +530,7 @@
 					name="brand"
 					bind:value={formData.brand}
 					placeholder="Ej: Transitions, Essilor"
+					class="placeholder:text-slate-400"
 				/>
 			</div>
 		</div>
@@ -537,6 +543,7 @@
 					name="technology"
 					bind:value={formData.technology}
 					placeholder="Ej: Evo-S, Digital, FreeForm"
+					class="placeholder:text-slate-400"
 				/>
 			</div>
 			<div>
@@ -584,10 +591,10 @@
 					bind:value={formData.refractiveIndex}
 					type="number"
 					step="0.01"
-					min="1.0"
+					min="1.49"
 					max="2.0"
 					placeholder="1.50"
-					class="font-mono"
+					class="font-mono placeholder:text-slate-400"
 				/>
 				{#if formData.materialId?.startsWith('pending_material_') && formData.refractiveIndex}
 					<p class="mt-1 text-xs text-blue-500">Se usará como índice para el nuevo material</p>
@@ -682,9 +689,9 @@
 									type="number"
 									step="0.25"
 									min="0"
-									placeholder="0.00"
+									placeholder="Ej: 0.00"
 									size="sm"
-									class="font-mono"
+									class="font-mono placeholder:text-slate-400"
 								/>
 								<span class="text-slate-400">a</span>
 								<span class="text-sm font-medium text-blue-600">±</span>
@@ -693,12 +700,11 @@
 									type="number"
 									step="0.25"
 									min="0"
-									placeholder="6.00"
+									placeholder="Ej: 6.00"
 									size="sm"
-									class="font-mono"
+									class="font-mono placeholder:text-slate-400"
 								/>
 							</div>
-
 						{:else}
 							<!-- Explicit mode: sphereMin to sphereMax -->
 							<div class="flex items-center gap-2">
@@ -706,21 +712,20 @@
 									bind:value={range.sphereMin}
 									type="number"
 									step="0.25"
-									placeholder="-6.00"
+									placeholder="Ej: -6.00"
 									size="sm"
-									class="font-mono"
+									class="font-mono placeholder:text-slate-400"
 								/>
 								<span class="text-slate-400">a</span>
 								<Input
 									bind:value={range.sphereMax}
 									type="number"
 									step="0.25"
-									placeholder="+6.00"
+									placeholder="Ej: +6.00"
 									size="sm"
-									class="font-mono"
+									class="font-mono placeholder:text-slate-400"
 								/>
 							</div>
-
 						{/if}
 					</div>
 
@@ -732,9 +737,9 @@
 								type="number"
 								step="0.25"
 								max="0"
-								placeholder="-4.00"
+								placeholder="Ej: -4.00"
 								size="sm"
-								class="font-mono"
+								class="font-mono placeholder:text-slate-400"
 							/>
 							<span class="text-slate-400">a</span>
 							<Input
@@ -742,12 +747,11 @@
 								type="number"
 								step="0.25"
 								max="0"
-								placeholder="0.00"
+								placeholder="Ej: 0.00"
 								size="sm"
-								class="font-mono"
+								class="font-mono placeholder:text-slate-400"
 							/>
 						</div>
-
 					</div>
 				</div>
 
@@ -761,9 +765,9 @@
 								step="0.25"
 								min="0"
 								max="4.00"
-								placeholder="0.75"
+								placeholder="Ej: 0.75"
 								size="sm"
-								class="font-mono"
+								class="font-mono placeholder:text-slate-400"
 							/>
 							<span class="text-slate-400">a</span>
 							<Input
@@ -772,9 +776,9 @@
 								step="0.25"
 								min="0"
 								max="4.00"
-								placeholder="3.50"
+								placeholder="Ej: 3.50"
 								size="sm"
-								class="font-mono"
+								class="font-mono placeholder:text-slate-400"
 							/>
 						</div>
 					</div>
@@ -782,8 +786,10 @@
 
 				<!-- Unified range preview -->
 				<div class="mt-3 rounded-md border border-blue-100 bg-blue-50/60 px-3 py-2">
-					<p class="mb-0.5 text-[10px] font-semibold tracking-wide text-blue-400 uppercase">Resultado</p>
-					{#each rangePreview(range) as line, li}
+					<p class="mb-0.5 text-[10px] font-semibold tracking-wide text-blue-400 uppercase">
+						Resultado
+					</p>
+					{#each rangePreview(range) as line, li (li)}
 						<p class="font-mono text-xs leading-relaxed text-blue-700">
 							{#if rangePreview(range).length > 1}
 								<span class="mr-1 text-blue-400">{li + 1}.</span>
@@ -827,7 +833,7 @@
 					step="0.01"
 					min="0"
 					placeholder="0.00"
-					class="font-mono"
+					class="font-mono placeholder:text-slate-400"
 				/>
 			</div>
 			<div>
@@ -840,7 +846,7 @@
 					step="0.01"
 					min="0"
 					placeholder="0.00"
-					class="font-mono"
+					class="font-mono placeholder:text-slate-400"
 				/>
 			</div>
 			<div>
@@ -852,6 +858,7 @@
 					type="number"
 					min="0"
 					placeholder="3"
+					class="font-mono placeholder:text-slate-400"
 				/>
 			</div>
 			<div>
@@ -868,7 +875,10 @@
 					type="number"
 					min="0"
 					placeholder="0"
-					class={isFinished ? 'border-indigo-300 ring-1 ring-indigo-200' : ''}
+					class={{
+						'font-mono placeholder:text-slate-400': true,
+						'border-indigo-300 ring-1 ring-indigo-200': isFinished
+					}}
 				/>
 				{#if isFinished}
 					<p class="mt-1 text-xs text-indigo-500">Los cristales terminados se manejan por stock</p>
