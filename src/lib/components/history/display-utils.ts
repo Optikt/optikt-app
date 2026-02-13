@@ -95,6 +95,8 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		baseFeatures: 'Características base',
 		isPhotochromic: 'Fotocromático',
 		basePrice: 'Precio base',
+		salePrice: 'Precio venta',
+		mountingPrice: 'Precio montaje',
 		deliveryDays: 'Días de entrega',
 		stock: 'Stock',
 		refractiveIndex: 'Índice de refracción',
