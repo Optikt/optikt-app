@@ -15,4 +15,4 @@ export { default as InstagramInput } from './InstagramInput.svelte';
 export { default as IdInput } from './IdInput.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
 export { default as PurchaseCurrencyInput } from './PurchaseCurrencyInput.svelte';
-export type { SelectOption } from './CreatableSelect.svelte';
+export type { SelectOption, PendingEntity } from './CreatableSelect.svelte';
