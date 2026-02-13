@@ -9,7 +9,8 @@
 		FormTextarea,
 		CreatableSelect,
 		PurchaseCurrencyInput,
-		type SelectOption
+		type SelectOption,
+		type PendingEntity
 	} from '$lib/components/ui';
 	import { scrollToFirstError } from '$lib/utils';
 	import {
@@ -81,15 +82,10 @@
 	// These track new items typed by the user that will be created on form submit
 	// ============================================================================
 
-	type PendingItem = {
-		pendingId: string;
-		name: string;
-		productType?: string; // Only for materials
-	};
-
-	let pendingBrands = $state<PendingItem[]>([]);
-	let pendingSuppliers = $state<PendingItem[]>([]);
-	let pendingMaterials = $state<PendingItem[]>([]);
+	let pendingBrands = $state<PendingEntity[]>([]);
+	let pendingSuppliers = $state<PendingEntity[]>([]);
+	let pendingMaterials = $state<PendingEntity[]>([]);
+	let pendingModels = $state<PendingEntity[]>([]);
 
 	// Merged options: original + pending
 	const allBrands = $derived<SelectOption[]>([
@@ -122,7 +118,12 @@
 		// Add pending materials for this product type
 		const pendingForType = pendingMaterials
 			.filter((p) => p.productType === type || p.productType === 'ALL')
-			.map((p) => ({ id: p.pendingId, name: p.name, isPending: true, productType: p.productType }));
+			.map((p) => ({
+				id: p.pendingId,
+				name: p.name,
+				isPending: true,
+				productType: typeof p.productType === 'string' ? p.productType : undefined
+			}));
 
 		return [...baseMaterials, ...pendingForType];
 	});
@@ -163,13 +164,16 @@
 		const material = pendingMaterials.find((m) => m.pendingId === pendingId);
 		if (material) return material.name;
 
+		const model = pendingModels.find((m) => m.pendingId === pendingId);
+		if (model) return model.name;
+
 		return null;
 	}
 
 	function getPendingMaterialProductType(pendingId: string): string | null {
 		if (!pendingId.startsWith('pending_material_')) return null;
 		const material = pendingMaterials.find((m) => m.pendingId === pendingId);
-		return material?.productType ?? null;
+		return typeof material?.productType === 'string' ? material.productType : null;
 	}
 
 	// Clear material when product type changes (since materials are type-specific)
