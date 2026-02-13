@@ -81,6 +81,7 @@
 		isAR: false,
 		basePrice: '0',
 		salePrice: '',
+		mountingPrice: '',
 		deliveryDays: '',
 		stock: '0',
 		refractiveIndex: '',
@@ -92,9 +93,9 @@
 		return {
 			symmetric: true,
 			absMin: '0.00',
-			absMax: '6.00',
-			sphereMin: '-6.00',
-			sphereMax: '6.00',
+			absMax: '0.00',
+			sphereMin: '0.00',
+			sphereMax: '0.00',
 			cylinderMin: '',
 			cylinderMax: '',
 			additionMin: '',
@@ -121,6 +122,7 @@
 					isAR: item!.isAR,
 					basePrice: item!.basePrice.toString(),
 					salePrice: item!.salePrice?.toString() ?? '',
+					mountingPrice: item!.mountingPrice?.toString() ?? '',
 					deliveryDays: item!.deliveryDays?.toString() ?? '',
 					stock: item!.stock?.toString() ?? '0',
 					refractiveIndex: item!.refractiveIndex?.toString() ?? '',
@@ -131,14 +133,14 @@
 				if (existingRanges.length > 0) {
 					ranges = existingRanges.map((r) => ({
 						symmetric: false,
-						absMin: '0',
-						absMax: '0',
-						sphereMin: r.sphereMin.toString(),
-						sphereMax: r.sphereMax.toString(),
-						cylinderMin: r.cylinderMin?.toString() ?? '',
-						cylinderMax: r.cylinderMax?.toString() ?? '',
-						additionMin: r.additionMin?.toString() ?? '',
-						additionMax: r.additionMax?.toString() ?? ''
+						absMin: '0.00',
+						absMax: '0.00',
+						sphereMin: r.sphereMin.toFixed(2),
+						sphereMax: r.sphereMax.toFixed(2),
+						cylinderMin: r.cylinderMin != null ? r.cylinderMin.toFixed(2) : '',
+						cylinderMax: r.cylinderMax != null ? r.cylinderMax.toFixed(2) : '',
+						additionMin: r.additionMin != null ? r.additionMin.toFixed(2) : '',
+						additionMax: r.additionMax != null ? r.additionMax.toFixed(2) : ''
 					}));
 				}
 			});
@@ -801,7 +803,7 @@
 	<!-- Price, Delivery, Stock -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<h3 class="mb-4 text-lg font-semibold text-slate-800">Precio y Disponibilidad</h3>
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
 			<div>
 				<Label for="lc_price" class="mb-2">Precio Compra ($) *</Label>
 				<Input
@@ -821,6 +823,19 @@
 					id="lc_sale_price"
 					name="salePrice"
 					bind:value={formData.salePrice}
+					type="number"
+					step="0.01"
+					min="0"
+					placeholder="0.00"
+					class="font-mono"
+				/>
+			</div>
+			<div>
+				<Label for="lc_mounting_price" class="mb-2">Precio Montaje ($)</Label>
+				<Input
+					id="lc_mounting_price"
+					name="mountingPrice"
+					bind:value={formData.mountingPrice}
 					type="number"
 					step="0.01"
 					min="0"
