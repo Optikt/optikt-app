@@ -3,6 +3,7 @@
 	import { universalSearch } from '$lib/remote/search.remote';
 	import type { SearchResults } from '$lib/remote/search.remote';
 	import { LensType, LENS_TYPE_LABELS } from '$lib/shared/enums';
+	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
 
 	let searchQuery = $state('');
@@ -134,7 +135,7 @@
 								</p>
 							</div>
 							<span class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-								${product.salePrice.toFixed(2)}
+								{formatPrice(product.salePrice)}
 							</span>
 						</a>
 					{/each}
@@ -177,7 +178,7 @@
 								</p>
 							</div>
 							<span class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-								${lens.basePrice.toFixed(2)}
+								{formatPrice(lens.basePrice)}
 							</span>
 						</a>
 					{/each}
