@@ -1,0 +1,16 @@
+{
+	"servers": {
+		"svelte-flowbite": {
+			"type": "stdio",
+			"command": "node",
+			"args": [
+				"/home/hypercycle/projects/mcp-servers/flowbite-svelte-mcp/build/server.js"
+			]
+		},
+		"svelte": {
+			"url": "https://mcp.svelte.dev/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}
