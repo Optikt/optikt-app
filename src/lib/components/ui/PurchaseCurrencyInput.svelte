@@ -7,6 +7,7 @@
 		ALL_CURRENCY_CODES,
 		isBaseCurrency
 	} from '$lib/shared/enums';
+	import { formatCurrency } from '$lib/utils';
 
 	type PurchaseCurrencyInputProps = {
 		/** Selected currency code */
@@ -70,23 +71,6 @@
 		if (!purchasePrice || purchasePrice === 0) return 0;
 		return ((salePrice - purchasePrice) / purchasePrice) * 100;
 	});
-
-	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat('es-VE', {
-			style: 'decimal',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		}).format(value);
-	}
-
-	// TODO: Evaluate if this is needed
-	function _formatRate(value: number): string {
-		return new Intl.NumberFormat('es-VE', {
-			style: 'decimal',
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 4
-		}).format(value);
-	}
 </script>
 
 <!-- Hidden inputs to submit values with the form -->

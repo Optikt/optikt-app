@@ -3,3 +3,4 @@ export * from './errors';
 export * from './form';
 export * from './rif';
 export * from './generateUUID';
+export * from './format';

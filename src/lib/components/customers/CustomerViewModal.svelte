@@ -2,6 +2,7 @@
 	import { Modal } from 'flowbite-svelte';
 	import { Phone, Mail, MapPin, Calendar, FileText, IdCard } from '@lucide/svelte';
 	import type { Customer } from '$lib/server/db/schema';
+	import { formatDate } from '$lib/utils';
 
 	interface Props {
 		open: boolean;
@@ -12,15 +13,6 @@
 
 	function getFullName(c: Customer): string {
 		return `${c.firstName} ${c.lastName}`;
-	}
-
-	function formatDate(date: Date | null): string {
-		if (!date) return '—';
-		return new Intl.DateTimeFormat('es-VE', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric'
-		}).format(new Date(date));
 	}
 
 	function calculateAge(birthDate: Date | null): number | null {

@@ -13,6 +13,7 @@
 	import { Eye, Pencil, Trash2, TriangleAlert } from '@lucide/svelte';
 	import { ProductType, PRODUCT_TYPE_LABELS } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
+	import { formatPrice } from '$lib/utils';
 
 	interface Props {
 		products: ProductWithRelations[];
@@ -35,14 +36,6 @@
 	function isLowStock(product: ProductWithRelations): boolean {
 		if (product.stock === null || product.minStock === null) return false;
 		return product.stock <= product.minStock;
-	}
-
-	function formatPrice(price: number): string {
-		return new Intl.NumberFormat('es-VE', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 2
-		}).format(price);
 	}
 </script>
 
