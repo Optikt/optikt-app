@@ -29,6 +29,16 @@
 		return `hasta ${fmtNum(max!)}`;
 	}
 
+	function formatRangeSummary(item: LensCatalogItemWithRelations): string {
+		if (!item.ranges || item.ranges.length === 0) return '—';
+		const first = item.ranges[0];
+		const summary = formatRange(first.sphereMin, first.sphereMax);
+		if (item.ranges.length > 1) {
+			return `${summary} (+${item.ranges.length - 1})`;
+		}
+		return summary;
+	}
+
 	function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
 		switch (type) {
 			case LensType.MONOFOCAL:
@@ -67,7 +77,7 @@
 				<th class="px-4 py-3">Tipo</th>
 				<th class="px-4 py-3">Material</th>
 				<th class="px-4 py-3">Tecnología</th>
-				<th class="px-4 py-3">Rango Esfera</th>
+				<th class="px-4 py-3">Rangos</th>
 				<th class="px-4 py-3 text-right">Precio Base</th>
 				<th class="px-4 py-3 text-right">Acciones</th>
 			</tr>
@@ -136,7 +146,7 @@
 							{item.technology ?? '—'}
 						</td>
 						<td class="px-4 py-3 font-mono text-sm">
-							{formatRange(item.sphereMin, item.sphereMax)}
+							{formatRangeSummary(item)}
 						</td>
 						<td class="px-4 py-3 text-right font-mono font-medium text-slate-800">
 							{formatPrice(item.basePrice)}
