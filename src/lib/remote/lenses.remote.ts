@@ -6,7 +6,12 @@ import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, ilike, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { suppliers, lensMaterials, lensCatalogItems } from '$lib/server/db/schema';
+import {
+	suppliers,
+	lensMaterials,
+	lensCatalogItems,
+	lensOpticalRanges
+} from '$lib/server/db/schema';
 import {
 	CreateLensMaterialSchema,
 	UpdateLensMaterialSchema,
@@ -40,7 +45,12 @@ import {
 	upsertSupplierTreatment,
 	deleteSupplierTreatment
 } from '$lib/server/db/queries/lenses';
-import type { LensMaterial, LensTreatment, LensCatalogItem } from '$lib/server/db/schema';
+import type {
+	LensMaterial,
+	LensTreatment,
+	LensCatalogItem,
+	LensOpticalRange
+} from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 
 // ============================================================================
@@ -179,9 +189,14 @@ export const listLensCatalog = query(
 
 export const createLensCatalogItemForm = form(
 	CreateLensCatalogItemSchema,
-	async (data): Promise<LensCatalogItem> => {
-		const { pendingSupplierName, pendingMaterialName, pendingMaterialRefractiveIndex, ...rest } =
-			data;
+	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
+		const {
+			pendingSupplierName,
+			pendingMaterialName,
+			pendingMaterialRefractiveIndex,
+			ranges,
+			...rest
+		} = data;
 		let { supplierId, materialId } = data;
 
 		return db.transaction(async (tx) => {
@@ -252,19 +267,33 @@ export const createLensCatalogItemForm = form(
 				})
 				.returning();
 
-			return item;
+			// Insert optical ranges
+			const rangeValues = ranges.map((r) => ({
+				...r,
+				id: crypto.randomUUID(),
+				lensCatalogItemId: item.id,
+				createdAt: now,
+				updatedAt: now
+			}));
+			const insertedRanges =
+				rangeValues.length > 0
+					? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
+					: [];
+
+			return { ...item, ranges: insertedRanges };
 		});
 	}
 );
 
 export const updateLensCatalogItemForm = form(
 	UpdateLensCatalogItemSchema,
-	async (data): Promise<LensCatalogItem> => {
+	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
 		const {
 			id,
 			pendingSupplierName,
 			pendingMaterialName,
 			pendingMaterialRefractiveIndex,
+			ranges,
 			...rest
 		} = data;
 		let { supplierId, materialId } = rest;
@@ -345,7 +374,31 @@ export const updateLensCatalogItemForm = form(
 				.returning();
 
 			if (!updated) invalid('Error actualizando item');
-			return updated;
+
+			// Replace optical ranges if provided
+			let insertedRanges: LensOpticalRange[] = [];
+			if (ranges) {
+				await tx.delete(lensOpticalRanges).where(eq(lensOpticalRanges.lensCatalogItemId, id));
+
+				const rangeValues = ranges.map((r) => ({
+					...r,
+					id: crypto.randomUUID(),
+					lensCatalogItemId: id,
+					createdAt: now,
+					updatedAt: now
+				}));
+				insertedRanges =
+					rangeValues.length > 0
+						? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
+						: [];
+			} else {
+				insertedRanges = await tx
+					.select()
+					.from(lensOpticalRanges)
+					.where(eq(lensOpticalRanges.lensCatalogItemId, id));
+			}
+
+			return { ...updated, ranges: insertedRanges };
 		});
 	}
 );
