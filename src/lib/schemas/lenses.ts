@@ -3,6 +3,7 @@
  * Valibot schemas for lens materials, treatments, and catalog items
  */
 import * as v from 'valibot';
+import { LensType, LensCatalogSource } from '$lib/shared/enums';
 
 // Coerce string to number (for form inputs)
 const CoercedNumber = v.pipe(
@@ -59,23 +60,8 @@ export const UpdateLensTreatmentSchema = v.object({
 // LENS CATALOG ITEMS
 // ============================================================================
 
-/** Allowed lens types */
-export const LENS_TYPES = ['MONOFOCAL', 'BIFOCAL', 'PROGRESSIVE', 'OCCUPATIONAL'] as const;
-export const LENS_TYPE_LABELS: Record<(typeof LENS_TYPES)[number], string> = {
-	MONOFOCAL: 'Monofocal',
-	BIFOCAL: 'Bifocal',
-	PROGRESSIVE: 'Progresivo',
-	OCCUPATIONAL: 'Ocupacional'
-};
-
-/** Lens catalog source — type is inferred from pgEnum, labels are for display */
-export const LENS_SOURCE_LABELS: Record<'FINISHED' | 'LAB', string> = {
-	FINISHED: 'Terminado',
-	LAB: 'Laboratorio'
-};
-
 export const CreateLensCatalogItemSchema = v.object({
-	source: v.optional(v.picklist(['FINISHED', 'LAB'] as const), 'LAB'),
+	source: v.optional(v.enum(LensCatalogSource), LensCatalogSource.LAB),
 	// supplierId accepts UUID or pending_* ID
 	supplierId: v.union(
 		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))],
@@ -84,7 +70,7 @@ export const CreateLensCatalogItemSchema = v.object({
 	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
 	brand: v.optional(v.string()),
 	technology: v.optional(v.string()),
-	type: v.picklist([...LENS_TYPES], 'Tipo de lente requerido'),
+	type: v.enum(LensType, 'Tipo de lente requerido'),
 	// materialId accepts UUID or pending_material_* ID
 	materialId: v.union(
 		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))],
@@ -116,14 +102,14 @@ export const CreateLensCatalogItemSchema = v.object({
 
 export const UpdateLensCatalogItemSchema = v.object({
 	id: v.pipe(v.string(), v.uuid()),
-	source: v.optional(v.picklist(['FINISHED', 'LAB'] as const)),
+	source: v.optional(v.enum(LensCatalogSource)),
 	supplierId: v.optional(
 		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))])
 	),
 	name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(255))),
 	brand: v.optional(v.string()),
 	technology: v.optional(v.string()),
-	type: v.optional(v.picklist([...LENS_TYPES])),
+	type: v.optional(v.enum(LensType)),
 	materialId: v.optional(
 		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))])
 	),
@@ -162,10 +148,10 @@ export const LensIdSchema = v.object({
 
 export const ListLensCatalogSchema = v.object({
 	search: v.optional(v.string()),
-	source: v.optional(v.picklist(['FINISHED', 'LAB'] as const)),
+	source: v.optional(v.enum(LensCatalogSource)),
 	supplierId: v.optional(v.pipe(v.string(), v.uuid())),
 	materialId: v.optional(v.pipe(v.string(), v.uuid())),
-	type: v.optional(v.picklist([...LENS_TYPES])),
+	type: v.optional(v.enum(LensType)),
 	technology: v.optional(v.string())
 });
 
