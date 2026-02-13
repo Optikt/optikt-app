@@ -20,6 +20,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	return {
 		item,
+		ranges: item.ranges,
 		materials: materials.map((m) => ({
 			id: m.id,
 			name: m.name,
