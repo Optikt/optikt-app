@@ -55,14 +55,6 @@
 		}, 200);
 	}
 
-	function fmtNum(n: number): string {
-		return n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2);
-	}
-
-	function fmtRange(min: number, max: number): string {
-		return `${fmtNum(min)} a ${fmtNum(max)}`;
-	}
-
 	const totalResults = $derived((results?.products.length ?? 0) + (results?.lenses.length ?? 0));
 </script>
 
@@ -171,10 +163,6 @@
 									<!-- TODO: Create getter function for this -->
 									{LENS_TYPE_LABELS[lens.type as LensType] ?? lens.type}
 									{#if lens.materialName}· {lens.materialName}{/if}
-									· Esf {fmtRange(lens.sphereMin, lens.sphereMax)}
-									{#if lens.cylinderMin !== null}
-										· Cil {fmtNum(lens.cylinderMin)} a {fmtNum(lens.cylinderMax ?? 0)}
-									{/if}
 								</p>
 							</div>
 							<span class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
