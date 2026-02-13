@@ -29,7 +29,7 @@
 
 	// Filter state
 	let search = $state('');
-	let typeFilter = $state<ProductType | ''>('');
+	let typeFilter = $state<ProductType>();
 	let brandFilter = $state('');
 	let supplierFilter = $state('');
 
@@ -131,7 +131,7 @@
 			class="min-w-64 flex-1"
 		/>
 		<Select bind:value={typeFilter} onchange={handleFilterChange} class="w-40">
-			<option value="">Todos los tipos</option>
+			<option value={undefined}>Todos los tipos</option>
 			{#each ALL_PRODUCT_TYPES as t (t)}
 				<option value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
 			{/each}
