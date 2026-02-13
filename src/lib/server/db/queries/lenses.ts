@@ -1,5 +1,6 @@
 import { eq, isNull, and, ilike, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import {
 	lensMaterials,
 	lensTreatments,
@@ -162,16 +163,16 @@ export async function getAllLensCatalogItems(): Promise<LensCatalogItem[]> {
 
 export async function getLensCatalogItemsWithRelations(options?: {
 	search?: string;
-	source?: string;
+	source?: LensCatalogSource;
 	supplierId?: string;
 	materialId?: string;
-	type?: string;
+	type?: LensType;
 	technology?: string;
 }): Promise<LensCatalogItemWithRelations[]> {
 	const conditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
 
 	if (options?.source) {
-		conditions.push(eq(lensCatalogItems.source, options.source as 'FINISHED' | 'LAB'));
+		conditions.push(eq(lensCatalogItems.source, options.source));
 	}
 	if (options?.supplierId) {
 		conditions.push(eq(lensCatalogItems.supplierId, options.supplierId));
