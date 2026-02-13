@@ -4,16 +4,18 @@
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
-	import { CreatableSelect, type SelectOption } from '$lib/components/ui';
-	import { LENS_TYPES, LENS_TYPE_LABELS, LENS_SOURCE_LABELS } from '$lib/schemas/lenses';
+	import { CreatableSelect, type SelectOption, type PendingEntity } from '$lib/components/ui';
+	import {
+		LensType,
+		LensCatalogSource,
+		LENS_TYPE_LABELS,
+		LENS_SOURCE_LABELS
+	} from '$lib/shared/enums';
 	import { scrollToFirstError } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem } from '$lib/server/db/schema';
 
 	type MaterialOption = SelectOption & { refractiveIndex?: number | null };
-
-	type PendingSupplier = { pendingId: string; name: string };
-	type PendingMaterial = { pendingId: string; name: string };
 
 	type Props = {
 		item?: LensCatalogItem | null;
@@ -42,20 +44,20 @@
 	const activeForm = $derived(isEdit ? currentUpdateForm : currentCreateForm);
 
 	// Pending entities
-	let pendingSuppliers = $state<PendingSupplier[]>([]);
-	let pendingMaterials = $state<PendingMaterial[]>([]);
+	let pendingSuppliers = $state<PendingEntity[]>([]);
+	let pendingMaterials = $state<PendingEntity[]>([]);
 
-	// Form data
+	// Form data — numeric fields are strings because they bind to <Input type="number">
 	let formData = $state({
-		source: 'LAB' as string,
+		source: LensCatalogSource.LAB as LensCatalogSource,
 		supplierId: '',
 		name: '',
 		brand: '',
 		technology: '',
-		type: 'MONOFOCAL' as string,
+		type: LensType.MONOFOCAL as LensType,
 		materialId: '',
 		sphereMin: '-6.00',
-		sphereMax: '+6.00',
+		sphereMax: '6.00',
 		cylinderMin: '-4.00',
 		cylinderMax: '0.00',
 		additionMin: '',
@@ -76,12 +78,12 @@
 		if (item) {
 			untrack(() => {
 				formData = {
-					source: item!.source,
+					source: item!.source as LensCatalogSource,
 					supplierId: item!.supplierId,
 					name: item!.name,
 					brand: item!.brand ?? '',
 					technology: item!.technology ?? '',
-					type: item!.type,
+					type: item!.type as LensType,
 					materialId: item!.materialId,
 					sphereMin: item!.sphereMin.toString(),
 					sphereMax: item!.sphereMax.toString(),
@@ -104,12 +106,12 @@
 	});
 
 	const showAddition = $derived(
-		formData.type === 'PROGRESSIVE' ||
-			formData.type === 'BIFOCAL' ||
-			formData.type === 'OCCUPATIONAL'
+		formData.type === LensType.PROGRESSIVE ||
+			formData.type === LensType.BIFOCAL ||
+			formData.type === LensType.OCCUPATIONAL
 	);
 
-	const isFinished = $derived(formData.source === 'FINISHED');
+	const isFinished = $derived(formData.source === LensCatalogSource.FINISHED);
 
 	// Material/supplier options for CreatableSelect
 	const materialOptions = $derived<MaterialOption[]>(
@@ -291,24 +293,26 @@
 {#snippet formFields()}
 	<!-- Source selector -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h3 class="mb-4 text-lg font-semibold text-slate-800">Fuente del Cristal</h3>
+		<h3 class="mb-4 text-lg font-semibold text-slate-800">Origen del Cristal</h3>
 		<div class="grid gap-4 md:grid-cols-2">
 			<button
 				type="button"
-				class="rounded-lg border-2 p-4 text-left transition-all {formData.source === 'LAB'
+				class="rounded-lg border-2 p-4 text-left transition-all {formData.source ===
+				LensCatalogSource.LAB
 					? 'border-blue-500 bg-blue-50/50'
 					: 'border-slate-200 hover:border-slate-300'}"
-				onclick={() => (formData.source = 'LAB')}
+				onclick={() => (formData.source = LensCatalogSource.LAB)}
 			>
 				<p class="font-semibold text-slate-800">{LENS_SOURCE_LABELS.LAB}</p>
 				<p class="text-sm text-slate-500">Cristal elaborado a medida en laboratorio</p>
 			</button>
 			<button
 				type="button"
-				class="rounded-lg border-2 p-4 text-left transition-all {formData.source === 'FINISHED'
+				class="rounded-lg border-2 p-4 text-left transition-all {formData.source ===
+				LensCatalogSource.FINISHED
 					? 'border-indigo-500 bg-indigo-50/50'
 					: 'border-slate-200 hover:border-slate-300'}"
-				onclick={() => (formData.source = 'FINISHED')}
+				onclick={() => (formData.source = LensCatalogSource.FINISHED)}
 			>
 				<p class="font-semibold text-slate-800">{LENS_SOURCE_LABELS.FINISHED}</p>
 				<p class="text-sm text-slate-500">Cristal pre-fabricado con graduación lista</p>
@@ -376,7 +380,7 @@
 			<div>
 				<Label for="lc_type" class="mb-2">Tipo *</Label>
 				<Select id="lc_type" name="type" bind:value={formData.type} required>
-					{#each LENS_TYPES as t (t)}
+					{#each Object.values(LensType) as t (t)}
 						<option value={t}>{LENS_TYPE_LABELS[t]}</option>
 					{/each}
 				</Select>
