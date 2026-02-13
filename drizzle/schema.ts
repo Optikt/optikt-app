@@ -51,6 +51,8 @@ export const lensCatalogItems = pgTable("lens_catalog_items", {
 	baseFeatures: json("base_features"),
 	isPhotochromic: boolean("is_photochromic").notNull(),
 	basePrice: doublePrecision("base_price").notNull(),
+	salePrice: doublePrecision("sale_price"),
+	mountingPrice: doublePrecision("mounting_price"),
 	deliveryDays: integer("delivery_days"),
 	stock: integer(),
 	refractiveIndex: doublePrecision("refractive_index"),
