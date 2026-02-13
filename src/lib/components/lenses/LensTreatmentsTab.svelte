@@ -3,7 +3,7 @@
 	import { Plus, Pencil, Trash2, X, Check, DollarSign } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import {
 		listLensTreatments,
 		createLensTreatmentForm,
@@ -333,7 +333,7 @@
 												/>
 											{:else}
 												<span class="font-mono text-slate-800">
-													${st.price.toFixed(2)}
+													{formatPrice(st.price)}
 												</span>
 											{/if}
 										</td>
