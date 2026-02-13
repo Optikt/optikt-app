@@ -25,6 +25,7 @@
 
 	<LensCatalogForm
 		item={data.item}
+		existingRanges={data.ranges}
 		materials={data.materials}
 		suppliers={data.suppliers}
 		cancelHref="/lenses"
