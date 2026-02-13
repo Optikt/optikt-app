@@ -9,6 +9,12 @@
 		isPending?: boolean;
 	};
 
+	export type PendingEntity = {
+		pendingId: string;
+		name: string;
+		[key: string]: unknown;
+	};
+
 	type Props = {
 		/** Current selected value (id) */
 		value: string;
