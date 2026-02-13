@@ -6,7 +6,12 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { LensMaterialsTab, LensTreatmentsTab, LensCatalogTable } from '$lib/components/lenses';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
-	import { LENS_TYPES, LENS_TYPE_LABELS, LENS_SOURCE_LABELS } from '$lib/schemas/lenses';
+	import {
+		LensType,
+		LensCatalogSource,
+		LENS_TYPE_LABELS,
+		LENS_SOURCE_LABELS
+	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
@@ -19,19 +24,17 @@
 	let items = $state<LensCatalogItemWithRelations[]>(catalogItems);
 	let catalogLoading = $state(false);
 	let search = $state('');
-	let sourceFilter = $state<'FINISHED' | 'LAB'>();
-	let typeFilter = $state('');
-	let supplierFilter = $state('');
+	let sourceFilter = $state<LensCatalogSource>();
+	let typeFilter = $state<LensType>();
+	let supplierFilter = $state<string>();
 
 	// Fetch catalog items
 	async function fetchCatalog() {
 		catalogLoading = true;
 		try {
 			items = await listLensCatalog({
-				search: search || undefined,
 				source: sourceFilter || undefined,
-				// source: (sourceFilter as 'FINISHED' | 'LAB') || undefined,
-				type: (typeFilter as (typeof LENS_TYPES)[number]) || undefined,
+				type: typeFilter || undefined,
 				supplierId: supplierFilter || undefined
 			});
 		} catch (e) {
@@ -85,18 +88,18 @@
 					class="min-w-64 flex-1"
 				/>
 				<Select bind:value={sourceFilter} onchange={handleFilterChange} class="w-44">
-					<option value="">Todas las fuentes</option>
-					<option value="FINISHED">{LENS_SOURCE_LABELS.FINISHED}</option>
-					<option value="LAB">{LENS_SOURCE_LABELS.LAB}</option>
+					<option value={undefined}>Todos los orígenes</option>
+					<option value={LensCatalogSource.FINISHED}>{LENS_SOURCE_LABELS.FINISHED}</option>
+					<option value={LensCatalogSource.LAB}>{LENS_SOURCE_LABELS.LAB}</option>
 				</Select>
 				<Select bind:value={typeFilter} onchange={handleFilterChange} class="w-44">
-					<option value="">Todos los tipos</option>
-					{#each LENS_TYPES as t (t)}
-						<option value={t}>{LENS_TYPE_LABELS[t]}</option>
+					<option value={undefined}>Todos los tipos</option>
+					{#each Object.values(LensType) as type (type)}
+						<option value={type}>{LENS_TYPE_LABELS[type]}</option>
 					{/each}
 				</Select>
 				<Select bind:value={supplierFilter} onchange={handleFilterChange} class="w-48">
-					<option value="">Todos los proveedores</option>
+					<option value={undefined}>Todos los proveedores</option>
 					{#each suppliers as s (s.id)}
 						<option value={s.id}>{s.name}</option>
 					{/each}
