@@ -96,12 +96,6 @@ export const lensCatalogItems = pgTable(
 		technology: varchar(),
 		type: varchar().notNull(),
 		materialId: uuid('material_id').notNull(),
-		sphereMin: doublePrecision('sphere_min').notNull(),
-		sphereMax: doublePrecision('sphere_max').notNull(),
-		cylinderMin: doublePrecision('cylinder_min'),
-		cylinderMax: doublePrecision('cylinder_max'),
-		additionMin: doublePrecision('addition_min'),
-		additionMax: doublePrecision('addition_max'),
 		baseFeatures: json('base_features').$type<string[]>(),
 		isPhotochromic: boolean('is_photochromic').notNull().default(false),
 		isBlueCut: boolean('is_blue_cut').notNull().default(false),
@@ -183,6 +177,38 @@ export const supplierLensTreatments = pgTable(
 	]
 );
 
+// ============================================================================
+// LENS OPTICAL RANGES (one-to-many from lensCatalogItems)
+// ============================================================================
+
+export const lensOpticalRanges = pgTable(
+	'lens_optical_ranges',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		lensCatalogItemId: uuid('lens_catalog_item_id').notNull(),
+		sphereMin: doublePrecision('sphere_min').notNull(),
+		sphereMax: doublePrecision('sphere_max').notNull(),
+		cylinderMin: doublePrecision('cylinder_min'),
+		cylinderMax: doublePrecision('cylinder_max'),
+		additionMin: doublePrecision('addition_min'),
+		additionMax: doublePrecision('addition_max'),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(table) => [
+		index('ix_lens_optical_ranges_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
+		index('ix_lens_optical_ranges_item_id').using(
+			'btree',
+			table.lensCatalogItemId.asc().nullsLast().op('uuid_ops')
+		),
+		foreignKey({
+			columns: [table.lensCatalogItemId],
+			foreignColumns: [lensCatalogItems.id],
+			name: 'lens_optical_ranges_item_id_fkey'
+		}).onDelete('cascade')
+	]
+);
+
 // Type exports
 export type LensMaterial = typeof lensMaterials.$inferSelect;
 export type NewLensMaterial = typeof lensMaterials.$inferInsert;
@@ -190,5 +216,7 @@ export type LensTreatment = typeof lensTreatments.$inferSelect;
 export type NewLensTreatment = typeof lensTreatments.$inferInsert;
 export type LensCatalogItem = typeof lensCatalogItems.$inferSelect;
 export type NewLensCatalogItem = typeof lensCatalogItems.$inferInsert;
+export type LensOpticalRange = typeof lensOpticalRanges.$inferSelect;
+export type NewLensOpticalRange = typeof lensOpticalRanges.$inferInsert;
 export type SupplierLensTreatment = typeof supplierLensTreatments.$inferSelect;
 export type NewSupplierLensTreatment = typeof supplierLensTreatments.$inferInsert;

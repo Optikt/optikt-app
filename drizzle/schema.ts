@@ -48,12 +48,6 @@ export const lensCatalogItems = pgTable("lens_catalog_items", {
 	brand: varchar(),
 	type: varchar().notNull(),
 	materialId: uuid("material_id").notNull(),
-	sphereMin: doublePrecision("sphere_min").notNull(),
-	sphereMax: doublePrecision("sphere_max").notNull(),
-	cylinderMin: doublePrecision("cylinder_min"),
-	cylinderMax: doublePrecision("cylinder_max"),
-	additionMin: doublePrecision("addition_min"),
-	additionMax: doublePrecision("addition_max"),
 	baseFeatures: json("base_features"),
 	isPhotochromic: boolean("is_photochromic").notNull(),
 	basePrice: doublePrecision("base_price").notNull(),
@@ -273,6 +267,27 @@ export const supplierLensTreatments = pgTable("supplier_lens_treatments", {
 			name: "supplier_lens_treatments_treatment_id_fkey"
 		}).onDelete("cascade"),
 	unique("uq_supplier_treatment").on(table.supplierId, table.treatmentId),
+]);
+
+export const lensOpticalRanges = pgTable("lens_optical_ranges", {
+	lensCatalogItemId: uuid("lens_catalog_item_id").notNull(),
+	sphereMin: doublePrecision("sphere_min").notNull(),
+	sphereMax: doublePrecision("sphere_max").notNull(),
+	cylinderMin: doublePrecision("cylinder_min"),
+	cylinderMax: doublePrecision("cylinder_max"),
+	additionMin: doublePrecision("addition_min"),
+	additionMax: doublePrecision("addition_max"),
+	id: uuid().primaryKey().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).notNull(),
+}, (table) => [
+	index("ix_lens_optical_ranges_id").using("btree", table.id.asc().nullsLast().op("uuid_ops")),
+	index("ix_lens_optical_ranges_item_id").using("btree", table.lensCatalogItemId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({
+			columns: [table.lensCatalogItemId],
+			foreignColumns: [lensCatalogItems.id],
+			name: "lens_optical_ranges_item_id_fkey"
+		}).onDelete("cascade"),
 ]);
 
 export const suppliers = pgTable("suppliers", {

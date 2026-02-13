@@ -57,6 +57,31 @@ export const UpdateLensTreatmentSchema = v.object({
 });
 
 // ============================================================================
+// OPTICAL RANGE (used inside catalog item schemas)
+// ============================================================================
+
+export const OpticalRangeSchema = v.pipe(
+	v.object({
+		sphereMin: v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30)),
+		sphereMax: v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30)),
+		cylinderMin: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
+		cylinderMax: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
+		additionMin: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
+		additionMax: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0)))
+	}),
+	v.forward(
+		v.partialCheck(
+			[['sphereMin'], ['sphereMax']],
+			(input) => input.sphereMin <= input.sphereMax,
+			'Esfera mínima debe ser ≤ esfera máxima'
+		),
+		['sphereMin']
+	)
+);
+
+export type OpticalRangeInput = v.InferOutput<typeof OpticalRangeSchema>;
+
+// ============================================================================
 // LENS CATALOG ITEMS
 // ============================================================================
 
@@ -82,12 +107,12 @@ export const CreateLensCatalogItemSchema = v.object({
 	pendingMaterialRefractiveIndex: v.optional(
 		v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))
 	),
-	sphereMin: v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30)),
-	sphereMax: v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30)),
-	cylinderMin: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
-	cylinderMax: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
-	additionMin: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
-	additionMax: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
+	// Optical ranges — at least one required
+	ranges: v.pipe(
+		v.string(),
+		v.transform((val) => JSON.parse(val) as unknown[]),
+		v.pipe(v.array(OpticalRangeSchema), v.minLength(1, 'Se requiere al menos un rango óptico'))
+	),
 	baseFeatures: v.optional(v.array(v.string())),
 	isPhotochromic: v.optional(v.boolean(), false),
 	isBlueCut: v.optional(v.boolean(), false),
@@ -119,12 +144,14 @@ export const UpdateLensCatalogItemSchema = v.object({
 	pendingMaterialRefractiveIndex: v.optional(
 		v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))
 	),
-	sphereMin: v.optional(v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30))),
-	sphereMax: v.optional(v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30))),
-	cylinderMin: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
-	cylinderMax: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
-	additionMin: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
-	additionMax: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
+	// Optical ranges — optional for partial update; if provided, replaces all
+	ranges: v.optional(
+		v.pipe(
+			v.string(),
+			v.transform((val) => JSON.parse(val) as unknown[]),
+			v.pipe(v.array(OpticalRangeSchema), v.minLength(1, 'Se requiere al menos un rango óptico'))
+		)
+	),
 	baseFeatures: v.optional(v.array(v.string())),
 	isPhotochromic: v.optional(v.boolean()),
 	isBlueCut: v.optional(v.boolean()),
