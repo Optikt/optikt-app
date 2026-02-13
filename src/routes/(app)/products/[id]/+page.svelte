@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { formatPrice, formatDate } from '$lib/utils';
 	import { untrack } from 'svelte';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
@@ -35,26 +36,6 @@
 		[ProductType.CONTACT_LENS]: 'purple',
 		[ProductType.ACCESSORY]: 'yellow'
 	};
-
-	function formatPrice(price: number): string {
-		return new Intl.NumberFormat('es-VE', {
-			style: 'currency',
-			currency: 'USD',
-			minimumFractionDigits: 2
-		}).format(price);
-	}
-
-	function formatDate(date: Date | string | null): string {
-		if (!date) return '—';
-		const d = typeof date === 'string' ? new Date(date) : date;
-		return d.toLocaleDateString('es-VE', {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
 
 	function getProfitMargin(purchase: number, sale: number): string {
 		if (purchase === 0) return '0.0%';
