@@ -286,6 +286,56 @@
 	/** Serialized ranges for the hidden input */
 	const serializedRanges = $derived(JSON.stringify(expandRanges()));
 
+	/** Human-readable preview of what a range entry will generate */
+	function rangePreview(r: RangeEntry): string[] {
+		const fmt = (n: number) => (n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2));
+		const lines: string[] = [];
+
+		// Build sphere descriptions
+		if (r.symmetric) {
+			const absMin = parseFloat(r.absMin) || 0;
+			const absMax = parseFloat(r.absMax) || 0;
+
+			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : null;
+			const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : null;
+			const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
+			const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
+
+			const cylPart = cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
+				? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
+				: '';
+			const addPart = addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
+				? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
+				: '';
+
+			if (absMin === 0) {
+				lines.push(`Esf ${fmt(-absMax)} a ${fmt(absMax)}${cylPart}${addPart}`);
+			} else {
+				lines.push(`Esf ${fmt(-absMax)} a ${fmt(-absMin)}${cylPart}${addPart}`);
+				lines.push(`Esf ${fmt(absMin)} a ${fmt(absMax)}${cylPart}${addPart}`);
+			}
+		} else {
+			const sMin = parseFloat(r.sphereMin) || 0;
+			const sMax = parseFloat(r.sphereMax) || 0;
+
+			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : null;
+			const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : null;
+			const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
+			const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
+
+			const cylPart = cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
+				? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
+				: '';
+			const addPart = addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
+				? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
+				: '';
+
+			lines.push(`Esf ${fmt(sMin)} a ${fmt(sMax)}${cylPart}${addPart}`);
+		}
+
+		return lines;
+	}
+
 	// ── Pending entity handlers ──────────────────────────────────
 	function handleCreatePendingSupplier(name: string): SelectOption {
 		const pendingId = `pending_supplier_${generateUUID()}`;
@@ -646,19 +696,7 @@
 									class="font-mono"
 								/>
 							</div>
-							<p class="mt-1 text-xs text-blue-500">
-								{#if parseFloat(range.absMin) === 0}
-									Genera: {-(parseFloat(range.absMax) || 0).toFixed(2)} a +{(
-										parseFloat(range.absMax) || 0
-									).toFixed(2)}
-								{:else}
-									Genera: -{(parseFloat(range.absMax) || 0).toFixed(2)} a -{(
-										parseFloat(range.absMin) || 0
-									).toFixed(2)} y +{(parseFloat(range.absMin) || 0).toFixed(2)} a +{(
-										parseFloat(range.absMax) || 0
-									).toFixed(2)}
-								{/if}
-							</p>
+
 						{:else}
 							<!-- Explicit mode: sphereMin to sphereMax -->
 							<div class="flex items-center gap-2">
@@ -680,7 +718,7 @@
 									class="font-mono"
 								/>
 							</div>
-							<p class="mt-1 text-xs text-slate-400">Rango explícito · Pasos 0.25</p>
+
 						{/if}
 					</div>
 
@@ -707,7 +745,7 @@
 								class="font-mono"
 							/>
 						</div>
-						<p class="mt-1 text-xs text-slate-400">Siempre ≤ 0 · Pasos de 0.25</p>
+
 					</div>
 				</div>
 
@@ -737,9 +775,21 @@
 								class="font-mono"
 							/>
 						</div>
-						<p class="mt-1 text-xs text-slate-400">Siempre ≥ 0 · Pasos de 0.25</p>
 					</div>
 				{/if}
+
+				<!-- Unified range preview -->
+				<div class="mt-3 rounded-md border border-blue-100 bg-blue-50/60 px-3 py-2">
+					<p class="mb-0.5 text-[10px] font-semibold tracking-wide text-blue-400 uppercase">Resultado</p>
+					{#each rangePreview(range) as line, li}
+						<p class="font-mono text-xs leading-relaxed text-blue-700">
+							{#if rangePreview(range).length > 1}
+								<span class="mr-1 text-blue-400">{li + 1}.</span>
+							{/if}
+							{line}
+						</p>
+					{/each}
+				</div>
 			</div>
 		{/each}
 
