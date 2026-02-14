@@ -268,13 +268,26 @@ export const createLensCatalogItemForm = form(
 				.returning();
 
 			// Insert optical ranges
-			const rangeValues = ranges.map((r) => ({
-				...r,
-				id: crypto.randomUUID(),
-				lensCatalogItemId: item.id,
-				createdAt: now,
-				updatedAt: now
-			}));
+			// Ensure min ≤ max ordering for cylinder/addition (required by
+			// numrange GiST indexes) and use null instead of undefined.
+			const rangeValues = ranges.map((r) => {
+				const cylA = r.cylinderMin ?? null;
+				const cylB = r.cylinderMax ?? null;
+				const addA = r.additionMin ?? null;
+				const addB = r.additionMax ?? null;
+				return {
+					sphereMin: r.sphereMin,
+					sphereMax: r.sphereMax,
+					cylinderMin: cylA != null && cylB != null ? Math.min(cylA, cylB) : cylA,
+					cylinderMax: cylA != null && cylB != null ? Math.max(cylA, cylB) : cylB,
+					additionMin: addA != null && addB != null ? Math.min(addA, addB) : addA,
+					additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB,
+					id: crypto.randomUUID(),
+					lensCatalogItemId: item.id,
+					createdAt: now,
+					updatedAt: now
+				};
+			});
 			const insertedRanges =
 				rangeValues.length > 0
 					? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
@@ -380,13 +393,24 @@ export const updateLensCatalogItemForm = form(
 			if (ranges) {
 				await tx.delete(lensOpticalRanges).where(eq(lensOpticalRanges.lensCatalogItemId, id));
 
-				const rangeValues = ranges.map((r) => ({
-					...r,
-					id: crypto.randomUUID(),
-					lensCatalogItemId: id,
-					createdAt: now,
-					updatedAt: now
-				}));
+				const rangeValues = ranges.map((r) => {
+					const cylA = r.cylinderMin ?? null;
+					const cylB = r.cylinderMax ?? null;
+					const addA = r.additionMin ?? null;
+					const addB = r.additionMax ?? null;
+					return {
+						sphereMin: r.sphereMin,
+						sphereMax: r.sphereMax,
+						cylinderMin: cylA != null && cylB != null ? Math.min(cylA, cylB) : cylA,
+						cylinderMax: cylA != null && cylB != null ? Math.max(cylA, cylB) : cylB,
+						additionMin: addA != null && addB != null ? Math.min(addA, addB) : addA,
+						additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB,
+						id: crypto.randomUUID(),
+						lensCatalogItemId: id,
+						createdAt: now,
+						updatedAt: now
+					};
+				});
 				insertedRanges =
 					rangeValues.length > 0
 						? await tx.insert(lensOpticalRanges).values(rangeValues).returning()

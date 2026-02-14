@@ -372,6 +372,7 @@
 	function handleCreateResult() {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			toast.error('Por favor corrige los errores del formulario');
 			scrollToFirstError();
 			return;
 		}
@@ -384,6 +385,7 @@
 	function handleUpdateResult() {
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			toast.error('Por favor corrige los errores del formulario');
 			scrollToFirstError();
 			return;
 		}
@@ -589,7 +591,7 @@
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<h3 class="mb-4 text-lg font-semibold text-slate-800">Proveedor y Material</h3>
 		<div class="grid gap-4 md:grid-cols-2">
-			<CreatableSelect
+				<CreatableSelect
 				label="Proveedor *"
 				name="supplierId"
 				bind:value={formData.supplierId}
@@ -598,6 +600,9 @@
 				required
 				creatable
 				onCreatePending={handleCreatePendingSupplier}
+				error={activeForm.fields.supplierId?.issues()
+					? getFormErrorMessage(activeForm.fields.supplierId.issues())
+					: null}
 			/>
 			<CreatableSelect
 				label="Material *"
@@ -608,6 +613,9 @@
 				required
 				creatable
 				onCreatePending={handleCreatePendingMaterial}
+				error={activeForm.fields.materialId?.issues()
+					? getFormErrorMessage(activeForm.fields.materialId.issues())
+					: null}
 			/>
 		</div>
 		<div class="mt-4 grid gap-4 md:grid-cols-2">

@@ -44,6 +44,8 @@
 		onCreatePending?: (name: string) => SelectOption;
 		/** Callback when value changes */
 		onchange?: (option: SelectOption | null) => void;
+		/** Error message to display below the select */
+		error?: string | null;
 	};
 
 	let {
@@ -56,7 +58,8 @@
 		disabled = false,
 		creatable = false,
 		onCreatePending,
-		onchange
+		onchange,
+		error = null
 	}: Props = $props();
 
 	// Track local options (newly created pending ones)
@@ -163,8 +166,10 @@
 		</label>
 	{/if}
 
+	<!-- Always emit the field so FormData never omits it -->
+	<input type="hidden" {name} value={value ?? ''} />
+
 	<Svelecte
-		{name}
 		{placeholder}
 		{disabled}
 		options={allOptions}
@@ -176,8 +181,12 @@
 		creatablePrefix="Crear: "
 		keepCreated={false}
 		onChange={handleChange}
-		class="creatable-select"
+		class="creatable-select {error ? 'creatable-select-error' : ''}"
 	/>
+
+	{#if error}
+		<p class="mt-1 text-xs text-red-500">{error}</p>
+	{/if}
 </div>
 
 <style>
@@ -197,5 +206,9 @@
 		--sv-placeholder-color: #6b7280;
 		--sv-item-selected-bg: #1e3a5f;
 		--sv-highlight-bg: #1e3a8a;
+	}
+
+	:global(.creatable-select-error) {
+		--sv-border: #ef4444;
 	}
 </style>
