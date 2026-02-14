@@ -193,6 +193,7 @@ export const lensOpticalRanges = pgTable(
 		cylinderMax: doublePrecision('cylinder_max'),
 		additionMin: doublePrecision('addition_min'),
 		additionMax: doublePrecision('addition_max'),
+		mirrorGroup: uuid('mirror_group'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 	},

@@ -67,7 +67,8 @@ export const OpticalRangeSchema = v.pipe(
 		cylinderMin: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
 		cylinderMax: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
 		additionMin: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
-		additionMax: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0)))
+		additionMax: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
+		mirrorGroup: v.optional(v.pipe(v.string(), v.uuid()))
 	}),
 	v.forward(
 		v.partialCheck(
