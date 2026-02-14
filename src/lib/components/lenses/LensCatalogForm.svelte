@@ -131,19 +131,9 @@
 					notes: item!.notes ?? ''
 				};
 
-				// Load existing ranges
+				// Load existing ranges — try to detect symmetric (±) mirror pairs
 				if (existingRanges.length > 0) {
-					ranges = existingRanges.map((r) => ({
-						symmetric: false,
-						absMin: '0.00',
-						absMax: '0.00',
-						sphereMin: r.sphereMin.toFixed(2),
-						sphereMax: r.sphereMax.toFixed(2),
-						cylinderMin: r.cylinderMin != null ? r.cylinderMin.toFixed(2) : '',
-						cylinderMax: r.cylinderMax != null ? r.cylinderMax.toFixed(2) : '',
-						additionMin: r.additionMin != null ? r.additionMin.toFixed(2) : '',
-						additionMax: r.additionMax != null ? r.additionMax.toFixed(2) : ''
-					}));
+					ranges = collapseSymmetricRanges(existingRanges);
 				}
 			});
 		}
@@ -232,28 +222,105 @@
 		ranges = ranges.filter((_, i) => i !== index);
 	}
 
+	/** Convert a single DB range to a non-symmetric RangeEntry */
+	function toPlainEntry(r: LensOpticalRange): RangeEntry {
+		return {
+			symmetric: false,
+			absMin: '0.00',
+			absMax: '0.00',
+			sphereMin: r.sphereMin.toFixed(2),
+			sphereMax: r.sphereMax.toFixed(2),
+			cylinderMin: r.cylinderMin != null ? r.cylinderMin.toFixed(2) : '',
+			cylinderMax: r.cylinderMax != null ? r.cylinderMax.toFixed(2) : '',
+			additionMin: r.additionMin != null ? r.additionMin.toFixed(2) : '',
+			additionMax: r.additionMax != null ? r.additionMax.toFixed(2) : ''
+		};
+	}
+
 	/**
-	 * Expand UI range entries into flat DB range objects.
-	 * When symmetric (±) is ON:
-	 *   - If absMin is 0: one continuous range from -absMax to +absMax
-	 *   - Otherwise: two ranges (negative side and positive side)
+	 * Collapse DB rows back into UI RangeEntry items.
+	 * Rows sharing the same mirrorGroup UUID are a symmetric (±) pair/single.
+	 * Rows without mirrorGroup are loaded as normal asymmetric ranges.
 	 */
-	function expandRanges(): {
+	function collapseSymmetricRanges(dbRanges: LensOpticalRange[]): RangeEntry[] {
+		const result: RangeEntry[] = [];
+
+		// Group by mirrorGroup — null-mirrorGroup rows are standalone
+		const groups = new Map<string, LensOpticalRange[]>();
+		const standalone: LensOpticalRange[] = [];
+
+		for (const r of dbRanges) {
+			if (r.mirrorGroup) {
+				const group = groups.get(r.mirrorGroup) ?? [];
+				group.push(r);
+				groups.set(r.mirrorGroup, group);
+			} else {
+				standalone.push(r);
+			}
+		}
+
+		// Process mirror groups → symmetric entries
+		for (const [, rows] of groups) {
+			if (rows.length === 1) {
+				// Single row with mirrorGroup = continuous symmetric (absMin=0, e.g. -6 to +6)
+				const r = rows[0];
+				result.push({
+					symmetric: true,
+					absMin: '0.00',
+					absMax: Math.max(Math.abs(r.sphereMin), Math.abs(r.sphereMax)).toFixed(2),
+					sphereMin: r.sphereMin.toFixed(2),
+					sphereMax: r.sphereMax.toFixed(2),
+					cylinderMin: r.cylinderMin != null ? r.cylinderMin.toFixed(2) : '',
+					cylinderMax: r.cylinderMax != null ? r.cylinderMax.toFixed(2) : '',
+					additionMin: r.additionMin != null ? r.additionMin.toFixed(2) : '',
+					additionMax: r.additionMax != null ? r.additionMax.toFixed(2) : ''
+				});
+			} else {
+				// Two rows = mirror pair → find the positive side for absMin/absMax
+				const pos = rows.find((r) => r.sphereMin >= 0) ?? rows[0];
+				const neg = rows.find((r) => r.sphereMax <= 0) ?? rows[1];
+				result.push({
+					symmetric: true,
+					absMin: Math.abs(pos.sphereMin).toFixed(2),
+					absMax: Math.abs(pos.sphereMax).toFixed(2),
+					sphereMin: neg.sphereMin.toFixed(2),
+					sphereMax: pos.sphereMax.toFixed(2),
+					cylinderMin: pos.cylinderMin != null ? pos.cylinderMin.toFixed(2) : '',
+					cylinderMax: pos.cylinderMax != null ? pos.cylinderMax.toFixed(2) : '',
+					additionMin: pos.additionMin != null ? pos.additionMin.toFixed(2) : '',
+					additionMax: pos.additionMax != null ? pos.additionMax.toFixed(2) : ''
+				});
+			}
+		}
+
+		// Standalone rows → plain entries
+		for (const r of standalone) {
+			result.push(toPlainEntry(r));
+		}
+
+		return result;
+	}
+
+	type ExpandedRange = {
 		sphereMin: number;
 		sphereMax: number;
 		cylinderMin?: number;
 		cylinderMax?: number;
 		additionMin?: number;
 		additionMax?: number;
-	}[] {
-		const result: {
-			sphereMin: number;
-			sphereMax: number;
-			cylinderMin?: number;
-			cylinderMax?: number;
-			additionMin?: number;
-			additionMax?: number;
-		}[] = [];
+		mirrorGroup?: string;
+	};
+
+	/**
+	 * Expand UI range entries into flat DB range objects.
+	 * When symmetric (±) is ON:
+	 *   - If absMin is 0: one continuous range from -absMax to +absMax
+	 *   - Otherwise: two ranges (negative side and positive side)
+	 * Symmetric pairs share a mirrorGroup UUID so they can be
+	 * re-collapsed when editing later.
+	 */
+	function expandRanges(): ExpandedRange[] {
+		const result: ExpandedRange[] = [];
 
 		for (const r of ranges) {
 			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : undefined;
@@ -271,14 +338,15 @@
 			if (r.symmetric) {
 				const absMin = parseFloat(r.absMin) || 0;
 				const absMax = parseFloat(r.absMax) || 0;
+				const mirrorGroup = generateUUID();
 
 				if (absMin === 0) {
 					// Continuous range: -absMax to +absMax (includes 0)
-					result.push({ sphereMin: -absMax, sphereMax: absMax, ...base });
+					result.push({ sphereMin: -absMax, sphereMax: absMax, ...base, mirrorGroup });
 				} else {
-					// Two sub-ranges: negative and positive sides
-					result.push({ sphereMin: -absMax, sphereMax: -absMin, ...base });
-					result.push({ sphereMin: absMin, sphereMax: absMax, ...base });
+					// Two sub-ranges: negative and positive sides — same mirrorGroup
+					result.push({ sphereMin: -absMax, sphereMax: -absMin, ...base, mirrorGroup });
+					result.push({ sphereMin: absMin, sphereMax: absMax, ...base, mirrorGroup });
 				}
 			} else {
 				const sphMin = parseFloat(r.sphereMin) || 0;
@@ -286,7 +354,15 @@
 				result.push({ sphereMin: sphMin, sphereMax: sphMax, ...base });
 			}
 		}
-		return result;
+
+		// Deduplicate exact-same ranges (keep first occurrence)
+		const seen = new Set<string>();
+		return result.filter((r) => {
+			const key = [r.sphereMin, r.sphereMax, r.cylinderMin, r.cylinderMax, r.additionMin, r.additionMax].join('|');
+			if (seen.has(key)) return false;
+			seen.add(key);
+			return true;
+		});
 	}
 
 	/** Serialized ranges for the hidden input */
