@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button, Badge, Spinner } from 'flowbite-svelte';
-	import { Pencil, Trash2 } from '@lucide/svelte';
+	import { Button, Badge, Spinner, Popover } from 'flowbite-svelte';
+	import { Pencil, Trash2, Eye, Layers } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
@@ -11,6 +11,7 @@
 		LENS_SOURCE_LABELS
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensOpticalRange } from '$lib/server/db/schema/lenses';
 	import { resolve } from '$app/paths';
 
 	type Props = {
@@ -29,14 +30,94 @@
 		return `hasta ${fmtNum(max!)}`;
 	}
 
-	function formatRangeSummary(item: LensCatalogItemWithRelations): string {
-		if (!item.ranges || item.ranges.length === 0) return '—';
-		const first = item.ranges[0];
-		const summary = formatRange(first.sphereMin, first.sphereMax);
-		if (item.ranges.length > 1) {
-			return `${summary} (+${item.ranges.length - 1})`;
+	/** Format a symmetric sphere range with ± notation */
+	function formatSymmetricSphere(absMin: number, absMax: number): string {
+		if (absMin === 0) return `±${absMax.toFixed(2)}`;
+		return `±${absMin.toFixed(2)} a ±${absMax.toFixed(2)}`;
+	}
+
+	type DisplayRange = {
+		id: string;
+		symmetric: boolean;
+		sphereLabel: string;
+		cylinderLabel: string | null;
+		additionLabel: string | null;
+	};
+
+	/**
+	 * Collapse raw DB ranges into display ranges, merging mirror-grouped pairs
+	 * into a single entry with ± notation.
+	 */
+	function collapseRangesForDisplay(ranges: LensOpticalRange[]): DisplayRange[] {
+		const result: DisplayRange[] = [];
+		const groups = new Map<string, LensOpticalRange[]>();
+		const standalone: LensOpticalRange[] = [];
+
+		for (const r of ranges) {
+			if (r.mirrorGroup) {
+				const group = groups.get(r.mirrorGroup) ?? [];
+				group.push(r);
+				groups.set(r.mirrorGroup, group);
+			} else {
+				standalone.push(r);
+			}
 		}
-		return summary;
+
+		// Mirror groups
+		for (const [groupId, rows] of groups) {
+			if (rows.length === 1) {
+				// Single row with mirrorGroup = just a regular range (e.g. -6 to +6), not a mirror pair
+				const r = rows[0];
+				result.push({
+					id: groupId,
+					symmetric: false,
+					sphereLabel: formatRange(r.sphereMin, r.sphereMax),
+					cylinderLabel: (r.cylinderMin != null || r.cylinderMax != null)
+						? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
+						: null,
+					additionLabel: (r.additionMin != null || r.additionMax != null)
+						? formatRange(r.additionMin ?? null, r.additionMax ?? null)
+						: null,
+				});
+			} else {
+				// Two rows = mirror pair → use absolute values with ±
+				const pos = rows.find((r) => r.sphereMin >= 0) ?? rows[0];
+				const absMin = Math.abs(pos.sphereMin);
+				const absMax = Math.abs(pos.sphereMax);
+				result.push({
+					id: groupId,
+					symmetric: true,
+					sphereLabel: formatSymmetricSphere(absMin, absMax),
+					cylinderLabel: (pos.cylinderMin != null || pos.cylinderMax != null)
+						? formatRange(pos.cylinderMin ?? null, pos.cylinderMax ?? null)
+						: null,
+					additionLabel: (pos.additionMin != null || pos.additionMax != null)
+						? formatRange(pos.additionMin ?? null, pos.additionMax ?? null)
+						: null,
+				});
+			}
+		}
+
+		// Standalone rows → plain entries
+		for (const r of standalone) {
+			result.push({
+				id: r.id,
+				symmetric: false,
+				sphereLabel: formatRange(r.sphereMin, r.sphereMax),
+				cylinderLabel: (r.cylinderMin != null || r.cylinderMax != null)
+					? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
+					: null,
+				additionLabel: (r.additionMin != null || r.additionMax != null)
+					? formatRange(r.additionMin ?? null, r.additionMax ?? null)
+					: null,
+			});
+		}
+
+		return result;
+	}
+
+	function getRangeCount(item: LensCatalogItemWithRelations): number {
+		return collapseRangesForDisplay(item.ranges).length;
 	}
 
 	function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
@@ -78,7 +159,7 @@
 				<th class="px-4 py-3">Material</th>
 				<th class="px-4 py-3">Tecnología</th>
 				<th class="px-4 py-3">Rangos</th>
-				<th class="px-4 py-3 text-right">Precio Base</th>
+				<th class="px-4 py-3 text-right">Precio Venta</th>
 				<th class="px-4 py-3 text-right">Acciones</th>
 			</tr>
 		</thead>
@@ -97,6 +178,7 @@
 				</tr>
 			{:else}
 				{#each items as item (item.id)}
+					{@const displayRanges = collapseRangesForDisplay(item.ranges ?? [])}
 					<tr class="hover:bg-slate-50">
 						<td class="px-4 py-3">
 							<div>
@@ -113,11 +195,6 @@
 							>
 								{LENS_SOURCE_LABELS[item.source] ?? item.source}
 							</Badge>
-							{#if item.source === LensCatalogSource.FINISHED && item.stock !== null}
-								<span class="ml-1 font-mono text-xs text-slate-500">
-									({item.stock} uds)
-								</span>
-							{/if}
 						</td>
 						<td class="px-4 py-3 text-slate-600">
 							{item.supplier?.name ?? '—'}
@@ -133,11 +210,6 @@
 						<td class="px-4 py-3">
 							{#if item.material}
 								<span class="text-slate-700">{item.material.name}</span>
-								{#if item.refractiveIndex}
-									<span class="ml-1 font-mono text-xs text-slate-400">
-										({item.refractiveIndex})
-									</span>
-								{/if}
 							{:else}
 								<span class="text-slate-400">—</span>
 							{/if}
@@ -145,14 +217,59 @@
 						<td class="px-4 py-3 text-slate-600">
 							{item.technology ?? '—'}
 						</td>
-						<td class="px-4 py-3 font-mono text-sm">
-							{formatRangeSummary(item)}
+						<td class="px-4 py-3">
+							{#if displayRanges.length > 0}
+								<button
+									id="ranges-{item.id}"
+									class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200"
+								>
+									<Layers class="h-3 w-3" />
+									{displayRanges.length} {displayRanges.length === 1 ? 'rango' : 'rangos'}
+								</button>
+								<Popover triggeredBy="#ranges-{item.id}" class="w-72 text-sm" trigger="hover">
+									<div class="space-y-2">
+										{#each displayRanges as dr, i (dr.id)}
+											<div class="rounded-md bg-slate-50 p-2">
+												{#if displayRanges.length > 1}
+													<p class="mb-1 text-xs font-semibold text-slate-500">
+														Rango {i + 1}
+														{#if dr.symmetric}
+															<span class="ml-1 text-indigo-500">(±)</span>
+														{/if}
+													</p>
+												{/if}
+												<div class="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-xs">
+													<span class="text-slate-500">Esfera:</span>
+													<span class="text-slate-800">{dr.sphereLabel}</span>
+													{#if dr.cylinderLabel}
+														<span class="text-slate-500">Cilindro:</span>
+														<span class="text-slate-800">{dr.cylinderLabel}</span>
+													{/if}
+													{#if dr.additionLabel}
+														<span class="text-slate-500">Adición:</span>
+														<span class="text-slate-800">{dr.additionLabel}</span>
+													{/if}
+												</div>
+											</div>
+										{/each}
+									</div>
+								</Popover>
+							{:else}
+								<span class="text-slate-400">—</span>
+							{/if}
 						</td>
 						<td class="px-4 py-3 text-right font-mono font-medium text-slate-800">
-							{formatPrice(item.basePrice)}
+							{#if item.salePrice != null}
+								{formatPrice(item.salePrice)}
+							{:else}
+								<span class="text-slate-400 text-xs italic">Sin precio</span>
+							{/if}
 						</td>
 						<td class="px-4 py-3">
 							<div class="flex justify-end gap-1">
+								<Button size="xs" color="alternative" href={resolve(`/lenses/${item.id}`)}>
+									<Eye class="h-3.5 w-3.5" />
+								</Button>
 								<Button size="xs" color="alternative" href={resolve(`/lenses/${item.id}/edit`)}>
 									<Pencil class="h-3.5 w-3.5" />
 								</Button>
