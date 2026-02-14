@@ -533,19 +533,6 @@
 				{/if}
 			</div>
 			<div>
-				<Label for="lc_brand" class="mb-2">Marca</Label>
-				<Input
-					id="lc_brand"
-					name="brand"
-					bind:value={formData.brand}
-					placeholder="Ej: Transitions, Essilor"
-					class="placeholder:text-slate-400"
-				/>
-			</div>
-		</div>
-
-		<div class="mt-4 grid gap-4 md:grid-cols-2">
-			<div>
 				<Label for="lc_variant" class="mb-2">
 					Variante
 					<span class="ml-1 text-xs font-normal text-slate-400">(opcional)</span>
@@ -560,6 +547,20 @@
 					Para diferenciar materiales similares con distintos precios/rangos
 				</p>
 			</div>
+		</div>
+
+		<div class="mt-4 grid gap-4 md:grid-cols-2">
+			<div>
+				<Label for="lc_brand" class="mb-2">Marca</Label>
+				<Input
+					id="lc_brand"
+					name="brand"
+					bind:value={formData.brand}
+					placeholder="Ej: Transitions, Essilor"
+					class="placeholder:text-slate-400"
+				/>
+			</div>
+
 			<div>
 				<Label for="lc_technology" class="mb-2">Tecnología</Label>
 				<Input
