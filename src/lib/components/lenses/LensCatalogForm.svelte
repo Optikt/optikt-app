@@ -73,6 +73,7 @@
 		supplierId: '',
 		name: '',
 		brand: '',
+		variant: '',
 		technology: '',
 		type: LensType.MONOFOCAL as LensType,
 		materialId: '',
@@ -114,6 +115,7 @@
 					supplierId: item!.supplierId,
 					name: item!.name,
 					brand: item!.brand ?? '',
+					variant: '',
 					technology: item!.technology ?? '',
 					type: item!.type as LensType,
 					materialId: item!.materialId,
@@ -196,6 +198,9 @@
 		const pendingMat = pendingMaterials.find((m) => m.pendingId === formData.materialId);
 		if (mat) parts.push(mat.name);
 		else if (pendingMat) parts.push(pendingMat.name);
+
+		// Variant (optional differentiator)
+		if (formData.variant) parts.push(formData.variant);
 
 		// Type
 		const typeLabel = LENS_TYPE_LABELS[formData.type as keyof typeof LENS_TYPE_LABELS];
@@ -541,6 +546,21 @@
 
 		<div class="mt-4 grid gap-4 md:grid-cols-2">
 			<div>
+				<Label for="lc_variant" class="mb-2">
+					Variante
+					<span class="ml-1 text-xs font-normal text-slate-400">(opcional)</span>
+				</Label>
+				<Input
+					id="lc_variant"
+					bind:value={formData.variant}
+					placeholder="Ej: Altos, Premium, Económico"
+					class="placeholder:text-slate-400"
+				/>
+				<p class="mt-1 text-xs text-slate-400">
+					Para diferenciar materiales similares con distintos precios/rangos
+				</p>
+			</div>
+			<div>
 				<Label for="lc_technology" class="mb-2">Tecnología</Label>
 				<Input
 					id="lc_technology"
@@ -550,6 +570,9 @@
 					class="placeholder:text-slate-400"
 				/>
 			</div>
+		</div>
+
+		<div class="mt-4 grid gap-4 md:grid-cols-2">
 			<div>
 				<Label for="lc_type" class="mb-2">Tipo *</Label>
 				<Select id="lc_type" name="type" bind:value={formData.type} required>
