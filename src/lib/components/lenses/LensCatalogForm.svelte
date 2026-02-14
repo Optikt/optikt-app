@@ -358,7 +358,14 @@
 		// Deduplicate exact-same ranges (keep first occurrence)
 		const seen = new Set<string>();
 		return result.filter((r) => {
-			const key = [r.sphereMin, r.sphereMax, r.cylinderMin, r.cylinderMax, r.additionMin, r.additionMax].join('|');
+			const key = [
+				r.sphereMin,
+				r.sphereMax,
+				r.cylinderMin,
+				r.cylinderMax,
+				r.additionMin,
+				r.additionMax
+			].join('|');
 			if (seen.has(key)) return false;
 			seen.add(key);
 			return true;
@@ -667,7 +674,7 @@
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<h3 class="mb-4 text-lg font-semibold text-slate-800">Proveedor y Material</h3>
 		<div class="grid gap-4 md:grid-cols-2">
-				<CreatableSelect
+			<CreatableSelect
 				label="Proveedor *"
 				name="supplierId"
 				bind:value={formData.supplierId}
