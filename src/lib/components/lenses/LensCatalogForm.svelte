@@ -3,6 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
 	import { CreatableSelect, type SelectOption, type PendingEntity } from '$lib/components/ui';
 	import {
@@ -246,7 +247,7 @@
 		const result: RangeEntry[] = [];
 
 		// Group by mirrorGroup — null-mirrorGroup rows are standalone
-		const groups = new Map<string, LensOpticalRange[]>();
+		const groups = new SvelteMap<string, LensOpticalRange[]>();
 		const standalone: LensOpticalRange[] = [];
 
 		for (const r of dbRanges) {
@@ -356,7 +357,7 @@
 		}
 
 		// Deduplicate exact-same ranges (keep first occurrence)
-		const seen = new Set<string>();
+		const seen = new SvelteSet<string>();
 		return result.filter((r) => {
 			const key = [
 				r.sphereMin,
