@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { Badge, Button } from 'flowbite-svelte';
 	import {
 		ArrowLeft,
@@ -81,7 +82,7 @@
 
 	function collapseRangesForDisplay(ranges: LensOpticalRange[]): DisplayRange[] {
 		const result: DisplayRange[] = [];
-		const groups = new Map<string, LensOpticalRange[]>();
+		const groups = new SvelteMap<string, LensOpticalRange[]>();
 		const standalone: LensOpticalRange[] = [];
 
 		for (const r of ranges) {
@@ -166,7 +167,7 @@
 		try {
 			await deleteLensCatalogItemById({ id: item.id });
 			toast.success('Lente eliminado correctamente');
-			goto('/lenses');
+			goto(resolve('/lenses'));
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando lente'));

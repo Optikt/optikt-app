@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { Button, Badge, Spinner, Popover } from 'flowbite-svelte';
 	import { Pencil, Trash2, Eye, Layers } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
@@ -50,7 +51,7 @@
 	 */
 	function collapseRangesForDisplay(ranges: LensOpticalRange[]): DisplayRange[] {
 		const result: DisplayRange[] = [];
-		const groups = new Map<string, LensOpticalRange[]>();
+		const groups = new SvelteMap<string, LensOpticalRange[]>();
 		const standalone: LensOpticalRange[] = [];
 
 		for (const r of ranges) {
@@ -120,10 +121,6 @@
 		}
 
 		return result;
-	}
-
-	function getRangeCount(item: LensCatalogItemWithRelations): number {
-		return collapseRangesForDisplay(item.ranges).length;
 	}
 
 	function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
