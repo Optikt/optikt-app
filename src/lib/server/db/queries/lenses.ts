@@ -261,6 +261,35 @@ export async function findLensCatalogItemById(
 	return { ...item, ranges };
 }
 
+export async function findLensCatalogItemByIdWithRelations(
+	id: string
+): Promise<LensCatalogItemWithRelations | null> {
+	const [result] = await db
+		.select({
+			item: lensCatalogItems,
+			material: { id: lensMaterials.id, name: lensMaterials.name, code: lensMaterials.code },
+			supplier: { id: suppliers.id, name: suppliers.name }
+		})
+		.from(lensCatalogItems)
+		.leftJoin(lensMaterials, eq(lensCatalogItems.materialId, lensMaterials.id))
+		.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
+		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)));
+
+	if (!result) return null;
+
+	const ranges = await db
+		.select()
+		.from(lensOpticalRanges)
+		.where(eq(lensOpticalRanges.lensCatalogItemId, id));
+
+	return {
+		...result.item,
+		material: result.material,
+		supplier: result.supplier,
+		ranges
+	};
+}
+
 export async function createLensCatalogItem(
 	data: NewLensCatalogItem,
 	ranges: Omit<NewLensOpticalRange, 'id' | 'lensCatalogItemId' | 'createdAt' | 'updatedAt'>[]
