@@ -72,12 +72,14 @@
 					id: groupId,
 					symmetric: false,
 					sphereLabel: formatRange(r.sphereMin, r.sphereMax),
-					cylinderLabel: (r.cylinderMin != null || r.cylinderMax != null)
-						? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
-						: null,
-					additionLabel: (r.additionMin != null || r.additionMax != null)
-						? formatRange(r.additionMin ?? null, r.additionMax ?? null)
-						: null,
+					cylinderLabel:
+						r.cylinderMin != null || r.cylinderMax != null
+							? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
+							: null,
+					additionLabel:
+						r.additionMin != null || r.additionMax != null
+							? formatRange(r.additionMin ?? null, r.additionMax ?? null)
+							: null
 				});
 			} else {
 				// Two rows = mirror pair → use absolute values with ±
@@ -88,12 +90,14 @@
 					id: groupId,
 					symmetric: true,
 					sphereLabel: formatSymmetricSphere(absMin, absMax),
-					cylinderLabel: (pos.cylinderMin != null || pos.cylinderMax != null)
-						? formatRange(pos.cylinderMin ?? null, pos.cylinderMax ?? null)
-						: null,
-					additionLabel: (pos.additionMin != null || pos.additionMax != null)
-						? formatRange(pos.additionMin ?? null, pos.additionMax ?? null)
-						: null,
+					cylinderLabel:
+						pos.cylinderMin != null || pos.cylinderMax != null
+							? formatRange(pos.cylinderMin ?? null, pos.cylinderMax ?? null)
+							: null,
+					additionLabel:
+						pos.additionMin != null || pos.additionMax != null
+							? formatRange(pos.additionMin ?? null, pos.additionMax ?? null)
+							: null
 				});
 			}
 		}
@@ -104,12 +108,14 @@
 				id: r.id,
 				symmetric: false,
 				sphereLabel: formatRange(r.sphereMin, r.sphereMax),
-				cylinderLabel: (r.cylinderMin != null || r.cylinderMax != null)
-					? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
-					: null,
-				additionLabel: (r.additionMin != null || r.additionMax != null)
-					? formatRange(r.additionMin ?? null, r.additionMax ?? null)
-					: null,
+				cylinderLabel:
+					r.cylinderMin != null || r.cylinderMax != null
+						? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
+						: null,
+				additionLabel:
+					r.additionMin != null || r.additionMax != null
+						? formatRange(r.additionMin ?? null, r.additionMax ?? null)
+						: null
 			});
 		}
 
@@ -224,7 +230,8 @@
 									class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200"
 								>
 									<Layers class="h-3 w-3" />
-									{displayRanges.length} {displayRanges.length === 1 ? 'rango' : 'rangos'}
+									{displayRanges.length}
+									{displayRanges.length === 1 ? 'rango' : 'rangos'}
 								</button>
 								<Popover triggeredBy="#ranges-{item.id}" class="w-72 text-sm" trigger="hover">
 									<div class="space-y-2">
@@ -262,7 +269,7 @@
 							{#if item.salePrice != null}
 								{formatPrice(item.salePrice)}
 							{:else}
-								<span class="text-slate-400 text-xs italic">Sin precio</span>
+								<span class="text-xs text-slate-400 italic">Sin precio</span>
 							{/if}
 						</td>
 						<td class="px-4 py-3">
