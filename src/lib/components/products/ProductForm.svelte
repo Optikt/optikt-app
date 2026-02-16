@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Spinner, Select, Label } from 'flowbite-svelte';
+	import { Select, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -24,6 +24,8 @@
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { Checkbox } from 'flowbite-svelte';
 	import type { Product } from '$lib/server/db/schema';
+
+	import FormActions from '$lib/components/ui/FormActions.svelte';
 
 	interface MaterialOption extends SelectOption {
 		productType?: string;
@@ -288,7 +290,7 @@
 	}
 </script>
 
-<div class="mx-auto max-w-4xl">
+<div class="mx-auto max-w-4xl pb-24">
 	{#if isEditMode && product}
 		<!-- UPDATE FORM -->
 		<form
@@ -562,14 +564,8 @@
 					/>
 				</div>
 
-				<!-- Actions -->
-				<div class="flex justify-end gap-3">
-					<Button color="alternative" href={cancelHref} disabled={isSubmitting}>Cancelar</Button>
-					<Button type="submit" color="blue" disabled={isSubmitting}>
-						{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-						{submitText}
-					</Button>
-				</div>
+				<!-- Actions (sticky inside form) -->
+				<FormActions primaryLabel={submitText} {cancelHref} {isSubmitting} />
 			</div>
 		</form>
 	{:else}
@@ -844,14 +840,8 @@
 				/>
 			</div>
 
-			<!-- Actions -->
-			<div class="flex justify-end gap-3">
-				<Button color="alternative" href={cancelHref} disabled={isSubmitting}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
+			<!-- Actions (sticky inside form) -->
+			<FormActions primaryLabel={submitText} {cancelHref} {isSubmitting} />
 		</form>
 	{/if}
 </div>
