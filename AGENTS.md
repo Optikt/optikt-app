@@ -1,24 +1,34 @@
-You are able to use the Flowbite-Svelte MCP server, where you have access to comprehensive Flowbite-Svelte component documentation. Here's how to use the available tools effectively:
+# Optikt App
 
-## Available MCP Tools:
+Optical store management system built with SvelteKit, Flowbite-Svelte, and Drizzle ORM.
 
-### 1. findComponent
+## Tech Stack
 
-Use this FIRST to discover components by name or category. Returns component information including the documentation path.
-When asked about Flowbite-Svelte components, ALWAYS use this tool to locate the correct component before fetching documentation.
-Example queries: 'Button', 'CardPlaceholder', 'form checkbox'
+- **Framework:** SvelteKit (Svelte 5 with runes)
+- **UI Library:** Flowbite-Svelte (use MCP tools for docs — `findComponent`, `getComponentDoc`, `searchDocs`)
+- **Styling:** Tailwind CSS
+- **Icons:** `@lucide/svelte`
+- **ORM:** Drizzle (PostgreSQL) — schema in `drizzle/schema.ts`
+- **Validation:** Valibot
+- **Toasts:** svelte-sonner
+- **Package Manager:** pnpm
 
-### 2. getComponentList
+## Key Architecture
 
-Lists all available Flowbite-Svelte components with their categories.
-Use this to discover what components are available or to help users explore component options.
+- `src/lib/remote/` — Remote functions (`query`, `query.batch`, `form`, `command`)
+- `src/lib/schemas/` — Valibot validation schemas
+- `src/lib/components/` — UI components organized by domain (brands, customers, lenses, products, suppliers, etc.)
+- `src/lib/server/` — Server-side auth, guards, audit, database
+- `src/routes/(app)/` — Authenticated app routes
+- `src/routes/(auth)/` — Auth routes (login, etc.)
+- `drizzle/` — DB migrations and schema
 
-### 3. getComponentDoc
+## Instructions
 
-Retrieves full documentation content for a specific component. Accepts the component path found using findComponent.
-After calling findComponent, use this tool to fetch the complete documentation including usage examples, props, and best practices.
+Project conventions, Svelte patterns, and design principles are in `.github/instructions/`.
+Toast reference is available as a prompt in `.github/prompts/toast-usage.prompt.md`.
 
-### 4. searchDocs
+## MCP Servers Available
 
-Performs full-text search across all Flowbite-Svelte documentation.
-Use this when you need to find specific information that might span multiple components or when the user asks about features or patterns.
+- **Svelte MCP** — Svelte 5 / SvelteKit documentation, autofixer, playground links
+- **Flowbite-Svelte MCP** — Component documentation, search, examples
