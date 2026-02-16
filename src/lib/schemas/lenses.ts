@@ -3,7 +3,7 @@
  * Valibot schemas for lens materials, treatments, and catalog items
  */
 import * as v from 'valibot';
-import { LensType, LensCatalogSource } from '$lib/shared/enums';
+import { LensType, LensCatalogSource, LensPricingUnit } from '$lib/shared/enums';
 
 // Coerce string to number (for form inputs)
 const CoercedNumber = v.pipe(
@@ -128,8 +128,11 @@ export const CreateLensCatalogItemSchema = v.object({
 	isPhotochromic: v.optional(CoercedBoolean, false),
 	isBlueCut: v.optional(CoercedBoolean, false),
 	isAR: v.optional(CoercedBoolean, false),
+	pricingUnit: v.optional(v.enum(LensPricingUnit), LensPricingUnit.UNIT),
 	basePrice: v.pipe(CoercedNumber, v.minValue(0, 'Precio de compra debe ser ≥ 0')),
-	salePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0, 'Precio de venta debe ser ≥ 0'))),
+	suggestedMultiplier: v.optional(
+		v.pipe(CoercedNumber, v.minValue(1, 'Multiplicador debe ser ≥ 1'))
+	),
 	mountingPrice: v.optional(v.pipe(CoercedNumber, v.minValue(0, 'Precio de montaje debe ser ≥ 0'))),
 	deliveryDays: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
@@ -168,8 +171,9 @@ export const UpdateLensCatalogItemSchema = v.object({
 	isPhotochromic: v.optional(CoercedBoolean),
 	isBlueCut: v.optional(CoercedBoolean),
 	isAR: v.optional(CoercedBoolean),
+	pricingUnit: v.optional(v.enum(LensPricingUnit)),
 	basePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
-	salePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
+	suggestedMultiplier: v.optional(v.pipe(CoercedNumber, v.minValue(1))),
 	mountingPrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
 	deliveryDays: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
