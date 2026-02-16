@@ -2,7 +2,7 @@
  * Lenses Remote Functions
  * Server-side functions for managing lens materials, treatments, and catalog items
  */
-import { query, form, command } from '$app/server';
+import { query, form, command, getRequestEvent } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, ilike, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
@@ -40,6 +40,7 @@ import {
 	updateLensTreatment,
 	deleteLensTreatment,
 	getLensCatalogItemsWithRelations,
+	findLensCatalogItemById,
 	deleteLensCatalogItem,
 	getSupplierTreatments,
 	upsertSupplierTreatment,
@@ -52,6 +53,19 @@ import type {
 	LensOpticalRange
 } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import { auditService, type AuditContext } from '$lib/server/audit';
+
+/**
+ * Helper to build audit context from the request event
+ */
+function getAuditContext(): AuditContext {
+	const event = getRequestEvent();
+	return {
+		userId: event.locals.user?.id ?? null,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent')
+	};
+}
 
 // ============================================================================
 // LENS MATERIALS
@@ -76,7 +90,9 @@ export const createLensMaterialForm = form(
 			invalid(issue.code('Ya existe un material con este código'));
 		}
 
-		return createLensMaterial(data);
+		const material = await createLensMaterial(data);
+		await auditService.logCreate('lens_material', material, getAuditContext());
+		return material;
 	}
 );
 
@@ -104,13 +120,19 @@ export const updateLensMaterialForm = form(
 
 		const updated = await updateLensMaterial(id, updates);
 		if (!updated) invalid('Error actualizando material');
+		await auditService.logUpdate('lens_material', id, existing, updated, getAuditContext());
 		return updated;
 	}
 );
 
 export const deleteLensMaterialById = command(LensIdSchema, async (data): Promise<void> => {
+	const existing = await findLensMaterialById(data.id);
+	if (!existing) throw new Error('Material no encontrado');
+
 	const deleted = await deleteLensMaterial(data.id);
-	if (!deleted) throw new Error('Material no encontrado');
+	if (!deleted) throw new Error('Error eliminando material');
+
+	await auditService.logDelete('lens_material', existing, getAuditContext());
 });
 
 // ============================================================================
@@ -134,7 +156,9 @@ export const createLensTreatmentForm = form(
 			invalid(issue.code('Ya existe un tratamiento con este código'));
 		}
 
-		return createLensTreatment(data);
+		const treatment = await createLensTreatment(data);
+		await auditService.logCreate('lens_treatment', treatment, getAuditContext());
+		return treatment;
 	}
 );
 
@@ -160,13 +184,19 @@ export const updateLensTreatmentForm = form(
 
 		const updated = await updateLensTreatment(id, updates);
 		if (!updated) invalid('Error actualizando tratamiento');
+		await auditService.logUpdate('lens_treatment', id, existing, updated, getAuditContext());
 		return updated;
 	}
 );
 
 export const deleteLensTreatmentById = command(LensIdSchema, async (data): Promise<void> => {
+	const existing = await findLensTreatmentById(data.id);
+	if (!existing) throw new Error('Tratamiento no encontrado');
+
 	const deleted = await deleteLensTreatment(data.id);
-	if (!deleted) throw new Error('Tratamiento no encontrado');
+	if (!deleted) throw new Error('Error eliminando tratamiento');
+
+	await auditService.logDelete('lens_treatment', existing, getAuditContext());
 });
 
 // ============================================================================
@@ -199,7 +229,7 @@ export const createLensCatalogItemForm = form(
 		} = data;
 		let { supplierId, materialId } = data;
 
-		return db.transaction(async (tx) => {
+		const result = await db.transaction(async (tx) => {
 			const now = new Date();
 
 			// Handle pending supplier
@@ -296,6 +326,11 @@ export const createLensCatalogItemForm = form(
 
 			return { ...item, ranges: insertedRanges };
 		});
+
+		// Log the creation after transaction succeeds
+		await auditService.logCreate('lens_catalog_item', result, getAuditContext());
+
+		return result;
 	}
 );
 
@@ -312,7 +347,7 @@ export const updateLensCatalogItemForm = form(
 		} = data;
 		let { supplierId, materialId } = rest;
 
-		return db.transaction(async (tx) => {
+		const { oldItem, result } = await db.transaction(async (tx) => {
 			const now = new Date();
 
 			const [existing] = await tx
@@ -322,6 +357,9 @@ export const updateLensCatalogItemForm = form(
 			if (!existing) {
 				invalid('Item de catálogo no encontrado');
 			}
+
+			// Capture old state for audit
+			const oldItem = { ...existing };
 
 			// Handle pending supplier
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
@@ -424,14 +462,24 @@ export const updateLensCatalogItemForm = form(
 					.where(eq(lensOpticalRanges.lensCatalogItemId, id));
 			}
 
-			return { ...updated, ranges: insertedRanges };
+			return { oldItem, result: { ...updated, ranges: insertedRanges } };
 		});
+
+		// Log the update after transaction succeeds
+		await auditService.logUpdate('lens_catalog_item', id, oldItem, result, getAuditContext());
+
+		return result;
 	}
 );
 
 export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Promise<void> => {
+	const existing = await findLensCatalogItemById(data.id);
+	if (!existing) throw new Error('Item de catálogo no encontrado');
+
 	const deleted = await deleteLensCatalogItem(data.id);
-	if (!deleted) throw new Error('Item de catálogo no encontrado');
+	if (!deleted) throw new Error('Error eliminando item de catálogo');
+
+	await auditService.logDelete('lens_catalog_item', existing, getAuditContext());
 });
 
 // ============================================================================
