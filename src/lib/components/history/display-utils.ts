@@ -101,7 +101,12 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		stock: 'Stock',
 		refractiveIndex: 'Índice de refracción',
 		notes: 'Notas',
-		isActive: 'Activo'
+		isActive: 'Activo',
+		rangosÓpticos: 'Rangos ópticos',
+		technology: 'Tecnología',
+		source: 'Origen',
+		isBlueCut: 'Blue Cut',
+		isAR: 'Anti-Reflejo'
 	},
 	supplier: {
 		name: 'Nombre',
