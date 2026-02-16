@@ -67,6 +67,11 @@
 		return `hasta ${formatDiopter(max!)}`;
 	}
 
+	/** Format cylinder range for display: show closer-to-zero value first (e.g. -0.25 a -2.00) */
+	function formatCylinderRange(min: number | null, max: number | null): string {
+		return formatRange(max, min);
+	}
+
 	function formatSymmetricSphere(absMin: number, absMax: number): string {
 		if (absMin === 0) return `±${absMax.toFixed(2)}`;
 		return `±${absMin.toFixed(2)} a ±${absMax.toFixed(2)}`;
@@ -104,7 +109,7 @@
 					sphereLabel: formatRange(r.sphereMin, r.sphereMax),
 					cylinderLabel:
 						r.cylinderMin != null || r.cylinderMax != null
-							? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
+							? formatCylinderRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
 							: null,
 					additionLabel:
 						r.additionMin != null || r.additionMax != null
@@ -121,7 +126,7 @@
 					sphereLabel: formatSymmetricSphere(absMin, absMax),
 					cylinderLabel:
 						pos.cylinderMin != null || pos.cylinderMax != null
-							? formatRange(pos.cylinderMin ?? null, pos.cylinderMax ?? null)
+							? formatCylinderRange(pos.cylinderMin ?? null, pos.cylinderMax ?? null)
 							: null,
 					additionLabel:
 						pos.additionMin != null || pos.additionMax != null
@@ -138,7 +143,7 @@
 				sphereLabel: formatRange(r.sphereMin, r.sphereMax),
 				cylinderLabel:
 					r.cylinderMin != null || r.cylinderMax != null
-						? formatRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
+						? formatCylinderRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
 						: null,
 				additionLabel:
 					r.additionMin != null || r.additionMax != null
