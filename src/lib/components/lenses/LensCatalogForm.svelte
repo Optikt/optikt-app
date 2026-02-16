@@ -15,6 +15,7 @@
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
+	import { resolve } from '$app/paths';
 
 	type MaterialOption = SelectOption & { refractiveIndex?: number | null };
 
@@ -461,8 +462,7 @@
 			return;
 		}
 		toast.success('Lente agregado al catálogo');
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto('/lenses');
+		goto(resolve('/lenses'));
 	}
 
 	// Handle update result
@@ -474,8 +474,7 @@
 			return;
 		}
 		toast.success('Lente actualizado');
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto('/lenses');
+		goto(resolve('/lenses'));
 	}
 </script>
 
