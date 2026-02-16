@@ -53,6 +53,17 @@
 		return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
 	}
 
+	/**
+	 * Estimated sale price for a pair of identical lenses.
+	 * Formula: (lens cost for pair + mounting) × multiplier
+	 */
+	const estimatedPairPrice = $derived.by(() => {
+		if (item.suggestedMultiplier == null) return null;
+		const lensCostPair = item.pricingUnit === 'UNIT' ? item.basePrice * 2 : item.basePrice;
+		const mounting = item.mountingPrice ?? 0;
+		return (lensCostPair + mounting) * item.suggestedMultiplier;
+	});
+
 	// Optical range display
 	const displayRanges = collapseRangesForDisplay(item.ranges);
 
@@ -360,7 +371,23 @@
 							</dd>
 						</div>
 					</div>
-
+					<!-- Estimated sale price -->
+					{#if estimatedPairPrice != null}
+						<div
+							class="mb-4 rounded-lg border border-dashed border-indigo-200 bg-indigo-50/50 p-4 text-center"
+						>
+							<dt class="text-xs font-medium text-indigo-500">Precio Estimado (par)</dt>
+							<dd class="mt-1 font-mono text-2xl font-bold text-indigo-700">
+								~{formatPrice(estimatedPairPrice)}
+							</dd>
+							<p class="mt-1 text-[10px] text-indigo-400">
+								({item.pricingUnit === 'UNIT'
+									? `${formatPrice(item.basePrice)} ×2`
+									: formatPrice(item.basePrice)}
+								+ {formatPrice(item.mountingPrice ?? 0)} montaje) × {item.suggestedMultiplier}
+							</p>
+						</div>
+					{/if}
 					<!-- Stock + Metadata -->
 					<div class="border-t border-slate-100 pt-4">
 						<div class="mb-4 flex items-center justify-between">
