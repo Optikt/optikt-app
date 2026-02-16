@@ -1,19 +1,10 @@
 <script lang="ts">
-	import {
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell,
-		Badge,
-		Spinner
-	} from 'flowbite-svelte';
+	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
 	import { SquarePen, Trash2, Power, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteUserById } from '$lib/remote/users.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
 	import { ToggleActiveModal } from '$lib/components/users';
 	import { UserRole } from '$lib/shared/enums';
 	import type { UserListItem } from '$lib/types';
@@ -75,81 +66,54 @@
 	}
 </script>
 
-{#if loading}
-	<div class="flex items-center justify-center py-12">
-		<Spinner size="10" />
-	</div>
-{:else if users.length > 0}
-	<Table hoverable striped shadow>
-		<TableHead>
-			<TableHeadCell>Nombre</TableHeadCell>
-			<TableHeadCell>Email</TableHeadCell>
-			<TableHeadCell>Usuario</TableHeadCell>
-			<TableHeadCell>Rol</TableHeadCell>
-			<TableHeadCell>Estado</TableHeadCell>
-			<TableHeadCell>Acciones</TableHeadCell>
-		</TableHead>
-		<TableBody>
-			{#each users as user (user.id)}
-				<TableBodyRow>
-					<TableBodyCell class="font-medium">{user.fullName}</TableBodyCell>
-					<TableBodyCell>{user.email}</TableBodyCell>
-					<TableBodyCell
-						><span class="font-mono text-sm text-slate-600">@{user.username}</span></TableBodyCell
-					>
-					<TableBodyCell>
-						<Badge color={getRoleBadgeColor(user.role)}>{user.role}</Badge>
-					</TableBodyCell>
-					<TableBodyCell>
-						<Badge color={user.isActive ? 'green' : 'red'}>
-							{user.isActive ? 'Activo' : 'Inactivo'}
-						</Badge>
-					</TableBodyCell>
-					<TableBodyCell>
-						<div class="flex items-center gap-1">
-							<button
-								onclick={() => onEdit(user)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600"
-								title="Editar"
-							>
-								<SquarePen class="h-4 w-4" />
-							</button>
-							<button
-								onclick={() => openToggle(user)}
-								class={[
-									'flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-150',
-									user.isActive
-										? 'text-slate-500 hover:bg-amber-50 hover:text-amber-600'
-										: 'text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
-								]}
-								title={user.isActive ? 'Desactivar' : 'Activar'}
-							>
-								<Power class="h-4 w-4" />
-							</button>
-							{#if !user.isSuperuser}
-								<button
-									onclick={() => openDelete(user)}
-									class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
-									title="Eliminar"
-								>
-									<Trash2 class="h-4 w-4" />
-								</button>
-							{/if}
-						</div>
-					</TableBodyCell>
-				</TableBodyRow>
-			{/each}
-		</TableBody>
-	</Table>
-{:else}
-	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/50 py-12 text-center"
-	>
-		<Users class="mb-3 h-10 w-10 text-slate-400" />
-		<p class="text-sm font-medium text-slate-600">No se encontraron usuarios</p>
-		<p class="mt-1 text-xs text-slate-400">Intenta ajustar los filtros de búsqueda</p>
-	</div>
-{/if}
+<DataTable
+	items={users}
+	{loading}
+	emptyIcon={Users}
+	emptyTitle="No se encontraron usuarios"
+	emptyDescription="Intenta ajustar los filtros de búsqueda"
+>
+	{#snippet header()}
+		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
+		<TableHeadCell class="font-semibold">Email</TableHeadCell>
+		<TableHeadCell class="font-semibold">Usuario</TableHeadCell>
+		<TableHeadCell class="font-semibold">Rol</TableHeadCell>
+		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+	{/snippet}
+
+	{#snippet row(user)}
+		<TableBodyCell class="font-medium">{user.fullName}</TableBodyCell>
+		<TableBodyCell>{user.email}</TableBodyCell>
+		<TableBodyCell>
+			<span class="font-mono text-sm text-slate-600">@{user.username}</span>
+		</TableBodyCell>
+		<TableBodyCell>
+			<Badge color={getRoleBadgeColor(user.role)}>{user.role}</Badge>
+		</TableBodyCell>
+		<TableBodyCell>
+			<Badge color={user.isActive ? 'green' : 'red'}>
+				{user.isActive ? 'Activo' : 'Inactivo'}
+			</Badge>
+		</TableBodyCell>
+	{/snippet}
+
+	{#snippet actions(user)}
+		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(user)} />
+		<ActionButton
+			icon={Power}
+			title={user.isActive ? 'Desactivar' : 'Activar'}
+			color={user.isActive ? 'amber' : 'green'}
+			onclick={() => openToggle(user)}
+		/>
+		<ActionButton
+			icon={Trash2}
+			title="Eliminar"
+			color="red"
+			hidden={user.isSuperuser}
+			onclick={() => openDelete(user)}
+		/>
+	{/snippet}
+</DataTable>
 
 <!-- Toggle Active Modal -->
 <ToggleActiveModal

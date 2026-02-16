@@ -1,19 +1,10 @@
 <script lang="ts">
-	import {
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell,
-		Spinner,
-		Badge
-	} from 'flowbite-svelte';
+	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
 	import { SquarePen, Trash2, Truck, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
 	import { SupplierViewModal } from '$lib/components/suppliers';
 	import { SupplierType, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
@@ -73,81 +64,50 @@
 	}
 </script>
 
-{#if loading}
-	<div class="flex items-center justify-center py-12">
-		<Spinner size="10" />
-	</div>
-{:else if suppliers.length > 0}
-	<Table hoverable striped shadow>
-		<TableHead>
-			<TableHeadCell>Nombre</TableHeadCell>
-			<TableHeadCell>Tipo</TableHeadCell>
-			<TableHeadCell>RIF</TableHeadCell>
-			<TableHeadCell>Teléfono</TableHeadCell>
-			<TableHeadCell>Contacto</TableHeadCell>
-			<TableHeadCell>Acciones</TableHeadCell>
-		</TableHead>
-		<TableBody>
-			{#each suppliers as supplier (supplier.id)}
-				<TableBodyRow>
-					<TableBodyCell class="font-medium">{supplier.name}</TableBodyCell>
-					<TableBodyCell>
-						<Badge color={getTypeBadgeColor(supplier.type)}>
-							{SUPPLIER_TYPE_LABELS[supplier.type as SupplierType] ?? supplier.type}
-						</Badge>
-					</TableBodyCell>
-					<TableBodyCell>
-						<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '—'}</span>
-					</TableBodyCell>
-					<TableBodyCell>{supplier.primaryPhone}</TableBodyCell>
-					<TableBodyCell>
-						{#if supplier.contactName}
-							<span>{supplier.contactName}</span>
-							{#if supplier.contactRole}
-								<span class="text-xs text-slate-500"> ({supplier.contactRole})</span>
-							{/if}
-						{:else}
-							—
-						{/if}
-					</TableBodyCell>
-					<TableBodyCell>
-						<div class="flex items-center gap-1">
-							<button
-								onclick={() => openView(supplier)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-700"
-								title="Ver detalles"
-							>
-								<Eye class="h-4 w-4" />
-							</button>
-							<button
-								onclick={() => onEdit(supplier)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600"
-								title="Editar"
-							>
-								<SquarePen class="h-4 w-4" />
-							</button>
-							<button
-								onclick={() => openDelete(supplier)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
-								title="Eliminar"
-							>
-								<Trash2 class="h-4 w-4" />
-							</button>
-						</div>
-					</TableBodyCell>
-				</TableBodyRow>
-			{/each}
-		</TableBody>
-	</Table>
-{:else}
-	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/50 py-12 text-center"
-	>
-		<Truck class="mb-3 h-10 w-10 text-slate-400" />
-		<p class="text-sm font-medium text-slate-600">No se encontraron proveedores</p>
-		<p class="mt-1 text-xs text-slate-400">Agrega un proveedor para comenzar</p>
-	</div>
-{/if}
+<DataTable
+	items={suppliers}
+	{loading}
+	emptyIcon={Truck}
+	emptyTitle="No se encontraron proveedores"
+	emptyDescription="Agrega un proveedor para comenzar"
+>
+	{#snippet header()}
+		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
+		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
+		<TableHeadCell class="font-semibold">RIF</TableHeadCell>
+		<TableHeadCell class="font-semibold">Teléfono</TableHeadCell>
+		<TableHeadCell class="font-semibold">Contacto</TableHeadCell>
+	{/snippet}
+
+	{#snippet row(supplier)}
+		<TableBodyCell class="font-medium">{supplier.name}</TableBodyCell>
+		<TableBodyCell>
+			<Badge color={getTypeBadgeColor(supplier.type)}>
+				{SUPPLIER_TYPE_LABELS[supplier.type as SupplierType] ?? supplier.type}
+			</Badge>
+		</TableBodyCell>
+		<TableBodyCell>
+			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '—'}</span>
+		</TableBodyCell>
+		<TableBodyCell>{supplier.primaryPhone}</TableBodyCell>
+		<TableBodyCell>
+			{#if supplier.contactName}
+				<span>{supplier.contactName}</span>
+				{#if supplier.contactRole}
+					<span class="text-xs text-slate-500"> ({supplier.contactRole})</span>
+				{/if}
+			{:else}
+				—
+			{/if}
+		</TableBodyCell>
+	{/snippet}
+
+	{#snippet actions(supplier)}
+		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(supplier)} />
+		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(supplier)} />
+		<ActionButton icon={Trash2} title="Eliminar" color="red" onclick={() => openDelete(supplier)} />
+	{/snippet}
+</DataTable>
 
 <!-- Delete Confirm Modal -->
 <ConfirmModal

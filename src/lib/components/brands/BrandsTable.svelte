@@ -1,21 +1,18 @@
 <script lang="ts">
 	import {
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
 		TableHeadCell,
-		Spinner,
+		TableBodyCell,
 		Modal,
 		Button,
 		Input,
-		Label
+		Label,
+		Spinner
 	} from 'flowbite-svelte';
 	import { SquarePen, Trash2, Tag, TriangleAlert, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { DataTable, ActionButton } from '$lib/components/ui';
 	import { BrandViewModal } from '$lib/components/brands';
 	import type { Brand } from '$lib/server/db/schema';
 
@@ -88,75 +85,44 @@
 	}
 </script>
 
-{#if loading}
-	<div class="flex items-center justify-center py-12">
-		<Spinner size="10" />
-	</div>
-{:else if brands.length > 0}
-	<Table hoverable striped shadow>
-		<TableHead>
-			<TableHeadCell>Nombre</TableHeadCell>
-			<TableHeadCell>País</TableHeadCell>
-			<TableHeadCell>Sitio Web</TableHeadCell>
-			<TableHeadCell>Acciones</TableHeadCell>
-		</TableHead>
-		<TableBody>
-			{#each brands as brand (brand.id)}
-				<TableBodyRow>
-					<TableBodyCell class="font-medium">{brand.name}</TableBodyCell>
-					<TableBodyCell>{brand.country ?? '—'}</TableBodyCell>
-					<TableBodyCell>
-						{#if brand.website}
-							<a
-								href={brand.website}
-								target="_blank"
-								rel="noopener noreferrer external"
-								class="text-primary-600 hover:underline"
-							>
-								{brand.website}
-							</a>
-						{:else}
-							—
-						{/if}
-					</TableBodyCell>
-					<TableBodyCell>
-						<div class="flex items-center gap-1">
-							<button
-								onclick={() => openView(brand)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-700"
-								title="Ver detalles"
-							>
-								<Eye class="h-4 w-4" />
-							</button>
-							<button
-								onclick={() => onEdit(brand)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-blue-50 hover:text-blue-600"
-								title="Editar"
-							>
-								<SquarePen class="h-4 w-4" />
-							</button>
-							<button
-								onclick={() => openDelete(brand)}
-								class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
-								title="Eliminar"
-							>
-								<Trash2 class="h-4 w-4" />
-							</button>
-						</div>
-					</TableBodyCell>
-				</TableBodyRow>
-			{/each}
-		</TableBody>
-	</Table>
-{:else}
-	<div
-		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/50 py-12 text-center"
-	>
-		<Tag class="mb-3 h-10 w-10 text-slate-400" />
-		<p class="text-sm font-medium text-slate-600">No se encontraron marcas</p>
-		<p class="mt-1 text-xs text-slate-400">Agrega una marca para comenzar</p>
-	</div>
-{/if}
+<DataTable
+	items={brands}
+	{loading}
+	emptyIcon={Tag}
+	emptyTitle="No se encontraron marcas"
+	emptyDescription="Agrega una marca para comenzar"
+>
+	{#snippet header()}
+		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
+		<TableHeadCell class="font-semibold">País</TableHeadCell>
+		<TableHeadCell class="font-semibold">Sitio Web</TableHeadCell>
+	{/snippet}
+
+	{#snippet row(brand)}
+		<TableBodyCell class="font-medium">{brand.name}</TableBodyCell>
+		<TableBodyCell>{brand.country ?? '—'}</TableBodyCell>
+		<TableBodyCell>
+			{#if brand.website}
+				<a
+					href={brand.website}
+					target="_blank"
+					rel="noopener noreferrer external"
+					class="text-primary-600 hover:underline"
+				>
+					{brand.website}
+				</a>
+			{:else}
+				—
+			{/if}
+		</TableBodyCell>
+	{/snippet}
+
+	{#snippet actions(brand)}
+		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(brand)} />
+		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(brand)} />
+		<ActionButton icon={Trash2} title="Eliminar" color="red" onclick={() => openDelete(brand)} />
+	{/snippet}
+</DataTable>
 
 <!-- Enhanced Delete Confirm Modal -->
 <Modal bind:open={showDeleteModal} title="Eliminar Marca" size="sm">
