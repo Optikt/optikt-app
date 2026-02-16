@@ -106,7 +106,14 @@
 								{LENS_TYPE_LABELS[item.type as LensType] ?? item.type}
 							</Badge>
 							{#if item.isPhotochromic}
-								<Badge color="yellow" class="ml-1 text-xs">Foto</Badge>
+								<Badge color="yellow" title="Fotocromático" class="ml-1 text-xs">Foto</Badge>
+							{/if}
+							{#if item.isBlueCut}
+								<Badge color="indigo" title="Blue Cut (Blue Block)" class="ml-1 text-xs">Blue</Badge
+								>
+							{/if}
+							{#if item.isAR}
+								<Badge color="green" title="Antirreflejo (AR)" class="ml-1 text-xs">AR</Badge>
 							{/if}
 						</td>
 						<td class="px-4 py-3">
