@@ -110,9 +110,7 @@ function toRangeSemantic(r: {
  * Sort ranges by sphereMin, then sphereMax for deterministic ordering.
  */
 function sortRanges(ranges: RangeSemantic[]): RangeSemantic[] {
-	return [...ranges].sort(
-		(a, b) => a.sphereMin - b.sphereMin || a.sphereMax - b.sphereMax
-	);
+	return [...ranges].sort((a, b) => a.sphereMin - b.sphereMin || a.sphereMax - b.sphereMax);
 }
 
 /**
@@ -121,7 +119,14 @@ function sortRanges(ranges: RangeSemantic[]): RangeSemantic[] {
  */
 function rangesAreEqual(
 	oldRanges: LensOpticalRange[],
-	newRanges: { sphereMin: number; sphereMax: number; cylinderMin?: number | null; cylinderMax?: number | null; additionMin?: number | null; additionMax?: number | null }[]
+	newRanges: {
+		sphereMin: number;
+		sphereMax: number;
+		cylinderMin?: number | null;
+		cylinderMax?: number | null;
+		additionMin?: number | null;
+		additionMax?: number | null;
+	}[]
 ): boolean {
 	if (oldRanges.length !== newRanges.length) return false;
 	const oldSorted = sortRanges(oldRanges.map(toRangeSemantic));
@@ -140,9 +145,7 @@ function fmtDiopter(n: number): string {
  * Build a human-readable summary of an optical range set for audit history.
  * Example: "ESF -6.00 a +6.00 | ESF -4.00 a -0.25, CIL -2.00 a -0.25"
  */
-function summarizeRanges(
-	ranges: RangeSemantic[]
-): string {
+function summarizeRanges(ranges: RangeSemantic[]): string {
 	if (ranges.length === 0) return '(sin rangos)';
 	const sorted = sortRanges(ranges);
 	return sorted
@@ -441,151 +444,152 @@ export const updateLensCatalogItemForm = form(
 		} = data;
 		let { supplierId, materialId } = rest;
 
-		const { oldItem, result, rangesChanged, oldRangesSummary, newRangesSummary } = await db.transaction(async (tx) => {
-			const now = new Date();
+		const { oldItem, result, rangesChanged, oldRangesSummary, newRangesSummary } =
+			await db.transaction(async (tx) => {
+				const now = new Date();
 
-			const [existing] = await tx
-				.select()
-				.from(lensCatalogItems)
-				.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)));
-			if (!existing) {
-				invalid('Item de catálogo no encontrado');
-			}
-
-			// Capture old state for audit
-			const oldItem = { ...existing };
-
-			// Fetch current optical ranges for comparison
-			const currentRanges = await tx
-				.select()
-				.from(lensOpticalRanges)
-				.where(eq(lensOpticalRanges.lensCatalogItemId, id));
-
-			// Handle pending supplier
-			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-				const [existingSup] = await tx
+				const [existing] = await tx
 					.select()
-					.from(suppliers)
-					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-				if (existingSup) {
-					supplierId = existingSup.id;
-				} else {
-					const [newSupplier] = await tx
-						.insert(suppliers)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingSupplierName,
-							type: 'DISTRIBUTOR',
-							primaryPhone: '',
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					supplierId = newSupplier.id;
+					.from(lensCatalogItems)
+					.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)));
+				if (!existing) {
+					invalid('Item de catálogo no encontrado');
 				}
-			}
 
-			// Handle pending material
-			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-				const [existingMat] = await tx
+				// Capture old state for audit
+				const oldItem = { ...existing };
+
+				// Fetch current optical ranges for comparison
+				const currentRanges = await tx
 					.select()
-					.from(lensMaterials)
-					.where(
-						and(ilike(lensMaterials.name, pendingMaterialName), isNull(lensMaterials.deletedAt))
-					);
+					.from(lensOpticalRanges)
+					.where(eq(lensOpticalRanges.lensCatalogItemId, id));
 
-				if (existingMat) {
-					materialId = existingMat.id;
-				} else {
-					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-					const [newMaterial] = await tx
-						.insert(lensMaterials)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingMaterialName,
-							code,
-							refractiveIndex: pendingMaterialRefractiveIndex ?? null,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					materialId = newMaterial.id;
+				// Handle pending supplier
+				if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+					const [existingSup] = await tx
+						.select()
+						.from(suppliers)
+						.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
+
+					if (existingSup) {
+						supplierId = existingSup.id;
+					} else {
+						const [newSupplier] = await tx
+							.insert(suppliers)
+							.values({
+								id: crypto.randomUUID(),
+								name: pendingSupplierName,
+								type: 'DISTRIBUTOR',
+								primaryPhone: '',
+								createdAt: now,
+								updatedAt: now
+							})
+							.returning();
+						supplierId = newSupplier.id;
+					}
 				}
-			}
 
-			const [updated] = await tx
-				.update(lensCatalogItems)
-				.set({
-					...rest,
-					...(supplierId !== undefined && { supplierId }),
-					...(materialId !== undefined && { materialId }),
-					updatedAt: now
-				})
-				.where(eq(lensCatalogItems.id, id))
-				.returning();
+				// Handle pending material
+				if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+					const [existingMat] = await tx
+						.select()
+						.from(lensMaterials)
+						.where(
+							and(ilike(lensMaterials.name, pendingMaterialName), isNull(lensMaterials.deletedAt))
+						);
 
-			if (!updated) invalid('Error actualizando item');
+					if (existingMat) {
+						materialId = existingMat.id;
+					} else {
+						const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
+						const [newMaterial] = await tx
+							.insert(lensMaterials)
+							.values({
+								id: crypto.randomUUID(),
+								name: pendingMaterialName,
+								code,
+								refractiveIndex: pendingMaterialRefractiveIndex ?? null,
+								createdAt: now,
+								updatedAt: now
+							})
+							.returning();
+						materialId = newMaterial.id;
+					}
+				}
 
-			// Handle optical ranges — only delete/reinsert if semantically changed
-			let insertedRanges: LensOpticalRange[] = [];
-			let rangesChanged = false;
-			let oldRangesSummary = '';
-			let newRangesSummary = '';
-
-			if (ranges) {
-				// Normalize incoming ranges for comparison
-				const normalizedNew = ranges.map((r) => {
-					const cylA = r.cylinderMin ?? null;
-					const cylB = r.cylinderMax ?? null;
-					const addA = r.additionMin ?? null;
-					const addB = r.additionMax ?? null;
-					return {
-						sphereMin: r.sphereMin,
-						sphereMax: r.sphereMax,
-						cylinderMin: cylA != null && cylB != null ? Math.min(cylA, cylB) : cylA,
-						cylinderMax: cylA != null && cylB != null ? Math.max(cylA, cylB) : cylB,
-						additionMin: addA != null && addB != null ? Math.min(addA, addB) : addA,
-						additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB,
-						mirrorGroup: r.mirrorGroup ?? null
-					};
-				});
-
-				if (rangesAreEqual(currentRanges, normalizedNew)) {
-					// Ranges haven't changed — keep existing rows
-					insertedRanges = currentRanges;
-				} else {
-					// Ranges changed — delete and reinsert
-					rangesChanged = true;
-					oldRangesSummary = summarizeRanges(currentRanges.map(toRangeSemantic));
-					newRangesSummary = summarizeRanges(normalizedNew.map(toRangeSemantic));
-
-					await tx.delete(lensOpticalRanges).where(eq(lensOpticalRanges.lensCatalogItemId, id));
-
-					const rangeValues = normalizedNew.map((r) => ({
-						...r,
-						id: crypto.randomUUID(),
-						lensCatalogItemId: id,
-						createdAt: now,
+				const [updated] = await tx
+					.update(lensCatalogItems)
+					.set({
+						...rest,
+						...(supplierId !== undefined && { supplierId }),
+						...(materialId !== undefined && { materialId }),
 						updatedAt: now
-					}));
-					insertedRanges =
-						rangeValues.length > 0
-							? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
-							: [];
-				}
-			} else {
-				insertedRanges = currentRanges;
-			}
+					})
+					.where(eq(lensCatalogItems.id, id))
+					.returning();
 
-			return {
-				oldItem,
-				result: { ...updated, ranges: insertedRanges },
-				rangesChanged,
-				oldRangesSummary,
-				newRangesSummary
-			};
-		});
+				if (!updated) invalid('Error actualizando item');
+
+				// Handle optical ranges — only delete/reinsert if semantically changed
+				let insertedRanges: LensOpticalRange[] = [];
+				let rangesChanged = false;
+				let oldRangesSummary = '';
+				let newRangesSummary = '';
+
+				if (ranges) {
+					// Normalize incoming ranges for comparison
+					const normalizedNew = ranges.map((r) => {
+						const cylA = r.cylinderMin ?? null;
+						const cylB = r.cylinderMax ?? null;
+						const addA = r.additionMin ?? null;
+						const addB = r.additionMax ?? null;
+						return {
+							sphereMin: r.sphereMin,
+							sphereMax: r.sphereMax,
+							cylinderMin: cylA != null && cylB != null ? Math.min(cylA, cylB) : cylA,
+							cylinderMax: cylA != null && cylB != null ? Math.max(cylA, cylB) : cylB,
+							additionMin: addA != null && addB != null ? Math.min(addA, addB) : addA,
+							additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB,
+							mirrorGroup: r.mirrorGroup ?? null
+						};
+					});
+
+					if (rangesAreEqual(currentRanges, normalizedNew)) {
+						// Ranges haven't changed — keep existing rows
+						insertedRanges = currentRanges;
+					} else {
+						// Ranges changed — delete and reinsert
+						rangesChanged = true;
+						oldRangesSummary = summarizeRanges(currentRanges.map(toRangeSemantic));
+						newRangesSummary = summarizeRanges(normalizedNew.map(toRangeSemantic));
+
+						await tx.delete(lensOpticalRanges).where(eq(lensOpticalRanges.lensCatalogItemId, id));
+
+						const rangeValues = normalizedNew.map((r) => ({
+							...r,
+							id: crypto.randomUUID(),
+							lensCatalogItemId: id,
+							createdAt: now,
+							updatedAt: now
+						}));
+						insertedRanges =
+							rangeValues.length > 0
+								? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
+								: [];
+					}
+				} else {
+					insertedRanges = currentRanges;
+				}
+
+				return {
+					oldItem,
+					result: { ...updated, ranges: insertedRanges },
+					rangesChanged,
+					oldRangesSummary,
+					newRangesSummary
+				};
+			});
 
 		// Log the update after transaction succeeds
 		const auditCtx = getAuditContext();
