@@ -168,8 +168,8 @@
 		</TableBodyCell>
 		<TableBodyCell class="text-right font-mono font-medium text-slate-800">
 			{formatPrice(item.basePrice)}
-			<span class="block text-[10px] font-normal text-slate-400">
-				{item.pricingUnit === 'PAIR' ? 'par' : 'und'}
+			<span class="font-normal text-slate-400">
+				({item.pricingUnit === 'PAIR' ? 'par' : 'und'})
 			</span>
 		</TableBodyCell>
 	{/snippet}
