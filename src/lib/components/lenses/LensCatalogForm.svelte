@@ -1012,18 +1012,17 @@
 
 		<div class="mt-4">
 			<Label class="mb-2 text-sm text-slate-600">Características incluidas</Label>
-			<!-- Hidden fallbacks ensure "false" is sent when checkboxes are unchecked -->
-			<input type="hidden" name="isPhotochromic" value="false" />
-			<input type="hidden" name="isBlueCut" value="false" />
-			<input type="hidden" name="isAR" value="false" />
+			<input type="hidden" name="isPhotochromic" value={String(formData.isPhotochromic)} />
+			<input type="hidden" name="isBlueCut" value={String(formData.isBlueCut)} />
+			<input type="hidden" name="isAR" value={String(formData.isAR)} />
 			<div class="flex flex-wrap items-center gap-6">
-				<Checkbox name="isPhotochromic" bind:checked={formData.isPhotochromic}>
+				<Checkbox bind:checked={formData.isPhotochromic}>
 					Fotocromático
 				</Checkbox>
-				<Checkbox name="isBlueCut" bind:checked={formData.isBlueCut}>
+				<Checkbox bind:checked={formData.isBlueCut}>
 					Blue Cut (Blue Block)
 				</Checkbox>
-				<Checkbox name="isAR" bind:checked={formData.isAR}>Antirreflejo (AR)</Checkbox>
+				<Checkbox bind:checked={formData.isAR}>Antirreflejo (AR)</Checkbox>
 			</div>
 			<p class="mt-2 text-xs text-slate-400">
 				Marca las características que ya vienen incluidas en este cristal
