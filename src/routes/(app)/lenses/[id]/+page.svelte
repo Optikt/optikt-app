@@ -27,8 +27,10 @@
 	import {
 		LensType,
 		LensCatalogSource,
+		LensPricingUnit,
 		LENS_TYPE_LABELS,
-		LENS_SOURCE_LABELS
+		LENS_SOURCE_LABELS,
+		LENS_PRICING_UNIT_LABELS
 	} from '$lib/shared/enums';
 
 	let { data } = $props();
@@ -47,11 +49,8 @@
 		...(item.material ? { [item.material.id]: item.material.name } : {})
 	});
 
-	function getProfitMargin(base: number, sale: number | null, mounting: number | null): string {
-		if (!sale) return '—';
-		const totalCost = base + (mounting ?? 0);
-		if (totalCost === 0) return '—';
-		return (((sale - totalCost) / totalCost) * 100).toFixed(1) + '%';
+	function getPricingUnitLabel(unit: string): string {
+		return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
 	}
 
 	// Optical range display
@@ -335,46 +334,31 @@
 			<div class="space-y-6">
 				<!-- Pricing + Stock + Metadata (condensed into one card) -->
 				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<!-- Sale price hero -->
-					{#if item.salePrice != null}
-						<div class="mb-4 rounded-lg bg-blue-50 p-5 text-center">
-							<dt class="text-sm font-medium text-blue-600">Precio Venta</dt>
-							<dd class="mt-1 font-mono text-3xl font-bold text-blue-700">
-								{formatPrice(item.salePrice)}
-							</dd>
-						</div>
-					{/if}
+					<!-- Pricing unit hero -->
+					<div class="mb-4 rounded-lg bg-blue-50 p-5 text-center">
+						<dt class="text-sm font-medium text-blue-600">Precio Compra</dt>
+						<dd class="mt-1 font-mono text-3xl font-bold text-blue-700">
+							{formatPrice(item.basePrice)}
+						</dd>
+						<dd class="mt-1 text-xs font-medium text-blue-500">
+							{getPricingUnitLabel(item.pricingUnit)}
+						</dd>
+					</div>
 
 					<!-- Cost breakdown grid -->
 					<div class="mb-4 grid grid-cols-2 gap-3">
-						<div class="rounded-lg bg-slate-50 p-3">
-							<dt class="text-xs text-slate-500">Precio Base</dt>
-							<dd class="mt-0.5 font-mono text-base font-medium text-slate-700">
-								{formatPrice(item.basePrice)}
-							</dd>
-						</div>
 						<div class="rounded-lg bg-amber-50 p-3">
-							<dt class="text-xs text-amber-600">Montaje</dt>
+							<dt class="text-xs text-amber-600">Montaje (par)</dt>
 							<dd class="mt-0.5 font-mono text-base font-medium text-amber-700">
 								{item.mountingPrice != null ? formatPrice(item.mountingPrice) : '—'}
 							</dd>
 						</div>
-					</div>
-
-					<!-- Margin -->
-					<div class="mb-5 rounded-lg bg-green-50 p-3">
-						<div class="flex items-center justify-between">
-							<dt class="text-sm text-green-600">Margen Neto</dt>
-							<dd class="text-xl font-bold text-green-700">
-								{getProfitMargin(item.basePrice, item.salePrice, item.mountingPrice)}
+						<div class="rounded-lg bg-green-50 p-3">
+							<dt class="text-xs text-green-600">Multiplicador Sugerido</dt>
+							<dd class="mt-0.5 font-mono text-base font-medium text-green-700">
+								{item.suggestedMultiplier != null ? `×${item.suggestedMultiplier}` : '—'}
 							</dd>
 						</div>
-						{#if item.salePrice != null}
-							<p class="mt-1 text-xs text-green-600/70">
-								Ganancia: {formatPrice(item.salePrice - item.basePrice - (item.mountingPrice ?? 0))} por
-								lente
-							</p>
-						{/if}
 					</div>
 
 					<!-- Stock + Metadata -->
