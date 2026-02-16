@@ -18,6 +18,16 @@ const CoercedInteger = v.pipe(
 	v.pipe(v.number(), v.integer())
 );
 
+// Coerce checkbox value ("on"/"true"/"false" / absent) to boolean
+const CoercedBoolean = v.pipe(
+	v.union([v.string(), v.boolean()]),
+	v.transform((val) => {
+		if (typeof val === 'boolean') return val;
+		return val === 'on' || val === 'true';
+	}),
+	v.boolean()
+);
+
 // ============================================================================
 // LENS MATERIALS
 // ============================================================================
@@ -115,9 +125,9 @@ export const CreateLensCatalogItemSchema = v.object({
 		v.pipe(v.array(OpticalRangeSchema), v.minLength(1, 'Se requiere al menos un rango óptico'))
 	),
 	baseFeatures: v.optional(v.array(v.string())),
-	isPhotochromic: v.optional(v.boolean(), false),
-	isBlueCut: v.optional(v.boolean(), false),
-	isAR: v.optional(v.boolean(), false),
+	isPhotochromic: v.optional(CoercedBoolean, false),
+	isBlueCut: v.optional(CoercedBoolean, false),
+	isAR: v.optional(CoercedBoolean, false),
 	basePrice: v.pipe(CoercedNumber, v.minValue(0, 'Precio de compra debe ser ≥ 0')),
 	salePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0, 'Precio de venta debe ser ≥ 0'))),
 	mountingPrice: v.optional(v.pipe(CoercedNumber, v.minValue(0, 'Precio de montaje debe ser ≥ 0'))),
@@ -155,9 +165,9 @@ export const UpdateLensCatalogItemSchema = v.object({
 		)
 	),
 	baseFeatures: v.optional(v.array(v.string())),
-	isPhotochromic: v.optional(v.boolean()),
-	isBlueCut: v.optional(v.boolean()),
-	isAR: v.optional(v.boolean()),
+	isPhotochromic: v.optional(CoercedBoolean),
+	isBlueCut: v.optional(CoercedBoolean),
+	isAR: v.optional(CoercedBoolean),
 	basePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
 	salePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
 	mountingPrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
@@ -165,7 +175,7 @@ export const UpdateLensCatalogItemSchema = v.object({
 	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
 	refractiveIndex: v.optional(v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))),
 	notes: v.optional(v.string()),
-	isActive: v.optional(v.boolean())
+	isActive: v.optional(CoercedBoolean)
 });
 
 // ============================================================================

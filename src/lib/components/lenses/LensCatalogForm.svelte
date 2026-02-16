@@ -1012,6 +1012,10 @@
 
 		<div class="mt-4">
 			<Label class="mb-2 text-sm text-slate-600">Características incluidas</Label>
+			<!-- Hidden fallbacks ensure "false" is sent when checkboxes are unchecked -->
+			<input type="hidden" name="isPhotochromic" value="false" />
+			<input type="hidden" name="isBlueCut" value="false" />
+			<input type="hidden" name="isAR" value="false" />
 			<div class="flex flex-wrap items-center gap-6">
 				<Checkbox name="isPhotochromic" bind:checked={formData.isPhotochromic}>
 					Fotocromático
