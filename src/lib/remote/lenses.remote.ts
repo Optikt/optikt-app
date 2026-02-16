@@ -327,8 +327,10 @@ export const createLensCatalogItemForm = form(
 			return { ...item, ranges: insertedRanges };
 		});
 
-		// Log the creation after transaction succeeds
-		await auditService.logCreate('lens_catalog_item', result, getAuditContext());
+		// Log the creation after transaction succeeds (exclude ranges — they are separate entities)
+		await auditService.logCreate('lens_catalog_item', result, getAuditContext(), {
+			excludeFields: ['ranges']
+		});
 
 		return result;
 	}
@@ -465,8 +467,10 @@ export const updateLensCatalogItemForm = form(
 			return { oldItem, result: { ...updated, ranges: insertedRanges } };
 		});
 
-		// Log the update after transaction succeeds
-		await auditService.logUpdate('lens_catalog_item', id, oldItem, result, getAuditContext());
+		// Log the update after transaction succeeds (exclude ranges — they are separate entities)
+		await auditService.logUpdate('lens_catalog_item', id, oldItem, result, getAuditContext(), {
+			excludeFields: ['ranges']
+		});
 
 		return result;
 	}
