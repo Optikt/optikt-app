@@ -461,9 +461,7 @@
 			scrollToFirstError();
 			return;
 		}
-		currentCreateForm.result
-
-		const result = currentCreateForm.result
+		const result = currentCreateForm.result;
 		toast.success('Lente agregado al catálogo');
 		goto(resolve(result ? `/lenses/${result.id}` : '/lenses'));
 	}
@@ -1016,12 +1014,8 @@
 			<input type="hidden" name="isBlueCut" value={String(formData.isBlueCut)} />
 			<input type="hidden" name="isAR" value={String(formData.isAR)} />
 			<div class="flex flex-wrap items-center gap-6">
-				<Checkbox bind:checked={formData.isPhotochromic}>
-					Fotocromático
-				</Checkbox>
-				<Checkbox bind:checked={formData.isBlueCut}>
-					Blue Cut (Blue Block)
-				</Checkbox>
+				<Checkbox bind:checked={formData.isPhotochromic}>Fotocromático</Checkbox>
+				<Checkbox bind:checked={formData.isBlueCut}>Blue Cut (Blue Block)</Checkbox>
 				<Checkbox bind:checked={formData.isAR}>Antirreflejo (AR)</Checkbox>
 			</div>
 			<p class="mt-2 text-xs text-slate-400">
