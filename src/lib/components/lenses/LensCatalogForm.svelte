@@ -461,8 +461,11 @@
 			scrollToFirstError();
 			return;
 		}
+		currentCreateForm.result
+
+		const result = currentCreateForm.result
 		toast.success('Lente agregado al catálogo');
-		goto(resolve('/lenses'));
+		goto(resolve(result ? `/lenses/${result.id}` : '/lenses'));
 	}
 
 	// Handle update result
@@ -474,7 +477,7 @@
 			return;
 		}
 		toast.success('Lente actualizado');
-		goto(resolve('/lenses'));
+		goto(resolve(`/lenses/${item!.id}`));
 	}
 </script>
 
