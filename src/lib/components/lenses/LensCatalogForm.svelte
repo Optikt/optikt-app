@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { Button, Label, Input, Select, Checkbox, Textarea } from 'flowbite-svelte';
+	import { Label, Input, Select, Checkbox, Textarea } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
 	import { CreatableSelect, type SelectOption, type PendingEntity } from '$lib/components/ui';
+	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
 		LensType,
 		LensCatalogSource,
@@ -483,7 +484,7 @@
 	}
 </script>
 
-<div class="mx-auto max-w-4xl">
+<div class="mx-auto max-w-4xl pb-24">
 	{#if isEdit && item}
 		<!-- UPDATE FORM -->
 		<form
@@ -1089,15 +1090,9 @@
 {/snippet}
 
 {#snippet formActions()}
-	<div class="flex justify-end gap-3 pb-8">
-		<Button color="alternative" href={cancelHref} disabled={isSubmitting}>Cancelar</Button>
-		<Button type="submit" color="blue" disabled={isSubmitting}>
-			{#if isSubmitting}
-				<span
-					class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-				></span>
-			{/if}
-			{isEdit ? 'Actualizar' : 'Agregar al Catálogo'}
-		</Button>
-	</div>
+	<FormActions
+		primaryLabel={isEdit ? 'Actualizar' : 'Agregar al Catálogo'}
+		{cancelHref}
+		{isSubmitting}
+	/>
 {/snippet}
