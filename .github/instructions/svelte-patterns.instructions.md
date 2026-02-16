@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.svelte,**/*.ts,**/+page.server.ts,**/+layout.server.ts"
+applyTo: '**/*.svelte,**/*.ts,**/+page.server.ts,**/+layout.server.ts'
 ---
 
 # Svelte & SvelteKit Patterns
@@ -25,6 +25,7 @@ applyTo: "**/*.svelte,**/*.ts,**/+page.server.ts,**/+layout.server.ts"
 ## Component Self-Containment Rule
 
 If a component performs a specific action (toggle, delete, reactivate), it should import and call the remote function internally. Pass only the data needed and emit events (`onSuccess`, `onError`) for parent coordination.
+
 - **Generic components** (like `ConfirmModal`): take callbacks
 - **Domain-specific components**: call their own remotes
 - For form inputs, use `FormInput` (includes Labels + Inputs) and `FormTextarea`
@@ -34,7 +35,7 @@ If a component performs a specific action (toggle, delete, reactivate), it shoul
 | Function          | Use Case                         |
 | ----------------- | -------------------------------- |
 | **`query`**       | Read data (GET operations)       |
-| **`query.batch`** | Multiple queries, avoid N+1     |
+| **`query.batch`** | Multiple queries, avoid N+1      |
 | **`form`**        | Form submissions with validation |
 | **`command`**     | Button clicks, non-form actions  |
 
@@ -67,11 +68,13 @@ When using `form` remote functions inside modals, validation issues persist afte
 ```
 
 For update forms with existing IDs:
+
 ```ts
 const currentUpdateForm = $derived(myForm.for(`${item.id}-${formInstanceId}`));
 ```
 
 Key points:
+
 - `untrack()` prevents the effect from re-triggering when updating state
 - Each modal open creates a fresh form instance with cleared validation
 - Use `crypto.randomUUID()` for collision-free IDs

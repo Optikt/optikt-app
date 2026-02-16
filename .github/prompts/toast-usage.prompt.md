@@ -30,8 +30,8 @@ toast.warning('Be careful');
 
 ```ts
 toast('Event created', {
-  description: 'Monday, January 3rd at 6:00pm',
-  icon: MyIconComponent
+	description: 'Monday, January 3rd at 6:00pm',
+	icon: MyIconComponent
 });
 ```
 
@@ -39,10 +39,10 @@ toast('Event created', {
 
 ```ts
 toast('Event created', {
-  action: {
-    label: 'Undo',
-    onClick: () => console.log('Undo')
-  }
+	action: {
+		label: 'Undo',
+		onClick: () => console.log('Undo')
+	}
 });
 ```
 
@@ -50,24 +50,24 @@ toast('Event created', {
 
 ```ts
 toast.promise(() => new Promise((resolve) => setTimeout(resolve, 2000)), {
-  loading: 'Loading',
-  success: 'Success',
-  error: 'Error'
+	loading: 'Loading',
+	success: 'Success',
+	error: 'Error'
 });
 
 // With result data
 toast.promise(promise, {
-  loading: 'Loading...',
-  success: (data) => `${data.name} has been added!`,
-  error: 'Error'
+	loading: 'Loading...',
+	success: (data) => `${data.name} has been added!`,
+	error: 'Error'
 });
 ```
 
 ### Custom Component
 
 ```ts
-toast(CustomComponent);           // styled
-toast.custom(HeadlessComponent);  // unstyled/headless
+toast(CustomComponent); // styled
+toast.custom(HeadlessComponent); // unstyled/headless
 ```
 
 ### Update a Toast
@@ -81,14 +81,14 @@ toast.success('Updated message', { id: toastId });
 
 ```ts
 const toastId = toast('Message');
-toast.dismiss(toastId);  // dismiss specific
-toast.dismiss();          // dismiss all
+toast.dismiss(toastId); // dismiss specific
+toast.dismiss(); // dismiss all
 ```
 
 ### Duration
 
 ```ts
-toast('Message', { duration: 10000 });          // 10 seconds
+toast('Message', { duration: 10000 }); // 10 seconds
 toast('Persistent', { duration: Number.POSITIVE_INFINITY }); // stays forever
 ```
 
@@ -96,8 +96,8 @@ toast('Persistent', { duration: Number.POSITIVE_INFINITY }); // stays forever
 
 ```ts
 toast('Event created', {
-  onDismiss: (t) => console.log(`Toast ${t.id} dismissed`),
-  onAutoClose: (t) => console.log(`Toast ${t.id} auto-closed`)
+	onDismiss: (t) => console.log(`Toast ${t.id} dismissed`),
+	onAutoClose: (t) => console.log(`Toast ${t.id} auto-closed`)
 });
 ```
 
@@ -105,15 +105,15 @@ toast('Event created', {
 
 ```ts
 toast('Hello', {
-  unstyled: true,
-  classes: {
-    toast: 'bg-blue-400',
-    title: 'text-red-400',
-    description: 'text-red-400',
-    actionButton: 'bg-zinc-400',
-    cancelButton: 'bg-orange-400',
-    closeButton: 'bg-lime-400'
-  }
+	unstyled: true,
+	classes: {
+		toast: 'bg-blue-400',
+		title: 'text-red-400',
+		description: 'text-red-400',
+		actionButton: 'bg-zinc-400',
+		cancelButton: 'bg-orange-400',
+		closeButton: 'bg-lime-400'
+	}
 });
 ```
 
