@@ -14,6 +14,12 @@ export enum LensCatalogSource {
 	LAB = 'LAB'
 }
 
+/** Whether the supplier prices per single lens or per pair */
+export enum LensPricingUnit {
+	UNIT = 'UNIT',
+	PAIR = 'PAIR'
+}
+
 /** Labels for display in Spanish */
 export const LENS_TYPE_LABELS: Record<LensType, string> = {
 	[LensType.MONOFOCAL]: 'Monofocal',
@@ -28,5 +34,12 @@ export const LENS_SOURCE_LABELS: Record<LensCatalogSource, string> = {
 	[LensCatalogSource.LAB]: 'Laboratorio'
 };
 
+/** Pricing unit labels */
+export const LENS_PRICING_UNIT_LABELS: Record<LensPricingUnit, string> = {
+	[LensPricingUnit.UNIT]: 'Por Unidad',
+	[LensPricingUnit.PAIR]: 'Por Par'
+};
+
 export const ALL_LENS_TYPES = Object.values(LensType) as LensType[];
 export const ALL_LENS_SOURCES = Object.values(LensCatalogSource) as LensCatalogSource[];
+export const ALL_LENS_PRICING_UNITS = Object.values(LensPricingUnit) as LensPricingUnit[];
