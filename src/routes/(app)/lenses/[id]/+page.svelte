@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SvelteMap } from 'svelte/reactivity';
 	import { Badge, Button } from 'flowbite-svelte';
 	import {
 		ArrowLeft,
@@ -24,13 +23,13 @@
 	import { ChangeHistoryModal } from '$lib/components/history';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import {
 		LensType,
 		LensCatalogSource,
 		LENS_TYPE_LABELS,
 		LENS_SOURCE_LABELS
 	} from '$lib/shared/enums';
-	import type { LensOpticalRange } from '$lib/server/db/schema/lenses';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
@@ -55,106 +54,7 @@
 		return (((sale - totalCost) / totalCost) * 100).toFixed(1) + '%';
 	}
 
-	// Optical range formatting
-	function formatDiopter(n: number): string {
-		return n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2);
-	}
-
-	function formatRange(min: number | null, max: number | null): string {
-		if (min === null && max === null) return '—';
-		if (min !== null && max !== null) return `${formatDiopter(min)} a ${formatDiopter(max)}`;
-		if (min !== null) return `desde ${formatDiopter(min)}`;
-		return `hasta ${formatDiopter(max!)}`;
-	}
-
-	/** Format cylinder range for display: show closer-to-zero value first (e.g. -0.25 a -2.00) */
-	function formatCylinderRange(min: number | null, max: number | null): string {
-		return formatRange(max, min);
-	}
-
-	function formatSymmetricSphere(absMin: number, absMax: number): string {
-		if (absMin === 0) return `±${absMax.toFixed(2)}`;
-		return `±${absMin.toFixed(2)} a ±${absMax.toFixed(2)}`;
-	}
-
-	type DisplayRange = {
-		id: string;
-		symmetric: boolean;
-		sphereLabel: string;
-		cylinderLabel: string | null;
-		additionLabel: string | null;
-	};
-
-	function collapseRangesForDisplay(ranges: LensOpticalRange[]): DisplayRange[] {
-		const result: DisplayRange[] = [];
-		const groups = new SvelteMap<string, LensOpticalRange[]>();
-		const standalone: LensOpticalRange[] = [];
-
-		for (const r of ranges) {
-			if (r.mirrorGroup) {
-				const group = groups.get(r.mirrorGroup) ?? [];
-				group.push(r);
-				groups.set(r.mirrorGroup, group);
-			} else {
-				standalone.push(r);
-			}
-		}
-
-		for (const [groupId, rows] of groups) {
-			if (rows.length === 1) {
-				const r = rows[0];
-				result.push({
-					id: groupId,
-					symmetric: false,
-					sphereLabel: formatRange(r.sphereMin, r.sphereMax),
-					cylinderLabel:
-						r.cylinderMin != null || r.cylinderMax != null
-							? formatCylinderRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
-							: null,
-					additionLabel:
-						r.additionMin != null || r.additionMax != null
-							? formatRange(r.additionMin ?? null, r.additionMax ?? null)
-							: null
-				});
-			} else {
-				const pos = rows.find((r) => r.sphereMin >= 0) ?? rows[0];
-				const absMin = Math.abs(pos.sphereMin);
-				const absMax = Math.abs(pos.sphereMax);
-				result.push({
-					id: groupId,
-					symmetric: true,
-					sphereLabel: formatSymmetricSphere(absMin, absMax),
-					cylinderLabel:
-						pos.cylinderMin != null || pos.cylinderMax != null
-							? formatCylinderRange(pos.cylinderMin ?? null, pos.cylinderMax ?? null)
-							: null,
-					additionLabel:
-						pos.additionMin != null || pos.additionMax != null
-							? formatRange(pos.additionMin ?? null, pos.additionMax ?? null)
-							: null
-				});
-			}
-		}
-
-		for (const r of standalone) {
-			result.push({
-				id: r.id,
-				symmetric: false,
-				sphereLabel: formatRange(r.sphereMin, r.sphereMax),
-				cylinderLabel:
-					r.cylinderMin != null || r.cylinderMax != null
-						? formatCylinderRange(r.cylinderMin ?? null, r.cylinderMax ?? null)
-						: null,
-				additionLabel:
-					r.additionMin != null || r.additionMax != null
-						? formatRange(r.additionMin ?? null, r.additionMax ?? null)
-						: null
-			});
-		}
-
-		return result;
-	}
-
+	// Optical range display
 	const displayRanges = collapseRangesForDisplay(item.ranges);
 
 	// Features list
