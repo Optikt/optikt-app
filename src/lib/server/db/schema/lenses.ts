@@ -22,6 +22,9 @@ import { suppliers } from './suppliers';
 /** Cristales terminados (en stock del proveedor) vs laboratorio (pedido a medida) */
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', ['FINISHED', 'LAB']);
 
+/** Whether the supplier prices per single lens (UNIT) or per pair (PAIR) */
+export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', ['UNIT', 'PAIR']);
+
 // ============================================================================
 // LENS MATERIALS
 // ============================================================================
@@ -100,8 +103,9 @@ export const lensCatalogItems = pgTable(
 		isPhotochromic: boolean('is_photochromic').notNull().default(false),
 		isBlueCut: boolean('is_blue_cut').notNull().default(false),
 		isAR: boolean('is_ar').notNull().default(false),
+		pricingUnit: lensPricingUnitEnum('pricing_unit').notNull().default('UNIT'),
 		basePrice: doublePrecision('base_price').notNull(),
-		salePrice: doublePrecision('sale_price'),
+		suggestedMultiplier: doublePrecision('suggested_multiplier'),
 		mountingPrice: doublePrecision('mounting_price'),
 		deliveryDays: integer('delivery_days'),
 		stock: integer(),
