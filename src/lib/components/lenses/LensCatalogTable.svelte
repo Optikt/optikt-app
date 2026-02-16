@@ -61,7 +61,7 @@
 				<th class="px-4 py-3">Material</th>
 				<th class="px-4 py-3">Tecnología</th>
 				<th class="px-4 py-3">Rangos</th>
-				<th class="px-4 py-3 text-right">Precio Venta</th>
+				<th class="px-4 py-3 text-right">Precio Compra</th>
 				<th class="px-4 py-3 text-right">Acciones</th>
 			</tr>
 		</thead>
@@ -169,11 +169,10 @@
 							{/if}
 						</td>
 						<td class="px-4 py-3 text-right font-mono font-medium text-slate-800">
-							{#if item.salePrice != null}
-								{formatPrice(item.salePrice)}
-							{:else}
-								<span class="text-xs text-slate-400 italic">Sin precio</span>
-							{/if}
+							{formatPrice(item.basePrice)}
+							<span class="block text-[10px] font-normal text-slate-400">
+								{item.pricingUnit === 'PAIR' ? 'par' : 'und'}
+							</span>
 						</td>
 						<td class="px-4 py-3">
 							<div class="flex justify-end gap-1">

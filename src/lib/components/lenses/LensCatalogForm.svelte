@@ -9,8 +9,10 @@
 	import {
 		LensType,
 		LensCatalogSource,
+		LensPricingUnit,
 		LENS_TYPE_LABELS,
-		LENS_SOURCE_LABELS
+		LENS_SOURCE_LABELS,
+		LENS_PRICING_UNIT_LABELS
 	} from '$lib/shared/enums';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -82,8 +84,9 @@
 		isPhotochromic: false,
 		isBlueCut: false,
 		isAR: false,
+		pricingUnit: LensPricingUnit.UNIT as LensPricingUnit,
 		basePrice: '0',
-		salePrice: '',
+		suggestedMultiplier: '',
 		mountingPrice: '',
 		deliveryDays: '',
 		stock: '0',
@@ -124,8 +127,9 @@
 					isPhotochromic: item!.isPhotochromic,
 					isBlueCut: item!.isBlueCut,
 					isAR: item!.isAR,
+					pricingUnit: (item!.pricingUnit as LensPricingUnit) ?? LensPricingUnit.UNIT,
 					basePrice: item!.basePrice.toString(),
-					salePrice: item!.salePrice?.toString() ?? '',
+					suggestedMultiplier: item!.suggestedMultiplier?.toString() ?? '',
 					mountingPrice: item!.mountingPrice?.toString() ?? '',
 					deliveryDays: item!.deliveryDays?.toString() ?? '',
 					stock: item!.stock?.toString() ?? '0',
@@ -931,9 +935,49 @@
 	<!-- Price, Delivery, Stock -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<h3 class="mb-4 text-lg font-semibold text-slate-800">Precio y Disponibilidad</h3>
+
+		<!-- Pricing unit selector -->
+		<div class="mb-5">
+			<Label class="mb-2 text-sm text-slate-600">¿Cómo cobra el proveedor?</Label>
+			<div class="grid gap-3 sm:grid-cols-2">
+				<button
+					type="button"
+					class="rounded-lg border-2 p-3 text-left transition-all {formData.pricingUnit ===
+					LensPricingUnit.UNIT
+						? 'border-blue-500 bg-blue-50/50'
+						: 'border-slate-200 hover:border-slate-300'}"
+					onclick={() => (formData.pricingUnit = LensPricingUnit.UNIT)}
+				>
+					<p class="text-sm font-semibold text-slate-800">
+						{LENS_PRICING_UNIT_LABELS[LensPricingUnit.UNIT]}
+					</p>
+					<p class="text-xs text-slate-500">El precio base es por un solo cristal</p>
+				</button>
+				<button
+					type="button"
+					class="rounded-lg border-2 p-3 text-left transition-all {formData.pricingUnit ===
+					LensPricingUnit.PAIR
+						? 'border-indigo-500 bg-indigo-50/50'
+						: 'border-slate-200 hover:border-slate-300'}"
+					onclick={() => (formData.pricingUnit = LensPricingUnit.PAIR)}
+				>
+					<p class="text-sm font-semibold text-slate-800">
+						{LENS_PRICING_UNIT_LABELS[LensPricingUnit.PAIR]}
+					</p>
+					<p class="text-xs text-slate-500">El precio base incluye ambos cristales</p>
+				</button>
+			</div>
+			<input type="hidden" name="pricingUnit" value={formData.pricingUnit} />
+		</div>
+
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
 			<div>
-				<Label for="lc_price" class="mb-2">Precio Compra ($) *</Label>
+				<Label for="lc_price" class="mb-2">
+					Precio Compra ($) *
+					<span class="ml-1 text-xs font-normal text-slate-400">
+						({formData.pricingUnit === LensPricingUnit.PAIR ? 'par' : 'unidad'})
+					</span>
+				</Label>
 				<Input
 					id="lc_price"
 					name="basePrice"
@@ -946,7 +990,10 @@
 				/>
 			</div>
 			<div>
-				<Label for="lc_mounting_price" class="mb-2">Precio Montaje ($)</Label>
+				<Label for="lc_mounting_price" class="mb-2">
+					Montaje ($)
+					<span class="ml-1 text-xs font-normal text-slate-400">(par)</span>
+				</Label>
 				<Input
 					id="lc_mounting_price"
 					name="mountingPrice"
@@ -959,17 +1006,21 @@
 				/>
 			</div>
 			<div>
-				<Label for="lc_sale_price" class="mb-2">Precio Venta ($)</Label>
+				<Label for="lc_multiplier" class="mb-2">
+					Multiplicador
+					<span class="ml-1 text-xs font-normal text-slate-400">(sugerido)</span>
+				</Label>
 				<Input
-					id="lc_sale_price"
-					name="salePrice"
-					bind:value={formData.salePrice}
+					id="lc_multiplier"
+					name="suggestedMultiplier"
+					bind:value={formData.suggestedMultiplier}
 					type="number"
-					step="0.01"
-					min="0"
-					placeholder="0.00"
+					step="0.1"
+					min="1"
+					placeholder="2.5"
 					class="font-mono placeholder:text-slate-400"
 				/>
+				<p class="mt-1 text-xs text-slate-400">Se aplica al total en la venta (ej: ×2, ×2.5)</p>
 			</div>
 			<div>
 				<Label for="lc_delivery" class="mb-2">Días de entrega</Label>
