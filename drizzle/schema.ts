@@ -1,6 +1,7 @@
-import { pgTable, varchar, index, uniqueIndex, uuid, timestamp, date, json, foreignKey, doublePrecision, boolean, integer, unique } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, varchar, index, uniqueIndex, uuid, timestamp, date, json, foreignKey, doublePrecision, boolean, integer, unique } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
+export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', ['UNIT', 'PAIR']);
 
 
 export const alembicVersion = pgTable("alembic_version", {
@@ -50,8 +51,9 @@ export const lensCatalogItems = pgTable("lens_catalog_items", {
 	materialId: uuid("material_id").notNull(),
 	baseFeatures: json("base_features"),
 	isPhotochromic: boolean("is_photochromic").notNull(),
+	pricingUnit: lensPricingUnitEnum("pricing_unit").notNull().default('UNIT'),
 	basePrice: doublePrecision("base_price").notNull(),
-	salePrice: doublePrecision("sale_price"),
+	suggestedMultiplier: doublePrecision("suggested_multiplier"),
 	mountingPrice: doublePrecision("mounting_price"),
 	deliveryDays: integer("delivery_days"),
 	stock: integer(),
