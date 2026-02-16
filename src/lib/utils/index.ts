@@ -4,3 +4,4 @@ export * from './form';
 export * from './rif';
 export * from './generateUUID';
 export * from './format';
+export * from './opticalRange';
