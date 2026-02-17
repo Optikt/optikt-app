@@ -39,13 +39,14 @@ export function formatDate(
 ): string {
 	if (!date) return '—';
 
-	const { year = 'numeric', month = 'long', day = 'numeric' } = opt;
+	const { year = 'numeric', month = 'long', day = 'numeric', ...rest } = opt;
 
 	const d = typeof date === 'string' ? new Date(date) : date;
 	return new Intl.DateTimeFormat('es-VE', {
 		year,
 		month,
-		day
+		day,
+		...rest
 	}).format(d);
 }
 
