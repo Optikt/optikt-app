@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { SquarePen, Trash2, Eye, User } from '@lucide/svelte';
+	import { SquarePen, Trash2, User, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { resolve } from '$app/paths';
 	import { deleteCustomerById } from '$lib/remote/customers.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, getFullName } from '$lib/utils';
 	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
-	import { CustomerViewModal } from '$lib/components/customers';
 	import type { Customer } from '$lib/server/db/schema';
 
 	interface Props {
@@ -19,14 +19,8 @@
 
 	// Modal state
 	let showDeleteModal = $state(false);
-	let showViewModal = $state(false);
 	let selectedCustomer = $state<Customer | null>(null);
 	let deleteLoading = $state(false);
-
-	function openView(customer: Customer) {
-		selectedCustomer = customer;
-		showViewModal = true;
-	}
 
 	function openDelete(customer: Customer) {
 		selectedCustomer = customer;
@@ -48,10 +42,6 @@
 			deleteLoading = false;
 		}
 	}
-
-	function getFullName(customer: Customer): string {
-		return `${customer.firstName} ${customer.lastName}`;
-	}
 </script>
 
 <DataTable
@@ -71,11 +61,6 @@
 	{#snippet row(customer)}
 		<TableBodyCell>
 			<div class="flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100"
-				>
-					<User class="h-5 w-5 text-primary-600" />
-				</div>
 				<div>
 					<div class="font-medium text-slate-900">{getFullName(customer)}</div>
 				</div>
@@ -93,7 +78,12 @@
 	{/snippet}
 
 	{#snippet actions(customer)}
-		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(customer)} />
+		<ActionButton
+			icon={Eye}
+			title="Ver detalles y recetas"
+			href={resolve(`/lenses/${customer.id}`)}
+		/>
+
 		<ActionButton
 			icon={SquarePen}
 			title="Editar cliente"
@@ -108,11 +98,6 @@
 		/>
 	{/snippet}
 </DataTable>
-
-<!-- View Modal -->
-{#if selectedCustomer}
-	<CustomerViewModal bind:open={showViewModal} customer={selectedCustomer} />
-{/if}
 
 <!-- Delete Confirmation -->
 <ConfirmModal
