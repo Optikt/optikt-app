@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell, Badge, Popover } from 'flowbite-svelte';
-	import { Pencil, Trash2, Eye, Layers } from '@lucide/svelte';
+	import { Trash2, Eye, Layers, SquarePen } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
@@ -177,7 +177,7 @@
 	{#snippet actions(item)}
 		<ActionButton icon={Eye} title="Ver detalles" href={resolve(`/lenses/${item.id}`)} />
 		<ActionButton
-			icon={Pencil}
+			icon={SquarePen}
 			title="Editar"
 			color="blue"
 			href={resolve(`/lenses/${item.id}/edit`)}

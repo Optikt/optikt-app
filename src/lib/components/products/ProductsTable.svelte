@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
-	import { Eye, Pencil, Trash2, TriangleAlert, Package } from '@lucide/svelte';
+	import { Eye, Trash2, TriangleAlert, Package, SquarePen } from '@lucide/svelte';
 	import { ProductType, PRODUCT_TYPE_LABELS } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice } from '$lib/utils';
@@ -95,7 +95,7 @@
 				onclick={() => onView?.(product)}
 			/>
 			<ActionButton
-				icon={Pencil}
+				icon={SquarePen}
 				title="Editar"
 				color="blue"
 				hidden={!onEdit}
