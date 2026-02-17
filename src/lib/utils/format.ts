@@ -4,6 +4,7 @@
  */
 
 import type { Customer } from '$lib/server/db/schema';
+import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
 
 /**
  * Format a number as USD currency (es-VE locale)
@@ -52,4 +53,17 @@ export function formatDate(
 
 export function getFullName(c: Customer): string {
 	return `${c.firstName} ${c.lastName}`;
+}
+
+// Format optical value for display
+export function formatOpticalValue(value: number | null | undefined): string {
+	if (value === null || value === undefined) return '—';
+	const sign = value >= 0 ? '+' : '';
+	return `${sign}${value.toFixed(2)}`;
+}
+
+// Format lens type
+export function formatLensType(type: string | null | undefined): string {
+	if (!type) return '—';
+	return LENS_TYPE_LABELS[type as LensType] ?? type;
 }
