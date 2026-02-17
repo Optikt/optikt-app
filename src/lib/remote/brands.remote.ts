@@ -23,6 +23,22 @@ import {
 import type { Brand } from '$lib/server/db/schema';
 import { auditService, type AuditContext } from '$lib/server/audit';
 
+// Types for paginated response
+export interface PaginatedBrands {
+	brands: Brand[];
+	total: number;
+	page: number;
+	perPage: number;
+	totalPages: number;
+}
+
+// Types for delete check
+export interface BrandDeleteCheck {
+	canDelete: boolean;
+	productCount: number;
+	brandName: string;
+}
+
 /**
  * Helper to build audit context from the request event
  */
@@ -33,15 +49,6 @@ function getAuditContext(): AuditContext {
 		ipAddress: event.getClientAddress(),
 		userAgent: event.request.headers.get('user-agent')
 	};
-}
-
-// Types for paginated response
-export interface PaginatedBrands {
-	brands: Brand[];
-	total: number;
-	page: number;
-	perPage: number;
-	totalPages: number;
 }
 
 /**
@@ -141,13 +148,6 @@ export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void
 	// Log the deletion
 	await auditService.logDelete('brand', existing, getAuditContext());
 });
-
-// Types for delete check
-export interface BrandDeleteCheck {
-	canDelete: boolean;
-	productCount: number;
-	brandName: string;
-}
 
 /**
  * Check if a brand can be safely deleted
