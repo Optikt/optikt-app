@@ -33,13 +33,19 @@ export function formatCurrency(value: number): string {
  * Format a date for display (es-VE locale, long month)
  * Example: formatDate(new Date()) → "12 de febrero de 2026"
  */
-export function formatDate(date: Date | string | null): string {
+export function formatDate(
+	date: Date | string | null,
+	opt: Intl.DateTimeFormatOptions = {}
+): string {
 	if (!date) return '—';
+
+	const { year = 'numeric', month = 'long', day = 'numeric' } = opt;
+
 	const d = typeof date === 'string' ? new Date(date) : date;
 	return new Intl.DateTimeFormat('es-VE', {
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric'
+		year,
+		month,
+		day
 	}).format(d);
 }
 
