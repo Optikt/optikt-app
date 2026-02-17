@@ -81,7 +81,7 @@
 		<ActionButton
 			icon={Eye}
 			title="Ver detalles y recetas"
-			href={resolve(`/lenses/${customer.id}`)}
+			href={resolve(`/customers/${customer.id}`)}
 		/>
 
 		<ActionButton
