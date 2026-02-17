@@ -3,7 +3,7 @@
  * Single source of truth for price, currency, and date formatting across the app
  */
 
-import type { Customer } from "$lib/server/db/schema";
+import type { Customer } from '$lib/server/db/schema';
 
 /**
  * Format a number as USD currency (es-VE locale)
@@ -42,7 +42,6 @@ export function formatDate(date: Date | string | null): string {
 		day: 'numeric'
 	}).format(d);
 }
-
 
 export function getFullName(c: Customer): string {
 	return `${c.firstName} ${c.lastName}`;
