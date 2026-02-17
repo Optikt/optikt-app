@@ -3,7 +3,7 @@
  * Single source of truth for price, currency, and date formatting across the app
  */
 
-import type { Customer } from '$lib/server/db/schema';
+import type { Customer, Prescription } from '$lib/server/db/schema';
 import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
 
 /**
@@ -66,4 +66,23 @@ export function formatOpticalValue(value: number | null | undefined): string {
 export function formatLensType(type: string | null | undefined): string {
 	if (!type) return '—';
 	return LENS_TYPE_LABELS[type as LensType] ?? type;
+}
+
+/**
+ * Format axis (integer)
+ */
+export function formatAxis(value: number | null | undefined): string {
+	if (value === null || value === undefined) return '—';
+	return `${value}°`;
+}
+
+/**
+ * Format PD
+ */
+export function formatPd(prescription: Prescription): string {
+	if (prescription.pd) return `${prescription.pd}mm`;
+	if (prescription.pdRight && prescription.pdLeft) {
+		return `${prescription.pdRight}/${prescription.pdLeft}mm`;
+	}
+	return '—';
 }
