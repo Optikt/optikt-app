@@ -87,7 +87,6 @@ export function formatPd(prescription: Prescription): string {
 	return '—';
 }
 
-
 /**
  * Calculate the profit margin between purchase and sale prices
  * @param purchase - The purchase price
@@ -97,4 +96,11 @@ export function formatPd(prescription: Prescription): string {
 export function getProfitMargin(purchase: number, sale: number): string {
 	if (purchase === 0) return '0.0%';
 	return (((sale - purchase) / purchase) * 100).toFixed(1) + '%';
+}
+
+
+// Format phone for display
+export function formatPhone(phone: string | null | undefined): string {
+	if (!phone) return '-';
+	return phone;
 }

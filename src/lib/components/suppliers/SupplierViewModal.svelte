@@ -10,8 +10,9 @@
 		User,
 		FileText
 	} from '@lucide/svelte';
-	import { SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
+	import { getSupplierBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
+	import { formatPhone } from '$lib/utils';
 
 	interface Props {
 		open: boolean;
@@ -31,26 +32,6 @@
 		open = false;
 		onEdit?.();
 	}
-
-	// Format phone for display
-	function formatPhone(phone: string | null | undefined): string {
-		if (!phone) return '-';
-		return phone;
-	}
-
-	// Get type badge color
-	function getTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' {
-		switch (type) {
-			case 'DISTRIBUTOR':
-				return 'blue';
-			case 'LABORATORY':
-				return 'green';
-			case 'BOTH':
-				return 'purple';
-			default:
-				return 'blue';
-		}
-	}
 </script>
 
 <Modal bind:open size="lg" title="Detalles del Proveedor" outsideclose onclose={handleClose}>
@@ -64,9 +45,8 @@
 						<p class="mt-1 font-mono text-sm text-slate-500">{supplier.rif}</p>
 					{/if}
 				</div>
-				<Badge color={getTypeBadgeColor(supplier.type)} class="text-sm">
-					{SUPPLIER_TYPE_LABELS[supplier.type as keyof typeof SUPPLIER_TYPE_LABELS] ??
-						supplier.type}
+				<Badge color={getSupplierBadgeColor(supplier.type)} class="text-sm">
+					{getSupplierTypeLabel(supplier.type)}
 				</Badge>
 			</div>
 
