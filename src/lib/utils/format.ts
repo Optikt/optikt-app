@@ -86,3 +86,15 @@ export function formatPd(prescription: Prescription): string {
 	}
 	return '—';
 }
+
+
+/**
+ * Calculate the profit margin between purchase and sale prices
+ * @param purchase - The purchase price
+ * @param sale - The sale price
+ * @returns The profit margin as a percentage string
+ */
+export function getProfitMargin(purchase: number, sale: number): string {
+	if (purchase === 0) return '0.0%';
+	return (((sale - purchase) / purchase) * 100).toFixed(1) + '%';
+}
