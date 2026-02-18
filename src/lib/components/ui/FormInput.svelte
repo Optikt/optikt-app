@@ -33,7 +33,8 @@
 		size = 'md',
 		class: className,
 		required = false,
-		title
+		title,
+		step
 	}: Props = $props();
 
 	// Use name as fallback for id (for the label's "for" attribute)
@@ -63,6 +64,7 @@
 		color={hasError ? 'red' : undefined}
 		{required}
 		{title}
+		{step}
 	/>
 	{#if displayError}
 		<Helper color="red">{displayError}</Helper>
