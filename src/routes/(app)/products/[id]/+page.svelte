@@ -16,6 +16,7 @@
 		getProductTypeLabel,
 		requiresStockTracking
 	} from '$lib/shared/enums';
+	import { isLowStock } from '$lib/utils/products.js';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);
@@ -33,11 +34,6 @@
 		...(product.supplier ? { [product.supplier.id]: product.supplier.name } : {}),
 		...(product.material ? { [product.material.id]: product.material.name } : {})
 	});
-
-	function isLowStock(): boolean {
-		if (product.stock === null || product.minStock === null) return false;
-		return product.stock <= product.minStock;
-	}
 
 	async function confirmDelete() {
 		deleteLoading = true;
@@ -175,10 +171,10 @@
 								<dt class="text-sm text-slate-500">Stock Actual</dt>
 								<dd
 									class="mt-1 text-2xl font-bold"
-									class:text-red-600={isLowStock()}
-									class:text-slate-900={!isLowStock()}
+									class:text-red-600={isLowStock(product)}
+									class:text-slate-900={!isLowStock(product)}
 								>
-									{#if isLowStock()}
+									{#if isLowStock(product)}
 										<span class="inline-flex items-center gap-2">
 											<TriangleAlert class="h-5 w-5" />
 											{product.stock}
@@ -192,7 +188,7 @@
 								<dt class="text-sm text-slate-500">Stock Mínimo</dt>
 								<dd class="mt-1 font-medium text-slate-700">{product.minStock ?? '—'}</dd>
 							</div>
-							{#if isLowStock()}
+							{#if isLowStock(product)}
 								<div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
 									⚠️ Stock bajo nivel mínimo. Considerar reposición.
 								</div>
