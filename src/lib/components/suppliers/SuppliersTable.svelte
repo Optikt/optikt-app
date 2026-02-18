@@ -6,7 +6,7 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
 	import { SupplierViewModal } from '$lib/components/suppliers';
-	import { SupplierType, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
+	import { SupplierType, getSupplierBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -49,19 +49,6 @@
 			deleteLoading = false;
 		}
 	}
-
-	function getTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' {
-		switch (type) {
-			case SupplierType.DISTRIBUTOR:
-				return 'blue';
-			case SupplierType.LABORATORY:
-				return 'green';
-			case SupplierType.BOTH:
-				return 'purple';
-			default:
-				return 'blue';
-		}
-	}
 </script>
 
 <DataTable
@@ -82,8 +69,8 @@
 	{#snippet row(supplier)}
 		<TableBodyCell class="font-medium">{supplier.name}</TableBodyCell>
 		<TableBodyCell>
-			<Badge color={getTypeBadgeColor(supplier.type)}>
-				{SUPPLIER_TYPE_LABELS[supplier.type as SupplierType] ?? supplier.type}
+			<Badge color={getSupplierBadgeColor(supplier.type)}>
+				{getSupplierTypeLabel(supplier.type)}
 			</Badge>
 		</TableBodyCell>
 		<TableBodyCell>
