@@ -24,6 +24,27 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 	[ProductType.ACCESSORY]: 'Accesorio'
 };
 
+/** Get the display label for a product type, with fallback to the raw value */
+export function getProductTypeLabel(type: string): string {
+	return PRODUCT_TYPE_LABELS[type as ProductType] ?? type;
+}
+
+/**
+ * Product type badge colors
+ */
+export const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
+	[ProductType.FRAME]: 'blue',
+	[ProductType.SUNGLASSES]: 'green',
+	[ProductType.CONTACT_LENS]: 'purple',
+	[ProductType.ACCESSORY]: 'yellow'
+};
+
+export type ProductTypeColor = (typeof typeColors)[ProductType];
+
+export function getProductTypeColor(type: string): ProductTypeColor | 'gray' {
+	return typeColors[type as ProductType] ?? 'gray';
+}
+
 /** All product types require stock tracking */
 export const STOCK_REQUIRED_TYPES: ProductType[] = [
 	ProductType.FRAME,
