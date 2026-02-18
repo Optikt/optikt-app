@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
 	import { Eye, Trash2, TriangleAlert, Package, SquarePen } from '@lucide/svelte';
-	import { ProductType, PRODUCT_TYPE_LABELS } from '$lib/shared/enums';
+	import { getProductTypeColor, getProductTypeLabel } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice } from '$lib/utils';
 	import { DataTable, ActionButton } from '$lib/components/ui';
+	import { isLowStock } from '$lib/utils/products';
 
 	interface Props {
 		products: ProductWithRelations[];
@@ -15,19 +16,6 @@
 	}
 
 	let { products, loading = false, onView, onEdit, onDelete }: Props = $props();
-
-	// Product type badge colors
-	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
-		[ProductType.FRAME]: 'blue',
-		[ProductType.SUNGLASSES]: 'green',
-		[ProductType.CONTACT_LENS]: 'purple',
-		[ProductType.ACCESSORY]: 'yellow'
-	};
-
-	function isLowStock(product: ProductWithRelations): boolean {
-		if (product.stock === null || product.minStock === null) return false;
-		return product.stock <= product.minStock;
-	}
 </script>
 
 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -52,8 +40,8 @@
 			<TableBodyCell class="font-mono text-sm text-slate-700">{product.sku}</TableBodyCell>
 			<TableBodyCell class="font-medium text-slate-900">{product.name}</TableBodyCell>
 			<TableBodyCell>
-				<Badge color={typeColors[product.type as ProductType]}>
-					{PRODUCT_TYPE_LABELS[product.type as ProductType] || product.type}
+				<Badge color={getProductTypeColor(product.type)}>
+					{getProductTypeLabel(product.type)}
 				</Badge>
 			</TableBodyCell>
 			<TableBodyCell class="text-slate-600">
@@ -88,26 +76,26 @@
 		{/snippet}
 
 		{#snippet actions(product)}
-			<ActionButton
-				icon={Eye}
-				title="Ver detalles"
-				hidden={!onView}
-				onclick={() => onView?.(product)}
-			/>
-			<ActionButton
-				icon={SquarePen}
-				title="Editar"
-				color="blue"
-				hidden={!onEdit}
-				onclick={() => onEdit?.(product)}
-			/>
-			<ActionButton
-				icon={Trash2}
-				title="Eliminar"
-				color="red"
-				hidden={!onDelete}
-				onclick={() => onDelete?.(product)}
-			/>
+			{#if onView}
+				<ActionButton icon={Eye} title="Ver detalles" onclick={() => onView(product)} />
+			{/if}
+			{#if onEdit}
+				<ActionButton
+					icon={SquarePen}
+					title="Editar"
+					color="blue"
+					onclick={() => onEdit(product)}
+				/>
+			{/if}
+			{#if onDelete}
+				<ActionButton
+					icon={Trash2}
+					title="Eliminar"
+					color="red"
+					hidden={!onDelete}
+					onclick={() => onDelete(product)}
+				/>
+			{/if}
 		{/snippet}
 	</DataTable>
 </div>
