@@ -4,13 +4,18 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { formatPrice, formatDate, getProfitMargin } from '$lib/utils';
 	import { untrack } from 'svelte';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { ProductType, PRODUCT_TYPE_LABELS, requiresStockTracking } from '$lib/shared/enums';
+	import {
+		ProductType,
+		getProductTypeColor,
+		getProductTypeLabel,
+		requiresStockTracking
+	} from '$lib/shared/enums';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);
@@ -28,19 +33,6 @@
 		...(product.supplier ? { [product.supplier.id]: product.supplier.name } : {}),
 		...(product.material ? { [product.material.id]: product.material.name } : {})
 	});
-
-	// Product type badge colors
-	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
-		[ProductType.FRAME]: 'blue',
-		[ProductType.SUNGLASSES]: 'green',
-		[ProductType.CONTACT_LENS]: 'purple',
-		[ProductType.ACCESSORY]: 'yellow'
-	};
-
-	function getProfitMargin(purchase: number, sale: number): string {
-		if (purchase === 0) return '0.0%';
-		return (((sale - purchase) / purchase) * 100).toFixed(1) + '%';
-	}
 
 	function isLowStock(): boolean {
 		if (product.stock === null || product.minStock === null) return false;
@@ -84,8 +76,8 @@
 				<div>
 					<div class="flex items-center gap-3">
 						<h1 class="text-3xl font-bold tracking-tight text-slate-900">{product.name}</h1>
-						<Badge color={typeColors[product.type as ProductType]}>
-							{PRODUCT_TYPE_LABELS[product.type as ProductType] || product.type}
+						<Badge color={getProductTypeColor(product.type)}>
+							{getProductTypeLabel(product.type)}
 						</Badge>
 						{#if product.isActive}
 							<Badge color="green">Activo</Badge>
