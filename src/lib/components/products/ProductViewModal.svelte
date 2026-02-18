@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { Modal, Badge } from 'flowbite-svelte';
-	import { ProductType, PRODUCT_TYPE_LABELS, requiresStockTracking } from '$lib/shared/enums';
+	import {
+		ProductType,
+		getProductTypeColor,
+		getProductTypeLabel,
+		requiresStockTracking
+	} from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { formatPrice, formatDate, getProfitMargin } from '$lib/utils';
+	import { isLowStock } from '$lib/utils/products';
 
 	interface Props {
 		open: boolean;
@@ -10,24 +16,6 @@
 	}
 
 	let { open = $bindable(), product }: Props = $props();
-
-	// Product type badge colors
-	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
-		[ProductType.FRAME]: 'blue',
-		[ProductType.SUNGLASSES]: 'green',
-		[ProductType.CONTACT_LENS]: 'purple',
-		[ProductType.ACCESSORY]: 'yellow'
-	};
-
-	function getProfitMargin(purchase: number, sale: number): string {
-		if (purchase === 0) return '0.0%';
-		return (((sale - purchase) / purchase) * 100).toFixed(1) + '%';
-	}
-
-	function isLowStock(prod: ProductWithRelations): boolean {
-		if (prod.stock === null || prod.minStock === null) return false;
-		return prod.stock <= prod.minStock;
-	}
 </script>
 
 <Modal bind:open size="md" title="Detalle del Producto" outsideclose>
@@ -40,8 +28,8 @@
 					<p class="font-mono text-lg font-medium text-slate-900">{product.sku}</p>
 				</div>
 				<div class="flex gap-2">
-					<Badge color={typeColors[product.type as ProductType]}>
-						{PRODUCT_TYPE_LABELS[product.type as ProductType] || product.type}
+					<Badge color={getProductTypeColor(product.type)}>
+						{getProductTypeLabel(product.type)}
 					</Badge>
 					{#if product.isActive}
 						<Badge color="green">Activo</Badge>
