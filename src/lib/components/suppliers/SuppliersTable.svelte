@@ -6,7 +6,7 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
 	import { SupplierViewModal } from '$lib/components/suppliers';
-	import { SupplierType, getSupplierBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
+	import { getSupplierBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {

@@ -3,8 +3,6 @@
  * Defines the types of suppliers in the optical business
  */
 
-import type { ProductType, ProductTypeColor, typeColors } from './productTypes';
-
 export enum SupplierType {
 	/** Distribuidor de productos terminados (monturas, lentes terminados, accesorios) */
 	DISTRIBUTOR = 'DISTRIBUTOR',

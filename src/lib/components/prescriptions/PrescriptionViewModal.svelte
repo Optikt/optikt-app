@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Modal, Button, Badge } from 'flowbite-svelte';
-	import {Trash2, Star, SquarePen } from '@lucide/svelte';
+	import { Trash2, Star, SquarePen } from '@lucide/svelte';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
 	import {
 		setCurrentPrescription,
