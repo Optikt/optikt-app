@@ -19,7 +19,7 @@
 	items={prescriptions}
 	{loading}
 	emptyIcon={Glasses}
-	emptyTitle="No hay recetas registradas"
+	emptyTitle="No hay fórmulas registradas"
 	emptyDescription="Agrega una receta para comenzar"
 >
 	{#snippet header()}

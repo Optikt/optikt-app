@@ -80,7 +80,7 @@
 	{#snippet actions(customer)}
 		<ActionButton
 			icon={Eye}
-			title="Ver detalles y recetas"
+			title="Ver detalles y fórmulas"
 			href={resolve(`/customers/${customer.id}`)}
 		/>
 
