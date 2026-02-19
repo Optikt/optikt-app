@@ -24,14 +24,7 @@
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import {
-		LensType,
-		LensCatalogSource,
-		LensPricingUnit,
-		LENS_TYPE_LABELS,
-		LENS_SOURCE_LABELS,
-		LENS_PRICING_UNIT_LABELS
-	} from '$lib/shared/enums';
+	import { getLensTypeLabel, getLensSourceLabel, getPricingUnitLabel } from '$lib/shared/enums';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
@@ -48,10 +41,6 @@
 		...(item.supplier ? { [item.supplier.id]: item.supplier.name } : {}),
 		...(item.material ? { [item.material.id]: item.material.name } : {})
 	});
-
-	function getPricingUnitLabel(unit: string): string {
-		return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
-	}
 
 	/**
 	 * Estimated sale price for a pair of identical lenses.
@@ -198,13 +187,13 @@
 						<div>
 							<dt class="text-sm font-medium text-slate-500">Tipo de Lente</dt>
 							<dd class="mt-0.5 text-slate-800">
-								{LENS_TYPE_LABELS[item.type as LensType] ?? item.type}
+								{getLensTypeLabel(item.type)}
 							</dd>
 						</div>
 						<div>
 							<dt class="text-sm font-medium text-slate-500">Origen</dt>
 							<dd class="mt-0.5 text-slate-800">
-								{LENS_SOURCE_LABELS[item.source as LensCatalogSource] ?? item.source}
+								{getLensSourceLabel(item.source)}
 							</dd>
 						</div>
 						{#if item.deliveryDays != null}
