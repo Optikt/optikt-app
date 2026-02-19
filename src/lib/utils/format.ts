@@ -77,14 +77,28 @@ export function formatAxis(value: number | null | undefined): string {
 }
 
 /**
- * Format PD
+ * Format DP/NP (Distancia Pupilar / Nasopupilar)
+ * DP is total, NP is per-eye measurements
  */
-export function formatPd(prescription: Prescription): string {
-	if (prescription.pd) return `${prescription.pd}mm`;
-	if (prescription.pdRight && prescription.pdLeft) {
-		return `${prescription.pdRight}/${prescription.pdLeft}mm`;
+export function formatDpNp(prescription: Prescription): string {
+	if (prescription.dp) return `${prescription.dp}mm`;
+	if (prescription.npRight && prescription.npLeft) {
+		return `${prescription.npRight}/${prescription.npLeft}mm`;
 	}
 	return '—';
+}
+
+/**
+ * Format treatments for display
+ */
+export function formatTreatments(treatments: Prescription['treatments']): string {
+	if (!treatments) return '—';
+	const parts: string[] = [];
+	if (treatments.antiReflective) parts.push('Antireflejo');
+	if (treatments.blueBlock) parts.push('Blueblock');
+	if (treatments.photochromic) parts.push('Fotocromático');
+	if (treatments.other) parts.push(`Otros: ${treatments.other}`);
+	return parts.length > 0 ? parts.join(', ') : '—';
 }
 
 /**
