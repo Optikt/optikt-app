@@ -11,9 +11,10 @@
 		LensType,
 		LensCatalogSource,
 		LensPricingUnit,
-		LENS_TYPE_LABELS,
 		LENS_SOURCE_LABELS,
-		LENS_PRICING_UNIT_LABELS
+		LENS_PRICING_UNIT_LABELS,
+		ALL_LENS_TYPES,
+		getLensTypeLabel
 	} from '$lib/shared/enums';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -33,6 +34,16 @@
 		cylinderMax: string;
 		additionMin: string;
 		additionMax: string;
+	};
+	
+	type ExpandedRange = {
+		sphereMin: number;
+		sphereMax: number;
+		cylinderMin?: number;
+		cylinderMax?: number;
+		additionMin?: number;
+		additionMax?: number;
+		mirrorGroup?: string;
 	};
 
 	type Props = {
@@ -200,7 +211,7 @@
 		if (formData.variant) parts.push(formData.variant);
 
 		// Type
-		const typeLabel = LENS_TYPE_LABELS[formData.type as keyof typeof LENS_TYPE_LABELS];
+		const typeLabel = getLensTypeLabel(formData.type);
 		if (typeLabel) parts.push(typeLabel);
 
 		// Technology
@@ -307,16 +318,6 @@
 
 		return result;
 	}
-
-	type ExpandedRange = {
-		sphereMin: number;
-		sphereMax: number;
-		cylinderMin?: number;
-		cylinderMax?: number;
-		additionMin?: number;
-		additionMax?: number;
-		mirrorGroup?: string;
-	};
 
 	/**
 	 * Expand UI range entries into flat DB range objects.
@@ -668,8 +669,8 @@
 			<div>
 				<Label for="lc_type" class="mb-2">Tipo *</Label>
 				<Select id="lc_type" name="type" bind:value={formData.type} required>
-					{#each Object.values(LensType) as t (t)}
-						<option value={t}>{LENS_TYPE_LABELS[t]}</option>
+					{#each ALL_LENS_TYPES as t (t)}
+						<option value={t}>{getLensTypeLabel(t)}</option>
 					{/each}
 				</Select>
 			</div>

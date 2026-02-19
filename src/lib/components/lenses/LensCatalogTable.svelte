@@ -5,10 +5,10 @@
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import {
-		LensType,
 		LensCatalogSource,
-		LENS_TYPE_LABELS,
-		LENS_SOURCE_LABELS
+		getLensTypeLabel,
+		getLensSourceLabel,
+		getLensTypeBadgeColor
 	} from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -47,21 +47,6 @@
 			deleteLoading = false;
 		}
 	}
-
-	function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
-		switch (type) {
-			case LensType.MONOFOCAL:
-				return 'blue';
-			case LensType.BIFOCAL:
-				return 'green';
-			case LensType.PROGRESSIVE:
-				return 'purple';
-			case LensType.OCCUPATIONAL:
-				return 'yellow';
-			default:
-				return 'blue';
-		}
-	}
 </script>
 
 <DataTable
@@ -94,7 +79,7 @@
 		</TableBodyCell>
 		<TableBodyCell>
 			<Badge color={item.source === LensCatalogSource.FINISHED ? 'indigo' : 'gray'} class="text-xs">
-				{LENS_SOURCE_LABELS[item.source] ?? item.source}
+				{getLensSourceLabel(item.source)}
 			</Badge>
 		</TableBodyCell>
 		<TableBodyCell class="text-slate-600">
@@ -102,7 +87,7 @@
 		</TableBodyCell>
 		<TableBodyCell>
 			<Badge color={getLensTypeBadgeColor(item.type)} class="text-xs">
-				{LENS_TYPE_LABELS[item.type as LensType] ?? item.type}
+				{getLensTypeLabel(item.type)}
 			</Badge>
 			{#if item.isPhotochromic}
 				<Badge color="yellow" title="Fotocromático" class="ml-1 text-xs">Foto</Badge>
