@@ -98,7 +98,6 @@ export function getProfitMargin(purchase: number, sale: number): string {
 	return (((sale - purchase) / purchase) * 100).toFixed(1) + '%';
 }
 
-
 // Format phone for display
 export function formatPhone(phone: string | null | undefined): string {
 	if (!phone) return '-';
