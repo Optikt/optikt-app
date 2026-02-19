@@ -22,19 +22,20 @@ export const SphereSchema = v.optional(
 );
 
 /**
- * Cylinder power validation - typically ranges from -6.00 to +6.00
- * In 0.25 increments
+ * Cylinder power validation - NEGATIVE ONLY (0 to -6)
+ * In optical terms, cylinder is always expressed in negative form
  */
 export const CylinderSchema = v.optional(
 	v.pipe(
 		v.number(),
 		v.minValue(-6, 'Cilindro debe ser mayor o igual a -6'),
-		v.maxValue(6, 'Cilindro debe ser menor o igual a +6')
+		v.maxValue(0, 'Cilindro debe ser negativo o cero')
 	)
 );
 
 /**
- * Axis validation - 0 to 180 degrees
+ * Axis validation - 0 to 180 degrees, integers only
+ * Always positive values in optical standards
  */
 export const AxisSchema = v.optional(
 	v.pipe(
@@ -57,15 +58,41 @@ export const AdditionSchema = v.optional(
 );
 
 /**
- * Pupillary distance validation - typically ranges from 50 to 80mm
+ * Distancia Pupilar (DP) validation - total pupillary distance
+ * Typically ranges from 50 to 80mm, always positive
  */
-export const PdSchema = v.optional(
+export const DpSchema = v.optional(
 	v.pipe(
 		v.number(),
-		v.minValue(20, 'PD debe ser mayor o igual a 20mm'),
-		v.maxValue(80, 'PD debe ser menor o igual a 80mm')
+		v.minValue(20, 'DP debe ser mayor o igual a 20mm'),
+		v.maxValue(80, 'DP debe ser menor o igual a 80mm')
 	)
 );
+
+/**
+ * Nasopupilar (NP) validation - per-eye measurements
+ * Always positive values, typically 20-40mm per eye
+ */
+export const NpSchema = v.optional(
+	v.pipe(
+		v.number(),
+		v.minValue(20, 'NP debe ser mayor o igual a 20mm'),
+		v.maxValue(80, 'NP debe ser menor o igual a 80mm')
+	)
+);
+
+// =============================================================================
+// TREATMENTS SCHEMA
+// =============================================================================
+
+/**
+ * Treatments that can be applied to a prescription
+ * Using separate fields for form compatibility with SvelteKit
+ */
+export const TreatmentAntiReflectiveSchema = v.optional(v.boolean());
+export const TreatmentBlueBlockSchema = v.optional(v.boolean());
+export const TreatmentPhotochromicSchema = v.optional(v.boolean());
+export const TreatmentOtherSchema = v.optional(v.string());
 
 // =============================================================================
 // ID SCHEMAS
@@ -100,10 +127,16 @@ export const CreatePrescriptionSchema = v.object({
 	osCylinder: CylinderSchema,
 	osAxis: AxisSchema,
 	osAddition: AdditionSchema,
-	// PD
-	pd: PdSchema,
-	pdRight: PdSchema,
-	pdLeft: PdSchema,
+	// Distancia Pupilar (DP) - total
+	dp: DpSchema,
+	// Nasopupilar (NP) - per-eye
+	npRight: NpSchema,
+	npLeft: NpSchema,
+	// Treatments (separate fields for form compatibility)
+	treatmentAntiReflective: TreatmentAntiReflectiveSchema,
+	treatmentBlueBlock: TreatmentBlueBlockSchema,
+	treatmentPhotochromic: TreatmentPhotochromicSchema,
+	treatmentOther: TreatmentOtherSchema,
 	// Additional
 	recommendedLensType: v.optional(
 		v.picklist(
@@ -134,10 +167,16 @@ export const UpdatePrescriptionSchema = v.object({
 	osCylinder: CylinderSchema,
 	osAxis: AxisSchema,
 	osAddition: AdditionSchema,
-	// PD
-	pd: PdSchema,
-	pdRight: PdSchema,
-	pdLeft: PdSchema,
+	// Distancia Pupilar (DP) - total
+	dp: DpSchema,
+	// Nasopupilar (NP) - per-eye
+	npRight: NpSchema,
+	npLeft: NpSchema,
+	// Treatments (separate fields for form compatibility)
+	treatmentAntiReflective: TreatmentAntiReflectiveSchema,
+	treatmentBlueBlock: TreatmentBlueBlockSchema,
+	treatmentPhotochromic: TreatmentPhotochromicSchema,
+	treatmentOther: TreatmentOtherSchema,
 	// Additional
 	recommendedLensType: v.optional(
 		v.picklist(
