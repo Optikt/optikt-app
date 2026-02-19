@@ -20,7 +20,7 @@ import {
 	deletePrescription,
 	findCustomerById
 } from '$lib/server/db/queries/customers';
-import type { Prescription } from '$lib/server/db/schema';
+import type { Prescription, PrescriptionTreatments } from '$lib/server/db/schema';
 import { auditService, type AuditContext } from '$lib/server/audit';
 
 /**
@@ -32,6 +32,31 @@ function getAuditContext(): AuditContext {
 		userId: event.locals.user?.id ?? null,
 		ipAddress: event.getClientAddress(),
 		userAgent: event.request.headers.get('user-agent')
+	};
+}
+
+/**
+ * Build treatments object from form data
+ */
+function buildTreatments(data: {
+	treatmentAntiReflective?: boolean;
+	treatmentBlueBlock?: boolean;
+	treatmentPhotochromic?: boolean;
+	treatmentOther?: string;
+}): PrescriptionTreatments | null {
+	const hasAnyTreatment =
+		data.treatmentAntiReflective ||
+		data.treatmentBlueBlock ||
+		data.treatmentPhotochromic ||
+		data.treatmentOther;
+
+	if (!hasAnyTreatment) return null;
+
+	return {
+		antiReflective: data.treatmentAntiReflective ?? false,
+		blueBlock: data.treatmentBlueBlock ?? false,
+		photochromic: data.treatmentPhotochromic ?? false,
+		other: data.treatmentOther ?? null
 	};
 }
 
@@ -89,6 +114,9 @@ export const createPrescriptionForm = form(
 			}
 		}
 
+		// Build treatments object
+		const treatments = buildTreatments(data);
+
 		// Create prescription
 		const prescription = await createPrescription({
 			customerId: data.customerId,
@@ -101,9 +129,10 @@ export const createPrescriptionForm = form(
 			osCylinder: data.osCylinder ?? null,
 			osAxis: data.osAxis ?? null,
 			osAddition: data.osAddition ?? null,
-			pd: data.pd ?? null,
-			pdRight: data.pdRight ?? null,
-			pdLeft: data.pdLeft ?? null,
+			dp: data.dp ?? null,
+			npRight: data.npRight ?? null,
+			npLeft: data.npLeft ?? null,
+			treatments,
 			recommendedLensType: data.recommendedLensType ?? null,
 			notes: data.notes ?? null,
 			doctorName: data.doctorName ?? null,
@@ -156,9 +185,18 @@ export const updatePrescriptionForm = form(
 		if (data.osCylinder !== undefined) updateData.osCylinder = data.osCylinder ?? null;
 		if (data.osAxis !== undefined) updateData.osAxis = data.osAxis ?? null;
 		if (data.osAddition !== undefined) updateData.osAddition = data.osAddition ?? null;
-		if (data.pd !== undefined) updateData.pd = data.pd ?? null;
-		if (data.pdRight !== undefined) updateData.pdRight = data.pdRight ?? null;
-		if (data.pdLeft !== undefined) updateData.pdLeft = data.pdLeft ?? null;
+		if (data.dp !== undefined) updateData.dp = data.dp ?? null;
+		if (data.npRight !== undefined) updateData.npRight = data.npRight ?? null;
+		if (data.npLeft !== undefined) updateData.npLeft = data.npLeft ?? null;
+		// Build treatments if any treatment field is present
+		if (
+			data.treatmentAntiReflective !== undefined ||
+			data.treatmentBlueBlock !== undefined ||
+			data.treatmentPhotochromic !== undefined ||
+			data.treatmentOther !== undefined
+		) {
+			updateData.treatments = buildTreatments(data);
+		}
 		if (data.recommendedLensType !== undefined) {
 			updateData.recommendedLensType = data.recommendedLensType ?? null;
 		}
