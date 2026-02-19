@@ -3,7 +3,13 @@
 	import { Eye, SquarePen, Star, Glasses } from '@lucide/svelte';
 	import { DataTable, ActionButton } from '$lib/components/ui';
 	import type { Prescription } from '$lib/server/db/schema';
-	import { formatAxis, formatDate, formatLensType, formatOpticalValue, formatPd } from '$lib/utils';
+	import {
+		formatAxis,
+		formatDate,
+		formatLensType,
+		formatOpticalValue,
+		formatDpNp
+	} from '$lib/utils';
 
 	interface Props {
 		prescriptions: Prescription[];
@@ -26,7 +32,7 @@
 		<TableHeadCell class="font-semibold">Fecha</TableHeadCell>
 		<TableHeadCell class="font-semibold">OD (Esfera/Cil/Eje/Add)</TableHeadCell>
 		<TableHeadCell class="font-semibold">OS (Esfera/Cil/Eje/Add)</TableHeadCell>
-		<TableHeadCell class="font-semibold">PD</TableHeadCell>
+		<TableHeadCell class="font-semibold">DP/NP</TableHeadCell>
 		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
 		<TableHeadCell class="font-semibold">Doctor</TableHeadCell>
 		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
@@ -69,7 +75,7 @@
 			</div>
 		</TableBodyCell>
 		<TableBodyCell class="whitespace-nowrap text-slate-600">
-			{formatPd(prescription)}
+			{formatDpNp(prescription)}
 		</TableBodyCell>
 		<TableBodyCell class="whitespace-nowrap text-slate-600">
 			{formatLensType(prescription.recommendedLensType)}
