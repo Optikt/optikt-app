@@ -5,3 +5,4 @@ export * from './brands';
 export * from './suppliers';
 export * from './settings';
 export * from './products';
+export * from './prescriptions';
