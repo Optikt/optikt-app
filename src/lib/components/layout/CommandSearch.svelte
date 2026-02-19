@@ -14,7 +14,7 @@
 
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
-	// TODO: Improve the search experience and results (this maybe need a change in 
+	// TODO: Improve the search experience and results (this maybe need a change in
 	// the backend to return more relevant results and not just a dumb search by name)
 	function handleInput() {
 		clearTimeout(debounceTimer);

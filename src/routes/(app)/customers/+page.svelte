@@ -3,7 +3,7 @@
 	import { Plus, TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, getFullName } from '$lib/utils';
 	import { listCustomers, reactivateCustomer } from '$lib/remote/customers.remote';
 	import { CustomersTable, CustomerFormModal } from '$lib/components/customers';
 	import type { Customer } from '$lib/server/db/schema';
@@ -199,8 +199,7 @@
 
 		<div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
 			<p class="font-medium text-amber-900">
-				{reactivateCandidate?.firstName}
-				{reactivateCandidate?.lastName}
+				{reactivateCandidate ? getFullName(reactivateCandidate) : '—'}
 			</p>
 			<p class="mt-1 text-sm text-amber-700">
 				Cliente eliminado previamente con la cédula {reactivateCandidate?.idNumber}

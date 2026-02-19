@@ -35,7 +35,7 @@
 		additionMin: string;
 		additionMax: string;
 	};
-	
+
 	type ExpandedRange = {
 		sphereMin: number;
 		sphereMax: number;
