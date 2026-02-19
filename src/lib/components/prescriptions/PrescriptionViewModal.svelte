@@ -176,26 +176,50 @@
 				</div>
 			</div>
 
-			<!-- PD Section -->
+			<!-- DP/NP Section -->
 			<div class="rounded-lg border border-slate-200 p-4">
-				<h4 class="mb-3 font-semibold text-slate-900">Distancia Pupilar (PD)</h4>
+				<h4 class="mb-3 font-semibold text-slate-900">Distancias</h4>
 				<dl class="grid grid-cols-3 gap-4 text-sm">
 					<div class="flex flex-col">
-						<dt class="text-slate-500">Total</dt>
-						<dd class="font-medium text-slate-900">{formatOpticalValue(prescription.pd)} mm</dd>
+						<dt class="text-slate-500">DP (Distancia Pupilar)</dt>
+						<dd class="font-medium text-slate-900">{formatOpticalValue(prescription.dp)} mm</dd>
 					</div>
 					<div class="flex flex-col">
-						<dt class="text-slate-500">Derecho</dt>
+						<dt class="text-slate-500">NP Derecho</dt>
 						<dd class="font-medium text-slate-900">
-							{formatOpticalValue(prescription.pdRight)} mm
+							{formatOpticalValue(prescription.npRight)} mm
 						</dd>
 					</div>
 					<div class="flex flex-col">
-						<dt class="text-slate-500">Izquierdo</dt>
-						<dd class="font-medium text-slate-900">{formatOpticalValue(prescription.pdLeft)} mm</dd>
+						<dt class="text-slate-500">NP Izquierdo</dt>
+						<dd class="font-medium text-slate-900">{formatOpticalValue(prescription.npLeft)} mm</dd>
 					</div>
 				</dl>
 			</div>
+
+			<!-- Treatments Section -->
+			{#if prescription.treatments}
+				<div class="rounded-lg border border-slate-200 p-4">
+					<h4 class="mb-3 font-semibold text-slate-900">Tratamientos</h4>
+					<div class="flex flex-wrap gap-2">
+						{#if prescription.treatments.antiReflective}
+							<Badge color="indigo">Antireflejo</Badge>
+						{/if}
+						{#if prescription.treatments.blueBlock}
+							<Badge color="blue">Blueblock</Badge>
+						{/if}
+						{#if prescription.treatments.photochromic}
+							<Badge color="purple">Fotocromático</Badge>
+						{/if}
+						{#if prescription.treatments.other}
+							<Badge color="gray">Otros: {prescription.treatments.other}</Badge>
+						{/if}
+						{#if !prescription.treatments.antiReflective && !prescription.treatments.blueBlock && !prescription.treatments.photochromic && !prescription.treatments.other}
+							<span class="text-slate-400">—</span>
+						{/if}
+					</div>
+				</div>
+			{/if}
 
 			<!-- Additional info -->
 			{#if prescription.doctorName || prescription.notes}
