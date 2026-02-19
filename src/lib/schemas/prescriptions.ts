@@ -72,7 +72,7 @@ export const PdSchema = v.optional(
 // =============================================================================
 
 export const PrescriptionIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid('ID de receta inválido'))
+	id: v.pipe(v.string(), v.uuid('ID de fórmula inválido'))
 });
 
 export const CustomerIdForPrescriptionSchema = v.object({
@@ -89,7 +89,7 @@ export const CustomerIdForPrescriptionSchema = v.object({
  */
 export const CreatePrescriptionSchema = v.object({
 	customerId: v.pipe(v.string(), v.uuid('ID de cliente inválido')),
-	prescriptionDate: v.pipe(v.string(), v.isoDate('Fecha de receta inválida')),
+	prescriptionDate: v.pipe(v.string(), v.isoDate('Fecha de fórmula inválida')),
 	// Right eye (OD)
 	odSphere: SphereSchema,
 	odCylinder: CylinderSchema,
@@ -122,8 +122,8 @@ export const CreatePrescriptionSchema = v.object({
  * All fields optional except id
  */
 export const UpdatePrescriptionSchema = v.object({
-	id: v.pipe(v.string(), v.uuid('ID de receta inválido')),
-	prescriptionDate: v.optional(v.pipe(v.string(), v.isoDate('Fecha de receta inválida'))),
+	id: v.pipe(v.string(), v.uuid('ID de fórmula inválido')),
+	prescriptionDate: v.optional(v.pipe(v.string(), v.isoDate('Fecha de fórmula inválida'))),
 	// Right eye (OD)
 	odSphere: SphereSchema,
 	odCylinder: CylinderSchema,
@@ -156,7 +156,7 @@ export const UpdatePrescriptionSchema = v.object({
  * Used to mark a prescription as the current one for a customer
  */
 export const SetCurrentPrescriptionSchema = v.object({
-	id: v.pipe(v.string(), v.uuid('ID de receta inválido')),
+	id: v.pipe(v.string(), v.uuid('ID de fórmula inválido')),
 	isCurrent: v.boolean()
 });
 

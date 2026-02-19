@@ -130,7 +130,7 @@ export const updatePrescriptionForm = form(
 		// Get existing prescription
 		const existing = await findPrescriptionById(data.id);
 		if (!existing) {
-			invalid(issue.id('Receta no encontrada'));
+			invalid(issue.id('Fórmula no encontrada'));
 		}
 
 		// If setting as current, unset other current prescriptions for this customer
@@ -169,7 +169,7 @@ export const updatePrescriptionForm = form(
 		// Update prescription
 		const updated = await updatePrescription(data.id, updateData);
 		if (!updated) {
-			invalid(issue.id('Error al actualizar receta'));
+			invalid(issue.id('Error al actualizar fórmula'));
 		}
 
 		// Log audit
@@ -190,7 +190,7 @@ export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, asyn
 	// Get existing prescription
 	const existing = await findPrescriptionById(data.id);
 	if (!existing) {
-		return { success: false, error: 'Receta no encontrada' };
+		return { success: false, error: 'Fórmula no encontrada' };
 	}
 
 	// If setting as current, unset other current prescriptions for this customer
@@ -206,7 +206,7 @@ export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, asyn
 	// Update prescription
 	const updated = await updatePrescription(data.id, { isCurrent: data.isCurrent });
 	if (!updated) {
-		return { success: false, error: 'Error al actualizar receta' };
+		return { success: false, error: 'Error al actualizar fórmula' };
 	}
 
 	// Log audit
@@ -226,13 +226,13 @@ export const deletePrescriptionCommand = command(PrescriptionIdSchema, async (da
 	// Get existing prescription
 	const existing = await findPrescriptionById(data.id);
 	if (!existing) {
-		return { success: false, error: 'Receta no encontrada' };
+		return { success: false, error: 'Fórmula no encontrada' };
 	}
 
 	// Delete prescription
 	const deleted = await deletePrescription(data.id);
 	if (!deleted) {
-		return { success: false, error: 'Error al eliminar receta' };
+		return { success: false, error: 'Error al eliminar fórmula' };
 	}
 
 	// Log audit

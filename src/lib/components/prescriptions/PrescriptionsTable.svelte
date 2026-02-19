@@ -20,7 +20,7 @@
 	{loading}
 	emptyIcon={Glasses}
 	emptyTitle="No hay fórmulas registradas"
-	emptyDescription="Agrega una receta para comenzar"
+	emptyDescription="Agrega una fórmula para comenzar"
 >
 	{#snippet header()}
 		<TableHeadCell class="font-semibold">Fecha</TableHeadCell>
