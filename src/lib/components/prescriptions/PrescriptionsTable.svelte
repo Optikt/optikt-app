@@ -13,7 +13,6 @@
 	}
 
 	let { prescriptions, loading = false, onView, onEdit }: Props = $props();
-
 </script>
 
 <DataTable
