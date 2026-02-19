@@ -9,8 +9,9 @@
 	import {
 		LensType,
 		LensCatalogSource,
-		LENS_TYPE_LABELS,
-		LENS_SOURCE_LABELS
+		LENS_SOURCE_LABELS,
+		ALL_LENS_TYPES,
+		getLensTypeLabel
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { PageData } from './$types';
@@ -94,8 +95,8 @@
 				</Select>
 				<Select bind:value={typeFilter} onchange={handleFilterChange} class="w-44">
 					<option value={undefined}>Todos los tipos</option>
-					{#each Object.values(LensType) as type (type)}
-						<option value={type}>{LENS_TYPE_LABELS[type]}</option>
+					{#each ALL_LENS_TYPES as type (type)}
+						<option value={type}>{getLensTypeLabel(type)}</option>
 					{/each}
 				</Select>
 				<Select bind:value={supplierFilter} onchange={handleFilterChange} class="w-48">
