@@ -1,8 +1,8 @@
 /**
  * Materials validation schemas
- * Valibot schemas for validation in remote functions
+ * Zod schemas for validation in remote functions
  */
-import * as v from 'valibot';
+import { z } from 'zod';
 import {
 	MATERIAL_PRODUCT_TYPES,
 	ProductType,
@@ -13,20 +13,20 @@ import {
 export const MaterialProductTypes = MATERIAL_PRODUCT_TYPES;
 export type { MaterialProductType };
 
-export const ListMaterialsSchema = v.object({
-	includeDeleted: v.optional(v.boolean(), false),
-	productType: v.optional(v.picklist(MATERIAL_PRODUCT_TYPES))
+export const ListMaterialsSchema = z.object({
+	includeDeleted: z.boolean().default(false),
+	productType: z.enum(MATERIAL_PRODUCT_TYPES).optional()
 });
 
-export const MaterialIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid())
+export const MaterialIdSchema = z.object({
+	id: z.uuid()
 });
 
 /**
  * Quick create schema - minimal fields for inline creation
  * Code is auto-generated from name
  */
-export const QuickCreateMaterialSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
-	productType: v.optional(v.picklist(MATERIAL_PRODUCT_TYPES), ProductType.FRAME)
+export const QuickCreateMaterialSchema = z.object({
+	name: z.string().min(1, 'Nombre requerido').max(255),
+	productType: z.enum(MATERIAL_PRODUCT_TYPES).default(ProductType.FRAME)
 });
