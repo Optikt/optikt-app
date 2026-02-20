@@ -211,7 +211,9 @@
 {/snippet}
 
 {#snippet prescriptionFields(formInstance: FormInstance)}
-	<div class="space-y-4 direct-children:not-last:border-b direct-children:border-b-slate-200 direct-children:pb-3">
+	<div
+		class="space-y-4 direct-children:border-b-slate-200 direct-children:pb-3 direct-children:not-last:border-b"
+	>
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
 			<FormDatepicker
 				name="prescriptionDate"
