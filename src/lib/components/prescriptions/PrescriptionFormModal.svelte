@@ -211,7 +211,7 @@
 {/snippet}
 
 {#snippet prescriptionFields(formInstance: FormInstance)}
-	<div class="space-y-4">
+	<div class="space-y-4 direct-children:not-last:border-b direct-children:border-b-slate-200 direct-children:pb-3">
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
 			<FormDatepicker
 				name="prescriptionDate"
@@ -222,7 +222,7 @@
 				error={formInstance.fields.prescriptionDate?.issues()}
 			/>
 			<div>
-				<Label for="recommendedLensType">Tipo de Lente</Label>
+				<Label for="recommendedLensType" class="mb-2">Tipo de Lente</Label>
 				<Select
 					id="recommendedLensType"
 					name="recommendedLensType"
@@ -245,6 +245,7 @@
 		<!-- Eye values section -->
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<!-- Right Eye (OD) -->
+			<!-- <div class="space-y-2 pr-4 border-slate-400 border-r "> -->
 			<div class="space-y-2">
 				<h4 class="font-semibold text-slate-900">Ojo Derecho (OD)</h4>
 				<div class="grid grid-cols-2 gap-3">
@@ -414,7 +415,6 @@
 					isSubmitting = false;
 				}
 			})}
-			class="space-y-4"
 		>
 			<input type="hidden" name="id" value={prescription.id} />
 			<input type="hidden" name="customerId" value={customer.id} />
@@ -447,7 +447,6 @@
 					isSubmitting = false;
 				}
 			})}
-			class="space-y-4"
 		>
 			<input type="hidden" name="customerId" value={customer.id} />
 
