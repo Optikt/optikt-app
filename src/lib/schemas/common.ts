@@ -99,18 +99,18 @@ export const OptionalIdNumberSchema = z.optional(z.union([z.literal(''), IdNumbe
 /**
  * CoercedNumber schema - accepts string or number, transforms to number
  */
-export const CoercedNumber = z.coerce.number<number>();
+export const CoercedNumber = z.coerce.number<number | string>();
 
 /**
  * CoercedInteger schema - accepts string or number, transforms to integer
  */
-export const CoercedInteger = z.coerce.number().int();
+export const CoercedInteger = CoercedNumber.int();
 
 /**
  * CoercedBoolean schema - accepts string or boolean, transforms to boolean
  * Handles form inputs like 'on', 'true', true
  */
-export const CoercedBoolean = z.preprocess((val) => {
+export const CoercedBoolean = z.preprocess((val: boolean | string) => {
 	if (typeof val === 'boolean') return val;
 	if (val === 'on' || val === 'true') return true;
 	if (val === 'off' || val === 'false') return false;
