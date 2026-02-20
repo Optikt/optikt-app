@@ -123,3 +123,15 @@ export const CoercedInteger = v.pipe(
 	v.transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val)),
 	v.pipe(v.number(), v.integer())
 );
+
+/**
+ * CoercedBoolean schema - accepts string or boolean, transforms to boolean
+ */
+export const CoercedBoolean = v.pipe(
+	v.union([v.string(), v.boolean()]),
+	v.transform((val) => {
+		if (typeof val === 'boolean') return val;
+		return val === 'on' || val === 'true';
+	}),
+	v.boolean()
+);
