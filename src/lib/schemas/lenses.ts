@@ -1,8 +1,8 @@
 /**
  * Lens validation schemas
- * Valibot schemas for lens materials, treatments, and catalog items
+ * Zod schemas for lens materials, treatments, and catalog items
  */
-import * as v from 'valibot';
+import { z } from 'zod';
 import { LensType, LensCatalogSource, LensPricingUnit } from '$lib/shared/enums';
 import { CoercedBoolean, CoercedInteger, CoercedNumber } from './common';
 
@@ -10,180 +10,162 @@ import { CoercedBoolean, CoercedInteger, CoercedNumber } from './common';
 // LENS MATERIALS
 // ============================================================================
 
-export const CreateLensMaterialSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
-	code: v.pipe(v.string(), v.minLength(1, 'Código requerido'), v.maxLength(50)),
-	refractiveIndex: v.optional(v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))),
-	description: v.optional(v.string())
+export const CreateLensMaterialSchema = z.object({
+	name: z.string().min(1, 'Nombre requerido').max(255),
+	code: z.string().min(1, 'Código requerido').max(50),
+	refractiveIndex: CoercedNumber.min(1.0).max(2.0).optional(),
+	description: z.string().optional()
 });
 
-export const UpdateLensMaterialSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(255))),
-	code: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(50))),
-	refractiveIndex: v.optional(v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))),
-	description: v.optional(v.string()),
-	isActive: v.optional(v.boolean())
+export const UpdateLensMaterialSchema = z.object({
+	id: z.uuid(),
+	name: z.string().min(1).max(255).optional(),
+	code: z.string().min(1).max(50).optional(),
+	refractiveIndex: CoercedNumber.min(1.0).max(2.0).optional(),
+	description: z.string().optional(),
+	isActive: z.boolean().optional()
 });
 
 // ============================================================================
 // LENS TREATMENTS
 // ============================================================================
 
-export const CreateLensTreatmentSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
-	code: v.pipe(v.string(), v.minLength(1, 'Código requerido'), v.maxLength(50)),
-	description: v.optional(v.string())
+export const CreateLensTreatmentSchema = z.object({
+	name: z.string().min(1, 'Nombre requerido').max(255),
+	code: z.string().min(1, 'Código requerido').max(50),
+	description: z.string().optional()
 });
 
-export const UpdateLensTreatmentSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(255))),
-	code: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(50))),
-	description: v.optional(v.string()),
-	isActive: v.optional(v.boolean())
+export const UpdateLensTreatmentSchema = z.object({
+	id: z.uuid(),
+	name: z.string().min(1).max(255).optional(),
+	code: z.string().min(1).max(50).optional(),
+	description: z.string().optional(),
+	isActive: z.boolean().optional()
 });
 
 // ============================================================================
 // OPTICAL RANGE (used inside catalog item schemas)
 // ============================================================================
 
-export const OpticalRangeSchema = v.pipe(
-	v.object({
-		sphereMin: v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30)),
-		sphereMax: v.pipe(CoercedNumber, v.minValue(-30), v.maxValue(30)),
-		cylinderMin: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
-		cylinderMax: v.optional(v.pipe(CoercedNumber, v.minValue(-10), v.maxValue(0))),
-		additionMin: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
-		additionMax: v.optional(v.pipe(CoercedNumber, v.minValue(0), v.maxValue(4.0))),
-		mirrorGroup: v.optional(v.pipe(v.string(), v.uuid()))
-	}),
-	v.forward(
-		v.partialCheck(
-			[['sphereMin'], ['sphereMax']],
-			(input) => input.sphereMin <= input.sphereMax,
-			'Esfera mínima debe ser ≤ esfera máxima'
-		),
-		['sphereMin']
-	)
-);
+export const OpticalRangeSchema = z
+	.object({
+		sphereMin: CoercedNumber.min(-30).max(30),
+		sphereMax: CoercedNumber.min(-30).max(30),
+		cylinderMin: CoercedNumber.min(-10).max(0).optional(),
+		cylinderMax: CoercedNumber.min(-10).max(0).optional(),
+		additionMin: CoercedNumber.min(0).max(4.0).optional(),
+		additionMax: CoercedNumber.min(0).max(4.0).optional(),
+		mirrorGroup: z.uuid().optional()
+	})
+	.refine((data) => data.sphereMin <= data.sphereMax, {
+		message: 'Esfera mínima debe ser ≤ esfera máxima',
+		path: ['sphereMin']
+	});
 
-export type OpticalRangeInput = v.InferOutput<typeof OpticalRangeSchema>;
+export type OpticalRangeInput = z.infer<typeof OpticalRangeSchema>;
 
 // ============================================================================
 // LENS CATALOG ITEMS
 // ============================================================================
 
-export const CreateLensCatalogItemSchema = v.object({
-	source: v.optional(v.enum(LensCatalogSource), LensCatalogSource.LAB),
+export const CreateLensCatalogItemSchema = z.object({
+	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),
 	// supplierId accepts UUID or pending_* ID
-	supplierId: v.union(
-		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))],
+	supplierId: z.union(
+		[z.uuid(), z.string().startsWith('pending_')],
 		'Proveedor requerido'
 	),
-	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
-	brand: v.optional(v.string()),
-	technology: v.optional(v.string()),
-	type: v.enum(LensType, 'Tipo de lente requerido'),
+	name: z.string().min(1, 'Nombre requerido').max(255),
+	brand: z.string().optional(),
+	technology: z.string().optional(),
+	type: z.enum(LensType, 'Tipo de lente requerido'),
 	// materialId accepts UUID or pending_material_* ID
-	materialId: v.union(
-		[v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))],
+	materialId: z.union(
+		[z.uuid(), z.string().startsWith('pending_material_')],
 		'Material requerido'
 	),
 	// Pending entity names (sent when ID starts with pending_*)
-	pendingSupplierName: v.optional(v.string()),
-	pendingMaterialName: v.optional(v.string()),
-	pendingMaterialRefractiveIndex: v.optional(
-		v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))
-	),
+	pendingSupplierName: z.string().optional(),
+	pendingMaterialName: z.string().optional(),
+	pendingMaterialRefractiveIndex: CoercedNumber.min(1.0).max(2.0).optional(),
 	// Optical ranges — at least one required
-	ranges: v.pipe(
-		v.string(),
-		v.transform((val) => JSON.parse(val) as unknown[]),
-		v.pipe(v.array(OpticalRangeSchema), v.minLength(1, 'Se requiere al menos un rango óptico'))
-	),
-	baseFeatures: v.optional(v.array(v.string())),
-	isPhotochromic: v.optional(CoercedBoolean, false),
-	isBlueCut: v.optional(CoercedBoolean, false),
-	isAR: v.optional(CoercedBoolean, false),
-	pricingUnit: v.optional(v.enum(LensPricingUnit), LensPricingUnit.UNIT),
-	basePrice: v.pipe(CoercedNumber, v.minValue(0, 'Precio de compra debe ser ≥ 0')),
-	suggestedMultiplier: v.optional(
-		v.pipe(CoercedNumber, v.minValue(1, 'Multiplicador debe ser ≥ 1'))
-	),
-	mountingPrice: v.optional(v.pipe(CoercedNumber, v.minValue(0, 'Precio de montaje debe ser ≥ 0'))),
-	deliveryDays: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
-	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
-	refractiveIndex: v.optional(v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))),
-	notes: v.optional(v.string())
+	ranges: z
+		.string()
+		.transform((val) => JSON.parse(val) as unknown[])
+		.pipe(z.array(OpticalRangeSchema).min(1, 'Se requiere al menos un rango óptico')),
+	baseFeatures: z.array(z.string()).optional(),
+	isPhotochromic: CoercedBoolean.default(false),
+	isBlueCut: CoercedBoolean.default(false),
+	isAR: CoercedBoolean.default(false),
+	pricingUnit: z.enum(LensPricingUnit).default(LensPricingUnit.UNIT),
+	basePrice: CoercedNumber.min(0, 'Precio de compra debe ser ≥ 0'),
+	suggestedMultiplier: CoercedNumber.min(1, 'Multiplicador debe ser ≥ 1').optional(),
+	mountingPrice: CoercedNumber.min(0, 'Precio de montaje debe ser ≥ 0').optional(),
+	deliveryDays: CoercedInteger.min(0).optional(),
+	stock: CoercedInteger.min(0).optional(),
+	refractiveIndex: CoercedNumber.min(1.0).max(2.0).optional(),
+	notes: z.string().optional()
 });
 
-export const UpdateLensCatalogItemSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	source: v.optional(v.enum(LensCatalogSource)),
-	supplierId: v.optional(
-		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_'))])
-	),
-	name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(255))),
-	brand: v.optional(v.string()),
-	technology: v.optional(v.string()),
-	type: v.optional(v.enum(LensType)),
-	materialId: v.optional(
-		v.union([v.pipe(v.string(), v.uuid()), v.pipe(v.string(), v.startsWith('pending_material_'))])
-	),
+export const UpdateLensCatalogItemSchema = z.object({
+	id: z.uuid(),
+	source: z.enum(LensCatalogSource).optional(),
+	supplierId: z.union([z.uuid(), z.string().startsWith('pending_')]).optional(),
+	name: z.string().min(1).max(255).optional(),
+	brand: z.string().optional(),
+	technology: z.string().optional(),
+	type: z.enum(LensType).optional(),
+	materialId: z.union([z.uuid(), z.string().startsWith('pending_material_')]).optional(),
 	// Pending entity names
-	pendingSupplierName: v.optional(v.string()),
-	pendingMaterialName: v.optional(v.string()),
-	pendingMaterialRefractiveIndex: v.optional(
-		v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))
-	),
+	pendingSupplierName: z.string().optional(),
+	pendingMaterialName: z.string().optional(),
+	pendingMaterialRefractiveIndex: CoercedNumber.min(1.0).max(2.0).optional(),
 	// Optical ranges — optional for partial update; if provided, replaces all
-	ranges: v.optional(
-		v.pipe(
-			v.string(),
-			v.transform((val) => JSON.parse(val) as unknown[]),
-			v.pipe(v.array(OpticalRangeSchema), v.minLength(1, 'Se requiere al menos un rango óptico'))
-		)
-	),
-	baseFeatures: v.optional(v.array(v.string())),
-	isPhotochromic: v.optional(CoercedBoolean),
-	isBlueCut: v.optional(CoercedBoolean),
-	isAR: v.optional(CoercedBoolean),
-	pricingUnit: v.optional(v.enum(LensPricingUnit)),
-	basePrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
-	suggestedMultiplier: v.optional(v.pipe(CoercedNumber, v.minValue(1))),
-	mountingPrice: v.optional(v.pipe(CoercedNumber, v.minValue(0))),
-	deliveryDays: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
-	stock: v.optional(v.pipe(CoercedInteger, v.minValue(0))),
-	refractiveIndex: v.optional(v.pipe(CoercedNumber, v.minValue(1.0), v.maxValue(2.0))),
-	notes: v.optional(v.string()),
-	isActive: v.optional(CoercedBoolean)
+	ranges: z
+		.string()
+		.transform((val) => JSON.parse(val) as unknown[])
+		.pipe(z.array(OpticalRangeSchema).min(1, 'Se requiere al menos un rango óptico'))
+		.optional(),
+	baseFeatures: z.array(z.string()).optional(),
+	isPhotochromic: CoercedBoolean.optional(),
+	isBlueCut: CoercedBoolean.optional(),
+	isAR: CoercedBoolean.optional(),
+	pricingUnit: z.enum(LensPricingUnit).optional(),
+	basePrice: CoercedNumber.min(0).optional(),
+	suggestedMultiplier: CoercedNumber.min(1).optional(),
+	mountingPrice: CoercedNumber.min(0).optional(),
+	deliveryDays: CoercedInteger.min(0).optional(),
+	stock: CoercedInteger.min(0).optional(),
+	refractiveIndex: CoercedNumber.min(1.0).max(2.0).optional(),
+	notes: z.string().optional(),
+	isActive: CoercedBoolean.optional()
 });
 
 // ============================================================================
 // COMMON
 // ============================================================================
 
-export const LensIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid())
+export const LensIdSchema = z.object({
+	id: z.uuid()
 });
 
-export const ListLensCatalogSchema = v.object({
-	search: v.optional(v.string()),
-	source: v.optional(v.enum(LensCatalogSource)),
-	supplierId: v.optional(v.pipe(v.string(), v.uuid())),
-	materialId: v.optional(v.pipe(v.string(), v.uuid())),
-	type: v.optional(v.enum(LensType)),
-	technology: v.optional(v.string())
+export const ListLensCatalogSchema = z.object({
+	search: z.string().optional(),
+	source: z.enum(LensCatalogSource).optional(),
+	supplierId: z.uuid().optional(),
+	materialId: z.uuid().optional(),
+	type: z.enum(LensType).optional(),
+	technology: z.string().optional()
 });
 
-export const SupplierIdSchema = v.object({
-	supplierId: v.pipe(v.string(), v.uuid())
+export const SupplierIdSchema = z.object({
+	supplierId: z.uuid()
 });
 
-export const UpsertSupplierTreatmentSchema = v.object({
-	supplierId: v.pipe(v.string(), v.uuid()),
-	treatmentId: v.pipe(v.string(), v.uuid()),
-	price: v.pipe(CoercedNumber, v.minValue(0, 'Precio debe ser ≥ 0')),
-	isAvailable: v.optional(v.boolean(), true)
+export const UpsertSupplierTreatmentSchema = z.object({
+	supplierId: z.uuid(),
+	treatmentId: z.uuid(),
+	price: CoercedNumber.min(0, 'Precio debe ser ≥ 0'),
+	isAvailable: z.boolean().default(true)
 });
