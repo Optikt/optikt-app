@@ -72,19 +72,13 @@ export type OpticalRangeInput = z.infer<typeof OpticalRangeSchema>;
 export const CreateLensCatalogItemSchema = z.object({
 	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),
 	// supplierId accepts UUID or pending_* ID
-	supplierId: z.union(
-		[z.uuid(), z.string().startsWith('pending_')],
-		'Proveedor requerido'
-	),
+	supplierId: z.union([z.uuid(), z.string().startsWith('pending_')], 'Proveedor requerido'),
 	name: z.string().min(1, 'Nombre requerido').max(255),
 	brand: z.string().optional(),
 	technology: z.string().optional(),
 	type: z.enum(LensType, 'Tipo de lente requerido'),
 	// materialId accepts UUID or pending_material_* ID
-	materialId: z.union(
-		[z.uuid(), z.string().startsWith('pending_material_')],
-		'Material requerido'
-	),
+	materialId: z.union([z.uuid(), z.string().startsWith('pending_material_')], 'Material requerido'),
 	// Pending entity names (sent when ID starts with pending_*)
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
