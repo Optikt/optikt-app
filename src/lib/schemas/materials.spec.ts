@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import * as v from 'valibot';
 import {
 	ListMaterialsSchema,
 	MaterialIdSchema,
@@ -9,16 +8,16 @@ import {
 
 describe('QuickCreateMaterialSchema', () => {
 	it('accepts valid payloads with defaults', () => {
-		const result = v.safeParse(QuickCreateMaterialSchema, { name: 'ACETATO' });
+		const result = QuickCreateMaterialSchema.safeParse({ name: 'ACETATO' });
 		expect(result.success).toBe(true);
 		if (result.success) {
-			const data = result.output;
+			const data = result.data;
 			expect(data.productType).toBe('FRAME');
 		}
 	});
 
 	it('accepts explicit productType values', () => {
-		const result = v.safeParse(QuickCreateMaterialSchema, {
+		const result = QuickCreateMaterialSchema.safeParse({
 			name: 'Metal',
 			productType: MaterialProductTypes[1]
 		});
@@ -26,42 +25,42 @@ describe('QuickCreateMaterialSchema', () => {
 	});
 
 	it('rejects empty names', () => {
-		const result = v.safeParse(QuickCreateMaterialSchema, { name: '' });
+		const result = QuickCreateMaterialSchema.safeParse({ name: '' });
 		expect(result.success).toBe(false);
 	});
 });
 
 describe('ListMaterialsSchema', () => {
 	it('defaults promise includeDeleted false', () => {
-		const result = v.safeParse(ListMaterialsSchema, {});
+		const result = ListMaterialsSchema.safeParse({});
 		expect(result.success).toBe(true);
 		if (result.success) {
-			const data = result.output;
+			const data = result.data;
 			expect(data.includeDeleted).toBe(false);
 		}
 	});
 
 	it('accepts valid productType filters', () => {
-		const result = v.safeParse(ListMaterialsSchema, { productType: MaterialProductTypes[2] });
+		const result = ListMaterialsSchema.safeParse({ productType: MaterialProductTypes[2] });
 		expect(result.success).toBe(true);
 	});
 
 	it('rejects invalid productType values', () => {
-		const result = v.safeParse(ListMaterialsSchema, { productType: 'XXX' });
+		const result = ListMaterialsSchema.safeParse({ productType: 'XXX' });
 		expect(result.success).toBe(false);
 	});
 });
 
 describe('MaterialIdSchema', () => {
 	it('validates uuid IDs', () => {
-		const result = v.safeParse(MaterialIdSchema, {
+		const result = MaterialIdSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000001'
 		});
 		expect(result.success).toBe(true);
 	});
 
 	it('rejects invalid UUIDs', () => {
-		const result = v.safeParse(MaterialIdSchema, { id: 'abc' });
+		const result = MaterialIdSchema.safeParse({ id: 'abc' });
 		expect(result.success).toBe(false);
 	});
 });
