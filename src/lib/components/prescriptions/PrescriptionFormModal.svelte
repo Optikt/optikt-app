@@ -212,12 +212,12 @@
 
 {#snippet prescriptionFields(formInstance: FormInstance)}
 	<div class="space-y-4">
-		<!-- Customer info -->
+		<!-- Customer info
 		<div class="rounded-lg bg-slate-50 p-3">
 			<p class="text-sm text-slate-600">
 				Cliente: <span class="font-medium text-slate-900">{getFullName(customer)}</span>
 			</p>
-		</div>
+		</div> -->
 
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
 			<FormDatepicker
@@ -354,7 +354,7 @@
 		<!-- Treatments Section -->
 		<div class="space-y-3">
 			<h4 class="font-semibold text-slate-900">Tratamientos</h4>
-			<div class="space-x-8 flex items-start">
+			<div class="flex items-start space-x-8">
 				<Checkbox name="treatmentAntiReflective" bind:checked={formData.treatmentAntiReflective}>
 					Antireflejo
 				</Checkbox>
@@ -367,20 +367,19 @@
 					Fotocromático
 				</Checkbox>
 
-				<div class="flex items-start gap-3">
+				<div class="flex w-1/3 items-start gap-3">
 					<Checkbox name="treatmentOtherChecked" bind:checked={formData.hasOtherTreatment}>
 						Otros
 					</Checkbox>
 
 					{#if formData.hasOtherTreatment}
-						<div class="flex-1">
-							<FormInput
-								name="treatmentOther"
-								placeholder="Describa el tratamiento"
-								bind:value={formData.treatmentOther}
-								required
-							/>
-						</div>
+						<FormInput
+							divClass="w-full"
+							name="treatmentOther"
+							placeholder="Describa el tratamiento"
+							bind:value={formData.treatmentOther}
+							required
+						/>
 					{/if}
 				</div>
 			</div>
@@ -397,7 +396,7 @@
 	</div>
 {/snippet}
 
-<Modal bind:open size="xl" {title} outsideclose onclose={handleClose}>
+<Modal bind:open size="xl" title={`${title} - ${getFullName(customer)}`} outsideclose onclose={handleClose}>
 	{#if isEditMode && prescription}
 		<!-- UPDATE FORM -->
 		<form
