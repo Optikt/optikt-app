@@ -2,6 +2,7 @@
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Input, Helper, Label, type InputProps } from 'flowbite-svelte';
 	import { getFormErrorMessage } from '$lib/utils';
+	import type { ClassValue } from 'svelte/elements';
 
 	interface Props extends InputProps {
 		value: string;
@@ -15,8 +16,10 @@
 		readonly?: boolean;
 		autocomplete?: 'off' | 'on' | 'new-password' | 'current-password' | 'email' | 'username';
 		size?: 'sm' | 'md' | 'lg';
-		class?: string;
 		title?: string;
+		class?: ClassValue;
+		divClass?: ClassValue;
+
 	}
 
 	let {
@@ -31,6 +34,7 @@
 		readonly = false,
 		autocomplete,
 		size = 'md',
+		divClass,
 		class: className,
 		required = false,
 		title,
@@ -49,7 +53,7 @@
 </script>
 
 <!-- Wrapper div ensures this is a single item when used -->
-<div>
+<div class={divClass}>
 	{#if label}
 		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
 	{/if}
