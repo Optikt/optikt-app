@@ -1,54 +1,54 @@
 /**
  * Customers validation schemas
- * Valibot schemas for validation in remote functions
+ * Zod schemas for validation in remote functions
  */
-import * as v from 'valibot';
+import { z } from 'zod';
 import { PhoneSchema, OptionalIdNumberSchema } from './common';
 
-export const ListCustomersSchema = v.object({
-	page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
-	perPage: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 10),
-	search: v.optional(v.string())
+export const ListCustomersSchema = z.object({
+	page: z.int().min(1).default(1),
+	perPage: z.int().min(1).max(100).default(10),
+	search: z.string().optional()
 });
 
-export const CreateCustomerSchema = v.object({
-	firstName: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(100)),
-	lastName: v.pipe(v.string(), v.minLength(1, 'Apellido requerido'), v.maxLength(100)),
+export const CreateCustomerSchema = z.object({
+	firstName: z.string().min(1, 'Nombre requerido').max(100),
+	lastName: z.string().min(1, 'Apellido requerido').max(100),
 	idNumber: OptionalIdNumberSchema,
-	birthDate: v.pipe(v.string(), v.isoDate('Fecha de nacimiento inválida')),
+	birthDate: z.iso.date('Fecha de nacimiento inválida'),
 	primaryPhone: PhoneSchema,
-	email: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.email('Email inválido'))])),
-	address: v.optional(v.string()),
-	secondaryPhones: v.optional(v.array(v.string())),
-	notes: v.optional(v.string())
+	email: z.optional(z.union([z.literal(''), z.email('Email inválido')])),
+	address: z.string().optional(),
+	secondaryPhones: z.array(PhoneSchema).optional(),
+	notes: z.string().optional()
 });
 
-export const UpdateCustomerSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	firstName: v.optional(v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(100))),
-	lastName: v.optional(v.pipe(v.string(), v.minLength(1, 'Apellido requerido'), v.maxLength(100))),
+export const UpdateCustomerSchema = z.object({
+	id: z.uuid(),
+	firstName: z.string().min(1, 'Nombre requerido').max(100).optional(),
+	lastName: z.string().min(1, 'Apellido requerido').max(100).optional(),
 	idNumber: OptionalIdNumberSchema,
-	birthDate: v.optional(v.pipe(v.string(), v.isoDate('Fecha de nacimiento inválida'))),
-	primaryPhone: v.optional(PhoneSchema),
-	email: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.email('Email inválido'))])),
-	address: v.optional(v.string()),
-	secondaryPhones: v.optional(v.array(v.string())),
-	notes: v.optional(v.string())
+	birthDate: z.iso.date('Fecha de nacimiento inválida').optional(),
+	primaryPhone: PhoneSchema.optional(),
+	email: z.optional(z.union([z.literal(''), z.email('Email inválido')])),
+	address: z.string().optional(),
+	secondaryPhones: z.array(PhoneSchema).optional(),
+	notes: z.string().optional()
 });
 
-export const CustomerIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid())
+export const CustomerIdSchema = z.object({
+	id: z.uuid()
 });
 
-export const ReactivateCustomerSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	firstName: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(100)),
-	lastName: v.pipe(v.string(), v.minLength(1, 'Apellido requerido'), v.maxLength(100)),
+export const ReactivateCustomerSchema = z.object({
+	id: z.uuid(),
+	firstName: z.string().min(1, 'Nombre requerido').max(100),
+	lastName: z.string().min(1, 'Apellido requerido').max(100),
 	idNumber: OptionalIdNumberSchema,
-	birthDate: v.pipe(v.string(), v.isoDate('Fecha de nacimiento inválida')),
+	birthDate: z.iso.date('Fecha de nacimiento inválida'),
 	primaryPhone: PhoneSchema,
-	email: v.optional(v.union([v.literal(''), v.pipe(v.string(), v.email('Email inválido'))])),
-	address: v.optional(v.string()),
-	secondaryPhones: v.optional(v.array(v.string())),
-	notes: v.optional(v.string())
+	email: z.optional(z.union([z.literal(''), z.email('Email inválido')])),
+	address: z.string().optional(),
+	secondaryPhones: z.array(PhoneSchema).optional(),
+	notes: z.string().optional()
 });
