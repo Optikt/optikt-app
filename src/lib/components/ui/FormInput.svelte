@@ -54,7 +54,7 @@
 <!-- Wrapper div ensures this is a single item when used -->
 <div class={divClass}>
 	{#if label}
-		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
+		<Label for={inputId} color={hasError ? 'red' : undefined} class="mb-2">{label}</Label>
 	{/if}
 	<Input
 		id={inputId}
