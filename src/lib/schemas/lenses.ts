@@ -4,29 +4,7 @@
  */
 import * as v from 'valibot';
 import { LensType, LensCatalogSource, LensPricingUnit } from '$lib/shared/enums';
-
-// Coerce string to number (for form inputs)
-const CoercedNumber = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseFloat(val) : val)),
-	v.number('Debe ser un número válido')
-);
-
-const CoercedInteger = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val)),
-	v.pipe(v.number(), v.integer())
-);
-
-// Coerce checkbox value ("on"/"true"/"false" / absent) to boolean
-const CoercedBoolean = v.pipe(
-	v.union([v.string(), v.boolean()]),
-	v.transform((val) => {
-		if (typeof val === 'boolean') return val;
-		return val === 'on' || val === 'true';
-	}),
-	v.boolean()
-);
+import { CoercedBoolean, CoercedInteger, CoercedNumber } from './common';
 
 // ============================================================================
 // LENS MATERIALS
