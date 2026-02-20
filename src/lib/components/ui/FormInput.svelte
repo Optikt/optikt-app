@@ -36,7 +36,8 @@
 		title,
 		step,
 		min,
-		max
+		max,
+		hidden
 	}: Props = $props();
 
 	// Use name as fallback for id (for the label's "for" attribute)
@@ -69,6 +70,7 @@
 		{step}
 		{min}
 		{max}
+		{hidden}
 	/>
 	{#if displayError}
 		<Helper color="red">{displayError}</Helper>
