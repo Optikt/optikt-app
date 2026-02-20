@@ -12,7 +12,7 @@
 		"zod": {
 			"url": "https://mcp.inkeep.com/zod/mcp",
 			"type": "http"
-		},
+		}
 	},
 	"inputs": []
 }
