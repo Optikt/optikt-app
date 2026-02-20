@@ -55,6 +55,7 @@
 		{availableTo}
 		color={hasError ? 'red' : 'primary'}
 		{required}
+		inputClass="p-2.5"
 	/>
 
 	<!-- Hidden input for form submission -->
