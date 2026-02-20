@@ -121,7 +121,7 @@ export const CoercedNumber = v.pipe(
 export const CoercedInteger = v.pipe(
 	v.union([v.string(), v.number()]),
 	v.transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val)),
-	v.pipe(v.number(), v.integer())
+	v.pipe(v.number('Debe ser un número válido'), v.integer('Debe ser un número entero'))
 );
 
 /**
