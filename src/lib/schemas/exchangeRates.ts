@@ -4,13 +4,7 @@
  */
 import * as v from 'valibot';
 import { ALL_CURRENCY_CODES } from '$lib/shared/enums';
-
-// Helper to coerce string to number for form inputs
-const CoercedNumber = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseFloat(val) : val)),
-	v.number()
-);
+import { CoercedNumber } from './common';
 
 export const ListCurrenciesSchema = v.object({
 	activeOnly: v.optional(v.boolean(), true)
