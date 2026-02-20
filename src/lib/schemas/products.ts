@@ -31,14 +31,9 @@ export const CreateProductSchema = z.object({
 	name: z.string().min(1, 'Nombre requerido').max(255),
 	type: z.enum(ALL_PRODUCT_TYPES, 'Tipo de producto requerido'),
 	// brandId is optional and can be null
-	brandId: z
-		.union([z.literal(''), z.uuid(), z.string().startsWith('pending_')])
-		.optional(),
+	brandId: z.union([z.literal(''), z.uuid(), z.string().startsWith('pending_')]).optional(),
 	// supplierId is REQUIRED - must be a valid UUID or pending ID
-	supplierId: z.union(
-		[z.uuid(), z.string().startsWith('pending_')],
-		'Proveedor es requerido'
-	),
+	supplierId: z.union([z.uuid(), z.string().startsWith('pending_')], 'Proveedor es requerido'),
 	// materialId is REQUIRED - must be a valid UUID or pending material ID
 	materialId: z.union(
 		[z.uuid(), z.string().startsWith('pending_material_')],
@@ -72,9 +67,7 @@ export const UpdateProductSchema = z.object({
 	name: z.string().min(1, 'Nombre requerido').max(255).optional(),
 	type: z.enum(ALL_PRODUCT_TYPES).optional(),
 	// brandId is optional and can be set to null (empty string)
-	brandId: z
-		.union([z.literal(''), z.uuid(), z.string().startsWith('pending_')])
-		.optional(),
+	brandId: z.union([z.literal(''), z.uuid(), z.string().startsWith('pending_')]).optional(),
 	// supplierId is required (cannot be null), but optional to update - cannot be empty string
 	supplierId: z.union([z.uuid(), z.string().startsWith('pending_')]).optional(),
 	// materialId is required (cannot be null), but optional to update - cannot be empty string

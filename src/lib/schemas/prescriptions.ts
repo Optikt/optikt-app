@@ -16,7 +16,7 @@ import { CoercedInteger } from './common';
  */
 export const SphereSchema = z.optional(
 	z.preprocess(
-		(val) => {
+		(val: string | number) => {
 			if (val === '' || val === undefined || val === null) return 0;
 			return typeof val === 'string' ? parseFloat(val) : val;
 		},
@@ -33,7 +33,7 @@ export const SphereSchema = z.optional(
  */
 export const CylinderSchema = z.optional(
 	z.preprocess(
-		(val) => {
+		(val: string | number) => {
 			if (val === '' || val === undefined || val === null) return 0;
 			return typeof val === 'string' ? parseFloat(val) : val;
 		},
