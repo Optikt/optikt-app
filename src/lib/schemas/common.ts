@@ -1,10 +1,12 @@
 /**
  * Common/Shared validation schemas
- * Reusable Valibot schemas for use across multiple entity schemas
+ * Reusable Zod schemas for use across multiple entity schemas
  */
-import * as v from 'valibot';
+import { z } from 'zod';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import { validateRif } from '$lib/utils';
+
+export const EmptySchema = z.object({});
 
 // =============================================================================
 // PHONE SCHEMAS
@@ -14,30 +16,26 @@ import { validateRif } from '$lib/utils';
  * Phone validation using libphonenumber-js
  * Validates phone numbers, defaulting to Venezuela (VE)
  */
-export const PhoneSchema = v.pipe(
-	v.string(),
-	v.minLength(7, 'Teléfono debe tener al menos 7 dígitos'),
-	v.check((value: string) => {
+export const PhoneSchema = z
+	.string()
+	.min(7, 'Teléfono debe tener al menos 7 dígitos')
+	.refine((value: string) => {
 		if (!value) return true;
 		const phone = parsePhoneNumberFromString(value, 'VE');
 		return phone?.isValid() ?? false;
-	}, 'Número de teléfono inválido')
-);
+	}, 'Número de teléfono inválido');
 
 /**
  * Optional phone validation - allows empty or valid phone
  */
-export const OptionalPhoneSchema = v.optional(
-	v.union([
-		v.literal(''),
-		v.pipe(
-			v.string(),
-			v.check((value: string) => {
-				if (!value) return true;
-				const phone = parsePhoneNumberFromString(value, 'VE');
-				return phone?.isValid() ?? false;
-			}, 'Número de teléfono inválido')
-		)
+export const OptionalPhoneSchema = z.optional(
+	z.union([
+		z.literal(''),
+		z.string().refine((value: string) => {
+			if (!value) return true;
+			const phone = parsePhoneNumberFromString(value, 'VE');
+			return phone?.isValid() ?? false;
+		}, 'Número de teléfono inválido')
 	])
 );
 
@@ -45,17 +43,14 @@ export const OptionalPhoneSchema = v.optional(
  * WhatsApp validation - international format with country code
  * Format: +XXNNNNNNN
  */
-export const WhatsAppSchema = v.optional(
-	v.union([
-		v.literal(''),
-		v.pipe(
-			v.string(),
-			v.check((value: string) => {
-				if (!value) return true;
-				const phone = parsePhoneNumberFromString(value);
-				return phone?.isValid() ?? false;
-			}, 'Número de WhatsApp inválido')
-		)
+export const WhatsAppSchema = z.optional(
+	z.union([
+		z.literal(''),
+		z.string().refine((value: string) => {
+			if (!value) return true;
+			const phone = parsePhoneNumberFromString(value);
+			return phone?.isValid() ?? false;
+		}, 'Número de WhatsApp inválido')
 	])
 );
 
@@ -66,11 +61,8 @@ export const WhatsAppSchema = v.optional(
 /**
  * Instagram validation - should start with @
  */
-export const InstagramSchema = v.optional(
-	v.union([
-		v.literal(''),
-		v.pipe(v.string(), v.regex(/^@[\w.]+$/, 'Usuario de Instagram inválido'))
-	])
+export const InstagramSchema = z.optional(
+	z.union([z.literal(''), z.string().regex(/^@[\w.]+$/, 'Usuario de Instagram inválido')])
 );
 
 // =============================================================================
@@ -81,57 +73,46 @@ export const InstagramSchema = v.optional(
  * RIF validation schema - V/E/J/G-XXXXXXXX-X format
  * Uses Module 11 algorithm to validate check digit
  */
-export const RifSchema = v.pipe(
-	v.string(),
-	v.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: X-12345678-9)'),
-	v.check((value: string) => validateRif(value), 'RIF inválido: dígito verificador incorrecto')
-);
+export const RifSchema = z
+	.string()
+	.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: X-12345678-9)')
+	.refine((value: string) => validateRif(value), 'RIF inválido: dígito verificador incorrecto');
 
 /**
  * Optional RIF validation
  */
-export const OptionalRifSchema = v.optional(v.union([v.literal(''), RifSchema]));
+export const OptionalRifSchema = z.optional(z.union([z.literal(''), RifSchema]));
 
 /**
  * ID Number (Cédula) validation - V/E prefix with variable length digits
  * Format: V-123456 through V-12345678 or E-123456 through E-12345678
  */
-export const IdNumberSchema = v.pipe(
-	v.string(),
-	v.regex(/^[VE]-\d{6,10}$/, 'Cédula inválida (formato: V-12345678 o E-12345678)')
-);
+export const IdNumberSchema = z
+	.string()
+	.regex(/^[VE]-\d{6,10}$/, 'Cédula inválida (formato: V-12345678 o E-12345678)');
 
 /**
  * Optional ID Number validation
  */
-export const OptionalIdNumberSchema = v.optional(v.union([v.literal(''), IdNumberSchema]));
+export const OptionalIdNumberSchema = z.optional(z.union([z.literal(''), IdNumberSchema]));
 
 /**
  * CoercedNumber schema - accepts string or number, transforms to number
  */
-export const CoercedNumber = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseFloat(val) : val)),
-	v.number('Debe ser un número válido')
-);
+export const CoercedNumber = z.coerce.number();
 
 /**
  * CoercedInteger schema - accepts string or number, transforms to integer
  */
-export const CoercedInteger = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val)),
-	v.pipe(v.number('Debe ser un número válido'), v.integer('Debe ser un número entero'))
-);
+export const CoercedInteger = z.coerce.number().int();
 
 /**
  * CoercedBoolean schema - accepts string or boolean, transforms to boolean
+ * Handles form inputs like 'on', 'true', true
  */
-export const CoercedBoolean = v.pipe(
-	v.union([v.string(), v.boolean()]),
-	v.transform((val) => {
-		if (typeof val === 'boolean') return val;
-		return val === 'on' || val === 'true';
-	}),
-	v.boolean()
-);
+export const CoercedBoolean = z.preprocess((val) => {
+	if (typeof val === 'boolean') return val;
+	if (val === 'on' || val === 'true') return true;
+	if (val === 'off' || val === 'false') return false;
+	return val;
+}, z.boolean());
