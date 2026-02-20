@@ -212,13 +212,6 @@
 
 {#snippet prescriptionFields(formInstance: FormInstance)}
 	<div class="space-y-4">
-		<!-- Customer info
-		<div class="rounded-lg bg-slate-50 p-3">
-			<p class="text-sm text-slate-600">
-				Cliente: <span class="font-medium text-slate-900">{getFullName(customer)}</span>
-			</p>
-		</div> -->
-
 		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
 			<FormDatepicker
 				name="prescriptionDate"
@@ -328,6 +321,7 @@
 					name="dp"
 					label="DP (mm)"
 					type="number"
+					min={0}
 					placeholder="62"
 					bind:value={formData.dp}
 					error={formInstance.fields.dp?.issues()}
@@ -336,6 +330,7 @@
 					name="npRight"
 					label="NP Derecho (mm)"
 					type="number"
+					min={0}
 					placeholder="31"
 					bind:value={formData.npRight}
 					error={formInstance.fields.npRight?.issues()}
@@ -344,6 +339,7 @@
 					name="npLeft"
 					label="NP Izquierdo (mm)"
 					type="number"
+					min={0}
 					placeholder="31"
 					bind:value={formData.npLeft}
 					error={formInstance.fields.npLeft?.issues()}
