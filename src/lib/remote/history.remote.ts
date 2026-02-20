@@ -3,13 +3,13 @@
  * Server-side functions for fetching entity change history
  */
 import { query } from '$app/server';
-import * as v from 'valibot';
+import { z } from 'zod';
 import { getEntityHistory, getEntityHistoryCount } from '$lib/server/db/queries/changeHistory';
 import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
 
 // Schema for fetching entity history
-const GetEntityHistorySchema = v.object({
-	entityType: v.picklist([
+const GetEntityHistorySchema = z.object({
+	entityType: z.enum([
 		'product',
 		'customer',
 		'prescription',
@@ -22,12 +22,12 @@ const GetEntityHistorySchema = v.object({
 		'lens_material',
 		'lens_treatment'
 	]),
-	entityId: v.pipe(v.string(), v.uuid()),
-	limit: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 50),
-	offset: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0)), 0)
+	entityId: z.string().uuid(),
+	limit: z.number().int().min(1).max(100).default(50),
+	offset: z.number().int().min(0).default(0)
 });
 
-export type GetEntityHistoryParams = v.InferInput<typeof GetEntityHistorySchema>;
+export type GetEntityHistoryParams = z.infer<typeof GetEntityHistorySchema>;
 
 export interface HistoryEntryResponse {
 	id: string;
