@@ -135,18 +135,3 @@ export const CoercedBoolean = v.pipe(
 	}),
 	v.boolean()
 );
-
-
-/**
- * Require at least one of two fields to be present
- * @param field1 First field to check
- * @param field2 Second field to check
- * @param message Error message if neither field is present
- * @returns Valibot check schema
- */
-export const requireAtLeastOne = (field1: string, field2: string, message: string) => {
-  return v.check(
-    (input: any) => input[field1] !== undefined || input[field2] !== undefined,
-    message
-  );
-};
