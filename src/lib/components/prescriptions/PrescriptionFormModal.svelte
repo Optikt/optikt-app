@@ -243,9 +243,9 @@
 		</div>
 
 		<!-- Eye values section -->
-		<div class="grid grid-cols-1 gap-6 border-t border-slate-300 pt-4 md:grid-cols-2">
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 			<!-- Right Eye (OD) -->
-			<div class="space-y-3">
+			<div class="space-y-2">
 				<h4 class="font-semibold text-slate-900">Ojo Derecho (OD)</h4>
 				<div class="grid grid-cols-2 gap-3">
 					{@render sphere('odSphere', formData, formInstance.fields)}
@@ -279,7 +279,7 @@
 			</div>
 
 			<!-- Left Eye (OS) -->
-			<div class="space-y-3">
+			<div class="space-y-2">
 				<h4 class="font-semibold text-slate-900">Ojo Izquierdo (OS)</h4>
 				<div class="grid grid-cols-2 gap-3">
 					{@render sphere('osSphere', formData, formInstance.fields)}
@@ -314,7 +314,7 @@
 		</div>
 
 		<!-- DP/NP Section -->
-		<div class="space-y-3">
+		<div class="space-y-2">
 			<h4 class="font-semibold text-slate-900">Distancias</h4>
 			<div class="grid grid-cols-3 gap-3">
 				<FormInput
@@ -348,7 +348,7 @@
 		</div>
 
 		<!-- Treatments Section -->
-		<div class="space-y-3">
+		<div class="space-y-2">
 			<h4 class="font-semibold text-slate-900">Tratamientos</h4>
 			<div class="flex items-start space-x-8">
 				<Checkbox name="treatmentAntiReflective" bind:checked={formData.treatmentAntiReflective}>
@@ -414,7 +414,7 @@
 					isSubmitting = false;
 				}
 			})}
-			class="space-y-6"
+			class="space-y-4"
 		>
 			<input type="hidden" name="id" value={prescription.id} />
 			<input type="hidden" name="customerId" value={customer.id} />
@@ -447,7 +447,7 @@
 					isSubmitting = false;
 				}
 			})}
-			class="space-y-6"
+			class="space-y-4"
 		>
 			<input type="hidden" name="customerId" value={customer.id} />
 
