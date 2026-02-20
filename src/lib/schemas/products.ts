@@ -5,6 +5,7 @@
 import * as v from 'valibot';
 import { ALL_PRODUCT_TYPES, ALL_CURRENCY_CODES } from '$lib/shared/enums';
 import { MaterialProductTypes } from './materials';
+import { CoercedInteger, CoercedNumber } from './common';
 
 // Single source of truth for SKU validation
 // SKU format: only uppercase letters, numbers, hyphens (no spaces, no special chars)
@@ -13,20 +14,6 @@ const SkuSchema = v.pipe(
 	v.minLength(1, 'SKU requerido'),
 	v.maxLength(50, 'SKU muy largo (máximo 50 caracteres)'),
 	v.regex(/^[A-Z0-9-]+$/, 'SKU inválido: solo mayúsculas, números y guiones')
-);
-
-// Helper to coerce string to number for form inputs
-const CoercedNumber = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseFloat(val) : val)),
-	v.number()
-);
-
-const CoercedInteger = v.pipe(
-	v.union([v.string(), v.number()]),
-	v.transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val)),
-	v.number(),
-	v.integer()
 );
 
 export const ListProductsSchema = v.object({
