@@ -363,7 +363,7 @@
 					Fotocromático
 				</Checkbox>
 
-				<div class="flex w-1/3 items-start gap-3">
+				<div class="flex w-full items-start gap-3">
 					<Checkbox name="treatmentOtherChecked" bind:checked={formData.hasOtherTreatment}>
 						Otros
 					</Checkbox>
@@ -392,7 +392,13 @@
 	</div>
 {/snippet}
 
-<Modal bind:open size="xl" title={`${title} - ${getFullName(customer)}`} outsideclose onclose={handleClose}>
+<Modal
+	bind:open
+	size="lg"
+	title={`${title} - ${getFullName(customer)}`}
+	outsideclose
+	onclose={handleClose}
+>
 	{#if isEditMode && prescription}
 		<!-- UPDATE FORM -->
 		<form
