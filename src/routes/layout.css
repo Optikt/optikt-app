@@ -5,6 +5,7 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin 'flowbite/plugin';
+@plugin 'tailwind-scrollbar';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
