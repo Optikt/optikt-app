@@ -4,7 +4,7 @@
 	import { untrack } from 'svelte';
 	import { createPrescriptionForm, updatePrescriptionForm } from '$lib/remote/prescriptions.remote';
 	import { FormInput, FormDatepicker } from '$lib/components/ui';
-	import { scrollToFirstError, getErrorMessage } from '$lib/utils';
+	import { scrollToFirstError, getErrorMessage, getFullName } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { LensType, ALL_LENS_TYPES, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
@@ -45,10 +45,16 @@
 		osCylinder: '' as string,
 		osAxis: '' as string,
 		osAddition: '' as string,
-		// PD
-		pd: '' as string,
-		pdRight: '' as string,
-		pdLeft: '' as string,
+		// DP/NP
+		dp: '' as string,
+		npRight: '' as string,
+		npLeft: '' as string,
+		// Treatments
+		treatmentAntiReflective: false,
+		treatmentBlueBlock: false,
+		treatmentPhotochromic: false,
+		hasOtherTreatment: false,
+		treatmentOther: '' as string,
 		// Additional
 		doctorName: '',
 		notes: '',
@@ -67,9 +73,6 @@
 			});
 		}
 	});
-
-	// Max date for prescription date picker (no future dates)
-	const today = new Date();
 
 	// Reset form when modal opens
 	let formInstanceId = $state(generateUUID());
@@ -91,9 +94,14 @@
 						osCylinder: prescription.osCylinder?.toString() ?? '',
 						osAxis: prescription.osAxis?.toString() ?? '',
 						osAddition: prescription.osAddition?.toString() ?? '',
-						pd: prescription.pd?.toString() ?? '',
-						pdRight: prescription.pdRight?.toString() ?? '',
-						pdLeft: prescription.pdLeft?.toString() ?? '',
+						dp: prescription.dp?.toString() ?? '',
+						npRight: prescription.npRight?.toString() ?? '',
+						npLeft: prescription.npLeft?.toString() ?? '',
+						treatmentAntiReflective: prescription.treatments?.antiReflective ?? false,
+						treatmentBlueBlock: prescription.treatments?.blueBlock ?? false,
+						treatmentPhotochromic: prescription.treatments?.photochromic ?? false,
+						hasOtherTreatment: !!prescription.treatments?.other,
+						treatmentOther: prescription.treatments?.other ?? '',
 						doctorName: prescription.doctorName ?? '',
 						notes: prescription.notes ?? '',
 						isCurrent: prescription.isCurrent ?? false
@@ -110,9 +118,14 @@
 						osCylinder: '',
 						osAxis: '',
 						osAddition: '',
-						pd: '',
-						pdRight: '',
-						pdLeft: '',
+						dp: '',
+						npRight: '',
+						npLeft: '',
+						treatmentAntiReflective: false,
+						treatmentBlueBlock: false,
+						treatmentPhotochromic: false,
+						hasOtherTreatment: false,
+						treatmentOther: '',
 						doctorName: '',
 						notes: '',
 						isCurrent: true
@@ -127,6 +140,9 @@
 	const currentUpdateForm = $derived(
 		updatePrescriptionForm.for(`${prescription?.id ?? 'new'}-${formInstanceId}`)
 	);
+
+	type FormData = typeof formData;
+	type FormInstance = typeof currentCreateForm | typeof currentUpdateForm;
 
 	// Handle create result
 	function handleCreateResult(formEl: HTMLFormElement) {
@@ -162,77 +178,108 @@
 	}
 </script>
 
-{#snippet prescriptionFields(formInstance: typeof currentCreateForm | typeof currentUpdateForm)}
+<!-- Sphere Snippet (OD-OI)-->
+{#snippet sphere(name: 'odSphere' | 'osSphere', data: FormData, issues: FormInstance['fields'])}
+	<FormInput
+		{name}
+		label="Esfera"
+		type="number"
+		step={0.25}
+		placeholder="-2.00"
+		bind:value={data[name]}
+		error={issues[name]?.issues()}
+	/>
+{/snippet}
+
+<!-- Cylinder Snippet (OD-OI)-->
+{#snippet cylinder(
+	name: 'odCylinder' | 'osCylinder',
+	data: FormData,
+	issues: FormInstance['fields']
+)}
+	<FormInput
+		{name}
+		label="Cilindro"
+		type="number"
+		step={0.25}
+		placeholder="-0.50"
+		min={-6}
+		max={0}
+		bind:value={data[name]}
+		error={issues[name]?.issues()}
+	/>
+{/snippet}
+
+{#snippet prescriptionFields(formInstance: FormInstance)}
 	<div class="space-y-4">
 		<!-- Customer info -->
 		<div class="rounded-lg bg-slate-50 p-3">
 			<p class="text-sm text-slate-600">
-				Cliente: <span class="font-medium text-slate-900"
-					>{customer.firstName} {customer.lastName}</span
-				>
+				Cliente: <span class="font-medium text-slate-900">{getFullName(customer)}</span>
 			</p>
 		</div>
 
-		<!-- Prescription Date + Lens Type -->
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+		<div class="grid grid-cols-1 items-end gap-4 md:grid-cols-4">
 			<FormDatepicker
 				name="prescriptionDate"
 				label="Fecha de Fórmula"
 				required
 				bind:value={formData.prescriptionDate}
-				availableTo={today}
+				availableTo={new Date()}
 				error={formInstance.fields.prescriptionDate?.issues()}
 			/>
 			<div>
-				<Label for="recommendedLensType" class="mb-2">Tipo de Lente</Label>
+				<Label for="recommendedLensType">Tipo de Lente</Label>
 				<Select
 					id="recommendedLensType"
 					name="recommendedLensType"
 					items={lensTypeOptions}
 					bind:value={formData.recommendedLensType}
-					class="mt-1"
 				/>
+			</div>
+			<FormInput
+				name="doctorName"
+				label="Doctor"
+				placeholder="Nombre del doctor"
+				bind:value={formData.doctorName}
+				error={formInstance.fields.doctorName?.issues()}
+			/>
+			<div class="flex h-[42px] items-center">
+				<Checkbox name="isCurrent" bind:checked={formData.isCurrent}>Fórmula actual</Checkbox>
 			</div>
 		</div>
 
 		<!-- Eye values section -->
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+		<div class="grid grid-cols-1 gap-6 border-t border-slate-300 pt-4 md:grid-cols-2">
 			<!-- Right Eye (OD) -->
 			<div class="space-y-3">
 				<h4 class="font-semibold text-slate-900">Ojo Derecho (OD)</h4>
 				<div class="grid grid-cols-2 gap-3">
-					<FormInput
-						name="odSphere"
-						label="Esfera"
-						type="number"
-						step="0.25"
-						placeholder="-2.00"
-						bind:value={formData.odSphere}
-					/>
-					<FormInput
-						name="odCylinder"
-						label="Cilindro"
-						type="number"
-						step="0.25"
-						placeholder="-0.50"
-						bind:value={formData.odCylinder}
-					/>
+					{@render sphere('odSphere', formData, formInstance.fields)}
+
+					{@render cylinder('odCylinder', formData, formInstance.fields)}
+
 					<FormInput
 						name="odAxis"
 						label="Eje"
 						type="number"
-						step="1"
+						step={1}
+						min={0}
+						max={180}
 						placeholder="180"
 						bind:value={formData.odAxis}
+						error={formInstance.fields.odAxis?.issues()}
 					/>
+
 					{#if !isMonofocal}
 						<FormInput
 							name="odAddition"
 							label="Adición"
 							type="number"
-							step="0.25"
+							step={0.25}
 							placeholder="+1.50"
 							bind:value={formData.odAddition}
+							error={formInstance.fields.odAddition?.issues()}
 						/>
 					{/if}
 				</div>
@@ -242,85 +289,100 @@
 			<div class="space-y-3">
 				<h4 class="font-semibold text-slate-900">Ojo Izquierdo (OS)</h4>
 				<div class="grid grid-cols-2 gap-3">
-					<FormInput
-						name="osSphere"
-						label="Esfera"
-						type="number"
-						step="0.25"
-						placeholder="-2.00"
-						bind:value={formData.osSphere}
-					/>
-					<FormInput
-						name="osCylinder"
-						label="Cilindro"
-						type="number"
-						step="0.25"
-						placeholder="-0.50"
-						bind:value={formData.osCylinder}
-					/>
+					{@render sphere('osSphere', formData, formInstance.fields)}
+
+					{@render cylinder('osCylinder', formData, formInstance.fields)}
+
 					<FormInput
 						name="osAxis"
 						label="Eje"
 						type="number"
-						step="1"
+						step={1}
+						min={0}
+						max={180}
 						placeholder="180"
 						bind:value={formData.osAxis}
+						error={formInstance.fields.osAxis?.issues()}
 					/>
+
 					{#if !isMonofocal}
 						<FormInput
 							name="osAddition"
 							label="Adición"
 							type="number"
-							step="0.25"
+							step={0.25}
 							placeholder="+1.50"
 							bind:value={formData.osAddition}
+							error={formInstance.fields.osAddition?.issues()}
 						/>
 					{/if}
 				</div>
 			</div>
 		</div>
 
-		<!-- PD Section -->
+		<!-- DP/NP Section -->
 		<div class="space-y-3">
-			<h4 class="font-semibold text-slate-900">Distancia Pupilar (PD)</h4>
+			<h4 class="font-semibold text-slate-900">Distancias</h4>
 			<div class="grid grid-cols-3 gap-3">
 				<FormInput
-					name="pd"
-					label="PD Total"
+					name="dp"
+					label="DP (mm)"
 					type="number"
-					step="0.5"
 					placeholder="62"
-					bind:value={formData.pd}
+					bind:value={formData.dp}
+					error={formInstance.fields.dp?.issues()}
 				/>
 				<FormInput
-					name="pdRight"
-					label="PD Derecho"
+					name="npRight"
+					label="NP Derecho (mm)"
 					type="number"
-					step="0.5"
 					placeholder="31"
-					bind:value={formData.pdRight}
+					bind:value={formData.npRight}
+					error={formInstance.fields.npRight?.issues()}
 				/>
 				<FormInput
-					name="pdLeft"
-					label="PD Izquierdo"
+					name="npLeft"
+					label="NP Izquierdo (mm)"
 					type="number"
-					step="0.5"
 					placeholder="31"
-					bind:value={formData.pdLeft}
+					bind:value={formData.npLeft}
+					error={formInstance.fields.npLeft?.issues()}
 				/>
 			</div>
 		</div>
 
-		<!-- Additional info -->
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<FormInput
-				name="doctorName"
-				label="Doctor"
-				placeholder="Nombre del doctor"
-				bind:value={formData.doctorName}
-			/>
-			<div class="flex items-end pb-2">
-				<Checkbox name="isCurrent" bind:checked={formData.isCurrent}>Fórmula actual</Checkbox>
+		<!-- Treatments Section -->
+		<div class="space-y-3">
+			<h4 class="font-semibold text-slate-900">Tratamientos</h4>
+			<div class="space-y-2">
+				<Checkbox name="treatmentAntiReflective" bind:checked={formData.treatmentAntiReflective}>
+					Antireflejo
+				</Checkbox>
+
+				<Checkbox name="treatmentBlueBlock" bind:checked={formData.treatmentBlueBlock}>
+					Blueblock
+				</Checkbox>
+
+				<Checkbox name="treatmentPhotochromic" bind:checked={formData.treatmentPhotochromic}>
+					Fotocromático
+				</Checkbox>
+
+				<div class="flex items-start gap-3">
+					<Checkbox name="treatmentOtherChecked" bind:checked={formData.hasOtherTreatment}>
+						Otros
+					</Checkbox>
+
+					{#if formData.hasOtherTreatment}
+						<div class="flex-1">
+							<FormInput
+								name="treatmentOther"
+								placeholder="Describa el tratamiento"
+								bind:value={formData.treatmentOther}
+								required
+							/>
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
 
@@ -330,6 +392,7 @@
 			label="Notas"
 			placeholder="Observaciones adicionales"
 			bind:value={formData.notes}
+			error={formInstance.fields.notes?.issues()}
 		/>
 	</div>
 {/snippet}
