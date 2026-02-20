@@ -4,6 +4,7 @@
  */
 import * as v from 'valibot';
 import { LensType } from '$lib/shared/enums/lensTypes';
+import { CoercedInteger, CoercedNumber } from './common';
 
 // =============================================================================
 // OPTICAL VALUE SCHEMAS
@@ -15,7 +16,9 @@ import { LensType } from '$lib/shared/enums/lensTypes';
  */
 export const SphereSchema = v.optional(
 	v.pipe(
-		v.number(),
+		v.union([v.string(), v.number()]),
+		v.transform((val) => (val === '' ? 0 : val)),
+		CoercedNumber,
 		v.minValue(-20, 'Esfera debe ser mayor o igual a -20'),
 		v.maxValue(20, 'Esfera debe ser menor o igual a +20')
 	)
@@ -27,7 +30,9 @@ export const SphereSchema = v.optional(
  */
 export const CylinderSchema = v.optional(
 	v.pipe(
-		v.number(),
+		v.union([v.string(), v.number()]),
+		v.transform((val) => (val === '' ? 0 : val)),
+		CoercedNumber,
 		v.minValue(-6, 'Cilindro debe ser mayor o igual a -6'),
 		v.maxValue(0, 'Cilindro debe ser negativo o cero')
 	)
@@ -37,13 +42,11 @@ export const CylinderSchema = v.optional(
  * Axis validation - 0 to 180 degrees, integers only
  * Always positive values in optical standards
  */
-export const AxisSchema = v.optional(
-	v.pipe(
-		v.number(),
-		v.integer('Eje debe ser un número entero'),
-		v.minValue(0, 'Eje debe ser mayor o igual a 0'),
-		v.maxValue(180, 'Eje debe ser menor o igual a 180')
-	)
+export const AxisSchema = v.pipe(
+	CoercedInteger,
+	v.integer('Eje debe ser un número entero'),
+	v.minValue(0, 'Eje debe ser mayor o igual a 0'),
+	v.maxValue(180, 'Eje debe ser menor o igual a 180')
 );
 
 /**
