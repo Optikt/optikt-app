@@ -354,7 +354,7 @@
 		<!-- Treatments Section -->
 		<div class="space-y-3">
 			<h4 class="font-semibold text-slate-900">Tratamientos</h4>
-			<div class="space-y-2">
+			<div class="space-x-8 flex items-start">
 				<Checkbox name="treatmentAntiReflective" bind:checked={formData.treatmentAntiReflective}>
 					Antireflejo
 				</Checkbox>
