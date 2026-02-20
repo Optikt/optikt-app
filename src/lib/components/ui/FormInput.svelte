@@ -19,7 +19,6 @@
 		title?: string;
 		class?: ClassValue;
 		divClass?: ClassValue;
-
 	}
 
 	let {
