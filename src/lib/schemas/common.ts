@@ -99,7 +99,7 @@ export const OptionalIdNumberSchema = z.optional(z.union([z.literal(''), IdNumbe
 /**
  * CoercedNumber schema - accepts string or number, transforms to number
  */
-export const CoercedNumber = z.coerce.number();
+export const CoercedNumber = z.coerce.number<number>();
 
 /**
  * CoercedInteger schema - accepts string or number, transforms to integer
