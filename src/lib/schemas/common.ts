@@ -105,3 +105,21 @@ export const IdNumberSchema = v.pipe(
  * Optional ID Number validation
  */
 export const OptionalIdNumberSchema = v.optional(v.union([v.literal(''), IdNumberSchema]));
+
+/**
+ * CoercedNumber schema - accepts string or number, transforms to number
+ */
+export const CoercedNumber = v.pipe(
+	v.union([v.string(), v.number()]),
+	v.transform((val) => (typeof val === 'string' ? parseFloat(val) : val)),
+	v.number('Debe ser un número válido')
+);
+
+/**
+ * CoercedInteger schema - accepts string or number, transforms to integer
+ */
+export const CoercedInteger = v.pipe(
+	v.union([v.string(), v.number()]),
+	v.transform((val) => (typeof val === 'string' ? parseInt(val, 10) : val)),
+	v.pipe(v.number(), v.integer())
+);
