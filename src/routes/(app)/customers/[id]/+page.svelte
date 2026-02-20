@@ -215,10 +215,10 @@
 				<div>
 					<p class="mb-1 text-xs font-medium text-slate-500">PD</p>
 					<p class="font-mono text-sm text-slate-900">
-						{#if currentPrescription.pd}
-							{currentPrescription.pd}mm
-						{:else if currentPrescription.pdRight && currentPrescription.pdLeft}
-							{currentPrescription.pdRight}/{currentPrescription.pdLeft}mm
+						{#if currentPrescription.dp}
+							{currentPrescription.dp}mm
+						{:else if currentPrescription.npRight && currentPrescription.npLeft}
+							{currentPrescription.npRight}/{currentPrescription.npLeft}mm
 						{:else}
 							—
 						{/if}
