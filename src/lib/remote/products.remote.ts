@@ -48,6 +48,7 @@ export interface PaginatedProducts {
 /**
  * List products with pagination, search, and filters
  */
+// TODO: We could move all the filtering logic to the database level for better performance with large datasets. For now, it's in-memory for simplicity.
 export const listProducts = query(ListProductsSchema, async (data): Promise<PaginatedProducts> => {
 	const { page, perPage, search, type, brandId, supplierId, includeInactive, lowStockOnly } = data;
 
