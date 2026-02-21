@@ -4,7 +4,9 @@
  */
 import { z } from 'zod';
 import { ALL_CURRENCY_CODES } from '$lib/shared/enums';
-import { CoercedNumber } from './common';
+import { CoercedNumber, EntityIdSchema } from './common';
+
+export const ExchangeRateIdSchema = EntityIdSchema();
 
 export const ListCurrenciesSchema = z.object({
 	activeOnly: z.boolean().default(true)
@@ -31,8 +33,4 @@ export const BatchUpsertRatesSchema = z.object({
 
 export const GetRatesForDateSchema = z.object({
 	date: z.string().min(1, 'Fecha requerida')
-});
-
-export const ExchangeRateIdSchema = z.object({
-	id: z.uuid()
 });
