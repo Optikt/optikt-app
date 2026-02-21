@@ -95,10 +95,10 @@
 				id: reactivateCandidate.id,
 				firstName: reactivateFormData.get('firstName') as string,
 				lastName: reactivateFormData.get('lastName') as string,
-				idNumber: (reactivateFormData.get('idNumber') as string) || undefined,
+				idNumber: (reactivateFormData.get('idNumber') as string),
 				birthDate: reactivateFormData.get('birthDate') as string,
 				primaryPhone: reactivateFormData.get('primaryPhone') as string,
-				email: (reactivateFormData.get('email') as string) || undefined,
+				email: reactivateFormData.get('email') as string,
 				address: (reactivateFormData.get('address') as string) || undefined,
 				notes: (reactivateFormData.get('notes') as string) || undefined
 			});
