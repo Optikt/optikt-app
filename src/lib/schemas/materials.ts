@@ -8,6 +8,7 @@ import {
 	ProductType,
 	type MaterialProductType
 } from '$lib/shared/enums/productTypes';
+import { NameSchema, EntityIdSchema } from './common';
 
 // Re-export for backward compatibility
 export const MaterialProductTypes = MATERIAL_PRODUCT_TYPES;
@@ -18,15 +19,13 @@ export const ListMaterialsSchema = z.object({
 	productType: z.enum(MATERIAL_PRODUCT_TYPES).optional()
 });
 
-export const MaterialIdSchema = z.object({
-	id: z.uuid()
-});
+export const MaterialIdSchema = EntityIdSchema();
 
 /**
  * Quick create schema - minimal fields for inline creation
  * Code is auto-generated from name
  */
 export const QuickCreateMaterialSchema = z.object({
-	name: z.string().min(1, 'Nombre requerido').max(255),
+	name: NameSchema(),
 	productType: z.enum(MATERIAL_PRODUCT_TYPES).default(ProductType.FRAME)
 });
