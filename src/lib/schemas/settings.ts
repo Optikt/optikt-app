@@ -3,27 +3,16 @@
  * Zod schemas for business settings remote functions
  */
 import { z } from 'zod';
-import { validateRif } from '$lib/utils';
+import { OptionalRifSchema, OptionalEmailSchema, NameSchema, PasswordSchema } from './common';
 
 /**
  * Update business settings schema
  */
 export const UpdateSettingsSchema = z.object({
 	businessName: z.string().optional(),
-	businessRif: z
-		.union([
-			z.literal(''),
-			z
-				.string()
-				.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: X-12345678-9)')
-				.refine(
-					(value: string) => validateRif(value),
-					'RIF inválido: dígito verificador incorrecto'
-				)
-		])
-		.optional(),
+	businessRif: OptionalRifSchema,
 	businessPhone: z.string().optional(),
-	businessEmail: z.union([z.literal(''), z.email('Email inválido')]).optional(),
+	businessEmail: OptionalEmailSchema,
 	businessAddress: z.string().optional(),
 	businessWebsite: z.string().optional(),
 	businessLogo: z.string().optional()
@@ -34,7 +23,7 @@ export const UpdateSettingsSchema = z.object({
  * Uses fullName to match database column
  */
 export const UpdateProfileSchema = z.object({
-	fullName: z.string().min(1, 'Nombre requerido').max(255),
+	fullName: NameSchema(),
 	email: z.email('Email inválido')
 });
 
@@ -43,6 +32,6 @@ export const UpdateProfileSchema = z.object({
  */
 export const ChangePasswordSchema = z.object({
 	currentPassword: z.string().min(1, 'Contraseña actual requerida'),
-	newPassword: z.string().min(6, 'La nueva contraseña debe tener al menos 6 caracteres'),
+	newPassword: PasswordSchema,
 	confirmPassword: z.string().min(1, 'Confirme la nueva contraseña')
 });
