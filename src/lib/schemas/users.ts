@@ -3,62 +3,39 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { UserRole, ALL_ROLES } from '$lib/shared/enums';
-import { CoercedBoolean } from './common';
+import { UserRole } from '$lib/shared/enums';
+import {
+	CoercedBoolean,
+	EmailSchema,
+	UsernameSchema,
+	PasswordSchema,
+	OptionalPasswordSchema,
+	NameSchema,
+	ListPaginationWithInactiveSchema,
+	EntityIdSchema
+} from './common';
 
-export const ListUsersSchema = z.object({
-	page: z.int().min(1).default(1),
-	perPage: z.int().min(1).max(100).default(10),
-	search: z.string().optional(),
-	role: z.enum(ALL_ROLES).optional(),
-	includeInactive: z.boolean().default(false)
+export const ListUsersSchema = ListPaginationWithInactiveSchema.extend({
+	role: z.enum(UserRole).optional()
 });
 
 export const CreateUserSchema = z.object({
-	email: z.email('Email inválido').max(255),
-	username: z
-		.string()
-		.min(3, 'Usuario debe tener al menos 3 caracteres')
-		.max(50)
-		.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos'),
-	fullName: z.string().min(2, 'Nombre completo requerido').max(255),
-	password: z.string().min(8, 'Contraseña debe tener al menos 8 caracteres'),
-	role: z.enum(ALL_ROLES).default(UserRole.VIEWER),
+	email: EmailSchema,
+	username: UsernameSchema,
+	fullName: NameSchema('Nombre completo requerido'),
+	password: PasswordSchema,
+	role: z.enum(UserRole).default(UserRole.VIEWER),
 	isActive: CoercedBoolean.default(true)
 });
 
-export const UpdateUserSchema = z.object({
+export const UpdateUserSchema = CreateUserSchema.partial().extend({
 	id: z.uuid(),
-	email: z.email('Email inválido').max(255).optional(),
-	username: z
-		.string()
-		.min(3, 'Usuario debe tener al menos 3 caracteres')
-		.max(50)
-		.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
-		.optional(),
-	fullName: z.string().min(2).max(255).optional(),
-	// Password can be empty (keep current) or valid password (min 8 chars)
-	password: z
-		.union([z.literal(''), z.string().min(8, 'Contraseña debe tener al menos 8 caracteres')])
-		.optional(),
-	role: z.enum(ALL_ROLES).optional(),
-	isActive: CoercedBoolean.optional()
+	// Password can be empty (keep current) or valid password
+	password: OptionalPasswordSchema.optional()
 });
 
-export const UserIdSchema = z.object({
-	id: z.uuid()
-});
+export const UserIdSchema = EntityIdSchema();
 
-export const ReactivateUserSchema = z.object({
-	deletedUserId: z.uuid(),
-	email: z.email('Email inválido').max(255),
-	username: z
-		.string()
-		.min(3, 'Usuario debe tener al menos 3 caracteres')
-		.max(50)
-		.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos'),
-	fullName: z.string().min(2, 'Nombre completo requerido').max(255),
-	password: z.string().min(8, 'Contraseña debe tener al menos 8 caracteres'),
-	role: z.enum(ALL_ROLES).default(UserRole.VIEWER),
-	isActive: CoercedBoolean.default(true)
+export const ReactivateUserSchema = CreateUserSchema.extend({
+	deletedUserId: z.uuid()
 });

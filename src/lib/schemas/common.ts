@@ -133,7 +133,7 @@ export const NameSchema = (message = 'Nombre requerido') => z.string().min(1, me
 /**
  * Email validation - strict format
  */
-export const EmailSchema = z.email('Email inválido');
+export const EmailSchema = z.email('Email inválido').max(255);
 
 /**
  * Optional email validation - allows empty string or valid email
