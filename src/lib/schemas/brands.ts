@@ -11,7 +11,7 @@ export const CreateBrandSchema = z.object({
 	name: NameSchema(),
 	description: z.string().optional(),
 	country: z.string().optional(),
-	website: z.string().optional()
+	website: z.url().optional()
 });
 
 export const UpdateBrandSchema = CreateBrandSchema.partial().extend({
