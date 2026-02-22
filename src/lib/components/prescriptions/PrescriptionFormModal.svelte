@@ -30,8 +30,6 @@
 	let showSubmitConfirmModal = $state(false);
 	let pendingSubmitCallback: (() => Promise<void>) | null = $state(null);
 
-
-
 	// Check if form has unsaved changes
 	const hasUnsavedChanges = $derived(() => {
 		return JSON.stringify(formData) !== JSON.stringify(initialFormData);
@@ -83,7 +81,7 @@
 	});
 
 	// Store initial form data to check for changes
-	let initialFormData = $state<typeof formData>({ ...(untrack(() => formData)) });
+	let initialFormData = $state<typeof formData>({ ...untrack(() => formData) });
 
 	// Derived: whether addition fields should be disabled
 	const isMonofocal = $derived(formData.recommendedLensType === LensType.MONOFOCAL);
@@ -481,12 +479,7 @@
 	</div>
 {/snippet}
 
-<Modal
-	bind:open
-	size="lg"
-	title={`${title} - ${getFullName(customer)}`}
-	permanent
->
+<Modal bind:open size="lg" title={`${title} - ${getFullName(customer)}`} permanent>
 	{#if isEditMode && prescription}
 		<!-- UPDATE FORM -->
 		<form
