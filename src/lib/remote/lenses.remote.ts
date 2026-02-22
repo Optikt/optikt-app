@@ -21,7 +21,7 @@ import {
 	UpdateLensCatalogItemSchema,
 	LensIdSchema,
 	ListLensCatalogSchema,
-	SupplierIdSchema,
+	LensSupplierIdSchema,
 	UpsertSupplierTreatmentSchema
 } from '$lib/schemas/lenses';
 import {
@@ -628,7 +628,7 @@ export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Pro
 // SUPPLIER LENS TREATMENTS
 // ============================================================================
 
-export const listSupplierTreatments = query(SupplierIdSchema, async (data) => {
+export const listSupplierTreatments = query(LensSupplierIdSchema, async (data) => {
 	return getSupplierTreatments(data.supplierId);
 });
 
