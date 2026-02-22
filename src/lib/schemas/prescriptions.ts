@@ -6,11 +6,11 @@ import { z } from 'zod';
 import { LensType } from '$lib/shared/enums/lensTypes';
 import {
 	CoercedBoolean,
-	CoercedInteger,
 	EntityIdSchema,
 	OptionalSphereSchema,
 	OptionalCylinderSchema,
-	OptionalAdditionSchema
+	OptionalAdditionSchema,
+	OptionalCoercedInteger
 } from './common';
 
 function requireSphereOrCylinder<T extends Record<string, unknown>>(
@@ -68,7 +68,7 @@ function requireAxisWhenCylinder<T extends Record<string, unknown>>(
  *
  * This is critical for requireAxisWhenCylinder validation to work correctly.
  */
-export const AxisSchema = z.preprocess((val: unknown) => {
+export const AxisSchema = z.preprocess((val: number | string | undefined) => {
 	// Empty string, null, or undefined → no value provided
 	if (val === '' || val === null || val === undefined) {
 		return undefined;
@@ -80,20 +80,16 @@ export const AxisSchema = z.preprocess((val: unknown) => {
 /**
  * Distancia Pupilar (DP) validation - total pupillary distance
  * Typically ranges from 50 to 80mm, always positive
+ * Uses OptionalCoercedInteger to distinguish empty string from intentional 0
  */
-export const DpSchema = CoercedInteger.min(10, 'DP debe ser mayor o igual a 10mm').max(
-	80,
-	'DP debe ser menor o igual a 80mm'
-);
+export const DpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
 
 /**
  * Nasopupilar (NP) validation - per-eye measurements
  * Always positive values, typically 10-40mm per eye
+ * Uses OptionalCoercedInteger to distinguish empty string from intentional 0
  */
-export const NpSchema = CoercedInteger.min(10, 'NP debe ser mayor o igual a 10mm').max(
-	80,
-	'NP debe ser menor o igual a 80mm'
-);
+export const NpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
 
 // =============================================================================
 // TREATMENTS SCHEMA
