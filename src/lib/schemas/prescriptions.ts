@@ -71,16 +71,16 @@ export const AxisSchema = CoercedInteger.min(0, 'Eje debe ser mayor o igual a 0'
  * Distancia Pupilar (DP) validation - total pupillary distance
  * Typically ranges from 50 to 80mm, always positive
  */
-export const DpSchema = CoercedInteger.min(20, 'DP debe ser mayor o igual a 20mm').max(
+export const DpSchema = CoercedInteger.min(10, 'DP debe ser mayor o igual a 10mm').max(
 	80,
 	'DP debe ser menor o igual a 80mm'
 );
 
 /**
  * Nasopupilar (NP) validation - per-eye measurements
- * Always positive values, typically 20-40mm per eye
+ * Always positive values, typically 10-40mm per eye
  */
-export const NpSchema = CoercedInteger.min(20, 'NP debe ser mayor o igual a 20mm').max(
+export const NpSchema = CoercedInteger.min(10, 'NP debe ser mayor o igual a 10mm').max(
 	80,
 	'NP debe ser menor o igual a 80mm'
 );
