@@ -107,6 +107,47 @@ export const CoercedNumber = z.coerce.number<number | string>();
 export const CoercedInteger = CoercedNumber.int();
 
 /**
+ * Factory for optional coerced integer schemas
+ * Converts empty string, null, or undefined to undefined (no value provided)
+ * This allows distinguishing between "user didn't enter anything" and "user entered 0"
+ *
+ * @param options - Optional min/max constraints
+ * @returns A zod schema that outputs number | undefined
+ *
+ * @example
+ * const DpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
+ * DpSchema.safeParse(''); // => undefined
+ * DpSchema.safeParse('0'); // => 0
+ */
+export const OptionalCoercedInteger = (options?: { min?: number; max?: number }) => {
+	return z.preprocess((val: number | string | undefined) => {
+		// Empty string, null, or undefined → no value provided
+		if (val === '' || val === null || val === undefined) {
+			return undefined;
+		}
+		// Coerce to integer
+		const num = typeof val === 'string' ? parseInt(val, 10) : Math.floor(Number(val));
+		return num;
+	}, createOptionalIntegerSchema(options));
+};
+
+/**
+ * Helper to create the integer schema with optional constraints
+ */
+function createOptionalIntegerSchema(options?: { min?: number; max?: number }) {
+	let schema = z.number().int();
+
+	if (options?.min !== undefined) {
+		schema = schema.min(options.min);
+	}
+	if (options?.max !== undefined) {
+		schema = schema.max(options.max);
+	}
+
+	return schema.optional();
+}
+
+/**
  * CoercedBoolean schema - accepts string or boolean, transforms to boolean
  * Handles form inputs like 'on', 'true', true
  */
