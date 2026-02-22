@@ -4,45 +4,59 @@
  */
 import { z } from 'zod';
 import { LensType } from '$lib/shared/enums/lensTypes';
-import { CoercedBoolean, CoercedInteger } from './common';
+import {
+	CoercedBoolean,
+	CoercedInteger,
+	EntityIdSchema,
+	OptionalSphereSchema,
+	OptionalCylinderSchema,
+	OptionalAdditionSchema
+} from './common';
+
+function requireSphereOrCylinder<T extends Record<string, unknown>>(
+	sphereKey: keyof T,
+	cylinderKey: keyof T
+) {
+	return (data: T, ctx: z.RefinementCtx) => {
+		const hasSphere = data[sphereKey] !== undefined && data[sphereKey] !== 0;
+		const hasCylinder = data[cylinderKey] !== undefined && data[cylinderKey] !== 0;
+
+		if (!(hasSphere || hasCylinder)) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Se necesita al menos Esfera o Cilindro',
+				path: [sphereKey]
+			});
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Se necesita al menos Esfera o Cilindro',
+				path: [cylinderKey]
+			});
+		}
+	};
+}
+
+function requireAxisWhenCylinder<T extends Record<string, unknown>>(
+	cylinderKey: keyof T,
+	axisKey: keyof T
+) {
+	return (data: T, ctx: z.RefinementCtx) => {
+		const hasCylinder = data[cylinderKey] !== undefined && data[cylinderKey] !== 0;
+		const hasAxis = data[axisKey] !== undefined;
+
+		if (hasCylinder && !hasAxis) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'El eje es requerido cuando hay cilindro',
+				path: [axisKey]
+			});
+		}
+	};
+}
 
 // =============================================================================
-// OPTICAL VALUE SCHEMAS
+// OPTICAL VALUE SCHEMAS (prescription-specific)
 // =============================================================================
-
-/**
- * Sphere power validation - typically ranges from -20.00 to +20.00
- * In 0.25 increments
- */
-export const SphereSchema = z.optional(
-	z.preprocess(
-		(val: string | number) => {
-			if (val === '' || val === undefined || val === null) return 0;
-			return typeof val === 'string' ? parseFloat(val) : val;
-		},
-		z
-			.number()
-			.min(-20, 'Esfera debe ser mayor o igual a -20')
-			.max(20, 'Esfera debe ser menor o igual a +20')
-	)
-);
-
-/**
- * Cylinder power validation - NEGATIVE ONLY (0 to -6)
- * In optical terms, cylinder is always expressed in negative form
- */
-export const CylinderSchema = z.optional(
-	z.preprocess(
-		(val: string | number) => {
-			if (val === '' || val === undefined || val === null) return 0;
-			return typeof val === 'string' ? parseFloat(val) : val;
-		},
-		z
-			.number()
-			.min(-6, 'Cilindro debe ser mayor o igual a -6')
-			.max(0, 'Cilindro debe ser negativo o cero')
-	)
-);
 
 /**
  * Axis validation - 0 to 180 degrees, integers only
@@ -54,35 +68,21 @@ export const AxisSchema = CoercedInteger.min(0, 'Eje debe ser mayor o igual a 0'
 );
 
 /**
- * Addition power validation - typically ranges from +0.50 to +4.00
- */
-export const AdditionSchema = z.optional(
-	z
-		.number()
-		.min(0.5, 'Adición debe ser mayor o igual a +0.50')
-		.max(4, 'Adición debe ser menor o igual a +4.00')
-);
-
-/**
  * Distancia Pupilar (DP) validation - total pupillary distance
  * Typically ranges from 50 to 80mm, always positive
  */
-export const DpSchema = z.optional(
-	CoercedInteger.min(20, 'DP debe ser mayor o igual a 20mm').max(
-		80,
-		'DP debe ser menor o igual a 80mm'
-	)
+export const DpSchema = CoercedInteger.min(20, 'DP debe ser mayor o igual a 20mm').max(
+	80,
+	'DP debe ser menor o igual a 80mm'
 );
 
 /**
  * Nasopupilar (NP) validation - per-eye measurements
  * Always positive values, typically 20-40mm per eye
  */
-export const NpSchema = z.optional(
-	CoercedInteger.min(20, 'NP debe ser mayor o igual a 20mm').max(
-		80,
-		'NP debe ser menor o igual a 80mm'
-	)
+export const NpSchema = CoercedInteger.min(20, 'NP debe ser mayor o igual a 20mm').max(
+	80,
+	'NP debe ser menor o igual a 80mm'
 );
 
 // =============================================================================
@@ -102,10 +102,7 @@ export const TreatmentOtherSchema = z.string().optional();
 // ID SCHEMAS
 // =============================================================================
 
-export const PrescriptionIdSchema = z.object({
-	id: z.uuid('ID de fórmula inválido')
-});
-
+export const PrescriptionIdSchema = EntityIdSchema('Fórmula');
 export const CustomerIdForPrescriptionSchema = z.object({
 	customerId: z.uuid('ID de cliente inválido')
 });
@@ -115,28 +112,27 @@ export const CustomerIdForPrescriptionSchema = z.object({
 // =============================================================================
 
 /**
- * Create prescription schema
- * All optical values are optional but at least some should be provided
+ * Base prescription schema (shared between create and update)
  */
-export const CreatePrescriptionSchema = z
+const PrescriptionBaseSchema = z
 	.object({
 		customerId: z.uuid('ID de cliente inválido'),
 		prescriptionDate: z.iso.date('Fecha de fórmula inválida'),
 		// Right eye (OD)
-		odSphere: SphereSchema,
-		odCylinder: CylinderSchema,
-		odAxis: AxisSchema,
-		odAddition: AdditionSchema,
+		odSphere: OptionalSphereSchema,
+		odCylinder: OptionalCylinderSchema,
+		odAxis: AxisSchema.optional(),
+		odAddition: OptionalAdditionSchema,
 		// Left eye (OS)
-		osSphere: SphereSchema,
-		osCylinder: CylinderSchema,
-		osAxis: AxisSchema,
-		osAddition: AdditionSchema,
+		osSphere: OptionalSphereSchema,
+		osCylinder: OptionalCylinderSchema,
+		osAxis: AxisSchema.optional(),
+		osAddition: OptionalAdditionSchema,
 		// Distancia Pupilar (DP) - total
-		dp: DpSchema,
+		dp: DpSchema.optional(),
 		// Nasopupilar (NP) - per-eye
-		npRight: NpSchema,
-		npLeft: NpSchema,
+		npRight: NpSchema.optional(),
+		npLeft: NpSchema.optional(),
 		// Treatments (separate fields for form compatibility)
 		treatmentAntiReflective: TreatmentAntiReflectiveSchema,
 		treatmentBlueBlock: TreatmentBlueBlockSchema,
@@ -149,77 +145,23 @@ export const CreatePrescriptionSchema = z
 		// Current prescription flag
 		isCurrent: CoercedBoolean.optional()
 	})
-	.superRefine(
-		// For OS
-		(data, ctx) => {
-			const hasSphere = data.osSphere !== undefined && data.osSphere !== 0;
-			const hasCylinder = data.osCylinder !== undefined && data.osCylinder !== 0;
-			if (!(hasSphere || hasCylinder)) {
-				ctx.addIssue({
-					code: 'custom',
-					message: 'Se necesita al menos Esfera o Cilindro',
-					path: ['osSphere']
-				});
-				ctx.addIssue({
-					code: 'custom',
-					message: 'Se necesita al menos Esfera o Cilindro',
-					path: ['osCylinder']
-				});
-			}
-		}
-	).superRefine(
-		// For OD
-		(data, ctx) => {
-			const hasSphere = data.odSphere !== undefined && data.odSphere !== 0;
-			const hasCylinder = data.odCylinder !== undefined && data.odCylinder !== 0;
-			if (!(hasSphere || hasCylinder)) {
-				ctx.addIssue({
-					code: 'custom',
-					message: 'Se necesita al menos Esfera o Cilindro',
-					path: ['odSphere']
-				});
-				ctx.addIssue({
-					code: 'custom',
-					message: 'Se necesita al menos Esfera o Cilindro',
-					path: ['odCylinder']
-				});
-			}
-		}
-	);
+	.superRefine(requireSphereOrCylinder('osSphere', 'osCylinder'))
+	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
+	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
+
+/**
+ * Create prescription schema
+ * All optical values are optional but at least some should be provided
+ */
+export const CreatePrescriptionSchema = PrescriptionBaseSchema;
 
 /**
  * Update prescription schema
  * All fields optional except id
  */
-export const UpdatePrescriptionSchema = z.object({
-	id: z.uuid('ID de fórmula inválido'),
-	prescriptionDate: z.iso.date('Fecha de fórmula inválida').optional(),
-	// Right eye (OD)
-	odSphere: SphereSchema,
-	odCylinder: CylinderSchema,
-	odAxis: AxisSchema,
-	odAddition: AdditionSchema,
-	// Left eye (OS)
-	osSphere: SphereSchema,
-	osCylinder: CylinderSchema,
-	osAxis: AxisSchema,
-	osAddition: AdditionSchema,
-	// Distancia Pupilar (DP) - total
-	dp: DpSchema,
-	// Nasopupilar (NP) - per-eye
-	npRight: NpSchema,
-	npLeft: NpSchema,
-	// Treatments (separate fields for form compatibility)
-	treatmentAntiReflective: TreatmentAntiReflectiveSchema,
-	treatmentBlueBlock: TreatmentBlueBlockSchema,
-	treatmentPhotochromic: TreatmentPhotochromicSchema,
-	treatmentOther: TreatmentOtherSchema,
-	// Additional
-	recommendedLensType: z.enum(LensType, 'Tipo de lente inválido').optional(),
-	notes: z.string().optional(),
-	doctorName: z.string().max(100).optional(),
-	// Current prescription flag
-	isCurrent: z.boolean().optional()
+export const UpdatePrescriptionSchema = PrescriptionBaseSchema.partial().extend({
+	id: z.uuid('ID de fórmula inválido')
 });
 
 /**
