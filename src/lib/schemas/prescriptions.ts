@@ -61,11 +61,21 @@ function requireAxisWhenCylinder<T extends Record<string, unknown>>(
 /**
  * Axis validation - 0 to 180 degrees, integers only
  * Always positive values in optical standards
+ *
+ * Uses z.preprocess to distinguish between:
+ * - Empty string "" → undefined (no value provided by user)
+ * - Intentional "0" → 0 (valid axis value)
+ *
+ * This is critical for requireAxisWhenCylinder validation to work correctly.
  */
-export const AxisSchema = CoercedInteger.min(0, 'Eje debe ser mayor o igual a 0').max(
-	180,
-	'Eje debe ser menor o igual a 180'
-);
+export const AxisSchema = z.preprocess((val: unknown) => {
+	// Empty string, null, or undefined → no value provided
+	if (val === '' || val === null || val === undefined) {
+		return undefined;
+	}
+	// Coerce to number for validation
+	return typeof val === 'string' ? parseFloat(val) : val;
+}, z.number().int('Eje debe ser un número entero').min(0, 'Eje debe ser mayor o igual a 0').max(180, 'Eje debe ser menor o igual a 180').optional());
 
 /**
  * Distancia Pupilar (DP) validation - total pupillary distance
