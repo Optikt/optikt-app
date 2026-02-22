@@ -7,7 +7,8 @@ import {
 	RifSchema,
 	OptionalRifSchema,
 	IdNumberSchema,
-	OptionalIdNumberSchema
+	OptionalIdNumberSchema,
+	OptionalCoercedInteger
 } from './common';
 
 // =============================================================================
@@ -174,5 +175,85 @@ describe('OptionalIdNumberSchema', () => {
 
 	it('rejects invalid ID when provided', () => {
 		expect(OptionalIdNumberSchema.safeParse('invalid').success).toBe(false);
+	});
+});
+
+// =============================================================================
+// OptionalCoercedInteger Schema
+// =============================================================================
+
+describe('OptionalCoercedInteger', () => {
+	const schema = OptionalCoercedInteger({ min: 10, max: 80 });
+
+	it('converts empty string to undefined', () => {
+		const result = schema.safeParse('');
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBeUndefined();
+		}
+	});
+
+	it('converts null to undefined', () => {
+		const result = schema.safeParse(null);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBeUndefined();
+		}
+	});
+
+	it('accepts undefined', () => {
+		const result = schema.safeParse(undefined);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBeUndefined();
+		}
+	});
+
+	it('accepts intentional 0 as valid value', () => {
+		const schemaWithLowMin = OptionalCoercedInteger({ min: 0, max: 100 });
+		const result = schemaWithLowMin.safeParse('0');
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBe(0);
+		}
+	});
+
+	it('accepts valid integer values', () => {
+		expect(schema.safeParse('50').success).toBe(true);
+		expect(schema.safeParse('80').success).toBe(true);
+		expect(schema.safeParse(45).success).toBe(true);
+		expect(schema.safeParse(80).success).toBe(true);
+	});
+
+	it('rejects values outside min/max range', () => {
+		expect(schema.safeParse('9').success).toBe(false);
+		expect(schema.safeParse('81').success).toBe(false);
+		expect(schema.safeParse(9).success).toBe(false);
+		expect(schema.safeParse(81).success).toBe(false);
+	});
+
+	it('parses string floats to integers (parseInt behavior)', () => {
+		// parseInt('50.5', 10) returns 50, which is valid
+		const result = schema.safeParse('50.5');
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBe(50);
+		}
+	});
+
+	it('coerces number floats to integers (Math.floor behavior)', () => {
+		// Math.floor(50.5) returns 50, which is valid
+		const result = schema.safeParse(50.5);
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBe(50);
+		}
+	});
+
+	it('works without constraints', () => {
+		const noConstraintsSchema = OptionalCoercedInteger();
+		expect(noConstraintsSchema.safeParse('').success).toBe(true);
+		expect(noConstraintsSchema.safeParse('1000').success).toBe(true);
+		expect(noConstraintsSchema.safeParse('-1000').success).toBe(true);
 	});
 });
