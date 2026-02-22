@@ -114,55 +114,60 @@ export const CustomerIdForPrescriptionSchema = z.object({
 /**
  * Base prescription schema (shared between create and update)
  */
-const PrescriptionBaseSchema = z
-	.object({
-		customerId: z.uuid('ID de cliente inválido'),
-		prescriptionDate: z.iso.date('Fecha de fórmula inválida'),
-		// Right eye (OD)
-		odSphere: OptionalSphereSchema,
-		odCylinder: OptionalCylinderSchema,
-		odAxis: AxisSchema.optional(),
-		odAddition: OptionalAdditionSchema,
-		// Left eye (OS)
-		osSphere: OptionalSphereSchema,
-		osCylinder: OptionalCylinderSchema,
-		osAxis: AxisSchema.optional(),
-		osAddition: OptionalAdditionSchema,
-		// Distancia Pupilar (DP) - total
-		dp: DpSchema.optional(),
-		// Nasopupilar (NP) - per-eye
-		npRight: NpSchema.optional(),
-		npLeft: NpSchema.optional(),
-		// Treatments (separate fields for form compatibility)
-		treatmentAntiReflective: TreatmentAntiReflectiveSchema,
-		treatmentBlueBlock: TreatmentBlueBlockSchema,
-		treatmentPhotochromic: TreatmentPhotochromicSchema,
-		treatmentOther: TreatmentOtherSchema,
-		// Additional
-		recommendedLensType: z.enum(LensType, 'Tipo de lente inválido').optional(),
-		notes: z.string().optional(),
-		doctorName: z.string().max(100).optional(),
-		// Current prescription flag
-		isCurrent: CoercedBoolean.optional()
-	})
-	.superRefine(requireSphereOrCylinder('osSphere', 'osCylinder'))
-	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
-	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
-	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
+const PrescriptionBaseSchema = z.object({
+	customerId: z.uuid('ID de cliente inválido'),
+	prescriptionDate: z.iso.date('Fecha de fórmula inválida'),
+	// Right eye (OD)
+	odSphere: OptionalSphereSchema,
+	odCylinder: OptionalCylinderSchema,
+	odAxis: AxisSchema.optional(),
+	odAddition: OptionalAdditionSchema,
+	// Left eye (OS)
+	osSphere: OptionalSphereSchema,
+	osCylinder: OptionalCylinderSchema,
+	osAxis: AxisSchema.optional(),
+	osAddition: OptionalAdditionSchema,
+	// Distancia Pupilar (DP) - total
+	dp: DpSchema.optional(),
+	// Nasopupilar (NP) - per-eye
+	npRight: NpSchema.optional(),
+	npLeft: NpSchema.optional(),
+	// Treatments (separate fields for form compatibility)
+	treatmentAntiReflective: TreatmentAntiReflectiveSchema,
+	treatmentBlueBlock: TreatmentBlueBlockSchema,
+	treatmentPhotochromic: TreatmentPhotochromicSchema,
+	treatmentOther: TreatmentOtherSchema,
+	// Additional
+	recommendedLensType: z.enum(LensType, 'Tipo de lente inválido').optional(),
+	notes: z.string().optional(),
+	doctorName: z.string().max(100).optional(),
+	// Current prescription flag
+	isCurrent: CoercedBoolean.optional()
+});
 
 /**
  * Create prescription schema
  * All optical values are optional but at least some should be provided
  */
-export const CreatePrescriptionSchema = PrescriptionBaseSchema;
+export const CreatePrescriptionSchema = PrescriptionBaseSchema.superRefine(
+	requireSphereOrCylinder('osSphere', 'osCylinder')
+)
+	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
+	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
 
 /**
  * Update prescription schema
  * All fields optional except id
  */
-export const UpdatePrescriptionSchema = PrescriptionBaseSchema.partial().extend({
-	id: z.uuid('ID de fórmula inválido')
-});
+export const UpdatePrescriptionSchema = PrescriptionBaseSchema.partial()
+	.extend({
+		id: z.uuid('ID de fórmula inválido')
+	})
+	.superRefine(requireSphereOrCylinder('osSphere', 'osCylinder'))
+	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
+	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
 
 /**
  * Set current prescription schema
