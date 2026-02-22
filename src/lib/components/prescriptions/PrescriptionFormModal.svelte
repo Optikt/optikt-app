@@ -3,7 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createPrescriptionForm, updatePrescriptionForm } from '$lib/remote/prescriptions.remote';
-	import { FormInput, FormDatepicker } from '$lib/components/ui';
+	import { FormInput, FormDatepicker, ConfirmModal } from '$lib/components/ui';
 	import { scrollToFirstError, getErrorMessage, getFullName } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { LensType, ALL_LENS_TYPES, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
@@ -24,6 +24,27 @@
 	const isEditMode = $derived(!!prescription);
 	const title = $derived(isEditMode ? 'Editar Fórmula' : 'Nueva Fórmula');
 	const submitText = $derived(isEditMode ? 'Guardar Cambios' : 'Crear Fórmula');
+
+	// Confirmation modal state
+	let showCloseConfirmModal = $state(false);
+	let showSubmitConfirmModal = $state(false);
+	let pendingSubmitCallback: (() => Promise<void>) | null = $state(null);
+
+
+
+	// Check if form has unsaved changes
+	const hasUnsavedChanges = $derived(() => {
+		return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+	});
+
+	// Build list of missing distance field labels for the confirm dialog
+	const missingDistanceFieldNames = $derived(() => {
+		const missing: string[] = [];
+		if (!formData.dp) missing.push('DP');
+		if (!formData.npRight) missing.push('NP Derecho');
+		if (!formData.npLeft) missing.push('NP Izquierdo');
+		return missing;
+	});
 
 	// Lens type options for select (no empty option - defaults to MONOFOCAL)
 	const lensTypeOptions = ALL_LENS_TYPES.map((type) => ({
@@ -60,6 +81,9 @@
 		notes: '',
 		isCurrent: false
 	});
+
+	// Store initial form data to check for changes
+	let initialFormData = $state<typeof formData>({ ...(untrack(() => formData)) });
 
 	// Derived: whether addition fields should be disabled
 	const isMonofocal = $derived(formData.recommendedLensType === LensType.MONOFOCAL);
@@ -131,6 +155,8 @@
 						isCurrent: true
 					};
 				}
+				// Capture initial state for unsaved-changes detection
+				initialFormData = { ...formData };
 			});
 		}
 	});
@@ -174,7 +200,67 @@
 
 	function handleClose() {
 		if (isSubmitting) return;
+		if (hasUnsavedChanges()) {
+			showCloseConfirmModal = true;
+		} else {
+			open = false;
+			onClose();
+		}
+	}
+
+	function confirmClose() {
+		showCloseConfirmModal = false;
+		open = false;
 		onClose();
+	}
+
+	// Handle form submission with validation
+	async function handleSubmit(
+		formEl: HTMLFormElement,
+		submit: () => Promise<void>,
+		handleResult: (formEl: HTMLFormElement) => void
+	) {
+		// Check for missing distance fields before submitting
+		const missing = missingDistanceFieldNames();
+		if (missing.length > 0) {
+			pendingSubmitCallback = async () => {
+				await executeSubmit(formEl, submit, handleResult);
+			};
+			showSubmitConfirmModal = true;
+			return;
+		}
+
+		await executeSubmit(formEl, submit, handleResult);
+	}
+
+	async function executeSubmit(
+		formEl: HTMLFormElement,
+		submit: () => Promise<void>,
+		handleResult: (formEl: HTMLFormElement) => void
+	) {
+		isSubmitting = true;
+		try {
+			await submit();
+			handleResult(formEl);
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error al guardar la fórmula'));
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	async function confirmSubmit() {
+		showSubmitConfirmModal = false;
+		if (pendingSubmitCallback) {
+			await pendingSubmitCallback();
+			pendingSubmitCallback = null;
+		}
+	}
+
+	function cancelSubmit() {
+		showSubmitConfirmModal = false;
+		pendingSubmitCallback = null;
 	}
 </script>
 
@@ -399,23 +485,13 @@
 	bind:open
 	size="lg"
 	title={`${title} - ${getFullName(customer)}`}
-	outsideclose
-	onclose={handleClose}
+	permanent
 >
 	{#if isEditMode && prescription}
 		<!-- UPDATE FORM -->
 		<form
 			{...currentUpdateForm.enhance(async ({ form: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleUpdateResult(formEl);
-				} catch (error) {
-					console.error(error);
-					toast.error(getErrorMessage(error, 'Error al guardar la fórmula'));
-				} finally {
-					isSubmitting = false;
-				}
+				await handleSubmit(formEl, submit, handleUpdateResult);
 			})}
 		>
 			<input type="hidden" name="id" value={prescription.id} />
@@ -438,16 +514,7 @@
 		<!-- CREATE FORM -->
 		<form
 			{...currentCreateForm.enhance(async ({ form: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleCreateResult(formEl);
-				} catch (error) {
-					console.error(error);
-					toast.error(getErrorMessage(error, 'Error al guardar la fórmula'));
-				} finally {
-					isSubmitting = false;
-				}
+				await handleSubmit(formEl, submit, handleCreateResult);
 			})}
 		>
 			<input type="hidden" name="customerId" value={customer.id} />
@@ -457,7 +524,7 @@
 			<!-- Form Actions -->
 			<div class="flex justify-end gap-3">
 				<Button color="alternative" onclick={handleClose} disabled={isSubmitting}>Cancelar</Button>
-				<Button type="submit" color="primary" disabled={isSubmitting}>
+				<Button type="submit" color="blue" disabled={isSubmitting}>
 					{#if isSubmitting}
 						<Spinner size="4" class="me-2" />
 					{/if}
@@ -467,3 +534,39 @@
 		</form>
 	{/if}
 </Modal>
+
+<!-- Close Confirmation Modal -->
+<ConfirmModal
+	bind:open={showCloseConfirmModal}
+	title="¿Descartar cambios?"
+	message="Tiene cambios sin guardar. ¿Está seguro de que desea cerrar sin guardar?"
+	confirmLabel="Descartar"
+	cancelLabel="Continuar editando"
+	confirmColor="red"
+	onConfirm={confirmClose}
+	permanent
+/>
+
+<!-- Submit Confirmation Modal (for missing DP/NP) -->
+<ConfirmModal
+	bind:open={showSubmitConfirmModal}
+	title="Campos de distancia incompletos"
+	confirmLabel="Guardar de todos modos"
+	cancelLabel="Revisar"
+	confirmColor="yellow"
+	onConfirm={confirmSubmit}
+	onCancel={cancelSubmit}
+	permanent
+>
+	{#snippet body()}
+		<p class="mb-2 text-gray-700">Los siguientes campos de distancia están vacíos:</p>
+		<ul class="mb-3 list-inside list-disc space-y-1 text-sm text-gray-600">
+			{#each missingDistanceFieldNames() as field, index (index)}
+				<li class="font-medium">{field}</li>
+			{/each}
+		</ul>
+		<p class="text-gray-700">
+			Estos campos son importantes para la prescripción. ¿Desea guardar sin estos valores?
+		</p>
+	{/snippet}
+</ConfirmModal>

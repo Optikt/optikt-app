@@ -1,46 +1,64 @@
 <script lang="ts">
-	import { Modal, Button, Spinner } from 'flowbite-svelte';
+	import { Modal, Button, Spinner, type ButtonProps } from 'flowbite-svelte';
 	import type { Snippet } from 'svelte';
-
-	type ButtonColor = 'red' | 'yellow' | 'green' | 'blue' | 'light';
 
 	interface Props {
 		open: boolean;
 		title: string;
 		message?: string;
+		body?: Snippet; // Rich content (e.g. bullet list of missing fields)
 		confirmLabel?: string;
 		cancelLabel?: string;
-		confirmColor?: ButtonColor;
+		confirmColor?: ButtonProps['color'];
 		loading?: boolean;
 		icon?: Snippet;
 		onConfirm: () => void;
 		onCancel?: () => void; // Optional extra callback, modal closes automatically
+		shouldConfirm?: () => boolean | Promise<boolean>; // Determine if confirmation should be shown
+		permanent?: boolean;
 	}
 
 	let {
 		open = $bindable(),
 		title,
 		message,
+		body,
 		confirmLabel = 'Confirmar',
 		cancelLabel = 'Cancelar',
 		confirmColor = 'blue',
 		loading = false,
 		icon,
 		onConfirm,
-		onCancel
+		onCancel,
+		shouldConfirm,
+		permanent = false
 	}: Props = $props();
+
+	let isChecking = $state(false);
 
 	function handleCancel() {
 		onCancel?.(); // Run extra callback if provided
 		open = false; // Always close
 	}
 
-	function handleConfirm() {
-		onConfirm();
+	async function handleConfirm() {
+		if (shouldConfirm) {
+			isChecking = true;
+			try {
+				const shouldProceed = await shouldConfirm();
+				if (shouldProceed) {
+					onConfirm();
+				}
+			} finally {
+				isChecking = false;
+			}
+		} else {
+			onConfirm();
+		}
 	}
 </script>
 
-<Modal bind:open size="sm" {title}>
+<Modal bind:open size="sm" {title} {permanent}>
 	<div class="flex items-start gap-3">
 		{#if icon}
 			{@render icon()}
@@ -49,13 +67,18 @@
 			{#if message}
 				<p class="text-gray-700">{message}</p>
 			{/if}
+			{#if body}
+				{@render body()}
+			{/if}
 		</div>
 	</div>
 
 	<div class="mt-6 flex justify-end gap-2">
-		<Button color="light" onclick={handleCancel} disabled={loading}>{cancelLabel}</Button>
-		<Button color={confirmColor} onclick={handleConfirm} disabled={loading}>
-			{#if loading}<Spinner size="4" class="mr-2" />{/if}
+		<Button color="light" onclick={handleCancel} disabled={loading || isChecking}
+			>{cancelLabel}</Button
+		>
+		<Button color={confirmColor} onclick={handleConfirm} disabled={loading || isChecking}>
+			{#if loading || isChecking}<Spinner size="4" class="mr-2" />{/if}
 			{confirmLabel}
 		</Button>
 	</div>
