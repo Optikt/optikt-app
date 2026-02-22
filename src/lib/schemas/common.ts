@@ -200,8 +200,68 @@ export const OptionalPendingEntitySchema = (prefix = 'pending_') =>
 /**
  * Refractive index validation for lenses
  */
-// TODO: Review realistic range for lens materials (e.g., 1.0 to 2.0)
 export const RefractiveIndexSchema = CoercedNumber.min(1.0).max(2.0);
+
+// =============================================================================
+// OPTICAL VALUE SCHEMAS
+// =============================================================================
+
+/**
+ * Sphere power validation - -30.00 to +30.00 diopters
+ * Standard range for both prescriptions and lens catalog
+ * Steps of 0.25 diopters
+ */
+export const SphereSchema = z.preprocess(
+	(val: string | number) => {
+		if (val === '' || val === undefined || val === null) return 0;
+		return typeof val === 'string' ? parseFloat(val) : val;
+	},
+	z
+		.number()
+		.min(-30, 'Esfera debe ser mayor o igual a -30')
+		.max(30, 'Esfera debe ser menor o igual a +30')
+);
+
+/**
+ * Optional sphere schema for prescriptions
+ */
+export const OptionalSphereSchema = z.optional(SphereSchema);
+
+/**
+ * Cylinder power validation - -10.00 to 0.00 diopters (negative only)
+ * In optical terms, cylinder is always expressed in negative form
+ * Steps of 0.25 diopters
+ */
+export const CylinderSchema = z.preprocess(
+	(val: string | number) => {
+		if (val === '' || val === undefined || val === null) return 0;
+		return typeof val === 'string' ? parseFloat(val) : val;
+	},
+	z
+		.number()
+		.min(-10, 'Cilindro debe ser mayor o igual a -10')
+		.max(0, 'Cilindro debe ser negativo o cero')
+);
+
+/**
+ * Optional cylinder schema for prescriptions
+ */
+export const OptionalCylinderSchema = z.optional(CylinderSchema);
+
+/**
+ * Addition power validation - 0.00 to +5.00 diopters
+ * For progressive/bifocal lenses
+ * Steps of 0.25 diopters
+ */
+export const AdditionSchema = z.preprocess((val: string | number) => {
+	if (val === '' || val === undefined || val === null) return undefined;
+	return typeof val === 'string' ? parseFloat(val) : val;
+}, z.number().min(0, 'Adición debe ser mayor o igual a 0').max(5, 'Adición debe ser menor o igual a +5').optional());
+
+/**
+ * Optional addition schema for prescriptions
+ */
+export const OptionalAdditionSchema = z.optional(AdditionSchema);
 
 // =============================================================================
 // LIST PAGINATION SCHEMAS
