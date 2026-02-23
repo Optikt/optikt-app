@@ -99,9 +99,9 @@ export const NpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
  * Treatments that can be applied to a prescription
  * Using separate fields for form compatibility with SvelteKit
  */
-export const TreatmentAntiReflectiveSchema = z.boolean().optional();
-export const TreatmentBlueBlockSchema = z.boolean().optional();
-export const TreatmentPhotochromicSchema = z.boolean().optional();
+export const TreatmentAntiReflectiveSchema = CoercedBoolean.optional();
+export const TreatmentBlueBlockSchema = CoercedBoolean.optional();
+export const TreatmentPhotochromicSchema = CoercedBoolean.optional();
 export const TreatmentOtherSchema = z.string().optional();
 
 // =============================================================================
