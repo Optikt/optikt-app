@@ -36,6 +36,18 @@ function getAuditContext(): AuditContext {
 }
 
 /**
+ * Normalize optical values for storage
+ * Converts 0 to null for consistency in the database
+ * This allows distinguishing between "not measured" and "measured as 0" during validation,
+ * but normalizes to null for storage to keep data consistent
+ */
+function normalizeOpticalValue(value: number | undefined | null): number | null {
+	if (value === undefined || value === null) return null;
+	// Convert 0 to null for storage consistency
+	return value === 0 ? null : value;
+}
+
+/**
  * Build treatments object from form data
  */
 function buildTreatments(data: {
@@ -117,18 +129,18 @@ export const createPrescriptionForm = form(
 		// Build treatments object
 		const treatments = buildTreatments(data);
 
-		// Create prescription
+		// Create prescription with normalized optical values (0 → null)
 		const prescription = await createPrescription({
 			customerId: data.customerId,
 			prescriptionDate: new Date(data.prescriptionDate),
-			odSphere: data.odSphere ?? null,
-			odCylinder: data.odCylinder ?? null,
-			odAxis: data.odAxis ?? null,
-			odAddition: data.odAddition ?? null,
-			osSphere: data.osSphere ?? null,
-			osCylinder: data.osCylinder ?? null,
-			osAxis: data.osAxis ?? null,
-			osAddition: data.osAddition ?? null,
+			odSphere: normalizeOpticalValue(data.odSphere),
+			odCylinder: normalizeOpticalValue(data.odCylinder),
+			odAxis: normalizeOpticalValue(data.odAxis),
+			odAddition: normalizeOpticalValue(data.odAddition),
+			osSphere: normalizeOpticalValue(data.osSphere),
+			osCylinder: normalizeOpticalValue(data.osCylinder),
+			osAxis: normalizeOpticalValue(data.osAxis),
+			osAddition: normalizeOpticalValue(data.osAddition),
 			dp: data.dp ?? null,
 			npRight: data.npRight ?? null,
 			npLeft: data.npLeft ?? null,
@@ -172,19 +184,23 @@ export const updatePrescriptionForm = form(
 			}
 		}
 
-		// Build update object
+		// Build update object with normalized optical values (0 → null)
 		const updateData: Partial<Omit<Prescription, 'id' | 'createdAt'>> = {};
 		if (data.prescriptionDate !== undefined) {
 			updateData.prescriptionDate = new Date(data.prescriptionDate);
 		}
-		if (data.odSphere !== undefined) updateData.odSphere = data.odSphere ?? null;
-		if (data.odCylinder !== undefined) updateData.odCylinder = data.odCylinder ?? null;
-		if (data.odAxis !== undefined) updateData.odAxis = data.odAxis ?? null;
-		if (data.odAddition !== undefined) updateData.odAddition = data.odAddition ?? null;
-		if (data.osSphere !== undefined) updateData.osSphere = data.osSphere ?? null;
-		if (data.osCylinder !== undefined) updateData.osCylinder = data.osCylinder ?? null;
-		if (data.osAxis !== undefined) updateData.osAxis = data.osAxis ?? null;
-		if (data.osAddition !== undefined) updateData.osAddition = data.osAddition ?? null;
+		if (data.odSphere !== undefined) updateData.odSphere = normalizeOpticalValue(data.odSphere);
+		if (data.odCylinder !== undefined)
+			updateData.odCylinder = normalizeOpticalValue(data.odCylinder);
+		if (data.odAxis !== undefined) updateData.odAxis = normalizeOpticalValue(data.odAxis);
+		if (data.odAddition !== undefined)
+			updateData.odAddition = normalizeOpticalValue(data.odAddition);
+		if (data.osSphere !== undefined) updateData.osSphere = normalizeOpticalValue(data.osSphere);
+		if (data.osCylinder !== undefined)
+			updateData.osCylinder = normalizeOpticalValue(data.osCylinder);
+		if (data.osAxis !== undefined) updateData.osAxis = normalizeOpticalValue(data.osAxis);
+		if (data.osAddition !== undefined)
+			updateData.osAddition = normalizeOpticalValue(data.osAddition);
 		if (data.dp !== undefined) updateData.dp = data.dp ?? null;
 		if (data.npRight !== undefined) updateData.npRight = data.npRight ?? null;
 		if (data.npLeft !== undefined) updateData.npLeft = data.npLeft ?? null;
