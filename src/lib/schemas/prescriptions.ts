@@ -18,8 +18,10 @@ function requireSphereOrCylinder<T extends Record<string, unknown>>(
 	cylinderKey: keyof T
 ) {
 	return (data: T, ctx: z.RefinementCtx) => {
-		const hasSphere = data[sphereKey] !== undefined && data[sphereKey] !== 0;
-		const hasCylinder = data[cylinderKey] !== undefined && data[cylinderKey] !== 0;
+		// Check if value was explicitly provided (not undefined)
+		// Explicit 0 is valid (patient has good vision) and will be normalized to null on save
+		const hasSphere = data[sphereKey] !== undefined;
+		const hasCylinder = data[cylinderKey] !== undefined;
 
 		if (!(hasSphere || hasCylinder)) {
 			ctx.addIssue({
@@ -41,7 +43,9 @@ function requireAxisWhenCylinder<T extends Record<string, unknown>>(
 	axisKey: keyof T
 ) {
 	return (data: T, ctx: z.RefinementCtx) => {
-		const hasCylinder = data[cylinderKey] !== undefined && data[cylinderKey] !== 0;
+		// Check if cylinder was explicitly provided (not undefined)
+		// This allows explicit 0 cylinder to not require axis
+		const hasCylinder = data[cylinderKey] !== undefined && data[cylinderKey] !== 0; // Cylinder of 0 does not require axis
 		const hasAxis = data[axisKey] !== undefined;
 
 		if (hasCylinder && !hasAxis) {

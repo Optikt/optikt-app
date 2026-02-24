@@ -117,20 +117,60 @@ describe('CreatePrescriptionSchema - requireAxisWhenCylinder', () => {
 		expect(result.success).toBe(true);
 	});
 
-	it('does not require axis when cylinder is 0', () => {
+	it('does not require axis when cylinder is 0 (normalized to null on save)', () => {
+		// With Option B: 0 is normalized to null for storage, so no axis required
 		const result = CreatePrescriptionSchema.safeParse({
 			...validBaseData,
-			odCylinder: 0,
-			odAxis: '' // No axis needed when cylinder is 0
+			odCylinder: '0', // Explicit 0 cylinder (will be normalized to null on save)
+			odAxis: '' // No axis needed
 		});
 		expect(result.success).toBe(true);
 	});
 
-	it('does not require axis when cylinder is not provided', () => {
+	it('does not require axis when cylinder is not provided (empty)', () => {
 		const result = CreatePrescriptionSchema.safeParse({
 			...validBaseData,
+			odCylinder: '', // Empty string → undefined → no cylinder
 			odAxis: '' // No axis needed when no cylinder
 		});
 		expect(result.success).toBe(true);
+	});
+
+	it('accepts explicit 0 in both sphere and cylinder (patient has good vision)', () => {
+		// Explicit 0 means patient has good vision (no correction needed)
+		// This is valid input, even though it will be normalized to null on save
+		const result = CreatePrescriptionSchema.safeParse({
+			...validBaseData,
+			odSphere: '0', // Explicit 0 - patient has good vision
+			odCylinder: '0', // Explicit 0 - no astigmatism
+			osSphere: '0', // Explicit 0 - patient has good vision
+			osCylinder: '0' // Explicit 0 - no astigmatism
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts explicit 0 in sphere with non-zero cylinder', () => {
+		// Sphere is 0 (normalized to null), but cylinder has a real value
+		const result = CreatePrescriptionSchema.safeParse({
+			...validBaseData,
+			odSphere: '0', // Will be normalized to null
+			odCylinder: '-1.0', // Real value
+			odAxis: '90',
+			osSphere: '0', // Will be normalized to null
+			osCylinder: '-0.5', // Real value
+			osAxis: '180'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects when both sphere and cylinder are empty (not provided)', () => {
+		const result = CreatePrescriptionSchema.safeParse({
+			...validBaseData,
+			odSphere: '', // Empty → undefined
+			odCylinder: '', // Empty → undefined
+			osSphere: '', // Empty → undefined
+			osCylinder: '' // Empty → undefined
+		});
+		expect(result.success).toBe(false);
 	});
 });
