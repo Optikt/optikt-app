@@ -19,7 +19,6 @@ import {
 // AUDIT SERVICE
 // ============================================================================
 
-
 /**
  * Audit Context Helper
  * Build audit context from the current request event.
@@ -33,7 +32,6 @@ export function getAuditContext(): AuditContext {
 		userAgent: event.request.headers.get('user-agent')
 	};
 }
-
 
 /**
  * Service for logging entity changes to the change_history table.
