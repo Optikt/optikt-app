@@ -18,3 +18,13 @@ export { default as IdInput } from './IdInput.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
 export { default as PurchaseCurrencyInput } from './PurchaseCurrencyInput.svelte';
 export type { SelectOption, PendingEntity } from './CreatableSelect.svelte';
+
+// Badge components
+export {
+	ProductTypeBadge,
+	SupplierTypeBadge,
+	LensTypeBadge,
+	UserRoleBadge,
+	StatusBadge,
+	TreatmentBadge
+} from './badges';
