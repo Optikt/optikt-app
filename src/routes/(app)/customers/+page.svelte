@@ -2,6 +2,8 @@
 	import { Button, Modal } from 'flowbite-svelte';
 	import { Plus, TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage, getFullName } from '$lib/utils';
 	import { listCustomers, reactivateCustomer } from '$lib/remote/customers.remote';
@@ -72,9 +74,15 @@
 		showFormModal = true;
 	}
 
-	function handleFormSuccess() {
+	function handleFormSuccess(createdCustomerId?: string) {
 		showFormModal = false;
-		fetchCustomers(customersData.page);
+		if (createdCustomerId) {
+			// Redirect to the new customer's detail page
+			goto(resolve(`/customers/${createdCustomerId}`));
+		} else {
+			// Just refresh the list (for edits)
+			fetchCustomers(customersData.page);
+		}
 	}
 
 	// Reactivation handlers

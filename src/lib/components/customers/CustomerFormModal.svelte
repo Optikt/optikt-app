@@ -13,7 +13,7 @@
 		open: boolean;
 		customer?: Customer | null;
 		preserveData?: boolean; // When true, don't reset form data on open
-		onSuccess?: () => void;
+		onSuccess?: (createdCustomerId?: string) => void;
 		onReactivate?: (candidate: Customer, formData: FormData) => void;
 		onClose: () => void;
 	}
@@ -111,7 +111,7 @@
 			toast.success('Cliente creado exitosamente');
 			formEl.reset();
 			open = false;
-			onSuccess?.();
+			onSuccess?.(result?.customer?.id);
 		}
 	}
 
