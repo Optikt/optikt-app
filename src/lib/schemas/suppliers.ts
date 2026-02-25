@@ -13,7 +13,8 @@ import {
 	NameSchema,
 	OptionalEmailSchema,
 	EntityIdSchema,
-	ListPaginationSchema
+	ListPaginationSchema,
+	OptionalUrlSchema
 } from './common';
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
@@ -30,7 +31,7 @@ export const CreateSupplierSchema = z.object({
 	address: z.string().optional(),
 	instagram: InstagramSchema,
 	whatsapp: WhatsAppSchema,
-	website: z.url().optional(),
+	website: OptionalUrlSchema,
 	contactName: z.string().optional(),
 	contactPhone: OptionalPhoneSchema,
 	contactRole: z.string().optional(),

@@ -181,6 +181,8 @@ export const EmailSchema = z.email('Email inválido').max(255);
  */
 export const OptionalEmailSchema = z.union([z.literal(''), EmailSchema]);
 
+export const OptionalUrlSchema = z.union([z.literal(''), z.url('URL inválida')]);
+
 // =============================================================================
 // USERNAME & PASSWORD SCHEMAS
 // =============================================================================
