@@ -3,7 +3,12 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { NameSchema, ListPaginationWithDeletedSchema, EntityIdSchema, OptionalUrlSchema } from './common';
+import {
+	NameSchema,
+	ListPaginationWithDeletedSchema,
+	EntityIdSchema,
+	OptionalUrlSchema
+} from './common';
 
 export const ListBrandsSchema = ListPaginationWithDeletedSchema;
 
