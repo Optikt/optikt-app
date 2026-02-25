@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
+	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
 	import { Eye, Trash2, TriangleAlert, Package, SquarePen } from '@lucide/svelte';
-	import { getProductTypeColor, getProductTypeLabel } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice } from '$lib/utils';
-	import { DataTable, ActionButton } from '$lib/components/ui';
+	import { DataTable, ActionButton, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 	import { isLowStock } from '$lib/utils/products';
 
 	interface Props {
@@ -40,9 +39,7 @@
 			<TableBodyCell class="font-mono text-sm text-slate-700">{product.sku}</TableBodyCell>
 			<TableBodyCell class="font-medium text-slate-900">{product.name}</TableBodyCell>
 			<TableBodyCell>
-				<Badge color={getProductTypeColor(product.type)}>
-					{getProductTypeLabel(product.type)}
-				</Badge>
+				<ProductTypeBadge type={product.type} />
 			</TableBodyCell>
 			<TableBodyCell class="text-slate-600">
 				{product.brand?.name || '—'}
@@ -67,11 +64,7 @@
 				{/if}
 			</TableBodyCell>
 			<TableBodyCell>
-				{#if product.isActive}
-					<Badge color="green">Activo</Badge>
-				{:else}
-					<Badge color="gray">Inactivo</Badge>
-				{/if}
+				<StatusBadge active={product.isActive} />
 			</TableBodyCell>
 		{/snippet}
 

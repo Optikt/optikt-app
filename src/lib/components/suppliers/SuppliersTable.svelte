@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
+	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
 	import { SquarePen, Trash2, Truck, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
+	import { DataTable, ActionButton, ConfirmModal, SupplierTypeBadge } from '$lib/components/ui';
 	import { SupplierViewModal } from '$lib/components/suppliers';
-	import { getSupplierBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -69,9 +68,7 @@
 	{#snippet row(supplier)}
 		<TableBodyCell class="font-medium">{supplier.name}</TableBodyCell>
 		<TableBodyCell>
-			<Badge color={getSupplierBadgeColor(supplier.type)}>
-				{getSupplierTypeLabel(supplier.type)}
-			</Badge>
+			<SupplierTypeBadge type={supplier.type} />
 		</TableBodyCell>
 		<TableBodyCell>
 			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '—'}</span>

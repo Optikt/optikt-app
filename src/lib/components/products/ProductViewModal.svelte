@@ -1,14 +1,10 @@
 <script lang="ts">
-	import { Modal, Badge } from 'flowbite-svelte';
-	import {
-		ProductType,
-		getProductTypeColor,
-		getProductTypeLabel,
-		requiresStockTracking
-	} from '$lib/shared/enums';
+	import { Modal } from 'flowbite-svelte';
+	import { ProductType, requiresStockTracking } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice, formatDate, getProfitMargin } from '$lib/utils';
 	import { isLowStock } from '$lib/utils/products';
+	import { ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 
 	interface Props {
 		open: boolean;
@@ -28,14 +24,8 @@
 					<p class="font-mono text-lg font-medium text-slate-900">{product.sku}</p>
 				</div>
 				<div class="flex gap-2">
-					<Badge color={getProductTypeColor(product.type)}>
-						{getProductTypeLabel(product.type)}
-					</Badge>
-					{#if product.isActive}
-						<Badge color="green">Activo</Badge>
-					{:else}
-						<Badge color="gray">Inactivo</Badge>
-					{/if}
+					<ProductTypeBadge type={product.type} />
+					<StatusBadge active={product.isActive} />
 				</div>
 			</div>
 

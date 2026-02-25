@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Modal, Button, Badge } from 'flowbite-svelte';
+	import { Modal, Button } from 'flowbite-svelte';
 	import {
 		Phone,
 		Mail,
@@ -10,7 +10,7 @@
 		User,
 		FileText
 	} from '@lucide/svelte';
-	import { getSupplierBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
+	import { SupplierTypeBadge } from '$lib/components/ui';
 	import type { Supplier } from '$lib/server/db/schema';
 	import { formatPhone } from '$lib/utils';
 
@@ -45,9 +45,7 @@
 						<p class="mt-1 font-mono text-sm text-slate-500">{supplier.rif}</p>
 					{/if}
 				</div>
-				<Badge color={getSupplierBadgeColor(supplier.type)} class="text-sm">
-					{getSupplierTypeLabel(supplier.type)}
-				</Badge>
+				<SupplierTypeBadge type={supplier.type} size="sm" />
 			</div>
 
 			<!-- Contact Information -->

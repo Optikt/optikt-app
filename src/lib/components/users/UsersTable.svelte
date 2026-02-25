@@ -1,12 +1,17 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
+	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
 	import { SquarePen, Trash2, Power, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteUserById } from '$lib/remote/users.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
+	import {
+		DataTable,
+		ActionButton,
+		ConfirmModal,
+		UserRoleBadge,
+		StatusBadge
+	} from '$lib/components/ui';
 	import { ToggleActiveModal } from '$lib/components/users';
-	import { UserRole } from '$lib/shared/enums';
 	import type { UserListItem } from '$lib/types';
 
 	interface Props {
@@ -53,17 +58,6 @@
 	function handleToggleSuccess() {
 		onRefresh?.();
 	}
-
-	function getRoleBadgeColor(role: UserRole): 'yellow' | 'purple' | 'blue' | 'green' | 'gray' {
-		const colors: Record<UserRole, 'yellow' | 'purple' | 'blue' | 'green' | 'gray'> = {
-			[UserRole.SUPERADMIN]: 'yellow',
-			[UserRole.ADMIN]: 'purple',
-			[UserRole.MANAGER]: 'blue',
-			[UserRole.SELLER]: 'green',
-			[UserRole.VIEWER]: 'gray'
-		};
-		return colors[role] ?? 'gray';
-	}
 </script>
 
 <DataTable
@@ -88,12 +82,10 @@
 			<span class="font-mono text-sm text-slate-600">@{user.username}</span>
 		</TableBodyCell>
 		<TableBodyCell>
-			<Badge color={getRoleBadgeColor(user.role)}>{user.role}</Badge>
+			<UserRoleBadge role={user.role} />
 		</TableBodyCell>
 		<TableBodyCell>
-			<Badge color={user.isActive ? 'green' : 'red'}>
-				{user.isActive ? 'Activo' : 'Inactivo'}
-			</Badge>
+			<StatusBadge active={user.isActive} />
 		</TableBodyCell>
 	{/snippet}
 

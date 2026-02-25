@@ -4,16 +4,17 @@
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import {
-		LensCatalogSource,
-		getLensTypeLabel,
-		getLensSourceLabel,
-		getLensTypeBadgeColor
-	} from '$lib/shared/enums';
+	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { resolve } from '$app/paths';
-	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
+	import {
+		DataTable,
+		ActionButton,
+		ConfirmModal,
+		LensTypeBadge,
+		TreatmentBadge
+	} from '$lib/components/ui';
 
 	type Props = {
 		items: LensCatalogItemWithRelations[];
@@ -86,17 +87,15 @@
 			{item.supplier?.name ?? '—'}
 		</TableBodyCell>
 		<TableBodyCell>
-			<Badge color={getLensTypeBadgeColor(item.type)} class="text-xs">
-				{getLensTypeLabel(item.type)}
-			</Badge>
+			<LensTypeBadge type={item.type} />
 			{#if item.isPhotochromic}
-				<Badge color="yellow" title="Fotocromático" class="ml-1 text-xs">Foto</Badge>
+				<TreatmentBadge type="photochromic" class="ml-1" />
 			{/if}
 			{#if item.isBlueCut}
-				<Badge color="indigo" title="Blue Cut (Blue Block)" class="ml-1 text-xs">Blue</Badge>
+				<TreatmentBadge type="blueBlock" class="ml-1" />
 			{/if}
 			{#if item.isAR}
-				<Badge color="green" title="Antirreflejo (AR)" class="ml-1 text-xs">AR</Badge>
+				<TreatmentBadge type="antiReflective" class="ml-1" />
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell>
