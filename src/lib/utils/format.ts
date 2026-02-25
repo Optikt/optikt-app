@@ -33,6 +33,10 @@ export function formatCurrency(value: number): string {
 /**
  * Format a date for display (es-VE locale, long month)
  * Example: formatDate(new Date()) → "12 de febrero de 2026"
+ *
+ * Handles date-only values by using UTC components to avoid timezone shifts
+ * that would show the wrong day. Birth dates are stored as date-only (no time),
+ * so we extract UTC components to display the correct calendar date.
  */
 export function formatDate(
 	date: Date | string | null,
@@ -42,7 +46,23 @@ export function formatDate(
 
 	const { year = 'numeric', month = 'long', day = 'numeric', ...rest } = opt;
 
-	const d = typeof date === 'string' ? new Date(date) : date;
+	let d: Date;
+	if (typeof date === 'string') {
+		// Check if it's a date-only string (YYYY-MM-DD)
+		if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+			// Parse as local date to avoid timezone shifts
+			const [y, m, day] = date.split('-').map(Number);
+			d = new Date(y, m - 1, day);
+		} else {
+			d = new Date(date);
+		}
+	} else {
+		// For Date objects representing date-only values (like birth dates),
+		// extract UTC components and create a local date to prevent timezone shift
+		// e.g., 1975-08-01T00:00:00.000Z should display as Aug 1, not July 31
+		d = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+	}
+
 	return new Intl.DateTimeFormat('es-VE', {
 		year,
 		month,
