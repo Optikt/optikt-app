@@ -5,7 +5,7 @@
 	import { createCustomerForm, updateCustomerForm } from '$lib/remote/customers.remote';
 	import type { CreateCustomerResult } from '$lib/remote/customers.remote';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
-	import { scrollToFirstError, getErrorMessage } from '$lib/utils';
+	import { scrollToFirstError, getErrorMessage, dateFromUTC } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Customer } from '$lib/server/db/schema';
 
@@ -65,7 +65,8 @@
 						firstName: customer.firstName ?? '',
 						lastName: customer.lastName ?? '',
 						idNumber: customer.idNumber ?? '',
-						birthDate: customer.birthDate ? new Date(customer.birthDate) : undefined,
+						// Convert UTC midnight (from DB) to local midnight (for Datepicker)
+						birthDate: dateFromUTC(customer.birthDate),
 						primaryPhone: customer.primaryPhone ?? '',
 						email: customer.email ?? '',
 						address: customer.address ?? '',

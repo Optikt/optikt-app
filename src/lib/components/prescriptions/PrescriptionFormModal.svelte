@@ -4,7 +4,7 @@
 	import { untrack } from 'svelte';
 	import { createPrescriptionForm, updatePrescriptionForm } from '$lib/remote/prescriptions.remote';
 	import { FormInput, FormDatepicker, ConfirmModal } from '$lib/components/ui';
-	import { scrollToFirstError, getErrorMessage, getFullName } from '$lib/utils';
+	import { scrollToFirstError, getErrorMessage, getFullName, dateFromUTC } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { LensType, ALL_LENS_TYPES, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
@@ -104,9 +104,8 @@
 				formInstanceId = generateUUID();
 				if (prescription) {
 					formData = {
-						prescriptionDate: prescription.prescriptionDate
-							? new Date(prescription.prescriptionDate)
-							: undefined,
+						// Convert UTC midnight (from DB) to local midnight (for Datepicker)
+						prescriptionDate: dateFromUTC(prescription.prescriptionDate),
 						recommendedLensType: prescription.recommendedLensType ?? LensType.MONOFOCAL,
 						odSphere: prescription.odSphere?.toString() ?? '',
 						odCylinder: prescription.odCylinder?.toString() ?? '',

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Datepicker, Label, Helper } from 'flowbite-svelte';
-	import { getFormErrorMessage } from '$lib/utils';
+	import { getFormErrorMessage, dateToISODateString } from '$lib/utils';
 
 	interface Props {
 		value: Date | undefined;
@@ -28,12 +28,8 @@
 	}: Props = $props();
 
 	// For form submission - ISO format using local date components
-	// to avoid timezone shifts from toISOString()
-	const isoValue = $derived(
-		value
-			? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
-			: ''
-	);
+	// Uses the utility function for consistent date-only handling
+	const isoValue = $derived(dateToISODateString(value));
 
 	// Error display
 	const displayError = $derived(getFormErrorMessage(error));
