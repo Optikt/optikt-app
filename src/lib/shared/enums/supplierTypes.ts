@@ -34,6 +34,11 @@ export const supplierTypeColors: Record<SupplierType, 'blue' | 'green' | 'purple
 
 export type SupplierTypeColor = (typeof supplierTypeColors)[SupplierType];
 
-export function getSupplierBadgeColor(type: string): SupplierTypeColor {
+export function getSupplierTypeBadgeColor(type: string): SupplierTypeColor {
 	return supplierTypeColors[type as SupplierType] ?? 'blue';
+}
+
+/** @deprecated Use getSupplierTypeBadgeColor instead */
+export function getSupplierBadgeColor(type: string): SupplierTypeColor {
+	return getSupplierTypeBadgeColor(type);
 }

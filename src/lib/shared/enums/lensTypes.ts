@@ -59,17 +59,18 @@ export function getPricingUnitLabel(unit: string): string {
 	return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
 }
 
-export function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
-	switch (type) {
-		case LensType.MONOFOCAL:
-			return 'blue';
-		case LensType.BIFOCAL:
-			return 'green';
-		case LensType.PROGRESSIVE:
-			return 'purple';
-		case LensType.OCCUPATIONAL:
-			return 'yellow';
-		default:
-			return 'blue';
-	}
+/**
+ * Lens type badge colors for consistent UI display
+ */
+export const lensTypeBadgeColors: Record<LensType, 'blue' | 'green' | 'purple' | 'yellow'> = {
+	[LensType.MONOFOCAL]: 'blue',
+	[LensType.BIFOCAL]: 'green',
+	[LensType.PROGRESSIVE]: 'purple',
+	[LensType.OCCUPATIONAL]: 'yellow'
+};
+
+export type LensTypeColor = (typeof lensTypeBadgeColors)[LensType];
+
+export function getLensTypeBadgeColor(type: string): LensTypeColor {
+	return lensTypeBadgeColors[type as LensType] ?? 'blue';
 }

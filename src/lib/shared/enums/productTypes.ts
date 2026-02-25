@@ -41,8 +41,13 @@ export const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yell
 
 export type ProductTypeColor = (typeof typeColors)[ProductType];
 
-export function getProductTypeColor(type: string): ProductTypeColor | 'gray' {
+export function getProductTypeBadgeColor(type: string): ProductTypeColor | 'gray' {
 	return typeColors[type as ProductType] ?? 'gray';
+}
+
+/** @deprecated Use getProductTypeBadgeColor instead */
+export function getProductTypeColor(type: string): ProductTypeColor | 'gray' {
+	return getProductTypeBadgeColor(type);
 }
 
 /** All product types require stock tracking */
