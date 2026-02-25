@@ -2,24 +2,12 @@
  * Materials Remote Functions
  * Server-side functions for unified materials management
  */
-import { query, command, getRequestEvent } from '$app/server';
+import { query, command } from '$app/server';
 import { QuickCreateMaterialSchema, ListMaterialsSchema } from '$lib/schemas/materials';
 import { eq, ilike, and, isNull, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { materials, type Material } from '$lib/server/db/schema';
-import { auditService, type AuditContext } from '$lib/server/audit';
-
-/**
- * Helper to get audit context from the current request
- */
-function getAuditContext(): AuditContext {
-	const event = getRequestEvent();
-	return {
-		userId: event.locals.user?.id ?? null,
-		ipAddress: event.getClientAddress(),
-		userAgent: event.request.headers.get('user-agent')
-	};
-}
+import { auditService, getAuditContext } from '$lib/server/audit';
 
 /**
  * List all active materials, optionally filtered by product type

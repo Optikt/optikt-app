@@ -2,7 +2,7 @@
  * Products Remote Functions
  * Server-side functions for product management
  */
-import { query, form, command, getRequestEvent } from '$app/server';
+import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { eq, isNull, and, ilike } from 'drizzle-orm';
 import {
@@ -22,19 +22,7 @@ import { ProductType, toMaterialProductType } from '$lib/shared/enums/productTyp
 import { db } from '$lib/server/db';
 import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { auditService, type AuditContext } from '$lib/server/audit';
-
-/**
- * Helper to build audit context from the request event
- */
-function getAuditContext(): AuditContext {
-	const event = getRequestEvent();
-	return {
-		userId: event.locals.user?.id ?? null,
-		ipAddress: event.getClientAddress(),
-		userAgent: event.request.headers.get('user-agent')
-	};
-}
+import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
 export interface PaginatedProducts {

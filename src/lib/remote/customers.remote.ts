@@ -2,7 +2,7 @@
  * Customers Remote Functions
  * Server-side functions for customer management
  */
-import { query, form, command, getRequestEvent } from '$app/server';
+import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListCustomersSchema,
@@ -22,19 +22,7 @@ import {
 	restoreCustomer
 } from '$lib/server/db/queries/customers';
 import type { Customer } from '$lib/server/db/schema';
-import { auditService, type AuditContext } from '$lib/server/audit';
-
-/**
- * Helper to build audit context from the request event
- */
-function getAuditContext(): AuditContext {
-	const event = getRequestEvent();
-	return {
-		userId: event.locals.user?.id ?? null,
-		ipAddress: event.getClientAddress(),
-		userAgent: event.request.headers.get('user-agent')
-	};
-}
+import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
 export interface PaginatedCustomers {

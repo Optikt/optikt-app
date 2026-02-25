@@ -2,7 +2,7 @@
  * Brands Remote Functions
  * Server-side functions for brand management
  */
-import { query, form, command, getRequestEvent } from '$app/server';
+import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListBrandsSchema,
@@ -21,7 +21,7 @@ import {
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
 import type { Brand } from '$lib/server/db/schema';
-import { auditService, type AuditContext } from '$lib/server/audit';
+import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
 export interface PaginatedBrands {
@@ -37,18 +37,6 @@ export interface BrandDeleteCheck {
 	canDelete: boolean;
 	productCount: number;
 	brandName: string;
-}
-
-/**
- * Helper to build audit context from the request event
- */
-function getAuditContext(): AuditContext {
-	const event = getRequestEvent();
-	return {
-		userId: event.locals.user?.id ?? null,
-		ipAddress: event.getClientAddress(),
-		userAgent: event.request.headers.get('user-agent')
-	};
 }
 
 /**
