@@ -1,4 +1,5 @@
 import { db } from '$lib/server/db';
+import { getRequestEvent } from '$app/server';
 import {
 	changeHistory,
 	type EntityType,
@@ -17,6 +18,22 @@ import {
 // ============================================================================
 // AUDIT SERVICE
 // ============================================================================
+
+
+/**
+ * Audit Context Helper
+ * Build audit context from the current request event.
+ * Used by remote functions to capture who made the change.
+ */
+export function getAuditContext(): AuditContext {
+	const event = getRequestEvent();
+	return {
+		userId: event.locals.user?.id ?? null,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent')
+	};
+}
+
 
 /**
  * Service for logging entity changes to the change_history table.
