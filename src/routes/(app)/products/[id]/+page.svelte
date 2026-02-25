@@ -1,21 +1,16 @@
 <script lang="ts">
-	import { Badge, Button } from 'flowbite-svelte';
+	import { Button } from 'flowbite-svelte';
 	import { ArrowLeft, Pencil, Trash2, TriangleAlert, History } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { formatPrice, formatDate, getProfitMargin } from '$lib/utils';
 	import { untrack } from 'svelte';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import {
-		ProductType,
-		getProductTypeColor,
-		getProductTypeLabel,
-		requiresStockTracking
-	} from '$lib/shared/enums';
+	import { ProductType, requiresStockTracking } from '$lib/shared/enums';
 	import { isLowStock } from '$lib/utils/products.js';
 
 	let { data } = $props();
@@ -72,14 +67,8 @@
 				<div>
 					<div class="flex items-center gap-3">
 						<h1 class="text-3xl font-bold tracking-tight text-slate-900">{product.name}</h1>
-						<Badge color={getProductTypeColor(product.type)}>
-							{getProductTypeLabel(product.type)}
-						</Badge>
-						{#if product.isActive}
-							<Badge color="green">Activo</Badge>
-						{:else}
-							<Badge color="gray">Inactivo</Badge>
-						{/if}
+						<ProductTypeBadge type={product.type} />
+						<StatusBadge active={product.isActive} />
 					</div>
 					<p class="mt-1 font-mono text-slate-500">{product.sku}</p>
 				</div>
