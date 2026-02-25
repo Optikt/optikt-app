@@ -27,8 +27,13 @@
 		availableTo
 	}: Props = $props();
 
-	// For form submission - ISO format hidden input
-	const isoValue = $derived(value?.toISOString().split('T')[0] ?? '');
+	// For form submission - ISO format using local date components
+	// to avoid timezone shifts from toISOString()
+	const isoValue = $derived(
+		value
+			? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+			: ''
+	);
 
 	// Error display
 	const displayError = $derived(getFormErrorMessage(error));
