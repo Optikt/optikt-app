@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
-	import { Eye, SquarePen, Star, Glasses } from '@lucide/svelte';
-	import { DataTable, ActionButton } from '$lib/components/ui';
+	import { Star, Glasses, Eye, SquarePen } from '@lucide/svelte';
+	import { DataTable } from '$lib/components/ui';
 	import type { Prescription } from '$lib/server/db/schema';
 	import {
 		formatAxis,
@@ -16,17 +16,24 @@
 		loading?: boolean;
 		onView?: (prescription: Prescription) => void;
 		onEdit?: (prescription: Prescription) => void;
+		refetch?: () => void | Promise<void>;
 	}
 
-	let { prescriptions, loading = false, onView, onEdit }: Props = $props();
+	let { prescriptions, loading = false, onView, onEdit, refetch }: Props = $props();
 </script>
 
 <DataTable
 	items={prescriptions}
 	{loading}
+	{refetch}
 	emptyIcon={Glasses}
 	emptyTitle="No hay fórmulas registradas"
 	emptyDescription="Agrega una fórmula para comenzar"
+	defaultActions="view,edit"
+	{onView}
+	{onEdit}
+	viewIcon={Eye}
+	editIcon={SquarePen}
 >
 	{#snippet header()}
 		<TableHeadCell class="font-semibold">Fecha</TableHeadCell>
@@ -93,15 +100,5 @@
 				<span class="text-slate-400">—</span>
 			{/if}
 		</TableBodyCell>
-	{/snippet}
-
-	{#snippet actions(prescription)}
-		<ActionButton icon={Eye} title="Ver detalles" onclick={() => onView?.(prescription)} />
-		<ActionButton
-			icon={SquarePen}
-			title="Editar"
-			color="blue"
-			onclick={() => onEdit?.(prescription)}
-		/>
 	{/snippet}
 </DataTable>

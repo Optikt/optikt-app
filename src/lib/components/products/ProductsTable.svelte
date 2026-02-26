@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { Eye, Trash2, TriangleAlert, Package, SquarePen } from '@lucide/svelte';
+	import { TriangleAlert, Package, Eye, SquarePen, Trash2 } from '@lucide/svelte';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice } from '$lib/utils';
-	import { DataTable, ActionButton, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
+	import { DataTable, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 	import { isLowStock } from '$lib/utils/products';
 
 	interface Props {
@@ -12,18 +12,27 @@
 		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
 		onDelete?: (product: ProductWithRelations) => void;
+		refetch?: () => void | Promise<void>;
 	}
 
-	let { products, loading = false, onView, onEdit, onDelete }: Props = $props();
+	let { products, loading = false, onView, onEdit, onDelete, refetch }: Props = $props();
 </script>
 
 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
 	<DataTable
 		items={products}
 		{loading}
+		{refetch}
 		emptyIcon={Package}
 		emptyTitle="No se encontraron productos"
 		emptyDescription="Agrega un producto para comenzar"
+		defaultActions="view,edit,delete"
+		{onView}
+		{onEdit}
+		{onDelete}
+		viewIcon={Eye}
+		editIcon={SquarePen}
+		deleteIcon={Trash2}
 	>
 		{#snippet header()}
 			<TableHeadCell class="font-semibold text-slate-600">SKU</TableHeadCell>
@@ -66,29 +75,6 @@
 			<TableBodyCell>
 				<StatusBadge active={product.isActive} />
 			</TableBodyCell>
-		{/snippet}
-
-		{#snippet actions(product)}
-			{#if onView}
-				<ActionButton icon={Eye} title="Ver detalles" onclick={() => onView(product)} />
-			{/if}
-			{#if onEdit}
-				<ActionButton
-					icon={SquarePen}
-					title="Editar"
-					color="blue"
-					onclick={() => onEdit(product)}
-				/>
-			{/if}
-			{#if onDelete}
-				<ActionButton
-					icon={Trash2}
-					title="Eliminar"
-					color="red"
-					hidden={!onDelete}
-					onclick={() => onDelete(product)}
-				/>
-			{/if}
 		{/snippet}
 	</DataTable>
 </div>

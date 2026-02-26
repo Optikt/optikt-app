@@ -7,6 +7,7 @@
 	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
 		DataTable,
@@ -159,12 +160,16 @@
 	{/snippet}
 
 	{#snippet actions(item)}
-		<ActionButton icon={Eye} title="Ver detalles" href={resolve(`/lenses/${item.id}`)} />
+		<ActionButton
+			icon={Eye}
+			title="Ver detalles"
+			onclick={() => goto(resolve(`/lenses/${item.id}`))}
+		/>
 		<ActionButton
 			icon={SquarePen}
 			title="Editar"
 			color="blue"
-			href={resolve(`/lenses/${item.id}/edit`)}
+			onclick={() => goto(resolve(`/lenses/${item.id}/edit`))}
 		/>
 		<ActionButton icon={Trash2} title="Eliminar" color="red" onclick={() => openDelete(item)} />
 	{/snippet}

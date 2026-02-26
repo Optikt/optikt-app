@@ -2,6 +2,7 @@
 	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
 	import { SquarePen, Trash2, User, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { deleteCustomerById } from '$lib/remote/customers.remote';
 	import { getErrorMessage, getFullName } from '$lib/utils';
@@ -81,7 +82,7 @@
 		<ActionButton
 			icon={Eye}
 			title="Ver detalles y fórmulas"
-			href={resolve(`/customers/${customer.id}`)}
+			onclick={() => goto(resolve(`/customers/${customer.id}`))}
 		/>
 
 		<ActionButton
