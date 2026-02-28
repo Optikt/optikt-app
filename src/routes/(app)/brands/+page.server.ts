@@ -2,7 +2,8 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { brands } from '$lib/server/db/schema';
-import { isNull, desc, count } from 'drizzle-orm';
+import { isNull, count } from 'drizzle-orm';
+import { getAllBrands } from '$lib/server/db/queries/brands';
 
 /**
  * Load initial brands data for SSR
@@ -20,20 +21,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.where(isNull(brands.deletedAt));
 
 	// Get first page of brands
-	const brandList = await db
-		.select({
-			id: brands.id,
-			name: brands.name,
-			description: brands.description,
-			country: brands.country,
-			logoUrl: brands.logoUrl,
-			website: brands.website,
-			createdAt: brands.createdAt
-		})
-		.from(brands)
-		.where(isNull(brands.deletedAt))
-		.orderBy(desc(brands.createdAt))
-		.limit(10);
+	const brandList = await getAllBrands({ orderBy: 'createdAt', orderSort: 'desc', limit: 10 });
 
 	return {
 		initialBrands: brandList,
