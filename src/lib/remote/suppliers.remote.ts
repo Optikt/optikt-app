@@ -9,7 +9,8 @@ import {
 	CreateSupplierSchema,
 	UpdateSupplierSchema,
 	SupplierIdSchema,
-	QuickCreateSupplierSchema
+	QuickCreateSupplierSchema,
+	ReactivateSupplierSchema
 } from '$lib/schemas/suppliers';
 import {
 	getAllSuppliers,
@@ -18,6 +19,7 @@ import {
 	findSupplierByRif,
 	createSupplier,
 	updateSupplier,
+	restoreSupplier,
 	deleteSupplier
 } from '$lib/server/db/queries/suppliers';
 import type { Supplier } from '$lib/server/db/schema';
@@ -32,16 +34,24 @@ export interface PaginatedSuppliers {
 	totalPages: number;
 }
 
+// Types for create result
+export interface CreateSupplierResult {
+	success: boolean;
+	message: string;
+	supplier?: Supplier;
+	reactivationCandidate?: Supplier;
+}
+
 /**
  * List suppliers with pagination, search, and type filter
  */
 export const listSuppliers = query(
 	ListSuppliersSchema,
 	async (data): Promise<PaginatedSuppliers> => {
-		const { page, perPage, search, type } = data;
+		const { page, perPage, search, type, includeDeleted } = data;
 
-		// Get all suppliers (we'll filter in memory for now)
-		let allSuppliers = await getAllSuppliers();
+		// Get suppliers (active only or all if includeDeleted)
+		let allSuppliers = await getAllSuppliers({ includeDeleted });
 
 		// Apply search filter
 		if (search) {
@@ -71,19 +81,20 @@ export const listSuppliers = query(
 
 /**
  * Create a new supplier with form validation
+ * Returns either a success with supplier, or a reactivation candidate for confirmation
  */
 export const createSupplierForm = form(
 	CreateSupplierSchema,
-	async (data, issue): Promise<Supplier> => {
+	async (data, issue): Promise<CreateSupplierResult> => {
 		const { name, rif, ...rest } = data;
 
-		// Check for duplicate name
-		const existingName = await findSupplierByName(name);
-		if (existingName) {
+		// Check for duplicate ACTIVE name
+		const existingActive = await findSupplierByName(name);
+		if (existingActive) {
 			invalid(issue.name('Ya existe un proveedor con este nombre'));
 		}
 
-		// Check for duplicate RIF if provided
+		// Check for duplicate ACTIVE RIF if provided
 		if (rif && rif.trim() !== '') {
 			const existingRif = await findSupplierByRif(rif);
 			if (existingRif) {
@@ -91,7 +102,19 @@ export const createSupplierForm = form(
 			}
 		}
 
-		// Create supplier
+		// Check for DELETED supplier with same name (reactivation candidate)
+		const deletedSupplier = await findSupplierByName(name, { deleted: true });
+		if (deletedSupplier) {
+			// Can reactivate! Return candidate for confirmation
+			return {
+				success: false,
+				reactivationCandidate: deletedSupplier,
+				message:
+					'El nombre del proveedor pertenece a un proveedor eliminado. ¿Desea reactivarlo con los nuevos datos?'
+			};
+		}
+
+		// All clear - create new supplier
 		const supplier = await createSupplier({
 			name,
 			rif: rif && rif.trim() !== '' ? rif : null,
@@ -101,7 +124,7 @@ export const createSupplierForm = form(
 		// Log audit
 		await auditService.logCreate('supplier', supplier, getAuditContext());
 
-		return supplier;
+		return { success: true, message: 'Proveedor creado exitosamente', supplier };
 	}
 );
 
@@ -195,5 +218,29 @@ export const quickCreateSupplier = command(
 		await auditService.logCreate('supplier', supplier, getAuditContext());
 
 		return { id: supplier.id, name: supplier.name };
+	}
+);
+
+/**
+ * Reactivate a deleted supplier with new data
+ */
+export const reactivateSupplier = command(
+	ReactivateSupplierSchema,
+	async (data): Promise<Supplier> => {
+		const { deletedSupplierId } = data;
+
+		// Verify the supplier exists and is deleted
+		const existing = await findSupplierById(deletedSupplierId, { deleted: true });
+		if (!existing || !existing.deletedAt) {
+			throw new Error('Proveedor eliminado no encontrado');
+		}
+
+		// Restore the supplier (reactivation)
+		const restored = await restoreSupplier(deletedSupplierId);
+
+		// Log the reactivation
+		await auditService.logCreate('supplier', restored, getAuditContext());
+
+		return restored;
 	}
 );

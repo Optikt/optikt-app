@@ -45,6 +45,10 @@ export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
 
 export const SupplierIdSchema = EntityIdSchema();
 
+export const ReactivateSupplierSchema = z.object({
+	deletedSupplierId: z.uuid()
+});
+
 /**
  * Quick create schema - minimal fields for inline creation
  * Uses defaults for required fields, user can complete later
