@@ -8,13 +8,13 @@
 	import { scrollToFirstError, getErrorMessage, dateFromUTC } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Customer } from '$lib/server/db/schema';
+	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
 
 	interface Props {
 		open: boolean;
 		customer?: Customer | null;
 		preserveData?: boolean; // When true, don't reset form data on open
 		onSuccess?: (createdCustomerId?: string) => void;
-		onReactivate?: (candidate: Customer, formData: FormData) => void;
 		onClose: () => void;
 	}
 
@@ -23,7 +23,6 @@
 		customer = null,
 		preserveData = $bindable(false),
 		onSuccess,
-		onReactivate,
 		onClose
 	}: Props = $props();
 
@@ -47,6 +46,10 @@
 
 	// Max date for birth date picker (no future dates)
 	const today = new Date();
+
+	// Reactivation modal state
+	let showReactivateModal = $state(false);
+	let reactivationCandidate = $state<Customer | null>(null);
 
 	// Reset form when modal opens (unless preserveData is true)
 	let formInstanceId = $state(generateUUID());
@@ -105,9 +108,9 @@
 		const result = currentCreateForm.result as CreateCustomerResult | undefined;
 
 		if (result && result.success === false && result.reactivationCandidate) {
-			// Reactivation candidate found - pass to parent
-			const fd = new FormData(formEl);
-			onReactivate?.(result.reactivationCandidate, fd);
+			// Reactivation candidate found - show reactivation confirmation modal
+			reactivationCandidate = result.reactivationCandidate;
+			showReactivateModal = true;
 		} else {
 			toast.success('Cliente creado exitosamente');
 			formEl.reset();
@@ -126,6 +129,14 @@
 
 		toast.success('Cliente actualizado exitosamente');
 		formEl.reset();
+		open = false;
+		onSuccess?.();
+	}
+
+	// Handle reactivation success
+	function handleReactivationSuccess() {
+		showReactivateModal = false;
+		reactivationCandidate = null;
 		open = false;
 		onSuccess?.();
 	}
@@ -324,3 +335,10 @@
 		</form>
 	{/if}
 </Modal>
+
+<!-- Reactivate Confirmation Modal -->
+<CustomerReactivateModal
+	bind:open={showReactivateModal}
+	candidate={reactivationCandidate}
+	onSuccess={handleReactivationSuccess}
+/>
