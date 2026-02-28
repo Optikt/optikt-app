@@ -82,9 +82,7 @@ export async function findBrandById(
 	id: string,
 	{ deleted }: { deleted?: boolean } = {}
 ): Promise<Brand | null> {
-	const filter = deleted
-		? eq(brands.id, id)
-		: and(eq(brands.id, id), isNull(brands.deletedAt));
+	const filter = deleted ? eq(brands.id, id) : and(eq(brands.id, id), isNull(brands.deletedAt));
 	const [brand] = await db.select().from(brands).where(filter);
 	return brand ?? null;
 }
@@ -97,9 +95,7 @@ export async function findBrandByName(
 	name: string,
 	{ deleted = false }: { deleted?: boolean } = {}
 ): Promise<Brand | null> {
-	const filter = deleted
-		? ilike(brands.name, name)
-		: and(ilike(brands.name, name), isNull(brands.deletedAt));
+	const filter = deleted ? isNotNull(brands.deletedAt) : isNull(brands.deletedAt);
 	const [brand] = await db
 		.select()
 		.from(brands)
@@ -164,9 +160,7 @@ export async function countProductsByBrand(brandId: string): Promise<number> {
 /**
  * Restore a soft-deleted brand
  */
-export async function restoreBrand(
-	id: string
-): Promise<Brand> {
+export async function restoreBrand(id: string): Promise<Brand> {
 	const [brand] = await db
 		.update(brands)
 		.set({
