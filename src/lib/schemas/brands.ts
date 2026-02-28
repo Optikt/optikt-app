@@ -25,6 +25,10 @@ export const UpdateBrandSchema = CreateBrandSchema.partial().extend({
 
 export const BrandIdSchema = EntityIdSchema();
 
+export const ReactivateBrandSchema = z.object({
+	deletedBrandId: z.uuid()
+});
+
 /**
  * Quick create schema - We already have minimal fields for inline creation.
  * Rename it to QuickCreateBrandSchema for clarity
