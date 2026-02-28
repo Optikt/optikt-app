@@ -1,8 +1,9 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { db } from '$lib/server/db';
 import { suppliers } from '$lib/server/db/schema';
-import { isNull, desc, count } from 'drizzle-orm';
+import { isNull, count } from 'drizzle-orm';
 
 /**
  * Load initial suppliers data for SSR
@@ -20,28 +21,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.where(isNull(suppliers.deletedAt));
 
 	// Get first page of suppliers
-	const supplierList = await db
-		.select({
-			id: suppliers.id,
-			name: suppliers.name,
-			type: suppliers.type,
-			rif: suppliers.rif,
-			primaryPhone: suppliers.primaryPhone,
-			email: suppliers.email,
-			address: suppliers.address,
-			instagram: suppliers.instagram,
-			whatsapp: suppliers.whatsapp,
-			website: suppliers.website,
-			contactName: suppliers.contactName,
-			contactPhone: suppliers.contactPhone,
-			contactRole: suppliers.contactRole,
-			notes: suppliers.notes,
-			createdAt: suppliers.createdAt
-		})
-		.from(suppliers)
-		.where(isNull(suppliers.deletedAt))
-		.orderBy(desc(suppliers.createdAt))
-		.limit(10);
+	const supplierList = await getAllSuppliers({
+		orderBy: 'createdAt',
+		orderSort: 'desc',
+		limit: 10
+	});
 
 	return {
 		initialSuppliers: supplierList,
