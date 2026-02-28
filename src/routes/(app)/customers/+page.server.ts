@@ -1,8 +1,9 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import { getAllCustomers } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import { customers } from '$lib/server/db/schema';
-import { isNull, desc, count } from 'drizzle-orm';
+import { isNull, count } from 'drizzle-orm';
 
 /**
  * Load initial customers data for SSR
@@ -20,26 +21,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.where(isNull(customers.deletedAt));
 
 	// Get first page of customers
-	const customerList = await db
-		.select({
-			id: customers.id,
-			firstName: customers.firstName,
-			lastName: customers.lastName,
-			idNumber: customers.idNumber,
-			birthDate: customers.birthDate,
-			primaryPhone: customers.primaryPhone,
-			email: customers.email,
-			address: customers.address,
-			secondaryPhones: customers.secondaryPhones,
-			notes: customers.notes,
-			createdAt: customers.createdAt,
-			updatedAt: customers.updatedAt,
-			deletedAt: customers.deletedAt
-		})
-		.from(customers)
-		.where(isNull(customers.deletedAt))
-		.orderBy(desc(customers.createdAt))
-		.limit(10);
+	const customerList = await getAllCustomers({
+		orderBy: 'createdAt',
+		orderSort: 'desc',
+		limit: 10
+	});
 
 	return {
 		initialCustomers: customerList,
