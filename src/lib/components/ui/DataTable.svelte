@@ -29,6 +29,7 @@
 			onView?: () => void;
 			onEdit?: () => void;
 			onDelete?: () => void;
+			onReactivate?: () => void;
 			onToggle?: () => void;
 			onDuplicate?: () => void;
 			onExport?: () => void;
@@ -60,6 +61,14 @@
 						label: 'Eliminar',
 						color: 'red',
 						onclick: handlers?.onDelete
+					});
+					break;
+				case 'reactivate':
+					actions.push({
+						id: 'reactivate',
+						label: 'Reactivar',
+						color: 'green',
+						onclick: handlers?.onReactivate
 					});
 					break;
 				case 'toggle':
@@ -110,6 +119,7 @@
 		onView?: (item: T) => void;
 		onEdit?: (item: T) => void;
 		onDelete?: (item: T) => void;
+		onReactivate?: (item: T) => void;
 		onToggle?: (item: T) => void;
 		onDuplicate?: (item: T) => void;
 		onExport?: (item: T) => void;
@@ -119,6 +129,8 @@
 		editIcon?: Component<{ class?: string }>;
 		/** Icon for delete action */
 		deleteIcon?: Component<{ class?: string }>;
+		/** Icon for reactivate action */
+		reactivateIcon?: Component<{ class?: string }>;
 		/** Icon for toggle action */
 		toggleIcon?: Component<{ class?: string }>;
 		/** Icon for duplicate action */
@@ -142,16 +154,28 @@
 		onView,
 		onEdit,
 		onDelete,
+		onReactivate,
 		onToggle,
 		onDuplicate,
 		onExport,
 		viewIcon,
 		editIcon,
 		deleteIcon,
+		reactivateIcon,
 		toggleIcon,
 		duplicateIcon,
 		exportIcon
 	}: Props = $props();
+
+	/** Check if an item is soft-deleted (has a truthy deletedAt) */
+	function isDeleted(item: T): boolean {
+		return 'deletedAt' in item && !!(item as Record<string, unknown>).deletedAt;
+	}
+
+	// Whether both delete and reactivate are configured (mutually exclusive per row)
+	const hasDeleteReactivateToggle = $derived(
+		defaultActions?.includes('delete') && defaultActions?.includes('reactivate')
+	);
 
 	// Build actions from shorthand if provided
 	const defaultActionConfigs = $derived.by(() => {
@@ -161,6 +185,7 @@
 			onView: () => {},
 			onEdit: () => {},
 			onDelete: () => {},
+			onReactivate: () => {},
 			onToggle: () => {},
 			onDuplicate: () => {},
 			onExport: () => {}
@@ -176,6 +201,9 @@
 					break;
 				case 'delete':
 					icon = deleteIcon;
+					break;
+				case 'reactivate':
+					icon = reactivateIcon;
 					break;
 				case 'toggle':
 					icon = toggleIcon;
@@ -216,8 +244,12 @@
 						</TableBodyCell>
 					{:else if defaultActions && defaultActionConfigs}
 						<TableBodyCell class="text-right">
+							{@const deleted = isDeleted(item)}
 							{@const itemActions = defaultActionConfigs.map((action) => ({
 								...action,
+								hidden: hasDeleteReactivateToggle
+									? (action.id === 'delete' && deleted) || (action.id === 'reactivate' && !deleted)
+									: false,
 								onclick: () => {
 									switch (action.id) {
 										case 'view':
@@ -228,6 +260,9 @@
 											break;
 										case 'delete':
 											onDelete?.(item);
+											break;
+										case 'reactivate':
+											onReactivate?.(item);
 											break;
 										case 'toggle':
 											onToggle?.(item);
