@@ -9,7 +9,8 @@ import {
 	CreateBrandSchema,
 	UpdateBrandSchema,
 	BrandIdSchema,
-	QuickCreateBrandSchema
+	QuickCreateBrandSchema,
+	ReactivateBrandSchema
 } from '$lib/schemas/brands';
 import {
 	getAllBrands,
@@ -17,6 +18,7 @@ import {
 	findBrandByName,
 	createBrand,
 	updateBrand,
+	restoreBrand,
 	deleteBrand,
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
@@ -39,14 +41,25 @@ export interface BrandDeleteCheck {
 	brandName: string;
 }
 
+// Types for create result
+/**
+ * Result type for createBrandForm, indicating success or if a reactivation candidate was found
+ */
+export interface CreateBrandResult {
+	success: boolean;
+	message: string;
+	brand?: Brand;
+	reactivationCandidate?: Brand;
+}
+
 /**
  * List brands with pagination and search
  */
 export const listBrands = query(ListBrandsSchema, async (data): Promise<PaginatedBrands> => {
-	const { page, perPage, search } = data;
+	const { page, perPage, search, includeDeleted } = data;
 
-	// TODO: Get all brands (we'll filter in memory for now, optimize with SQL later)
-	let allBrands = await getAllBrands();
+	// Get brands from DB (single query handles the includeDeleted filter)
+	let allBrands = await getAllBrands({ includeDeleted });
 
 	// Apply search filter
 	if (search) {
@@ -69,24 +82,40 @@ export const listBrands = query(ListBrandsSchema, async (data): Promise<Paginate
 
 /**
  * Create a new brand with form validation
+ * Returns either a success with brand, or a reactivation candidate for confirmation
  */
-export const createBrandForm = form(CreateBrandSchema, async (data, issue): Promise<Brand> => {
-	const { name, ...rest } = data;
+export const createBrandForm = form(
+	CreateBrandSchema,
+	async (data, issue): Promise<CreateBrandResult> => {
+		const { name, ...rest } = data;
 
-	// Check for duplicate name
-	const existing = await findBrandByName(name);
-	if (existing) {
-		invalid(issue.name('Ya existe una marca con este nombre'));
+		// Check for duplicate ACTIVE name
+		const existingActive = await findBrandByName(name);
+		if (existingActive) {
+			invalid(issue.name('Ya existe una marca con este nombre'));
+		}
+
+		// Check for DELETED brand with same name (reactivation candidate)
+		const deletedBrand = await findBrandByName(name, { deleted: true });
+		if (deletedBrand) {
+			// Can reactivate! Return candidate for confirmation
+			return {
+				success: false,
+				reactivationCandidate: deletedBrand,
+				message:
+					'El nombre de la marca pertenece a una marca eliminada. ¿Desea reactivarla con los nuevos datos?'
+			};
+		}
+
+		// All clear - create new brand
+		const brand = await createBrand({ name, ...rest });
+
+		// Log the creation
+		await auditService.logCreate('brand', brand, getAuditContext());
+
+		return { success: true, message: 'Marca creada exitosamente', brand };
 	}
-
-	// Create brand
-	const brand = await createBrand({ name, ...rest });
-
-	// Log the creation
-	await auditService.logCreate('brand', brand, getAuditContext());
-
-	return brand;
-});
+);
 
 /**
  * Update an existing brand with form validation
@@ -182,3 +211,24 @@ export const quickCreateBrand = command(
 		return { id: brand.id, name: brand.name };
 	}
 );
+
+/**
+ * Reactivate a deleted brand with new data
+ */
+export const reactivateBrand = command(ReactivateBrandSchema, async (data): Promise<Brand> => {
+	const { deletedBrandId } = data;
+
+	// Verify the brand exists and is deleted
+	const existing = await findBrandById(deletedBrandId, { deleted: true });
+	if (!existing || !existing.deletedAt) {
+		throw new Error('Marca eliminada no encontrada');
+	}
+
+	// Restore the brand (reactivation)
+	const restored = await restoreBrand(deletedBrandId);
+
+	// Log the reactivation
+	await auditService.logCreate('brand', restored, getAuditContext());
+
+	return restored;
+});
