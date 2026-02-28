@@ -10,6 +10,7 @@
 		Eye,
 		Tag,
 		Truck,
+		Layers,
 		ChartColumn,
 		Shield,
 		LogOut,
@@ -41,6 +42,7 @@
 		eye: Eye,
 		tag: Tag,
 		truck: Truck,
+		layers: Layers,
 		reports: ChartColumn,
 		shield: Shield
 	};
@@ -53,6 +55,7 @@
 		{ href: '/sales', label: 'Ventas', icon: 'shopping' },
 		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },
+		{ href: '/materials', label: 'Materiales', icon: 'layers' },
 		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' }
 	] as const;
 
