@@ -15,7 +15,6 @@ import {
 	getAllCustomers,
 	findCustomerById,
 	findCustomerByIdNumber,
-	findDeletedCustomerByIdNumber,
 	createCustomer,
 	updateCustomer,
 	deleteCustomer,
@@ -46,10 +45,10 @@ export interface CreateCustomerResult {
 export const listCustomers = query(
 	ListCustomersSchema,
 	async (data): Promise<PaginatedCustomers> => {
-		const { page, perPage, search } = data;
+		const { page, perPage, search, includeDeleted } = data;
 
-		// Get all customers (we'll filter in memory for now)
-		let allCustomers = await getAllCustomers();
+		// Get all customers (active or all including deleted)
+		let allCustomers = await getAllCustomers({ includeDeleted });
 
 		// Apply search filter (name, phone, idNumber)
 		if (search) {
@@ -90,7 +89,7 @@ export const createCustomerForm = form(
 			}
 
 			// Check for deleted customer with same idNumber (for reactivation)
-			const deletedCustomer = await findDeletedCustomerByIdNumber(idNumber);
+			const deletedCustomer = await findCustomerByIdNumber(idNumber, { deleted: true });
 			if (deletedCustomer) {
 				return {
 					success: false,
@@ -177,13 +176,10 @@ export const deleteCustomerById = command(CustomerIdSchema, async (data): Promis
 export const reactivateCustomerForm = form(
 	ReactivateCustomerSchema,
 	async (data): Promise<Customer> => {
-		const { id, birthDate, ...rest } = data;
+		const { id } = data;
 
 		// Check if customer exists and is deleted
-		const customer = await restoreCustomer(id, {
-			...rest,
-			birthDate: birthDate ? new Date(birthDate) : null
-		});
+		const customer = await restoreCustomer(id);
 
 		if (!customer) {
 			invalid('Cliente no encontrado o no está eliminado');
@@ -202,16 +198,12 @@ export const reactivateCustomerForm = form(
 export const reactivateCustomer = command(
 	ReactivateCustomerSchema,
 	async (data): Promise<Customer> => {
-		const { id, birthDate, ...rest } = data;
+		const { id } = data;
 
-		const customer = await restoreCustomer(id, {
-			...rest,
-			birthDate: birthDate ? new Date(birthDate) : null
-		});
+		const customer = await restoreCustomer(id);
 
 		if (!customer) {
 			invalid('Cliente no encontrado o no está eliminado');
-			throw new Error('Customer not found');
 		}
 
 		// Log the restoration

@@ -8,11 +8,11 @@ import {
 	IdNumberSchema,
 	NameSchema,
 	OptionalEmailSchema,
-	ListPaginationSchema,
+	ListPaginationWithDeletedSchema,
 	EntityIdSchema
 } from './common';
 
-export const ListCustomersSchema = ListPaginationSchema;
+export const ListCustomersSchema = ListPaginationWithDeletedSchema;
 
 export const CustomerIdSchema = EntityIdSchema();
 
@@ -32,6 +32,6 @@ export const UpdateCustomerSchema = CreateCustomerSchema.partial().extend({
 	id: z.uuid()
 });
 
-export const ReactivateCustomerSchema = CreateCustomerSchema.extend({
+export const ReactivateCustomerSchema = z.object({
 	id: z.uuid()
 });
