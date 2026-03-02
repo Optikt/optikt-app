@@ -21,8 +21,8 @@ export const load: LayoutServerLoad = async ({ params }) => {
 
 	// Load brands, suppliers, and materials for edit form (only needed columns)
 	const [brandsList, suppliersList, materialsList] = await Promise.all([
-		getAllBrands({ id: brands.id, name: brands.name }),
-		getAllSuppliers({ id: suppliers.id, name: suppliers.name }),
+		getAllBrands({ columns: { id: brands.id, name: brands.name } }),
+		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } }),
 		getAllMaterials({
 			id: materials.id,
 			name: materials.name,
