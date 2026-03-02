@@ -14,6 +14,8 @@
 	import { scrollToFirstError } from '$lib/utils';
 	import type { Supplier } from '$lib/server/db/schema';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import SupplierReactivateModal from './SupplierReactivateModal.svelte';
+	import type { CreateSupplierResult } from '$lib/remote/suppliers.remote';
 
 	interface Props {
 		open: boolean;
@@ -46,6 +48,10 @@
 		contactRole: '',
 		notes: ''
 	});
+
+	// Reactivation modal state
+	let showReactivateModal = $state(false);
+	let reactivationCandidate = $state<Supplier | null>(null);
 
 	// Reset form when modal opens or supplier changes
 	let formInstanceId = $state(generateUUID());
@@ -104,8 +110,27 @@
 			return;
 		}
 
+		const result = currentCreateForm.result as CreateSupplierResult | undefined;
+
+		// Check for reactivation candidate
+		if (result && !result.success && result.reactivationCandidate) {
+			// Show reactivation confirmation modal
+			reactivationCandidate = result.reactivationCandidate;
+			showReactivateModal = true;
+			return;
+		}
+
+		// Success - close and refresh
 		toast.success('Proveedor creado exitosamente');
 		formEl.reset();
+		open = false;
+		onSuccess?.();
+	}
+
+	// Handle reactivation success
+	function handleReactivationSuccess() {
+		showReactivateModal = false;
+		reactivationCandidate = null;
 		open = false;
 		onSuccess?.();
 	}
@@ -406,3 +431,10 @@
 		</form>
 	{/if}
 </Modal>
+
+<!-- Reactivate Confirmation Modal -->
+<SupplierReactivateModal
+	bind:open={showReactivateModal}
+	candidate={reactivationCandidate}
+	onSuccess={handleReactivationSuccess}
+/>
