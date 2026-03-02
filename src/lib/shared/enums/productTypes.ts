@@ -66,27 +66,35 @@ export function requiresStockTracking(type: ProductType): boolean {
 }
 
 // ============================================================================
-// MATERIAL PRODUCT TYPES
+// MATERIAL CATEGORIES
 // ============================================================================
 
 /**
- * Valid product types for materials.
+ * Valid categories for materials.
+ * These categorize what type of product a material is used for:
+ * - FRAME: frame materials (Titanium, Acetate, TR90, etc.)
+ * - LENS: lens materials (CR39, Polycarbonate, Trivex, etc.)
+ * - CONTACT_LENS: contact lens materials
+ * - ACCESSORY: accessory materials (Leather, Microfiber, etc.)
+ * - ALL: materials usable across all categories
+ *
  * Note: SUNGLASSES is excluded because sunglasses and frames share materials.
- * Use toMaterialProductType() to convert a ProductType to its material equivalent.
+ * Use toMaterialCategory() to convert a ProductType to its material category.
  */
-export const MATERIAL_PRODUCT_TYPES = [
+export const MATERIAL_CATEGORIES = [
 	ProductType.FRAME,
+	'LENS',
 	ProductType.CONTACT_LENS,
 	ProductType.ACCESSORY,
 	'ALL'
 ] as const;
-export type MaterialProductType = (typeof MATERIAL_PRODUCT_TYPES)[number];
+export type MaterialCategory = (typeof MATERIAL_CATEGORIES)[number];
 
 /**
- * Convert a ProductType to its MaterialProductType equivalent.
+ * Convert a ProductType to its MaterialCategory equivalent.
  * SUNGLASSES → FRAME (they share materials)
  * All others map 1:1
  */
-export function toMaterialProductType(type: ProductType): MaterialProductType {
+export function toMaterialCategory(type: ProductType): MaterialCategory {
 	return type === ProductType.SUNGLASSES ? ProductType.FRAME : type;
 }
