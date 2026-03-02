@@ -2,21 +2,24 @@ import type { PageServerLoad } from './$types';
 import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
 import { getAllBrands } from '$lib/server/db/queries/brands';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { brands, suppliers } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async () => {
-	const [initialProducts, brands, suppliers] = await Promise.all([
-		getAllProductsWithRelations(),
-		getAllBrands(),
-		getAllSuppliers()
+	const [initialProducts, brandsList, suppliersList] = await Promise.all([
+		getAllProductsWithRelations({
+			activeOnly: true,
+			limit: 10,
+			orderBy: 'createdAt',
+			orderSort: 'desc'
+		}),
+		getAllBrands({ columns: { id: brands.id, name: brands.name } }),
+		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } })
 	]);
 
-	// Filter to active only for initial load
-	const activeProducts = initialProducts.filter((p) => p.isActive);
-
 	return {
-		initialProducts: activeProducts.slice(0, 10),
-		totalCount: activeProducts.length,
-		brands: brands.map((b) => ({ id: b.id, name: b.name })),
-		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name }))
+		initialProducts: initialProducts,
+		totalCount: initialProducts.length,
+		brands: brandsList,
+		suppliers: suppliersList
 	};
 };

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { Button, Select } from 'flowbite-svelte';
+	import { Button, Select, Toggle } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { SearchInput, TablePagination, ConfirmModal } from '$lib/components/ui';
+	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
-	import { listProducts, deleteProductById } from '$lib/remote/products.remote';
+	import { listProducts } from '$lib/remote/products.remote';
 	import { ProductsTable } from '$lib/components/products';
 	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS, ProductType } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -32,11 +32,7 @@
 	let typeFilter = $state<ProductType>();
 	let brandFilter = $state('');
 	let supplierFilter = $state('');
-
-	// Delete modal state
-	let showDeleteModal = $state(false);
-	let deleteProduct = $state<ProductWithRelations | null>(null);
-	let deleteLoading = $state(false);
+	let includeDeleted = $state(false);
 
 	// Fetch products (for filtering/pagination)
 	async function fetchProducts(page = 1) {
@@ -48,7 +44,8 @@
 				search: search || undefined,
 				type: typeFilter || undefined,
 				brandId: brandFilter || undefined,
-				supplierId: supplierFilter || undefined
+				supplierId: supplierFilter || undefined,
+				includeDeleted
 			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando productos'));
@@ -69,37 +66,9 @@
 		fetchProducts(1);
 	}
 
-	// Navigate to product detail
-	function handleRowClick(product: ProductWithRelations) {
-		goto(resolve(`/(app)/products/[id]`, { id: product.id }));
-	}
-
 	// Navigate to edit page
 	function handleEdit(product: ProductWithRelations) {
 		goto(resolve(`/(app)/products/[id]/update`, { id: product.id }));
-	}
-
-	// Open delete confirmation
-	function openDelete(product: ProductWithRelations) {
-		deleteProduct = product;
-		showDeleteModal = true;
-	}
-
-	async function confirmDelete() {
-		if (!deleteProduct) return;
-
-		deleteLoading = true;
-		try {
-			await deleteProductById({ id: deleteProduct.id });
-			toast.success('Producto eliminado correctamente');
-			showDeleteModal = false;
-			deleteProduct = null;
-			fetchProducts(productsData.page);
-		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error eliminando producto'));
-		} finally {
-			deleteLoading = false;
-		}
 	}
 </script>
 
@@ -148,15 +117,21 @@
 				<option value={supplier.id}>{supplier.name}</option>
 			{/each}
 		</Select>
+		<Toggle
+			bind:checked={includeDeleted}
+			onchange={handleFilterChange}
+			class="text-sm text-slate-600"
+		>
+			Mostrar eliminados
+		</Toggle>
 	</div>
 
 	<!-- Table -->
 	<ProductsTable
 		products={productsData.products}
 		{loading}
-		onView={handleRowClick}
 		onEdit={handleEdit}
-		onDelete={openDelete}
+		onRefresh={() => fetchProducts(productsData.page)}
 	/>
 
 	<!-- Pagination -->
@@ -168,15 +143,3 @@
 		onPageChange={(p) => fetchProducts(p)}
 	/>
 </div>
-
-<!-- Delete Confirmation Modal -->
-<ConfirmModal
-	bind:open={showDeleteModal}
-	title="Eliminar Producto"
-	message="¿Estás seguro de que deseas eliminar este producto? Esta acción puede ser revertida."
-	confirmLabel="Eliminar"
-	confirmColor="red"
-	loading={deleteLoading}
-	onConfirm={confirmDelete}
-	onCancel={() => (showDeleteModal = false)}
-/>
