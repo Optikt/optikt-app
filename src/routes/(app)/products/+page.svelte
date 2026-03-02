@@ -66,6 +66,11 @@
 		fetchProducts(1);
 	}
 
+	// Navigate to detail page
+	function handleView(product: ProductWithRelations) {
+		goto(resolve(`/(app)/products/[id]`, { id: product.id }));
+	}
+
 	// Navigate to edit page
 	function handleEdit(product: ProductWithRelations) {
 		goto(resolve(`/(app)/products/[id]/update`, { id: product.id }));
@@ -130,6 +135,7 @@
 	<ProductsTable
 		products={productsData.products}
 		{loading}
+		onView={handleView}
 		onEdit={handleEdit}
 		onRefresh={() => fetchProducts(productsData.page)}
 	/>
