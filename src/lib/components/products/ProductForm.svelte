@@ -24,8 +24,8 @@
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { Checkbox } from 'flowbite-svelte';
 	import type { Product } from '$lib/server/db/schema';
-
 	import FormActions from '$lib/components/ui/FormActions.svelte';
+	import { resolve } from '$app/paths';
 
 	interface MaterialOption extends SelectOption {
 		productType?: string;
@@ -285,8 +285,7 @@
 
 		toast.success('Producto actualizado');
 		formEl.reset();
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(`/products/${product?.id}`);
+		goto(resolve(`/products/${product?.id}`));
 	}
 </script>
 
