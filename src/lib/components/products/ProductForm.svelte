@@ -172,7 +172,7 @@
 		return null;
 	}
 
-	function getPendingMaterialProductType(pendingId: string): string | null {
+	function getPendingMaterialCategory(pendingId: string): string | null {
 		if (!pendingId.startsWith('pending_material_')) return null;
 		const material = pendingMaterials.find((m) => m.pendingId === pendingId);
 		return typeof material?.productType === 'string' ? material.productType : null;
@@ -333,8 +333,8 @@
 				/>
 				<input
 					type="hidden"
-					name="pendingMaterialProductType"
-					value={getPendingMaterialProductType(formData.materialId) ?? formData.type}
+					name="pendingMaterialCategory"
+					value={getPendingMaterialCategory(formData.materialId) ?? formData.type}
 				/>
 			{/if}
 
@@ -608,8 +608,8 @@
 				/>
 				<input
 					type="hidden"
-					name="pendingMaterialProductType"
-					value={getPendingMaterialProductType(formData.materialId) ?? formData.type}
+					name="pendingMaterialCategory"
+					value={getPendingMaterialCategory(formData.materialId) ?? formData.type}
 				/>
 			{/if}
 
