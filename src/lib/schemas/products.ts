@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 import { ALL_PRODUCT_TYPES, ALL_CURRENCY_CODES, ProductType } from '$lib/shared/enums';
-import { MaterialProductTypes } from './materials';
+import { MaterialCategories } from './materials';
 import {
 	CoercedInteger,
 	CoercedNumber,
@@ -29,7 +29,8 @@ export const ListProductsSchema = ListPaginationSchema.extend({
 	brandId: z.uuid().optional(),
 	supplierId: z.uuid().optional(),
 	includeInactive: z.boolean().default(false),
-	lowStockOnly: z.boolean().default(false)
+	lowStockOnly: z.boolean().default(false),
+	includeDeleted: z.boolean().default(false)
 });
 
 export const CreateProductSchema = z.object({
@@ -46,7 +47,7 @@ export const CreateProductSchema = z.object({
 	pendingBrandName: z.string().optional(),
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
-	pendingMaterialProductType: z.enum(MaterialProductTypes).optional(),
+	pendingMaterialCategory: z.enum(MaterialCategories).optional(),
 	gender: z.string().optional(),
 	color: z.string().optional(),
 	size: z.string().optional(),
@@ -70,3 +71,7 @@ export const UpdateProductSchema = CreateProductSchema.partial().extend({
 });
 
 export const ProductIdSchema = EntityIdSchema();
+
+export const ReactivateProductSchema = z.object({
+	deletedProductId: z.uuid()
+});

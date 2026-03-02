@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ProductType } from '$lib/shared/enums';
-import { MaterialProductTypes } from './materials';
+import { MaterialCategories } from './materials';
 import { CreateProductSchema, UpdateProductSchema, ListProductsSchema } from './products';
 
 const baseCreatePayload = {
@@ -45,7 +45,7 @@ describe('CreateProductSchema', () => {
 			pendingBrandName: 'Nueva Marca',
 			pendingSupplierName: 'Proveedor Nuevo',
 			pendingMaterialName: 'Acetato',
-			pendingMaterialProductType: MaterialProductTypes[0]
+			pendingMaterialCategory: MaterialCategories[0]
 		};
 
 		const result = CreateProductSchema.safeParse(payload);
