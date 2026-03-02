@@ -9,16 +9,19 @@ import {
 	ListProductsSchema,
 	CreateProductSchema,
 	UpdateProductSchema,
-	ProductIdSchema
+	ProductIdSchema,
+	ReactivateProductSchema
 } from '$lib/schemas/products';
 import {
 	getAllProductsWithRelations,
+	countProducts,
 	findProductById,
+	findProductBySku,
 	updateProduct,
 	deleteProduct,
-	reactivateProduct
+	restoreProduct
 } from '$lib/server/db/queries/products';
-import { ProductType, toMaterialProductType } from '$lib/shared/enums/productTypes';
+import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
 import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -33,60 +36,39 @@ export interface PaginatedProducts {
 	totalPages: number;
 }
 
+// Types for create result
+export interface CreateProductResult {
+	success: boolean;
+	message: string;
+	product?: Product;
+	reactivationCandidate?: Product;
+}
+
 /**
  * List products with pagination, search, and filters
  */
-// TODO: We could move all the filtering logic to the database level for better performance with large datasets. For now, it's in-memory for simplicity.
 export const listProducts = query(ListProductsSchema, async (data): Promise<PaginatedProducts> => {
-	const { page, perPage, search, type, brandId, supplierId, includeInactive, lowStockOnly } = data;
-
-	// Get all products with relations
-	let allProducts = await getAllProductsWithRelations();
-
-	// Filter by active status
-	if (!includeInactive) {
-		allProducts = allProducts.filter((p) => p.isActive);
-	}
-
-	// Apply search filter (name or SKU)
-	if (search) {
-		const searchLower = search.toLowerCase();
-		allProducts = allProducts.filter(
-			(product) =>
-				product.name.toLowerCase().includes(searchLower) ||
-				product.sku.toLowerCase().includes(searchLower)
-		);
-	}
-
-	// Apply type filter
-	if (type) {
-		allProducts = allProducts.filter((p) => p.type === type);
-	}
-
-	// Apply brand filter
-	if (brandId) {
-		allProducts = allProducts.filter((p) => p.brandId === brandId);
-	}
-
-	// Apply supplier filter
-	if (supplierId) {
-		allProducts = allProducts.filter((p) => p.supplierId === supplierId);
-	}
-
-	// Apply low stock filter
-	if (lowStockOnly) {
-		allProducts = allProducts.filter(
-			(p) => p.stock !== null && p.minStock !== null && p.stock <= p.minStock
-		);
-	}
-
-	// Calculate pagination
-	const total = allProducts.length;
-	const totalPages = Math.ceil(total / perPage);
+	const { page, perPage, ...filters } = data;
 	const offset = (page - 1) * perPage;
-	const products = allProducts.slice(offset, offset + perPage);
 
-	return { products, total, page, perPage, totalPages };
+	const [items, total] = await Promise.all([
+		getAllProductsWithRelations({
+			...filters,
+			limit: perPage,
+			offset,
+			orderBy: 'createdAt',
+			orderSort: 'desc'
+		}),
+		countProducts(filters)
+	]);
+
+	return {
+		products: items,
+		total,
+		page,
+		perPage,
+		totalPages: Math.ceil(total / perPage)
+	};
 });
 
 /**
@@ -95,18 +77,29 @@ export const listProducts = query(ListProductsSchema, async (data): Promise<Pagi
  */
 export const createProductForm = form(
 	CreateProductSchema,
-	async (data, issue): Promise<Product> => {
+	async (data, issue): Promise<CreateProductResult> => {
 		const {
 			sku,
 			pendingBrandName,
 			pendingSupplierName,
 			pendingMaterialName,
-			pendingMaterialProductType,
+			pendingMaterialCategory,
 			...rest
 		} = data;
 		let { brandId, supplierId, materialId } = data;
 
-		// TODO: Validate existing products SKUs maybe? For not duplicates? Even soft-deleted?
+		// Check for DELETED product with same SKU (reactivation candidate)
+		const deletedProduct = await findProductBySku(sku, { deleted: 'only' });
+		if (deletedProduct) {
+			// Can reactivate! Return candidate for confirmation
+			return {
+				success: false,
+				reactivationCandidate: deletedProduct,
+				message:
+					'El SKU pertenece a un producto eliminado. ¿Desea reactivarlo con los nuevos datos?'
+			};
+		}
+
 		// TODO: Validate deleted brands/suppliers/materials too?
 
 		// Use a transaction for atomicity - all or nothing
@@ -168,7 +161,7 @@ export const createProductForm = form(
 
 			// Handle pending material
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-				const productType = pendingMaterialProductType ?? toMaterialProductType(rest.type);
+				const productType = pendingMaterialCategory ?? toMaterialCategory(rest.type);
 				const [existing] = await tx
 					.select()
 					.from(materials)
@@ -203,15 +196,11 @@ export const createProductForm = form(
 			const [existingSku] = await tx.select().from(products).where(eq(products.sku, sku));
 
 			if (existingSku) {
-				// If it's soft-deleted, we can reactivate it with new data
+				// If it's soft-deleted, just restore it (race condition guard — normally caught earlier)
 				if (existingSku.deletedAt) {
 					const [reactivated] = await tx
 						.update(products)
 						.set({
-							...rest,
-							brandId: brandId && brandId.trim() !== '' ? brandId : null,
-							supplierId, // Required, already resolved from pending or passed as UUID
-							materialId, // Required, already resolved from pending or passed as UUID
 							deletedAt: null,
 							isActive: true,
 							updatedAt: now
@@ -245,7 +234,7 @@ export const createProductForm = form(
 		// Log the creation after transaction succeeds
 		await auditService.logCreate('product', product, getAuditContext());
 
-		return product;
+		return { success: true, product, message: 'Producto creado exitosamente' };
 	}
 );
 
@@ -262,7 +251,7 @@ export const updateProductForm = form(
 			pendingBrandName,
 			pendingSupplierName,
 			pendingMaterialName,
-			pendingMaterialProductType,
+			pendingMaterialCategory,
 			...rest
 		} = data;
 		let { brandId, supplierId, materialId } = data;
@@ -323,7 +312,7 @@ export const updateProductForm = form(
 			// Handle pending material
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
 				const productType =
-					pendingMaterialProductType ?? toMaterialProductType(rest.type ?? ProductType.FRAME);
+					pendingMaterialCategory ?? toMaterialCategory(rest.type ?? ProductType.FRAME);
 
 				const [existing] = await tx
 					.select()
@@ -450,21 +439,25 @@ export const toggleProductActive = command(
 /**
  * Reactivate a soft-deleted product
  */
-export const reactivateProductById = command(ProductIdSchema, async (data): Promise<Product> => {
-	const { id } = data;
+export const reactivateProduct = command(
+	ReactivateProductSchema,
+	async (data): Promise<Product> => {
+		const { deletedProductId } = data;
 
-	// Get the product before reactivation (it's soft-deleted so we need to find it differently)
-	const [existing] = await db.select().from(products).where(eq(products.id, id));
+		// Verify the product exists and is deleted
+		const existing = await findProductById(deletedProductId, { deleted: true });
+		if (!existing || !existing.deletedAt) {
+			throw new Error('Producto eliminado no encontrado');
+		}
 
-	const product = await reactivateProduct(id);
-	if (!product) {
-		throw new Error('Producto no encontrado');
+		const restored = await restoreProduct(deletedProductId);
+		if (!restored) {
+			throw new Error('Error restaurando producto');
+		}
+
+		// Log the reactivation
+		await auditService.logRestore('product', restored, getAuditContext());
+
+		return restored;
 	}
-
-	// Log the restoration
-	if (existing) {
-		await auditService.logRestore('product', product, getAuditContext());
-	}
-
-	return product;
-});
+);
