@@ -173,13 +173,16 @@
 	}
 
 	// Whether both delete and reactivate are configured (mutually exclusive per row)
-	const hasDeleteReactivateToggle = $derived(
-		defaultActions?.includes('delete') && defaultActions?.includes('reactivate')
-	);
+	function hasDeleteReactivateToggle(): boolean {
+		return !!defaultActions?.includes('delete') && !!defaultActions?.includes('reactivate');
+	}
 
-	// Build actions from shorthand if provided
-	const defaultActionConfigs = $derived.by(() => {
-		if (!defaultActions) return null;
+	/** Build per-item actions on demand — avoids $derived signal timing issues during teardown */
+	function buildItemActions(item: T): TableAction[] {
+		if (!defaultActions) return [];
+
+		const deleted = isDeleted(item);
+		const toggleMode = hasDeleteReactivateToggle();
 
 		return parseActionString(defaultActions, {
 			onView: () => {},
@@ -190,7 +193,6 @@
 			onDuplicate: () => {},
 			onExport: () => {}
 		}).map((action) => {
-			// Add appropriate icon based on action ID
 			let icon: Component<{ class?: string }> | undefined;
 			switch (action.id) {
 				case 'view':
@@ -215,9 +217,42 @@
 					icon = exportIcon;
 					break;
 			}
-			return { ...action, icon };
+
+			return {
+				...action,
+				icon,
+				hidden: toggleMode
+					? (action.id === 'delete' && deleted) || (action.id === 'reactivate' && !deleted)
+					: false,
+				onclick: () => {
+					switch (action.id) {
+						case 'view':
+							onView?.(item);
+							break;
+						case 'edit':
+							onEdit?.(item);
+							break;
+						case 'delete':
+							onDelete?.(item);
+							break;
+						case 'reactivate':
+							onReactivate?.(item);
+							break;
+						case 'toggle':
+							onToggle?.(item);
+							break;
+						case 'duplicate':
+							onDuplicate?.(item);
+							break;
+						case 'export':
+							onExport?.(item);
+							break;
+					}
+					refetch?.();
+				}
+			};
 		});
-	});
+	}
 </script>
 
 {#if loading}
@@ -242,42 +277,9 @@
 								{@render actionsSnippet(item)}
 							</div>
 						</TableBodyCell>
-					{:else if defaultActions && defaultActionConfigs}
+					{:else if defaultActions}
 						<TableBodyCell class="text-right">
-							{@const deleted = isDeleted(item)}
-							{@const itemActions = defaultActionConfigs.map((action) => ({
-								...action,
-								hidden: hasDeleteReactivateToggle
-									? (action.id === 'delete' && deleted) || (action.id === 'reactivate' && !deleted)
-									: false,
-								onclick: () => {
-									switch (action.id) {
-										case 'view':
-											onView?.(item);
-											break;
-										case 'edit':
-											onEdit?.(item);
-											break;
-										case 'delete':
-											onDelete?.(item);
-											break;
-										case 'reactivate':
-											onReactivate?.(item);
-											break;
-										case 'toggle':
-											onToggle?.(item);
-											break;
-										case 'duplicate':
-											onDuplicate?.(item);
-											break;
-										case 'export':
-											onExport?.(item);
-											break;
-									}
-									refetch?.();
-								}
-							}))}
-							<RowActions {item} actions={itemActions} />
+							<RowActions {item} actions={buildItemActions(item)} />
 						</TableBodyCell>
 					{/if}
 				</TableBodyRow>

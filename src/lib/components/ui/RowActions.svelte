@@ -33,20 +33,19 @@
 		// Also notify parent handler
 		onAction?.(action.id, item);
 	}
-
-	// Filter visible actions and maintain order
-	const visibleActions = $derived(actions.filter((a) => !a.hidden));
 </script>
 
 <div class="flex justify-end gap-1 {className}">
-	{#each visibleActions as action (action.id)}
-		<ActionButton
-			icon={action.icon as Component<{ class?: string }>}
-			title={action.label}
-			color={action.color as ActionColor}
-			hidden={false}
-			disabled={action.disabled}
-			onclick={() => handleClick(action)}
-		/>
+	{#each actions as action (action.id)}
+		{#if !action.hidden}
+			<ActionButton
+				icon={action.icon as Component<{ class?: string }>}
+				title={action.label}
+				color={action.color as ActionColor}
+				hidden={false}
+				disabled={action.disabled}
+				onclick={() => handleClick(action)}
+			/>
+		{/if}
 	{/each}
 </div>
