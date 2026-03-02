@@ -1,38 +1,100 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { TriangleAlert, Package, Eye, SquarePen, Trash2 } from '@lucide/svelte';
+	import {
+		TableHeadCell,
+		TableBodyCell,
+		Modal,
+		Button,
+		Input,
+		Label,
+		Spinner
+	} from 'flowbite-svelte';
+	import { TriangleAlert, Package, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice } from '$lib/utils';
 	import { DataTable, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 	import { isLowStock } from '$lib/utils/products';
+	import { deleteProductById } from '$lib/remote/products.remote';
+	import { getErrorMessage } from '$lib/utils';
+	import ProductReactivateModal from './ProductReactivateModal.svelte';
+	import ProductViewModal from './ProductViewModal.svelte';
 
 	interface Props {
 		products: ProductWithRelations[];
 		loading?: boolean;
-		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
-		onDelete?: (product: ProductWithRelations) => void;
-		refetch?: () => void | Promise<void>;
+		onRefresh?: () => void;
 	}
 
-	let { products, loading = false, onView, onEdit, onDelete, refetch }: Props = $props();
+	let { products, loading = false, onEdit, onRefresh }: Props = $props();
+
+	// Modal state
+	let showDeleteModal = $state(false);
+	let showReactivateModal = $state(false);
+	let showViewModal = $state(false);
+	let selectedProduct = $state<ProductWithRelations | null>(null);
+	let deleteLoading = $state(false);
+	let confirmInput = $state('');
+
+	// For safety, user must type product SKU to confirm
+	const canConfirm = $derived(confirmInput === selectedProduct?.sku);
+
+	function openDelete(product: ProductWithRelations) {
+		selectedProduct = product;
+		confirmInput = '';
+		showDeleteModal = true;
+	}
+
+	function openReactivate(product: ProductWithRelations) {
+		selectedProduct = product;
+		showReactivateModal = true;
+	}
+
+	function openView(product: ProductWithRelations) {
+		selectedProduct = product;
+		showViewModal = true;
+	}
+
+	async function handleDelete() {
+		if (!selectedProduct || !canConfirm) return;
+
+		deleteLoading = true;
+		try {
+			await deleteProductById({ id: selectedProduct.id });
+			toast.success('Producto eliminado exitosamente');
+			showDeleteModal = false;
+			onRefresh?.();
+		} catch (e) {
+			console.error(e);
+			toast.error(getErrorMessage(e, 'Error eliminando producto'));
+		} finally {
+			deleteLoading = false;
+		}
+	}
+
+	function closeModal() {
+		showDeleteModal = false;
+		selectedProduct = null;
+		confirmInput = '';
+	}
 </script>
 
 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
 	<DataTable
 		items={products}
 		{loading}
-		{refetch}
 		emptyIcon={Package}
 		emptyTitle="No se encontraron productos"
 		emptyDescription="Agrega un producto para comenzar"
-		defaultActions="view,edit,delete"
-		{onView}
+		defaultActions="view,edit,delete,reactivate"
+		onView={openView}
 		{onEdit}
-		{onDelete}
+		onDelete={openDelete}
+		onReactivate={openReactivate}
 		viewIcon={Eye}
 		editIcon={SquarePen}
 		deleteIcon={Trash2}
+		reactivateIcon={RotateCcw}
 	>
 		{#snippet header()}
 			<TableHeadCell class="font-semibold text-slate-600">SKU</TableHeadCell>
@@ -73,8 +135,52 @@
 				{/if}
 			</TableBodyCell>
 			<TableBodyCell>
-				<StatusBadge active={product.isActive} />
+				<StatusBadge active={!product.deletedAt} />
 			</TableBodyCell>
 		{/snippet}
 	</DataTable>
 </div>
+
+<!-- Delete Confirm Modal -->
+<Modal bind:open={showDeleteModal} title="Eliminar Producto" size="sm">
+	<div class="flex flex-col gap-4">
+		<p class="text-slate-600">
+			¿Está seguro que desea eliminar el producto <strong>{selectedProduct?.sku}</strong> (
+			{selectedProduct?.name})?
+		</p>
+
+		<!-- Confirmation input -->
+		<div>
+			<Label for="confirmSku" class="mb-2">
+				Escriba <strong class="text-red-600">{selectedProduct?.sku}</strong> para confirmar:
+			</Label>
+			<Input
+				id="confirmSku"
+				bind:value={confirmInput}
+				placeholder="Escriba el SKU del producto"
+				class="placeholder:text-slate-400"
+			/>
+		</div>
+	</div>
+
+	<div class="mt-6 flex justify-end gap-2">
+		<Button color="light" onclick={closeModal}>Cancelar</Button>
+		<Button color="red" disabled={!canConfirm || deleteLoading} onclick={handleDelete}>
+			{#if deleteLoading}<Spinner size="4" class="mr-2" />{/if}
+			Eliminar
+		</Button>
+	</div>
+</Modal>
+
+<!-- Reactivate Modal -->
+<ProductReactivateModal
+	bind:open={showReactivateModal}
+	candidate={selectedProduct}
+	onSuccess={() => {
+		selectedProduct = null;
+		onRefresh?.();
+	}}
+/>
+
+<!-- View Details Modal -->
+<ProductViewModal bind:open={showViewModal} product={selectedProduct} />
