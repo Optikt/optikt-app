@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { SquarePen, Trash2, Truck, Eye } from '@lucide/svelte';
+	import { Truck, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, ActionButton, ConfirmModal, SupplierTypeBadge } from '$lib/components/ui';
-	import { SupplierViewModal } from '$lib/components/suppliers';
+	import { DataTable, ConfirmModal, SupplierTypeBadge, StatusBadge } from '$lib/components/ui';
+	import { SupplierViewModal, SupplierReactivateModal } from '$lib/components/suppliers';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -20,6 +20,7 @@
 	// Modal state
 	let showDeleteModal = $state(false);
 	let showViewModal = $state(false);
+	let showReactivateModal = $state(false);
 	let selectedSupplier = $state<Supplier | null>(null);
 	let deleteLoading = $state(false);
 
@@ -33,6 +34,11 @@
 		showDeleteModal = true;
 	}
 
+	function openReactivate(supplier: Supplier) {
+		selectedSupplier = supplier;
+		showReactivateModal = true;
+	}
+
 	async function handleDelete() {
 		if (!selectedSupplier) return;
 
@@ -43,6 +49,7 @@
 			showDeleteModal = false;
 			onRefresh?.();
 		} catch (e) {
+			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando proveedor'));
 		} finally {
 			deleteLoading = false;
@@ -56,6 +63,15 @@
 	emptyIcon={Truck}
 	emptyTitle="No se encontraron proveedores"
 	emptyDescription="Agrega un proveedor para comenzar"
+	defaultActions="view,edit,delete,reactivate"
+	onView={openView}
+	onEdit={(s) => onEdit(s)}
+	onDelete={openDelete}
+	onReactivate={openReactivate}
+	viewIcon={Eye}
+	editIcon={SquarePen}
+	deleteIcon={Trash2}
+	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
 		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
@@ -63,6 +79,7 @@
 		<TableHeadCell class="font-semibold">RIF</TableHeadCell>
 		<TableHeadCell class="font-semibold">Teléfono</TableHeadCell>
 		<TableHeadCell class="font-semibold">Contacto</TableHeadCell>
+		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
 	{/snippet}
 
 	{#snippet row(supplier)}
@@ -84,12 +101,9 @@
 				—
 			{/if}
 		</TableBodyCell>
-	{/snippet}
-
-	{#snippet actions(supplier)}
-		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(supplier)} />
-		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(supplier)} />
-		<ActionButton icon={Trash2} title="Eliminar" color="red" onclick={() => openDelete(supplier)} />
+		<TableBodyCell>
+			<StatusBadge active={!supplier.deletedAt} />
+		</TableBodyCell>
 	{/snippet}
 </DataTable>
 
@@ -111,5 +125,15 @@
 	onClose={() => (selectedSupplier = null)}
 	onEdit={() => {
 		if (selectedSupplier) onEdit(selectedSupplier);
+	}}
+/>
+
+<!-- Reactivate Modal -->
+<SupplierReactivateModal
+	bind:open={showReactivateModal}
+	candidate={selectedSupplier}
+	onSuccess={() => {
+		selectedSupplier = null;
+		onRefresh?.();
 	}}
 />
