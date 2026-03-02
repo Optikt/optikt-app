@@ -17,21 +17,20 @@
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import ProductReactivateModal from './ProductReactivateModal.svelte';
-	import ProductViewModal from './ProductViewModal.svelte';
 
 	interface Props {
 		products: ProductWithRelations[];
 		loading?: boolean;
+		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
 		onRefresh?: () => void;
 	}
 
-	let { products, loading = false, onEdit, onRefresh }: Props = $props();
+	let { products, loading = false, onView, onEdit, onRefresh }: Props = $props();
 
 	// Modal state
 	let showDeleteModal = $state(false);
 	let showReactivateModal = $state(false);
-	let showViewModal = $state(false);
 	let selectedProduct = $state<ProductWithRelations | null>(null);
 	let deleteLoading = $state(false);
 	let confirmInput = $state('');
@@ -48,11 +47,6 @@
 	function openReactivate(product: ProductWithRelations) {
 		selectedProduct = product;
 		showReactivateModal = true;
-	}
-
-	function openView(product: ProductWithRelations) {
-		selectedProduct = product;
-		showViewModal = true;
 	}
 
 	async function handleDelete() {
@@ -87,7 +81,7 @@
 		emptyTitle="No se encontraron productos"
 		emptyDescription="Agrega un producto para comenzar"
 		defaultActions="view,edit,delete,reactivate"
-		onView={openView}
+		{onView}
 		{onEdit}
 		onDelete={openDelete}
 		onReactivate={openReactivate}
@@ -181,6 +175,3 @@
 		onRefresh?.();
 	}}
 />
-
-<!-- View Details Modal -->
-<ProductViewModal bind:open={showViewModal} product={selectedProduct} />
