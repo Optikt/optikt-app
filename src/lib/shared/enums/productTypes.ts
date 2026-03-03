@@ -73,22 +73,27 @@ export function requiresStockTracking(type: ProductType): boolean {
  * Valid categories for materials.
  * These categorize what type of product a material is used for:
  * - FRAME: frame materials (Titanium, Acetate, TR90, etc.)
- * - LENS: lens materials (CR39, Polycarbonate, Trivex, etc.)
  * - CONTACT_LENS: contact lens materials
  * - ACCESSORY: accessory materials (Leather, Microfiber, etc.)
- * - ALL: materials usable across all categories
  *
  * Note: SUNGLASSES is excluded because sunglasses and frames share materials.
+ * Note: LENS is excluded because lens materials have a dedicated table (`lens_materials`)
+ * managed separately from the `/lenses` page.
  * Use toMaterialCategory() to convert a ProductType to its material category.
  */
 export const MATERIAL_CATEGORIES = [
 	ProductType.FRAME,
-	'LENS',
 	ProductType.CONTACT_LENS,
-	ProductType.ACCESSORY,
-	'ALL'
+	ProductType.ACCESSORY
 ] as const;
 export type MaterialCategory = (typeof MATERIAL_CATEGORIES)[number];
+
+/** Labels for display in Spanish */
+export const MATERIAL_CATEGORY_LABELS: Record<MaterialCategory, string> = {
+	[ProductType.FRAME]: 'Montura / Lentes de sol',
+	[ProductType.CONTACT_LENS]: 'Lente de contacto',
+	[ProductType.ACCESSORY]: 'Accesorio'
+};
 
 /**
  * Convert a ProductType to its MaterialCategory equivalent.
