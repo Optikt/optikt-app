@@ -9,9 +9,11 @@ export const load: PageServerLoad = async () => {
 		getAllBrands({ columns: { id: brands.id, name: brands.name } }),
 		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } }),
 		getAllMaterials({
-			id: materials.id,
-			name: materials.name,
-			productType: materials.productType
+			columns: {
+				id: materials.id,
+				name: materials.name,
+				productType: materials.productType
+			}
 		})
 	]);
 
