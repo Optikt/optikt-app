@@ -3,7 +3,7 @@ import {
 	ListMaterialsSchema,
 	MaterialIdSchema,
 	QuickCreateMaterialSchema,
-	MaterialProductTypes
+	MaterialCategories
 } from './materials';
 
 describe('QuickCreateMaterialSchema', () => {
@@ -19,7 +19,7 @@ describe('QuickCreateMaterialSchema', () => {
 	it('accepts explicit productType values', () => {
 		const result = QuickCreateMaterialSchema.safeParse({
 			name: 'Metal',
-			productType: MaterialProductTypes[1]
+			productType: MaterialCategories[1]
 		});
 		expect(result.success).toBe(true);
 	});
@@ -41,7 +41,7 @@ describe('ListMaterialsSchema', () => {
 	});
 
 	it('accepts valid productType filters', () => {
-		const result = ListMaterialsSchema.safeParse({ productType: MaterialProductTypes[2] });
+		const result = ListMaterialsSchema.safeParse({ productType: MaterialCategories[2] });
 		expect(result.success).toBe(true);
 	});
 
