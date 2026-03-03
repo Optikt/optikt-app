@@ -8,6 +8,10 @@
 		"svelte": {
 			"url": "https://mcp.svelte.dev/mcp",
 			"type": "http"
+		},
+		"zod": {
+			"url": "https://mcp.inkeep.com/zod/mcp",
+			"type": "http"
 		}
 	},
 	"inputs": []

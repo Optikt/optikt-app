@@ -6,12 +6,14 @@ import { brands, suppliers, materials } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async () => {
 	const [brandsList, suppliersList, materialsList] = await Promise.all([
-		getAllBrands({ id: brands.id, name: brands.name }),
-		getAllSuppliers({ id: suppliers.id, name: suppliers.name }),
+		getAllBrands({ columns: { id: brands.id, name: brands.name } }),
+		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } }),
 		getAllMaterials({
-			id: materials.id,
-			name: materials.name,
-			productType: materials.productType
+			columns: {
+				id: materials.id,
+				name: materials.name,
+				productType: materials.productType
+			}
 		})
 	]);
 

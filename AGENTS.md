@@ -9,14 +9,14 @@ Optical store management system built with SvelteKit, Flowbite-Svelte, and Drizz
 - **Styling:** Tailwind CSS
 - **Icons:** `@lucide/svelte`
 - **ORM:** Drizzle (PostgreSQL) — schema in `drizzle/schema.ts`
-- **Validation:** Valibot
+- **Validation:** Zod
 - **Toasts:** svelte-sonner
 - **Package Manager:** pnpm
 
 ## Key Architecture
 
 - `src/lib/remote/` — Remote functions (`query`, `query.batch`, `form`, `command`)
-- `src/lib/schemas/` — Valibot validation schemas
+- `src/lib/schemas/` — Zod validation schemas
 - `src/lib/components/` — UI components organized by domain (brands, customers, lenses, products, suppliers, etc.)
 - `src/lib/server/` — Server-side auth, guards, audit, database
 - `src/routes/(app)/` — Authenticated app routes

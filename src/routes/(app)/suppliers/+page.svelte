@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Select } from 'flowbite-svelte';
+	import { Button, Select, Toggle } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
@@ -17,7 +17,7 @@
 
 	// Data state - initialize from server
 	let suppliersData = $state<PaginatedSuppliers>({
-		suppliers: initialSuppliers as Supplier[],
+		suppliers: initialSuppliers,
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -28,7 +28,7 @@
 	// Filter state
 	let search = $state('');
 	let typeFilter = $state<SupplierType | ''>('');
-
+	let includeDeleted = $state(false);
 	// Form modal state
 	let showFormModal = $state(false);
 	let selectedSupplier = $state<Supplier | null>(null);
@@ -41,7 +41,8 @@
 				page,
 				perPage: 10,
 				search: search || undefined,
-				type: typeFilter || undefined
+				type: typeFilter || undefined,
+				includeDeleted
 			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando proveedores'));
@@ -112,6 +113,13 @@
 				<option value={t}>{SUPPLIER_TYPE_LABELS[t]}</option>
 			{/each}
 		</Select>
+		<Toggle
+			bind:checked={includeDeleted}
+			onchange={handleFilterChange}
+			class="text-sm text-slate-600"
+		>
+			Mostrar eliminados
+		</Toggle>
 	</div>
 
 	<!-- Table -->

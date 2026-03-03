@@ -1,76 +1,41 @@
 /**
  * User management schemas
- * Valibot schemas for validation in remote functions
+ * Zod schemas for validation in remote functions
  */
-import * as v from 'valibot';
-import { UserRole, ALL_ROLES } from '$lib/shared/enums';
+import { z } from 'zod';
+import { UserRole } from '$lib/shared/enums';
+import {
+	CoercedBoolean,
+	EmailSchema,
+	UsernameSchema,
+	PasswordSchema,
+	OptionalPasswordSchema,
+	NameSchema,
+	ListPaginationWithInactiveSchema,
+	EntityIdSchema
+} from './common';
 
-// Helper to coerce string to boolean for form inputs
-const BooleanFromString = v.pipe(
-	v.union([v.boolean(), v.picklist(['true', 'false'])]),
-	v.transform((val) => (typeof val === 'boolean' ? val : val === 'true'))
-);
-
-export const ListUsersSchema = v.object({
-	page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
-	perPage: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 10),
-	search: v.optional(v.string()),
-	role: v.optional(v.picklist(ALL_ROLES)),
-	includeInactive: v.optional(v.boolean(), false)
+export const ListUsersSchema = ListPaginationWithInactiveSchema.extend({
+	role: z.enum(UserRole).optional()
 });
 
-export const CreateUserSchema = v.object({
-	email: v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255)),
-	username: v.pipe(
-		v.string(),
-		v.minLength(3, 'Usuario debe tener al menos 3 caracteres'),
-		v.maxLength(50),
-		v.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
-	),
-	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
-	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
-	role: v.optional(v.picklist(ALL_ROLES), UserRole.VIEWER),
-	isActive: v.optional(BooleanFromString, true)
+export const CreateUserSchema = z.object({
+	email: EmailSchema,
+	username: UsernameSchema,
+	fullName: NameSchema('Nombre completo requerido'),
+	password: PasswordSchema,
+	role: z.enum(UserRole).default(UserRole.VIEWER),
+	isActive: CoercedBoolean.default(true)
 });
 
-export const UpdateUserSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	email: v.optional(v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255))),
-	username: v.optional(
-		v.pipe(
-			v.string(),
-			v.minLength(3, 'Usuario debe tener al menos 3 caracteres'),
-			v.maxLength(50),
-			v.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
-		)
-	),
-	fullName: v.optional(v.pipe(v.string(), v.minLength(2), v.maxLength(255))),
-	// Password can be empty (keep current) or valid password (min 8 chars)
-	password: v.optional(
-		v.union([
-			v.literal(''),
-			v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres'))
-		])
-	),
-	role: v.optional(v.picklist(ALL_ROLES)),
-	isActive: v.optional(BooleanFromString)
+export const UpdateUserSchema = CreateUserSchema.partial().extend({
+	id: z.uuid(),
+	// Password can be empty (keep current) or valid password
+	password: OptionalPasswordSchema.optional()
 });
 
-export const UserIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid())
-});
+export const UserIdSchema = EntityIdSchema();
 
-export const ReactivateUserSchema = v.object({
-	deletedUserId: v.pipe(v.string(), v.uuid()),
-	email: v.pipe(v.string(), v.email('Email inválido'), v.maxLength(255)),
-	username: v.pipe(
-		v.string(),
-		v.minLength(3, 'Usuario debe tener al menos 3 caracteres'),
-		v.maxLength(50),
-		v.regex(/^[a-zA-Z0-9_]+$/, 'Usuario solo puede contener letras, números y guiones bajos')
-	),
-	fullName: v.pipe(v.string(), v.minLength(2, 'Nombre completo requerido'), v.maxLength(255)),
-	password: v.pipe(v.string(), v.minLength(8, 'Contraseña debe tener al menos 8 caracteres')),
-	role: v.optional(v.picklist(ALL_ROLES), UserRole.VIEWER),
-	isActive: v.optional(BooleanFromString, true)
+export const ReactivateUserSchema = CreateUserSchema.extend({
+	deletedUserId: z.uuid()
 });

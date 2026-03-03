@@ -6,11 +6,18 @@
 		title: string;
 		color?: 'default' | 'blue' | 'red' | 'amber' | 'green';
 		onclick?: () => void;
-		href?: string;
 		hidden?: boolean;
+		disabled?: boolean;
 	}
 
-	let { icon: Icon, title, color = 'default', onclick, href, hidden = false }: Props = $props();
+	let {
+		icon: Icon,
+		title,
+		color = 'default',
+		onclick,
+		hidden = false,
+		disabled = false
+	}: Props = $props();
 
 	const colorClasses: Record<string, string> = {
 		default: 'text-slate-500 hover:bg-slate-100 hover:text-slate-700',
@@ -25,14 +32,15 @@
 </script>
 
 {#if !hidden}
-	{#if href}
-		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-		<a {href} class="{baseClasses} {colorClasses[color]}" {title}>
-			<Icon class="h-4 w-4" />
-		</a>
-	{:else}
-		<button type="button" {onclick} class="{baseClasses} {colorClasses[color]}" {title}>
-			<Icon class="h-4 w-4" />
-		</button>
-	{/if}
+	<button
+		type="button"
+		{onclick}
+		{disabled}
+		class="{baseClasses} {colorClasses[color]}"
+		class:opacity-50={disabled}
+		class:cursor-not-allowed={disabled}
+		{title}
+	>
+		<Icon class="h-4 w-4" />
+	</button>
 {/if}

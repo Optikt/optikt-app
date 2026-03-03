@@ -1,38 +1,36 @@
 /**
  * Brands validation schemas
- * Valibot schemas for validation in remote functions
+ * Zod schemas for validation in remote functions
  */
-import * as v from 'valibot';
+import { z } from 'zod';
+import {
+	NameSchema,
+	ListPaginationWithDeletedSchema,
+	EntityIdSchema,
+	OptionalUrlSchema
+} from './common';
 
-export const ListBrandsSchema = v.object({
-	page: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)), 1),
-	perPage: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100)), 10),
-	search: v.optional(v.string()),
-	includeDeleted: v.optional(v.boolean(), false)
+export const ListBrandsSchema = ListPaginationWithDeletedSchema;
+
+export const CreateBrandSchema = z.object({
+	name: NameSchema(),
+	description: z.string().optional(),
+	country: z.string().optional(),
+	website: OptionalUrlSchema
 });
 
-export const CreateBrandSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255)),
-	description: v.optional(v.string()),
-	country: v.optional(v.string()),
-	website: v.optional(v.string())
+export const UpdateBrandSchema = CreateBrandSchema.partial().extend({
+	id: z.uuid()
 });
 
-export const UpdateBrandSchema = v.object({
-	id: v.pipe(v.string(), v.uuid()),
-	name: v.optional(v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255))),
-	description: v.optional(v.string()),
-	country: v.optional(v.string()),
-	website: v.optional(v.string())
-});
+export const BrandIdSchema = EntityIdSchema();
 
-export const BrandIdSchema = v.object({
-	id: v.pipe(v.string(), v.uuid())
+export const ReactivateBrandSchema = z.object({
+	deletedBrandId: z.uuid()
 });
 
 /**
- * Quick create schema - minimal fields for inline creation
+ * Quick create schema - We already have minimal fields for inline creation.
+ * Rename it to QuickCreateBrandSchema for clarity
  */
-export const QuickCreateBrandSchema = v.object({
-	name: v.pipe(v.string(), v.minLength(1, 'Nombre requerido'), v.maxLength(255))
-});
+export const QuickCreateBrandSchema = CreateBrandSchema;

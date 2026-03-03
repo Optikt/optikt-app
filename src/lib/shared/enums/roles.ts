@@ -11,6 +11,26 @@ export enum UserRole {
 }
 
 /**
+ * Role badge colors for consistent UI display
+ */
+export const roleBadgeColors: Record<UserRole, 'yellow' | 'purple' | 'blue' | 'green' | 'gray'> = {
+	[UserRole.SUPERADMIN]: 'yellow',
+	[UserRole.ADMIN]: 'purple',
+	[UserRole.MANAGER]: 'blue',
+	[UserRole.SELLER]: 'green',
+	[UserRole.VIEWER]: 'gray'
+};
+
+export type UserRoleColor = (typeof roleBadgeColors)[UserRole];
+
+/**
+ * Get the badge color for a user role
+ */
+export function getUserRoleBadgeColor(role: string): UserRoleColor {
+	return roleBadgeColors[role as UserRole] ?? 'gray';
+}
+
+/**
  * Helper function to check if a role has admin privileges
  */
 export function isAdminRole(role: UserRole | undefined | null): boolean {

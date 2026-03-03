@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
+	import { Button, Toggle } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
@@ -16,7 +16,7 @@
 
 	// Data state - initialize from server
 	let brandsData = $state<PaginatedBrands>({
-		brands: initialBrands as Brand[],
+		brands: initialBrands,
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -26,7 +26,7 @@
 
 	// Filter state
 	let search = $state('');
-
+	let includeDeleted = $state(false);
 	// Form modal state
 	let showFormModal = $state(false);
 	let selectedBrand = $state<Brand | null>(null);
@@ -38,7 +38,8 @@
 			brandsData = await listBrands({
 				page,
 				perPage: 10,
-				search: search || undefined
+				search: search || undefined,
+				includeDeleted
 			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando marcas'));
@@ -98,6 +99,13 @@
 			oninput={handleSearch}
 			class="min-w-64 flex-1"
 		/>
+		<Toggle
+			bind:checked={includeDeleted}
+			onchange={() => fetchBrands(1)}
+			class="text-sm text-slate-600"
+		>
+			Mostrar eliminados
+		</Toggle>
 	</div>
 
 	<!-- Table -->

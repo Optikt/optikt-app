@@ -4,8 +4,10 @@
 	import { untrack } from 'svelte';
 	import { createBrandForm, updateBrandForm } from '$lib/remote/brands.remote';
 	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import BrandReactivateModal from './BrandReactivateModal.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Brand } from '$lib/server/db/schema';
+	import type { CreateBrandResult } from '$lib/remote/brands.remote';
 
 	interface Props {
 		open: boolean;
@@ -29,6 +31,15 @@
 		country: '',
 		website: ''
 	});
+
+	// Reactivation modal state
+	let showReactivateModal = $state(false);
+	let reactivationCandidate = $state<{
+		id: string;
+		name: string;
+		country?: string | null;
+		website?: string | null;
+	} | null>(null);
 
 	// Reset form when modal opens or brand changes
 	let formInstanceId = $state(generateUUID());
@@ -63,6 +74,19 @@
 			return; // Stay open, show errors
 		}
 
+		const result: CreateBrandResult | undefined = currentCreateForm.result;
+
+		// Check for reactivation candidate
+		if (result && !result.success && result.reactivationCandidate) {
+			// if (result && !result.success && result.reactivationCandidate) {
+			// Show reactivation confirmation modal
+			const c = result.reactivationCandidate;
+			reactivationCandidate = { id: c.id, name: c.name, country: c.country, website: c.website };
+			showReactivateModal = true;
+			return;
+		}
+
+		// Success - close and refresh
 		toast.success('Marca creada exitosamente');
 		formEl.reset();
 		open = false;
@@ -78,6 +102,14 @@
 
 		toast.success('Marca actualizada');
 		formEl.reset();
+		open = false;
+		onSuccess?.();
+	}
+
+	// Handle reactivation success
+	function handleReactivationSuccess() {
+		showReactivateModal = false;
+		reactivationCandidate = null;
 		open = false;
 		onSuccess?.();
 	}
@@ -210,3 +242,10 @@
 		</form>
 	{/if}
 </Modal>
+
+<!-- Reactivate Confirmation Modal -->
+<BrandReactivateModal
+	bind:open={showReactivateModal}
+	candidate={reactivationCandidate}
+	onSuccess={handleReactivationSuccess}
+/>

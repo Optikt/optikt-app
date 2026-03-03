@@ -48,7 +48,7 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 	},
 	prescription: {
 		customerId: 'Cliente',
-		prescriptionDate: 'Fecha de receta',
+		prescriptionDate: 'Fecha de fórmula',
 		odSphere: 'OD Esfera',
 		odCylinder: 'OD Cilindro',
 		odAxis: 'OD Eje',
@@ -57,13 +57,14 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		osCylinder: 'OS Cilindro',
 		osAxis: 'OS Eje',
 		osAddition: 'OS Adición',
-		pd: 'DP',
-		pdRight: 'DP Derecho',
-		pdLeft: 'DP Izquierdo',
+		dp: 'DP (Distancia Pupilar)',
+		npRight: 'NP Derecho',
+		npLeft: 'NP Izquierdo',
+		treatments: 'Tratamientos',
 		recommendedLensType: 'Tipo de lente recomendado',
 		notes: 'Notas',
 		doctorName: 'Médico',
-		isCurrent: 'Receta actual'
+		isCurrent: 'Fórmula actual'
 	},
 	sale: {
 		customerId: 'Cliente',

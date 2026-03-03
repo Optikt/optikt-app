@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { Badge, Button } from 'flowbite-svelte';
+	import { Button } from 'flowbite-svelte';
 	import { ArrowLeft, Pencil, Trash2, TriangleAlert, History } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { formatPrice, formatDate, getProfitMargin } from '$lib/utils';
 	import { untrack } from 'svelte';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { ProductType, PRODUCT_TYPE_LABELS, requiresStockTracking } from '$lib/shared/enums';
+	import { ProductType, requiresStockTracking } from '$lib/shared/enums';
+	import { isLowStock } from '$lib/utils/products.js';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);
@@ -28,24 +29,6 @@
 		...(product.supplier ? { [product.supplier.id]: product.supplier.name } : {}),
 		...(product.material ? { [product.material.id]: product.material.name } : {})
 	});
-
-	// Product type badge colors
-	const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
-		[ProductType.FRAME]: 'blue',
-		[ProductType.SUNGLASSES]: 'green',
-		[ProductType.CONTACT_LENS]: 'purple',
-		[ProductType.ACCESSORY]: 'yellow'
-	};
-
-	function getProfitMargin(purchase: number, sale: number): string {
-		if (purchase === 0) return '0.0%';
-		return (((sale - purchase) / purchase) * 100).toFixed(1) + '%';
-	}
-
-	function isLowStock(): boolean {
-		if (product.stock === null || product.minStock === null) return false;
-		return product.stock <= product.minStock;
-	}
 
 	async function confirmDelete() {
 		deleteLoading = true;
@@ -84,14 +67,8 @@
 				<div>
 					<div class="flex items-center gap-3">
 						<h1 class="text-3xl font-bold tracking-tight text-slate-900">{product.name}</h1>
-						<Badge color={typeColors[product.type as ProductType]}>
-							{PRODUCT_TYPE_LABELS[product.type as ProductType] || product.type}
-						</Badge>
-						{#if product.isActive}
-							<Badge color="green">Activo</Badge>
-						{:else}
-							<Badge color="gray">Inactivo</Badge>
-						{/if}
+						<ProductTypeBadge type={product.type} />
+						<StatusBadge active={product.isActive} />
 					</div>
 					<p class="mt-1 font-mono text-slate-500">{product.sku}</p>
 				</div>
@@ -183,10 +160,10 @@
 								<dt class="text-sm text-slate-500">Stock Actual</dt>
 								<dd
 									class="mt-1 text-2xl font-bold"
-									class:text-red-600={isLowStock()}
-									class:text-slate-900={!isLowStock()}
+									class:text-red-600={isLowStock(product)}
+									class:text-slate-900={!isLowStock(product)}
 								>
-									{#if isLowStock()}
+									{#if isLowStock(product)}
 										<span class="inline-flex items-center gap-2">
 											<TriangleAlert class="h-5 w-5" />
 											{product.stock}
@@ -200,7 +177,7 @@
 								<dt class="text-sm text-slate-500">Stock Mínimo</dt>
 								<dd class="mt-1 font-medium text-slate-700">{product.minStock ?? '—'}</dd>
 							</div>
-							{#if isLowStock()}
+							{#if isLowStock(product)}
 								<div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
 									⚠️ Stock bajo nivel mínimo. Considerar reposición.
 								</div>

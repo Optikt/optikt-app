@@ -43,3 +43,34 @@ export const LENS_PRICING_UNIT_LABELS: Record<LensPricingUnit, string> = {
 export const ALL_LENS_TYPES = Object.values(LensType) as LensType[];
 export const ALL_LENS_SOURCES = Object.values(LensCatalogSource) as LensCatalogSource[];
 export const ALL_LENS_PRICING_UNITS = Object.values(LensPricingUnit) as LensPricingUnit[];
+
+/** Get the display label for a lens type, with fallback to the raw value */
+export function getLensTypeLabel(type: string): string {
+	return LENS_TYPE_LABELS[type as LensType] ?? type;
+}
+
+/** Get the display label for a lens source, with fallback to the raw value */
+export function getLensSourceLabel(source: string): string {
+	return LENS_SOURCE_LABELS[source as LensCatalogSource] ?? source;
+}
+
+/** Get the display label for a pricing unit, with fallback to the raw value */
+export function getPricingUnitLabel(unit: string): string {
+	return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
+}
+
+/**
+ * Lens type badge colors for consistent UI display
+ */
+export const lensTypeBadgeColors: Record<LensType, 'blue' | 'green' | 'purple' | 'yellow'> = {
+	[LensType.MONOFOCAL]: 'blue',
+	[LensType.BIFOCAL]: 'green',
+	[LensType.PROGRESSIVE]: 'purple',
+	[LensType.OCCUPATIONAL]: 'yellow'
+};
+
+export type LensTypeColor = (typeof lensTypeBadgeColors)[LensType];
+
+export function getLensTypeBadgeColor(type: string): LensTypeColor {
+	return lensTypeBadgeColors[type as LensType] ?? 'blue';
+}

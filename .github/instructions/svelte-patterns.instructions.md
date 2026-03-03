@@ -18,7 +18,7 @@ applyTo: '**/*.svelte,**/*.ts,**/+page.server.ts,**/+layout.server.ts'
 
 ## Error Handling with Remote Functions
 
-- Server-side validation happens via valibot in remote functions, but **client-side validation is required** to show errors correctly to users
+- Server-side validation happens via zod in remote functions, but **client-side validation is required** to show errors correctly to users
 - Use toasts for error feedback. In modals, use both a toast and a small error box (toasts tend to appear behind modals)
 - In `try/catch` blocks with toast error feedback, always add `console.error(error)` for debugging
 

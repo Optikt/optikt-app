@@ -3,16 +3,15 @@
  * Handles business settings get/update (admin only for updates)
  */
 import { query, form } from '$app/server';
+import { EmptySchema } from '$lib/schemas/common';
 import { UpdateSettingsSchema } from '$lib/schemas/settings';
 import {
 	getSettings as getSettingsQuery,
 	updateSettings as updateSettingsQuery
 } from '$lib/server/db/queries';
 import type { Settings } from '$lib/server/db/schema';
-import * as v from 'valibot';
 
 // Empty schema for getting settings (no params needed)
-const EmptySchema = v.object({});
 
 /**
  * Get business settings

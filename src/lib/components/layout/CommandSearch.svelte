@@ -2,7 +2,7 @@
 	import { Search, Package, Microscope, X } from '@lucide/svelte';
 	import { universalSearch } from '$lib/remote/search.remote';
 	import type { SearchResults } from '$lib/remote/search.remote';
-	import { LensType, LENS_TYPE_LABELS } from '$lib/shared/enums';
+	import { getLensTypeLabel } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
 
@@ -14,6 +14,8 @@
 
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
+	// TODO: Improve the search experience and results (this maybe need a change in
+	// the backend to return more relevant results and not just a dumb search by name)
 	function handleInput() {
 		clearTimeout(debounceTimer);
 		const q = searchQuery.trim();
@@ -160,8 +162,7 @@
 									{#if lens.brand}<span class="text-slate-500"> · {lens.brand}</span>{/if}
 								</p>
 								<p class="truncate text-xs text-slate-500">
-									<!-- TODO: Create getter function for this -->
-									{LENS_TYPE_LABELS[lens.type as LensType] ?? lens.type}
+									{getLensTypeLabel(lens.type)}
 									{#if lens.materialName}· {lens.materialName}{/if}
 								</p>
 							</div>

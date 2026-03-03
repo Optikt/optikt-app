@@ -2,7 +2,7 @@
 	import { Modal } from 'flowbite-svelte';
 	import { Phone, Mail, MapPin, Calendar, FileText, IdCard } from '@lucide/svelte';
 	import type { Customer } from '$lib/server/db/schema';
-	import { formatDate } from '$lib/utils';
+	import { formatDate, getFullName } from '$lib/utils';
 
 	interface Props {
 		open: boolean;
@@ -10,10 +10,6 @@
 	}
 
 	let { open = $bindable(), customer }: Props = $props();
-
-	function getFullName(c: Customer): string {
-		return `${c.firstName} ${c.lastName}`;
-	}
 
 	function calculateAge(birthDate: Date | null): number | null {
 		if (!birthDate) return null;

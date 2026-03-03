@@ -3,6 +3,7 @@ export { default as Card } from './Card.svelte';
 export { default as Button } from './Button.svelte';
 export { default as DataTable } from './DataTable.svelte';
 export { default as ActionButton } from './ActionButton.svelte';
+export { default as RowActions } from './RowActions.svelte';
 export { default as FormInput } from './FormInput.svelte';
 export { default as FormTextarea } from './FormTextarea.svelte';
 export { default as FormDatepicker } from './FormDatepicker.svelte';
@@ -18,3 +19,13 @@ export { default as IdInput } from './IdInput.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
 export { default as PurchaseCurrencyInput } from './PurchaseCurrencyInput.svelte';
 export type { SelectOption, PendingEntity } from './CreatableSelect.svelte';
+
+// Badge components
+export {
+	ProductTypeBadge,
+	SupplierTypeBadge,
+	LensTypeBadge,
+	UserRoleBadge,
+	StatusBadge,
+	TreatmentBadge
+} from './badges';

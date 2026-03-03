@@ -1,14 +1,14 @@
 /**
  * User-related types
  */
-import type * as v from 'valibot';
+import type { z } from 'zod';
 import type { ListUsersSchema, CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
 import type { UserRole } from '$lib/shared/enums';
 
 // Inferred input types from schemas
-export type ListUsersInput = v.InferOutput<typeof ListUsersSchema>;
-export type CreateUserInput = v.InferOutput<typeof CreateUserSchema>;
-export type UpdateUserInput = v.InferOutput<typeof UpdateUserSchema>;
+export type ListUsersInput = z.infer<typeof ListUsersSchema>;
+export type CreateUserInput = z.infer<typeof CreateUserSchema>;
+export type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
 
 // User list item (without sensitive data)
 export interface UserListItem {

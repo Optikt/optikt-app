@@ -5,9 +5,14 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin 'flowbite/plugin';
+@plugin 'tailwind-scrollbar';
 
 @custom-variant dark (&:where(.dark, .dark *));
-
+@custom-variant not-first-last (&:not(:last-child):not(:first-child));
+@custom-variant first-last (&:first-child, &:last-child);
+@custom-variant direct-children (& > *);
+@custom-variant penultimate (&:nth-last-child(2));
+@custom-variant not-last (&:not(:last-child));
 @theme {
 	/* Primary colors (used by Flowbite for focus states) - set to brand-blue */
 	--color-primary-50: #f0fafb;

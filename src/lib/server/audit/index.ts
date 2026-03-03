@@ -1,4 +1,4 @@
 // Audit module barrel export
-export { auditService } from './auditService';
+export { auditService, getAuditContext } from './auditService';
 export * from './types';
 export * from './utils';

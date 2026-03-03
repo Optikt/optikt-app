@@ -1,13 +1,19 @@
-import { eq, isNull, and, ilike, lte, ne, or, sql } from 'drizzle-orm';
-import { db } from '$lib/server/db';
 import {
-	products,
-	brands,
-	suppliers,
-	materials,
-	type Product,
-	type NewProduct
-} from '$lib/server/db/schema';
+	eq,
+	isNull,
+	isNotNull,
+	and,
+	or,
+	lte,
+	asc,
+	desc,
+	ilike,
+	count,
+	type AnyColumn,
+	type SQL
+} from 'drizzle-orm';
+import { db } from '$lib/server/db';
+import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
 
 // Product with related brand and supplier data
 export type ProductWithRelations = Product & {
@@ -16,18 +22,117 @@ export type ProductWithRelations = Product & {
 	material: { id: string; name: string; code: string } | null;
 };
 
+/** Sortable product columns */
+export type ProductOrderBy = 'name' | 'sku' | 'salePrice' | 'stock' | 'createdAt' | 'updatedAt';
+
+/** Options for filtering products (shared between query and count) */
+export interface ProductFilterOptions {
+	/** Include soft-deleted products in results (default: false) */
+	includeDeleted?: boolean;
+	/** Include inactive products in results (default: false — only active shown) */
+	includeInactive?: boolean;
+	/** Search by name or SKU (case-insensitive) */
+	search?: string;
+	/** Filter by product type */
+	type?: string;
+	/** Filter by brand ID */
+	brandId?: string;
+	/** Filter by supplier ID */
+	supplierId?: string;
+	/** Only show products where stock <= minStock */
+	lowStockOnly?: boolean;
+}
+
+/** Options for querying products with relations */
+export interface GetProductsOptions extends ProductFilterOptions {
+	/** Column to order by */
+	orderBy?: ProductOrderBy;
+	/** Sort direction (default: 'asc') */
+	orderSort?: 'asc' | 'desc';
+	/** Maximum number of results to return */
+	limit?: number;
+	/** Number of results to skip (for pagination) */
+	offset?: number;
+}
+
+/** Column map for orderBy */
+const ORDER_COLUMNS: Record<ProductOrderBy, AnyColumn> = {
+	name: products.name,
+	sku: products.sku,
+	salePrice: products.salePrice,
+	stock: products.stock,
+	createdAt: products.createdAt,
+	updatedAt: products.updatedAt
+};
+
 /**
- * Get all products (excluding soft-deleted)
+ * Build WHERE conditions from filter options.
+ *
+ * Defaults (no options): active, non-deleted products only.
  */
-export async function getAllProducts(): Promise<Product[]> {
-	return await db.select().from(products).where(isNull(products.deletedAt));
+function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
+	const conditions: SQL[] = [];
+
+	if (!opts.includeDeleted) {
+		conditions.push(isNull(products.deletedAt));
+	}
+
+	if (!opts.includeInactive) {
+		if (opts.includeDeleted) {
+			// Keep active OR deleted (deleted products have isActive=false by design)
+			conditions.push(or(eq(products.isActive, true), isNotNull(products.deletedAt))!);
+		} else {
+			conditions.push(eq(products.isActive, true));
+		}
+	}
+
+	if (opts.search) {
+		conditions.push(
+			or(ilike(products.name, `%${opts.search}%`), ilike(products.sku, `%${opts.search}%`))!
+		);
+	}
+
+	if (opts.type) {
+		conditions.push(eq(products.type, opts.type));
+	}
+
+	if (opts.brandId) {
+		conditions.push(eq(products.brandId, opts.brandId));
+	}
+
+	if (opts.supplierId) {
+		conditions.push(eq(products.supplierId, opts.supplierId));
+	}
+
+	if (opts.lowStockOnly) {
+		conditions.push(isNotNull(products.stock));
+		conditions.push(isNotNull(products.minStock));
+		conditions.push(lte(products.stock, products.minStock));
+	}
+
+	return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
 /**
- * Get all products with brand and supplier info (including inactive, excluding deleted)
+ * Get all products with brand, supplier, and material info
+ *
+ * @example
+ * getAllProductsWithRelations()                                             // active, non-deleted
+ * getAllProductsWithRelations({ includeInactive: true })                    // all non-deleted
+ * getAllProductsWithRelations({ includeDeleted: true })                     // active + deleted
+ * getAllProductsWithRelations({ search: 'ray', type: 'FRAME', limit: 10 }) // filtered + paginated
  */
-export async function getAllProductsWithRelations(): Promise<ProductWithRelations[]> {
-	const results = await db
+export async function getAllProductsWithRelations(
+	options?: GetProductsOptions
+): Promise<ProductWithRelations[]> {
+	const opts = options ?? {};
+	const where = buildProductConditions(opts);
+
+	// Build ORDER BY
+	const orderFn = opts.orderSort === 'desc' ? desc : asc;
+	const orderClause = opts.orderBy ? orderFn(ORDER_COLUMNS[opts.orderBy]) : undefined;
+
+	const base = db
 		.select({
 			product: products,
 			brand: { id: brands.id, name: brands.name },
@@ -38,7 +143,14 @@ export async function getAllProductsWithRelations(): Promise<ProductWithRelation
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
 		.leftJoin(materials, eq(products.materialId, materials.id))
-		.where(isNull(products.deletedAt));
+		.$dynamic();
+
+	if (where) base.where(where);
+	if (orderClause) base.orderBy(orderClause);
+	if (opts.limit) base.limit(opts.limit);
+	if (opts.offset) base.offset(opts.offset);
+
+	const results = await base;
 
 	return results.map((r) => ({
 		...r.product,
@@ -49,47 +161,44 @@ export async function getAllProductsWithRelations(): Promise<ProductWithRelation
 }
 
 /**
- * Get all active products with brand and supplier info
+ * Count products matching the given filters (no JOINs needed).
+ * Uses the same conditions as getAllProductsWithRelations.
  */
-export async function getActiveProductsWithRelations(): Promise<ProductWithRelations[]> {
-	const results = await db
-		.select({
-			product: products,
-			brand: { id: brands.id, name: brands.name },
-			supplier: { id: suppliers.id, name: suppliers.name },
-			material: { id: materials.id, name: materials.name, code: materials.code }
-		})
-		.from(products)
-		.leftJoin(brands, eq(products.brandId, brands.id))
-		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-		.leftJoin(materials, eq(products.materialId, materials.id))
-		.where(and(isNull(products.deletedAt), eq(products.isActive, true)));
-
-	return results.map((r) => ({
-		...r.product,
-		brand: r.brand?.id ? r.brand : null,
-		supplier: r.supplier?.id ? r.supplier : null,
-		material: r.material?.id ? r.material : null
-	}));
+export async function countProducts(options?: ProductFilterOptions): Promise<number> {
+	const where = buildProductConditions(options ?? {});
+	const base = db.select({ value: count() }).from(products).$dynamic();
+	if (where) base.where(where);
+	const [result] = await base;
+	return result.value;
 }
 
 /**
- * Find a product by ID (including inactive)
+ * Find a product by ID
+ * @param deleted - If true, also matches soft-deleted products (default: false)
  */
-export async function findProductById(id: string): Promise<Product | null> {
-	const [product] = await db
-		.select()
-		.from(products)
-		.where(and(eq(products.id, id), isNull(products.deletedAt)));
+export async function findProductById(
+	id: string,
+	{ deleted }: { deleted?: boolean } = {}
+): Promise<Product | null> {
+	const filter = deleted
+		? eq(products.id, id)
+		: and(eq(products.id, id), isNull(products.deletedAt));
+	const [product] = await db.select().from(products).where(filter);
 	return product ?? null;
 }
 
 /**
  * Find a product by ID with relations
+ * @param deleted - If true, also matches soft-deleted products (default: false)
  */
 export async function findProductByIdWithRelations(
-	id: string
+	id: string,
+	{ deleted }: { deleted?: boolean } = {}
 ): Promise<ProductWithRelations | null> {
+	const filter = deleted
+		? eq(products.id, id)
+		: and(eq(products.id, id), isNull(products.deletedAt));
+
 	const results = await db
 		.select({
 			product: products,
@@ -101,7 +210,7 @@ export async function findProductByIdWithRelations(
 		.leftJoin(brands, eq(products.brandId, brands.id))
 		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
 		.leftJoin(materials, eq(products.materialId, materials.id))
-		.where(and(eq(products.id, id), isNull(products.deletedAt)));
+		.where(filter);
 
 	if (results.length === 0) return null;
 
@@ -115,51 +224,24 @@ export async function findProductByIdWithRelations(
 }
 
 /**
- * Find a product by SKU (only active, non-deleted)
+ * Find a product by SKU
+ * @param deleted - 'exclude' (default): active only, 'only': deleted only, 'include': all
  */
-export async function findProductBySku(sku: string): Promise<Product | null> {
-	const [product] = await db
-		.select()
-		.from(products)
-		.where(and(eq(products.sku, sku), isNull(products.deletedAt)));
-	return product ?? null;
-}
-
-/**
- * Find a product by SKU including soft-deleted (for duplicate check)
- */
-export async function findProductBySkuIncludingDeleted(sku: string): Promise<Product | null> {
-	const [product] = await db.select().from(products).where(eq(products.sku, sku));
-	return product ?? null;
-}
-
-/**
- * Find a product by SKU, excluding a specific ID (for update validation)
- */
-export async function findProductBySkuExcluding(
+export async function findProductBySku(
 	sku: string,
-	excludeId: string
+	{ deleted = 'exclude' }: { deleted?: 'exclude' | 'only' | 'include' } = {}
 ): Promise<Product | null> {
+	const conditions = [eq(products.sku, sku)];
+	if (deleted === 'exclude') {
+		conditions.push(isNull(products.deletedAt));
+	} else if (deleted === 'only') {
+		conditions.push(isNotNull(products.deletedAt));
+	}
 	const [product] = await db
 		.select()
 		.from(products)
-		.where(and(eq(products.sku, sku), ne(products.id, excludeId), isNull(products.deletedAt)));
+		.where(and(...conditions));
 	return product ?? null;
-}
-
-/**
- * Search products by name or SKU (case-insensitive)
- */
-export async function searchProducts(query: string): Promise<Product[]> {
-	return await db
-		.select()
-		.from(products)
-		.where(
-			and(
-				or(ilike(products.name, `%${query}%`), ilike(products.sku, `%${query}%`)),
-				isNull(products.deletedAt)
-			)
-		);
 }
 
 /**
@@ -179,23 +261,6 @@ export async function getLowStockProducts(): Promise<Product[]> {
 }
 
 /**
- * Create a new product
- */
-export async function createProduct(data: NewProduct): Promise<Product> {
-	const now = new Date();
-	const [product] = await db
-		.insert(products)
-		.values({
-			...data,
-			id: crypto.randomUUID(),
-			createdAt: now,
-			updatedAt: now
-		})
-		.returning();
-	return product;
-}
-
-/**
  * Update a product by ID
  */
 export async function updateProduct(
@@ -211,16 +276,6 @@ export async function updateProduct(
 }
 
 /**
- * Update product stock
- */
-export async function updateProductStock(id: string, quantity: number): Promise<void> {
-	await db
-		.update(products)
-		.set({ stock: quantity, updatedAt: new Date() })
-		.where(eq(products.id, id));
-}
-
-/**
  * Soft delete a product by ID
  */
 export async function deleteProduct(id: string): Promise<boolean> {
@@ -232,30 +287,13 @@ export async function deleteProduct(id: string): Promise<boolean> {
 }
 
 /**
- * Reactivate a soft-deleted product
+ * Restore a soft-deleted product with new data
  */
-export async function reactivateProduct(id: string): Promise<Product | null> {
+export async function restoreProduct(id: string): Promise<Product | null> {
 	const [product] = await db
 		.update(products)
 		.set({ deletedAt: null, isActive: true, updatedAt: new Date() })
 		.where(eq(products.id, id))
 		.returning();
 	return product ?? null;
-}
-
-/**
- * Get count of products (for pagination)
- */
-export async function getProductCount(includeInactive = false): Promise<number> {
-	const conditions = [isNull(products.deletedAt)];
-	if (!includeInactive) {
-		conditions.push(eq(products.isActive, true));
-	}
-
-	const result = await db
-		.select({ count: sql<number>`count(*)::int` })
-		.from(products)
-		.where(and(...conditions));
-
-	return result[0]?.count ?? 0;
 }

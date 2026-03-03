@@ -24,6 +24,32 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
 	[ProductType.ACCESSORY]: 'Accesorio'
 };
 
+/** Get the display label for a product type, with fallback to the raw value */
+export function getProductTypeLabel(type: string): string {
+	return PRODUCT_TYPE_LABELS[type as ProductType] ?? type;
+}
+
+/**
+ * Product type badge colors
+ */
+export const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
+	[ProductType.FRAME]: 'blue',
+	[ProductType.SUNGLASSES]: 'green',
+	[ProductType.CONTACT_LENS]: 'purple',
+	[ProductType.ACCESSORY]: 'yellow'
+};
+
+export type ProductTypeColor = (typeof typeColors)[ProductType];
+
+export function getProductTypeBadgeColor(type: string): ProductTypeColor | 'gray' {
+	return typeColors[type as ProductType] ?? 'gray';
+}
+
+/** @deprecated Use getProductTypeBadgeColor instead */
+export function getProductTypeColor(type: string): ProductTypeColor | 'gray' {
+	return getProductTypeBadgeColor(type);
+}
+
 /** All product types require stock tracking */
 export const STOCK_REQUIRED_TYPES: ProductType[] = [
 	ProductType.FRAME,
@@ -40,27 +66,40 @@ export function requiresStockTracking(type: ProductType): boolean {
 }
 
 // ============================================================================
-// MATERIAL PRODUCT TYPES
+// MATERIAL CATEGORIES
 // ============================================================================
 
 /**
- * Valid product types for materials.
+ * Valid categories for materials.
+ * These categorize what type of product a material is used for:
+ * - FRAME: frame materials (Titanium, Acetate, TR90, etc.)
+ * - CONTACT_LENS: contact lens materials
+ * - ACCESSORY: accessory materials (Leather, Microfiber, etc.)
+ *
  * Note: SUNGLASSES is excluded because sunglasses and frames share materials.
- * Use toMaterialProductType() to convert a ProductType to its material equivalent.
+ * Note: LENS is excluded because lens materials have a dedicated table (`lens_materials`)
+ * managed separately from the `/lenses` page.
+ * Use toMaterialCategory() to convert a ProductType to its material category.
  */
-export const MATERIAL_PRODUCT_TYPES = [
+export const MATERIAL_CATEGORIES = [
 	ProductType.FRAME,
 	ProductType.CONTACT_LENS,
-	ProductType.ACCESSORY,
-	'ALL'
+	ProductType.ACCESSORY
 ] as const;
-export type MaterialProductType = (typeof MATERIAL_PRODUCT_TYPES)[number];
+export type MaterialCategory = (typeof MATERIAL_CATEGORIES)[number];
+
+/** Labels for display in Spanish */
+export const MATERIAL_CATEGORY_LABELS: Record<MaterialCategory, string> = {
+	[ProductType.FRAME]: 'Montura / Lentes de sol',
+	[ProductType.CONTACT_LENS]: 'Lente de contacto',
+	[ProductType.ACCESSORY]: 'Accesorio'
+};
 
 /**
- * Convert a ProductType to its MaterialProductType equivalent.
+ * Convert a ProductType to its MaterialCategory equivalent.
  * SUNGLASSES → FRAME (they share materials)
  * All others map 1:1
  */
-export function toMaterialProductType(type: ProductType): MaterialProductType {
+export function toMaterialCategory(type: ProductType): MaterialCategory {
 	return type === ProductType.SUNGLASSES ? ProductType.FRAME : type;
 }

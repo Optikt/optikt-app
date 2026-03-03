@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import * as v from 'valibot';
 import { ProductType } from '$lib/shared/enums';
-import { MaterialProductTypes } from './materials';
+import { MaterialCategories } from './materials';
 import { CreateProductSchema, UpdateProductSchema, ListProductsSchema } from './products';
 
 const baseCreatePayload = {
@@ -21,19 +20,19 @@ const baseCreatePayload = {
 
 describe('CreateProductSchema', () => {
 	it('accepts valid payloads with required fields', () => {
-		const result = v.safeParse(CreateProductSchema, baseCreatePayload);
+		const result = CreateProductSchema.safeParse(baseCreatePayload);
 		expect(result.success).toBe(true);
 	});
 
 	it('requires supplierId', () => {
 		const { supplierId: _, ...payloadWithoutSupplier } = baseCreatePayload;
-		const result = v.safeParse(CreateProductSchema, payloadWithoutSupplier);
+		const result = CreateProductSchema.safeParse(payloadWithoutSupplier);
 		expect(result.success).toBe(false);
 	});
 
 	it('requires materialId', () => {
 		const { materialId: _, ...payloadWithoutMaterial } = baseCreatePayload;
-		const result = v.safeParse(CreateProductSchema, payloadWithoutMaterial);
+		const result = CreateProductSchema.safeParse(payloadWithoutMaterial);
 		expect(result.success).toBe(false);
 	});
 
@@ -46,15 +45,15 @@ describe('CreateProductSchema', () => {
 			pendingBrandName: 'Nueva Marca',
 			pendingSupplierName: 'Proveedor Nuevo',
 			pendingMaterialName: 'Acetato',
-			pendingMaterialProductType: MaterialProductTypes[0]
+			pendingMaterialCategory: MaterialCategories[0]
 		};
 
-		const result = v.safeParse(CreateProductSchema, payload);
+		const result = CreateProductSchema.safeParse(payload);
 		expect(result.success).toBe(true);
 	});
 
 	it('rejects empty string for supplierId', () => {
-		const result = v.safeParse(CreateProductSchema, {
+		const result = CreateProductSchema.safeParse({
 			...baseCreatePayload,
 			supplierId: ''
 		});
@@ -62,7 +61,7 @@ describe('CreateProductSchema', () => {
 	});
 
 	it('rejects empty string for materialId', () => {
-		const result = v.safeParse(CreateProductSchema, {
+		const result = CreateProductSchema.safeParse({
 			...baseCreatePayload,
 			materialId: ''
 		});
@@ -70,7 +69,7 @@ describe('CreateProductSchema', () => {
 	});
 
 	it('allows brandId to be empty string (optional)', () => {
-		const result = v.safeParse(CreateProductSchema, {
+		const result = CreateProductSchema.safeParse({
 			...baseCreatePayload,
 			brandId: ''
 		});
@@ -78,7 +77,7 @@ describe('CreateProductSchema', () => {
 	});
 
 	it('rejects invalid SKUs', () => {
-		const result = v.safeParse(CreateProductSchema, {
+		const result = CreateProductSchema.safeParse({
 			...baseCreatePayload,
 			sku: 'INVALID SKU!'
 		});
@@ -86,7 +85,7 @@ describe('CreateProductSchema', () => {
 	});
 
 	it('requires non-negative prices', () => {
-		const negativePrice = v.safeParse(CreateProductSchema, {
+		const negativePrice = CreateProductSchema.safeParse({
 			...baseCreatePayload,
 			purchasePrice: -1,
 			salePrice: -5
@@ -97,14 +96,14 @@ describe('CreateProductSchema', () => {
 
 describe('UpdateProductSchema', () => {
 	it('requires uuid id', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: 'not-a-uuid'
 		});
 		expect(result.success).toBe(false);
 	});
 
 	it('accepts partial updates', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000000',
 			brandId: 'pending_brand_1'
 		});
@@ -112,7 +111,7 @@ describe('UpdateProductSchema', () => {
 	});
 
 	it('rejects empty string for supplierId (cannot set to null)', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000000',
 			supplierId: ''
 		});
@@ -120,7 +119,7 @@ describe('UpdateProductSchema', () => {
 	});
 
 	it('rejects empty string for materialId (cannot set to null)', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000000',
 			materialId: ''
 		});
@@ -128,7 +127,7 @@ describe('UpdateProductSchema', () => {
 	});
 
 	it('allows empty string for brandId (can be null)', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000000',
 			brandId: ''
 		});
@@ -136,7 +135,7 @@ describe('UpdateProductSchema', () => {
 	});
 
 	it('allows updating supplierId to a valid UUID', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000000',
 			supplierId: '00000000-0000-4000-8000-000000000001'
 		});
@@ -144,7 +143,7 @@ describe('UpdateProductSchema', () => {
 	});
 
 	it('allows updating materialId with pending ID', () => {
-		const result = v.safeParse(UpdateProductSchema, {
+		const result = UpdateProductSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000000',
 			materialId: 'pending_material_new'
 		});
@@ -154,10 +153,10 @@ describe('UpdateProductSchema', () => {
 
 describe('ListProductsSchema', () => {
 	it('applies defaults on empty payloads', () => {
-		const result = v.safeParse(ListProductsSchema, {});
+		const result = ListProductsSchema.safeParse({});
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		const data = result.output;
+		const data = result.data;
 		expect(data.page).toBe(1);
 		expect(data.perPage).toBe(10);
 		expect(data.includeInactive).toBe(false);
@@ -165,7 +164,7 @@ describe('ListProductsSchema', () => {
 	});
 
 	it('validates pagination bounds', () => {
-		const result = v.safeParse(ListProductsSchema, { page: 0, perPage: 101 });
+		const result = ListProductsSchema.safeParse({ page: 0, perPage: 101 });
 		expect(result.success).toBe(false);
 	});
 });

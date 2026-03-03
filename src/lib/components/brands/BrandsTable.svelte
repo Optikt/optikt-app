@@ -8,12 +8,12 @@
 		Label,
 		Spinner
 	} from 'flowbite-svelte';
-	import { SquarePen, Trash2, Tag, TriangleAlert, Eye } from '@lucide/svelte';
+	import { SquarePen, Trash2, Tag, TriangleAlert, Eye, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, ActionButton } from '$lib/components/ui';
-	import { BrandViewModal } from '$lib/components/brands';
+	import { DataTable, StatusBadge } from '$lib/components/ui';
+	import { BrandViewModal, BrandReactivateModal } from '$lib/components/brands';
 	import type { Brand } from '$lib/server/db/schema';
 
 	interface Props {
@@ -28,6 +28,7 @@
 	// Modal state
 	let showDeleteModal = $state(false);
 	let showViewModal = $state(false);
+	let showReactivateModal = $state(false);
 	let selectedBrand = $state<Brand | null>(null);
 	let deleteLoading = $state(false);
 	let checkingDelete = $state(false);
@@ -58,6 +59,11 @@
 		} finally {
 			checkingDelete = false;
 		}
+	}
+
+	function openReactivate(brand: Brand) {
+		selectedBrand = brand;
+		showReactivateModal = true;
 	}
 
 	async function handleDelete() {
@@ -91,11 +97,21 @@
 	emptyIcon={Tag}
 	emptyTitle="No se encontraron marcas"
 	emptyDescription="Agrega una marca para comenzar"
+	defaultActions="view,edit,delete,reactivate"
+	onView={openView}
+	viewIcon={Eye}
+	onEdit={(b) => onEdit(b)}
+	editIcon={SquarePen}
+	onDelete={openDelete}
+	deleteIcon={Trash2}
+	onReactivate={openReactivate}
+	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
 		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
 		<TableHeadCell class="font-semibold">País</TableHeadCell>
 		<TableHeadCell class="font-semibold">Sitio Web</TableHeadCell>
+		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
 	{/snippet}
 
 	{#snippet row(brand)}
@@ -115,12 +131,9 @@
 				—
 			{/if}
 		</TableBodyCell>
-	{/snippet}
-
-	{#snippet actions(brand)}
-		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(brand)} />
-		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(brand)} />
-		<ActionButton icon={Trash2} title="Eliminar" color="red" onclick={() => openDelete(brand)} />
+		<TableBodyCell>
+			<StatusBadge active={!brand.deletedAt} />
+		</TableBodyCell>
 	{/snippet}
 </DataTable>
 
@@ -181,5 +194,15 @@
 	onClose={() => (selectedBrand = null)}
 	onEdit={() => {
 		if (selectedBrand) onEdit(selectedBrand);
+	}}
+/>
+
+<!-- Reactivate Modal -->
+<BrandReactivateModal
+	bind:open={showReactivateModal}
+	candidate={selectedBrand}
+	onSuccess={() => {
+		selectedBrand = null;
+		onRefresh?.();
 	}}
 />

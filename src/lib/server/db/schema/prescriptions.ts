@@ -8,9 +8,21 @@ import {
 	integer,
 	doublePrecision,
 	foreignKey,
-	boolean
+	boolean,
+	json
 } from 'drizzle-orm/pg-core';
 import { customers } from './customers';
+
+/**
+ * Treatments stored on a prescription
+ * All fields are optional booleans except 'other' which requires a description
+ */
+export type PrescriptionTreatments = {
+	antiReflective: boolean;
+	blueBlock: boolean;
+	photochromic: boolean;
+	other: string | null;
+};
 
 export const prescriptions = pgTable(
 	'prescriptions',
@@ -28,10 +40,13 @@ export const prescriptions = pgTable(
 		osCylinder: doublePrecision('os_cylinder'),
 		osAxis: integer('os_axis'),
 		osAddition: doublePrecision('os_addition'),
-		// PD
-		pd: doublePrecision(),
-		pdRight: doublePrecision('pd_right'),
-		pdLeft: doublePrecision('pd_left'),
+		// Distancia Pupilar (DP) - total pupillary distance
+		dp: doublePrecision(),
+		// Nasopupilar (NP) - per-eye measurements
+		npRight: doublePrecision('np_right'),
+		npLeft: doublePrecision('np_left'),
+		// Treatments
+		treatments: json('treatments').$type<PrescriptionTreatments>(),
 		// Additional
 		recommendedLensType: varchar('recommended_lens_type'),
 		notes: varchar(),

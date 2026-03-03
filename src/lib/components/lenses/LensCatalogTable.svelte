@@ -1,19 +1,21 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell, Badge, Popover } from 'flowbite-svelte';
-	import { Pencil, Trash2, Eye, Layers } from '@lucide/svelte';
+	import { Trash2, Eye, Layers, SquarePen } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import {
-		LensType,
-		LensCatalogSource,
-		LENS_TYPE_LABELS,
-		LENS_SOURCE_LABELS
-	} from '$lib/shared/enums';
+	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { DataTable, ActionButton, ConfirmModal } from '$lib/components/ui';
+	import {
+		DataTable,
+		ActionButton,
+		ConfirmModal,
+		LensTypeBadge,
+		TreatmentBadge
+	} from '$lib/components/ui';
 
 	type Props = {
 		items: LensCatalogItemWithRelations[];
@@ -45,21 +47,6 @@
 			toast.error(getErrorMessage(e, 'Error eliminando item'));
 		} finally {
 			deleteLoading = false;
-		}
-	}
-
-	function getLensTypeBadgeColor(type: string): 'blue' | 'green' | 'purple' | 'yellow' {
-		switch (type) {
-			case LensType.MONOFOCAL:
-				return 'blue';
-			case LensType.BIFOCAL:
-				return 'green';
-			case LensType.PROGRESSIVE:
-				return 'purple';
-			case LensType.OCCUPATIONAL:
-				return 'yellow';
-			default:
-				return 'blue';
 		}
 	}
 </script>
@@ -94,24 +81,22 @@
 		</TableBodyCell>
 		<TableBodyCell>
 			<Badge color={item.source === LensCatalogSource.FINISHED ? 'indigo' : 'gray'} class="text-xs">
-				{LENS_SOURCE_LABELS[item.source] ?? item.source}
+				{getLensSourceLabel(item.source)}
 			</Badge>
 		</TableBodyCell>
 		<TableBodyCell class="text-slate-600">
 			{item.supplier?.name ?? '—'}
 		</TableBodyCell>
 		<TableBodyCell>
-			<Badge color={getLensTypeBadgeColor(item.type)} class="text-xs">
-				{LENS_TYPE_LABELS[item.type as LensType] ?? item.type}
-			</Badge>
+			<LensTypeBadge type={item.type} />
 			{#if item.isPhotochromic}
-				<Badge color="yellow" title="Fotocromático" class="ml-1 text-xs">Foto</Badge>
+				<TreatmentBadge type="photochromic" class="ml-1" />
 			{/if}
 			{#if item.isBlueCut}
-				<Badge color="indigo" title="Blue Cut (Blue Block)" class="ml-1 text-xs">Blue</Badge>
+				<TreatmentBadge type="blueBlock" class="ml-1" />
 			{/if}
 			{#if item.isAR}
-				<Badge color="green" title="Antirreflejo (AR)" class="ml-1 text-xs">AR</Badge>
+				<TreatmentBadge type="antiReflective" class="ml-1" />
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell>
@@ -175,12 +160,16 @@
 	{/snippet}
 
 	{#snippet actions(item)}
-		<ActionButton icon={Eye} title="Ver detalles" href={resolve(`/lenses/${item.id}`)} />
 		<ActionButton
-			icon={Pencil}
+			icon={Eye}
+			title="Ver detalles"
+			onclick={() => goto(resolve(`/lenses/${item.id}`))}
+		/>
+		<ActionButton
+			icon={SquarePen}
 			title="Editar"
 			color="blue"
-			href={resolve(`/lenses/${item.id}/edit`)}
+			onclick={() => goto(resolve(`/lenses/${item.id}/edit`))}
 		/>
 		<ActionButton icon={Trash2} title="Eliminar" color="red" onclick={() => openDelete(item)} />
 	{/snippet}

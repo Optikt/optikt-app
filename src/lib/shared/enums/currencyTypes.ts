@@ -19,6 +19,11 @@ export const CURRENCY_LABELS: Record<CurrencyCode, string> = {
 	[CurrencyCode.USD_PAYPAL]: 'USD PayPal'
 };
 
+/** Get the display label for a currency code, with fallback to the raw value */
+export function getCurrencyLabel(code: string): string {
+	return CURRENCY_LABELS[code as CurrencyCode] ?? code;
+}
+
 /**
  * Currency symbols
  */

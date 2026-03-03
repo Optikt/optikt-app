@@ -1,4 +1,5 @@
-import { eq, isNull, and, ilike, desc, not } from 'drizzle-orm';
+import { eq, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'drizzle-orm';
+import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import {
 	customers,
@@ -8,37 +9,110 @@ import {
 	type Prescription,
 	type NewPrescription
 } from '$lib/server/db/schema';
+import type { InferSelectedRow } from '$lib/server/db/types';
 
 // ============================================================================
 // CUSTOMERS
 // ============================================================================
 
+/** Sortable customer columns */
+export type CustomerOrderBy = 'firstName' | 'lastName' | 'createdAt' | 'updatedAt';
+
+/** Options for querying customers */
+export interface GetCustomersOptions {
+	/** Include soft-deleted customers in results (default: false) */
+	includeDeleted?: boolean;
+	/** Column to order by */
+	orderBy?: CustomerOrderBy;
+	/** Sort direction (default: 'asc') */
+	orderSort?: 'asc' | 'desc';
+	/** Maximum number of results to return */
+	limit?: number;
+	/** Number of results to skip (for pagination) */
+	offset?: number;
+}
+
+/** Query with column projection */
+export interface GetCustomersQuery<
+	T extends SelectedFields = SelectedFields
+> extends GetCustomersOptions {
+	columns: T;
+}
+
+/** Column map for orderBy */
+const ORDER_COLUMNS: Record<CustomerOrderBy, AnyColumn> = {
+	firstName: customers.firstName,
+	lastName: customers.lastName,
+	createdAt: customers.createdAt,
+	updatedAt: customers.updatedAt
+};
+
 /**
- * Get all customers (excluding soft-deleted)
+ * Get all customers (excluding soft-deleted by default)
+ *
+ * @example
+ * getAllCustomers()                                                  // → Customer[]
+ * getAllCustomers({ orderBy: 'createdAt', limit: 10 })              // → Customer[]
+ * getAllCustomers({ columns: { id: customers.id, firstName: customers.firstName } }) // → { id, firstName }[]
  */
-export async function getAllCustomers(): Promise<Customer[]> {
-	return await db.select().from(customers).where(isNull(customers.deletedAt));
+export async function getAllCustomers<T extends SelectedFields>(
+	query: GetCustomersQuery<T>
+): Promise<InferSelectedRow<T>[]>;
+export async function getAllCustomers(options?: GetCustomersOptions): Promise<Customer[]>;
+export async function getAllCustomers<T extends SelectedFields>(
+	optionsOrQuery?: GetCustomersOptions | GetCustomersQuery<T>
+): Promise<Customer[] | InferSelectedRow<T>[]> {
+	const columns =
+		optionsOrQuery && 'columns' in optionsOrQuery ? optionsOrQuery.columns : undefined;
+	const opts = optionsOrQuery ?? {};
+
+	// Build WHERE
+	const whereClause = opts.includeDeleted ? undefined : isNull(customers.deletedAt);
+
+	// Build ORDER BY
+	const orderFn = opts.orderSort === 'desc' ? desc : asc;
+	const orderClause = opts.orderBy ? orderFn(ORDER_COLUMNS[opts.orderBy]) : undefined;
+
+	// Build query with $dynamic() to allow conditional chaining
+	const base = columns
+		? db.select(columns).from(customers).$dynamic()
+		: db.select().from(customers).$dynamic();
+
+	if (whereClause) base.where(whereClause);
+	if (orderClause) base.orderBy(orderClause);
+	if (opts.limit) base.limit(opts.limit);
+	if (opts.offset) base.offset(opts.offset);
+	return await base;
 }
 
 /**
  * Find a customer by ID
+ * @param deleted - If true, also matches soft-deleted customers (default: false)
  */
-export async function findCustomerById(id: string): Promise<Customer | null> {
-	const [customer] = await db
-		.select()
-		.from(customers)
-		.where(and(eq(customers.id, id), isNull(customers.deletedAt)));
+export async function findCustomerById(
+	id: string,
+	{ deleted }: { deleted?: boolean } = {}
+): Promise<Customer | null> {
+	const filter = deleted
+		? eq(customers.id, id)
+		: and(eq(customers.id, id), isNull(customers.deletedAt));
+	const [customer] = await db.select().from(customers).where(filter);
 	return customer ?? null;
 }
 
 /**
  * Find a customer by ID number (cedula, passport, etc.)
+ * @param deleted - If true, matches only soft-deleted customers. If false (default), matches only active customers.
  */
-export async function findCustomerByIdNumber(idNumber: string): Promise<Customer | null> {
+export async function findCustomerByIdNumber(
+	idNumber: string,
+	{ deleted = false }: { deleted?: boolean } = {}
+): Promise<Customer | null> {
+	const deletedFilter = deleted ? isNotNull(customers.deletedAt) : isNull(customers.deletedAt);
 	const [customer] = await db
 		.select()
 		.from(customers)
-		.where(and(eq(customers.idNumber, idNumber), isNull(customers.deletedAt)));
+		.where(and(eq(customers.idNumber, idNumber), deletedFilter));
 	return customer ?? null;
 }
 
@@ -113,26 +187,12 @@ export async function deleteCustomer(id: string): Promise<boolean> {
 }
 
 /**
- * Find a soft-deleted customer by ID number (for reactivation)
- */
-export async function findDeletedCustomerByIdNumber(idNumber: string): Promise<Customer | null> {
-	const [customer] = await db
-		.select()
-		.from(customers)
-		.where(and(eq(customers.idNumber, idNumber), not(isNull(customers.deletedAt))));
-	return customer ?? null;
-}
-
-/**
  * Restore a soft-deleted customer
  */
-export async function restoreCustomer(
-	id: string,
-	data?: Partial<Omit<Customer, 'id' | 'createdAt' | 'deletedAt'>>
-): Promise<Customer | null> {
+export async function restoreCustomer(id: string): Promise<Customer | null> {
 	const [customer] = await db
 		.update(customers)
-		.set({ ...data, deletedAt: null, updatedAt: new Date() })
+		.set({ deletedAt: null, updatedAt: new Date() })
 		.where(eq(customers.id, id))
 		.returning();
 	return customer ?? null;

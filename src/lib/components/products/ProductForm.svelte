@@ -24,8 +24,8 @@
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { Checkbox } from 'flowbite-svelte';
 	import type { Product } from '$lib/server/db/schema';
-
 	import FormActions from '$lib/components/ui/FormActions.svelte';
+	import { resolve } from '$app/paths';
 
 	interface MaterialOption extends SelectOption {
 		productType?: string;
@@ -106,10 +106,9 @@
 		// Map materials to include pending status
 		const baseMaterials = materials
 			.filter((m) => {
-				// Show materials that match the product type or are universal (ALL)
+				// Show materials that match the product type
 				// For SUNGLASSES, also show FRAME materials since they share materials
-				const materialType = m.productType ?? 'ALL';
-				if (materialType === 'ALL') return true;
+				const materialType = m.productType;
 				if (type === ProductType.SUNGLASSES) {
 					return materialType === 'FRAME' || materialType === 'SUNGLASSES';
 				}
@@ -119,7 +118,7 @@
 
 		// Add pending materials for this product type
 		const pendingForType = pendingMaterials
-			.filter((p) => p.productType === type || p.productType === 'ALL')
+			.filter((p) => p.productType === type)
 			.map((p) => ({
 				id: p.pendingId,
 				name: p.name,
@@ -172,7 +171,7 @@
 		return null;
 	}
 
-	function getPendingMaterialProductType(pendingId: string): string | null {
+	function getPendingMaterialCategory(pendingId: string): string | null {
 		if (!pendingId.startsWith('pending_material_')) return null;
 		const material = pendingMaterials.find((m) => m.pendingId === pendingId);
 		return typeof material?.productType === 'string' ? material.productType : null;
@@ -285,8 +284,7 @@
 
 		toast.success('Producto actualizado');
 		formEl.reset();
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(`/products/${product?.id}`);
+		goto(resolve(`/products/${product?.id}`));
 	}
 </script>
 
@@ -333,8 +331,8 @@
 				/>
 				<input
 					type="hidden"
-					name="pendingMaterialProductType"
-					value={getPendingMaterialProductType(formData.materialId) ?? formData.type}
+					name="pendingMaterialCategory"
+					value={getPendingMaterialCategory(formData.materialId) ?? formData.type}
 				/>
 			{/if}
 
@@ -608,8 +606,8 @@
 				/>
 				<input
 					type="hidden"
-					name="pendingMaterialProductType"
-					value={getPendingMaterialProductType(formData.materialId) ?? formData.type}
+					name="pendingMaterialCategory"
+					value={getPendingMaterialCategory(formData.materialId) ?? formData.type}
 				/>
 			{/if}
 

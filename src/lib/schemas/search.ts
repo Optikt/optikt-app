@@ -1,8 +1,8 @@
 /**
  * Search validation schema
  */
-import * as v from 'valibot';
+import { z } from 'zod';
 
-export const UniversalSearchSchema = v.object({
-	query: v.pipe(v.string(), v.minLength(1, 'Búsqueda requerida'))
+export const UniversalSearchSchema = z.object({
+	query: z.string().min(1, 'Búsqueda requerida')
 });

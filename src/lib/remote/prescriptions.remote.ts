@@ -1,0 +1,286 @@
+/**
+ * Prescriptions Remote Functions
+ * Server-side functions for prescription management
+ */
+import { query, form, command } from '$app/server';
+import { invalid } from '@sveltejs/kit';
+import {
+	CreatePrescriptionSchema,
+	UpdatePrescriptionSchema,
+	PrescriptionIdSchema,
+	CustomerIdForPrescriptionSchema,
+	SetCurrentPrescriptionSchema
+} from '$lib/schemas/prescriptions';
+import {
+	getCustomerPrescriptions,
+	getLatestPrescription,
+	findPrescriptionById,
+	createPrescription,
+	updatePrescription,
+	deletePrescription,
+	findCustomerById
+} from '$lib/server/db/queries/customers';
+import type { Prescription, PrescriptionTreatments } from '$lib/server/db/schema';
+import { auditService, getAuditContext } from '$lib/server/audit';
+
+/**
+ * Normalize optical values for storage
+ * Converts 0 to null for consistency in the database
+ * This allows distinguishing between "not measured" and "measured as 0" during validation,
+ * but normalizes to null for storage to keep data consistent
+ */
+function normalizeOpticalValue(value: number | undefined | null): number | null {
+	if (value === undefined || value === null) return null;
+	// Convert 0 to null for storage consistency
+	return value === 0 ? null : value;
+}
+
+/**
+ * Build treatments object from form data
+ */
+function buildTreatments(data: {
+	treatmentAntiReflective?: boolean;
+	treatmentBlueBlock?: boolean;
+	treatmentPhotochromic?: boolean;
+	treatmentOther?: string;
+}): PrescriptionTreatments | null {
+	const hasAnyTreatment =
+		data.treatmentAntiReflective ||
+		data.treatmentBlueBlock ||
+		data.treatmentPhotochromic ||
+		data.treatmentOther;
+
+	if (!hasAnyTreatment) return null;
+
+	return {
+		antiReflective: data.treatmentAntiReflective ?? false,
+		blueBlock: data.treatmentBlueBlock ?? false,
+		photochromic: data.treatmentPhotochromic ?? false,
+		other: data.treatmentOther ?? null
+	};
+}
+
+/**
+ * List all prescriptions for a customer
+ */
+export const listPrescriptions = query(
+	CustomerIdForPrescriptionSchema,
+	async (data): Promise<Prescription[]> => {
+		return await getCustomerPrescriptions(data.customerId);
+	}
+);
+
+/**
+ * Get the latest/current prescription for a customer
+ */
+export const getLatestCustomerPrescription = query(
+	CustomerIdForPrescriptionSchema,
+	async (data): Promise<Prescription | null> => {
+		return await getLatestPrescription(data.customerId);
+	}
+);
+
+/**
+ * Get a single prescription by ID
+ */
+export const getPrescription = query(
+	PrescriptionIdSchema,
+	async (data): Promise<Prescription | null> => {
+		return await findPrescriptionById(data.id);
+	}
+);
+
+/**
+ * Create a new prescription
+ */
+export const createPrescriptionForm = form(
+	CreatePrescriptionSchema,
+	async (data, issue): Promise<Prescription> => {
+		const context = getAuditContext();
+
+		// Verify customer exists
+		const customer = await findCustomerById(data.customerId);
+		if (!customer) {
+			invalid(issue.customerId('Cliente no encontrado'));
+		}
+
+		// If this is set as current, unset other current prescriptions for this customer
+		if (data.isCurrent) {
+			const existingPrescriptions = await getCustomerPrescriptions(data.customerId);
+			for (const p of existingPrescriptions) {
+				if (p.isCurrent) {
+					await updatePrescription(p.id, { isCurrent: false });
+				}
+			}
+		}
+
+		// Build treatments object
+		const treatments = buildTreatments(data);
+
+		// Create prescription with normalized optical values (0 → null)
+		const prescription = await createPrescription({
+			customerId: data.customerId,
+			prescriptionDate: new Date(data.prescriptionDate),
+			odSphere: normalizeOpticalValue(data.odSphere),
+			odCylinder: normalizeOpticalValue(data.odCylinder),
+			odAxis: normalizeOpticalValue(data.odAxis),
+			odAddition: normalizeOpticalValue(data.odAddition),
+			osSphere: normalizeOpticalValue(data.osSphere),
+			osCylinder: normalizeOpticalValue(data.osCylinder),
+			osAxis: normalizeOpticalValue(data.osAxis),
+			osAddition: normalizeOpticalValue(data.osAddition),
+			dp: data.dp ?? null,
+			npRight: data.npRight ?? null,
+			npLeft: data.npLeft ?? null,
+			treatments,
+			recommendedLensType: data.recommendedLensType ?? null,
+			notes: data.notes ?? null,
+			doctorName: data.doctorName ?? null,
+			isCurrent: data.isCurrent ?? false
+		});
+
+		// Log audit
+		await auditService.logCreate('prescription', prescription, context, {
+			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+		});
+
+		return prescription;
+	}
+);
+
+/**
+ * Update an existing prescription
+ */
+export const updatePrescriptionForm = form(
+	UpdatePrescriptionSchema,
+	async (data, issue): Promise<Prescription> => {
+		const context = getAuditContext();
+
+		// Get existing prescription
+		const existing = await findPrescriptionById(data.id);
+		if (!existing) {
+			invalid(issue.id('Fórmula no encontrada'));
+		}
+
+		// If setting as current, unset other current prescriptions for this customer
+		if (data.isCurrent) {
+			const existingPrescriptions = await getCustomerPrescriptions(existing.customerId);
+			for (const p of existingPrescriptions) {
+				if (p.isCurrent && p.id !== data.id) {
+					await updatePrescription(p.id, { isCurrent: false });
+				}
+			}
+		}
+
+		// Build update object with normalized optical values (0 → null)
+		const updateData: Partial<Omit<Prescription, 'id' | 'createdAt'>> = {};
+		if (data.prescriptionDate !== undefined) {
+			updateData.prescriptionDate = new Date(data.prescriptionDate);
+		}
+		if (data.odSphere !== undefined) updateData.odSphere = normalizeOpticalValue(data.odSphere);
+		if (data.odCylinder !== undefined)
+			updateData.odCylinder = normalizeOpticalValue(data.odCylinder);
+		if (data.odAxis !== undefined) updateData.odAxis = normalizeOpticalValue(data.odAxis);
+		if (data.odAddition !== undefined)
+			updateData.odAddition = normalizeOpticalValue(data.odAddition);
+		if (data.osSphere !== undefined) updateData.osSphere = normalizeOpticalValue(data.osSphere);
+		if (data.osCylinder !== undefined)
+			updateData.osCylinder = normalizeOpticalValue(data.osCylinder);
+		if (data.osAxis !== undefined) updateData.osAxis = normalizeOpticalValue(data.osAxis);
+		if (data.osAddition !== undefined)
+			updateData.osAddition = normalizeOpticalValue(data.osAddition);
+		if (data.dp !== undefined) updateData.dp = data.dp ?? null;
+		if (data.npRight !== undefined) updateData.npRight = data.npRight ?? null;
+		if (data.npLeft !== undefined) updateData.npLeft = data.npLeft ?? null;
+		// Build treatments if any treatment field is present
+		if (
+			data.treatmentAntiReflective !== undefined ||
+			data.treatmentBlueBlock !== undefined ||
+			data.treatmentPhotochromic !== undefined ||
+			data.treatmentOther !== undefined
+		) {
+			updateData.treatments = buildTreatments(data);
+		}
+		if (data.recommendedLensType !== undefined) {
+			updateData.recommendedLensType = data.recommendedLensType ?? null;
+		}
+		if (data.notes !== undefined) updateData.notes = data.notes ?? null;
+		if (data.doctorName !== undefined) updateData.doctorName = data.doctorName ?? null;
+		if (data.isCurrent !== undefined) updateData.isCurrent = data.isCurrent;
+
+		// Update prescription
+		const updated = await updatePrescription(data.id, updateData);
+		if (!updated) {
+			invalid(issue.id('Error al actualizar fórmula'));
+		}
+
+		// Log audit
+		await auditService.logUpdate('prescription', data.id, existing, updated, context, {
+			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+		});
+
+		return updated;
+	}
+);
+
+/**
+ * Set a prescription as current/not current
+ */
+export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, async (data) => {
+	const context = getAuditContext();
+
+	// Get existing prescription
+	const existing = await findPrescriptionById(data.id);
+	if (!existing) {
+		return { success: false, error: 'Fórmula no encontrada' };
+	}
+
+	// If setting as current, unset other current prescriptions for this customer
+	if (data.isCurrent) {
+		const existingPrescriptions = await getCustomerPrescriptions(existing.customerId);
+		for (const p of existingPrescriptions) {
+			if (p.isCurrent && p.id !== data.id) {
+				await updatePrescription(p.id, { isCurrent: false });
+			}
+		}
+	}
+
+	// Update prescription
+	const updated = await updatePrescription(data.id, { isCurrent: data.isCurrent });
+	if (!updated) {
+		return { success: false, error: 'Error al actualizar fórmula' };
+	}
+
+	// Log audit
+	await auditService.logUpdate('prescription', data.id, existing, updated, context, {
+		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+	});
+
+	return { success: true };
+});
+
+/**
+ * Delete a prescription (soft delete)
+ */
+export const deletePrescriptionCommand = command(PrescriptionIdSchema, async (data) => {
+	const context = getAuditContext();
+
+	// Get existing prescription
+	const existing = await findPrescriptionById(data.id);
+	if (!existing) {
+		return { success: false, error: 'Fórmula no encontrada' };
+	}
+
+	// Delete prescription
+	const deleted = await deletePrescription(data.id);
+	if (!deleted) {
+		return { success: false, error: 'Error al eliminar fórmula' };
+	}
+
+	// Log audit
+	await auditService.logDelete('prescription', existing, context, {
+		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+	});
+
+	return { success: true };
+});

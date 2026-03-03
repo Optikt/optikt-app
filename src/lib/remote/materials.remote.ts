@@ -2,83 +2,188 @@
  * Materials Remote Functions
  * Server-side functions for unified materials management
  */
-import { query, command, getRequestEvent } from '$app/server';
-import { QuickCreateMaterialSchema, ListMaterialsSchema } from '$lib/schemas/materials';
-import { eq, ilike, and, isNull, or } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { materials, type Material } from '$lib/server/db/schema';
-import { auditService, type AuditContext } from '$lib/server/audit';
+import { query, form, command } from '$app/server';
+import { invalid } from '@sveltejs/kit';
+import {
+	ListMaterialsSchema,
+	MaterialIdSchema,
+	CreateMaterialSchema,
+	UpdateMaterialSchema,
+	QuickCreateMaterialSchema,
+	ReactivateMaterialSchema
+} from '$lib/schemas/materials';
+import {
+	getAllMaterials,
+	countMaterials,
+	findMaterialById,
+	findMaterialByName,
+	createMaterial,
+	updateMaterial,
+	restoreMaterial,
+	deleteMaterial
+} from '$lib/server/db/queries/materials';
+import type { Material } from '$lib/server/db/schema';
+import { auditService, getAuditContext } from '$lib/server/audit';
 
-/**
- * Helper to get audit context from the current request
- */
-function getAuditContext(): AuditContext {
-	const event = getRequestEvent();
-	return {
-		userId: event.locals.user?.id ?? null,
-		ipAddress: event.getClientAddress(),
-		userAgent: event.request.headers.get('user-agent')
-	};
+// Types for paginated response
+export interface PaginatedMaterials {
+	materials: Material[];
+	total: number;
+	page: number;
+	perPage: number;
+	totalPages: number;
+}
+
+// Types for create result
+export interface CreateMaterialResult {
+	success: boolean;
+	message: string;
+	material?: Material;
+	reactivationCandidate?: Material;
 }
 
 /**
- * List all active materials, optionally filtered by product type
+ * List all materials, optionally including deleted ones
  */
-export const listMaterials = query(ListMaterialsSchema, async (params): Promise<Material[]> => {
-	const { includeDeleted, productType } = params;
+export const listMaterials = query(
+	ListMaterialsSchema,
+	async (params): Promise<PaginatedMaterials> => {
+		const { page, perPage, search, includeDeleted, productType } = params;
+		const offset = (page - 1) * perPage;
 
-	const conditions = [];
+		const filterOpts = { search, productType, includeDeleted };
 
-	if (!includeDeleted) {
-		conditions.push(isNull(materials.deletedAt));
+		const [materialList, total] = await Promise.all([
+			getAllMaterials({
+				...filterOpts,
+				orderBy: 'name',
+				limit: perPage,
+				offset
+			}),
+			countMaterials(filterOpts)
+		]);
+
+		return {
+			materials: materialList,
+			total,
+			page,
+			perPage,
+			totalPages: Math.ceil(total / perPage)
+		};
 	}
+);
 
-	conditions.push(eq(materials.isActive, true));
-
-	if (productType) {
-		// Include materials for the specific type AND universal materials (ALL)
-		conditions.push(or(eq(materials.productType, productType), eq(materials.productType, 'ALL')));
+/**
+ * Find a material by ID
+ */
+export const getMaterialById = query(MaterialIdSchema, async (data): Promise<Material | null> => {
+	const { id } = data;
+	const material = await findMaterialById(id);
+	if (!material) {
+		throw new Error('Material no encontrado');
 	}
-
-	return await db
-		.select()
-		.from(materials)
-		.where(and(...conditions))
-		.orderBy(materials.name);
+	return material;
 });
 
 /**
- * Find a material by name and product type (case-insensitive)
+ * Create a new material with form validation
+ * Returns either a success with material, or a reactivation candidate for confirmation
  */
-async function findMaterialByNameAndType(
-	name: string,
-	productType: string
-): Promise<Material | null> {
-	const [material] = await db
-		.select()
-		.from(materials)
-		.where(
-			and(
-				ilike(materials.name, name),
-				eq(materials.productType, productType),
-				isNull(materials.deletedAt)
-			)
-		);
-	return material ?? null;
-}
+export const createMaterialForm = form(
+	CreateMaterialSchema,
+	async (data, issue): Promise<CreateMaterialResult> => {
+		const { name, code, productType, description } = data;
+
+		// Check for duplicate ACTIVE name + productType
+		const existingActive = await findMaterialByName(name, productType);
+		if (existingActive) {
+			invalid(issue.name('Ya existe un material con este nombre y tipo'));
+		}
+
+		// Check for DELETED material with same name and productType (reactivation candidate)
+		const deletedMaterial = await findMaterialByName(name, productType, { deleted: 'only' });
+		if (deletedMaterial) {
+			// Can reactivate! Return candidate for confirmation
+			return {
+				success: false,
+				reactivationCandidate: deletedMaterial,
+				message:
+					'El nombre del material pertenece a un material eliminado. ¿Desea reactivarlo con los nuevos datos?'
+			};
+		}
+
+		// All clear - create new material
+		const material = await createMaterial({
+			name,
+			code,
+			productType,
+			description: description ?? null,
+			isActive: true
+		});
+
+		// Log the creation
+		await auditService.logCreate('material', material, getAuditContext());
+
+		return { success: true, material, message: 'Material creado exitosamente' };
+	}
+);
 
 /**
- * Generate a unique code from material name and product type
+ * Update an existing material with form validation
  */
-function generateMaterialCode(name: string, productType: string): string {
-	const prefix = productType.slice(0, 2).toUpperCase();
-	const nameCode = name
-		.toUpperCase()
-		.replace(/\s+/g, '_')
-		.replace(/[^A-Z0-9_]/g, '')
-		.slice(0, 10);
-	return `${prefix}_${nameCode}`;
-}
+export const updateMaterialForm = form(
+	UpdateMaterialSchema,
+	async (data, issue): Promise<Material> => {
+		const { id, name, code, productType, description } = data;
+
+		// Check if material exists
+		const existing = await findMaterialById(id);
+		if (!existing) {
+			invalid('Material no encontrado');
+		}
+
+		// Check for duplicate name + productType if being changed
+		if (name && name !== existing.name) {
+			const duplicate = await findMaterialByName(name, productType ?? existing.productType);
+			if (duplicate) {
+				invalid(issue.name('Ya existe un material con este nombre y tipo'));
+			}
+		}
+
+		// Update material
+		const updated = await updateMaterial(id, {
+			name,
+			code,
+			productType,
+			description: description ?? null
+		});
+		if (!updated) {
+			invalid('Error actualizando material');
+		}
+
+		// Log the update
+		await auditService.logUpdate('material', id, existing, updated, getAuditContext());
+
+		return updated;
+	}
+);
+
+/**
+ * Delete a material (soft delete)
+ */
+export const deleteMaterialById = command(MaterialIdSchema, async (data): Promise<void> => {
+	const { id } = data;
+
+	const existing = await findMaterialById(id);
+	if (!existing) {
+		throw new Error('Material no encontrado');
+	}
+
+	await deleteMaterial(id);
+
+	// Log the deletion
+	await auditService.logDelete('material', existing, getAuditContext());
+});
 
 /**
  * Quick create a material with minimal info (for inline creation in forms)
@@ -90,7 +195,7 @@ export const quickCreateMaterial = command(
 		const { name, productType = 'FRAME' } = data;
 
 		// Check for duplicate (same name + productType)
-		const existing = await findMaterialByNameAndType(name, productType);
+		const existing = await findMaterialByName(name, productType);
 		if (existing) {
 			// Return existing instead of throwing error
 			return {
@@ -100,21 +205,49 @@ export const quickCreateMaterial = command(
 			};
 		}
 
-		const code = generateMaterialCode(name, productType);
+		// Generate code from name
+		const prefix = productType.slice(0, 2).toUpperCase();
+		const nameCode = name
+			.toUpperCase()
+			.replace(/\s+/g, '_')
+			.replace(/[^A-Z0-9_]/g, '')
+			.slice(0, 10);
+		const code = `${prefix}_${nameCode}`;
 
-		const [material] = await db
-			.insert(materials)
-			.values({
-				name,
-				code,
-				productType,
-				isActive: true
-			})
-			.returning();
+		const material = await createMaterial({
+			name,
+			code,
+			productType,
+			isActive: true
+		});
 
-		// Log audit
+		// Log the creation
 		await auditService.logCreate('material', material, getAuditContext());
 
 		return { id: material.id, name: material.name, productType: material.productType };
+	}
+);
+
+/**
+ * Reactivate a deleted material with new data
+ */
+export const reactivateMaterial = command(
+	ReactivateMaterialSchema,
+	async (data): Promise<Material> => {
+		const { deletedMaterialId } = data;
+
+		// Verify the material exists and is deleted
+		const material = await findMaterialById(deletedMaterialId, { deleted: 'include' });
+		if (!material || !material.deletedAt) {
+			throw new Error('Material eliminado no encontrado');
+		}
+
+		// Restore the material (reactivation)
+		const restored = await restoreMaterial(deletedMaterialId);
+
+		// Log the reactivation
+		await auditService.logCreate('material', restored, getAuditContext());
+
+		return restored;
 	}
 );

@@ -2,7 +2,7 @@
  * Lenses Remote Functions
  * Server-side functions for managing lens materials, treatments, and catalog items
  */
-import { query, form, command, getRequestEvent } from '$app/server';
+import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, ilike, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
@@ -21,7 +21,7 @@ import {
 	UpdateLensCatalogItemSchema,
 	LensIdSchema,
 	ListLensCatalogSchema,
-	SupplierIdSchema,
+	LensSupplierIdSchema,
 	UpsertSupplierTreatmentSchema
 } from '$lib/schemas/lenses';
 import {
@@ -53,19 +53,7 @@ import type {
 	LensOpticalRange
 } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import { auditService, type AuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
-
-/**
- * Helper to build audit context from the request event
- */
-function getAuditContext(): AuditContext {
-	const event = getRequestEvent();
-	return {
-		userId: event.locals.user?.id ?? null,
-		ipAddress: event.getClientAddress(),
-		userAgent: event.request.headers.get('user-agent')
-	};
-}
+import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
 
 // ============================================================================
 // OPTICAL RANGE COMPARISON HELPERS
@@ -628,7 +616,7 @@ export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Pro
 // SUPPLIER LENS TREATMENTS
 // ============================================================================
 
-export const listSupplierTreatments = query(SupplierIdSchema, async (data) => {
+export const listSupplierTreatments = query(LensSupplierIdSchema, async (data) => {
 	return getSupplierTreatments(data.supplierId);
 });
 
