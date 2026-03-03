@@ -244,9 +244,7 @@ export async function deleteMaterial(id: string): Promise<boolean> {
 /**
  * Restore a soft-deleted material
  */
-export async function restoreMaterial(
-	id: string
-): Promise<Material> {
+export async function restoreMaterial(id: string): Promise<Material> {
 	const [material] = await db
 		.update(materials)
 		.set({
