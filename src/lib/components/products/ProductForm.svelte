@@ -106,10 +106,9 @@
 		// Map materials to include pending status
 		const baseMaterials = materials
 			.filter((m) => {
-				// Show materials that match the product type or are universal (ALL)
+				// Show materials that match the product type
 				// For SUNGLASSES, also show FRAME materials since they share materials
-				const materialType = m.productType ?? 'ALL';
-				if (materialType === 'ALL') return true;
+				const materialType = m.productType;
 				if (type === ProductType.SUNGLASSES) {
 					return materialType === 'FRAME' || materialType === 'SUNGLASSES';
 				}
@@ -119,7 +118,7 @@
 
 		// Add pending materials for this product type
 		const pendingForType = pendingMaterials
-			.filter((p) => p.productType === type || p.productType === 'ALL')
+			.filter((p) => p.productType === type)
 			.map((p) => ({
 				id: p.pendingId,
 				name: p.name,
