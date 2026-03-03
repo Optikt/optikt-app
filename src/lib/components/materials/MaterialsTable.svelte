@@ -203,7 +203,6 @@
 <MaterialReactivateModal
 	bind:open={showReactivateModal}
 	candidate={selectedMaterial}
-	formData={null}
 	onSuccess={() => {
 		selectedMaterial = null;
 		onRefresh?.();
