@@ -18,12 +18,13 @@ describe('ProductType enum', () => {
 });
 
 describe('MATERIAL_CATEGORIES', () => {
-	it('excludes SUNGLASSES (shares materials with FRAME)', () => {
+	it('excludes SUNGLASSES (shares materials with FRAME) and LENS (separate table)', () => {
 		expect(MATERIAL_CATEGORIES).toContain(ProductType.FRAME);
 		expect(MATERIAL_CATEGORIES).toContain(ProductType.CONTACT_LENS);
 		expect(MATERIAL_CATEGORIES).toContain(ProductType.ACCESSORY);
-		expect(MATERIAL_CATEGORIES).toContain('ALL');
 		expect(MATERIAL_CATEGORIES).not.toContain(ProductType.SUNGLASSES);
+		expect(MATERIAL_CATEGORIES).not.toContain('LENS');
+		expect(MATERIAL_CATEGORIES).not.toContain('ALL');
 	});
 });
 
