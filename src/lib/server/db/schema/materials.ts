@@ -5,21 +5,20 @@ import {
 	uniqueIndex,
 	uuid,
 	timestamp,
-	boolean,
-	doublePrecision
+	boolean
 } from 'drizzle-orm/pg-core';
 
 /**
  * Unified Materials Table
  *
- * This table stores all materials used across different product types:
- * - Frame materials: Titanium, Acetate, TR90, Metal, etc.
- * - Lens materials: CR39, Policarbonato, Trivex, etc.
+ * This table stores materials used across different product types:
+ * - Frame materials: Titanium, Acetate, TR90, Metal, etc. (also used by sunglasses)
+ * - Contact lens materials: Silicone Hydrogel, etc.
  * - Accessory materials: Leather, Microfiber, etc.
  *
- * The `productType` field indicates which product type(s) this material applies to.
- * Use 'ALL' for materials that can be used across all product types.
+ * The `productType` field indicates which product type this material applies to.
  * Note: SUNGLASSES materials are stored as FRAME type (they share materials).
+ * Note: Lens materials (CR39, Polycarbonate, etc.) have a dedicated `lens_materials` table.
  */
 
 export const materials = pgTable(
@@ -28,8 +27,7 @@ export const materials = pgTable(
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		name: varchar().notNull(),
 		code: varchar().notNull(),
-		productType: varchar('product_type', { length: 20 }).notNull(), // FRAME, LENS, CONTACT_LENS, ACCESSORY, ALL
-		refractiveIndex: doublePrecision('refractive_index'), // Optional, mainly for lens materials
+		productType: varchar('product_type', { length: 20 }).notNull(), // FRAME, CONTACT_LENS, ACCESSORY
 		description: varchar(),
 		isActive: boolean('is_active').notNull().default(true),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
