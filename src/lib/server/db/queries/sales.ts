@@ -15,6 +15,7 @@ import {
 	type SQL
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import type { DbOrTx } from '$lib/server/db/types';
 import {
 	sales,
 	saleItems,
@@ -231,10 +232,11 @@ export async function countSales(options?: SaleFilterOptions): Promise<number> {
  */
 export async function findSaleById(
 	id: string,
-	{ deleted }: { deleted?: boolean } = {}
+	{ deleted }: { deleted?: boolean } = {},
+	executor: DbOrTx = db
 ): Promise<Sale | null> {
 	const filter = deleted ? eq(sales.id, id) : and(eq(sales.id, id), isNull(sales.deletedAt));
-	const [sale] = await db.select().from(sales).where(filter!);
+	const [sale] = await executor.select().from(sales).where(filter!);
 	return sale ?? null;
 }
 
@@ -295,9 +297,10 @@ export async function createSale(data: NewSale): Promise<Sale> {
  */
 export async function updateSale(
 	id: string,
-	data: Partial<Omit<Sale, 'id' | 'createdAt'>>
+	data: Partial<Omit<Sale, 'id' | 'createdAt'>>,
+	executor: DbOrTx = db
 ): Promise<Sale | null> {
-	const [sale] = await db
+	const [sale] = await executor
 		.update(sales)
 		.set({ ...data, updatedAt: new Date() })
 		.where(eq(sales.id, id))
@@ -398,8 +401,11 @@ export async function getSalePayments(
 /**
  * Find a payment by ID
  */
-export async function findPaymentById(id: string): Promise<SalePayment | null> {
-	const [payment] = await db
+export async function findPaymentById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<SalePayment | null> {
+	const [payment] = await executor
 		.select()
 		.from(salePayments)
 		.where(and(eq(salePayments.id, id), isNull(salePayments.voidedAt)));
@@ -409,9 +415,12 @@ export async function findPaymentById(id: string): Promise<SalePayment | null> {
 /**
  * Add a payment to a sale
  */
-export async function addSalePayment(data: NewSalePayment): Promise<SalePayment> {
+export async function addSalePayment(
+	data: NewSalePayment,
+	executor: DbOrTx = db
+): Promise<SalePayment> {
 	const now = new Date();
-	const [payment] = await db
+	const [payment] = await executor
 		.insert(salePayments)
 		.values({
 			...data,
@@ -426,8 +435,11 @@ export async function addSalePayment(data: NewSalePayment): Promise<SalePayment>
 /**
  * Void a payment (soft-delete by setting voidedAt)
  */
-export async function voidSalePayment(id: string): Promise<SalePayment | null> {
-	const [payment] = await db
+export async function voidSalePayment(
+	id: string,
+	executor: DbOrTx = db
+): Promise<SalePayment | null> {
+	const [payment] = await executor
 		.update(salePayments)
 		.set({ voidedAt: new Date(), updatedAt: new Date() })
 		.where(and(eq(salePayments.id, id), isNull(salePayments.voidedAt)))
@@ -440,15 +452,18 @@ export async function voidSalePayment(id: string): Promise<SalePayment | null> {
  * Sums all non-voided payments' amountBcvUsd.
  * Returns the new paidAmountBcvUsd value.
  */
-export async function recalcSalePaidAmount(saleId: string): Promise<number> {
-	const [result] = await db
+export async function recalcSalePaidAmount(
+	saleId: string,
+	executor: DbOrTx = db
+): Promise<number> {
+	const [result] = await executor
 		.select({ total: sum(salePayments.amountBcvUsd) })
 		.from(salePayments)
 		.where(and(eq(salePayments.saleId, saleId), isNull(salePayments.voidedAt)));
 
 	const paidAmount = Number(result?.total ?? 0);
 
-	await db
+	await executor
 		.update(sales)
 		.set({ paidAmountBcvUsd: paidAmount, updatedAt: new Date() })
 		.where(eq(sales.id, saleId));
