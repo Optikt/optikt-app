@@ -9,7 +9,7 @@ import {
 	type Prescription,
 	type NewPrescription
 } from '$lib/server/db/schema';
-import type { InferSelectedRow } from '$lib/server/db/types';
+import type { InferSelectedRow, DbOrTx } from '$lib/server/db/types';
 
 // ============================================================================
 // CUSTOMERS
@@ -146,9 +146,12 @@ export async function searchCustomersByPhone(phone: string): Promise<Customer[]>
 /**
  * Create a new customer
  */
-export async function createCustomer(data: NewCustomer): Promise<Customer> {
+export async function createCustomer(
+	data: NewCustomer,
+	executor: DbOrTx = db
+): Promise<Customer> {
 	const now = new Date();
-	const [customer] = await db
+	const [customer] = await executor
 		.insert(customers)
 		.values({
 			...data,
