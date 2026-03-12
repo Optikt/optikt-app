@@ -22,12 +22,14 @@ import {
 	findPaymentById,
 	addSalePayment,
 	voidSalePayment,
-	recalcSalePaidAmount
+	recalcSalePaidAmount,
+	updateSale
 } from '$lib/server/db/queries/sales';
 import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 import {
 	findCustomerById,
-	findCustomerByIdNumber
+	findCustomerByIdNumber,
+	createCustomer
 } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import {
@@ -35,8 +37,8 @@ import {
 	saleItems,
 	products,
 	lensCatalogItems,
-	customers,
-	type SalePayment
+	type SalePayment,
+	type Customer
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
@@ -165,28 +167,26 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 	const { sale, newCustomer } = await db.transaction(async (tx) => {
 		const now = new Date();
 		let customerId: string;
-		let createdCustomer: typeof customers.$inferSelect | null = null;
+		let createdCustomer: Customer | null = null;
+		// let createdCustomer: Awaited<ReturnType<typeof createCustomer>> | null = null;
 
 		if (existingCustomerId) {
 			customerId = existingCustomerId;
 		} else {
 			// Create customer inside transaction — rolls back if sale creation fails
 			const normalizedIdNumber = normalizeIdNumber(data.newCustomer!.idNumber);
-			const [customer] = await tx
-				.insert(customers)
-				.values({
-					id: crypto.randomUUID(),
+			const customer = await createCustomer(
+				{
 					firstName: data.newCustomer!.firstName,
 					lastName: data.newCustomer!.lastName,
 					idNumber: normalizedIdNumber,
 					primaryPhone: data.newCustomer!.primaryPhone ?? '',
 					email: data.newCustomer!.email || null,
 					address: data.newCustomer!.address || null,
-					notes: data.newCustomer!.notes ?? null,
-					createdAt: now,
-					updatedAt: now
-				})
-				.returning();
+					notes: data.newCustomer!.notes ?? null
+				},
+				tx
+			);
 			customerId = customer.id;
 			createdCustomer = customer;
 		}
@@ -327,46 +327,50 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 		return { success: false as const, error: 'No se pueden agregar pagos a una venta cancelada' };
 	}
 
-	// Compute BCV USD equivalent
+	// Compute BCV USD equivalent (pure computation — safe outside transaction)
 	const method = data.paymentMethod as PaymentMethod;
 	let amountBcvUsd: number;
 
 	if (isBsPaymentMethod(method)) {
-		// Bs methods: amount is in Bs, divide by BCV rate
 		amountBcvUsd = data.amount / data.bcvRate;
 	} else {
-		// USD/USDT: amount × exchangeRate gives Bs, then ÷ bcvRate
 		if (!data.exchangeRate) {
 			return { success: false as const, error: 'Tasa de cambio requerida para este método' };
 		}
 		amountBcvUsd = (data.amount * data.exchangeRate) / data.bcvRate;
 	}
 
-	const payment = await addSalePayment({
-		saleId: data.saleId,
-		paymentMethod: data.paymentMethod,
-		amount: data.amount,
-		exchangeRate: data.exchangeRate ?? null,
-		bcvRate: data.bcvRate,
-		amountBcvUsd,
-		reference: data.reference ?? null,
-		notes: data.notes ?? null
+	// All writes in a single transaction: payment + recalc + auto-complete
+	const { payment, paidAmount } = await db.transaction(async (tx) => {
+		const newPayment = await addSalePayment(
+			{
+				saleId: data.saleId,
+				paymentMethod: data.paymentMethod,
+				amount: data.amount,
+				exchangeRate: data.exchangeRate ?? null,
+				bcvRate: data.bcvRate,
+				amountBcvUsd,
+				reference: data.reference ?? null,
+				notes: data.notes ?? null
+			},
+			tx
+		);
+
+		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
+
+		// Auto-complete if fully paid (small tolerance for floating point)
+		if (newPaidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
+			await updateSale(data.saleId, { status: SaleStatus.COMPLETED }, tx);
+		}
+
+		return { payment: newPayment, paidAmount: newPaidAmount };
 	});
 
-	// Recalc total paid and auto-complete if fully paid
-	const paidAmount = await recalcSalePaidAmount(data.saleId);
-
-	// Small tolerance for floating point (0.01 USD)
+	// Audit logs (best-effort, after transaction succeeds)
 	if (paidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
-		const existing = { ...sale };
-		await db
-			.update(sales)
-			.set({ status: SaleStatus.COMPLETED, updatedAt: new Date() })
-			.where(eq(sales.id, data.saleId));
-
 		const updated = await findSaleById(data.saleId);
 		if (updated) {
-			await auditService.logUpdate('sale', data.saleId, existing, updated, context, {
+			await auditService.logUpdate('sale', data.saleId, sale, updated, context, {
 				excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 			});
 		}
@@ -396,25 +400,28 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
 		return { success: false as const, error: 'Pago no encontrado' };
 	}
 
-	const voided = await voidSalePayment(data.id);
-	if (!voided) {
-		return { success: false as const, error: 'No se pudo anular el pago' };
-	}
+	// All writes in a single transaction: void + recalc + status revert
+	const paidAmount = await db.transaction(async (tx) => {
+		const voided = await voidSalePayment(data.id, tx);
+		if (!voided) {
+			throw new Error('No se pudo anular el pago');
+		}
 
-	// Recalc total paid
-	const paidAmount = await recalcSalePaidAmount(data.saleId);
+		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
 
-	// If sale was COMPLETED but now underpaid, revert to PENDING
+		// If sale was COMPLETED but now underpaid, revert to PENDING
+		if (sale.status === SaleStatus.COMPLETED && newPaidAmount < sale.total - 0.01) {
+			await updateSale(data.saleId, { status: SaleStatus.PENDING }, tx);
+		}
+
+		return newPaidAmount;
+	});
+
+	// Audit log (best-effort, after transaction succeeds)
 	if (sale.status === SaleStatus.COMPLETED && paidAmount < sale.total - 0.01) {
-		const existing = { ...sale };
-		await db
-			.update(sales)
-			.set({ status: SaleStatus.PENDING, updatedAt: new Date() })
-			.where(eq(sales.id, data.saleId));
-
 		const updated = await findSaleById(data.saleId);
 		if (updated) {
-			await auditService.logUpdate('sale', data.saleId, existing, updated, context, {
+			await auditService.logUpdate('sale', data.saleId, sale, updated, context, {
 				excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 			});
 		}
@@ -480,16 +487,16 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 		}
 
 		// Update sale status
-		await tx
-			.update(sales)
-			.set({
+		await updateSale(
+			data.id,
+			{
 				status: SaleStatus.CANCELLED,
 				notes: data.reason
 					? `${existing.notes ?? ''}\n[Cancelada]: ${data.reason}`.trim()
-					: existing.notes,
-				updatedAt: now
-			})
-			.where(eq(sales.id, data.id));
+					: existing.notes
+			},
+			tx
+		);
 	});
 
 	const updated = await findSaleById(data.id);
