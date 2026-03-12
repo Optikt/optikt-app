@@ -1,18 +1,19 @@
 /**
- * Venezuelan RIF (Registro Único de Información Fiscal) Validation
+ * Venezuelan ID Document Prefixes & RIF Validation
  *
- * RIF format: X-XXXXXXXX-X
- * - First letter: V (Venezuelan), E (Foreign), J (Legal entity), G (Government)
- * - 8 digits: ID number
- * - 1 digit: Check digit calculated using Module 11 algorithm
+ * Document prefixes (V, E, J, G) are shared across:
+ * - Cédula / Document IDs for customers (V = Venezuelan, E = Foreigner)
+ * - RIF (Registro Único de Información Fiscal) for tax purposes (J = Juridic, G = Government)
+ *
+ * RIF format: X-XXXXXXXX-X (prefix + 8 digits + check digit)
  */
 
-/** Valid RIF type letters */
-export const RIF_TYPES = ['V', 'E', 'J', 'G'] as const;
-export type RifType = (typeof RIF_TYPES)[number];
+/** Valid Venezuelan document type prefixes (shared by cédula and RIF) */
+export const ID_DOC_PREFIXES = ['V', 'E', 'J', 'G'] as const;
+export type IdDocPrefix = (typeof ID_DOC_PREFIXES)[number];
 
 /** RIF type multipliers for Module 11 calculation */
-const RIF_TYPE_VALUES: Record<RifType, number> = {
+const RIF_TYPE_VALUES: Record<IdDocPrefix, number> = {
 	V: 1,
 	E: 2,
 	J: 3,
@@ -28,7 +29,7 @@ const WEIGHTS = [4, 3, 2, 7, 6, 5, 4, 3, 2];
  * @param digits - The 8-digit number as string
  * @returns The calculated check digit (0-9)
  */
-export function calculateRifCheckDigit(rifType: RifType, digits: string): number {
+export function calculateRifCheckDigit(rifType: IdDocPrefix, digits: string): number {
 	// Ensure we have exactly 8 digits
 	const cleanDigits = digits.replace(/\D/g, '').slice(0, 8);
 	if (cleanDigits.length !== 8) {
@@ -65,7 +66,7 @@ export function validateRif(rif: string): boolean {
 	if (!match) return false;
 
 	const [, type, digits, checkDigitStr] = match;
-	const rifType = type as RifType;
+	const rifType = type as IdDocPrefix;
 	const providedCheckDigit = parseInt(checkDigitStr, 10);
 
 	// Calculate expected check digit
@@ -87,4 +88,12 @@ export function formatRif(rif: string): string | null {
 
 	const [, type, digits, checkDigit] = match;
 	return `${type}-${digits}-${checkDigit}`;
+}
+
+/**
+ * Normalize an ID number to standard uppercase format.
+ * e.g. "v-27783554" → "V-27783554"
+ */
+export function normalizeIdNumber(idNumber: string): string {
+	return idNumber.trim().toUpperCase();
 }
