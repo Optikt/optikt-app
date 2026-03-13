@@ -12,6 +12,21 @@
 export const ID_DOC_PREFIXES = ['V', 'E', 'J', 'G'] as const;
 export type IdDocPrefix = (typeof ID_DOC_PREFIXES)[number];
 
+/** Regex character class for ID_DOC_PREFIXES, e.g. "[VEJG]" */
+const PREFIX_CLASS = `[${ID_DOC_PREFIXES.join('')}]`;
+
+/** Matches a full RIF: captures (prefix)(8 digits)(check digit). Dashes optional. */
+export const RIF_RE = new RegExp(`^(${PREFIX_CLASS})-?(\\d{8})-?(\\d)$`);
+
+/** Matches a strict RIF with dashes: X-XXXXXXXX-X (no capture groups) */
+export const RIF_STRICT_RE = new RegExp(`^${PREFIX_CLASS}-\\d{8}-\\d$`);
+
+/** Matches an ID number: captures (prefix)(6-10 digits) */
+export const ID_NUMBER_RE = new RegExp(`^(${PREFIX_CLASS})-(\\d{1,10})$`);
+
+/** Matches a strict ID number: X-XXXXXX..X (6-10 digits, no capture groups) */
+export const ID_NUMBER_STRICT_RE = new RegExp(`^${PREFIX_CLASS}-\\d{6,10}$`);
+
 /** RIF type multipliers for Module 11 calculation */
 const RIF_TYPE_VALUES: Record<IdDocPrefix, number> = {
 	V: 1,
@@ -62,7 +77,7 @@ export function validateRif(rif: string): boolean {
 	if (!rif) return false;
 
 	// Parse RIF - accepts with or without dashes
-	const match = rif.toUpperCase().match(/^([VEJG])-?(\d{8})-?(\d)$/);
+	const match = rif.toUpperCase().match(RIF_RE);
 	if (!match) return false;
 
 	const [, type, digits, checkDigitStr] = match;
@@ -83,7 +98,7 @@ export function validateRif(rif: string): boolean {
 export function formatRif(rif: string): string | null {
 	if (!rif) return null;
 
-	const match = rif.toUpperCase().match(/^([VEJG])-?(\d{8})-?(\d)$/);
+	const match = rif.toUpperCase().match(RIF_RE);
 	if (!match) return null;
 
 	const [, type, digits, checkDigit] = match;
