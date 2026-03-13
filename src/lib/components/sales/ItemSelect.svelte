@@ -1,14 +1,30 @@
 <script lang="ts">
 	import BaseSelect from '$lib/components/ui/BaseSelect.svelte';
-	import { TriangleAlert } from '@lucide/svelte';
+	import { Glasses, Sun, Eye, Package, Microscope, TriangleAlert } from '@lucide/svelte';
+	import type { Component } from 'svelte';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { formatPrice } from '$lib/utils';
-	import {
-		getProductTypeLabel,
-		getProductTypeIconSvg,
-		getProductTypeBadgeHex
-	} from '$lib/shared/enums/productTypes';
+	import { ProductType, getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
+
+	// TODO: See if this is duplicated in CommandSearch
+	/** Lucide icon component per product type */
+	const PRODUCT_TYPE_ICON: Record<string, Component> = {
+		[ProductType.FRAME]: Glasses,
+		[ProductType.SUNGLASSES]: Sun,
+		[ProductType.CONTACT_LENS]: Eye,
+		[ProductType.ACCESSORY]: Package
+	};
+
+	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
+
+	function getIcon(productType: string): Component {
+		return PRODUCT_TYPE_ICON[productType] ?? Microscope;
+	}
+
+	function getBadge(productType: string): { bg: string; text: string } {
+		return productType ? getProductTypeBadgeHex(productType) : LENS_BADGE;
+	}
 
 	interface Props {
 		/** 'product' or 'lens' mode */
@@ -83,63 +99,6 @@
 
 	const hasStockWarning = $derived(selectedStock !== null && selectedStock <= 0);
 
-	/** Custom renderer for dropdown items for Svelecte — returns raw HTML */
-	function renderOption(item: object, isSelection?: boolean): string {
-		const opt = item as SelectOption;
-
-		// Product type badge (only for products, not lenses)
-		const typeBadgeHtml = (() => {
-			if (!opt.productType) return '';
-			const { bg, text } = getProductTypeBadgeHex(opt.productType);
-			const icon = getProductTypeIconSvg(opt.productType, isSelection ? 11 : 12);
-			const label = getProductTypeLabel(opt.productType);
-			return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:${isSelection ? '0.7rem' : '0.7rem'};color:${text};background:${bg};padding:1px 7px;border-radius:4px;font-weight:500;white-space:nowrap;">${icon}${label}</span>`;
-		})();
-
-		if (isSelection) {
-			// Compact display for the selected value in the input
-			const stockBadge =
-				opt.stock !== null && opt.stock <= 0
-					? ' <span style="color:#dc2626;font-weight:600;">⚠ Sin stock</span>'
-					: '';
-			return `<span style="font-weight:500;">${opt.name}</span>${opt.sku ? ` <span style="font-family:monospace;color:#64748b;font-size:0.8em;">${opt.sku}</span>` : ''} ${typeBadgeHtml}${stockBadge}`;
-		}
-
-		// Rich display for dropdown options
-		const stockColor =
-			opt.stock === null
-				? '#94a3b8'
-				: opt.stock <= 0
-					? '#dc2626'
-					: opt.stock <= 3
-						? '#d97706'
-						: '#16a34a';
-		const stockLabel =
-			opt.stock === null
-				? ''
-				: opt.stock <= 0
-					? '<strong>Sin stock</strong>'
-					: `${opt.stock} disp.`;
-		const stockBadge = stockLabel
-			? `<span style="font-size:0.75rem;color:${stockColor};font-weight:500;padding:1px 6px;border-radius:9999px;background:${opt.stock !== null && opt.stock <= 0 ? '#fef2f2' : 'transparent'};">${stockLabel}</span>`
-			: '';
-
-		return `
-			<div style="display:flex;flex-direction:column;gap:2px;padding:2px 0;">
-				<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-					<span style="font-weight:600;color:#1e293b;">${opt.name}</span>
-					${opt.brand ? `<span style="font-size:0.75rem;color:#64748b;background:#f1f5f9;padding:1px 6px;border-radius:4px;">${opt.brand}</span>` : ''}
-					${typeBadgeHtml}
-					${stockBadge}
-				</div>
-				<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;">
-					${opt.sku ? `<span style="font-family:monospace;color:#64748b;">${opt.sku}</span>` : ''}
-					<span style="font-weight:600;color:#1e40af;">${formatPrice(opt.price)}</span>
-				</div>
-			</div>
-		`;
-	}
-
 	function handleChange(selected: SelectOption | null) {
 		const newId = selected?.id ?? '';
 
@@ -169,9 +128,70 @@
 	{value}
 	valueField="id"
 	labelField="label"
-	renderer={renderOption}
 	onChange={handleChange}
 >
+	{#snippet option(item)}
+		{@const opt = item as SelectOption}
+		{@const badge = getBadge(opt.productType)}
+		{@const Icon = getIcon(opt.productType)}
+		<div class="flex items-center gap-2.5 py-0.5">
+			<div
+				class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
+				style:background={badge.bg}
+				style:color={badge.text}
+			>
+				<Icon class="h-3.5 w-3.5" />
+			</div>
+			<div class="flex min-w-0 flex-1 flex-col gap-px">
+				<div class="flex flex-wrap items-center gap-1.5">
+					<span class="font-semibold text-slate-800">{opt.name}</span>
+					{#if opt.brand}
+						<span class="text-xs text-slate-500">· {opt.brand}</span>
+					{/if}
+					{#if opt.stock !== null}
+						{#if opt.stock <= 0}
+							<span class="rounded-full bg-red-50 px-1.5 py-px text-xs font-medium text-red-600">
+								<strong>Sin stock</strong>
+							</span>
+						{:else if opt.stock <= 3}
+							<span class="text-xs font-medium text-amber-600">{opt.stock} disp.</span>
+						{:else}
+							<span class="text-xs font-medium text-green-600">{opt.stock} disp.</span>
+						{/if}
+					{/if}
+				</div>
+				<div class="flex items-center gap-2 text-[0.8rem]">
+					{#if opt.sku}
+						<span class="font-mono text-slate-500">{opt.sku}</span>
+					{/if}
+					<span class="font-semibold text-blue-800">{formatPrice(opt.price)}</span>
+				</div>
+			</div>
+		</div>
+	{/snippet}
+
+	{#snippet selection(selectedOptions)}
+		{@const opt = selectedOptions[0] as SelectOption}
+		{@const badge = getBadge(opt.productType)}
+		{@const Icon = getIcon(opt.productType)}
+		<div class="flex items-center gap-1.5">
+			<div
+				class="flex h-5.5 w-5.5 min-w-5.5 items-center justify-center rounded"
+				style:background={badge.bg}
+				style:color={badge.text}
+			>
+				<Icon class="h-3 w-3" />
+			</div>
+			<span class="font-medium">{opt.name}</span>
+			{#if opt.sku}
+				<span class="font-mono text-[0.8em] text-slate-500">{opt.sku}</span>
+			{/if}
+			{#if opt.stock !== null && opt.stock <= 0}
+				<span class="font-semibold text-red-600">⚠ Sin stock</span>
+			{/if}
+		</div>
+	{/snippet}
+
 	{#snippet footer()}
 		{#if hasStockWarning}
 			{#if kind === 'lens'}
