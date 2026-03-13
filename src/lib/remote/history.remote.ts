@@ -15,6 +15,7 @@ const GetEntityHistorySchema = z.object({
 		'prescription',
 		'sale',
 		'sale_item',
+		'sale_payment',
 		'lens_catalog_item',
 		'supplier',
 		'brand',
