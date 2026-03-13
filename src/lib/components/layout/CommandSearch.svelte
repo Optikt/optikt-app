@@ -1,10 +1,25 @@
 <script lang="ts">
-	import { Search, Package, Microscope, X } from '@lucide/svelte';
+	import { Search, Package, Microscope, X, Glasses, Sun, Eye } from '@lucide/svelte';
 	import { universalSearch } from '$lib/remote/search.remote';
 	import type { SearchResults } from '$lib/remote/search.remote';
 	import { getLensTypeLabel } from '$lib/shared/enums';
+	import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
 	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
+
+	const PRODUCT_TYPE_ICONS: Record<string, typeof Package> = {
+		FRAME: Glasses,
+		SUNGLASSES: Sun,
+		CONTACT_LENS: Eye,
+		ACCESSORY: Package
+	};
+
+	const PRODUCT_TYPE_ICON_CLASSES: Record<string, string> = {
+		FRAME: 'bg-blue-100 text-blue-600',
+		SUNGLASSES: 'bg-green-100 text-green-600',
+		CONTACT_LENS: 'bg-purple-100 text-purple-600',
+		ACCESSORY: 'bg-yellow-100 text-yellow-600'
+	};
 
 	let searchQuery = $state('');
 	let results = $state<SearchResults | null>(null);
@@ -110,20 +125,21 @@
 						</div>
 					</div>
 					{#each results.products as product (product.id)}
+						{@const ProductIcon = PRODUCT_TYPE_ICONS[product.type] ?? Package}
+						{@const iconClasses =
+							PRODUCT_TYPE_ICON_CLASSES[product.type] ?? 'bg-slate-100 text-slate-500'}
 						<a
 							href={resolve(`/products/${product.id}`)}
 							class="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50"
 							onclick={close}
 						>
-							<div
-								class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500"
-							>
-								<Package class="h-4 w-4" />
+							<div class="flex h-8 w-8 items-center justify-center rounded-lg {iconClasses}">
+								<ProductIcon class="h-4 w-4" />
 							</div>
 							<div class="min-w-0 flex-1">
 								<p class="truncate text-sm font-medium text-slate-800">{product.name}</p>
 								<p class="truncate text-xs text-slate-500">
-									{product.type}
+									{getProductTypeLabel(product.type)}
 									{#if product.brand}· {product.brand}{/if}
 									{#if product.supplier}· {product.supplier}{/if}
 								</p>
