@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
-import { validateRif } from '$lib/utils';
+import { validateRif, RIF_STRICT_RE, ID_NUMBER_STRICT_RE } from '$lib/utils';
 
 export const EmptySchema = z.object({});
 
@@ -75,7 +75,7 @@ export const InstagramSchema = z.optional(
  */
 export const RifSchema = z
 	.string()
-	.regex(/^[VEJG]-\d{8}-\d$/, 'RIF inválido (formato: X-12345678-9)')
+	.regex(RIF_STRICT_RE, 'RIF inválido (formato: X-12345678-9)')
 	.refine((value: string) => validateRif(value), 'RIF inválido: dígito verificador incorrecto');
 
 /**
@@ -84,12 +84,16 @@ export const RifSchema = z
 export const OptionalRifSchema = z.optional(z.union([z.literal(''), RifSchema]));
 
 /**
- * ID Number (Cédula) validation - V/E prefix with variable length digits
- * Format: V-123456 through V-12345678 or E-123456 through E-12345678
+ * ID Number (Cédula/RIF) validation - V/E/J/G prefix with variable length digits
+ * Format: V-123456 through V-12345678, E-123456, J-12345678, G-12345678
+ * Supports natural persons (V/E) and juridic/government entities (J/G)
  */
 export const IdNumberSchema = z
 	.string()
-	.regex(/^[VE]-\d{6,10}$/, 'Cédula inválida (formato: V-12345678 o E-12345678)');
+	.regex(
+		ID_NUMBER_STRICT_RE,
+		'Documento inválido (formato: V-12345678, E-12345678, J-12345678 o G-12345678)'
+	);
 
 /**
  * Optional ID Number validation
