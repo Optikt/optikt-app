@@ -173,6 +173,7 @@
 			if (i.kind !== 'lens' || !i.lensCatalogItemId) return false;
 			const lens = lensItems.find((l) => l.id === i.lensCatalogItemId);
 			if (!lens) return false;
+			if (prescriptionValues.lensType !== lens.type) return true;
 			const parseNum = (v: string): number | null => {
 				if (v === '') return null;
 				const n = parseFloat(v);
@@ -268,11 +269,21 @@
 							odSphere: parseOpt(prescriptionValues.odSphere),
 							odCylinder: parseOpt(prescriptionValues.odCylinder),
 							odAxis: parseOpt(prescriptionValues.odAxis),
-							odAddition: parseOpt(prescriptionValues.odAddition),
+							...((): Record<string, number | undefined> => {
+								const lens = lensItems.find((l) => l.id === item.lensCatalogItemId);
+								const canHaveAddition =
+									prescriptionValues.lensType !== LensType.MONOFOCAL &&
+									lens?.type !== LensType.MONOFOCAL;
+								return canHaveAddition
+									? {
+											odAddition: parseOpt(prescriptionValues.odAddition),
+											osAddition: parseOpt(prescriptionValues.osAddition)
+										}
+									: {};
+							})(),
 							osSphere: parseOpt(prescriptionValues.osSphere),
 							osCylinder: parseOpt(prescriptionValues.osCylinder),
-							osAxis: parseOpt(prescriptionValues.osAxis),
-							osAddition: parseOpt(prescriptionValues.osAddition)
+							osAxis: parseOpt(prescriptionValues.osAxis)
 						}
 					: {})
 			}));

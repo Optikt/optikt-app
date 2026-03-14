@@ -87,6 +87,10 @@ function getApplicableRanges(eye: EyePrescription, ranges: LensOpticalRange[]): 
 	const anyCylinderRanges = ranges.some((r) => r.cylinderMin != null || r.cylinderMax != null);
 	const anyAdditionRanges = ranges.some((r) => r.additionMin != null || r.additionMax != null);
 
+	if (eyeHasAddition && !anyAdditionRanges) {
+		return [];
+	}
+
 	return ranges.filter((r) => {
 		const rangeHasCylinder = r.cylinderMin != null || r.cylinderMax != null;
 		const rangeHasAddition = r.additionMin != null || r.additionMax != null;

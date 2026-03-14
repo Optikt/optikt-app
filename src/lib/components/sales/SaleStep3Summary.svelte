@@ -23,7 +23,7 @@
 		MATCH_DISPLAY,
 		dateToISODateString
 	} from '$lib/utils';
-	import type { PrescriptionForMatching } from '$lib/utils/lensMatching';
+	import type { LensMatchDetail, PrescriptionForMatching } from '$lib/utils/lensMatching';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
@@ -36,7 +36,7 @@
 		getProductTypeLabel,
 		getProductTypeBadgeColor
 	} from '$lib/shared/enums/productTypes';
-	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { LensType, getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { Component } from 'svelte';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer } from '$lib/server/db/schema';
@@ -147,10 +147,13 @@
 		return p?.type ?? null;
 	}
 
-	function getLensMatch(item: SaleItemRow) {
+	function getLensMatch(item: SaleItemRow): LensMatchDetail | null {
 		if (item.kind !== 'lens' || !item.lensCatalogItemId) return null;
 		const lens = lensItems.find((l) => l.id === item.lensCatalogItemId);
 		if (!lens) return null;
+		if (prescriptionValues.lensType !== lens.type) {
+			return { overall: 'none', od: 'none', os: 'none' };
+		}
 		const parseNum = (v: string): number | null => {
 			if (v === '') return null;
 			const n = parseFloat(v);
@@ -370,65 +373,56 @@
 									</div>
 									<!-- Prescription row — visually separated -->
 									{#if prescriptionValues.odSphere || prescriptionValues.osSphere}
+										{@const showAddition =
+											prescriptionValues.lensType !== LensType.MONOFOCAL &&
+											lens?.type !== LensType.MONOFOCAL}
 										<div
-											class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs"
+											class="mt-2 inline-grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
 										>
-											<div class="flex items-center gap-1.5">
+											<!-- OD row -->
+											<span class="flex items-center gap-1 font-semibold text-blue-600">
 												<Eye class="h-3.5 w-3.5 text-blue-500" />
-												<span class="font-semibold text-blue-600">OD</span>
-												<span class="font-mono font-medium text-slate-800"
-													>{prescriptionValues.odSphere || '—'}</span
-												>
+												OD
+											</span>
+											<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
+												{prescriptionValues.odSphere || '—'}
 												<span class="text-slate-400">/</span>
-												<span class="font-mono font-medium text-slate-800"
-													>{prescriptionValues.odCylinder || '—'}</span
-												>
+												{prescriptionValues.odCylinder || '—'}
 												{#if prescriptionValues.odAxis}
 													<span class="text-slate-400">x</span>
-													<span class="font-mono font-medium text-slate-800"
-														>{prescriptionValues.odAxis}°</span
-													>
+													{prescriptionValues.odAxis}°
 												{/if}
-												{#if prescriptionValues.odAddition}
+												{#if prescriptionValues.odAddition && showAddition}
 													<span class="text-slate-400">Add</span>
-													<span class="font-mono font-medium text-slate-800"
-														>{prescriptionValues.odAddition}</span
-													>
+													{prescriptionValues.odAddition}
 												{/if}
-											</div>
-											<div class="h-4 w-px bg-slate-300"></div>
-											<div class="flex items-center gap-1.5">
+											</span>
+											<!-- OS row -->
+											<span class="flex items-center gap-1 font-semibold text-violet-600">
 												<Eye class="h-3.5 w-3.5 text-violet-500" />
-												<span class="font-semibold text-violet-600">OS</span>
-												<span class="font-mono font-medium text-slate-800"
-													>{prescriptionValues.osSphere || '—'}</span
-												>
+												OS
+											</span>
+											<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
+												{prescriptionValues.osSphere || '—'}
 												<span class="text-slate-400">/</span>
-												<span class="font-mono font-medium text-slate-800"
-													>{prescriptionValues.osCylinder || '—'}</span
-												>
+												{prescriptionValues.osCylinder || '—'}
 												{#if prescriptionValues.osAxis}
 													<span class="text-slate-400">x</span>
-													<span class="font-mono font-medium text-slate-800"
-														>{prescriptionValues.osAxis}°</span
-													>
+													{prescriptionValues.osAxis}°
 												{/if}
-												{#if prescriptionValues.osAddition}
+												{#if prescriptionValues.osAddition && showAddition}
 													<span class="text-slate-400">Add</span>
-													<span class="font-mono font-medium text-slate-800"
-														>{prescriptionValues.osAddition}</span
-													>
+													{prescriptionValues.osAddition}
 												{/if}
-											</div>
-											{#if rxMatch}
-												<div class="h-4 w-px bg-slate-300"></div>
-												{@const display = MATCH_DISPLAY[rxMatch.overall]}
-												<span
-													class="rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
-												>
-													{display.label}
-												</span>
-											{/if}
+												{#if rxMatch}
+													{@const display = MATCH_DISPLAY[rxMatch.overall]}
+													<span
+														class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
+													>
+														{display.label}
+													</span>
+												{/if}
+											</span>
 										</div>
 									{/if}
 								{/if}

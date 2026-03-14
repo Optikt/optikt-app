@@ -13,13 +13,14 @@
 		Eye
 	} from '@lucide/svelte';
 	import { formatPrice, checkLensMatch, hasPrescriptionData, MATCH_DISPLAY } from '$lib/utils';
-	import type { PrescriptionForMatching } from '$lib/utils/lensMatching';
+	import type { LensMatchDetail, PrescriptionForMatching } from '$lib/utils/lensMatching';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
 	import {
+		LensType,
 		getLensTypeLabel,
 		getLensSourceLabel,
 		getPricingUnitLabel
@@ -130,10 +131,13 @@
 		};
 	}
 
-	function getLensMatch(item: SaleItemRow) {
+	function getLensMatch(item: SaleItemRow): LensMatchDetail | null {
 		if (item.kind !== 'lens' || !item.lensCatalogItemId) return null;
 		const lens = lensItems.find((l) => l.id === item.lensCatalogItemId);
 		if (!lens) return null;
+		if (prescriptionValues.lensType !== lens.type) {
+			return { overall: 'none', od: 'none', os: 'none' };
+		}
 		const rx = buildRxForMatching();
 		if (!hasPrescriptionData(rx)) return null;
 		return checkLensMatch(lens.ranges, rx);

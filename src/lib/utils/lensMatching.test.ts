@@ -194,12 +194,13 @@ describe('checkLensMatch', () => {
 			expect(result.overall).toBe('none');
 		});
 
-		it('addition present but no addition range → uses sphere-only range', () => {
+		it('addition present but no addition range → incompatible', () => {
 			expect(1).toBe(1);
-			// Only sphere-only ranges, no addition constraints at all
+			// Only sphere-only ranges, no addition constraints at all.
+			// A lens without addition-aware ranges cannot satisfy a prescription with Add.
 			const sphereOnlyRanges = [range({ sphereMin: -6, sphereMax: 6 })];
 			const result = checkLensMatch(sphereOnlyRanges, rx(eye(2, 0, 1.5), eye(-1, 0, 2.0)));
-			expect(result.overall).toBe('full');
+			expect(result.overall).toBe('none');
 		});
 	});
 
