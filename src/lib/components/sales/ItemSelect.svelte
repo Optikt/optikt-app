@@ -183,9 +183,6 @@
 				<Icon class="h-3 w-3" />
 			</div>
 			<span class="font-medium">{opt.name}</span>
-			{#if opt.sku}
-				<span class="font-mono text-[0.8em] text-slate-500">{opt.sku}</span>
-			{/if}
 			{#if opt.stock !== null && opt.stock <= 0}
 				<span class="font-semibold text-red-600">⚠ Sin stock</span>
 			{/if}

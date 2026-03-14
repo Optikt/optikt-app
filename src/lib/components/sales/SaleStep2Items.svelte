@@ -147,6 +147,13 @@
 	// HELPERS
 	// ============================================================================
 
+	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
+		if (item.kind === 'product' && item.productId) {
+			return products.find((p) => p.id === item.productId);
+		}
+		return undefined;
+	}
+
 	function getItemMaxStock(item: SaleItemRow): number | null {
 		if (item.kind === 'product' && item.productId) {
 			const p = products.find((p) => p.id === item.productId);
@@ -285,6 +292,22 @@
 							label={item.kind === 'product' ? 'Producto *' : 'Lente *'}
 							onselect={(id, price) => handleItemSelect(item, id, price)}
 						/>
+						{#if item.kind === 'product' && item.productId}
+							{@const product = getProduct(item)}
+							{#if product?.sku}
+								<p class="mt-1 truncate font-mono text-xs text-slate-400">{product.sku}</p>
+							{/if}
+						{:else if item.kind === 'lens' && item.lensCatalogItemId}
+							{@const lens = getLensItem(item)}
+							{#if lens}
+								<p class="mt-1 truncate text-xs text-violet-400">
+									{getLensSourceLabel(lens.source)} &middot; {getLensTypeLabel(
+										lens.type
+									)}{#if lens.material}
+										&middot; {lens.material.name}{/if}
+								</p>
+							{/if}
+						{/if}
 					</div>
 
 					<!-- Quantity -->

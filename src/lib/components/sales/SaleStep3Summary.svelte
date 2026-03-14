@@ -9,7 +9,11 @@
 		Hash,
 		CheckCircle,
 		XCircle,
-		Eye
+		Eye,
+		Glasses,
+		Sun,
+		Package,
+		Microscope
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import {
@@ -27,7 +31,13 @@
 	} from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { getProductTypeLabel, getProductTypeBadgeColor } from '$lib/shared/enums/productTypes';
+	import {
+		ProductType,
+		getProductTypeLabel,
+		getProductTypeBadgeColor
+	} from '$lib/shared/enums/productTypes';
+	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import type { Component } from 'svelte';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
@@ -98,21 +108,43 @@
 	// HELPERS
 	// ============================================================================
 
+	const PRODUCT_TYPE_ICON: Record<string, Component> = {
+		[ProductType.FRAME]: Glasses,
+		[ProductType.SUNGLASSES]: Sun,
+		[ProductType.CONTACT_LENS]: Eye,
+		[ProductType.ACCESSORY]: Package
+	};
+
+	function getProductIcon(type: string): Component {
+		return PRODUCT_TYPE_ICON[type] ?? Microscope;
+	}
+
+	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
+		if (item.kind === 'product' && item.productId) {
+			return products.find((p) => p.id === item.productId);
+		}
+		return undefined;
+	}
+
+	function getLensItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
+		if (item.kind === 'lens' && item.lensCatalogItemId) {
+			return lensItems.find((l) => l.id === item.lensCatalogItemId);
+		}
+		return undefined;
+	}
+
 	function getItemName(item: SaleItemRow): string {
 		if (item.kind === 'product') {
-			const p = products.find((p) => p.id === item.productId);
-			return p ? `${p.name}${p.sku ? ` (${p.sku})` : ''}` : '—';
+			const p = getProduct(item);
+			return p?.name ?? '—';
 		}
-		const l = lensItems.find((l) => l.id === item.lensCatalogItemId);
-		return l ? `${l.name}${l.brand ? ` (${l.brand})` : ''}` : '—';
+		const l = getLensItem(item);
+		return l?.name ?? '—';
 	}
 
 	function getItemProductType(item: SaleItemRow): string | null {
-		if (item.kind === 'product' && item.productId) {
-			const p = products.find((p) => p.id === item.productId);
-			return p?.type ?? null;
-		}
-		return null;
+		const p = getProduct(item);
+		return p?.type ?? null;
 	}
 
 	function getLensMatch(item: SaleItemRow) {
@@ -269,57 +301,96 @@
 							<td class="px-4 py-3">
 								{#if item.kind === 'lens'}
 									<span
-										class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
+										class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
 									>
+										<Eye class="h-3 w-3" />
 										Lente
 									</span>
 								{:else if productType}
 									{@const badgeColor = getProductTypeBadgeColor(productType)}
+									{@const Icon = getProductIcon(productType)}
 									<span
-										class="rounded-full px-2.5 py-1 text-xs font-semibold
+										class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
 										{badgeColor === 'blue' ? 'bg-blue-100 text-blue-700' : ''}
 										{badgeColor === 'green' ? 'bg-green-100 text-green-700' : ''}
 										{badgeColor === 'purple' ? 'bg-purple-100 text-purple-700' : ''}
 										{badgeColor === 'yellow' ? 'bg-amber-100 text-amber-700' : ''}
 										{badgeColor === 'gray' ? 'bg-slate-100 text-slate-700' : ''}"
 									>
+										<Icon class="h-3 w-3" />
 										{getProductTypeLabel(productType)}
 									</span>
 								{:else}
 									<span
-										class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700"
+										class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700"
 									>
+										<Package class="h-3 w-3" />
 										Producto
 									</span>
 								{/if}
 							</td>
 							<td class="px-4 py-3">
 								<p class="text-base font-medium">{getItemName(item)}</p>
-								{#if item.kind === 'lens' && (prescriptionValues.odSphere || prescriptionValues.osSphere)}
-									<div class="mt-1 flex items-center gap-3 text-xs text-slate-500">
-										<span class="flex items-center gap-1">
-											<Eye class="h-3 w-3 text-blue-400" />
-											OD:
-											<span class="font-mono font-medium text-slate-700"
-												>{prescriptionValues.odSphere || '—'} / {prescriptionValues.odCylinder ||
-													'—'}</span
-											>
-										</span>
-										<span class="flex items-center gap-1">
-											<Eye class="h-3 w-3 text-violet-400" />
-											OS:
-											<span class="font-mono font-medium text-slate-700"
-												>{prescriptionValues.osSphere || '—'} / {prescriptionValues.osCylinder ||
-													'—'}</span
-											>
-										</span>
-										{#if rxMatch}
-											{@const display = MATCH_DISPLAY[rxMatch.overall]}
+								{#if item.kind === 'product'}
+									{@const product = getProduct(item)}
+									{#if product}
+										<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+											{#if product.sku}
+												<span class="font-mono text-slate-400">{product.sku}</span>
+											{/if}
+											{#if product.brand}
+												<span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
+													>{product.brand.name}</span
+												>
+											{/if}
+										</div>
+									{/if}
+								{:else}
+									{@const lens = getLensItem(item)}
+									<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+										{#if lens}
 											<span
-												class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
+												class="rounded px-1.5 py-0.5 font-medium {lens.source === 'FINISHED'
+													? 'bg-emerald-50 text-emerald-600'
+													: 'bg-sky-50 text-sky-600'}">{getLensSourceLabel(lens.source)}</span
 											>
-												{display.label}
+											<span class="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600"
+												>{getLensTypeLabel(lens.type)}</span
+											>
+											{#if lens.material}
+												<span class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-500"
+													>{lens.material.name}</span
+												>
+											{/if}
+											{#if lens.supplier}
+												<span class="text-slate-400">&middot; {lens.supplier.name}</span>
+											{/if}
+										{/if}
+										{#if prescriptionValues.odSphere || prescriptionValues.osSphere}
+											<span class="flex items-center gap-1">
+												<Eye class="h-3 w-3 text-blue-400" />
+												OD:
+												<span class="font-mono font-medium text-slate-700"
+													>{prescriptionValues.odSphere || '—'} / {prescriptionValues.odCylinder ||
+														'—'}</span
+												>
 											</span>
+											<span class="flex items-center gap-1">
+												<Eye class="h-3 w-3 text-violet-400" />
+												OS:
+												<span class="font-mono font-medium text-slate-700"
+													>{prescriptionValues.osSphere || '—'} / {prescriptionValues.osCylinder ||
+														'—'}</span
+												>
+											</span>
+											{#if rxMatch}
+												{@const display = MATCH_DISPLAY[rxMatch.overall]}
+												<span
+													class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
+												>
+													{display.label}
+												</span>
+											{/if}
 										{/if}
 									</div>
 								{/if}
