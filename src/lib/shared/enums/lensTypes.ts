@@ -11,6 +11,7 @@ export enum LensType {
 
 export enum LensCatalogSource {
 	FINISHED = 'FINISHED',
+	ON_DEMAND = 'ON_DEMAND',
 	LAB = 'LAB'
 }
 
@@ -18,6 +19,13 @@ export enum LensCatalogSource {
 export enum LensPricingUnit {
 	UNIT = 'UNIT',
 	PAIR = 'PAIR'
+}
+
+/** How the lens item will be fulfilled in a sale */
+export enum LensFulfillmentMode {
+	INVENTORY = 'INVENTORY',
+	ON_DEMAND = 'ON_DEMAND',
+	LAB = 'LAB'
 }
 
 /** Labels for display in Spanish */
@@ -31,6 +39,7 @@ export const LENS_TYPE_LABELS: Record<LensType, string> = {
 /** Lens catalog source labels */
 export const LENS_SOURCE_LABELS: Record<LensCatalogSource, string> = {
 	[LensCatalogSource.FINISHED]: 'Terminado',
+	[LensCatalogSource.ON_DEMAND]: 'Proveedor (On-Demand)',
 	[LensCatalogSource.LAB]: 'Laboratorio'
 };
 
@@ -40,9 +49,18 @@ export const LENS_PRICING_UNIT_LABELS: Record<LensPricingUnit, string> = {
 	[LensPricingUnit.PAIR]: 'Por Par'
 };
 
+export const LENS_FULFILLMENT_MODE_LABELS: Record<LensFulfillmentMode, string> = {
+	[LensFulfillmentMode.INVENTORY]: 'Desde Inventario',
+	[LensFulfillmentMode.ON_DEMAND]: 'Pedir Proveedor',
+	[LensFulfillmentMode.LAB]: 'Pedir Laboratorio'
+};
+
 export const ALL_LENS_TYPES = Object.values(LensType) as LensType[];
 export const ALL_LENS_SOURCES = Object.values(LensCatalogSource) as LensCatalogSource[];
 export const ALL_LENS_PRICING_UNITS = Object.values(LensPricingUnit) as LensPricingUnit[];
+export const ALL_LENS_FULFILLMENT_MODES = Object.values(
+	LensFulfillmentMode
+) as LensFulfillmentMode[];
 
 /** Get the display label for a lens type, with fallback to the raw value */
 export function getLensTypeLabel(type: string): string {
@@ -57,6 +75,10 @@ export function getLensSourceLabel(source: string): string {
 /** Get the display label for a pricing unit, with fallback to the raw value */
 export function getPricingUnitLabel(unit: string): string {
 	return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
+}
+
+export function getLensFulfillmentModeLabel(mode: string): string {
+	return LENS_FULFILLMENT_MODE_LABELS[mode as LensFulfillmentMode] ?? mode;
 }
 
 /**

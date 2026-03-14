@@ -13,7 +13,7 @@
 	} from '$lib/utils';
 	import type { PrescriptionForMatching } from '$lib/utils/lensMatching';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
+	import { LensCatalogSource, LensFulfillmentMode, LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SaleItemInput } from '$lib/schemas/sales';
@@ -126,6 +126,7 @@
 			kind: 'product',
 			productId: '',
 			lensCatalogItemId: '',
+			lensFulfillmentMode: LensFulfillmentMode.INVENTORY,
 			quantity: 1,
 			unitPrice: 0,
 			discount: 0,
@@ -157,7 +158,14 @@
 
 	const hasOutOfStockItem = $derived(
 		items.some((i) => {
-			if (i.kind === 'lens') return false;
+			if (i.kind === 'lens' && i.lensCatalogItemId) {
+				const lens = lensItems.find((l) => l.id === i.lensCatalogItemId);
+				if (!lens || lens.source !== LensCatalogSource.FINISHED) return false;
+				if (i.lensFulfillmentMode !== LensFulfillmentMode.INVENTORY) return false;
+				const maxStock = lens.stock ?? null;
+				if (maxStock === null) return false;
+				return maxStock <= 0 || i.quantity > maxStock;
+			}
 			if (i.kind === 'product' && i.productId) {
 				const p = products.find((p) => p.id === i.productId);
 				const maxStock = p?.stock ?? null;
@@ -258,6 +266,7 @@
 			const saleItems: SaleItemInput[] = items.map((item) => ({
 				productId: item.kind === 'product' ? item.productId : undefined,
 				lensCatalogItemId: item.kind === 'lens' ? item.lensCatalogItemId : undefined,
+				lensFulfillmentMode: item.kind === 'lens' ? item.lensFulfillmentMode : undefined,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
 				discount: item.discount,

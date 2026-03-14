@@ -5,6 +5,7 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { formatPrice } from '$lib/utils';
+	import { LensCatalogSource } from '$lib/shared/enums/lensTypes';
 	import { ProductType, getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 
 	// TODO: See if this is duplicated in CommandSearch
@@ -52,6 +53,7 @@
 		stock: number | null;
 		price: number;
 		productType: string;
+		source?: string;
 	}
 
 	const productOptions: SelectOption[] = $derived(
@@ -63,7 +65,8 @@
 			brand: p.brand?.name ?? '',
 			stock: p.stock,
 			price: p.salePrice,
-			productType: p.type
+			productType: p.type,
+			source: undefined
 		}))
 	);
 
@@ -78,7 +81,8 @@
 				brand: l.brand ?? '',
 				stock: l.stock,
 				price,
-				productType: ''
+				productType: '',
+				source: l.source
 			};
 		})
 	);
@@ -98,6 +102,7 @@
 	});
 
 	const hasStockWarning = $derived(selectedStock !== null && selectedStock <= 0);
+	const selectedOption = $derived(options.find((opt) => opt.id === value));
 
 	function handleChange(selected: SelectOption | null) {
 		const newId = selected?.id ?? '';
@@ -192,12 +197,28 @@
 	{#snippet footer()}
 		{#if hasStockWarning}
 			{#if kind === 'lens'}
-				<div
-					class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-				>
-					<TriangleAlert class="h-4 w-4 shrink-0" />
-					<span>Sin stock — se pedirá al proveedor</span>
-				</div>
+				{#if selectedOption?.source === LensCatalogSource.FINISHED}
+					<div
+						class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
+					>
+						<TriangleAlert class="h-4 w-4 shrink-0" />
+						<span>Sin stock en inventario</span>
+					</div>
+				{:else if selectedOption?.source === LensCatalogSource.LAB}
+					<div
+						class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
+					>
+						<TriangleAlert class="h-4 w-4 shrink-0" />
+						<span>Sin stock — se pedirá al laboratorio</span>
+					</div>
+				{:else}
+					<div
+						class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
+					>
+						<TriangleAlert class="h-4 w-4 shrink-0" />
+						<span>Sin stock — se pedirá al proveedor</span>
+					</div>
+				{/if}
 			{:else}
 				<div
 					class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"

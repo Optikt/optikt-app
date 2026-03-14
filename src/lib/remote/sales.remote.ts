@@ -41,7 +41,13 @@ import {
 	type Customer
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
+import {
+	SaleStatus,
+	LensCatalogSource,
+	LensFulfillmentMode,
+	isBsPaymentMethod,
+	type PaymentMethod
+} from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
@@ -218,6 +224,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				saleId: newSale.id,
 				productId: item.productId ?? null,
 				lensCatalogItemId: item.lensCatalogItemId ?? null,
+				lensFulfillmentMode: item.lensFulfillmentMode ?? null,
 				selectedTreatments: item.selectedTreatments ?? null,
 				prescriptionId: item.prescriptionId ?? null,
 				odSphere: item.odSphere ?? null,
@@ -262,14 +269,15 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				}
 			}
 
-			// TODO - Maybe this is duplicated
-			// FIXME - This decrement stock does not take in count 
-			// if the lens is directly from supplier (no stock) or 
-			// directly from laboratory
-			// Decrement stock for lens catalog items
+			// Decrement stock only for finished lenses (inventory-managed).
+			// LAB/ON_DEMAND are fulfilled externally and should not block by stock.
 			if (item.lensCatalogItemId) {
 				const [lens] = await tx
-					.select({ id: lensCatalogItems.id, stock: lensCatalogItems.stock })
+					.select({
+						id: lensCatalogItems.id,
+						stock: lensCatalogItems.stock,
+						source: lensCatalogItems.source
+					})
 					.from(lensCatalogItems)
 					.where(
 						and(eq(lensCatalogItems.id, item.lensCatalogItemId), isNull(lensCatalogItems.deletedAt))
@@ -279,7 +287,12 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 					throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
 				}
 
-				if (lens.stock !== null) {
+				const shouldUseInventory =
+					lens.source === LensCatalogSource.FINISHED &&
+					(item.lensFulfillmentMode ?? LensFulfillmentMode.INVENTORY) ===
+						LensFulfillmentMode.INVENTORY;
+
+				if (shouldUseInventory && lens.stock !== null) {
 					const newStock = lens.stock - item.quantity;
 					if (newStock < 0) {
 						throw new Error(
@@ -473,11 +486,21 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 			// Restore stock for lens catalog items
 			if (item.lensCatalogItemId) {
 				const [lens] = await tx
-					.select({ id: lensCatalogItems.id, stock: lensCatalogItems.stock })
+					.select({
+						id: lensCatalogItems.id,
+						stock: lensCatalogItems.stock,
+						source: lensCatalogItems.source
+					})
 					.from(lensCatalogItems)
 					.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 
-				if (lens && lens.stock !== null) {
+				const shouldUseInventory =
+					lens &&
+					lens.source === LensCatalogSource.FINISHED &&
+					(item.lensFulfillmentMode ?? LensFulfillmentMode.INVENTORY) ===
+						LensFulfillmentMode.INVENTORY;
+
+				if (shouldUseInventory && lens.stock !== null) {
 					await tx
 						.update(lensCatalogItems)
 						.set({ stock: lens.stock + item.quantity, updatedAt: now })

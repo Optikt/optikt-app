@@ -20,7 +20,10 @@
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
 	import {
+		LensCatalogSource,
+		LensFulfillmentMode,
 		LensType,
+		getLensFulfillmentModeLabel,
 		getLensTypeLabel,
 		getLensSourceLabel,
 		getPricingUnitLabel
@@ -73,12 +76,19 @@
 			kind: 'product',
 			productId: '',
 			lensCatalogItemId: '',
+			lensFulfillmentMode: LensFulfillmentMode.INVENTORY,
 			quantity: 1,
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			notes: ''
 		};
+	}
+
+	function getDefaultLensFulfillment(source: string): LensFulfillmentMode {
+		if (source === LensCatalogSource.LAB) return LensFulfillmentMode.LAB;
+		if (source === LensCatalogSource.ON_DEMAND) return LensFulfillmentMode.ON_DEMAND;
+		return LensFulfillmentMode.INVENTORY;
 	}
 
 	function addItem() {
@@ -93,6 +103,7 @@
 	function handleKindChange(item: SaleItemRow) {
 		item.productId = '';
 		item.lensCatalogItemId = '';
+		item.lensFulfillmentMode = LensFulfillmentMode.INVENTORY;
 		item.unitPrice = 0;
 	}
 
@@ -101,6 +112,10 @@
 			item.productId = id;
 		} else {
 			item.lensCatalogItemId = id;
+			const lens = lensItems.find((l) => l.id === id);
+			if (lens) {
+				item.lensFulfillmentMode = getDefaultLensFulfillment(lens.source);
+			}
 		}
 		item.unitPrice = unitPrice;
 	}
@@ -165,7 +180,10 @@
 		}
 		if (item.kind === 'lens' && item.lensCatalogItemId) {
 			const l = lensItems.find((l) => l.id === item.lensCatalogItemId);
-			return l?.stock ?? null;
+			if (l?.source === LensCatalogSource.FINISHED) {
+				return l.stock ?? null;
+			}
+			return null;
 		}
 		return null;
 	}
@@ -251,6 +269,11 @@
 	<div class="space-y-5">
 		{#each items as item, index (item.id)}
 			{@const maxStock = getItemMaxStock(item)}
+			{@const lens = item.kind === 'lens' ? getLensItem(item) : undefined}
+			{@const enforceStock =
+				item.kind === 'product' ||
+				(lens?.source === LensCatalogSource.FINISHED &&
+					item.lensFulfillmentMode === LensFulfillmentMode.INVENTORY)}
 			<div
 				class="rounded-lg border p-5 {item.kind === 'lens'
 					? 'border-violet-200 bg-violet-50/30'
@@ -302,7 +325,6 @@
 								<p class="mt-1 truncate font-mono text-xs text-slate-400">{product.sku}</p>
 							{/if}
 						{:else if item.kind === 'lens' && item.lensCatalogItemId}
-							{@const lens = getLensItem(item)}
 							{#if lens}
 								<p class="mt-1 truncate text-xs text-violet-400">
 									{getLensSourceLabel(lens.source)} &middot; {getLensTypeLabel(
@@ -310,6 +332,21 @@
 									)}{#if lens.material}
 										&middot; {lens.material.name}{/if}
 								</p>
+								{#if lens.source === LensCatalogSource.FINISHED}
+									<div class="mt-2">
+										<Label for="fulfillment-{item.id}" class="mb-1.5 text-xs text-slate-600"
+											>Abastecimiento</Label
+										>
+										<Select id="fulfillment-{item.id}" bind:value={item.lensFulfillmentMode}>
+											<option value={LensFulfillmentMode.INVENTORY}
+												>{getLensFulfillmentModeLabel(LensFulfillmentMode.INVENTORY)}</option
+											>
+											<option value={LensFulfillmentMode.ON_DEMAND}
+												>{getLensFulfillmentModeLabel(LensFulfillmentMode.ON_DEMAND)}</option
+											>
+										</Select>
+									</div>
+								{/if}
 							{/if}
 						{/if}
 					</div>
@@ -322,16 +359,12 @@
 							type="number"
 							bind:value={item.quantity}
 							min="1"
-							max={item.kind === 'product' && maxStock !== null && maxStock > 0
-								? maxStock
-								: undefined}
-							class="font-mono {item.kind === 'product' &&
-							maxStock !== null &&
-							item.quantity > maxStock
+							max={enforceStock && maxStock !== null && maxStock > 0 ? maxStock : undefined}
+							class="font-mono {enforceStock && maxStock !== null && item.quantity > maxStock
 								? 'border-red-500 ring-1 ring-red-500'
 								: ''}"
 						/>
-						{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
+						{#if enforceStock && maxStock !== null && item.quantity > maxStock}
 							<p class="mt-0.5 text-xs text-red-500">Máx: {maxStock}</p>
 						{/if}
 					</div>
@@ -380,17 +413,19 @@
 
 				<!-- Lens Info Bar: pricing unit + source badges -->
 				{#if item.kind === 'lens' && item.lensCatalogItemId}
-					{@const lens = getLensItem(item)}
 					{@const match = getLensMatch(item)}
 					<div class="mt-3 flex flex-wrap items-center gap-2">
 						{#if lens}
 							<!-- Source badge -->
 							<span
-								class="rounded-full px-3 py-1 text-sm font-semibold {lens.source === 'FINISHED'
+								class="rounded-full px-3 py-1 text-sm font-semibold {item.lensFulfillmentMode ===
+								LensFulfillmentMode.INVENTORY
 									? 'bg-emerald-100 text-emerald-700'
-									: 'bg-sky-100 text-sky-700'}"
+									: item.lensFulfillmentMode === LensFulfillmentMode.LAB
+										? 'bg-sky-100 text-sky-700'
+										: 'bg-amber-100 text-amber-700'}"
 							>
-								{getLensSourceLabel(lens.source)}
+								{getLensFulfillmentModeLabel(item.lensFulfillmentMode)}
 							</span>
 							<!-- Pricing unit badge -->
 							<span

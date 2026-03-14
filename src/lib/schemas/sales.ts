@@ -18,6 +18,7 @@ import {
 	ALL_DISCOUNT_TYPES,
 	DiscountType
 } from '$lib/shared/enums';
+import { LensFulfillmentMode } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 
 // ============================================================================
@@ -44,6 +45,7 @@ export const SaleItemSchema = z
 	.object({
 		productId: z.uuid().optional(),
 		lensCatalogItemId: z.uuid().optional(),
+		lensFulfillmentMode: z.enum(LensFulfillmentMode).optional(),
 		selectedTreatments: z.array(z.string()).optional(),
 		/** Link to existing prescription (optional, used for lens items) */
 		prescriptionId: z.uuid().optional(),

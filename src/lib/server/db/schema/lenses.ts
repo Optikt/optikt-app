@@ -20,7 +20,11 @@ import { suppliers } from './suppliers';
 // ============================================================================
 
 /** Cristales terminados (en stock del proveedor) vs laboratorio (pedido a medida) */
-export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', ['FINISHED', 'LAB']);
+export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', [
+	'FINISHED',
+	'ON_DEMAND',
+	'LAB'
+]);
 
 /** Whether the supplier prices per single lens (UNIT) or per pair (PAIR) */
 export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', ['UNIT', 'PAIR']);

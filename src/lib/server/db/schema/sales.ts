@@ -82,6 +82,7 @@ export const saleItems = pgTable(
 		saleId: uuid('sale_id').notNull(),
 		productId: uuid('product_id'),
 		lensCatalogItemId: uuid('lens_catalog_item_id'),
+		lensFulfillmentMode: varchar('lens_fulfillment_mode'),
 		selectedTreatments: json('selected_treatments').$type<string[]>(),
 		/** Link to customer prescription used for this lens item */
 		prescriptionId: uuid('prescription_id'),

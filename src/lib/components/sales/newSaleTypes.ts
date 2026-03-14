@@ -1,4 +1,5 @@
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
+import type { LensFulfillmentMode } from '$lib/shared/enums/lensTypes';
 
 export type ItemKind = 'product' | 'lens';
 
@@ -7,6 +8,7 @@ export interface SaleItemRow {
 	kind: ItemKind;
 	productId: string;
 	lensCatalogItemId: string;
+	lensFulfillmentMode: LensFulfillmentMode;
 	quantity: number;
 	unitPrice: number;
 	discount: number;
