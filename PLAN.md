@@ -10,6 +10,17 @@ Alinear la arquitectura de Optikt App con el flujo operativo real de la optica:
 - Mayor visibilidad UX de todo evento automatico, decision requerida y riesgo operativo.
 - Modelo fiscal de IVA claro para productos y parametrizable para lentes.
 
+## Postura de ejecucion
+Este plan asume una reescritura agresiva del dominio actual.
+
+Reglas de ejecucion:
+- No se prioriza compatibilidad hacia atras.
+- No se prioriza estabilidad de una app en produccion porque no existe un entorno real de produccion.
+- Se permite romper el modelo actual si eso simplifica y mejora la arquitectura final.
+- Se prefiere reemplazar directamente estructuras viejas antes que mantener adaptadores temporales.
+- Se eliminara codigo legacy tan pronto el nuevo flujo equivalente exista.
+- La prioridad es velocidad de ejecucion con claridad arquitectonica, no transiciones suaves.
+
 ---
 
 ## Respuestas directas a tus puntos
@@ -278,7 +289,7 @@ Patrones obligatorios:
 
 ## Plan de ejecucion detallado por fases
 
-## Fase 0 - Definicion y contratos (sin romper produccion)
+## Fase 0 - Definicion ejecutable del nuevo dominio
 Objetivo:
 - Cerrar contratos de tipos/estados y decisiones de negocio.
 
@@ -286,22 +297,23 @@ Entregables:
 - Tipos TS de rasgos/politicas/matching/planner.
 - Diccionario de estados y etiquetas UX.
 - Matriz de compatibilidad por proveedor/item/tratamiento.
+- Lista de archivos/tablas legacy que se reemplazaran o eliminaran.
 
 Criterios de salida:
-- Contratos aprobados y versionados.
+- Contratos aprobados y suficientemente concretos para codificar sin reinterpretacion.
 
-## Fase 1 - Refactor de dominio de lentes
+## Fase 1 - Reemplazo directo del dominio de lentes
 Objetivo:
 - Implementar estructura de rasgos/politicas por item.
 
 Cambios:
-- Migraciones DB para nuevos campos de politica.
-- Backfill desde booleans actuales (isPhotochromic/isAR/isBlueCut).
-- Query layer para exponer contratos nuevos.
+- Rediseñar schema DB de lentes para reflejar el modelo final.
+- Eliminar o sustituir campos legacy ambiguos donde estorben.
+- Reescribir query layer para exponer un unico contrato claro.
+- Reescribir formularios/serializacion de lentes segun el nuevo modelo.
 
 Criterios de salida:
-- CRUD de lentes funcional con politicas nuevas.
-- Compatibilidad backward temporal via adaptadores.
+- CRUD de lentes funcional con el nuevo modelo como unica fuente de verdad.
 
 ## Fase 2 - Motor de matching v2
 Objetivo:
@@ -318,7 +330,7 @@ Cambios:
 Criterios de salida:
 - 100% de reglas core cubiertas en tests.
 
-## Fase 3 - Procurement policy + Fulfillment planner
+## Fase 3 - Procurement policy + Fulfillment planner como nucleo operativo
 Objetivo:
 - Resolver unidad/par, consulta, excedente y costo operativo.
 
@@ -326,6 +338,8 @@ Cambios:
 - Engine de politicas de compra.
 - Generador de plan por unidades requeridas.
 - Reglas de creacion de excedente en compras por par.
+- Definicion de mensajes UX derivados del plan para cada escenario.
+- Contrato unico consumible por venta, presupuesto y busqueda avanzada.
 
 Criterios de salida:
 - Dado un carrito y formula, planner devuelve plan consistente y explicable.
@@ -343,7 +357,7 @@ Criterios de salida:
 - Excedente generado en escenarios de compra por par.
 - Excedente reutilizable en OD u OI si coincide exacto.
 
-## Fase 5 - Refactor de wizard de ventas
+## Fase 5 - Reescritura del wizard de ventas sobre el planner
 Objetivo:
 - Reutilizar planner y mostrar decisiones claras.
 
@@ -351,12 +365,14 @@ Cambios:
 - Step items con selector de tratamientos validado por proveedor/item.
 - Panel de impacto operativo por item y total.
 - Bloqueos/confirmaciones donde aplique.
+- Eliminacion de validaciones viejas que ya no representen la realidad del flujo.
+- Reorganizacion visual tajante para priorizar visibilidad operativa.
 
 Criterios de salida:
 - Usuario entiende que pasara antes de confirmar.
 - Sin decisiones ocultas.
 
-## Fase 6 - Modulo de presupuestos
+## Fase 6 - Creacion del modulo de presupuestos
 Objetivo:
 - Flujo completo quote -> sale.
 
@@ -364,12 +380,13 @@ Cambios:
 - Nuevas tablas y remotes de quotes.
 - UI para listado/creacion/edicion.
 - Boton Generar venta con prefill del wizard.
+- Reutilizacion explicita del planner y parser compartido.
 
 Criterios de salida:
 - Presupuesto sin cliente/pagos.
 - Conversion trazable y editable.
 
-## Fase 7 - Busqueda global con scopes y parser compartido
+## Fase 7 - Reescritura de busqueda global con scopes y parser compartido
 Objetivo:
 - Busqueda mas precisa y reutilizable.
 
@@ -378,6 +395,7 @@ Cambios:
 - Parser optico robusto OD/OI.
 - Pagina de resultados completos al Enter.
 - Integracion con ventas/presupuestos.
+- Sustitucion de la barra actual por una interfaz centrada en scopes y resultados semanticos.
 
 Criterios de salida:
 - Busqueda acotada por scope y atributos.
@@ -396,29 +414,32 @@ Criterios de salida:
 - Usuario captura precio de venta sin friccion.
 - Sistema guarda desglose fiscal consistente.
 
-## Fase 9 - Hardening, migracion y despliegue
+## Fase 9 - Limpieza final del modelo viejo
 Objetivo:
-- Salida segura a produccion.
+- Dejar la base de codigo alineada unicamente al modelo nuevo.
 
 Cambios:
-- Feature flags por modulo.
-- Migraciones en dos pasos (expand/contract).
-- Scripts de verificacion y backfill.
-- Capacitacion corta de usuarios.
+- Eliminar campos, ramas y componentes legacy que ya no se usen.
+- Eliminar contratos viejos, helpers ambiguos y codigo muerto.
+- Ajustar tests al flujo final, sin duplicidad de comportamiento viejo.
 
 Criterios de salida:
-- Cero perdida de datos.
-- Monitoreo y rollback plan listos.
+- No quedan puntos importantes del flujo dependiendo del modelo anterior.
 
 ---
 
-## Estrategia de migraciones y compatibilidad
+## Estrategia de reemplazo directo
 
-1. Expandir esquema sin romper lecturas existentes.
-2. Backfill de datos historicos a nuevos contratos.
-3. Dual-read temporal (viejo+nuevo) en puntos criticos.
-4. Switch de escritura al nuevo modelo.
-5. Contraccion y retiro de campos legacy.
+1. Definir el modelo final primero.
+2. Reescribir tablas/campos/contratos necesarios para soportarlo.
+3. Migrar los datos minimos utiles si vale la pena; descartar lo ambiguo o inservible.
+4. Reescribir consumidores clave: lentes, ventas, presupuestos, busqueda.
+5. Eliminar el modelo anterior tan pronto el nuevo flujo compile y pase pruebas.
+
+Nota:
+- No se usara dual-read.
+- No se usaran feature flags.
+- No se mantendra codigo legacy solo por precaucion.
 
 ---
 
@@ -470,13 +491,16 @@ Riesgo: complejidad del planner.
 Mitigacion: iniciar con reglas deterministicas y sin optimizacion prematura.
 
 Riesgo: inconsistencias durante migracion.
-Mitigacion: dual-read temporal + reportes de reconciliacion.
+Mitigacion: reescribir con contratos claros y validar con pruebas de dominio antes de seguir a UI.
 
 Riesgo: UX sobrecargada.
 Mitigacion: jerarquia visual fuerte, badges semanticos y panel de impacto resumido.
 
 Riesgo: rendimiento de busqueda global.
 Mitigacion: scopes, limites por seccion, pagina dedicada para resultados amplios.
+
+Riesgo: romper partes del flujo actual durante el reemplazo.
+Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta cerrar el flujo nuevo completo.
 
 ---
 
@@ -495,16 +519,17 @@ Mitigacion: scopes, limites por seccion, pagina dedicada para resultados amplios
 ## Checklist de estado del plan
 
 - [x] Plan maestro consolidado en raiz.
+- [x] Postura agresiva de reemplazo directo definida.
 - [x] Reglas de negocio clave incorporadas (feedback actual).
 - [ ] Definir contratos TS exactos (fase 0).
-- [ ] Preparar migraciones DB fase 1.
+- [ ] Reemplazar schema y contratos DB fase 1.
 - [ ] Implementar motor matching v2.
 - [ ] Implementar planner + excedentes.
 - [ ] Refactor wizard ventas.
 - [ ] Modulo presupuestos.
 - [ ] Scoped search + parser compartido.
 - [ ] IVA y pricing UX.
-- [ ] Hardening y despliegue por feature flags.
+- [ ] Eliminar codigo legacy sobrante.
 
 ---
 
