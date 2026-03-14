@@ -347,6 +347,7 @@
 									{/if}
 								{:else}
 									{@const lens = getLensItem(item)}
+									<!-- Lens badges row -->
 									<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
 										{#if lens}
 											<span
@@ -366,33 +367,70 @@
 												<span class="text-slate-400">&middot; {lens.supplier.name}</span>
 											{/if}
 										{/if}
-										{#if prescriptionValues.odSphere || prescriptionValues.osSphere}
-											<span class="flex items-center gap-1">
-												<Eye class="h-3 w-3 text-blue-400" />
-												OD:
-												<span class="font-mono font-medium text-slate-700"
-													>{prescriptionValues.odSphere || '—'} / {prescriptionValues.odCylinder ||
-														'—'}</span
+									</div>
+									<!-- Prescription row — visually separated -->
+									{#if prescriptionValues.odSphere || prescriptionValues.osSphere}
+										<div
+											class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs"
+										>
+											<div class="flex items-center gap-1.5">
+												<Eye class="h-3.5 w-3.5 text-blue-500" />
+												<span class="font-semibold text-blue-600">OD</span>
+												<span class="font-mono font-medium text-slate-800"
+													>{prescriptionValues.odSphere || '—'}</span
 												>
-											</span>
-											<span class="flex items-center gap-1">
-												<Eye class="h-3 w-3 text-violet-400" />
-												OS:
-												<span class="font-mono font-medium text-slate-700"
-													>{prescriptionValues.osSphere || '—'} / {prescriptionValues.osCylinder ||
-														'—'}</span
+												<span class="text-slate-400">/</span>
+												<span class="font-mono font-medium text-slate-800"
+													>{prescriptionValues.odCylinder || '—'}</span
 												>
-											</span>
+												{#if prescriptionValues.odAxis}
+													<span class="text-slate-400">x</span>
+													<span class="font-mono font-medium text-slate-800"
+														>{prescriptionValues.odAxis}°</span
+													>
+												{/if}
+												{#if prescriptionValues.odAddition}
+													<span class="text-slate-400">Add</span>
+													<span class="font-mono font-medium text-slate-800"
+														>{prescriptionValues.odAddition}</span
+													>
+												{/if}
+											</div>
+											<div class="h-4 w-px bg-slate-300"></div>
+											<div class="flex items-center gap-1.5">
+												<Eye class="h-3.5 w-3.5 text-violet-500" />
+												<span class="font-semibold text-violet-600">OS</span>
+												<span class="font-mono font-medium text-slate-800"
+													>{prescriptionValues.osSphere || '—'}</span
+												>
+												<span class="text-slate-400">/</span>
+												<span class="font-mono font-medium text-slate-800"
+													>{prescriptionValues.osCylinder || '—'}</span
+												>
+												{#if prescriptionValues.osAxis}
+													<span class="text-slate-400">x</span>
+													<span class="font-mono font-medium text-slate-800"
+														>{prescriptionValues.osAxis}°</span
+													>
+												{/if}
+												{#if prescriptionValues.osAddition}
+													<span class="text-slate-400">Add</span>
+													<span class="font-mono font-medium text-slate-800"
+														>{prescriptionValues.osAddition}</span
+													>
+												{/if}
+											</div>
 											{#if rxMatch}
+												<div class="h-4 w-px bg-slate-300"></div>
 												{@const display = MATCH_DISPLAY[rxMatch.overall]}
 												<span
-													class="ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
+													class="rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
 												>
 													{display.label}
 												</span>
 											{/if}
-										{/if}
-									</div>
+										</div>
+									{/if}
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
