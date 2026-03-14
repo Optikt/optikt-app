@@ -301,6 +301,9 @@ Entregables:
 
 Criterios de salida:
 - Contratos aprobados y suficientemente concretos para codificar sin reinterpretacion.
+- Referencias creadas:
+  - `src/lib/shared/contracts/*`
+  - `docs/phase-0-domain-contracts.md`
 
 ## Fase 1 - Reemplazo directo del dominio de lentes
 Objetivo:
@@ -521,7 +524,7 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 - [x] Plan maestro consolidado en raiz.
 - [x] Postura agresiva de reemplazo directo definida.
 - [x] Reglas de negocio clave incorporadas (feedback actual).
-- [ ] Definir contratos TS exactos (fase 0).
+- [x] Definir contratos TS exactos (fase 0).
 - [ ] Reemplazar schema y contratos DB fase 1.
 - [ ] Implementar motor matching v2.
 - [ ] Implementar planner + excedentes.
