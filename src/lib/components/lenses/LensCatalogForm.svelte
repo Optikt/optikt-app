@@ -16,9 +16,21 @@
 		ALL_LENS_TYPES,
 		getLensTypeLabel
 	} from '$lib/shared/enums';
+	import {
+		PhotochromicMode,
+		LensRangeAvailability,
+		LensTreatmentAvailability,
+		CORE_LENS_TREATMENT_CODES,
+		PHOTOCHROMIC_MODE_LABELS,
+		LENS_RANGE_AVAILABILITY_LABELS,
+		LENS_TREATMENT_LABELS,
+		LENS_TREATMENT_AVAILABILITY_LABELS,
+		type CoreLensTreatmentCode
+	} from '$lib/shared/contracts';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
+	import type { LensTreatmentPolicy } from '$lib/shared/contracts';
 	import { resolve } from '$app/paths';
 
 	type MaterialOption = SelectOption & { refractiveIndex?: number | null };
@@ -93,18 +105,38 @@
 		technology: '',
 		type: LensType.MONOFOCAL as LensType,
 		materialId: '',
-		isPhotochromic: false,
-		isBlueCut: false,
-		isAR: false,
+		// Identity traits
+		photochromicMode: PhotochromicMode.NONE as PhotochromicMode,
+		rangeAvailability: LensRangeAvailability.EXACT_RANGES as LensRangeAvailability,
+		// Pricing
 		pricingUnit: LensPricingUnit.UNIT as LensPricingUnit,
 		basePrice: '0',
 		suggestedMultiplier: '',
-		mountingPrice: '',
+		// Purchase policy
+		allowsSingleUnitOrder: false,
+		singleUnitRequiresConfirmation: false,
+		singleUnitSurcharge: '0',
+		minimumOrderUnits: '1',
+		mountingPrice: '0',
+		shippingPrice: '0',
+		// Operations
 		deliveryDays: '',
 		stock: '0',
 		refractiveIndex: '',
 		notes: ''
 	});
+
+	// Treatment policies — one per core treatment code
+	function createDefaultPolicies(): LensTreatmentPolicy[] {
+		return CORE_LENS_TREATMENT_CODES.map((code) => ({
+			code,
+			availability: LensTreatmentAvailability.NOT_AVAILABLE,
+			additionalPrice: 0,
+			requiresConfirmation: false
+		}));
+	}
+
+	let treatmentPolicies = $state<LensTreatmentPolicy[]>(createDefaultPolicies());
 
 	// Dynamic optical ranges
 	function createEmptyRange(): RangeEntry {
@@ -136,18 +168,43 @@
 					technology: item!.technology ?? '',
 					type: item!.type as LensType,
 					materialId: item!.materialId,
-					isPhotochromic: item!.isPhotochromic,
-					isBlueCut: item!.isBlueCut,
-					isAR: item!.isAR,
+					photochromicMode: (item!.photochromicMode as PhotochromicMode) ?? PhotochromicMode.NONE,
+					rangeAvailability:
+						(item!.rangeAvailability as LensRangeAvailability) ??
+						LensRangeAvailability.EXACT_RANGES,
 					pricingUnit: (item!.pricingUnit as LensPricingUnit) ?? LensPricingUnit.UNIT,
 					basePrice: item!.basePrice.toString(),
 					suggestedMultiplier: item!.suggestedMultiplier?.toString() ?? '',
-					mountingPrice: item!.mountingPrice?.toString() ?? '',
+					allowsSingleUnitOrder: item!.allowsSingleUnitOrder,
+					singleUnitRequiresConfirmation: item!.singleUnitRequiresConfirmation,
+					singleUnitSurcharge: item!.singleUnitSurcharge.toString(),
+					minimumOrderUnits: item!.minimumOrderUnits.toString(),
+					mountingPrice: item!.mountingPrice.toString(),
+					shippingPrice: item!.shippingPrice.toString(),
 					deliveryDays: item!.deliveryDays?.toString() ?? '',
 					stock: item!.stock?.toString() ?? '0',
 					refractiveIndex: item!.refractiveIndex?.toString() ?? '',
 					notes: item!.notes ?? ''
 				};
+
+				// Load existing treatment policies or create defaults
+				const existing = item!.treatmentPolicies;
+				if (existing && existing.length > 0) {
+					// Ensure all core codes are represented
+					treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
+						const found = existing.find((p) => p.code === code);
+						return (
+							found ?? {
+								code,
+								availability: LensTreatmentAvailability.NOT_AVAILABLE,
+								additionalPrice: 0,
+								requiresConfirmation: false
+							}
+						);
+					});
+				} else {
+					treatmentPolicies = createDefaultPolicies();
+				}
 
 				// Load existing ranges — try to detect symmetric (±) mirror pairs
 				if (existingRanges.length > 0) {
@@ -972,7 +1029,7 @@
 			<input type="hidden" name="pricingUnit" value={formData.pricingUnit} />
 		</div>
 
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<div>
 				<Label for="lc_price" class="mb-2">
 					Precio Compra ($) *
@@ -1062,18 +1119,165 @@
 		</div>
 
 		<div class="mt-4">
-			<Label class="mb-2 text-sm text-slate-600">Características incluidas</Label>
-			<input type="hidden" name="isPhotochromic" value={String(formData.isPhotochromic)} />
-			<input type="hidden" name="isBlueCut" value={String(formData.isBlueCut)} />
-			<input type="hidden" name="isAR" value={String(formData.isAR)} />
-			<div class="flex flex-wrap items-center gap-6">
-				<Checkbox bind:checked={formData.isPhotochromic}>Fotocromático</Checkbox>
-				<Checkbox bind:checked={formData.isBlueCut}>Blue Cut (Blue Block)</Checkbox>
-				<Checkbox bind:checked={formData.isAR}>Antirreflejo (AR)</Checkbox>
+			<Label class="mb-2 text-sm text-slate-600">Identidad del cristal</Label>
+			<input type="hidden" name="photochromicMode" value={formData.photochromicMode} />
+			<input type="hidden" name="rangeAvailability" value={formData.rangeAvailability} />
+			<input type="hidden" name="treatmentPolicies" value={JSON.stringify(treatmentPolicies)} />
+			<input type="hidden" name="allowsSingleUnitOrder" value={String(formData.allowsSingleUnitOrder)} />
+			<input type="hidden" name="singleUnitRequiresConfirmation" value={String(formData.singleUnitRequiresConfirmation)} />
+
+			<!-- Photochromic mode -->
+			<div class="mb-4">
+				<div class="grid gap-3 sm:grid-cols-2">
+					{#each Object.values(PhotochromicMode) as mode (mode)}
+						<button
+							type="button"
+							class="rounded-lg border-2 p-3 text-left transition-all {formData.photochromicMode === mode
+								? 'border-amber-500 bg-amber-50/50'
+								: 'border-slate-200 hover:border-slate-300'}"
+							onclick={() => (formData.photochromicMode = mode)}
+						>
+							<p class="text-sm font-semibold text-slate-800">
+								{PHOTOCHROMIC_MODE_LABELS[mode]}
+							</p>
+						</button>
+					{/each}
+				</div>
 			</div>
-			<p class="mt-2 text-xs text-slate-400">
-				Marca las características que ya vienen incluidas en este cristal
-			</p>
+
+			<!-- Range availability -->
+			<div class="mb-4">
+				<Label class="mb-2 text-sm text-slate-600">Disponibilidad de rangos ópticos</Label>
+				<div class="grid gap-3 sm:grid-cols-2">
+					{#each Object.values(LensRangeAvailability) as ra (ra)}
+						<button
+							type="button"
+							class="rounded-lg border-2 p-3 text-left transition-all {formData.rangeAvailability === ra
+								? 'border-blue-500 bg-blue-50/50'
+								: 'border-slate-200 hover:border-slate-300'}"
+							onclick={() => (formData.rangeAvailability = ra)}
+						>
+							<p class="text-sm font-semibold text-slate-800">
+								{LENS_RANGE_AVAILABILITY_LABELS[ra]}
+							</p>
+							<p class="mt-0.5 text-xs text-slate-500">
+								{ra === LensRangeAvailability.EXACT_RANGES
+									? 'El proveedor publica rangos exactos'
+									: 'Requiere consulta al proveedor'}
+							</p>
+						</button>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Treatment policies per item -->
+			<div>
+				<Label class="mb-2 text-sm text-slate-600">
+					Política de tratamientos
+					<span class="ml-1 text-xs font-normal text-slate-400">(por este ítem)</span>
+				</Label>
+				<div class="space-y-3">
+					{#each treatmentPolicies as policy, pi (policy.code)}
+						<div class="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+							<div class="mb-2 flex items-center gap-2">
+								<span class="text-sm font-semibold text-slate-700">
+									{LENS_TREATMENT_LABELS[policy.code as CoreLensTreatmentCode] ?? policy.code}
+								</span>
+							</div>
+							<div class="grid gap-3 sm:grid-cols-3">
+								{#each Object.values(LensTreatmentAvailability) as avail (avail)}
+									<button
+										type="button"
+										class="rounded-md border-2 px-3 py-2 text-left text-xs transition-all {policy.availability === avail
+											? 'border-blue-500 bg-blue-50'
+											: 'border-slate-200 hover:border-slate-300'}"
+										onclick={() => (treatmentPolicies[pi].availability = avail)}
+									>
+										{LENS_TREATMENT_AVAILABILITY_LABELS[avail]}
+									</button>
+								{/each}
+							</div>
+							{#if policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
+								<div class="mt-3 grid gap-3 sm:grid-cols-2">
+									<div>
+										<Label class="mb-1 text-xs text-slate-500">Precio adicional ($)</Label>
+										<Input
+											bind:value={treatmentPolicies[pi].additionalPrice}
+											type="number"
+											step="0.01"
+											min="0"
+											size="sm"
+											class="font-mono"
+										/>
+									</div>
+									<div class="flex items-end">
+										<Checkbox bind:checked={treatmentPolicies[pi].requiresConfirmation}>
+											<span class="text-xs text-slate-600">Requiere confirmación</span>
+										</Checkbox>
+									</div>
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+				<p class="mt-2 text-xs text-slate-400">
+					Define cómo se comporta cada tratamiento para este cristal de este proveedor
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<!-- Purchase Policy -->
+	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+		<h3 class="mb-4 text-lg font-semibold text-slate-800">Política de compra</h3>
+		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+			<div>
+				<Label for="lc_min_order" class="mb-2">Mínimo de unidades</Label>
+				<Input
+					id="lc_min_order"
+					name="minimumOrderUnits"
+					bind:value={formData.minimumOrderUnits}
+					type="number"
+					min="1"
+					class="font-mono"
+				/>
+			</div>
+			<div>
+				<Label for="lc_surcharge" class="mb-2">Recargo por unidad sola ($)</Label>
+				<Input
+					id="lc_surcharge"
+					name="singleUnitSurcharge"
+					bind:value={formData.singleUnitSurcharge}
+					type="number"
+					step="0.01"
+					min="0"
+					placeholder="0.00"
+					class="font-mono placeholder:text-slate-400"
+				/>
+			</div>
+			<div>
+				<Label for="lc_shipping" class="mb-2">Envío ($)</Label>
+				<Input
+					id="lc_shipping"
+					name="shippingPrice"
+					bind:value={formData.shippingPrice}
+					type="number"
+					step="0.01"
+					min="0"
+					placeholder="0.00"
+					class="font-mono placeholder:text-slate-400"
+				/>
+			</div>
+		</div>
+		<div class="mt-4 flex flex-wrap gap-6">
+			<Checkbox bind:checked={formData.allowsSingleUnitOrder}>
+				Permite compra por unidad
+			</Checkbox>
+			{#if formData.allowsSingleUnitOrder}
+				<Checkbox bind:checked={formData.singleUnitRequiresConfirmation}>
+					Requiere confirmación para unidad
+				</Checkbox>
+			{/if}
 		</div>
 	</div>
 
