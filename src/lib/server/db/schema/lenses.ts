@@ -32,7 +32,10 @@ const enumValues = <T extends Record<string, string>>(e: T) =>
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
 export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', enumValues(LensPricingUnit));
 export const photochromicModeEnum = pgEnum('photochromic_mode', enumValues(PhotochromicMode));
-export const rangeAvailabilityEnum = pgEnum('range_availability', enumValues(LensRangeAvailability));
+export const rangeAvailabilityEnum = pgEnum(
+	'range_availability',
+	enumValues(LensRangeAvailability)
+);
 export const treatmentAvailabilityEnum = pgEnum(
 	'treatment_availability',
 	enumValues(LensTreatmentAvailability)
@@ -121,7 +124,10 @@ export const lensCatalogItems = pgTable(
 			.default('EXACT_RANGES'),
 
 		// --- Treatment policies (per-item, provider-scoped) ---
-		treatmentPolicies: json('treatment_policies').$type<LensTreatmentPolicy[]>().notNull().default([]),
+		treatmentPolicies: json('treatment_policies')
+			.$type<LensTreatmentPolicy[]>()
+			.notNull()
+			.default([]),
 
 		// --- Pricing ---
 		pricingUnit: lensPricingUnitEnum('pricing_unit').notNull().default('UNIT'),

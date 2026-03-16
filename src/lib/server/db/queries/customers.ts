@@ -146,10 +146,7 @@ export async function searchCustomersByPhone(phone: string): Promise<Customer[]>
 /**
  * Create a new customer
  */
-export async function createCustomer(
-	data: NewCustomer,
-	executor: DbOrTx = db
-): Promise<Customer> {
+export async function createCustomer(data: NewCustomer, executor: DbOrTx = db): Promise<Customer> {
 	const now = new Date();
 	const [customer] = await executor
 		.insert(customers)

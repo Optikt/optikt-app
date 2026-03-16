@@ -11,10 +11,7 @@ export interface DomainStatusUiDescriptor {
 	description: string;
 }
 
-export const FULFILLMENT_STATUS_UI: Record<
-	FulfillmentPlanningStatus,
-	DomainStatusUiDescriptor
-> = {
+export const FULFILLMENT_STATUS_UI: Record<FulfillmentPlanningStatus, DomainStatusUiDescriptor> = {
 	[FulfillmentPlanningStatus.READY]: {
 		label: 'Listo',
 		tone: 'success',

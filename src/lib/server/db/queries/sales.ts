@@ -452,10 +452,7 @@ export async function voidSalePayment(
  * Sums all non-voided payments' amountBcvUsd.
  * Returns the new paidAmountBcvUsd value.
  */
-export async function recalcSalePaidAmount(
-	saleId: string,
-	executor: DbOrTx = db
-): Promise<number> {
+export async function recalcSalePaidAmount(saleId: string, executor: DbOrTx = db): Promise<number> {
 	const [result] = await executor
 		.select({ total: sum(salePayments.amountBcvUsd) })
 		.from(salePayments)

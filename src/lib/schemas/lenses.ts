@@ -4,7 +4,12 @@
  */
 import { z } from 'zod';
 import { LensType, LensCatalogSource, LensPricingUnit } from '$lib/shared/enums';
-import { PhotochromicMode, LensRangeAvailability, LensTreatmentAvailability, CORE_LENS_TREATMENT_CODES } from '$lib/shared/contracts';
+import {
+	PhotochromicMode,
+	LensRangeAvailability,
+	LensTreatmentAvailability,
+	CORE_LENS_TREATMENT_CODES
+} from '$lib/shared/contracts';
 import {
 	CoercedBoolean,
 	CoercedInteger,

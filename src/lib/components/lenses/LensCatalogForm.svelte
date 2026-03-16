@@ -1123,8 +1123,16 @@
 			<input type="hidden" name="photochromicMode" value={formData.photochromicMode} />
 			<input type="hidden" name="rangeAvailability" value={formData.rangeAvailability} />
 			<input type="hidden" name="treatmentPolicies" value={JSON.stringify(treatmentPolicies)} />
-			<input type="hidden" name="allowsSingleUnitOrder" value={String(formData.allowsSingleUnitOrder)} />
-			<input type="hidden" name="singleUnitRequiresConfirmation" value={String(formData.singleUnitRequiresConfirmation)} />
+			<input
+				type="hidden"
+				name="allowsSingleUnitOrder"
+				value={String(formData.allowsSingleUnitOrder)}
+			/>
+			<input
+				type="hidden"
+				name="singleUnitRequiresConfirmation"
+				value={String(formData.singleUnitRequiresConfirmation)}
+			/>
 
 			<!-- Photochromic mode -->
 			<div class="mb-4">
@@ -1132,7 +1140,8 @@
 					{#each Object.values(PhotochromicMode) as mode (mode)}
 						<button
 							type="button"
-							class="rounded-lg border-2 p-3 text-left transition-all {formData.photochromicMode === mode
+							class="rounded-lg border-2 p-3 text-left transition-all {formData.photochromicMode ===
+							mode
 								? 'border-amber-500 bg-amber-50/50'
 								: 'border-slate-200 hover:border-slate-300'}"
 							onclick={() => (formData.photochromicMode = mode)}
@@ -1152,7 +1161,8 @@
 					{#each Object.values(LensRangeAvailability) as ra (ra)}
 						<button
 							type="button"
-							class="rounded-lg border-2 p-3 text-left transition-all {formData.rangeAvailability === ra
+							class="rounded-lg border-2 p-3 text-left transition-all {formData.rangeAvailability ===
+							ra
 								? 'border-blue-500 bg-blue-50/50'
 								: 'border-slate-200 hover:border-slate-300'}"
 							onclick={() => (formData.rangeAvailability = ra)}
@@ -1188,7 +1198,8 @@
 								{#each Object.values(LensTreatmentAvailability) as avail (avail)}
 									<button
 										type="button"
-										class="rounded-md border-2 px-3 py-2 text-left text-xs transition-all {policy.availability === avail
+										class="rounded-md border-2 px-3 py-2 text-left text-xs transition-all {policy.availability ===
+										avail
 											? 'border-blue-500 bg-blue-50'
 											: 'border-slate-200 hover:border-slate-300'}"
 										onclick={() => (treatmentPolicies[pi].availability = avail)}
@@ -1270,9 +1281,7 @@
 			</div>
 		</div>
 		<div class="mt-4 flex flex-wrap gap-6">
-			<Checkbox bind:checked={formData.allowsSingleUnitOrder}>
-				Permite compra por unidad
-			</Checkbox>
+			<Checkbox bind:checked={formData.allowsSingleUnitOrder}>Permite compra por unidad</Checkbox>
 			{#if formData.allowsSingleUnitOrder}
 				<Checkbox bind:checked={formData.singleUnitRequiresConfirmation}>
 					Requiere confirmación para unidad

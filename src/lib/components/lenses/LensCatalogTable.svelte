@@ -5,7 +5,12 @@
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
-	import { PhotochromicMode, LensTreatmentAvailability, LENS_TREATMENT_LABELS, type CoreLensTreatmentCode } from '$lib/shared/contracts';
+	import {
+		PhotochromicMode,
+		LensTreatmentAvailability,
+		LENS_TREATMENT_LABELS,
+		type CoreLensTreatmentCode
+	} from '$lib/shared/contracts';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { goto } from '$app/navigation';

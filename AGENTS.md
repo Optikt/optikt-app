@@ -33,13 +33,14 @@ await addSalePayment(data);
 
 // Inside a transaction (uses tx — rolls back on failure)
 await db.transaction(async (tx) => {
-  await addSalePayment(data, tx);
-  await recalcSalePaidAmount(saleId, tx);
-  await updateSale(saleId, { status: 'COMPLETED' }, tx);
+	await addSalePayment(data, tx);
+	await recalcSalePaidAmount(saleId, tx);
+	await updateSale(saleId, { status: 'COMPLETED' }, tx);
 });
 ```
 
 **Rules:**
+
 - All related writes in a remote command **must** be inside a single `db.transaction()`.
 - Pass `tx` to every query function called within the transaction.
 - Reads for validation (e.g., `findSaleById`) can stay outside the transaction.
