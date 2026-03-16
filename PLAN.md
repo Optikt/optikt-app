@@ -525,7 +525,7 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 - [x] Postura agresiva de reemplazo directo definida.
 - [x] Reglas de negocio clave incorporadas (feedback actual).
 - [x] Definir contratos TS exactos (fase 0).
-- [ ] Reemplazar schema y contratos DB fase 1.
+- [x] Reemplazar schema y contratos DB fase 1.
 - [ ] Implementar motor matching v2.
 - [ ] Implementar planner + excedentes.
 - [ ] Refactor wizard ventas.
