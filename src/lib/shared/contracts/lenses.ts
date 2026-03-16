@@ -25,7 +25,6 @@ export interface LensTreatmentPolicy {
 	availability: LensTreatmentAvailability;
 	additionalPrice: number;
 	requiresConfirmation: boolean;
-	providerScoped: true;
 }
 
 export interface LensPurchasePolicy {
