@@ -6,4 +6,4 @@ export type {
 	PrescriptionForMatching,
 	RangeMatchResult,
 	CompatibilityResult
-} from "./types";
+} from './types';

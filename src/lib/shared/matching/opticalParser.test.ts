@@ -38,7 +38,7 @@ describe('parseOpticalPrescription', () => {
 		it('parses sphere + cylinder + addition', () => {
 			const result = parseOpticalPrescription('-1.00 -0.50 +2.00');
 			expect(result.isOptical).toBe(true);
-			expect(result.hasPrefixes).toBe(false); 
+			expect(result.hasPrefixes).toBe(false);
 			expect(result.prescription?.od).toEqual({ sphere: -1, cylinder: -0.5, addition: 2 });
 			expect(result.prescription?.os).toEqual({ sphere: -1, cylinder: -0.5, addition: 2 });
 		});
