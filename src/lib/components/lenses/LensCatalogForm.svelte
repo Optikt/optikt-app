@@ -388,16 +388,18 @@
 		const result: ExpandedRange[] = [];
 
 		for (const r of ranges) {
-			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : undefined;
-			const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : undefined;
-			const addMin = r.additionMin ? parseFloat(r.additionMin) : undefined;
-			const addMax = r.additionMax ? parseFloat(r.additionMax) : undefined;
+			const cylA = r.cylinderMin ? parseFloat(r.cylinderMin) : undefined;
+			const cylB = r.cylinderMax ? parseFloat(r.cylinderMax) : undefined;
+			const addA = r.additionMin ? parseFloat(r.additionMin) : undefined;
+			const addB = r.additionMax ? parseFloat(r.additionMax) : undefined;
+
+			// Normalize min ≤ max ordering
+			const hasCyl = cylA !== undefined && !isNaN(cylA) && cylB !== undefined && !isNaN(cylB);
+			const hasAdd = addA !== undefined && !isNaN(addA) && addB !== undefined && !isNaN(addB);
 
 			const base = {
-				...(cylMin !== undefined && !isNaN(cylMin) && { cylinderMin: cylMin }),
-				...(cylMax !== undefined && !isNaN(cylMax) && { cylinderMax: cylMax }),
-				...(addMin !== undefined && !isNaN(addMin) && { additionMin: addMin }),
-				...(addMax !== undefined && !isNaN(addMax) && { additionMax: addMax })
+				...(hasCyl && { cylinderMin: Math.min(cylA, cylB), cylinderMax: Math.max(cylA, cylB) }),
+				...(hasAdd && { additionMin: Math.min(addA, addB), additionMax: Math.max(addA, addB) })
 			};
 
 			if (r.symmetric) {

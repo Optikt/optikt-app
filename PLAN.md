@@ -442,6 +442,7 @@ Cambios:
 - Bloqueos/confirmaciones donde aplique.
 - Eliminacion de validaciones viejas que ya no representen la realidad del flujo.
 - Reorganizacion visual tajante para priorizar visibilidad operativa.
+- Mejorar formulario de lentes: agrupacion logica de campos, feedback visual de errores inline (rangos, tratamientos, politica de compra), textos explicativos mas claros.
 
 Criterios de salida:
 
