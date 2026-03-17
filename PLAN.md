@@ -406,7 +406,7 @@ Criterios de salida:
 
 - 100% de reglas core cubiertas en tests.
 
-## Fase 3 - Procurement policy + Fulfillment planner como nucleo operativo
+## Fase 3 - Procurement policy + Fulfillment planner como nucleo operativo ✅
 
 Objetivo:
 
@@ -414,11 +414,29 @@ Objetivo:
 
 Cambios:
 
-- Engine de politicas de compra.
-- Generador de plan por unidades requeridas.
-- Reglas de creacion de excedente en compras por par.
-- Definicion de mensajes UX derivados del plan para cada escenario.
-- Contrato unico consumible por venta, presupuesto y busqueda avanzada.
+- [x] Nuevo modulo de planning (`src/lib/shared/planning/`).
+  - `types.ts` — tipos desacoplados: `LensRequirement`, `CatalogItemForPlanning`, `FulfillmentPlan`, `FulfillmentPlanLine`, `LineCostBreakdown`, `SurplusInfo`, `PlanWarning`.
+  - `fulfillmentPlanner.ts` — `buildFulfillmentPlan()` con estrategias UNIT y PAIR.
+  - `index.ts` — barrel export.
+- [x] Engine de politicas de compra integrado en planner:
+  - UNIT pricing: cada ojo es una linea independiente.
+  - PAIR pricing natural: OD+OS del mismo item → par sin excedente.
+  - PAIR pricing single-eye: forzar par → surplus, o single con surcharge si policy permite.
+  - `allowsSingleUnitOrder` + `singleUnitRequiresConfirmation` + `singleUnitSurcharge`.
+  - `minimumOrderUnits` → warning BELOW_MINIMUM_ORDER.
+- [x] Calculo de costo por linea: base + treatments (solo OPTIONAL_EXTRA) + surcharge + mounting + shipping.
+- [x] Generacion de surplus con trazabilidad (catalogItemId, surplusUnits, surplusCostIncluded).
+- [x] Warnings tipados: CONSULT_REQUIRED, REQUIRES_SINGLE_UNIT_CONFIRMATION, SINGLE_UNIT_SURCHARGE, CREATES_SURPLUS, BELOW_MINIMUM_ORDER.
+- [x] Tests unitarios (22 tests):
+  - UNIT pricing: par, single, con treatments, con mounting/shipping.
+  - PAIR pricing: par natural, single con surcharge, single con confirmacion, forced pair → surplus.
+  - CONSULT_REQUIRED propagation.
+  - Minimum order units.
+  - Mixed catalog items (UNIT + PAIR en mismo plan).
+  - Treatment cost: solo OPTIONAL_EXTRA suma, INHERENT no suma.
+  - Error: catalog item not found.
+  - Real-world: progresivo par completo con AR + mounting + shipping.
+- [x] Build + lint + svelte-check limpio.
 
 Criterios de salida:
 
@@ -639,8 +657,8 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 - [x] Reglas de negocio clave incorporadas (feedback actual).
 - [x] Definir contratos TS exactos (fase 0).
 - [x] Reemplazar schema y contratos DB fase 1.
-- [ ] Implementar motor matching v2.
-- [ ] Implementar planner + excedentes.
+- [x] Implementar motor matching v2.
+- [x] Implementar planner + excedentes.
 - [ ] Refactor wizard ventas.
 - [ ] Modulo presupuestos.
 - [ ] Scoped search + parser compartido.
