@@ -28,11 +28,7 @@
 	import {
 		PhotochromicMode,
 		LensTreatmentAvailability,
-		LensRangeAvailability,
-		PHOTOCHROMIC_MODE_LABELS,
 		LENS_TREATMENT_LABELS,
-		LENS_TREATMENT_AVAILABILITY_LABELS,
-		LENS_RANGE_AVAILABILITY_LABELS,
 		type CoreLensTreatmentCode
 	} from '$lib/shared/contracts';
 

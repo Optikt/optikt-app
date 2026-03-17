@@ -7,8 +7,6 @@
 		Calendar,
 		FileText,
 		Hash,
-		CheckCircle,
-		XCircle,
 		Eye,
 		Glasses,
 		Sun,

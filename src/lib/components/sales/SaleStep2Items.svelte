@@ -14,15 +14,10 @@
 	} from '@lucide/svelte';
 	import { formatPrice, checkLensMatch, hasPrescriptionData, MATCH_DISPLAY } from '$lib/utils';
 	import type { LensMatchDetail, PrescriptionForMatching } from '$lib/utils/lensMatching';
-	import {
-		ALL_DISCOUNT_TYPES,
-		DiscountType,
-		type DiscountType as DiscountTypeEnum
-	} from '$lib/shared/enums';
+	import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
 	import {
 		LensCatalogSource,
 		LensFulfillmentMode,
-		LensType,
 		getLensFulfillmentModeLabel,
 		getLensTypeLabel,
 		getLensSourceLabel,
