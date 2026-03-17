@@ -23,17 +23,23 @@
 		/** Custom HTML renderer for options (prefer option/selection snippets instead) */
 		renderer?: (item: object, isSelection?: boolean) => string;
 		/** Snippet for rendering each dropdown option */
-		option?: Snippet<[option: any, inputValue: string]>;
+		option?: Snippet<[option: object, inputValue: string]>;
 		/** Snippet for rendering the selected value */
-		selection?: Snippet<[selectedOptions: any[], bindItem: Function]>;
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+		selection?: Snippet<[selectedOptions: object[], bindItem: Function]>;
 		/** Change handler */
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		onChange?: (selected: any) => void;
 		/** Enable creation of new options */
 		creatable?: boolean;
 		/** Handler for creating new options */
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		createHandler?: (props: any) => any;
+		createHandler?: (prop: {
+			inputValue: string;
+			valueField: string;
+			labelField: string;
+			prefix: string;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		}) => any;
 		/** Prefix shown before new option text */
 		creatablePrefix?: string;
 		/** Keep created items in internal list */
