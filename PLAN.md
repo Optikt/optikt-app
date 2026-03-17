@@ -375,7 +375,7 @@ Criterios de salida:
 
 - CRUD de lentes funcional con el nuevo modelo como unica fuente de verdad.
 
-## Fase 2 - Motor de matching v2
+## Fase 2 - Motor de matching v2 ✅
 
 Objetivo:
 
@@ -383,12 +383,24 @@ Objetivo:
 
 Cambios:
 
-- Nuevo modulo de matching compartido.
-- Tests unitarios intensivos:
-  - firma exacta
-  - exclusion por tratamiento extra no solicitado
-  - casos sin rango
-  - parser od/oi con y sin addition
+- [x] Nuevo modulo de matching compartido (`src/lib/shared/matching/`).
+  - `types.ts` — tipos input/output desacoplados del DB.
+  - `signatureMatching.ts` — `matchesSignature()` + `evaluateLensCompatibility()`.
+  - `opticalParser.ts` — `parseOpticalPrescription()` con prefijos OD/OI/OS.
+  - `index.ts` — barrel export.
+- [x] Tests unitarios intensivos (50 tests):
+  - firma exacta, material null wildcard
+  - exclusion por tratamiento extra INHERENT no solicitado
+  - OPTIONAL_EXTRA no solicitado permitido
+  - fotosensible mismatch bidireccional
+  - CONSULT_REQUIRED bypass sin range check
+  - EXACT_RANGES con sphere, cylinder, addition
+  - rangos de cilindro filtran ranges applicables
+  - ojo sin datos = no_data (no falla)
+  - parser od/oi/os con y sin addition
+  - parser unprefixed (ambos ojos iguales)
+  - parser monocular (un solo ojo)
+- [x] Build + lint + svelte-check limpio.
 
 Criterios de salida:
 
@@ -443,6 +455,9 @@ Cambios:
 - Eliminacion de validaciones viejas que ya no representen la realidad del flujo.
 - Reorganizacion visual tajante para priorizar visibilidad operativa.
 - Mejorar formulario de lentes: agrupacion logica de campos, feedback visual de errores inline (rangos, tratamientos, politica de compra), textos explicativos mas claros.
+- **Migrar** `SaleStep2Items`, `SaleStep3Summary`, `NewSaleForm` de `$lib/utils/lensMatching` → `$lib/shared/matching`.
+- **Eliminar** `$lib/utils/lensMatching.ts` y su test una vez migrados todos los consumidores.
+- Corregir bug de display de pricing unit (muestra "Por Unidad" en vez de "Por Par").
 
 Criterios de salida:
 
@@ -480,6 +495,8 @@ Cambios:
 - Pagina de resultados completos al Enter.
 - Integracion con ventas/presupuestos.
 - Sustitucion de la barra actual por una interfaz centrada en scopes y resultados semanticos.
+- **Migrar** `search.remote.ts` de `$lib/utils/opticalParser` → `$lib/shared/matching` (`parseOpticalPrescription`).
+- **Eliminar** `$lib/utils/opticalParser.ts` una vez migrado.
 
 Criterios de salida:
 
@@ -514,6 +531,8 @@ Cambios:
 - Eliminar campos, ramas y componentes legacy que ya no se usen.
 - Eliminar contratos viejos, helpers ambiguos y codigo muerto.
 - Ajustar tests al flujo final, sin duplicidad de comportamiento viejo.
+- **Verificar** que `$lib/utils/lensMatching.ts` y `$lib/utils/opticalParser.ts` fueron eliminados en fases anteriores. Si no, eliminar aqui.
+- **Verificar** que `$lib/utils/index.ts` ya no re-exporta codigo de matching/parser viejo.
 
 Criterios de salida:
 
