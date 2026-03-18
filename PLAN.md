@@ -160,6 +160,43 @@ Nuevos campos/estructuras en item de catalogo:
 
 Nota: la politica de tratamiento se resuelve por item y proveedor del item.
 
+### A.1) Politicas de tratamiento a nivel proveedor/laboratorio (CRITICO)
+
+**Problema identificado:** las `treatmentPolicies` estan declaradas por item de catalogo,
+pero en la practica muchos laboratorios definen politicas de tratamiento que aplican a
+**todos** sus cristales, no a cada item individual.
+
+Ejemplos reales:
+
+| Laboratorio    | Politica                                       | Nivel correcto     |
+| -------------- | ---------------------------------------------- | ------------------ |
+| Novak          | AR $15/lens para todos sus cristales, sin blue  | **Proveedor**      |
+| FFTech         | AR $18/lens + Blueblock $8/lens, combinables   | **Proveedor**      |
+| Cristal Royal  | Sin tratamientos opcionales; variantes con AR/blue son items separados (INHERENT) | **Item** |
+
+**Consecuencia sin resolver:** si Novak cambia el precio de AR de $15 a $18, habria que actualizar
+**todos** los items de Novak en catalogo manualmente (pueden ser decenas o cientos).
+Lo mismo si FFTech agrega un nuevo tratamiento: habria que declararlo en cada item.
+
+**Solucion propuesta: herencia de politicas con override por item.**
+
+1. Nueva tabla/estructura: `supplier_treatment_policies` — define tratamientos por defecto
+   a nivel proveedor/laboratorio (code, availability, additionalPrice, requiresConfirmation).
+2. Cada item de catalogo **hereda** las politicas del proveedor por defecto.
+3. Un item puede **sobrescribir** la politica del proveedor si necesita un comportamiento distinto
+   (ej: un cristal especifico de Novak que no soporta AR por su material).
+4. Items con tratamientos INHERENT (como Cristal Royal) ignoran la politica del proveedor
+   para esos tratamientos — el dato vive en el item.
+5. Al construir `CatalogItemForPlanning`, el sistema **resuelve** las politicas:
+   `supplier defaults → merge con item overrides → resultado final`.
+
+**El fulfillment planner NO cambia.** Recibe politicas ya resueltas — no le importa de donde vienen.
+
+**Este cambio afecta:**
+- Schema DB (nueva tabla + logica de resolucion en queries)
+- Formulario de lentes (UI para configurar politicas a nivel proveedor y overrides por item)
+- No necesita Seed/migracion de datos existentes, no hay app para migrar aun
+
 ### B) Inventario de excedentes fisicos
 
 Nueva entidad de unidades fisicas de excedente:
@@ -374,6 +411,7 @@ Cambios:
 Criterios de salida:
 
 - CRUD de lentes funcional con el nuevo modelo como unica fuente de verdad.
+- ⚠️ **Pendiente:** schema DB aun no tiene `supplier_treatment_policies` — se implementa en Fase 5 (ver seccion A.1).
 
 ## Fase 2 - Motor de matching v2 ✅
 
@@ -467,6 +505,13 @@ Objetivo:
 
 Cambios:
 
+- **⚠️ CRITICO: Implementar politicas de tratamiento a nivel proveedor (ver seccion A.1 del modelo de datos).**
+  - Nueva tabla `supplier_treatment_policies` con defaults por laboratorio.
+  - Logica de resolucion: supplier defaults → merge con item overrides → `treatmentPolicies` final.
+  - No necesita migrar datos existentes, no hay app en produccion para migrar. Se puede extraer politicas repetidas a nivel proveedor, pero sencllamente es mas facil hacerlo directo.
+  - UI de proveedor/laboratorio: seccion para configurar tratamientos por defecto.
+  - UI de item de catalogo: mostrar politicas heredadas, permitir override por item.
+  - Al resolver `CatalogItemForPlanning`, usar la capa de resolucion (no leer directo del item).
 - Step items con selector de tratamientos validado por proveedor/item.
 - Panel de impacto operativo por item y total.
 - Bloqueos/confirmaciones donde aplique.
