@@ -167,7 +167,7 @@ function matchRanges(
 ): RangeMatchResult {
 	return {
 		od: eyeMatchesRanges(prescription.od, ranges),
-		os: eyeMatchesRanges(prescription.os, ranges)
+		oi: eyeMatchesRanges(prescription.oi, ranges)
 	};
 }
 
@@ -236,7 +236,7 @@ export function evaluateLensCompatibility(
 
 	const bothInRange =
 		(rangeMatch.od === 'in_range' || rangeMatch.od === 'no_data') &&
-		(rangeMatch.os === 'in_range' || rangeMatch.os === 'no_data');
+		(rangeMatch.oi === 'in_range' || rangeMatch.oi === 'no_data');
 
 	const verdict: CompatibilityVerdict = bothInRange ? 'EXACT_MATCH' : 'SIGNATURE_MISMATCH';
 

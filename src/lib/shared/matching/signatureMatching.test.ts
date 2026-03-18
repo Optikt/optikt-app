@@ -60,8 +60,8 @@ function eye(
 	};
 }
 
-function rx(od: EyePrescription, os: EyePrescription): PrescriptionForMatching {
-	return { od, os };
+function rx(od: EyePrescription, oi: EyePrescription): PrescriptionForMatching {
+	return { od, oi };
 }
 
 function range(
@@ -337,7 +337,7 @@ describe('evaluateLensCompatibility', () => {
 			const item = makeCatalogItem({ ranges: sphereOnlyRanges });
 			const result = evaluateLensCompatibility(item, makeRequest(), rx(eye(+3.0), eye(-2.0)));
 			expect(result.verdict).toBe('EXACT_MATCH');
-			expect(result.rangeMatch).toEqual({ od: 'in_range', os: 'in_range' });
+			expect(result.rangeMatch).toEqual({ od: 'in_range', oi: 'in_range' });
 		});
 
 		it('returns SIGNATURE_MISMATCH when OD out of range', () => {
@@ -345,7 +345,7 @@ describe('evaluateLensCompatibility', () => {
 			const result = evaluateLensCompatibility(item, makeRequest(), rx(eye(+8.0), eye(-2.0)));
 			expect(result.verdict).toBe('SIGNATURE_MISMATCH');
 			expect(result.rangeMatch!.od).toBe('out_of_range');
-			expect(result.rangeMatch!.os).toBe('in_range');
+			expect(result.rangeMatch!.oi).toBe('in_range');
 		});
 
 		it('returns SIGNATURE_MISMATCH when OS out of range', () => {
@@ -353,7 +353,7 @@ describe('evaluateLensCompatibility', () => {
 			const result = evaluateLensCompatibility(item, makeRequest(), rx(eye(+1.0), eye(-7.0)));
 			expect(result.verdict).toBe('SIGNATURE_MISMATCH');
 			expect(result.rangeMatch!.od).toBe('in_range');
-			expect(result.rangeMatch!.os).toBe('out_of_range');
+			expect(result.rangeMatch!.oi).toBe('out_of_range');
 		});
 
 		it('returns EXACT_MATCH when one eye has no data and the other is in range', () => {
@@ -365,7 +365,7 @@ describe('evaluateLensCompatibility', () => {
 			);
 			expect(result.verdict).toBe('EXACT_MATCH');
 			expect(result.rangeMatch!.od).toBe('in_range');
-			expect(result.rangeMatch!.os).toBe('no_data');
+			expect(result.rangeMatch!.oi).toBe('no_data');
 		});
 
 		it('returns EXACT_MATCH when both eyes have no data', () => {
@@ -377,7 +377,7 @@ describe('evaluateLensCompatibility', () => {
 			);
 			expect(result.verdict).toBe('EXACT_MATCH');
 			expect(result.rangeMatch!.od).toBe('no_data');
-			expect(result.rangeMatch!.os).toBe('no_data');
+			expect(result.rangeMatch!.oi).toBe('no_data');
 		});
 
 		it('returns EXACT_MATCH at exact boundary values', () => {
