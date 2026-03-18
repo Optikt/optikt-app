@@ -3,14 +3,18 @@ import type {
 	LensPurchasePolicy,
 	LensTreatmentPolicy
 } from '$lib/shared/contracts/lenses';
+import type { PatientEye } from '$lib/shared/contracts/common';
+import type { FulfillmentCostBreakdown } from '$lib/shared/contracts/fulfillment';
 import type { CompatibilityVerdict } from '$lib/shared/matching/types';
+import { FulfillmentSource, FulfillmentWarningCode } from '$lib/shared/contracts/fulfillment';
+
+// Re-export enums so consumers can import from planning
+export { FulfillmentSource, FulfillmentWarningCode };
+export type { PatientEye, FulfillmentCostBreakdown };
 
 // ============================================================================
 // Input types — what the planner receives
 // ============================================================================
-
-/** Which eye this requirement is for */
-export type EyeSide = 'OD' | 'OS';
 
 /**
  * A single lens need from a sale/quote.
@@ -20,7 +24,7 @@ export interface LensRequirement {
 	/** Unique id for this requirement (caller-provided) */
 	requirementId: string;
 	/** Which eye */
-	eye: EyeSide;
+	eye: PatientEye;
 	/** Resolved catalog item */
 	catalogItemId: string;
 	/** Compatibility verdict from matching engine */
@@ -45,50 +49,21 @@ export interface CatalogItemForPlanning {
 // Output types — what the planner returns
 // ============================================================================
 
-/** How this lens unit will be sourced */
-export type FulfillmentSource =
-	| 'SUPPLIER_ORDER' // Standard order from supplier/lab
-	| 'PAIR_BUNDLED'; // Covered as part of a pair purchase
-
-/** Warning codes the UI can use for display */
-export type PlanWarning =
-	| 'CONSULT_REQUIRED' // Ranges not confirmed, must consult supplier
-	| 'REQUIRES_SINGLE_UNIT_CONFIRMATION' // Supplier normally sells pairs, single unit needs confirmation
-	| 'SINGLE_UNIT_SURCHARGE' // Extra cost for buying a single unit
-	| 'CREATES_SURPLUS' // Buying a pair for one eye need, excess unit created
-	| 'BELOW_MINIMUM_ORDER'; // Units needed < supplier minimum
-
-/** Cost breakdown for a single plan line */
-export interface LineCostBreakdown {
-	/** Base lens price for one unit */
-	baseUnitCost: number;
-	/** Sum of additional treatment prices */
-	treatmentsCost: number;
-	/** Surcharge for single-unit order (0 if pair or not applicable) */
-	singleUnitSurcharge: number;
-	/** Mounting price from purchase policy */
-	mountingCost: number;
-	/** Shipping price from purchase policy */
-	shippingCost: number;
-	/** Total for this line = base + treatments + surcharge + mounting + shipping */
-	lineTotal: number;
-}
-
-/** One line in the fulfillment plan — corresponds to one LensRequirement */
-export interface FulfillmentPlanLine {
+/** One line in the fulfillment plan result — corresponds to one LensRequirement */
+export interface FulfillmentPlanResultLine {
 	/** Links back to the requirement */
 	requirementId: string;
-	eye: EyeSide;
+	eye: PatientEye;
 	catalogItemId: string;
 
 	/** How this unit is sourced */
 	source: FulfillmentSource;
 
 	/** Cost breakdown (null when bundled into a pair — cost lives on the pair's primary line) */
-	cost: LineCostBreakdown | null;
+	cost: FulfillmentCostBreakdown | null;
 
 	/** Human-readable warnings for the UI */
-	warnings: PlanWarning[];
+	warnings: FulfillmentWarningCode[];
 
 	/** Whether user must explicitly confirm before proceeding */
 	requiresConfirmation: boolean;
@@ -106,10 +81,10 @@ export interface SurplusInfo {
 	surplusCostIncluded: number;
 }
 
-/** The complete fulfillment plan for a set of lens requirements */
-export interface FulfillmentPlan {
+/** The complete fulfillment plan result for a set of lens requirements */
+export interface FulfillmentPlanResult {
 	/** One line per requirement, in same order */
-	lines: FulfillmentPlanLine[];
+	lines: FulfillmentPlanResultLine[];
 	/** Surplus generated (if any) */
 	surplus: SurplusInfo[];
 	/** Grand total across all lines */
@@ -117,5 +92,5 @@ export interface FulfillmentPlan {
 	/** Whether any line requires confirmation */
 	requiresAnyConfirmation: boolean;
 	/** All warnings across all lines (deduplicated) */
-	allWarnings: PlanWarning[];
+	allWarnings: FulfillmentWarningCode[];
 }
