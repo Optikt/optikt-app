@@ -6,7 +6,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
-		allowedHosts: ['elitebook.taild8f0b9.ts.net', 'nanezx-elitebook.taild8f0b9.ts.net']
+		allowedHosts: ['elitebook.taild8f0b9.ts.net', 'nanezx-elitebook.taild8f0b9.ts.net'],
+		watch: {
+			ignored: ['**/PLAN.md', '**/AGENTS.md', '**/docs/**', '**/plans/**', '**/drizzle/**']
+		}
 	},
 
 	test: {
