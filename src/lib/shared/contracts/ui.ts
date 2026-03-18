@@ -49,6 +49,11 @@ export const FULFILLMENT_SOURCE_UI: Record<FulfillmentSource, DomainStatusUiDesc
 		label: 'Pedido a laboratorio',
 		tone: 'warning',
 		description: 'La unidad debe procesarse o pedirse como trabajo de laboratorio.'
+	},
+	[FulfillmentSource.PAIR_BUNDLED]: {
+		label: 'Incluido en par',
+		tone: 'success',
+		description: 'La unidad esta incluida en la compra de un par del mismo cristal.'
 	}
 };
 
@@ -82,6 +87,17 @@ export const FULFILLMENT_WARNING_UI: Record<FulfillmentWarningCode, DomainStatus
 		label: 'Rango no publicado',
 		tone: 'warning',
 		description: 'La firma coincide, pero no hay rango confirmado para validar la formula.'
+	},
+	[FulfillmentWarningCode.SINGLE_UNIT_SURCHARGE]: {
+		label: 'Recargo por unidad',
+		tone: 'warning',
+		description: 'Se aplica un recargo adicional por comprar una sola unidad en lugar de par.'
+	},
+	[FulfillmentWarningCode.BELOW_MINIMUM_ORDER]: {
+		label: 'Bajo minimo de pedido',
+		tone: 'danger',
+		description:
+			'La cantidad solicitada no alcanza el minimo de unidades que requiere el proveedor.'
 	}
 };
 
