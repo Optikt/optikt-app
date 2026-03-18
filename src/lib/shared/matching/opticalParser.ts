@@ -8,7 +8,7 @@ const DIOPTER_PATTERN = /[+-]\d+(?:\.\d{1,2})?/g;
 const EYE_PREFIX = /^(od|oi|os)\s*:\s*/i;
 
 interface SingleEyeParseResult {
-	eye: 'od' | 'os';
+	eye: 'od' | 'oi';
 	prescription: EyePrescription;
 }
 
@@ -43,7 +43,7 @@ function parseEyeSegment(segment: string): SingleEyeParseResult | null {
 	if (!prefixMatch) return null;
 
 	const rawEye = prefixMatch[1]!.toLowerCase();
-	const eye: 'od' | 'os' = rawEye === 'od' ? 'od' : 'os'; // OI/OS both map to OS
+	const eye: 'od' | 'oi' = rawEye === 'od' ? 'od' : 'oi'; // OI/OS both map to OI
 	const rest = trimmed.slice(prefixMatch[0].length);
 
 	const prescription = parseDiopters(rest);
@@ -58,7 +58,7 @@ export interface PrescriptionParseResult {
 	text: string;
 	/** Whether any optical data was parsed */
 	isOptical: boolean;
-	/** Whether OD/OS segments were found */
+	/** Whether OD/OI segments were found */
 	hasPrefixes: boolean;
 }
 
@@ -90,21 +90,21 @@ export function parseOpticalPrescription(input: string): PrescriptionParseResult
 
 	if (hasPrefix) {
 		let od: EyePrescription = { ...EMPTY_EYE };
-		let os: EyePrescription = { ...EMPTY_EYE };
+		let oi: EyePrescription = { ...EMPTY_EYE };
 
 		for (const seg of segments) {
 			const parsed = parseEyeSegment(seg);
 			if (!parsed) continue;
 			if (parsed.eye === 'od') od = parsed.prescription;
-			else os = parsed.prescription;
+			else oi = parsed.prescription;
 		}
 
 		// At least one eye must have data
 		const hasData =
-			od.sphere !== null || od.cylinder !== null || os.sphere !== null || os.cylinder !== null;
+			od.sphere !== null || od.cylinder !== null || oi.sphere !== null || oi.cylinder !== null;
 
 		return {
-			prescription: hasData ? { od, os } : null,
+			prescription: hasData ? { od, oi } : null,
 			text: trimmed,
 			isOptical: hasData,
 			hasPrefixes: true
@@ -115,7 +115,7 @@ export function parseOpticalPrescription(input: string): PrescriptionParseResult
 	const single = parseDiopters(trimmed);
 	if (single && single.sphere !== null) {
 		return {
-			prescription: { od: single, os: { ...single } },
+			prescription: { od: single, oi: { ...single } },
 			text: trimmed,
 			isOptical: true,
 			hasPrefixes: false

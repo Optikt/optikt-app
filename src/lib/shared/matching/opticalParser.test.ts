@@ -24,7 +24,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.hasPrefixes).toBe(false);
 			expect(result.prescription?.od.sphere).toBe(3.5);
 			expect(result.prescription?.od.cylinder).toBeNull();
-			expect(result.prescription?.os.sphere).toBe(3.5);
+			expect(result.prescription?.oi.sphere).toBe(3.5);
 		});
 
 		it('parses sphere + cylinder', () => {
@@ -32,7 +32,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(false);
 			expect(result.prescription?.od).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
-			expect(result.prescription?.os).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
 		});
 
 		it('parses sphere + cylinder + addition', () => {
@@ -40,7 +40,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(false);
 			expect(result.prescription?.od).toEqual({ sphere: -1, cylinder: -0.5, addition: 2 });
-			expect(result.prescription?.os).toEqual({ sphere: -1, cylinder: -0.5, addition: 2 });
+			expect(result.prescription?.oi).toEqual({ sphere: -1, cylinder: -0.5, addition: 2 });
 		});
 
 		it('returns null for non-optical text', () => {
@@ -57,7 +57,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
-			expect(result.prescription?.os).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
 		});
 
 		it('parses with extra spaces', () => {
@@ -65,7 +65,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
-			expect(result.prescription?.os).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
 		});
 
 		it('is case insensitive (OD/OI uppercase)', () => {
@@ -73,7 +73,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
-			expect(result.prescription?.os).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
 		});
 	});
 
@@ -83,7 +83,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od).toEqual({ sphere: 3.5, cylinder: -2, addition: null });
-			expect(result.prescription?.os).toEqual({ sphere: null, cylinder: null, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: null, cylinder: null, addition: null });
 		});
 
 		it('parses OI only — OD gets empty', () => {
@@ -91,7 +91,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od).toEqual({ sphere: null, cylinder: null, addition: null });
-			expect(result.prescription?.os).toEqual({ sphere: -0.5, cylinder: -0.5, addition: 2 });
+			expect(result.prescription?.oi).toEqual({ sphere: -0.5, cylinder: -0.5, addition: 2 });
 		});
 	});
 
@@ -100,14 +100,14 @@ describe('parseOpticalPrescription', () => {
 			const result = parseOpticalPrescription('os:+1.00 -0.50');
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
-			expect(result.prescription?.os).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
 		});
 
 		it('parses OI as OS eye', () => {
 			const result = parseOpticalPrescription('oi:+1.00 -0.50');
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
-			expect(result.prescription?.os).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
+			expect(result.prescription?.oi).toEqual({ sphere: 1, cylinder: -0.5, addition: null });
 		});
 
 		it('parses OD + OS format', () => {
@@ -115,7 +115,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od.sphere).toBe(2);
-			expect(result.prescription?.os.sphere).toBe(-1);
+			expect(result.prescription?.oi.sphere).toBe(-1);
 		});
 
 		it('parses OD + OI format', () => {
@@ -123,7 +123,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.isOptical).toBe(true);
 			expect(result.hasPrefixes).toBe(true);
 			expect(result.prescription?.od.sphere).toBe(2);
-			expect(result.prescription?.os.sphere).toBe(-1);
+			expect(result.prescription?.oi.sphere).toBe(-1);
 		});
 	});
 
@@ -131,19 +131,19 @@ describe('parseOpticalPrescription', () => {
 		it('parses binocular with addition', () => {
 			const result = parseOpticalPrescription('od:+1.00 -0.75 +2.00 oi:-0.50 -0.50 +2.50');
 			expect(result.prescription?.od.addition).toBe(2);
-			expect(result.prescription?.os.addition).toBe(2.5);
+			expect(result.prescription?.oi.addition).toBe(2.5);
 		});
 
 		it('parses binocular with only one eye (OD) with addition', () => {
 			const result = parseOpticalPrescription('od:+1.00 -0.75 +2.00 oi:-0.50 -0.50');
 			expect(result.prescription?.od.addition).toBe(2);
-			expect(result.prescription?.os.addition).toBe(null);
+			expect(result.prescription?.oi.addition).toBe(null);
 		});
 
 		it('parses binocular with only one eye (OS) with addition', () => {
 			const result = parseOpticalPrescription('od:+1.00 -0.75 oi:-0.50 -0.50 +2.50');
 			expect(result.prescription?.od.addition).toBe(null);
-			expect(result.prescription?.os.addition).toBe(2.5);
+			expect(result.prescription?.oi.addition).toBe(2.5);
 		});
 	});
 
@@ -168,7 +168,7 @@ describe('parseOpticalPrescription', () => {
 			expect(result.hasPrefixes).toBe(true);
 			// OD should be parsed, OS stays empty
 			expect(result.prescription?.od.sphere).toBe(3.5);
-			expect(result.prescription?.os.sphere).toBeNull();
+			expect(result.prescription?.oi.sphere).toBeNull();
 		});
 	});
 });
