@@ -1,13 +1,13 @@
 import { LensPricingUnit } from '$lib/shared/enums/lensTypes';
 import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
+import { FulfillmentSource, FulfillmentWarningCode } from '$lib/shared/contracts/fulfillment';
+import type { FulfillmentCostBreakdown } from '$lib/shared/contracts/fulfillment';
 import type {
 	LensRequirement,
 	CatalogItemForPlanning,
-	FulfillmentPlan,
-	FulfillmentPlanLine,
-	LineCostBreakdown,
-	SurplusInfo,
-	PlanWarning
+	FulfillmentPlanResult,
+	FulfillmentPlanResultLine,
+	SurplusInfo
 } from './types';
 
 // ============================================================================
@@ -21,31 +21,29 @@ function calculateLineCost(
 	requirement: LensRequirement,
 	item: CatalogItemForPlanning,
 	applySingleUnitSurcharge: boolean
-): LineCostBreakdown {
-	const baseUnitCost = item.basePrice;
+): FulfillmentCostBreakdown {
+	const basePrice = item.basePrice;
 
-	let treatmentsCost = 0;
+	let treatmentPrice = 0;
 	for (const code of requirement.selectedOptionalTreatments) {
 		const policy = item.treatmentPolicies.find((p) => p.code === code);
 		if (policy && policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA) {
-			treatmentsCost += policy.additionalPrice;
+			treatmentPrice += policy.additionalPrice;
 		}
 	}
 
-	const singleUnitSurcharge = applySingleUnitSurcharge
-		? item.purchasePolicy.singleUnitSurcharge
-		: 0;
+	const surchargePrice = applySingleUnitSurcharge ? item.purchasePolicy.singleUnitSurcharge : 0;
 
-	const mountingCost = item.purchasePolicy.mountingPrice;
-	const shippingCost = item.purchasePolicy.shippingPrice;
+	const mountingPrice = item.purchasePolicy.mountingPrice;
+	const shippingPrice = item.purchasePolicy.shippingPrice;
 
 	return {
-		baseUnitCost,
-		treatmentsCost,
-		singleUnitSurcharge,
-		mountingCost,
-		shippingCost,
-		lineTotal: baseUnitCost + treatmentsCost + singleUnitSurcharge + mountingCost + shippingCost
+		basePrice,
+		treatmentPrice,
+		surchargePrice,
+		mountingPrice,
+		shippingPrice,
+		totalCost: basePrice + treatmentPrice + surchargePrice + mountingPrice + shippingPrice
 	};
 }
 
@@ -96,8 +94,8 @@ function groupByCatalogItem(requirements: LensRequirement[]): RequirementGroup[]
 export function buildFulfillmentPlan(
 	requirements: LensRequirement[],
 	catalog: Map<string, CatalogItemForPlanning>
-): FulfillmentPlan {
-	const lines: FulfillmentPlanLine[] = [];
+): FulfillmentPlanResult {
+	const lines: FulfillmentPlanResultLine[] = [];
 	const surplus: SurplusInfo[] = [];
 	const groups = groupByCatalogItem(requirements);
 
@@ -120,14 +118,14 @@ export function buildFulfillmentPlan(
 		// Check minimum order units
 		if (unitCount < policy.minimumOrderUnits) {
 			for (const line of lines.filter((l) => l.catalogItemId === group.catalogItemId)) {
-				if (!line.warnings.includes('BELOW_MINIMUM_ORDER')) {
-					line.warnings.push('BELOW_MINIMUM_ORDER');
+				if (!line.warnings.includes(FulfillmentWarningCode.BELOW_MINIMUM_ORDER)) {
+					line.warnings.push(FulfillmentWarningCode.BELOW_MINIMUM_ORDER);
 				}
 			}
 		}
 	}
 
-	const totalCost = lines.reduce((sum, l) => sum + (l.cost?.lineTotal ?? 0), 0);
+	const totalCost = lines.reduce((sum, l) => sum + (l.cost?.totalCost ?? 0), 0);
 	const requiresAnyConfirmation = lines.some((l) => l.requiresConfirmation);
 	const allWarnings = [...new Set(lines.flatMap((l) => l.warnings))];
 
@@ -141,7 +139,7 @@ export function buildFulfillmentPlan(
 function planUnitPricingGroup(
 	group: RequirementGroup,
 	item: CatalogItemForPlanning,
-	lines: FulfillmentPlanLine[]
+	lines: FulfillmentPlanResultLine[]
 ): void {
 	for (const req of group.requirements) {
 		const warnings = buildWarnings(req, false, false);
@@ -151,10 +149,10 @@ function planUnitPricingGroup(
 			requirementId: req.requirementId,
 			eye: req.eye,
 			catalogItemId: req.catalogItemId,
-			source: 'SUPPLIER_ORDER',
+			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost,
 			warnings,
-			requiresConfirmation: warnings.includes('CONSULT_REQUIRED')
+			requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
 		});
 	}
 }
@@ -166,7 +164,7 @@ function planUnitPricingGroup(
 function planPairPricingGroup(
 	group: RequirementGroup,
 	item: CatalogItemForPlanning,
-	lines: FulfillmentPlanLine[],
+	lines: FulfillmentPlanResultLine[],
 	surplus: SurplusInfo[]
 ): void {
 	const policy = item.purchasePolicy;
@@ -185,7 +183,7 @@ function planPairPricingGroup(
 function planNaturalPairs(
 	group: RequirementGroup,
 	item: CatalogItemForPlanning,
-	lines: FulfillmentPlanLine[]
+	lines: FulfillmentPlanResultLine[]
 ): void {
 	// Process in pairs of 2
 	for (let i = 0; i < group.requirements.length; i += 2) {
@@ -199,10 +197,10 @@ function planNaturalPairs(
 			requirementId: first.requirementId,
 			eye: first.eye,
 			catalogItemId: first.catalogItemId,
-			source: 'SUPPLIER_ORDER',
+			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost: firstCost,
 			warnings: firstWarnings,
-			requiresConfirmation: firstWarnings.includes('CONSULT_REQUIRED')
+			requiresConfirmation: firstWarnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
 		});
 
 		if (second) {
@@ -213,10 +211,10 @@ function planNaturalPairs(
 				requirementId: second.requirementId,
 				eye: second.eye,
 				catalogItemId: second.catalogItemId,
-				source: 'PAIR_BUNDLED',
+				source: FulfillmentSource.PAIR_BUNDLED,
 				cost: secondCost,
 				warnings: secondWarnings,
-				requiresConfirmation: secondWarnings.includes('CONSULT_REQUIRED')
+				requiresConfirmation: secondWarnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
 			});
 		} else {
 			// Odd requirement out — treated as single unit need (shouldn't happen with 2, but handles 3+)
@@ -230,7 +228,7 @@ function planSingleUnitNeed(
 	req: LensRequirement,
 	item: CatalogItemForPlanning,
 	policy: CatalogItemForPlanning['purchasePolicy'],
-	lines: FulfillmentPlanLine[],
+	lines: FulfillmentPlanResultLine[],
 	surplus: SurplusInfo[]
 ): void {
 	if (policy.allowsSingleUnitOrder) {
@@ -238,8 +236,11 @@ function planSingleUnitNeed(
 		const applySurcharge = policy.singleUnitSurcharge > 0;
 		const needsConfirmation = policy.singleUnitRequiresConfirmation;
 		const warnings = buildWarnings(req, applySurcharge, false);
-		if (needsConfirmation && !warnings.includes('REQUIRES_SINGLE_UNIT_CONFIRMATION')) {
-			warnings.push('REQUIRES_SINGLE_UNIT_CONFIRMATION');
+		if (
+			needsConfirmation &&
+			!warnings.includes(FulfillmentWarningCode.SINGLE_UNIT_REQUIRES_CONFIRMATION)
+		) {
+			warnings.push(FulfillmentWarningCode.SINGLE_UNIT_REQUIRES_CONFIRMATION);
 		}
 
 		const cost = calculateLineCost(req, item, applySurcharge);
@@ -248,10 +249,11 @@ function planSingleUnitNeed(
 			requirementId: req.requirementId,
 			eye: req.eye,
 			catalogItemId: req.catalogItemId,
-			source: 'SUPPLIER_ORDER',
+			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost,
 			warnings,
-			requiresConfirmation: needsConfirmation || warnings.includes('CONSULT_REQUIRED')
+			requiresConfirmation:
+				needsConfirmation || warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
 		});
 	} else {
 		// Must buy a pair — one unit is needed, one becomes surplus
@@ -262,10 +264,10 @@ function planSingleUnitNeed(
 			requirementId: req.requirementId,
 			eye: req.eye,
 			catalogItemId: req.catalogItemId,
-			source: 'SUPPLIER_ORDER',
+			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost,
 			warnings,
-			requiresConfirmation: warnings.includes('CONSULT_REQUIRED')
+			requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
 		});
 
 		// The surplus unit's cost is the same base + treatments (included in pair price)
@@ -273,7 +275,7 @@ function planSingleUnitNeed(
 		surplus.push({
 			catalogItemId: req.catalogItemId,
 			surplusUnits: 1,
-			surplusCostIncluded: surplusCost.lineTotal
+			surplusCostIncluded: surplusCost.totalCost
 		});
 	}
 }
@@ -286,17 +288,17 @@ function buildWarnings(
 	req: LensRequirement,
 	hasSurcharge: boolean,
 	createsSurplus: boolean
-): PlanWarning[] {
-	const warnings: PlanWarning[] = [];
+): FulfillmentWarningCode[] {
+	const warnings: FulfillmentWarningCode[] = [];
 
 	if (req.compatibilityVerdict === 'CONSULT_REQUIRED') {
-		warnings.push('CONSULT_REQUIRED');
+		warnings.push(FulfillmentWarningCode.CONSULT_REQUIRED);
 	}
 	if (hasSurcharge) {
-		warnings.push('SINGLE_UNIT_SURCHARGE');
+		warnings.push(FulfillmentWarningCode.SINGLE_UNIT_SURCHARGE);
 	}
 	if (createsSurplus) {
-		warnings.push('CREATES_SURPLUS');
+		warnings.push(FulfillmentWarningCode.PAIR_ORDER_CREATES_SURPLUS);
 	}
 
 	return warnings;

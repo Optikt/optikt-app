@@ -6,7 +6,9 @@ import {
 	type LensTreatmentPolicy
 } from '$lib/shared/contracts/lenses';
 import { LensPricingUnit } from '$lib/shared/enums/lensTypes';
-import type { LensRequirement, CatalogItemForPlanning, EyeSide } from './types';
+import { PatientEye } from '$lib/shared/contracts/common';
+import { FulfillmentSource, FulfillmentWarningCode } from '$lib/shared/contracts/fulfillment';
+import type { LensRequirement, CatalogItemForPlanning } from './types';
 import type { CompatibilityVerdict } from '$lib/shared/matching/types';
 
 // ---------------------------------------------------------------------------
@@ -66,7 +68,7 @@ function makeCatalogItem(
 }
 
 function makeRequirement(
-	eye: EyeSide,
+	eye: PatientEye,
 	catalogItemId: string,
 	overrides: Partial<LensRequirement> = {}
 ): LensRequirement {
@@ -96,22 +98,25 @@ describe('buildFulfillmentPlan — UNIT pricing', () => {
 
 	it('plans two independent lines for a pair (OD + OS)', () => {
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-1'), makeRequirement('OS', 'lens-1')],
+			[makeRequirement(PatientEye.OD, 'lens-1'), makeRequirement(PatientEye.OI, 'lens-1')],
 			catalogMap(unitItem)
 		);
 
 		expect(plan.lines).toHaveLength(2);
-		expect(plan.lines[0]!.source).toBe('SUPPLIER_ORDER');
-		expect(plan.lines[1]!.source).toBe('SUPPLIER_ORDER');
+		expect(plan.lines[0]?.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
+		expect(plan.lines[1]?.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
 		expect(plan.totalCost).toBe(1000); // 500 + 500
 		expect(plan.surplus).toHaveLength(0);
 	});
 
 	it('plans a single line for one eye', () => {
-		const plan = buildFulfillmentPlan([makeRequirement('OD', 'lens-1')], catalogMap(unitItem));
+		const plan = buildFulfillmentPlan(
+			[makeRequirement(PatientEye.OD, 'lens-1')],
+			catalogMap(unitItem)
+		);
 
 		expect(plan.lines).toHaveLength(1);
-		expect(plan.lines[0]!.cost!.baseUnitCost).toBe(500);
+		expect(plan.lines[0].cost?.basePrice).toBe(500);
 		expect(plan.totalCost).toBe(500);
 		expect(plan.surplus).toHaveLength(0);
 	});
@@ -125,14 +130,16 @@ describe('buildFulfillmentPlan — UNIT pricing', () => {
 
 		const plan = buildFulfillmentPlan(
 			[
-				makeRequirement('OD', 'lens-ar', { selectedOptionalTreatments: ['AR'] }),
-				makeRequirement('OS', 'lens-ar', { selectedOptionalTreatments: ['AR'] })
+				makeRequirement(PatientEye.OD, 'lens-ar', { selectedOptionalTreatments: ['AR'] }),
+				makeRequirement(PatientEye.OI, 'lens-ar', { selectedOptionalTreatments: ['AR'] })
 			],
 			catalogMap(itemWithTreatments)
 		);
 
-		expect(plan.lines[0]!.cost!.treatmentsCost).toBe(100);
-		expect(plan.lines[0]!.cost!.lineTotal).toBe(600);
+        console.log("plan: ", JSON.stringify(plan, null, 2))
+		expect(plan.lines).toHaveLength(1);
+		expect(plan.lines[0].cost?.treatmentPrice).toBe(100);
+		expect(plan.lines[0].cost?.totalCost).toBe(600);
 		expect(plan.totalCost).toBe(1200);
 	});
 
@@ -146,11 +153,14 @@ describe('buildFulfillmentPlan — UNIT pricing', () => {
 			})
 		});
 
-		const plan = buildFulfillmentPlan([makeRequirement('OD', 'lens-ops')], catalogMap(itemWithOps));
+		const plan = buildFulfillmentPlan(
+			[makeRequirement(PatientEye.OD, 'lens-ops')],
+			catalogMap(itemWithOps)
+		);
 
-		expect(plan.lines[0]!.cost!.mountingCost).toBe(50);
-		expect(plan.lines[0]!.cost!.shippingCost).toBe(30);
-		expect(plan.lines[0]!.cost!.lineTotal).toBe(580);
+		expect(plan.lines[0]!.cost!.mountingPrice).toBe(50);
+		expect(plan.lines[0]!.cost!.shippingPrice).toBe(30);
+		expect(plan.lines[0]!.cost!.totalCost).toBe(580);
 	});
 });
 
@@ -166,13 +176,13 @@ describe('buildFulfillmentPlan — PAIR pricing, natural pair', () => {
 
 	it('handles a natural pair (OD + OS same item)', () => {
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-pair'), makeRequirement('OS', 'lens-pair')],
+			[makeRequirement(PatientEye.OD, 'lens-pair'), makeRequirement(PatientEye.OI, 'lens-pair')],
 			catalogMap(pairItem)
 		);
 
 		expect(plan.lines).toHaveLength(2);
-		expect(plan.lines[0]!.source).toBe('SUPPLIER_ORDER');
-		expect(plan.lines[1]!.source).toBe('PAIR_BUNDLED');
+		expect(plan.lines[0]!.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
+		expect(plan.lines[1]!.source).toBe(FulfillmentSource.PAIR_BUNDLED);
 		expect(plan.surplus).toHaveLength(0);
 		// Both lines carry cost — total = 2 × 400
 		expect(plan.totalCost).toBe(800);
@@ -180,13 +190,13 @@ describe('buildFulfillmentPlan — PAIR pricing, natural pair', () => {
 
 	it('no surplus and no single-unit warnings for a natural pair', () => {
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-pair'), makeRequirement('OS', 'lens-pair')],
+			[makeRequirement(PatientEye.OD, 'lens-pair'), makeRequirement(PatientEye.OI, 'lens-pair')],
 			catalogMap(pairItem)
 		);
 
 		expect(plan.surplus).toHaveLength(0);
-		expect(plan.allWarnings).not.toContain('CREATES_SURPLUS');
-		expect(plan.allWarnings).not.toContain('SINGLE_UNIT_SURCHARGE');
+		expect(plan.allWarnings).not.toContain(FulfillmentWarningCode.PAIR_ORDER_CREATES_SURPLUS);
+		expect(plan.allWarnings).not.toContain(FulfillmentWarningCode.SINGLE_UNIT_SURCHARGE);
 	});
 });
 
@@ -206,13 +216,16 @@ describe('buildFulfillmentPlan — PAIR pricing, single unit allowed', () => {
 			})
 		});
 
-		const plan = buildFulfillmentPlan([makeRequirement('OD', 'lens-flex')], catalogMap(item));
+		const plan = buildFulfillmentPlan(
+			[makeRequirement(PatientEye.OD, 'lens-flex')],
+			catalogMap(item)
+		);
 
 		expect(plan.lines).toHaveLength(1);
-		expect(plan.lines[0]!.source).toBe('SUPPLIER_ORDER');
-		expect(plan.lines[0]!.cost!.singleUnitSurcharge).toBe(50);
-		expect(plan.lines[0]!.cost!.lineTotal).toBe(450);
-		expect(plan.allWarnings).toContain('SINGLE_UNIT_SURCHARGE');
+		expect(plan.lines[0]!.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
+		expect(plan.lines[0]!.cost!.surchargePrice).toBe(50);
+		expect(plan.lines[0]!.cost!.totalCost).toBe(450);
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.SINGLE_UNIT_SURCHARGE);
 		expect(plan.surplus).toHaveLength(0);
 	});
 
@@ -227,10 +240,13 @@ describe('buildFulfillmentPlan — PAIR pricing, single unit allowed', () => {
 			})
 		});
 
-		const plan = buildFulfillmentPlan([makeRequirement('OD', 'lens-confirm')], catalogMap(item));
+		const plan = buildFulfillmentPlan(
+			[makeRequirement(PatientEye.OD, 'lens-confirm')],
+			catalogMap(item)
+		);
 
 		expect(plan.requiresAnyConfirmation).toBe(true);
-		expect(plan.allWarnings).toContain('REQUIRES_SINGLE_UNIT_CONFIRMATION');
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.SINGLE_UNIT_REQUIRES_CONFIRMATION);
 	});
 
 	it('no surcharge warning when surcharge is 0', () => {
@@ -244,12 +260,12 @@ describe('buildFulfillmentPlan — PAIR pricing, single unit allowed', () => {
 		});
 
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-no-surcharge')],
+			[makeRequirement(PatientEye.OD, 'lens-no-surcharge')],
 			catalogMap(item)
 		);
 
-		expect(plan.allWarnings).not.toContain('SINGLE_UNIT_SURCHARGE');
-		expect(plan.lines[0]!.cost!.singleUnitSurcharge).toBe(0);
+		expect(plan.allWarnings).not.toContain(FulfillmentWarningCode.SINGLE_UNIT_SURCHARGE);
+		expect(plan.lines[0]!.cost!.surchargePrice).toBe(0);
 	});
 });
 
@@ -268,13 +284,13 @@ describe('buildFulfillmentPlan — PAIR pricing, forced pair → surplus', () =>
 
 	it('creates surplus when buying pair for single eye', () => {
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-strict')],
+			[makeRequirement(PatientEye.OD, 'lens-strict')],
 			catalogMap(strictPairItem)
 		);
 
 		expect(plan.lines).toHaveLength(1);
-		expect(plan.lines[0]!.source).toBe('SUPPLIER_ORDER');
-		expect(plan.allWarnings).toContain('CREATES_SURPLUS');
+		expect(plan.lines[0]!.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.PAIR_ORDER_CREATES_SURPLUS);
 		expect(plan.surplus).toHaveLength(1);
 		expect(plan.surplus[0]!.catalogItemId).toBe('lens-strict');
 		expect(plan.surplus[0]!.surplusUnits).toBe(1);
@@ -282,7 +298,7 @@ describe('buildFulfillmentPlan — PAIR pricing, forced pair → surplus', () =>
 
 	it('surplus cost is included in the plan cost', () => {
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-strict')],
+			[makeRequirement(PatientEye.OD, 'lens-strict')],
 			catalogMap(strictPairItem)
 		);
 
@@ -304,14 +320,14 @@ describe('buildFulfillmentPlan — CONSULT_REQUIRED', () => {
 	it('adds CONSULT_REQUIRED warning and requires confirmation', () => {
 		const plan = buildFulfillmentPlan(
 			[
-				makeRequirement('OD', 'lens-consult', {
+				makeRequirement(PatientEye.OD, 'lens-consult', {
 					compatibilityVerdict: 'CONSULT_REQUIRED'
 				})
 			],
 			catalogMap(item)
 		);
 
-		expect(plan.allWarnings).toContain('CONSULT_REQUIRED');
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.CONSULT_REQUIRED);
 		expect(plan.requiresAnyConfirmation).toBe(true);
 		expect(plan.lines[0]!.requiresConfirmation).toBe(true);
 	});
@@ -319,10 +335,10 @@ describe('buildFulfillmentPlan — CONSULT_REQUIRED', () => {
 	it('only marks CONSULT_REQUIRED lines, not EXACT_MATCH lines', () => {
 		const plan = buildFulfillmentPlan(
 			[
-				makeRequirement('OD', 'lens-consult', {
+				makeRequirement(PatientEye.OD, 'lens-consult', {
 					compatibilityVerdict: 'CONSULT_REQUIRED'
 				}),
-				makeRequirement('OS', 'lens-consult', {
+				makeRequirement(PatientEye.OI, 'lens-consult', {
 					compatibilityVerdict: 'EXACT_MATCH'
 				})
 			],
@@ -348,9 +364,12 @@ describe('buildFulfillmentPlan — minimum order units', () => {
 			})
 		});
 
-		const plan = buildFulfillmentPlan([makeRequirement('OD', 'lens-min')], catalogMap(item));
+		const plan = buildFulfillmentPlan(
+			[makeRequirement(PatientEye.OD, 'lens-min')],
+			catalogMap(item)
+		);
 
-		expect(plan.allWarnings).toContain('BELOW_MINIMUM_ORDER');
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.BELOW_MINIMUM_ORDER);
 	});
 
 	it('no warning when units meet minimum', () => {
@@ -363,11 +382,11 @@ describe('buildFulfillmentPlan — minimum order units', () => {
 		});
 
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-min2'), makeRequirement('OS', 'lens-min2')],
+			[makeRequirement(PatientEye.OD, 'lens-min2'), makeRequirement(PatientEye.OI, 'lens-min2')],
 			catalogMap(item)
 		);
 
-		expect(plan.allWarnings).not.toContain('BELOW_MINIMUM_ORDER');
+		expect(plan.allWarnings).not.toContain(FulfillmentWarningCode.BELOW_MINIMUM_ORDER);
 	});
 });
 
@@ -387,13 +406,13 @@ describe('buildFulfillmentPlan — mixed catalog items', () => {
 		});
 
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-A'), makeRequirement('OS', 'lens-B')],
+			[makeRequirement(PatientEye.OD, 'lens-A'), makeRequirement(PatientEye.OI, 'lens-B')],
 			catalogMap(itemA, itemB)
 		);
 
 		expect(plan.lines).toHaveLength(2);
-		expect(plan.lines[0]!.cost!.baseUnitCost).toBe(500);
-		expect(plan.lines[1]!.cost!.baseUnitCost).toBe(700);
+		expect(plan.lines[0]!.cost!.basePrice).toBe(500);
+		expect(plan.lines[1]!.cost!.basePrice).toBe(700);
 		expect(plan.totalCost).toBe(1200);
 	});
 
@@ -411,18 +430,20 @@ describe('buildFulfillmentPlan — mixed catalog items', () => {
 		});
 
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-unit'), makeRequirement('OS', 'lens-pair')],
+			[makeRequirement(PatientEye.OD, 'lens-unit'), makeRequirement(PatientEye.OI, 'lens-pair')],
 			catalogMap(unitItem, pairItem)
 		);
 
 		expect(plan.lines).toHaveLength(2);
 		// Unit item: normal order
-		expect(plan.lines.find((l) => l.catalogItemId === 'lens-unit')!.source).toBe('SUPPLIER_ORDER');
+		expect(plan.lines.find((l) => l.catalogItemId === 'lens-unit')!.source).toBe(
+			FulfillmentSource.SUPPLIER_ORDER
+		);
 		// Pair item with single need: forced pair → surplus
 		const pairLine = plan.lines.find((l) => l.catalogItemId === 'lens-pair')!;
-		expect(pairLine.source).toBe('SUPPLIER_ORDER');
+		expect(pairLine.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
 		expect(plan.surplus).toHaveLength(1);
-		expect(plan.allWarnings).toContain('CREATES_SURPLUS');
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.PAIR_ORDER_CREATES_SURPLUS);
 	});
 });
 
@@ -453,7 +474,7 @@ describe('buildFulfillmentPlan — treatment costs', () => {
 
 		const plan = buildFulfillmentPlan(
 			[
-				makeRequirement('OD', 'lens-t', {
+				makeRequirement(PatientEye.OD, 'lens-t', {
 					selectedOptionalTreatments: ['AR', 'BLUECUT']
 				})
 			],
@@ -461,8 +482,8 @@ describe('buildFulfillmentPlan — treatment costs', () => {
 		);
 
 		// Only BLUECUT adds cost (150), AR is INHERENT so additionalPrice ignored
-		expect(plan.lines[0]!.cost!.treatmentsCost).toBe(150);
-		expect(plan.lines[0]!.cost!.lineTotal).toBe(650);
+		expect(plan.lines[0]!.cost!.treatmentPrice).toBe(150);
+		expect(plan.lines[0]!.cost!.totalCost).toBe(650);
 	});
 
 	it('zero treatment cost when no treatments selected', () => {
@@ -473,11 +494,11 @@ describe('buildFulfillmentPlan — treatment costs', () => {
 		});
 
 		const plan = buildFulfillmentPlan(
-			[makeRequirement('OD', 'lens-no-t', { selectedOptionalTreatments: [] })],
+			[makeRequirement(PatientEye.OD, 'lens-no-t', { selectedOptionalTreatments: [] })],
 			catalogMap(item)
 		);
 
-		expect(plan.lines[0]!.cost!.treatmentsCost).toBe(0);
+		expect(plan.lines[0]!.cost!.treatmentPrice).toBe(0);
 	});
 });
 
@@ -487,9 +508,9 @@ describe('buildFulfillmentPlan — treatment costs', () => {
 
 describe('buildFulfillmentPlan — errors', () => {
 	it('throws if catalog item not found', () => {
-		expect(() => buildFulfillmentPlan([makeRequirement('OD', 'missing-item')], new Map())).toThrow(
-			'Catalog item not found: missing-item'
-		);
+		expect(() =>
+			buildFulfillmentPlan([makeRequirement(PatientEye.OD, 'missing-item')], new Map())
+		).toThrow('Catalog item not found: missing-item');
 	});
 });
 
@@ -514,11 +535,11 @@ describe('buildFulfillmentPlan — real-world scenario', () => {
 
 		const plan = buildFulfillmentPlan(
 			[
-				makeRequirement('OD', 'progressive-1', {
+				makeRequirement(PatientEye.OD, 'progressive-1', {
 					compatibilityVerdict: 'EXACT_MATCH',
 					selectedOptionalTreatments: ['AR']
 				}),
-				makeRequirement('OS', 'progressive-1', {
+				makeRequirement(PatientEye.OI, 'progressive-1', {
 					compatibilityVerdict: 'EXACT_MATCH',
 					selectedOptionalTreatments: ['AR']
 				})
@@ -532,17 +553,17 @@ describe('buildFulfillmentPlan — real-world scenario', () => {
 
 		// First line: SUPPLIER_ORDER with full cost
 		const line1 = plan.lines[0]!;
-		expect(line1.source).toBe('SUPPLIER_ORDER');
-		expect(line1.cost!.baseUnitCost).toBe(800);
-		expect(line1.cost!.treatmentsCost).toBe(120);
-		expect(line1.cost!.mountingCost).toBe(75);
-		expect(line1.cost!.shippingCost).toBe(40);
-		expect(line1.cost!.lineTotal).toBe(1035);
+		expect(line1.source).toBe(FulfillmentSource.SUPPLIER_ORDER);
+		expect(line1.cost!.basePrice).toBe(800);
+		expect(line1.cost!.treatmentPrice).toBe(120);
+		expect(line1.cost!.mountingPrice).toBe(75);
+		expect(line1.cost!.shippingPrice).toBe(40);
+		expect(line1.cost!.totalCost).toBe(1035);
 
 		// Second line: PAIR_BUNDLED with cost
 		const line2 = plan.lines[1]!;
-		expect(line2.source).toBe('PAIR_BUNDLED');
-		expect(line2.cost!.lineTotal).toBe(1035);
+		expect(line2.source).toBe(FulfillmentSource.PAIR_BUNDLED);
+		expect(line2.cost!.totalCost).toBe(1035);
 
 		// Total = 1035 + 1035 = 2070
 		expect(plan.totalCost).toBe(2070);
@@ -560,7 +581,7 @@ describe('buildFulfillmentPlan — real-world scenario', () => {
 
 		const plan = buildFulfillmentPlan(
 			[
-				makeRequirement('OS', 'consult-pair', {
+				makeRequirement(PatientEye.OI, 'consult-pair', {
 					compatibilityVerdict: 'CONSULT_REQUIRED'
 				})
 			],
@@ -568,8 +589,8 @@ describe('buildFulfillmentPlan — real-world scenario', () => {
 		);
 
 		expect(plan.lines).toHaveLength(1);
-		expect(plan.allWarnings).toContain('CONSULT_REQUIRED');
-		expect(plan.allWarnings).toContain('CREATES_SURPLUS');
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.CONSULT_REQUIRED);
+		expect(plan.allWarnings).toContain(FulfillmentWarningCode.PAIR_ORDER_CREATES_SURPLUS);
 		expect(plan.requiresAnyConfirmation).toBe(true);
 		expect(plan.surplus).toHaveLength(1);
 	});
