@@ -136,7 +136,7 @@ describe('buildFulfillmentPlan — UNIT pricing', () => {
 			catalogMap(itemWithTreatments)
 		);
 
-        console.log("plan: ", JSON.stringify(plan, null, 2))
+		console.log('plan: ', JSON.stringify(plan, null, 2));
 		expect(plan.lines).toHaveLength(1);
 		expect(plan.lines[0].cost?.treatmentPrice).toBe(100);
 		expect(plan.lines[0].cost?.totalCost).toBe(600);

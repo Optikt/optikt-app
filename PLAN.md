@@ -168,11 +168,11 @@ pero en la practica muchos laboratorios definen politicas de tratamiento que apl
 
 Ejemplos reales:
 
-| Laboratorio    | Politica                                       | Nivel correcto     |
-| -------------- | ---------------------------------------------- | ------------------ |
-| Novak          | AR $15/lens para todos sus cristales, sin blue  | **Proveedor**      |
-| FFTech         | AR $18/lens + Blueblock $8/lens, combinables   | **Proveedor**      |
-| Cristal Royal  | Sin tratamientos opcionales; variantes con AR/blue son items separados (INHERENT) | **Item** |
+| Laboratorio   | Politica                                                                          | Nivel correcto |
+| ------------- | --------------------------------------------------------------------------------- | -------------- |
+| Novak         | AR $15/lens para todos sus cristales, sin blue                                    | **Proveedor**  |
+| FFTech        | AR $18/lens + Blueblock $8/lens, combinables                                      | **Proveedor**  |
+| Cristal Royal | Sin tratamientos opcionales; variantes con AR/blue son items separados (INHERENT) | **Item**       |
 
 **Consecuencia sin resolver:** si Novak cambia el precio de AR de $15 a $18, habria que actualizar
 **todos** los items de Novak en catalogo manualmente (pueden ser decenas o cientos).
@@ -193,6 +193,7 @@ Lo mismo si FFTech agrega un nuevo tratamiento: habria que declararlo en cada it
 **El fulfillment planner NO cambia.** Recibe politicas ya resueltas — no le importa de donde vienen.
 
 **Este cambio afecta:**
+
 - Schema DB (nueva tabla + logica de resolucion en queries)
 - Formulario de lentes (UI para configurar politicas a nivel proveedor y overrides por item)
 - No necesita Seed/migracion de datos existentes, no hay app para migrar aun
