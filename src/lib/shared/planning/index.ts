@@ -1,12 +1,11 @@
 export { buildFulfillmentPlan } from './fulfillmentPlanner';
+export { FulfillmentSource, FulfillmentWarningCode } from './types';
 export type {
+	PatientEye,
+	FulfillmentCostBreakdown,
 	LensRequirement,
 	CatalogItemForPlanning,
-	FulfillmentPlan,
-	FulfillmentPlanLine,
-	LineCostBreakdown,
-	SurplusInfo,
-	PlanWarning,
-	EyeSide,
-	FulfillmentSource
+	FulfillmentPlanResult,
+	FulfillmentPlanResultLine,
+	SurplusInfo
 } from './types';
