@@ -35,7 +35,7 @@ export interface EyePrescription {
 /** Full binocular prescription */
 export interface PrescriptionForMatching {
 	od: EyePrescription;
-	os: EyePrescription;
+	oi: EyePrescription;
 }
 
 // ============================================================================
@@ -46,7 +46,7 @@ export type EyeRangeMatch = 'in_range' | 'out_of_range' | 'no_data';
 
 export interface RangeMatchResult {
 	od: EyeRangeMatch;
-	os: EyeRangeMatch;
+	oi: EyeRangeMatch;
 }
 
 export type CompatibilityVerdict =
