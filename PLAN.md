@@ -481,7 +481,7 @@ Criterios de salida:
 
 - Dado un carrito y formula, planner devuelve plan consistente y explicable.
 
-## Fase 4 - Inventario de excedentes fisicos
+## Fase 4 - Inventario de excedentes fisicos ✅
 
 Objetivo:
 
@@ -489,9 +489,47 @@ Objetivo:
 
 Cambios:
 
-- Tabla de excedentes.
-- Movimientos: crear, reservar, consumir, liberar.
-- Integracion con planner para priorizar inventario existente.
+- [x] Tabla `surplus_units` en DB schema (`src/lib/server/db/schema/surplusUnits.ts`).
+  - Campos: originType, originSaleId, catalogItemId, supplierId, physicalSignature (JSON),
+    status (AVAILABLE/RESERVED/CONSUMED/VOID), costSnapshot (JSON), consumedBySaleId,
+    reservedForSaleId, reservedAt, consumedAt, voidedAt, notes.
+  - Foreign keys a lensCatalogItems, suppliers, sales (origin, consumed, reserved).
+  - Indices por catalogItemId, supplierId, status, originSaleId.
+  - Enums derivados de contratos compartidos (SurplusOriginType, SurplusUnitStatus).
+- [x] Relaciones Drizzle (`drizzle/relations.ts`): surplus → catalogItem, supplier, originSale, consumedBySale.
+- [x] Schema barrel export actualizado.
+- [x] Queries CRUD con lifecycle de movimientos (`src/lib/server/db/queries/surplusUnits.ts`):
+  - `findSurplusUnitById`, `findAvailableSurplusByCatalogItemId`,
+    `findAvailableSurplusForItems` (batch por multiples items).
+  - `findSurplusByOriginSaleId` (trazabilidad de venta origen).
+  - `createSurplusUnit` (SALE_PURCHASE_PAIR_EXCESS o MANUAL_ADJUSTMENT).
+  - `reserveSurplusUnit` (AVAILABLE → RESERVED, con saleId).
+  - `consumeSurplusUnit` (RESERVED → CONSUMED, con saleId).
+  - `releaseSurplusUnit` (RESERVED → AVAILABLE, limpia reservacion).
+  - `voidSurplusUnit` (AVAILABLE|RESERVED → VOID, con notas).
+  - Todos aceptan `DbOrTx` para transacciones.
+- [x] Modulo de lifecycle puro (`src/lib/shared/planning/surplusLifecycle.ts`):
+  - `isValidTransition(from, to)` — valida transiciones de estado.
+  - `getValidTransitionsFrom(status)` — transiciones permitidas.
+  - `isTerminalStatus(status)` — CONSUMED y VOID son terminales.
+- [x] Integracion con planner: `buildFulfillmentPlan` acepta `availableSurplus: SurplusUnitForPlanning[]`.
+  - Antes de aplicar logica UNIT/PAIR, intenta fulfillmentear desde surplus (FIFO por catalog item).
+  - Lineas de surplus: source=SURPLUS_STOCK, cost=0, surplusUnitId referenciado.
+  - Remaining requirements pasan al flujo normal de ordering.
+  - Surplus evita compra forzada por par (elimina surplus innecesario).
+  - Backward-compatible: parametro es optional, default `[]`.
+- [x] Nuevo tipo `SurplusUnitForPlanning` en types.ts (id, catalogItemId, costSnapshot).
+- [x] Campo `surplusUnitId: string | null` en `FulfillmentPlanResultLine`.
+- [x] Tests unitarios (46 tests en modulo planning):
+  - Planner (30 tests): 8 nuevos tests de surplus:
+    - Surplus single eye, surplus ambos ojos, surplus parcial (uno surplus + uno order).
+    - Surplus no aplica a otros catalog items.
+    - Surplus evita forced pair → no genera surplus nuevo.
+    - Surplus + PAIR pricing mixto (uno surplus, uno forced pair → nuevo surplus).
+    - Surplus vacio == sin surplus.
+    - CONSULT_REQUIRED en linea de surplus.
+  - Lifecycle (16 tests): todas las transiciones validas e invalidas, terminales.
+- [x] Build + lint + svelte-check limpio. 288 tests totales pasando.
 
 Criterios de salida:
 
