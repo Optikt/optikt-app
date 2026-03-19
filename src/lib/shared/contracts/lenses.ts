@@ -29,6 +29,8 @@ export interface LensTreatmentPolicy {
 
 export interface LensPurchasePolicy {
 	listOrderUnit: LensPricingUnit;
+	/** When true, both lenses in a pair must have identical Rx + treatments */
+	requiresSamePrescriptionForPair: boolean;
 	allowsSingleUnitOrder: boolean;
 	singleUnitRequiresConfirmation: boolean;
 	singleUnitSurcharge: number;
@@ -51,6 +53,19 @@ export interface LensFinalSignature extends LensRequestSignature {
 
 export interface LensPhysicalSignature extends LensRequestSignature {
 	originCatalogItemId: string;
+	/** Exact ground prescription — the specific formula this physical lens was ordered with */
+	prescription: LensOrderedPrescription;
+}
+
+/**
+ * The exact prescription values a physical lens was ordered/ground with.
+ * All fields nullable because not every lens type uses every parameter.
+ */
+export interface LensOrderedPrescription {
+	sphere: number | null;
+	cylinder: number | null;
+	axis: number | null;
+	addition: number | null;
 }
 
 export interface LensCatalogContract {
