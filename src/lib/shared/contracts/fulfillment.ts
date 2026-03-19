@@ -1,5 +1,10 @@
 import type { LensPricingUnit } from '$lib/shared/enums/lensTypes';
-import type { CoreLensTreatmentCode, LensFinalSignature, LensPhysicalSignature } from './lenses';
+import type {
+	CoreLensTreatmentCode,
+	LensFinalSignature,
+	LensPhysicalSignature,
+	LensOrderedPrescription
+} from './lenses';
 import { PatientEye } from './common';
 
 export enum FulfillmentSource {
@@ -39,12 +44,12 @@ export enum SurplusUnitStatus {
 	VOID = 'VOID'
 }
 
-export interface LensRequirementPrescription {
-	sphere: number | null;
-	cylinder: number | null;
-	addition: number | null;
-	axis: number | null;
-}
+/**
+ * Patient's prescription for one eye — same shape as LensOrderedPrescription
+ * but semantically represents the doctor's Rx rather than the ground formula.
+ */
+// TODO: consider unifying these types if the distinction isn't important in practice.
+export type LensRequirementPrescription = LensOrderedPrescription;
 
 export interface LensRequirementUnit {
 	id: string;
