@@ -45,6 +45,19 @@ export interface CatalogItemForPlanning {
 	treatmentPolicies: LensTreatmentPolicy[];
 }
 
+/**
+ * An available surplus unit the planner can use instead of ordering new.
+ * Keyed by catalogItemId — the planner picks from these before going to supplier.
+ */
+export interface SurplusUnitForPlanning {
+	/** The surplus unit's DB id */
+	id: string;
+	/** Which catalog item this surplus matches */
+	catalogItemId: string;
+	/** Cost snapshot from when the surplus was created (already paid) */
+	costSnapshot: FulfillmentCostBreakdown;
+}
+
 // ============================================================================
 // Output types — what the planner returns
 // ============================================================================
@@ -67,6 +80,9 @@ export interface FulfillmentPlanResultLine {
 
 	/** Whether user must explicitly confirm before proceeding */
 	requiresConfirmation: boolean;
+
+	/** If sourced from surplus, reference to the surplus unit */
+	surplusUnitId: string | null;
 }
 
 /**
