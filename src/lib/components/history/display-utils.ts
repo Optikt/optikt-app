@@ -164,6 +164,18 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		reference: 'Referencia',
 		notes: 'Notas',
 		voidedAt: 'Anulado'
+	},
+	supplier_treatment_policy: {
+		code: 'Código de tratamiento',
+		availability: 'Disponibilidad',
+		additionalPrice: 'Precio adicional',
+		requiresConfirmation: 'Requiere confirmación'
+	},
+	surplus_unit: {
+		status: 'Estado',
+		notes: 'Notas',
+		reservedForSaleId: 'Reservado para venta',
+		consumedBySaleId: 'Consumido por venta'
 	}
 };
 
