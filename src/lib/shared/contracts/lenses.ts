@@ -27,6 +27,10 @@ export interface LensTreatmentPolicy {
 	requiresConfirmation: boolean;
 }
 
+export function findTreatmentPolicy(policies: LensTreatmentPolicy[], code: CoreLensTreatmentCode) {
+	return policies.find((p) => p.code === code);
+}
+
 export interface LensPurchasePolicy {
 	listOrderUnit: LensPricingUnit;
 	/** When true, both lenses in a pair must have identical Rx + treatments */
