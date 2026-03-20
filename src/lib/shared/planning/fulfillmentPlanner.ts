@@ -1,5 +1,5 @@
 import { LensPricingUnit } from '$lib/shared/enums/lensTypes';
-import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
+import { LensTreatmentAvailability, findTreatmentPolicy } from '$lib/shared/contracts/lenses';
 import { FulfillmentSource, FulfillmentWarningCode } from '$lib/shared/contracts/fulfillment';
 import type { FulfillmentCostBreakdown } from '$lib/shared/contracts/fulfillment';
 import type {
@@ -27,7 +27,7 @@ function calculateLineCost(
 
 	let treatmentPrice = 0;
 	for (const code of requirement.selectedOptionalTreatments) {
-		const policy = item.treatmentPolicies.find((p) => p.code === code);
+		const policy = findTreatmentPolicy(item.treatmentPolicies, code);
 		if (policy && policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA) {
 			treatmentPrice += policy.additionalPrice;
 		}

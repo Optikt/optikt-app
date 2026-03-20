@@ -1,22 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { resolveTreatmentPolicies } from './resolveTreatmentPolicies';
-import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
+import { LensTreatmentAvailability, findTreatmentPolicy } from '$lib/shared/contracts/lenses';
 import type { LensTreatmentPolicy } from '$lib/shared/contracts/lenses';
 
 const NOT_AVAILABLE = LensTreatmentAvailability.NOT_AVAILABLE;
 const OPTIONAL_EXTRA = LensTreatmentAvailability.OPTIONAL_EXTRA;
 const INHERENT = LensTreatmentAvailability.INHERENT;
 
-function findByCode(policies: LensTreatmentPolicy[], code: string) {
-	return policies.find((p) => p.code === code)!;
-}
-
 describe('resolveTreatmentPolicies', () => {
 	it('returns NOT_AVAILABLE defaults when both inputs are empty', () => {
 		const result = resolveTreatmentPolicies([], []);
 		expect(result).toHaveLength(2);
-		const ar = findByCode(result, 'AR');
-		const bc = findByCode(result, 'BLUECUT');
+		const ar = findTreatmentPolicy(result, 'AR')!;
+		const bc = findTreatmentPolicy(result, 'BLUECUT')!;
 		expect(ar.availability).toBe(NOT_AVAILABLE);
 		expect(ar.additionalPrice).toBe(0);
 		expect(ar.requiresConfirmation).toBe(false);
@@ -29,10 +25,10 @@ describe('resolveTreatmentPolicies', () => {
 			{ code: 'BLUECUT', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, []);
-		const ar = findByCode(result, 'AR');
+		const ar = findTreatmentPolicy(result, 'AR')!;
 		expect(ar.availability).toBe(OPTIONAL_EXTRA);
 		expect(ar.additionalPrice).toBe(50);
-		const bc = findByCode(result, 'BLUECUT');
+		const bc = findTreatmentPolicy(result, 'BLUECUT')!;
 		expect(bc.availability).toBe(INHERENT);
 	});
 
@@ -45,9 +41,9 @@ describe('resolveTreatmentPolicies', () => {
 			{ code: 'AR', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, itemOverrides);
-		expect(findByCode(result, 'AR').availability).toBe(INHERENT);
-		expect(findByCode(result, 'AR').additionalPrice).toBe(0);
-		expect(findByCode(result, 'BLUECUT').availability).toBe(NOT_AVAILABLE);
+		expect(findTreatmentPolicy(result, 'AR')!.availability).toBe(INHERENT);
+		expect(findTreatmentPolicy(result, 'AR')!.additionalPrice).toBe(0);
+		expect(findTreatmentPolicy(result, 'BLUECUT')!.availability).toBe(NOT_AVAILABLE);
 	});
 
 	it('item overrides all codes — ignores supplier entirely', () => {
@@ -60,11 +56,11 @@ describe('resolveTreatmentPolicies', () => {
 			{ code: 'BLUECUT', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, itemOverrides);
-		const ar = findByCode(result, 'AR');
+		const ar = findTreatmentPolicy(result, 'AR')!;
 		expect(ar.availability).toBe(OPTIONAL_EXTRA);
 		expect(ar.additionalPrice).toBe(100);
 		expect(ar.requiresConfirmation).toBe(true);
-		expect(findByCode(result, 'BLUECUT').availability).toBe(INHERENT);
+		expect(findTreatmentPolicy(result, 'BLUECUT')!.availability).toBe(INHERENT);
 	});
 
 	it('missing supplier defaults falls back to NOT_AVAILABLE', () => {
@@ -72,9 +68,9 @@ describe('resolveTreatmentPolicies', () => {
 			{ code: 'BLUECUT', availability: OPTIONAL_EXTRA, additionalPrice: 30, requiresConfirmation: false }
 		];
 		const result = resolveTreatmentPolicies([], itemOverrides);
-		expect(findByCode(result, 'AR').availability).toBe(NOT_AVAILABLE);
-		expect(findByCode(result, 'BLUECUT').availability).toBe(OPTIONAL_EXTRA);
-		expect(findByCode(result, 'BLUECUT').additionalPrice).toBe(30);
+		expect(findTreatmentPolicy(result, 'AR')!.availability).toBe(NOT_AVAILABLE);
+		expect(findTreatmentPolicy(result, 'BLUECUT')!.availability).toBe(OPTIONAL_EXTRA);
+		expect(findTreatmentPolicy(result, 'BLUECUT')!.additionalPrice).toBe(30);
 	});
 
 	it('always returns exactly one entry per core treatment code', () => {

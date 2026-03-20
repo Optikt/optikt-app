@@ -2,6 +2,7 @@ import {
 	PhotochromicMode,
 	LensTreatmentAvailability,
 	LensRangeAvailability,
+	findTreatmentPolicy,
 	type CoreLensTreatmentCode,
 	CORE_LENS_TREATMENT_CODES
 } from '$lib/shared/contracts/lenses';
@@ -63,7 +64,7 @@ export function matchesSignature(
 	const extraInherentTreatments: CoreLensTreatmentCode[] = [];
 
 	for (const code of CORE_LENS_TREATMENT_CODES) {
-		const policy = item.treatmentPolicies.find((p) => p.code === code);
+		const policy = findTreatmentPolicy(item.treatmentPolicies, code);
 		const availability = policy?.availability ?? LensTreatmentAvailability.NOT_AVAILABLE;
 		const isRequested = request.requiredTreatments.includes(code);
 

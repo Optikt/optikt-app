@@ -25,6 +25,7 @@
 		LENS_RANGE_AVAILABILITY_LABELS,
 		LENS_TREATMENT_LABELS,
 		LENS_TREATMENT_AVAILABILITY_LABELS,
+		findTreatmentPolicy,
 		type CoreLensTreatmentCode
 	} from '$lib/shared/contracts';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
@@ -191,8 +192,8 @@
 				const existing = item!.treatmentPolicies;
 				if (existing && existing.length > 0) {
 					// Ensure all core codes are represented
-					treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
-						const found = existing.find((p) => p.code === code);
+				treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
+						const found = findTreatmentPolicy(existing, code);
 						return (
 							found ?? {
 								code,

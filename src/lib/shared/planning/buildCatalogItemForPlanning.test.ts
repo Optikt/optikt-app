@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildCatalogItemForPlanning, type RawCatalogItem } from './buildCatalogItemForPlanning';
-import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
+import { LensTreatmentAvailability, findTreatmentPolicy } from '$lib/shared/contracts/lenses';
 import type { LensTreatmentPolicy } from '$lib/shared/contracts/lenses';
 import { LensPricingUnit } from '$lib/shared/enums/lensTypes';
 
@@ -43,7 +43,7 @@ describe('buildCatalogItemForPlanning', () => {
 			]
 		});
 		const result = buildCatalogItemForPlanning(raw, supplierDefaults);
-		const ar = result.treatmentPolicies.find((p) => p.code === 'AR')!;
+		const ar = findTreatmentPolicy(result.treatmentPolicies, 'AR')!;
 		expect(ar.availability).toBe(LensTreatmentAvailability.INHERENT);
 		expect(ar.additionalPrice).toBe(0);
 	});
@@ -53,7 +53,7 @@ describe('buildCatalogItemForPlanning', () => {
 			{ code: 'BLUECUT', availability: LensTreatmentAvailability.OPTIONAL_EXTRA, additionalPrice: 30, requiresConfirmation: true }
 		];
 		const result = buildCatalogItemForPlanning(makeRaw(), supplierDefaults);
-		const bc = result.treatmentPolicies.find((p) => p.code === 'BLUECUT')!;
+		const bc = findTreatmentPolicy(result.treatmentPolicies, 'BLUECUT')!;
 		expect(bc.availability).toBe(LensTreatmentAvailability.OPTIONAL_EXTRA);
 		expect(bc.additionalPrice).toBe(30);
 		expect(bc.requiresConfirmation).toBe(true);
@@ -82,7 +82,7 @@ describe('buildCatalogItemForPlanning', () => {
 		const codes = result.treatmentPolicies.map((p) => p.code).sort();
 		expect(codes).toEqual(['AR', 'BLUECUT']);
 		// Item overrides win
-		expect(result.treatmentPolicies.find((p) => p.code === 'AR')!.availability).toBe(LensTreatmentAvailability.INHERENT);
-		expect(result.treatmentPolicies.find((p) => p.code === 'BLUECUT')!.availability).toBe(LensTreatmentAvailability.NOT_AVAILABLE);
+		expect(findTreatmentPolicy(result.treatmentPolicies, 'AR')!.availability).toBe(LensTreatmentAvailability.INHERENT);
+		expect(findTreatmentPolicy(result.treatmentPolicies, 'BLUECUT')!.availability).toBe(LensTreatmentAvailability.NOT_AVAILABLE);
 	});
 });
