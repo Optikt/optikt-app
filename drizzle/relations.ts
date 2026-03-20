@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, customers, prescriptions, brands, products, saleItems, sales, users, supplierLensTreatments, lensTreatments, userSessions, surplusUnits } from "./schema";
+import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, customers, prescriptions, brands, products, saleItems, sales, users, supplierLensTreatments, lensTreatments, userSessions, surplusUnits, supplierTreatmentPolicies } from "./schema";
 
 export const lensCatalogItemsRelations = relations(lensCatalogItems, ({one, many}) => ({
 	lensMaterial: one(lensMaterials, {
@@ -29,6 +29,14 @@ export const suppliersRelations = relations(suppliers, ({many}) => ({
 	lensCatalogItems: many(lensCatalogItems),
 	products: many(products),
 	supplierLensTreatments: many(supplierLensTreatments),
+	treatmentPolicies: many(supplierTreatmentPolicies),
+}));
+
+export const supplierTreatmentPoliciesRelations = relations(supplierTreatmentPolicies, ({one}) => ({
+	supplier: one(suppliers, {
+		fields: [supplierTreatmentPolicies.supplierId],
+		references: [suppliers.id]
+	}),
 }));
 
 export const prescriptionsRelations = relations(prescriptions, ({one}) => ({
