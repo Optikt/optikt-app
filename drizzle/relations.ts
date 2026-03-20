@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, customers, prescriptions, brands, products, saleItems, sales, users, supplierLensTreatments, lensTreatments, userSessions } from "./schema";
+import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, customers, prescriptions, brands, products, saleItems, sales, users, supplierLensTreatments, lensTreatments, userSessions, surplusUnits } from "./schema";
 
 export const lensCatalogItemsRelations = relations(lensCatalogItems, ({one, many}) => ({
 	lensMaterial: one(lensMaterials, {
@@ -110,5 +110,26 @@ export const userSessionsRelations = relations(userSessions, ({one}) => ({
 	user: one(users, {
 		fields: [userSessions.userId],
 		references: [users.id]
+	}),
+}));
+
+export const surplusUnitsRelations = relations(surplusUnits, ({one}) => ({
+	catalogItem: one(lensCatalogItems, {
+		fields: [surplusUnits.catalogItemId],
+		references: [lensCatalogItems.id]
+	}),
+	supplier: one(suppliers, {
+		fields: [surplusUnits.supplierId],
+		references: [suppliers.id]
+	}),
+	originSale: one(sales, {
+		fields: [surplusUnits.originSaleId],
+		references: [sales.id],
+		relationName: 'surplusOriginSale'
+	}),
+	consumedBySale: one(sales, {
+		fields: [surplusUnits.consumedBySaleId],
+		references: [sales.id],
+		relationName: 'surplusConsumedBySale'
 	}),
 }));
