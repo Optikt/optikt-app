@@ -12,3 +12,4 @@ export * from './lenses';
 export * from './materials';
 export * from './exchangeRates';
 export * from './search';
+export * from './sales';

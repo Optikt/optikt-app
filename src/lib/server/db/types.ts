@@ -1,4 +1,25 @@
 import type { SelectedFields } from 'drizzle-orm/pg-core';
+import type { db } from './index';
+
+type TxParam = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Drizzle database or transaction instance.
+ *
+ * Query functions accept this type so they work both standalone (using `db`)
+ * and inside transactions (using `tx`). The caller decides atomicity:
+ *
+ * @example
+ * // Standalone — uses db internally
+ * await addSalePayment(data);
+ *
+ * // Inside a transaction
+ * await db.transaction(async (tx) => {
+ *   await addSalePayment(data, tx);
+ *   await recalcSalePaidAmount(saleId, tx);
+ * });
+ */
+export type DbOrTx = typeof db | TxParam;
 
 /**
  * Infer the row type from a Drizzle `SelectedFields` object.

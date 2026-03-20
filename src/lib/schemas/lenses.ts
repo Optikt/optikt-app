@@ -5,6 +5,12 @@
 import { z } from 'zod';
 import { LensType, LensCatalogSource, LensPricingUnit } from '$lib/shared/enums';
 import {
+	PhotochromicMode,
+	LensRangeAvailability,
+	LensTreatmentAvailability,
+	CORE_LENS_TREATMENT_CODES
+} from '$lib/shared/contracts';
+import {
 	CoercedBoolean,
 	CoercedInteger,
 	CoercedNumber,
@@ -90,48 +96,83 @@ export const OpticalRangeSchema = z
 export type OpticalRangeInput = z.infer<typeof OpticalRangeSchema>;
 
 // ============================================================================
+// TREATMENT POLICY (embedded in catalog item)
+// ============================================================================
+
+export const TreatmentPolicySchema = z.object({
+	code: z.enum(CORE_LENS_TREATMENT_CODES),
+	availability: z.enum(LensTreatmentAvailability),
+	additionalPrice: CoercedNumber.min(0, 'Precio adicional debe ser ≥ 0').default(0),
+	requiresConfirmation: CoercedBoolean.default(false)
+});
+
+export type TreatmentPolicyInput = z.infer<typeof TreatmentPolicySchema>;
+
+// ============================================================================
 // LENS CATALOG ITEMS
 // ============================================================================
 
-// TODO: Validation. If materialId is provided and starts with 'pending_material_',
-// then pendingMaterialName and pendingMaterialRefractiveIndex are required.
-// Similar for supplierId and pendingSupplierName. Also validate that if materialId
-// is provided and does not start with 'pending_material_', it should be an uuid and
-// the pendingMaterialName and pendingMaterialRefractiveIndex must not be provided (same for supplier).
-export const CreateLensCatalogItemSchema = z.object({
+/** JSON string → parsed array pipeline for ranges */
+const RangesJsonSchema = z
+	.string()
+	.default('[]')
+	.transform((val) => JSON.parse(val) as unknown[])
+	.pipe(z.array(OpticalRangeSchema));
+
+/** JSON string → parsed array pipeline for treatment policies */
+const TreatmentPoliciesJsonSchema = z
+	.string()
+	.default('[]')
+	.transform((val) => JSON.parse(val) as unknown[])
+	.pipe(z.array(TreatmentPolicySchema));
+
+const BaseLensCatalogItemSchema = z.object({
 	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),
-	// supplierId accepts UUID or pending_* ID
-	supplierId: PendingEntitySchema('Proveedor requerido'),
+	supplierId: PendingEntitySchema(),
 	name: NameSchema(),
 	brand: z.string().optional(),
 	technology: z.string().optional(),
 	type: z.enum(LensType, 'Tipo de lente requerido'),
-	// materialId accepts UUID or pending_material_* ID
 	materialId: PendingEntitySchema('pending_material_'),
-	// Pending entity names (sent when ID starts with pending_*)
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialRefractiveIndex: RefractiveIndexSchema.optional(),
-	// Optical ranges — at least one required
-	ranges: z
-		.string()
-		.transform((val) => JSON.parse(val) as unknown[])
-		.pipe(z.array(OpticalRangeSchema).min(1, 'Se requiere al menos un rango óptico')),
+	ranges: RangesJsonSchema,
 	baseFeatures: z.array(z.string()).optional(),
-	isPhotochromic: CoercedBoolean.default(false),
-	isBlueCut: CoercedBoolean.default(false),
-	isAR: CoercedBoolean.default(false),
+
+	// --- Identity traits ---
+	photochromicMode: z.enum(PhotochromicMode).default(PhotochromicMode.NONE),
+	rangeAvailability: z.enum(LensRangeAvailability).default(LensRangeAvailability.EXACT_RANGES),
+
+	// --- Treatment policies (JSON string from form) ---
+	treatmentPolicies: TreatmentPoliciesJsonSchema,
+
+	// --- Pricing ---
 	pricingUnit: z.enum(LensPricingUnit).default(LensPricingUnit.UNIT),
 	basePrice: CoercedNumber.min(0, 'Precio de compra debe ser ≥ 0'),
 	suggestedMultiplier: CoercedNumber.min(1, 'Multiplicador debe ser ≥ 1').optional(),
-	mountingPrice: CoercedNumber.min(0, 'Precio de montaje debe ser ≥ 0').optional(),
+
+	// --- Purchase policy ---
+	allowsSingleUnitOrder: CoercedBoolean.default(false),
+	singleUnitRequiresConfirmation: CoercedBoolean.default(false),
+	singleUnitSurcharge: CoercedNumber.min(0).default(0),
+	minimumOrderUnits: CoercedInteger.min(1).default(1),
+	mountingPrice: CoercedNumber.min(0, 'Precio de montaje debe ser ≥ 0').default(0),
+	shippingPrice: CoercedNumber.min(0, 'Precio de envío debe ser ≥ 0').default(0),
+
+	// --- Operations ---
 	deliveryDays: CoercedInteger.min(0).optional(),
 	stock: CoercedInteger.min(0).optional(),
 	refractiveIndex: RefractiveIndexSchema.optional(),
 	notes: z.string().optional()
 });
 
-export const UpdateLensCatalogItemSchema = CreateLensCatalogItemSchema.partial().extend({
+export const CreateLensCatalogItemSchema = BaseLensCatalogItemSchema.refine(
+	(data) => data.rangeAvailability === 'CONSULT_REQUIRED' || data.ranges.length > 0,
+	{ message: 'Se requiere al menos un rango óptico', path: ['ranges'] }
+);
+
+export const UpdateLensCatalogItemSchema = BaseLensCatalogItemSchema.partial().extend({
 	id: z.uuid(),
 	isActive: CoercedBoolean.optional()
 });

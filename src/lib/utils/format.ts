@@ -200,3 +200,15 @@ export function formatPhone(phone: string | null | undefined): string {
 	if (!phone) return '-';
 	return phone;
 }
+
+/**
+ * Compute the effective discount amount from a value, type, and base amount.
+ * For PERCENTAGE type, calculates (value / 100) * base.
+ * For FIXED type, returns the value as-is.
+ */
+export function computeDiscount(value: number, type: string, base: number): number {
+	if (type === 'PERCENTAGE') {
+		return (value / 100) * base;
+	}
+	return value;
+}

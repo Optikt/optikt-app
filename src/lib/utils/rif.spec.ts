@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { validateRif, calculateRifCheckDigit, formatRif, RIF_TYPES } from './rif';
+import { validateRif, calculateRifCheckDigit, formatRif, ID_DOC_PREFIXES } from './rif';
 
-describe('RIF_TYPES', () => {
-	it('contains all valid RIF types', () => {
-		expect(RIF_TYPES).toContain('V');
-		expect(RIF_TYPES).toContain('E');
-		expect(RIF_TYPES).toContain('J');
-		expect(RIF_TYPES).toContain('G');
-		expect(RIF_TYPES.length).toBe(4);
+describe('ID_DOC_PREFIXES', () => {
+	it('contains all valid document type prefixes', () => {
+		expect(ID_DOC_PREFIXES).toContain('V');
+		expect(ID_DOC_PREFIXES).toContain('E');
+		expect(ID_DOC_PREFIXES).toContain('J');
+		expect(ID_DOC_PREFIXES).toContain('G');
+		expect(ID_DOC_PREFIXES.length).toBe(4);
 	});
 });
 

@@ -58,6 +58,19 @@ export const STOCK_REQUIRED_TYPES: ProductType[] = [
 	ProductType.ACCESSORY
 ];
 
+/** Badge color hex values for inline styles (icon circles, etc.) */
+export const PRODUCT_TYPE_BADGE_COLORS: Record<ProductType, { bg: string; text: string }> = {
+	[ProductType.FRAME]: { bg: '#eff6ff', text: '#1d4ed8' },
+	[ProductType.SUNGLASSES]: { bg: '#f0fdf4', text: '#15803d' },
+	[ProductType.CONTACT_LENS]: { bg: '#faf5ff', text: '#7e22ce' },
+	[ProductType.ACCESSORY]: { bg: '#fefce8', text: '#a16207' }
+};
+
+/** Get badge color hex values for a product type (for inline HTML) */
+export function getProductTypeBadgeHex(type: string): { bg: string; text: string } {
+	return PRODUCT_TYPE_BADGE_COLORS[type as ProductType] ?? { bg: '#f1f5f9', text: '#475569' };
+}
+
 /**
  * Check if a product type requires stock tracking
  */

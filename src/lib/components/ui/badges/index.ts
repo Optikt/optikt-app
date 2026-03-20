@@ -4,3 +4,4 @@ export { default as LensTypeBadge } from './LensTypeBadge.svelte';
 export { default as UserRoleBadge } from './UserRoleBadge.svelte';
 export { default as StatusBadge } from './StatusBadge.svelte';
 export { default as TreatmentBadge } from './TreatmentBadge.svelte';
+export { default as SaleStatusBadge } from './SaleStatusBadge.svelte';

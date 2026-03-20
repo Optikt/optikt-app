@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Select, Input, Helper, Label } from 'flowbite-svelte';
-	import { getFormErrorMessage } from '$lib/utils';
+	import { getFormErrorMessage, ID_DOC_PREFIXES, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
 
 	interface Props {
 		value: string;
@@ -21,11 +21,7 @@
 		required = false
 	}: Props = $props();
 
-	// ID Types: V (Venezuelan), E (Extranjero/Foreign)
-	const ID_TYPES = ['V', 'E'] as const;
-	type IdType = (typeof ID_TYPES)[number];
-
-	let idType = $state<IdType>('V');
+	let idType = $state<IdDocPrefix>('V');
 	let idNumber = $state('');
 	let previousValue = $state('');
 
@@ -35,9 +31,9 @@
 		if (value !== previousValue) {
 			previousValue = value;
 			if (value) {
-				const match = value.match(/^([VE])-(\d+)$/);
+				const match = value.match(ID_NUMBER_RE);
 				if (match) {
-					idType = match[1] as IdType;
+					idType = match[1] as IdDocPrefix;
 					idNumber = match[2];
 				}
 			} else {
@@ -86,7 +82,7 @@
 
 	<div class="flex gap-2">
 		<Select bind:value={idType} {disabled} class="w-20 shrink-0" onchange={handleTypeChange}>
-			{#each ID_TYPES as type (type)}
+			{#each ID_DOC_PREFIXES as type (type)}
 				<option value={type}>{type}</option>
 			{/each}
 		</Select>

@@ -5,6 +5,7 @@
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
+	import { PhotochromicMode, LensTreatmentAvailability } from '$lib/shared/contracts';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { goto } from '$app/navigation';
@@ -89,15 +90,18 @@
 		</TableBodyCell>
 		<TableBodyCell>
 			<LensTypeBadge type={item.type} />
-			{#if item.isPhotochromic}
+			{#if item.photochromicMode === PhotochromicMode.INHERENT}
 				<TreatmentBadge type="photochromic" class="ml-1" />
 			{/if}
-			{#if item.isBlueCut}
-				<TreatmentBadge type="blueBlock" class="ml-1" />
-			{/if}
-			{#if item.isAR}
-				<TreatmentBadge type="antiReflective" class="ml-1" />
-			{/if}
+			{#each item.treatmentPolicies ?? [] as policy (policy.code)}
+				{#if policy.availability === LensTreatmentAvailability.INHERENT || policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
+					{#if policy.code === 'BLUECUT'}
+						<TreatmentBadge type="blueBlock" class="ml-1" />
+					{:else if policy.code === 'AR'}
+						<TreatmentBadge type="antiReflective" class="ml-1" />
+					{/if}
+				{/if}
+			{/each}
 		</TableBodyCell>
 		<TableBodyCell>
 			{#if item.material}

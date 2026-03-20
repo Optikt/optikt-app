@@ -131,6 +131,19 @@
 	}
 }
 
+/* ──────────────────────────────────────────────────────────────────────────────
+   Fix Flowbite Input placeholder color.
+   Flowbite's "default" color variant sets `text-gray-900` but NO light-mode
+   `placeholder-*` class, so placeholders inherit the dark text color.
+   This rule is intentionally OUTSIDE @layer so it beats all layered styles
+   (Tailwind v4 cascade: un-layered > any @layer).
+   ────────────────────────────────────────────────────────────────────────────── */
+input::placeholder,
+textarea::placeholder {
+	color: #9ca3af !important; /* gray-400 */
+	opacity: 1 !important;
+}
+
 /* Google Fonts - load via link tag in app.html instead for proper loading */
 
 /* Base Styles */

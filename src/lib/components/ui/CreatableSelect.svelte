@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Svelecte from 'svelecte';
+	import BaseSelect from './BaseSelect.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
 
 	export type SelectOption = {
@@ -66,7 +66,7 @@
 	let localOptions = $state<SelectOption[]>([]);
 
 	// Merge options with locally created ones
-	let allOptions = $derived([...options, ...localOptions]);
+	const allOptions = $derived([...options, ...localOptions]);
 
 	// Internal state for Svelecte (the selected ID as a string)
 	// We need $state here because we mutate it in handleChange
@@ -96,17 +96,14 @@
 		// Check if already exists in ALL options (case insensitive)
 		const exists = allOptions.some((opt) => opt.name.toLowerCase() === inputValue.toLowerCase());
 		if (exists) {
-			// Return the existing option instead of creating a duplicate
 			return allOptions.find((opt) => opt.name.toLowerCase() === inputValue.toLowerCase())!;
 		}
 
 		let newOption: SelectOption;
 
 		if (onCreatePending) {
-			// Use custom handler
 			newOption = onCreatePending(inputValue);
 		} else {
-			// Default: create with temp ID
 			newOption = {
 				id: `pending_${generateUUID()}`,
 				name: inputValue,
@@ -114,7 +111,6 @@
 			};
 		}
 
-		// Add to local options
 		localOptions = [...localOptions, newOption];
 		return newOption;
 	}
@@ -128,87 +124,28 @@
 		internalValue = newValue;
 		onchange?.(selected);
 	}
-
-	/**
-	 * Get all pending options that need to be saved.
-	 * Call this before form submit to get items to create.
-	 */
-	export function getPendingOptions(): SelectOption[] {
-		return localOptions.filter((opt) => opt.isPending);
-	}
-
-	/**
-	 * Update a pending option with real data after saving to DB.
-	 * Call this after creating in DB to update the ID.
-	 */
-	export function resolvePendingOption(pendingId: string, realOption: SelectOption) {
-		localOptions = localOptions.map((opt) =>
-			opt.id === pendingId ? { ...realOption, isPending: false } : opt
-		);
-		// Update value if this was the selected option
-		if (value === pendingId) {
-			value = realOption.id;
-		}
-	}
-
-	/**
-	 * Clear all pending options (e.g., on form reset)
-	 */
-	export function clearPending() {
-		localOptions = localOptions.filter((opt) => !opt.isPending);
-	}
 </script>
 
 <div class="flex flex-col gap-1">
-	{#if label}
-		<label for={name} class="text-sm font-medium text-gray-700 dark:text-gray-200">
-			{label}{#if required}<span class="ml-0.5 text-red-500">*</span>{/if}
-		</label>
-	{/if}
-
 	<!-- Always emit the field so FormData never omits it -->
 	<input type="hidden" {name} value={value ?? ''} />
 
-	<Svelecte
+	<BaseSelect
+		{label}
+		{required}
 		{placeholder}
 		{disabled}
 		options={allOptions}
 		bind:value={internalValue}
-		valueField="id"
-		labelField="name"
 		{creatable}
 		createHandler={handleCreate}
 		creatablePrefix="Crear: "
 		keepCreated={false}
 		onChange={handleChange}
-		class="creatable-select {error ? 'creatable-select-error' : ''}"
+		hasError={!!error}
 	/>
 
 	{#if error}
 		<p class="mt-1 text-xs text-red-500">{error}</p>
 	{/if}
 </div>
-
-<style>
-	:global(.creatable-select) {
-		--sv-bg: #ffffff;
-		--sv-border: #d1d5db;
-		--sv-border-radius: 0.5rem;
-		--sv-min-height: 42px;
-		--sv-placeholder-color: #9ca3af;
-		--sv-item-selected-bg: #eff6ff;
-		--sv-highlight-bg: #dbeafe;
-	}
-
-	:global(.dark .creatable-select) {
-		--sv-bg: #1f2937;
-		--sv-border: #4b5563;
-		--sv-placeholder-color: #6b7280;
-		--sv-item-selected-bg: #1e3a5f;
-		--sv-highlight-bg: #1e3a8a;
-	}
-
-	:global(.creatable-select-error) {
-		--sv-border: #ef4444;
-	}
-</style>

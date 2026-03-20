@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1771220885143,
-      "tag": "0000_lazy_zodiak",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772502750178,
-      "tag": "0001_deep_miek",
+      "when": 1773688201221,
+      "tag": "0000_long_callisto",
       "breakpoints": true
     }
   ]

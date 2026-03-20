@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Select, Input, Helper, Label } from 'flowbite-svelte';
-	import { getFormErrorMessage } from '$lib/utils';
+	import { getFormErrorMessage, ID_DOC_PREFIXES, RIF_RE, type IdDocPrefix } from '$lib/utils';
 
 	interface Props {
 		value: string;
@@ -13,19 +13,15 @@
 
 	let { value = $bindable(), label, name, error = null, disabled = false }: Props = $props();
 
-	// Split RIF into type and number parts
-	const RIF_TYPES = ['V', 'E', 'J', 'G'] as const;
-	type RifType = (typeof RIF_TYPES)[number];
-
-	let rifType = $state<RifType>('J');
+	let rifType = $state<IdDocPrefix>('J');
 	let rifNumber = $state('');
 
 	// Parse initial value (e.g., "J-12345678-9")
 	$effect(() => {
 		if (value && !rifNumber) {
-			const match = value.match(/^([VEJG])-?(\d{8})-?(\d)$/);
+			const match = value.match(RIF_RE);
 			if (match) {
-				rifType = match[1] as RifType;
+				rifType = match[1] as IdDocPrefix;
 				rifNumber = match[2] + match[3]; // Full 9 digits
 			}
 		}
@@ -80,7 +76,7 @@
 
 	<div class="flex gap-2">
 		<Select bind:value={rifType} {disabled} class="w-20 shrink-0" onchange={handleTypeChange}>
-			{#each RIF_TYPES as type (type)}
+			{#each ID_DOC_PREFIXES as type (type)}
 				<option value={type}>{type}</option>
 			{/each}
 		</Select>

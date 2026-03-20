@@ -25,6 +25,12 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import { getLensTypeLabel, getLensSourceLabel, getPricingUnitLabel } from '$lib/shared/enums';
+	import {
+		PhotochromicMode,
+		LensTreatmentAvailability,
+		LENS_TREATMENT_LABELS,
+		type CoreLensTreatmentCode
+	} from '$lib/shared/contracts';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
@@ -56,13 +62,21 @@
 	// Optical range display
 	const displayRanges = collapseRangesForDisplay(item.ranges);
 
-	// Features list
+	// Features list — new trait/policy model
+	const isPhotochromic = $derived(item.photochromicMode === PhotochromicMode.INHERENT);
 	const features = $derived.by(() => {
 		const list: { label: string; icon: typeof Sun; active: boolean }[] = [
-			{ label: 'Fotocromático', icon: Sun, active: item.isPhotochromic },
-			{ label: 'Blue Cut', icon: Shield, active: item.isBlueCut },
-			{ label: 'Anti-Reflejo', icon: Eye, active: item.isAR }
+			{ label: 'Fotocromático', icon: Sun, active: isPhotochromic }
 		];
+		for (const policy of item.treatmentPolicies ?? []) {
+			const label = LENS_TREATMENT_LABELS[policy.code as CoreLensTreatmentCode] ?? policy.code;
+			const active = policy.availability !== LensTreatmentAvailability.NOT_AVAILABLE;
+			if (policy.code === 'BLUECUT') {
+				list.push({ label, icon: Shield, active });
+			} else if (policy.code === 'AR') {
+				list.push({ label, icon: Eye, active });
+			}
+		}
 		return list;
 	});
 

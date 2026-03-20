@@ -14,16 +14,30 @@ import {
 	unique
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
+import { enumValues } from './utils';
+import { LensCatalogSource, LensPricingUnit } from '$lib/shared/enums/lensTypes';
+import {
+	PhotochromicMode,
+	LensTreatmentAvailability,
+	LensRangeAvailability,
+	type LensTreatmentPolicy
+} from '$lib/shared/contracts/lenses';
 
 // ============================================================================
-// LENS CATALOG SOURCE ENUM
+// LENS ENUMS — derived from shared enums / contracts (single source of truth)
 // ============================================================================
 
-/** Cristales terminados (en stock del proveedor) vs laboratorio (pedido a medida) */
-export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', ['FINISHED', 'LAB']);
-
-/** Whether the supplier prices per single lens (UNIT) or per pair (PAIR) */
-export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', ['UNIT', 'PAIR']);
+export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
+export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', enumValues(LensPricingUnit));
+export const photochromicModeEnum = pgEnum('photochromic_mode', enumValues(PhotochromicMode));
+export const rangeAvailabilityEnum = pgEnum(
+	'range_availability',
+	enumValues(LensRangeAvailability)
+);
+export const treatmentAvailabilityEnum = pgEnum(
+	'treatment_availability',
+	enumValues(LensTreatmentAvailability)
+);
 
 // ============================================================================
 // LENS MATERIALS
@@ -100,13 +114,35 @@ export const lensCatalogItems = pgTable(
 		type: varchar().notNull(),
 		materialId: uuid('material_id').notNull(),
 		baseFeatures: json('base_features').$type<string[]>(),
-		isPhotochromic: boolean('is_photochromic').notNull().default(false),
-		isBlueCut: boolean('is_blue_cut').notNull().default(false),
-		isAR: boolean('is_ar').notNull().default(false),
+
+		// --- Identity traits ---
+		photochromicMode: photochromicModeEnum('photochromic_mode').notNull().default('NONE'),
+		rangeAvailability: rangeAvailabilityEnum('range_availability')
+			.notNull()
+			.default('EXACT_RANGES'),
+
+		// --- Treatment policies (per-item, provider-scoped) ---
+		treatmentPolicies: json('treatment_policies')
+			.$type<LensTreatmentPolicy[]>()
+			.notNull()
+			.default([]),
+
+		// --- Pricing ---
 		pricingUnit: lensPricingUnitEnum('pricing_unit').notNull().default('UNIT'),
 		basePrice: doublePrecision('base_price').notNull(),
 		suggestedMultiplier: doublePrecision('suggested_multiplier'),
-		mountingPrice: doublePrecision('mounting_price'),
+
+		// --- Purchase policy ---
+		allowsSingleUnitOrder: boolean('allows_single_unit_order').notNull().default(false),
+		singleUnitRequiresConfirmation: boolean('single_unit_requires_confirmation')
+			.notNull()
+			.default(false),
+		singleUnitSurcharge: doublePrecision('single_unit_surcharge').notNull().default(0),
+		minimumOrderUnits: integer('minimum_order_units').notNull().default(1),
+		mountingPrice: doublePrecision('mounting_price').notNull().default(0),
+		shippingPrice: doublePrecision('shipping_price').notNull().default(0),
+
+		// --- Operations ---
 		deliveryDays: integer('delivery_days'),
 		stock: integer(),
 		refractiveIndex: doublePrecision('refractive_index'),

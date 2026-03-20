@@ -1,5 +1,5 @@
 {
-  "id": "6510a584-5bc0-4e89-9b7d-7a4d6ba0bf8d",
+  "id": "610ab865-93e4-4510-bbd2-3abbc9d8968a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1082,12 +1082,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "refractive_index": {
-          "name": "refractive_index",
-          "type": "double precision",
-          "primaryKey": false,
-          "notNull": false
-        },
         "description": {
           "name": "description",
           "type": "varchar",
@@ -1739,26 +1733,28 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_photochromic": {
-          "name": "is_photochromic",
-          "type": "boolean",
+        "photochromic_mode": {
+          "name": "photochromic_mode",
+          "type": "photochromic_mode",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": false
+          "default": "'NONE'"
         },
-        "is_blue_cut": {
-          "name": "is_blue_cut",
-          "type": "boolean",
+        "range_availability": {
+          "name": "range_availability",
+          "type": "range_availability",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": false
+          "default": "'EXACT_RANGES'"
         },
-        "is_ar": {
-          "name": "is_ar",
-          "type": "boolean",
+        "treatment_policies": {
+          "name": "treatment_policies",
+          "type": "json",
           "primaryKey": false,
           "notNull": true,
-          "default": false
+          "default": "'[]'::json"
         },
         "pricing_unit": {
           "name": "pricing_unit",
@@ -1780,11 +1776,47 @@
           "primaryKey": false,
           "notNull": false
         },
+        "allows_single_unit_order": {
+          "name": "allows_single_unit_order",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "single_unit_requires_confirmation": {
+          "name": "single_unit_requires_confirmation",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "single_unit_surcharge": {
+          "name": "single_unit_surcharge",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "minimum_order_units": {
+          "name": "minimum_order_units",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
         "mounting_price": {
           "name": "mounting_price",
           "type": "double precision",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": 0
+        },
+        "shipping_price": {
+          "name": "shipping_price",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "delivery_days": {
           "name": "delivery_days",
@@ -2506,21 +2538,27 @@
           "primaryKey": false,
           "notNull": false
         },
-        "pd": {
-          "name": "pd",
+        "dp": {
+          "name": "dp",
           "type": "double precision",
           "primaryKey": false,
           "notNull": false
         },
-        "pd_right": {
-          "name": "pd_right",
+        "np_right": {
+          "name": "np_right",
           "type": "double precision",
           "primaryKey": false,
           "notNull": false
         },
-        "pd_left": {
-          "name": "pd_left",
+        "np_left": {
+          "name": "np_left",
           "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "treatments": {
+          "name": "treatments",
+          "type": "json",
           "primaryKey": false,
           "notNull": false
         },
@@ -2670,9 +2708,69 @@
           "primaryKey": false,
           "notNull": false
         },
+        "lens_fulfillment_mode": {
+          "name": "lens_fulfillment_mode",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "selected_treatments": {
           "name": "selected_treatments",
           "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prescription_id": {
+          "name": "prescription_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "od_sphere": {
+          "name": "od_sphere",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "od_cylinder": {
+          "name": "od_cylinder",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "od_axis": {
+          "name": "od_axis",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "od_addition": {
+          "name": "od_addition",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os_sphere": {
+          "name": "os_sphere",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os_cylinder": {
+          "name": "os_cylinder",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os_axis": {
+          "name": "os_axis",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "os_addition": {
+          "name": "os_addition",
+          "type": "double precision",
           "primaryKey": false,
           "notNull": false
         },
@@ -2694,6 +2792,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "discount_type": {
+          "name": "discount_type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'FIXED'"
         },
         "notes": {
           "name": "notes",
@@ -2755,6 +2860,22 @@
           "method": "btree",
           "with": {}
         },
+        "ix_sale_items_prescription_id": {
+          "name": "ix_sale_items_prescription_id",
+          "columns": [
+            {
+              "expression": "prescription_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "ix_sale_items_product_id": {
           "name": "ix_sale_items_product_id",
           "columns": [
@@ -2802,6 +2923,19 @@
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
+        "sale_items_prescription_id_fkey": {
+          "name": "sale_items_prescription_id_fkey",
+          "tableFrom": "sale_items",
+          "tableTo": "prescriptions",
+          "columnsFrom": [
+            "prescription_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "sale_items_product_id_fkey": {
           "name": "sale_items_product_id_fkey",
           "tableFrom": "sale_items",
@@ -2835,6 +2969,141 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.sale_payments": {
+      "name": "sale_payments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sale_id": {
+          "name": "sale_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payment_method": {
+          "name": "payment_method",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "exchange_rate": {
+          "name": "exchange_rate",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bcv_rate": {
+          "name": "bcv_rate",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_bcv_usd": {
+          "name": "amount_bcv_usd",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference": {
+          "name": "reference",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voided_at": {
+          "name": "voided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_sale_payments_id": {
+          "name": "ix_sale_payments_id",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_sale_payments_sale_id": {
+          "name": "ix_sale_payments_sale_id",
+          "columns": [
+            {
+              "expression": "sale_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "uuid_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sale_payments_sale_id_fkey": {
+          "name": "sale_payments_sale_id_fkey",
+          "tableFrom": "sale_payments",
+          "tableTo": "sales",
+          "columnsFrom": [
+            "sale_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.sales": {
       "name": "sales",
       "schema": "",
@@ -2845,6 +3114,12 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
+        },
+        "order_number": {
+          "name": "order_number",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
         },
         "customer_id": {
           "name": "customer_id",
@@ -2884,17 +3159,25 @@
           "notNull": true,
           "default": 0
         },
+        "discount_type": {
+          "name": "discount_type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'FIXED'"
+        },
         "total": {
           "name": "total",
           "type": "double precision",
           "primaryKey": false,
           "notNull": true
         },
-        "payment_method": {
-          "name": "payment_method",
-          "type": "varchar",
+        "paid_amount_bcv_usd": {
+          "name": "paid_amount_bcv_usd",
+          "type": "double precision",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": 0
         },
         "notes": {
           "name": "notes",
@@ -2987,6 +3270,22 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "ix_sales_order_number": {
+          "name": "ix_sales_order_number",
+          "columns": [
+            {
+              "expression": "order_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "int4_ops"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -3030,6 +3329,7 @@
       "schema": "public",
       "values": [
         "FINISHED",
+        "ON_DEMAND",
         "LAB"
       ]
     },
@@ -3039,6 +3339,31 @@
       "values": [
         "UNIT",
         "PAIR"
+      ]
+    },
+    "public.photochromic_mode": {
+      "name": "photochromic_mode",
+      "schema": "public",
+      "values": [
+        "NONE",
+        "INHERENT"
+      ]
+    },
+    "public.range_availability": {
+      "name": "range_availability",
+      "schema": "public",
+      "values": [
+        "EXACT_RANGES",
+        "CONSULT_REQUIRED"
+      ]
+    },
+    "public.treatment_availability": {
+      "name": "treatment_availability",
+      "schema": "public",
+      "values": [
+        "INHERENT",
+        "OPTIONAL_EXTRA",
+        "NOT_AVAILABLE"
       ]
     }
   },
