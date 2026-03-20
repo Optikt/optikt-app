@@ -5,6 +5,7 @@ import type { FulfillmentCostBreakdown } from '$lib/shared/contracts/fulfillment
 import type {
 	LensRequirement,
 	CatalogItemForPlanning,
+	SurplusUnitForPlanning,
 	FulfillmentPlanResult,
 	FulfillmentPlanResultLine,
 	SurplusInfo
@@ -82,22 +83,27 @@ function groupByCatalogItem(requirements: LensRequirement[]): RequirementGroup[]
  *
  * Rules:
  * 1. Group requirements by catalog item.
- * 2. For each group, check the item's purchase policy:
+ * 2. For each group, first try to fulfill from available surplus units.
+ * 3. For remaining (unfulfilled) requirements, check the item's purchase policy:
  *    a. UNIT pricing → each requirement is an independent order line.
  *    b. PAIR pricing with 2 requirements → natural pair, one cost covers both.
  *    c. PAIR pricing with 1 requirement → must buy a pair for one eye.
  *       - If allowsSingleUnitOrder → can order single with optional surcharge.
  *       - If NOT → forced to buy pair, creating 1 surplus unit.
- * 3. CONSULT_REQUIRED verdicts produce a warning on the line.
- * 4. Minimum order units checked against group size.
+ * 4. CONSULT_REQUIRED verdicts produce a warning on the line.
+ * 5. Minimum order units checked against group size.
  */
 export function buildFulfillmentPlan(
 	requirements: LensRequirement[],
-	catalog: Map<string, CatalogItemForPlanning>
+	catalog: Map<string, CatalogItemForPlanning>,
+	availableSurplus: SurplusUnitForPlanning[] = []
 ): FulfillmentPlanResult {
 	const lines: FulfillmentPlanResultLine[] = [];
 	const surplus: SurplusInfo[] = [];
 	const groups = groupByCatalogItem(requirements);
+
+	// Index surplus by catalog item for fast lookup
+	const surplusPool = buildSurplusPool(availableSurplus);
 
 	for (const group of groups) {
 		const item = catalog.get(group.catalogItemId);
@@ -105,21 +111,34 @@ export function buildFulfillmentPlan(
 			throw new Error(`Catalog item not found: ${group.catalogItemId}`);
 		}
 
-		const policy = item.purchasePolicy;
-		const isPairPricing = policy.listOrderUnit === LensPricingUnit.PAIR;
-		const unitCount = group.requirements.length;
+		// Step 1: Try to fulfill from surplus
+		const remaining = fulfillFromSurplus(group.requirements, surplusPool, lines);
 
-		if (isPairPricing) {
-			planPairPricingGroup(group, item, lines, surplus);
-		} else {
-			planUnitPricingGroup(group, item, lines);
-		}
+		// Step 2: Handle remaining requirements through normal ordering
+		if (remaining.length > 0) {
+			const remainingGroup: RequirementGroup = {
+				catalogItemId: group.catalogItemId,
+				requirements: remaining
+			};
 
-		// Check minimum order units
-		if (unitCount < policy.minimumOrderUnits) {
-			for (const line of lines.filter((l) => l.catalogItemId === group.catalogItemId)) {
-				if (!line.warnings.includes(FulfillmentWarningCode.BELOW_MINIMUM_ORDER)) {
-					line.warnings.push(FulfillmentWarningCode.BELOW_MINIMUM_ORDER);
+			const policy = item.purchasePolicy;
+			const isPairPricing = policy.listOrderUnit === LensPricingUnit.PAIR;
+
+			if (isPairPricing) {
+				planPairPricingGroup(remainingGroup, item, lines, surplus);
+			} else {
+				planUnitPricingGroup(remainingGroup, item, lines);
+			}
+
+			// Check minimum order units (only for ordered units, not surplus-fulfilled)
+			if (remaining.length < policy.minimumOrderUnits) {
+				for (const line of lines.filter(
+					(l) =>
+						l.catalogItemId === group.catalogItemId && l.source !== FulfillmentSource.SURPLUS_STOCK
+				)) {
+					if (!line.warnings.includes(FulfillmentWarningCode.BELOW_MINIMUM_ORDER)) {
+						line.warnings.push(FulfillmentWarningCode.BELOW_MINIMUM_ORDER);
+					}
 				}
 			}
 		}
@@ -130,6 +149,110 @@ export function buildFulfillmentPlan(
 	const allWarnings = [...new Set(lines.flatMap((l) => l.warnings))];
 
 	return { lines, surplus, totalCost, requiresAnyConfirmation, allWarnings };
+}
+
+// ============================================================================
+// SURPLUS FULFILLMENT
+// ============================================================================
+
+type SurplusPool = Map<string, SurplusUnitForPlanning[]>;
+
+/** Build a mutable pool of surplus units indexed by catalog item */
+function buildSurplusPool(surplus: SurplusUnitForPlanning[]): SurplusPool {
+	const pool: SurplusPool = new Map();
+	for (const unit of surplus) {
+		const existing = pool.get(unit.catalogItemId);
+		if (existing) {
+			existing.push(unit);
+		} else {
+			pool.set(unit.catalogItemId, [unit]);
+		}
+	}
+	return pool;
+}
+
+/**
+ * Check if a surplus unit's prescription matches a requirement.
+ * Compares sphere, cylinder, and addition — NOT axis (axis is a mounting concern).
+ */
+function prescriptionsMatch(
+	a: { sphere: number | null; cylinder: number | null; addition: number | null },
+	b: { sphere: number | null; cylinder: number | null; addition: number | null }
+): boolean {
+	return a.sphere === b.sphere && a.cylinder === b.cylinder && a.addition === b.addition;
+}
+
+/**
+ * Check if two treatment arrays contain the same codes (order-independent).
+ */
+function treatmentsMatch(a: readonly string[], b: readonly string[]): boolean {
+	if (a.length !== b.length) return false;
+	if (a.length === 0) return true;
+	const setA = new Set(a);
+	return b.every((code) => setA.has(code));
+}
+
+/**
+ * Check if a surplus unit fully matches a requirement.
+ * Requires: same catalogItemId (handled by pool), same prescription
+ * (sphere, cylinder, addition — not axis), and same optional treatments.
+ */
+function surplusMatchesRequirement(surplus: SurplusUnitForPlanning, req: LensRequirement): boolean {
+	return (
+		prescriptionsMatch(surplus.prescription, req.prescription) &&
+		treatmentsMatch(surplus.appliedOptionalTreatments, req.selectedOptionalTreatments)
+	);
+}
+
+/**
+ * Try to fulfill requirements from surplus stock.
+ * Matching requires catalogItemId + prescription (sphere, cylinder, addition)
+ * + identical optional treatments.
+ * Consumed surplus units are removed from the pool.
+ * Returns the requirements that could NOT be fulfilled from surplus.
+ */
+function fulfillFromSurplus(
+	requirements: LensRequirement[],
+	pool: SurplusPool,
+	lines: FulfillmentPlanResultLine[]
+): LensRequirement[] {
+	const remaining: LensRequirement[] = [];
+	const available = pool.get(requirements[0]?.catalogItemId ?? '') ?? [];
+
+	for (const req of requirements) {
+		const matchIndex = available.findIndex((u) => surplusMatchesRequirement(u, req));
+
+		if (matchIndex !== -1) {
+			const surplusUnit = available.splice(matchIndex, 1)[0]!;
+			const warnings = buildWarnings(req, false, false);
+			lines.push({
+				requirementId: req.requirementId,
+				eye: req.eye,
+				catalogItemId: req.catalogItemId,
+				source: FulfillmentSource.SURPLUS_STOCK,
+				cost: zeroCost(),
+				warnings,
+				requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED),
+				surplusUnitId: surplusUnit.id
+			});
+		} else {
+			remaining.push(req);
+		}
+	}
+
+	return remaining;
+}
+
+/** Zero cost breakdown for surplus-fulfilled lines (already paid for) */
+function zeroCost(): FulfillmentCostBreakdown {
+	return {
+		basePrice: 0,
+		treatmentPrice: 0,
+		surchargePrice: 0,
+		mountingPrice: 0,
+		shippingPrice: 0,
+		totalCost: 0
+	};
 }
 
 // ============================================================================
@@ -152,7 +275,8 @@ function planUnitPricingGroup(
 			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost,
 			warnings,
-			requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
+			requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED),
+			surplusUnitId: null
 		});
 	}
 }
@@ -161,6 +285,34 @@ function planUnitPricingGroup(
 // PAIR PRICING STRATEGY
 // ============================================================================
 
+/**
+ * Build a key for sub-grouping requirements by "pair identity" —
+ * matching prescription (sphere, cylinder, addition — not axis) + sorted treatments.
+ */
+function pairIdentityKey(req: LensRequirement): string {
+	const rx = req.prescription;
+	const treatments = [...req.selectedOptionalTreatments].sort().join(',');
+	return `${rx.sphere}|${rx.cylinder}|${rx.addition}|${treatments}`;
+}
+
+/**
+ * Sub-group requirements by prescription + treatments identity.
+ * Only requirements with identical Rx + treatments can form a natural pair.
+ */
+function subGroupByPairIdentity(requirements: LensRequirement[]): LensRequirement[][] {
+	const map = new Map<string, LensRequirement[]>();
+	for (const req of requirements) {
+		const key = pairIdentityKey(req);
+		const existing = map.get(key);
+		if (existing) {
+			existing.push(req);
+		} else {
+			map.set(key, [req]);
+		}
+	}
+	return Array.from(map.values());
+}
+
 function planPairPricingGroup(
 	group: RequirementGroup,
 	item: CatalogItemForPlanning,
@@ -168,14 +320,29 @@ function planPairPricingGroup(
 	surplus: SurplusInfo[]
 ): void {
 	const policy = item.purchasePolicy;
-	const unitCount = group.requirements.length;
 
-	if (unitCount >= 2) {
-		// Natural pair(s) — process in pairs
-		planNaturalPairs(group, item, lines);
+	if (policy.requiresSamePrescriptionForPair) {
+		// Same-Rx supplier: sub-group by Rx+treatments, then process each sub-group
+		const subGroups = subGroupByPairIdentity(group.requirements);
+		for (const subGroup of subGroups) {
+			if (subGroup.length >= 2) {
+				planNaturalPairs(
+					{ catalogItemId: group.catalogItemId, requirements: subGroup },
+					item,
+					lines
+				);
+			} else {
+				// Single need in this Rx sub-group → forced pair, surplus Rx is predetermined
+				planSingleUnitNeed(subGroup[0]!, item, policy, lines, surplus, true);
+			}
+		}
 	} else {
-		// Single unit need with pair pricing
-		planSingleUnitNeed(group.requirements[0]!, item, policy, lines, surplus);
+		// Mixed-Rx allowed: any requirements can pair together
+		if (group.requirements.length >= 2) {
+			planNaturalPairs(group, item, lines);
+		} else {
+			planSingleUnitNeed(group.requirements[0]!, item, policy, lines, surplus, false);
+		}
 	}
 }
 
@@ -200,7 +367,8 @@ function planNaturalPairs(
 			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost: firstCost,
 			warnings: firstWarnings,
-			requiresConfirmation: firstWarnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
+			requiresConfirmation: firstWarnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED),
+			surplusUnitId: null
 		});
 
 		if (second) {
@@ -214,7 +382,8 @@ function planNaturalPairs(
 				source: FulfillmentSource.PAIR_BUNDLED,
 				cost: secondCost,
 				warnings: secondWarnings,
-				requiresConfirmation: secondWarnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
+				requiresConfirmation: secondWarnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED),
+				surplusUnitId: null
 			});
 		} else {
 			// Odd requirement out — treated as single unit need (shouldn't happen with 2, but handles 3+)
@@ -223,13 +392,18 @@ function planNaturalPairs(
 	}
 }
 
-/** One eye needs a lens but supplier sells by pair */
+/**
+ * One eye needs a lens but supplier sells by pair.
+ * @param surplusRxPredetermined When true (same-Rx supplier), surplus Rx is identical
+ *   to the requirement's Rx + treatments. When false, user decides at order time.
+ */
 function planSingleUnitNeed(
 	req: LensRequirement,
 	item: CatalogItemForPlanning,
 	policy: CatalogItemForPlanning['purchasePolicy'],
 	lines: FulfillmentPlanResultLine[],
-	surplus: SurplusInfo[]
+	surplus: SurplusInfo[],
+	surplusRxPredetermined: boolean
 ): void {
 	if (policy.allowsSingleUnitOrder) {
 		// Can order single unit — possibly with surcharge + confirmation
@@ -253,7 +427,8 @@ function planSingleUnitNeed(
 			cost,
 			warnings,
 			requiresConfirmation:
-				needsConfirmation || warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
+				needsConfirmation || warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED),
+			surplusUnitId: null
 		});
 	} else {
 		// Must buy a pair — one unit is needed, one becomes surplus
@@ -267,7 +442,8 @@ function planSingleUnitNeed(
 			source: FulfillmentSource.SUPPLIER_ORDER,
 			cost,
 			warnings,
-			requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED)
+			requiresConfirmation: warnings.includes(FulfillmentWarningCode.CONSULT_REQUIRED),
+			surplusUnitId: null
 		});
 
 		// The surplus unit's cost is the same base + treatments (included in pair price)
@@ -275,7 +451,9 @@ function planSingleUnitNeed(
 		surplus.push({
 			catalogItemId: req.catalogItemId,
 			surplusUnits: 1,
-			surplusCostIncluded: surplusCost.totalCost
+			surplusCostIncluded: surplusCost.totalCost,
+			predeterminedPrescription: surplusRxPredetermined ? { ...req.prescription } : null,
+			predeterminedTreatments: surplusRxPredetermined ? [...req.selectedOptionalTreatments] : null
 		});
 	}
 }
