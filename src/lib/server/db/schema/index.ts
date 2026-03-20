@@ -17,6 +17,7 @@ export * from './lenses';
 export * from './prescriptions';
 export * from './sales';
 export * from './surplusUnits';
+export * from './supplierTreatmentPolicies';
 
 // Audit / History
 export * from './changeHistory';
