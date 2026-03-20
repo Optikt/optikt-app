@@ -14,6 +14,7 @@ import {
 	unique
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
+import { enumValues } from './utils';
 import { LensCatalogSource, LensPricingUnit } from '$lib/shared/enums/lensTypes';
 import {
 	PhotochromicMode,
@@ -25,9 +26,6 @@ import {
 // ============================================================================
 // LENS ENUMS — derived from shared enums / contracts (single source of truth)
 // ============================================================================
-
-const enumValues = <T extends Record<string, string>>(e: T) =>
-	Object.values(e) as [string, ...string[]];
 
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
 export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', enumValues(LensPricingUnit));
