@@ -5,24 +5,12 @@
 import { query } from '$app/server';
 import { z } from 'zod';
 import { getEntityHistory, getEntityHistoryCount } from '$lib/server/db/queries/changeHistory';
+import { ALL_ENTITY_TYPES } from '$lib/server/db/schema';
 import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
 
 // Schema for fetching entity history
 const GetEntityHistorySchema = z.object({
-	entityType: z.enum([
-		'product',
-		'customer',
-		'prescription',
-		'sale',
-		'sale_item',
-		'sale_payment',
-		'lens_catalog_item',
-		'supplier',
-		'brand',
-		'material',
-		'lens_material',
-		'lens_treatment'
-	]),
+	entityType: z.enum(ALL_ENTITY_TYPES),
 	entityId: z.string().uuid(),
 	limit: z.number().int().min(1).max(100).default(50),
 	offset: z.number().int().min(0).default(0)
