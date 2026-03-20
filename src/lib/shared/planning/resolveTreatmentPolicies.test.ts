@@ -21,7 +21,12 @@ describe('resolveTreatmentPolicies', () => {
 
 	it('uses supplier defaults when no item overrides', () => {
 		const supplierDefaults: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: OPTIONAL_EXTRA, additionalPrice: 50, requiresConfirmation: false },
+			{
+				code: 'AR',
+				availability: OPTIONAL_EXTRA,
+				additionalPrice: 50,
+				requiresConfirmation: false
+			},
 			{ code: 'BLUECUT', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, []);
@@ -34,8 +39,18 @@ describe('resolveTreatmentPolicies', () => {
 
 	it('item overrides one code, supplier used for the other', () => {
 		const supplierDefaults: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: OPTIONAL_EXTRA, additionalPrice: 50, requiresConfirmation: false },
-			{ code: 'BLUECUT', availability: NOT_AVAILABLE, additionalPrice: 0, requiresConfirmation: false }
+			{
+				code: 'AR',
+				availability: OPTIONAL_EXTRA,
+				additionalPrice: 50,
+				requiresConfirmation: false
+			},
+			{
+				code: 'BLUECUT',
+				availability: NOT_AVAILABLE,
+				additionalPrice: 0,
+				requiresConfirmation: false
+			}
 		];
 		const itemOverrides: LensTreatmentPolicy[] = [
 			{ code: 'AR', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
@@ -49,10 +64,20 @@ describe('resolveTreatmentPolicies', () => {
 	it('item overrides all codes — ignores supplier entirely', () => {
 		const supplierDefaults: LensTreatmentPolicy[] = [
 			{ code: 'AR', availability: NOT_AVAILABLE, additionalPrice: 0, requiresConfirmation: false },
-			{ code: 'BLUECUT', availability: NOT_AVAILABLE, additionalPrice: 0, requiresConfirmation: false }
+			{
+				code: 'BLUECUT',
+				availability: NOT_AVAILABLE,
+				additionalPrice: 0,
+				requiresConfirmation: false
+			}
 		];
 		const itemOverrides: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: OPTIONAL_EXTRA, additionalPrice: 100, requiresConfirmation: true },
+			{
+				code: 'AR',
+				availability: OPTIONAL_EXTRA,
+				additionalPrice: 100,
+				requiresConfirmation: true
+			},
 			{ code: 'BLUECUT', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, itemOverrides);
@@ -65,7 +90,12 @@ describe('resolveTreatmentPolicies', () => {
 
 	it('missing supplier defaults falls back to NOT_AVAILABLE', () => {
 		const itemOverrides: LensTreatmentPolicy[] = [
-			{ code: 'BLUECUT', availability: OPTIONAL_EXTRA, additionalPrice: 30, requiresConfirmation: false }
+			{
+				code: 'BLUECUT',
+				availability: OPTIONAL_EXTRA,
+				additionalPrice: 30,
+				requiresConfirmation: false
+			}
 		];
 		const result = resolveTreatmentPolicies([], itemOverrides);
 		expect(findTreatmentPolicy(result, 'AR')!.availability).toBe(NOT_AVAILABLE);
@@ -75,7 +105,14 @@ describe('resolveTreatmentPolicies', () => {
 
 	it('always returns exactly one entry per core treatment code', () => {
 		const result = resolveTreatmentPolicies(
-			[{ code: 'AR', availability: OPTIONAL_EXTRA, additionalPrice: 10, requiresConfirmation: false }],
+			[
+				{
+					code: 'AR',
+					availability: OPTIONAL_EXTRA,
+					additionalPrice: 10,
+					requiresConfirmation: false
+				}
+			],
 			[{ code: 'AR', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }]
 		);
 		expect(result).toHaveLength(2);

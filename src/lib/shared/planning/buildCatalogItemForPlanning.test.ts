@@ -35,11 +35,21 @@ describe('buildCatalogItemForPlanning', () => {
 
 	it('resolves treatment policies with supplier defaults and item overrides', () => {
 		const supplierDefaults: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: LensTreatmentAvailability.OPTIONAL_EXTRA, additionalPrice: 50, requiresConfirmation: false }
+			{
+				code: 'AR',
+				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
+				additionalPrice: 50,
+				requiresConfirmation: false
+			}
 		];
 		const raw = makeRaw({
 			treatmentPolicies: [
-				{ code: 'AR', availability: LensTreatmentAvailability.INHERENT, additionalPrice: 0, requiresConfirmation: false }
+				{
+					code: 'AR',
+					availability: LensTreatmentAvailability.INHERENT,
+					additionalPrice: 0,
+					requiresConfirmation: false
+				}
 			]
 		});
 		const result = buildCatalogItemForPlanning(raw, supplierDefaults);
@@ -50,7 +60,12 @@ describe('buildCatalogItemForPlanning', () => {
 
 	it('uses supplier defaults when item has no overrides', () => {
 		const supplierDefaults: LensTreatmentPolicy[] = [
-			{ code: 'BLUECUT', availability: LensTreatmentAvailability.OPTIONAL_EXTRA, additionalPrice: 30, requiresConfirmation: true }
+			{
+				code: 'BLUECUT',
+				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
+				additionalPrice: 30,
+				requiresConfirmation: true
+			}
 		];
 		const result = buildCatalogItemForPlanning(makeRaw(), supplierDefaults);
 		const bc = findTreatmentPolicy(result.treatmentPolicies, 'BLUECUT')!;
@@ -68,13 +83,33 @@ describe('buildCatalogItemForPlanning', () => {
 
 	it('does not duplicate policies when supplier and item both define the same code', () => {
 		const supplierDefaults: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: LensTreatmentAvailability.OPTIONAL_EXTRA, additionalPrice: 50, requiresConfirmation: false },
-			{ code: 'BLUECUT', availability: LensTreatmentAvailability.OPTIONAL_EXTRA, additionalPrice: 20, requiresConfirmation: false }
+			{
+				code: 'AR',
+				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
+				additionalPrice: 50,
+				requiresConfirmation: false
+			},
+			{
+				code: 'BLUECUT',
+				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
+				additionalPrice: 20,
+				requiresConfirmation: false
+			}
 		];
 		const raw = makeRaw({
 			treatmentPolicies: [
-				{ code: 'AR', availability: LensTreatmentAvailability.INHERENT, additionalPrice: 0, requiresConfirmation: false },
-				{ code: 'BLUECUT', availability: LensTreatmentAvailability.NOT_AVAILABLE, additionalPrice: 0, requiresConfirmation: false }
+				{
+					code: 'AR',
+					availability: LensTreatmentAvailability.INHERENT,
+					additionalPrice: 0,
+					requiresConfirmation: false
+				},
+				{
+					code: 'BLUECUT',
+					availability: LensTreatmentAvailability.NOT_AVAILABLE,
+					additionalPrice: 0,
+					requiresConfirmation: false
+				}
 			]
 		});
 		const result = buildCatalogItemForPlanning(raw, supplierDefaults);
@@ -82,7 +117,11 @@ describe('buildCatalogItemForPlanning', () => {
 		const codes = result.treatmentPolicies.map((p) => p.code).sort();
 		expect(codes).toEqual(['AR', 'BLUECUT']);
 		// Item overrides win
-		expect(findTreatmentPolicy(result.treatmentPolicies, 'AR')!.availability).toBe(LensTreatmentAvailability.INHERENT);
-		expect(findTreatmentPolicy(result.treatmentPolicies, 'BLUECUT')!.availability).toBe(LensTreatmentAvailability.NOT_AVAILABLE);
+		expect(findTreatmentPolicy(result.treatmentPolicies, 'AR')!.availability).toBe(
+			LensTreatmentAvailability.INHERENT
+		);
+		expect(findTreatmentPolicy(result.treatmentPolicies, 'BLUECUT')!.availability).toBe(
+			LensTreatmentAvailability.NOT_AVAILABLE
+		);
 	});
 });

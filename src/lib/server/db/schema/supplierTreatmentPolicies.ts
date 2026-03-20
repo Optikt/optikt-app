@@ -1,4 +1,12 @@
-import { pgTable, varchar, uuid, timestamp, doublePrecision, boolean, unique } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	varchar,
+	uuid,
+	timestamp,
+	doublePrecision,
+	boolean,
+	unique
+} from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
 
 // ============================================================================

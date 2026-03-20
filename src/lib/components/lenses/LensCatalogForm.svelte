@@ -192,7 +192,7 @@
 				const existing = item!.treatmentPolicies;
 				if (existing && existing.length > 0) {
 					// Ensure all core codes are represented
-				treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
+					treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
 						const found = findTreatmentPolicy(existing, code);
 						return (
 							found ?? {
