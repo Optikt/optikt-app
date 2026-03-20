@@ -1,8 +1,10 @@
 import type {
 	CoreLensTreatmentCode,
+	LensOrderedPrescription,
 	LensPurchasePolicy,
 	LensTreatmentPolicy
 } from '$lib/shared/contracts/lenses';
+export type { CoreLensTreatmentCode };
 import type { PatientEye } from '$lib/shared/contracts/common';
 import type { FulfillmentCostBreakdown } from '$lib/shared/contracts/fulfillment';
 import type { CompatibilityVerdict } from '$lib/shared/matching/types';
@@ -27,6 +29,8 @@ export interface LensRequirement {
 	eye: PatientEye;
 	/** Resolved catalog item */
 	catalogItemId: string;
+	/** The exact prescription for this eye (sphere, cylinder, axis, addition) */
+	prescription: LensOrderedPrescription;
 	/** Compatibility verdict from matching engine */
 	compatibilityVerdict: CompatibilityVerdict;
 	/** Requested treatments that are OPTIONAL_EXTRA (not INHERENT) */
@@ -47,13 +51,18 @@ export interface CatalogItemForPlanning {
 
 /**
  * An available surplus unit the planner can use instead of ordering new.
- * Keyed by catalogItemId — the planner picks from these before going to supplier.
+ * Matching requires catalogItemId + prescription (sphere, cylinder, addition — not axis)
+ * + identical optional treatments applied.
  */
 export interface SurplusUnitForPlanning {
 	/** The surplus unit's DB id */
 	id: string;
 	/** Which catalog item this surplus matches */
 	catalogItemId: string;
+	/** The exact prescription this surplus unit was ground with */
+	prescription: LensOrderedPrescription;
+	/** Optional treatments physically applied to this lens (e.g. AR, BLUECUT) */
+	appliedOptionalTreatments: CoreLensTreatmentCode[];
 	/** Cost snapshot from when the surplus was created (already paid) */
 	costSnapshot: FulfillmentCostBreakdown;
 }
@@ -95,6 +104,16 @@ export interface SurplusInfo {
 	surplusUnits: number;
 	/** Cost of the surplus unit(s) — already included in the pair line's cost */
 	surplusCostIncluded: number;
+	/**
+	 * When the supplier requires same-Rx pairs, the surplus prescription is
+	 * predetermined (identical to the used lens). Null when user decides the Rx.
+	 */
+	predeterminedPrescription: LensOrderedPrescription | null;
+	/**
+	 * When the surplus prescription is predetermined, the treatments applied.
+	 * Null when user decides.
+	 */
+	predeterminedTreatments: CoreLensTreatmentCode[] | null;
 }
 
 /** The complete fulfillment plan result for a set of lens requirements */
