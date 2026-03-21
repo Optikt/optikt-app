@@ -16,6 +16,7 @@ import {
 	ListPaginationSchema,
 	OptionalUrlSchema
 } from './common';
+import { TreatmentPolicySchema } from './lenses';
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
 	type: z.enum(SupplierType).optional(),
@@ -47,6 +48,19 @@ export const SupplierIdSchema = EntityIdSchema();
 
 export const ReactivateSupplierSchema = z.object({
 	deletedSupplierId: z.uuid()
+});
+
+// ============================================================================
+// SUPPLIER TREATMENT DEFAULTS
+// ============================================================================
+
+export const SupplierTreatmentQuerySchema = z.object({
+	supplierId: z.uuid()
+});
+
+export const SaveSupplierTreatmentDefaultsSchema = z.object({
+	supplierId: z.uuid(),
+	policies: z.array(TreatmentPolicySchema)
 });
 
 /**

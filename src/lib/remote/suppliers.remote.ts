@@ -10,7 +10,9 @@ import {
 	UpdateSupplierSchema,
 	SupplierIdSchema,
 	QuickCreateSupplierSchema,
-	ReactivateSupplierSchema
+	ReactivateSupplierSchema,
+	SupplierTreatmentQuerySchema,
+	SaveSupplierTreatmentDefaultsSchema
 } from '$lib/schemas/suppliers';
 import {
 	getAllSuppliers,
@@ -24,6 +26,13 @@ import {
 } from '$lib/server/db/queries/suppliers';
 import type { Supplier } from '$lib/server/db/schema';
 import { auditService, getAuditContext } from '$lib/server/audit';
+import { db } from '$lib/server/db';
+import {
+	getSupplierTreatmentPolicies,
+	upsertSupplierTreatmentPolicy,
+	deleteSupplierTreatmentPolicy
+} from '$lib/server/db/queries/supplierTreatmentPolicies';
+import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
 
 // Types for paginated response
 export interface PaginatedSuppliers {
@@ -242,5 +251,58 @@ export const reactivateSupplier = command(
 		await auditService.logCreate('supplier', restored, getAuditContext());
 
 		return restored;
+	}
+);
+
+// ============================================================================
+// SUPPLIER TREATMENT DEFAULTS
+// ============================================================================
+
+/**
+ * Get treatment policy defaults for a supplier
+ */
+export const getSupplierTreatmentDefaults = query(SupplierTreatmentQuerySchema, async (data) => {
+	return getSupplierTreatmentPolicies(data.supplierId);
+});
+
+/**
+ * Save treatment policy defaults for a supplier.
+ * NOT_AVAILABLE policies are deleted (that's the default when no row exists).
+ * Other policies are upserted.
+ */
+export const saveSupplierTreatmentDefaults = command(
+	SaveSupplierTreatmentDefaultsSchema,
+	async (data): Promise<void> => {
+		const { supplierId, policies } = data;
+
+		const existingPolicies = await getSupplierTreatmentPolicies(supplierId);
+
+		await db.transaction(async (tx) => {
+			for (const policy of policies) {
+				if (policy.availability === LensTreatmentAvailability.NOT_AVAILABLE) {
+					await deleteSupplierTreatmentPolicy(supplierId, policy.code, tx);
+				} else {
+					await upsertSupplierTreatmentPolicy(
+						{
+							supplierId,
+							code: policy.code,
+							availability: policy.availability,
+							additionalPrice: policy.additionalPrice ?? 0,
+							requiresConfirmation: policy.requiresConfirmation ?? false
+						},
+						tx
+					);
+				}
+			}
+		});
+
+		const newPolicies = await getSupplierTreatmentPolicies(supplierId);
+		await auditService.logUpdate(
+			'supplier_treatment_policy',
+			supplierId,
+			{ policies: existingPolicies },
+			{ policies: newPolicies },
+			getAuditContext()
+		);
 	}
 );
