@@ -5,6 +5,7 @@
 	import { untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
+	import { getSupplierTreatmentDefaults } from '$lib/remote/suppliers.remote';
 	import { CreatableSelect, type SelectOption, type PendingEntity } from '$lib/components/ui';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
@@ -26,12 +27,14 @@
 		LENS_TREATMENT_LABELS,
 		LENS_TREATMENT_AVAILABILITY_LABELS,
 		findTreatmentPolicy,
+		createDefaultTreatmentPolicies,
 		type CoreLensTreatmentCode
 	} from '$lib/shared/contracts';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 	import type { LensTreatmentPolicy } from '$lib/shared/contracts';
+	import { resolveTreatmentPolicies } from '$lib/shared/planning';
 	import { resolve } from '$app/paths';
 
 	type MaterialOption = SelectOption & { refractiveIndex?: number | null };
@@ -128,16 +131,70 @@
 	});
 
 	// Treatment policies — one per core treatment code
-	function createDefaultPolicies(): LensTreatmentPolicy[] {
-		return CORE_LENS_TREATMENT_CODES.map((code) => ({
-			code,
-			availability: LensTreatmentAvailability.NOT_AVAILABLE,
-			additionalPrice: 0,
-			requiresConfirmation: false
-		}));
+	let treatmentPolicies = $state<LensTreatmentPolicy[]>(createDefaultTreatmentPolicies());
+
+	// Supplier treatment defaults + inheritance tracking
+	let supplierDefaults = $state<LensTreatmentPolicy[]>([]);
+	let overriddenCodes = new SvelteSet<CoreLensTreatmentCode>();
+
+	const hasRealSupplier = $derived(
+		!!formData.supplierId && !formData.supplierId.startsWith('pending_')
+	);
+
+	// Fetch supplier treatment defaults when supplier selection changes
+	$effect(() => {
+		const supplierId = formData.supplierId;
+		if (supplierId && !supplierId.startsWith('pending_')) {
+			untrack(() => {
+				fetchSupplierDefaults(supplierId);
+			});
+		} else {
+			untrack(() => {
+				supplierDefaults = [];
+				const overrides = treatmentPolicies.filter((p) => overriddenCodes.has(p.code));
+				treatmentPolicies = resolveTreatmentPolicies([], overrides);
+			});
+		}
+	});
+
+	async function fetchSupplierDefaults(supplierId: string) {
+		try {
+			const rows = await getSupplierTreatmentDefaults({ supplierId });
+			supplierDefaults = rows.map((row) => ({
+				code: row.code as CoreLensTreatmentCode,
+				availability: row.availability as LensTreatmentAvailability,
+				additionalPrice: row.additionalPrice,
+				requiresConfirmation: row.requiresConfirmation
+			}));
+			const overrides = treatmentPolicies.filter((p) => overriddenCodes.has(p.code));
+			treatmentPolicies = resolveTreatmentPolicies(supplierDefaults, overrides);
+		} catch (e) {
+			console.error(e);
+			supplierDefaults = [];
+		}
 	}
 
-	let treatmentPolicies = $state<LensTreatmentPolicy[]>(createDefaultPolicies());
+	function toggleTreatmentOverride(code: CoreLensTreatmentCode) {
+		if (overriddenCodes.has(code)) {
+			// Revert to supplier default
+			overriddenCodes.delete(code);
+			const defaultPolicy = findTreatmentPolicy(supplierDefaults, code) ?? {
+				code,
+				availability: LensTreatmentAvailability.NOT_AVAILABLE,
+				additionalPrice: 0,
+				requiresConfirmation: false
+			};
+			const idx = treatmentPolicies.findIndex((p) => p.code === code);
+			if (idx >= 0) treatmentPolicies[idx] = { ...defaultPolicy };
+		} else {
+			overriddenCodes.add(code);
+		}
+	}
+
+	/** Only overridden policies are stored — non-overridden inherit from supplier */
+	const serializedTreatmentOverrides = $derived(
+		JSON.stringify(treatmentPolicies.filter((p) => overriddenCodes.has(p.code)))
+	);
 
 	// Dynamic optical ranges
 	function createEmptyRange(): RangeEntry {
@@ -191,7 +248,9 @@
 				// Load existing treatment policies or create defaults
 				const existing = item!.treatmentPolicies;
 				if (existing && existing.length > 0) {
-					// Ensure all core codes are represented
+					// Stored policies are treated as overrides (explicit per-item values)
+					overriddenCodes.clear();
+					for (const p of existing) overriddenCodes.add(p.code as CoreLensTreatmentCode);
 					treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
 						const found = findTreatmentPolicy(existing, code);
 						return (
@@ -204,7 +263,8 @@
 						);
 					});
 				} else {
-					treatmentPolicies = createDefaultPolicies();
+					overriddenCodes.clear();
+					treatmentPolicies = createDefaultTreatmentPolicies();
 				}
 
 				// Load existing ranges — try to detect symmetric (±) mirror pairs
@@ -1125,7 +1185,7 @@
 			<Label class="mb-2 text-sm text-slate-600">Identidad del cristal</Label>
 			<input type="hidden" name="photochromicMode" value={formData.photochromicMode} />
 			<input type="hidden" name="rangeAvailability" value={formData.rangeAvailability} />
-			<input type="hidden" name="treatmentPolicies" value={JSON.stringify(treatmentPolicies)} />
+			<input type="hidden" name="treatmentPolicies" value={serializedTreatmentOverrides} />
 			<input
 				type="hidden"
 				name="allowsSingleUnitOrder"
@@ -1187,55 +1247,115 @@
 			<div>
 				<Label class="mb-2 text-sm text-slate-600">
 					Política de tratamientos
-					<span class="ml-1 text-xs font-normal text-slate-400">(por este ítem)</span>
+					{#if hasRealSupplier}
+						<span class="ml-1 text-xs font-normal text-slate-400"
+							>(hereda del proveedor, personalizable por ítem)</span
+						>
+					{:else}
+						<span class="ml-1 text-xs font-normal text-slate-400">(por este ítem)</span>
+					{/if}
 				</Label>
 				<div class="space-y-3">
 					{#each treatmentPolicies as policy, pi (policy.code)}
-						<div class="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-							<div class="mb-2 flex items-center gap-2">
-								<span class="text-sm font-semibold text-slate-700">
-									{LENS_TREATMENT_LABELS[policy.code as CoreLensTreatmentCode] ?? policy.code}
-								</span>
-							</div>
-							<div class="grid gap-3 sm:grid-cols-3">
-								{#each Object.values(LensTreatmentAvailability) as avail (avail)}
+						{@const isOverridden = overriddenCodes.has(policy.code)}
+						{@const isInherited = hasRealSupplier && !isOverridden}
+						<div
+							class="rounded-lg border p-4 {isInherited
+								? 'border-slate-150 bg-slate-50/30'
+								: 'border-slate-200 bg-slate-50/50'}"
+						>
+							<div class="mb-2 flex items-center justify-between">
+								<div class="flex items-center gap-2">
+									<span class="text-sm font-semibold text-slate-700">
+										{LENS_TREATMENT_LABELS[policy.code as CoreLensTreatmentCode] ?? policy.code}
+									</span>
+									{#if hasRealSupplier}
+										{#if isOverridden}
+											<span
+												class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+											>
+												Personalizado
+											</span>
+										{:else}
+											<span
+												class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500"
+											>
+												Heredado del proveedor
+											</span>
+										{/if}
+									{/if}
+								</div>
+								{#if hasRealSupplier}
 									<button
 										type="button"
-										class="rounded-md border-2 px-3 py-2 text-left text-xs transition-all {policy.availability ===
-										avail
-											? 'border-blue-500 bg-blue-50'
-											: 'border-slate-200 hover:border-slate-300'}"
-										onclick={() => (treatmentPolicies[pi].availability = avail)}
+										class="text-xs text-slate-400 transition-colors hover:text-slate-600"
+										onclick={() => toggleTreatmentOverride(policy.code)}
 									>
-										{LENS_TREATMENT_AVAILABILITY_LABELS[avail]}
+										{isOverridden ? 'Heredar' : 'Personalizar'}
 									</button>
-								{/each}
+								{/if}
 							</div>
-							{#if policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
-								<div class="mt-3 grid gap-3 sm:grid-cols-2">
-									<div>
-										<Label class="mb-1 text-xs text-slate-500">Precio adicional ($)</Label>
-										<Input
-											bind:value={treatmentPolicies[pi].additionalPrice}
-											type="number"
-											step="0.01"
-											min="0"
-											size="sm"
-											class="font-mono"
-										/>
-									</div>
-									<div class="flex items-end">
-										<Checkbox bind:checked={treatmentPolicies[pi].requiresConfirmation}>
-											<span class="text-xs text-slate-600">Requiere confirmación</span>
-										</Checkbox>
-									</div>
+
+							{#if isInherited}
+								<!-- Read-only inherited view -->
+								<p class="text-sm text-slate-500">
+									{LENS_TREATMENT_AVAILABILITY_LABELS[policy.availability]}
+									{#if policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
+										<span class="font-mono">· ${policy.additionalPrice}</span>
+										{#if policy.requiresConfirmation}
+											<span>· Requiere confirmación</span>
+										{/if}
+									{/if}
+								</p>
+							{:else}
+								<!-- Editable controls -->
+								<div class="grid gap-3 sm:grid-cols-3">
+									{#each Object.values(LensTreatmentAvailability) as avail (avail)}
+										<button
+											type="button"
+											class="rounded-md border-2 px-3 py-2 text-left text-xs transition-all {policy.availability ===
+											avail
+												? 'border-blue-500 bg-blue-50'
+												: 'border-slate-200 hover:border-slate-300'}"
+											onclick={() => {
+												treatmentPolicies[pi].availability = avail;
+												if (hasRealSupplier) overriddenCodes.add(policy.code);
+											}}
+										>
+											{LENS_TREATMENT_AVAILABILITY_LABELS[avail]}
+										</button>
+									{/each}
 								</div>
+								{#if policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
+									<div class="mt-3 grid gap-3 sm:grid-cols-2">
+										<div>
+											<Label class="mb-1 text-xs text-slate-500">Precio adicional ($)</Label>
+											<Input
+												bind:value={treatmentPolicies[pi].additionalPrice}
+												type="number"
+												step="0.1"
+												min="0"
+												size="sm"
+												class="font-mono"
+											/>
+										</div>
+										<div class="flex items-end">
+											<Checkbox bind:checked={treatmentPolicies[pi].requiresConfirmation}>
+												<span class="text-xs text-slate-600">Requiere confirmación</span>
+											</Checkbox>
+										</div>
+									</div>
+								{/if}
 							{/if}
 						</div>
 					{/each}
 				</div>
 				<p class="mt-2 text-xs text-slate-400">
-					Define cómo se comporta cada tratamiento para este cristal de este proveedor
+					{#if hasRealSupplier}
+						Los valores heredados cambian automáticamente si se actualizan en el proveedor
+					{:else}
+						Define cómo se comporta cada tratamiento para este cristal
+					{/if}
 				</p>
 			</div>
 		</div>
