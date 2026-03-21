@@ -31,6 +31,15 @@ export function findTreatmentPolicy(policies: LensTreatmentPolicy[], code: CoreL
 	return policies.find((p) => p.code === code);
 }
 
+export function createDefaultTreatmentPolicies(): LensTreatmentPolicy[] {
+	return CORE_LENS_TREATMENT_CODES.map((code) => ({
+		code,
+		availability: LensTreatmentAvailability.NOT_AVAILABLE,
+		additionalPrice: 0,
+		requiresConfirmation: false
+	}));
+}
+
 export interface LensPurchasePolicy {
 	listOrderUnit: LensPricingUnit;
 	/** When true, both lenses in a pair must have identical Rx + treatments */
