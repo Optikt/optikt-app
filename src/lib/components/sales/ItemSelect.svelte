@@ -1,6 +1,6 @@
 <script lang="ts">
 	import BaseSelect from '$lib/components/ui/BaseSelect.svelte';
-	import { TriangleAlert } from '@lucide/svelte';
+	import { TriangleAlert, Eye } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -9,6 +9,10 @@
 	import { ProductType, getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
+
+	function getIcon(opt: SelectOption) {
+		return opt.productType ? getProductTypeIcon(opt.productType) : Eye;
+	}
 
 	function getBadge(productType: string): { bg: string; text: string } {
 		return productType ? getProductTypeBadgeHex(productType) : LENS_BADGE;
@@ -125,7 +129,7 @@
 	{#snippet option(item)}
 		{@const opt = item as SelectOption}
 		{@const badge = getBadge(opt.productType)}
-		{@const Icon = getProductTypeIcon(opt.productType)}
+		{@const Icon = getIcon(opt)}
 		<div class="flex items-center gap-2.5 py-0.5">
 			<div
 				class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
@@ -165,7 +169,7 @@
 	{#snippet selection(selectedOptions)}
 		{@const opt = selectedOptions[0] as SelectOption}
 		{@const badge = getBadge(opt.productType)}
-		{@const Icon = getProductTypeIcon(opt.productType)}
+		{@const Icon = getIcon(opt)}
 		<div class="flex items-center gap-1.5">
 			<div
 				class="flex h-5.5 w-5.5 min-w-5.5 items-center justify-center rounded"
