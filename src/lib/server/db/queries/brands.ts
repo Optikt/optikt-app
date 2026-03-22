@@ -2,7 +2,7 @@ import { eq, isNull, isNotNull, and, ilike, count, asc, desc, type AnyColumn } f
 import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { brands, products, type Brand, type NewBrand } from '$lib/server/db/schema';
-import type { InferSelectedRow } from '$lib/server/db/types';
+import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
 
 /** Sortable brand columns */
 export type BrandOrderBy = 'name' | 'createdAt' | 'updatedAt' | 'country';
@@ -170,4 +170,33 @@ export async function restoreBrand(id: string): Promise<Brand> {
 		.where(eq(brands.id, id))
 		.returning();
 	return brand;
+}
+
+/**
+ * Resolve a pending brand inside a transaction.
+ * Looks up by name (case-insensitive); creates if not found.
+ * Returns the resolved brand ID.
+ */
+export async function resolvePendingBrand(
+	pendingName: string,
+	now: Date,
+	executor: DbOrTx = db
+): Promise<string> {
+	const [existing] = await executor
+		.select()
+		.from(brands)
+		.where(and(ilike(brands.name, pendingName), isNull(brands.deletedAt)));
+
+	if (existing) return existing.id;
+
+	const [created] = await executor
+		.insert(brands)
+		.values({
+			id: crypto.randomUUID(),
+			name: pendingName,
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created.id;
 }
