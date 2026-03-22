@@ -8,7 +8,10 @@ import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { buildCatalogItemForPlanning } from '$lib/shared/planning';
 import type { CatalogItemForPlanning, SurplusUnitForPlanning } from '$lib/shared/planning';
 import { toTreatmentPolicy } from '$lib/shared/contracts/lenses';
-import type { CoreLensTreatmentCode, LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
+import type {
+	CoreLensTreatmentCode,
+	LensTreatmentAvailability
+} from '$lib/shared/contracts/lenses';
 
 export const load: PageServerLoad = async () => {
 	// Phase 1: load core data in parallel
