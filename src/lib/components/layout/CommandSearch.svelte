@@ -1,18 +1,12 @@
 <script lang="ts">
-	import { Search, Package, Microscope, X, Glasses, Sun, Eye } from '@lucide/svelte';
+	import { Search, Package, Microscope, X } from '@lucide/svelte';
+	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import { universalSearch } from '$lib/remote/search.remote';
 	import type { SearchResults } from '$lib/remote/search.remote';
 	import { getLensTypeLabel } from '$lib/shared/enums';
 	import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
 	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
-
-	const PRODUCT_TYPE_ICONS: Record<string, typeof Package> = {
-		FRAME: Glasses,
-		SUNGLASSES: Sun,
-		CONTACT_LENS: Eye,
-		ACCESSORY: Package
-	};
 
 	const PRODUCT_TYPE_ICON_CLASSES: Record<string, string> = {
 		FRAME: 'bg-blue-100 text-blue-600',
@@ -125,7 +119,7 @@
 						</div>
 					</div>
 					{#each results.products as product (product.id)}
-						{@const ProductIcon = PRODUCT_TYPE_ICONS[product.type] ?? Package}
+						{@const ProductIcon = getProductTypeIcon(product.type)}
 						{@const iconClasses =
 							PRODUCT_TYPE_ICON_CLASSES[product.type] ?? 'bg-slate-100 text-slate-500'}
 						<a
