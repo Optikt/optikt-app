@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { buildCatalogItemForPlanning, type RawCatalogItem } from './buildCatalogItemForPlanning';
-import { LensTreatmentAvailability, findTreatmentPolicy } from '$lib/shared/contracts/lenses';
-import type { LensTreatmentPolicy } from '$lib/shared/contracts/lenses';
+import {
+	LensTreatmentAvailability,
+	findTreatmentPolicy,
+	toTreatmentPolicy
+} from '$lib/shared/contracts/lenses';
 import { LensPricingUnit } from '$lib/shared/enums/lensTypes';
 
 function makeRaw(overrides: Partial<RawCatalogItem> = {}): RawCatalogItem {
@@ -34,22 +37,15 @@ describe('buildCatalogItemForPlanning', () => {
 	});
 
 	it('resolves treatment policies with supplier defaults and item overrides', () => {
-		const supplierDefaults: LensTreatmentPolicy[] = [
-			{
-				code: 'AR',
+		const supplierDefaults = [
+			toTreatmentPolicy('AR', {
 				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
-				additionalPrice: 50,
-				requiresConfirmation: false
-			}
+				additionalPrice: 50
+			})
 		];
 		const raw = makeRaw({
 			treatmentPolicies: [
-				{
-					code: 'AR',
-					availability: LensTreatmentAvailability.INHERENT,
-					additionalPrice: 0,
-					requiresConfirmation: false
-				}
+				toTreatmentPolicy('AR', { availability: LensTreatmentAvailability.INHERENT })
 			]
 		});
 		const result = buildCatalogItemForPlanning(raw, supplierDefaults);
@@ -59,13 +55,12 @@ describe('buildCatalogItemForPlanning', () => {
 	});
 
 	it('uses supplier defaults when item has no overrides', () => {
-		const supplierDefaults: LensTreatmentPolicy[] = [
-			{
-				code: 'BLUECUT',
+		const supplierDefaults = [
+			toTreatmentPolicy('BLUECUT', {
 				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
 				additionalPrice: 30,
 				requiresConfirmation: true
-			}
+			})
 		];
 		const result = buildCatalogItemForPlanning(makeRaw(), supplierDefaults);
 		const bc = findTreatmentPolicy(result.treatmentPolicies, 'BLUECUT')!;
@@ -82,34 +77,20 @@ describe('buildCatalogItemForPlanning', () => {
 	});
 
 	it('does not duplicate policies when supplier and item both define the same code', () => {
-		const supplierDefaults: LensTreatmentPolicy[] = [
-			{
-				code: 'AR',
+		const supplierDefaults = [
+			toTreatmentPolicy('AR', {
 				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
-				additionalPrice: 50,
-				requiresConfirmation: false
-			},
-			{
-				code: 'BLUECUT',
+				additionalPrice: 50
+			}),
+			toTreatmentPolicy('BLUECUT', {
 				availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
-				additionalPrice: 20,
-				requiresConfirmation: false
-			}
+				additionalPrice: 20
+			})
 		];
 		const raw = makeRaw({
 			treatmentPolicies: [
-				{
-					code: 'AR',
-					availability: LensTreatmentAvailability.INHERENT,
-					additionalPrice: 0,
-					requiresConfirmation: false
-				},
-				{
-					code: 'BLUECUT',
-					availability: LensTreatmentAvailability.NOT_AVAILABLE,
-					additionalPrice: 0,
-					requiresConfirmation: false
-				}
+				toTreatmentPolicy('AR', { availability: LensTreatmentAvailability.INHERENT }),
+				toTreatmentPolicy('BLUECUT')
 			]
 		});
 		const result = buildCatalogItemForPlanning(raw, supplierDefaults);
