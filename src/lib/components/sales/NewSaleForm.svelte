@@ -16,9 +16,10 @@
 	import { LensCatalogSource, LensFulfillmentMode, LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { CatalogItemForPlanning, SurplusUnitForPlanning } from '$lib/shared/planning';
 	import type { SaleItemInput } from '$lib/schemas/sales';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
-	import type { Customer, Prescription } from '$lib/server/db/schema';
+	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
@@ -27,10 +28,14 @@
 	interface Props {
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
+		catalogItems: CatalogItemForPlanning[];
+		availableSurplus: SurplusUnitForPlanning[];
+		suppliers: Supplier[];
 		nextOrderNumber?: number;
 	}
 
-	let { products, lensItems, nextOrderNumber }: Props = $props();
+	let { products, lensItems, catalogItems, availableSurplus, suppliers, nextOrderNumber }: Props =
+		$props();
 
 	// ============================================================================
 	// WIZARD STATE
