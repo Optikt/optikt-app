@@ -28,6 +28,7 @@
 		LENS_TREATMENT_AVAILABILITY_LABELS,
 		findTreatmentPolicy,
 		createDefaultTreatmentPolicies,
+		toTreatmentPolicy,
 		type CoreLensTreatmentCode
 	} from '$lib/shared/contracts';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
@@ -160,12 +161,13 @@
 	async function fetchSupplierDefaults(supplierId: string) {
 		try {
 			const rows = await getSupplierTreatmentDefaults({ supplierId });
-			supplierDefaults = rows.map((row) => ({
-				code: row.code as CoreLensTreatmentCode,
-				availability: row.availability as LensTreatmentAvailability,
-				additionalPrice: row.additionalPrice,
-				requiresConfirmation: row.requiresConfirmation
-			}));
+			supplierDefaults = rows.map((row) =>
+				toTreatmentPolicy(row.code as CoreLensTreatmentCode, {
+					availability: row.availability as LensTreatmentAvailability,
+					additionalPrice: row.additionalPrice,
+					requiresConfirmation: row.requiresConfirmation
+				})
+			);
 			const overrides = treatmentPolicies.filter((p) => overriddenCodes.has(p.code));
 			treatmentPolicies = resolveTreatmentPolicies(supplierDefaults, overrides);
 		} catch (e) {
@@ -178,12 +180,7 @@
 		if (overriddenCodes.has(code)) {
 			// Revert to supplier default
 			overriddenCodes.delete(code);
-			const defaultPolicy = findTreatmentPolicy(supplierDefaults, code) ?? {
-				code,
-				availability: LensTreatmentAvailability.NOT_AVAILABLE,
-				additionalPrice: 0,
-				requiresConfirmation: false
-			};
+			const defaultPolicy = findTreatmentPolicy(supplierDefaults, code) ?? toTreatmentPolicy(code);
 			const idx = treatmentPolicies.findIndex((p) => p.code === code);
 			if (idx >= 0) treatmentPolicies[idx] = { ...defaultPolicy };
 		} else {
@@ -253,14 +250,7 @@
 					for (const p of existing) overriddenCodes.add(p.code as CoreLensTreatmentCode);
 					treatmentPolicies = CORE_LENS_TREATMENT_CODES.map((code) => {
 						const found = findTreatmentPolicy(existing, code);
-						return (
-							found ?? {
-								code,
-								availability: LensTreatmentAvailability.NOT_AVAILABLE,
-								additionalPrice: 0,
-								requiresConfirmation: false
-							}
-						);
+						return found ?? toTreatmentPolicy(code);
 					});
 				} else {
 					overriddenCodes.clear();
