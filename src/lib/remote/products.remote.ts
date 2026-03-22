@@ -23,8 +23,9 @@ import {
 } from '$lib/server/db/queries/products';
 import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
-import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
+import { brands, materials, products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
+import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
@@ -136,27 +137,7 @@ export const createProductForm = form(
 
 			// Handle pending supplier
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-				const [existing] = await tx
-					.select()
-					.from(suppliers)
-					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-				if (existing) {
-					supplierId = existing.id;
-				} else {
-					const [newSupplier] = await tx
-						.insert(suppliers)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingSupplierName,
-							type: 'DISTRIBUTOR',
-							primaryPhone: '',
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					supplierId = newSupplier.id;
-				}
+				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 			}
 
 			// Handle pending material
@@ -286,27 +267,7 @@ export const updateProductForm = form(
 
 			// Handle pending supplier
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-				const [existing] = await tx
-					.select()
-					.from(suppliers)
-					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-				if (existing) {
-					supplierId = existing.id;
-				} else {
-					const [newSupplier] = await tx
-						.insert(suppliers)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingSupplierName,
-							type: 'DISTRIBUTOR',
-							primaryPhone: '',
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					supplierId = newSupplier.id;
-				}
+				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 			}
 
 			// Handle pending material
