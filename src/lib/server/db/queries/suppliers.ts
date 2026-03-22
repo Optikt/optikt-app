@@ -187,3 +187,34 @@ export async function restoreSupplier(id: string): Promise<Supplier> {
 		.returning();
 	return supplier;
 }
+
+/**
+ * Resolve a pending supplier inside a transaction.
+ * Looks up by name (case-insensitive); creates a DISTRIBUTOR if not found.
+ * Returns the resolved supplier ID.
+ */
+export async function resolvePendingSupplier(
+	pendingName: string,
+	now: Date,
+	executor: DbOrTx = db
+): Promise<string> {
+	const [existing] = await executor
+		.select()
+		.from(suppliers)
+		.where(and(ilike(suppliers.name, pendingName), isNull(suppliers.deletedAt)));
+
+	if (existing) return existing.id;
+
+	const [created] = await executor
+		.insert(suppliers)
+		.values({
+			id: crypto.randomUUID(),
+			name: pendingName,
+			type: 'DISTRIBUTOR',
+			primaryPhone: '',
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created.id;
+}
