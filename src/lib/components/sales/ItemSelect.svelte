@@ -1,27 +1,14 @@
 <script lang="ts">
 	import BaseSelect from '$lib/components/ui/BaseSelect.svelte';
-	import { Glasses, Sun, Eye, Package, Microscope, TriangleAlert } from '@lucide/svelte';
-	import type { Component } from 'svelte';
+	import { TriangleAlert } from '@lucide/svelte';
+	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { formatPrice } from '$lib/utils';
 	import { LensCatalogSource } from '$lib/shared/enums/lensTypes';
 	import { ProductType, getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 
-	// TODO: See if this is duplicated in CommandSearch
-	/** Lucide icon component per product type */
-	const PRODUCT_TYPE_ICON: Record<string, Component> = {
-		[ProductType.FRAME]: Glasses,
-		[ProductType.SUNGLASSES]: Sun,
-		[ProductType.CONTACT_LENS]: Eye,
-		[ProductType.ACCESSORY]: Package
-	};
-
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
-
-	function getIcon(productType: string): Component {
-		return PRODUCT_TYPE_ICON[productType] ?? Microscope;
-	}
 
 	function getBadge(productType: string): { bg: string; text: string } {
 		return productType ? getProductTypeBadgeHex(productType) : LENS_BADGE;
@@ -138,7 +125,7 @@
 	{#snippet option(item)}
 		{@const opt = item as SelectOption}
 		{@const badge = getBadge(opt.productType)}
-		{@const Icon = getIcon(opt.productType)}
+		{@const Icon = getProductTypeIcon(opt.productType)}
 		<div class="flex items-center gap-2.5 py-0.5">
 			<div
 				class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
@@ -178,7 +165,7 @@
 	{#snippet selection(selectedOptions)}
 		{@const opt = selectedOptions[0] as SelectOption}
 		{@const badge = getBadge(opt.productType)}
-		{@const Icon = getIcon(opt.productType)}
+		{@const Icon = getProductTypeIcon(opt.productType)}
 		<div class="flex items-center gap-1.5">
 			<div
 				class="flex h-5.5 w-5.5 min-w-5.5 items-center justify-center rounded"
