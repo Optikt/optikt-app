@@ -5,15 +5,9 @@
 	import { resolve } from '$app/paths';
 	import { createSale } from '$lib/remote/sales.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
-	import {
-		getErrorMessage,
-		dateToISODateString,
-		checkLensMatch,
-		hasPrescriptionData
-	} from '$lib/utils';
-	import type { PrescriptionForMatching } from '$lib/utils/lensMatching';
+	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensCatalogSource, LensFulfillmentMode, LensType } from '$lib/shared/enums/lensTypes';
+	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { CatalogItemForPlanning, SurplusUnitForPlanning } from '$lib/shared/planning';
@@ -114,10 +108,10 @@
 		odCylinder: '',
 		odAxis: '',
 		odAddition: '',
-		osSphere: '',
-		osCylinder: '',
-		osAxis: '',
-		osAddition: '',
+		oiSphere: '',
+		oiCylinder: '',
+		oiAxis: '',
+		oiAddition: '',
 		lensType: LensType.MONOFOCAL
 	});
 
@@ -130,9 +124,8 @@
 			id: crypto.randomUUID(),
 			kind: 'product',
 			productId: '',
-			lensCatalogItemId: '',
-			lensFulfillmentMode: LensFulfillmentMode.INVENTORY,
 			quantity: 1,
+			lensPair: null,
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -155,24 +148,18 @@
 		items.length > 0 &&
 			items.every(
 				(i) =>
-					(i.kind === 'product' ? i.productId !== '' : i.lensCatalogItemId !== '') &&
-					i.quantity > 0 &&
+					(i.kind === 'product'
+						? i.productId !== ''
+						: (i.lensPair?.catalogItemId ?? '') !== '') &&
+					(i.kind === 'product' ? i.quantity > 0 : true) &&
 					i.unitPrice >= 0
 			)
 	);
 
 	const hasOutOfStockItem = $derived(
 		items.some((i) => {
-			if (i.kind === 'lens' && i.lensCatalogItemId) {
-				const lens = lensItems.find((l) => l.id === i.lensCatalogItemId);
-				if (!lens || lens.source !== LensCatalogSource.FINISHED) return false;
-				if (i.lensFulfillmentMode !== LensFulfillmentMode.INVENTORY) return false;
-				const maxStock = lens.stock ?? null;
-				if (maxStock === null) return false;
-				return maxStock <= 0 || i.quantity > maxStock;
-			}
 			if (i.kind === 'product' && i.productId) {
-				const p = products.find((p) => p.id === i.productId);
+				const p = products.find((pr) => pr.id === i.productId);
 				const maxStock = p?.stock ?? null;
 				if (maxStock === null) return false;
 				return maxStock <= 0 || i.quantity > maxStock;
@@ -183,32 +170,12 @@
 
 	const hasIncompatibleLens = $derived(
 		items.some((i) => {
-			if (i.kind !== 'lens' || !i.lensCatalogItemId) return false;
-			const lens = lensItems.find((l) => l.id === i.lensCatalogItemId);
-			if (!lens) return false;
-			if (prescriptionValues.lensType !== lens.type) return true;
-			const parseNum = (v: string): number | null => {
-				if (v === '') return null;
-				const n = parseFloat(v);
-				return isNaN(n) ? null : n;
-			};
-			const rx: PrescriptionForMatching = {
-				od: {
-					sphere: parseNum(prescriptionValues.odSphere),
-					cylinder: parseNum(prescriptionValues.odCylinder),
-					axis: parseNum(prescriptionValues.odAxis),
-					addition: parseNum(prescriptionValues.odAddition)
-				},
-				os: {
-					sphere: parseNum(prescriptionValues.osSphere),
-					cylinder: parseNum(prescriptionValues.osCylinder),
-					axis: parseNum(prescriptionValues.osAxis),
-					addition: parseNum(prescriptionValues.osAddition)
-				}
-			};
-			if (!hasPrescriptionData(rx)) return false;
-			const match = checkLensMatch(lens.ranges, rx);
-			return match !== null && match.overall === 'none';
+			if (i.kind !== 'lens' || !i.lensPair) return false;
+			const { od, oi } = i.lensPair;
+			return (
+				(od.enabled && od.compatibilityVerdict === 'SIGNATURE_MISMATCH') ||
+				(oi.enabled && oi.compatibilityVerdict === 'SIGNATURE_MISMATCH')
+			);
 		})
 	);
 
@@ -262,42 +229,28 @@
 		submitting = true;
 
 		try {
-			const parseOpt = (v: string): number | undefined => {
-				if (v === '') return undefined;
-				const n = parseFloat(v);
-				return isNaN(n) ? undefined : n;
-			};
+			const toOpt = (v: number | null): number | undefined => v ?? undefined;
 
 			const saleItems: SaleItemInput[] = items.map((item) => ({
 				productId: item.kind === 'product' ? item.productId : undefined,
-				lensCatalogItemId: item.kind === 'lens' ? item.lensCatalogItemId : undefined,
-				lensFulfillmentMode: item.kind === 'lens' ? item.lensFulfillmentMode : undefined,
+				lensCatalogItemId: item.kind === 'lens' ? item.lensPair?.catalogItemId : undefined,
+				selectedTreatments: item.kind === 'lens' ? item.lensPair?.selectedOptionalTreatments : undefined,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
 				discount: item.discount,
 				discountType: item.discountType,
 				notes: item.notes || undefined,
-				...(item.kind === 'lens'
+				...(item.kind === 'lens' && item.lensPair
 					? {
 							prescriptionId: customerPrescription?.id,
-							odSphere: parseOpt(prescriptionValues.odSphere),
-							odCylinder: parseOpt(prescriptionValues.odCylinder),
-							odAxis: parseOpt(prescriptionValues.odAxis),
-							...((): Record<string, number | undefined> => {
-								const lens = lensItems.find((l) => l.id === item.lensCatalogItemId);
-								const canHaveAddition =
-									prescriptionValues.lensType !== LensType.MONOFOCAL &&
-									lens?.type !== LensType.MONOFOCAL;
-								return canHaveAddition
-									? {
-											odAddition: parseOpt(prescriptionValues.odAddition),
-											osAddition: parseOpt(prescriptionValues.osAddition)
-										}
-									: {};
-							})(),
-							osSphere: parseOpt(prescriptionValues.osSphere),
-							osCylinder: parseOpt(prescriptionValues.osCylinder),
-							osAxis: parseOpt(prescriptionValues.osAxis)
+							odSphere: toOpt(item.lensPair.od.prescription.sphere),
+							odCylinder: toOpt(item.lensPair.od.prescription.cylinder),
+							odAxis: toOpt(item.lensPair.od.prescription.axis),
+							odAddition: toOpt(item.lensPair.od.prescription.addition),
+							osSphere: toOpt(item.lensPair.oi.prescription.sphere),
+							osCylinder: toOpt(item.lensPair.oi.prescription.cylinder),
+							osAxis: toOpt(item.lensPair.oi.prescription.axis),
+							osAddition: toOpt(item.lensPair.oi.prescription.addition)
 						}
 					: {})
 			}));
@@ -383,6 +336,7 @@
 			{newCustomer}
 			{products}
 			{lensItems}
+			{catalogItems}
 			{nextOrderNumber}
 			valid={step2Valid}
 			onnext={nextStep}
