@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
@@ -19,6 +19,34 @@ export async function getSupplierTreatmentPolicies(
 		.select()
 		.from(supplierTreatmentPolicies)
 		.where(eq(supplierTreatmentPolicies.supplierId, supplierId));
+}
+
+/**
+ * Batch-load treatment policies for multiple suppliers in a single query.
+ * Returns a map: supplierId → SupplierTreatmentPolicy[]
+ */
+export async function getSupplierTreatmentPoliciesByIds(
+	supplierIds: string[],
+	executor: DbOrTx = db
+): Promise<Map<string, SupplierTreatmentPolicy[]>> {
+	const map = new Map<string, SupplierTreatmentPolicy[]>();
+	if (supplierIds.length === 0) return map;
+
+	const rows = await executor
+		.select()
+		.from(supplierTreatmentPolicies)
+		.where(inArray(supplierTreatmentPolicies.supplierId, supplierIds));
+
+	for (const row of rows) {
+		const existing = map.get(row.supplierId);
+		if (existing) {
+			existing.push(row);
+		} else {
+			map.set(row.supplierId, [row]);
+		}
+	}
+
+	return map;
 }
 
 // ============================================================================
