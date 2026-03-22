@@ -17,7 +17,7 @@ import {
 import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { materials, type Material, type NewMaterial } from '$lib/server/db/schema';
-import type { InferSelectedRow } from '$lib/server/db/types';
+import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -255,4 +255,43 @@ export async function restoreMaterial(id: string): Promise<Material> {
 		.where(eq(materials.id, id))
 		.returning();
 	return material;
+}
+
+/**
+ * Resolve a pending material inside a transaction.
+ * Looks up by name + productType (case-insensitive); creates if not found.
+ * Returns the resolved material ID.
+ */
+export async function resolvePendingMaterial(
+	pendingName: string,
+	productType: string,
+	now: Date,
+	executor: DbOrTx = db
+): Promise<string> {
+	const [existing] = await executor
+		.select()
+		.from(materials)
+		.where(
+			and(
+				ilike(materials.name, pendingName),
+				eq(materials.productType, productType),
+				isNull(materials.deletedAt)
+			)
+		);
+
+	if (existing) return existing.id;
+
+	const code = pendingName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
+	const [created] = await executor
+		.insert(materials)
+		.values({
+			id: crypto.randomUUID(),
+			name: pendingName,
+			code,
+			productType,
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created.id;
 }
