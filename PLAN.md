@@ -584,7 +584,62 @@ Criterios de salida:
 - Presupuesto sin cliente/pagos.
 - Conversion trazable y editable.
 
-## Fase 7 - Reescritura de busqueda global con scopes y parser compartido
+## Fase 7 - IVA y pricing UX
+
+Objetivo:
+
+- Modelo fiscal claro y facil de usar.
+- Se ejecuta antes de Dashboard/Reports para que todas las pantallas de precio muestren datos fiscales correctos desde el inicio.
+
+Cambios:
+
+- Campos de tax en productos.
+- UI de precio final con desglose automatico neto/IVA/bruto.
+- Defaults por categoria.
+
+Criterios de salida:
+
+- Usuario captura precio de venta sin friccion.
+- Sistema guarda desglose fiscal consistente.
+
+## Fase 8 - Dashboard con datos reales
+
+Objetivo:
+
+- Reemplazar valores hardcodeados del dashboard con metricas reales del sistema.
+
+Cambios:
+
+- Query layer para conteos y totales: clientes activos, ventas del dia/semana/mes, productos activos, low stock, presupuestos pendientes.
+- `/dashboard/+page.server.ts` con carga paralela de metricas.
+- Reemplazar tarjetas hardcodeadas en `/dashboard/+page.svelte` con datos reales.
+- Seccion de actividad reciente (ultimas ventas, ultimos presupuestos convertidos).
+
+Criterios de salida:
+
+- Dashboard muestra datos reales y actualizados.
+- Indicadores de low stock visibles.
+
+## Fase 9 - Reportes
+
+Objetivo:
+
+- Modulo de reportes funcional con datos de ventas, inventario y clientes.
+
+Cambios:
+
+- Queries de reportes: ventas por periodo, snapshot de inventario, actividad de clientes, resumen fiscal/IVA.
+- `src/lib/remote/reports.remote.ts` con remotes de consulta.
+- `/reports/+page.server.ts` + componentes de reporte por pestanas.
+- Filtros por rango de fecha, cliente, producto/lente, proveedor.
+- Exportacion basica (CSV o impresion).
+
+Criterios de salida:
+
+- Reportes de ventas, inventario y clientes funcionales.
+- Filtros por periodo y entidad.
+
+## Fase 10 - Reescritura de busqueda global con scopes y parser compartido
 
 Objetivo:
 
@@ -605,24 +660,7 @@ Criterios de salida:
 - Busqueda acotada por scope y atributos.
 - Resultados con estados operativos visibles.
 
-## Fase 8 - IVA y pricing UX
-
-Objetivo:
-
-- Modelo fiscal claro y facil de usar.
-
-Cambios:
-
-- Campos de tax en productos.
-- UI de precio final con desglose automatico neto/IVA/bruto.
-- Defaults por categoria.
-
-Criterios de salida:
-
-- Usuario captura precio de venta sin friccion.
-- Sistema guarda desglose fiscal consistente.
-
-## Fase 9 - Limpieza final del modelo viejo
+## Fase 11 - Limpieza final del modelo viejo
 
 Objetivo:
 
@@ -639,6 +677,25 @@ Cambios:
 Criterios de salida:
 
 - No quedan puntos importantes del flujo dependiendo del modelo anterior.
+
+## Fase 12 - Rediseno UI/UX completo
+
+Objetivo:
+
+- Rediseno visual de toda la aplicacion con todos los flujos funcionales ya definidos.
+- Usar herramientas de prototipado (Stitch, design system generator) sobre pantallas reales.
+
+Cambios:
+
+- Generar design system formal (tipografia, paleta, espaciado, componentes) a partir del sistema existente.
+- Prototipar todas las pantallas principales (~15-20 screens) con flujos reales.
+- Aplicar rediseno a componentes existentes sin cambiar logica de negocio.
+- Revision de accesibilidad, responsividad y consistencia visual.
+
+Criterios de salida:
+
+- Todas las pantallas rediseñadas y consistentes.
+- Design system documentado y aplicado.
 
 ---
 
@@ -728,11 +785,27 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 2. Planner de fulfillment operativo y explicado.
 3. Inventario de excedentes fisicos unitarios en produccion.
 4. Modulo de presupuestos con conversion a venta.
-5. Busqueda global con prefijos y parser optico compartido.
-6. Modelo de IVA en productos con UX simple.
-7. Suite de pruebas y observabilidad completa.
+5. Modelo de IVA en productos con UX simple.
+6. Dashboard con metricas reales.
+7. Modulo de reportes funcional (ventas, inventario, clientes, fiscal).
+8. Busqueda global con prefijos y parser optico compartido.
+9. Suite de pruebas y observabilidad completa.
+10. Rediseno UI/UX completo con design system formal.
 
 ---
+
+## Orden de ejecucion recomendado
+
+| Orden | Fase | Que | Por que en esta posicion |
+|-------|------|-----|-------------------------|
+| 1 | 5 | Wizard de ventas | Fundacion — todo se construye sobre esto |
+| 2 | 6 | Presupuestos | Reutiliza wizard directamente |
+| 3 | 7 | IVA y pricing | Cambio de schema — mejor antes de que Reports cristalice |
+| 4 | 8 | Dashboard real | Quick win, contadores de ventas + presupuestos |
+| 5 | 9 | Reportes | Significativos ahora que ventas/presupuestos/IVA existen |
+| 6 | 10 | Busqueda global | Polish — mejora navegacion entre todas las entidades |
+| 7 | 11 | Limpieza legacy | Barrido final antes del rediseno |
+| 8 | 12 | Rediseno UI/UX | Todos los flujos definidos, todas las pantallas existen |
 
 ## Checklist de estado del plan
 
@@ -740,14 +813,17 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 - [x] Postura agresiva de reemplazo directo definida.
 - [x] Reglas de negocio clave incorporadas (feedback actual).
 - [x] Definir contratos TS exactos (fase 0).
-- [x] Reemplazar schema y contratos DB fase 1.
-- [x] Implementar motor matching v2.
-- [x] Implementar planner + excedentes.
-- [ ] Refactor wizard ventas.
-- [ ] Modulo presupuestos.
-- [ ] Scoped search + parser compartido.
-- [ ] IVA y pricing UX.
-- [ ] Eliminar codigo legacy sobrante.
+- [x] Reemplazar schema y contratos DB (fase 1).
+- [x] Implementar motor matching v2 (fase 2).
+- [x] Implementar planner + excedentes (fases 3-4).
+- [ ] Refactor wizard ventas (fase 5) — **EN PROGRESO** (steps 1-3 completos, step 4 siguiente).
+- [ ] Modulo presupuestos (fase 6).
+- [ ] IVA y pricing UX (fase 7).
+- [ ] Dashboard con datos reales (fase 8).
+- [ ] Reportes (fase 9).
+- [ ] Scoped search + parser compartido (fase 10).
+- [ ] Eliminar codigo legacy sobrante (fase 11).
+- [ ] Rediseno UI/UX completo (fase 12).
 
 ---
 
