@@ -4,7 +4,7 @@
  */
 import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
-import { eq, isNull, and, ilike } from 'drizzle-orm';
+import { eq, isNull, and } from 'drizzle-orm';
 import {
 	ListProductsSchema,
 	CreateProductSchema,
@@ -23,10 +23,11 @@ import {
 } from '$lib/server/db/queries/products';
 import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
-import { brands, products, type Product } from '$lib/server/db/schema';
+import { products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import { resolvePendingMaterial } from '$lib/server/db/queries/materials';
+import { resolvePendingBrand } from '$lib/server/db/queries/brands';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
@@ -114,26 +115,7 @@ export const createProductForm = form(
 
 			// Handle pending brand
 			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
-				// Check if brand already exists (case-insensitive)
-				const [existing] = await tx
-					.select()
-					.from(brands)
-					.where(and(ilike(brands.name, pendingBrandName), isNull(brands.deletedAt)));
-
-				if (existing) {
-					brandId = existing.id;
-				} else {
-					const [newBrand] = await tx
-						.insert(brands)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingBrandName,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					brandId = newBrand.id;
-				}
+				brandId = await resolvePendingBrand(pendingBrandName, now, tx);
 			}
 
 			// Handle pending supplier
@@ -218,25 +200,7 @@ export const updateProductForm = form(
 
 			// Handle pending brand
 			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
-				const [existing] = await tx
-					.select()
-					.from(brands)
-					.where(and(ilike(brands.name, pendingBrandName), isNull(brands.deletedAt)));
-
-				if (existing) {
-					brandId = existing.id;
-				} else {
-					const [newBrand] = await tx
-						.insert(brands)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingBrandName,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					brandId = newBrand.id;
-				}
+				brandId = await resolvePendingBrand(pendingBrandName, now, tx);
 			}
 
 			// Handle pending supplier
