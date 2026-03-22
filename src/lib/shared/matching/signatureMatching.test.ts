@@ -4,6 +4,7 @@ import {
 	PhotochromicMode,
 	LensTreatmentAvailability,
 	LensRangeAvailability,
+	toTreatmentPolicy,
 	type CoreLensTreatmentCode
 } from '$lib/shared/contracts/lenses';
 import { LensType } from '$lib/shared/enums/lensTypes';
@@ -96,12 +97,7 @@ describe('matchesSignature', () => {
 		it('matches when requesting AR and item has AR as INHERENT', () => {
 			const item = makeCatalogItem({
 				treatmentPolicies: [
-					{
-						code: 'AR',
-						availability: LensTreatmentAvailability.INHERENT,
-						additionalPrice: 0,
-						requiresConfirmation: false
-					}
+					toTreatmentPolicy('AR', { availability: LensTreatmentAvailability.INHERENT })
 				]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: ['AR'] }));
@@ -112,12 +108,10 @@ describe('matchesSignature', () => {
 		it('matches when requesting AR and item has AR as OPTIONAL_EXTRA', () => {
 			const item = makeCatalogItem({
 				treatmentPolicies: [
-					{
-						code: 'AR',
+					toTreatmentPolicy('AR', {
 						availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
-						additionalPrice: 100,
-						requiresConfirmation: false
-					}
+						additionalPrice: 100
+					})
 				]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: ['AR'] }));
@@ -185,14 +179,7 @@ describe('matchesSignature', () => {
 	describe('treatment mismatches', () => {
 		it('fails when required treatment is NOT_AVAILABLE', () => {
 			const item = makeCatalogItem({
-				treatmentPolicies: [
-					{
-						code: 'AR',
-						availability: LensTreatmentAvailability.NOT_AVAILABLE,
-						additionalPrice: 0,
-						requiresConfirmation: false
-					}
-				]
+				treatmentPolicies: [toTreatmentPolicy('AR')]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: ['AR'] }));
 			expect(result.matches).toBe(false);
@@ -209,12 +196,7 @@ describe('matchesSignature', () => {
 		it('fails with unwanted INHERENT treatment not requested', () => {
 			const item = makeCatalogItem({
 				treatmentPolicies: [
-					{
-						code: 'BLUECUT',
-						availability: LensTreatmentAvailability.INHERENT,
-						additionalPrice: 0,
-						requiresConfirmation: false
-					}
+					toTreatmentPolicy('BLUECUT', { availability: LensTreatmentAvailability.INHERENT })
 				]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: [] }));
@@ -225,12 +207,10 @@ describe('matchesSignature', () => {
 		it('allows OPTIONAL_EXTRA treatment not requested (no penalty)', () => {
 			const item = makeCatalogItem({
 				treatmentPolicies: [
-					{
-						code: 'AR',
+					toTreatmentPolicy('AR', {
 						availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
-						additionalPrice: 50,
-						requiresConfirmation: false
-					}
+						additionalPrice: 50
+					})
 				]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: [] }));
@@ -248,18 +228,8 @@ describe('matchesSignature', () => {
 		it('matches with both treatments requested and both INHERENT', () => {
 			const item = makeCatalogItem({
 				treatmentPolicies: [
-					{
-						code: 'AR',
-						availability: LensTreatmentAvailability.INHERENT,
-						additionalPrice: 0,
-						requiresConfirmation: false
-					},
-					{
-						code: 'BLUECUT',
-						availability: LensTreatmentAvailability.INHERENT,
-						additionalPrice: 0,
-						requiresConfirmation: false
-					}
+					toTreatmentPolicy('AR', { availability: LensTreatmentAvailability.INHERENT }),
+					toTreatmentPolicy('BLUECUT', { availability: LensTreatmentAvailability.INHERENT })
 				]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: ['AR', 'BLUECUT'] }));
@@ -269,18 +239,11 @@ describe('matchesSignature', () => {
 		it('matches with one INHERENT and one OPTIONAL_EXTRA both requested', () => {
 			const item = makeCatalogItem({
 				treatmentPolicies: [
-					{
-						code: 'AR',
-						availability: LensTreatmentAvailability.INHERENT,
-						additionalPrice: 0,
-						requiresConfirmation: false
-					},
-					{
-						code: 'BLUECUT',
+					toTreatmentPolicy('AR', { availability: LensTreatmentAvailability.INHERENT }),
+					toTreatmentPolicy('BLUECUT', {
 						availability: LensTreatmentAvailability.OPTIONAL_EXTRA,
-						additionalPrice: 200,
-						requiresConfirmation: false
-					}
+						additionalPrice: 200
+					})
 				]
 			});
 			const result = matchesSignature(item, makeRequest({ requiredTreatments: ['AR', 'BLUECUT'] }));
