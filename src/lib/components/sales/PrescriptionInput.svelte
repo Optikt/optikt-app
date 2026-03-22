@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Input, Label, Select } from 'flowbite-svelte';
-	import { Eye } from '@lucide/svelte';
+	import { Eye, Copy } from '@lucide/svelte';
 	import { LensType, ALL_LENS_TYPES, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { Prescription } from '$lib/server/db/schema';
 
@@ -13,10 +13,10 @@
 		odCylinder: string;
 		odAxis: string;
 		odAddition: string;
-		osSphere: string;
-		osCylinder: string;
-		osAxis: string;
-		osAddition: string;
+		oiSphere: string;
+		oiCylinder: string;
+		oiAxis: string;
+		oiAddition: string;
 		lensType: string;
 	}
 
@@ -52,7 +52,7 @@
 	$effect(() => {
 		if (isMonofocal) {
 			values.odAddition = '';
-			values.osAddition = '';
+			values.oiAddition = '';
 		}
 	});
 
@@ -62,10 +62,10 @@
 		values.odCylinder = existingPrescription.odCylinder?.toString() ?? '';
 		values.odAxis = existingPrescription.odAxis?.toString() ?? '';
 		values.odAddition = existingPrescription.odAddition?.toString() ?? '';
-		values.osSphere = existingPrescription.osSphere?.toString() ?? '';
-		values.osCylinder = existingPrescription.osCylinder?.toString() ?? '';
-		values.osAxis = existingPrescription.osAxis?.toString() ?? '';
-		values.osAddition = existingPrescription.osAddition?.toString() ?? '';
+		values.oiSphere = existingPrescription.osSphere?.toString() ?? '';
+		values.oiCylinder = existingPrescription.osCylinder?.toString() ?? '';
+		values.oiAxis = existingPrescription.osAxis?.toString() ?? '';
+		values.oiAddition = existingPrescription.osAddition?.toString() ?? '';
 		if (existingPrescription.recommendedLensType) {
 			values.lensType = existingPrescription.recommendedLensType;
 		}
@@ -106,7 +106,7 @@
 					</span>
 					<span class="mx-1.5 text-emerald-400">·</span>
 					<span class="font-mono font-semibold">
-						OS {formatOpt(existingPrescription?.osSphere)} / {formatOpt(
+						OI {formatOpt(existingPrescription?.osSphere)} / {formatOpt(
 							existingPrescription?.osCylinder
 						)}
 					</span>
@@ -127,7 +127,7 @@
 		</div>
 	{/if}
 
-	<!-- Lens type selector -->
+	<!-- Lens type selector + Copy OD → OI -->
 	<div class="flex items-center gap-3">
 		<Label class="shrink-0 text-sm font-semibold text-slate-700">Tipo de lente</Label>
 		<Select bind:value={values.lensType} class="w-44">
@@ -135,6 +135,19 @@
 				<option value={opt.value}>{opt.name}</option>
 			{/each}
 		</Select>
+		<button
+			type="button"
+			class="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
+			onclick={() => {
+				values.oiSphere = values.odSphere;
+				values.oiCylinder = values.odCylinder;
+				values.oiAxis = values.odAxis;
+				values.oiAddition = values.odAddition;
+			}}
+		>
+			<Copy class="h-3 w-3" />
+			Copiar OD → OI
+		</button>
 	</div>
 
 	<!-- Eye values -->
@@ -199,7 +212,7 @@
 			</div>
 		</div>
 
-		<!-- Left Eye (OS) -->
+		<!-- Left Eye (OI) -->
 		<div
 			class="rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-violet-50/50 p-3"
 		>
@@ -207,7 +220,7 @@
 				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
 					<Eye class="h-3 w-3 text-white" />
 				</div>
-				<h5 class="text-sm font-bold text-violet-800">OS — Ojo Izquierdo</h5>
+				<h5 class="text-sm font-bold text-violet-800">OI — Ojo Izquierdo</h5>
 			</div>
 			<div class="grid grid-cols-2 gap-2 {!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}">
 				<div>
@@ -216,7 +229,7 @@
 						type="number"
 						step={0.25}
 						placeholder="-2.00"
-						bind:value={values.osSphere}
+						bind:value={values.oiSphere}
 						class="font-mono text-sm"
 					/>
 				</div>
@@ -228,7 +241,7 @@
 						min={-10}
 						max={0}
 						placeholder="-0.50"
-						bind:value={values.osCylinder}
+						bind:value={values.oiCylinder}
 						class="font-mono text-sm"
 					/>
 				</div>
@@ -240,7 +253,7 @@
 						min={0}
 						max={180}
 						placeholder="180"
-						bind:value={values.osAxis}
+						bind:value={values.oiAxis}
 						class="font-mono text-sm"
 					/>
 				</div>
@@ -253,7 +266,7 @@
 							min={0}
 							max={5}
 							placeholder="+1.50"
-							bind:value={values.osAddition}
+							bind:value={values.oiAddition}
 							class="font-mono text-sm"
 						/>
 					</div>
