@@ -8,20 +8,23 @@
 		FileText,
 		Hash,
 		Eye,
-		Glasses,
-		Sun,
-		Package,
-		Microscope
+		Package
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import {
 		formatPrice,
-		checkLensMatch,
-		hasPrescriptionData,
-		MATCH_DISPLAY,
 		dateToISODateString
 	} from '$lib/utils';
-	import type { LensMatchDetail, PrescriptionForMatching } from '$lib/utils/lensMatching';
+	import type { CompatibilityVerdict } from '$lib/shared/matching/types';
+	import {
+		findProduct,
+		findLensItem,
+		computeItemDiscount,
+		itemLineTotal,
+		getItemVerdict,
+		getItemName as _getItemName,
+		VERDICT_DISPLAY
+	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
@@ -35,7 +38,7 @@
 		getProductTypeBadgeColor
 	} from '$lib/shared/enums/productTypes';
 	import { LensType, getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
-	import type { Component } from 'svelte';
+	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
@@ -82,18 +85,6 @@
 	// DERIVED TOTALS
 	// ============================================================================
 
-	function computeItemDiscount(item: SaleItemRow): number {
-		const lineTotal = item.unitPrice * item.quantity;
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * lineTotal;
-		}
-		return item.discount;
-	}
-
-	function itemLineTotal(item: SaleItemRow): number {
-		return item.unitPrice * item.quantity - computeItemDiscount(item);
-	}
-
 	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 
 	const globalDiscountAmount = $derived(
@@ -106,38 +97,16 @@
 	// HELPERS
 	// ============================================================================
 
-	const PRODUCT_TYPE_ICON: Record<string, Component> = {
-		[ProductType.FRAME]: Glasses,
-		[ProductType.SUNGLASSES]: Sun,
-		[ProductType.CONTACT_LENS]: Eye,
-		[ProductType.ACCESSORY]: Package
-	};
-
-	function getProductIcon(type: string): Component {
-		return PRODUCT_TYPE_ICON[type] ?? Microscope;
-	}
-
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
-		if (item.kind === 'product' && item.productId) {
-			return products.find((p) => p.id === item.productId);
-		}
-		return undefined;
+		return findProduct(item, products);
 	}
 
 	function getLensItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
-		if (item.kind === 'lens' && item.lensCatalogItemId) {
-			return lensItems.find((l) => l.id === item.lensCatalogItemId);
-		}
-		return undefined;
+		return findLensItem(item, lensItems);
 	}
 
 	function getItemName(item: SaleItemRow): string {
-		if (item.kind === 'product') {
-			const p = getProduct(item);
-			return p?.name ?? '—';
-		}
-		const l = getLensItem(item);
-		return l?.name ?? '—';
+		return _getItemName(item, products, lensItems);
 	}
 
 	function getItemProductType(item: SaleItemRow): string | null {
@@ -145,34 +114,8 @@
 		return p?.type ?? null;
 	}
 
-	function getLensMatch(item: SaleItemRow): LensMatchDetail | null {
-		if (item.kind !== 'lens' || !item.lensCatalogItemId) return null;
-		const lens = lensItems.find((l) => l.id === item.lensCatalogItemId);
-		if (!lens) return null;
-		if (prescriptionValues.lensType !== lens.type) {
-			return { overall: 'none', od: 'none', os: 'none' };
-		}
-		const parseNum = (v: string): number | null => {
-			if (v === '') return null;
-			const n = parseFloat(v);
-			return isNaN(n) ? null : n;
-		};
-		const rx: PrescriptionForMatching = {
-			od: {
-				sphere: parseNum(prescriptionValues.odSphere),
-				cylinder: parseNum(prescriptionValues.odCylinder),
-				axis: parseNum(prescriptionValues.odAxis),
-				addition: parseNum(prescriptionValues.odAddition)
-			},
-			os: {
-				sphere: parseNum(prescriptionValues.osSphere),
-				cylinder: parseNum(prescriptionValues.osCylinder),
-				axis: parseNum(prescriptionValues.osAxis),
-				addition: parseNum(prescriptionValues.osAddition)
-			}
-		};
-		if (!hasPrescriptionData(rx)) return null;
-		return checkLensMatch(lens.ranges, rx);
+	function getOverallVerdict(item: SaleItemRow): CompatibilityVerdict | null {
+		return getItemVerdict(item);
 	}
 </script>
 
@@ -297,7 +240,7 @@
 				<tbody class="divide-y divide-slate-100">
 					{#each items as item (item.id)}
 						{@const productType = getItemProductType(item)}
-						{@const rxMatch = getLensMatch(item)}
+					{@const verdict = getOverallVerdict(item)}
 						<tr class="text-slate-700 hover:bg-slate-50/50">
 							<td class="px-4 py-3">
 								{#if item.kind === 'lens'}
@@ -309,7 +252,7 @@
 									</span>
 								{:else if productType}
 									{@const badgeColor = getProductTypeBadgeColor(productType)}
-									{@const Icon = getProductIcon(productType)}
+									{@const Icon = getProductTypeIcon(productType)}
 									<span
 										class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
 										{badgeColor === 'blue' ? 'bg-blue-100 text-blue-700' : ''}
@@ -370,7 +313,7 @@
 										{/if}
 									</div>
 									<!-- Prescription row — visually separated -->
-									{#if prescriptionValues.odSphere || prescriptionValues.osSphere}
+									{#if prescriptionValues.odSphere || prescriptionValues.oiSphere}
 										{@const showAddition =
 											prescriptionValues.lensType !== LensType.MONOFOCAL &&
 											lens?.type !== LensType.MONOFOCAL}
@@ -395,27 +338,27 @@
 													{prescriptionValues.odAddition}
 												{/if}
 											</span>
-											<!-- OS row -->
-											<span class="flex items-center gap-1 font-semibold text-violet-600">
-												<Eye class="h-3.5 w-3.5 text-violet-500" />
-												OS
-											</span>
-											<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
-												{prescriptionValues.osSphere || '—'}
-												<span class="text-slate-400">/</span>
-												{prescriptionValues.osCylinder || '—'}
-												{#if prescriptionValues.osAxis}
-													<span class="text-slate-400">x</span>
-													{prescriptionValues.osAxis}°
+												<!-- OI row -->
+												<span class="flex items-center gap-1 font-semibold text-violet-600">
+													<Eye class="h-3.5 w-3.5 text-violet-500" />
+													OI
+												</span>
+												<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
+													{prescriptionValues.oiSphere || '—'}
+													<span class="text-slate-400">/</span>
+													{prescriptionValues.oiCylinder || '—'}
+													{#if prescriptionValues.oiAxis}
+														<span class="text-slate-400">x</span>
+														{prescriptionValues.oiAxis}°
+													{/if}
+													{#if prescriptionValues.oiAddition && showAddition}
+														<span class="text-slate-400">Add</span>
+														{prescriptionValues.oiAddition}
 												{/if}
-												{#if prescriptionValues.osAddition && showAddition}
-													<span class="text-slate-400">Add</span>
-													{prescriptionValues.osAddition}
-												{/if}
-												{#if rxMatch}
-													{@const display = MATCH_DISPLAY[rxMatch.overall]}
+												{#if verdict}
+													{@const display = VERDICT_DISPLAY[verdict]}
 													<span
-														class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
+														class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold {display.badgeBgColor} {display.textColor}"
 													>
 														{display.label}
 													</span>
