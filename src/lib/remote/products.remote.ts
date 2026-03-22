@@ -23,9 +23,10 @@ import {
 } from '$lib/server/db/queries/products';
 import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
-import { brands, materials, products, type Product } from '$lib/server/db/schema';
+import { brands, products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
+import { resolvePendingMaterial } from '$lib/server/db/queries/materials';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
@@ -143,34 +144,7 @@ export const createProductForm = form(
 			// Handle pending material
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
 				const productType = pendingMaterialCategory ?? toMaterialCategory(rest.type);
-				const [existing] = await tx
-					.select()
-					.from(materials)
-					.where(
-						and(
-							ilike(materials.name, pendingMaterialName),
-							eq(materials.productType, productType),
-							isNull(materials.deletedAt)
-						)
-					);
-
-				if (existing) {
-					materialId = existing.id;
-				} else {
-					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-					const [newMaterial] = await tx
-						.insert(materials)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingMaterialName,
-							code,
-							productType,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					materialId = newMaterial.id;
-				}
+				materialId = await resolvePendingMaterial(pendingMaterialName, productType, now, tx);
 			}
 
 			// Check for duplicate SKU (including soft-deleted)
@@ -274,35 +248,7 @@ export const updateProductForm = form(
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
 				const productType =
 					pendingMaterialCategory ?? toMaterialCategory(rest.type ?? ProductType.FRAME);
-
-				const [existing] = await tx
-					.select()
-					.from(materials)
-					.where(
-						and(
-							ilike(materials.name, pendingMaterialName),
-							eq(materials.productType, productType),
-							isNull(materials.deletedAt)
-						)
-					);
-
-				if (existing) {
-					materialId = existing.id;
-				} else {
-					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-					const [newMaterial] = await tx
-						.insert(materials)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingMaterialName,
-							code,
-							productType,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					materialId = newMaterial.id;
-				}
+				materialId = await resolvePendingMaterial(pendingMaterialName, productType, now, tx);
 			}
 
 			// Check if product exists - also captures the old state for audit
