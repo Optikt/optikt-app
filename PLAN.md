@@ -796,16 +796,16 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 
 ## Orden de ejecucion recomendado
 
-| Orden | Fase | Que | Por que en esta posicion |
-|-------|------|-----|-------------------------|
-| 1 | 5 | Wizard de ventas | Fundacion — todo se construye sobre esto |
-| 2 | 6 | Presupuestos | Reutiliza wizard directamente |
-| 3 | 7 | IVA y pricing | Cambio de schema — mejor antes de que Reports cristalice |
-| 4 | 8 | Dashboard real | Quick win, contadores de ventas + presupuestos |
-| 5 | 9 | Reportes | Significativos ahora que ventas/presupuestos/IVA existen |
-| 6 | 10 | Busqueda global | Polish — mejora navegacion entre todas las entidades |
-| 7 | 11 | Limpieza legacy | Barrido final antes del rediseno |
-| 8 | 12 | Rediseno UI/UX | Todos los flujos definidos, todas las pantallas existen |
+| Orden | Fase | Que              | Por que en esta posicion                                 |
+| ----- | ---- | ---------------- | -------------------------------------------------------- |
+| 1     | 5    | Wizard de ventas | Fundacion — todo se construye sobre esto                 |
+| 2     | 6    | Presupuestos     | Reutiliza wizard directamente                            |
+| 3     | 7    | IVA y pricing    | Cambio de schema — mejor antes de que Reports cristalice |
+| 4     | 8    | Dashboard real   | Quick win, contadores de ventas + presupuestos           |
+| 5     | 9    | Reportes         | Significativos ahora que ventas/presupuestos/IVA existen |
+| 6     | 10   | Busqueda global  | Polish — mejora navegacion entre todas las entidades     |
+| 7     | 11   | Limpieza legacy  | Barrido final antes del rediseno                         |
+| 8     | 12   | Rediseno UI/UX   | Todos los flujos definidos, todas las pantallas existen  |
 
 ## Checklist de estado del plan
 
