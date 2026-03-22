@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { resolveTreatmentPolicies } from './resolveTreatmentPolicies';
-import { LensTreatmentAvailability, findTreatmentPolicy } from '$lib/shared/contracts/lenses';
-import type { LensTreatmentPolicy } from '$lib/shared/contracts/lenses';
+import {
+	LensTreatmentAvailability,
+	findTreatmentPolicy,
+	toTreatmentPolicy
+} from '$lib/shared/contracts/lenses';
 
 const NOT_AVAILABLE = LensTreatmentAvailability.NOT_AVAILABLE;
 const OPTIONAL_EXTRA = LensTreatmentAvailability.OPTIONAL_EXTRA;
@@ -20,14 +23,9 @@ describe('resolveTreatmentPolicies', () => {
 	});
 
 	it('uses supplier defaults when no item overrides', () => {
-		const supplierDefaults: LensTreatmentPolicy[] = [
-			{
-				code: 'AR',
-				availability: OPTIONAL_EXTRA,
-				additionalPrice: 50,
-				requiresConfirmation: false
-			},
-			{ code: 'BLUECUT', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
+		const supplierDefaults = [
+			toTreatmentPolicy('AR', { availability: OPTIONAL_EXTRA, additionalPrice: 50 }),
+			toTreatmentPolicy('BLUECUT', { availability: INHERENT })
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, []);
 		const ar = findTreatmentPolicy(result, 'AR')!;
@@ -38,23 +36,11 @@ describe('resolveTreatmentPolicies', () => {
 	});
 
 	it('item overrides one code, supplier used for the other', () => {
-		const supplierDefaults: LensTreatmentPolicy[] = [
-			{
-				code: 'AR',
-				availability: OPTIONAL_EXTRA,
-				additionalPrice: 50,
-				requiresConfirmation: false
-			},
-			{
-				code: 'BLUECUT',
-				availability: NOT_AVAILABLE,
-				additionalPrice: 0,
-				requiresConfirmation: false
-			}
+		const supplierDefaults = [
+			toTreatmentPolicy('AR', { availability: OPTIONAL_EXTRA, additionalPrice: 50 }),
+			toTreatmentPolicy('BLUECUT')
 		];
-		const itemOverrides: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
-		];
+		const itemOverrides = [toTreatmentPolicy('AR', { availability: INHERENT })];
 		const result = resolveTreatmentPolicies(supplierDefaults, itemOverrides);
 		expect(findTreatmentPolicy(result, 'AR')!.availability).toBe(INHERENT);
 		expect(findTreatmentPolicy(result, 'AR')!.additionalPrice).toBe(0);
@@ -62,23 +48,14 @@ describe('resolveTreatmentPolicies', () => {
 	});
 
 	it('item overrides all codes — ignores supplier entirely', () => {
-		const supplierDefaults: LensTreatmentPolicy[] = [
-			{ code: 'AR', availability: NOT_AVAILABLE, additionalPrice: 0, requiresConfirmation: false },
-			{
-				code: 'BLUECUT',
-				availability: NOT_AVAILABLE,
-				additionalPrice: 0,
-				requiresConfirmation: false
-			}
-		];
-		const itemOverrides: LensTreatmentPolicy[] = [
-			{
-				code: 'AR',
+		const supplierDefaults = [toTreatmentPolicy('AR'), toTreatmentPolicy('BLUECUT')];
+		const itemOverrides = [
+			toTreatmentPolicy('AR', {
 				availability: OPTIONAL_EXTRA,
 				additionalPrice: 100,
 				requiresConfirmation: true
-			},
-			{ code: 'BLUECUT', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }
+			}),
+			toTreatmentPolicy('BLUECUT', { availability: INHERENT })
 		];
 		const result = resolveTreatmentPolicies(supplierDefaults, itemOverrides);
 		const ar = findTreatmentPolicy(result, 'AR')!;
@@ -89,13 +66,8 @@ describe('resolveTreatmentPolicies', () => {
 	});
 
 	it('missing supplier defaults falls back to NOT_AVAILABLE', () => {
-		const itemOverrides: LensTreatmentPolicy[] = [
-			{
-				code: 'BLUECUT',
-				availability: OPTIONAL_EXTRA,
-				additionalPrice: 30,
-				requiresConfirmation: false
-			}
+		const itemOverrides = [
+			toTreatmentPolicy('BLUECUT', { availability: OPTIONAL_EXTRA, additionalPrice: 30 })
 		];
 		const result = resolveTreatmentPolicies([], itemOverrides);
 		expect(findTreatmentPolicy(result, 'AR')!.availability).toBe(NOT_AVAILABLE);
@@ -105,15 +77,8 @@ describe('resolveTreatmentPolicies', () => {
 
 	it('always returns exactly one entry per core treatment code', () => {
 		const result = resolveTreatmentPolicies(
-			[
-				{
-					code: 'AR',
-					availability: OPTIONAL_EXTRA,
-					additionalPrice: 10,
-					requiresConfirmation: false
-				}
-			],
-			[{ code: 'AR', availability: INHERENT, additionalPrice: 0, requiresConfirmation: false }]
+			[toTreatmentPolicy('AR', { availability: OPTIONAL_EXTRA, additionalPrice: 10 })],
+			[toTreatmentPolicy('AR', { availability: INHERENT })]
 		);
 		expect(result).toHaveLength(2);
 		const codes = result.map((p) => p.code).sort();

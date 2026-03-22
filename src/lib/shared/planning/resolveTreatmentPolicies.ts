@@ -1,6 +1,5 @@
 import type { CoreLensTreatmentCode, LensTreatmentPolicy } from '$lib/shared/contracts/lenses';
-import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
-import { CORE_LENS_TREATMENT_CODES } from '$lib/shared/contracts/lenses';
+import { CORE_LENS_TREATMENT_CODES, toTreatmentPolicy } from '$lib/shared/contracts/lenses';
 
 /**
  * Resolve final treatment policies for a catalog item by merging:
@@ -18,12 +17,7 @@ export function resolveTreatmentPolicies(
 
 	// Layer 0: base defaults — everything NOT_AVAILABLE
 	for (const code of CORE_LENS_TREATMENT_CODES) {
-		map.set(code, {
-			code,
-			availability: LensTreatmentAvailability.NOT_AVAILABLE,
-			additionalPrice: 0,
-			requiresConfirmation: false
-		});
+		map.set(code, toTreatmentPolicy(code));
 	}
 
 	// Layer 1: supplier defaults
