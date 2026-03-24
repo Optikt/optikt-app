@@ -133,6 +133,9 @@ export const lensCatalogItems = pgTable(
 		suggestedMultiplier: doublePrecision('suggested_multiplier'),
 
 		// --- Purchase policy ---
+		requiresSamePrescriptionForPair: boolean('requires_same_prescription_for_pair')
+			.notNull()
+			.default(false),
 		allowsSingleUnitOrder: boolean('allows_single_unit_order').notNull().default(false),
 		singleUnitRequiresConfirmation: boolean('single_unit_requires_confirmation')
 			.notNull()
