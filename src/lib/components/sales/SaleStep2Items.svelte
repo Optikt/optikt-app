@@ -120,10 +120,27 @@
 	// PRESCRIPTION SYNC + COMPATIBILITY
 	// ============================================================================
 
-	function parseNum(v: string): number | null {
+	function parseNullableNum(v: string): number | null {
 		if (v === '') return null;
 		const n = parseFloat(v);
 		return isNaN(n) ? null : n;
+	}
+
+	function parseNumOrZero(v: string): number {
+		return parseNullableNum(v) ?? 0;
+	}
+
+	function parseAddition(v: string): number | null {
+		const n = parseNullableNum(v);
+		// Addition of 0 means no addition in practice.
+		if (n === null || n === 0) return null;
+		return n;
+	}
+
+	function parseAxis(v: string, cylinder: number): number | null {
+		// Axis is relevant only when cylinder is present.
+		if (cylinder === 0) return null;
+		return parseNullableNum(v);
 	}
 
 	/** Build LensCatalogForMatching from DB lens item + resolved treatment policies */
@@ -158,26 +175,34 @@
 		const catItem = catalogItems.find((c) => c.id === pair.catalogItemId);
 		if (!lens || !catItem) return;
 
-		// Sync prescription from shared form state
+		// Sync prescription from shared form state with clinical defaults:
+		// sphere/cylinder empty -> 0, axis only if cylinder exists, addition 0 -> null.
+		const odCylinder = parseNumOrZero(prescriptionValues.odCylinder);
+		const oiCylinder = parseNumOrZero(prescriptionValues.oiCylinder);
+
 		pair.od.prescription = {
-			sphere: parseNum(prescriptionValues.odSphere),
-			cylinder: parseNum(prescriptionValues.odCylinder),
-			axis: parseNum(prescriptionValues.odAxis),
-			addition: parseNum(prescriptionValues.odAddition)
+			sphere: parseNumOrZero(prescriptionValues.odSphere),
+			cylinder: odCylinder,
+			axis: parseAxis(prescriptionValues.odAxis, odCylinder),
+			addition: parseAddition(prescriptionValues.odAddition)
 		};
 		pair.oi.prescription = {
-			sphere: parseNum(prescriptionValues.oiSphere),
-			cylinder: parseNum(prescriptionValues.oiCylinder),
-			axis: parseNum(prescriptionValues.oiAxis),
-			addition: parseNum(prescriptionValues.oiAddition)
+			sphere: parseNumOrZero(prescriptionValues.oiSphere),
+			cylinder: oiCylinder,
+			axis: parseAxis(prescriptionValues.oiAxis, oiCylinder),
+			addition: parseAddition(prescriptionValues.oiAddition)
 		};
 
-		// Build matching input
+		// Clear verdicts for disabled eyes
+		if (!pair.od.enabled) pair.od.compatibilityVerdict = null;
+		if (!pair.oi.enabled) pair.oi.compatibilityVerdict = null;
+
+		// Build matching input (only if at least one eye is enabled)
+		if (!pair.od.enabled && !pair.oi.enabled) return;
+
 		const matchable = buildMatchable(lens, catItem);
-		const rx =
-			pair.od.prescription.sphere !== null || pair.oi.prescription.sphere !== null
-				? { od: pair.od.prescription, oi: pair.oi.prescription }
-				: undefined;
+
+		const rx = { od: pair.od.prescription, oi: pair.oi.prescription };
 
 		const result = evaluateLensCompatibility(
 			matchable,
@@ -190,15 +215,27 @@
 			rx
 		);
 
-		pair.od.compatibilityVerdict = result.verdict;
-		pair.oi.compatibilityVerdict = result.verdict;
+		if (pair.od.enabled) pair.od.compatibilityVerdict = result.verdict;
+		if (pair.oi.enabled) pair.oi.compatibilityVerdict = result.verdict;
 
-		// If range match has per-eye data, refine verdicts
+		// If range match has per-eye data, assign correct per-eye verdicts independently
 		if (result.rangeMatch) {
-			pair.od.compatibilityVerdict =
-				result.rangeMatch.od === 'out_of_range' ? 'SIGNATURE_MISMATCH' : result.verdict;
-			pair.oi.compatibilityVerdict =
-				result.rangeMatch.oi === 'out_of_range' ? 'SIGNATURE_MISMATCH' : result.verdict;
+			if (pair.od.enabled) {
+				if (result.rangeMatch.od === 'out_of_range') {
+					pair.od.compatibilityVerdict = 'SIGNATURE_MISMATCH';
+				} else if (result.rangeMatch.od === 'in_range') {
+					pair.od.compatibilityVerdict = 'EXACT_MATCH';
+				}
+				// 'no_data' → keep the overall verdict (CONSULT_REQUIRED if applicable)
+			}
+			if (pair.oi.enabled) {
+				if (result.rangeMatch.oi === 'out_of_range') {
+					pair.oi.compatibilityVerdict = 'SIGNATURE_MISMATCH';
+				} else if (result.rangeMatch.oi === 'in_range') {
+					pair.oi.compatibilityVerdict = 'EXACT_MATCH';
+				}
+				// 'no_data' → keep the overall verdict (CONSULT_REQUIRED if applicable)
+			}
 		}
 	}
 
@@ -454,6 +491,32 @@
 
 				<!-- Lens-specific: treatments + compatibility -->
 				{#if item.kind === 'lens' && item.lensPair?.catalogItemId && catItem}
+					<!-- Eye Enable/Disable Toggle -->
+					<div class="mt-4 flex items-center gap-4">
+						<span class="text-sm font-medium text-slate-600">Ojos:</span>
+						<label class="inline-flex cursor-pointer items-center gap-1.5">
+							<input
+								type="checkbox"
+								bind:checked={item.lensPair.od.enabled}
+								onchange={() => syncAndEvaluate(item)}
+								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+							/>
+							<span class="text-sm font-semibold {item.lensPair.od.enabled ? 'text-slate-700' : 'text-slate-400'}">OD</span>
+						</label>
+						<label class="inline-flex cursor-pointer items-center gap-1.5">
+							<input
+								type="checkbox"
+								bind:checked={item.lensPair.oi.enabled}
+								onchange={() => syncAndEvaluate(item)}
+								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+							/>
+							<span class="text-sm font-semibold {item.lensPair.oi.enabled ? 'text-slate-700' : 'text-slate-400'}">OI</span>
+						</label>
+						{#if !item.lensPair.od.enabled && !item.lensPair.oi.enabled}
+							<span class="text-xs font-medium text-red-500">Debe habilitar al menos un ojo</span>
+						{/if}
+					</div>
+
 					<!-- Treatment Selector -->
 					<div class="mt-4">
 						<TreatmentSelector
