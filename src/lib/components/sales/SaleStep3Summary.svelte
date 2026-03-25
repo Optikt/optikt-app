@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
 	import { Button, Select, Input, Spinner } from 'flowbite-svelte';
 	import {
 		ShoppingCart,
@@ -8,22 +9,16 @@
 		FileText,
 		Hash,
 		Eye,
-		Package
+		Package,
+		AlertTriangle
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import {
-		formatPrice,
-		dateToISODateString
-	} from '$lib/utils';
-	import type { CompatibilityVerdict } from '$lib/shared/matching/types';
+	import { formatPrice, dateToISODateString } from '$lib/utils';
 	import {
 		findProduct,
-		findLensItem,
 		computeItemDiscount,
 		itemLineTotal,
-		getItemVerdict,
-		getItemName as _getItemName,
-		VERDICT_DISPLAY
+		getItemName as _getItemName
 	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
@@ -33,19 +28,17 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import {
-		ProductType,
 		getProductTypeLabel,
 		getProductTypeBadgeColor
 	} from '$lib/shared/enums/productTypes';
-	import { LensType, getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
-	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
+	import type { FulfillmentPlanResult, CatalogItemForPlanning } from '$lib/shared/planning';
+	import FulfillmentPlanPanel from './FulfillmentPlanPanel.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
-		prescriptionValues: PrescriptionValues;
 		customerId: string;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
@@ -56,6 +49,8 @@
 		nextOrderNumber?: number;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
+		planResult: FulfillmentPlanResult | null;
+		catalogMap: Map<string, CatalogItemForPlanning>;
 		submitting: boolean;
 		canSubmit: boolean;
 		onprev: () => void;
@@ -64,7 +59,6 @@
 
 	let {
 		items,
-		prescriptionValues,
 		customerId,
 		selectedCustomer,
 		newCustomer,
@@ -75,6 +69,8 @@
 		nextOrderNumber,
 		products,
 		lensItems,
+		planResult,
+		catalogMap,
 		submitting,
 		canSubmit,
 		onprev,
@@ -82,8 +78,41 @@
 	}: Props = $props();
 
 	// ============================================================================
+	// CONFIRMATION STATE
+	// ============================================================================
+
+	/** Track which plan lines the user has confirmed */
+	let confirmedLines = new SvelteSet<string>();
+	let surplusAcknowledged = $state(false);
+
+	function toggleConfirm(requirementId: string) {
+		if (confirmedLines.has(requirementId)) confirmedLines.delete(requirementId);
+		else confirmedLines.add(requirementId);
+	}
+
+	/** Lines that require confirmation */
+	const linesNeedingConfirmation = $derived(
+		planResult?.lines.filter((l) => l.requiresConfirmation) ?? []
+	);
+
+	/** All confirmations acknowledged? */
+	const allConfirmed = $derived(
+		linesNeedingConfirmation.length === 0 ||
+			linesNeedingConfirmation.every((l) => confirmedLines.has(l.requirementId))
+	);
+
+	const surplusItems = $derived(planResult?.surplus ?? []);
+	const surplusUnitsTotal = $derived(surplusItems.reduce((sum, item) => sum + item.surplusUnits, 0));
+	const hasSurplusToAcknowledge = $derived(surplusItems.length > 0);
+	const hasUndefinedSurplusRx = $derived(
+		surplusItems.some((item) => item.predeterminedPrescription === null)
+	);
+
+	// ============================================================================
 	// DERIVED TOTALS
 	// ============================================================================
+
+	const hasLensItems = $derived(items.some((i) => i.kind === 'lens'));
 
 	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 
@@ -93,16 +122,17 @@
 
 	const total = $derived(Math.max(0, subtotal - globalDiscountAmount));
 
+	/** Can submit? All confirmations + surplus acknowledgement + parent canSubmit */
+	const canSubmitFinal = $derived(
+		canSubmit && allConfirmed && (!hasSurplusToAcknowledge || surplusAcknowledged)
+	);
+
 	// ============================================================================
 	// HELPERS
 	// ============================================================================
 
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
 		return findProduct(item, products);
-	}
-
-	function getLensItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
-		return findLensItem(item, lensItems);
 	}
 
 	function getItemName(item: SaleItemRow): string {
@@ -112,10 +142,6 @@
 	function getItemProductType(item: SaleItemRow): string | null {
 		const p = getProduct(item);
 		return p?.type ?? null;
-	}
-
-	function getOverallVerdict(item: SaleItemRow): CompatibilityVerdict | null {
-		return getItemVerdict(item);
 	}
 </script>
 
@@ -222,7 +248,7 @@
 		</div>
 	</div>
 
-	<!-- Row 2: Items Table (full width) -->
+	<!-- Row 2: All Items Table (products + lenses unified) -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">Detalle de Ítems</p>
 		<div class="overflow-x-auto rounded-lg border border-slate-200">
@@ -240,7 +266,6 @@
 				<tbody class="divide-y divide-slate-100">
 					{#each items as item (item.id)}
 						{@const productType = getItemProductType(item)}
-					{@const verdict = getOverallVerdict(item)}
 						<tr class="text-slate-700 hover:bg-slate-50/50">
 							<td class="px-4 py-3">
 								{#if item.kind === 'lens'}
@@ -275,101 +300,23 @@
 							</td>
 							<td class="px-4 py-3">
 								<p class="text-base font-medium">{getItemName(item)}</p>
-								{#if item.kind === 'product'}
-									{@const product = getProduct(item)}
-									{#if product}
-										<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-											{#if product.sku}
-												<span class="font-mono text-slate-400">{product.sku}</span>
-											{/if}
-											{#if product.brand}
-												<span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
-													>{product.brand.name}</span
-												>
-											{/if}
-										</div>
-									{/if}
-								{:else}
-									{@const lens = getLensItem(item)}
-									<!-- Lens badges row -->
+								{#if item.kind === 'product' && getProduct(item)}
+									{@const product = getProduct(item)!}
 									<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-										{#if lens}
-											<span
-												class="rounded px-1.5 py-0.5 font-medium {lens.source === 'FINISHED'
-													? 'bg-emerald-50 text-emerald-600'
-													: 'bg-sky-50 text-sky-600'}">{getLensSourceLabel(lens.source)}</span
+										{#if product.sku}
+											<span class="font-mono text-slate-400">{product.sku}</span>
+										{/if}
+										{#if product.brand}
+											<span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
+												>{product.brand.name}</span
 											>
-											<span class="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600"
-												>{getLensTypeLabel(lens.type)}</span
-											>
-											{#if lens.material}
-												<span class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-500"
-													>{lens.material.name}</span
-												>
-											{/if}
-											{#if lens.supplier}
-												<span class="text-slate-400">&middot; {lens.supplier.name}</span>
-											{/if}
 										{/if}
 									</div>
-									<!-- Prescription row — visually separated -->
-									{#if prescriptionValues.odSphere || prescriptionValues.oiSphere}
-										{@const showAddition =
-											prescriptionValues.lensType !== LensType.MONOFOCAL &&
-											lens?.type !== LensType.MONOFOCAL}
-										<div
-											class="mt-2 inline-grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
-										>
-											<!-- OD row -->
-											<span class="flex items-center gap-1 font-semibold text-blue-600">
-												<Eye class="h-3.5 w-3.5 text-blue-500" />
-												OD
-											</span>
-											<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
-												{prescriptionValues.odSphere || '—'}
-												<span class="text-slate-400">/</span>
-												{prescriptionValues.odCylinder || '—'}
-												{#if prescriptionValues.odAxis}
-													<span class="text-slate-400">x</span>
-													{prescriptionValues.odAxis}°
-												{/if}
-												{#if prescriptionValues.odAddition && showAddition}
-													<span class="text-slate-400">Add</span>
-													{prescriptionValues.odAddition}
-												{/if}
-											</span>
-												<!-- OI row -->
-												<span class="flex items-center gap-1 font-semibold text-violet-600">
-													<Eye class="h-3.5 w-3.5 text-violet-500" />
-													OI
-												</span>
-												<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
-													{prescriptionValues.oiSphere || '—'}
-													<span class="text-slate-400">/</span>
-													{prescriptionValues.oiCylinder || '—'}
-													{#if prescriptionValues.oiAxis}
-														<span class="text-slate-400">x</span>
-														{prescriptionValues.oiAxis}°
-													{/if}
-													{#if prescriptionValues.oiAddition && showAddition}
-														<span class="text-slate-400">Add</span>
-														{prescriptionValues.oiAddition}
-												{/if}
-												{#if verdict}
-													{@const display = VERDICT_DISPLAY[verdict]}
-													<span
-														class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold {display.badgeBgColor} {display.textColor}"
-													>
-														{display.label}
-													</span>
-												{/if}
-											</span>
-										</div>
-									{/if}
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base"
+								>{formatPrice(item.unitPrice)}</td
 							>
 							<td class="px-4 py-3 text-right font-mono text-base text-red-500">
 								{#if item.discount > 0}
@@ -390,7 +337,77 @@
 		</div>
 	</div>
 
-	<!-- Row 3: Discount + Total side by side -->
+	<!-- Row 3: Fulfillment Plan — logistics only (only if there are lens items) -->
+	{#if hasLensItems && planResult}
+		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+			<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">
+				Plan de Cumplimiento
+			</p>
+			<FulfillmentPlanPanel plan={planResult} catalog={catalogMap} />
+
+			<!-- Confirmation Checkboxes -->
+			{#if linesNeedingConfirmation.length > 0}
+				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+					<div class="mb-3 flex items-center gap-2">
+						<AlertTriangle class="h-4 w-4 text-amber-600" />
+						<span class="text-sm font-semibold text-amber-800">
+							Confirmaciones requeridas
+						</span>
+					</div>
+					<div class="space-y-2">
+						{#each linesNeedingConfirmation as line (line.requirementId)}
+							{@const catalogName = catalogMap.get(line.catalogItemId)?.name ?? '—'}
+							<label class="flex items-start gap-3 cursor-pointer">
+								<input
+									type="checkbox"
+									checked={confirmedLines.has(line.requirementId)}
+									onchange={() => toggleConfirm(line.requirementId)}
+									class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+								/>
+								<span class="text-sm text-amber-800">
+									Confirmo con el proveedor el pedido por unidad de <span class="font-semibold"
+										>{catalogName}</span
+									>
+									({line.eye === 'OD' ? 'OD' : 'OI'})
+								</span>
+							</label>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if hasSurplusToAcknowledge}
+				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+					<div class="mb-3 flex items-center gap-2">
+						<AlertTriangle class="h-4 w-4 text-amber-600" />
+						<span class="text-sm font-semibold text-amber-800">
+							Confirmación de excedente
+						</span>
+					</div>
+					<p class="mb-3 text-sm text-amber-800">
+						Esta venta generará <span class="font-semibold">{surplusUnitsTotal} unidad(es) de excedente</span>
+						que quedarán en stock.
+						{#if hasUndefinedSurplusRx}
+							 Parte de ese excedente quedará con <span class="font-semibold">Rx a definir</span>
+							al momento de hacer el pedido.
+						{/if}
+					</p>
+					<label class="flex items-start gap-3 cursor-pointer">
+						<input
+							type="checkbox"
+							bind:checked={surplusAcknowledged}
+							class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+						/>
+						<span class="text-sm text-amber-800">
+							Confirmo que entiendo y acepto el excedente que esta venta dejará en stock
+						</span>
+					</label>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Row 4: Discount + Total side by side -->
 	<div class="grid gap-5 lg:grid-cols-2">
 		<!-- Discount -->
 		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -449,7 +466,7 @@
 	</Button>
 	<div class="flex gap-3">
 		<Button color="light" size="lg" href={resolve('/sales')}>Cancelar</Button>
-		<Button color="blue" size="lg" disabled={!canSubmit} onclick={onsubmit}>
+		<Button color="blue" size="lg" disabled={!canSubmitFinal} onclick={onsubmit}>
 			{#if submitting}
 				<Spinner size="4" class="mr-2" />
 			{/if}
