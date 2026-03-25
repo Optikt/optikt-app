@@ -10,11 +10,13 @@
 	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { CatalogItemForPlanning, SurplusUnitForPlanning } from '$lib/shared/planning';
+	import type { CatalogItemForPlanning, SurplusUnitForPlanning, FulfillmentPlanResult } from '$lib/shared/planning';
+	import { buildFulfillmentPlan } from '$lib/shared/planning';
 	import type { SaleItemInput } from '$lib/schemas/sales';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
+	import { buildLensRequirements } from './saleItemHelpers';
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
 	import SaleStep3Summary from './SaleStep3Summary.svelte';
@@ -45,17 +47,47 @@
 	];
 
 	function goToStep(step: WizardStep) {
+		if (step === 3) generateFulfillmentPlan();
 		currentStep = step;
 	}
 
 	function nextStep() {
 		if (currentStep === 1 && !step1Valid) return;
 		if (currentStep === 2 && !step2Valid) return;
-		if (currentStep < 3) currentStep = (currentStep + 1) as WizardStep;
+		if (currentStep < 3) {
+			const next = (currentStep + 1) as WizardStep;
+			if (next === 3) generateFulfillmentPlan();
+			currentStep = next;
+		}
 	}
 
 	function prevStep() {
 		if (currentStep > 1) currentStep = (currentStep - 1) as WizardStep;
+	}
+
+	// ============================================================================
+	// FULFILLMENT PLAN STATE
+	// ============================================================================
+
+	let planResult = $state<FulfillmentPlanResult | null>(null);
+
+	/** Pre-built catalog map for the planner and the summary panel */
+	const catalogMap = $derived(
+		new Map(catalogItems.map((item) => [item.id, item]))
+	);
+
+	function generateFulfillmentPlan() {
+		const lensItems = items.filter((i) => i.kind === 'lens');
+		if (lensItems.length === 0) {
+			planResult = null;
+			return;
+		}
+		const requirements = buildLensRequirements(items);
+		if (requirements.length === 0) {
+			planResult = null;
+			return;
+		}
+		planResult = buildFulfillmentPlan(requirements, catalogMap, availableSurplus);
 	}
 
 	// ============================================================================
@@ -150,7 +182,8 @@
 				(i) =>
 					(i.kind === 'product'
 						? i.productId !== ''
-						: (i.lensPair?.catalogItemId ?? '') !== '') &&
+						: (i.lensPair?.catalogItemId ?? '') !== '' &&
+							(i.lensPair!.od.enabled || i.lensPair!.oi.enabled)) &&
 					(i.kind === 'product' ? i.quantity > 0 : true) &&
 					i.unitPrice >= 0
 			)
@@ -348,7 +381,6 @@
 	<div class:hidden={currentStep !== 3}>
 		<SaleStep3Summary
 			{items}
-			{prescriptionValues}
 			{customerId}
 			{selectedCustomer}
 			{newCustomer}
@@ -359,6 +391,8 @@
 			{nextOrderNumber}
 			{products}
 			{lensItems}
+			{planResult}
+			{catalogMap}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}
