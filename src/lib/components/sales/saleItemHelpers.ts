@@ -8,6 +8,8 @@ import type { CompatibilityVerdict } from '$lib/shared/matching/types';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { SaleItemRow } from './newSaleTypes';
+import { PatientEye } from '$lib/shared/contracts/common';
+import type { LensRequirement } from '$lib/shared/planning';
 
 // ============================================================================
 // ITEM LOOKUPS
@@ -123,3 +125,41 @@ export const VERDICT_DISPLAY: Record<CompatibilityVerdict, VerdictDisplayConfig>
 		desc: 'La fórmula del paciente no es compatible con este lente.'
 	}
 };
+
+// ============================================================================
+// PLAN BRIDGE — Convert wizard state → LensRequirement[] for the planner
+// ============================================================================
+
+/**
+ * Convert lens SaleItemRows into LensRequirement[] for the fulfillment planner.
+ * One requirement per enabled eye per lens item.
+ */
+export function buildLensRequirements(items: SaleItemRow[]): LensRequirement[] {
+	const reqs: LensRequirement[] = [];
+
+	for (const item of items) {
+		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) continue;
+		const pair = item.lensPair;
+
+		const eyes = [
+			{ flag: pair.od, eye: PatientEye.OD, suffix: 'od' },
+			{ flag: pair.oi, eye: PatientEye.OI, suffix: 'oi' }
+		] as const;
+
+		for (const { flag, eye, suffix } of eyes) {
+			if (!flag.enabled) continue;
+			if (!flag.compatibilityVerdict) continue; // no verdict means no Rx entered yet
+
+			reqs.push({
+				requirementId: `${item.id}-${suffix}`,
+				eye,
+				catalogItemId: pair.catalogItemId,
+				prescription: { ...flag.prescription },
+				compatibilityVerdict: flag.compatibilityVerdict,
+				selectedOptionalTreatments: [...pair.selectedOptionalTreatments]
+			});
+		}
+	}
+
+	return reqs;
+}
