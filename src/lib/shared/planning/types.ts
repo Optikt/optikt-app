@@ -100,6 +100,8 @@ export interface FulfillmentPlanResultLine {
 export interface SurplusInfo {
 	/** Which catalog item generates the surplus */
 	catalogItemId: string;
+	/** The requirement ID that triggered this surplus (for linking back to the eye/prescription) */
+	sourceRequirementId: string;
 	/** How many surplus units this plan creates */
 	surplusUnits: number;
 	/** Cost of the surplus unit(s) — already included in the pair line's cost */
