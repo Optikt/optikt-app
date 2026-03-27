@@ -450,6 +450,7 @@ function planSingleUnitNeed(
 		const surplusCost = calculateLineCost(req, item, false);
 		surplus.push({
 			catalogItemId: req.catalogItemId,
+			sourceRequirementId: req.requirementId,
 			surplusUnits: 1,
 			surplusCostIncluded: surplusCost.totalCost,
 			predeterminedPrescription: surplusRxPredetermined ? { ...req.prescription } : null,
