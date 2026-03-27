@@ -4,7 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
+	import { LensCatalogSource, getLensSourceLabel, getPricingUnitLabel } from '$lib/shared/enums';
 	import { PhotochromicMode, LensTreatmentAvailability } from '$lib/shared/contracts';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -158,7 +158,7 @@
 		<TableBodyCell class="text-right font-mono font-medium text-slate-800">
 			{formatPrice(item.basePrice)}
 			<span class="font-normal text-slate-400">
-				({item.pricingUnit === 'PAIR' ? 'par' : 'und'})
+				({getPricingUnitLabel(item.pricingUnit)})
 			</span>
 		</TableBodyCell>
 	{/snippet}
