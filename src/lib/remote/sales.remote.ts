@@ -272,10 +272,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			});
 
 			// Consume surplus for items sourced from surplus stock
-			if (
-				item.fulfillmentSource === FulfillmentSource.SURPLUS_STOCK &&
-				item.surplusUnitId
-			) {
+			if (item.fulfillmentSource === FulfillmentSource.SURPLUS_STOCK && item.surplusUnitId) {
 				const reserved = await reserveSurplusUnit(item.surplusUnitId, newSale.id, tx);
 				if (!reserved) {
 					throw new Error(
@@ -284,9 +281,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				}
 				const consumed = await consumeSurplusUnit(item.surplusUnitId, newSale.id, tx);
 				if (!consumed) {
-					throw new Error(
-						`No se pudo consumir la unidad de excedente ${item.surplusUnitId}`
-					);
+					throw new Error(`No se pudo consumir la unidad de excedente ${item.surplusUnitId}`);
 				}
 			}
 
@@ -333,7 +328,10 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 					throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
 				}
 
-				if (shouldDecrementLensStock(lens.source, item.lensFulfillmentMode) && lens.stock !== null) {
+				if (
+					shouldDecrementLensStock(lens.source, item.lensFulfillmentMode) &&
+					lens.stock !== null
+				) {
 					const newStock = lens.stock - item.quantity;
 					if (newStock < 0) {
 						throw new Error(
@@ -589,7 +587,11 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 					.from(lensCatalogItems)
 					.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 
-				if (lens && shouldDecrementLensStock(lens.source, item.lensFulfillmentMode) && lens.stock !== null) {
+				if (
+					lens &&
+					shouldDecrementLensStock(lens.source, item.lensFulfillmentMode) &&
+					lens.stock !== null
+				) {
 					await tx
 						.update(lensCatalogItems)
 						.set({ stock: lens.stock + item.quantity, updatedAt: now })
@@ -609,11 +611,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 		// Void surplus units created by this sale (pair purchase excess)
 		const createdSurplus = await findSurplusByOriginSaleId(data.id, tx);
 		for (const unit of createdSurplus) {
-			const voided = await voidSurplusUnit(
-				unit.id,
-				`Anulado por cancelación de venta`,
-				tx
-			);
+			const voided = await voidSurplusUnit(unit.id, `Anulado por cancelación de venta`, tx);
 			if (voided) {
 				voidedSurplus.push({ id: voided.id });
 			}

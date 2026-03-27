@@ -2,13 +2,7 @@
  * Product type → Lucide icon mapping.
  * Shared across ItemSelect, SaleStep3Summary, CommandSearch.
  */
-import {
-	Glasses,
-	Sun,
-	Eye,
-	Package,
-	Microscope
-} from '@lucide/svelte';
+import { Glasses, Sun, Eye, Package, Microscope } from '@lucide/svelte';
 import { ProductType } from '$lib/shared/enums/productTypes';
 import type { Component } from 'svelte';
 
