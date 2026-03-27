@@ -51,10 +51,14 @@
 		lensItems: LensCatalogItemWithRelations[];
 		planResult: FulfillmentPlanResult | null;
 		catalogMap: Map<string, CatalogItemForPlanning>;
+		singleUnitOverrides: Map<string, 'FORCE_PAIR'>;
+		surplusRxChoices: Map<string, 'SAME_RX' | 'UNDEFINED'>;
 		submitting: boolean;
 		canSubmit: boolean;
 		onprev: () => void;
 		onsubmit: () => void;
+		onoverridechange: (catalogItemId: string, action: 'FORCE_PAIR' | 'UNDO') => void;
+		onsurplusrxchange: (catalogItemId: string, choice: 'SAME_RX' | 'UNDEFINED') => void;
 	}
 
 	let {
@@ -71,10 +75,14 @@
 		lensItems,
 		planResult,
 		catalogMap,
+		singleUnitOverrides,
+		surplusRxChoices,
 		submitting,
 		canSubmit,
 		onprev,
-		onsubmit
+		onsubmit,
+		onoverridechange,
+		onsurplusrxchange
 	}: Props = $props();
 
 	// ============================================================================
@@ -90,9 +98,11 @@
 		else confirmedLines.add(requirementId);
 	}
 
-	/** Lines that require confirmation */
+	/** Lines that require confirmation (excluding overridden ones) */
 	const linesNeedingConfirmation = $derived(
-		planResult?.lines.filter((l) => l.requiresConfirmation) ?? []
+		(planResult?.lines.filter(
+			(l) => l.requiresConfirmation && !singleUnitOverrides.has(l.catalogItemId)
+		) ?? [])
 	);
 
 	/** All confirmations acknowledged? */
@@ -104,9 +114,6 @@
 	const surplusItems = $derived(planResult?.surplus ?? []);
 	const surplusUnitsTotal = $derived(surplusItems.reduce((sum, item) => sum + item.surplusUnits, 0));
 	const hasSurplusToAcknowledge = $derived(surplusItems.length > 0);
-	const hasUndefinedSurplusRx = $derived(
-		surplusItems.some((item) => item.predeterminedPrescription === null)
-	);
 
 	// ============================================================================
 	// DERIVED TOTALS
@@ -343,7 +350,12 @@
 			<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">
 				Plan de Cumplimiento
 			</p>
-			<FulfillmentPlanPanel plan={planResult} catalog={catalogMap} />
+			<FulfillmentPlanPanel
+				plan={planResult}
+				catalog={catalogMap}
+				{singleUnitOverrides}
+				{onoverridechange}
+			/>
 
 			<!-- Confirmation Checkboxes -->
 			{#if linesNeedingConfirmation.length > 0}
@@ -387,11 +399,45 @@
 					<p class="mb-3 text-sm text-amber-800">
 						Esta venta generará <span class="font-semibold">{surplusUnitsTotal} unidad(es) de excedente</span>
 						que quedarán en stock.
-						{#if hasUndefinedSurplusRx}
-							 Parte de ese excedente quedará con <span class="font-semibold">Rx a definir</span>
-							al momento de hacer el pedido.
-						{/if}
 					</p>
+
+					<!-- Surplus Rx Decision Radios -->
+					{#each surplusItems as surplus (surplus.catalogItemId)}
+						{@const catalogName = catalogMap.get(surplus.catalogItemId)?.name ?? '—'}
+						{@const rxChoice = surplusRxChoices.get(surplus.catalogItemId) ?? 'UNDEFINED'}
+						{#if surplus.predeterminedPrescription === null}
+							<div class="mb-3 rounded-md border border-amber-100 bg-white px-3 py-2">
+								<p class="mb-2 text-sm font-medium text-amber-800">
+									¿El excedente de <span class="font-semibold">{catalogName}</span> tendrá la misma Rx que el ojo pedido?
+								</p>
+								<div class="flex gap-4">
+									<label class="flex items-center gap-2 cursor-pointer">
+										<input
+											type="radio"
+											name="surplus-rx-{surplus.catalogItemId}"
+											value="SAME_RX"
+											checked={rxChoice === 'SAME_RX'}
+											onchange={() => onsurplusrxchange(surplus.catalogItemId, 'SAME_RX')}
+											class="h-4 w-4 border-amber-300 text-amber-600 focus:ring-amber-500"
+										/>
+										<span class="text-sm text-amber-800">Sí, misma Rx</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer">
+										<input
+											type="radio"
+											name="surplus-rx-{surplus.catalogItemId}"
+											value="UNDEFINED"
+											checked={rxChoice === 'UNDEFINED'}
+											onchange={() => onsurplusrxchange(surplus.catalogItemId, 'UNDEFINED')}
+											class="h-4 w-4 border-amber-300 text-amber-600 focus:ring-amber-500"
+										/>
+										<span class="text-sm text-amber-800">No, Rx por definir</span>
+									</label>
+								</div>
+							</div>
+						{/if}
+					{/each}
+
 					<label class="flex items-start gap-3 cursor-pointer">
 						<input
 							type="checkbox"
