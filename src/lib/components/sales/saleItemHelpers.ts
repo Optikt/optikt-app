@@ -3,13 +3,13 @@
  * Pure functions that operate on SaleItemRow + data arrays.
  */
 
-import { DiscountType } from '$lib/shared/enums';
 import type { CompatibilityVerdict } from '$lib/shared/matching/types';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { SaleItemRow } from './newSaleTypes';
 import { PatientEye } from '$lib/shared/contracts/common';
 import type { LensRequirement } from '$lib/shared/planning';
+import { computeDiscount } from '$lib/utils';
 
 // ============================================================================
 // ITEM LOOKUPS
@@ -51,10 +51,7 @@ export function getItemName(
 export function computeItemDiscount(item: SaleItemRow): number {
 	const qty = item.kind === 'product' ? item.quantity : 1;
 	const lineTotal = item.unitPrice * qty;
-	if (item.discountType === DiscountType.PERCENTAGE) {
-		return (item.discount / 100) * lineTotal;
-	}
-	return item.discount;
+	return computeDiscount(item.discount, item.discountType, lineTotal);
 }
 
 export function itemLineTotal(item: SaleItemRow): number {
