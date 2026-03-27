@@ -7,7 +7,8 @@
 		AlertTriangle,
 		ChevronDown,
 		ChevronUp,
-		Eye
+		Eye,
+		Undo2
 	} from '@lucide/svelte';
 	import {
 		FulfillmentSource,
@@ -20,9 +21,11 @@
 	interface Props {
 		plan: FulfillmentPlanResult;
 		catalog: Map<string, CatalogItemForPlanning>;
+		singleUnitOverrides?: Map<string, 'FORCE_PAIR'>;
+		onoverridechange?: (catalogItemId: string, action: 'FORCE_PAIR' | 'UNDO') => void;
 	}
 
-	let { plan, catalog }: Props = $props();
+	let { plan, catalog, singleUnitOverrides, onoverridechange }: Props = $props();
 
 	let expandedLines = $state<Set<string>>(new Set());
 
@@ -216,12 +219,41 @@
 
 					<!-- Confirmation required -->
 					{#if line.requiresConfirmation}
-						<div class="mt-2 flex items-center gap-2 rounded-md bg-amber-50 px-3 py-2">
-							<AlertTriangle class="h-4 w-4 shrink-0 text-amber-500" />
-							<span class="text-xs font-medium text-amber-700">
-								Debes confirmar manualmente con el proveedor que este lente puede pedirse por unidad
-							</span>
-						</div>
+						{@const isOverridden = singleUnitOverrides?.has(line.catalogItemId)}
+						{#if isOverridden}
+							<div class="mt-2 flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2">
+								<Package class="h-4 w-4 shrink-0 text-emerald-600" />
+								<span class="text-xs font-medium text-emerald-700">
+									Se comprará el par completo
+								</span>
+								{#if onoverridechange}
+									<button
+										type="button"
+										class="ml-auto flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+										onclick={() => onoverridechange(line.catalogItemId, 'UNDO')}
+									>
+										<Undo2 class="h-3 w-3" />
+										Deshacer
+									</button>
+								{/if}
+							</div>
+						{:else}
+							<div class="mt-2 flex items-center gap-2 rounded-md bg-amber-50 px-3 py-2">
+								<AlertTriangle class="h-4 w-4 shrink-0 text-amber-500" />
+								<span class="text-xs font-medium text-amber-700">
+									Debes confirmar manualmente con el proveedor que este lente puede pedirse por unidad
+								</span>
+							</div>
+							{#if onoverridechange}
+								<button
+									type="button"
+									class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+									onclick={() => onoverridechange(line.catalogItemId, 'FORCE_PAIR')}
+								>
+									El proveedor rechazó → Comprar par completo
+								</button>
+							{/if}
+						{/if}
 					{/if}
 				</div>
 			{/if}
