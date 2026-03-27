@@ -19,7 +19,13 @@ import {
 	DiscountType
 } from '$lib/shared/enums';
 import { LensFulfillmentMode } from '$lib/shared/enums/lensTypes';
+import { FulfillmentSource } from '$lib/shared/contracts/fulfillment';
+import { PatientEye } from '$lib/shared/contracts/common';
+import { CORE_LENS_TREATMENT_CODES } from '$lib/shared/contracts/lenses';
 import { AxisSchema } from '$lib/schemas/prescriptions';
+
+const ALL_FULFILLMENT_SOURCES = Object.values(FulfillmentSource) as [string, ...string[]];
+const ALL_PATIENT_EYES = Object.values(PatientEye) as [string, ...string[]];
 
 // ============================================================================
 // LIST / FILTER SCHEMAS
@@ -34,19 +40,52 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 });
 
 // ============================================================================
+// PRESCRIPTION SNAPSHOT SCHEMA (reusable)
+// ============================================================================
+
+const PrescriptionSnapshotSchema = z.object({
+	sphere: z.number().nullable(),
+	cylinder: z.number().nullable(),
+	axis: z.number().int().nullable(),
+	addition: z.number().nullable()
+});
+
+// ============================================================================
+// COST BREAKDOWN SCHEMA
+// ============================================================================
+
+const CostBreakdownSchema = z.object({
+	basePrice: z.number(),
+	treatmentPrice: z.number(),
+	mountingPrice: z.number(),
+	shippingPrice: z.number(),
+	surchargePrice: z.number(),
+	totalCost: z.number()
+});
+
+// ============================================================================
 // SALE ITEM SCHEMA
 // ============================================================================
 
 /**
  * A single line item in a sale.
  * Either productId or lensCatalogItemId must be provided (not both).
+ * Lens items are per-eye (one row per eye) with fulfillment info.
  */
 export const SaleItemSchema = z
 	.object({
 		productId: z.uuid().optional(),
 		lensCatalogItemId: z.uuid().optional(),
 		lensFulfillmentMode: z.enum(LensFulfillmentMode).optional(),
+		/** Which eye this lens item is for (OD or OI) */
+		eye: z.enum(ALL_PATIENT_EYES).optional(),
+		/** How this item is sourced */
+		fulfillmentSource: z.enum(ALL_FULFILLMENT_SOURCES).optional(),
+		/** Surplus unit ID consumed by this item */
+		surplusUnitId: z.uuid().optional(),
 		selectedTreatments: z.array(z.string()).optional(),
+		/** Planner cost breakdown snapshot */
+		costBreakdown: CostBreakdownSchema.optional(),
 		/** Link to existing prescription (optional, used for lens items) */
 		prescriptionId: z.uuid().optional(),
 		/** Prescription snapshot: right eye */
@@ -69,6 +108,19 @@ export const SaleItemSchema = z
 		message: 'Debe seleccionar un producto o un lente',
 		path: ['productId']
 	});
+
+// ============================================================================
+// SURPLUS CREATION SCHEMA
+// ============================================================================
+
+/** Surplus unit to create from a forced pair purchase */
+export const SurplusCreationSchema = z.object({
+	catalogItemId: z.uuid(),
+	supplierId: z.uuid(),
+	prescription: PrescriptionSnapshotSchema.nullable(),
+	selectedTreatments: z.array(z.enum(CORE_LENS_TREATMENT_CODES)).nullable(),
+	costSnapshot: CostBreakdownSchema
+});
 
 // ============================================================================
 // CREATE SALE SCHEMA
@@ -95,7 +147,9 @@ export const CreateSaleSchema = z
 		discount: CoercedNumber.min(0).default(0),
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 		notes: z.string().optional(),
-		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto')
+		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto'),
+		/** Surplus units to create from forced pair purchases */
+		surplusToCreate: z.array(SurplusCreationSchema).default([])
 	})
 	.refine((data) => data.customerId || data.newCustomer, {
 		message: 'Debe seleccionar o crear un cliente',
@@ -159,6 +213,7 @@ export const CustomerLookupSchema = z.object({
 
 export type CreateSaleInput = z.infer<typeof CreateSaleSchema>;
 export type SaleItemInput = z.infer<typeof SaleItemSchema>;
+export type SurplusCreationInput = z.infer<typeof SurplusCreationSchema>;
 export type ListSalesInput = z.infer<typeof ListSalesSchema>;
 export type InlineCustomerInput = z.infer<typeof InlineCustomerSchema>;
 export type AddPaymentInput = z.infer<typeof AddPaymentSchema>;
