@@ -9,11 +9,15 @@
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import { LensType } from '$lib/shared/enums/lensTypes';
 	import { PatientEye } from '$lib/shared/contracts/common';
-	import { FulfillmentSource } from '$lib/shared/contracts/fulfillment';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { CatalogItemForPlanning, SurplusUnitForPlanning, FulfillmentPlanResult } from '$lib/shared/planning';
-	import { buildFulfillmentPlan } from '$lib/shared/planning';
+	import {
+		FulfillmentSource,
+		buildFulfillmentPlan,
+		type CatalogItemForPlanning,
+		type SurplusUnitForPlanning,
+		type FulfillmentPlanResult
+	} from '$lib/shared/planning';
 	import type { SaleItemInput, SurplusCreationInput } from '$lib/schemas/sales';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
@@ -74,9 +78,7 @@
 	let planResult = $state<FulfillmentPlanResult | null>(null);
 
 	/** Pre-built catalog map for the planner and the summary panel */
-	const catalogMap = $derived(
-		new Map(catalogItems.map((item) => [item.id, item]))
-	);
+	const catalogMap = $derived(new Map(catalogItems.map((item) => [item.id, item])));
 
 	/**
 	 * Per-item overrides: when the supplier rejects a single-unit order,
@@ -91,7 +93,9 @@
 	 */
 	let surplusRxChoices = $state<Map<string, 'SAME_RX' | 'UNDEFINED'>>(new Map());
 
-	function applyOverrides(catalog: Map<string, CatalogItemForPlanning>): Map<string, CatalogItemForPlanning> {
+	function applyOverrides(
+		catalog: Map<string, CatalogItemForPlanning>
+	): Map<string, CatalogItemForPlanning> {
 		if (singleUnitOverrides.size === 0) return catalog;
 		const overridden = new Map(catalog);
 		for (const [itemId] of singleUnitOverrides) {
