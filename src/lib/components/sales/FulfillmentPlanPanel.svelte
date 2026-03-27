@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
 	import {
 		Truck,
 		Package,
@@ -27,13 +28,11 @@
 
 	let { plan, catalog, singleUnitOverrides, onoverridechange }: Props = $props();
 
-	let expandedLines = $state<Set<string>>(new Set());
+	let expandedLines = new SvelteSet<string>();
 
 	function toggleExpand(reqId: string) {
-		const next = new Set(expandedLines);
-		if (next.has(reqId)) next.delete(reqId);
-		else next.add(reqId);
-		expandedLines = next;
+		if (expandedLines.has(reqId)) expandedLines.delete(reqId);
+		else expandedLines.add(reqId);
 	}
 
 	function getCatalogName(itemId: string): string {
@@ -131,8 +130,6 @@
 	function eyeLabel(eye: PatientEye): string {
 		return eye === PatientEye.OD ? 'OD' : 'OI';
 	}
-
-	const hasWarnings = $derived(plan.lines.some((l) => l.warnings.length > 0));
 </script>
 
 <div class="space-y-3">
@@ -212,7 +209,7 @@
 					<!-- Warnings -->
 					{#if lineWarnings.length > 0}
 						<div class="space-y-1">
-							{#each lineWarnings as w}
+							{#each lineWarnings as w (w.label)}
 								<div
 									class="flex items-center gap-1.5 text-xs font-medium {w.severity === 'red'
 										? 'text-red-600'
@@ -279,7 +276,7 @@
 				</span>
 			</div>
 			<div class="mt-2 space-y-1">
-				{#each plan.surplus as surplus}
+				{#each plan.surplus as surplus (surplus.sourceRequirementId)}
 					<div class="flex items-center justify-between text-sm">
 						<span class="text-amber-700">
 							{getCatalogName(surplus.catalogItemId)}

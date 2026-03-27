@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	import { Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -12,7 +13,6 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import {
-		FulfillmentSource,
 		buildFulfillmentPlan,
 		type CatalogItemForPlanning,
 		type SurplusUnitForPlanning,
@@ -36,8 +36,14 @@
 		nextOrderNumber?: number;
 	}
 
-	let { products, lensItems, catalogItems, availableSurplus, suppliers, nextOrderNumber }: Props =
-		$props();
+	let {
+		products,
+		lensItems,
+		catalogItems,
+		availableSurplus,
+		suppliers: _suppliers,
+		nextOrderNumber
+	}: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE
@@ -85,19 +91,19 @@
 	 * user clicks "Comprar par" to force pair purchase.
 	 * Keyed by catalogItemId.
 	 */
-	let singleUnitOverrides = $state<Map<string, 'FORCE_PAIR'>>(new Map());
+	let singleUnitOverrides = new SvelteMap<string, 'FORCE_PAIR'>();
 
 	/**
 	 * Surplus Rx choices: user decides whether surplus gets the same Rx or not.
 	 * Keyed by catalogItemId.
 	 */
-	let surplusRxChoices = $state<Map<string, 'SAME_RX' | 'UNDEFINED'>>(new Map());
+	let surplusRxChoices = new SvelteMap<string, 'SAME_RX' | 'UNDEFINED'>();
 
 	function applyOverrides(
 		catalog: Map<string, CatalogItemForPlanning>
 	): Map<string, CatalogItemForPlanning> {
 		if (singleUnitOverrides.size === 0) return catalog;
-		const overridden = new Map(catalog);
+		const overridden = new SvelteMap(catalog);
 		for (const [itemId] of singleUnitOverrides) {
 			const original = overridden.get(itemId);
 			if (original) {
@@ -114,20 +120,16 @@
 	}
 
 	function handleOverrideChange(catalogItemId: string, action: 'FORCE_PAIR' | 'UNDO') {
-		const next = new Map(singleUnitOverrides);
 		if (action === 'FORCE_PAIR') {
-			next.set(catalogItemId, 'FORCE_PAIR');
+			singleUnitOverrides.set(catalogItemId, 'FORCE_PAIR');
 		} else {
-			next.delete(catalogItemId);
+			singleUnitOverrides.delete(catalogItemId);
 		}
-		singleUnitOverrides = next;
 		generateFulfillmentPlan();
 	}
 
 	function handleSurplusRxChange(catalogItemId: string, choice: 'SAME_RX' | 'UNDEFINED') {
-		const next = new Map(surplusRxChoices);
-		next.set(catalogItemId, choice);
-		surplusRxChoices = next;
+		surplusRxChoices.set(catalogItemId, choice);
 	}
 
 	function generateFulfillmentPlan() {
