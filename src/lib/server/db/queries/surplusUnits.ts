@@ -197,3 +197,27 @@ export async function voidSurplusUnit(
 		.returning();
 	return unit ?? null;
 }
+
+/**
+ * Restore a consumed surplus unit back to AVAILABLE (sale cancelled — unit was never physically used).
+ * Only CONSUMED units can be restored.
+ */
+export async function restoreSurplusUnit(
+	id: string,
+	executor: DbOrTx = db
+): Promise<SurplusUnit | null> {
+	const now = new Date();
+	const [unit] = await executor
+		.update(surplusUnits)
+		.set({
+			status: SurplusUnitStatus.AVAILABLE,
+			reservedForSaleId: null,
+			reservedAt: null,
+			consumedBySaleId: null,
+			consumedAt: null,
+			updatedAt: now
+		})
+		.where(and(eq(surplusUnits.id, id), eq(surplusUnits.status, SurplusUnitStatus.CONSUMED)))
+		.returning();
+	return unit ?? null;
+}
