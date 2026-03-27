@@ -138,7 +138,8 @@
 <div class="space-y-3">
 	<!-- Plan Lines -->
 	{#each plan.lines as line (line.requirementId)}
-		{@const source = SOURCE_DISPLAY[line.source] ?? SOURCE_DISPLAY[FulfillmentSource.SUPPLIER_ORDER]}
+		{@const source =
+			SOURCE_DISPLAY[line.source] ?? SOURCE_DISPLAY[FulfillmentSource.SUPPLIER_ORDER]}
 		{@const SourceIcon = getSourceIcon(line.source)}
 		{@const lineWarnings = line.warnings
 			.map((w) => WARNING_DISPLAY[w])
@@ -157,7 +158,10 @@
 					<div>
 						<div class="flex items-center gap-2">
 							<span
-								class="inline-flex items-center gap-1 text-sm font-semibold {line.eye === PatientEye.OD ? 'text-emerald-700' : 'text-violet-700'}"
+								class="inline-flex items-center gap-1 text-sm font-semibold {line.eye ===
+								PatientEye.OD
+									? 'text-emerald-700'
+									: 'text-violet-700'}"
 							>
 								<Eye class="h-3.5 w-3.5" />
 								{eyeLabel(line.eye)}
@@ -174,7 +178,11 @@
 				{#if hasLineDetail}
 					<div class="flex items-center gap-2">
 						{#if lineWarnings.length > 0}
-							<AlertTriangle class="h-4 w-4 {lineWarnings.some((w) => w.severity === 'red') ? 'text-red-500' : 'text-amber-500'}" />
+							<AlertTriangle
+								class="h-4 w-4 {lineWarnings.some((w) => w.severity === 'red')
+									? 'text-red-500'
+									: 'text-amber-500'}"
+							/>
 						{/if}
 						{#if isExpanded}
 							<ChevronUp class="h-4 w-4 text-slate-400" />
@@ -200,7 +208,7 @@
 
 			<!-- Expanded: Warnings + Confirmation -->
 			{#if hasLineDetail && isExpanded}
-				<div class="border-t {source.borderColor} px-4 pb-3 pt-2">
+				<div class="border-t {source.borderColor} px-4 pt-2 pb-3">
 					<!-- Warnings -->
 					{#if lineWarnings.length > 0}
 						<div class="space-y-1">
@@ -241,13 +249,14 @@
 							<div class="mt-2 flex items-center gap-2 rounded-md bg-amber-50 px-3 py-2">
 								<AlertTriangle class="h-4 w-4 shrink-0 text-amber-500" />
 								<span class="text-xs font-medium text-amber-700">
-									Debes confirmar manualmente con el proveedor que este lente puede pedirse por unidad
+									Debes confirmar manualmente con el proveedor que este lente puede pedirse por
+									unidad
 								</span>
 							</div>
 							{#if onoverridechange}
 								<button
 									type="button"
-									class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+									class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
 									onclick={() => onoverridechange(line.catalogItemId, 'FORCE_PAIR')}
 								>
 									El proveedor rechazó → Comprar par completo
@@ -266,8 +275,7 @@
 			<div class="flex items-center gap-2">
 				<Archive class="h-4 w-4 text-amber-600" />
 				<span class="text-sm font-semibold text-amber-800">
-					Esta venta genera {plan.surplus.reduce((a, s) => a + s.surplusUnits, 0)} unidad(es)
-					de excedente
+					Esta venta genera {plan.surplus.reduce((a, s) => a + s.surplusUnits, 0)} unidad(es) de excedente
 				</span>
 			</div>
 			<div class="mt-2 space-y-1">
@@ -277,16 +285,14 @@
 							{getCatalogName(surplus.catalogItemId)}
 							{#if surplus.predeterminedPrescription}
 								<span class="font-mono text-xs">
-									(Esf: {surplus.predeterminedPrescription.sphere ?? '—'},
-									Cil: {surplus.predeterminedPrescription.cylinder ?? '—'})
+									(Esf: {surplus.predeterminedPrescription.sphere ?? '—'}, Cil: {surplus
+										.predeterminedPrescription.cylinder ?? '—'})
 								</span>
 							{:else}
 								<span class="text-xs italic">Rx a definir</span>
 							{/if}
 						</span>
-						<span class="text-xs text-amber-600">
-							Quedará en stock
-						</span>
+						<span class="text-xs text-amber-600"> Quedará en stock </span>
 					</div>
 				{/each}
 			</div>

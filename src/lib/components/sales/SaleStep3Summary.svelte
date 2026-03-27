@@ -27,10 +27,7 @@
 	} from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import {
-		getProductTypeLabel,
-		getProductTypeBadgeColor
-	} from '$lib/shared/enums/productTypes';
+	import { getProductTypeLabel, getProductTypeBadgeColor } from '$lib/shared/enums/productTypes';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
@@ -100,9 +97,9 @@
 
 	/** Lines that require confirmation (excluding overridden ones) */
 	const linesNeedingConfirmation = $derived(
-		(planResult?.lines.filter(
+		planResult?.lines.filter(
 			(l) => l.requiresConfirmation && !singleUnitOverrides.has(l.catalogItemId)
-		) ?? [])
+		) ?? []
 	);
 
 	/** All confirmations acknowledged? */
@@ -112,7 +109,9 @@
 	);
 
 	const surplusItems = $derived(planResult?.surplus ?? []);
-	const surplusUnitsTotal = $derived(surplusItems.reduce((sum, item) => sum + item.surplusUnits, 0));
+	const surplusUnitsTotal = $derived(
+		surplusItems.reduce((sum, item) => sum + item.surplusUnits, 0)
+	);
 	const hasSurplusToAcknowledge = $derived(surplusItems.length > 0);
 
 	// ============================================================================
@@ -322,8 +321,7 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base"
-								>{formatPrice(item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
 							>
 							<td class="px-4 py-3 text-right font-mono text-base text-red-500">
 								{#if item.discount > 0}
@@ -362,14 +360,12 @@
 				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
 					<div class="mb-3 flex items-center gap-2">
 						<AlertTriangle class="h-4 w-4 text-amber-600" />
-						<span class="text-sm font-semibold text-amber-800">
-							Confirmaciones requeridas
-						</span>
+						<span class="text-sm font-semibold text-amber-800"> Confirmaciones requeridas </span>
 					</div>
 					<div class="space-y-2">
 						{#each linesNeedingConfirmation as line (line.requirementId)}
 							{@const catalogName = catalogMap.get(line.catalogItemId)?.name ?? '—'}
-							<label class="flex items-start gap-3 cursor-pointer">
+							<label class="flex cursor-pointer items-start gap-3">
 								<input
 									type="checkbox"
 									checked={confirmedLines.has(line.requirementId)}
@@ -392,12 +388,12 @@
 				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
 					<div class="mb-3 flex items-center gap-2">
 						<AlertTriangle class="h-4 w-4 text-amber-600" />
-						<span class="text-sm font-semibold text-amber-800">
-							Confirmación de excedente
-						</span>
+						<span class="text-sm font-semibold text-amber-800"> Confirmación de excedente </span>
 					</div>
 					<p class="mb-3 text-sm text-amber-800">
-						Esta venta generará <span class="font-semibold">{surplusUnitsTotal} unidad(es) de excedente</span>
+						Esta venta generará <span class="font-semibold"
+							>{surplusUnitsTotal} unidad(es) de excedente</span
+						>
 						que quedarán en stock.
 					</p>
 
@@ -408,10 +404,11 @@
 						{#if surplus.predeterminedPrescription === null}
 							<div class="mb-3 rounded-md border border-amber-100 bg-white px-3 py-2">
 								<p class="mb-2 text-sm font-medium text-amber-800">
-									¿El excedente de <span class="font-semibold">{catalogName}</span> tendrá la misma Rx que el ojo pedido?
+									¿El excedente de <span class="font-semibold">{catalogName}</span> tendrá la misma Rx
+									que el ojo pedido?
 								</p>
 								<div class="flex gap-4">
-									<label class="flex items-center gap-2 cursor-pointer">
+									<label class="flex cursor-pointer items-center gap-2">
 										<input
 											type="radio"
 											name="surplus-rx-{surplus.catalogItemId}"
@@ -422,7 +419,7 @@
 										/>
 										<span class="text-sm text-amber-800">Sí, misma Rx</span>
 									</label>
-									<label class="flex items-center gap-2 cursor-pointer">
+									<label class="flex cursor-pointer items-center gap-2">
 										<input
 											type="radio"
 											name="surplus-rx-{surplus.catalogItemId}"
@@ -438,7 +435,7 @@
 						{/if}
 					{/each}
 
-					<label class="flex items-start gap-3 cursor-pointer">
+					<label class="flex cursor-pointer items-start gap-3">
 						<input
 							type="checkbox"
 							bind:checked={surplusAcknowledged}

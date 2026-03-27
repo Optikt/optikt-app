@@ -409,7 +409,9 @@
 					<div class="sm:col-span-5">
 						<ItemSelect
 							kind={item.kind}
-							value={item.kind === 'product' ? item.productId : (item.lensPair?.catalogItemId ?? '')}
+							value={item.kind === 'product'
+								? item.productId
+								: (item.lensPair?.catalogItemId ?? '')}
 							{products}
 							{lensItems}
 							label={item.kind === 'product' ? 'Producto *' : 'Lente *'}
@@ -422,7 +424,9 @@
 							{/if}
 						{:else if item.kind === 'lens' && lens}
 							<p class="mt-1 truncate text-xs text-violet-400">
-								{getLensSourceLabel(lens.source)} &middot; {getLensTypeLabel(lens.type)}{#if lens.material}&nbsp;&middot; {lens.material.name}{/if}
+								{getLensSourceLabel(lens.source)} &middot; {getLensTypeLabel(
+									lens.type
+								)}{#if lens.material}&nbsp;&middot; {lens.material.name}{/if}
 							</p>
 						{/if}
 					</div>
@@ -501,7 +505,11 @@
 								onchange={() => syncAndEvaluate(item)}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
-							<span class="text-sm font-semibold {item.lensPair.od.enabled ? 'text-slate-700' : 'text-slate-400'}">OD</span>
+							<span
+								class="text-sm font-semibold {item.lensPair.od.enabled
+									? 'text-slate-700'
+									: 'text-slate-400'}">OD</span
+							>
 						</label>
 						<label class="inline-flex cursor-pointer items-center gap-1.5">
 							<input
@@ -510,7 +518,11 @@
 								onchange={() => syncAndEvaluate(item)}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
-							<span class="text-sm font-semibold {item.lensPair.oi.enabled ? 'text-slate-700' : 'text-slate-400'}">OI</span>
+							<span
+								class="text-sm font-semibold {item.lensPair.oi.enabled
+									? 'text-slate-700'
+									: 'text-slate-400'}">OI</span
+							>
 						</label>
 						{#if !item.lensPair.od.enabled && !item.lensPair.oi.enabled}
 							<span class="text-xs font-medium text-red-500">Debe habilitar al menos un ojo</span>
@@ -555,7 +567,14 @@
 						<div
 							class="mt-3 flex items-center gap-3 rounded-lg border-2 px-4 py-3 {display.borderColor} {display.bgColor}"
 						>
-							<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {verdict === 'EXACT_MATCH' ? 'bg-emerald-500' : verdict === 'CONSULT_REQUIRED' ? 'bg-amber-500' : 'bg-red-500'}">
+							<div
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {verdict ===
+								'EXACT_MATCH'
+									? 'bg-emerald-500'
+									: verdict === 'CONSULT_REQUIRED'
+										? 'bg-amber-500'
+										: 'bg-red-500'}"
+							>
 								{#if verdict === 'EXACT_MATCH'}
 									<CircleCheck class="h-5 w-5 text-white" />
 								{:else if verdict === 'CONSULT_REQUIRED'}
@@ -573,7 +592,8 @@
 										{#each [{ label: 'OD', v: item.lensPair.od }, { label: 'OI', v: item.lensPair.oi }] as eye}
 											{#if eye.v.enabled && eye.v.compatibilityVerdict}
 												<span
-													class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold {eye.v.compatibilityVerdict === 'EXACT_MATCH'
+													class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold {eye
+														.v.compatibilityVerdict === 'EXACT_MATCH'
 														? 'bg-emerald-100 text-emerald-700'
 														: eye.v.compatibilityVerdict === 'CONSULT_REQUIRED'
 															? 'bg-amber-100 text-amber-700'
