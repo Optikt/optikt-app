@@ -4,7 +4,8 @@
  */
 import { query } from '$app/server';
 import { UniversalSearchSchema } from '$lib/schemas/search';
-import { parseOpticalInput, type OpticalParams } from '$lib/utils/opticalParser';
+import { parseOpticalPrescription } from '$lib/shared/matching';
+import type { EyePrescription } from '$lib/shared/matching';
 import { db } from '$lib/server/db';
 import {
 	products,
@@ -51,12 +52,14 @@ const MAX_RESULTS = 8;
 export const universalSearch = query(
 	UniversalSearchSchema,
 	async (data): Promise<SearchResults> => {
-		const parsed = parseOpticalInput(data.query);
+		const parsed = parseOpticalPrescription(data.query);
 		const searchText = data.query.toLowerCase().trim();
+		// Use OD eye for range search (unprefixed input sets both eyes the same)
+		const optical = parsed.prescription?.od ?? null;
 
 		const [productResults, lensResults] = await Promise.all([
 			searchProducts(searchText),
-			searchLenses(searchText, parsed.optical)
+			searchLenses(searchText, optical)
 		]);
 
 		return {
@@ -101,19 +104,19 @@ async function searchProducts(search: string): Promise<ProductResult[]> {
 
 async function searchLenses(
 	search: string,
-	optical: OpticalParams | null
+	optical: EyePrescription | null
 ): Promise<LensCatalogResult[]> {
 	const baseConditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
 
 	// If optical params detected, join via lens_optical_ranges and use containment
-	if (optical?.sphere !== undefined) {
+	if (optical?.sphere !== undefined && optical.sphere !== null) {
 		const rangeConditions = [
 			eq(lensOpticalRanges.lensCatalogItemId, lensCatalogItems.id),
 			lte(lensOpticalRanges.sphereMin, optical.sphere),
 			gte(lensOpticalRanges.sphereMax, optical.sphere)
 		];
 
-		if (optical.cylinder !== undefined && optical.cylinder < 0) {
+		if (optical.cylinder !== undefined && optical.cylinder !== null && optical.cylinder < 0) {
 			rangeConditions.push(lte(lensOpticalRanges.cylinderMin, optical.cylinder));
 			rangeConditions.push(gte(lensOpticalRanges.cylinderMax, optical.cylinder));
 		}
