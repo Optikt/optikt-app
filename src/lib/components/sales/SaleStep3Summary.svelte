@@ -14,12 +14,7 @@
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
-	import {
-		findProduct,
-		computeItemDiscount,
-		itemLineTotal,
-		getItemName as _getItemName
-	} from './saleItemHelpers';
+	import { findProduct, itemLineTotal, getItemName as _getItemName } from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,

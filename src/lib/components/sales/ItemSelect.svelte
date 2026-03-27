@@ -6,7 +6,7 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { formatPrice } from '$lib/utils';
 	import { LensCatalogSource } from '$lib/shared/enums/lensTypes';
-	import { ProductType, getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
+	import { getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
 

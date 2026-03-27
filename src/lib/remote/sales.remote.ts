@@ -45,7 +45,6 @@ import {
 	saleItems,
 	products,
 	lensCatalogItems,
-	surplusUnits,
 	type SalePayment,
 	type Customer
 } from '$lib/server/db/schema';

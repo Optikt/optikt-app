@@ -288,10 +288,6 @@
 		return null;
 	}
 
-	function computeItemDiscount(item: SaleItemRow): number {
-		return _computeDiscount(item);
-	}
-
 	function itemLineTotal(item: SaleItemRow): number {
 		return _lineTotal(item);
 	}
@@ -589,7 +585,7 @@
 								<!-- Per-eye verdicts when they differ -->
 								{#if item.lensPair.od.compatibilityVerdict !== item.lensPair.oi.compatibilityVerdict}
 									<div class="mt-1 flex items-center gap-3">
-										{#each [{ label: 'OD', v: item.lensPair.od }, { label: 'OI', v: item.lensPair.oi }] as eye}
+										{#each [{ label: 'OD', v: item.lensPair.od }, { label: 'OI', v: item.lensPair.oi }] as eye (eye.label)}
 											{#if eye.v.enabled && eye.v.compatibilityVerdict}
 												<span
 													class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold {eye
