@@ -17,6 +17,7 @@
 	import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
 	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums/lensTypes';
 	import { evaluateLensCompatibility } from '$lib/shared/matching';
+	import { LENS_TREATMENT_LABELS, LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
 	import type { LensCatalogForMatching, CompatibilityVerdict } from '$lib/shared/matching/types';
 	import type { CatalogItemForPlanning } from '$lib/shared/planning';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -27,8 +28,12 @@
 		computeItemDiscount as _computeDiscount,
 		itemLineTotal as _lineTotal,
 		getItemVerdict,
-		VERDICT_DISPLAY
+		VERDICT_DISPLAY,
+		getRequiredEyes,
+		validatePrescriptionFields,
+		hasPrescriptionErrors
 	} from './saleItemHelpers';
+	import type { PrescriptionFieldErrors } from './saleItemHelpers';
 	import ItemSelect from './ItemSelect.svelte';
 	import PrescriptionInput from './PrescriptionInput.svelte';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
@@ -105,6 +110,7 @@
 	function handleItemSelect(item: SaleItemRow, id: string, unitPrice: number) {
 		if (item.kind === 'product') {
 			item.productId = id;
+			item.unitPrice = unitPrice;
 		} else {
 			if (!item.lensPair) {
 				item.lensPair = createEmptyLensPair();
@@ -112,8 +118,8 @@
 			item.lensPair.catalogItemId = id;
 			item.lensPair.selectedOptionalTreatments = [];
 			syncAndEvaluate(item);
+			recalcSuggestedPrice(item);
 		}
-		item.unitPrice = unitPrice;
 	}
 
 	// ============================================================================
@@ -295,6 +301,69 @@
 	function getWorstVerdict(item: SaleItemRow): CompatibilityVerdict | null {
 		return getItemVerdict(item);
 	}
+
+	// ============================================================================
+	// PRESCRIPTION VALIDATION
+	// ============================================================================
+
+	const requiredEyes = $derived(getRequiredEyes(items));
+
+	const rxErrors: PrescriptionFieldErrors = $derived(
+		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
+	);
+
+	/** Only show Rx errors once the user has started filling in prescription fields */
+	const anyRxFieldFilled = $derived(
+		prescriptionValues.odSphere !== '' ||
+			prescriptionValues.odCylinder !== '' ||
+			prescriptionValues.odAxis !== '' ||
+			prescriptionValues.odAddition !== '' ||
+			prescriptionValues.oiSphere !== '' ||
+			prescriptionValues.oiCylinder !== '' ||
+			prescriptionValues.oiAxis !== '' ||
+			prescriptionValues.oiAddition !== ''
+	);
+
+	const visibleRxErrors: PrescriptionFieldErrors = $derived(anyRxFieldFilled ? rxErrors : {});
+
+	// ============================================================================
+	// LENS COST HELPERS
+	// ============================================================================
+
+	function getEnabledEyeCount(item: SaleItemRow): number {
+		if (!item.lensPair) return 0;
+		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
+	}
+
+	function getTreatmentCostPerUnit(item: SaleItemRow, catItem: CatalogItemForPlanning): number {
+		if (!item.lensPair) return 0;
+		let cost = 0;
+		for (const code of item.lensPair.selectedOptionalTreatments) {
+			const policy = catItem.treatmentPolicies.find(
+				(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
+			);
+			if (policy) cost += policy.additionalPrice;
+		}
+		return cost;
+	}
+
+	/** Recalculate unitPrice to the suggested sale price for the full lens order */
+	function recalcSuggestedPrice(item: SaleItemRow) {
+		if (item.kind !== 'lens' || !item.lensPair) return;
+		const catItem = getCatalogItem(item);
+		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (!catItem || !lens) return;
+
+		const eyeCount = getEnabledEyeCount(item);
+		if (eyeCount === 0) return;
+
+		const treatmentPerUnit = getTreatmentCostPerUnit(item, catItem);
+		const totalCost =
+			(catItem.basePrice + treatmentPerUnit) * eyeCount +
+			catItem.purchasePolicy.mountingPrice +
+			catItem.purchasePolicy.shippingPrice;
+		item.unitPrice = lens.suggestedMultiplier ? totalCost * lens.suggestedMultiplier : totalCost;
+	}
 </script>
 
 <!-- Customer reference banner -->
@@ -341,6 +410,7 @@
 			bind:values={prescriptionValues}
 			existingPrescription={customerPrescription}
 			showAddition={prescriptionValues.lensType !== 'MONOFOCAL'}
+			errors={visibleRxErrors}
 		/>
 	</div>
 {/if}
@@ -498,7 +568,7 @@
 							<input
 								type="checkbox"
 								bind:checked={item.lensPair.od.enabled}
-								onchange={() => syncAndEvaluate(item)}
+							onchange={() => { syncAndEvaluate(item); recalcSuggestedPrice(item); }}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
 							<span
@@ -511,7 +581,7 @@
 							<input
 								type="checkbox"
 								bind:checked={item.lensPair.oi.enabled}
-								onchange={() => syncAndEvaluate(item)}
+							onchange={() => { syncAndEvaluate(item); recalcSuggestedPrice(item); }}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
 							<span
@@ -534,10 +604,82 @@
 								if (item.lensPair) {
 									item.lensPair.selectedOptionalTreatments = sel;
 									syncAndEvaluate(item);
+									recalcSuggestedPrice(item);
 								}
 							}}
 						/>
 					</div>
+
+					<!-- Treatment cost summary (5b.2) -->
+					{@const eyeCount = getEnabledEyeCount(item)}
+					{#if item.lensPair.selectedOptionalTreatments.length > 0 && eyeCount > 0}
+						<div class="mt-2 space-y-0.5">
+							{#each item.lensPair.selectedOptionalTreatments as code (code)}
+								{@const policy = catItem.treatmentPolicies.find((p) => p.code === code)}
+								{#if policy && policy.additionalPrice > 0}
+									<p class="text-xs text-slate-500">
+										<span class="font-medium">{LENS_TREATMENT_LABELS[code] ?? code}</span>
+										&middot; {formatPrice(policy.additionalPrice)} × {eyeCount} =
+										<span class="font-semibold text-slate-600"
+											>{formatPrice(policy.additionalPrice * eyeCount)}</span
+										>
+									</p>
+								{/if}
+							{/each}
+						</div>
+					{/if}
+
+					<!-- Lens cost breakdown (5b.3) -->
+					{@const basePrice = catItem.basePrice}
+					{@const treatmentPerUnit = getTreatmentCostPerUnit(item, catItem)}
+					{@const mountingPrice = catItem.purchasePolicy.mountingPrice}
+					{@const shippingPrice = catItem.purchasePolicy.shippingPrice}
+					{@const totalCost = (basePrice + treatmentPerUnit) * eyeCount + mountingPrice + shippingPrice}
+					{@const multiplier = lens?.suggestedMultiplier ?? null}
+					{@const suggestedPrice = multiplier ? totalCost * multiplier : null}
+					{#if eyeCount > 0}
+						<div class="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
+							<p class="mb-1.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+								Desglose de Costo
+							</p>
+							<div class="space-y-0.5 text-xs text-slate-600">
+								<div class="flex justify-between">
+									<span>Cristales × {eyeCount}</span>
+									<span class="font-mono">{formatPrice(basePrice * eyeCount)}</span>
+								</div>
+								{#if treatmentPerUnit > 0}
+									<div class="flex justify-between">
+										<span>Tratamientos × {eyeCount}</span>
+										<span class="font-mono">{formatPrice(treatmentPerUnit * eyeCount)}</span>
+									</div>
+								{/if}
+								{#if mountingPrice > 0}
+									<div class="flex justify-between">
+										<span>Montaje</span>
+										<span class="font-mono">{formatPrice(mountingPrice)}</span>
+									</div>
+								{/if}
+								{#if shippingPrice > 0}
+									<div class="flex justify-between">
+										<span>Envío</span>
+										<span class="font-mono">{formatPrice(shippingPrice)}</span>
+									</div>
+								{/if}
+								<div
+									class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700"
+								>
+									<span>Costo total</span>
+									<span class="font-mono">{formatPrice(totalCost)}</span>
+								</div>
+								{#if suggestedPrice}
+									<div class="flex justify-between text-blue-600">
+										<span>Sugerido (×{multiplier})</span>
+										<span class="font-mono font-semibold">{formatPrice(suggestedPrice)}</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/if}
 
 					<!-- Lens info badges -->
 					<div class="mt-3 flex flex-wrap items-center gap-2">

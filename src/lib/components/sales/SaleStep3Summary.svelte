@@ -14,12 +14,18 @@
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
-	import { findProduct, itemLineTotal, getItemName as _getItemName } from './saleItemHelpers';
+	import {
+		findProduct,
+		itemLineTotal,
+		getItemName as _getItemName,
+		findLensItem
+	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
+	import { LENS_TREATMENT_LABELS, LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { getProductTypeLabel, getProductTypeBadgeColor } from '$lib/shared/enums/productTypes';
@@ -90,12 +96,42 @@
 		else confirmedLines.add(requirementId);
 	}
 
+	/** Toggle all lines in a confirmation group at once */
+	function toggleConfirmGroup(lineIds: string[]) {
+		const allConfirmedInGroup = lineIds.every((id) => confirmedLines.has(id));
+		for (const id of lineIds) {
+			if (allConfirmedInGroup) confirmedLines.delete(id);
+			else confirmedLines.add(id);
+		}
+	}
+
 	/** Lines that require confirmation (excluding overridden ones) */
 	const linesNeedingConfirmation = $derived(
 		planResult?.lines.filter(
 			(l) => l.requiresConfirmation && !singleUnitOverrides.has(l.catalogItemId)
 		) ?? []
 	);
+
+	/** Group confirmation lines by catalog item for consolidated checkboxes */
+	const confirmationGroups = $derived.by(() => {
+		const map = new Map<string, string[]>();
+		const eyes = new Map<string, string[]>();
+		for (const line of linesNeedingConfirmation) {
+			const existing = map.get(line.catalogItemId);
+			if (existing) existing.push(line.requirementId);
+			else map.set(line.catalogItemId, [line.requirementId]);
+			const eyeList = eyes.get(line.catalogItemId);
+			const eyeLabel = line.eye === 'OD' ? 'OD' : 'OI';
+			if (eyeList) eyeList.push(eyeLabel);
+			else eyes.set(line.catalogItemId, [eyeLabel]);
+		}
+		return Array.from(map.entries()).map(([catId, lineIds]) => ({
+			catalogItemId: catId,
+			catalogName: catalogMap.get(catId)?.name ?? '—',
+			lineIds,
+			eyeLabels: eyes.get(catId)?.join(' + ') ?? ''
+		}));
+	});
 
 	/** All confirmations acknowledged? */
 	const allConfirmed = $derived(
@@ -143,6 +179,63 @@
 	function getItemProductType(item: SaleItemRow): string | null {
 		const p = getProduct(item);
 		return p?.type ?? null;
+	}
+
+	function getLensForItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
+		return findLensItem(item, lensItems);
+	}
+
+	/** Get the number of enabled eyes for a lens item */
+	function getEnabledEyeCount(item: SaleItemRow): number {
+		if (!item.lensPair) return 0;
+		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
+	}
+
+	/** Compute lens cost breakdown from catalog data (mounting/shipping only ONCE, not per eye) */
+	function getLensCostBreakdown(item: SaleItemRow) {
+		if (item.kind !== 'lens' || !item.lensPair) return null;
+		const catItem = catalogMap.get(item.lensPair.catalogItemId);
+		if (!catItem) return null;
+
+		const eyeCount = getEnabledEyeCount(item);
+		if (eyeCount === 0) return null;
+
+		const basePrice = catItem.basePrice * eyeCount;
+
+		let treatmentPerUnit = 0;
+		for (const code of item.lensPair.selectedOptionalTreatments) {
+			const policy = catItem.treatmentPolicies.find(
+				(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
+			);
+			if (policy) treatmentPerUnit += policy.additionalPrice;
+		}
+		const treatmentPrice = treatmentPerUnit * eyeCount;
+
+		const mountingPrice = catItem.purchasePolicy.mountingPrice;
+		const shippingPrice = catItem.purchasePolicy.shippingPrice;
+		const totalCost = basePrice + treatmentPrice + mountingPrice + shippingPrice;
+
+		return { basePrice, treatmentPrice, mountingPrice, shippingPrice, totalCost, eyeCount };
+	}
+
+	/** Get selected treatment details for a lens item */
+	function getSelectedTreatments(item: SaleItemRow) {
+		if (item.kind !== 'lens' || !item.lensPair) return [];
+		const catItem = catalogMap.get(item.lensPair.catalogItemId);
+		if (!catItem) return [];
+
+		return item.lensPair.selectedOptionalTreatments
+			.map((code) => {
+				const policy = catItem.treatmentPolicies.find(
+					(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
+				);
+				return {
+					code,
+					label: LENS_TREATMENT_LABELS[code] ?? code,
+					pricePerUnit: policy?.additionalPrice ?? 0
+				};
+			})
+			.filter((t) => t.pricePerUnit > 0);
 	}
 </script>
 
@@ -331,6 +424,73 @@
 								>{formatPrice(itemLineTotal(item))}</td
 							>
 						</tr>
+						<!-- Lens treatment sub-rows + cost breakdown (5b.2 + 5b.3) -->
+						{#if item.kind === 'lens' && item.lensPair}
+							{@const treatments = getSelectedTreatments(item)}
+							{@const costBreakdown = getLensCostBreakdown(item)}
+							{@const lens = getLensForItem(item)}
+							{#if treatments.length > 0}
+								{#each treatments as treatment (treatment.code)}
+									<tr class="text-slate-400">
+										<td class="px-4 py-1"></td>
+										<td class="px-4 py-1 pl-8 text-xs" colspan="4">
+											<span class="text-violet-500">{treatment.label}</span>
+											<span class="ml-1 text-slate-400">(incluido en precio)</span>
+										</td>
+										<td class="px-4 py-1"></td>
+									</tr>
+								{/each}
+							{/if}
+							{#if costBreakdown && costBreakdown.totalCost > 0}
+								<tr class="bg-slate-50/60">
+									<td class="px-4 py-2" colspan="6">
+										<div
+											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
+										>
+											<span
+												>Cristales ({costBreakdown.eyeCount}): <span class="font-mono font-medium text-slate-500"
+													>{formatPrice(costBreakdown.basePrice)}</span
+												></span
+											>
+											{#if costBreakdown.treatmentPrice > 0}
+												<span
+													>Trat: <span class="font-mono font-medium text-slate-500"
+														>{formatPrice(costBreakdown.treatmentPrice)}</span
+													></span
+												>
+											{/if}
+											{#if costBreakdown.mountingPrice > 0}
+												<span
+													>Montaje: <span class="font-mono font-medium text-slate-500"
+														>{formatPrice(costBreakdown.mountingPrice)}</span
+													></span
+												>
+											{/if}
+											{#if costBreakdown.shippingPrice > 0}
+												<span
+													>Envío: <span class="font-mono font-medium text-slate-500"
+														>{formatPrice(costBreakdown.shippingPrice)}</span
+													></span
+												>
+											{/if}
+
+											<span class="font-semibold text-slate-500"
+												>Costo: <span class="font-mono">{formatPrice(costBreakdown.totalCost)}</span
+												></span
+											>
+											{#if lens?.suggestedMultiplier}
+												{@const suggested = costBreakdown.totalCost * lens.suggestedMultiplier}
+												<span class="text-blue-500"
+													>Sugerido (×{lens.suggestedMultiplier}):
+													<span class="font-mono font-semibold">{formatPrice(suggested)}</span
+													></span
+												>
+											{/if}
+										</div>
+									</td>
+								</tr>
+							{/if}
+						{/if}
 					{/each}
 				</tbody>
 			</table>
@@ -351,27 +511,26 @@
 			/>
 
 			<!-- Confirmation Checkboxes -->
-			{#if linesNeedingConfirmation.length > 0}
+			{#if confirmationGroups.length > 0}
 				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
 					<div class="mb-3 flex items-center gap-2">
 						<AlertTriangle class="h-4 w-4 text-amber-600" />
 						<span class="text-sm font-semibold text-amber-800"> Confirmaciones requeridas </span>
 					</div>
 					<div class="space-y-2">
-						{#each linesNeedingConfirmation as line (line.requirementId)}
-							{@const catalogName = catalogMap.get(line.catalogItemId)?.name ?? '—'}
+						{#each confirmationGroups as group (group.catalogItemId)}
+							{@const allChecked = group.lineIds.every((id) => confirmedLines.has(id))}
 							<label class="flex cursor-pointer items-start gap-3">
 								<input
 									type="checkbox"
-									checked={confirmedLines.has(line.requirementId)}
-									onchange={() => toggleConfirm(line.requirementId)}
+									checked={allChecked}
+									onchange={() => toggleConfirmGroup(group.lineIds)}
 									class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
 								/>
 								<span class="text-sm text-amber-800">
-									Confirmo con el proveedor el pedido por unidad de <span class="font-semibold"
-										>{catalogName}</span
-									>
-									({line.eye === 'OD' ? 'OD' : 'OI'})
+									Confirmo con el proveedor el pedido de
+									<span class="font-semibold">{group.catalogName}</span>
+									({group.eyeLabels})
 								</span>
 							</label>
 						{/each}

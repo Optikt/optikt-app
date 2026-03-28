@@ -22,7 +22,12 @@
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
-	import { buildLensRequirements } from './saleItemHelpers';
+	import {
+		buildLensRequirements,
+		getRequiredEyes,
+		validatePrescriptionFields,
+		hasPrescriptionErrors
+	} from './saleItemHelpers';
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
 	import SaleStep3Summary from './SaleStep3Summary.svelte';
@@ -269,7 +274,17 @@
 		})
 	);
 
-	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasIncompatibleLens);
+	const requiredEyes = $derived(getRequiredEyes(items));
+
+	const rxErrors = $derived(
+		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
+	);
+
+	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
+
+	const step2Valid = $derived(
+		itemsValid && !hasOutOfStockItem && !hasIncompatibleLens && !hasInvalidPrescription
+	);
 
 	const canSubmit = $derived(step1Valid && step2Valid && !submitting);
 

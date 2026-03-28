@@ -20,6 +20,8 @@
 		lensType: string;
 	}
 
+	import type { PrescriptionFieldErrors } from './saleItemHelpers';
+
 	interface Props {
 		/** Bindable prescription values */
 		values: PrescriptionValues;
@@ -29,13 +31,16 @@
 		showAddition?: boolean;
 		/** Compact mode for inline use — reserved for future use */
 		compact?: boolean;
+		/** Per-field validation errors */
+		errors?: PrescriptionFieldErrors;
 	}
 
 	let {
 		values = $bindable(),
 		existingPrescription = null,
 		showAddition: _showAddition = false,
-		compact: _compact = false
+		compact: _compact = false,
+		errors = {}
 	}: Props = $props();
 
 	// Track whether user has been offered autofill
@@ -168,8 +173,11 @@
 						step={0.25}
 						placeholder="-2.00"
 						bind:value={values.odSphere}
-						class="font-mono text-sm"
+						class="font-mono text-sm {errors?.odSphere ? '!border-red-400' : ''}"
 					/>
+					{#if errors?.odSphere}
+						<p class="mt-0.5 text-xs text-red-500">{errors.odSphere}</p>
+					{/if}
 				</div>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Cilindro</Label>
@@ -180,8 +188,11 @@
 						max={0}
 						placeholder="-0.50"
 						bind:value={values.odCylinder}
-						class="font-mono text-sm"
+						class="font-mono text-sm {errors?.odCylinder ? '!border-red-400' : ''}"
 					/>
+					{#if errors?.odCylinder}
+						<p class="mt-0.5 text-xs text-red-500">{errors.odCylinder}</p>
+					{/if}
 				</div>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
@@ -192,8 +203,11 @@
 						max={180}
 						placeholder="180"
 						bind:value={values.odAxis}
-						class="font-mono text-sm"
+						class="font-mono text-sm {errors?.odAxis ? '!border-red-400' : ''}"
 					/>
+					{#if errors?.odAxis}
+						<p class="mt-0.5 text-xs text-red-500">{errors.odAxis}</p>
+					{/if}
 				</div>
 				{#if !isMonofocal}
 					<div>
@@ -205,8 +219,11 @@
 							max={5}
 							placeholder="+1.50"
 							bind:value={values.odAddition}
-							class="font-mono text-sm"
+							class="font-mono text-sm {errors?.odAddition ? '!border-red-400' : ''}"
 						/>
+						{#if errors?.odAddition}
+							<p class="mt-0.5 text-xs text-red-500">{errors.odAddition}</p>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -230,8 +247,11 @@
 						step={0.25}
 						placeholder="-2.00"
 						bind:value={values.oiSphere}
-						class="font-mono text-sm"
+						class="font-mono text-sm {errors?.oiSphere ? '!border-red-400' : ''}"
 					/>
+					{#if errors?.oiSphere}
+						<p class="mt-0.5 text-xs text-red-500">{errors.oiSphere}</p>
+					{/if}
 				</div>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Cilindro</Label>
@@ -242,8 +262,11 @@
 						max={0}
 						placeholder="-0.50"
 						bind:value={values.oiCylinder}
-						class="font-mono text-sm"
+						class="font-mono text-sm {errors?.oiCylinder ? '!border-red-400' : ''}"
 					/>
+					{#if errors?.oiCylinder}
+						<p class="mt-0.5 text-xs text-red-500">{errors.oiCylinder}</p>
+					{/if}
 				</div>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
@@ -254,8 +277,11 @@
 						max={180}
 						placeholder="180"
 						bind:value={values.oiAxis}
-						class="font-mono text-sm"
+						class="font-mono text-sm {errors?.oiAxis ? '!border-red-400' : ''}"
 					/>
+					{#if errors?.oiAxis}
+						<p class="mt-0.5 text-xs text-red-500">{errors.oiAxis}</p>
+					{/if}
 				</div>
 				{#if !isMonofocal}
 					<div>
@@ -267,8 +293,11 @@
 							max={5}
 							placeholder="+1.50"
 							bind:value={values.oiAddition}
-							class="font-mono text-sm"
+							class="font-mono text-sm {errors?.oiAddition ? '!border-red-400' : ''}"
 						/>
+						{#if errors?.oiAddition}
+							<p class="mt-0.5 text-xs text-red-500">{errors.oiAddition}</p>
+						{/if}
 					</div>
 				{/if}
 			</div>

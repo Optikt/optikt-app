@@ -596,7 +596,7 @@ Objetivo:
 - Mostrar precios de tratamientos como líneas separadas (por cristal × 2).
 - Resolver la ambigüedad de precios por unidad/par/montaje/envío con un desglose claro.
 
-### 5b.1 — Validación de prescripción en Step 2
+### 5b.1 — Validación de prescripción en Step 2 ✅
 
 Actualmente el wizard permite avanzar con todos los campos de fórmula vacíos. Reglas:
 
@@ -614,7 +614,7 @@ Archivos afectados:
 - `src/lib/components/sales/NewSaleForm.svelte` — gate de avance Step 2 → Step 3
 - Posiblemente `src/lib/schemas/` — schema Zod reutilizable para prescripción de venta
 
-### 5b.2 — Tratamientos como líneas visibles en Step 2 y Step 3
+### 5b.2 — Tratamientos como líneas visibles en Step 2 y Step 3 ✅
 
 Actualmente los tratamientos se muestran como badges. Mejoras:
 
@@ -635,7 +635,7 @@ Archivos afectados:
 - `src/lib/components/sales/SaleStep3Summary.svelte` — líneas de tratamiento en desglose
 - Posiblemente `src/lib/components/sales/saleItemHelpers.ts` — helpers de cálculo
 
-### 5b.3 — Desglose claro de precios de cristales
+### 5b.3 — Desglose claro de precios de cristales ✅
 
 El pricing actual es confuso porque mezcla conceptos. Resolver:
 
@@ -659,6 +659,7 @@ Archivos afectados:
 ### 5b.4 — Inventario por tipo de fuente (nota de A.2) ✅
 
 Mostrar información de inventario según el source:
+
 - LAB: "Fabricado a medida" (sin stock ni surplus)
 - FINISHED/ON_DEMAND: stock + surplus count (si hay excedentes)
 
