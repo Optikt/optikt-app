@@ -206,12 +206,14 @@ esto tiene sentido — son genéricos. Pero para cristales de **laboratorio** (L
 física tiene una Rx específica y debería rastrearse como `surplus_unit` con su `physicalSignature`.
 
 **Estado actual:**
+
 - `stock` es editable manualmente en el form para todos los tipos de lente.
 - `surplus_units` tiene Rx, tratamientos, trazabilidad — es el modelo correcto para inventario con Rx.
 - **No hay auto-incremento** de stock al crear surplus. Son independientes.
 - El planner usa `stock` solo para FINISHED + CATALOG_STOCK; usa `surplus_units` para todo lo demás.
 
 **Resolución propuesta (futura, no Phase 5):**
+
 1. Ocultar campo `stock` en el form para lentes LAB (solo visible para FINISHED).
 2. Para LAB, mostrar en la detail page un count derivado: `surplus_units WHERE status=AVAILABLE`.
 3. Opcionalmente, agregar flujo de "ingreso manual de inventario" que cree `surplus_units` con Rx.
@@ -607,6 +609,7 @@ Actualmente el wizard permite avanzar con todos los campos de fórmula vacíos. 
 5. Mostrar errores inline por campo, no solo bloquear el botón.
 
 Archivos afectados:
+
 - `src/lib/components/sales/SaleStep2Items.svelte` — lógica de validación
 - `src/lib/components/sales/NewSaleForm.svelte` — gate de avance Step 2 → Step 3
 - Posiblemente `src/lib/schemas/` — schema Zod reutilizable para prescripción de venta
@@ -627,6 +630,7 @@ Actualmente los tratamientos se muestran como badges. Mejoras:
    Solo se cambia la presentación visual en el wizard.
 
 Archivos afectados:
+
 - `src/lib/components/sales/SaleStep2Items.svelte` — mostrar costo de tratamiento expandido
 - `src/lib/components/sales/SaleStep3Summary.svelte` — líneas de tratamiento en desglose
 - Posiblemente `src/lib/components/sales/saleItemHelpers.ts` — helpers de cálculo
@@ -646,6 +650,7 @@ El pricing actual es confuso porque mezcla conceptos. Resolver:
 5. El usuario debe poder editar el precio final, pero ver la sugerencia como referencia.
 
 Archivos afectados:
+
 - `src/lib/components/sales/SaleStep2Items.svelte` — desglose visual de precio
 - `src/lib/components/sales/SaleStep3Summary.svelte` — resumen con líneas separadas
 - `src/lib/shared/planning/fulfillmentPlanner.ts` — ya tiene `LineCostBreakdown`, verificar completitud
@@ -657,6 +662,7 @@ Ocultar campo `stock` en el form de lentes para source=LAB. Solo visible para FI
 Mostrar en detail page de LAB lenses un count derivado de `surplus_units` disponibles.
 
 Archivos afectados:
+
 - `src/lib/components/lenses/LensCatalogForm.svelte` — condicional por source
 - `src/routes/(app)/lenses/[id]/+page.svelte` — mostrar surplus count para LAB
 
