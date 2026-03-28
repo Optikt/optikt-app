@@ -16,6 +16,8 @@ import { customers } from './customers';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
 import { prescriptions } from './prescriptions';
+import { surplusUnits } from './surplusUnits';
+import type { FulfillmentCostBreakdown } from '../../../shared/contracts/fulfillment';
 
 // ============================================================================
 // SALES (ORDERS)
@@ -83,7 +85,15 @@ export const saleItems = pgTable(
 		productId: uuid('product_id'),
 		lensCatalogItemId: uuid('lens_catalog_item_id'),
 		lensFulfillmentMode: varchar('lens_fulfillment_mode'),
+		/** Which eye this lens item is for (OD or OI). Null for product items. */
+		eye: varchar(),
+		/** How this item is sourced: SUPPLIER_ORDER, SURPLUS_STOCK, PAIR_BUNDLED, etc. */
+		fulfillmentSource: varchar('fulfillment_source'),
+		/** Surplus unit consumed by this item (null if not from surplus) */
+		surplusUnitId: uuid('surplus_unit_id'),
 		selectedTreatments: json('selected_treatments').$type<string[]>(),
+		/** Planner cost breakdown snapshot */
+		costBreakdown: json('cost_breakdown').$type<FulfillmentCostBreakdown>(),
 		/** Link to customer prescription used for this lens item */
 		prescriptionId: uuid('prescription_id'),
 		/** Snapshot: Right eye sphere at time of sale */
@@ -147,7 +157,12 @@ export const saleItems = pgTable(
 			columns: [table.saleId],
 			foreignColumns: [sales.id],
 			name: 'sale_items_sale_id_fkey'
-		}).onDelete('cascade')
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.surplusUnitId],
+			foreignColumns: [surplusUnits.id],
+			name: 'sale_items_surplus_unit_id_fkey'
+		}).onDelete('set null')
 	]
 );
 

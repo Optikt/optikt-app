@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from 'flowbite-svelte';
-	import { ArrowLeft, User, Calendar, Package, FileText, Hash, XCircle, Eye } from '@lucide/svelte';
+	import { ArrowLeft, User, Calendar, Package, FileText, Hash, CircleX, Eye } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -115,7 +115,7 @@
 			{#if isPending}
 				<div class="flex gap-2">
 					<Button color="red" outline onclick={() => (showCancelModal = true)}>
-						<XCircle class="mr-2 h-5 w-5" />
+						<CircleX class="mr-2 h-5 w-5" />
 						Cancelar Venta
 					</Button>
 				</div>

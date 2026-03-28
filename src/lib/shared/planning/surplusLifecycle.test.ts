@@ -41,10 +41,16 @@ describe('surplus lifecycle — state transitions', () => {
 		expect(isValidTransition(SurplusUnitStatus.RESERVED, SurplusUnitStatus.RESERVED)).toBe(false);
 	});
 
-	// --- CONSUMED terminal ---
-	it('CONSUMED → any is invalid (terminal state)', () => {
-		expect(isValidTransition(SurplusUnitStatus.CONSUMED, SurplusUnitStatus.AVAILABLE)).toBe(false);
+	// --- CONSUMED transitions ---
+	it('CONSUMED → AVAILABLE is valid (sale cancelled)', () => {
+		expect(isValidTransition(SurplusUnitStatus.CONSUMED, SurplusUnitStatus.AVAILABLE)).toBe(true);
+	});
+
+	it('CONSUMED → RESERVED is invalid', () => {
 		expect(isValidTransition(SurplusUnitStatus.CONSUMED, SurplusUnitStatus.RESERVED)).toBe(false);
+	});
+
+	it('CONSUMED → VOID is invalid (cancel first, then void if needed)', () => {
 		expect(isValidTransition(SurplusUnitStatus.CONSUMED, SurplusUnitStatus.VOID)).toBe(false);
 	});
 
@@ -76,17 +82,22 @@ describe('surplus lifecycle — helpers', () => {
 		expect(transitions).toHaveLength(3);
 	});
 
-	it('getValidTransitionsFrom CONSUMED returns empty (terminal)', () => {
-		expect(getValidTransitionsFrom(SurplusUnitStatus.CONSUMED)).toHaveLength(0);
+	it('getValidTransitionsFrom CONSUMED returns AVAILABLE', () => {
+		const transitions = getValidTransitionsFrom(SurplusUnitStatus.CONSUMED);
+		expect(transitions).toContain(SurplusUnitStatus.AVAILABLE);
+		expect(transitions).toHaveLength(1);
 	});
 
 	it('getValidTransitionsFrom VOID returns empty (terminal)', () => {
 		expect(getValidTransitionsFrom(SurplusUnitStatus.VOID)).toHaveLength(0);
 	});
 
-	it('CONSUMED and VOID are terminal states', () => {
-		expect(isTerminalStatus(SurplusUnitStatus.CONSUMED)).toBe(true);
+	it('VOID is a terminal state', () => {
 		expect(isTerminalStatus(SurplusUnitStatus.VOID)).toBe(true);
+	});
+
+	it('CONSUMED is not terminal (can be restored on sale cancel)', () => {
+		expect(isTerminalStatus(SurplusUnitStatus.CONSUMED)).toBe(false);
 	});
 
 	it('AVAILABLE and RESERVED are not terminal states', () => {

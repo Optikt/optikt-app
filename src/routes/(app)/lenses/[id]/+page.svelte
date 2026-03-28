@@ -34,6 +34,7 @@
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
+	const surplusCount = untrack(() => data.surplusCount);
 
 	// Delete modal state
 	let showDeleteModal = $state(false);
@@ -391,15 +392,34 @@
 							</p>
 						</div>
 					{/if}
-					<!-- Stock + Metadata -->
+					<!-- Inventario por tipo de fuente -->
 					<div class="border-t border-slate-100 pt-4">
-						<div class="mb-4 flex items-center justify-between">
-							<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
-								<Package class="h-4 w-4 text-teal-500" />
-								Stock
-							</span>
-							<span class="text-xl font-bold text-slate-900">{item.stock ?? '—'}</span>
-						</div>
+						{#if item.source === 'LAB'}
+							<div class="mb-4 flex items-center gap-1.5">
+								<FlaskConical class="h-4 w-4 text-violet-500" />
+								<span class="text-sm text-slate-500">Fabricado a medida por el laboratorio</span>
+							</div>
+						{:else}
+							<div class="mb-4 flex items-center justify-between">
+								<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+									<Package class="h-4 w-4 text-teal-500" />
+									Stock
+								</span>
+								<span class="text-xl font-bold text-slate-900">{item.stock ?? 0}</span>
+							</div>
+							{#if surplusCount > 0}
+								<div class="mb-4 flex items-center justify-between">
+									<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+										<Package class="h-4 w-4 text-amber-500" />
+										Excedentes
+									</span>
+									<span class="text-xl font-bold text-amber-600">{surplusCount}</span>
+								</div>
+								<p class="-mt-2 mb-3 text-xs text-slate-400">
+									Unidades sobrantes de compras por par, con Rx específica
+								</p>
+							{/if}
+						{/if}
 					</div>
 
 					<div class="border-t border-slate-100 pt-4">

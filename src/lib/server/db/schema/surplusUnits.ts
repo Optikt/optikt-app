@@ -11,8 +11,8 @@ import {
 import { lensCatalogItems } from './lenses';
 import { suppliers } from './suppliers';
 import { sales } from './sales';
-import { SurplusOriginType, SurplusUnitStatus } from '$lib/shared/contracts/fulfillment';
-import type { LensPhysicalSignature, FulfillmentCostBreakdown } from '$lib/shared/contracts';
+import { SurplusOriginType, SurplusUnitStatus } from '../../../shared/contracts/fulfillment';
+import type { LensPhysicalSignature, FulfillmentCostBreakdown } from '../../../shared/contracts';
 import { enumValues } from './utils';
 
 // ============================================================================
@@ -70,7 +70,7 @@ export const surplusUnits = pgTable(
 			'btree',
 			table.supplierId.asc().nullsLast().op('uuid_ops')
 		),
-		index('ix_surplus_units_status').using('btree', table.status.asc().nullsLast().op('text_ops')),
+		index('ix_surplus_units_status').using('btree', table.status),
 		index('ix_surplus_units_origin_sale_id').using(
 			'btree',
 			table.originSaleId.asc().nullsLast().op('uuid_ops')

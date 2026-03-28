@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { ShoppingCart, Eye, XCircle } from '@lucide/svelte';
+	import { ShoppingCart, Eye, CircleX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { DataTable, SaleStatusBadge, ConfirmModal } from '$lib/components/ui';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
@@ -142,7 +142,7 @@
 						class="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
 						title="Cancelar venta"
 					>
-						<XCircle class="h-5 w-5" />
+						<CircleX class="h-5 w-5" />
 					</button>
 				{/if}
 			</div>

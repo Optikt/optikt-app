@@ -15,13 +15,13 @@ import {
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
 import { enumValues } from './utils';
-import { LensCatalogSource, LensPricingUnit } from '$lib/shared/enums/lensTypes';
+import { LensCatalogSource, LensPricingUnit } from '../../../shared/enums/lensTypes';
 import {
 	PhotochromicMode,
 	LensTreatmentAvailability,
 	LensRangeAvailability,
 	type LensTreatmentPolicy
-} from '$lib/shared/contracts/lenses';
+} from '../../../shared/contracts/lenses';
 
 // ============================================================================
 // LENS ENUMS — derived from shared enums / contracts (single source of truth)

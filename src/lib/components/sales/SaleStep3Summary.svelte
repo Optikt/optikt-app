@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
 	import { Button, Select, Input, Spinner } from 'flowbite-svelte';
 	import {
 		ShoppingCart,
@@ -8,41 +9,34 @@
 		FileText,
 		Hash,
 		Eye,
-		Glasses,
-		Sun,
 		Package,
-		Microscope
+		AlertTriangle
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
+	import { formatPrice, dateToISODateString } from '$lib/utils';
 	import {
-		formatPrice,
-		checkLensMatch,
-		hasPrescriptionData,
-		MATCH_DISPLAY,
-		dateToISODateString
-	} from '$lib/utils';
-	import type { LensMatchDetail, PrescriptionForMatching } from '$lib/utils/lensMatching';
+		findProduct,
+		itemLineTotal,
+		getItemName as _getItemName,
+		findLensItem
+	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
+	import { LENS_TREATMENT_LABELS, LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import {
-		ProductType,
-		getProductTypeLabel,
-		getProductTypeBadgeColor
-	} from '$lib/shared/enums/productTypes';
-	import { LensType, getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
-	import type { Component } from 'svelte';
-	import type { PrescriptionValues } from './PrescriptionInput.svelte';
+	import { getProductTypeLabel, getProductTypeBadgeColor } from '$lib/shared/enums/productTypes';
+	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
+	import type { FulfillmentPlanResult, CatalogItemForPlanning } from '$lib/shared/planning';
+	import FulfillmentPlanPanel from './FulfillmentPlanPanel.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
-		prescriptionValues: PrescriptionValues;
 		customerId: string;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
@@ -53,15 +47,20 @@
 		nextOrderNumber?: number;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
+		planResult: FulfillmentPlanResult | null;
+		catalogMap: Map<string, CatalogItemForPlanning>;
+		singleUnitOverrides: Map<string, 'FORCE_PAIR'>;
+		surplusRxChoices: Map<string, 'SAME_RX' | 'UNDEFINED'>;
 		submitting: boolean;
 		canSubmit: boolean;
 		onprev: () => void;
 		onsubmit: () => void;
+		onoverridechange: (catalogItemId: string, action: 'FORCE_PAIR' | 'UNDO') => void;
+		onsurplusrxchange: (catalogItemId: string, choice: 'SAME_RX' | 'UNDEFINED') => void;
 	}
 
 	let {
 		items,
-		prescriptionValues,
 		customerId,
 		selectedCustomer,
 		newCustomer,
@@ -72,27 +71,85 @@
 		nextOrderNumber,
 		products,
 		lensItems,
+		planResult,
+		catalogMap,
+		singleUnitOverrides,
+		surplusRxChoices,
 		submitting,
 		canSubmit,
 		onprev,
-		onsubmit
+		onsubmit,
+		onoverridechange,
+		onsurplusrxchange
 	}: Props = $props();
+
+	// ============================================================================
+	// CONFIRMATION STATE
+	// ============================================================================
+
+	/** Track which plan lines the user has confirmed */
+	let confirmedLines = new SvelteSet<string>();
+	let surplusAcknowledged = $state(false);
+
+	function toggleConfirm(requirementId: string) {
+		if (confirmedLines.has(requirementId)) confirmedLines.delete(requirementId);
+		else confirmedLines.add(requirementId);
+	}
+
+	/** Toggle all lines in a confirmation group at once */
+	function toggleConfirmGroup(lineIds: string[]) {
+		const allConfirmedInGroup = lineIds.every((id) => confirmedLines.has(id));
+		for (const id of lineIds) {
+			if (allConfirmedInGroup) confirmedLines.delete(id);
+			else confirmedLines.add(id);
+		}
+	}
+
+	/** Lines that require confirmation (excluding overridden ones) */
+	const linesNeedingConfirmation = $derived(
+		planResult?.lines.filter(
+			(l) => l.requiresConfirmation && !singleUnitOverrides.has(l.catalogItemId)
+		) ?? []
+	);
+
+	/** Group confirmation lines by catalog item for consolidated checkboxes */
+	const confirmationGroups = $derived.by(() => {
+		const map = new Map<string, string[]>();
+		const eyes = new Map<string, string[]>();
+		for (const line of linesNeedingConfirmation) {
+			const existing = map.get(line.catalogItemId);
+			if (existing) existing.push(line.requirementId);
+			else map.set(line.catalogItemId, [line.requirementId]);
+			const eyeList = eyes.get(line.catalogItemId);
+			const eyeLabel = line.eye === 'OD' ? 'OD' : 'OI';
+			if (eyeList) eyeList.push(eyeLabel);
+			else eyes.set(line.catalogItemId, [eyeLabel]);
+		}
+		return Array.from(map.entries()).map(([catId, lineIds]) => ({
+			catalogItemId: catId,
+			catalogName: catalogMap.get(catId)?.name ?? '—',
+			lineIds,
+			eyeLabels: eyes.get(catId)?.join(' + ') ?? ''
+		}));
+	});
+
+	/** All confirmations acknowledged? */
+	const allConfirmed = $derived(
+		linesNeedingConfirmation.length === 0 ||
+			linesNeedingConfirmation.every((l) => confirmedLines.has(l.requirementId))
+	);
+
+	const surplusItems = $derived(planResult?.surplus ?? []);
+	const surplusUnitsTotal = $derived(
+		surplusItems.reduce((sum, item) => sum + item.surplusUnits, 0)
+	);
+	const hasSurplusToAcknowledge = $derived(surplusItems.length > 0);
 
 	// ============================================================================
 	// DERIVED TOTALS
 	// ============================================================================
 
-	function computeItemDiscount(item: SaleItemRow): number {
-		const lineTotal = item.unitPrice * item.quantity;
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * lineTotal;
-		}
-		return item.discount;
-	}
-
-	function itemLineTotal(item: SaleItemRow): number {
-		return item.unitPrice * item.quantity - computeItemDiscount(item);
-	}
+	const hasLensItems = $derived(items.some((i) => i.kind === 'lens'));
 
 	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 
@@ -102,42 +159,21 @@
 
 	const total = $derived(Math.max(0, subtotal - globalDiscountAmount));
 
+	/** Can submit? All confirmations + surplus acknowledgement + parent canSubmit */
+	const canSubmitFinal = $derived(
+		canSubmit && allConfirmed && (!hasSurplusToAcknowledge || surplusAcknowledged)
+	);
+
 	// ============================================================================
 	// HELPERS
 	// ============================================================================
 
-	const PRODUCT_TYPE_ICON: Record<string, Component> = {
-		[ProductType.FRAME]: Glasses,
-		[ProductType.SUNGLASSES]: Sun,
-		[ProductType.CONTACT_LENS]: Eye,
-		[ProductType.ACCESSORY]: Package
-	};
-
-	function getProductIcon(type: string): Component {
-		return PRODUCT_TYPE_ICON[type] ?? Microscope;
-	}
-
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
-		if (item.kind === 'product' && item.productId) {
-			return products.find((p) => p.id === item.productId);
-		}
-		return undefined;
-	}
-
-	function getLensItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
-		if (item.kind === 'lens' && item.lensCatalogItemId) {
-			return lensItems.find((l) => l.id === item.lensCatalogItemId);
-		}
-		return undefined;
+		return findProduct(item, products);
 	}
 
 	function getItemName(item: SaleItemRow): string {
-		if (item.kind === 'product') {
-			const p = getProduct(item);
-			return p?.name ?? '—';
-		}
-		const l = getLensItem(item);
-		return l?.name ?? '—';
+		return _getItemName(item, products, lensItems);
 	}
 
 	function getItemProductType(item: SaleItemRow): string | null {
@@ -145,34 +181,61 @@
 		return p?.type ?? null;
 	}
 
-	function getLensMatch(item: SaleItemRow): LensMatchDetail | null {
-		if (item.kind !== 'lens' || !item.lensCatalogItemId) return null;
-		const lens = lensItems.find((l) => l.id === item.lensCatalogItemId);
-		if (!lens) return null;
-		if (prescriptionValues.lensType !== lens.type) {
-			return { overall: 'none', od: 'none', os: 'none' };
+	function getLensForItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
+		return findLensItem(item, lensItems);
+	}
+
+	/** Get the number of enabled eyes for a lens item */
+	function getEnabledEyeCount(item: SaleItemRow): number {
+		if (!item.lensPair) return 0;
+		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
+	}
+
+	/** Compute lens cost breakdown from catalog data (mounting/shipping only ONCE, not per eye) */
+	function getLensCostBreakdown(item: SaleItemRow) {
+		if (item.kind !== 'lens' || !item.lensPair) return null;
+		const catItem = catalogMap.get(item.lensPair.catalogItemId);
+		if (!catItem) return null;
+
+		const eyeCount = getEnabledEyeCount(item);
+		if (eyeCount === 0) return null;
+
+		const basePrice = catItem.basePrice * eyeCount;
+
+		let treatmentPerUnit = 0;
+		for (const code of item.lensPair.selectedOptionalTreatments) {
+			const policy = catItem.treatmentPolicies.find(
+				(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
+			);
+			if (policy) treatmentPerUnit += policy.additionalPrice;
 		}
-		const parseNum = (v: string): number | null => {
-			if (v === '') return null;
-			const n = parseFloat(v);
-			return isNaN(n) ? null : n;
-		};
-		const rx: PrescriptionForMatching = {
-			od: {
-				sphere: parseNum(prescriptionValues.odSphere),
-				cylinder: parseNum(prescriptionValues.odCylinder),
-				axis: parseNum(prescriptionValues.odAxis),
-				addition: parseNum(prescriptionValues.odAddition)
-			},
-			os: {
-				sphere: parseNum(prescriptionValues.osSphere),
-				cylinder: parseNum(prescriptionValues.osCylinder),
-				axis: parseNum(prescriptionValues.osAxis),
-				addition: parseNum(prescriptionValues.osAddition)
-			}
-		};
-		if (!hasPrescriptionData(rx)) return null;
-		return checkLensMatch(lens.ranges, rx);
+		const treatmentPrice = treatmentPerUnit * eyeCount;
+
+		const mountingPrice = catItem.purchasePolicy.mountingPrice;
+		const shippingPrice = catItem.purchasePolicy.shippingPrice;
+		const totalCost = basePrice + treatmentPrice + mountingPrice + shippingPrice;
+
+		return { basePrice, treatmentPrice, mountingPrice, shippingPrice, totalCost, eyeCount };
+	}
+
+	/** Get selected treatment details for a lens item */
+	function getSelectedTreatments(item: SaleItemRow) {
+		if (item.kind !== 'lens' || !item.lensPair) return [];
+		const catItem = catalogMap.get(item.lensPair.catalogItemId);
+		if (!catItem) return [];
+
+		return item.lensPair.selectedOptionalTreatments
+			.map((code) => {
+				const policy = catItem.treatmentPolicies.find(
+					(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
+				);
+				return {
+					code,
+					label: LENS_TREATMENT_LABELS[code] ?? code,
+					pricePerUnit: policy?.additionalPrice ?? 0
+				};
+			})
+			.filter((t) => t.pricePerUnit > 0);
 	}
 </script>
 
@@ -279,7 +342,7 @@
 		</div>
 	</div>
 
-	<!-- Row 2: Items Table (full width) -->
+	<!-- Row 2: All Items Table (products + lenses unified) -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">Detalle de Ítems</p>
 		<div class="overflow-x-auto rounded-lg border border-slate-200">
@@ -297,7 +360,6 @@
 				<tbody class="divide-y divide-slate-100">
 					{#each items as item (item.id)}
 						{@const productType = getItemProductType(item)}
-						{@const rxMatch = getLensMatch(item)}
 						<tr class="text-slate-700 hover:bg-slate-50/50">
 							<td class="px-4 py-3">
 								{#if item.kind === 'lens'}
@@ -309,7 +371,7 @@
 									</span>
 								{:else if productType}
 									{@const badgeColor = getProductTypeBadgeColor(productType)}
-									{@const Icon = getProductIcon(productType)}
+									{@const Icon = getProductTypeIcon(productType)}
 									<span
 										class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
 										{badgeColor === 'blue' ? 'bg-blue-100 text-blue-700' : ''}
@@ -332,97 +394,18 @@
 							</td>
 							<td class="px-4 py-3">
 								<p class="text-base font-medium">{getItemName(item)}</p>
-								{#if item.kind === 'product'}
-									{@const product = getProduct(item)}
-									{#if product}
-										<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-											{#if product.sku}
-												<span class="font-mono text-slate-400">{product.sku}</span>
-											{/if}
-											{#if product.brand}
-												<span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
-													>{product.brand.name}</span
-												>
-											{/if}
-										</div>
-									{/if}
-								{:else}
-									{@const lens = getLensItem(item)}
-									<!-- Lens badges row -->
+								{#if item.kind === 'product' && getProduct(item)}
+									{@const product = getProduct(item)!}
 									<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-										{#if lens}
-											<span
-												class="rounded px-1.5 py-0.5 font-medium {lens.source === 'FINISHED'
-													? 'bg-emerald-50 text-emerald-600'
-													: 'bg-sky-50 text-sky-600'}">{getLensSourceLabel(lens.source)}</span
+										{#if product.sku}
+											<span class="font-mono text-slate-400">{product.sku}</span>
+										{/if}
+										{#if product.brand}
+											<span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
+												>{product.brand.name}</span
 											>
-											<span class="rounded bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600"
-												>{getLensTypeLabel(lens.type)}</span
-											>
-											{#if lens.material}
-												<span class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-500"
-													>{lens.material.name}</span
-												>
-											{/if}
-											{#if lens.supplier}
-												<span class="text-slate-400">&middot; {lens.supplier.name}</span>
-											{/if}
 										{/if}
 									</div>
-									<!-- Prescription row — visually separated -->
-									{#if prescriptionValues.odSphere || prescriptionValues.osSphere}
-										{@const showAddition =
-											prescriptionValues.lensType !== LensType.MONOFOCAL &&
-											lens?.type !== LensType.MONOFOCAL}
-										<div
-											class="mt-2 inline-grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
-										>
-											<!-- OD row -->
-											<span class="flex items-center gap-1 font-semibold text-blue-600">
-												<Eye class="h-3.5 w-3.5 text-blue-500" />
-												OD
-											</span>
-											<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
-												{prescriptionValues.odSphere || '—'}
-												<span class="text-slate-400">/</span>
-												{prescriptionValues.odCylinder || '—'}
-												{#if prescriptionValues.odAxis}
-													<span class="text-slate-400">x</span>
-													{prescriptionValues.odAxis}°
-												{/if}
-												{#if prescriptionValues.odAddition && showAddition}
-													<span class="text-slate-400">Add</span>
-													{prescriptionValues.odAddition}
-												{/if}
-											</span>
-											<!-- OS row -->
-											<span class="flex items-center gap-1 font-semibold text-violet-600">
-												<Eye class="h-3.5 w-3.5 text-violet-500" />
-												OS
-											</span>
-											<span class="flex items-center gap-1.5 font-mono font-medium text-slate-800">
-												{prescriptionValues.osSphere || '—'}
-												<span class="text-slate-400">/</span>
-												{prescriptionValues.osCylinder || '—'}
-												{#if prescriptionValues.osAxis}
-													<span class="text-slate-400">x</span>
-													{prescriptionValues.osAxis}°
-												{/if}
-												{#if prescriptionValues.osAddition && showAddition}
-													<span class="text-slate-400">Add</span>
-													{prescriptionValues.osAddition}
-												{/if}
-												{#if rxMatch}
-													{@const display = MATCH_DISPLAY[rxMatch.overall]}
-													<span
-														class="ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold {display.bgColor} {display.color}"
-													>
-														{display.label}
-													</span>
-												{/if}
-											</span>
-										</div>
-									{/if}
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
@@ -441,13 +424,187 @@
 								>{formatPrice(itemLineTotal(item))}</td
 							>
 						</tr>
+						<!-- Lens treatment sub-rows + cost breakdown (5b.2 + 5b.3) -->
+						{#if item.kind === 'lens' && item.lensPair}
+							{@const treatments = getSelectedTreatments(item)}
+							{@const costBreakdown = getLensCostBreakdown(item)}
+							{@const lens = getLensForItem(item)}
+							{#if treatments.length > 0}
+								{#each treatments as treatment (treatment.code)}
+									<tr class="text-slate-400">
+										<td class="px-4 py-1"></td>
+										<td class="px-4 py-1 pl-8 text-xs" colspan="4">
+											<span class="text-violet-500">{treatment.label}</span>
+											<span class="ml-1 text-slate-400">(incluido en precio)</span>
+										</td>
+										<td class="px-4 py-1"></td>
+									</tr>
+								{/each}
+							{/if}
+							{#if costBreakdown && costBreakdown.totalCost > 0}
+								<tr class="bg-slate-50/60">
+									<td class="px-4 py-2" colspan="6">
+										<div
+											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
+										>
+											<span
+												>Cristales ({costBreakdown.eyeCount}): <span class="font-mono font-medium text-slate-500"
+													>{formatPrice(costBreakdown.basePrice)}</span
+												></span
+											>
+											{#if costBreakdown.treatmentPrice > 0}
+												<span
+													>Trat: <span class="font-mono font-medium text-slate-500"
+														>{formatPrice(costBreakdown.treatmentPrice)}</span
+													></span
+												>
+											{/if}
+											{#if costBreakdown.mountingPrice > 0}
+												<span
+													>Montaje: <span class="font-mono font-medium text-slate-500"
+														>{formatPrice(costBreakdown.mountingPrice)}</span
+													></span
+												>
+											{/if}
+											{#if costBreakdown.shippingPrice > 0}
+												<span
+													>Envío: <span class="font-mono font-medium text-slate-500"
+														>{formatPrice(costBreakdown.shippingPrice)}</span
+													></span
+												>
+											{/if}
+
+											<span class="font-semibold text-slate-500"
+												>Costo: <span class="font-mono">{formatPrice(costBreakdown.totalCost)}</span
+												></span
+											>
+											{#if lens?.suggestedMultiplier}
+												{@const suggested = costBreakdown.totalCost * lens.suggestedMultiplier}
+												<span class="text-blue-500"
+													>Sugerido (×{lens.suggestedMultiplier}):
+													<span class="font-mono font-semibold">{formatPrice(suggested)}</span
+													></span
+												>
+											{/if}
+										</div>
+									</td>
+								</tr>
+							{/if}
+						{/if}
 					{/each}
 				</tbody>
 			</table>
 		</div>
 	</div>
 
-	<!-- Row 3: Discount + Total side by side -->
+	<!-- Row 3: Fulfillment Plan — logistics only (only if there are lens items) -->
+	{#if hasLensItems && planResult}
+		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+			<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">
+				Plan de Cumplimiento
+			</p>
+			<FulfillmentPlanPanel
+				plan={planResult}
+				catalog={catalogMap}
+				{singleUnitOverrides}
+				{onoverridechange}
+			/>
+
+			<!-- Confirmation Checkboxes -->
+			{#if confirmationGroups.length > 0}
+				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+					<div class="mb-3 flex items-center gap-2">
+						<AlertTriangle class="h-4 w-4 text-amber-600" />
+						<span class="text-sm font-semibold text-amber-800"> Confirmaciones requeridas </span>
+					</div>
+					<div class="space-y-2">
+						{#each confirmationGroups as group (group.catalogItemId)}
+							{@const allChecked = group.lineIds.every((id) => confirmedLines.has(id))}
+							<label class="flex cursor-pointer items-start gap-3">
+								<input
+									type="checkbox"
+									checked={allChecked}
+									onchange={() => toggleConfirmGroup(group.lineIds)}
+									class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+								/>
+								<span class="text-sm text-amber-800">
+									Confirmo con el proveedor el pedido de
+									<span class="font-semibold">{group.catalogName}</span>
+									({group.eyeLabels})
+								</span>
+							</label>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if hasSurplusToAcknowledge}
+				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+					<div class="mb-3 flex items-center gap-2">
+						<AlertTriangle class="h-4 w-4 text-amber-600" />
+						<span class="text-sm font-semibold text-amber-800"> Confirmación de excedente </span>
+					</div>
+					<p class="mb-3 text-sm text-amber-800">
+						Esta venta generará <span class="font-semibold"
+							>{surplusUnitsTotal} unidad(es) de excedente</span
+						>
+						que quedarán en stock.
+					</p>
+
+					<!-- Surplus Rx Decision Radios -->
+					{#each surplusItems as surplus (surplus.catalogItemId)}
+						{@const catalogName = catalogMap.get(surplus.catalogItemId)?.name ?? '—'}
+						{@const rxChoice = surplusRxChoices.get(surplus.catalogItemId) ?? 'UNDEFINED'}
+						{#if surplus.predeterminedPrescription === null}
+							<div class="mb-3 rounded-md border border-amber-100 bg-white px-3 py-2">
+								<p class="mb-2 text-sm font-medium text-amber-800">
+									¿El excedente de <span class="font-semibold">{catalogName}</span> tendrá la misma Rx
+									que el ojo pedido?
+								</p>
+								<div class="flex gap-4">
+									<label class="flex cursor-pointer items-center gap-2">
+										<input
+											type="radio"
+											name="surplus-rx-{surplus.catalogItemId}"
+											value="SAME_RX"
+											checked={rxChoice === 'SAME_RX'}
+											onchange={() => onsurplusrxchange(surplus.catalogItemId, 'SAME_RX')}
+											class="h-4 w-4 border-amber-300 text-amber-600 focus:ring-amber-500"
+										/>
+										<span class="text-sm text-amber-800">Sí, misma Rx</span>
+									</label>
+									<label class="flex cursor-pointer items-center gap-2">
+										<input
+											type="radio"
+											name="surplus-rx-{surplus.catalogItemId}"
+											value="UNDEFINED"
+											checked={rxChoice === 'UNDEFINED'}
+											onchange={() => onsurplusrxchange(surplus.catalogItemId, 'UNDEFINED')}
+											class="h-4 w-4 border-amber-300 text-amber-600 focus:ring-amber-500"
+										/>
+										<span class="text-sm text-amber-800">No, Rx por definir</span>
+									</label>
+								</div>
+							</div>
+						{/if}
+					{/each}
+
+					<label class="flex cursor-pointer items-start gap-3">
+						<input
+							type="checkbox"
+							bind:checked={surplusAcknowledged}
+							class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+						/>
+						<span class="text-sm text-amber-800">
+							Confirmo que entiendo y acepto el excedente que esta venta dejará en stock
+						</span>
+					</label>
+				</div>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Row 4: Discount + Total side by side -->
 	<div class="grid gap-5 lg:grid-cols-2">
 		<!-- Discount -->
 		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -506,7 +663,7 @@
 	</Button>
 	<div class="flex gap-3">
 		<Button color="light" size="lg" href={resolve('/sales')}>Cancelar</Button>
-		<Button color="blue" size="lg" disabled={!canSubmit} onclick={onsubmit}>
+		<Button color="blue" size="lg" disabled={!canSubmitFinal} onclick={onsubmit}>
 			{#if submitting}
 				<Spinner size="4" class="mr-2" />
 			{/if}

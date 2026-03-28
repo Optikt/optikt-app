@@ -28,6 +28,9 @@
 	<NewSaleForm
 		products={data.products}
 		lensItems={data.lensItems}
+		catalogItems={data.catalogItems}
+		availableSurplus={data.availableSurplus}
+		suppliers={data.suppliers}
 		nextOrderNumber={data.nextOrderNumber}
 	/>
 </div>

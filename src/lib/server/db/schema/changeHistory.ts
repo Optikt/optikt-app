@@ -57,19 +57,24 @@ export const changeHistory = pgTable(
 // TYPES
 // ============================================================================
 
-export type EntityType =
-	| 'product'
-	| 'customer'
-	| 'prescription'
-	| 'sale'
-	| 'sale_item'
-	| 'sale_payment'
-	| 'lens_catalog_item'
-	| 'supplier'
-	| 'brand'
-	| 'material'
-	| 'lens_material'
-	| 'lens_treatment';
+export const ALL_ENTITY_TYPES = [
+	'product',
+	'customer',
+	'prescription',
+	'sale',
+	'sale_item',
+	'sale_payment',
+	'lens_catalog_item',
+	'supplier',
+	'supplier_treatment_policy',
+	'brand',
+	'material',
+	'lens_material',
+	'lens_treatment',
+	'surplus_unit'
+] as const;
+
+export type EntityType = (typeof ALL_ENTITY_TYPES)[number];
 
 export type ActionType = 'create' | 'update' | 'delete' | 'restore';
 

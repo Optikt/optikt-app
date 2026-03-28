@@ -2,7 +2,7 @@ import { eq, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'dr
 import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { suppliers, type Supplier, type NewSupplier } from '$lib/server/db/schema';
-import type { InferSelectedRow } from '$lib/server/db/types';
+import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
 
 /** Sortable supplier columns */
 export type SupplierOrderBy = 'name' | 'type' | 'createdAt' | 'updatedAt';
@@ -120,9 +120,9 @@ export async function findSupplierByRif(rif: string): Promise<Supplier | null> {
 /**
  * Create a new supplier
  */
-export async function createSupplier(data: NewSupplier): Promise<Supplier> {
+export async function createSupplier(data: NewSupplier, executor: DbOrTx = db): Promise<Supplier> {
 	const now = new Date();
-	const [supplier] = await db
+	const [supplier] = await executor
 		.insert(suppliers)
 		.values({
 			...data,
@@ -151,9 +151,10 @@ export async function quickCreateSupplier(name: string): Promise<Supplier> {
  */
 export async function updateSupplier(
 	id: string,
-	data: Partial<Omit<Supplier, 'id' | 'createdAt'>>
+	data: Partial<Omit<Supplier, 'id' | 'createdAt'>>,
+	executor: DbOrTx = db
 ): Promise<Supplier | null> {
-	const [supplier] = await db
+	const [supplier] = await executor
 		.update(suppliers)
 		.set({ ...data, updatedAt: new Date() })
 		.where(eq(suppliers.id, id))
@@ -185,4 +186,35 @@ export async function restoreSupplier(id: string): Promise<Supplier> {
 		.where(eq(suppliers.id, id))
 		.returning();
 	return supplier;
+}
+
+/**
+ * Resolve a pending supplier inside a transaction.
+ * Looks up by name (case-insensitive); creates a DISTRIBUTOR if not found.
+ * Returns the resolved supplier ID.
+ */
+export async function resolvePendingSupplier(
+	pendingName: string,
+	now: Date,
+	executor: DbOrTx = db
+): Promise<string> {
+	const [existing] = await executor
+		.select()
+		.from(suppliers)
+		.where(and(ilike(suppliers.name, pendingName), isNull(suppliers.deletedAt)));
+
+	if (existing) return existing.id;
+
+	const [created] = await executor
+		.insert(suppliers)
+		.values({
+			id: crypto.randomUUID(),
+			name: pendingName,
+			type: 'DISTRIBUTOR',
+			primaryPhone: '',
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created.id;
 }

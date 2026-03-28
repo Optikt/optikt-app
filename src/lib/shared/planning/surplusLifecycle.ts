@@ -8,6 +8,7 @@ import { SurplusUnitStatus } from '$lib/shared/contracts/fulfillment';
  * RESERVED → CONSUMED (sale confirmed)
  * RESERVED → AVAILABLE (sale cancelled, plan changed)
  * RESERVED → VOID (damaged while reserved)
+ * CONSUMED → AVAILABLE (sale cancelled — unit was never physically used)
  */
 const VALID_TRANSITIONS: ReadonlyMap<SurplusUnitStatus, readonly SurplusUnitStatus[]> = new Map([
 	[SurplusUnitStatus.AVAILABLE, [SurplusUnitStatus.RESERVED, SurplusUnitStatus.VOID]],
@@ -15,7 +16,7 @@ const VALID_TRANSITIONS: ReadonlyMap<SurplusUnitStatus, readonly SurplusUnitStat
 		SurplusUnitStatus.RESERVED,
 		[SurplusUnitStatus.CONSUMED, SurplusUnitStatus.AVAILABLE, SurplusUnitStatus.VOID]
 	],
-	[SurplusUnitStatus.CONSUMED, []],
+	[SurplusUnitStatus.CONSUMED, [SurplusUnitStatus.AVAILABLE]],
 	[SurplusUnitStatus.VOID, []]
 ]);
 
@@ -28,5 +29,5 @@ export function getValidTransitionsFrom(status: SurplusUnitStatus): readonly Sur
 }
 
 export function isTerminalStatus(status: SurplusUnitStatus): boolean {
-	return status === SurplusUnitStatus.CONSUMED || status === SurplusUnitStatus.VOID;
+	return status === SurplusUnitStatus.VOID;
 }

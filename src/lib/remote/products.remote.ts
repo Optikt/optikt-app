@@ -4,7 +4,7 @@
  */
 import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
-import { eq, isNull, and, ilike } from 'drizzle-orm';
+import { eq, isNull, and } from 'drizzle-orm';
 import {
 	ListProductsSchema,
 	CreateProductSchema,
@@ -23,8 +23,11 @@ import {
 } from '$lib/server/db/queries/products';
 import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
-import { brands, suppliers, materials, products, type Product } from '$lib/server/db/schema';
+import { products, type Product } from '$lib/server/db/schema';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
+import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
+import { resolvePendingMaterial } from '$lib/server/db/queries/materials';
+import { resolvePendingBrand } from '$lib/server/db/queries/brands';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
@@ -112,84 +115,18 @@ export const createProductForm = form(
 
 			// Handle pending brand
 			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
-				// Check if brand already exists (case-insensitive)
-				const [existing] = await tx
-					.select()
-					.from(brands)
-					.where(and(ilike(brands.name, pendingBrandName), isNull(brands.deletedAt)));
-
-				if (existing) {
-					brandId = existing.id;
-				} else {
-					const [newBrand] = await tx
-						.insert(brands)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingBrandName,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					brandId = newBrand.id;
-				}
+				brandId = await resolvePendingBrand(pendingBrandName, now, tx);
 			}
 
 			// Handle pending supplier
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-				const [existing] = await tx
-					.select()
-					.from(suppliers)
-					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-				if (existing) {
-					supplierId = existing.id;
-				} else {
-					const [newSupplier] = await tx
-						.insert(suppliers)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingSupplierName,
-							type: 'DISTRIBUTOR',
-							primaryPhone: '',
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					supplierId = newSupplier.id;
-				}
+				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 			}
 
 			// Handle pending material
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
 				const productType = pendingMaterialCategory ?? toMaterialCategory(rest.type);
-				const [existing] = await tx
-					.select()
-					.from(materials)
-					.where(
-						and(
-							ilike(materials.name, pendingMaterialName),
-							eq(materials.productType, productType),
-							isNull(materials.deletedAt)
-						)
-					);
-
-				if (existing) {
-					materialId = existing.id;
-				} else {
-					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-					const [newMaterial] = await tx
-						.insert(materials)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingMaterialName,
-							code,
-							productType,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					materialId = newMaterial.id;
-				}
+				materialId = await resolvePendingMaterial(pendingMaterialName, productType, now, tx);
 			}
 
 			// Check for duplicate SKU (including soft-deleted)
@@ -263,85 +200,19 @@ export const updateProductForm = form(
 
 			// Handle pending brand
 			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {
-				const [existing] = await tx
-					.select()
-					.from(brands)
-					.where(and(ilike(brands.name, pendingBrandName), isNull(brands.deletedAt)));
-
-				if (existing) {
-					brandId = existing.id;
-				} else {
-					const [newBrand] = await tx
-						.insert(brands)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingBrandName,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					brandId = newBrand.id;
-				}
+				brandId = await resolvePendingBrand(pendingBrandName, now, tx);
 			}
 
 			// Handle pending supplier
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-				const [existing] = await tx
-					.select()
-					.from(suppliers)
-					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-				if (existing) {
-					supplierId = existing.id;
-				} else {
-					const [newSupplier] = await tx
-						.insert(suppliers)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingSupplierName,
-							type: 'DISTRIBUTOR',
-							primaryPhone: '',
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					supplierId = newSupplier.id;
-				}
+				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 			}
 
 			// Handle pending material
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
 				const productType =
 					pendingMaterialCategory ?? toMaterialCategory(rest.type ?? ProductType.FRAME);
-
-				const [existing] = await tx
-					.select()
-					.from(materials)
-					.where(
-						and(
-							ilike(materials.name, pendingMaterialName),
-							eq(materials.productType, productType),
-							isNull(materials.deletedAt)
-						)
-					);
-
-				if (existing) {
-					materialId = existing.id;
-				} else {
-					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-					const [newMaterial] = await tx
-						.insert(materials)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingMaterialName,
-							code,
-							productType,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					materialId = newMaterial.id;
-				}
+				materialId = await resolvePendingMaterial(pendingMaterialName, productType, now, tx);
 			}
 
 			// Check if product exists - also captures the old state for audit

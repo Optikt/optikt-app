@@ -27,6 +27,31 @@ export interface LensTreatmentPolicy {
 	requiresConfirmation: boolean;
 }
 
+export function findTreatmentPolicy(policies: LensTreatmentPolicy[], code: CoreLensTreatmentCode) {
+	return policies.find((p) => p.code === code);
+}
+
+/**
+ * Build a single treatment policy, filling in defaults for any missing fields.
+ * - No overrides → NOT_AVAILABLE with price 0 and no confirmation
+ * - Partial overrides → merged with defaults
+ */
+export function toTreatmentPolicy(
+	code: CoreLensTreatmentCode,
+	overrides?: Partial<Omit<LensTreatmentPolicy, 'code'>>
+): LensTreatmentPolicy {
+	return {
+		code,
+		availability: overrides?.availability ?? LensTreatmentAvailability.NOT_AVAILABLE,
+		additionalPrice: overrides?.additionalPrice ?? 0,
+		requiresConfirmation: overrides?.requiresConfirmation ?? false
+	};
+}
+
+export function createDefaultTreatmentPolicies(): LensTreatmentPolicy[] {
+	return CORE_LENS_TREATMENT_CODES.map((code) => toTreatmentPolicy(code));
+}
+
 export interface LensPurchasePolicy {
 	listOrderUnit: LensPricingUnit;
 	/** When true, both lenses in a pair must have identical Rx + treatments */

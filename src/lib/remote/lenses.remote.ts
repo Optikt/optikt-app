@@ -4,14 +4,9 @@
  */
 import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
-import { eq, and, ilike, isNull } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import {
-	suppliers,
-	lensMaterials,
-	lensCatalogItems,
-	lensOpticalRanges
-} from '$lib/server/db/schema';
+import { lensCatalogItems, lensOpticalRanges } from '$lib/server/db/schema';
 import {
 	CreateLensMaterialSchema,
 	UpdateLensMaterialSchema,
@@ -44,8 +39,10 @@ import {
 	deleteLensCatalogItem,
 	getSupplierTreatments,
 	upsertSupplierTreatment,
-	deleteSupplierTreatment
+	deleteSupplierTreatment,
+	resolvePendingLensMaterial
 } from '$lib/server/db/queries/lenses';
+import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import type {
 	LensMaterial,
 	LensTreatment,
@@ -315,57 +312,17 @@ export const createLensCatalogItemForm = form(
 		const result = await db.transaction(async (tx) => {
 			const now = new Date();
 
-			// Handle pending supplier
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-				const [existing] = await tx
-					.select()
-					.from(suppliers)
-					.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-				if (existing) {
-					supplierId = existing.id;
-				} else {
-					const [newSupplier] = await tx
-						.insert(suppliers)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingSupplierName,
-							type: 'DISTRIBUTOR',
-							primaryPhone: '',
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					supplierId = newSupplier.id;
-				}
+				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 			}
 
-			// Handle pending material (lens_materials table)
 			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-				const [existing] = await tx
-					.select()
-					.from(lensMaterials)
-					.where(
-						and(ilike(lensMaterials.name, pendingMaterialName), isNull(lensMaterials.deletedAt))
-					);
-
-				if (existing) {
-					materialId = existing.id;
-				} else {
-					const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-					const [newMaterial] = await tx
-						.insert(lensMaterials)
-						.values({
-							id: crypto.randomUUID(),
-							name: pendingMaterialName,
-							code,
-							refractiveIndex: pendingMaterialRefractiveIndex ?? null,
-							createdAt: now,
-							updatedAt: now
-						})
-						.returning();
-					materialId = newMaterial.id;
-				}
+				materialId = await resolvePendingLensMaterial(
+					pendingMaterialName,
+					pendingMaterialRefractiveIndex,
+					now,
+					tx
+				);
 			}
 
 			const [item] = await tx
@@ -453,57 +410,17 @@ export const updateLensCatalogItemForm = form(
 					.from(lensOpticalRanges)
 					.where(eq(lensOpticalRanges.lensCatalogItemId, id));
 
-				// Handle pending supplier
 				if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
-					const [existingSup] = await tx
-						.select()
-						.from(suppliers)
-						.where(and(ilike(suppliers.name, pendingSupplierName), isNull(suppliers.deletedAt)));
-
-					if (existingSup) {
-						supplierId = existingSup.id;
-					} else {
-						const [newSupplier] = await tx
-							.insert(suppliers)
-							.values({
-								id: crypto.randomUUID(),
-								name: pendingSupplierName,
-								type: 'DISTRIBUTOR',
-								primaryPhone: '',
-								createdAt: now,
-								updatedAt: now
-							})
-							.returning();
-						supplierId = newSupplier.id;
-					}
+					supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 				}
 
-				// Handle pending material
 				if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
-					const [existingMat] = await tx
-						.select()
-						.from(lensMaterials)
-						.where(
-							and(ilike(lensMaterials.name, pendingMaterialName), isNull(lensMaterials.deletedAt))
-						);
-
-					if (existingMat) {
-						materialId = existingMat.id;
-					} else {
-						const code = pendingMaterialName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
-						const [newMaterial] = await tx
-							.insert(lensMaterials)
-							.values({
-								id: crypto.randomUUID(),
-								name: pendingMaterialName,
-								code,
-								refractiveIndex: pendingMaterialRefractiveIndex ?? null,
-								createdAt: now,
-								updatedAt: now
-							})
-							.returning();
-						materialId = newMaterial.id;
-					}
+					materialId = await resolvePendingLensMaterial(
+						pendingMaterialName,
+						pendingMaterialRefractiveIndex,
+						now,
+						tx
+					);
 				}
 
 				const [updated] = await tx

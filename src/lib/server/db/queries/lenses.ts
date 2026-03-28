@@ -1,6 +1,7 @@
 import { eq, isNull, and, ilike, desc, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { LensType, LensCatalogSource } from '$lib/shared/enums';
+import type { DbOrTx } from '$lib/server/db/types';
 import {
 	lensMaterials,
 	lensTreatments,
@@ -445,4 +446,37 @@ export async function deleteSupplierTreatment(id: string): Promise<boolean> {
 		.where(and(eq(supplierLensTreatments.id, id), isNull(supplierLensTreatments.deletedAt)))
 		.returning({ id: supplierLensTreatments.id });
 	return !!deleted;
+}
+
+/**
+ * Resolve a pending lens material inside a transaction.
+ * Looks up by name (case-insensitive); creates if not found.
+ * Returns the resolved lens material ID.
+ */
+export async function resolvePendingLensMaterial(
+	pendingName: string,
+	refractiveIndex: number | null | undefined,
+	now: Date,
+	executor: DbOrTx = db
+): Promise<string> {
+	const [existing] = await executor
+		.select()
+		.from(lensMaterials)
+		.where(and(ilike(lensMaterials.name, pendingName), isNull(lensMaterials.deletedAt)));
+
+	if (existing) return existing.id;
+
+	const code = pendingName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
+	const [created] = await executor
+		.insert(lensMaterials)
+		.values({
+			id: crypto.randomUUID(),
+			name: pendingName,
+			code,
+			refractiveIndex: refractiveIndex ?? null,
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created.id;
 }

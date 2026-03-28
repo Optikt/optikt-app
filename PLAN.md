@@ -198,6 +198,28 @@ Lo mismo si FFTech agrega un nuevo tratamiento: habria que declararlo en cada it
 - Formulario de lentes (UI para configurar politicas a nivel proveedor y overrides por item)
 - No necesita Seed/migracion de datos existentes, no hay app para migrar aun
 
+### A.2) Source, Stock y Surplus (RESUELTO)
+
+**Modelo conceptual correcto:**
+
+- **`source`** describe el tipo de cristal (cómo se fabrica), NO la estrategia de inventario:
+  - **LAB** = fabricado a medida por el laboratorio con la Rx exacta del paciente.
+    Sin stock. Sin surplus (cada cristal es único). Siempre precio unitario.
+  - **FINISHED** = cristal pre-fabricado con graduación/parámetros fijos.
+    Puede tener o no stock. Si stock=0 se pide al proveedor ("en demanda").
+    Puede generar surplus de compras por par.
+  - **ON_DEMAND** = existe en el enum pero NO se expone en la UI. En la práctica,
+    un FINISHED con stock=0 cumple el mismo rol.
+- **`stock`** = unidades en inventario. Aplica solo a FINISHED. 0 = se pide al proveedor.
+- **`surplus_units`** = sobrantes de compras por par. Aplica a FINISHED (y ON_DEMAND si existiera).
+  NO aplica a LAB.
+
+**Resolución implementada:**
+
+1. Form: solo muestra LAB y Terminado. Stock visible para FINISHED (0 = pedir al proveedor).
+2. Detail page: FINISHED muestra stock + surplus (si hay). LAB muestra "Fabricado a medida".
+3. Server: carga surplus para items no-LAB.
+
 ### B) Inventario de excedentes fisicos
 
 Nueva entidad de unidades fisicas de excedente:
@@ -566,6 +588,95 @@ Criterios de salida:
 - Usuario entiende que pasara antes de confirmar.
 - Sin decisiones ocultas.
 
+## Fase 5b - Validación de fórmula, pricing de tratamientos y desglose de costos en wizard
+
+Objetivo:
+
+- Asegurar que las fórmulas del paciente sean válidas antes de avanzar en el wizard.
+- Mostrar precios de tratamientos como líneas separadas (por cristal × 2).
+- Resolver la ambigüedad de precios por unidad/par/montaje/envío con un desglose claro.
+
+### 5b.1 — Validación de prescripción en Step 2 ✅
+
+Actualmente el wizard permite avanzar con todos los campos de fórmula vacíos. Reglas:
+
+1. **Esfera/Cilindro:** al menos uno debe tener valor (no vacío). Si ambos están vacíos,
+   bloquear avance. Valor explícito `0` es válido (plano).
+2. **Eje:** obligatorio si cilindro > 0. Si cilindro está vacío o es 0, eje es opcional.
+3. **Adición:** obligatoria para bifocales, progresivos y ocupacionales.
+   No puede ser 0 — no tiene sentido usar estos tipos de lente sin adición.
+4. Validar por ojo habilitado (OD, OI, o ambos).
+5. Mostrar errores inline por campo, no solo bloquear el botón.
+
+Archivos afectados:
+
+- `src/lib/components/sales/SaleStep2Items.svelte` — lógica de validación
+- `src/lib/components/sales/NewSaleForm.svelte` — gate de avance Step 2 → Step 3
+- Posiblemente `src/lib/schemas/` — schema Zod reutilizable para prescripción de venta
+
+### 5b.2 — Tratamientos como líneas visibles en Step 2 y Step 3 ✅
+
+Actualmente los tratamientos se muestran como badges. Mejoras:
+
+1. **Step 2:** Al seleccionar un tratamiento (ej. Antirreflejo), mostrar:
+   `Antirreflejo · $15,00 × 2 = $30,00` (precio por cristal × cantidad de ojos habilitados).
+2. **Step 3 (resumen/desglose):** Los tratamientos aparecen como líneas separadas:
+   ```
+   Cristales Monofocales · CR39    $30,00  (2 uds)
+   Antirreflejo                    $30,00  (2 uds × $15,00)
+   ```
+   Esto facilita la lectura para el óptico y para la factura/presupuesto al cliente.
+3. El partner del usuario quiere verlo "como producto", pero no se cambiará el schema DB.
+   Solo se cambia la presentación visual en el wizard.
+
+Archivos afectados:
+
+- `src/lib/components/sales/SaleStep2Items.svelte` — mostrar costo de tratamiento expandido
+- `src/lib/components/sales/SaleStep3Summary.svelte` — líneas de tratamiento en desglose
+- Posiblemente `src/lib/components/sales/saleItemHelpers.ts` — helpers de cálculo
+
+### 5b.3 — Desglose claro de precios de cristales ✅
+
+El pricing actual es confuso porque mezcla conceptos. Resolver:
+
+1. **Precio base:** Distinguir claramente si es por unidad o por par.
+   - Si UNIT: mostrar `$X × 2 = $Y` (por ojo).
+   - Si PAIR: mostrar `$X (par)` sin multiplicar.
+2. **Montaje (mounting):** Mostrar como línea separada cuando aplique.
+3. **Envío (shipping):** Mostrar como línea separada cuando aplique.
+4. **Precio sugerido de venta:** Usar el multiplicador (`suggestedMultiplier`) del catálogo
+   para calcular y mostrar el precio de venta recomendado al lado del costo.
+   Fórmula: `(precioBase × cantOjos + tratamientos + montaje) × multiplicador`.
+5. El usuario debe poder editar el precio final, pero ver la sugerencia como referencia.
+
+Archivos afectados:
+
+- `src/lib/components/sales/SaleStep2Items.svelte` — desglose visual de precio
+- `src/lib/components/sales/SaleStep3Summary.svelte` — resumen con líneas separadas
+- `src/lib/shared/planning/fulfillmentPlanner.ts` — ya tiene `LineCostBreakdown`, verificar completitud
+- `src/lib/components/sales/saleItemHelpers.ts` — helpers de precio sugerido
+
+### 5b.4 — Inventario por tipo de fuente (nota de A.2) ✅
+
+Mostrar información de inventario según el source:
+
+- LAB: "Fabricado a medida" (sin stock ni surplus)
+- FINISHED/ON_DEMAND: stock + surplus count (si hay excedentes)
+
+Archivos afectados:
+
+- `src/lib/components/lenses/LensCatalogForm.svelte` — stock solo para FINISHED, hint "deja en 0 si se pide"
+- `src/routes/(app)/lenses/[id]/+page.svelte` — LAB vs no-LAB display
+- `src/routes/(app)/lenses/[id]/+page.server.ts` — surplus count para no-LAB
+
+Criterios de salida:
+
+- No se puede avanzar del Step 2 sin fórmula válida.
+- Tratamientos visibles como líneas con precio × cantidad.
+- Desglose de precio claro: base + tratamientos + montaje + envío.
+- Precio sugerido visible como referencia.
+- FINISHED muestra stock + surplus, LAB muestra "fabricado a medida".
+
 ## Fase 6 - Creacion del modulo de presupuestos
 
 Objetivo:
@@ -584,7 +695,62 @@ Criterios de salida:
 - Presupuesto sin cliente/pagos.
 - Conversion trazable y editable.
 
-## Fase 7 - Reescritura de busqueda global con scopes y parser compartido
+## Fase 7 - IVA y pricing UX
+
+Objetivo:
+
+- Modelo fiscal claro y facil de usar.
+- Se ejecuta antes de Dashboard/Reports para que todas las pantallas de precio muestren datos fiscales correctos desde el inicio.
+
+Cambios:
+
+- Campos de tax en productos.
+- UI de precio final con desglose automatico neto/IVA/bruto.
+- Defaults por categoria.
+
+Criterios de salida:
+
+- Usuario captura precio de venta sin friccion.
+- Sistema guarda desglose fiscal consistente.
+
+## Fase 8 - Dashboard con datos reales
+
+Objetivo:
+
+- Reemplazar valores hardcodeados del dashboard con metricas reales del sistema.
+
+Cambios:
+
+- Query layer para conteos y totales: clientes activos, ventas del dia/semana/mes, productos activos, low stock, presupuestos pendientes.
+- `/dashboard/+page.server.ts` con carga paralela de metricas.
+- Reemplazar tarjetas hardcodeadas en `/dashboard/+page.svelte` con datos reales.
+- Seccion de actividad reciente (ultimas ventas, ultimos presupuestos convertidos).
+
+Criterios de salida:
+
+- Dashboard muestra datos reales y actualizados.
+- Indicadores de low stock visibles.
+
+## Fase 9 - Reportes
+
+Objetivo:
+
+- Modulo de reportes funcional con datos de ventas, inventario y clientes.
+
+Cambios:
+
+- Queries de reportes: ventas por periodo, snapshot de inventario, actividad de clientes, resumen fiscal/IVA.
+- `src/lib/remote/reports.remote.ts` con remotes de consulta.
+- `/reports/+page.server.ts` + componentes de reporte por pestanas.
+- Filtros por rango de fecha, cliente, producto/lente, proveedor.
+- Exportacion basica (CSV o impresion).
+
+Criterios de salida:
+
+- Reportes de ventas, inventario y clientes funcionales.
+- Filtros por periodo y entidad.
+
+## Fase 10 - Reescritura de busqueda global con scopes y parser compartido
 
 Objetivo:
 
@@ -605,24 +771,7 @@ Criterios de salida:
 - Busqueda acotada por scope y atributos.
 - Resultados con estados operativos visibles.
 
-## Fase 8 - IVA y pricing UX
-
-Objetivo:
-
-- Modelo fiscal claro y facil de usar.
-
-Cambios:
-
-- Campos de tax en productos.
-- UI de precio final con desglose automatico neto/IVA/bruto.
-- Defaults por categoria.
-
-Criterios de salida:
-
-- Usuario captura precio de venta sin friccion.
-- Sistema guarda desglose fiscal consistente.
-
-## Fase 9 - Limpieza final del modelo viejo
+## Fase 11 - Limpieza final del modelo viejo
 
 Objetivo:
 
@@ -639,6 +788,25 @@ Cambios:
 Criterios de salida:
 
 - No quedan puntos importantes del flujo dependiendo del modelo anterior.
+
+## Fase 12 - Rediseno UI/UX completo
+
+Objetivo:
+
+- Rediseno visual de toda la aplicacion con todos los flujos funcionales ya definidos.
+- Usar herramientas de prototipado (Stitch, design system generator) sobre pantallas reales.
+
+Cambios:
+
+- Generar design system formal (tipografia, paleta, espaciado, componentes) a partir del sistema existente.
+- Prototipar todas las pantallas principales (~15-20 screens) con flujos reales.
+- Aplicar rediseno a componentes existentes sin cambiar logica de negocio.
+- Revision de accesibilidad, responsividad y consistencia visual.
+
+Criterios de salida:
+
+- Todas las pantallas rediseñadas y consistentes.
+- Design system documentado y aplicado.
 
 ---
 
@@ -728,11 +896,27 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 2. Planner de fulfillment operativo y explicado.
 3. Inventario de excedentes fisicos unitarios en produccion.
 4. Modulo de presupuestos con conversion a venta.
-5. Busqueda global con prefijos y parser optico compartido.
-6. Modelo de IVA en productos con UX simple.
-7. Suite de pruebas y observabilidad completa.
+5. Modelo de IVA en productos con UX simple.
+6. Dashboard con metricas reales.
+7. Modulo de reportes funcional (ventas, inventario, clientes, fiscal).
+8. Busqueda global con prefijos y parser optico compartido.
+9. Suite de pruebas y observabilidad completa.
+10. Rediseno UI/UX completo con design system formal.
 
 ---
+
+## Orden de ejecucion recomendado
+
+| Orden | Fase | Que              | Por que en esta posicion                                 |
+| ----- | ---- | ---------------- | -------------------------------------------------------- |
+| 1     | 5    | Wizard de ventas | Fundacion — todo se construye sobre esto                 |
+| 2     | 6    | Presupuestos     | Reutiliza wizard directamente                            |
+| 3     | 7    | IVA y pricing    | Cambio de schema — mejor antes de que Reports cristalice |
+| 4     | 8    | Dashboard real   | Quick win, contadores de ventas + presupuestos           |
+| 5     | 9    | Reportes         | Significativos ahora que ventas/presupuestos/IVA existen |
+| 6     | 10   | Busqueda global  | Polish — mejora navegacion entre todas las entidades     |
+| 7     | 11   | Limpieza legacy  | Barrido final antes del rediseno                         |
+| 8     | 12   | Rediseno UI/UX   | Todos los flujos definidos, todas las pantallas existen  |
 
 ## Checklist de estado del plan
 
@@ -740,14 +924,17 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 - [x] Postura agresiva de reemplazo directo definida.
 - [x] Reglas de negocio clave incorporadas (feedback actual).
 - [x] Definir contratos TS exactos (fase 0).
-- [x] Reemplazar schema y contratos DB fase 1.
-- [x] Implementar motor matching v2.
-- [x] Implementar planner + excedentes.
-- [ ] Refactor wizard ventas.
-- [ ] Modulo presupuestos.
-- [ ] Scoped search + parser compartido.
-- [ ] IVA y pricing UX.
-- [ ] Eliminar codigo legacy sobrante.
+- [x] Reemplazar schema y contratos DB (fase 1).
+- [x] Implementar motor matching v2 (fase 2).
+- [x] Implementar planner + excedentes (fases 3-4).
+- [ ] Refactor wizard ventas (fase 5) — **EN PROGRESO** (steps 1-3 completos, step 4 siguiente).
+- [ ] Modulo presupuestos (fase 6).
+- [ ] IVA y pricing UX (fase 7).
+- [ ] Dashboard con datos reales (fase 8).
+- [ ] Reportes (fase 9).
+- [ ] Scoped search + parser compartido (fase 10).
+- [ ] Eliminar codigo legacy sobrante (fase 11).
+- [ ] Rediseno UI/UX completo (fase 12).
 
 ---
 

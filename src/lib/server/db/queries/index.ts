@@ -12,3 +12,5 @@ export * from './sales';
 export * from './settings';
 export * from './changeHistory';
 export * from './exchangeRates';
+export * from './surplusUnits';
+export * from './supplierTreatmentPolicies';
