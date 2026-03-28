@@ -272,8 +272,6 @@
 			formData.type === LensType.OCCUPATIONAL
 	);
 
-	const isFinished = $derived(formData.source === LensCatalogSource.FINISHED);
-
 	// Material/supplier options for CreatableSelect
 	const materialOptions = $derived<MaterialOption[]>(
 		materials.map((m) => ({
@@ -1262,9 +1260,13 @@
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<h3 class="mb-1 text-lg font-semibold text-slate-800">Precios y Disponibilidad</h3>
 		<p class="mb-4 text-xs text-slate-400">
-			Precio de compra al proveedor, margen de venta sugerido, plazo de entrega y stock actual.
+			Precio de compra al proveedor, margen de venta sugerido y plazo de entrega.
 		</p>
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+		<div
+			class="grid gap-4 md:grid-cols-2 lg:grid-cols-{formData.source === LensCatalogSource.FINISHED
+				? '4'
+				: '3'}"
+		>
 			<div>
 				<Label for="lc_price" class="mb-2">
 					Precio Compra ($) *
@@ -1318,29 +1320,35 @@
 					class="font-mono placeholder:text-slate-400"
 				/>
 			</div>
-			<div>
-				<Label for="lc_stock" class="mb-2">
-					Stock
-					{#if isFinished}
-						<span class="ml-1 text-xs text-indigo-600">(Terminado)</span>
+			{#if formData.source === LensCatalogSource.FINISHED}
+				<div>
+					<Label for="lc_stock" class="mb-2">Stock</Label>
+					<Input
+						id="lc_stock"
+						name="stock"
+						bind:value={formData.stock}
+						type="number"
+						min="0"
+						placeholder="0"
+						class="font-mono placeholder:text-slate-400"
+					/>
+					{#if Number(formData.stock) > 0}
+						<p class="mt-1.5 flex items-center gap-1 text-xs text-teal-600">
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"
+							></span>
+							{formData.stock} unidad{Number(formData.stock) !== 1 ? 'es' : ''} en inventario
+						</p>
+					{:else}
+						<p class="mt-1.5 flex items-center gap-1 text-xs text-amber-600">
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden="true"
+							></span>
+							Se pedirá al proveedor en cada venta
+						</p>
 					{/if}
-				</Label>
-				<Input
-					id="lc_stock"
-					name="stock"
-					bind:value={formData.stock}
-					type="number"
-					min="0"
-					placeholder="0"
-					class={{
-						'font-mono placeholder:text-slate-400': true,
-						'border-indigo-300 ring-1 ring-indigo-200': isFinished
-					}}
-				/>
-				{#if isFinished}
-					<p class="mt-1 text-xs text-indigo-500">Los cristales terminados se manejan por stock</p>
-				{/if}
-			</div>
+				</div>
+			{:else}
+				<input type="hidden" name="stock" value="0" />
+			{/if}
 		</div>
 	</div>
 
