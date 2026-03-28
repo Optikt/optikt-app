@@ -198,27 +198,27 @@ Lo mismo si FFTech agrega un nuevo tratamiento: habria que declararlo en cada it
 - Formulario de lentes (UI para configurar politicas a nivel proveedor y overrides por item)
 - No necesita Seed/migracion de datos existentes, no hay app para migrar aun
 
-### A.2) Stock genérico vs Surplus con Rx (PENDIENTE)
+### A.2) Source, Stock y Surplus (RESUELTO)
 
-**Problema identificado (Phase 5 testing):** `lens_catalog_items.stock` es un contador entero
-genérico que no tiene prescripción asociada. Para cristales **terminados** (FINISHED) pre-fabricados
-esto tiene sentido — son genéricos. Pero para cristales de **laboratorio** (LAB), cada unidad
-física tiene una Rx específica y debería rastrearse como `surplus_unit` con su `physicalSignature`.
+**Modelo conceptual correcto:**
 
-**Estado actual:**
+- **`source`** describe el tipo de cristal (cómo se fabrica), NO la estrategia de inventario:
+  - **LAB** = fabricado a medida por el laboratorio con la Rx exacta del paciente.
+    Sin stock. Sin surplus (cada cristal es único). Siempre precio unitario.
+  - **FINISHED** = cristal pre-fabricado con graduación/parámetros fijos.
+    Puede tener o no stock. Si stock=0 se pide al proveedor ("en demanda").
+    Puede generar surplus de compras por par.
+  - **ON_DEMAND** = existe en el enum pero NO se expone en la UI. En la práctica,
+    un FINISHED con stock=0 cumple el mismo rol.
+- **`stock`** = unidades en inventario. Aplica solo a FINISHED. 0 = se pide al proveedor.
+- **`surplus_units`** = sobrantes de compras por par. Aplica a FINISHED (y ON_DEMAND si existiera).
+  NO aplica a LAB.
 
-- `stock` es editable manualmente en el form para todos los tipos de lente.
-- `surplus_units` tiene Rx, tratamientos, trazabilidad — es el modelo correcto para inventario con Rx.
-- **No hay auto-incremento** de stock al crear surplus. Son independientes.
-- El planner usa `stock` solo para FINISHED + CATALOG_STOCK; usa `surplus_units` para todo lo demás.
+**Resolución implementada:**
 
-**Resolución propuesta (futura, no Phase 5):**
-
-1. Ocultar campo `stock` en el form para lentes LAB (solo visible para FINISHED).
-2. Para LAB, mostrar en la detail page un count derivado: `surplus_units WHERE status=AVAILABLE`.
-3. Opcionalmente, agregar flujo de "ingreso manual de inventario" que cree `surplus_units` con Rx.
-
-**Cuándo implementar:** Fase 5b o posterior, cuando se refine el wizard de ventas.
+1. Form: solo muestra LAB y Terminado. Stock visible para FINISHED (0 = pedir al proveedor).
+2. Detail page: FINISHED muestra stock + surplus (si hay). LAB muestra "Fabricado a medida".
+3. Server: carga surplus para items no-LAB.
 
 ### B) Inventario de excedentes fisicos
 
@@ -656,15 +656,17 @@ Archivos afectados:
 - `src/lib/shared/planning/fulfillmentPlanner.ts` — ya tiene `LineCostBreakdown`, verificar completitud
 - `src/lib/components/sales/saleItemHelpers.ts` — helpers de precio sugerido
 
-### 5b.4 — Stock solo para FINISHED (nota de A.2)
+### 5b.4 — Inventario por tipo de fuente (nota de A.2) ✅
 
-Ocultar campo `stock` en el form de lentes para source=LAB. Solo visible para FINISHED.
-Mostrar en detail page de LAB lenses un count derivado de `surplus_units` disponibles.
+Mostrar información de inventario según el source:
+- LAB: "Fabricado a medida" (sin stock ni surplus)
+- FINISHED/ON_DEMAND: stock + surplus count (si hay excedentes)
 
 Archivos afectados:
 
-- `src/lib/components/lenses/LensCatalogForm.svelte` — condicional por source
-- `src/routes/(app)/lenses/[id]/+page.svelte` — mostrar surplus count para LAB
+- `src/lib/components/lenses/LensCatalogForm.svelte` — stock solo para FINISHED, hint "deja en 0 si se pide"
+- `src/routes/(app)/lenses/[id]/+page.svelte` — LAB vs no-LAB display
+- `src/routes/(app)/lenses/[id]/+page.server.ts` — surplus count para no-LAB
 
 Criterios de salida:
 
@@ -672,7 +674,7 @@ Criterios de salida:
 - Tratamientos visibles como líneas con precio × cantidad.
 - Desglose de precio claro: base + tratamientos + montaje + envío.
 - Precio sugerido visible como referencia.
-- Stock oculto para lentes de laboratorio.
+- FINISHED muestra stock + surplus, LAB muestra "fabricado a medida".
 
 ## Fase 6 - Creacion del modulo de presupuestos
 
