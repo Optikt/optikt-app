@@ -198,6 +198,26 @@ Lo mismo si FFTech agrega un nuevo tratamiento: habria que declararlo en cada it
 - Formulario de lentes (UI para configurar politicas a nivel proveedor y overrides por item)
 - No necesita Seed/migracion de datos existentes, no hay app para migrar aun
 
+### A.2) Stock genérico vs Surplus con Rx (PENDIENTE)
+
+**Problema identificado (Phase 5 testing):** `lens_catalog_items.stock` es un contador entero
+genérico que no tiene prescripción asociada. Para cristales **terminados** (FINISHED) pre-fabricados
+esto tiene sentido — son genéricos. Pero para cristales de **laboratorio** (LAB), cada unidad
+física tiene una Rx específica y debería rastrearse como `surplus_unit` con su `physicalSignature`.
+
+**Estado actual:**
+- `stock` es editable manualmente en el form para todos los tipos de lente.
+- `surplus_units` tiene Rx, tratamientos, trazabilidad — es el modelo correcto para inventario con Rx.
+- **No hay auto-incremento** de stock al crear surplus. Son independientes.
+- El planner usa `stock` solo para FINISHED + CATALOG_STOCK; usa `surplus_units` para todo lo demás.
+
+**Resolución propuesta (futura, no Phase 5):**
+1. Ocultar campo `stock` en el form para lentes LAB (solo visible para FINISHED).
+2. Para LAB, mostrar en la detail page un count derivado: `surplus_units WHERE status=AVAILABLE`.
+3. Opcionalmente, agregar flujo de "ingreso manual de inventario" que cree `surplus_units` con Rx.
+
+**Cuándo implementar:** Fase 5b o posterior, cuando se refine el wizard de ventas.
+
 ### B) Inventario de excedentes fisicos
 
 Nueva entidad de unidades fisicas de excedente:
@@ -565,6 +585,88 @@ Criterios de salida:
 
 - Usuario entiende que pasara antes de confirmar.
 - Sin decisiones ocultas.
+
+## Fase 5b - Validación de fórmula, pricing de tratamientos y desglose de costos en wizard
+
+Objetivo:
+
+- Asegurar que las fórmulas del paciente sean válidas antes de avanzar en el wizard.
+- Mostrar precios de tratamientos como líneas separadas (por cristal × 2).
+- Resolver la ambigüedad de precios por unidad/par/montaje/envío con un desglose claro.
+
+### 5b.1 — Validación de prescripción en Step 2
+
+Actualmente el wizard permite avanzar con todos los campos de fórmula vacíos. Reglas:
+
+1. **Esfera/Cilindro:** al menos uno debe tener valor (no vacío). Si ambos están vacíos,
+   bloquear avance. Valor explícito `0` es válido (plano).
+2. **Eje:** obligatorio si cilindro > 0. Si cilindro está vacío o es 0, eje es opcional.
+3. **Adición:** obligatoria para bifocales, progresivos y ocupacionales.
+   No puede ser 0 — no tiene sentido usar estos tipos de lente sin adición.
+4. Validar por ojo habilitado (OD, OI, o ambos).
+5. Mostrar errores inline por campo, no solo bloquear el botón.
+
+Archivos afectados:
+- `src/lib/components/sales/SaleStep2Items.svelte` — lógica de validación
+- `src/lib/components/sales/NewSaleForm.svelte` — gate de avance Step 2 → Step 3
+- Posiblemente `src/lib/schemas/` — schema Zod reutilizable para prescripción de venta
+
+### 5b.2 — Tratamientos como líneas visibles en Step 2 y Step 3
+
+Actualmente los tratamientos se muestran como badges. Mejoras:
+
+1. **Step 2:** Al seleccionar un tratamiento (ej. Antirreflejo), mostrar:
+   `Antirreflejo · $15,00 × 2 = $30,00` (precio por cristal × cantidad de ojos habilitados).
+2. **Step 3 (resumen/desglose):** Los tratamientos aparecen como líneas separadas:
+   ```
+   Cristales Monofocales · CR39    $30,00  (2 uds)
+   Antirreflejo                    $30,00  (2 uds × $15,00)
+   ```
+   Esto facilita la lectura para el óptico y para la factura/presupuesto al cliente.
+3. El partner del usuario quiere verlo "como producto", pero no se cambiará el schema DB.
+   Solo se cambia la presentación visual en el wizard.
+
+Archivos afectados:
+- `src/lib/components/sales/SaleStep2Items.svelte` — mostrar costo de tratamiento expandido
+- `src/lib/components/sales/SaleStep3Summary.svelte` — líneas de tratamiento en desglose
+- Posiblemente `src/lib/components/sales/saleItemHelpers.ts` — helpers de cálculo
+
+### 5b.3 — Desglose claro de precios de cristales
+
+El pricing actual es confuso porque mezcla conceptos. Resolver:
+
+1. **Precio base:** Distinguir claramente si es por unidad o por par.
+   - Si UNIT: mostrar `$X × 2 = $Y` (por ojo).
+   - Si PAIR: mostrar `$X (par)` sin multiplicar.
+2. **Montaje (mounting):** Mostrar como línea separada cuando aplique.
+3. **Envío (shipping):** Mostrar como línea separada cuando aplique.
+4. **Precio sugerido de venta:** Usar el multiplicador (`suggestedMultiplier`) del catálogo
+   para calcular y mostrar el precio de venta recomendado al lado del costo.
+   Fórmula: `(precioBase × cantOjos + tratamientos + montaje) × multiplicador`.
+5. El usuario debe poder editar el precio final, pero ver la sugerencia como referencia.
+
+Archivos afectados:
+- `src/lib/components/sales/SaleStep2Items.svelte` — desglose visual de precio
+- `src/lib/components/sales/SaleStep3Summary.svelte` — resumen con líneas separadas
+- `src/lib/shared/planning/fulfillmentPlanner.ts` — ya tiene `LineCostBreakdown`, verificar completitud
+- `src/lib/components/sales/saleItemHelpers.ts` — helpers de precio sugerido
+
+### 5b.4 — Stock solo para FINISHED (nota de A.2)
+
+Ocultar campo `stock` en el form de lentes para source=LAB. Solo visible para FINISHED.
+Mostrar en detail page de LAB lenses un count derivado de `surplus_units` disponibles.
+
+Archivos afectados:
+- `src/lib/components/lenses/LensCatalogForm.svelte` — condicional por source
+- `src/routes/(app)/lenses/[id]/+page.svelte` — mostrar surplus count para LAB
+
+Criterios de salida:
+
+- No se puede avanzar del Step 2 sin fórmula válida.
+- Tratamientos visibles como líneas con precio × cantidad.
+- Desglose de precio claro: base + tratamientos + montaje + envío.
+- Precio sugerido visible como referencia.
+- Stock oculto para lentes de laboratorio.
 
 ## Fase 6 - Creacion del modulo de presupuestos
 
