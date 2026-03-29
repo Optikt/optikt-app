@@ -2,10 +2,7 @@
 	import { Modal, Button, Spinner, Select, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import {
-		createSupplierForm,
-		updateSupplierForm
-	} from '$lib/remote/suppliers.remote';
+	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
 	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
 	import {
 		FormInput,

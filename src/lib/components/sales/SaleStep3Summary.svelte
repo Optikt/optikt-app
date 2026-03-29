@@ -12,11 +12,7 @@
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
-	import {
-		findProduct,
-		itemLineTotal,
-		getItemName as _getItemName
-	} from './saleItemHelpers';
+	import { findProduct, itemLineTotal, getItemName as _getItemName } from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
@@ -319,7 +315,8 @@
 											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
 										>
 											<span
-												>Cristales ({costBreakdown.eyeCount}): <span class="font-mono font-medium text-slate-500"
+												>Cristales ({costBreakdown.eyeCount}):
+												<span class="font-mono font-medium text-slate-500"
 													>{formatPrice(costBreakdown.basePrice)}</span
 												></span
 											>
@@ -351,8 +348,6 @@
 			</table>
 		</div>
 	</div>
-
-
 
 	<!-- Row 4: Discount + Total side by side -->
 	<div class="grid gap-5 lg:grid-cols-2">

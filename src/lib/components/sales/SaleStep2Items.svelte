@@ -1,15 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Button, Select, Input, Label } from 'flowbite-svelte';
-	import {
-		Plus,
-		Trash2,
-		ChevronLeft,
-		ChevronRight,
-		User,
-		Hash,
-		Eye
-	} from '@lucide/svelte';
+	import { Plus, Trash2, ChevronLeft, ChevronRight, User, Hash, Eye } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
 	import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
 	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums/lensTypes';
@@ -248,8 +240,7 @@
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return;
 
-		const totalCost =
-			lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice;
+		const totalCost = lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice;
 		item.unitPrice = totalCost;
 	}
 </script>
@@ -455,7 +446,10 @@
 							<input
 								type="checkbox"
 								bind:checked={item.lensPair.od.enabled}
-							onchange={() => { syncPrescription(item); recalcSuggestedPrice(item); }}
+								onchange={() => {
+									syncPrescription(item);
+									recalcSuggestedPrice(item);
+								}}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
 							<span
@@ -468,7 +462,10 @@
 							<input
 								type="checkbox"
 								bind:checked={item.lensPair.oi.enabled}
-							onchange={() => { syncPrescription(item); recalcSuggestedPrice(item); }}
+								onchange={() => {
+									syncPrescription(item);
+									recalcSuggestedPrice(item);
+								}}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
 							<span
@@ -510,7 +507,11 @@
 									class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700"
 								>
 									<span>Costo total</span>
-									<span class="font-mono">{formatPrice(lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice)}</span>
+									<span class="font-mono"
+										>{formatPrice(
+											lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice
+										)}</span
+									>
 								</div>
 							</div>
 						</div>

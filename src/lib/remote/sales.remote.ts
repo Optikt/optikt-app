@@ -41,11 +41,7 @@ import {
 	type Customer
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import {
-	SaleStatus,
-	isBsPaymentMethod,
-	type PaymentMethod
-} from '$lib/shared/enums';
+import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
 import { auditService, getAuditContext } from '$lib/server/audit';
 

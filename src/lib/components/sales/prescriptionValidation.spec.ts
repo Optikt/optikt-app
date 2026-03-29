@@ -24,10 +24,7 @@ function makeValues(overrides: Partial<Record<string, string>> = {}) {
 	};
 }
 
-function makeLensItem(
-	odEnabled = true,
-	oiEnabled = true
-): SaleItemRow {
+function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'some-lens';
 	pair.od.enabled = odEnabled;
@@ -110,11 +107,7 @@ describe('validatePrescriptionFields', () => {
 	});
 
 	it('does not require axis when cylinder is empty', () => {
-		const errors = validatePrescriptionFields(
-			makeValues({ odSphere: '-2.00' }),
-			true,
-			false
-		);
+		const errors = validatePrescriptionFields(makeValues({ odSphere: '-2.00' }), true, false);
 		expect(errors.odAxis).toBeUndefined();
 	});
 

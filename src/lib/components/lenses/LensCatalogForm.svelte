@@ -630,9 +630,7 @@
 	     ================================================================ -->
 	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 		<h3 class="mb-1 text-lg font-semibold text-slate-800">Precios y Disponibilidad</h3>
-		<p class="mb-4 text-xs text-slate-400">
-			Precio de compra al proveedor y tipo de cobro.
-		</p>
+		<p class="mb-4 text-xs text-slate-400">Precio de compra al proveedor y tipo de cobro.</p>
 
 		<!-- Price type selector -->
 		<div class="mb-5">

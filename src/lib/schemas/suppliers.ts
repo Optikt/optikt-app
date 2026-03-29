@@ -17,7 +17,6 @@ import {
 	OptionalUrlSchema
 } from './common';
 
-
 export const ListSuppliersSchema = ListPaginationSchema.extend({
 	type: z.enum(SupplierType).optional(),
 	includeDeleted: z.boolean().default(false)
@@ -37,7 +36,7 @@ export const CreateSupplierSchema = z.object({
 	contactPhone: OptionalPhoneSchema,
 	contactRole: z.string().optional(),
 	notes: z.string().optional(),
-	defaultCurrency: z.enum(CurrencyCode).optional(),
+	defaultCurrency: z.enum(CurrencyCode).optional()
 });
 
 export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({

@@ -57,10 +57,7 @@ export const suppliers = pgTable(
 // SUPPLIER TREATMENTS — optional extras a lab offers for tallado lenses
 // ============================================================================
 
-export const treatmentCategoryEnum = pgEnum(
-	'treatment_category',
-	enumValues(TreatmentCategory)
-);
+export const treatmentCategoryEnum = pgEnum('treatment_category', enumValues(TreatmentCategory));
 
 export const supplierTreatments = pgTable(
 	'supplier_treatments',
@@ -75,10 +72,7 @@ export const supplierTreatments = pgTable(
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 	},
 	(table) => [
-		index('ix_supplier_treatments_id').using(
-			'btree',
-			table.id.asc().nullsLast().op('uuid_ops')
-		),
+		index('ix_supplier_treatments_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
 		index('ix_supplier_treatments_supplier_id').using(
 			'btree',
 			table.supplierId.asc().nullsLast().op('uuid_ops')

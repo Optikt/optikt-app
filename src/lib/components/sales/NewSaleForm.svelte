@@ -31,12 +31,7 @@
 		nextOrderNumber?: number;
 	}
 
-	let {
-		products,
-		lensItems,
-		suppliers: _suppliers,
-		nextOrderNumber
-	}: Props = $props();
+	let { products, lensItems, suppliers: _suppliers, nextOrderNumber }: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE
@@ -178,9 +173,7 @@
 		})
 	);
 
-	const step2Valid = $derived(
-		itemsValid && !hasOutOfStockItem && !hasInvalidPrescription
-	);
+	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
 
 	const requiredEyes = $derived(getRequiredEyes(items));
 

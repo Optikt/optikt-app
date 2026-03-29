@@ -52,35 +52,34 @@ const PrescriptionSnapshotSchema = z.object({
 // SALE ITEM SCHEMA (redesigned — PRODUCT | LENS_PAIR | TREATMENT)
 // ============================================================================
 
-export const SaleItemSchema = z
-	.object({
-		itemType: z.enum(ALL_SALE_ITEM_TYPES),
-		/** FK: only for PRODUCT items */
-		productId: z.uuid().optional(),
-		/** FK: only for LENS_PAIR items */
-		lensCatalogItemId: z.uuid().optional(),
-		/** FK self-ref: only for TREATMENT items → parent LENS_PAIR */
-		parentSaleItemId: z.uuid().optional(),
-		/** FK: only for TREATMENT items → which lab treatment */
-		supplierTreatmentId: z.uuid().optional(),
-		/** Link to existing prescription (optional, used for LENS_PAIR items) */
-		prescriptionId: z.uuid().optional(),
-		/** Prescription snapshot: right eye */
-		odSphere: OptionalSphereSchema.optional(),
-		odCylinder: OptionalCylinderSchema.optional(),
-		odAxis: AxisSchema.optional(),
-		odAddition: OptionalAdditionSchema.optional(),
-		/** Prescription snapshot: left eye */
-		osSphere: OptionalSphereSchema.optional(),
-		osCylinder: OptionalCylinderSchema.optional(),
-		osAxis: AxisSchema.optional(),
-		osAddition: OptionalAdditionSchema.optional(),
-		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
-		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
-		discount: CoercedNumber.min(0).default(0),
-		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
-		notes: z.string().optional()
-	});
+export const SaleItemSchema = z.object({
+	itemType: z.enum(ALL_SALE_ITEM_TYPES),
+	/** FK: only for PRODUCT items */
+	productId: z.uuid().optional(),
+	/** FK: only for LENS_PAIR items */
+	lensCatalogItemId: z.uuid().optional(),
+	/** FK self-ref: only for TREATMENT items → parent LENS_PAIR */
+	parentSaleItemId: z.uuid().optional(),
+	/** FK: only for TREATMENT items → which lab treatment */
+	supplierTreatmentId: z.uuid().optional(),
+	/** Link to existing prescription (optional, used for LENS_PAIR items) */
+	prescriptionId: z.uuid().optional(),
+	/** Prescription snapshot: right eye */
+	odSphere: OptionalSphereSchema.optional(),
+	odCylinder: OptionalCylinderSchema.optional(),
+	odAxis: AxisSchema.optional(),
+	odAddition: OptionalAdditionSchema.optional(),
+	/** Prescription snapshot: left eye */
+	osSphere: OptionalSphereSchema.optional(),
+	osCylinder: OptionalCylinderSchema.optional(),
+	osAxis: AxisSchema.optional(),
+	osAddition: OptionalAdditionSchema.optional(),
+	quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
+	unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
+	discount: CoercedNumber.min(0).default(0),
+	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
+	notes: z.string().optional()
+});
 
 // ============================================================================
 // CREATE SALE SCHEMA
