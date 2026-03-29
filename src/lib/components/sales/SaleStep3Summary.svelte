@@ -13,7 +13,7 @@
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
-	import { findProduct, itemLineTotal, getItemName as _getItemName } from './saleItemHelpers';
+	import { findProduct, itemLineTotal, computeItemDiscount, getItemName as _getItemName } from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
@@ -71,13 +71,7 @@
 	// DERIVED TOTALS
 	// ============================================================================
 
-	function treatmentsTotal(item: SaleItemRow): number {
-		return item.treatments.reduce((sum, t) => sum + t.price, 0);
-	}
-
-	const subtotal = $derived(
-		items.reduce((acc, item) => acc + itemLineTotal(item) + treatmentsTotal(item), 0)
-	);
+	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 
 	const globalDiscountAmount = $derived(
 		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
@@ -119,12 +113,21 @@
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return null;
 
-		const basePrice = lens.basePrice * eyeCount;
+		const unitBasePrice = lens.basePrice;
+		const basePrice = lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
 		const mountingPrice = lens.mountingPrice;
 		const shippingPrice = lens.shippingPrice;
 		const totalCost = basePrice + mountingPrice + shippingPrice;
+		const isPair = lens.priceType === 'PAIR';
 
-		return { basePrice, mountingPrice, shippingPrice, totalCost, eyeCount };
+		return { unitBasePrice, basePrice, mountingPrice, shippingPrice, totalCost, eyeCount, isPair };
+	}
+
+	/** Get the lens display price excluding treatments (treatments are shown as separate rows) */
+	function getLensDisplayPrice(item: SaleItemRow): number {
+		const eyeCount = getEnabledEyeCount(item);
+		const treatmentsSum = item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
+		return item.unitPrice - treatmentsSum;
 	}
 </script>
 
@@ -298,7 +301,7 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.kind === 'lens' && item.treatments.length > 0 ? getLensDisplayPrice(item) : item.unitPrice)}</td
 							>
 							<td class="px-4 py-3 text-right font-mono text-base text-red-500">
 								{#if item.discount > 0}
@@ -310,7 +313,7 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base font-semibold"
-								>{formatPrice(itemLineTotal(item))}</td
+								>{formatPrice(item.kind === 'lens' && item.treatments.length > 0 ? getLensDisplayPrice(item) - computeItemDiscount(item) : itemLineTotal(item))}</td
 							>
 						</tr>
 						<!-- Lens cost breakdown -->
@@ -323,7 +326,11 @@
 											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
 										>
 											<span
-												>Cristales ({costBreakdown.eyeCount}):
+												>Cristales{costBreakdown.isPair
+													? ' (par)'
+													: costBreakdown.eyeCount > 1
+														? ` ${formatPrice(costBreakdown.unitBasePrice)} × ${costBreakdown.eyeCount}`
+														: ''}:
 												<span class="font-mono font-medium text-slate-500"
 													>{formatPrice(costBreakdown.basePrice)}</span
 												></span
@@ -350,23 +357,33 @@
 									</td>
 								</tr>
 							{/if}
-							<!-- Treatment breakdown -->
+							<!-- Treatment items -->
 							{#if item.treatments.length > 0}
+								{@const treatmentEyeCount = getEnabledEyeCount(item)}
 								{#each item.treatments as treatment (treatment.supplierTreatmentId)}
-									<tr class="bg-violet-50/40">
-										<td class="px-4 py-1.5" colspan="4">
-											<div class="ml-4 flex items-center gap-2 text-xs">
-												<FlaskConical class="h-3 w-3 text-violet-400" />
-												<span class="font-medium text-violet-700">{treatment.name}</span>
+									<tr class="border-t border-violet-100 bg-violet-50/30 text-slate-700">
+										<td class="px-4 py-3">
+											<span
+												class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
+											>
+												<FlaskConical class="h-3 w-3" />
+												Tratamiento
+											</span>
+										</td>
+										<td class="px-4 py-3">
+											<div class="flex items-center gap-2">
+												<p class="text-base font-medium text-violet-800">{treatment.name}</p>
 												<span
 													class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
 													>{getTreatmentCategoryLabel(treatment.category)}</span
 												>
 											</div>
 										</td>
-										<td class="px-4 py-1.5"></td>
-										<td class="px-4 py-1.5 text-right font-mono text-xs font-medium text-violet-600"
-											>{formatPrice(treatment.price)}</td
+										<td class="px-4 py-3 text-right font-mono text-base">{treatmentEyeCount}</td>
+										<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(treatment.price)}</td>
+										<td class="px-4 py-3 text-right font-mono text-base text-red-500">—</td>
+										<td class="px-4 py-3 text-right font-mono text-base font-semibold text-violet-700"
+											>{formatPrice(treatment.price * treatmentEyeCount)}</td
 										>
 									</tr>
 								{/each}

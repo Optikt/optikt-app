@@ -89,6 +89,7 @@ const BaseLensCatalogItemSchema = z.object({
 	supplierId: PendingEntitySchema(),
 	name: NameSchema(),
 	type: z.enum(LensType, 'Tipo de lente requerido'),
+	technology: z.string().max(100).optional(),
 	materialId: PendingEntitySchema('pending_material_'),
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
@@ -103,6 +104,7 @@ const BaseLensCatalogItemSchema = z.object({
 	// --- Pricing ---
 	priceType: z.enum(LensPriceType).default(LensPriceType.UNIT),
 	basePrice: CoercedNumber.min(0, 'Precio de compra debe ser ≥ 0'),
+	salePrice: CoercedNumber.min(0, 'Precio de venta debe ser ≥ 0').optional(),
 	mountingPrice: CoercedNumber.min(0, 'Precio de montaje debe ser ≥ 0').default(0),
 	shippingPrice: CoercedNumber.min(0, 'Precio de envío debe ser ≥ 0').default(0),
 
@@ -112,8 +114,8 @@ const BaseLensCatalogItemSchema = z.object({
 });
 
 export const CreateLensCatalogItemSchema = BaseLensCatalogItemSchema.refine(
-	(data) => data.ranges.length > 0,
-	{ message: 'Se requiere al menos un rango óptico', path: ['ranges'] }
+	(data) => (data.source === LensCatalogSource.FINISHED ? data.ranges.length > 0 : true),
+	{ message: 'Se requiere al menos un rango óptico para cristales terminados', path: ['ranges'] }
 );
 
 export const UpdateLensCatalogItemSchema = BaseLensCatalogItemSchema.partial().extend({

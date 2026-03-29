@@ -8,6 +8,20 @@
       "when": 1774759019348,
       "tag": "0000_new_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774802083739,
+      "tag": "0001_easy_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774814512827,
+      "tag": "0002_light_shaman",
+      "breakpoints": true
     }
   ]
 }

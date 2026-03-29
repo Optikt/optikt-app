@@ -105,15 +105,13 @@ describe('treatmentsTotal', () => {
 	});
 });
 
-// ── Full subtotal including treatments (Step 3 logic) ───────────────────
+// ── Full subtotal (Step 3 logic) ────────────────────────────────────────
+// Note: item.unitPrice for lenses is set by recalcSuggestedPrice which
+// already includes treatments. The subtotal is just sum(itemLineTotal).
 
-describe('subtotal with treatments', () => {
-	function treatmentsTotal(item: SaleItemRow): number {
-		return item.treatments.reduce((sum, t) => sum + t.price, 0);
-	}
-
+describe('subtotal (Step 3)', () => {
 	function subtotal(items: SaleItemRow[]): number {
-		return items.reduce((acc, item) => acc + itemLineTotal(item) + treatmentsTotal(item), 0);
+		return items.reduce((acc, item) => acc + itemLineTotal(item), 0);
 	}
 
 	it('computes subtotal with product only', () => {
@@ -121,26 +119,27 @@ describe('subtotal with treatments', () => {
 		expect(subtotal(items)).toBe(170);
 	});
 
-	it('computes subtotal with lens + treatments', () => {
+	it('computes subtotal with lens (unitPrice includes treatments)', () => {
+		// unitPrice = basePrice + mounting + shipping + treatments = 50 + 15 + 8
 		const lens = makeLensRow([makeTreatment(15), makeTreatment(8)]);
-		lens.unitPrice = 50;
-		expect(subtotal([lens])).toBe(50 + 15 + 8);
+		lens.unitPrice = 73; // already includes treatments
+		expect(subtotal([lens])).toBe(73);
 	});
 
-	it('computes subtotal with product + lens + treatments', () => {
+	it('computes subtotal with product + lens', () => {
 		const product = makeProductRow({ unitPrice: 85, quantity: 1 });
 		const lens = makeLensRow([makeTreatment(15)]);
-		lens.unitPrice = 50;
-		expect(subtotal([product, lens])).toBe(85 + 50 + 15);
+		lens.unitPrice = 65; // already includes treatment
+		expect(subtotal([product, lens])).toBe(85 + 65);
 	});
 
-	it('applies discount only to item line, not treatments', () => {
+	it('applies discount to full lens unitPrice (which includes treatments)', () => {
 		const lens = makeLensRow([makeTreatment(15)]);
-		lens.unitPrice = 100;
+		lens.unitPrice = 115; // base cost + treatment already included
 		lens.discount = 10;
 		lens.discountType = DiscountType.FIXED;
-		// itemLineTotal = 100 - 10 = 90, treatments = 15
-		expect(subtotal([lens])).toBe(90 + 15);
+		// itemLineTotal = 115 - 10 = 105
+		expect(subtotal([lens])).toBe(105);
 	});
 });
 

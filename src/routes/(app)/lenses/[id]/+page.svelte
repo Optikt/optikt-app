@@ -23,7 +23,7 @@
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums';
+	import { getLensTypeLabel, getLensSourceLabel, getPriceTypeLabel } from '$lib/shared/enums';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
@@ -165,6 +165,12 @@
 								{getLensSourceLabel(item.source)}
 							</dd>
 						</div>
+						{#if item.technology}
+							<div>
+								<dt class="text-sm font-medium text-slate-500">Tecnología</dt>
+								<dd class="mt-0.5 text-slate-800">{item.technology}</dd>
+							</div>
+						{/if}
 					</dl>
 
 					<!-- Characteristics section within the same card -->
@@ -286,10 +292,40 @@
 						<dd class="mt-1 font-mono text-3xl font-bold text-blue-700">
 							{formatPrice(item.basePrice)}
 						</dd>
-						<dd class="mt-1 text-xs font-medium text-blue-500">
-							{item.priceType ?? 'PAIR'}
+						<dd class="mt-1 text-xs font-medium text-blue-500 uppercase">
+							{getPriceTypeLabel(item.priceType)}
 						</dd>
 					</div>
+
+					{#if item.salePrice}
+						<div class="mb-4 flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3">
+							<span class="text-sm font-medium text-emerald-700">Precio Venta</span>
+							<span class="font-mono text-lg font-bold text-emerald-700">
+								{formatPrice(item.salePrice)}
+							</span>
+						</div>
+					{/if}
+
+					{#if item.mountingPrice > 0 || item.shippingPrice > 0}
+						<div class="mb-4 space-y-2 text-sm">
+							{#if item.mountingPrice > 0}
+								<div class="flex items-center justify-between">
+									<span class="text-slate-500">Montaje</span>
+									<span class="font-mono font-medium text-slate-700"
+										>{formatPrice(item.mountingPrice)}</span
+									>
+								</div>
+							{/if}
+							{#if item.shippingPrice > 0}
+								<div class="flex items-center justify-between">
+									<span class="text-slate-500">Envío</span>
+									<span class="font-mono font-medium text-slate-700"
+										>{formatPrice(item.shippingPrice)}</span
+									>
+								</div>
+							{/if}
+						</div>
+					{/if}
 
 					<!-- Inventario por tipo de fuente -->
 					<div class="border-t border-slate-100 pt-4">

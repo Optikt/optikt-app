@@ -64,6 +64,7 @@ export const lensCatalogItems = pgTable(
 		supplierId: uuid('supplier_id').notNull(),
 		name: varchar().notNull(),
 		type: varchar().notNull(),
+		technology: varchar(),
 		materialId: uuid('material_id').notNull(),
 
 		// --- Inherent traits (booleans) ---
@@ -74,6 +75,7 @@ export const lensCatalogItems = pgTable(
 		// --- Pricing ---
 		priceType: lensPriceTypeEnum('price_type').notNull().default('UNIT'),
 		basePrice: doublePrecision('base_price').notNull(),
+		salePrice: doublePrecision('sale_price'),
 		mountingPrice: doublePrecision('mounting_price').notNull().default(0),
 		shippingPrice: doublePrecision('shipping_price').notNull().default(0),
 

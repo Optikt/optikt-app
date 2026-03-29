@@ -257,6 +257,13 @@
 					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
 				];
 
+				// Compute per-eye lens-only price (treatments are sent as separate items)
+				const enabledEyes = eyes.filter(({ entry }) => entry.enabled);
+				const eyeCount = enabledEyes.length;
+				const treatmentsSum = item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
+				const lensOnlyTotal = item.unitPrice - treatmentsSum;
+				const perEyeUnitPrice = eyeCount > 0 ? lensOnlyTotal / eyeCount : 0;
+
 				// Generate a stable parent ID for the first lens eye item
 				// so treatment items can reference it
 				const parentLensItemId = crypto.randomUUID();
@@ -277,8 +284,9 @@
 						odAxis: entry.prescription.axis ?? undefined,
 						odAddition: entry.prescription.addition ?? undefined,
 						quantity: 1,
-						unitPrice: item.unitPrice,
-						discount: item.discount,
+						unitPrice: perEyeUnitPrice,
+						// FIXED discount goes on first eye only; PERCENTAGE works on each eye
+						discount: item.discountType === DiscountType.FIXED && !isFirstEye ? 0 : item.discount,
 						discountType: item.discountType,
 						notes: item.notes || undefined
 					});
@@ -292,7 +300,7 @@
 						itemType: SaleItemType.TREATMENT,
 						parentSaleItemId: parentLensItemId,
 						supplierTreatmentId: t.supplierTreatmentId,
-						quantity: 1,
+						quantity: eyeCount,
 						unitPrice: t.price,
 						discount: 0,
 						discountType: DiscountType.FIXED

@@ -28,7 +28,8 @@
 		computeItemDiscount as _computeDiscount,
 		itemLineTotal as _lineTotal,
 		getRequiredEyes,
-		validatePrescriptionFields
+		validatePrescriptionFields,
+		hasPrescriptionErrors
 	} from './saleItemHelpers';
 	import type { PrescriptionFieldErrors } from './saleItemHelpers';
 	import ItemSelect from './ItemSelect.svelte';
@@ -144,8 +145,9 @@
 		if (idx >= 0) {
 			item.treatments = item.treatments.filter((t) => t.supplierTreatmentId !== treatment.id);
 		} else {
+			// Replace any existing treatment of the same category (max 1 per category)
 			item.treatments = [
-				...item.treatments,
+				...item.treatments.filter((t) => t.category !== treatment.category),
 				{
 					supplierTreatmentId: treatment.id,
 					name: treatment.name,
@@ -161,8 +163,8 @@
 		return item.treatments.some((t) => t.supplierTreatmentId === treatmentId);
 	}
 
-	function treatmentsTotal(item: SaleItemRow): number {
-		return item.treatments.reduce((sum, t) => sum + t.price, 0);
+	function treatmentsTotal(item: SaleItemRow, eyeCount: number): number {
+		return item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
 	}
 
 	// Load treatments when a lens item's supplier changes
@@ -300,6 +302,42 @@
 	const visibleRxErrors: PrescriptionFieldErrors = $derived(anyRxFieldFilled ? rxErrors : {});
 
 	// ============================================================================
+	// VALIDATION REASONS (for "Siguiente" button feedback)
+	// ============================================================================
+
+	function getValidationReasons(): string[] {
+		const reasons: string[] = [];
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			const num = i + 1;
+			if (item.kind === 'product' && !item.productId) {
+				reasons.push(`Ítem #${num}: seleccione un producto`);
+			}
+			if (item.kind === 'product' && item.productId && item.quantity <= 0) {
+				reasons.push(`Ítem #${num}: cantidad debe ser mayor a 0`);
+			}
+			if (item.kind === 'lens') {
+				if (!item.lensPair?.catalogItemId) {
+					reasons.push(`Ítem #${num}: seleccione un cristal`);
+				} else if (!item.lensPair.od.enabled && !item.lensPair.oi.enabled) {
+					reasons.push(`Ítem #${num}: habilite al menos un ojo`);
+				}
+			}
+			if (item.kind === 'product' && item.productId) {
+				const p = products.find((pr) => pr.id === item.productId);
+				const maxStock = p?.stock ?? null;
+				if (maxStock !== null && (maxStock <= 0 || item.quantity > maxStock)) {
+					reasons.push(`Ítem #${num}: stock insuficiente (disponible: ${maxStock})`);
+				}
+			}
+		}
+		if (hasPrescriptionErrors(rxErrors)) {
+			reasons.push('Complete los campos de prescripción requeridos');
+		}
+		return reasons;
+	}
+
+	// ============================================================================
 	// LENS COST HELPERS
 	// ============================================================================
 
@@ -308,7 +346,8 @@
 		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
 	}
 
-	/** Recalculate unitPrice to the suggested sale price for the full lens order */
+	/** Recalculate unitPrice to the suggested sale price for the full lens order.
+	 *  Uses salePrice (sell price) when available, otherwise falls back to basePrice (cost). */
 	function recalcSuggestedPrice(item: SaleItemRow) {
 		if (item.kind !== 'lens' || !item.lensPair) return;
 		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
@@ -317,9 +356,23 @@
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return;
 
-		const totalCost =
-			lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice + treatmentsTotal(item);
-		item.unitPrice = totalCost;
+		const lensPrice = lensSalePrice(lens, eyeCount);
+		const totalPrice = lensPrice + treatmentsTotal(item, eyeCount);
+		item.unitPrice = totalPrice;
+	}
+
+	/** Sale price for the lens respecting PAIR vs UNIT. Falls back to cost (base + mounting + shipping). */
+	function lensSalePrice(lens: LensCatalogItemWithRelations, eyeCount: number): number {
+		if (lens.salePrice != null && lens.salePrice > 0) {
+			return lens.priceType === 'PAIR' ? lens.salePrice : lens.salePrice * eyeCount;
+		}
+		// Fallback to cost-based price
+		return lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice;
+	}
+
+	/** Base lens cost respecting PAIR vs UNIT pricing */
+	function lensBaseCost(lens: LensCatalogItemWithRelations, eyeCount: number): number {
+		return lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
 	}
 </script>
 
@@ -566,8 +619,8 @@
 							</p>
 							<div class="space-y-0.5 text-xs text-slate-600">
 								<div class="flex justify-between">
-									<span>Cristales × {eyeCount}</span>
-									<span class="font-mono">{formatPrice(lens.basePrice * eyeCount)}</span>
+									<span>Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`}</span>
+									<span class="font-mono">{formatPrice(lensBaseCost(lens, eyeCount))}</span>
 								</div>
 								{#if lens.mountingPrice > 0}
 									<div class="flex justify-between">
@@ -583,8 +636,8 @@
 								{/if}
 								{#each item.treatments as t (t.supplierTreatmentId)}
 									<div class="flex justify-between">
-										<span>{t.name}</span>
-										<span class="font-mono">{formatPrice(t.price)}</span>
+										<span>{t.name}{eyeCount > 1 ? ` × ${eyeCount}` : ''}</span>
+										<span class="font-mono">{formatPrice(t.price * eyeCount)}</span>
 									</div>
 								{/each}
 								<div
@@ -593,10 +646,10 @@
 									<span>Costo total</span>
 									<span class="font-mono"
 										>{formatPrice(
-											lens.basePrice * eyeCount +
+											lensBaseCost(lens, eyeCount) +
 												lens.mountingPrice +
 												lens.shippingPrice +
-												treatmentsTotal(item)
+													treatmentsTotal(item, eyeCount)
 										)}</span
 									>
 								</div>
@@ -666,13 +719,28 @@
 </div>
 
 <!-- Step 2 Navigation -->
-<div class="mt-6 flex justify-between">
-	<Button color="light" size="lg" onclick={onprev}>
-		<ChevronLeft class="mr-1 h-4 w-4" />
-		Anterior
-	</Button>
-	<Button color="blue" size="lg" onclick={onnext} disabled={!valid}>
-		Siguiente
-		<ChevronRight class="ml-1 h-4 w-4" />
-	</Button>
+<div class="mt-6">
+	{#if !valid}
+		{@const reasons = getValidationReasons()}
+		{#if reasons.length > 0}
+			<div class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+				<p class="text-xs font-medium text-amber-700">Para continuar:</p>
+				<ul class="mt-1 space-y-0.5 text-xs text-amber-600">
+					{#each reasons as reason, i (i)}
+						<li>• {reason}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+	{/if}
+	<div class="flex justify-between">
+		<Button color="light" size="lg" onclick={onprev}>
+			<ChevronLeft class="mr-1 h-4 w-4" />
+			Anterior
+		</Button>
+		<Button color="blue" size="lg" onclick={onnext} disabled={!valid}>
+			Siguiente
+			<ChevronRight class="ml-1 h-4 w-4" />
+		</Button>
+	</div>
 </div>

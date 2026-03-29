@@ -149,7 +149,7 @@ async function main() {
 	// ── 5. Lens Catalog Items ───────────────────────────────────────────
 	console.log('👓 Creating lens catalog items...');
 	await db.insert(schema.lensCatalogItems).values([
-		{
+		{12
 			source: 'LAB',
 			supplierId: supplierLab.id,
 			name: 'Monofocal CR-39 LAB',
@@ -160,6 +160,7 @@ async function main() {
 			isPhotochromic: false,
 			priceType: 'UNIT',
 			basePrice: 12,
+			salePrice: 30,
 			mountingPrice: 5,
 			shippingPrice: 3,
 			notes: 'Monofocal básico de laboratorio',
@@ -178,6 +179,7 @@ async function main() {
 			isPhotochromic: false,
 			priceType: 'UNIT',
 			basePrice: 35,
+			salePrice: 85,
 			mountingPrice: 8,
 			shippingPrice: 3,
 			notes: 'Progresivo policarbonato de laboratorio',
@@ -196,6 +198,7 @@ async function main() {
 			isPhotochromic: false,
 			priceType: 'PAIR',
 			basePrice: 20,
+			salePrice: 45,
 			mountingPrice: 0,
 			shippingPrice: 2,
 			stock: 10,

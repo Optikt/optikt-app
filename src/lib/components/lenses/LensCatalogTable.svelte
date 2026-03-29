@@ -66,6 +66,7 @@
 		<TableHeadCell class="font-semibold">Material</TableHeadCell>
 		<TableHeadCell class="font-semibold">Rangos</TableHeadCell>
 		<TableHeadCell class="text-right font-semibold">Precio Compra</TableHeadCell>
+		<TableHeadCell class="text-right font-semibold">Precio Venta</TableHeadCell>
 	{/snippet}
 
 	{#snippet row(item)}
@@ -149,6 +150,13 @@
 			<span class="font-normal text-slate-400">
 				({getPriceTypeLabel(item.priceType)})
 			</span>
+		</TableBodyCell>
+		<TableBodyCell class="text-right font-mono font-medium">
+			{#if item.salePrice}
+				<span class="text-emerald-700">{formatPrice(item.salePrice)}</span>
+			{:else}
+				<span class="text-slate-400">—</span>
+			{/if}
 		</TableBodyCell>
 	{/snippet}
 

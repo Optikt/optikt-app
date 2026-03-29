@@ -69,7 +69,7 @@
 			sku: '',
 			brand: '',
 			stock: l.stock,
-			price: l.basePrice,
+			price: l.salePrice ?? l.basePrice,
 			productType: '',
 			source: l.source
 		}))
@@ -102,7 +102,7 @@
 			} else {
 				const lens = lensItems.find((l) => l.id === newId);
 				if (lens) {
-					onselect(newId, lens.basePrice);
+					onselect(newId, lens.salePrice ?? lens.basePrice);
 				}
 			}
 		} else if (!newId && onselect) {
