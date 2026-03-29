@@ -329,12 +329,13 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				}
 			}
 
-			// Decrement stock for lens catalog items with tracked stock
+			// Decrement stock for lens catalog items with tracked stock (skip LAB — ordered on demand)
 			if (item.lensCatalogItemId) {
 				const [lens] = await tx
 					.select({
 						id: lensCatalogItems.id,
-						stock: lensCatalogItems.stock
+						stock: lensCatalogItems.stock,
+						source: lensCatalogItems.source
 					})
 					.from(lensCatalogItems)
 					.where(
@@ -345,7 +346,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 					throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
 				}
 
-				if (lens.stock !== null) {
+				// LAB lenses are custom-ordered — no stock to decrement
+				if (lens.source !== 'LAB' && lens.stock !== null) {
 					const newStock = lens.stock - item.quantity;
 					if (newStock < 0) {
 						throw new Error(
