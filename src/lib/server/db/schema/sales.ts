@@ -117,6 +117,27 @@ export const saleItems = pgTable(
 		unitPrice: doublePrecision('unit_price').notNull(),
 		discount: doublePrecision().notNull().default(0),
 		discountType: varchar('discount_type').notNull().default('FIXED'),
+
+		// --- Snapshot (immutable at time of sale) ---
+		/** Display name (product name, lens description, treatment name) */
+		snapshotName: varchar('snapshot_name'),
+		/** Product SKU (PRODUCT only) */
+		snapshotSku: varchar('snapshot_sku'),
+		/** Brand name (PRODUCT) or Supplier name (LENS_PAIR, TREATMENT) */
+		snapshotBrand: varchar('snapshot_brand'),
+		/** Lens: per-unit cost price from catalog */
+		snapshotBaseCost: doublePrecision('snapshot_base_cost'),
+		/** Lens: mounting price from catalog */
+		snapshotMountingPrice: doublePrecision('snapshot_mounting_price'),
+		/** Lens: shipping price from catalog */
+		snapshotShippingPrice: doublePrecision('snapshot_shipping_price'),
+		/** Lens: sale price per unit from catalog (the price we set as suggested sell) */
+		snapshotSalePrice: doublePrecision('snapshot_sale_price'),
+		/** Lens: price type from catalog ('UNIT' or 'PAIR') */
+		snapshotPriceType: varchar('snapshot_price_type'),
+		/** Treatment: category (AR, BLUECUT, etc.) */
+		snapshotTreatmentCategory: varchar('snapshot_treatment_category'),
+
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),

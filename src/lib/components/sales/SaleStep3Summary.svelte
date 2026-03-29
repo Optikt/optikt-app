@@ -303,14 +303,21 @@
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.kind === 'lens' && item.treatments.length > 0 ? getLensDisplayPrice(item) : item.unitPrice)}</td
 							>
-							<td class="px-4 py-3 text-right font-mono text-base text-red-500">
-								{#if item.discount > 0}
-									-{item.discountType === 'PERCENTAGE'
-										? `${item.discount}%`
-										: formatPrice(item.discount)}
-								{:else}
-									—
-								{/if}
+							<td class="px-2 py-2">
+								<div class="flex items-center justify-end gap-1">
+									<Input
+										type="number"
+										bind:value={item.discount}
+										step="0.01"
+										min="0"
+										class="w-20 text-right font-mono text-sm"
+									/>
+									<Select bind:value={item.discountType} class="w-14 shrink-0 text-sm">
+										{#each ALL_DISCOUNT_TYPES as dt (dt)}
+											<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
+										{/each}
+									</Select>
+								</div>
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base font-semibold"
 								>{formatPrice(item.kind === 'lens' && item.treatments.length > 0 ? getLensDisplayPrice(item) - computeItemDiscount(item) : itemLineTotal(item))}</td

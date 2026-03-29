@@ -236,6 +236,7 @@
 
 			for (const item of items) {
 				if (item.kind === 'product') {
+					const product = products.find((p) => p.id === item.productId);
 					saleItems.push({
 						itemType: SaleItemType.PRODUCT,
 						productId: item.productId,
@@ -243,7 +244,10 @@
 						unitPrice: item.unitPrice,
 						discount: item.discount,
 						discountType: item.discountType,
-						notes: item.notes || undefined
+						notes: item.notes || undefined,
+						snapshotName: product?.name,
+						snapshotSku: product?.sku ?? undefined,
+						snapshotBrand: product?.brand?.name ?? undefined
 					});
 					continue;
 				}
@@ -252,6 +256,7 @@
 				if (!item.lensPair) continue;
 
 				const pair = item.lensPair;
+				const lens = lensItems.find((l) => l.id === pair.catalogItemId);
 				const eyes = [
 					{ entry: pair.od, eye: PatientEye.OD, suffix: 'od' as const },
 					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
@@ -288,7 +293,14 @@
 						// FIXED discount goes on first eye only; PERCENTAGE works on each eye
 						discount: item.discountType === DiscountType.FIXED && !isFirstEye ? 0 : item.discount,
 						discountType: item.discountType,
-						notes: item.notes || undefined
+						notes: item.notes || undefined,
+						snapshotName: lens?.name,
+						snapshotBrand: lens?.supplier?.name ?? undefined,
+						snapshotBaseCost: lens?.basePrice,
+						snapshotMountingPrice: lens?.mountingPrice,
+						snapshotShippingPrice: lens?.shippingPrice,
+						snapshotSalePrice: lens?.salePrice ?? undefined,
+						snapshotPriceType: lens?.priceType
 					});
 
 					isFirstEye = false;
@@ -303,7 +315,10 @@
 						quantity: eyeCount,
 						unitPrice: t.price,
 						discount: 0,
-						discountType: DiscountType.FIXED
+						discountType: DiscountType.FIXED,
+						snapshotName: t.name,
+						snapshotBrand: lens?.supplier?.name ?? undefined,
+						snapshotTreatmentCategory: t.category
 					});
 				}
 			}

@@ -12,7 +12,7 @@
 		FlaskConical
 	} from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import { ALL_DISCOUNT_TYPES, DiscountType, TreatmentCategory } from '$lib/shared/enums';
+	import { DiscountType, TreatmentCategory } from '$lib/shared/enums';
 	import {
 		getLensTypeLabel,
 		getLensSourceLabel,
@@ -527,7 +527,7 @@
 					{/if}
 
 					<!-- Unit Price -->
-					<div class={item.kind === 'product' ? 'sm:col-span-2' : 'sm:col-span-3'}>
+					<div class={item.kind === 'product' ? 'sm:col-span-3' : 'sm:col-span-4'}>
 						<Label for="price-{item.id}" class="mb-1.5 text-sm">Precio ($)</Label>
 						<Input
 							id="price-{item.id}"
@@ -539,28 +539,8 @@
 						/>
 					</div>
 
-					<!-- Item Discount -->
-					<div class="sm:col-span-2">
-						<Label for="disc-{item.id}" class="mb-1.5 text-sm">Descuento</Label>
-						<div class="flex items-center gap-1">
-							<Input
-								id="disc-{item.id}"
-								type="number"
-								bind:value={item.discount}
-								step="0.01"
-								min="0"
-								class="min-w-0 flex-1 font-mono"
-							/>
-							<Select bind:value={item.discountType} class="w-16 shrink-0">
-								{#each ALL_DISCOUNT_TYPES as dt (dt)}
-									<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
-								{/each}
-							</Select>
-						</div>
-					</div>
-
 					<!-- Line Total -->
-					<div class="sm:col-span-2">
+					<div class="sm:col-span-3">
 						<div class="mb-1.5 text-sm">&nbsp;</div>
 						<p class="flex h-[42px] items-center font-mono text-base font-semibold text-blue-700">
 							{formatPrice(itemLineTotal(item))}

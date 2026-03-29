@@ -71,6 +71,18 @@ export const SaleItemSchema = z.object({
 	unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
 	discount: CoercedNumber.min(0).default(0),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
+
+	// Snapshot fields (immutable at time of sale)
+	snapshotName: z.string().optional(),
+	snapshotSku: z.string().optional(),
+	snapshotBrand: z.string().optional(),
+	snapshotBaseCost: CoercedNumber.optional(),
+	snapshotMountingPrice: CoercedNumber.optional(),
+	snapshotShippingPrice: CoercedNumber.optional(),
+	snapshotSalePrice: CoercedNumber.optional(),
+	snapshotPriceType: z.string().optional(),
+	snapshotTreatmentCategory: z.string().optional(),
+
 	notes: z.string().optional()
 });
 
