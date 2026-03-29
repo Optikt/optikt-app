@@ -16,14 +16,7 @@ import {
 	ListPaginationSchema,
 	OptionalUrlSchema
 } from './common';
-import { TreatmentPolicySchema } from './lenses';
 
-/** JSON string → parsed array pipeline for treatment policies */
-const TreatmentPoliciesJsonSchema = z
-	.string()
-	.default('[]')
-	.transform((val) => JSON.parse(val) as unknown[])
-	.pipe(z.array(TreatmentPolicySchema));
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
 	type: z.enum(SupplierType).optional(),
@@ -45,7 +38,6 @@ export const CreateSupplierSchema = z.object({
 	contactRole: z.string().optional(),
 	notes: z.string().optional(),
 	defaultCurrency: z.enum(CurrencyCode).optional(),
-	treatmentPolicies: TreatmentPoliciesJsonSchema
 });
 
 export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({

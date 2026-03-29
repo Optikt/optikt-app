@@ -9,38 +9,21 @@ import {
 	boolean,
 	integer,
 	doublePrecision,
-	foreignKey,
-	json,
-	unique
+	foreignKey
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
 import { enumValues } from './utils';
-import { LensCatalogSource, LensPricingUnit } from '../../../shared/enums/lensTypes';
-import {
-	PhotochromicMode,
-	LensTreatmentAvailability,
-	LensRangeAvailability,
-	type LensTreatmentPolicy
-} from '../../../shared/contracts/lenses';
+import { LensCatalogSource, LensPriceType } from '../../../shared/enums/lensTypes';
 
 // ============================================================================
-// LENS ENUMS — derived from shared enums / contracts (single source of truth)
+// LENS ENUMS — derived from shared enums (single source of truth)
 // ============================================================================
 
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
-export const lensPricingUnitEnum = pgEnum('lens_pricing_unit', enumValues(LensPricingUnit));
-export const photochromicModeEnum = pgEnum('photochromic_mode', enumValues(PhotochromicMode));
-export const rangeAvailabilityEnum = pgEnum(
-	'range_availability',
-	enumValues(LensRangeAvailability)
-);
-export const treatmentAvailabilityEnum = pgEnum(
-	'treatment_availability',
-	enumValues(LensTreatmentAvailability)
-);
+export const lensPriceTypeEnum = pgEnum('lens_price_type', enumValues(LensPriceType));
 
 // ============================================================================
-// LENS MATERIALS
+// LENS MATERIALS (unchanged)
 // ============================================================================
 
 export const lensMaterials = pgTable(
@@ -70,36 +53,7 @@ export const lensMaterials = pgTable(
 );
 
 // ============================================================================
-// LENS TREATMENTS
-// ============================================================================
-
-export const lensTreatments = pgTable(
-	'lens_treatments',
-	{
-		id: uuid().primaryKey().notNull().defaultRandom(),
-		name: varchar().notNull(),
-		code: varchar().notNull(),
-		description: varchar(),
-		isActive: boolean('is_active').notNull().default(true),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
-	},
-	(table) => [
-		uniqueIndex('ix_lens_treatments_code').using(
-			'btree',
-			table.code.asc().nullsLast().op('text_ops')
-		),
-		index('ix_lens_treatments_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
-		uniqueIndex('ix_lens_treatments_name').using(
-			'btree',
-			table.name.asc().nullsLast().op('text_ops')
-		)
-	]
-);
-
-// ============================================================================
-// LENS CATALOG ITEMS
+// LENS CATALOG ITEMS (simplified)
 // ============================================================================
 
 export const lensCatalogItems = pgTable(
@@ -109,43 +63,22 @@ export const lensCatalogItems = pgTable(
 		source: lensCatalogSourceEnum().notNull().default('LAB'),
 		supplierId: uuid('supplier_id').notNull(),
 		name: varchar().notNull(),
-		brand: varchar(),
-		technology: varchar(),
 		type: varchar().notNull(),
 		materialId: uuid('material_id').notNull(),
-		baseFeatures: json('base_features').$type<string[]>(),
 
-		// --- Identity traits ---
-		photochromicMode: photochromicModeEnum('photochromic_mode').notNull().default('NONE'),
-		rangeAvailability: rangeAvailabilityEnum('range_availability')
-			.notNull()
-			.default('EXACT_RANGES'),
-
-		// --- Treatment policies (per-item, provider-scoped) ---
-		treatmentPolicies: json('treatment_policies')
-			.$type<LensTreatmentPolicy[]>()
-			.notNull()
-			.default([]),
+		// --- Inherent traits (booleans) ---
+		hasAr: boolean('has_ar').notNull().default(false),
+		hasBluecut: boolean('has_bluecut').notNull().default(false),
+		isPhotochromic: boolean('is_photochromic').notNull().default(false),
 
 		// --- Pricing ---
-		pricingUnit: lensPricingUnitEnum('pricing_unit').notNull().default('UNIT'),
+		priceType: lensPriceTypeEnum('price_type').notNull().default('UNIT'),
 		basePrice: doublePrecision('base_price').notNull(),
-		suggestedMultiplier: doublePrecision('suggested_multiplier'),
-
-		// --- Purchase policy ---
-		allowsSingleUnitOrder: boolean('allows_single_unit_order').notNull().default(false),
-		singleUnitRequiresConfirmation: boolean('single_unit_requires_confirmation')
-			.notNull()
-			.default(false),
-		singleUnitSurcharge: doublePrecision('single_unit_surcharge').notNull().default(0),
-		minimumOrderUnits: integer('minimum_order_units').notNull().default(1),
 		mountingPrice: doublePrecision('mounting_price').notNull().default(0),
 		shippingPrice: doublePrecision('shipping_price').notNull().default(0),
 
 		// --- Operations ---
-		deliveryDays: integer('delivery_days'),
 		stock: integer(),
-		refractiveIndex: doublePrecision('refractive_index'),
 		notes: varchar(),
 		isActive: boolean('is_active').notNull().default(true),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
@@ -176,50 +109,7 @@ export const lensCatalogItems = pgTable(
 );
 
 // ============================================================================
-// SUPPLIER LENS TREATMENTS (Junction Table)
-// ============================================================================
-
-export const supplierLensTreatments = pgTable(
-	'supplier_lens_treatments',
-	{
-		id: uuid().primaryKey().notNull().defaultRandom(),
-		supplierId: uuid('supplier_id').notNull(),
-		treatmentId: uuid('treatment_id').notNull(),
-		price: doublePrecision().notNull(),
-		isAvailable: boolean('is_available').notNull().default(true),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
-	},
-	(table) => [
-		index('ix_supplier_lens_treatments_id').using(
-			'btree',
-			table.id.asc().nullsLast().op('uuid_ops')
-		),
-		index('ix_supplier_lens_treatments_supplier_id').using(
-			'btree',
-			table.supplierId.asc().nullsLast().op('uuid_ops')
-		),
-		index('ix_supplier_lens_treatments_treatment_id').using(
-			'btree',
-			table.treatmentId.asc().nullsLast().op('uuid_ops')
-		),
-		foreignKey({
-			columns: [table.supplierId],
-			foreignColumns: [suppliers.id],
-			name: 'supplier_lens_treatments_supplier_id_fkey'
-		}).onDelete('cascade'),
-		foreignKey({
-			columns: [table.treatmentId],
-			foreignColumns: [lensTreatments.id],
-			name: 'supplier_lens_treatments_treatment_id_fkey'
-		}).onDelete('cascade'),
-		unique('uq_supplier_treatment').on(table.supplierId, table.treatmentId)
-	]
-);
-
-// ============================================================================
-// LENS OPTICAL RANGES (one-to-many from lensCatalogItems)
+// LENS OPTICAL RANGES (simplified — removed mirrorGroup)
 // ============================================================================
 
 export const lensOpticalRanges = pgTable(
@@ -233,7 +123,6 @@ export const lensOpticalRanges = pgTable(
 		cylinderMax: doublePrecision('cylinder_max'),
 		additionMin: doublePrecision('addition_min'),
 		additionMax: doublePrecision('addition_max'),
-		mirrorGroup: uuid('mirror_group'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 	},
@@ -254,11 +143,7 @@ export const lensOpticalRanges = pgTable(
 // Type exports
 export type LensMaterial = typeof lensMaterials.$inferSelect;
 export type NewLensMaterial = typeof lensMaterials.$inferInsert;
-export type LensTreatment = typeof lensTreatments.$inferSelect;
-export type NewLensTreatment = typeof lensTreatments.$inferInsert;
 export type LensCatalogItem = typeof lensCatalogItems.$inferSelect;
 export type NewLensCatalogItem = typeof lensCatalogItems.$inferInsert;
 export type LensOpticalRange = typeof lensOpticalRanges.$inferSelect;
 export type NewLensOpticalRange = typeof lensOpticalRanges.$inferInsert;
-export type SupplierLensTreatment = typeof supplierLensTreatments.$inferSelect;
-export type NewSupplierLensTreatment = typeof supplierLensTreatments.$inferInsert;

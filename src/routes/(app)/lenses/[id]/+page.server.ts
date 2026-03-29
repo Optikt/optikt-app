@@ -1,7 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses';
-import { findAvailableSurplusByCatalogItemId } from '$lib/server/db/queries/surplusUnits';
 import { isValidUuid } from '$lib/utils/uuid';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -19,12 +18,5 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Lente no encontrado');
 	}
 
-	// Surplus applies to non-LAB items (pair purchases where one unit is leftover)
-	let surplusCount = 0;
-	if (item.source !== 'LAB') {
-		const surplusUnits = await findAvailableSurplusByCatalogItemId(item.id);
-		surplusCount = surplusUnits.length;
-	}
-
-	return { item, surplusCount };
+	return { item };
 };

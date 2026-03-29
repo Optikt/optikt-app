@@ -1,6 +1,5 @@
 import { LensType } from '$lib/shared/enums/lensTypes';
 import { PatientEye } from './common';
-import type { CoreLensTreatmentCode } from './lenses';
 
 export enum SearchScope {
 	GLOBAL = 'GLOBAL',
@@ -23,10 +22,9 @@ export interface LensSearchFilters {
 	lensType: LensType | null;
 	supplierId: string | null;
 	materialId: string | null;
-	onlySurplusStock: boolean;
-	onlyLowStock: boolean;
 	photochromic: boolean | null;
-	requiredTreatments: CoreLensTreatmentCode[];
+	hasAr: boolean | null;
+	hasBluecut: boolean | null;
 	eyes: OpticalEyeQuery[];
 }
 

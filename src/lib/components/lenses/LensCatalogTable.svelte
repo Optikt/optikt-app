@@ -4,8 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import { LensCatalogSource, getLensSourceLabel, getPricingUnitLabel } from '$lib/shared/enums';
-	import { PhotochromicMode, LensTreatmentAvailability } from '$lib/shared/contracts';
+	import { LensCatalogSource, getLensSourceLabel, getPriceTypeLabel } from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { goto } from '$app/navigation';
@@ -65,7 +64,6 @@
 		<TableHeadCell class="font-semibold">Proveedor</TableHeadCell>
 		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
 		<TableHeadCell class="font-semibold">Material</TableHeadCell>
-		<TableHeadCell class="font-semibold">Tecnología</TableHeadCell>
 		<TableHeadCell class="font-semibold">Rangos</TableHeadCell>
 		<TableHeadCell class="text-right font-semibold">Precio Compra</TableHeadCell>
 	{/snippet}
@@ -75,9 +73,6 @@
 		<TableBodyCell>
 			<div>
 				<p class="font-medium text-slate-800">{item.name}</p>
-				{#if item.brand}
-					<p class="text-xs text-slate-500">{item.brand}</p>
-				{/if}
 			</div>
 		</TableBodyCell>
 		<TableBodyCell>
@@ -90,18 +85,15 @@
 		</TableBodyCell>
 		<TableBodyCell>
 			<LensTypeBadge type={item.type} />
-			{#if item.photochromicMode === PhotochromicMode.INHERENT}
+			{#if item.isPhotochromic}
 				<TreatmentBadge type="photochromic" class="ml-1" />
 			{/if}
-			{#each item.treatmentPolicies ?? [] as policy (policy.code)}
-				{#if policy.availability === LensTreatmentAvailability.INHERENT || policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
-					{#if policy.code === 'BLUECUT'}
-						<TreatmentBadge type="blueBlock" class="ml-1" />
-					{:else if policy.code === 'AR'}
-						<TreatmentBadge type="antiReflective" class="ml-1" />
-					{/if}
-				{/if}
-			{/each}
+			{#if item.hasBluecut}
+				<TreatmentBadge type="blueBlock" class="ml-1" />
+			{/if}
+			{#if item.hasAr}
+				<TreatmentBadge type="antiReflective" class="ml-1" />
+			{/if}
 		</TableBodyCell>
 		<TableBodyCell>
 			{#if item.material}
@@ -109,9 +101,6 @@
 			{:else}
 				<span class="text-slate-400">—</span>
 			{/if}
-		</TableBodyCell>
-		<TableBodyCell class="text-slate-600">
-			{item.technology ?? '—'}
 		</TableBodyCell>
 		<TableBodyCell>
 			{#if displayRanges.length > 0}
@@ -158,7 +147,7 @@
 		<TableBodyCell class="text-right font-mono font-medium text-slate-800">
 			{formatPrice(item.basePrice)}
 			<span class="font-normal text-slate-400">
-				({getPricingUnitLabel(item.pricingUnit)})
+				({getPriceTypeLabel(item.priceType)})
 			</span>
 		</TableBodyCell>
 	{/snippet}

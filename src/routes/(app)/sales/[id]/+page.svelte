@@ -219,9 +219,6 @@
 										{#if item.product?.sku}
 											<p class="font-mono text-xs text-slate-500">{item.product.sku}</p>
 										{/if}
-										{#if item.lensCatalogItem?.brand}
-											<p class="text-xs text-slate-500">{item.lensCatalogItem.brand}</p>
-										{/if}
 									</div>
 								</div>
 							</td>

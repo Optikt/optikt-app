@@ -4,7 +4,7 @@
 	import { SearchInput } from '$lib/components/ui';
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage } from '$lib/utils';
-	import { LensMaterialsTab, LensTreatmentsTab, LensCatalogTable } from '$lib/components/lenses';
+	import { LensMaterialsTab, LensCatalogTable } from '$lib/components/lenses';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
 	import {
 		LensType,
@@ -19,7 +19,7 @@
 	import { resolve } from '$app/paths';
 
 	let { data }: { data: PageData } = $props();
-	let { materials, treatments, catalogItems, suppliers } = untrack(() => data);
+	let { materials, catalogItems, suppliers } = untrack(() => data);
 
 	// Catalog state
 	let items = $state<LensCatalogItemWithRelations[]>(catalogItems);
@@ -112,10 +112,6 @@
 
 		<TabItem title="Materiales">
 			<LensMaterialsTab initialMaterials={materials} />
-		</TabItem>
-
-		<TabItem title="Tratamientos">
-			<LensTreatmentsTab initialTreatments={treatments} {suppliers} />
 		</TabItem>
 	</Tabs>
 </div>

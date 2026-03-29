@@ -1,6 +1,5 @@
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-import type { CoreLensTreatmentCode, LensOrderedPrescription } from '$lib/shared/contracts/lenses';
-import type { CompatibilityVerdict } from '$lib/shared/matching/types';
+import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
 export type ItemKind = 'product' | 'lens';
 
@@ -8,15 +7,13 @@ export type ItemKind = 'product' | 'lens';
 export interface LensEyeEntry {
 	enabled: boolean;
 	prescription: LensOrderedPrescription;
-	compatibilityVerdict: CompatibilityVerdict | null;
 }
 
-/** A lens pair entry — both eyes sharing the same catalog item + treatments */
+/** A lens pair entry — both eyes sharing the same catalog item */
 export interface LensPairEntry {
 	catalogItemId: string;
 	od: LensEyeEntry;
 	oi: LensEyeEntry;
-	selectedOptionalTreatments: CoreLensTreatmentCode[];
 }
 
 export interface SaleItemRow {
@@ -48,8 +45,7 @@ export interface NewCustomerData {
 export function createEmptyEyeEntry(): LensEyeEntry {
 	return {
 		enabled: true,
-		prescription: { sphere: null, cylinder: null, axis: null, addition: null },
-		compatibilityVerdict: null
+		prescription: { sphere: null, cylinder: null, axis: null, addition: null }
 	};
 }
 
@@ -58,7 +54,6 @@ export function createEmptyLensPair(): LensPairEntry {
 	return {
 		catalogItemId: '',
 		od: createEmptyEyeEntry(),
-		oi: createEmptyEyeEntry(),
-		selectedOptionalTreatments: []
+		oi: createEmptyEyeEntry()
 	};
 }

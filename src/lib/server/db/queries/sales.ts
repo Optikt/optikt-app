@@ -43,7 +43,7 @@ export type SaleWithRelations = Sale & {
 
 export type SaleItemWithDetails = SaleItem & {
 	product: { id: string; name: string; sku: string } | null;
-	lensCatalogItem: { id: string; name: string; brand: string | null; type: string } | null;
+	lensCatalogItem: { id: string; name: string; type: string } | null;
 };
 
 // ============================================================================
@@ -323,7 +323,6 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
 			lensCatalogItem: {
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,
-				brand: lensCatalogItems.brand,
 				type: lensCatalogItems.type
 			}
 		})
