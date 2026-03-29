@@ -104,7 +104,7 @@
 		mountingPrice: initialItem?.mountingPrice?.toString() ?? '0',
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
 		// Operations
-		stock: initialItem?.stock?.toString() ?? '0',
+		stock: initialItem?.stock != null ? initialItem.stock.toString() : '',
 		notes: initialItem?.notes ?? ''
 	});
 
@@ -742,31 +742,40 @@
 			{#if formData.source === LensCatalogSource.FINISHED}
 				<div>
 					<Label for="lc_stock" class="mb-2">Stock</Label>
+					<!-- Only submit stock when a value is entered; empty = null (on-demand) -->
+					{#if formData.stock !== ''}
+						<input type="hidden" name="stock" value={formData.stock} />
+					{/if}
 					<Input
 						id="lc_stock"
-						name="stock"
 						bind:value={formData.stock}
 						type="number"
 						min="0"
-						placeholder="0"
+						placeholder="Vacío = se pide en demanda"
 						class="font-mono placeholder:text-slate-400"
 					/>
-					{#if Number(formData.stock) > 0}
+					{#if formData.stock !== '' && Number(formData.stock) > 0}
 						<p class="mt-1.5 flex items-center gap-1 text-xs text-teal-600">
 							<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"
 							></span>
 							{formData.stock} unidad{Number(formData.stock) !== 1 ? 'es' : ''} en inventario
 						</p>
-					{:else}
-						<p class="mt-1.5 flex items-center gap-1 text-xs text-amber-600">
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" aria-hidden="true"
+					{:else if formData.stock !== '' && Number(formData.stock) === 0}
+						<p class="mt-1.5 flex items-center gap-1 text-xs text-red-500">
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true"
 							></span>
-							Se pedirá al proveedor en cada venta
+							Sin stock — se controla inventario
+						</p>
+					{:else}
+						<p class="mt-1.5 flex items-center gap-1 text-xs text-sky-600">
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true"
+							></span>
+							Se pide en demanda — sin control de inventario
 						</p>
 					{/if}
 				</div>
 			{:else}
-				<input type="hidden" name="stock" value="0" />
+				<!-- LAB lenses are always ordered on demand — no stock tracking -->
 			{/if}
 		</div>
 	</div>

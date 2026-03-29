@@ -241,6 +241,10 @@ export const createLensCatalogItemForm = form(
 				);
 			}
 
+			// LAB lenses are always on-demand; FINISHED with no stock value = on-demand
+			const stockValue =
+				rest.source === 'LAB' ? null : (rest.stock !== undefined ? rest.stock : null);
+
 			const [item] = await tx
 				.insert(lensCatalogItems)
 				.values({
@@ -248,6 +252,7 @@ export const createLensCatalogItemForm = form(
 					id: crypto.randomUUID(),
 					supplierId,
 					materialId,
+					stock: stockValue,
 					createdAt: now,
 					updatedAt: now
 				})
@@ -338,12 +343,21 @@ export const updateLensCatalogItemForm = form(
 					);
 				}
 
+				// Force stock=null for LAB lenses; for FINISHED, undefined → null (on-demand)
+				const stockOverride =
+					rest.source === 'LAB'
+						? { stock: null }
+						: rest.stock === undefined
+							? { stock: null }
+							: {};
+
 				const [updated] = await tx
 					.update(lensCatalogItems)
 					.set({
 						...rest,
 						...(supplierId !== undefined && { supplierId }),
 						...(materialId !== undefined && { materialId }),
+						...stockOverride,
 						updatedAt: now
 					})
 					.where(eq(lensCatalogItems.id, id))
