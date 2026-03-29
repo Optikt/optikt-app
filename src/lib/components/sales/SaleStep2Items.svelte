@@ -12,7 +12,7 @@
 		FlaskConical
 	} from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import { DiscountType, TreatmentCategory } from '$lib/shared/enums';
+	import { DiscountType, TreatmentCategory, LensCatalogSource } from '$lib/shared/enums';
 	import {
 		getLensTypeLabel,
 		getLensSourceLabel,
@@ -137,6 +137,8 @@
 		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
 		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
 		if (!lens?.supplier) return [];
+		// FINISHED lenses come with coatings already applied — no treatments to add
+		if (lens.source === LensCatalogSource.FINISHED) return [];
 		return treatmentCache[lens.supplier.id] ?? [];
 	}
 
@@ -167,13 +169,13 @@
 		return item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
 	}
 
-	// Load treatments when a lens item's supplier changes
+	// Load treatments when a lens item's supplier changes (only for LAB lenses)
 	$effect(() => {
 		const lensItemsInCart = items.filter((i) => i.kind === 'lens' && i.lensPair?.catalogItemId);
 		untrack(() => {
 			for (const item of lensItemsInCart) {
 				const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
-				if (lens?.supplier?.id) {
+				if (lens?.supplier?.id && lens.source !== LensCatalogSource.FINISHED) {
 					loadTreatmentsForSupplier(lens.supplier.id);
 				}
 			}
@@ -373,6 +375,70 @@
 	/** Base lens cost respecting PAIR vs UNIT pricing */
 	function lensBaseCost(lens: LensCatalogItemWithRelations, eyeCount: number): number {
 		return lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
+	}
+
+	// ============================================================================
+	// OPTICAL RANGE VALIDATION
+	// ============================================================================
+
+	/** Check if a value falls within [min, max]. Returns true if no range boundary defined. */
+	function inRange(value: number | null, min: number | null, max: number | null): boolean {
+		if (value === null || value === 0) return true; // no value to check
+		if (min !== null && value < min) return false;
+		if (max !== null && value > max) return false;
+		return true;
+	}
+
+	/** Returns warning messages if the prescription doesn't fit any of the lens's optical ranges. */
+	function getRangeWarnings(item: SaleItemRow): string[] {
+		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
+		if (!anyRxFieldFilled) return [];
+
+		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (!lens || lens.ranges.length === 0) return [];
+
+		const warnings: string[] = [];
+		const eyes: { label: string; enabled: boolean; sphere: string; cylinder: string; addition: string }[] = [
+			{
+				label: 'OD',
+				enabled: item.lensPair.od.enabled,
+				sphere: prescriptionValues.odSphere,
+				cylinder: prescriptionValues.odCylinder,
+				addition: prescriptionValues.odAddition
+			},
+			{
+				label: 'OI',
+				enabled: item.lensPair.oi.enabled,
+				sphere: prescriptionValues.oiSphere,
+				cylinder: prescriptionValues.oiCylinder,
+				addition: prescriptionValues.oiAddition
+			}
+		];
+
+		for (const eye of eyes) {
+			if (!eye.enabled) continue;
+			const sphere = parseNullableNum(eye.sphere);
+			const cylinder = parseNullableNum(eye.cylinder);
+			const addition = parseNullableNum(eye.addition);
+
+			// Check if prescription fits at least one range
+			const fitsAny = lens.ranges.some(
+				(r) =>
+					inRange(sphere, r.sphereMin, r.sphereMax) &&
+					inRange(cylinder, r.cylinderMin ?? null, r.cylinderMax ?? null) &&
+					inRange(addition, r.additionMin ?? null, r.additionMax ?? null)
+			);
+
+			if (!fitsAny) {
+				const parts: string[] = [];
+				if (sphere !== null) parts.push(`Esf ${sphere >= 0 ? '+' : ''}${sphere.toFixed(2)}`);
+				if (cylinder !== null) parts.push(`Cil ${cylinder >= 0 ? '+' : ''}${cylinder.toFixed(2)}`);
+				if (addition !== null) parts.push(`Add ${addition >= 0 ? '+' : ''}${addition.toFixed(2)}`);
+				warnings.push(`${eye.label} (${parts.join(', ')}) fuera del rango óptico del cristal`);
+			}
+		}
+
+		return warnings;
 	}
 </script>
 
@@ -589,6 +655,19 @@
 							<span class="text-xs font-medium text-red-500">Debe habilitar al menos un ojo</span>
 						{/if}
 					</div>
+
+					<!-- Optical range warning -->
+					{@const rangeWarnings = getRangeWarnings(item)}
+					{#if rangeWarnings.length > 0}
+						<div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+							<p class="mb-1 text-xs font-semibold text-amber-700 uppercase">
+								Fuera de rango óptico
+							</p>
+							{#each rangeWarnings as w (w)}
+								<p class="text-xs text-amber-600">• {w}</p>
+							{/each}
+						</div>
+					{/if}
 
 					<!-- Lens cost breakdown -->
 					{@const eyeCount = getEnabledEyeCount(item)}
