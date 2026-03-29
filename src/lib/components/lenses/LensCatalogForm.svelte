@@ -13,9 +13,7 @@
 		LensCatalogSource,
 		LensPriceType,
 		LENS_SOURCE_LABELS,
-		LENS_PRICE_TYPE_LABELS,
 		ALL_LENS_TYPES,
-		ALL_LENS_PRICE_TYPES,
 		getLensTypeLabel,
 		getPriceTypeLabel
 	} from '$lib/shared/enums';

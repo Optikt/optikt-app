@@ -62,20 +62,17 @@
 	);
 
 	const lensOptions: SelectOption[] = $derived(
-		lensItems.map((l) => {
-			const price = l.suggestedMultiplier ? l.basePrice * l.suggestedMultiplier : l.basePrice;
-			return {
-				id: l.id,
-				label: `${l.name}${l.brand ? ` (${l.brand})` : ''}`,
-				name: l.name,
-				sku: '',
-				brand: l.brand ?? '',
-				stock: l.stock,
-				price,
-				productType: '',
-				source: l.source
-			};
-		})
+		lensItems.map((l) => ({
+			id: l.id,
+			label: l.name,
+			name: l.name,
+			sku: '',
+			brand: '',
+			stock: l.stock,
+			price: l.basePrice,
+			productType: '',
+			source: l.source
+		}))
 	);
 
 	const options = $derived(kind === 'product' ? productOptions : lensOptions);
@@ -105,10 +102,7 @@
 			} else {
 				const lens = lensItems.find((l) => l.id === newId);
 				if (lens) {
-					const price = lens.suggestedMultiplier
-						? lens.basePrice * lens.suggestedMultiplier
-						: lens.basePrice;
-					onselect(newId, price);
+					onselect(newId, lens.basePrice);
 				}
 			}
 		} else if (!newId && onselect) {

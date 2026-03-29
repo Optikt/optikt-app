@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	validatePrescriptionFields,
 	hasPrescriptionErrors,
-	getRequiredEyes,
-	type PrescriptionFieldErrors
+	getRequiredEyes
 } from './saleItemHelpers';
 import { DiscountType } from '$lib/shared/enums';
 import type { SaleItemRow } from './newSaleTypes';

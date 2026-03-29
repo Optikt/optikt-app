@@ -19,11 +19,9 @@ import {
 	DiscountType
 } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { PatientEye } from '$lib/shared/contracts/common';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
-const ALL_PATIENT_EYES = Object.values(PatientEye) as [string, ...string[]];
 
 // ============================================================================
 // LIST / FILTER SCHEMAS
@@ -40,13 +38,6 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 // ============================================================================
 // PRESCRIPTION SNAPSHOT SCHEMA (reusable)
 // ============================================================================
-
-const PrescriptionSnapshotSchema = z.object({
-	sphere: z.number().nullable(),
-	cylinder: z.number().nullable(),
-	axis: z.number().int().nullable(),
-	addition: z.number().nullable()
-});
 
 // ============================================================================
 // SALE ITEM SCHEMA (redesigned — PRODUCT | LENS_PAIR | TREATMENT)

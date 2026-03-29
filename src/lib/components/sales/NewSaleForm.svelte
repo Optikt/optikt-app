@@ -7,7 +7,7 @@
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
+	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { PatientEye } from '$lib/shared/contracts/common';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -173,8 +173,6 @@
 		})
 	);
 
-	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
-
 	const requiredEyes = $derived(getRequiredEyes(items));
 
 	const rxErrors = $derived(
@@ -182,6 +180,8 @@
 	);
 
 	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
+
+	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
 
 	const canSubmit = $derived(step1Valid && step2Valid && !submitting);
 
@@ -236,6 +236,7 @@
 			for (const item of items) {
 				if (item.kind === 'product') {
 					saleItems.push({
+						itemType: SaleItemType.PRODUCT,
 						productId: item.productId,
 						quantity: item.quantity,
 						unitPrice: item.unitPrice,
@@ -255,10 +256,11 @@
 					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
 				];
 
-				for (const { entry, eye } of eyes) {
+				for (const { entry } of eyes) {
 					if (!entry.enabled) continue;
 
 					saleItems.push({
+						itemType: SaleItemType.LENS_PAIR,
 						lensCatalogItemId: pair.catalogItemId,
 						prescriptionId: customerPrescription?.id,
 						odSphere: entry.prescription.sphere ?? undefined,

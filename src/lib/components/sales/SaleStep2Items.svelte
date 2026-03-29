@@ -13,8 +13,7 @@
 		computeItemDiscount as _computeDiscount,
 		itemLineTotal as _lineTotal,
 		getRequiredEyes,
-		validatePrescriptionFields,
-		hasPrescriptionErrors
+		validatePrescriptionFields
 	} from './saleItemHelpers';
 	import type { PrescriptionFieldErrors } from './saleItemHelpers';
 	import ItemSelect from './ItemSelect.svelte';
