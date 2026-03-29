@@ -1,12 +1,27 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Button, Select, Input, Label } from 'flowbite-svelte';
-	import { Plus, Trash2, ChevronLeft, ChevronRight, User, Hash, Eye } from '@lucide/svelte';
+	import {
+		Plus,
+		Trash2,
+		ChevronLeft,
+		ChevronRight,
+		User,
+		Hash,
+		Eye,
+		FlaskConical
+	} from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
-	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums/lensTypes';
+	import { ALL_DISCOUNT_TYPES, DiscountType, TreatmentCategory } from '$lib/shared/enums';
+	import {
+		getLensTypeLabel,
+		getLensSourceLabel,
+		getTreatmentCategoryLabel
+	} from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
 	import {
 		findProduct,
 		findLensItem,
@@ -64,6 +79,7 @@
 			productId: '',
 			quantity: 1,
 			lensPair: null,
+			treatments: [],
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -83,6 +99,7 @@
 	function handleKindChange(item: SaleItemRow) {
 		item.productId = '';
 		item.lensPair = null;
+		item.treatments = [];
 		item.unitPrice = 0;
 	}
 
@@ -95,10 +112,71 @@
 				item.lensPair = createEmptyLensPair();
 			}
 			item.lensPair.catalogItemId = id;
+			item.treatments = [];
 			syncPrescription(item);
 			recalcSuggestedPrice(item);
 		}
 	}
+
+	// ============================================================================
+	// TREATMENTS
+	// ============================================================================
+
+	/** Cache of treatments per supplier to avoid re-fetching */
+	let treatmentCache = $state<Record<string, SupplierTreatment[]>>({});
+
+	async function loadTreatmentsForSupplier(supplierId: string): Promise<SupplierTreatment[]> {
+		if (treatmentCache[supplierId]) return treatmentCache[supplierId];
+		const treatments = await listSupplierTreatments({ supplierId });
+		treatmentCache[supplierId] = treatments.filter((t) => t.isActive);
+		return treatmentCache[supplierId];
+	}
+
+	function getAvailableTreatments(item: SaleItemRow): SupplierTreatment[] {
+		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
+		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (!lens?.supplier) return [];
+		return treatmentCache[lens.supplier.id] ?? [];
+	}
+
+	function toggleTreatment(item: SaleItemRow, treatment: SupplierTreatment) {
+		const idx = item.treatments.findIndex((t) => t.supplierTreatmentId === treatment.id);
+		if (idx >= 0) {
+			item.treatments = item.treatments.filter((t) => t.supplierTreatmentId !== treatment.id);
+		} else {
+			item.treatments = [
+				...item.treatments,
+				{
+					supplierTreatmentId: treatment.id,
+					name: treatment.name,
+					category: treatment.category,
+					price: treatment.price
+				}
+			];
+		}
+		recalcSuggestedPrice(item);
+	}
+
+	function isTreatmentSelected(item: SaleItemRow, treatmentId: string): boolean {
+		return item.treatments.some((t) => t.supplierTreatmentId === treatmentId);
+	}
+
+	function treatmentsTotal(item: SaleItemRow): number {
+		return item.treatments.reduce((sum, t) => sum + t.price, 0);
+	}
+
+	// Load treatments when a lens item's supplier changes
+	$effect(() => {
+		const lensItemsInCart = items.filter((i) => i.kind === 'lens' && i.lensPair?.catalogItemId);
+		untrack(() => {
+			for (const item of lensItemsInCart) {
+				const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+				if (lens?.supplier?.id) {
+					loadTreatmentsForSupplier(lens.supplier.id);
+				}
+			}
+		});
+	});
 
 	// ============================================================================
 	// PRESCRIPTION SYNC
@@ -239,7 +317,8 @@
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return;
 
-		const totalCost = lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice;
+		const totalCost =
+			lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice + treatmentsTotal(item);
 		item.unitPrice = totalCost;
 	}
 </script>
@@ -502,16 +581,64 @@
 										<span class="font-mono">{formatPrice(lens.shippingPrice)}</span>
 									</div>
 								{/if}
+								{#each item.treatments as t (t.supplierTreatmentId)}
+									<div class="flex justify-between">
+										<span>{t.name}</span>
+										<span class="font-mono">{formatPrice(t.price)}</span>
+									</div>
+								{/each}
 								<div
 									class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700"
 								>
 									<span>Costo total</span>
 									<span class="font-mono"
 										>{formatPrice(
-											lens.basePrice * eyeCount + lens.mountingPrice + lens.shippingPrice
+											lens.basePrice * eyeCount +
+												lens.mountingPrice +
+												lens.shippingPrice +
+												treatmentsTotal(item)
 										)}</span
 									>
 								</div>
+							</div>
+						</div>
+					{/if}
+
+					<!-- Treatment selector -->
+					{@const available = getAvailableTreatments(item)}
+					{#if available.length > 0}
+						<div class="mt-3 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+							<div class="mb-2 flex items-center gap-2">
+								<FlaskConical class="h-3.5 w-3.5 text-violet-500" />
+								<span class="text-xs font-semibold tracking-wide text-violet-600 uppercase">
+									Tratamientos
+								</span>
+							</div>
+							<div class="space-y-1.5">
+								{#each available as treatment (treatment.id)}
+									<label
+										class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-violet-100/50"
+									>
+										<input
+											type="checkbox"
+											checked={isTreatmentSelected(item, treatment.id)}
+											onchange={() => toggleTreatment(item, treatment)}
+											class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+										/>
+										<span class="flex-1 text-sm text-slate-700">{treatment.name}</span>
+										<span
+											class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+											{treatment.category === TreatmentCategory.AR
+												? 'bg-blue-100 text-blue-700'
+												: 'bg-violet-100 text-violet-700'}"
+										>
+											{getTreatmentCategoryLabel(treatment.category)}
+										</span>
+										<span class="font-mono text-sm text-slate-600"
+											>{formatPrice(treatment.price)}</span
+										>
+									</label>
+								{/each}
 							</div>
 						</div>
 					{/if}

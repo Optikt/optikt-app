@@ -8,7 +8,8 @@
 		FileText,
 		Hash,
 		Eye,
-		Package
+		Package,
+		FlaskConical
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
@@ -24,6 +25,7 @@
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
+	import { getTreatmentCategoryLabel } from '$lib/shared/enums';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -69,7 +71,13 @@
 	// DERIVED TOTALS
 	// ============================================================================
 
-	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
+	function treatmentsTotal(item: SaleItemRow): number {
+		return item.treatments.reduce((sum, t) => sum + t.price, 0);
+	}
+
+	const subtotal = $derived(
+		items.reduce((acc, item) => acc + itemLineTotal(item) + treatmentsTotal(item), 0)
+	);
 
 	const globalDiscountAmount = $derived(
 		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
@@ -341,6 +349,27 @@
 										</div>
 									</td>
 								</tr>
+							{/if}
+							<!-- Treatment breakdown -->
+							{#if item.treatments.length > 0}
+								{#each item.treatments as treatment (treatment.supplierTreatmentId)}
+									<tr class="bg-violet-50/40">
+										<td class="px-4 py-1.5" colspan="4">
+											<div class="ml-4 flex items-center gap-2 text-xs">
+												<FlaskConical class="h-3 w-3 text-violet-400" />
+												<span class="font-medium text-violet-700">{treatment.name}</span>
+												<span
+													class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
+													>{getTreatmentCategoryLabel(treatment.category)}</span
+												>
+											</div>
+										</td>
+										<td class="px-4 py-1.5"></td>
+										<td class="px-4 py-1.5 text-right font-mono text-xs font-medium text-violet-600"
+											>{formatPrice(treatment.price)}</td
+										>
+									</tr>
+								{/each}
 							{/if}
 						{/if}
 					{/each}

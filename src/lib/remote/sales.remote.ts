@@ -42,8 +42,11 @@ import {
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
 import { auditService, getAuditContext } from '$lib/server/audit';
+import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
+import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 
 // ============================================================================
 // TYPES
@@ -150,6 +153,63 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		return { success: false as const, error: 'Debe seleccionar o crear un cliente' };
 	}
 
+	// ── Validate TREATMENT items ─────────────────────────────────────────
+	// Build a map of client-generated IDs → lens catalog item IDs for parent lookup
+	const lensItemMap = new Map<string, string>(); // id → lensCatalogItemId
+	for (const item of data.items) {
+		if (item.itemType === SaleItemType.LENS_PAIR && item.id && item.lensCatalogItemId) {
+			lensItemMap.set(item.id, item.lensCatalogItemId);
+		}
+	}
+
+	for (const item of data.items) {
+		if (item.itemType !== SaleItemType.TREATMENT) continue;
+
+		// Require parentSaleItemId → must reference a LENS_PAIR item in this sale
+		if (!item.parentSaleItemId) {
+			return { success: false as const, error: 'Tratamiento requiere un ítem de lente padre' };
+		}
+		const parentLensId = lensItemMap.get(item.parentSaleItemId);
+		if (!parentLensId) {
+			return {
+				success: false as const,
+				error: 'Tratamiento referencia un ítem padre que no es tipo LENS_PAIR'
+			};
+		}
+
+		// Require supplierTreatmentId
+		if (!item.supplierTreatmentId) {
+			return {
+				success: false as const,
+				error: 'Tratamiento requiere un supplierTreatmentId'
+			};
+		}
+
+		// Validate: lens must be LAB source
+		const lens = await findLensCatalogItemById(parentLensId);
+		if (!lens) {
+			return { success: false as const, error: 'Lente padre no encontrado' };
+		}
+		if (lens.source !== 'LAB') {
+			return {
+				success: false as const,
+				error: 'Los tratamientos solo aplican a cristales de tipo LAB'
+			};
+		}
+
+		// Validate: treatment must belong to the same supplier as the lens
+		const treatment = await findSupplierTreatmentById(item.supplierTreatmentId);
+		if (!treatment) {
+			return { success: false as const, error: 'Tratamiento de proveedor no encontrado' };
+		}
+		if (treatment.supplierId !== lens.supplierId) {
+			return {
+				success: false as const,
+				error: 'El tratamiento debe pertenecer al mismo proveedor del cristal'
+			};
+		}
+	}
+
 	// Calculate totals from items (pure computation — safe outside transaction)
 	const itemsSubtotal = data.items.reduce((acc, item) => {
 		const lineTotal = item.unitPrice * item.quantity;
@@ -210,7 +270,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		// Create sale items + handle stock
 		for (const item of data.items) {
 			await tx.insert(saleItems).values({
-				id: crypto.randomUUID(),
+				id: item.id ?? crypto.randomUUID(),
 				saleId: newSale.id,
 				itemType: item.itemType,
 				parentSaleItemId: item.parentSaleItemId ?? null,

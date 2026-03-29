@@ -34,6 +34,7 @@ function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
 		productId: '',
 		quantity: 1,
 		lensPair: pair,
+		treatments: [],
 		unitPrice: 100,
 		discount: 0,
 		discountType: DiscountType.FIXED,

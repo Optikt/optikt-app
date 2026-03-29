@@ -155,11 +155,11 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		notes: 'Notas',
 		voidedAt: 'Anulado'
 	},
-	supplier_treatment_policy: {
-		code: 'Código de tratamiento',
-		availability: 'Disponibilidad',
-		additionalPrice: 'Precio adicional',
-		requiresConfirmation: 'Requiere confirmación'
+	supplier_treatment: {
+		name: 'Nombre',
+		category: 'Categoría',
+		price: 'Precio',
+		isActive: 'Activo'
 	},
 	surplus_unit: {
 		status: 'Estado',

@@ -3,6 +3,14 @@ import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
 export type ItemKind = 'product' | 'lens';
 
+/** A treatment selected for a lens item in the wizard */
+export interface SelectedTreatment {
+	supplierTreatmentId: string;
+	name: string;
+	category: string;
+	price: number;
+}
+
 /** Prescription data for a single eye in the wizard (string values for form inputs) */
 export interface LensEyeEntry {
 	enabled: boolean;
@@ -24,6 +32,8 @@ export interface SaleItemRow {
 	quantity: number;
 	// Lens fields (only when kind === 'lens')
 	lensPair: LensPairEntry | null;
+	// Treatments (only when kind === 'lens')
+	treatments: SelectedTreatment[];
 	// Shared
 	unitPrice: number;
 	discount: number;

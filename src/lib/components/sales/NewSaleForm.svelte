@@ -130,6 +130,7 @@
 			productId: '',
 			quantity: 1,
 			lensPair: null,
+			treatments: [],
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -256,10 +257,18 @@
 					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
 				];
 
+				// Generate a stable parent ID for the first lens eye item
+				// so treatment items can reference it
+				const parentLensItemId = crypto.randomUUID();
+				let isFirstEye = true;
+
 				for (const { entry } of eyes) {
 					if (!entry.enabled) continue;
 
+					const lensItemId = isFirstEye ? parentLensItemId : crypto.randomUUID();
+
 					saleItems.push({
+						id: lensItemId,
 						itemType: SaleItemType.LENS_PAIR,
 						lensCatalogItemId: pair.catalogItemId,
 						prescriptionId: customerPrescription?.id,
@@ -272,6 +281,21 @@
 						discount: item.discount,
 						discountType: item.discountType,
 						notes: item.notes || undefined
+					});
+
+					isFirstEye = false;
+				}
+
+				// Emit treatment items linked to the parent lens item
+				for (const t of item.treatments) {
+					saleItems.push({
+						itemType: SaleItemType.TREATMENT,
+						parentSaleItemId: parentLensItemId,
+						supplierTreatmentId: t.supplierTreatmentId,
+						quantity: 1,
+						unitPrice: t.price,
+						discount: 0,
+						discountType: DiscountType.FIXED
 					});
 				}
 			}

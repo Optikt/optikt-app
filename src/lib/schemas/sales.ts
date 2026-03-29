@@ -44,6 +44,8 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 // ============================================================================
 
 export const SaleItemSchema = z.object({
+	/** Optional client-generated UUID — used to link treatment items to their parent lens item */
+	id: z.uuid().optional(),
 	itemType: z.enum(ALL_SALE_ITEM_TYPES),
 	/** FK: only for PRODUCT items */
 	productId: z.uuid().optional(),

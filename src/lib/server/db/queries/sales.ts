@@ -24,6 +24,7 @@ import {
 	users,
 	products,
 	lensCatalogItems,
+	supplierTreatments,
 	type Sale,
 	type NewSale,
 	type SaleItem,
@@ -44,6 +45,7 @@ export type SaleWithRelations = Sale & {
 export type SaleItemWithDetails = SaleItem & {
 	product: { id: string; name: string; sku: string } | null;
 	lensCatalogItem: { id: string; name: string; type: string } | null;
+	supplierTreatment: { id: string; name: string; category: string } | null;
 };
 
 // ============================================================================
@@ -324,17 +326,24 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,
 				type: lensCatalogItems.type
+			},
+			supplierTreatment: {
+				id: supplierTreatments.id,
+				name: supplierTreatments.name,
+				category: supplierTreatments.category
 			}
 		})
 		.from(saleItems)
 		.leftJoin(products, eq(saleItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(saleItems.lensCatalogItemId, lensCatalogItems.id))
+		.leftJoin(supplierTreatments, eq(saleItems.supplierTreatmentId, supplierTreatments.id))
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)));
 
 	return results.map((r) => ({
 		...r.item,
 		product: r.product?.id ? r.product : null,
-		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null
+		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null,
+		supplierTreatment: r.supplierTreatment?.id ? r.supplierTreatment : null
 	}));
 }
 

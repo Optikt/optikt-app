@@ -1,6 +1,16 @@
 <script lang="ts">
 	import { Button } from 'flowbite-svelte';
-	import { ArrowLeft, User, Calendar, Package, FileText, Hash, CircleX, Eye } from '@lucide/svelte';
+	import {
+		ArrowLeft,
+		User,
+		Calendar,
+		Package,
+		FileText,
+		Hash,
+		CircleX,
+		Eye,
+		FlaskConical
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -8,7 +18,8 @@
 	import { PaymentForm, PaymentsTable } from '$lib/components/sales';
 	import { cancelSale } from '$lib/remote/sales.remote';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
-	import { SaleStatus, DiscountType } from '$lib/shared/enums';
+	import { SaleStatus, DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
+	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
@@ -25,6 +36,16 @@
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
+
+	/** Main items (PRODUCT + LENS_PAIR), excluding TREATMENT rows */
+	let mainItems = $derived(items.filter((i) => i.itemType !== SaleItemType.TREATMENT));
+
+	/** Get treatment items for a given parent sale item */
+	function getTreatments(parentId: string): SaleItemWithDetails[] {
+		return items.filter(
+			(i) => i.itemType === SaleItemType.TREATMENT && i.parentSaleItemId === parentId
+		);
+	}
 
 	// Action state
 	let actionLoading = $state(false);
@@ -197,7 +218,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each items as item (item.id)}
+					{#each mainItems as item (item.id)}
 						{@const discAmt = itemDiscountAmount(item)}
 						{@const lineTotal = item.unitPrice * item.quantity - discAmt}
 						<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
@@ -253,6 +274,39 @@
 								{formatPrice(lineTotal)}
 							</td>
 						</tr>
+						<!-- Treatment sub-rows for lens items -->
+						{#each getTreatments(item.id) as treatment (treatment.id)}
+							<tr class="border-t border-slate-50 bg-violet-50/40">
+								<td class="px-4 py-2">
+									<div class="ml-11 flex items-center gap-2">
+										<FlaskConical class="h-3.5 w-3.5 text-violet-400" />
+										<span class="text-sm font-medium text-violet-700">
+											{treatment.supplierTreatment?.name ?? '—'}
+										</span>
+										{#if treatment.supplierTreatment?.category}
+											<span
+												class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
+												>{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}</span
+											>
+										{/if}
+									</div>
+								</td>
+								<td class="px-4 py-2 text-center">
+									<span
+										class="inline-block rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-600"
+										>Tratamiento</span
+									>
+								</td>
+								<td class="px-4 py-2 text-right font-mono text-sm">{treatment.quantity}</td>
+								<td class="px-4 py-2 text-right font-mono text-sm">
+									{formatPrice(treatment.unitPrice)}
+								</td>
+								<td class="px-4 py-2 text-right font-mono text-sm text-red-500">—</td>
+								<td class="px-4 py-2 text-right font-mono text-sm font-medium text-violet-600">
+									{formatPrice(treatment.unitPrice * treatment.quantity)}
+								</td>
+							</tr>
+						{/each}
 					{/each}
 				</tbody>
 			</table>

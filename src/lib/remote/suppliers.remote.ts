@@ -10,7 +10,11 @@ import {
 	UpdateSupplierSchema,
 	SupplierIdSchema,
 	QuickCreateSupplierSchema,
-	ReactivateSupplierSchema
+	ReactivateSupplierSchema,
+	SupplierTreatmentQuerySchema,
+	CreateSupplierTreatmentSchema,
+	UpdateSupplierTreatmentSchema,
+	SupplierTreatmentIdSchema
 } from '$lib/schemas/suppliers';
 import {
 	getAllSuppliers,
@@ -20,9 +24,15 @@ import {
 	createSupplier,
 	updateSupplier,
 	restoreSupplier,
-	deleteSupplier
+	deleteSupplier,
+	getSupplierTreatments,
+	findSupplierTreatmentById,
+	findSupplierTreatmentByName,
+	createSupplierTreatment,
+	updateSupplierTreatment,
+	deleteSupplierTreatment
 } from '$lib/server/db/queries/suppliers';
-import type { Supplier } from '$lib/server/db/schema';
+import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 // Types for paginated response
@@ -240,5 +250,94 @@ export const reactivateSupplier = command(
 		await auditService.logCreate('supplier', restored, getAuditContext());
 
 		return restored;
+	}
+);
+
+// ============================================================================
+// SUPPLIER TREATMENTS
+// ============================================================================
+
+/**
+ * List treatments for a supplier
+ */
+export const listSupplierTreatments = query(
+	SupplierTreatmentQuerySchema,
+	async (data): Promise<SupplierTreatment[]> => {
+		return getSupplierTreatments(data.supplierId);
+	}
+);
+
+/**
+ * Create a supplier treatment
+ */
+export const createSupplierTreatmentForm = form(
+	CreateSupplierTreatmentSchema,
+	async (data, issue): Promise<SupplierTreatment> => {
+		// Check supplier exists
+		const supplier = await findSupplierById(data.supplierId);
+		if (!supplier) {
+			invalid('Proveedor no encontrado');
+		}
+
+		// Check for duplicate name within this supplier
+		const existing = await findSupplierTreatmentByName(data.supplierId, data.name);
+		if (existing) {
+			invalid(issue.name('Ya existe un tratamiento con este nombre para este proveedor'));
+		}
+
+		const treatment = await createSupplierTreatment(data);
+
+		await auditService.logCreate('supplier_treatment', treatment, getAuditContext());
+
+		return treatment;
+	}
+);
+
+/**
+ * Update a supplier treatment
+ */
+export const updateSupplierTreatmentForm = form(
+	UpdateSupplierTreatmentSchema,
+	async (data, issue): Promise<SupplierTreatment> => {
+		const { id, name, ...rest } = data;
+
+		const existing = await findSupplierTreatmentById(id);
+		if (!existing) {
+			invalid('Tratamiento no encontrado');
+		}
+
+		// Check for duplicate name if name is changing
+		if (name && name !== existing.name) {
+			const duplicate = await findSupplierTreatmentByName(existing.supplierId, name);
+			if (duplicate) {
+				invalid(issue.name('Ya existe un tratamiento con este nombre para este proveedor'));
+			}
+		}
+
+		const updated = await updateSupplierTreatment(id, { name, ...rest });
+		if (!updated) {
+			invalid('Error actualizando tratamiento');
+		}
+
+		await auditService.logUpdate('supplier_treatment', id, existing, updated, getAuditContext());
+
+		return updated;
+	}
+);
+
+/**
+ * Delete a supplier treatment (hard delete)
+ */
+export const deleteSupplierTreatmentById = command(
+	SupplierTreatmentIdSchema,
+	async (data): Promise<void> => {
+		const existing = await findSupplierTreatmentById(data.id);
+		if (!existing) {
+			throw new Error('Tratamiento no encontrado');
+		}
+
+		await deleteSupplierTreatment(data.id);
+
+		await auditService.logDelete('supplier_treatment', existing, getAuditContext());
 	}
 );
