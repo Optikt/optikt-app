@@ -98,8 +98,8 @@
 		if (typeof localStorage !== 'undefined') {
 			try {
 				localStorage.setItem(STORAGE_KEY, value);
-			} catch (e) {
-				console.log('Error saving sidebar state to localStorage', e);
+			} catch {
+				// Storage unavailable — non-critical, sidebar state just won't persist
 			}
 		}
 
@@ -108,8 +108,8 @@
 		if (typeof document !== 'undefined') {
 			try {
 				document.cookie = `${STORAGE_KEY}=${value}; path=/; max-age=31536000; SameSite=Lax`;
-			} catch (e) {
-				console.log('Error saving sidebar state to cookie', e);
+			} catch {
+				// Cookie write failed — non-critical
 			}
 		}
 	}
