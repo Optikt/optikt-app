@@ -131,6 +131,7 @@
 				sale = data.sale;
 				items = data.items;
 				payments = data.payments;
+				bcvRate = data.bcvRate;
 			} else {
 				toast.error(result.error ?? 'Error cancelando venta');
 			}
@@ -146,6 +147,7 @@
 		sale = data.sale;
 		items = data.items;
 		payments = data.payments;
+		bcvRate = data.bcvRate;
 	}
 
 	async function handlePaymentVoided() {
@@ -153,6 +155,7 @@
 		sale = data.sale;
 		items = data.items;
 		payments = data.payments;
+		bcvRate = data.bcvRate;
 	}
 
 	function goBack() {
