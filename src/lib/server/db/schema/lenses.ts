@@ -13,7 +13,11 @@ import {
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
 import { enumValues } from './utils';
-import { LensCatalogSource, LensPriceType } from '../../../shared/enums/lensTypes';
+import {
+	LensCatalogSource,
+	LensPriceType,
+	LensInventoryMode
+} from '../../../shared/enums/lensTypes';
 
 // ============================================================================
 // LENS ENUMS — derived from shared enums (single source of truth)
@@ -21,6 +25,7 @@ import { LensCatalogSource, LensPriceType } from '../../../shared/enums/lensType
 
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
 export const lensPriceTypeEnum = pgEnum('lens_price_type', enumValues(LensPriceType));
+export const lensInventoryModeEnum = pgEnum('lens_inventory_mode', enumValues(LensInventoryMode));
 
 // ============================================================================
 // LENS MATERIALS (unchanged)
@@ -79,7 +84,8 @@ export const lensCatalogItems = pgTable(
 		mountingPrice: doublePrecision('mounting_price').notNull().default(0),
 		shippingPrice: doublePrecision('shipping_price').notNull().default(0),
 
-		// --- Operations ---
+		// --- Inventory ---
+		inventoryMode: lensInventoryModeEnum('inventory_mode').notNull().default('ON_DEMAND'),
 		stock: integer(),
 		notes: varchar(),
 		isActive: boolean('is_active').notNull().default(true),

@@ -8,8 +8,7 @@ import {
 	timestamp,
 	integer,
 	doublePrecision,
-	foreignKey,
-	serial
+	foreignKey
 } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { customers } from './customers';
@@ -34,8 +33,8 @@ export const sales = pgTable(
 	'sales',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
-		/** Auto-incrementing order number starting at 1 */
-		orderNumber: serial('order_number').notNull(),
+		/** Sequential order number assigned inside the transaction */
+		orderNumber: integer('order_number').notNull(),
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
 		saleDate: timestamp('sale_date', { mode: 'date' }).notNull(),

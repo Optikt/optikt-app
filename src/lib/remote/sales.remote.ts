@@ -23,7 +23,8 @@ import {
 	addSalePayment,
 	voidSalePayment,
 	recalcSalePaidAmount,
-	updateSale
+	updateSale,
+	getNextOrderNumber
 } from '$lib/server/db/queries/sales';
 import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 import {
@@ -248,10 +249,12 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		}
 
 		// Create the sale header
+		const orderNumber = await getNextOrderNumber(tx);
 		const [newSale] = await tx
 			.insert(sales)
 			.values({
 				id: crypto.randomUUID(),
+				orderNumber,
 				customerId,
 				sellerId: context.userId!,
 				saleDate: new Date(data.saleDate),
@@ -329,12 +332,13 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				}
 			}
 
-			// Decrement stock for lens catalog items with tracked inventory (stock !== null)
+			// Decrement stock for lens catalog items with STOCK inventory mode
 			if (item.lensCatalogItemId) {
 				const [lens] = await tx
 					.select({
 						id: lensCatalogItems.id,
-						stock: lensCatalogItems.stock
+						stock: lensCatalogItems.stock,
+						inventoryMode: lensCatalogItems.inventoryMode
 					})
 					.from(lensCatalogItems)
 					.where(
@@ -345,12 +349,12 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 					throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
 				}
 
-				// stock === null → on-demand (no inventory to track)
-				if (lens.stock !== null) {
-					const newStock = lens.stock - item.quantity;
+				if (lens.inventoryMode === 'STOCK') {
+					const currentStock = lens.stock ?? 0;
+					const newStock = currentStock - item.quantity;
 					if (newStock < 0) {
 						throw new Error(
-							`Stock insuficiente para el lente. Disponible: ${lens.stock}, solicitado: ${item.quantity}`
+							`Stock insuficiente para el lente. Disponible: ${currentStock}, solicitado: ${item.quantity}`
 						);
 					}
 					await tx
@@ -540,12 +544,13 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 				const [lens] = await tx
 					.select({
 						id: lensCatalogItems.id,
-						stock: lensCatalogItems.stock
+						stock: lensCatalogItems.stock,
+						inventoryMode: lensCatalogItems.inventoryMode
 					})
 					.from(lensCatalogItems)
 					.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 
-				if (lens && lens.stock !== null) {
+				if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
 					await tx
 						.update(lensCatalogItems)
 						.set({ stock: lens.stock + item.quantity, updatedAt: now })

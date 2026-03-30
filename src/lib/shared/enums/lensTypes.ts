@@ -23,6 +23,14 @@ export enum LensPriceType {
 	PAIR = 'PAIR'
 }
 
+/** How the lens inventory is managed */
+export enum LensInventoryMode {
+	/** Ordered on demand from supplier/lab — no stock tracking */
+	ON_DEMAND = 'ON_DEMAND',
+	/** Tracked inventory — stock count is maintained */
+	STOCK = 'STOCK'
+}
+
 /** Treatment category — what kind of treatment a lab offers */
 export enum TreatmentCategory {
 	AR = 'AR',
@@ -55,6 +63,11 @@ export const LENS_PRICE_TYPE_LABELS: Record<LensPriceType, string> = {
 	[LensPriceType.PAIR]: 'Por Par'
 };
 
+export const LENS_INVENTORY_MODE_LABELS: Record<LensInventoryMode, string> = {
+	[LensInventoryMode.ON_DEMAND]: 'Por demanda',
+	[LensInventoryMode.STOCK]: 'En inventario'
+};
+
 export const TREATMENT_CATEGORY_LABELS: Record<TreatmentCategory, string> = {
 	[TreatmentCategory.AR]: 'Antirreflejo',
 	[TreatmentCategory.BLUECUT]: 'Bluecut'
@@ -71,6 +84,7 @@ export const SALE_ITEM_TYPE_LABELS: Record<SaleItemType, string> = {
 export const ALL_LENS_TYPES = Object.values(LensType) as LensType[];
 export const ALL_LENS_SOURCES = Object.values(LensCatalogSource) as LensCatalogSource[];
 export const ALL_LENS_PRICE_TYPES = Object.values(LensPriceType) as LensPriceType[];
+export const ALL_LENS_INVENTORY_MODES = Object.values(LensInventoryMode) as LensInventoryMode[];
 export const ALL_TREATMENT_CATEGORIES = Object.values(TreatmentCategory) as TreatmentCategory[];
 export const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as SaleItemType[];
 
@@ -86,6 +100,10 @@ export function getLensSourceLabel(source: string): string {
 
 export function getPriceTypeLabel(unit: string): string {
 	return LENS_PRICE_TYPE_LABELS[unit as LensPriceType] ?? unit;
+}
+
+export function getInventoryModeLabel(mode: string): string {
+	return LENS_INVENTORY_MODE_LABELS[mode as LensInventoryMode] ?? mode;
 }
 
 export function getTreatmentCategoryLabel(cat: string): string {

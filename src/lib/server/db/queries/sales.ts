@@ -154,10 +154,11 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 // ============================================================================
 
 /**
- * Get the next estimated order number (MAX + 1)
+ * Get the next order number (MAX + 1).
+ * When called inside a transaction, ensures sequential numbering without gaps.
  */
-export async function getNextOrderNumber(): Promise<number> {
-	const [row] = await db.select({ maxNum: max(sales.orderNumber) }).from(sales);
+export async function getNextOrderNumber(executor: DbOrTx = db): Promise<number> {
+	const [row] = await executor.select({ maxNum: max(sales.orderNumber) }).from(sales);
 	return (row?.maxNum ?? 0) + 1;
 }
 

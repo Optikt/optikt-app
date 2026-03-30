@@ -12,6 +12,7 @@
 		LensType,
 		LensCatalogSource,
 		LensPriceType,
+		LensInventoryMode,
 		LENS_SOURCE_LABELS,
 		ALL_LENS_TYPES,
 		getLensTypeLabel,
@@ -103,8 +104,10 @@
 		salePrice: initialItem?.salePrice?.toString() ?? '',
 		mountingPrice: initialItem?.mountingPrice?.toString() ?? '0',
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
-		// Operations
-		stock: initialItem?.stock != null ? initialItem.stock.toString() : '',
+		// Inventory
+		inventoryMode:
+			(initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
+		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
 		notes: initialItem?.notes ?? ''
 	});
 
@@ -134,6 +137,15 @@
 				if (formData.source === LensCatalogSource.FINISHED) {
 					ranges = [createEmptyRange()];
 				}
+			});
+		}
+	});
+
+	// Force ON_DEMAND when source is LAB
+	$effect(() => {
+		if (formData.source === LensCatalogSource.LAB) {
+			untrack(() => {
+				formData.inventoryMode = LensInventoryMode.ON_DEMAND;
 			});
 		}
 	});
@@ -741,41 +753,65 @@
 			</div>
 			{#if formData.source === LensCatalogSource.FINISHED}
 				<div>
-					<Label for="lc_stock" class="mb-2">Stock</Label>
-					<!-- Only submit stock when a value is entered; empty = null (on-demand) -->
-					{#if formData.stock !== ''}
-						<input type="hidden" name="stock" value={formData.stock} />
-					{/if}
-					<Input
-						id="lc_stock"
-						bind:value={formData.stock}
-						type="number"
-						min="0"
-						placeholder="Vacío = se pide en demanda"
-						class="font-mono placeholder:text-slate-400"
-					/>
-					{#if formData.stock !== '' && Number(formData.stock) > 0}
-						<p class="mt-1.5 flex items-center gap-1 text-xs text-teal-600">
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"
-							></span>
-							{formData.stock} unidad{Number(formData.stock) !== 1 ? 'es' : ''} en inventario
-						</p>
-					{:else if formData.stock !== '' && Number(formData.stock) === 0}
-						<p class="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true"
-							></span>
-							Sin stock — se controla inventario
-						</p>
-					{:else}
+					<Label class="mb-2">Modo de Inventario</Label>
+					<input type="hidden" name="inventoryMode" value={formData.inventoryMode} />
+					<div class="flex gap-2">
+						<button
+							type="button"
+							class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors {formData.inventoryMode ===
+							LensInventoryMode.ON_DEMAND
+								? 'border-sky-300 bg-sky-50 text-sky-700'
+								: 'border-slate-200 text-slate-500 hover:bg-slate-50'}"
+							onclick={() => (formData.inventoryMode = LensInventoryMode.ON_DEMAND)}
+						>
+							Por demanda
+						</button>
+						<button
+							type="button"
+							class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors {formData.inventoryMode ===
+							LensInventoryMode.STOCK
+								? 'border-teal-300 bg-teal-50 text-teal-700'
+								: 'border-slate-200 text-slate-500 hover:bg-slate-50'}"
+							onclick={() => (formData.inventoryMode = LensInventoryMode.STOCK)}
+						>
+							En inventario
+						</button>
+					</div>
+					{#if formData.inventoryMode === LensInventoryMode.ON_DEMAND}
 						<p class="mt-1.5 flex items-center gap-1 text-xs text-sky-600">
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true"
-							></span>
-							Se pide en demanda — sin control de inventario
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true"></span>
+							Se pide al proveedor cuando se vende
 						</p>
 					{/if}
 				</div>
+				{#if formData.inventoryMode === LensInventoryMode.STOCK}
+					<div>
+						<Label for="lc_stock" class="mb-2">Cantidad en Stock</Label>
+						<Input
+							id="lc_stock"
+							name="stock"
+							bind:value={formData.stock}
+							type="number"
+							min="0"
+							placeholder="0"
+							class="font-mono placeholder:text-slate-400"
+						/>
+						{#if Number(formData.stock) > 0}
+							<p class="mt-1.5 flex items-center gap-1 text-xs text-teal-600">
+								<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"></span>
+								{formData.stock} unidad{Number(formData.stock) !== 1 ? 'es' : ''} en inventario
+							</p>
+						{:else}
+							<p class="mt-1.5 flex items-center gap-1 text-xs text-red-500">
+								<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true"></span>
+								Sin stock
+							</p>
+						{/if}
+					</div>
+				{/if}
 			{:else}
-				<!-- LAB lenses are always ordered on demand — no stock tracking -->
+				<!-- LAB lenses are always on-demand -->
+				<input type="hidden" name="inventoryMode" value={LensInventoryMode.ON_DEMAND} />
 			{/if}
 		</div>
 	</div>

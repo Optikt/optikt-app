@@ -3,7 +3,7 @@
  * Zod schemas for lens materials and catalog items
  */
 import { z } from 'zod';
-import { LensType, LensCatalogSource, LensPriceType } from '$lib/shared/enums';
+import { LensType, LensCatalogSource, LensPriceType, LensInventoryMode } from '$lib/shared/enums';
 import {
 	CoercedBoolean,
 	CoercedInteger,
@@ -108,7 +108,10 @@ const BaseLensCatalogItemSchema = z.object({
 	mountingPrice: CoercedNumber.min(0, 'Precio de montaje debe ser ≥ 0').default(0),
 	shippingPrice: CoercedNumber.min(0, 'Precio de envío debe ser ≥ 0').default(0),
 
-	// --- Operations ---
+	// --- Inventory ---
+	inventoryMode: z
+		.enum(LensInventoryMode, 'Modo de inventario requerido')
+		.default(LensInventoryMode.ON_DEMAND),
 	stock: CoercedInteger.min(0).optional(),
 	notes: z.string().optional()
 });

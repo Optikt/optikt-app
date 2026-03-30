@@ -241,9 +241,9 @@ export const createLensCatalogItemForm = form(
 				);
 			}
 
-			// LAB lenses are always on-demand; FINISHED with no stock value = on-demand
+			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
 			const stockValue =
-				rest.source === 'LAB' ? null : (rest.stock !== undefined ? rest.stock : null);
+				rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
 
 			const [item] = await tx
 				.insert(lensCatalogItems)
@@ -343,13 +343,13 @@ export const updateLensCatalogItemForm = form(
 					);
 				}
 
-				// Force stock=null for LAB lenses; for FINISHED, undefined → null (on-demand)
+				// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
 				const stockOverride =
-					rest.source === 'LAB'
+					rest.inventoryMode === 'ON_DEMAND'
 						? { stock: null }
-						: rest.stock === undefined
-							? { stock: null }
-							: {};
+						: rest.stock !== undefined
+							? {}
+							: { stock: 0 };
 
 				const [updated] = await tx
 					.update(lensCatalogItems)

@@ -327,12 +327,15 @@
 						</div>
 					{/if}
 
-					<!-- Inventario por tipo de fuente -->
+					<!-- Inventario -->
 					<div class="border-t border-slate-100 pt-4">
-						{#if item.source === 'LAB'}
-							<div class="mb-4 flex items-center gap-1.5">
-								<FlaskConical class="h-4 w-4 text-violet-500" />
-								<span class="text-sm text-slate-500">Fabricado a medida por el laboratorio</span>
+						{#if item.inventoryMode === 'ON_DEMAND'}
+							<div class="mb-4 flex items-center justify-between">
+								<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+									<Package class="h-4 w-4 text-sky-500" />
+									Inventario
+								</span>
+								<span class="text-sm font-semibold text-sky-600">Por demanda</span>
 							</div>
 						{:else}
 							<div class="mb-4 flex items-center justify-between">
@@ -340,7 +343,7 @@
 									<Package class="h-4 w-4 text-teal-500" />
 									Stock
 								</span>
-								<span class="text-xl font-bold text-slate-900">{item.stock ?? 0}</span>
+								<span class="text-xl font-bold {(item.stock ?? 0) <= 0 ? 'text-red-600' : 'text-slate-900'}">{item.stock ?? 0}</span>
 							</div>
 						{/if}
 					</div>
