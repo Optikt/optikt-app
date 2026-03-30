@@ -33,6 +33,12 @@
 	let notes = $state('');
 	let submitting = $state(false);
 
+	const isCashMethod = $derived(
+		paymentMethod === PaymentMethod.EFECTIVO_BS || paymentMethod === PaymentMethod.EFECTIVO_USD
+	);
+	const referenceRequired = $derived(paymentMethod !== '' && !isCashMethod);
+	const hasReferenceValue = $derived(reference.trim().length > 0);
+
 	const activeBcvRate = $derived(currentBcvRate > 0 ? currentBcvRate : bcvRate);
 
 	// Whether the selected method needs a method-specific exchange rate
@@ -60,6 +66,20 @@
 		}
 		if (!exchangeRate || exchangeRate <= 0) return 0;
 		return (amountUsd * activeBcvRate) / exchangeRate;
+	});
+
+	const formulaHelper = $derived.by(() => {
+		if (!paymentMethod || amountUsd <= 0 || activeBcvRate <= 0) return '';
+
+		const method = paymentMethod as PaymentMethodType;
+		if (isBsPaymentMethod(method)) {
+			return `${amountUsd.toFixed(2)} x ${activeBcvRate.toFixed(2)} = ${suggestedAmount.toFixed(2)} Bs`;
+		}
+
+		if (!exchangeRate || exchangeRate <= 0) return '';
+
+		const unit = method === PaymentMethod.EFECTIVO_USD ? '$' : 'USDT';
+		return `${amountUsd.toFixed(2)} x ${activeBcvRate.toFixed(2)} / ${exchangeRate.toFixed(2)} = ${suggestedAmount.toFixed(2)} ${unit}`;
 	});
 
 	const amount = $derived.by(() =>
@@ -98,6 +118,10 @@
 		if (!paymentMethod || amount <= 0 || amountUsd <= 0 || activeBcvRate <= 0 || !paymentDate)
 			return;
 		if (needsExchangeRate && exchangeRate <= 0) return;
+		if (referenceRequired && !hasReferenceValue) {
+			toast.error('La referencia es obligatoria para este método. Si no aplica, ingresa --');
+			return;
+		}
 
 		submitting = true;
 		try {
@@ -131,21 +155,31 @@
 
 <div class="rounded-lg border border-slate-200 bg-white p-5">
 	<h4 class="mb-1 text-base font-semibold text-slate-800">Registrar Pago</h4>
-	<p class="mb-4 text-sm text-slate-500">
-		Primero indica cuánto deseas cancelar en USD BCV. Con las tasas, el sistema te sugiere el monto
-		a cobrar según el método, y puedes ajustarlo manualmente.
+	<p class="mb-3 text-sm text-slate-500">
+		Flujo sugerido: método de pago, tasas y monto calculado. Puedes ajustar el monto manualmente.
 	</p>
 
-	<div class="mb-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
-		<div>
-			<Label for="pay-date" class="mb-1.5 flex items-center gap-1.5 text-sm">
+	<div class="mb-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+		<div class="max-w-sm">
+			<Label
+				for="pay-date"
+				class="mb-1 flex items-center gap-1.5 text-sm font-semibold text-slate-700"
+			>
 				<CalendarDays class="h-4 w-4 text-slate-500" />
 				Fecha del Pago *
 			</Label>
-			<Input id="pay-date" type="date" bind:value={paymentDate} max="9999-12-31" />
+			<Input
+				id="pay-date"
+				type="date"
+				bind:value={paymentDate}
+				max="9999-12-31"
+				class="h-9 text-sm"
+			/>
 		</div>
-		<div>
-			<Label for="pay-usd" class="mb-1.5 text-sm">Monto a aplicar (USD BCV) *</Label>
+		<div class="max-w-sm">
+			<Label for="pay-usd" class="mb-1 text-sm font-semibold text-slate-700"
+				>Monto a cancelar (USD BCV) *</Label
+			>
 			<Input
 				id="pay-usd"
 				type="number"
@@ -153,7 +187,7 @@
 				placeholder={remainingBcvUsd.toFixed(2)}
 				step="0.01"
 				min="0"
-				class="font-mono"
+				class="h-9 font-mono text-sm"
 			/>
 			<p class="mt-1 text-xs text-slate-500">
 				Pendiente actual: <span class="font-mono text-slate-700"
@@ -167,7 +201,7 @@
 		<!-- Payment Method -->
 		<div>
 			<Label for="pay-method" class="mb-1.5 text-sm">Método de Pago *</Label>
-			<Select id="pay-method" bind:value={paymentMethod} class="w-full">
+			<Select id="pay-method" bind:value={paymentMethod} class="h-9 w-full text-sm">
 				<option value="">Seleccionar...</option>
 				{#each ALL_PAYMENT_METHODS as method (method)}
 					<option value={method}>{PAYMENT_METHOD_LABELS[method]}</option>
@@ -175,10 +209,39 @@
 			</Select>
 		</div>
 
+		<!-- BCV Rate -->
+		<div>
+			<Label for="pay-bcv" class="mb-1.5 text-sm">Tasa BCV (Bs/$) *</Label>
+			<Input
+				id="pay-bcv"
+				type="number"
+				bind:value={currentBcvRate}
+				placeholder={bcvRate > 0 ? bcvRate.toFixed(2) : '0.00'}
+				step="0.01"
+				min="0"
+				class="h-9 font-mono text-sm"
+			/>
+		</div>
+
+		<!-- Method-specific exchange rate -->
+		{#if needsExchangeRate}
+			<div>
+				<Label for="pay-rate" class="mb-1.5 text-sm">{exchangeRateLabel} *</Label>
+				<Input
+					id="pay-rate"
+					type="number"
+					bind:value={exchangeRate}
+					step="0.01"
+					min="0"
+					class="h-9 font-mono text-sm"
+				/>
+			</div>
+		{/if}
+
 		<!-- Amount -->
 		<div>
 			<div class="mb-1.5 flex items-center justify-between gap-2 text-sm">
-				<Label for="pay-amount">Monto ({amountUnitLabel}) *</Label>
+				<Label for="pay-amount">Monto calculado ({amountUnitLabel}) *</Label>
 				<button
 					type="button"
 					onclick={useSuggestedAmount}
@@ -198,56 +261,42 @@
 				}}
 				step="0.01"
 				min="0"
-				class="font-mono"
+				class="h-9 font-mono text-sm"
 			/>
 			<p class="mt-1 text-xs text-slate-500">
-				Sugerido por helper: <span class="font-mono text-slate-700"
-					>{suggestedAmount.toFixed(2)}</span
-				>
+				Sugerido: <span class="font-mono text-slate-700">{suggestedAmount.toFixed(2)}</span>
 			</p>
 		</div>
 
-		<!-- BCV Rate -->
-		<div>
-			<Label for="pay-bcv" class="mb-1.5 text-sm">Tasa BCV (Bs/$) *</Label>
-			<Input
-				id="pay-bcv"
-				type="number"
-				bind:value={currentBcvRate}
-				placeholder={bcvRate > 0 ? bcvRate.toFixed(2) : '0.00'}
-				step="0.01"
-				min="0"
-				class="font-mono"
-			/>
-		</div>
-
-		<!-- Method-specific exchange rate -->
-		{#if needsExchangeRate}
-			<div>
-				<Label for="pay-rate" class="mb-1.5 text-sm">{exchangeRateLabel} *</Label>
-				<Input
-					id="pay-rate"
-					type="number"
-					bind:value={exchangeRate}
-					step="0.01"
-					min="0"
-					class="font-mono"
-				/>
-			</div>
-		{/if}
-
 		<!-- Reference -->
 		<div>
-			<Label for="pay-ref" class="mb-1.5 text-sm">Referencia</Label>
-			<Input id="pay-ref" bind:value={reference} placeholder="Nro. referencia" />
+			<Label for="pay-ref" class="mb-1.5 text-sm">
+				Referencia {referenceRequired ? '*' : '(opcional)'}
+			</Label>
+			<Input
+				id="pay-ref"
+				bind:value={reference}
+				placeholder={referenceRequired ? 'Nro. referencia o --' : 'Nro. referencia (opcional)'}
+				class="h-9 text-sm"
+			/>
+			{#if referenceRequired}
+				<p class="mt-1 text-xs text-slate-500">Obligatoria. Si no aplica, escribe --</p>
+			{/if}
 		</div>
 
 		<!-- Notes -->
 		<div>
 			<Label for="pay-notes" class="mb-1.5 text-sm">Notas</Label>
-			<Input id="pay-notes" bind:value={notes} placeholder="Observaciones" />
+			<Input id="pay-notes" bind:value={notes} placeholder="Observaciones" class="h-9 text-sm" />
 		</div>
 	</div>
+
+	{#if paymentMethod && formulaHelper}
+		<div class="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+			<p class="text-xs font-semibold tracking-wide text-blue-700 uppercase">Formula aplicada</p>
+			<p class="mt-1 font-mono text-sm text-blue-900">{formulaHelper}</p>
+		</div>
+	{/if}
 
 	<!-- Preview & Submit -->
 	<div
@@ -277,6 +326,7 @@
 				amountUsd <= 0 ||
 				amount <= 0 ||
 				!paymentDate ||
+				(referenceRequired && !hasReferenceValue) ||
 				activeBcvRate <= 0 ||
 				(needsExchangeRate && exchangeRate <= 0) ||
 				submitting}
