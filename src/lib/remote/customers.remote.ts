@@ -35,6 +35,7 @@ export interface PaginatedCustomers {
 // Type for create result with potential reactivation candidate
 export interface CreateCustomerResult {
 	success: boolean;
+	message: string;
 	customer?: Customer;
 	reactivationCandidate?: Customer;
 }
@@ -93,6 +94,7 @@ export const createCustomerForm = form(
 			if (deletedCustomer) {
 				return {
 					success: false,
+					message: 'Ya existe un cliente eliminado con este número de cédula. ¿Desea reactivarlo?',
 					reactivationCandidate: deletedCustomer
 				};
 			}
@@ -107,7 +109,7 @@ export const createCustomerForm = form(
 		// Log the creation
 		await auditService.logCreate('customer', customer, getAuditContext());
 
-		return { success: true, customer };
+		return { success: true, message: 'Cliente creado exitosamente', customer };
 	}
 );
 
