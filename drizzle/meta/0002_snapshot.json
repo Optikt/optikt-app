@@ -1,6 +1,6 @@
 {
-  "id": "8906863e-6b14-4289-8f16-5a2764f81aef",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "2b533045-49bb-4b6e-bf87-154990c66993",
+  "prevId": "cce8c4f1-de28-4213-8466-c9763afcd687",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1831,6 +1831,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "technology": {
+          "name": "technology",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "material_id": {
           "name": "material_id",
           "type": "uuid",
@@ -1871,6 +1877,12 @@
           "type": "double precision",
           "primaryKey": false,
           "notNull": true
+        },
+        "sale_price": {
+          "name": "sale_price",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
         },
         "mounting_price": {
           "name": "mounting_price",

@@ -8,27 +8,25 @@
 		ChevronRight,
 		User,
 		Hash,
-		CircleCheck,
-		TriangleAlert,
-		CircleX,
-		Eye
+		Eye,
+		FlaskConical
 	} from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
-	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums/lensTypes';
-	import { evaluateLensCompatibility } from '$lib/shared/matching';
-	import { LENS_TREATMENT_LABELS, LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
-	import type { LensCatalogForMatching, CompatibilityVerdict } from '$lib/shared/matching/types';
-	import type { CatalogItemForPlanning } from '$lib/shared/planning';
+	import { DiscountType, TreatmentCategory, LensCatalogSource } from '$lib/shared/enums';
+	import {
+		getLensTypeLabel,
+		getLensSourceLabel,
+		getTreatmentCategoryLabel
+	} from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
 	import {
 		findProduct,
 		findLensItem,
 		computeItemDiscount as _computeDiscount,
 		itemLineTotal as _lineTotal,
-		getItemVerdict,
-		VERDICT_DISPLAY,
 		getRequiredEyes,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
@@ -37,7 +35,6 @@
 	import ItemSelect from './ItemSelect.svelte';
 	import PrescriptionInput from './PrescriptionInput.svelte';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
-	import TreatmentSelector from './TreatmentSelector.svelte';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { createEmptyLensPair } from './newSaleTypes';
@@ -50,7 +47,6 @@
 		newCustomer: NewCustomerData | null;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
-		catalogItems: CatalogItemForPlanning[];
 		nextOrderNumber?: number;
 		valid: boolean;
 		onnext: () => void;
@@ -65,7 +61,6 @@
 		newCustomer,
 		products,
 		lensItems,
-		catalogItems,
 		nextOrderNumber,
 		valid,
 		onnext,
@@ -85,6 +80,7 @@
 			productId: '',
 			quantity: 1,
 			lensPair: null,
+			treatments: [],
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -104,6 +100,7 @@
 	function handleKindChange(item: SaleItemRow) {
 		item.productId = '';
 		item.lensPair = null;
+		item.treatments = [];
 		item.unitPrice = 0;
 	}
 
@@ -116,14 +113,77 @@
 				item.lensPair = createEmptyLensPair();
 			}
 			item.lensPair.catalogItemId = id;
-			item.lensPair.selectedOptionalTreatments = [];
-			syncAndEvaluate(item);
+			item.treatments = [];
+			syncPrescription(item);
 			recalcSuggestedPrice(item);
 		}
 	}
 
 	// ============================================================================
-	// PRESCRIPTION SYNC + COMPATIBILITY
+	// TREATMENTS
+	// ============================================================================
+
+	/** Cache of treatments per supplier to avoid re-fetching */
+	let treatmentCache = $state<Record<string, SupplierTreatment[]>>({});
+
+	async function loadTreatmentsForSupplier(supplierId: string): Promise<SupplierTreatment[]> {
+		if (treatmentCache[supplierId]) return treatmentCache[supplierId];
+		const treatments = await listSupplierTreatments({ supplierId });
+		treatmentCache[supplierId] = treatments.filter((t) => t.isActive);
+		return treatmentCache[supplierId];
+	}
+
+	function getAvailableTreatments(item: SaleItemRow): SupplierTreatment[] {
+		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
+		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (!lens?.supplier) return [];
+		// FINISHED lenses come with coatings already applied — no treatments to add
+		if (lens.source === LensCatalogSource.FINISHED) return [];
+		return treatmentCache[lens.supplier.id] ?? [];
+	}
+
+	function toggleTreatment(item: SaleItemRow, treatment: SupplierTreatment) {
+		const idx = item.treatments.findIndex((t) => t.supplierTreatmentId === treatment.id);
+		if (idx >= 0) {
+			item.treatments = item.treatments.filter((t) => t.supplierTreatmentId !== treatment.id);
+		} else {
+			// Replace any existing treatment of the same category (max 1 per category)
+			item.treatments = [
+				...item.treatments.filter((t) => t.category !== treatment.category),
+				{
+					supplierTreatmentId: treatment.id,
+					name: treatment.name,
+					category: treatment.category,
+					price: treatment.price
+				}
+			];
+		}
+		recalcSuggestedPrice(item);
+	}
+
+	function isTreatmentSelected(item: SaleItemRow, treatmentId: string): boolean {
+		return item.treatments.some((t) => t.supplierTreatmentId === treatmentId);
+	}
+
+	function treatmentsTotal(item: SaleItemRow, eyeCount: number): number {
+		return item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
+	}
+
+	// Load treatments when a lens item's supplier changes (only for LAB lenses)
+	$effect(() => {
+		const lensItemsInCart = items.filter((i) => i.kind === 'lens' && i.lensPair?.catalogItemId);
+		untrack(() => {
+			for (const item of lensItemsInCart) {
+				const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+				if (lens?.supplier?.id && lens.source !== LensCatalogSource.FINISHED) {
+					loadTreatmentsForSupplier(lens.supplier.id);
+				}
+			}
+		});
+	});
+
+	// ============================================================================
+	// PRESCRIPTION SYNC
 	// ============================================================================
 
 	function parseNullableNum(v: string): number | null {
@@ -149,40 +209,12 @@
 		return parseNullableNum(v);
 	}
 
-	/** Build LensCatalogForMatching from DB lens item + resolved treatment policies */
-	function buildMatchable(
-		lens: LensCatalogItemWithRelations,
-		catItem: CatalogItemForPlanning
-	): LensCatalogForMatching {
-		return {
-			id: lens.id,
-			type: lens.type,
-			materialId: lens.materialId,
-			photochromicMode: lens.photochromicMode,
-			rangeAvailability: lens.rangeAvailability,
-			treatmentPolicies: catItem.treatmentPolicies,
-			ranges: lens.ranges.map((r) => ({
-				sphereMin: r.sphereMin,
-				sphereMax: r.sphereMax,
-				cylinderMin: r.cylinderMin,
-				cylinderMax: r.cylinderMax,
-				additionMin: r.additionMin,
-				additionMax: r.additionMax
-			}))
-		};
-	}
-
-	/** Sync shared prescription form values into the lens pair and run compatibility evaluation */
-	function syncAndEvaluate(item: SaleItemRow) {
+	/** Sync shared prescription form values into the lens pair */
+	function syncPrescription(item: SaleItemRow) {
 		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return;
 
 		const pair = item.lensPair;
-		const lens = lensItems.find((l) => l.id === pair.catalogItemId);
-		const catItem = catalogItems.find((c) => c.id === pair.catalogItemId);
-		if (!lens || !catItem) return;
 
-		// Sync prescription from shared form state with clinical defaults:
-		// sphere/cylinder empty -> 0, axis only if cylinder exists, addition 0 -> null.
 		const odCylinder = parseNumOrZero(prescriptionValues.odCylinder);
 		const oiCylinder = parseNumOrZero(prescriptionValues.oiCylinder);
 
@@ -198,51 +230,6 @@
 			axis: parseAxis(prescriptionValues.oiAxis, oiCylinder),
 			addition: parseAddition(prescriptionValues.oiAddition)
 		};
-
-		// Clear verdicts for disabled eyes
-		if (!pair.od.enabled) pair.od.compatibilityVerdict = null;
-		if (!pair.oi.enabled) pair.oi.compatibilityVerdict = null;
-
-		// Build matching input (only if at least one eye is enabled)
-		if (!pair.od.enabled && !pair.oi.enabled) return;
-
-		const matchable = buildMatchable(lens, catItem);
-
-		const rx = { od: pair.od.prescription, oi: pair.oi.prescription };
-
-		const result = evaluateLensCompatibility(
-			matchable,
-			{
-				lensType: lens.type,
-				materialId: null,
-				photochromic: false,
-				requiredTreatments: pair.selectedOptionalTreatments
-			},
-			rx
-		);
-
-		if (pair.od.enabled) pair.od.compatibilityVerdict = result.verdict;
-		if (pair.oi.enabled) pair.oi.compatibilityVerdict = result.verdict;
-
-		// If range match has per-eye data, assign correct per-eye verdicts independently
-		if (result.rangeMatch) {
-			if (pair.od.enabled) {
-				if (result.rangeMatch.od === 'out_of_range') {
-					pair.od.compatibilityVerdict = 'SIGNATURE_MISMATCH';
-				} else if (result.rangeMatch.od === 'in_range') {
-					pair.od.compatibilityVerdict = 'EXACT_MATCH';
-				}
-				// 'no_data' → keep the overall verdict (CONSULT_REQUIRED if applicable)
-			}
-			if (pair.oi.enabled) {
-				if (result.rangeMatch.oi === 'out_of_range') {
-					pair.oi.compatibilityVerdict = 'SIGNATURE_MISMATCH';
-				} else if (result.rangeMatch.oi === 'in_range') {
-					pair.oi.compatibilityVerdict = 'EXACT_MATCH';
-				}
-				// 'no_data' → keep the overall verdict (CONSULT_REQUIRED if applicable)
-			}
-		}
 	}
 
 	// Re-evaluate all lens items when prescription changes
@@ -262,7 +249,7 @@
 		untrack(() => {
 			for (const item of items) {
 				if (item.kind === 'lens' && item.lensPair?.catalogItemId) {
-					syncAndEvaluate(item);
+					syncPrescription(item);
 				}
 			}
 		});
@@ -280,12 +267,6 @@
 		return findLensItem(item, lensItems);
 	}
 
-	function getCatalogItem(item: SaleItemRow): CatalogItemForPlanning | undefined {
-		const catId = item.lensPair?.catalogItemId;
-		if (!catId) return undefined;
-		return catalogItems.find((c) => c.id === catId);
-	}
-
 	function getProductMaxStock(item: SaleItemRow): number | null {
 		if (item.kind === 'product' && item.productId) {
 			const p = products.find((pr) => pr.id === item.productId);
@@ -296,10 +277,6 @@
 
 	function itemLineTotal(item: SaleItemRow): number {
 		return _lineTotal(item);
-	}
-
-	function getWorstVerdict(item: SaleItemRow): CompatibilityVerdict | null {
-		return getItemVerdict(item);
 	}
 
 	// ============================================================================
@@ -327,6 +304,42 @@
 	const visibleRxErrors: PrescriptionFieldErrors = $derived(anyRxFieldFilled ? rxErrors : {});
 
 	// ============================================================================
+	// VALIDATION REASONS (for "Siguiente" button feedback)
+	// ============================================================================
+
+	function getValidationReasons(): string[] {
+		const reasons: string[] = [];
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			const num = i + 1;
+			if (item.kind === 'product' && !item.productId) {
+				reasons.push(`Ítem #${num}: seleccione un producto`);
+			}
+			if (item.kind === 'product' && item.productId && item.quantity <= 0) {
+				reasons.push(`Ítem #${num}: cantidad debe ser mayor a 0`);
+			}
+			if (item.kind === 'lens') {
+				if (!item.lensPair?.catalogItemId) {
+					reasons.push(`Ítem #${num}: seleccione un cristal`);
+				} else if (!item.lensPair.od.enabled && !item.lensPair.oi.enabled) {
+					reasons.push(`Ítem #${num}: habilite al menos un ojo`);
+				}
+			}
+			if (item.kind === 'product' && item.productId) {
+				const p = products.find((pr) => pr.id === item.productId);
+				const maxStock = p?.stock ?? null;
+				if (maxStock !== null && (maxStock <= 0 || item.quantity > maxStock)) {
+					reasons.push(`Ítem #${num}: stock insuficiente (disponible: ${maxStock})`);
+				}
+			}
+		}
+		if (hasPrescriptionErrors(rxErrors)) {
+			reasons.push('Complete los campos de prescripción requeridos');
+		}
+		return reasons;
+	}
+
+	// ============================================================================
 	// LENS COST HELPERS
 	// ============================================================================
 
@@ -335,34 +348,103 @@
 		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
 	}
 
-	function getTreatmentCostPerUnit(item: SaleItemRow, catItem: CatalogItemForPlanning): number {
-		if (!item.lensPair) return 0;
-		let cost = 0;
-		for (const code of item.lensPair.selectedOptionalTreatments) {
-			const policy = catItem.treatmentPolicies.find(
-				(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
-			);
-			if (policy) cost += policy.additionalPrice;
-		}
-		return cost;
-	}
-
-	/** Recalculate unitPrice to the suggested sale price for the full lens order */
+	/** Recalculate unitPrice to the suggested sale price for the full lens order.
+	 *  Uses salePrice (sell price) when available, otherwise falls back to basePrice (cost). */
 	function recalcSuggestedPrice(item: SaleItemRow) {
 		if (item.kind !== 'lens' || !item.lensPair) return;
-		const catItem = getCatalogItem(item);
 		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
-		if (!catItem || !lens) return;
+		if (!lens) return;
 
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return;
 
-		const treatmentPerUnit = getTreatmentCostPerUnit(item, catItem);
-		const totalCost =
-			(catItem.basePrice + treatmentPerUnit) * eyeCount +
-			catItem.purchasePolicy.mountingPrice +
-			catItem.purchasePolicy.shippingPrice;
-		item.unitPrice = lens.suggestedMultiplier ? totalCost * lens.suggestedMultiplier : totalCost;
+		const lensPrice = lensSalePrice(lens, eyeCount);
+		const totalPrice = lensPrice + treatmentsTotal(item, eyeCount);
+		item.unitPrice = totalPrice;
+	}
+
+	/** Sale price for the lens respecting PAIR vs UNIT. Falls back to cost (base + mounting + shipping). */
+	function lensSalePrice(lens: LensCatalogItemWithRelations, eyeCount: number): number {
+		if (lens.salePrice != null && lens.salePrice > 0) {
+			return lens.priceType === 'PAIR' ? lens.salePrice : lens.salePrice * eyeCount;
+		}
+		// Fallback to cost-based price
+		return lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice;
+	}
+
+	/** Base lens cost respecting PAIR vs UNIT pricing */
+	function lensBaseCost(lens: LensCatalogItemWithRelations, eyeCount: number): number {
+		return lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
+	}
+
+	// ============================================================================
+	// OPTICAL RANGE VALIDATION
+	// ============================================================================
+
+	/** Check if a value falls within [min, max]. Returns true if no range boundary defined. */
+	function inRange(value: number | null, min: number | null, max: number | null): boolean {
+		if (value === null || value === 0) return true; // no value to check
+		if (min !== null && value < min) return false;
+		if (max !== null && value > max) return false;
+		return true;
+	}
+
+	/** Returns warning messages if the prescription doesn't fit any of the lens's optical ranges. */
+	function getRangeWarnings(item: SaleItemRow): string[] {
+		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
+		if (!anyRxFieldFilled) return [];
+
+		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (!lens || lens.ranges.length === 0) return [];
+
+		const warnings: string[] = [];
+		const eyes: {
+			label: string;
+			enabled: boolean;
+			sphere: string;
+			cylinder: string;
+			addition: string;
+		}[] = [
+			{
+				label: 'OD',
+				enabled: item.lensPair.od.enabled,
+				sphere: prescriptionValues.odSphere,
+				cylinder: prescriptionValues.odCylinder,
+				addition: prescriptionValues.odAddition
+			},
+			{
+				label: 'OI',
+				enabled: item.lensPair.oi.enabled,
+				sphere: prescriptionValues.oiSphere,
+				cylinder: prescriptionValues.oiCylinder,
+				addition: prescriptionValues.oiAddition
+			}
+		];
+
+		for (const eye of eyes) {
+			if (!eye.enabled) continue;
+			const sphere = parseNullableNum(eye.sphere);
+			const cylinder = parseNullableNum(eye.cylinder);
+			const addition = parseNullableNum(eye.addition);
+
+			// Check if prescription fits at least one range
+			const fitsAny = lens.ranges.some(
+				(r) =>
+					inRange(sphere, r.sphereMin, r.sphereMax) &&
+					inRange(cylinder, r.cylinderMin ?? null, r.cylinderMax ?? null) &&
+					inRange(addition, r.additionMin ?? null, r.additionMax ?? null)
+			);
+
+			if (!fitsAny) {
+				const parts: string[] = [];
+				if (sphere !== null) parts.push(`Esf ${sphere >= 0 ? '+' : ''}${sphere.toFixed(2)}`);
+				if (cylinder !== null) parts.push(`Cil ${cylinder >= 0 ? '+' : ''}${cylinder.toFixed(2)}`);
+				if (addition !== null) parts.push(`Add ${addition >= 0 ? '+' : ''}${addition.toFixed(2)}`);
+				warnings.push(`${eye.label} (${parts.join(', ')}) fuera del rango óptico del cristal`);
+			}
+		}
+
+		return warnings;
 	}
 </script>
 
@@ -435,7 +517,6 @@
 	<div class="space-y-5">
 		{#each items as item, index (item.id)}
 			{@const lens = item.kind === 'lens' ? getLensForDisplay(item) : undefined}
-			{@const catItem = item.kind === 'lens' ? getCatalogItem(item) : undefined}
 			{@const maxStock = item.kind === 'product' ? getProductMaxStock(item) : null}
 			<div
 				class="rounded-lg border p-5 {item.kind === 'lens'
@@ -518,7 +599,7 @@
 					{/if}
 
 					<!-- Unit Price -->
-					<div class={item.kind === 'product' ? 'sm:col-span-2' : 'sm:col-span-3'}>
+					<div class={item.kind === 'product' ? 'sm:col-span-3' : 'sm:col-span-4'}>
 						<Label for="price-{item.id}" class="mb-1.5 text-sm">Precio ($)</Label>
 						<Input
 							id="price-{item.id}"
@@ -530,28 +611,8 @@
 						/>
 					</div>
 
-					<!-- Item Discount -->
-					<div class="sm:col-span-2">
-						<Label for="disc-{item.id}" class="mb-1.5 text-sm">Descuento</Label>
-						<div class="flex items-center gap-1">
-							<Input
-								id="disc-{item.id}"
-								type="number"
-								bind:value={item.discount}
-								step="0.01"
-								min="0"
-								class="min-w-0 flex-1 font-mono"
-							/>
-							<Select bind:value={item.discountType} class="w-16 shrink-0">
-								{#each ALL_DISCOUNT_TYPES as dt (dt)}
-									<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
-								{/each}
-							</Select>
-						</div>
-					</div>
-
 					<!-- Line Total -->
-					<div class="sm:col-span-2">
+					<div class="sm:col-span-3">
 						<div class="mb-1.5 text-sm">&nbsp;</div>
 						<p class="flex h-[42px] items-center font-mono text-base font-semibold text-blue-700">
 							{formatPrice(itemLineTotal(item))}
@@ -559,8 +620,8 @@
 					</div>
 				</div>
 
-				<!-- Lens-specific: treatments + compatibility -->
-				{#if item.kind === 'lens' && item.lensPair?.catalogItemId && catItem}
+				<!-- Lens-specific: eye toggles + cost breakdown -->
+				{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 					<!-- Eye Enable/Disable Toggle -->
 					<div class="mt-4 flex items-center gap-4">
 						<span class="text-sm font-medium text-slate-600">Ojos:</span>
@@ -568,7 +629,10 @@
 							<input
 								type="checkbox"
 								bind:checked={item.lensPair.od.enabled}
-							onchange={() => { syncAndEvaluate(item); recalcSuggestedPrice(item); }}
+								onchange={() => {
+									syncPrescription(item);
+									recalcSuggestedPrice(item);
+								}}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
 							<span
@@ -581,7 +645,10 @@
 							<input
 								type="checkbox"
 								bind:checked={item.lensPair.oi.enabled}
-							onchange={() => { syncAndEvaluate(item); recalcSuggestedPrice(item); }}
+								onchange={() => {
+									syncPrescription(item);
+									recalcSuggestedPrice(item);
+								}}
 								class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
 							/>
 							<span
@@ -595,88 +662,101 @@
 						{/if}
 					</div>
 
-					<!-- Treatment Selector -->
-					<div class="mt-4">
-						<TreatmentSelector
-							catalogItem={catItem}
-							selected={item.lensPair.selectedOptionalTreatments}
-							onchange={(sel) => {
-								if (item.lensPair) {
-									item.lensPair.selectedOptionalTreatments = sel;
-									syncAndEvaluate(item);
-									recalcSuggestedPrice(item);
-								}
-							}}
-						/>
-					</div>
-
-					<!-- Treatment cost summary (5b.2) -->
-					{@const eyeCount = getEnabledEyeCount(item)}
-					{#if item.lensPair.selectedOptionalTreatments.length > 0 && eyeCount > 0}
-						<div class="mt-2 space-y-0.5">
-							{#each item.lensPair.selectedOptionalTreatments as code (code)}
-								{@const policy = catItem.treatmentPolicies.find((p) => p.code === code)}
-								{#if policy && policy.additionalPrice > 0}
-									<p class="text-xs text-slate-500">
-										<span class="font-medium">{LENS_TREATMENT_LABELS[code] ?? code}</span>
-										&middot; {formatPrice(policy.additionalPrice)} × {eyeCount} =
-										<span class="font-semibold text-slate-600"
-											>{formatPrice(policy.additionalPrice * eyeCount)}</span
-										>
-									</p>
-								{/if}
+					<!-- Optical range warning -->
+					{@const rangeWarnings = getRangeWarnings(item)}
+					{#if rangeWarnings.length > 0}
+						<div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+							<p class="mb-1 text-xs font-semibold text-amber-700 uppercase">
+								Fuera de rango óptico
+							</p>
+							{#each rangeWarnings as w (w)}
+								<p class="text-xs text-amber-600">• {w}</p>
 							{/each}
 						</div>
 					{/if}
 
-					<!-- Lens cost breakdown (5b.3) -->
-					{@const basePrice = catItem.basePrice}
-					{@const treatmentPerUnit = getTreatmentCostPerUnit(item, catItem)}
-					{@const mountingPrice = catItem.purchasePolicy.mountingPrice}
-					{@const shippingPrice = catItem.purchasePolicy.shippingPrice}
-					{@const totalCost = (basePrice + treatmentPerUnit) * eyeCount + mountingPrice + shippingPrice}
-					{@const multiplier = lens?.suggestedMultiplier ?? null}
-					{@const suggestedPrice = multiplier ? totalCost * multiplier : null}
-					{#if eyeCount > 0}
+					<!-- Lens cost breakdown -->
+					{@const eyeCount = getEnabledEyeCount(item)}
+					{#if eyeCount > 0 && lens}
 						<div class="mt-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3">
 							<p class="mb-1.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
 								Desglose de Costo
 							</p>
 							<div class="space-y-0.5 text-xs text-slate-600">
 								<div class="flex justify-between">
-									<span>Cristales × {eyeCount}</span>
-									<span class="font-mono">{formatPrice(basePrice * eyeCount)}</span>
+									<span>Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`}</span>
+									<span class="font-mono">{formatPrice(lensBaseCost(lens, eyeCount))}</span>
 								</div>
-								{#if treatmentPerUnit > 0}
-									<div class="flex justify-between">
-										<span>Tratamientos × {eyeCount}</span>
-										<span class="font-mono">{formatPrice(treatmentPerUnit * eyeCount)}</span>
-									</div>
-								{/if}
-								{#if mountingPrice > 0}
+								{#if lens.mountingPrice > 0}
 									<div class="flex justify-between">
 										<span>Montaje</span>
-										<span class="font-mono">{formatPrice(mountingPrice)}</span>
+										<span class="font-mono">{formatPrice(lens.mountingPrice)}</span>
 									</div>
 								{/if}
-								{#if shippingPrice > 0}
+								{#if lens.shippingPrice > 0}
 									<div class="flex justify-between">
 										<span>Envío</span>
-										<span class="font-mono">{formatPrice(shippingPrice)}</span>
+										<span class="font-mono">{formatPrice(lens.shippingPrice)}</span>
 									</div>
 								{/if}
+								{#each item.treatments as t (t.supplierTreatmentId)}
+									<div class="flex justify-between">
+										<span>{t.name}{eyeCount > 1 ? ` × ${eyeCount}` : ''}</span>
+										<span class="font-mono">{formatPrice(t.price * eyeCount)}</span>
+									</div>
+								{/each}
 								<div
 									class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700"
 								>
 									<span>Costo total</span>
-									<span class="font-mono">{formatPrice(totalCost)}</span>
+									<span class="font-mono"
+										>{formatPrice(
+											lensBaseCost(lens, eyeCount) +
+												lens.mountingPrice +
+												lens.shippingPrice +
+												treatmentsTotal(item, eyeCount)
+										)}</span
+									>
 								</div>
-								{#if suggestedPrice}
-									<div class="flex justify-between text-blue-600">
-										<span>Sugerido (×{multiplier})</span>
-										<span class="font-mono font-semibold">{formatPrice(suggestedPrice)}</span>
-									</div>
-								{/if}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Treatment selector -->
+					{@const available = getAvailableTreatments(item)}
+					{#if available.length > 0}
+						<div class="mt-3 rounded-lg border border-violet-200 bg-violet-50/50 p-3">
+							<div class="mb-2 flex items-center gap-2">
+								<FlaskConical class="h-3.5 w-3.5 text-violet-500" />
+								<span class="text-xs font-semibold tracking-wide text-violet-600 uppercase">
+									Tratamientos
+								</span>
+							</div>
+							<div class="space-y-1.5">
+								{#each available as treatment (treatment.id)}
+									<label
+										class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-violet-100/50"
+									>
+										<input
+											type="checkbox"
+											checked={isTreatmentSelected(item, treatment.id)}
+											onchange={() => toggleTreatment(item, treatment)}
+											class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+										/>
+										<span class="flex-1 text-sm text-slate-700">{treatment.name}</span>
+										<span
+											class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+											{treatment.category === TreatmentCategory.AR
+												? 'bg-blue-100 text-blue-700'
+												: 'bg-violet-100 text-violet-700'}"
+										>
+											{getTreatmentCategoryLabel(treatment.category)}
+										</span>
+										<span class="font-mono text-sm text-slate-600"
+											>{formatPrice(treatment.price)}</span
+										>
+									</label>
+								{/each}
 							</div>
 						</div>
 					{/if}
@@ -697,62 +777,6 @@
 							{/if}
 						{/if}
 					</div>
-
-					<!-- Compatibility Banner -->
-					{@const verdict = getWorstVerdict(item)}
-					{#if verdict}
-						{@const display = VERDICT_DISPLAY[verdict]}
-						<div
-							class="mt-3 flex items-center gap-3 rounded-lg border-2 px-4 py-3 {display.borderColor} {display.bgColor}"
-						>
-							<div
-								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {verdict ===
-								'EXACT_MATCH'
-									? 'bg-emerald-500'
-									: verdict === 'CONSULT_REQUIRED'
-										? 'bg-amber-500'
-										: 'bg-red-500'}"
-							>
-								{#if verdict === 'EXACT_MATCH'}
-									<CircleCheck class="h-5 w-5 text-white" />
-								{:else if verdict === 'CONSULT_REQUIRED'}
-									<TriangleAlert class="h-5 w-5 text-white" />
-								{:else}
-									<CircleX class="h-5 w-5 text-white" />
-								{/if}
-							</div>
-							<div class="flex-1">
-								<p class="text-sm font-bold {display.textColor}">{display.label}</p>
-								<p class="text-xs {display.textColor}">{display.desc}</p>
-								<!-- Per-eye verdicts when they differ -->
-								{#if item.lensPair.od.compatibilityVerdict !== item.lensPair.oi.compatibilityVerdict}
-									<div class="mt-1 flex items-center gap-3">
-										{#each [{ label: 'OD', v: item.lensPair.od }, { label: 'OI', v: item.lensPair.oi }] as eye (eye.label)}
-											{#if eye.v.enabled && eye.v.compatibilityVerdict}
-												<span
-													class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold {eye
-														.v.compatibilityVerdict === 'EXACT_MATCH'
-														? 'bg-emerald-100 text-emerald-700'
-														: eye.v.compatibilityVerdict === 'CONSULT_REQUIRED'
-															? 'bg-amber-100 text-amber-700'
-															: 'bg-red-100 text-red-700'}"
-												>
-													{#if eye.v.compatibilityVerdict === 'EXACT_MATCH'}
-														<CircleCheck class="h-3.5 w-3.5" />
-													{:else if eye.v.compatibilityVerdict === 'CONSULT_REQUIRED'}
-														<TriangleAlert class="h-3.5 w-3.5" />
-													{:else}
-														<CircleX class="h-3.5 w-3.5" />
-													{/if}
-													{eye.label}
-												</span>
-											{/if}
-										{/each}
-									</div>
-								{/if}
-							</div>
-						</div>
-					{/if}
 				{/if}
 			</div>
 		{/each}
@@ -760,13 +784,28 @@
 </div>
 
 <!-- Step 2 Navigation -->
-<div class="mt-6 flex justify-between">
-	<Button color="light" size="lg" onclick={onprev}>
-		<ChevronLeft class="mr-1 h-4 w-4" />
-		Anterior
-	</Button>
-	<Button color="blue" size="lg" onclick={onnext} disabled={!valid}>
-		Siguiente
-		<ChevronRight class="ml-1 h-4 w-4" />
-	</Button>
+<div class="mt-6">
+	{#if !valid}
+		{@const reasons = getValidationReasons()}
+		{#if reasons.length > 0}
+			<div class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+				<p class="text-xs font-medium text-amber-700">Para continuar:</p>
+				<ul class="mt-1 space-y-0.5 text-xs text-amber-600">
+					{#each reasons as reason, i (i)}
+						<li>• {reason}</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+	{/if}
+	<div class="flex justify-between">
+		<Button color="light" size="lg" onclick={onprev}>
+			<ChevronLeft class="mr-1 h-4 w-4" />
+			Anterior
+		</Button>
+		<Button color="blue" size="lg" onclick={onnext} disabled={!valid}>
+			Siguiente
+			<ChevronRight class="ml-1 h-4 w-4" />
+		</Button>
+	</div>
 </div>

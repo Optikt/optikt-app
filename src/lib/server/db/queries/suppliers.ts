@@ -1,7 +1,14 @@
 import { eq, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'drizzle-orm';
 import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
-import { suppliers, type Supplier, type NewSupplier } from '$lib/server/db/schema';
+import {
+	suppliers,
+	supplierTreatments,
+	type Supplier,
+	type NewSupplier,
+	type SupplierTreatment,
+	type NewSupplierTreatment
+} from '$lib/server/db/schema';
 import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
 
 /** Sortable supplier columns */
@@ -217,4 +224,85 @@ export async function resolvePendingSupplier(
 		})
 		.returning();
 	return created.id;
+}
+
+// ============================================================================
+// SUPPLIER TREATMENTS
+// ============================================================================
+
+/** List treatments for a specific supplier */
+export async function getSupplierTreatments(
+	supplierId: string,
+	executor: DbOrTx = db
+): Promise<SupplierTreatment[]> {
+	return executor
+		.select()
+		.from(supplierTreatments)
+		.where(eq(supplierTreatments.supplierId, supplierId))
+		.orderBy(asc(supplierTreatments.category), asc(supplierTreatments.name));
+}
+
+/** Find a single supplier treatment by ID */
+export async function findSupplierTreatmentById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<SupplierTreatment | null> {
+	const [treatment] = await executor
+		.select()
+		.from(supplierTreatments)
+		.where(eq(supplierTreatments.id, id));
+	return treatment ?? null;
+}
+
+/** Find treatment by supplier + name (for uniqueness check) */
+export async function findSupplierTreatmentByName(
+	supplierId: string,
+	name: string,
+	executor: DbOrTx = db
+): Promise<SupplierTreatment | null> {
+	const [treatment] = await executor
+		.select()
+		.from(supplierTreatments)
+		.where(
+			and(eq(supplierTreatments.supplierId, supplierId), ilike(supplierTreatments.name, name))
+		);
+	return treatment ?? null;
+}
+
+/** Create a supplier treatment */
+export async function createSupplierTreatment(
+	data: NewSupplierTreatment,
+	executor: DbOrTx = db
+): Promise<SupplierTreatment> {
+	const now = new Date();
+	const [treatment] = await executor
+		.insert(supplierTreatments)
+		.values({
+			...data,
+			id: crypto.randomUUID(),
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return treatment;
+}
+
+/** Update a supplier treatment */
+export async function updateSupplierTreatment(
+	id: string,
+	data: Partial<Pick<SupplierTreatment, 'name' | 'category' | 'price' | 'isActive'>>,
+	executor: DbOrTx = db
+): Promise<SupplierTreatment | null> {
+	const [treatment] = await executor
+		.update(supplierTreatments)
+		.set({ ...data, updatedAt: new Date() })
+		.where(eq(supplierTreatments.id, id))
+		.returning();
+	return treatment ?? null;
+}
+
+/** Delete a supplier treatment (hard delete) */
+export async function deleteSupplierTreatment(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor.delete(supplierTreatments).where(eq(supplierTreatments.id, id));
+	return result.count > 0;
 }

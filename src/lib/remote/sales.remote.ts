@@ -23,7 +23,8 @@ import {
 	addSalePayment,
 	voidSalePayment,
 	recalcSalePaidAmount,
-	updateSale
+	updateSale,
+	getNextOrderNumber
 } from '$lib/server/db/queries/sales';
 import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 import {
@@ -31,14 +32,6 @@ import {
 	findCustomerByIdNumber,
 	createCustomer
 } from '$lib/server/db/queries/customers';
-import {
-	reserveSurplusUnit,
-	consumeSurplusUnit,
-	createSurplusUnit,
-	findSurplusByOriginSaleId,
-	voidSurplusUnit,
-	restoreSurplusUnit
-} from '$lib/server/db/queries/surplusUnits';
 import { db } from '$lib/server/db';
 import {
 	sales,
@@ -49,31 +42,12 @@ import {
 	type Customer
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import {
-	SaleStatus,
-	LensCatalogSource,
-	LensFulfillmentMode,
-	isBsPaymentMethod,
-	type PaymentMethod
-} from '$lib/shared/enums';
-import { FulfillmentSource, SurplusOriginType } from '$lib/shared/contracts/fulfillment';
-import { PhotochromicMode } from '$lib/shared/contracts/lenses';
+import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
 import { auditService, getAuditContext } from '$lib/server/audit';
-
-/**
- * Check whether a lens catalog item's stock should be decremented/restored.
- * Only FINISHED source lenses in INVENTORY fulfillment mode use tracked stock.
- */
-function shouldDecrementLensStock(
-	lensSource: string,
-	lensFulfillmentMode: string | null | undefined
-): boolean {
-	return (
-		lensSource === LensCatalogSource.FINISHED &&
-		(lensFulfillmentMode ?? LensFulfillmentMode.INVENTORY) === LensFulfillmentMode.INVENTORY
-	);
-}
+import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
+import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 
 // ============================================================================
 // TYPES
@@ -156,9 +130,7 @@ export const lookupCustomer = query(CustomerLookupSchema, async (data) => {
 
 /**
  * Create a new sale with items in a single transaction.
- * Handles fulfillment plan execution: persists items with treatments/prescriptions,
- * consumes surplus from inventory, creates surplus from forced pair purchases,
- * and decrements product stock.
+ * Persists items with prescriptions and decrements product stock.
  */
 export const createSale = command(CreateSaleSchema, async (data) => {
 	const context = getAuditContext();
@@ -182,6 +154,63 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		return { success: false as const, error: 'Debe seleccionar o crear un cliente' };
 	}
 
+	// ── Validate TREATMENT items ─────────────────────────────────────────
+	// Build a map of client-generated IDs → lens catalog item IDs for parent lookup
+	const lensItemMap = new Map<string, string>(); // id → lensCatalogItemId
+	for (const item of data.items) {
+		if (item.itemType === SaleItemType.LENS_PAIR && item.id && item.lensCatalogItemId) {
+			lensItemMap.set(item.id, item.lensCatalogItemId);
+		}
+	}
+
+	for (const item of data.items) {
+		if (item.itemType !== SaleItemType.TREATMENT) continue;
+
+		// Require parentSaleItemId → must reference a LENS_PAIR item in this sale
+		if (!item.parentSaleItemId) {
+			return { success: false as const, error: 'Tratamiento requiere un ítem de lente padre' };
+		}
+		const parentLensId = lensItemMap.get(item.parentSaleItemId);
+		if (!parentLensId) {
+			return {
+				success: false as const,
+				error: 'Tratamiento referencia un ítem padre que no es tipo LENS_PAIR'
+			};
+		}
+
+		// Require supplierTreatmentId
+		if (!item.supplierTreatmentId) {
+			return {
+				success: false as const,
+				error: 'Tratamiento requiere un supplierTreatmentId'
+			};
+		}
+
+		// Validate: lens must be LAB source
+		const lens = await findLensCatalogItemById(parentLensId);
+		if (!lens) {
+			return { success: false as const, error: 'Lente padre no encontrado' };
+		}
+		if (lens.source !== 'LAB') {
+			return {
+				success: false as const,
+				error: 'Los tratamientos solo aplican a cristales de tipo LAB'
+			};
+		}
+
+		// Validate: treatment must belong to the same supplier as the lens
+		const treatment = await findSupplierTreatmentById(item.supplierTreatmentId);
+		if (!treatment) {
+			return { success: false as const, error: 'Tratamiento de proveedor no encontrado' };
+		}
+		if (treatment.supplierId !== lens.supplierId) {
+			return {
+				success: false as const,
+				error: 'El tratamiento debe pertenecer al mismo proveedor del cristal'
+			};
+		}
+	}
+
 	// Calculate totals from items (pure computation — safe outside transaction)
 	const itemsSubtotal = data.items.reduce((acc, item) => {
 		const lineTotal = item.unitPrice * item.quantity;
@@ -194,7 +223,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 	const total = Math.max(0, subtotal - globalDiscount);
 
 	// All writes in a single transaction
-	const { sale, newCustomer, createdSurplusUnits } = await db.transaction(async (tx) => {
+	const { sale, newCustomer } = await db.transaction(async (tx) => {
 		const now = new Date();
 		let customerId: string;
 		let createdCustomer: Customer | null = null;
@@ -220,10 +249,12 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		}
 
 		// Create the sale header
+		const orderNumber = await getNextOrderNumber(tx);
 		const [newSale] = await tx
 			.insert(sales)
 			.values({
 				id: crypto.randomUUID(),
+				orderNumber,
 				customerId,
 				sellerId: context.userId!,
 				saleDate: new Date(data.saleDate),
@@ -239,19 +270,16 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			})
 			.returning();
 
-		// Create sale items + handle stock/surplus
+		// Create sale items + handle stock
 		for (const item of data.items) {
 			await tx.insert(saleItems).values({
-				id: crypto.randomUUID(),
+				id: item.id ?? crypto.randomUUID(),
 				saleId: newSale.id,
+				itemType: item.itemType,
+				parentSaleItemId: item.parentSaleItemId ?? null,
 				productId: item.productId ?? null,
 				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				lensFulfillmentMode: item.lensFulfillmentMode ?? null,
-				eye: item.eye ?? null,
-				fulfillmentSource: item.fulfillmentSource ?? null,
-				surplusUnitId: item.surplusUnitId ?? null,
-				selectedTreatments: item.selectedTreatments ?? null,
-				costBreakdown: item.costBreakdown ?? null,
+				supplierTreatmentId: item.supplierTreatmentId ?? null,
 				prescriptionId: item.prescriptionId ?? null,
 				odSphere: item.odSphere ?? null,
 				odCylinder: item.odCylinder ?? null,
@@ -265,24 +293,19 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				unitPrice: item.unitPrice,
 				discount: item.discount,
 				discountType: item.discountType,
+				snapshotName: item.snapshotName ?? null,
+				snapshotSku: item.snapshotSku ?? null,
+				snapshotBrand: item.snapshotBrand ?? null,
+				snapshotBaseCost: item.snapshotBaseCost ?? null,
+				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
+				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
+				snapshotSalePrice: item.snapshotSalePrice ?? null,
+				snapshotPriceType: item.snapshotPriceType ?? null,
+				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
 				notes: item.notes ?? null,
 				createdAt: now,
 				updatedAt: now
 			});
-
-			// Consume surplus for items sourced from surplus stock
-			if (item.fulfillmentSource === FulfillmentSource.SURPLUS_STOCK && item.surplusUnitId) {
-				const reserved = await reserveSurplusUnit(item.surplusUnitId, newSale.id, tx);
-				if (!reserved) {
-					throw new Error(
-						`No se pudo reservar la unidad de excedente ${item.surplusUnitId} — puede que ya no esté disponible`
-					);
-				}
-				const consumed = await consumeSurplusUnit(item.surplusUnitId, newSale.id, tx);
-				if (!consumed) {
-					throw new Error(`No se pudo consumir la unidad de excedente ${item.surplusUnitId}`);
-				}
-			}
 
 			// Decrement stock for product items
 			if (item.productId) {
@@ -309,14 +332,13 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				}
 			}
 
-			// Decrement stock only for lenses fulfilled from catalog stock.
-			// SUPPLIER_ORDER, LAB_ORDER, PAIR_BUNDLED, and SURPLUS_STOCK don't touch inventory.
-			if (item.lensCatalogItemId && item.fulfillmentSource === FulfillmentSource.CATALOG_STOCK) {
+			// Decrement stock for lens catalog items with STOCK inventory mode
+			if (item.lensCatalogItemId) {
 				const [lens] = await tx
 					.select({
 						id: lensCatalogItems.id,
 						stock: lensCatalogItems.stock,
-						source: lensCatalogItems.source
+						inventoryMode: lensCatalogItems.inventoryMode
 					})
 					.from(lensCatalogItems)
 					.where(
@@ -327,14 +349,12 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 					throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
 				}
 
-				if (
-					shouldDecrementLensStock(lens.source, item.lensFulfillmentMode) &&
-					lens.stock !== null
-				) {
-					const newStock = lens.stock - item.quantity;
+				if (lens.inventoryMode === 'STOCK') {
+					const currentStock = lens.stock ?? 0;
+					const newStock = currentStock - item.quantity;
 					if (newStock < 0) {
 						throw new Error(
-							`Stock insuficiente para el lente. Disponible: ${lens.stock}, solicitado: ${item.quantity}`
+							`Stock insuficiente para el lente. Disponible: ${currentStock}, solicitado: ${item.quantity}`
 						);
 					}
 					await tx
@@ -345,50 +365,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			}
 		}
 
-		// Create surplus units from forced pair purchases
-		const surplusCreated = [];
-		for (const surplusInput of data.surplusToCreate) {
-			// Look up catalog item identity for the physical signature
-			const [catalogLens] = await tx
-				.select({
-					type: lensCatalogItems.type,
-					materialId: lensCatalogItems.materialId,
-					photochromicMode: lensCatalogItems.photochromicMode
-				})
-				.from(lensCatalogItems)
-				.where(eq(lensCatalogItems.id, surplusInput.catalogItemId));
-
-			if (!catalogLens) {
-				throw new Error(`Lente de catálogo ${surplusInput.catalogItemId} no encontrado`);
-			}
-
-			const unit = await createSurplusUnit(
-				{
-					originType: SurplusOriginType.SALE_PURCHASE_PAIR_EXCESS,
-					originSaleId: newSale.id,
-					catalogItemId: surplusInput.catalogItemId,
-					supplierId: surplusInput.supplierId,
-					physicalSignature: {
-						lensType: catalogLens.type as never,
-						materialId: catalogLens.materialId,
-						photochromic: catalogLens.photochromicMode === PhotochromicMode.INHERENT,
-						requiredTreatments: surplusInput.selectedTreatments ?? [],
-						originCatalogItemId: surplusInput.catalogItemId,
-						prescription: surplusInput.prescription ?? {
-							sphere: null,
-							cylinder: null,
-							axis: null,
-							addition: null
-						}
-					},
-					costSnapshot: surplusInput.costSnapshot
-				},
-				tx
-			);
-			surplusCreated.push(unit);
-		}
-
-		return { sale: newSale, newCustomer: createdCustomer, createdSurplusUnits: surplusCreated };
+		return { sale: newSale, newCustomer: createdCustomer };
 	});
 
 	// Audit logs (best-effort, after transaction succeeds)
@@ -401,12 +378,6 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 	await auditService.logCreate('sale', sale, context, {
 		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 	});
-
-	for (const surplusUnit of createdSurplusUnits) {
-		await auditService.logCreate('surplus_unit', surplusUnit, context, {
-			excludeFields: ['createdAt', 'updatedAt']
-		});
-	}
 
 	return { success: true as const, sale };
 });
@@ -532,8 +503,6 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
 
 /**
  * Cancel a sale and restore stock for product/lens items.
- * Also voids any surplus units created by this sale (AVAILABLE/RESERVED → VOID).
- * Surplus units consumed by this sale are restored to AVAILABLE (unit was never physically used).
  */
 export const cancelSale = command(CancelSaleSchema, async (data) => {
 	const context = getAuditContext();
@@ -546,10 +515,6 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 		return { success: false, error: 'La venta ya está cancelada' };
 	}
 
-	// Restore stock + void/restore surplus + update status in a transaction
-	const voidedSurplus: Array<{ id: string }> = [];
-	const restoredSurplus: Array<{ id: string }> = [];
-
 	await db.transaction(async (tx) => {
 		const now = new Date();
 
@@ -559,7 +524,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 			.from(saleItems)
 			.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
 
-		// Restore stock for product items
+		// Restore stock for product and lens items
 		for (const item of items) {
 			if (item.productId) {
 				const [product] = await tx
@@ -575,44 +540,22 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 				}
 			}
 
-			// Restore stock for lens catalog items (only for items fulfilled from catalog stock)
-			if (item.lensCatalogItemId && item.fulfillmentSource === FulfillmentSource.CATALOG_STOCK) {
+			if (item.lensCatalogItemId) {
 				const [lens] = await tx
 					.select({
 						id: lensCatalogItems.id,
 						stock: lensCatalogItems.stock,
-						source: lensCatalogItems.source
+						inventoryMode: lensCatalogItems.inventoryMode
 					})
 					.from(lensCatalogItems)
 					.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 
-				if (
-					lens &&
-					shouldDecrementLensStock(lens.source, item.lensFulfillmentMode) &&
-					lens.stock !== null
-				) {
+				if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
 					await tx
 						.update(lensCatalogItems)
 						.set({ stock: lens.stock + item.quantity, updatedAt: now })
 						.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 				}
-			}
-
-			// Restore consumed surplus back to AVAILABLE (unit was never physically used)
-			if (item.surplusUnitId && item.fulfillmentSource === FulfillmentSource.SURPLUS_STOCK) {
-				const restored = await restoreSurplusUnit(item.surplusUnitId, tx);
-				if (restored) {
-					restoredSurplus.push({ id: restored.id });
-				}
-			}
-		}
-
-		// Void surplus units created by this sale (pair purchase excess)
-		const createdSurplus = await findSurplusByOriginSaleId(data.id, tx);
-		for (const unit of createdSurplus) {
-			const voided = await voidSurplusUnit(unit.id, `Anulado por cancelación de venta`, tx);
-			if (voided) {
-				voidedSurplus.push({ id: voided.id });
 			}
 		}
 
@@ -635,32 +578,6 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 		await auditService.logUpdate('sale', data.id, existing, updated, context, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
-	}
-
-	for (const unit of voidedSurplus) {
-		await auditService.logCustom(
-			'surplus_unit',
-			unit.id,
-			'update',
-			{
-				status: { old: 'AVAILABLE', new: 'VOID' },
-				reason: { old: null, new: 'sale_cancelled' }
-			},
-			context
-		);
-	}
-
-	for (const unit of restoredSurplus) {
-		await auditService.logCustom(
-			'surplus_unit',
-			unit.id,
-			'update',
-			{
-				status: { old: 'CONSUMED', new: 'AVAILABLE' },
-				reason: { old: null, new: 'sale_cancelled' }
-			},
-			context
-		);
 	}
 
 	return { success: true };

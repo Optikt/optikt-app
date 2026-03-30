@@ -1,22 +1,9 @@
 <script lang="ts">
-	import { Modal, Button, Spinner, Select, Label, Input, Checkbox } from 'flowbite-svelte';
+	import { Modal, Button, Spinner, Select, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import {
-		createSupplierForm,
-		updateSupplierForm,
-		getSupplierTreatmentDefaults
-	} from '$lib/remote/suppliers.remote';
+	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
 	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
-	import {
-		CORE_LENS_TREATMENT_CODES,
-		LensTreatmentAvailability,
-		LENS_TREATMENT_LABELS,
-		LENS_TREATMENT_AVAILABILITY_LABELS,
-		createDefaultTreatmentPolicies,
-		toTreatmentPolicy,
-		type LensTreatmentPolicy
-	} from '$lib/shared/contracts';
 	import {
 		FormInput,
 		FormTextarea,
@@ -66,12 +53,6 @@
 	let showReactivateModal = $state(false);
 	let reactivationCandidate = $state<Supplier | null>(null);
 
-	// Treatment defaults state
-	let treatmentDefaults = $state<LensTreatmentPolicy[]>(createDefaultTreatmentPolicies());
-
-	/** Serialized treatment policies for the hidden form input */
-	const serializedTreatmentPolicies = $derived(JSON.stringify(treatmentDefaults));
-
 	// Reset form when modal opens or supplier changes
 	let formInstanceId = $state(generateUUID());
 	$effect(() => {
@@ -94,7 +75,6 @@
 						contactRole: supplier.contactRole ?? '',
 						notes: supplier.notes ?? ''
 					};
-					loadTreatmentDefaults(supplier.id);
 				} else {
 					formData = {
 						name: '',
@@ -111,7 +91,6 @@
 						contactRole: '',
 						notes: ''
 					};
-					treatmentDefaults = createDefaultTreatmentPolicies();
 				}
 			});
 		}
@@ -122,26 +101,6 @@
 	const currentUpdateForm = $derived(
 		updateSupplierForm.for(`${supplier?.id ?? 'new'}-${formInstanceId}`)
 	);
-
-	// Load treatment defaults for an existing supplier
-	async function loadTreatmentDefaults(supplierId: string) {
-		try {
-			const rows = await getSupplierTreatmentDefaults({ supplierId });
-			treatmentDefaults = CORE_LENS_TREATMENT_CODES.map((code) => {
-				const row = rows.find((r) => r.code === code);
-				return row
-					? toTreatmentPolicy(code, {
-							availability: row.availability as LensTreatmentAvailability,
-							additionalPrice: row.additionalPrice,
-							requiresConfirmation: row.requiresConfirmation
-						})
-					: toTreatmentPolicy(code);
-			});
-		} catch (e) {
-			console.error(e);
-			treatmentDefaults = createDefaultTreatmentPolicies();
-		}
-	}
 
 	// Handle create result
 	function handleCreateResult(formEl: HTMLFormElement) {
@@ -210,7 +169,6 @@
 			class="flex flex-col gap-4"
 		>
 			<input type="hidden" name="id" value={supplier.id} />
-			<input type="hidden" name="treatmentPolicies" value={serializedTreatmentPolicies} />
 
 			<!-- Basic Info -->
 			<div class="grid grid-cols-2 gap-4">
@@ -317,8 +275,6 @@
 				</div>
 			</div>
 
-			{@render treatmentDefaultsSection()}
-
 			<FormTextarea
 				label="Notas"
 				name="notes"
@@ -352,8 +308,6 @@
 			})}
 			class="flex flex-col gap-4"
 		>
-			<input type="hidden" name="treatmentPolicies" value={serializedTreatmentPolicies} />
-
 			<!-- Basic Info -->
 			<div class="grid grid-cols-2 gap-4">
 				<FormInput
@@ -459,8 +413,6 @@
 				</div>
 			</div>
 
-			{@render treatmentDefaultsSection()}
-
 			<FormTextarea
 				label="Notas"
 				name="notes"
@@ -479,60 +431,6 @@
 		</form>
 	{/if}
 </Modal>
-
-{#snippet treatmentDefaultsSection()}
-	<div class="border-t border-slate-200 pt-4">
-		<p class="mb-3 text-sm font-medium text-slate-700">Políticas de Tratamiento por Defecto</p>
-		<p class="mb-3 text-xs text-slate-400">
-			Define los tratamientos disponibles para los cristales de este proveedor
-		</p>
-		<div class="space-y-3">
-			{#each treatmentDefaults as policy, pi (policy.code)}
-				<div class="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
-					<div class="mb-2">
-						<span class="text-sm font-semibold text-slate-700">
-							{LENS_TREATMENT_LABELS[policy.code] ?? policy.code}
-						</span>
-					</div>
-					<div class="grid gap-2 sm:grid-cols-3">
-						{#each Object.values(LensTreatmentAvailability) as avail (avail)}
-							<button
-								type="button"
-								class="rounded-md border-2 px-3 py-1.5 text-xs transition-all {policy.availability ===
-								avail
-									? 'border-blue-500 bg-blue-50 font-medium text-blue-700'
-									: 'border-slate-200 text-slate-600 hover:border-slate-300'}"
-								onclick={() => (treatmentDefaults[pi].availability = avail)}
-							>
-								{LENS_TREATMENT_AVAILABILITY_LABELS[avail]}
-							</button>
-						{/each}
-					</div>
-					{#if policy.availability === LensTreatmentAvailability.OPTIONAL_EXTRA}
-						<div class="mt-2 grid gap-3 sm:grid-cols-2">
-							<div>
-								<Label class="mb-1 text-xs text-slate-500">Precio adicional ($)</Label>
-								<Input
-									bind:value={treatmentDefaults[pi].additionalPrice}
-									type="number"
-									step="0.1"
-									min="0"
-									size="sm"
-									class="font-mono"
-								/>
-							</div>
-							<div class="flex items-end">
-								<Checkbox bind:checked={treatmentDefaults[pi].requiresConfirmation}>
-									<span class="text-xs text-slate-600">Requiere confirmación</span>
-								</Checkbox>
-							</div>
-						</div>
-					{/if}
-				</div>
-			{/each}
-		</div>
-	</div>
-{/snippet}
 
 <!-- Reactivate Confirmation Modal -->
 <SupplierReactivateModal

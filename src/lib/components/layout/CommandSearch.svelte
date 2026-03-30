@@ -169,7 +169,6 @@
 							<div class="min-w-0 flex-1">
 								<p class="truncate text-sm font-medium text-slate-800">
 									{lens.name}
-									{#if lens.brand}<span class="text-slate-500"> · {lens.brand}</span>{/if}
 								</p>
 								<p class="truncate text-xs text-slate-500">
 									{getLensTypeLabel(lens.type)}

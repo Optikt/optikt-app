@@ -1,11 +1,21 @@
 <script lang="ts">
 	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { Truck, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
+	import { Truck, Eye, SquarePen, Trash2, RotateCcw, FlaskConical } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, ConfirmModal, SupplierTypeBadge, StatusBadge } from '$lib/components/ui';
-	import { SupplierViewModal, SupplierReactivateModal } from '$lib/components/suppliers';
+	import {
+		DataTable,
+		ConfirmModal,
+		SupplierTypeBadge,
+		StatusBadge,
+		ActionButton
+	} from '$lib/components/ui';
+	import {
+		SupplierViewModal,
+		SupplierReactivateModal,
+		SupplierTreatmentsModal
+	} from '$lib/components/suppliers';
 	import type { Supplier } from '$lib/server/db/schema';
 
 	interface Props {
@@ -21,6 +31,7 @@
 	let showDeleteModal = $state(false);
 	let showViewModal = $state(false);
 	let showReactivateModal = $state(false);
+	let showTreatmentsModal = $state(false);
 	let selectedSupplier = $state<Supplier | null>(null);
 	let deleteLoading = $state(false);
 
@@ -37,6 +48,11 @@
 	function openReactivate(supplier: Supplier) {
 		selectedSupplier = supplier;
 		showReactivateModal = true;
+	}
+
+	function openTreatments(supplier: Supplier) {
+		selectedSupplier = supplier;
+		showTreatmentsModal = true;
 	}
 
 	async function handleDelete() {
@@ -63,15 +79,6 @@
 	emptyIcon={Truck}
 	emptyTitle="No se encontraron proveedores"
 	emptyDescription="Agrega un proveedor para comenzar"
-	defaultActions="view,edit,delete,reactivate"
-	onView={openView}
-	onEdit={(s) => onEdit(s)}
-	onDelete={openDelete}
-	onReactivate={openReactivate}
-	viewIcon={Eye}
-	editIcon={SquarePen}
-	deleteIcon={Trash2}
-	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
 		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
@@ -105,6 +112,32 @@
 			<StatusBadge active={!supplier.deletedAt} />
 		</TableBodyCell>
 	{/snippet}
+
+	{#snippet actions(supplier)}
+		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(supplier)} />
+		<ActionButton
+			icon={FlaskConical}
+			title="Tratamientos"
+			color="blue"
+			onclick={() => openTreatments(supplier)}
+		/>
+		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(supplier)} />
+		{#if supplier.deletedAt}
+			<ActionButton
+				icon={RotateCcw}
+				title="Reactivar"
+				color="green"
+				onclick={() => openReactivate(supplier)}
+			/>
+		{:else}
+			<ActionButton
+				icon={Trash2}
+				title="Eliminar"
+				color="red"
+				onclick={() => openDelete(supplier)}
+			/>
+		{/if}
+	{/snippet}
 </DataTable>
 
 <!-- Delete Confirm Modal -->
@@ -136,4 +169,11 @@
 		selectedSupplier = null;
 		onRefresh?.();
 	}}
+/>
+
+<!-- Treatments Modal -->
+<SupplierTreatmentsModal
+	bind:open={showTreatmentsModal}
+	supplier={selectedSupplier}
+	onClose={() => (selectedSupplier = null)}
 />

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SvelteMap } from 'svelte/reactivity';
 	import { Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -8,22 +7,15 @@
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
+	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { PatientEye } from '$lib/shared/contracts/common';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import {
-		buildFulfillmentPlan,
-		type CatalogItemForPlanning,
-		type SurplusUnitForPlanning,
-		type FulfillmentPlanResult
-	} from '$lib/shared/planning';
-	import type { SaleItemInput, SurplusCreationInput } from '$lib/schemas/sales';
+	import type { SaleItemInput } from '$lib/schemas/sales';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import {
-		buildLensRequirements,
 		getRequiredEyes,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
@@ -35,20 +27,11 @@
 	interface Props {
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
-		catalogItems: CatalogItemForPlanning[];
-		availableSurplus: SurplusUnitForPlanning[];
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
 	}
 
-	let {
-		products,
-		lensItems,
-		catalogItems,
-		availableSurplus,
-		suppliers: _suppliers,
-		nextOrderNumber
-	}: Props = $props();
+	let { products, lensItems, suppliers: _suppliers, nextOrderNumber }: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE
@@ -64,7 +47,6 @@
 	];
 
 	function goToStep(step: WizardStep) {
-		if (step === 3) generateFulfillmentPlan();
 		currentStep = step;
 	}
 
@@ -72,84 +54,12 @@
 		if (currentStep === 1 && !step1Valid) return;
 		if (currentStep === 2 && !step2Valid) return;
 		if (currentStep < 3) {
-			const next = (currentStep + 1) as WizardStep;
-			if (next === 3) generateFulfillmentPlan();
-			currentStep = next;
+			currentStep = (currentStep + 1) as WizardStep;
 		}
 	}
 
 	function prevStep() {
 		if (currentStep > 1) currentStep = (currentStep - 1) as WizardStep;
-	}
-
-	// ============================================================================
-	// FULFILLMENT PLAN STATE
-	// ============================================================================
-
-	let planResult = $state<FulfillmentPlanResult | null>(null);
-
-	/** Pre-built catalog map for the planner and the summary panel */
-	const catalogMap = $derived(new Map(catalogItems.map((item) => [item.id, item])));
-
-	/**
-	 * Per-item overrides: when the supplier rejects a single-unit order,
-	 * user clicks "Comprar par" to force pair purchase.
-	 * Keyed by catalogItemId.
-	 */
-	let singleUnitOverrides = new SvelteMap<string, 'FORCE_PAIR'>();
-
-	/**
-	 * Surplus Rx choices: user decides whether surplus gets the same Rx or not.
-	 * Keyed by catalogItemId.
-	 */
-	let surplusRxChoices = new SvelteMap<string, 'SAME_RX' | 'UNDEFINED'>();
-
-	function applyOverrides(
-		catalog: Map<string, CatalogItemForPlanning>
-	): Map<string, CatalogItemForPlanning> {
-		if (singleUnitOverrides.size === 0) return catalog;
-		const overridden = new SvelteMap(catalog);
-		for (const [itemId] of singleUnitOverrides) {
-			const original = overridden.get(itemId);
-			if (original) {
-				overridden.set(itemId, {
-					...original,
-					purchasePolicy: {
-						...original.purchasePolicy,
-						allowsSingleUnitOrder: false
-					}
-				});
-			}
-		}
-		return overridden;
-	}
-
-	function handleOverrideChange(catalogItemId: string, action: 'FORCE_PAIR' | 'UNDO') {
-		if (action === 'FORCE_PAIR') {
-			singleUnitOverrides.set(catalogItemId, 'FORCE_PAIR');
-		} else {
-			singleUnitOverrides.delete(catalogItemId);
-		}
-		generateFulfillmentPlan();
-	}
-
-	function handleSurplusRxChange(catalogItemId: string, choice: 'SAME_RX' | 'UNDEFINED') {
-		surplusRxChoices.set(catalogItemId, choice);
-	}
-
-	function generateFulfillmentPlan() {
-		const lensItems = items.filter((i) => i.kind === 'lens');
-		if (lensItems.length === 0) {
-			planResult = null;
-			return;
-		}
-		const requirements = buildLensRequirements(items);
-		if (requirements.length === 0) {
-			planResult = null;
-			return;
-		}
-		const effectiveCatalog = applyOverrides(catalogMap);
-		planResult = buildFulfillmentPlan(requirements, effectiveCatalog, availableSurplus);
 	}
 
 	// ============================================================================
@@ -220,6 +130,7 @@
 			productId: '',
 			quantity: 1,
 			lensPair: null,
+			treatments: [],
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -263,17 +174,6 @@
 		})
 	);
 
-	const hasIncompatibleLens = $derived(
-		items.some((i) => {
-			if (i.kind !== 'lens' || !i.lensPair) return false;
-			const { od, oi } = i.lensPair;
-			return (
-				(od.enabled && od.compatibilityVerdict === 'SIGNATURE_MISMATCH') ||
-				(oi.enabled && oi.compatibilityVerdict === 'SIGNATURE_MISMATCH')
-			);
-		})
-	);
-
 	const requiredEyes = $derived(getRequiredEyes(items));
 
 	const rxErrors = $derived(
@@ -282,9 +182,7 @@
 
 	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
 
-	const step2Valid = $derived(
-		itemsValid && !hasOutOfStockItem && !hasIncompatibleLens && !hasInvalidPrescription
-	);
+	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
 
 	const canSubmit = $derived(step1Valid && step2Valid && !submitting);
 
@@ -338,95 +236,89 @@
 
 			for (const item of items) {
 				if (item.kind === 'product') {
+					const product = products.find((p) => p.id === item.productId);
 					saleItems.push({
+						itemType: SaleItemType.PRODUCT,
 						productId: item.productId,
 						quantity: item.quantity,
 						unitPrice: item.unitPrice,
 						discount: item.discount,
 						discountType: item.discountType,
-						notes: item.notes || undefined
+						notes: item.notes || undefined,
+						snapshotName: product?.name,
+						snapshotSku: product?.sku ?? undefined,
+						snapshotBrand: product?.brand?.name ?? undefined
 					});
 					continue;
 				}
 
-				// Lens items: build per-eye items from the fulfillment plan
-				if (!item.lensPair || !planResult) continue;
+				// Lens items: build per-eye items
+				if (!item.lensPair) continue;
 
 				const pair = item.lensPair;
+				const lens = lensItems.find((l) => l.id === pair.catalogItemId);
 				const eyes = [
 					{ entry: pair.od, eye: PatientEye.OD, suffix: 'od' as const },
 					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
 				];
 
-				for (const { entry, eye, suffix } of eyes) {
+				// Compute per-eye lens-only price (treatments are sent as separate items)
+				const enabledEyes = eyes.filter(({ entry }) => entry.enabled);
+				const eyeCount = enabledEyes.length;
+				const treatmentsSum = item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
+				const lensOnlyTotal = item.unitPrice - treatmentsSum;
+				const perEyeUnitPrice = eyeCount > 0 ? lensOnlyTotal / eyeCount : 0;
+
+				// Generate a stable parent ID for the first lens eye item
+				// so treatment items can reference it
+				const parentLensItemId = crypto.randomUUID();
+				let isFirstEye = true;
+
+				for (const { entry } of eyes) {
 					if (!entry.enabled) continue;
 
-					// Find the matching plan line for this requirement
-					const reqId = `${item.id}-${suffix}`;
-					const planLine = planResult.lines.find((l) => l.requirementId === reqId);
+					const lensItemId = isFirstEye ? parentLensItemId : crypto.randomUUID();
 
 					saleItems.push({
+						id: lensItemId,
+						itemType: SaleItemType.LENS_PAIR,
 						lensCatalogItemId: pair.catalogItemId,
-						eye,
-						fulfillmentSource: planLine?.source,
-						surplusUnitId: planLine?.surplusUnitId ?? undefined,
-						selectedTreatments: pair.selectedOptionalTreatments,
-						costBreakdown: planLine?.cost ?? undefined,
 						prescriptionId: customerPrescription?.id,
 						odSphere: entry.prescription.sphere ?? undefined,
 						odCylinder: entry.prescription.cylinder ?? undefined,
 						odAxis: entry.prescription.axis ?? undefined,
 						odAddition: entry.prescription.addition ?? undefined,
 						quantity: 1,
-						unitPrice: item.unitPrice,
-						discount: item.discount,
+						unitPrice: perEyeUnitPrice,
+						// FIXED discount goes on first eye only; PERCENTAGE works on each eye
+						discount: item.discountType === DiscountType.FIXED && !isFirstEye ? 0 : item.discount,
 						discountType: item.discountType,
-						notes: item.notes || undefined
+						notes: item.notes || undefined,
+						snapshotName: lens?.name,
+						snapshotBrand: lens?.supplier?.name ?? undefined,
+						snapshotBaseCost: lens?.basePrice,
+						snapshotMountingPrice: lens?.mountingPrice,
+						snapshotShippingPrice: lens?.shippingPrice,
+						snapshotSalePrice: lens?.salePrice ?? undefined,
+						snapshotPriceType: lens?.priceType
 					});
+
+					isFirstEye = false;
 				}
-			}
 
-			// Build surplus to create from plan + user Rx choices
-			const surplusToCreate: SurplusCreationInput[] = [];
-			if (planResult) {
-				for (const surplus of planResult.surplus) {
-					const catalogItem = catalogMap.get(surplus.catalogItemId);
-					const lensItem = lensItems.find((l) => l.id === surplus.catalogItemId);
-					if (!catalogItem || !lensItem) continue;
-
-					const rxChoice = surplusRxChoices.get(surplus.catalogItemId) ?? 'UNDEFINED';
-
-					// Find the ordered eye's prescription for SAME_RX
-					let prescription = surplus.predeterminedPrescription;
-					if (rxChoice === 'SAME_RX' && !prescription) {
-						// Use sourceRequirementId to find the exact wizard item + eye
-						for (const item of items) {
-							if (item.kind !== 'lens' || !item.lensPair) continue;
-							const reqId = surplus.sourceRequirementId;
-							if (reqId === `${item.id}-od` && item.lensPair.od.enabled) {
-								prescription = { ...item.lensPair.od.prescription };
-								break;
-							}
-							if (reqId === `${item.id}-oi` && item.lensPair.oi.enabled) {
-								prescription = { ...item.lensPair.oi.prescription };
-								break;
-							}
-						}
-					}
-
-					surplusToCreate.push({
-						catalogItemId: surplus.catalogItemId,
-						supplierId: lensItem.supplierId,
-						prescription: prescription ?? null,
-						selectedTreatments: surplus.predeterminedTreatments ?? null,
-						costSnapshot: {
-							basePrice: surplus.surplusCostIncluded,
-							treatmentPrice: 0,
-							mountingPrice: 0,
-							shippingPrice: 0,
-							surchargePrice: 0,
-							totalCost: surplus.surplusCostIncluded
-						}
+				// Emit treatment items linked to the parent lens item
+				for (const t of item.treatments) {
+					saleItems.push({
+						itemType: SaleItemType.TREATMENT,
+						parentSaleItemId: parentLensItemId,
+						supplierTreatmentId: t.supplierTreatmentId,
+						quantity: eyeCount,
+						unitPrice: t.price,
+						discount: 0,
+						discountType: DiscountType.FIXED,
+						snapshotName: t.name,
+						snapshotBrand: lens?.supplier?.name ?? undefined,
+						snapshotTreatmentCategory: t.category
 					});
 				}
 			}
@@ -439,8 +331,7 @@
 				discount,
 				discountType,
 				notes: notes || undefined,
-				items: saleItems,
-				surplusToCreate
+				items: saleItems
 			});
 
 			if (!result.success) {
@@ -513,7 +404,6 @@
 			{newCustomer}
 			{products}
 			{lensItems}
-			{catalogItems}
 			{nextOrderNumber}
 			valid={step2Valid}
 			onnext={nextStep}
@@ -535,16 +425,10 @@
 			{nextOrderNumber}
 			{products}
 			{lensItems}
-			{planResult}
-			{catalogMap}
-			{singleUnitOverrides}
-			{surplusRxChoices}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}
 			onsubmit={handleSubmit}
-			onoverridechange={handleOverrideChange}
-			onsurplusrxchange={handleSurplusRxChange}
 		/>
 	</div>
 </div>

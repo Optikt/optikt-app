@@ -1,5 +1,4 @@
 import { DiscountType } from '$lib/shared/enums';
-import type { FulfillmentPlan } from './fulfillment';
 
 export enum QuoteStatus {
 	DRAFT = 'DRAFT',
@@ -29,7 +28,7 @@ export interface QuoteDraft {
 	customerId: string | null;
 	conversionSaleId: string | null;
 	items: QuoteItemDraft[];
-	planningSnapshot: FulfillmentPlan | null;
+	planningSnapshot: unknown | null;
 	notes: string | null;
 	createdAtIso: string;
 	updatedAtIso: string;

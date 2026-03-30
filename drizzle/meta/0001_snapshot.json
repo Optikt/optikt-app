@@ -1,6 +1,6 @@
 {
-  "id": "8906863e-6b14-4289-8f16-5a2764f81aef",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "cce8c4f1-de28-4213-8466-c9763afcd687",
+  "prevId": "8906863e-6b14-4289-8f16-5a2764f81aef",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1830,6 +1830,12 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": true
+        },
+        "technology": {
+          "name": "technology",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
         },
         "material_id": {
           "name": "material_id",

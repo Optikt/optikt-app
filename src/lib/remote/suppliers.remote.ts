@@ -11,7 +11,10 @@ import {
 	SupplierIdSchema,
 	QuickCreateSupplierSchema,
 	ReactivateSupplierSchema,
-	SupplierTreatmentQuerySchema
+	SupplierTreatmentQuerySchema,
+	CreateSupplierTreatmentSchema,
+	UpdateSupplierTreatmentSchema,
+	SupplierTreatmentIdSchema
 } from '$lib/schemas/suppliers';
 import {
 	getAllSuppliers,
@@ -21,17 +24,16 @@ import {
 	createSupplier,
 	updateSupplier,
 	restoreSupplier,
-	deleteSupplier
+	deleteSupplier,
+	getSupplierTreatments,
+	findSupplierTreatmentById,
+	findSupplierTreatmentByName,
+	createSupplierTreatment,
+	updateSupplierTreatment,
+	deleteSupplierTreatment
 } from '$lib/server/db/queries/suppliers';
-import type { Supplier } from '$lib/server/db/schema';
+import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 import { auditService, getAuditContext } from '$lib/server/audit';
-import { db } from '$lib/server/db';
-import {
-	getSupplierTreatmentPolicies,
-	upsertSupplierTreatmentPolicy,
-	deleteSupplierTreatmentPolicy
-} from '$lib/server/db/queries/supplierTreatmentPolicies';
-import { LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
 
 // Types for paginated response
 export interface PaginatedSuppliers {
@@ -94,7 +96,7 @@ export const listSuppliers = query(
 export const createSupplierForm = form(
 	CreateSupplierSchema,
 	async (data, issue): Promise<CreateSupplierResult> => {
-		const { name, rif, treatmentPolicies, ...rest } = data;
+		const { name, rif, ...rest } = data;
 
 		// Check for duplicate ACTIVE name
 		const existingActive = await findSupplierByName(name);
@@ -122,26 +124,14 @@ export const createSupplierForm = form(
 			};
 		}
 
-		// Create supplier + save treatment policies in a single transaction
-		const supplier = await db.transaction(async (tx) => {
-			const sup = await createSupplier(
-				{ name, rif: rif && rif.trim() !== '' ? rif : null, ...rest },
-				tx
-			);
-			await saveTreatmentPoliciesInTx(sup.id, treatmentPolicies, tx);
-			return sup;
+		const supplier = await createSupplier({
+			name,
+			rif: rif && rif.trim() !== '' ? rif : null,
+			...rest
 		});
 
-		// Audit logs (best-effort, after transaction)
+		// Audit logs (best-effort)
 		await auditService.logCreate('supplier', supplier, getAuditContext());
-		const newPolicies = await getSupplierTreatmentPolicies(supplier.id);
-		if (newPolicies.length > 0) {
-			await auditService.logCreate(
-				'supplier_treatment_policy',
-				{ id: supplier.id, policies: newPolicies },
-				getAuditContext()
-			);
-		}
 
 		return { success: true, message: 'Proveedor creado exitosamente', supplier };
 	}
@@ -153,7 +143,7 @@ export const createSupplierForm = form(
 export const updateSupplierForm = form(
 	UpdateSupplierSchema,
 	async (data, issue): Promise<Supplier> => {
-		const { id, name, rif, treatmentPolicies, ...rest } = data;
+		const { id, name, rif, ...rest } = data;
 
 		// Check if supplier exists
 		const existing = await findSupplierById(id);
@@ -177,37 +167,17 @@ export const updateSupplierForm = form(
 			}
 		}
 
-		// Read existing treatment policies before update (for audit diff)
-		const existingPolicies = await getSupplierTreatmentPolicies(id);
-
-		// Update supplier + save treatment policies in a single transaction
-		const updated = await db.transaction(async (tx) => {
-			const sup = await updateSupplier(
-				id,
-				{ name, rif: rif && rif.trim() !== '' ? rif : null, ...rest },
-				tx
-			);
-			if (!sup) {
-				throw new Error('Error actualizando proveedor');
-			}
-			if (treatmentPolicies) {
-				await saveTreatmentPoliciesInTx(id, treatmentPolicies, tx);
-			}
-			return sup;
+		const updated = await updateSupplier(id, {
+			name,
+			rif: rif && rif.trim() !== '' ? rif : null,
+			...rest
 		});
-
-		// Audit logs (best-effort, after transaction)
-		await auditService.logUpdate('supplier', id, existing, updated, getAuditContext());
-		if (treatmentPolicies) {
-			const newPolicies = await getSupplierTreatmentPolicies(id);
-			await auditService.logUpdate(
-				'supplier_treatment_policy',
-				id,
-				{ policies: existingPolicies },
-				{ policies: newPolicies },
-				getAuditContext()
-			);
+		if (!updated) {
+			invalid('Error actualizando proveedor');
 		}
+
+		// Audit logs (best-effort)
+		await auditService.logUpdate('supplier', id, existing, updated, getAuditContext());
 
 		return updated;
 	}
@@ -284,41 +254,90 @@ export const reactivateSupplier = command(
 );
 
 // ============================================================================
-// SUPPLIER TREATMENT DEFAULTS
+// SUPPLIER TREATMENTS
 // ============================================================================
 
-/** Internal helper — saves treatment policies inside an existing transaction */
-async function saveTreatmentPoliciesInTx(
-	supplierId: string,
-	policies: {
-		code: string;
-		availability: string;
-		additionalPrice?: number;
-		requiresConfirmation?: boolean;
-	}[],
-	tx: Parameters<Parameters<typeof db.transaction>[0]>[0]
-) {
-	for (const policy of policies) {
-		if (policy.availability === LensTreatmentAvailability.NOT_AVAILABLE) {
-			await deleteSupplierTreatmentPolicy(supplierId, policy.code, tx);
-		} else {
-			await upsertSupplierTreatmentPolicy(
-				{
-					supplierId,
-					code: policy.code,
-					availability: policy.availability,
-					additionalPrice: policy.additionalPrice ?? 0,
-					requiresConfirmation: policy.requiresConfirmation ?? false
-				},
-				tx
-			);
-		}
+/**
+ * List treatments for a supplier
+ */
+export const listSupplierTreatments = query(
+	SupplierTreatmentQuerySchema,
+	async (data): Promise<SupplierTreatment[]> => {
+		return getSupplierTreatments(data.supplierId);
 	}
-}
+);
 
 /**
- * Get treatment policy defaults for a supplier
+ * Create a supplier treatment
  */
-export const getSupplierTreatmentDefaults = query(SupplierTreatmentQuerySchema, async (data) => {
-	return getSupplierTreatmentPolicies(data.supplierId);
-});
+export const createSupplierTreatmentForm = form(
+	CreateSupplierTreatmentSchema,
+	async (data, issue): Promise<SupplierTreatment> => {
+		// Check supplier exists
+		const supplier = await findSupplierById(data.supplierId);
+		if (!supplier) {
+			invalid('Proveedor no encontrado');
+		}
+
+		// Check for duplicate name within this supplier
+		const existing = await findSupplierTreatmentByName(data.supplierId, data.name);
+		if (existing) {
+			invalid(issue.name('Ya existe un tratamiento con este nombre para este proveedor'));
+		}
+
+		const treatment = await createSupplierTreatment(data);
+
+		await auditService.logCreate('supplier_treatment', treatment, getAuditContext());
+
+		return treatment;
+	}
+);
+
+/**
+ * Update a supplier treatment
+ */
+export const updateSupplierTreatmentForm = form(
+	UpdateSupplierTreatmentSchema,
+	async (data, issue): Promise<SupplierTreatment> => {
+		const { id, name, ...rest } = data;
+
+		const existing = await findSupplierTreatmentById(id);
+		if (!existing) {
+			invalid('Tratamiento no encontrado');
+		}
+
+		// Check for duplicate name if name is changing
+		if (name && name !== existing.name) {
+			const duplicate = await findSupplierTreatmentByName(existing.supplierId, name);
+			if (duplicate) {
+				invalid(issue.name('Ya existe un tratamiento con este nombre para este proveedor'));
+			}
+		}
+
+		const updated = await updateSupplierTreatment(id, { name, ...rest });
+		if (!updated) {
+			invalid('Error actualizando tratamiento');
+		}
+
+		await auditService.logUpdate('supplier_treatment', id, existing, updated, getAuditContext());
+
+		return updated;
+	}
+);
+
+/**
+ * Delete a supplier treatment (hard delete)
+ */
+export const deleteSupplierTreatmentById = command(
+	SupplierTreatmentIdSchema,
+	async (data): Promise<void> => {
+		const existing = await findSupplierTreatmentById(data.id);
+		if (!existing) {
+			throw new Error('Tratamiento no encontrado');
+		}
+
+		await deleteSupplierTreatment(data.id);
+
+		await auditService.logDelete('supplier_treatment', existing, getAuditContext());
+	}
+);

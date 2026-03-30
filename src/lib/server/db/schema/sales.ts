@@ -1,5 +1,6 @@
 import {
 	pgTable,
+	pgEnum,
 	varchar,
 	index,
 	uniqueIndex,
@@ -7,17 +8,22 @@ import {
 	timestamp,
 	integer,
 	doublePrecision,
-	foreignKey,
-	json,
-	serial
+	foreignKey
 } from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { customers } from './customers';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
 import { prescriptions } from './prescriptions';
-import { surplusUnits } from './surplusUnits';
-import type { FulfillmentCostBreakdown } from '../../../shared/contracts/fulfillment';
+import { supplierTreatments } from './suppliers';
+import { enumValues } from './utils';
+import { SaleItemType } from '../../../shared/enums/lensTypes';
+
+// ============================================================================
+// SALE ITEM TYPE ENUM
+// ============================================================================
+
+export const saleItemTypeEnum = pgEnum('sale_item_type', enumValues(SaleItemType));
 
 // ============================================================================
 // SALES (ORDERS)
@@ -27,8 +33,8 @@ export const sales = pgTable(
 	'sales',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
-		/** Auto-incrementing order number starting at 1 */
-		orderNumber: serial('order_number').notNull(),
+		/** Sequential order number assigned inside the transaction */
+		orderNumber: integer('order_number').notNull(),
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
 		saleDate: timestamp('sale_date', { mode: 'date' }).notNull(),
@@ -74,7 +80,7 @@ export const sales = pgTable(
 );
 
 // ============================================================================
-// SALE ITEMS
+// SALE ITEMS (redesigned — PRODUCT | LENS_PAIR | TREATMENT)
 // ============================================================================
 
 export const saleItems = pgTable(
@@ -82,42 +88,55 @@ export const saleItems = pgTable(
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		saleId: uuid('sale_id').notNull(),
+		itemType: saleItemTypeEnum('item_type').notNull(),
+
+		// --- Polymorphic FKs (only one set per itemType) ---
+		/** FK: only for PRODUCT items */
 		productId: uuid('product_id'),
+		/** FK: only for LENS_PAIR items */
 		lensCatalogItemId: uuid('lens_catalog_item_id'),
-		lensFulfillmentMode: varchar('lens_fulfillment_mode'),
-		/** Which eye this lens item is for (OD or OI). Null for product items. */
-		eye: varchar(),
-		/** How this item is sourced: SUPPLIER_ORDER, SURPLUS_STOCK, PAIR_BUNDLED, etc. */
-		fulfillmentSource: varchar('fulfillment_source'),
-		/** Surplus unit consumed by this item (null if not from surplus) */
-		surplusUnitId: uuid('surplus_unit_id'),
-		selectedTreatments: json('selected_treatments').$type<string[]>(),
-		/** Planner cost breakdown snapshot */
-		costBreakdown: json('cost_breakdown').$type<FulfillmentCostBreakdown>(),
-		/** Link to customer prescription used for this lens item */
+		/** FK self-ref: only for TREATMENT items → parent LENS_PAIR */
+		parentSaleItemId: uuid('parent_sale_item_id'),
+		/** FK: only for TREATMENT items → which lab treatment */
+		supplierTreatmentId: uuid('supplier_treatment_id'),
+
+		// --- Prescription snapshot (only for LENS_PAIR) ---
 		prescriptionId: uuid('prescription_id'),
-		/** Snapshot: Right eye sphere at time of sale */
 		odSphere: doublePrecision('od_sphere'),
-		/** Snapshot: Right eye cylinder at time of sale */
 		odCylinder: doublePrecision('od_cylinder'),
-		/** Snapshot: Right eye axis at time of sale */
 		odAxis: integer('od_axis'),
-		/** Snapshot: Right eye addition at time of sale */
 		odAddition: doublePrecision('od_addition'),
-		/** Snapshot: Left eye sphere at time of sale */
 		osSphere: doublePrecision('os_sphere'),
-		/** Snapshot: Left eye cylinder at time of sale */
 		osCylinder: doublePrecision('os_cylinder'),
-		/** Snapshot: Left eye axis at time of sale */
 		osAxis: integer('os_axis'),
-		/** Snapshot: Left eye addition at time of sale */
 		osAddition: doublePrecision('os_addition'),
+
+		// --- Pricing ---
 		quantity: integer().notNull(),
 		unitPrice: doublePrecision('unit_price').notNull(),
-		/** Item discount value (fixed amount or percentage input) */
 		discount: doublePrecision().notNull().default(0),
-		/** 'FIXED' or 'PERCENTAGE' */
 		discountType: varchar('discount_type').notNull().default('FIXED'),
+
+		// --- Snapshot (immutable at time of sale) ---
+		/** Display name (product name, lens description, treatment name) */
+		snapshotName: varchar('snapshot_name'),
+		/** Product SKU (PRODUCT only) */
+		snapshotSku: varchar('snapshot_sku'),
+		/** Brand name (PRODUCT) or Supplier name (LENS_PAIR, TREATMENT) */
+		snapshotBrand: varchar('snapshot_brand'),
+		/** Lens: per-unit cost price from catalog */
+		snapshotBaseCost: doublePrecision('snapshot_base_cost'),
+		/** Lens: mounting price from catalog */
+		snapshotMountingPrice: doublePrecision('snapshot_mounting_price'),
+		/** Lens: shipping price from catalog */
+		snapshotShippingPrice: doublePrecision('snapshot_shipping_price'),
+		/** Lens: sale price per unit from catalog (the price we set as suggested sell) */
+		snapshotSalePrice: doublePrecision('snapshot_sale_price'),
+		/** Lens: price type from catalog ('UNIT' or 'PAIR') */
+		snapshotPriceType: varchar('snapshot_price_type'),
+		/** Treatment: category (AR, BLUECUT, etc.) */
+		snapshotTreatmentCategory: varchar('snapshot_treatment_category'),
+
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -138,6 +157,10 @@ export const saleItems = pgTable(
 			table.productId.asc().nullsLast().op('uuid_ops')
 		),
 		index('ix_sale_items_sale_id').using('btree', table.saleId.asc().nullsLast().op('uuid_ops')),
+		index('ix_sale_items_parent_id').using(
+			'btree',
+			table.parentSaleItemId.asc().nullsLast().op('uuid_ops')
+		),
 		foreignKey({
 			columns: [table.lensCatalogItemId],
 			foreignColumns: [lensCatalogItems.id],
@@ -159,10 +182,15 @@ export const saleItems = pgTable(
 			name: 'sale_items_sale_id_fkey'
 		}).onDelete('cascade'),
 		foreignKey({
-			columns: [table.surplusUnitId],
-			foreignColumns: [surplusUnits.id],
-			name: 'sale_items_surplus_unit_id_fkey'
-		}).onDelete('set null')
+			columns: [table.parentSaleItemId],
+			foreignColumns: [table.id],
+			name: 'sale_items_parent_sale_item_id_fkey'
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.supplierTreatmentId],
+			foreignColumns: [supplierTreatments.id],
+			name: 'sale_items_supplier_treatment_id_fkey'
+		}).onDelete('restrict')
 	]
 );
 

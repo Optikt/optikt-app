@@ -1,21 +1,18 @@
 /**
  * Universal Search Remote Function
- * Searches across products and lab lens catalog with optical parameter parsing
+ * Searches across products and lab lens catalog
  */
 import { query } from '$app/server';
 import { UniversalSearchSchema } from '$lib/schemas/search';
-import { parseOpticalPrescription } from '$lib/shared/matching';
-import type { EyePrescription } from '$lib/shared/matching';
 import { db } from '$lib/server/db';
 import {
 	products,
 	lensCatalogItems,
-	lensOpticalRanges,
 	lensMaterials,
 	suppliers,
 	brands
 } from '$lib/server/db/schema';
-import { eq, and, isNull, ilike, or, gte, lte, desc } from 'drizzle-orm';
+import { eq, and, isNull, ilike, or, desc } from 'drizzle-orm';
 
 /** A product search result */
 export interface ProductResult {
@@ -32,7 +29,6 @@ export interface ProductResult {
 export interface LensCatalogResult {
 	id: string;
 	name: string;
-	brand: string | null;
 	type: string;
 	source: string;
 	materialName: string | null;
@@ -44,7 +40,6 @@ export interface SearchResults {
 	products: ProductResult[];
 	lenses: LensCatalogResult[];
 	query: string;
-	isOptical: boolean;
 }
 
 const MAX_RESULTS = 8;
@@ -52,21 +47,17 @@ const MAX_RESULTS = 8;
 export const universalSearch = query(
 	UniversalSearchSchema,
 	async (data): Promise<SearchResults> => {
-		const parsed = parseOpticalPrescription(data.query);
 		const searchText = data.query.toLowerCase().trim();
-		// Use OD eye for range search (unprefixed input sets both eyes the same)
-		const optical = parsed.prescription?.od ?? null;
 
 		const [productResults, lensResults] = await Promise.all([
 			searchProducts(searchText),
-			searchLenses(searchText, optical)
+			searchLenses(searchText)
 		]);
 
 		return {
 			products: productResults,
 			lenses: lensResults,
-			query: data.query,
-			isOptical: parsed.isOptical
+			query: data.query
 		};
 	}
 );
@@ -102,56 +93,11 @@ async function searchProducts(search: string): Promise<ProductResult[]> {
 	return results;
 }
 
-async function searchLenses(
-	search: string,
-	optical: EyePrescription | null
-): Promise<LensCatalogResult[]> {
-	const baseConditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
-
-	// If optical params detected, join via lens_optical_ranges and use containment
-	if (optical?.sphere !== undefined && optical.sphere !== null) {
-		const rangeConditions = [
-			eq(lensOpticalRanges.lensCatalogItemId, lensCatalogItems.id),
-			lte(lensOpticalRanges.sphereMin, optical.sphere),
-			gte(lensOpticalRanges.sphereMax, optical.sphere)
-		];
-
-		if (optical.cylinder !== undefined && optical.cylinder !== null && optical.cylinder < 0) {
-			rangeConditions.push(lte(lensOpticalRanges.cylinderMin, optical.cylinder));
-			rangeConditions.push(gte(lensOpticalRanges.cylinderMax, optical.cylinder));
-		}
-
-		const results = await db
-			.selectDistinctOn([lensCatalogItems.id], {
-				id: lensCatalogItems.id,
-				name: lensCatalogItems.name,
-				brand: lensCatalogItems.brand,
-				type: lensCatalogItems.type,
-				source: lensCatalogItems.source,
-				materialName: lensMaterials.name,
-				supplierName: suppliers.name,
-				basePrice: lensCatalogItems.basePrice
-			})
-			.from(lensCatalogItems)
-			.innerJoin(lensOpticalRanges, and(...rangeConditions))
-			.leftJoin(lensMaterials, eq(lensCatalogItems.materialId, lensMaterials.id))
-			.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
-			.where(and(...baseConditions))
-			.limit(MAX_RESULTS);
-
-		return results;
-	}
-
-	// Text search fallback
-	baseConditions.push(
-		or(ilike(lensCatalogItems.name, `%${search}%`), ilike(lensCatalogItems.brand, `%${search}%`))!
-	);
-
+async function searchLenses(search: string): Promise<LensCatalogResult[]> {
 	const results = await db
 		.select({
 			id: lensCatalogItems.id,
 			name: lensCatalogItems.name,
-			brand: lensCatalogItems.brand,
 			type: lensCatalogItems.type,
 			source: lensCatalogItems.source,
 			materialName: lensMaterials.name,
@@ -161,7 +107,13 @@ async function searchLenses(
 		.from(lensCatalogItems)
 		.leftJoin(lensMaterials, eq(lensCatalogItems.materialId, lensMaterials.id))
 		.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
-		.where(and(...baseConditions))
+		.where(
+			and(
+				isNull(lensCatalogItems.deletedAt),
+				eq(lensCatalogItems.isActive, true),
+				ilike(lensCatalogItems.name, `%${search}%`)
+			)
+		)
 		.limit(MAX_RESULTS)
 		.orderBy(desc(lensCatalogItems.createdAt));
 

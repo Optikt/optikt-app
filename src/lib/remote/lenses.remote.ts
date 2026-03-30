@@ -10,14 +10,10 @@ import { lensCatalogItems, lensOpticalRanges } from '$lib/server/db/schema';
 import {
 	CreateLensMaterialSchema,
 	UpdateLensMaterialSchema,
-	CreateLensTreatmentSchema,
-	UpdateLensTreatmentSchema,
 	CreateLensCatalogItemSchema,
 	UpdateLensCatalogItemSchema,
 	LensIdSchema,
-	ListLensCatalogSchema,
-	LensSupplierIdSchema,
-	UpsertSupplierTreatmentSchema
+	ListLensCatalogSchema
 } from '$lib/schemas/lenses';
 import {
 	getAllLensMaterials,
@@ -27,28 +23,13 @@ import {
 	createLensMaterial,
 	updateLensMaterial,
 	deleteLensMaterial,
-	getAllLensTreatments,
-	findLensTreatmentById,
-	findLensTreatmentByName,
-	findLensTreatmentByCode,
-	createLensTreatment,
-	updateLensTreatment,
-	deleteLensTreatment,
 	getLensCatalogItemsWithRelations,
 	findLensCatalogItemById,
 	deleteLensCatalogItem,
-	getSupplierTreatments,
-	upsertSupplierTreatment,
-	deleteSupplierTreatment,
 	resolvePendingLensMaterial
 } from '$lib/server/db/queries/lenses';
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
-import type {
-	LensMaterial,
-	LensTreatment,
-	LensCatalogItem,
-	LensOpticalRange
-} from '$lib/server/db/schema';
+import type { LensMaterial, LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
 
@@ -216,70 +197,6 @@ export const deleteLensMaterialById = command(LensIdSchema, async (data): Promis
 });
 
 // ============================================================================
-// LENS TREATMENTS
-// ============================================================================
-
-export const listLensTreatments = query('unchecked', async (): Promise<LensTreatment[]> => {
-	return getAllLensTreatments();
-});
-
-export const createLensTreatmentForm = form(
-	CreateLensTreatmentSchema,
-	async (data, issue): Promise<LensTreatment> => {
-		const existingName = await findLensTreatmentByName(data.name);
-		if (existingName) {
-			invalid(issue.name('Ya existe un tratamiento con este nombre'));
-		}
-
-		const existingCode = await findLensTreatmentByCode(data.code);
-		if (existingCode) {
-			invalid(issue.code('Ya existe un tratamiento con este código'));
-		}
-
-		const treatment = await createLensTreatment(data);
-		await auditService.logCreate('lens_treatment', treatment, getAuditContext());
-		return treatment;
-	}
-);
-
-export const updateLensTreatmentForm = form(
-	UpdateLensTreatmentSchema,
-	async (data, issue): Promise<LensTreatment> => {
-		const { id, ...updates } = data;
-
-		const existing = await findLensTreatmentById(id);
-		if (!existing) {
-			invalid('Tratamiento no encontrado');
-		}
-
-		if (updates.name && updates.name !== existing.name) {
-			const dup = await findLensTreatmentByName(updates.name);
-			if (dup) invalid(issue.name('Ya existe un tratamiento con este nombre'));
-		}
-
-		if (updates.code && updates.code !== existing.code) {
-			const dup = await findLensTreatmentByCode(updates.code);
-			if (dup) invalid(issue.code('Ya existe un tratamiento con este código'));
-		}
-
-		const updated = await updateLensTreatment(id, updates);
-		if (!updated) invalid('Error actualizando tratamiento');
-		await auditService.logUpdate('lens_treatment', id, existing, updated, getAuditContext());
-		return updated;
-	}
-);
-
-export const deleteLensTreatmentById = command(LensIdSchema, async (data): Promise<void> => {
-	const existing = await findLensTreatmentById(data.id);
-	if (!existing) throw new Error('Tratamiento no encontrado');
-
-	const deleted = await deleteLensTreatment(data.id);
-	if (!deleted) throw new Error('Error eliminando tratamiento');
-
-	await auditService.logDelete('lens_treatment', existing, getAuditContext());
-});
-
-// ============================================================================
 // LENS CATALOG ITEMS
 // ============================================================================
 
@@ -291,8 +208,7 @@ export const listLensCatalog = query(
 			source: data.source,
 			supplierId: data.supplierId,
 			materialId: data.materialId,
-			type: data.type,
-			technology: data.technology
+			type: data.type
 		});
 	}
 );
@@ -325,6 +241,9 @@ export const createLensCatalogItemForm = form(
 				);
 			}
 
+			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
+			const stockValue = rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
+
 			const [item] = await tx
 				.insert(lensCatalogItems)
 				.values({
@@ -332,6 +251,7 @@ export const createLensCatalogItemForm = form(
 					id: crypto.randomUUID(),
 					supplierId,
 					materialId,
+					stock: stockValue,
 					createdAt: now,
 					updatedAt: now
 				})
@@ -352,7 +272,6 @@ export const createLensCatalogItemForm = form(
 					cylinderMax: cylA != null && cylB != null ? Math.max(cylA, cylB) : cylB,
 					additionMin: addA != null && addB != null ? Math.min(addA, addB) : addA,
 					additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB,
-					mirrorGroup: r.mirrorGroup ?? null,
 					id: crypto.randomUUID(),
 					lensCatalogItemId: item.id,
 					createdAt: now,
@@ -423,12 +342,21 @@ export const updateLensCatalogItemForm = form(
 					);
 				}
 
+				// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
+				const stockOverride =
+					rest.inventoryMode === 'ON_DEMAND'
+						? { stock: null }
+						: rest.stock !== undefined
+							? {}
+							: { stock: 0 };
+
 				const [updated] = await tx
 					.update(lensCatalogItems)
 					.set({
 						...rest,
 						...(supplierId !== undefined && { supplierId }),
 						...(materialId !== undefined && { materialId }),
+						...stockOverride,
 						updatedAt: now
 					})
 					.where(eq(lensCatalogItems.id, id))
@@ -455,8 +383,7 @@ export const updateLensCatalogItemForm = form(
 							cylinderMin: cylA != null && cylB != null ? Math.min(cylA, cylB) : cylA,
 							cylinderMax: cylA != null && cylB != null ? Math.max(cylA, cylB) : cylB,
 							additionMin: addA != null && addB != null ? Math.min(addA, addB) : addA,
-							additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB,
-							mirrorGroup: r.mirrorGroup ?? null
+							additionMax: addA != null && addB != null ? Math.max(addA, addB) : addB
 						};
 					});
 
@@ -527,21 +454,4 @@ export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Pro
 	if (!deleted) throw new Error('Error eliminando item de catálogo');
 
 	await auditService.logDelete('lens_catalog_item', existing, getAuditContext());
-});
-
-// ============================================================================
-// SUPPLIER LENS TREATMENTS
-// ============================================================================
-
-export const listSupplierTreatments = query(LensSupplierIdSchema, async (data) => {
-	return getSupplierTreatments(data.supplierId);
-});
-
-export const upsertSupplierTreatmentCmd = command(UpsertSupplierTreatmentSchema, async (data) => {
-	return upsertSupplierTreatment(data);
-});
-
-export const deleteSupplierTreatmentCmd = command(LensIdSchema, async (data): Promise<void> => {
-	const deleted = await deleteSupplierTreatment(data.id);
-	if (!deleted) throw new Error('Tratamiento de proveedor no encontrado');
 });

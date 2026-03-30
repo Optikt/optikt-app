@@ -4,15 +4,11 @@ import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	lensMaterials,
-	lensTreatments,
 	lensCatalogItems,
 	lensOpticalRanges,
-	supplierLensTreatments,
 	suppliers,
 	type LensMaterial,
 	type NewLensMaterial,
-	type LensTreatment,
-	type NewLensTreatment,
 	type LensCatalogItem,
 	type NewLensCatalogItem,
 	type LensOpticalRange,
@@ -85,71 +81,6 @@ export async function deleteLensMaterial(id: string): Promise<boolean> {
 }
 
 // ============================================================================
-// LENS TREATMENTS
-// ============================================================================
-
-export async function getAllLensTreatments(): Promise<LensTreatment[]> {
-	return await db
-		.select()
-		.from(lensTreatments)
-		.where(and(isNull(lensTreatments.deletedAt), eq(lensTreatments.isActive, true)));
-}
-
-export async function findLensTreatmentById(id: string): Promise<LensTreatment | null> {
-	const [treatment] = await db
-		.select()
-		.from(lensTreatments)
-		.where(and(eq(lensTreatments.id, id), isNull(lensTreatments.deletedAt)));
-	return treatment ?? null;
-}
-
-export async function findLensTreatmentByCode(code: string): Promise<LensTreatment | null> {
-	const [treatment] = await db
-		.select()
-		.from(lensTreatments)
-		.where(and(eq(lensTreatments.code, code), isNull(lensTreatments.deletedAt)));
-	return treatment ?? null;
-}
-
-export async function findLensTreatmentByName(name: string): Promise<LensTreatment | null> {
-	const [treatment] = await db
-		.select()
-		.from(lensTreatments)
-		.where(and(ilike(lensTreatments.name, name), isNull(lensTreatments.deletedAt)));
-	return treatment ?? null;
-}
-
-export async function createLensTreatment(data: NewLensTreatment): Promise<LensTreatment> {
-	const now = new Date();
-	const [treatment] = await db
-		.insert(lensTreatments)
-		.values({ ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now })
-		.returning();
-	return treatment;
-}
-
-export async function updateLensTreatment(
-	id: string,
-	data: Partial<NewLensTreatment>
-): Promise<LensTreatment | null> {
-	const [updated] = await db
-		.update(lensTreatments)
-		.set({ ...data, updatedAt: new Date() })
-		.where(and(eq(lensTreatments.id, id), isNull(lensTreatments.deletedAt)))
-		.returning();
-	return updated ?? null;
-}
-
-export async function deleteLensTreatment(id: string): Promise<boolean> {
-	const [deleted] = await db
-		.update(lensTreatments)
-		.set({ deletedAt: new Date() })
-		.where(and(eq(lensTreatments.id, id), isNull(lensTreatments.deletedAt)))
-		.returning({ id: lensTreatments.id });
-	return !!deleted;
-}
-
-// ============================================================================
 // LENS CATALOG ITEMS
 // ============================================================================
 
@@ -172,7 +103,6 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	supplierId?: string;
 	materialId?: string;
 	type?: LensType;
-	technology?: string;
 }): Promise<LensCatalogItemWithRelations[]> {
 	const conditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
 
@@ -187,9 +117,6 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	}
 	if (options?.type) {
 		conditions.push(eq(lensCatalogItems.type, options.type));
-	}
-	if (options?.technology) {
-		conditions.push(ilike(lensCatalogItems.technology, `%${options.technology}%`));
 	}
 
 	const results = await db
@@ -211,14 +138,12 @@ export async function getLensCatalogItemsWithRelations(options?: {
 		ranges: [] as LensOpticalRange[]
 	}));
 
-	// Text search in memory (name, brand, supplier name, material name)
+	// Text search in memory (name, supplier name, material name)
 	if (options?.search) {
 		const searchLower = options.search.toLowerCase();
 		items = items.filter(
 			(item) =>
 				item.name.toLowerCase().includes(searchLower) ||
-				item.brand?.toLowerCase().includes(searchLower) ||
-				item.technology?.toLowerCase().includes(searchLower) ||
 				item.supplier?.name.toLowerCase().includes(searchLower) ||
 				item.material?.name.toLowerCase().includes(searchLower)
 		);
@@ -372,79 +297,6 @@ export async function deleteLensCatalogItem(id: string): Promise<boolean> {
 		.set({ deletedAt: new Date() })
 		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
 		.returning({ id: lensCatalogItems.id });
-	return !!deleted;
-}
-
-// ============================================================================
-// SUPPLIER LENS TREATMENTS
-// ============================================================================
-
-export async function getSupplierTreatments(supplierId: string) {
-	return await db
-		.select({
-			id: supplierLensTreatments.id,
-			price: supplierLensTreatments.price,
-			isAvailable: supplierLensTreatments.isAvailable,
-			treatment: { id: lensTreatments.id, name: lensTreatments.name, code: lensTreatments.code }
-		})
-		.from(supplierLensTreatments)
-		.innerJoin(lensTreatments, eq(supplierLensTreatments.treatmentId, lensTreatments.id))
-		.where(
-			and(
-				eq(supplierLensTreatments.supplierId, supplierId),
-				isNull(supplierLensTreatments.deletedAt)
-			)
-		);
-}
-
-export async function upsertSupplierTreatment(data: {
-	supplierId: string;
-	treatmentId: string;
-	price: number;
-	isAvailable?: boolean;
-}) {
-	// Try to find existing
-	const [existing] = await db
-		.select()
-		.from(supplierLensTreatments)
-		.where(
-			and(
-				eq(supplierLensTreatments.supplierId, data.supplierId),
-				eq(supplierLensTreatments.treatmentId, data.treatmentId),
-				isNull(supplierLensTreatments.deletedAt)
-			)
-		);
-
-	const now = new Date();
-
-	if (existing) {
-		const [updated] = await db
-			.update(supplierLensTreatments)
-			.set({ price: data.price, isAvailable: data.isAvailable ?? true, updatedAt: now })
-			.where(eq(supplierLensTreatments.id, existing.id))
-			.returning();
-		return updated;
-	}
-
-	const [created] = await db
-		.insert(supplierLensTreatments)
-		.values({
-			...data,
-			id: crypto.randomUUID(),
-			isAvailable: data.isAvailable ?? true,
-			createdAt: now,
-			updatedAt: now
-		})
-		.returning();
-	return created;
-}
-
-export async function deleteSupplierTreatment(id: string): Promise<boolean> {
-	const [deleted] = await db
-		.update(supplierLensTreatments)
-		.set({ deletedAt: new Date() })
-		.where(and(eq(supplierLensTreatments.id, id), isNull(supplierLensTreatments.deletedAt)))
-		.returning({ id: supplierLensTreatments.id });
 	return !!deleted;
 }
 

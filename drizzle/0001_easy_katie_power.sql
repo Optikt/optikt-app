@@ -1,0 +1,1 @@
+ALTER TABLE "lens_catalog_items" ADD COLUMN "technology" varchar;

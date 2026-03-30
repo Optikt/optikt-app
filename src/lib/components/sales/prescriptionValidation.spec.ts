@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	validatePrescriptionFields,
 	hasPrescriptionErrors,
-	getRequiredEyes,
-	type PrescriptionFieldErrors
+	getRequiredEyes
 } from './saleItemHelpers';
 import { DiscountType } from '$lib/shared/enums';
 import type { SaleItemRow } from './newSaleTypes';
@@ -24,10 +23,7 @@ function makeValues(overrides: Partial<Record<string, string>> = {}) {
 	};
 }
 
-function makeLensItem(
-	odEnabled = true,
-	oiEnabled = true
-): SaleItemRow {
+function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'some-lens';
 	pair.od.enabled = odEnabled;
@@ -38,6 +34,7 @@ function makeLensItem(
 		productId: '',
 		quantity: 1,
 		lensPair: pair,
+		treatments: [],
 		unitPrice: 100,
 		discount: 0,
 		discountType: DiscountType.FIXED,
@@ -110,11 +107,7 @@ describe('validatePrescriptionFields', () => {
 	});
 
 	it('does not require axis when cylinder is empty', () => {
-		const errors = validatePrescriptionFields(
-			makeValues({ odSphere: '-2.00' }),
-			true,
-			false
-		);
+		const errors = validatePrescriptionFields(makeValues({ odSphere: '-2.00' }), true, false);
 		expect(errors.odAxis).toBeUndefined();
 	});
 

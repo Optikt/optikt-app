@@ -5,8 +5,43 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773688201221,
-      "tag": "0000_long_callisto",
+      "when": 1774759019348,
+      "tag": "0000_new_vector",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774802083739,
+      "tag": "0001_easy_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774814512827,
+      "tag": "0002_light_shaman",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774821690328,
+      "tag": "0003_brave_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774826189481,
+      "tag": "0004_late_lenny_balinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774833777154,
+      "tag": "0005_handy_colleen_wing",
       "breakpoints": true
     }
   ]

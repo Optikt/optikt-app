@@ -66,7 +66,7 @@ export const ALL_ENTITY_TYPES = [
 	'sale_payment',
 	'lens_catalog_item',
 	'supplier',
-	'supplier_treatment_policy',
+	'supplier_treatment',
 	'brand',
 	'material',
 	'lens_material',

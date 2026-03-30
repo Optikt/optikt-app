@@ -18,14 +18,10 @@ import {
 	ALL_DISCOUNT_TYPES,
 	DiscountType
 } from '$lib/shared/enums';
-import { LensFulfillmentMode } from '$lib/shared/enums/lensTypes';
-import { FulfillmentSource } from '$lib/shared/contracts/fulfillment';
-import { PatientEye } from '$lib/shared/contracts/common';
-import { CORE_LENS_TREATMENT_CODES } from '$lib/shared/contracts/lenses';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 
-const ALL_FULFILLMENT_SOURCES = Object.values(FulfillmentSource) as [string, ...string[]];
-const ALL_PATIENT_EYES = Object.values(PatientEye) as [string, ...string[]];
+const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 
 // ============================================================================
 // LIST / FILTER SCHEMAS
@@ -43,83 +39,51 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 // PRESCRIPTION SNAPSHOT SCHEMA (reusable)
 // ============================================================================
 
-const PrescriptionSnapshotSchema = z.object({
-	sphere: z.number().nullable(),
-	cylinder: z.number().nullable(),
-	axis: z.number().int().nullable(),
-	addition: z.number().nullable()
-});
-
 // ============================================================================
-// COST BREAKDOWN SCHEMA
+// SALE ITEM SCHEMA (redesigned — PRODUCT | LENS_PAIR | TREATMENT)
 // ============================================================================
 
-const CostBreakdownSchema = z.object({
-	basePrice: z.number(),
-	treatmentPrice: z.number(),
-	mountingPrice: z.number(),
-	shippingPrice: z.number(),
-	surchargePrice: z.number(),
-	totalCost: z.number()
-});
+export const SaleItemSchema = z.object({
+	/** Optional client-generated UUID — used to link treatment items to their parent lens item */
+	id: z.uuid().optional(),
+	itemType: z.enum(ALL_SALE_ITEM_TYPES),
+	/** FK: only for PRODUCT items */
+	productId: z.uuid().optional(),
+	/** FK: only for LENS_PAIR items */
+	lensCatalogItemId: z.uuid().optional(),
+	/** FK self-ref: only for TREATMENT items → parent LENS_PAIR */
+	parentSaleItemId: z.uuid().optional(),
+	/** FK: only for TREATMENT items → which lab treatment */
+	supplierTreatmentId: z.uuid().optional(),
+	/** Link to existing prescription (optional, used for LENS_PAIR items) */
+	prescriptionId: z.uuid().optional(),
+	/** Prescription snapshot: right eye */
+	odSphere: OptionalSphereSchema.optional(),
+	odCylinder: OptionalCylinderSchema.optional(),
+	odAxis: AxisSchema.optional(),
+	odAddition: OptionalAdditionSchema.optional(),
+	/** Prescription snapshot: left eye */
+	osSphere: OptionalSphereSchema.optional(),
+	osCylinder: OptionalCylinderSchema.optional(),
+	osAxis: AxisSchema.optional(),
+	osAddition: OptionalAdditionSchema.optional(),
+	quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
+	unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
+	discount: CoercedNumber.min(0).default(0),
+	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 
-// ============================================================================
-// SALE ITEM SCHEMA
-// ============================================================================
+	// Snapshot fields (immutable at time of sale)
+	snapshotName: z.string().optional(),
+	snapshotSku: z.string().optional(),
+	snapshotBrand: z.string().optional(),
+	snapshotBaseCost: CoercedNumber.optional(),
+	snapshotMountingPrice: CoercedNumber.optional(),
+	snapshotShippingPrice: CoercedNumber.optional(),
+	snapshotSalePrice: CoercedNumber.optional(),
+	snapshotPriceType: z.string().optional(),
+	snapshotTreatmentCategory: z.string().optional(),
 
-/**
- * A single line item in a sale.
- * Either productId or lensCatalogItemId must be provided (not both).
- * Lens items are per-eye (one row per eye) with fulfillment info.
- */
-export const SaleItemSchema = z
-	.object({
-		productId: z.uuid().optional(),
-		lensCatalogItemId: z.uuid().optional(),
-		lensFulfillmentMode: z.enum(LensFulfillmentMode).optional(),
-		/** Which eye this lens item is for (OD or OI) */
-		eye: z.enum(ALL_PATIENT_EYES).optional(),
-		/** How this item is sourced */
-		fulfillmentSource: z.enum(ALL_FULFILLMENT_SOURCES).optional(),
-		/** Surplus unit ID consumed by this item */
-		surplusUnitId: z.uuid().optional(),
-		selectedTreatments: z.array(z.string()).optional(),
-		/** Planner cost breakdown snapshot */
-		costBreakdown: CostBreakdownSchema.optional(),
-		/** Link to existing prescription (optional, used for lens items) */
-		prescriptionId: z.uuid().optional(),
-		/** Prescription snapshot: right eye */
-		odSphere: OptionalSphereSchema.optional(),
-		odCylinder: OptionalCylinderSchema.optional(),
-		odAxis: AxisSchema.optional(),
-		odAddition: OptionalAdditionSchema.optional(),
-		/** Prescription snapshot: left eye */
-		osSphere: OptionalSphereSchema.optional(),
-		osCylinder: OptionalCylinderSchema.optional(),
-		osAxis: AxisSchema.optional(),
-		osAddition: OptionalAdditionSchema.optional(),
-		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
-		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
-		discount: CoercedNumber.min(0).default(0),
-		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
-		notes: z.string().optional()
-	})
-	.refine((data) => data.productId || data.lensCatalogItemId, {
-		message: 'Debe seleccionar un producto o un lente',
-		path: ['productId']
-	});
-
-// ============================================================================
-// SURPLUS CREATION SCHEMA
-// ============================================================================
-
-/** Surplus unit to create from a forced pair purchase */
-export const SurplusCreationSchema = z.object({
-	catalogItemId: z.uuid(),
-	supplierId: z.uuid(),
-	prescription: PrescriptionSnapshotSchema.nullable(),
-	selectedTreatments: z.array(z.enum(CORE_LENS_TREATMENT_CODES)).nullable(),
-	costSnapshot: CostBreakdownSchema
+	notes: z.string().optional()
 });
 
 // ============================================================================
@@ -147,9 +111,7 @@ export const CreateSaleSchema = z
 		discount: CoercedNumber.min(0).default(0),
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 		notes: z.string().optional(),
-		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto'),
-		/** Surplus units to create from forced pair purchases */
-		surplusToCreate: z.array(SurplusCreationSchema).default([])
+		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto')
 	})
 	.refine((data) => data.customerId || data.newCustomer, {
 		message: 'Debe seleccionar o crear un cliente',
@@ -213,7 +175,6 @@ export const CustomerLookupSchema = z.object({
 
 export type CreateSaleInput = z.infer<typeof CreateSaleSchema>;
 export type SaleItemInput = z.infer<typeof SaleItemSchema>;
-export type SurplusCreationInput = z.infer<typeof SurplusCreationSchema>;
 export type ListSalesInput = z.infer<typeof ListSalesSchema>;
 export type InlineCustomerInput = z.infer<typeof InlineCustomerSchema>;
 export type AddPaymentInput = z.infer<typeof AddPaymentSchema>;

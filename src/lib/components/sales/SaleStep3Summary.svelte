@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { SvelteSet } from 'svelte/reactivity';
 	import { Button, Select, Input, Spinner } from 'flowbite-svelte';
 	import {
 		ShoppingCart,
@@ -10,30 +9,28 @@
 		Hash,
 		Eye,
 		Package,
-		AlertTriangle
+		FlaskConical
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
 	import {
 		findProduct,
 		itemLineTotal,
-		getItemName as _getItemName,
-		findLensItem
+		computeItemDiscount,
+		getItemName as _getItemName
 	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
-	import { LENS_TREATMENT_LABELS, LensTreatmentAvailability } from '$lib/shared/contracts/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { getProductTypeLabel, getProductTypeBadgeColor } from '$lib/shared/enums/productTypes';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
-	import type { FulfillmentPlanResult, CatalogItemForPlanning } from '$lib/shared/planning';
-	import FulfillmentPlanPanel from './FulfillmentPlanPanel.svelte';
+	import { getTreatmentCategoryLabel } from '$lib/shared/enums';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -47,16 +44,10 @@
 		nextOrderNumber?: number;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
-		planResult: FulfillmentPlanResult | null;
-		catalogMap: Map<string, CatalogItemForPlanning>;
-		singleUnitOverrides: Map<string, 'FORCE_PAIR'>;
-		surplusRxChoices: Map<string, 'SAME_RX' | 'UNDEFINED'>;
 		submitting: boolean;
 		canSubmit: boolean;
 		onprev: () => void;
 		onsubmit: () => void;
-		onoverridechange: (catalogItemId: string, action: 'FORCE_PAIR' | 'UNDO') => void;
-		onsurplusrxchange: (catalogItemId: string, choice: 'SAME_RX' | 'UNDEFINED') => void;
 	}
 
 	let {
@@ -71,85 +62,19 @@
 		nextOrderNumber,
 		products,
 		lensItems,
-		planResult,
-		catalogMap,
-		singleUnitOverrides,
-		surplusRxChoices,
 		submitting,
 		canSubmit,
 		onprev,
-		onsubmit,
-		onoverridechange,
-		onsurplusrxchange
+		onsubmit
 	}: Props = $props();
 
 	// ============================================================================
 	// CONFIRMATION STATE
 	// ============================================================================
 
-	/** Track which plan lines the user has confirmed */
-	let confirmedLines = new SvelteSet<string>();
-	let surplusAcknowledged = $state(false);
-
-	function toggleConfirm(requirementId: string) {
-		if (confirmedLines.has(requirementId)) confirmedLines.delete(requirementId);
-		else confirmedLines.add(requirementId);
-	}
-
-	/** Toggle all lines in a confirmation group at once */
-	function toggleConfirmGroup(lineIds: string[]) {
-		const allConfirmedInGroup = lineIds.every((id) => confirmedLines.has(id));
-		for (const id of lineIds) {
-			if (allConfirmedInGroup) confirmedLines.delete(id);
-			else confirmedLines.add(id);
-		}
-	}
-
-	/** Lines that require confirmation (excluding overridden ones) */
-	const linesNeedingConfirmation = $derived(
-		planResult?.lines.filter(
-			(l) => l.requiresConfirmation && !singleUnitOverrides.has(l.catalogItemId)
-		) ?? []
-	);
-
-	/** Group confirmation lines by catalog item for consolidated checkboxes */
-	const confirmationGroups = $derived.by(() => {
-		const map = new Map<string, string[]>();
-		const eyes = new Map<string, string[]>();
-		for (const line of linesNeedingConfirmation) {
-			const existing = map.get(line.catalogItemId);
-			if (existing) existing.push(line.requirementId);
-			else map.set(line.catalogItemId, [line.requirementId]);
-			const eyeList = eyes.get(line.catalogItemId);
-			const eyeLabel = line.eye === 'OD' ? 'OD' : 'OI';
-			if (eyeList) eyeList.push(eyeLabel);
-			else eyes.set(line.catalogItemId, [eyeLabel]);
-		}
-		return Array.from(map.entries()).map(([catId, lineIds]) => ({
-			catalogItemId: catId,
-			catalogName: catalogMap.get(catId)?.name ?? '—',
-			lineIds,
-			eyeLabels: eyes.get(catId)?.join(' + ') ?? ''
-		}));
-	});
-
-	/** All confirmations acknowledged? */
-	const allConfirmed = $derived(
-		linesNeedingConfirmation.length === 0 ||
-			linesNeedingConfirmation.every((l) => confirmedLines.has(l.requirementId))
-	);
-
-	const surplusItems = $derived(planResult?.surplus ?? []);
-	const surplusUnitsTotal = $derived(
-		surplusItems.reduce((sum, item) => sum + item.surplusUnits, 0)
-	);
-	const hasSurplusToAcknowledge = $derived(surplusItems.length > 0);
-
 	// ============================================================================
 	// DERIVED TOTALS
 	// ============================================================================
-
-	const hasLensItems = $derived(items.some((i) => i.kind === 'lens'));
 
 	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 
@@ -159,10 +84,7 @@
 
 	const total = $derived(Math.max(0, subtotal - globalDiscountAmount));
 
-	/** Can submit? All confirmations + surplus acknowledgement + parent canSubmit */
-	const canSubmitFinal = $derived(
-		canSubmit && allConfirmed && (!hasSurplusToAcknowledge || surplusAcknowledged)
-	);
+	const canSubmitFinal = $derived(canSubmit);
 
 	// ============================================================================
 	// HELPERS
@@ -181,61 +103,36 @@
 		return p?.type ?? null;
 	}
 
-	function getLensForItem(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
-		return findLensItem(item, lensItems);
-	}
-
 	/** Get the number of enabled eyes for a lens item */
 	function getEnabledEyeCount(item: SaleItemRow): number {
 		if (!item.lensPair) return 0;
 		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
 	}
 
-	/** Compute lens cost breakdown from catalog data (mounting/shipping only ONCE, not per eye) */
+	/** Compute lens cost breakdown from lens item */
 	function getLensCostBreakdown(item: SaleItemRow) {
 		if (item.kind !== 'lens' || !item.lensPair) return null;
-		const catItem = catalogMap.get(item.lensPair.catalogItemId);
-		if (!catItem) return null;
+		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (!lens) return null;
 
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return null;
 
-		const basePrice = catItem.basePrice * eyeCount;
+		const unitBasePrice = lens.basePrice;
+		const basePrice = lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
+		const mountingPrice = lens.mountingPrice;
+		const shippingPrice = lens.shippingPrice;
+		const totalCost = basePrice + mountingPrice + shippingPrice;
+		const isPair = lens.priceType === 'PAIR';
 
-		let treatmentPerUnit = 0;
-		for (const code of item.lensPair.selectedOptionalTreatments) {
-			const policy = catItem.treatmentPolicies.find(
-				(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
-			);
-			if (policy) treatmentPerUnit += policy.additionalPrice;
-		}
-		const treatmentPrice = treatmentPerUnit * eyeCount;
-
-		const mountingPrice = catItem.purchasePolicy.mountingPrice;
-		const shippingPrice = catItem.purchasePolicy.shippingPrice;
-		const totalCost = basePrice + treatmentPrice + mountingPrice + shippingPrice;
-
-		return { basePrice, treatmentPrice, mountingPrice, shippingPrice, totalCost, eyeCount };
+		return { unitBasePrice, basePrice, mountingPrice, shippingPrice, totalCost, eyeCount, isPair };
 	}
 
-	/** Get selected treatment details for a lens item */
-	function getSelectedTreatments(item: SaleItemRow) {
-		if (item.kind !== 'lens' || !item.lensPair) return [];
-		const catItem = catalogMap.get(item.lensPair.catalogItemId);
-		if (!catItem) return [];
-
-		return item.lensPair.selectedOptionalTreatments
-			.map((code) => {
-				const policy = catItem.treatmentPolicies.find(
-					(p) => p.code === code && p.availability === LensTreatmentAvailability.OPTIONAL_EXTRA
-				);
-				return {
-					code,
-					label: LENS_TREATMENT_LABELS[code] ?? code,
-					pricePerUnit: policy?.additionalPrice ?? 0
-				};
-			})
-			.filter((t) => t.pricePerUnit > 0);
+	/** Get the lens display price excluding treatments (treatments are shown as separate rows) */
+	function getLensDisplayPrice(item: SaleItemRow): number {
+		const eyeCount = getEnabledEyeCount(item);
+		const treatmentsSum = item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
+		return item.unitPrice - treatmentsSum;
 	}
 </script>
 
@@ -409,38 +306,40 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base"
+								>{formatPrice(
+									item.kind === 'lens' && item.treatments.length > 0
+										? getLensDisplayPrice(item)
+										: item.unitPrice
+								)}</td
 							>
-							<td class="px-4 py-3 text-right font-mono text-base text-red-500">
-								{#if item.discount > 0}
-									-{item.discountType === 'PERCENTAGE'
-										? `${item.discount}%`
-										: formatPrice(item.discount)}
-								{:else}
-									—
-								{/if}
+							<td class="px-2 py-2">
+								<div class="flex items-center justify-end gap-1">
+									<Input
+										type="number"
+										bind:value={item.discount}
+										step="0.01"
+										min="0"
+										class="w-20 text-right font-mono text-sm"
+									/>
+									<Select bind:value={item.discountType} class="w-14 shrink-0 text-sm">
+										{#each ALL_DISCOUNT_TYPES as dt (dt)}
+											<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
+										{/each}
+									</Select>
+								</div>
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base font-semibold"
-								>{formatPrice(itemLineTotal(item))}</td
+								>{formatPrice(
+									item.kind === 'lens' && item.treatments.length > 0
+										? getLensDisplayPrice(item) - computeItemDiscount(item)
+										: itemLineTotal(item)
+								)}</td
 							>
 						</tr>
-						<!-- Lens treatment sub-rows + cost breakdown (5b.2 + 5b.3) -->
+						<!-- Lens cost breakdown -->
 						{#if item.kind === 'lens' && item.lensPair}
-							{@const treatments = getSelectedTreatments(item)}
 							{@const costBreakdown = getLensCostBreakdown(item)}
-							{@const lens = getLensForItem(item)}
-							{#if treatments.length > 0}
-								{#each treatments as treatment (treatment.code)}
-									<tr class="text-slate-400">
-										<td class="px-4 py-1"></td>
-										<td class="px-4 py-1 pl-8 text-xs" colspan="4">
-											<span class="text-violet-500">{treatment.label}</span>
-											<span class="ml-1 text-slate-400">(incluido en precio)</span>
-										</td>
-										<td class="px-4 py-1"></td>
-									</tr>
-								{/each}
-							{/if}
 							{#if costBreakdown && costBreakdown.totalCost > 0}
 								<tr class="bg-slate-50/60">
 									<td class="px-4 py-2" colspan="6">
@@ -448,17 +347,15 @@
 											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
 										>
 											<span
-												>Cristales ({costBreakdown.eyeCount}): <span class="font-mono font-medium text-slate-500"
+												>Cristales{costBreakdown.isPair
+													? ' (par)'
+													: costBreakdown.eyeCount > 1
+														? ` ${formatPrice(costBreakdown.unitBasePrice)} × ${costBreakdown.eyeCount}`
+														: ''}:
+												<span class="font-mono font-medium text-slate-500"
 													>{formatPrice(costBreakdown.basePrice)}</span
 												></span
 											>
-											{#if costBreakdown.treatmentPrice > 0}
-												<span
-													>Trat: <span class="font-mono font-medium text-slate-500"
-														>{formatPrice(costBreakdown.treatmentPrice)}</span
-													></span
-												>
-											{/if}
 											{#if costBreakdown.mountingPrice > 0}
 												<span
 													>Montaje: <span class="font-mono font-medium text-slate-500"
@@ -473,22 +370,47 @@
 													></span
 												>
 											{/if}
-
 											<span class="font-semibold text-slate-500"
 												>Costo: <span class="font-mono">{formatPrice(costBreakdown.totalCost)}</span
 												></span
 											>
-											{#if lens?.suggestedMultiplier}
-												{@const suggested = costBreakdown.totalCost * lens.suggestedMultiplier}
-												<span class="text-blue-500"
-													>Sugerido (×{lens.suggestedMultiplier}):
-													<span class="font-mono font-semibold">{formatPrice(suggested)}</span
-													></span
-												>
-											{/if}
 										</div>
 									</td>
 								</tr>
+							{/if}
+							<!-- Treatment items -->
+							{#if item.treatments.length > 0}
+								{@const treatmentEyeCount = getEnabledEyeCount(item)}
+								{#each item.treatments as treatment (treatment.supplierTreatmentId)}
+									<tr class="border-t border-violet-100 bg-violet-50/30 text-slate-700">
+										<td class="px-4 py-3">
+											<span
+												class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
+											>
+												<FlaskConical class="h-3 w-3" />
+												Tratamiento
+											</span>
+										</td>
+										<td class="px-4 py-3">
+											<div class="flex items-center gap-2">
+												<p class="text-base font-medium text-violet-800">{treatment.name}</p>
+												<span
+													class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
+													>{getTreatmentCategoryLabel(treatment.category)}</span
+												>
+											</div>
+										</td>
+										<td class="px-4 py-3 text-right font-mono text-base">{treatmentEyeCount}</td>
+										<td class="px-4 py-3 text-right font-mono text-base"
+											>{formatPrice(treatment.price)}</td
+										>
+										<td class="px-4 py-3 text-right font-mono text-base text-red-500">—</td>
+										<td
+											class="px-4 py-3 text-right font-mono text-base font-semibold text-violet-700"
+											>{formatPrice(treatment.price * treatmentEyeCount)}</td
+										>
+									</tr>
+								{/each}
 							{/if}
 						{/if}
 					{/each}
@@ -496,113 +418,6 @@
 			</table>
 		</div>
 	</div>
-
-	<!-- Row 3: Fulfillment Plan — logistics only (only if there are lens items) -->
-	{#if hasLensItems && planResult}
-		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-			<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">
-				Plan de Cumplimiento
-			</p>
-			<FulfillmentPlanPanel
-				plan={planResult}
-				catalog={catalogMap}
-				{singleUnitOverrides}
-				{onoverridechange}
-			/>
-
-			<!-- Confirmation Checkboxes -->
-			{#if confirmationGroups.length > 0}
-				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-					<div class="mb-3 flex items-center gap-2">
-						<AlertTriangle class="h-4 w-4 text-amber-600" />
-						<span class="text-sm font-semibold text-amber-800"> Confirmaciones requeridas </span>
-					</div>
-					<div class="space-y-2">
-						{#each confirmationGroups as group (group.catalogItemId)}
-							{@const allChecked = group.lineIds.every((id) => confirmedLines.has(id))}
-							<label class="flex cursor-pointer items-start gap-3">
-								<input
-									type="checkbox"
-									checked={allChecked}
-									onchange={() => toggleConfirmGroup(group.lineIds)}
-									class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-								/>
-								<span class="text-sm text-amber-800">
-									Confirmo con el proveedor el pedido de
-									<span class="font-semibold">{group.catalogName}</span>
-									({group.eyeLabels})
-								</span>
-							</label>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
-			{#if hasSurplusToAcknowledge}
-				<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-					<div class="mb-3 flex items-center gap-2">
-						<AlertTriangle class="h-4 w-4 text-amber-600" />
-						<span class="text-sm font-semibold text-amber-800"> Confirmación de excedente </span>
-					</div>
-					<p class="mb-3 text-sm text-amber-800">
-						Esta venta generará <span class="font-semibold"
-							>{surplusUnitsTotal} unidad(es) de excedente</span
-						>
-						que quedarán en stock.
-					</p>
-
-					<!-- Surplus Rx Decision Radios -->
-					{#each surplusItems as surplus (surplus.catalogItemId)}
-						{@const catalogName = catalogMap.get(surplus.catalogItemId)?.name ?? '—'}
-						{@const rxChoice = surplusRxChoices.get(surplus.catalogItemId) ?? 'UNDEFINED'}
-						{#if surplus.predeterminedPrescription === null}
-							<div class="mb-3 rounded-md border border-amber-100 bg-white px-3 py-2">
-								<p class="mb-2 text-sm font-medium text-amber-800">
-									¿El excedente de <span class="font-semibold">{catalogName}</span> tendrá la misma Rx
-									que el ojo pedido?
-								</p>
-								<div class="flex gap-4">
-									<label class="flex cursor-pointer items-center gap-2">
-										<input
-											type="radio"
-											name="surplus-rx-{surplus.catalogItemId}"
-											value="SAME_RX"
-											checked={rxChoice === 'SAME_RX'}
-											onchange={() => onsurplusrxchange(surplus.catalogItemId, 'SAME_RX')}
-											class="h-4 w-4 border-amber-300 text-amber-600 focus:ring-amber-500"
-										/>
-										<span class="text-sm text-amber-800">Sí, misma Rx</span>
-									</label>
-									<label class="flex cursor-pointer items-center gap-2">
-										<input
-											type="radio"
-											name="surplus-rx-{surplus.catalogItemId}"
-											value="UNDEFINED"
-											checked={rxChoice === 'UNDEFINED'}
-											onchange={() => onsurplusrxchange(surplus.catalogItemId, 'UNDEFINED')}
-											class="h-4 w-4 border-amber-300 text-amber-600 focus:ring-amber-500"
-										/>
-										<span class="text-sm text-amber-800">No, Rx por definir</span>
-									</label>
-								</div>
-							</div>
-						{/if}
-					{/each}
-
-					<label class="flex cursor-pointer items-start gap-3">
-						<input
-							type="checkbox"
-							bind:checked={surplusAcknowledged}
-							class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-						/>
-						<span class="text-sm text-amber-800">
-							Confirmo que entiendo y acepto el excedente que esta venta dejará en stock
-						</span>
-					</label>
-				</div>
-			{/if}
-		</div>
-	{/if}
 
 	<!-- Row 4: Discount + Total side by side -->
 	<div class="grid gap-5 lg:grid-cols-2">

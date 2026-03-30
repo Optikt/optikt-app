@@ -24,6 +24,7 @@ import {
 	users,
 	products,
 	lensCatalogItems,
+	supplierTreatments,
 	type Sale,
 	type NewSale,
 	type SaleItem,
@@ -43,7 +44,8 @@ export type SaleWithRelations = Sale & {
 
 export type SaleItemWithDetails = SaleItem & {
 	product: { id: string; name: string; sku: string } | null;
-	lensCatalogItem: { id: string; name: string; brand: string | null; type: string } | null;
+	lensCatalogItem: { id: string; name: string; type: string } | null;
+	supplierTreatment: { id: string; name: string; category: string } | null;
 };
 
 // ============================================================================
@@ -152,10 +154,11 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 // ============================================================================
 
 /**
- * Get the next estimated order number (MAX + 1)
+ * Get the next order number (MAX + 1).
+ * When called inside a transaction, ensures sequential numbering without gaps.
  */
-export async function getNextOrderNumber(): Promise<number> {
-	const [row] = await db.select({ maxNum: max(sales.orderNumber) }).from(sales);
+export async function getNextOrderNumber(executor: DbOrTx = db): Promise<number> {
+	const [row] = await executor.select({ maxNum: max(sales.orderNumber) }).from(sales);
 	return (row?.maxNum ?? 0) + 1;
 }
 
@@ -323,19 +326,25 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
 			lensCatalogItem: {
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,
-				brand: lensCatalogItems.brand,
 				type: lensCatalogItems.type
+			},
+			supplierTreatment: {
+				id: supplierTreatments.id,
+				name: supplierTreatments.name,
+				category: supplierTreatments.category
 			}
 		})
 		.from(saleItems)
 		.leftJoin(products, eq(saleItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(saleItems.lensCatalogItemId, lensCatalogItems.id))
+		.leftJoin(supplierTreatments, eq(saleItems.supplierTreatmentId, supplierTreatments.id))
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)));
 
 	return results.map((r) => ({
 		...r.item,
 		product: r.product?.id ? r.product : null,
-		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null
+		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null,
+		supplierTreatment: r.supplierTreatment?.id ? r.supplierTreatment : null
 	}));
 }
 

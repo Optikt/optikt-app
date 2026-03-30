@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { SupplierType, CurrencyCode } from '$lib/shared/enums';
+import { SupplierType, CurrencyCode, ALL_TREATMENT_CATEGORIES } from '$lib/shared/enums';
 import {
 	PhoneSchema,
 	OptionalPhoneSchema,
@@ -14,16 +14,9 @@ import {
 	OptionalEmailSchema,
 	EntityIdSchema,
 	ListPaginationSchema,
-	OptionalUrlSchema
+	OptionalUrlSchema,
+	CoercedNumber
 } from './common';
-import { TreatmentPolicySchema } from './lenses';
-
-/** JSON string → parsed array pipeline for treatment policies */
-const TreatmentPoliciesJsonSchema = z
-	.string()
-	.default('[]')
-	.transform((val) => JSON.parse(val) as unknown[])
-	.pipe(z.array(TreatmentPolicySchema));
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
 	type: z.enum(SupplierType).optional(),
@@ -44,8 +37,7 @@ export const CreateSupplierSchema = z.object({
 	contactPhone: OptionalPhoneSchema,
 	contactRole: z.string().optional(),
 	notes: z.string().optional(),
-	defaultCurrency: z.enum(CurrencyCode).optional(),
-	treatmentPolicies: TreatmentPoliciesJsonSchema
+	defaultCurrency: z.enum(CurrencyCode).optional()
 });
 
 export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
@@ -59,11 +51,32 @@ export const ReactivateSupplierSchema = z.object({
 });
 
 // ============================================================================
-// SUPPLIER TREATMENT DEFAULTS
+// SUPPLIER TREATMENTS
 // ============================================================================
+
+const ALL_TREATMENT_CATS = ALL_TREATMENT_CATEGORIES as [string, ...string[]];
 
 export const SupplierTreatmentQuerySchema = z.object({
 	supplierId: z.uuid()
+});
+
+export const CreateSupplierTreatmentSchema = z.object({
+	supplierId: z.uuid(),
+	name: z.string().min(1, 'Nombre requerido').max(100),
+	category: z.enum(ALL_TREATMENT_CATS),
+	price: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0')
+});
+
+export const UpdateSupplierTreatmentSchema = z.object({
+	id: z.uuid(),
+	name: z.string().min(1, 'Nombre requerido').max(100).optional(),
+	category: z.enum(ALL_TREATMENT_CATS).optional(),
+	price: CoercedNumber.min(0).optional(),
+	isActive: z.boolean().optional()
+});
+
+export const SupplierTreatmentIdSchema = z.object({
+	id: z.uuid()
 });
 
 /**

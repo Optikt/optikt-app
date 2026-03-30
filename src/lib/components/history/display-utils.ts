@@ -90,28 +90,18 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 	lens_catalog_item: {
 		supplierId: 'Proveedor',
 		name: 'Nombre',
-		brand: 'Marca',
 		type: 'Tipo',
 		materialId: 'Material',
-		baseFeatures: 'Características base',
-		photochromicMode: 'Modo fotocromático',
-		rangeAvailability: 'Disponibilidad de rangos',
-		treatmentPolicies: 'Políticas de tratamiento',
+		hasAr: 'Antirreflejo',
+		hasBluecut: 'Filtro azul',
+		isPhotochromic: 'Fotocromático',
+		priceType: 'Tipo de precio',
 		basePrice: 'Precio base',
-		salePrice: 'Precio venta',
 		mountingPrice: 'Precio montaje',
 		shippingPrice: 'Precio envío',
-		allowsSingleUnitOrder: 'Permite unidad sola',
-		singleUnitRequiresConfirmation: 'Unidad requiere confirmación',
-		singleUnitSurcharge: 'Recargo unidad',
-		minimumOrderUnits: 'Mínimo de unidades',
-		deliveryDays: 'Días de entrega',
 		stock: 'Stock',
-		refractiveIndex: 'Índice de refracción',
 		notes: 'Notas',
 		isActive: 'Activo',
-		rangosÓpticos: 'Rangos ópticos',
-		technology: 'Tecnología',
 		source: 'Origen'
 	},
 	supplier: {
@@ -165,11 +155,11 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		notes: 'Notas',
 		voidedAt: 'Anulado'
 	},
-	supplier_treatment_policy: {
-		code: 'Código de tratamiento',
-		availability: 'Disponibilidad',
-		additionalPrice: 'Precio adicional',
-		requiresConfirmation: 'Requiere confirmación'
+	supplier_treatment: {
+		name: 'Nombre',
+		category: 'Categoría',
+		price: 'Precio',
+		isActive: 'Activo'
 	},
 	surplus_unit: {
 		status: 'Estado',

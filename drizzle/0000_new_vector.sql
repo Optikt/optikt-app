@@ -1,8 +1,7 @@
-CREATE TYPE "public"."lens_catalog_source" AS ENUM('FINISHED', 'ON_DEMAND', 'LAB');--> statement-breakpoint
-CREATE TYPE "public"."lens_pricing_unit" AS ENUM('UNIT', 'PAIR');--> statement-breakpoint
-CREATE TYPE "public"."photochromic_mode" AS ENUM('NONE', 'INHERENT');--> statement-breakpoint
-CREATE TYPE "public"."range_availability" AS ENUM('EXACT_RANGES', 'CONSULT_REQUIRED');--> statement-breakpoint
-CREATE TYPE "public"."treatment_availability" AS ENUM('INHERENT', 'OPTIONAL_EXTRA', 'NOT_AVAILABLE');--> statement-breakpoint
+CREATE TYPE "public"."treatment_category" AS ENUM('AR', 'BLUECUT');--> statement-breakpoint
+CREATE TYPE "public"."lens_catalog_source" AS ENUM('FINISHED', 'LAB');--> statement-breakpoint
+CREATE TYPE "public"."lens_price_type" AS ENUM('UNIT', 'PAIR');--> statement-breakpoint
+CREATE TYPE "public"."sale_item_type" AS ENUM('PRODUCT', 'LENS_PAIR', 'TREATMENT');--> statement-breakpoint
 CREATE TABLE "brands" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar NOT NULL,
@@ -79,6 +78,18 @@ CREATE TABLE "users" (
 	"deleted_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "supplier_treatments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"supplier_id" uuid NOT NULL,
+	"name" varchar NOT NULL,
+	"category" "treatment_category" NOT NULL,
+	"price" double precision NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_supplier_treatment_name" UNIQUE("supplier_id","name")
 );
 --> statement-breakpoint
 CREATE TABLE "suppliers" (
@@ -174,26 +185,16 @@ CREATE TABLE "lens_catalog_items" (
 	"source" "lens_catalog_source" DEFAULT 'LAB' NOT NULL,
 	"supplier_id" uuid NOT NULL,
 	"name" varchar NOT NULL,
-	"brand" varchar,
-	"technology" varchar,
 	"type" varchar NOT NULL,
 	"material_id" uuid NOT NULL,
-	"base_features" json,
-	"photochromic_mode" "photochromic_mode" DEFAULT 'NONE' NOT NULL,
-	"range_availability" "range_availability" DEFAULT 'EXACT_RANGES' NOT NULL,
-	"treatment_policies" json DEFAULT '[]'::json NOT NULL,
-	"pricing_unit" "lens_pricing_unit" DEFAULT 'UNIT' NOT NULL,
+	"has_ar" boolean DEFAULT false NOT NULL,
+	"has_bluecut" boolean DEFAULT false NOT NULL,
+	"is_photochromic" boolean DEFAULT false NOT NULL,
+	"price_type" "lens_price_type" DEFAULT 'UNIT' NOT NULL,
 	"base_price" double precision NOT NULL,
-	"suggested_multiplier" double precision,
-	"allows_single_unit_order" boolean DEFAULT false NOT NULL,
-	"single_unit_requires_confirmation" boolean DEFAULT false NOT NULL,
-	"single_unit_surcharge" double precision DEFAULT 0 NOT NULL,
-	"minimum_order_units" integer DEFAULT 1 NOT NULL,
 	"mounting_price" double precision DEFAULT 0 NOT NULL,
 	"shipping_price" double precision DEFAULT 0 NOT NULL,
-	"delivery_days" integer,
 	"stock" integer,
-	"refractive_index" double precision,
 	"notes" varchar,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"deleted_at" timestamp with time zone,
@@ -222,32 +223,8 @@ CREATE TABLE "lens_optical_ranges" (
 	"cylinder_max" double precision,
 	"addition_min" double precision,
 	"addition_max" double precision,
-	"mirror_group" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "lens_treatments" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"name" varchar NOT NULL,
-	"code" varchar NOT NULL,
-	"description" varchar,
-	"is_active" boolean DEFAULT true NOT NULL,
-	"deleted_at" timestamp with time zone,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "supplier_lens_treatments" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"supplier_id" uuid NOT NULL,
-	"treatment_id" uuid NOT NULL,
-	"price" double precision NOT NULL,
-	"is_available" boolean DEFAULT true NOT NULL,
-	"deleted_at" timestamp with time zone,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "uq_supplier_treatment" UNIQUE("supplier_id","treatment_id")
 );
 --> statement-breakpoint
 CREATE TABLE "prescriptions" (
@@ -278,10 +255,11 @@ CREATE TABLE "prescriptions" (
 CREATE TABLE "sale_items" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"sale_id" uuid NOT NULL,
+	"item_type" "sale_item_type" NOT NULL,
 	"product_id" uuid,
 	"lens_catalog_item_id" uuid,
-	"lens_fulfillment_mode" varchar,
-	"selected_treatments" json,
+	"parent_sale_item_id" uuid,
+	"supplier_treatment_id" uuid,
 	"prescription_id" uuid,
 	"od_sphere" double precision,
 	"od_cylinder" double precision,
@@ -335,6 +313,7 @@ CREATE TABLE "sales" (
 );
 --> statement-breakpoint
 ALTER TABLE "change_history" ADD CONSTRAINT "change_history_changed_by_id_users_id_fk" FOREIGN KEY ("changed_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "supplier_treatments" ADD CONSTRAINT "supplier_treatments_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_brand_id_fkey" FOREIGN KEY ("brand_id") REFERENCES "public"."brands"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -342,13 +321,13 @@ ALTER TABLE "products" ADD CONSTRAINT "products_material_id_fkey" FOREIGN KEY ("
 ALTER TABLE "lens_catalog_items" ADD CONSTRAINT "lens_catalog_items_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "public"."lens_materials"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lens_catalog_items" ADD CONSTRAINT "lens_catalog_items_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lens_optical_ranges" ADD CONSTRAINT "lens_optical_ranges_item_id_fkey" FOREIGN KEY ("lens_catalog_item_id") REFERENCES "public"."lens_catalog_items"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "supplier_lens_treatments" ADD CONSTRAINT "supplier_lens_treatments_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "supplier_lens_treatments" ADD CONSTRAINT "supplier_lens_treatments_treatment_id_fkey" FOREIGN KEY ("treatment_id") REFERENCES "public"."lens_treatments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_lens_catalog_item_id_fkey" FOREIGN KEY ("lens_catalog_item_id") REFERENCES "public"."lens_catalog_items"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_prescription_id_fkey" FOREIGN KEY ("prescription_id") REFERENCES "public"."prescriptions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."sales"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_parent_sale_item_id_fkey" FOREIGN KEY ("parent_sale_item_id") REFERENCES "public"."sale_items"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_supplier_treatment_id_fkey" FOREIGN KEY ("supplier_treatment_id") REFERENCES "public"."supplier_treatments"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_payments" ADD CONSTRAINT "sale_payments_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."sales"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sales" ADD CONSTRAINT "sales_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sales" ADD CONSTRAINT "sales_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -371,6 +350,8 @@ CREATE UNIQUE INDEX "ix_users_email" ON "users" USING btree ("email" text_ops);-
 CREATE INDEX "ix_users_id" ON "users" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_users_username" ON "users" USING btree ("username" text_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_users_username_lower" ON "users" USING btree (lower((username)::text));--> statement-breakpoint
+CREATE INDEX "ix_supplier_treatments_id" ON "supplier_treatments" USING btree ("id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "ix_supplier_treatments_supplier_id" ON "supplier_treatments" USING btree ("supplier_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_suppliers_id" ON "suppliers" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_suppliers_name" ON "suppliers" USING btree ("name" text_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_suppliers_rif" ON "suppliers" USING btree ("rif" text_ops);--> statement-breakpoint
@@ -397,12 +378,6 @@ CREATE INDEX "ix_lens_materials_id" ON "lens_materials" USING btree ("id" uuid_o
 CREATE UNIQUE INDEX "ix_lens_materials_name" ON "lens_materials" USING btree ("name" text_ops);--> statement-breakpoint
 CREATE INDEX "ix_lens_optical_ranges_id" ON "lens_optical_ranges" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_lens_optical_ranges_item_id" ON "lens_optical_ranges" USING btree ("lens_catalog_item_id" uuid_ops);--> statement-breakpoint
-CREATE UNIQUE INDEX "ix_lens_treatments_code" ON "lens_treatments" USING btree ("code" text_ops);--> statement-breakpoint
-CREATE INDEX "ix_lens_treatments_id" ON "lens_treatments" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE UNIQUE INDEX "ix_lens_treatments_name" ON "lens_treatments" USING btree ("name" text_ops);--> statement-breakpoint
-CREATE INDEX "ix_supplier_lens_treatments_id" ON "supplier_lens_treatments" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_supplier_lens_treatments_supplier_id" ON "supplier_lens_treatments" USING btree ("supplier_id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_supplier_lens_treatments_treatment_id" ON "supplier_lens_treatments" USING btree ("treatment_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_customer_id" ON "prescriptions" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_id" ON "prescriptions" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_prescription_date" ON "prescriptions" USING btree ("prescription_date" date_ops);--> statement-breakpoint
@@ -411,6 +386,7 @@ CREATE INDEX "ix_sale_items_lens_catalog_item_id" ON "sale_items" USING btree ("
 CREATE INDEX "ix_sale_items_prescription_id" ON "sale_items" USING btree ("prescription_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_items_product_id" ON "sale_items" USING btree ("product_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_items_sale_id" ON "sale_items" USING btree ("sale_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "ix_sale_items_parent_id" ON "sale_items" USING btree ("parent_sale_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_payments_id" ON "sale_payments" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_payments_sale_id" ON "sale_payments" USING btree ("sale_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sales_customer_id" ON "sales" USING btree ("customer_id" uuid_ops);--> statement-breakpoint

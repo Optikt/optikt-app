@@ -1,11 +1,10 @@
 <script lang="ts">
 	import BaseSelect from '$lib/components/ui/BaseSelect.svelte';
-	import { TriangleAlert, Eye } from '@lucide/svelte';
+	import { TriangleAlert, Eye, Package } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { formatPrice } from '$lib/utils';
-	import { LensCatalogSource } from '$lib/shared/enums/lensTypes';
 	import { getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
@@ -45,6 +44,7 @@
 		price: number;
 		productType: string;
 		source?: string;
+		inventoryMode?: string;
 	}
 
 	const productOptions: SelectOption[] = $derived(
@@ -62,20 +62,18 @@
 	);
 
 	const lensOptions: SelectOption[] = $derived(
-		lensItems.map((l) => {
-			const price = l.suggestedMultiplier ? l.basePrice * l.suggestedMultiplier : l.basePrice;
-			return {
-				id: l.id,
-				label: `${l.name}${l.brand ? ` (${l.brand})` : ''}`,
-				name: l.name,
-				sku: '',
-				brand: l.brand ?? '',
-				stock: l.stock,
-				price,
-				productType: '',
-				source: l.source
-			};
-		})
+		lensItems.map((l) => ({
+			id: l.id,
+			label: l.name,
+			name: l.name,
+			sku: '',
+			brand: '',
+			stock: l.stock,
+			price: l.salePrice ?? l.basePrice,
+			productType: '',
+			source: l.source,
+			inventoryMode: l.inventoryMode
+		}))
 	);
 
 	const options = $derived(kind === 'product' ? productOptions : lensOptions);
@@ -92,8 +90,13 @@
 		return l?.stock ?? null;
 	});
 
-	const hasStockWarning = $derived(selectedStock !== null && selectedStock <= 0);
 	const selectedOption = $derived(options.find((opt) => opt.id === value));
+	const hasStockWarning = $derived(
+		selectedOption?.inventoryMode === 'STOCK' && selectedStock !== null && selectedStock <= 0
+	);
+	const isOnDemand = $derived(
+		!!value && kind === 'lens' && selectedOption?.inventoryMode === 'ON_DEMAND'
+	);
 
 	function handleChange(selected: SelectOption | null) {
 		const newId = selected?.id ?? '';
@@ -105,10 +108,7 @@
 			} else {
 				const lens = lensItems.find((l) => l.id === newId);
 				if (lens) {
-					const price = lens.suggestedMultiplier
-						? lens.basePrice * lens.suggestedMultiplier
-						: lens.basePrice;
-					onselect(newId, price);
+					onselect(newId, lens.salePrice ?? lens.basePrice);
 				}
 			}
 		} else if (!newId && onselect) {
@@ -154,6 +154,10 @@
 						{:else}
 							<span class="text-xs font-medium text-green-600">{opt.stock} disp.</span>
 						{/if}
+					{:else if opt.source}
+						<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600"
+							>Por pedido</span
+						>
 					{/if}
 				</div>
 				<div class="flex items-center gap-2 text-[0.8rem]">
@@ -179,37 +183,30 @@
 				<Icon class="h-3 w-3" />
 			</div>
 			<span class="font-medium">{opt.name}</span>
-			{#if opt.stock !== null && opt.stock <= 0}
+			{#if opt.inventoryMode === 'STOCK' && opt.stock !== null && opt.stock <= 0}
 				<span class="font-semibold text-red-600">⚠ Sin stock</span>
+			{:else if opt.inventoryMode === 'ON_DEMAND'}
+				<span class="text-xs font-medium text-sky-600">Por pedido</span>
 			{/if}
 		</div>
 	{/snippet}
 
 	{#snippet footer()}
-		{#if hasStockWarning}
+		{#if isOnDemand}
+			<div
+				class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
+			>
+				<Package class="h-4 w-4 shrink-0" />
+				<span>Se pedirá al proveedor</span>
+			</div>
+		{:else if hasStockWarning}
 			{#if kind === 'lens'}
-				{#if selectedOption?.source === LensCatalogSource.FINISHED}
-					<div
-						class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
-					>
-						<TriangleAlert class="h-4 w-4 shrink-0" />
-						<span>Sin stock en inventario</span>
-					</div>
-				{:else if selectedOption?.source === LensCatalogSource.LAB}
-					<div
-						class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-					>
-						<TriangleAlert class="h-4 w-4 shrink-0" />
-						<span>Sin stock — se pedirá al laboratorio</span>
-					</div>
-				{:else}
-					<div
-						class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-					>
-						<TriangleAlert class="h-4 w-4 shrink-0" />
-						<span>Sin stock — se pedirá al proveedor</span>
-					</div>
-				{/if}
+				<div
+					class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
+				>
+					<TriangleAlert class="h-4 w-4 shrink-0" />
+					<span>Sin stock en inventario</span>
+				</div>
 			{:else}
 				<div
 					class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"

@@ -10,7 +10,6 @@
 		Sun,
 		Layers,
 		Package,
-		Truck,
 		FlaskConical,
 		Target
 	} from '@lucide/svelte';
@@ -24,17 +23,10 @@
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import { getLensTypeLabel, getLensSourceLabel, getPricingUnitLabel } from '$lib/shared/enums';
-	import {
-		PhotochromicMode,
-		LensTreatmentAvailability,
-		LENS_TREATMENT_LABELS,
-		type CoreLensTreatmentCode
-	} from '$lib/shared/contracts';
+	import { getLensTypeLabel, getLensSourceLabel, getPriceTypeLabel } from '$lib/shared/enums';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
-	const surplusCount = untrack(() => data.surplusCount);
 
 	// Delete modal state
 	let showDeleteModal = $state(false);
@@ -49,35 +41,16 @@
 		...(item.material ? { [item.material.id]: item.material.name } : {})
 	});
 
-	/**
-	 * Estimated sale price for a pair of identical lenses.
-	 * Formula: (lens cost for pair + mounting) × multiplier
-	 */
-	const estimatedPairPrice = $derived.by(() => {
-		if (item.suggestedMultiplier == null) return null;
-		const lensCostPair = item.pricingUnit === 'UNIT' ? item.basePrice * 2 : item.basePrice;
-		const mounting = item.mountingPrice ?? 0;
-		return (lensCostPair + mounting) * item.suggestedMultiplier;
-	});
-
 	// Optical range display
 	const displayRanges = collapseRangesForDisplay(item.ranges);
 
-	// Features list — new trait/policy model
-	const isPhotochromic = $derived(item.photochromicMode === PhotochromicMode.INHERENT);
+	// Features list — simplified boolean model
 	const features = $derived.by(() => {
 		const list: { label: string; icon: typeof Sun; active: boolean }[] = [
-			{ label: 'Fotocromático', icon: Sun, active: isPhotochromic }
+			{ label: 'Fotocromático', icon: Sun, active: item.isPhotochromic ?? false },
+			{ label: 'Blue Cut', icon: Shield, active: item.hasBluecut ?? false },
+			{ label: 'Antirreflejo', icon: Eye, active: item.hasAr ?? false }
 		];
-		for (const policy of item.treatmentPolicies ?? []) {
-			const label = LENS_TREATMENT_LABELS[policy.code as CoreLensTreatmentCode] ?? policy.code;
-			const active = policy.availability !== LensTreatmentAvailability.NOT_AVAILABLE;
-			if (policy.code === 'BLUECUT') {
-				list.push({ label, icon: Shield, active });
-			} else if (policy.code === 'AR') {
-				list.push({ label, icon: Eye, active });
-			}
-		}
 		return list;
 	});
 
@@ -124,19 +97,6 @@
 							<Badge color="red">Inactivo</Badge>
 						{/if}
 					</div>
-					{#if item.brand || item.technology}
-						<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-							{#if item.brand}
-								<span class="font-medium text-slate-600">{item.brand}</span>
-							{/if}
-							{#if item.brand && item.technology}
-								<span class="text-slate-300">|</span>
-							{/if}
-							{#if item.technology}
-								<span>{item.technology}</span>
-							{/if}
-						</div>
-					{/if}
 				</div>
 
 				<div class="flex flex-shrink-0 gap-2">
@@ -194,12 +154,6 @@
 							</dd>
 						</div>
 						<div>
-							<dt class="text-sm font-medium text-slate-500">Índice de Refracción</dt>
-							<dd class="mt-0.5 font-mono text-slate-800">
-								{item.refractiveIndex?.toFixed(2) ?? '—'}
-							</dd>
-						</div>
-						<div>
 							<dt class="text-sm font-medium text-slate-500">Tipo de Lente</dt>
 							<dd class="mt-0.5 text-slate-800">
 								{getLensTypeLabel(item.type)}
@@ -211,16 +165,10 @@
 								{getLensSourceLabel(item.source)}
 							</dd>
 						</div>
-						{#if item.deliveryDays != null}
+						{#if item.technology}
 							<div>
-								<dt class="text-sm font-medium text-slate-500">Tiempo de Entrega</dt>
-								<dd class="mt-0.5 text-slate-800">
-									<span class="inline-flex items-center gap-1.5">
-										<Truck class="h-3.5 w-3.5 text-slate-400" />
-										{item.deliveryDays}
-										{item.deliveryDays === 1 ? 'día' : 'días'}
-									</span>
-								</dd>
+								<dt class="text-sm font-medium text-slate-500">Tecnología</dt>
+								<dd class="mt-0.5 text-slate-800">{item.technology}</dd>
 							</div>
 						{/if}
 					</dl>
@@ -254,17 +202,6 @@
 								</div>
 							{/each}
 						</div>
-						{#if item.baseFeatures && item.baseFeatures.length > 0}
-							<div class="mt-3 flex flex-wrap gap-1.5">
-								{#each item.baseFeatures as feature (feature)}
-									<span
-										class="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700"
-									>
-										{feature}
-									</span>
-								{/each}
-							</div>
-						{/if}
 					</div>
 				</div>
 
@@ -355,49 +292,50 @@
 						<dd class="mt-1 font-mono text-3xl font-bold text-blue-700">
 							{formatPrice(item.basePrice)}
 						</dd>
-						<dd class="mt-1 text-xs font-medium text-blue-500">
-							{getPricingUnitLabel(item.pricingUnit)}
+						<dd class="mt-1 text-xs font-medium text-blue-500 uppercase">
+							{getPriceTypeLabel(item.priceType)}
 						</dd>
 					</div>
 
-					<!-- Cost breakdown grid -->
-					<div class="mb-4 grid grid-cols-2 gap-3">
-						<div class="rounded-lg bg-amber-50 p-3">
-							<dt class="text-xs text-amber-600">Montaje (par)</dt>
-							<dd class="mt-0.5 font-mono text-base font-medium text-amber-700">
-								{item.mountingPrice != null ? formatPrice(item.mountingPrice) : '—'}
-							</dd>
-						</div>
-						<div class="rounded-lg bg-green-50 p-3">
-							<dt class="text-xs text-green-600">Multiplicador Sugerido</dt>
-							<dd class="mt-0.5 font-mono text-base font-medium text-green-700">
-								{item.suggestedMultiplier != null ? `×${item.suggestedMultiplier}` : '—'}
-							</dd>
-						</div>
-					</div>
-					<!-- Estimated sale price -->
-					{#if estimatedPairPrice != null}
-						<div
-							class="mb-4 rounded-lg border border-dashed border-indigo-200 bg-indigo-50/50 p-4 text-center"
-						>
-							<dt class="text-xs font-medium text-indigo-500">Precio Estimado (par)</dt>
-							<dd class="mt-1 font-mono text-2xl font-bold text-indigo-700">
-								~{formatPrice(estimatedPairPrice)}
-							</dd>
-							<p class="mt-1 text-[10px] text-indigo-400">
-								({item.pricingUnit === 'UNIT'
-									? `${formatPrice(item.basePrice)} ×2`
-									: formatPrice(item.basePrice)}
-								+ {formatPrice(item.mountingPrice ?? 0)} montaje) × {item.suggestedMultiplier}
-							</p>
+					{#if item.salePrice}
+						<div class="mb-4 flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3">
+							<span class="text-sm font-medium text-emerald-700">Precio Venta</span>
+							<span class="font-mono text-lg font-bold text-emerald-700">
+								{formatPrice(item.salePrice)}
+							</span>
 						</div>
 					{/if}
-					<!-- Inventario por tipo de fuente -->
+
+					{#if item.mountingPrice > 0 || item.shippingPrice > 0}
+						<div class="mb-4 space-y-2 text-sm">
+							{#if item.mountingPrice > 0}
+								<div class="flex items-center justify-between">
+									<span class="text-slate-500">Montaje</span>
+									<span class="font-mono font-medium text-slate-700"
+										>{formatPrice(item.mountingPrice)}</span
+									>
+								</div>
+							{/if}
+							{#if item.shippingPrice > 0}
+								<div class="flex items-center justify-between">
+									<span class="text-slate-500">Envío</span>
+									<span class="font-mono font-medium text-slate-700"
+										>{formatPrice(item.shippingPrice)}</span
+									>
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					<!-- Inventario -->
 					<div class="border-t border-slate-100 pt-4">
-						{#if item.source === 'LAB'}
-							<div class="mb-4 flex items-center gap-1.5">
-								<FlaskConical class="h-4 w-4 text-violet-500" />
-								<span class="text-sm text-slate-500">Fabricado a medida por el laboratorio</span>
+						{#if item.inventoryMode === 'ON_DEMAND'}
+							<div class="mb-4 flex items-center justify-between">
+								<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
+									<Package class="h-4 w-4 text-sky-500" />
+									Inventario
+								</span>
+								<span class="text-sm font-semibold text-sky-600">Por demanda</span>
 							</div>
 						{:else}
 							<div class="mb-4 flex items-center justify-between">
@@ -405,20 +343,12 @@
 									<Package class="h-4 w-4 text-teal-500" />
 									Stock
 								</span>
-								<span class="text-xl font-bold text-slate-900">{item.stock ?? 0}</span>
+								<span
+									class="text-xl font-bold {(item.stock ?? 0) <= 0
+										? 'text-red-600'
+										: 'text-slate-900'}">{item.stock ?? 0}</span
+								>
 							</div>
-							{#if surplusCount > 0}
-								<div class="mb-4 flex items-center justify-between">
-									<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
-										<Package class="h-4 w-4 text-amber-500" />
-										Excedentes
-									</span>
-									<span class="text-xl font-bold text-amber-600">{surplusCount}</span>
-								</div>
-								<p class="-mt-2 mb-3 text-xs text-slate-400">
-									Unidades sobrantes de compras por par, con Rx específica
-								</p>
-							{/if}
 						{/if}
 					</div>
 

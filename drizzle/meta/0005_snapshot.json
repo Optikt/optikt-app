@@ -1,6 +1,6 @@
 {
-  "id": "8906863e-6b14-4289-8f16-5a2764f81aef",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "7e9f666a-4d42-4f19-a455-9e55fbecdf20",
+  "prevId": "4d08950a-1ffc-4f44-b47e-1117ddbd3fb6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1831,6 +1831,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "technology": {
+          "name": "technology",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "material_id": {
           "name": "material_id",
           "type": "uuid",
@@ -1872,6 +1878,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "sale_price": {
+          "name": "sale_price",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
         "mounting_price": {
           "name": "mounting_price",
           "type": "double precision",
@@ -1885,6 +1897,14 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
+        },
+        "inventory_mode": {
+          "name": "inventory_mode",
+          "type": "lens_inventory_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ON_DEMAND'"
         },
         "stock": {
           "name": "stock",
@@ -2593,6 +2613,60 @@
           "notNull": true,
           "default": "'FIXED'"
         },
+        "snapshot_name": {
+          "name": "snapshot_name",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_sku": {
+          "name": "snapshot_sku",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_brand": {
+          "name": "snapshot_brand",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_base_cost": {
+          "name": "snapshot_base_cost",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_mounting_price": {
+          "name": "snapshot_mounting_price",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_shipping_price": {
+          "name": "snapshot_shipping_price",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_sale_price": {
+          "name": "snapshot_sale_price",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_price_type": {
+          "name": "snapshot_price_type",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_treatment_category": {
+          "name": "snapshot_treatment_category",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
         "notes": {
           "name": "notes",
           "type": "varchar",
@@ -2952,7 +3026,7 @@
         },
         "order_number": {
           "name": "order_number",
-          "type": "serial",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -3173,6 +3247,14 @@
       "values": [
         "FINISHED",
         "LAB"
+      ]
+    },
+    "public.lens_inventory_mode": {
+      "name": "lens_inventory_mode",
+      "schema": "public",
+      "values": [
+        "ON_DEMAND",
+        "STOCK"
       ]
     },
     "public.lens_price_type": {

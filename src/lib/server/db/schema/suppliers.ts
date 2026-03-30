@@ -1,4 +1,23 @@
-import { pgTable, varchar, index, uniqueIndex, uuid, timestamp, json } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	pgEnum,
+	varchar,
+	index,
+	uniqueIndex,
+	uuid,
+	timestamp,
+	json,
+	boolean,
+	doublePrecision,
+	unique,
+	foreignKey
+} from 'drizzle-orm/pg-core';
+import { enumValues } from './utils';
+import { TreatmentCategory } from '../../../shared/enums/lensTypes';
+
+// ============================================================================
+// SUPPLIERS
+// ============================================================================
 
 export const suppliers = pgTable(
 	'suppliers',
@@ -34,5 +53,40 @@ export const suppliers = pgTable(
 	]
 );
 
+// ============================================================================
+// SUPPLIER TREATMENTS — optional extras a lab offers for tallado lenses
+// ============================================================================
+
+export const treatmentCategoryEnum = pgEnum('treatment_category', enumValues(TreatmentCategory));
+
+export const supplierTreatments = pgTable(
+	'supplier_treatments',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		supplierId: uuid('supplier_id').notNull(),
+		name: varchar().notNull(),
+		category: treatmentCategoryEnum().notNull(),
+		price: doublePrecision().notNull(),
+		isActive: boolean('is_active').notNull().default(true),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(table) => [
+		index('ix_supplier_treatments_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
+		index('ix_supplier_treatments_supplier_id').using(
+			'btree',
+			table.supplierId.asc().nullsLast().op('uuid_ops')
+		),
+		foreignKey({
+			columns: [table.supplierId],
+			foreignColumns: [suppliers.id],
+			name: 'supplier_treatments_supplier_id_fkey'
+		}).onDelete('cascade'),
+		unique('uq_supplier_treatment_name').on(table.supplierId, table.name)
+	]
+);
+
 export type Supplier = typeof suppliers.$inferSelect;
 export type NewSupplier = typeof suppliers.$inferInsert;
+export type SupplierTreatment = typeof supplierTreatments.$inferSelect;
+export type NewSupplierTreatment = typeof supplierTreatments.$inferInsert;

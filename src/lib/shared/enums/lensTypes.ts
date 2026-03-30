@@ -9,26 +9,43 @@ export enum LensType {
 	OCCUPATIONAL = 'OCCUPATIONAL'
 }
 
+/** How the lens is produced */
 export enum LensCatalogSource {
+	/** Pre-fabricated with fixed prescription — may or may not be in stock */
 	FINISHED = 'FINISHED',
-	ON_DEMAND = 'ON_DEMAND',
+	/** Custom-made by a laboratory for a specific Rx */
 	LAB = 'LAB'
 }
 
-/** Whether the supplier prices per single lens or per pair */
-export enum LensPricingUnit {
+/** How the supplier prices this lens: per single unit or per pair */
+export enum LensPriceType {
 	UNIT = 'UNIT',
 	PAIR = 'PAIR'
 }
 
-/** How the lens item will be fulfilled in a sale */
-export enum LensFulfillmentMode {
-	INVENTORY = 'INVENTORY',
+/** How the lens inventory is managed */
+export enum LensInventoryMode {
+	/** Ordered on demand from supplier/lab — no stock tracking */
 	ON_DEMAND = 'ON_DEMAND',
-	LAB = 'LAB'
+	/** Tracked inventory — stock count is maintained */
+	STOCK = 'STOCK'
 }
 
-/** Labels for display in Spanish */
+/** Treatment category — what kind of treatment a lab offers */
+export enum TreatmentCategory {
+	AR = 'AR',
+	BLUECUT = 'BLUECUT'
+}
+
+/** Sale item type — what kind of line item this is in an order */
+export enum SaleItemType {
+	PRODUCT = 'PRODUCT',
+	LENS_PAIR = 'LENS_PAIR',
+	TREATMENT = 'TREATMENT'
+}
+
+// ── Labels ──────────────────────────────────────────────────────────────
+
 export const LENS_TYPE_LABELS: Record<LensType, string> = {
 	[LensType.MONOFOCAL]: 'Monofocal',
 	[LensType.BIFOCAL]: 'Bifocal',
@@ -36,54 +53,65 @@ export const LENS_TYPE_LABELS: Record<LensType, string> = {
 	[LensType.OCCUPATIONAL]: 'Ocupacional'
 };
 
-/** Lens catalog source labels */
 export const LENS_SOURCE_LABELS: Record<LensCatalogSource, string> = {
 	[LensCatalogSource.FINISHED]: 'Terminado',
-	[LensCatalogSource.ON_DEMAND]: 'Proveedor (On-Demand)',
 	[LensCatalogSource.LAB]: 'Laboratorio'
 };
 
-/** Pricing unit labels */
-export const LENS_PRICING_UNIT_LABELS: Record<LensPricingUnit, string> = {
-	[LensPricingUnit.UNIT]: 'Por Unidad',
-	[LensPricingUnit.PAIR]: 'Por Par'
+export const LENS_PRICE_TYPE_LABELS: Record<LensPriceType, string> = {
+	[LensPriceType.UNIT]: 'Por Unidad',
+	[LensPriceType.PAIR]: 'Por Par'
 };
 
-export const LENS_FULFILLMENT_MODE_LABELS: Record<LensFulfillmentMode, string> = {
-	[LensFulfillmentMode.INVENTORY]: 'Desde Inventario',
-	[LensFulfillmentMode.ON_DEMAND]: 'Pedir Proveedor',
-	[LensFulfillmentMode.LAB]: 'Pedir Laboratorio'
+export const LENS_INVENTORY_MODE_LABELS: Record<LensInventoryMode, string> = {
+	[LensInventoryMode.ON_DEMAND]: 'Por demanda',
+	[LensInventoryMode.STOCK]: 'En inventario'
 };
+
+export const TREATMENT_CATEGORY_LABELS: Record<TreatmentCategory, string> = {
+	[TreatmentCategory.AR]: 'Antirreflejo',
+	[TreatmentCategory.BLUECUT]: 'Bluecut'
+};
+
+export const SALE_ITEM_TYPE_LABELS: Record<SaleItemType, string> = {
+	[SaleItemType.PRODUCT]: 'Producto',
+	[SaleItemType.LENS_PAIR]: 'Cristales',
+	[SaleItemType.TREATMENT]: 'Tratamiento'
+};
+
+// ── Convenience arrays ──────────────────────────────────────────────────
 
 export const ALL_LENS_TYPES = Object.values(LensType) as LensType[];
 export const ALL_LENS_SOURCES = Object.values(LensCatalogSource) as LensCatalogSource[];
-export const ALL_LENS_PRICING_UNITS = Object.values(LensPricingUnit) as LensPricingUnit[];
-export const ALL_LENS_FULFILLMENT_MODES = Object.values(
-	LensFulfillmentMode
-) as LensFulfillmentMode[];
+export const ALL_LENS_PRICE_TYPES = Object.values(LensPriceType) as LensPriceType[];
+export const ALL_LENS_INVENTORY_MODES = Object.values(LensInventoryMode) as LensInventoryMode[];
+export const ALL_TREATMENT_CATEGORIES = Object.values(TreatmentCategory) as TreatmentCategory[];
+export const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as SaleItemType[];
 
-/** Get the display label for a lens type, with fallback to the raw value */
+// ── Label helpers ───────────────────────────────────────────────────────
+
 export function getLensTypeLabel(type: string): string {
 	return LENS_TYPE_LABELS[type as LensType] ?? type;
 }
 
-/** Get the display label for a lens source, with fallback to the raw value */
 export function getLensSourceLabel(source: string): string {
 	return LENS_SOURCE_LABELS[source as LensCatalogSource] ?? source;
 }
 
-/** Get the display label for a pricing unit, with fallback to the raw value */
-export function getPricingUnitLabel(unit: string): string {
-	return LENS_PRICING_UNIT_LABELS[unit as LensPricingUnit] ?? unit;
+export function getPriceTypeLabel(unit: string): string {
+	return LENS_PRICE_TYPE_LABELS[unit as LensPriceType] ?? unit;
 }
 
-export function getLensFulfillmentModeLabel(mode: string): string {
-	return LENS_FULFILLMENT_MODE_LABELS[mode as LensFulfillmentMode] ?? mode;
+export function getInventoryModeLabel(mode: string): string {
+	return LENS_INVENTORY_MODE_LABELS[mode as LensInventoryMode] ?? mode;
 }
 
-/**
- * Lens type badge colors for consistent UI display
- */
+export function getTreatmentCategoryLabel(cat: string): string {
+	return TREATMENT_CATEGORY_LABELS[cat as TreatmentCategory] ?? cat;
+}
+
+// ── Badge colors ────────────────────────────────────────────────────────
+
 export const lensTypeBadgeColors: Record<LensType, 'blue' | 'green' | 'purple' | 'yellow'> = {
 	[LensType.MONOFOCAL]: 'blue',
 	[LensType.BIFOCAL]: 'green',
