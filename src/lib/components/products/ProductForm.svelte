@@ -87,7 +87,7 @@
 	let pendingBrands = $state<PendingEntity[]>([]);
 	let pendingSuppliers = $state<PendingEntity[]>([]);
 	let pendingMaterials = $state<PendingEntity[]>([]);
-	let pendingModels = $state<PendingEntity[]>([]);
+	const pendingModels: PendingEntity[] = [];
 
 	// Merged options: original + pending
 	const allBrands = $derived<SelectOption[]>([

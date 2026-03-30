@@ -1,0 +1,9 @@
+{
+	"ignore": {
+		"rules": ["no-console"],
+		"files": ["scripts/", "src/lib/server/db/seed.ts"]
+	},
+	"lint": true,
+	"deadCode": true,
+	"cache": true
+}

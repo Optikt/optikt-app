@@ -19,7 +19,8 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
-		"db:seed": "tsx scripts/seed-db.ts"
+		"db:seed": "tsx scripts/seed-db.ts",
+		"svelte:doctor": "svelte-doctor check"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
@@ -48,6 +49,7 @@
 		"prettier-plugin-tailwindcss": "^0.7.2",
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
+		"svelte-doctor": "^0.1.9",
 		"tailwind-scrollbar": "^4.0.2",
 		"tailwindcss": "^4.1.17",
 		"tsx": "^4.21.0",
