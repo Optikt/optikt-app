@@ -11,6 +11,7 @@
 		Eye,
 		FlaskConical
 	} from '@lucide/svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -59,7 +60,7 @@
 
 	let displayGroups: DisplayGroup[] = $derived.by(() => {
 		const groups: DisplayGroup[] = [];
-		const lensGroupMap = new Map<string, DisplayGroup>();
+		const lensGroupMap = new SvelteMap<string, DisplayGroup>();
 
 		for (const item of mainItems) {
 			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
