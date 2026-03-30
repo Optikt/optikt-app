@@ -122,19 +122,32 @@ export const CreateSaleSchema = z
 // PAYMENT SCHEMA
 // ============================================================================
 
-export const AddPaymentSchema = z.object({
-	saleId: z.uuid('ID de venta requerido'),
-	paymentMethod: z.enum(ALL_PAYMENT_METHODS, 'Método de pago requerido'),
-	paymentDate: z.iso.date('La fecha del pago es requerida'),
-	/** Amount in the native currency of the payment method */
-	amount: CoercedNumber.positive('El monto debe ser positivo'),
-	/** Method-specific exchange rate (Bs per unit). Required for non-Bs methods */
-	exchangeRate: CoercedNumber.positive().optional(),
-	/** BCV official Bs/$ rate (always required) */
-	bcvRate: CoercedNumber.positive('La tasa BCV es requerida'),
-	reference: z.string().optional(),
-	notes: z.string().optional()
-});
+export const AddPaymentSchema = z
+	.object({
+		saleId: z.uuid('ID de venta requerido'),
+		paymentMethod: z.enum(ALL_PAYMENT_METHODS, 'Método de pago requerido'),
+		paymentDate: z.iso.date('La fecha del pago es requerida'),
+		/** Amount in the native currency of the payment method */
+		amount: CoercedNumber.positive('El monto debe ser positivo'),
+		/** Method-specific exchange rate (Bs per unit). Required for non-Bs methods */
+		exchangeRate: CoercedNumber.positive().optional(),
+		/** BCV official Bs/$ rate (always required) */
+		bcvRate: CoercedNumber.positive('La tasa BCV es requerida'),
+		reference: z.string().optional(),
+		notes: z.string().optional()
+	})
+	.superRefine((data, ctx) => {
+		const isCashMethod =
+			data.paymentMethod === 'EFECTIVO_BS' || data.paymentMethod === 'EFECTIVO_USD';
+
+		if (!isCashMethod && !data.reference?.trim()) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['reference'],
+				message: 'La referencia es obligatoria para este método. Si no aplica, use --'
+			});
+		}
+	});
 
 export const VoidPaymentSchema = z.object({
 	id: z.uuid('ID de pago requerido'),
