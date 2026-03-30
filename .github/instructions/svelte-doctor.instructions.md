@@ -8,20 +8,20 @@ applyTo: 'svelte-doctor.config.json,**/*.svelte,**/*.ts'
 
 ## Commands (Quick Reference)
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm svelte:doctor` | Full project scan |
-| `svelte-doctor check --no-cache` | Cold scan (skip cache) |
-| `svelte-doctor check --copy` | Export diagnostics for AI |
-| `svelte-doctor apply --write` | Auto-fix safe patterns |
-| `svelte-doctor apply --dry-run` | Preview safe fixes |
-| `svelte-doctor baseline` | Snapshot current issues for suppression |
-| `svelte-doctor check --baseline` | Only show new issues |
-| `svelte-doctor watch` | Live score on file changes |
-| `svelte-doctor trend` | Score history chart |
-| `svelte-doctor deps` | Dependency health check |
-| `svelte-doctor rules` | List all rules |
-| `svelte-doctor explain <rule>` | Detailed rule explanation |
+| Command                          | Purpose                                 |
+| -------------------------------- | --------------------------------------- |
+| `pnpm svelte:doctor`             | Full project scan                       |
+| `svelte-doctor check --no-cache` | Cold scan (skip cache)                  |
+| `svelte-doctor check --copy`     | Export diagnostics for AI               |
+| `svelte-doctor apply --write`    | Auto-fix safe patterns                  |
+| `svelte-doctor apply --dry-run`  | Preview safe fixes                      |
+| `svelte-doctor baseline`         | Snapshot current issues for suppression |
+| `svelte-doctor check --baseline` | Only show new issues                    |
+| `svelte-doctor watch`            | Live score on file changes              |
+| `svelte-doctor trend`            | Score history chart                     |
+| `svelte-doctor deps`             | Dependency health check                 |
+| `svelte-doctor rules`            | List all rules                          |
+| `svelte-doctor explain <rule>`   | Detailed rule explanation               |
 
 ## Configuration
 
@@ -29,13 +29,13 @@ File: `svelte-doctor.config.json` in project root.
 
 ```json
 {
-  "ignore": {
-    "rules": ["rule-name"],
-    "files": ["path/to/exclude/"]
-  },
-  "lint": true,
-  "deadCode": true,
-  "cache": true
+	"ignore": {
+		"rules": ["rule-name"],
+		"files": ["path/to/exclude/"]
+	},
+	"lint": true,
+	"deadCode": true,
+	"cache": true
 }
 ```
 
@@ -122,9 +122,9 @@ Or in `package.json` under `"svelte-doctor"` key.
 
 ## Interpreting Scores
 
-| Score | Label | Action |
-|-------|-------|--------|
-| 90–100 | Excellent | Maintain |
-| 70–89 | Good | Minor improvements |
-| 50–69 | Needs Work | Prioritize fixes |
-| 0–49 | Critical | Immediate action needed |
+| Score  | Label      | Action                  |
+| ------ | ---------- | ----------------------- |
+| 90–100 | Excellent  | Maintain                |
+| 70–89  | Good       | Minor improvements      |
+| 50–69  | Needs Work | Prioritize fixes        |
+| 0–49   | Critical   | Immediate action needed |
