@@ -47,6 +47,57 @@
 		);
 	}
 
+	/** Grouped display rows — consolidates LENS_PAIR items that share the same catalog item */
+	interface DisplayGroup {
+		key: string;
+		item: SaleItemWithDetails;
+		quantity: number;
+		discountAmount: number;
+		lineTotal: number;
+		treatments: SaleItemWithDetails[];
+	}
+
+	let displayGroups: DisplayGroup[] = $derived.by(() => {
+		const groups: DisplayGroup[] = [];
+		const lensGroupMap = new Map<string, DisplayGroup>();
+
+		for (const item of mainItems) {
+			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
+				const existing = lensGroupMap.get(item.lensCatalogItemId);
+				if (existing) {
+					existing.quantity += item.quantity;
+					existing.discountAmount += itemDiscountAmount(item);
+					existing.lineTotal += item.unitPrice * item.quantity - itemDiscountAmount(item);
+					existing.treatments.push(...getTreatments(item.id));
+				} else {
+					const discAmt = itemDiscountAmount(item);
+					const group: DisplayGroup = {
+						key: `lens-${item.lensCatalogItemId}`,
+						item,
+						quantity: item.quantity,
+						discountAmount: discAmt,
+						lineTotal: item.unitPrice * item.quantity - discAmt,
+						treatments: [...getTreatments(item.id)]
+					};
+					lensGroupMap.set(item.lensCatalogItemId, group);
+					groups.push(group);
+				}
+			} else {
+				const discAmt = itemDiscountAmount(item);
+				groups.push({
+					key: item.id,
+					item,
+					quantity: item.quantity,
+					discountAmount: discAmt,
+					lineTotal: item.unitPrice * item.quantity - discAmt,
+					treatments: getTreatments(item.id)
+				});
+			}
+		}
+
+		return groups;
+	});
+
 	// Action state
 	let actionLoading = $state(false);
 	let showCancelModal = $state(false);
@@ -218,13 +269,11 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each mainItems as item (item.id)}
-						{@const discAmt = itemDiscountAmount(item)}
-						{@const lineTotal = item.unitPrice * item.quantity - discAmt}
+					{#each displayGroups as group (group.key)}
 						<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
 							<td class="px-4 py-3">
 								<div class="flex items-center gap-3">
-									{#if item.lensCatalogItem}
+									{#if group.item.lensCatalogItem}
 										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50">
 											<Eye class="h-4 w-4 text-indigo-500" />
 										</div>
@@ -235,16 +284,16 @@
 									{/if}
 									<div>
 										<p class="text-sm font-semibold text-slate-800">
-											{item.product?.name ?? item.lensCatalogItem?.name ?? '—'}
+											{group.item.product?.name ?? group.item.lensCatalogItem?.name ?? '—'}
 										</p>
-										{#if item.product?.sku}
-											<p class="font-mono text-xs text-slate-500">{item.product.sku}</p>
+										{#if group.item.product?.sku}
+											<p class="font-mono text-xs text-slate-500">{group.item.product.sku}</p>
 										{/if}
 									</div>
 								</div>
 							</td>
 							<td class="px-4 py-3 text-center">
-								{#if item.lensCatalogItem}
+								{#if group.item.lensCatalogItem}
 									<span
 										class="inline-block rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"
 										>Lente</span
@@ -256,53 +305,57 @@
 									>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-right font-mono text-sm">{item.quantity}</td>
+							<td class="px-4 py-3 text-right font-mono text-sm">{group.quantity}</td>
 							<td class="px-4 py-3 text-right font-mono text-sm">
-								{formatPrice(item.unitPrice)}
+								{formatPrice(group.item.unitPrice)}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-sm text-red-500">
-								{#if discAmt > 0}
-									-{formatPrice(discAmt)}
-									{#if item.discountType === DiscountType.PERCENTAGE}
-										<span class="text-xs text-slate-400">({item.discount}%)</span>
+								{#if group.discountAmount > 0}
+									-{formatPrice(group.discountAmount)}
+									{#if group.item.discountType === DiscountType.PERCENTAGE}
+										<span class="text-xs text-slate-400">({group.item.discount}%)</span>
 									{/if}
 								{:else}
 									—
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-sm font-semibold">
-								{formatPrice(lineTotal)}
+								{formatPrice(group.lineTotal)}
 							</td>
 						</tr>
-						<!-- Treatment sub-rows for lens items -->
-						{#each getTreatments(item.id) as treatment (treatment.id)}
-							<tr class="border-t border-slate-50 bg-violet-50/40">
-								<td class="px-4 py-2">
-									<div class="ml-11 flex items-center gap-2">
-										<FlaskConical class="h-3.5 w-3.5 text-violet-400" />
-										<span class="text-sm font-medium text-violet-700">
-											{treatment.supplierTreatment?.name ?? '—'}
-										</span>
-										{#if treatment.supplierTreatment?.category}
-											<span
-												class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
-												>{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}</span
-											>
-										{/if}
+						<!-- Treatment rows -->
+						{#each group.treatments as treatment (treatment.id)}
+							<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
+								<td class="px-4 py-3">
+									<div class="flex items-center gap-3">
+										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
+											<FlaskConical class="h-4 w-4 text-violet-500" />
+										</div>
+										<div>
+											<p class="text-sm font-semibold text-slate-800">
+												{treatment.supplierTreatment?.name ?? '—'}
+											</p>
+											{#if treatment.supplierTreatment?.category}
+												<span
+													class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
+													>{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}</span
+												>
+											{/if}
+										</div>
 									</div>
 								</td>
-								<td class="px-4 py-2 text-center">
+								<td class="px-4 py-3 text-center">
 									<span
 										class="inline-block rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-600"
 										>Tratamiento</span
 									>
 								</td>
-								<td class="px-4 py-2 text-right font-mono text-sm">{treatment.quantity}</td>
-								<td class="px-4 py-2 text-right font-mono text-sm">
+								<td class="px-4 py-3 text-right font-mono text-sm">{treatment.quantity}</td>
+								<td class="px-4 py-3 text-right font-mono text-sm">
 									{formatPrice(treatment.unitPrice)}
 								</td>
-								<td class="px-4 py-2 text-right font-mono text-sm text-red-500">—</td>
-								<td class="px-4 py-2 text-right font-mono text-sm font-medium text-violet-600">
+								<td class="px-4 py-3 text-right font-mono text-sm text-red-500">—</td>
+								<td class="px-4 py-3 text-right font-mono text-sm font-semibold text-violet-600">
 									{formatPrice(treatment.unitPrice * treatment.quantity)}
 								</td>
 							</tr>
