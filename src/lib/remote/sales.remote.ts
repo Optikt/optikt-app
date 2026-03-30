@@ -401,6 +401,7 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 	// Compute BCV USD equivalent (pure computation — safe outside transaction)
 	const method = data.paymentMethod as PaymentMethod;
 	let amountBcvUsd: number;
+	const paymentDate = new Date(`${data.paymentDate}T12:00:00.000Z`);
 
 	if (isBsPaymentMethod(method)) {
 		amountBcvUsd = data.amount / data.bcvRate;
@@ -420,6 +421,7 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 				amount: data.amount,
 				exchangeRate: data.exchangeRate ?? null,
 				bcvRate: data.bcvRate,
+				paymentDate,
 				amountBcvUsd,
 				reference: data.reference ?? null,
 				notes: data.notes ?? null

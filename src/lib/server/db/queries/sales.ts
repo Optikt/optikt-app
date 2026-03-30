@@ -404,7 +404,7 @@ export async function getSalePayments(
 		.select()
 		.from(salePayments)
 		.where(and(...conditions))
-		.orderBy(desc(salePayments.createdAt));
+		.orderBy(desc(salePayments.paymentDate), desc(salePayments.createdAt));
 }
 
 /**

@@ -125,6 +125,7 @@ export const CreateSaleSchema = z
 export const AddPaymentSchema = z.object({
 	saleId: z.uuid('ID de venta requerido'),
 	paymentMethod: z.enum(ALL_PAYMENT_METHODS, 'Método de pago requerido'),
+	paymentDate: z.iso.date('La fecha del pago es requerida'),
 	/** Amount in the native currency of the payment method */
 	amount: CoercedNumber.positive('El monto debe ser positivo'),
 	/** Method-specific exchange rate (Bs per unit). Required for non-Bs methods */

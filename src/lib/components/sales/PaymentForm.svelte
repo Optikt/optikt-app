@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, Select, Input, Label, Spinner } from 'flowbite-svelte';
-	import { Plus } from '@lucide/svelte';
+	import { CalendarDays, RefreshCcw, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { addPayment } from '$lib/remote/sales.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
@@ -23,19 +23,17 @@
 	let { saleId, remainingBcvUsd, bcvRate, onPaymentAdded }: Props = $props();
 
 	let paymentMethod = $state<PaymentMethodType | ''>('');
-	let amount = $state(0);
+	let amountUsd = $state(0);
+	let manualAmount = $state(0);
+	let amountEdited = $state(false);
 	let exchangeRate = $state(0);
 	let currentBcvRate = $state(0);
+	let paymentDate = $state(new Date().toISOString().slice(0, 10));
 	let reference = $state('');
 	let notes = $state('');
 	let submitting = $state(false);
 
-	// Sync BCV rate from prop (initial + when parent updates)
-	$effect(() => {
-		if (bcvRate > 0 && currentBcvRate === 0) {
-			currentBcvRate = bcvRate;
-		}
-	});
+	const activeBcvRate = $derived(currentBcvRate > 0 ? currentBcvRate : bcvRate);
 
 	// Whether the selected method needs a method-specific exchange rate
 	const needsExchangeRate = $derived(
@@ -46,27 +44,59 @@
 		paymentMethod ? getExchangeRateLabel(paymentMethod as PaymentMethodType) : ''
 	);
 
-	// Preview of BCV USD equivalent
-	const previewBcvUsd = $derived(() => {
-		if (!paymentMethod || !amount || !currentBcvRate) return 0;
+	const amountUnitLabel = $derived.by(() => {
+		if (!paymentMethod) return 'Monto';
+		if (isBsPaymentMethod(paymentMethod as PaymentMethodType)) return 'Bs';
+		if (paymentMethod === PaymentMethod.EFECTIVO_USD) return '$';
+		if (paymentMethod === PaymentMethod.BINANCE_USDT) return 'USDT';
+		return 'Monto';
+	});
+
+	const suggestedAmount = $derived.by(() => {
+		if (!paymentMethod || amountUsd <= 0 || activeBcvRate <= 0) return 0;
 		const method = paymentMethod as PaymentMethodType;
 		if (isBsPaymentMethod(method)) {
-			return amount / currentBcvRate;
+			return amountUsd * activeBcvRate;
+		}
+		if (!exchangeRate || exchangeRate <= 0) return 0;
+		return (amountUsd * activeBcvRate) / exchangeRate;
+	});
+
+	const amount = $derived.by(() =>
+		amountEdited ? manualAmount : Number(suggestedAmount.toFixed(2))
+	);
+
+	// Preview of BCV USD equivalent
+	const previewBcvUsd = $derived.by(() => {
+		if (!paymentMethod || !amount || !activeBcvRate) return 0;
+		const method = paymentMethod as PaymentMethodType;
+		if (isBsPaymentMethod(method)) {
+			return amount / activeBcvRate;
 		}
 		if (!exchangeRate) return 0;
-		return (amount * exchangeRate) / currentBcvRate;
+		return (amount * exchangeRate) / activeBcvRate;
 	});
 
 	function reset() {
 		paymentMethod = '';
-		amount = 0;
+		amountUsd = 0;
+		manualAmount = 0;
+		amountEdited = false;
 		exchangeRate = 0;
+		currentBcvRate = 0;
+		paymentDate = new Date().toISOString().slice(0, 10);
 		reference = '';
 		notes = '';
 	}
 
+	function useSuggestedAmount() {
+		amountEdited = false;
+		manualAmount = Number(suggestedAmount.toFixed(2));
+	}
+
 	async function handleSubmit() {
-		if (!paymentMethod || amount <= 0 || currentBcvRate <= 0) return;
+		if (!paymentMethod || amount <= 0 || amountUsd <= 0 || activeBcvRate <= 0 || !paymentDate)
+			return;
 		if (needsExchangeRate && exchangeRate <= 0) return;
 
 		submitting = true;
@@ -74,9 +104,10 @@
 			const result = await addPayment({
 				saleId,
 				paymentMethod: paymentMethod as PaymentMethodType,
+				paymentDate,
 				amount,
 				exchangeRate: needsExchangeRate ? exchangeRate : undefined,
-				bcvRate: currentBcvRate,
+				bcvRate: activeBcvRate,
 				reference: reference || undefined,
 				notes: notes || undefined
 			});
@@ -99,7 +130,38 @@
 </script>
 
 <div class="rounded-lg border border-slate-200 bg-white p-5">
-	<h4 class="mb-4 text-base font-semibold text-slate-800">Registrar Pago</h4>
+	<h4 class="mb-1 text-base font-semibold text-slate-800">Registrar Pago</h4>
+	<p class="mb-4 text-sm text-slate-500">
+		Primero indica cuánto deseas cancelar en USD BCV. Con las tasas, el sistema te sugiere el monto
+		a cobrar según el método, y puedes ajustarlo manualmente.
+	</p>
+
+	<div class="mb-4 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+		<div>
+			<Label for="pay-date" class="mb-1.5 flex items-center gap-1.5 text-sm">
+				<CalendarDays class="h-4 w-4 text-slate-500" />
+				Fecha del Pago *
+			</Label>
+			<Input id="pay-date" type="date" bind:value={paymentDate} max="9999-12-31" />
+		</div>
+		<div>
+			<Label for="pay-usd" class="mb-1.5 text-sm">Monto a aplicar (USD BCV) *</Label>
+			<Input
+				id="pay-usd"
+				type="number"
+				bind:value={amountUsd}
+				placeholder={remainingBcvUsd.toFixed(2)}
+				step="0.01"
+				min="0"
+				class="font-mono"
+			/>
+			<p class="mt-1 text-xs text-slate-500">
+				Pendiente actual: <span class="font-mono text-slate-700"
+					>{formatPrice(remainingBcvUsd)}</span
+				>
+			</p>
+		</div>
+	</div>
 
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		<!-- Payment Method -->
@@ -115,23 +177,34 @@
 
 		<!-- Amount -->
 		<div>
-			<Label for="pay-amount" class="mb-1.5 text-sm">
-				Monto ({paymentMethod && isBsPaymentMethod(paymentMethod as PaymentMethodType)
-					? 'Bs'
-					: paymentMethod === PaymentMethod.EFECTIVO_USD
-						? '$'
-						: paymentMethod === PaymentMethod.BINANCE_USDT
-							? 'USDT'
-							: ''}) *
-			</Label>
+			<div class="mb-1.5 flex items-center justify-between gap-2 text-sm">
+				<Label for="pay-amount">Monto ({amountUnitLabel}) *</Label>
+				<button
+					type="button"
+					onclick={useSuggestedAmount}
+					class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-50"
+				>
+					<RefreshCcw class="h-3.5 w-3.5" />
+					Usar sugerido
+				</button>
+			</div>
 			<Input
 				id="pay-amount"
 				type="number"
-				bind:value={amount}
+				value={amount}
+				oninput={(event) => {
+					amountEdited = true;
+					manualAmount = Number((event.currentTarget as HTMLInputElement).value);
+				}}
 				step="0.01"
 				min="0"
 				class="font-mono"
 			/>
+			<p class="mt-1 text-xs text-slate-500">
+				Sugerido por helper: <span class="font-mono text-slate-700"
+					>{suggestedAmount.toFixed(2)}</span
+				>
+			</p>
 		</div>
 
 		<!-- BCV Rate -->
@@ -141,6 +214,7 @@
 				id="pay-bcv"
 				type="number"
 				bind:value={currentBcvRate}
+				placeholder={bcvRate > 0 ? bcvRate.toFixed(2) : '0.00'}
 				step="0.01"
 				min="0"
 				class="font-mono"
@@ -176,13 +250,18 @@
 	</div>
 
 	<!-- Preview & Submit -->
-	<div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+	<div
+		class="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between"
+	>
 		<div class="text-base text-slate-500">
-			{#if amount > 0 && currentBcvRate > 0}
-				Equivalente BCV:
+			{#if amount > 0 && activeBcvRate > 0}
+				Equivalente BCV registrado:
 				<span class="font-mono font-semibold text-blue-700">
-					{formatPrice(previewBcvUsd())}
+					{formatPrice(previewBcvUsd)}
 				</span>
+				{#if amountUsd > 0}
+					<span class="ml-2 text-sm text-slate-400">Objetivo: {formatPrice(amountUsd)}</span>
+				{/if}
 				{#if remainingBcvUsd > 0}
 					<span class="ml-2 text-sm text-slate-400">
 						/ Pendiente: {formatPrice(remainingBcvUsd)}
@@ -195,8 +274,10 @@
 			size="sm"
 			onclick={handleSubmit}
 			disabled={!paymentMethod ||
+				amountUsd <= 0 ||
 				amount <= 0 ||
-				currentBcvRate <= 0 ||
+				!paymentDate ||
+				activeBcvRate <= 0 ||
 				(needsExchangeRate && exchangeRate <= 0) ||
 				submitting}
 		>
