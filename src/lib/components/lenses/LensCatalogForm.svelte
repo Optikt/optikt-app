@@ -105,8 +105,7 @@
 		mountingPrice: initialItem?.mountingPrice?.toString() ?? '0',
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
 		// Inventory
-		inventoryMode:
-			(initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
+		inventoryMode: (initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
 		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
 		notes: initialItem?.notes ?? ''
 	});
@@ -779,7 +778,8 @@
 					</div>
 					{#if formData.inventoryMode === LensInventoryMode.ON_DEMAND}
 						<p class="mt-1.5 flex items-center gap-1 text-xs text-sky-600">
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true"></span>
+							<span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true"
+							></span>
 							Se pide al proveedor cuando se vende
 						</p>
 					{/if}
@@ -798,12 +798,14 @@
 						/>
 						{#if Number(formData.stock) > 0}
 							<p class="mt-1.5 flex items-center gap-1 text-xs text-teal-600">
-								<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"></span>
+								<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"
+								></span>
 								{formData.stock} unidad{Number(formData.stock) !== 1 ? 'es' : ''} en inventario
 							</p>
 						{:else}
 							<p class="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-								<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true"></span>
+								<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true"
+								></span>
 								Sin stock
 							</p>
 						{/if}

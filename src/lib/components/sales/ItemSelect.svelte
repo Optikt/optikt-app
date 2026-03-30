@@ -153,8 +153,12 @@
 							<span class="text-xs font-medium text-amber-600">{opt.stock} disp.</span>
 						{:else}
 							<span class="text-xs font-medium text-green-600">{opt.stock} disp.</span>
-						{/if}				{:else if opt.source}
-					<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600">Por pedido</span>					{/if}
+						{/if}
+					{:else if opt.source}
+						<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600"
+							>Por pedido</span
+						>
+					{/if}
 				</div>
 				<div class="flex items-center gap-2 text-[0.8rem]">
 					{#if opt.sku}

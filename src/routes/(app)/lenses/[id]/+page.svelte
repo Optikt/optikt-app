@@ -343,7 +343,11 @@
 									<Package class="h-4 w-4 text-teal-500" />
 									Stock
 								</span>
-								<span class="text-xl font-bold {(item.stock ?? 0) <= 0 ? 'text-red-600' : 'text-slate-900'}">{item.stock ?? 0}</span>
+								<span
+									class="text-xl font-bold {(item.stock ?? 0) <= 0
+										? 'text-red-600'
+										: 'text-slate-900'}">{item.stock ?? 0}</span
+								>
 							</div>
 						{/if}
 					</div>

@@ -242,8 +242,7 @@ export const createLensCatalogItemForm = form(
 			}
 
 			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
-			const stockValue =
-				rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
+			const stockValue = rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
 
 			const [item] = await tx
 				.insert(lensCatalogItems)

@@ -398,7 +398,13 @@
 		if (!lens || lens.ranges.length === 0) return [];
 
 		const warnings: string[] = [];
-		const eyes: { label: string; enabled: boolean; sphere: string; cylinder: string; addition: string }[] = [
+		const eyes: {
+			label: string;
+			enabled: boolean;
+			sphere: string;
+			cylinder: string;
+			addition: string;
+		}[] = [
 			{
 				label: 'OD',
 				enabled: item.lensPair.od.enabled,
@@ -708,7 +714,7 @@
 											lensBaseCost(lens, eyeCount) +
 												lens.mountingPrice +
 												lens.shippingPrice +
-													treatmentsTotal(item, eyeCount)
+												treatmentsTotal(item, eyeCount)
 										)}</span
 									>
 								</div>

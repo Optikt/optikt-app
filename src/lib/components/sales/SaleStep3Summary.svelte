@@ -13,7 +13,12 @@
 	} from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { formatPrice, dateToISODateString } from '$lib/utils';
-	import { findProduct, itemLineTotal, computeItemDiscount, getItemName as _getItemName } from './saleItemHelpers';
+	import {
+		findProduct,
+		itemLineTotal,
+		computeItemDiscount,
+		getItemName as _getItemName
+	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
@@ -301,7 +306,12 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.kind === 'lens' && item.treatments.length > 0 ? getLensDisplayPrice(item) : item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base"
+								>{formatPrice(
+									item.kind === 'lens' && item.treatments.length > 0
+										? getLensDisplayPrice(item)
+										: item.unitPrice
+								)}</td
 							>
 							<td class="px-2 py-2">
 								<div class="flex items-center justify-end gap-1">
@@ -320,7 +330,11 @@
 								</div>
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base font-semibold"
-								>{formatPrice(item.kind === 'lens' && item.treatments.length > 0 ? getLensDisplayPrice(item) - computeItemDiscount(item) : itemLineTotal(item))}</td
+								>{formatPrice(
+									item.kind === 'lens' && item.treatments.length > 0
+										? getLensDisplayPrice(item) - computeItemDiscount(item)
+										: itemLineTotal(item)
+								)}</td
 							>
 						</tr>
 						<!-- Lens cost breakdown -->
@@ -387,9 +401,12 @@
 											</div>
 										</td>
 										<td class="px-4 py-3 text-right font-mono text-base">{treatmentEyeCount}</td>
-										<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(treatment.price)}</td>
+										<td class="px-4 py-3 text-right font-mono text-base"
+											>{formatPrice(treatment.price)}</td
+										>
 										<td class="px-4 py-3 text-right font-mono text-base text-red-500">—</td>
-										<td class="px-4 py-3 text-right font-mono text-base font-semibold text-violet-700"
+										<td
+											class="px-4 py-3 text-right font-mono text-base font-semibold text-violet-700"
 											>{formatPrice(treatment.price * treatmentEyeCount)}</td
 										>
 									</tr>

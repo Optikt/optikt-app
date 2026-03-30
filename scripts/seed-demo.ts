@@ -149,7 +149,7 @@ async function main() {
 	// ── 5. Lens Catalog Items ───────────────────────────────────────────
 	console.log('👓 Creating lens catalog items...');
 	await db.insert(schema.lensCatalogItems).values([
-		{12
+		{
 			source: 'LAB',
 			supplierId: supplierLab.id,
 			name: 'Monofocal CR-39 LAB',
