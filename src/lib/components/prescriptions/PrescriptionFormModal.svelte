@@ -31,12 +31,12 @@
 	let pendingSubmitCallback: (() => Promise<void>) | null = $state(null);
 
 	// Check if form has unsaved changes
-	const hasUnsavedChanges = $derived(() => {
+	const hasUnsavedChanges = $derived.by(() => {
 		return JSON.stringify(formData) !== JSON.stringify(initialFormData);
 	});
 
 	// Build list of missing distance field labels for the confirm dialog
-	const missingDistanceFieldNames = $derived(() => {
+	const missingDistanceFieldNames = $derived.by(() => {
 		const missing: string[] = [];
 		if (!formData.dp) missing.push('DP');
 		if (!formData.npRight) missing.push('NP Derecho');
@@ -197,7 +197,7 @@
 
 	function handleClose() {
 		if (isSubmitting) return;
-		if (hasUnsavedChanges()) {
+		if (hasUnsavedChanges) {
 			showCloseConfirmModal = true;
 		} else {
 			open = false;
@@ -218,7 +218,7 @@
 		handleResult: (formEl: HTMLFormElement) => void
 	) {
 		// Check for missing distance fields before submitting
-		const missing = missingDistanceFieldNames();
+		const missing = missingDistanceFieldNames;
 		if (missing.length > 0) {
 			pendingSubmitCallback = async () => {
 				await executeSubmit(formEl, submit, handleResult);
@@ -553,7 +553,7 @@
 	{#snippet body()}
 		<p class="mb-2 text-gray-700">Los siguientes campos de distancia están vacíos:</p>
 		<ul class="mb-3 list-inside list-disc space-y-1 text-sm text-gray-600">
-			{#each missingDistanceFieldNames() as field, index (index)}
+			{#each missingDistanceFieldNames as field, index (index)}
 				<li class="font-medium">{field}</li>
 			{/each}
 		</ul>
