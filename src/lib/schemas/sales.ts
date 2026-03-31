@@ -129,6 +129,8 @@ export const AddPaymentSchema = z
 		paymentDate: z.iso.date('La fecha del pago es requerida'),
 		/** Amount in the native currency of the payment method */
 		amount: CoercedNumber.positive('El monto debe ser positivo'),
+		/** USD BCV equivalent entered by the user (avoids back-calculation rounding) */
+		usdBcvAmount: CoercedNumber.positive('El monto USD BCV es requerido'),
 		/** Method-specific exchange rate (Bs per unit). Required for non-Bs methods */
 		exchangeRate: CoercedNumber.positive().optional(),
 		/** BCV official Bs/$ rate (always required) */

@@ -398,18 +398,13 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 		return { success: false as const, error: 'No se pueden agregar pagos a una venta cancelada' };
 	}
 
-	// Compute BCV USD equivalent (pure computation — safe outside transaction)
+	// Use the user-entered USD BCV amount directly (avoids floating-point drift from back-calculation)
 	const method = data.paymentMethod as PaymentMethod;
-	let amountBcvUsd: number;
+	const amountBcvUsd = data.usdBcvAmount;
 	const paymentDate = new Date(`${data.paymentDate}T12:00:00.000Z`);
 
-	if (isBsPaymentMethod(method)) {
-		amountBcvUsd = data.amount / data.bcvRate;
-	} else {
-		if (!data.exchangeRate) {
-			return { success: false as const, error: 'Tasa de cambio requerida para este método' };
-		}
-		amountBcvUsd = (data.amount * data.exchangeRate) / data.bcvRate;
+	if (!isBsPaymentMethod(method) && !data.exchangeRate) {
+		return { success: false as const, error: 'Tasa de cambio requerida para este método' };
 	}
 
 	// All writes in a single transaction: payment + recalc + auto-complete

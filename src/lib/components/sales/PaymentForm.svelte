@@ -130,6 +130,7 @@
 				paymentMethod: paymentMethod as PaymentMethodType,
 				paymentDate,
 				amount,
+				usdBcvAmount: amountUsd,
 				exchangeRate: needsExchangeRate ? exchangeRate : undefined,
 				bcvRate: activeBcvRate,
 				reference: reference || undefined,
