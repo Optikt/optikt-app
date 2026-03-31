@@ -23,31 +23,15 @@ import {
 	deleteMaterial
 } from '$lib/server/db/queries/materials';
 import type { Material } from '$lib/server/db/schema';
+import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
-
-// Types for paginated response
-export interface PaginatedMaterials {
-	materials: Material[];
-	total: number;
-	page: number;
-	perPage: number;
-	totalPages: number;
-}
-
-// Types for create result
-export interface CreateMaterialResult {
-	success: boolean;
-	message: string;
-	material?: Material;
-	reactivationCandidate?: Material;
-}
 
 /**
  * List all materials, optionally including deleted ones
  */
 export const listMaterials = query(
 	ListMaterialsSchema,
-	async (params): Promise<PaginatedMaterials> => {
+	async (params): Promise<PaginatedResult<Material>> => {
 		const { page, perPage, search, includeDeleted, productType } = params;
 		const offset = (page - 1) * perPage;
 
@@ -64,7 +48,7 @@ export const listMaterials = query(
 		]);
 
 		return {
-			materials: materialList,
+			items: materialList,
 			total,
 			page,
 			perPage,
@@ -91,7 +75,7 @@ export const getMaterialById = query(MaterialIdSchema, async (data): Promise<Mat
  */
 export const createMaterialForm = form(
 	CreateMaterialSchema,
-	async (data, issue): Promise<CreateMaterialResult> => {
+	async (data, issue): Promise<CreateEntityResult<Material>> => {
 		const { name, code, productType, description } = data;
 
 		// Check for duplicate ACTIVE name + productType
@@ -124,7 +108,7 @@ export const createMaterialForm = form(
 		// Log the creation
 		await auditService.logCreate('material', material, getAuditContext());
 
-		return { success: true, material, message: 'Material creado exitosamente' };
+		return { success: true, entity: material, message: 'Material creado exitosamente' };
 	}
 );
 

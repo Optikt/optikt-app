@@ -941,3 +941,47 @@ Mitigacion: aceptado como costo del refactor; se corrige en la misma rama hasta 
 ## Nota operativa
 
 Este documento es la referencia unica de arquitectura/ejecucion para evitar perdida de contexto en sesiones futuras. Cualquier cambio de alcance o regla de negocio debe reflejarse aqui primero.
+
+---
+
+## Refactorizaciones pendientes (deuda tecnica)
+
+Items identificados en auditoria de codigo duplicado. No bloquean funcionalidad pero mejoran mantenibilidad.
+
+### RT-1: Estandarizar schemas de reactivacion
+
+**Estado:** Pendiente
+**Riesgo:** Medio — requiere actualizar remotes + form modals + reactivate modals para usar key comun.
+**Descripcion:** Cada entidad tiene su propio `ReactivateXxxSchema` con un key distinto (`deletedBrandId`, `deletedSupplierId`, `id` en customers). Estandarizar a un key comun y factory function.
+**Archivos afectados:** `src/lib/schemas/{brands,suppliers,customers,materials,products}.ts`, remotes, reactivate modals.
+
+### RT-2: Consolidar enum label/badge getters en un unico modulo
+
+**Estado:** Pendiente
+**Riesgo:** Bajo — cambio mecanico, solo imports.
+**Descripcion:** Hay 10+ funciones `getXxxLabel()` y 5+ funciones `getXxxBadgeColor()` con logica identica (lookup en mapa + fallback). Opciones:
+
+1. Un helper generico `getLabel(labels, value)` y `getBadgeColor(colors, value)`.
+2. Cada modulo de enums exporta solo el mapa, y un unico archivo centraliza los getters.
+   **Archivos afectados:** `src/lib/shared/enums/*.ts`, todos los componentes que usan los getters.
+
+### RT-3: Componente generico de reactivacion de entidad
+
+**Estado:** Pendiente
+**Riesgo:** Medio — los 5 modals (Brand, Supplier, Customer, Material, Product) tienen estructura casi identica. Requiere parametrizar los campos de display y el callback `onConfirm`.
+**Descripcion:** Crear `ReactivateEntityModal.svelte` que acepte:
+
+- `entityLabel` (para textos)
+- `fields` (array de {label, value} para mostrar datos del candidato)
+- `onConfirm` callback
+- `onCancel` callback
+  **Ahorro estimado:** ~400+ lineas.
+  **Archivos afectados:** `src/lib/components/{brands,suppliers,customers,materials,products}/*ReactivateModal.svelte`.
+
+### RT-4: Query CRUD factory para Drizzle
+
+**Estado:** Pendiente
+**Riesgo:** Alto — toca la capa de DB directamente, requiere tipado generico complejo con Drizzle.
+**Descripcion:** `getAllX`, `findXById`, `findXByName`, `createX`, `updateX`, `deleteX` se repiten en cada archivo de queries con la misma estructura. Un factory que genere CRUD a partir de la tabla Drizzle reduciria ~1000+ lineas.
+**Consideraciones:** Drizzle tiene tipado fuerte que complica abstracciones genericas. Evaluar si vale la pena vs. el boilerplate actual.
+**Archivos afectados:** `src/lib/server/db/queries/{brands,suppliers,customers,materials,products}.ts`.

@@ -147,6 +147,7 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 	},
 	sale_payment: {
 		paymentMethod: 'Método de Pago',
+		paymentDate: 'Fecha de Pago',
 		amount: 'Monto',
 		exchangeRate: 'Tasa de Cambio',
 		bcvRate: 'Tasa BCV',

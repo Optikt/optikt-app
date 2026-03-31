@@ -7,7 +7,7 @@
 	import { listBrands } from '$lib/remote/brands.remote';
 	import { BrandsTable, BrandFormModal } from '$lib/components/brands';
 	import type { Brand } from '$lib/server/db/schema';
-	import type { PaginatedBrands } from '$lib/remote/brands.remote';
+	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -15,8 +15,8 @@
 	let { initialBrands, totalCount } = untrack(() => data);
 
 	// Data state - initialize from server
-	let brandsData = $state<PaginatedBrands>({
-		brands: initialBrands,
+	let brandsData = $state<PaginatedResult<Brand>>({
+		items: initialBrands,
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -110,7 +110,7 @@
 
 	<!-- Table -->
 	<BrandsTable
-		brands={brandsData.brands}
+		brands={brandsData.items}
 		{loading}
 		onEdit={openEdit}
 		onRefresh={() => fetchBrands(brandsData.page)}

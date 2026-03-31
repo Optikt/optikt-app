@@ -33,31 +33,15 @@ import {
 	deleteSupplierTreatment
 } from '$lib/server/db/queries/suppliers';
 import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
+import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
-
-// Types for paginated response
-export interface PaginatedSuppliers {
-	suppliers: Supplier[];
-	total: number;
-	page: number;
-	perPage: number;
-	totalPages: number;
-}
-
-// Types for create result
-export interface CreateSupplierResult {
-	success: boolean;
-	message: string;
-	supplier?: Supplier;
-	reactivationCandidate?: Supplier;
-}
 
 /**
  * List suppliers with pagination, search, and type filter
  */
 export const listSuppliers = query(
 	ListSuppliersSchema,
-	async (data): Promise<PaginatedSuppliers> => {
+	async (data): Promise<PaginatedResult<Supplier>> => {
 		const { page, perPage, search, type, includeDeleted } = data;
 
 		// Get suppliers (active only or all if includeDeleted)
@@ -85,7 +69,7 @@ export const listSuppliers = query(
 		const offset = (page - 1) * perPage;
 		const suppliers = allSuppliers.slice(offset, offset + perPage);
 
-		return { suppliers, total, page, perPage, totalPages };
+		return { items: suppliers, total, page, perPage, totalPages };
 	}
 );
 
@@ -95,7 +79,7 @@ export const listSuppliers = query(
  */
 export const createSupplierForm = form(
 	CreateSupplierSchema,
-	async (data, issue): Promise<CreateSupplierResult> => {
+	async (data, issue): Promise<CreateEntityResult<Supplier>> => {
 		const { name, rif, ...rest } = data;
 
 		// Check for duplicate ACTIVE name
@@ -133,7 +117,7 @@ export const createSupplierForm = form(
 		// Audit logs (best-effort)
 		await auditService.logCreate('supplier', supplier, getAuditContext());
 
-		return { success: true, message: 'Proveedor creado exitosamente', supplier };
+		return { success: true, message: 'Proveedor creado exitosamente', entity: supplier };
 	}
 );
 

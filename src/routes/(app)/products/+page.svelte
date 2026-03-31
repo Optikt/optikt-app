@@ -10,7 +10,7 @@
 	import { ProductsTable } from '$lib/components/products';
 	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS, ProductType } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { PaginatedProducts } from '$lib/remote/products.remote';
+	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -18,8 +18,8 @@
 	let { initialProducts, totalCount, brands, suppliers } = untrack(() => data);
 
 	// Data state - initialize from server
-	let productsData = $state<PaginatedProducts>({
-		products: initialProducts as ProductWithRelations[],
+	let productsData = $state<PaginatedResult<ProductWithRelations>>({
+		items: initialProducts as ProductWithRelations[],
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -133,7 +133,7 @@
 
 	<!-- Table -->
 	<ProductsTable
-		products={productsData.products}
+		products={productsData.items}
 		{loading}
 		onView={handleView}
 		onEdit={handleEdit}

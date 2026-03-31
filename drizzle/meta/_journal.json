@@ -43,6 +43,13 @@
       "when": 1774833777154,
       "tag": "0005_handy_colleen_wing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774889800000,
+      "tag": "0006_payment_date_for_sale_payments",
+      "breakpoints": true
     }
   ]
 }
