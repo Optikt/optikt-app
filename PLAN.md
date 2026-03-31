@@ -29,6 +29,7 @@
 Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertirlo a venta cuando acepte.
 
 **Alcance:**
+
 - Tablas: `quotes`, `quote_items`
 - CRUD: crear, listar, ver detalle, editar, cancelar
 - Convertir a venta (prefill del wizard con los ítems del presupuesto)
@@ -37,6 +38,7 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 - Cliente opcional al presupuestar, requerido al convertir a venta
 
 **Fuera de scope inicial:**
+
 - PDF de presupuesto
 - Expiración automática
 - Historial de versiones / revisiones
@@ -46,12 +48,14 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 ### Fase 7 — IVA básico en productos
 
 **Alcance:**
+
 - Campos en productos: `isTaxable` (bool), `taxRate` (%, default 16)
 - UI: toggle visible en formulario de producto
 - Mostrar precio neto / IVA / precio bruto en vista de producto
 - Default: productos gravables al 16%, lentes no gravables
 
 **Fuera de scope inicial:**
+
 - Configuración global de tasas
 - IVA en reportes fiscales detallados
 - Facturación electrónica
@@ -61,11 +65,13 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 ### Fase 8 — Dashboard con datos reales
 
 **Alcance:**
+
 - Métricas de hoy: ventas del día (monto + cantidad), presupuestos pendientes, cobros pendientes
 - Ítems de bajo stock (STOCK mode con cantidad ≤ umbral)
 - Actividad reciente: últimas 5-10 ventas
 
 **Fuera de scope inicial:**
+
 - Gráficas históricas
 - Comparación periodos
 
@@ -74,12 +80,14 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 ### Fase 9 — Reportes básicos
 
 **Alcance:**
+
 - Ventas por período (filtro fecha): listado con totales
 - Pagos recibidos por período
 - Inventario de lentes (stock actual por ítem)
 - Exportación simple (CSV o impresión del navegador)
 
 **Fuera de scope inicial:**
+
 - Reportes fiscales / IVA
 - Reportes por vendedor
 - Dashboards analíticos complejos
@@ -89,6 +97,7 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 ### Fase 10 — Rediseño UI/UX
 
 **Alcance:**
+
 - Revisión visual de todas las pantallas clave (~15 screens)
 - Consistencia tipográfica, espaciado, colores semánticos
 - Sin cambios en lógica de negocio
@@ -111,11 +120,11 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 
 ## Deuda técnica conocida
 
-| ID   | Descripción | Riesgo |
-|------|-------------|--------|
-| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function | Medio |
-| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos | Bajo |
-| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos) | Medio |
+| ID   | Descripción                                                            | Riesgo |
+| ---- | ---------------------------------------------------------------------- | ------ |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function      | Medio  |
+| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos | Bajo   |
+| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)  | Medio  |
 
 ---
 
