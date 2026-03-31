@@ -3,7 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createCustomerForm, updateCustomerForm } from '$lib/remote/customers.remote';
-	import type { CreateCustomerResult } from '$lib/remote/customers.remote';
+	import type { CreateEntityResult } from '$lib/types';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
 	import { scrollToFirstError, getErrorMessage, dateFromUTC } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -105,7 +105,7 @@
 			return;
 		}
 
-		const result = currentCreateForm.result as CreateCustomerResult | undefined;
+		const result = currentCreateForm.result as CreateEntityResult<Customer> | undefined;
 
 		if (result && result.success === false && result.reactivationCandidate) {
 			// Reactivation candidate found - show reactivation confirmation modal
@@ -115,7 +115,7 @@
 			toast.success('Cliente creado exitosamente');
 			formEl.reset();
 			open = false;
-			onSuccess?.(result?.customer?.id);
+			onSuccess?.(result?.entity?.id);
 		}
 	}
 

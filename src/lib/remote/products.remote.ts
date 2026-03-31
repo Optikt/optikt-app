@@ -29,6 +29,7 @@ import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import { resolvePendingMaterial } from '$lib/server/db/queries/materials';
 import { resolvePendingBrand } from '$lib/server/db/queries/brands';
 import { auditService, getAuditContext } from '$lib/server/audit';
+import type { CreateEntityResult, PaginatedResult } from '$lib/types';
 
 // Types for paginated response
 export interface PaginatedProducts {
@@ -50,29 +51,32 @@ export interface CreateProductResult {
 /**
  * List products with pagination, search, and filters
  */
-export const listProducts = query(ListProductsSchema, async (data): Promise<PaginatedProducts> => {
-	const { page, perPage, ...filters } = data;
-	const offset = (page - 1) * perPage;
+export const listProducts = query(
+	ListProductsSchema,
+	async (data): Promise<PaginatedResult<ProductWithRelations>> => {
+		const { page, perPage, ...filters } = data;
+		const offset = (page - 1) * perPage;
 
-	const [items, total] = await Promise.all([
-		getAllProductsWithRelations({
-			...filters,
-			limit: perPage,
-			offset,
-			orderBy: 'createdAt',
-			orderSort: 'desc'
-		}),
-		countProducts(filters)
-	]);
+		const [items, total] = await Promise.all([
+			getAllProductsWithRelations({
+				...filters,
+				limit: perPage,
+				offset,
+				orderBy: 'createdAt',
+				orderSort: 'desc'
+			}),
+			countProducts(filters)
+		]);
 
-	return {
-		products: items,
-		total,
-		page,
-		perPage,
-		totalPages: Math.ceil(total / perPage)
-	};
-});
+		return {
+			items: items,
+			total,
+			page,
+			perPage,
+			totalPages: Math.ceil(total / perPage)
+		};
+	}
+);
 
 /**
  * Create a new product with form validation
@@ -80,7 +84,7 @@ export const listProducts = query(ListProductsSchema, async (data): Promise<Pagi
  */
 export const createProductForm = form(
 	CreateProductSchema,
-	async (data, issue): Promise<CreateProductResult> => {
+	async (data, issue): Promise<CreateEntityResult<Product>> => {
 		const {
 			sku,
 			pendingBrandName,
@@ -171,7 +175,7 @@ export const createProductForm = form(
 		// Log the creation after transaction succeeds
 		await auditService.logCreate('product', product, getAuditContext());
 
-		return { success: true, product, message: 'Producto creado exitosamente' };
+		return { success: true, entity: product, message: 'Producto creado exitosamente' };
 	}
 );
 

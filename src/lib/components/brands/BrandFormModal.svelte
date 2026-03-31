@@ -7,7 +7,7 @@
 	import BrandReactivateModal from './BrandReactivateModal.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Brand } from '$lib/server/db/schema';
-	import type { CreateBrandResult } from '$lib/remote/brands.remote';
+	import type { CreateEntityResult } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -74,7 +74,7 @@
 			return; // Stay open, show errors
 		}
 
-		const result: CreateBrandResult | undefined = currentCreateForm.result;
+		const result: CreateEntityResult<Brand> | undefined = currentCreateForm.result;
 
 		// Check for reactivation candidate
 		if (result && !result.success && result.reactivationCandidate) {

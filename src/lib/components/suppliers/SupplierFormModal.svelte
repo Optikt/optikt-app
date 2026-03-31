@@ -15,7 +15,7 @@
 	import type { Supplier } from '$lib/server/db/schema';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import SupplierReactivateModal from './SupplierReactivateModal.svelte';
-	import type { CreateSupplierResult } from '$lib/remote/suppliers.remote';
+	import type { CreateEntityResult } from '$lib/types';
 
 	interface Props {
 		open: boolean;
@@ -110,7 +110,7 @@
 			return;
 		}
 
-		const result = currentCreateForm.result as CreateSupplierResult | undefined;
+		const result = currentCreateForm.result as CreateEntityResult<Supplier> | undefined;
 
 		// Check for reactivation candidate
 		if (result && !result.success && result.reactivationCandidate) {

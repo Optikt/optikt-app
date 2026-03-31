@@ -7,7 +7,7 @@
 	import MaterialReactivateModal from './MaterialReactivateModal.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Material } from '$lib/server/db/schema';
-	import type { CreateMaterialResult } from '$lib/remote/materials.remote';
+	import type { CreateEntityResult } from '$lib/types';
 	import { MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS } from '$lib/shared/enums/productTypes';
 
 	interface Props {
@@ -75,7 +75,7 @@
 			return; // Stay open, show errors
 		}
 
-		const result = currentCreateForm.result as CreateMaterialResult | undefined;
+		const result = currentCreateForm.result as CreateEntityResult<Material> | undefined;
 
 		// Check for reactivation candidate
 		if (result && !result.success && result.reactivationCandidate) {

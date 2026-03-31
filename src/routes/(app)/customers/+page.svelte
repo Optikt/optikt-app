@@ -9,7 +9,7 @@
 	import { listCustomers } from '$lib/remote/customers.remote';
 	import { CustomersTable, CustomerFormModal } from '$lib/components/customers';
 	import type { Customer } from '$lib/server/db/schema';
-	import type { PaginatedCustomers } from '$lib/remote/customers.remote';
+	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -17,8 +17,8 @@
 	let { initialCustomers, totalCount } = untrack(() => data);
 
 	// Data state - initialize from server
-	let customersData = $state<PaginatedCustomers>({
-		customers: initialCustomers,
+	let customersData = $state<PaginatedResult<Customer>>({
+		items: initialCustomers,
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -119,7 +119,7 @@
 
 	<!-- Table -->
 	<CustomersTable
-		customers={customersData.customers}
+		customers={customersData.items}
 		{loading}
 		onEdit={openEdit}
 		onRefresh={() => fetchCustomers(customersData.page)}

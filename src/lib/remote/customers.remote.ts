@@ -21,31 +21,15 @@ import {
 	restoreCustomer
 } from '$lib/server/db/queries/customers';
 import type { Customer } from '$lib/server/db/schema';
+import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
-
-// Types for paginated response
-export interface PaginatedCustomers {
-	customers: Customer[];
-	total: number;
-	page: number;
-	perPage: number;
-	totalPages: number;
-}
-
-// Type for create result with potential reactivation candidate
-export interface CreateCustomerResult {
-	success: boolean;
-	message: string;
-	customer?: Customer;
-	reactivationCandidate?: Customer;
-}
 
 /**
  * List customers with pagination and search
  */
 export const listCustomers = query(
 	ListCustomersSchema,
-	async (data): Promise<PaginatedCustomers> => {
+	async (data): Promise<PaginatedResult<Customer>> => {
 		const { page, perPage, search, includeDeleted } = data;
 
 		// Get all customers (active or all including deleted)
@@ -70,7 +54,7 @@ export const listCustomers = query(
 		const offset = (page - 1) * perPage;
 		const customers = allCustomers.slice(offset, offset + perPage);
 
-		return { customers, total, page, perPage, totalPages };
+		return { items: customers, total, page, perPage, totalPages };
 	}
 );
 
@@ -79,7 +63,7 @@ export const listCustomers = query(
  */
 export const createCustomerForm = form(
 	CreateCustomerSchema,
-	async (data, issue): Promise<CreateCustomerResult> => {
+	async (data, issue): Promise<CreateEntityResult<Customer>> => {
 		const { idNumber, birthDate, ...rest } = data;
 
 		// Check for duplicate idNumber if provided
@@ -109,7 +93,7 @@ export const createCustomerForm = form(
 		// Log the creation
 		await auditService.logCreate('customer', customer, getAuditContext());
 
-		return { success: true, message: 'Cliente creado exitosamente', customer };
+		return { success: true, message: 'Cliente creado exitosamente', entity: customer };
 	}
 );
 

@@ -12,7 +12,7 @@
 		type MaterialCategory
 	} from '$lib/shared/enums/productTypes';
 	import type { Material } from '$lib/server/db/schema';
-	import type { PaginatedMaterials } from '$lib/remote/materials.remote';
+	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -20,8 +20,8 @@
 	let { initialMaterials, totalCount } = untrack(() => data);
 
 	// Data state - initialize from server
-	let materialsData = $state<PaginatedMaterials>({
-		materials: initialMaterials,
+	let materialsData = $state<PaginatedResult<Material>>({
+		items: initialMaterials,
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -129,7 +129,7 @@
 
 	<!-- Table -->
 	<MaterialsTable
-		materials={materialsData.materials}
+		materials={materialsData.items}
 		{loading}
 		onEdit={openEdit}
 		onRefresh={() => fetchMaterials(materialsData.page)}

@@ -23,16 +23,8 @@ import {
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
 import type { Brand } from '$lib/server/db/schema';
+import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
-
-// Types for paginated response
-export interface PaginatedBrands {
-	brands: Brand[];
-	total: number;
-	page: number;
-	perPage: number;
-	totalPages: number;
-}
 
 // Types for delete check
 export interface BrandDeleteCheck {
@@ -41,21 +33,10 @@ export interface BrandDeleteCheck {
 	brandName: string;
 }
 
-// Types for create result
-/**
- * Result type for createBrandForm, indicating success or if a reactivation candidate was found
- */
-export interface CreateBrandResult {
-	success: boolean;
-	message: string;
-	brand?: Brand;
-	reactivationCandidate?: Brand;
-}
-
 /**
  * List brands with pagination and search
  */
-export const listBrands = query(ListBrandsSchema, async (data): Promise<PaginatedBrands> => {
+export const listBrands = query(ListBrandsSchema, async (data): Promise<PaginatedResult<Brand>> => {
 	const { page, perPage, search, includeDeleted } = data;
 
 	// Get brands from DB (single query handles the includeDeleted filter)
@@ -77,7 +58,7 @@ export const listBrands = query(ListBrandsSchema, async (data): Promise<Paginate
 	const offset = (page - 1) * perPage;
 	const brands = allBrands.slice(offset, offset + perPage);
 
-	return { brands, total, page, perPage, totalPages };
+	return { items: brands, total, page, perPage, totalPages };
 });
 
 /**
@@ -86,7 +67,7 @@ export const listBrands = query(ListBrandsSchema, async (data): Promise<Paginate
  */
 export const createBrandForm = form(
 	CreateBrandSchema,
-	async (data, issue): Promise<CreateBrandResult> => {
+	async (data, issue): Promise<CreateEntityResult<Brand>> => {
 		const { name, ...rest } = data;
 
 		// Check for duplicate ACTIVE name
@@ -113,7 +94,7 @@ export const createBrandForm = form(
 		// Log the creation
 		await auditService.logCreate('brand', brand, getAuditContext());
 
-		return { success: true, message: 'Marca creada exitosamente', brand };
+		return { success: true, message: 'Marca creada exitosamente', entity: brand };
 	}
 );
 

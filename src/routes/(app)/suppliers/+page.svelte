@@ -8,7 +8,7 @@
 	import { SuppliersTable, SupplierFormModal } from '$lib/components/suppliers';
 	import { ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS, SupplierType } from '$lib/shared/enums';
 	import type { Supplier } from '$lib/server/db/schema';
-	import type { PaginatedSuppliers } from '$lib/remote/suppliers.remote';
+	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -16,8 +16,8 @@
 	let { initialSuppliers, totalCount } = untrack(() => data);
 
 	// Data state - initialize from server
-	let suppliersData = $state<PaginatedSuppliers>({
-		suppliers: initialSuppliers,
+	let suppliersData = $state<PaginatedResult<Supplier>>({
+		items: initialSuppliers,
 		total: totalCount,
 		page: 1,
 		perPage: 10,
@@ -124,7 +124,7 @@
 
 	<!-- Table -->
 	<SuppliersTable
-		suppliers={suppliersData.suppliers}
+		suppliers={suppliersData.items}
 		{loading}
 		onEdit={openEdit}
 		onRefresh={() => fetchSuppliers(suppliersData.page)}
