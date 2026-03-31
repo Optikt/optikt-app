@@ -133,8 +133,8 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] CRUD completo (todas las entidades)
 - [x] Wizard de ventas (happy path completo)
 - [x] inventoryMode ON_DEMAND / STOCK
-- [x] Tests (215)
-- [ ] Fase 6 — Presupuestos
+- [x] Tests (245)
+- [x] Fase 6 — Presupuestos
 - [ ] Fase 7 — IVA básico
 - [ ] Fase 8 — Dashboard real
 - [ ] Fase 9 — Reportes básicos
