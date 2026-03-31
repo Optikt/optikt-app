@@ -167,6 +167,20 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		notes: 'Notas',
 		reservedForSaleId: 'Reservado para venta',
 		consumedBySaleId: 'Consumido por venta'
+	},
+	quote: {
+		quoteNumber: 'Nro. Presupuesto',
+		customerId: 'Cliente',
+		sellerId: 'Vendedor',
+		quoteDate: 'Fecha',
+		status: 'Estado',
+		subtotal: 'Subtotal',
+		discount: 'Descuento',
+		discountType: 'Tipo Descuento',
+		total: 'Total',
+		validUntil: 'Válido hasta',
+		notes: 'Notas',
+		conversionSaleId: 'Venta Convertida'
 	}
 };
 

@@ -16,7 +16,8 @@
 		LogOut,
 		PanelLeftClose,
 		PanelLeftOpen,
-		Settings
+		Settings,
+		FileText
 	} from '@lucide/svelte';
 	import { Dropdown, DropdownItem, DropdownHeader, DropdownGroup } from 'flowbite-svelte';
 	import { UserRole, isAdminRole } from '$lib/shared/enums';
@@ -44,7 +45,8 @@
 		truck: Truck,
 		layers: Layers,
 		reports: ChartColumn,
-		shield: Shield
+		shield: Shield,
+		quotes: FileText
 	};
 
 	// Navigation items
@@ -53,6 +55,7 @@
 		{ href: '/customers', label: 'Clientes', icon: 'users' },
 		{ href: '/products', label: 'Inventario', icon: 'package' },
 		{ href: '/sales', label: 'Ventas', icon: 'shopping' },
+		{ href: '/quotes', label: 'Presupuestos', icon: 'quotes' },
 		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },
 		{ href: '/materials', label: 'Materiales', icon: 'layers' },

@@ -29,5 +29,6 @@ export {
 	UserRoleBadge,
 	StatusBadge,
 	TreatmentBadge,
-	SaleStatusBadge
+	SaleStatusBadge,
+	QuoteStatusBadge
 } from './badges';

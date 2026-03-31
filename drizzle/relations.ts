@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, supplierTreatments, customers, prescriptions, brands, products, saleItems, sales, users, userSessions } from "./schema";
+import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, supplierTreatments, customers, prescriptions, brands, products, saleItems, sales, users, userSessions, quotes, quoteItems } from "./schema";
 
 export const lensCatalogItemsRelations = relations(lensCatalogItems, ({one, many}) => ({
 	lensMaterial: one(lensMaterials, {
@@ -49,6 +49,7 @@ export const prescriptionsRelations = relations(prescriptions, ({one}) => ({
 export const customersRelations = relations(customers, ({many}) => ({
 	prescriptions: many(prescriptions),
 	sales: many(sales),
+	quotes: many(quotes),
 }));
 
 export const productsRelations = relations(products, ({one, many}) => ({
@@ -108,6 +109,7 @@ export const salesRelations = relations(sales, ({one, many}) => ({
 
 export const usersRelations = relations(users, ({many}) => ({
 	sales: many(sales),
+	quotes: many(quotes),
 	userSessions: many(userSessions),
 }));
 
@@ -115,5 +117,48 @@ export const userSessionsRelations = relations(userSessions, ({one}) => ({
 	user: one(users, {
 		fields: [userSessions.userId],
 		references: [users.id]
+	}),
+}));
+
+export const quotesRelations = relations(quotes, ({one, many}) => ({
+	quoteItems: many(quoteItems),
+	customer: one(customers, {
+		fields: [quotes.customerId],
+		references: [customers.id]
+	}),
+	user: one(users, {
+		fields: [quotes.sellerId],
+		references: [users.id]
+	}),
+	conversionSale: one(sales, {
+		fields: [quotes.conversionSaleId],
+		references: [sales.id]
+	}),
+}));
+
+export const quoteItemsRelations = relations(quoteItems, ({one, many}) => ({
+	quote: one(quotes, {
+		fields: [quoteItems.quoteId],
+		references: [quotes.id]
+	}),
+	product: one(products, {
+		fields: [quoteItems.productId],
+		references: [products.id]
+	}),
+	lensCatalogItem: one(lensCatalogItems, {
+		fields: [quoteItems.lensCatalogItemId],
+		references: [lensCatalogItems.id]
+	}),
+	parentQuoteItem: one(quoteItems, {
+		fields: [quoteItems.parentQuoteItemId],
+		references: [quoteItems.id],
+		relationName: 'quoteItemParent'
+	}),
+	childQuoteItems: many(quoteItems, {
+		relationName: 'quoteItemParent'
+	}),
+	supplierTreatment: one(supplierTreatments, {
+		fields: [quoteItems.supplierTreatmentId],
+		references: [supplierTreatments.id]
 	}),
 }));
