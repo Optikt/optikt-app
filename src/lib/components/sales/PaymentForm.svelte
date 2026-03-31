@@ -86,16 +86,8 @@
 		amountEdited ? manualAmount : Number(suggestedAmount.toFixed(2))
 	);
 
-	// Preview of BCV USD equivalent
-	const previewBcvUsd = $derived.by(() => {
-		if (!paymentMethod || !amount || !activeBcvRate) return 0;
-		const method = paymentMethod as PaymentMethodType;
-		if (isBsPaymentMethod(method)) {
-			return amount / activeBcvRate;
-		}
-		if (!exchangeRate) return 0;
-		return (amount * exchangeRate) / activeBcvRate;
-	});
+	// Preview of BCV USD equivalent — use the user-entered USD value directly
+	const previewBcvUsd = $derived(amountUsd);
 
 	function reset() {
 		paymentMethod = '';
