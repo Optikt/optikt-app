@@ -144,14 +144,14 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			return { success: false as const, error: 'Cliente no encontrado' };
 		}
 		existingCustomerId = customer.id;
-	} else if (data.newCustomer) {
+	} else if (!data.newCustomer) {
+		return { success: false as const, error: 'Debe seleccionar o crear un cliente' };
+	} else {
 		const normalizedIdNumber = normalizeIdNumber(data.newCustomer.idNumber);
 		const existing = await findCustomerByIdNumber(normalizedIdNumber);
 		if (existing) {
 			return { success: false as const, error: 'Ya existe un cliente con ese documento' };
 		}
-	} else {
-		return { success: false as const, error: 'Debe seleccionar o crear un cliente' };
 	}
 
 	// ── Validate TREATMENT items ─────────────────────────────────────────
@@ -231,12 +231,11 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		if (existingCustomerId) {
 			customerId = existingCustomerId;
 		} else {
-			const normalizedIdNumber = normalizeIdNumber(data.newCustomer!.idNumber);
 			const customer = await createCustomer(
 				{
 					firstName: data.newCustomer!.firstName,
 					lastName: data.newCustomer!.lastName,
-					idNumber: normalizedIdNumber,
+					idNumber: normalizeIdNumber(data.newCustomer!.idNumber),
 					primaryPhone: data.newCustomer!.primaryPhone ?? '',
 					email: data.newCustomer!.email || null,
 					address: data.newCustomer!.address || null,

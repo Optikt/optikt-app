@@ -9,6 +9,7 @@ export * from './products';
 export * from './customers';
 export * from './lenses';
 export * from './sales';
+export * from './quotes';
 export * from './settings';
 export * from './changeHistory';
 export * from './exchangeRates';
