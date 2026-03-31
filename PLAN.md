@@ -17,31 +17,30 @@
 - ✅ **Vista detalle de venta** — artículos consolidados, treatments como items, pagos
 - ✅ **inventoryMode** — ON_DEMAND vs STOCK por lens catalog item
 - ✅ **Order numbers** — secuencial sin gaps (MAX+1 dentro de transacción)
-- ✅ **215 tests** — Vitest (schemas, helpers, validación Rx)
+- ✅ **245 tests** — Vitest (schemas, helpers, validación Rx, quotes)
 - ✅ **Seed de demo** — datos de ejemplo para desarrollo
+- ✅ **Presupuestos (Fase 6)** — CRUD completo, wizard 3 pasos, conversión a venta, estados DRAFT→APPROVED→CONVERTED|CANCELLED|EXPIRED
 
 ---
 
 ## Fases pendientes
 
-### Fase 6 — Presupuestos
+### ~~Fase 6 — Presupuestos~~ ✅ COMPLETADA
 
 Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertirlo a venta cuando acepte.
 
-**Alcance:**
+**Implementado:**
 
-- Tablas: `quotes`, `quote_items`
-- CRUD: crear, listar, ver detalle, editar, cancelar
-- Convertir a venta (prefill del wizard con los ítems del presupuesto)
+- Tablas: `quotes`, `quote_items` (schema + relaciones + queries)
+- CRUD: crear (wizard 3 pasos), listar (filtros + paginación), ver detalle, cancelar
+- Aprobar presupuesto (DRAFT → APPROVED)
+- Convertir a venta (APPROVED → CONVERTED, crea venta + decrementa stock)
 - Estado: `DRAFT → APPROVED → CONVERTED | CANCELLED | EXPIRED`
 - `quoteNumber` secuencial (mismo patrón que `orderNumber`)
 - Cliente opcional al presupuestar, requerido al convertir a venta
-
-**Fuera de scope inicial:**
-
-- PDF de presupuesto
-- Expiración automática
-- Historial de versiones / revisiones
+- 30 tests (24 schemas + 6 contracts)
+- Componentes: QuotesTable, NewQuoteForm, QuoteStep1Info, QuoteStep3Summary, QuoteStatusBadge
+- Audit logging con entity type `quote`
 
 ---
 

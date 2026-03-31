@@ -1,43 +1,37 @@
-import { DiscountType } from '$lib/shared/enums';
+/**
+ * Quote (Presupuesto) contracts
+ * Status workflow, labels, and badge colors
+ */
 
 export enum QuoteStatus {
 	DRAFT = 'DRAFT',
-	APPROVED = 'APPROVED',
 	CONVERTED = 'CONVERTED',
 	EXPIRED = 'EXPIRED',
 	CANCELLED = 'CANCELLED'
 }
 
-export interface QuoteItemDraft {
-	id: string;
-	kind: 'product' | 'lens';
-	productId: string | null;
-	lensCatalogItemId: string | null;
-	quantity: number;
-	unitPrice: number;
-	discount: number;
-	discountType: DiscountType;
-	notes: string;
-}
-
-export interface QuoteDraft {
-	id: string;
-	quoteNumber: number;
-	title: string;
-	status: QuoteStatus;
-	customerId: string | null;
-	conversionSaleId: string | null;
-	items: QuoteItemDraft[];
-	planningSnapshot: unknown | null;
-	notes: string | null;
-	createdAtIso: string;
-	updatedAtIso: string;
-}
+export const ALL_QUOTE_STATUSES = Object.values(QuoteStatus) as QuoteStatus[];
 
 export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
 	[QuoteStatus.DRAFT]: 'Borrador',
-	[QuoteStatus.APPROVED]: 'Aprobado',
 	[QuoteStatus.CONVERTED]: 'Convertido',
 	[QuoteStatus.EXPIRED]: 'Expirado',
 	[QuoteStatus.CANCELLED]: 'Cancelado'
 };
+
+export function getQuoteStatusLabel(status: string): string {
+	return QUOTE_STATUS_LABELS[status as QuoteStatus] ?? status;
+}
+
+export const quoteStatusColors: Record<QuoteStatus, 'yellow' | 'blue' | 'gray' | 'red'> = {
+	[QuoteStatus.DRAFT]: 'yellow',
+	[QuoteStatus.CONVERTED]: 'blue',
+	[QuoteStatus.EXPIRED]: 'gray',
+	[QuoteStatus.CANCELLED]: 'red'
+};
+
+export type QuoteStatusColor = (typeof quoteStatusColors)[QuoteStatus];
+
+export function getQuoteStatusBadgeColor(status: string): QuoteStatusColor {
+	return quoteStatusColors[status as QuoteStatus] ?? 'yellow';
+}

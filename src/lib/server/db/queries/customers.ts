@@ -161,6 +161,42 @@ export async function createCustomer(data: NewCustomer, executor: DbOrTx = db): 
 }
 
 /**
+ * Resolve an inline customer: normalize ID, check for duplicates, and create.
+ * Returns `{ customer }` on success or `{ error }` if a duplicate exists.
+ */
+export async function resolveInlineCustomer(
+	data: {
+		firstName: string;
+		lastName: string;
+		idNumber: string;
+		primaryPhone?: string;
+		email?: string;
+		address?: string;
+		notes?: string;
+	},
+	executor: DbOrTx = db
+): Promise<{ customer: Customer; error?: never } | { customer?: never; error: string }> {
+	const normalizedIdNumber = data.idNumber.trim().toUpperCase();
+	const existing = await findCustomerByIdNumber(normalizedIdNumber);
+	if (existing) {
+		return { error: 'Ya existe un cliente con ese documento' };
+	}
+	const customer = await createCustomer(
+		{
+			firstName: data.firstName,
+			lastName: data.lastName,
+			idNumber: normalizedIdNumber,
+			primaryPhone: data.primaryPhone ?? '',
+			email: data.email || null,
+			address: data.address || null,
+			notes: data.notes ?? null
+		},
+		executor
+	);
+	return { customer };
+}
+
+/**
  * Update a customer by ID
  */
 export async function updateCustomer(
