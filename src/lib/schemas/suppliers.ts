@@ -76,7 +76,7 @@ export const UpdateSupplierTreatmentSchema = z.object({
 	name: z.string().min(1, 'Nombre requerido').max(100).optional(),
 	category: z.enum(ALL_TREATMENT_CATS).optional(),
 	price: CoercedNumber.min(0).optional(),
-	salePrice: CoercedNumber.min(0).optional().nullable(),
+	salePrice: CoercedNumber.min(0).optional(),
 	isTaxable: CoercedBoolean.optional(),
 	taxRate: CoercedNumber.min(0).optional(),
 	isActive: CoercedBoolean.optional()
