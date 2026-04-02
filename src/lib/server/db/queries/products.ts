@@ -245,22 +245,6 @@ export async function findProductBySku(
 }
 
 /**
- * Get products with low stock
- */
-export async function getLowStockProducts(): Promise<Product[]> {
-	return await db
-		.select()
-		.from(products)
-		.where(
-			and(
-				isNull(products.deletedAt),
-				eq(products.isActive, true),
-				lte(products.stock, products.minStock)
-			)
-		);
-}
-
-/**
  * Update a product by ID
  */
 export async function updateProduct(
