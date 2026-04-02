@@ -166,7 +166,7 @@
 		return item.treatments.some((t) => t.supplierTreatmentId === treatmentId);
 	}
 
-	function treatmentsTotal(item: SaleItemRow, eyeCount: number): number {
+	function _treatmentsTotal(item: SaleItemRow, eyeCount: number): number {
 		return item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
 	}
 

@@ -16,7 +16,6 @@
 	import {
 		findProduct,
 		itemLineTotal,
-		computeItemDiscount,
 		getItemName as _getItemName,
 		getEnabledEyeCount,
 		buildTaxItemsFromWizard
