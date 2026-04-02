@@ -17,7 +17,9 @@
 		findProduct,
 		itemLineTotal,
 		computeItemDiscount,
-		getItemName as _getItemName
+		getItemName as _getItemName,
+		getEnabledEyeCount,
+		buildTaxItemsFromWizard
 	} from '$lib/components/sales/saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
@@ -31,6 +33,8 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import { getTreatmentCategoryLabel } from '$lib/shared/enums';
+	import { computeTaxBreakdown } from '$lib/shared/tax';
+	import { TaxBreakdownDisplay } from '$lib/components/ui';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -72,7 +76,16 @@
 	// DERIVED TOTALS
 	// ============================================================================
 
-	const subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
+	const subtotal = $derived(
+		items.reduce((acc, item) => {
+			let itemTotal = itemLineTotal(item);
+			if (item.kind === 'lens') {
+				const eyeCount = getEnabledEyeCount(item);
+				itemTotal += item.treatments.reduce((sum, t) => sum + t.price * eyeCount, 0);
+			}
+			return acc + itemTotal;
+		}, 0)
+	);
 
 	const globalDiscountAmount = $derived(
 		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
@@ -99,11 +112,6 @@
 		return p?.type ?? null;
 	}
 
-	function getEnabledEyeCount(item: SaleItemRow): number {
-		if (!item.lensPair) return 0;
-		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
-	}
-
 	function getLensCostBreakdown(item: SaleItemRow) {
 		if (item.kind !== 'lens' || !item.lensPair) return null;
 		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
@@ -122,11 +130,12 @@
 		return { unitBasePrice, basePrice, mountingPrice, shippingPrice, totalCost, eyeCount, isPair };
 	}
 
-	function getLensDisplayPrice(item: SaleItemRow): number {
-		const eyeCount = getEnabledEyeCount(item);
-		const treatmentsSum = item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
-		return item.unitPrice - treatmentsSum;
-	}
+	// ============================================================================
+	// TAX BREAKDOWN
+	// ============================================================================
+
+	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems));
+	const taxBreakdown = $derived(computeTaxBreakdown(taxItems));
 </script>
 
 <div class="space-y-6">
@@ -309,11 +318,7 @@
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
 							<td class="px-4 py-3 text-right font-mono text-base"
-								>{formatPrice(
-									item.kind === 'lens' && item.treatments.length > 0
-										? getLensDisplayPrice(item)
-										: item.unitPrice
-								)}</td
+								>{formatPrice(item.unitPrice)}</td
 							>
 							<td class="px-2 py-2">
 								<div class="flex items-center justify-end gap-1">
@@ -332,11 +337,7 @@
 								</div>
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base font-semibold"
-								>{formatPrice(
-									item.kind === 'lens' && item.treatments.length > 0
-										? getLensDisplayPrice(item) - computeItemDiscount(item)
-										: itemLineTotal(item)
-								)}</td
+								>{formatPrice(itemLineTotal(item))}</td
 							>
 						</tr>
 						<!-- Lens cost breakdown -->
@@ -403,9 +404,15 @@
 											</div>
 										</td>
 										<td class="px-4 py-3 text-right font-mono text-base">{treatmentEyeCount}</td>
-										<td class="px-4 py-3 text-right font-mono text-base"
-											>{formatPrice(treatment.price)}</td
-										>
+										<td class="px-2 py-2">
+											<Input
+												type="number"
+												bind:value={treatment.price}
+												step="0.01"
+												min="0"
+												class="w-24 text-right font-mono text-sm"
+											/>
+										</td>
 										<td class="px-4 py-3 text-right font-mono text-base text-red-500">—</td>
 										<td
 											class="px-4 py-3 text-right font-mono text-base font-semibold text-violet-700"
@@ -421,7 +428,7 @@
 		</div>
 	</div>
 
-	<!-- Row 3: Discount + Total side by side -->
+	<!-- Row 3: Discount + Tax + Total -->
 	<div class="grid gap-5 lg:grid-cols-2">
 		<!-- Discount -->
 		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -459,17 +466,27 @@
 			</div>
 		</div>
 
-		<!-- Total -->
-		<div
-			class="flex flex-col justify-center rounded-xl border border-blue-200 bg-gradient-to-br from-blue-600 to-blue-700 p-6 shadow-lg"
-		>
-			<p class="mb-2 text-sm font-bold tracking-widest text-blue-200 uppercase">
-				Total Presupuesto
-			</p>
-			<p class="font-mono text-4xl font-bold text-white">{formatPrice(total)}</p>
-			<p class="mt-2 text-base text-blue-200">
-				{items.length} artículo{items.length !== 1 ? 's' : ''}
-			</p>
+		<!-- Tax Breakdown + Total stacked -->
+		<div class="flex flex-col gap-4">
+			<TaxBreakdownDisplay
+				taxableBase={taxBreakdown.taxableBase}
+				exemptTotal={taxBreakdown.exemptTotal}
+				taxAmount={taxBreakdown.taxAmount}
+				subtotal={taxBreakdown.total}
+			/>
+
+			<!-- Total -->
+			<div
+				class="flex flex-1 flex-col justify-center rounded-xl border border-blue-200 bg-gradient-to-br from-blue-600 to-blue-700 p-6 shadow-lg"
+			>
+				<p class="mb-2 text-sm font-bold tracking-widest text-blue-200 uppercase">
+					Total Presupuesto
+				</p>
+				<p class="font-mono text-4xl font-bold text-white">{formatPrice(total)}</p>
+				<p class="mt-2 text-base text-blue-200">
+					{items.length} artículo{items.length !== 1 ? 's' : ''}
+				</p>
+			</div>
 		</div>
 	</div>
 </div>
