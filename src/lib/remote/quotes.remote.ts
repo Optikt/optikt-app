@@ -77,6 +77,8 @@ function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now: Date) 
 		snapshotSalePrice: item.snapshotSalePrice ?? null,
 		snapshotPriceType: item.snapshotPriceType ?? null,
 		snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
+		snapshotIsTaxable: item.snapshotIsTaxable ?? null,
+		snapshotTaxRate: item.snapshotTaxRate ?? null,
 		notes: item.notes ?? null,
 		createdAt: now,
 		updatedAt: now
@@ -535,6 +537,8 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				snapshotSalePrice: item.snapshotSalePrice ?? null,
 				snapshotPriceType: item.snapshotPriceType ?? null,
 				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
+				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
+				snapshotTaxRate: item.snapshotTaxRate ?? null,
 				notes: item.notes ?? null,
 				createdAt: now,
 				updatedAt: now
