@@ -6,6 +6,7 @@ import {
 	uniqueIndex,
 	uuid,
 	timestamp,
+	boolean,
 	integer,
 	doublePrecision,
 	foreignKey
@@ -136,6 +137,12 @@ export const saleItems = pgTable(
 		snapshotPriceType: varchar('snapshot_price_type'),
 		/** Treatment: category (AR, BLUECUT, etc.) */
 		snapshotTreatmentCategory: varchar('snapshot_treatment_category'),
+
+		// --- Tax snapshot ---
+		/** Whether the item was taxable at time of sale */
+		snapshotIsTaxable: boolean('snapshot_is_taxable'),
+		/** Tax rate at time of sale (e.g. 16) */
+		snapshotTaxRate: doublePrecision('snapshot_tax_rate'),
 
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
