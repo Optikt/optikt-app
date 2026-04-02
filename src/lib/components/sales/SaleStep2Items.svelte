@@ -704,9 +704,7 @@
 									<span>Costo total</span>
 									<span class="font-mono"
 										>{formatPrice(
-											lensBaseCost(lens, eyeCount) +
-												lens.mountingPrice +
-												lens.shippingPrice
+											lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice
 										)}</span
 									>
 								</div>
@@ -730,7 +728,11 @@
 									{@const selectedTreatment = item.treatments.find(
 										(t) => t.supplierTreatmentId === treatment.id
 									)}
-									<div class="rounded-md px-2 py-1.5 transition-colors {selected ? 'bg-violet-100/60' : 'hover:bg-violet-100/50'}">
+									<div
+										class="rounded-md px-2 py-1.5 transition-colors {selected
+											? 'bg-violet-100/60'
+											: 'hover:bg-violet-100/50'}"
+									>
 										<label class="flex cursor-pointer items-center gap-3">
 											<input
 												type="checkbox"
@@ -766,7 +768,9 @@
 													/>
 												</label>
 												<span class="font-mono text-xs text-slate-400">
-													× {getEnabledEyeCount(item)} = {formatPrice(selectedTreatment.price * getEnabledEyeCount(item))}
+													× {getEnabledEyeCount(item)} = {formatPrice(
+														selectedTreatment.price * getEnabledEyeCount(item)
+													)}
 												</span>
 											</div>
 										{/if}

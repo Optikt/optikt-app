@@ -186,7 +186,9 @@
 											placeholder="Nombre"
 										/>
 										{#if currentEditForm.fields.name?.issues()}
-											<p class="mt-1 text-xs text-red-500">{currentEditForm.fields.name.issues()}</p>
+											<p class="mt-1 text-xs text-red-500">
+												{currentEditForm.fields.name.issues()}
+											</p>
 										{/if}
 									</div>
 									<Select name="category" value={treatment.category} class="w-36 text-sm">
@@ -198,14 +200,23 @@
 										<Button type="submit" size="xs" color="blue" class="p-1.5">
 											<Check class="h-3.5 w-3.5" />
 										</Button>
-										<Button type="button" size="xs" color="light" class="p-1.5" onclick={cancelEdit}>
+										<Button
+											type="button"
+											size="xs"
+											color="light"
+											class="p-1.5"
+											onclick={cancelEdit}
+										>
 											<X class="h-3.5 w-3.5" />
 										</Button>
 									</div>
 								</div>
 								<div class="flex items-center gap-3">
 									<div class="w-28">
-										<label for="edit-price-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500">Costo</label>
+										<label
+											for="edit-price-{treatment.id}"
+											class="mb-1 block text-[11px] font-medium text-slate-500">Costo</label
+										>
 										<input
 											id="edit-price-{treatment.id}"
 											name="price"
@@ -218,7 +229,10 @@
 										/>
 									</div>
 									<div class="w-28">
-										<label for="edit-salePrice-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label>
+										<label
+											for="edit-salePrice-{treatment.id}"
+											class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label
+										>
 										<input
 											id="edit-salePrice-{treatment.id}"
 											name="salePrice"
@@ -231,26 +245,31 @@
 										/>
 									</div>
 									<div class="flex items-center gap-2 pt-4">
-										<input
-											type="hidden"
-											name="isTaxable"
-											value={String(editTaxable)}
-										/>
+										<input type="hidden" name="isTaxable" value={String(editTaxable)} />
 										<button
 											type="button"
-											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {editTaxable ? 'bg-blue-600' : 'bg-slate-200'}"
+											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {editTaxable
+												? 'bg-blue-600'
+												: 'bg-slate-200'}"
 											onclick={() => (editTaxable = !editTaxable)}
 											role="switch"
 											aria-checked={editTaxable}
 											aria-label="IVA"
 										>
-											<span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {editTaxable ? 'translate-x-4' : 'translate-x-0'}"></span>
+											<span
+												class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {editTaxable
+													? 'translate-x-4'
+													: 'translate-x-0'}"
+											></span>
 										</button>
 										<span class="text-xs text-slate-600">IVA</span>
 									</div>
 									{#if editTaxable}
 										<div class="w-20">
-											<label for="edit-taxRate-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500">Tasa %</label>
+											<label
+												for="edit-taxRate-{treatment.id}"
+												class="mb-1 block text-[11px] font-medium text-slate-500">Tasa %</label
+											>
 											<input
 												id="edit-taxRate-{treatment.id}"
 												name="taxRate"
@@ -282,12 +301,18 @@
 									{getTreatmentCategoryLabel(treatment.category)}
 								</span>
 								{#if treatment.isTaxable}
-									<span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">IVA {treatment.taxRate}%</span>
+									<span
+										class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+										>IVA {treatment.taxRate}%</span
+									>
 								{/if}
 								<span class="text-right font-mono text-xs text-slate-400" title="Costo">
 									{formatPrice(treatment.price)}
 								</span>
-								<span class="w-24 text-right font-mono text-sm font-medium text-slate-700" title="Precio Venta">
+								<span
+									class="w-24 text-right font-mono text-sm font-medium text-slate-700"
+									title="Precio Venta"
+								>
 									{formatPrice(treatment.salePrice ?? treatment.price)}
 								</span>
 								{#if !treatment.isActive}
@@ -355,7 +380,9 @@
 					</div>
 					<div class="flex items-center gap-3">
 						<div class="w-28">
-							<label for="create-price" class="mb-1 block text-[11px] font-medium text-slate-500">Costo</label>
+							<label for="create-price" class="mb-1 block text-[11px] font-medium text-slate-500"
+								>Costo</label
+							>
 							<input
 								id="create-price"
 								name="price"
@@ -370,7 +397,10 @@
 							{/if}
 						</div>
 						<div class="w-28">
-							<label for="create-salePrice" class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label>
+							<label
+								for="create-salePrice"
+								class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label
+							>
 							<input
 								id="create-salePrice"
 								name="salePrice"
@@ -382,26 +412,31 @@
 							/>
 						</div>
 						<div class="flex items-center gap-2 pt-4">
-							<input
-								type="hidden"
-								name="isTaxable"
-								value={String(createTaxable)}
-							/>
+							<input type="hidden" name="isTaxable" value={String(createTaxable)} />
 							<button
 								type="button"
-								class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {createTaxable ? 'bg-blue-600' : 'bg-slate-200'}"
+								class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {createTaxable
+									? 'bg-blue-600'
+									: 'bg-slate-200'}"
 								onclick={() => (createTaxable = !createTaxable)}
 								role="switch"
 								aria-checked={createTaxable}
 								aria-label="IVA"
 							>
-								<span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {createTaxable ? 'translate-x-4' : 'translate-x-0'}"></span>
+								<span
+									class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {createTaxable
+										? 'translate-x-4'
+										: 'translate-x-0'}"
+								></span>
 							</button>
 							<span class="text-xs text-slate-600">IVA</span>
 						</div>
 						{#if createTaxable}
 							<div class="w-20">
-								<label for="create-taxRate" class="mb-1 block text-[11px] font-medium text-slate-500">Tasa %</label>
+								<label
+									for="create-taxRate"
+									class="mb-1 block text-[11px] font-medium text-slate-500">Tasa %</label
+								>
 								<input
 									id="create-taxRate"
 									name="taxRate"

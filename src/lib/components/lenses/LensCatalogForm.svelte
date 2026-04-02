@@ -6,7 +6,12 @@
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
-	import { CreatableSelect, TaxToggle, type SelectOption, type PendingEntity } from '$lib/components/ui';
+	import {
+		CreatableSelect,
+		TaxToggle,
+		type SelectOption,
+		type PendingEntity
+	} from '$lib/components/ui';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
 		LensType,

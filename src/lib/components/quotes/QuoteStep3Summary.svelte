@@ -317,8 +317,7 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base"
-								>{formatPrice(item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
 							>
 							<td class="px-2 py-2">
 								<div class="flex items-center justify-end gap-1">

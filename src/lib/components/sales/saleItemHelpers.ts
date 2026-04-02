@@ -229,7 +229,14 @@ export function buildTaxItemsFromWizard(
 
 /** Compute tax breakdown from stored snapshot fields on persisted items. */
 export function computeSnapshotTaxBreakdown(
-	items: { unitPrice: number; quantity: number; discount: number; discountType: string; snapshotIsTaxable: boolean | null; snapshotTaxRate: number | null }[]
+	items: {
+		unitPrice: number;
+		quantity: number;
+		discount: number;
+		discountType: string;
+		snapshotIsTaxable: boolean | null;
+		snapshotTaxRate: number | null;
+	}[]
 ): { taxableBase: number; exemptTotal: number; taxAmount: number } {
 	let taxableBase = 0;
 	let exemptTotal = 0;

@@ -7,10 +7,7 @@
  */
 
 /** Decompose a tax-inclusive price into base and tax amounts. */
-export function decomposePrice(
-	price: number,
-	taxRate: number
-): { base: number; tax: number } {
+export function decomposePrice(price: number, taxRate: number): { base: number; tax: number } {
 	if (taxRate <= 0) return { base: price, tax: 0 };
 	const base = price / (1 + taxRate / 100);
 	const tax = price - base;

@@ -119,12 +119,12 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 
 ## Deuda técnica conocida
 
-| ID   | Descripción                                                            | Riesgo |
-| ---- | ---------------------------------------------------------------------- | ------ |
-| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function      | Medio  |
-| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos | Bajo   |
-| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)  | Medio  |
-| RT-4 | Fallback para errores de validación no vinculados a campos visibles — cuando un campo no tiene `error` prop wired, el error de schema es completamente silencioso (solo visible en Network tab). Implementar un catch-all: tras submit, si `allIssues()` tiene errores sin elemento `.border-red-500` en el DOM, mostrar toast con campo + mensaje. | Alto |
+| ID   | Descripción                                                                                                                                                                                                                                                                                                                                         | Riesgo |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function                                                                                                                                                                                                                                                                                   | Medio  |
+| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                                                                                                                                                                                                              | Bajo   |
+| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                                                                                                                                                                                                               | Medio  |
+| RT-4 | Fallback para errores de validación no vinculados a campos visibles — cuando un campo no tiene `error` prop wired, el error de schema es completamente silencioso (solo visible en Network tab). Implementar un catch-all: tras submit, si `allIssues()` tiene errores sin elemento `.border-red-500` en el DOM, mostrar toast con campo + mensaje. | Alto   |
 
 ---
 

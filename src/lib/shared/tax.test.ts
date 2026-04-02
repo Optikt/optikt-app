@@ -69,9 +69,7 @@ describe('computeTaxBreakdown', () => {
 	});
 
 	it('computes breakdown for a single exempt item', () => {
-		const result = computeTaxBreakdown([
-			makeItem({ unitPrice: 100, isTaxable: false })
-		]);
+		const result = computeTaxBreakdown([makeItem({ unitPrice: 100, isTaxable: false })]);
 		expect(result.taxableBase).toBe(0);
 		expect(result.taxAmount).toBe(0);
 		expect(result.exemptTotal).toBe(100);
@@ -137,9 +135,7 @@ describe('computeTaxBreakdown', () => {
 	});
 
 	it('treats taxable item with 0% rate as exempt', () => {
-		const result = computeTaxBreakdown([
-			makeItem({ unitPrice: 100, isTaxable: true, taxRate: 0 })
-		]);
+		const result = computeTaxBreakdown([makeItem({ unitPrice: 100, isTaxable: true, taxRate: 0 })]);
 		expect(result.taxableBase).toBe(0);
 		expect(result.taxAmount).toBe(0);
 		expect(result.exemptTotal).toBe(100);

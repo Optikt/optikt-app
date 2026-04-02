@@ -38,7 +38,7 @@
 	<label class="flex cursor-pointer items-center gap-2">
 		<button
 			type="button"
-			class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {checked
+			class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {checked
 				? 'bg-blue-600'
 				: 'bg-slate-200'}"
 			onclick={toggle}

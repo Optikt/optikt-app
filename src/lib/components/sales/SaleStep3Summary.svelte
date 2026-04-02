@@ -314,8 +314,7 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base"
-								>{formatPrice(item.unitPrice)}</td
+							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
 							>
 							<td class="px-2 py-2">
 								<div class="flex items-center justify-end gap-1">
@@ -476,9 +475,7 @@
 			<div
 				class="flex flex-1 flex-col justify-center rounded-xl border border-blue-200 bg-gradient-to-br from-blue-600 to-blue-700 p-6 shadow-lg"
 			>
-				<p class="mb-2 text-sm font-bold tracking-widest text-blue-200 uppercase">
-					Total a Pagar
-				</p>
+				<p class="mb-2 text-sm font-bold tracking-widest text-blue-200 uppercase">Total a Pagar</p>
 				<p class="font-mono text-4xl font-bold text-white">{formatPrice(total)}</p>
 				<p class="mt-2 text-base text-blue-200">
 					{items.length} artículo{items.length !== 1 ? 's' : ''}
