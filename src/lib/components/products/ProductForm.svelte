@@ -9,10 +9,11 @@
 		FormTextarea,
 		CreatableSelect,
 		PurchaseCurrencyInput,
+		TaxToggle,
 		type SelectOption,
 		type PendingEntity
 	} from '$lib/components/ui';
-	import { scrollToFirstError } from '$lib/utils';
+	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import {
 		ProductType,
 		ALL_PRODUCT_TYPES,
@@ -67,6 +68,8 @@
 		description: '',
 		purchasePrice: 0,
 		salePrice: 0,
+		isTaxable: true,
+		taxRate: 16,
 		// Currency fields
 		purchaseCurrency: CurrencyCode.USD_BCV,
 		purchaseCurrencyRate: 0,
@@ -221,6 +224,8 @@
 					description: product.description ?? '',
 					purchasePrice: product.purchasePrice ?? 0,
 					salePrice: product.salePrice ?? 0,
+					isTaxable: product.isTaxable ?? true,
+					taxRate: product.taxRate ?? 16,
 					purchaseCurrency: (product.purchaseCurrency as CurrencyCode) ?? CurrencyCode.USD_BCV,
 					purchaseCurrencyRate: product.purchaseCurrencyRate ?? 0,
 					purchaseUsdBcvRate: product.purchaseUsdBcvRate ?? 0,
@@ -424,6 +429,9 @@
 							options={allMaterials}
 							creatable
 							onCreatePending={handleCreatePendingMaterial}
+							error={currentUpdateForm.fields.materialId?.issues()
+								? getFormErrorMessage(currentUpdateForm.fields.materialId.issues())
+								: null}
 						/>
 						<CreatableSelect
 							label="Marca"
@@ -433,6 +441,9 @@
 							options={allBrands}
 							creatable
 							onCreatePending={handleCreatePendingBrand}
+							error={currentUpdateForm.fields.brandId?.issues()
+								? getFormErrorMessage(currentUpdateForm.fields.brandId.issues())
+								: null}
 						/>
 						<CreatableSelect
 							label="Proveedor"
@@ -442,6 +453,9 @@
 							options={allSuppliers}
 							creatable
 							onCreatePending={handleCreatePendingSupplier}
+							error={currentUpdateForm.fields.supplierId?.issues()
+								? getFormErrorMessage(currentUpdateForm.fields.supplierId.issues())
+								: null}
 						/>
 					</div>
 				</div>
@@ -504,6 +518,11 @@
 								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
 							/>
 						</div>
+					</div>
+
+					<!-- Tax (IVA) -->
+					<div class="mt-4">
+						<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
 					</div>
 
 					<!-- Currency & Exchange Rate Section -->
@@ -699,6 +718,9 @@
 							options={allMaterials}
 							creatable
 							onCreatePending={handleCreatePendingMaterial}
+							error={currentCreateForm.fields.materialId?.issues()
+								? getFormErrorMessage(currentCreateForm.fields.materialId.issues())
+								: null}
 						/>
 						<CreatableSelect
 							label="Marca"
@@ -708,6 +730,9 @@
 							options={allBrands}
 							creatable
 							onCreatePending={handleCreatePendingBrand}
+							error={currentCreateForm.fields.brandId?.issues()
+								? getFormErrorMessage(currentCreateForm.fields.brandId.issues())
+								: null}
 						/>
 						<CreatableSelect
 							label="Proveedor"
@@ -717,6 +742,9 @@
 							options={allSuppliers}
 							creatable
 							onCreatePending={handleCreatePendingSupplier}
+							error={currentCreateForm.fields.supplierId?.issues()
+								? getFormErrorMessage(currentCreateForm.fields.supplierId.issues())
+								: null}
 						/>
 					</div>
 				</div>
@@ -780,6 +808,11 @@
 							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
 						/>
 					</div>
+				</div>
+
+				<!-- Tax (IVA) -->
+				<div class="mt-4">
+					<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
 				</div>
 
 				<!-- Currency & Exchange Rate Section -->
