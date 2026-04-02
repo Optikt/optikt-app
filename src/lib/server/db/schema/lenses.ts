@@ -84,6 +84,12 @@ export const lensCatalogItems = pgTable(
 		mountingPrice: doublePrecision('mounting_price').notNull().default(0),
 		shippingPrice: doublePrecision('shipping_price').notNull().default(0),
 
+		// --- Tax ---
+		/** Whether this lens is subject to tax (IVA). Lenses are exempt by default. */
+		isTaxable: boolean('is_taxable').notNull().default(false),
+		/** Tax rate percentage (e.g. 16 for 16%) */
+		taxRate: doublePrecision('tax_rate').notNull().default(16),
+
 		// --- Inventory ---
 		inventoryMode: lensInventoryModeEnum('inventory_mode').notNull().default('ON_DEMAND'),
 		stock: integer(),

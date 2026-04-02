@@ -44,6 +44,10 @@ export const products = pgTable(
 		normalizedCostUsd: doublePrecision('normalized_cost_usd'),
 		/** Sale price in USD BCV */
 		salePrice: doublePrecision('sale_price').notNull(),
+		/** Whether this product is subject to tax (IVA) */
+		isTaxable: boolean('is_taxable').notNull().default(true),
+		/** Tax rate percentage (e.g. 16 for 16%) */
+		taxRate: doublePrecision('tax_rate').notNull().default(16),
 		stock: integer(),
 		minStock: integer('min_stock'),
 		imageUrl: varchar('image_url'),
