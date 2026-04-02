@@ -8,6 +8,7 @@ import { MaterialCategories } from './materials';
 import {
 	CoercedInteger,
 	CoercedNumber,
+	CoercedBoolean,
 	NameSchema,
 	EntityIdSchema,
 	OptionalPendingEntitySchema,
@@ -54,6 +55,8 @@ export const CreateProductSchema = z.object({
 	description: z.string().optional(),
 	purchasePrice: CoercedNumber.min(0, 'Precio de compra debe ser mayor o igual a 0'),
 	salePrice: CoercedNumber.min(0, 'Precio de venta debe ser mayor o igual a 0'),
+	isTaxable: CoercedBoolean.default(true),
+	taxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser mayor o igual a 0').default(16),
 	// Currency purchase fields
 	purchaseCurrency: z.enum(ALL_CURRENCY_CODES, 'Moneda de compra requerida'),
 	purchaseCurrencyRate: CoercedNumber.min(0.01, 'Tasa de moneda de compra requerida'),

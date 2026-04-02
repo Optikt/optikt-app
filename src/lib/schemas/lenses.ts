@@ -108,6 +108,10 @@ const BaseLensCatalogItemSchema = z.object({
 	mountingPrice: CoercedNumber.min(0, 'Precio de montaje debe ser ≥ 0').default(0),
 	shippingPrice: CoercedNumber.min(0, 'Precio de envío debe ser ≥ 0').default(0),
 
+	// --- Tax ---
+	isTaxable: CoercedBoolean.default(false),
+	taxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser ≥ 0').default(16),
+
 	// --- Inventory ---
 	inventoryMode: z
 		.enum(LensInventoryMode, 'Modo de inventario requerido')
