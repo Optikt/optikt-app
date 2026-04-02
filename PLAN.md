@@ -67,15 +67,19 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 
 ---
 
-### Fase 8 — Dashboard con datos reales
+### ~~Fase 8 — Dashboard con datos reales~~ ✅ COMPLETADA
 
-**Alcance:**
+**Implementado:**
 
-- Métricas de hoy: ventas del día (monto + cantidad), presupuestos pendientes, cobros pendientes
-- Ítems de bajo stock (STOCK mode con cantidad ≤ umbral)
-- Actividad reciente: últimas 5-10 ventas
+- Dashboard queries: `getDashboardStats()`, `getRecentSales()`, `getLowStockItems()` con ejecución paralela
+- 4 StatCards: Clientes totales, Ventas Hoy (cantidad + monto), Presupuestos Pendientes (DRAFT), Bajo Stock (productos + lentes)
+- Banner condicional de cobros pendientes (PENDING) con monto y enlace a ventas filtradas
+- RecentSalesTable: últimas 5 ventas con número, estado, cliente, total, fecha (filas clickeables)
+- LowStockList: productos bajo mínimo + lentes STOCK con stock ≤ 0, con enlaces a detalle
+- Quick Actions preservados (Nuevo Cliente, Agregar Producto, Registrar Venta, Catálogo de Lentes)
+- Limpieza: eliminada `getLowStockProducts()` redundante de products.ts
 
-**Fuera de scope inicial:**
+**Fuera de scope (se mantiene):**
 
 - Gráficas históricas
 - Comparación periodos
@@ -143,6 +147,6 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] Tests (245)
 - [x] Fase 6 — Presupuestos
 - [x] Fase 7 — IVA básico
-- [ ] Fase 8 — Dashboard real
+- [x] Fase 8 — Dashboard real
 - [ ] Fase 9 — Reportes básicos
 - [ ] Fase 10 — Rediseño UI/UX

@@ -13,3 +13,4 @@ export * from './quotes';
 export * from './settings';
 export * from './changeHistory';
 export * from './exchangeRates';
+export * from './dashboard';
