@@ -29,6 +29,8 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import CustomerLookupInput from '$lib/components/sales/CustomerLookupInput.svelte';
+	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import { TaxBreakdownDisplay } from '$lib/components/ui';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
@@ -45,6 +47,8 @@
 			(i) => i.itemType === SaleItemType.TREATMENT && i.parentQuoteItemId === parentId
 		);
 	}
+
+	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
 
 	interface DisplayGroup {
 		key: string;
@@ -475,6 +479,14 @@
 						-{formatPrice(quote.subtotal - quote.total)}
 					</span>
 				</div>
+			{/if}
+			{#if taxBreakdown.taxAmount > 0 || taxBreakdown.exemptTotal > 0}
+				<TaxBreakdownDisplay
+					taxableBase={taxBreakdown.taxableBase}
+					exemptTotal={taxBreakdown.exemptTotal}
+					taxAmount={taxBreakdown.taxAmount}
+					variant="inline"
+				/>
 			{/if}
 			<div class="flex justify-between border-t border-slate-200 pt-3 text-lg">
 				<span class="font-bold text-slate-900">Total</span>

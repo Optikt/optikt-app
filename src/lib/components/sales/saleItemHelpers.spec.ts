@@ -44,7 +44,9 @@ function makeTreatment(price: number, name = 'AR Angel'): SelectedTreatment {
 		supplierTreatmentId: crypto.randomUUID(),
 		name,
 		category: 'AR',
-		price
+		price,
+		isTaxable: true,
+		taxRate: 16
 	};
 }
 

@@ -9,6 +9,8 @@ export interface SelectedTreatment {
 	name: string;
 	category: string;
 	price: number;
+	isTaxable: boolean;
+	taxRate: number;
 }
 
 /** Prescription data for a single eye in the wizard (string values for form inputs) */

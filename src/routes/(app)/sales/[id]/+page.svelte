@@ -23,6 +23,8 @@
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
+	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import { TaxBreakdownDisplay } from '$lib/components/ui';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -47,6 +49,9 @@
 			(i) => i.itemType === SaleItemType.TREATMENT && i.parentSaleItemId === parentId
 		);
 	}
+
+	/** Compute tax breakdown from stored snapshot fields */
+	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
 
 	/** Grouped display rows — consolidates LENS_PAIR items that share the same catalog item */
 	interface DisplayGroup {
@@ -396,6 +401,14 @@
 							)}
 						</span>
 					</div>
+				{/if}
+				{#if taxBreakdown.taxAmount > 0 || taxBreakdown.exemptTotal > 0}
+					<TaxBreakdownDisplay
+						taxableBase={taxBreakdown.taxableBase}
+						exemptTotal={taxBreakdown.exemptTotal}
+						taxAmount={taxBreakdown.taxAmount}
+						variant="inline"
+					/>
 				{/if}
 				<hr class="border-slate-200" />
 				<div class="flex justify-between text-xl font-bold">

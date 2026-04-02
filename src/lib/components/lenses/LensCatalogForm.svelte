@@ -6,7 +6,12 @@
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
-	import { CreatableSelect, type SelectOption, type PendingEntity } from '$lib/components/ui';
+	import {
+		CreatableSelect,
+		TaxToggle,
+		type SelectOption,
+		type PendingEntity
+	} from '$lib/components/ui';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
 		LensType,
@@ -104,6 +109,9 @@
 		salePrice: initialItem?.salePrice?.toString() ?? '',
 		mountingPrice: initialItem?.mountingPrice?.toString() ?? '0',
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
+		// Tax
+		isTaxable: initialItem?.isTaxable ?? false,
+		taxRate: initialItem?.taxRate?.toString() ?? '16',
 		// Inventory
 		inventoryMode: (initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
 		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
@@ -749,6 +757,12 @@
 					placeholder="0.00"
 					class="font-mono placeholder:text-slate-400"
 				/>
+			</div>
+
+			<!-- Tax (IVA) -->
+			<div class="col-span-full">
+				<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
+				<p class="mt-1 text-[11px] text-slate-400">Los cristales son exentos de IVA por defecto</p>
 			</div>
 			{#if formData.source === LensCatalogSource.FINISHED}
 				<div>

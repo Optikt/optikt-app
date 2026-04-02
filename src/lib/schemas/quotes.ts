@@ -71,6 +71,10 @@ export const QuoteItemSchema = z.object({
 	snapshotPriceType: z.string().optional(),
 	snapshotTreatmentCategory: z.string().optional(),
 
+	// Tax snapshot
+	snapshotIsTaxable: z.boolean().optional(),
+	snapshotTaxRate: CoercedNumber.optional(),
+
 	notes: z.string().optional()
 });
 

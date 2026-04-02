@@ -247,7 +247,9 @@
 						notes: item.notes || undefined,
 						snapshotName: product?.name,
 						snapshotSku: product?.sku ?? undefined,
-						snapshotBrand: product?.brand?.name ?? undefined
+						snapshotBrand: product?.brand?.name ?? undefined,
+						snapshotIsTaxable: product?.isTaxable ?? true,
+						snapshotTaxRate: product?.taxRate ?? 16
 					});
 					continue;
 				}
@@ -262,12 +264,10 @@
 					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
 				];
 
-				// Compute per-eye lens-only price (treatments are sent as separate items)
+				// unitPrice is already lens-only (treatments are sent as separate items)
 				const enabledEyes = eyes.filter(({ entry }) => entry.enabled);
 				const eyeCount = enabledEyes.length;
-				const treatmentsSum = item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
-				const lensOnlyTotal = item.unitPrice - treatmentsSum;
-				const perEyeUnitPrice = eyeCount > 0 ? lensOnlyTotal / eyeCount : 0;
+				const perEyeUnitPrice = eyeCount > 0 ? item.unitPrice / eyeCount : 0;
 
 				// Generate a stable parent ID for the first lens eye item
 				// so treatment items can reference it
@@ -300,7 +300,9 @@
 						snapshotMountingPrice: lens?.mountingPrice,
 						snapshotShippingPrice: lens?.shippingPrice,
 						snapshotSalePrice: lens?.salePrice ?? undefined,
-						snapshotPriceType: lens?.priceType
+						snapshotPriceType: lens?.priceType,
+						snapshotIsTaxable: lens?.isTaxable ?? false,
+						snapshotTaxRate: lens?.taxRate ?? 16
 					});
 
 					isFirstEye = false;
@@ -318,7 +320,9 @@
 						discountType: DiscountType.FIXED,
 						snapshotName: t.name,
 						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotTreatmentCategory: t.category
+						snapshotTreatmentCategory: t.category,
+						snapshotIsTaxable: t.isTaxable,
+						snapshotTaxRate: t.taxRate
 					});
 				}
 			}

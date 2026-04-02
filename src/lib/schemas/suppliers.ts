@@ -15,7 +15,8 @@ import {
 	EntityIdSchema,
 	ListPaginationSchema,
 	OptionalUrlSchema,
-	CoercedNumber
+	CoercedNumber,
+	CoercedBoolean
 } from './common';
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
@@ -64,7 +65,10 @@ export const CreateSupplierTreatmentSchema = z.object({
 	supplierId: z.uuid(),
 	name: z.string().min(1, 'Nombre requerido').max(100),
 	category: z.enum(ALL_TREATMENT_CATS),
-	price: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0')
+	price: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
+	salePrice: CoercedNumber.min(0, 'Precio de venta debe ser mayor o igual a 0').optional(),
+	isTaxable: CoercedBoolean.default(true),
+	taxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser mayor o igual a 0').default(16)
 });
 
 export const UpdateSupplierTreatmentSchema = z.object({
@@ -72,7 +76,10 @@ export const UpdateSupplierTreatmentSchema = z.object({
 	name: z.string().min(1, 'Nombre requerido').max(100).optional(),
 	category: z.enum(ALL_TREATMENT_CATS).optional(),
 	price: CoercedNumber.min(0).optional(),
-	isActive: z.boolean().optional()
+	salePrice: CoercedNumber.min(0).optional(),
+	isTaxable: CoercedBoolean.optional(),
+	taxRate: CoercedNumber.min(0).optional(),
+	isActive: CoercedBoolean.optional()
 });
 
 export const SupplierTreatmentIdSchema = z.object({

@@ -301,6 +301,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				snapshotSalePrice: item.snapshotSalePrice ?? null,
 				snapshotPriceType: item.snapshotPriceType ?? null,
 				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
+				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
+				snapshotTaxRate: item.snapshotTaxRate ?? null,
 				notes: item.notes ?? null,
 				createdAt: now,
 				updatedAt: now

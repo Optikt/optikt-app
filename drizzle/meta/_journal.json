@@ -57,6 +57,13 @@
       "when": 1774925116834,
       "tag": "0007_quotes_and_quote_items",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775006291046,
+      "tag": "0008_burly_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

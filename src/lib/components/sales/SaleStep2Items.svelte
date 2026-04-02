@@ -154,18 +154,19 @@
 					supplierTreatmentId: treatment.id,
 					name: treatment.name,
 					category: treatment.category,
-					price: treatment.price
+					price: treatment.salePrice ?? treatment.price,
+					isTaxable: treatment.isTaxable,
+					taxRate: treatment.taxRate
 				}
 			];
 		}
-		recalcSuggestedPrice(item);
 	}
 
 	function isTreatmentSelected(item: SaleItemRow, treatmentId: string): boolean {
 		return item.treatments.some((t) => t.supplierTreatmentId === treatmentId);
 	}
 
-	function treatmentsTotal(item: SaleItemRow, eyeCount: number): number {
+	function _treatmentsTotal(item: SaleItemRow, eyeCount: number): number {
 		return item.treatments.reduce((sum, t) => sum + t.price, 0) * eyeCount;
 	}
 
@@ -348,7 +349,7 @@
 		return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
 	}
 
-	/** Recalculate unitPrice to the suggested sale price for the full lens order.
+	/** Recalculate unitPrice to the suggested sale price for the lens only (excluding treatments).
 	 *  Uses salePrice (sell price) when available, otherwise falls back to basePrice (cost). */
 	function recalcSuggestedPrice(item: SaleItemRow) {
 		if (item.kind !== 'lens' || !item.lensPair) return;
@@ -358,9 +359,7 @@
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return;
 
-		const lensPrice = lensSalePrice(lens, eyeCount);
-		const totalPrice = lensPrice + treatmentsTotal(item, eyeCount);
-		item.unitPrice = totalPrice;
+		item.unitPrice = lensSalePrice(lens, eyeCount);
 	}
 
 	/** Sale price for the lens respecting PAIR vs UNIT. Falls back to cost (base + mounting + shipping). */
@@ -699,22 +698,13 @@
 										<span class="font-mono">{formatPrice(lens.shippingPrice)}</span>
 									</div>
 								{/if}
-								{#each item.treatments as t (t.supplierTreatmentId)}
-									<div class="flex justify-between">
-										<span>{t.name}{eyeCount > 1 ? ` × ${eyeCount}` : ''}</span>
-										<span class="font-mono">{formatPrice(t.price * eyeCount)}</span>
-									</div>
-								{/each}
 								<div
 									class="flex justify-between border-t border-slate-200 pt-1 font-semibold text-slate-700"
 								>
 									<span>Costo total</span>
 									<span class="font-mono"
 										>{formatPrice(
-											lensBaseCost(lens, eyeCount) +
-												lens.mountingPrice +
-												lens.shippingPrice +
-												treatmentsTotal(item, eyeCount)
+											lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice
 										)}</span
 									>
 								</div>
@@ -734,28 +724,57 @@
 							</div>
 							<div class="space-y-1.5">
 								{#each available as treatment (treatment.id)}
-									<label
-										class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-violet-100/50"
+									{@const selected = isTreatmentSelected(item, treatment.id)}
+									{@const selectedTreatment = item.treatments.find(
+										(t) => t.supplierTreatmentId === treatment.id
+									)}
+									<div
+										class="rounded-md px-2 py-1.5 transition-colors {selected
+											? 'bg-violet-100/60'
+											: 'hover:bg-violet-100/50'}"
 									>
-										<input
-											type="checkbox"
-											checked={isTreatmentSelected(item, treatment.id)}
-											onchange={() => toggleTreatment(item, treatment)}
-											class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-										/>
-										<span class="flex-1 text-sm text-slate-700">{treatment.name}</span>
-										<span
-											class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-											{treatment.category === TreatmentCategory.AR
-												? 'bg-blue-100 text-blue-700'
-												: 'bg-violet-100 text-violet-700'}"
-										>
-											{getTreatmentCategoryLabel(treatment.category)}
-										</span>
-										<span class="font-mono text-sm text-slate-600"
-											>{formatPrice(treatment.price)}</span
-										>
-									</label>
+										<label class="flex cursor-pointer items-center gap-3">
+											<input
+												type="checkbox"
+												checked={selected}
+												onchange={() => toggleTreatment(item, treatment)}
+												class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+											/>
+											<span class="flex-1 text-sm text-slate-700">{treatment.name}</span>
+											<span
+												class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+												{treatment.category === TreatmentCategory.AR
+													? 'bg-blue-100 text-blue-700'
+													: 'bg-violet-100 text-violet-700'}"
+											>
+												{getTreatmentCategoryLabel(treatment.category)}
+											</span>
+											{#if !selected}
+												<span class="font-mono text-sm text-slate-400">
+													{formatPrice(treatment.salePrice ?? treatment.price)}
+												</span>
+											{/if}
+										</label>
+										{#if selected && selectedTreatment}
+											<div class="mt-1.5 ml-7 flex items-center gap-3">
+												<label class="flex items-center gap-1.5 text-xs text-slate-500">
+													<span>Precio:</span>
+													<input
+														type="number"
+														bind:value={selectedTreatment.price}
+														step="0.01"
+														min="0"
+														class="w-24 rounded-md border-slate-300 py-1 text-right font-mono text-sm focus:border-violet-500 focus:ring-violet-500"
+													/>
+												</label>
+												<span class="font-mono text-xs text-slate-400">
+													× {getEnabledEyeCount(item)} = {formatPrice(
+														selectedTreatment.price * getEnabledEyeCount(item)
+													)}
+												</span>
+											</div>
+										{/if}
+									</div>
 								{/each}
 							</div>
 						</div>

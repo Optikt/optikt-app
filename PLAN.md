@@ -17,9 +17,10 @@
 - ✅ **Vista detalle de venta** — artículos consolidados, treatments como items, pagos
 - ✅ **inventoryMode** — ON_DEMAND vs STOCK por lens catalog item
 - ✅ **Order numbers** — secuencial sin gaps (MAX+1 dentro de transacción)
-- ✅ **245 tests** — Vitest (schemas, helpers, validación Rx, quotes)
+- ✅ **265 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax)
 - ✅ **Seed de demo** — datos de ejemplo para desarrollo
 - ✅ **Presupuestos (Fase 6)** — CRUD completo, wizard 3 pasos, conversión a venta, estados DRAFT→APPROVED→CONVERTED|CANCELLED|EXPIRED
+- ✅ **IVA básico (Fase 7)** — tax-inclusive pricing, desglose fiscal en ventas/presupuestos, 265 tests
 
 ---
 
@@ -44,16 +45,21 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 
 ---
 
-### Fase 7 — IVA básico en productos
+### ~~Fase 7 — IVA básico en productos~~ ✅ COMPLETADA
 
-**Alcance:**
+**Implementado:**
 
-- Campos en productos: `isTaxable` (bool), `taxRate` (%, default 16)
-- UI: toggle visible en formulario de producto
-- Mostrar precio neto / IVA / precio bruto en vista de producto
-- Default: productos gravables al 16%, lentes no gravables
+- DB: `isTaxable`, `taxRate`, `salePrice` en productos y supplier treatments; `snapshotIsTaxable`, `snapshotTaxRate` en sale_items y quote_items
+- Tax-inclusive pricing: `decomposePrice()` descompone precio total → base + IVA; `computeTaxBreakdown()` para listas de items
+- UI toggle (TaxToggle component) en ProductForm, LensCatalogForm, SupplierTreatmentsModal
+- Desglose fiscal (TaxBreakdownDisplay component) en wizard de ventas (Step 3), wizard de presupuestos (Step 3), detalle de venta, detalle de presupuesto
+- Helpers compartidos: `buildTaxItemsFromWizard()`, `computeSnapshotTaxBreakdown()` en saleItemHelpers
+- Schemas: CoercedBoolean para campos de formulario que envían strings
+- Error display: wired up `error` prop en CreatableSelects de ProductForm (supplierId, materialId, brandId)
+- 265 tests (15 nuevos para tax helpers)
+- Default: productos gravables al 16%, lentes exentos
 
-**Fuera de scope inicial:**
+**Fuera de scope (se mantiene):**
 
 - Configuración global de tasas
 - IVA en reportes fiscales detallados
@@ -119,11 +125,12 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 
 ## Deuda técnica conocida
 
-| ID   | Descripción                                                            | Riesgo |
-| ---- | ---------------------------------------------------------------------- | ------ |
-| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function      | Medio  |
-| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos | Bajo   |
-| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)  | Medio  |
+| ID   | Descripción                                                                                                                                                                                                                                                                                                                                         | Riesgo |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function                                                                                                                                                                                                                                                                                   | Medio  |
+| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                                                                                                                                                                                                              | Bajo   |
+| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                                                                                                                                                                                                               | Medio  |
+| RT-4 | Fallback para errores de validación no vinculados a campos visibles — cuando un campo no tiene `error` prop wired, el error de schema es completamente silencioso (solo visible en Network tab). Implementar un catch-all: tras submit, si `allIssues()` tiene errores sin elemento `.border-red-500` en el DOM, mostrar toast con campo + mensaje. | Alto   |
 
 ---
 
@@ -133,9 +140,9 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] CRUD completo (todas las entidades)
 - [x] Wizard de ventas (happy path completo)
 - [x] inventoryMode ON_DEMAND / STOCK
-- [x] Tests (215)
-- [ ] Fase 6 — Presupuestos
-- [ ] Fase 7 — IVA básico
+- [x] Tests (245)
+- [x] Fase 6 — Presupuestos
+- [x] Fase 7 — IVA básico
 - [ ] Fase 8 — Dashboard real
 - [ ] Fase 9 — Reportes básicos
 - [ ] Fase 10 — Rediseño UI/UX
