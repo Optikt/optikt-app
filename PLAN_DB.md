@@ -700,11 +700,29 @@ Acción:
 
 ```
 Situación: Puse $80 pero era $90.
-Acción: El lote no se edita directamente.
-        Actualizar unitPurchasePrice/unitSalePrice en el lote (permitido).
-        Crear ADJUSTMENT_IN con delta = 0 y notes explicando el cambio de precio.
-        (Alternativa: considerar que los movimientos no capturan cambios de precio,
-         solo de cantidad. Los cambios de precio se auditan en change_history.)
+
+Acción:
+1. Editar directamente el lote:
+   - inventory_lots.unitPurchasePrice = 90
+   - inventory_lots.unitSalePrice = nuevo precio de venta (si aplica)
+   - El lote tiene updatedAt → queda registro del cambio.
+
+2. change_history captura automáticamente:
+   - Entidad: inventory_lot, id del lote
+   - Campo: unitPurchasePrice
+   - Valor anterior: 80, Valor nuevo: 90
+   - Quién y cuándo
+
+3. Si es el lote más reciente del producto:
+   - Actualizar products.currentPurchasePrice / currentSalePrice
+
+4. Las ventas YA realizadas con este lote NO se tocan:
+   - sale_items.snapshotPurchasePrice quedó con 80 (inmutable)
+   - El margen real de esas ventas refleja el error original
+
+NOTA: NO se crea inventory_movement. Los movimientos son exclusivamente
+      para cambios de CANTIDAD. Los cambios de precio se auditan en
+      change_history.
 ```
 
 ---
@@ -827,15 +845,15 @@ MODIFICAR:
 
 ---
 
-## Decisiones Pendientes
+## Decisiones Resueltas
 
-| # | Decisión | Opciones | Recomendación |
-|---|----------|----------|---------------|
-| D1 | ¿Un sale_item puede consumir de múltiples lotes? | A) No, 1 item = 1 lote. B) Sí, split entre lotes | **A) No split** — más simple. Si no alcanza un solo lote, error. El vendedor ajusta la cantidad. |
-| D2 | ¿Usar pgEnum o varchar para los tipos nuevos? | A) pgEnum (type-safe en DB). B) varchar (flexible) | **A) pgEnum** — alineado con el patrón existente (`sale_item_type`, `lens_catalog_source`, etc.) |
-| D3 | ¿`doublePrecision` o `numeric` para precios en tablas nuevas? | A) doublePrecision (consistente). B) numeric(12,2) (preciso) | **A) doublePrecision** — consistente con el schema actual. Migrar todo a numeric es un cambio masivo separado |
-| D4 | ~~¿Cambiar `purchasePrice`/`salePrice` semántica o deprecar?~~ | ~~A) Mantener como cached. B) Crear `current*` y deprecar los originales~~ | **RESUELTO: ELIMINAR.** Schema fresh — se dropean `purchasePrice`, `salePrice` y todos los campos de compra legacy. Solo quedan `currentPurchasePrice` / `currentSalePrice` como cached refs. |
-| D5 | ¿`lotNumber` auto-incremental o formato "LOT-YYYY-NNN"? | A) Integer secuencial. B) Formatted string | **A) Integer** — consistente con `orderNumber` en sales/quotes | 
+| # | Decisión | Resolución |
+|---|----------|------------|
+| D1 | ¿Un sale_item puede consumir de múltiples lotes? | **No split.** 1 sale_item = 1 lote. Si no alcanza, error. El vendedor ajusta la cantidad. |
+| D2 | ¿Usar pgEnum o varchar para los tipos nuevos? | **pgEnum.** Alineado con el patrón existente (`sale_item_type`, `lens_catalog_source`, etc.). |
+| D3 | ¿`doublePrecision` o `numeric` para precios en tablas nuevas? | **doublePrecision.** Consistente con el schema actual. |
+| D4 | ¿Cambiar `purchasePrice`/`salePrice` semántica o deprecar? | **ELIMINAR.** Schema fresh — se dropean todos los campos de compra legacy. Solo quedan `currentPurchasePrice` / `currentSalePrice` como cached refs. |
+| D5 | ¿`lotNumber` auto-incremental o formato? | **Integer secuencial.** Consistente con `orderNumber` en sales/quotes. | 
 
 ---
 
