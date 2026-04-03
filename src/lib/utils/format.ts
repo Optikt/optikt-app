@@ -107,15 +107,13 @@ export function formatDate(
 ): string {
 	if (!date) return '—';
 
-	const { year = 'numeric', month = 'long', day = 'numeric', ...rest } = opt;
-
 	let d: Date;
 	if (typeof date === 'string') {
 		// Check if it's a date-only string (YYYY-MM-DD)
 		if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
 			// Parse as local date to avoid timezone shifts
-			const [y, m, day] = date.split('-').map(Number);
-			d = new Date(y, m - 1, day);
+			const [y, m, dy] = date.split('-').map(Number);
+			d = new Date(y, m - 1, dy);
 		} else {
 			d = new Date(date);
 		}
@@ -126,12 +124,14 @@ export function formatDate(
 		d = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 	}
 
-	return new Intl.DateTimeFormat('es-VE', {
-		year,
-		month,
-		day,
-		...rest
-	}).format(d);
+	// When dateStyle/timeStyle is used, individual components (year/month/day)
+	// must NOT be present — Intl.DateTimeFormat throws otherwise.
+	const options: Intl.DateTimeFormatOptions =
+		'dateStyle' in opt || 'timeStyle' in opt
+			? opt
+			: { year: 'numeric', month: 'long', day: 'numeric', ...opt };
+
+	return new Intl.DateTimeFormat('es-VE', options).format(d);
 }
 
 export function getFullName(c: Customer): string {
