@@ -9,15 +9,18 @@
 **Context:** Venezuelan optical retail. Multi-currency economy (USD, Bolívares, USDT), official BCV exchange rates, IVA tax, payment methods like Pago Móvil and Binance. WhatsApp and Instagram are primary business communication channels.
 
 ## 🎨 Paleta de colores:
+
 - Azul marino (principal): #152346 — usado para fondos oscuros, textos y elementos de autoridad
 - Amarillo dorado (acento): #f7cb16 — usado para destacar elementos clave, CTAs y detalles del ícono
 - Azul cielo (secundario): #419ebd — usado para elementos secundarios, íconos y acentos frescos
 
 ## 🔤 Tipografía:
+
 Familia: Unbounded (Google Fonts)
 Usar en títulos, subtítulos y bloques de texto. Soporta múltiples pesos para crear jerarquía visual clara.
 
 ## 🖼️ Logo y variantes: Tengo disponibles los archivos individuales de todas las versiones del logo:
+
 - Vertical (ícono arriba, nombre abajo)
 - Horizontal (ícono a la izquierda, nombre a la derecha)
 - Unicolor principal — azul marino #152346
@@ -71,6 +74,7 @@ View all information about a product: SKU, brand, supplier, material, color, siz
 ### 7. Product Create/Edit
 
 Create or update a product. Key capabilities:
+
 - Auto-generates SKU based on type + brand, but allows manual editing.
 - Brand, supplier, and material can be selected from existing records OR created inline on the spot — the new entity is created in the same operation as the product.
 - Multi-currency purchase pricing: user enters purchase price in any supported currency (USD BCV, USD parallel, VES, USDT), provides the exchange rate, and the system auto-calculates the normalized cost in USD.
@@ -130,6 +134,7 @@ Nearly identical to the New Sale wizard with key differences: the customer is **
 ### 16. Quote Detail
 
 View a quote's full information: customer, items, treatments, totals with tax breakdown, and notes. Key actions depend on the quote's state:
+
 - **Convert to sale:** Turns the quote into an actual sale (available for draft/pending quotes).
 - **Cancel:** Cancels the quote.
 - **Assign customer:** For draft quotes without a customer — look up by ID number and assign.
@@ -215,31 +220,31 @@ Suppliers ── SupplierTreatments (AR, Blue Cut)
 
 ## Screen Summary
 
-| # | Page | Purpose |
-|---|------|---------|
-| 1 | Login | Authentication |
-| 2 | Dashboard | Store overview + quick actions |
-| 3 | Customers List | Customer CRUD |
-| 4 | Customer Detail | Profile + prescriptions |
-| 5 | Products List | Product inventory CRUD |
-| 6 | Product Detail | Product info + pricing + stock |
-| 7 | Product Create/Edit | Multi-currency product form |
-| 8 | Lens Catalog | Lens items + materials management |
-| 9 | Lens Detail | Lens info + optical ranges + pricing |
-| 10 | Lens Create/Edit | Lens form with optical ranges |
-| 11 | Sales List | Sales browsing |
-| 12 | New Sale | 3-step wizard: customer → items → confirm |
-| 13 | Sale Detail | Sale info + payment management |
-| 14 | Quotes List | Quotes browsing |
-| 15 | New Quote | 3-step wizard (customer optional) |
-| 16 | Quote Detail | Quote info + convert to sale |
-| 17 | Brands | Brand CRUD |
-| 18 | Materials | Material CRUD |
-| 19 | Suppliers | Supplier CRUD + treatment management |
-| 20 | Reports Hub | Report navigation |
-| 21 | Sales Report | Sales analysis by date range |
-| 22 | Payments Report | Payment tracking by method |
-| 23 | Inventory Report | Stock status overview |
-| 24 | Users | User + role management |
-| 25 | Settings | Profile + business config |
-| 26 | Error Page | Error handling |
+| #   | Page                | Purpose                                   |
+| --- | ------------------- | ----------------------------------------- |
+| 1   | Login               | Authentication                            |
+| 2   | Dashboard           | Store overview + quick actions            |
+| 3   | Customers List      | Customer CRUD                             |
+| 4   | Customer Detail     | Profile + prescriptions                   |
+| 5   | Products List       | Product inventory CRUD                    |
+| 6   | Product Detail      | Product info + pricing + stock            |
+| 7   | Product Create/Edit | Multi-currency product form               |
+| 8   | Lens Catalog        | Lens items + materials management         |
+| 9   | Lens Detail         | Lens info + optical ranges + pricing      |
+| 10  | Lens Create/Edit    | Lens form with optical ranges             |
+| 11  | Sales List          | Sales browsing                            |
+| 12  | New Sale            | 3-step wizard: customer → items → confirm |
+| 13  | Sale Detail         | Sale info + payment management            |
+| 14  | Quotes List         | Quotes browsing                           |
+| 15  | New Quote           | 3-step wizard (customer optional)         |
+| 16  | Quote Detail        | Quote info + convert to sale              |
+| 17  | Brands              | Brand CRUD                                |
+| 18  | Materials           | Material CRUD                             |
+| 19  | Suppliers           | Supplier CRUD + treatment management      |
+| 20  | Reports Hub         | Report navigation                         |
+| 21  | Sales Report        | Sales analysis by date range              |
+| 22  | Payments Report     | Payment tracking by method                |
+| 23  | Inventory Report    | Stock status overview                     |
+| 24  | Users               | User + role management                    |
+| 25  | Settings            | Profile + business config                 |
+| 26  | Error Page          | Error handling                            |
