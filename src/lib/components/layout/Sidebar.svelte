@@ -120,7 +120,7 @@
 
 <aside
 	class={[
-		'sticky top-0 flex h-screen flex-col bg-linear-to-b from-slate-800 to-slate-900 transition-all duration-300',
+		'sticky top-0 flex h-screen flex-col bg-linear-to-b from-slate-800 to-slate-900 transition-all duration-300 print:hidden',
 		collapsed ? 'w-20' : 'w-64'
 	]}
 >
