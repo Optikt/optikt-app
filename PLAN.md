@@ -86,7 +86,7 @@ Happy path: crear un presupuesto con ítems, enviárselo al cliente, y convertir
 
 ---
 
-### Fase 9 — Reportes básicos
+### Fase 9 — Reportes básicos ✅ COMPLETADA
 
 **Alcance:**
 
@@ -135,6 +135,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 | RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                                                                                                                                                                                                              | Bajo   |
 | RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                                                                                                                                                                                                               | Medio  |
 | RT-4 | Fallback para errores de validación no vinculados a campos visibles — cuando un campo no tiene `error` prop wired, el error de schema es completamente silencioso (solo visible en Network tab). Implementar un catch-all: tras submit, si `allIssues()` tiene errores sin elemento `.border-red-500` en el DOM, mostrar toast con campo + mensaje. | Alto   |
+| RT-5 | Backfill `payment_date` en `sale_payments` — ejecutar migración que haga `UPDATE sale_payments SET payment_date = created_at WHERE payment_date IS NULL`, luego marcar la columna como `NOT NULL`. Tras eso, eliminar el `COALESCE` en `getReportPayments()` y usar directamente `salePayments.paymentDate` (quitar import de `sql`).               | Bajo   |
 
 ---
 
@@ -148,5 +149,5 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] Fase 6 — Presupuestos
 - [x] Fase 7 — IVA básico
 - [x] Fase 8 — Dashboard real
-- [ ] Fase 9 — Reportes básicos
+- [x] Fase 9 — Reportes básicos (271 tests)
 - [ ] Fase 10 — Rediseño UI/UX
