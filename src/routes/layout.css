@@ -198,3 +198,15 @@ body {
 	@apply rounded-xl border border-slate-200 bg-white shadow-sm;
 	box-shadow: var(--ds-shadow-md);
 }
+
+/* Print styles for reports */
+@media print {
+	body {
+		background: white !important;
+	}
+
+	.glass-card {
+		box-shadow: none;
+		border: 1px solid #e2e8f0;
+	}
+}

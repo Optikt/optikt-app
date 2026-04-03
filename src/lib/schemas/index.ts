@@ -13,4 +13,5 @@ export * from './materials';
 export * from './exchangeRates';
 export * from './search';
 export * from './sales';
+export * from './reports';
 export * from './quotes';
