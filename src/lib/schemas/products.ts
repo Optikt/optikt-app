@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { ALL_PRODUCT_TYPES, ALL_CURRENCY_CODES, ProductType } from '$lib/shared/enums';
+import { ProductType } from '$lib/shared/enums';
 import { MaterialCategories } from './materials';
 import {
 	CoercedInteger,
@@ -26,7 +26,7 @@ const SkuSchema = z
 
 // export const ListProductsSchema = z.object({
 export const ListProductsSchema = ListPaginationSchema.extend({
-	type: z.enum(ALL_PRODUCT_TYPES).optional(),
+	type: z.enum(Object.values(ProductType) as [string, ...string[]]).optional(),
 	brandId: z.uuid().optional(),
 	supplierId: z.uuid().optional(),
 	includeInactive: z.boolean().default(false),
@@ -53,16 +53,8 @@ export const CreateProductSchema = z.object({
 	color: z.string().optional(),
 	size: z.string().optional(),
 	description: z.string().optional(),
-	purchasePrice: CoercedNumber.min(0, 'Precio de compra debe ser mayor o igual a 0'),
-	salePrice: CoercedNumber.min(0, 'Precio de venta debe ser mayor o igual a 0'),
 	isTaxable: CoercedBoolean.default(true),
 	taxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser mayor o igual a 0').default(16),
-	// Currency purchase fields
-	purchaseCurrency: z.enum(ALL_CURRENCY_CODES, 'Moneda de compra requerida'),
-	purchaseCurrencyRate: CoercedNumber.min(0.01, 'Tasa de moneda de compra requerida'),
-	purchaseUsdBcvRate: CoercedNumber.min(0.01, 'Tasa USD BCV requerida'),
-	purchaseDate: z.string().min(1, 'Fecha de compra requerida'),
-	normalizedCostUsd: CoercedNumber.min(0),
 	stock: CoercedInteger.min(0).optional(),
 	minStock: CoercedInteger.min(0).optional(),
 	imageUrl: z.string().optional()

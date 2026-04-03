@@ -8,7 +8,6 @@
 		FormInput,
 		FormTextarea,
 		CreatableSelect,
-		PurchaseCurrencyInput,
 		TaxToggle,
 		type SelectOption,
 		type PendingEntity
@@ -18,8 +17,7 @@
 		ProductType,
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
-		requiresStockTracking,
-		CurrencyCode
+		requiresStockTracking
 	} from '$lib/shared/enums';
 	import { generateSku, ProductGender, PRODUCT_GENDER_LABELS } from '$lib/utils/sku';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -66,15 +64,8 @@
 		color: '',
 		size: '',
 		description: '',
-		purchasePrice: 0,
-		salePrice: 0,
 		isTaxable: true,
 		taxRate: 16,
-		// Currency fields
-		purchaseCurrency: CurrencyCode.USD_BCV,
-		purchaseCurrencyRate: 0,
-		purchaseUsdBcvRate: 0,
-		purchaseDate: new Date().toISOString().split('T')[0],
 		stock: 0,
 		minStock: 0,
 		imageUrl: ''
@@ -222,14 +213,8 @@
 					color: product.color ?? '',
 					size: product.size ?? '',
 					description: product.description ?? '',
-					purchasePrice: product.purchasePrice ?? 0,
-					salePrice: product.salePrice ?? 0,
 					isTaxable: product.isTaxable ?? true,
 					taxRate: product.taxRate ?? 16,
-					purchaseCurrency: (product.purchaseCurrency as CurrencyCode) ?? CurrencyCode.USD_BCV,
-					purchaseCurrencyRate: product.purchaseCurrencyRate ?? 0,
-					purchaseUsdBcvRate: product.purchaseUsdBcvRate ?? 0,
-					purchaseDate: product.purchaseDate ?? new Date().toISOString().split('T')[0],
 					stock: product.stock ?? 0,
 					minStock: product.minStock ?? 0,
 					imageUrl: product.imageUrl ?? ''
@@ -488,55 +473,10 @@
 					</div>
 				</div>
 
-				<!-- Pricing -->
+				<!-- Tax -->
 				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios y Moneda de Compra</h3>
-					<div class="grid gap-4 md:grid-cols-2">
-						<div>
-							<Label for="purchasePrice_u" class="mb-2">Precio compra *</Label>
-							<input
-								type="number"
-								id="purchasePrice_u"
-								name="purchasePrice"
-								bind:value={formData.purchasePrice}
-								step="0.01"
-								min="0"
-								required
-								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
-							/>
-						</div>
-						<div>
-							<Label for="salePrice_u" class="mb-2">Precio venta (USD BCV) *</Label>
-							<input
-								type="number"
-								id="salePrice_u"
-								name="salePrice"
-								bind:value={formData.salePrice}
-								step="0.01"
-								min="0"
-								required
-								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
-							/>
-						</div>
-					</div>
-
-					<!-- Tax (IVA) -->
-					<div class="mt-4">
-						<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
-					</div>
-
-					<!-- Currency & Exchange Rate Section -->
-					<div class="mt-6 border-t border-slate-100 pt-4">
-						<PurchaseCurrencyInput
-							bind:purchaseCurrency={formData.purchaseCurrency}
-							bind:purchaseCurrencyRate={formData.purchaseCurrencyRate}
-							bind:purchaseUsdBcvRate={formData.purchaseUsdBcvRate}
-							bind:purchaseDate={formData.purchaseDate}
-							purchasePrice={formData.purchasePrice}
-							salePrice={formData.salePrice}
-							idPrefix="u_"
-						/>
-					</div>
+					<h3 class="mb-4 text-lg font-semibold text-slate-800">Impuestos</h3>
+					<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
 				</div>
 
 				<!-- Stock -->
@@ -778,55 +718,10 @@
 				</div>
 			</div>
 
-			<!-- Pricing -->
+			<!-- Tax -->
 			<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-				<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios y Moneda de Compra</h3>
-				<div class="grid gap-4 md:grid-cols-2">
-					<div>
-						<Label for="purchasePrice_c" class="mb-2">Precio compra *</Label>
-						<input
-							type="number"
-							id="purchasePrice_c"
-							name="purchasePrice"
-							bind:value={formData.purchasePrice}
-							step="0.01"
-							min="0"
-							required
-							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
-						/>
-					</div>
-					<div>
-						<Label for="salePrice_c" class="mb-2">Precio venta (USD BCV) *</Label>
-						<input
-							type="number"
-							id="salePrice_c"
-							name="salePrice"
-							bind:value={formData.salePrice}
-							step="0.01"
-							min="0"
-							required
-							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 font-mono text-sm"
-						/>
-					</div>
-				</div>
-
-				<!-- Tax (IVA) -->
-				<div class="mt-4">
-					<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
-				</div>
-
-				<!-- Currency & Exchange Rate Section -->
-				<div class="mt-6 border-t border-slate-100 pt-4">
-					<PurchaseCurrencyInput
-						bind:purchaseCurrency={formData.purchaseCurrency}
-						bind:purchaseCurrencyRate={formData.purchaseCurrencyRate}
-						bind:purchaseUsdBcvRate={formData.purchaseUsdBcvRate}
-						bind:purchaseDate={formData.purchaseDate}
-						purchasePrice={formData.purchasePrice}
-						salePrice={formData.salePrice}
-						idPrefix="c_"
-					/>
-				</div>
+				<h3 class="mb-4 text-lg font-semibold text-slate-800">Impuestos</h3>
+				<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
 			</div>
 
 			<!-- Stock -->

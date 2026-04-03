@@ -130,19 +130,23 @@
 						<div class="rounded-lg bg-slate-50 p-4">
 							<dt class="text-sm text-slate-500">Precio Compra</dt>
 							<dd class="mt-1 font-mono text-xl font-medium text-slate-700">
-								{formatPrice(product.purchasePrice)}
+								{product.currentPurchasePrice != null
+									? formatPrice(product.currentPurchasePrice)
+									: '—'}
 							</dd>
 						</div>
 						<div class="rounded-lg bg-blue-50 p-4">
 							<dt class="text-sm text-blue-600">Precio Venta</dt>
 							<dd class="mt-1 font-mono text-xl font-bold text-blue-700">
-								{formatPrice(product.salePrice)}
+								{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
 							</dd>
 						</div>
 						<div class="rounded-lg bg-green-50 p-4">
 							<dt class="text-sm text-green-600">Margen</dt>
 							<dd class="mt-1 text-xl font-bold text-green-700">
-								{getProfitMargin(product.purchasePrice, product.salePrice)}
+								{product.currentPurchasePrice != null && product.currentSalePrice != null
+									? getProfitMargin(product.currentPurchasePrice, product.currentSalePrice)
+									: '—'}
 							</dd>
 						</div>
 					</div>

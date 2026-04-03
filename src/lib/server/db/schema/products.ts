@@ -8,8 +8,7 @@ import {
 	boolean,
 	integer,
 	doublePrecision,
-	foreignKey,
-	date
+	foreignKey
 } from 'drizzle-orm/pg-core';
 
 import { brands } from './brands';
@@ -30,25 +29,16 @@ export const products = pgTable(
 		gender: varchar({ length: 20 }),
 		materialId: uuid('material_id').notNull(),
 		description: varchar(),
-		// Price fields
-		purchasePrice: doublePrecision('purchase_price').notNull(),
-		/** Currency code used for purchase (CurrencyCode enum) */
-		purchaseCurrency: varchar('purchase_currency'),
-		/** Exchange rate of the purchase currency to VES on purchase date */
-		purchaseCurrencyRate: doublePrecision('purchase_currency_rate'),
-		/** USD BCV rate to VES on the same purchase date (for differential calculation) */
-		purchaseUsdBcvRate: doublePrecision('purchase_usd_bcv_rate'),
-		/** Date when the purchase was made / rates were recorded */
-		purchaseDate: date('purchase_date'),
-		/** Normalized cost in USD BCV = purchasePrice * (purchaseCurrencyRate / purchaseUsdBcvRate) */
-		normalizedCostUsd: doublePrecision('normalized_cost_usd'),
-		/** Sale price in USD BCV */
-		salePrice: doublePrecision('sale_price').notNull(),
+		/** Cached: purchase price from the most recent lot */
+		currentPurchasePrice: doublePrecision('current_purchase_price'),
+		/** Cached: sale price from the most recent lot */
+		currentSalePrice: doublePrecision('current_sale_price'),
 		/** Whether this product is subject to tax (IVA) */
 		isTaxable: boolean('is_taxable').notNull().default(true),
 		/** Tax rate percentage (e.g. 16 for 16%) */
 		taxRate: doublePrecision('tax_rate').notNull().default(16),
-		stock: integer(),
+		/** Cached counter: SUM(inventory_lots.quantityAvailable) */
+		stock: integer().notNull().default(0),
 		minStock: integer('min_stock'),
 		imageUrl: varchar('image_url'),
 		isActive: boolean('is_active').notNull().default(true),

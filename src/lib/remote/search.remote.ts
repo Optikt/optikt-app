@@ -20,7 +20,7 @@ export interface ProductResult {
 	sku: string;
 	name: string;
 	type: string;
-	salePrice: number;
+	currentSalePrice: number | null;
 	brand?: string | null;
 	supplier?: string | null;
 }
@@ -69,7 +69,7 @@ async function searchProducts(search: string): Promise<ProductResult[]> {
 			sku: products.sku,
 			name: products.name,
 			type: products.type,
-			salePrice: products.salePrice,
+			currentSalePrice: products.currentSalePrice,
 			brand: brands.name,
 			supplier: suppliers.name
 		})

@@ -15,3 +15,6 @@ export * from './changeHistory';
 export * from './exchangeRates';
 export * from './dashboard';
 export * from './reports';
+export * from './purchaseOrders';
+export * from './inventoryLots';
+export * from './inventoryMovements';
