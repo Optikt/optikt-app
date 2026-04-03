@@ -42,13 +42,13 @@ Implementar un sistema de **inventario por lotes con FIFO**:
 
 ### Alcance
 
-| Acción | Cantidad | Detalle |
-|--------|----------|---------|
-| Tablas nuevas | 4 | `purchase_orders`, `purchase_order_items`, `inventory_lots`, `inventory_movements` |
-| Tablas modificadas | 3 | `products`, `sale_items`, `lens_catalog_items` |
-| Enums nuevos | 3 | `PurchaseOrderStatus`, `InventoryMovementType`, `MovementReferenceType` |
-| Tablas sin cambios | 18 | Todo lo demás se mantiene intacto |
-| **Estrategia** | **Fresh** | **DROP todas las tablas y CREATE desde cero — sin migración de datos legacy** |
+| Acción             | Cantidad  | Detalle                                                                            |
+| ------------------ | --------- | ---------------------------------------------------------------------------------- |
+| Tablas nuevas      | 4         | `purchase_orders`, `purchase_order_items`, `inventory_lots`, `inventory_movements` |
+| Tablas modificadas | 3         | `products`, `sale_items`, `lens_catalog_items`                                     |
+| Enums nuevos       | 3         | `PurchaseOrderStatus`, `InventoryMovementType`, `MovementReferenceType`            |
+| Tablas sin cambios | 18        | Todo lo demás se mantiene intacto                                                  |
+| **Estrategia**     | **Fresh** | **DROP todas las tablas y CREATE desde cero — sin migración de datos legacy**      |
 
 ---
 
@@ -56,24 +56,24 @@ Implementar un sistema de **inventario por lotes con FIFO**:
 
 ### Lo que está BIEN (no tocar)
 
-| Componente | Por qué está correcto |
-|------------|----------------------|
-| Separación `products` vs `lens_catalog_items` | Son entidades con comportamientos radicalmente distintos (stock físico vs catálogo por demanda) |
-| Snapshots en `sale_items` / `quote_items` | Captura de precios al momento de transacción — estándar absoluto |
-| Sistema multi-moneda con BCV USD | Correcto para Venezuela |
-| `change_history` genérica | Buen patrón de auditoría |
-| Lógica polimórfica de items (PRODUCT \| LENS_PAIR \| TREATMENT) | Correcta para el dominio |
-| Patrón `DbOrTx` para transacciones | Permite atomicidad configurable |
+| Componente                                                      | Por qué está correcto                                                                           |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Separación `products` vs `lens_catalog_items`                   | Son entidades con comportamientos radicalmente distintos (stock físico vs catálogo por demanda) |
+| Snapshots en `sale_items` / `quote_items`                       | Captura de precios al momento de transacción — estándar absoluto                                |
+| Sistema multi-moneda con BCV USD                                | Correcto para Venezuela                                                                         |
+| `change_history` genérica                                       | Buen patrón de auditoría                                                                        |
+| Lógica polimórfica de items (PRODUCT \| LENS_PAIR \| TREATMENT) | Correcta para el dominio                                                                        |
+| Patrón `DbOrTx` para transacciones                              | Permite atomicidad configurable                                                                 |
 
 ### Lo que hay que cambiar
 
-| Tabla | Problema | Solución |
-|-------|----------|----------|
-| `products` | `stock` nullable, precios estáticos como fuente de verdad | `stock` → NOT NULL DEFAULT 0 (cached counter). Los precios viven en lotes. Agregar `currentPurchasePrice` / `currentSalePrice` como referencia rápida |
-| `products` | Campos `purchasePrice`, `purchaseCurrency`, `purchaseCurrencyRate`, `purchaseUsdBcvRate`, `purchaseDate`, `normalizedCostUsd`, `salePrice` son la fuente de verdad | **ELIMINAR** todos estos campos. Los precios viven exclusivamente en lotes. Solo se agregan `currentPurchasePrice` / `currentSalePrice` como cached refs del último lote |
-| `sale_items` | No hay trazabilidad al lote consumido | Agregar `lotId` FK → `inventory_lots` |
-| `sale_items` | No hay snapshot del costo de compra | Agregar `snapshotPurchasePrice` para margen real |
-| `lens_catalog_items` | `stock` nullable para modo STOCK | Mantener nullable (solo relevante en modo STOCK, no en ON_DEMAND/LAB) |
+| Tabla                | Problema                                                                                                                                                           | Solución                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `products`           | `stock` nullable, precios estáticos como fuente de verdad                                                                                                          | `stock` → NOT NULL DEFAULT 0 (cached counter). Los precios viven en lotes. Agregar `currentPurchasePrice` / `currentSalePrice` como referencia rápida                    |
+| `products`           | Campos `purchasePrice`, `purchaseCurrency`, `purchaseCurrencyRate`, `purchaseUsdBcvRate`, `purchaseDate`, `normalizedCostUsd`, `salePrice` son la fuente de verdad | **ELIMINAR** todos estos campos. Los precios viven exclusivamente en lotes. Solo se agregan `currentPurchasePrice` / `currentSalePrice` como cached refs del último lote |
+| `sale_items`         | No hay trazabilidad al lote consumido                                                                                                                              | Agregar `lotId` FK → `inventory_lots`                                                                                                                                    |
+| `sale_items`         | No hay snapshot del costo de compra                                                                                                                                | Agregar `snapshotPurchasePrice` para margen real                                                                                                                         |
+| `lens_catalog_items` | `stock` nullable para modo STOCK                                                                                                                                   | Mantener nullable (solo relevante en modo STOCK, no en ON_DEMAND/LAB)                                                                                                    |
 
 ---
 
@@ -148,6 +148,7 @@ purchase_orders
 ```
 
 **Índices:**
+
 - `ix_purchase_orders_id` (btree, uuid)
 - `ix_purchase_orders_order_number` (btree, unique)
 - `ix_purchase_orders_supplier_id` (btree, uuid)
@@ -155,16 +156,18 @@ purchase_orders
 - `ix_purchase_orders_status` (btree, text)
 
 **FKs:**
+
 - `supplierId` → `suppliers.id` ON DELETE RESTRICT
 - `createdById` → `users.id` ON DELETE RESTRICT
 - `confirmedById` → `users.id` ON DELETE SET NULL
 
 **Reglas de estado:**
+
 ```
 DRAFT ──(confirmar)──> CONFIRMED
   │                        │
   └──(cancelar)──> CANCELLED    (solo si DRAFT, sin lotes)
-                        
+
 CONFIRMED: no se puede cancelar directamente.
            Para "deshacer", usar ajustes manuales.
 ```
@@ -191,18 +194,21 @@ purchase_order_items
 ```
 
 **Índices:**
+
 - `ix_purchase_order_items_id` (btree, uuid)
 - `ix_purchase_order_items_po_id` (btree, uuid)
 - `ix_purchase_order_items_product_id` (btree, uuid)
 - `ix_purchase_order_items_lens_id` (btree, uuid)
 
 **FKs:**
+
 - `purchaseOrderId` → `purchase_orders.id` ON DELETE CASCADE
 - `productId` → `products.id` ON DELETE RESTRICT
 - `lensCatalogItemId` → `lens_catalog_items.id` ON DELETE RESTRICT
 - `lotId` → `inventory_lots.id` ON DELETE SET NULL
 
 **Notas:**
+
 - `itemType` es `PRODUCT` o `LENS`. No es un pgEnum — usamos varchar para flexibilidad (alineado con el patrón existente en `sale_items.item_type` que usa pgEnum pero los valores son los mismos conceptos).
 - Para lentes con `inventory_mode = ON_DEMAND` o `LAB`, **no se crean líneas de compra** — su costo se registra directamente en `sale_items` al vender.
 - Solo lentes con `inventory_mode = STOCK` participan en el sistema de compras/lotes.
@@ -230,6 +236,7 @@ inventory_lots
 ```
 
 **Índices:**
+
 - `ix_inventory_lots_id` (btree, uuid)
 - `ix_inventory_lots_lot_number` (btree, unique)
 - `ix_inventory_lots_product_id` (btree, uuid)
@@ -239,11 +246,13 @@ inventory_lots
 - `ix_inventory_lots_active_lens` (btree, lensCatalogItemId + isActive) — para FIFO queries
 
 **FKs:**
+
 - `purchaseOrderItemId` → `purchase_order_items.id` ON DELETE RESTRICT
 - `productId` → `products.id` ON DELETE RESTRICT
 - `lensCatalogItemId` → `lens_catalog_items.id` ON DELETE RESTRICT
 
 **Invariantes:**
+
 - `quantityAvailable >= 0` siempre
 - `quantityAvailable <= quantityInitial` siempre
 - Cuando `quantityAvailable = 0` → `isActive = false`
@@ -276,6 +285,7 @@ inventory_movements
 **ESTA TABLA ES INMUTABLE.** No tiene `updatedAt`, no tiene `deletedAt`. Los registros nunca se modifican ni eliminan. Si hay un error, se crea un movimiento nuevo de corrección.
 
 **Índices:**
+
 - `ix_inventory_movements_id` (btree, uuid)
 - `ix_inventory_movements_lot_id` (btree, uuid)
 - `ix_inventory_movements_product_id` (btree, uuid)
@@ -285,6 +295,7 @@ inventory_movements
 - `ix_inventory_movements_created_at` (btree, timestamp) — para reportes cronológicos
 
 **FKs:**
+
 - `lotId` → `inventory_lots.id` ON DELETE RESTRICT (nunca borrar lotes con movimientos)
 - `productId` → `products.id` ON DELETE RESTRICT
 - `lensCatalogItemId` → `lens_catalog_items.id` ON DELETE RESTRICT
@@ -300,30 +311,31 @@ inventory_movements
 
 **Campos que se ELIMINAN:**
 
-| Campo eliminado | Motivo |
-|----------------|--------|
-| `purchasePrice` | Los precios de compra viven exclusivamente en lotes |
-| `salePrice` | Los precios de venta viven exclusivamente en lotes |
-| `purchaseCurrency` | La moneda/tasa se registra por compra, no por producto |
-| `purchaseCurrencyRate` | Idem — vive en `purchase_orders` |
-| `purchaseUsdBcvRate` | Idem — vive en `purchase_orders` |
-| `purchaseDate` | El producto no tiene "fecha de compra" — cada lote tiene la suya |
-| `normalizedCostUsd` | Se calcula desde el lote cuando se necesita |
+| Campo eliminado        | Motivo                                                           |
+| ---------------------- | ---------------------------------------------------------------- |
+| `purchasePrice`        | Los precios de compra viven exclusivamente en lotes              |
+| `salePrice`            | Los precios de venta viven exclusivamente en lotes               |
+| `purchaseCurrency`     | La moneda/tasa se registra por compra, no por producto           |
+| `purchaseCurrencyRate` | Idem — vive en `purchase_orders`                                 |
+| `purchaseUsdBcvRate`   | Idem — vive en `purchase_orders`                                 |
+| `purchaseDate`         | El producto no tiene "fecha de compra" — cada lote tiene la suya |
+| `normalizedCostUsd`    | Se calcula desde el lote cuando se necesita                      |
 
 **Campos que CAMBIAN:**
 
-| Campo actual | Cambio | Motivo |
-|-------------|--------|--------|
+| Campo actual                  | Cambio                             | Motivo                              |
+| ----------------------------- | ---------------------------------- | ----------------------------------- |
 | `stock: integer()` (nullable) | → `integer().notNull().default(0)` | Cached counter, siempre tiene valor |
 
 **Campos que se AGREGAN:**
 
-| Campo nuevo | Tipo | Descripción |
-|-------------|------|-------------|
+| Campo nuevo            | Tipo                         | Descripción                                                               |
+| ---------------------- | ---------------------------- | ------------------------------------------------------------------------- |
 | `currentPurchasePrice` | `doublePrecision` (nullable) | Precio de compra del lote más reciente. Se actualiza al confirmar compra. |
-| `currentSalePrice` | `doublePrecision` (nullable) | Precio de venta del lote más reciente. Se actualiza al confirmar compra. |
+| `currentSalePrice`     | `doublePrecision` (nullable) | Precio de venta del lote más reciente. Se actualiza al confirmar compra.  |
 
 **Campos que se MANTIENEN sin cambiar:**
+
 - `minStock` — se mantiene nullable (configuración opcional de alerta)
 - Todos los demás campos de identidad (sku, name, type, brand, supplier, material, etc.)
 
@@ -333,18 +345,21 @@ inventory_movements
 
 **Campos que se AGREGAN:**
 
-| Campo nuevo | Tipo | Descripción |
-|-------------|------|-------------|
-| `lotId` | `uuid FK → inventory_lots.id` (nullable) | Lote FIFO consumido. NULL para items de tipo LENS_PAIR (ON_DEMAND/LAB) y TREATMENT |
-| `snapshotPurchasePrice` | `doublePrecision` (nullable) | Costo de compra del lote consumido, para calcular margen real |
+| Campo nuevo             | Tipo                                     | Descripción                                                                        |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| `lotId`                 | `uuid FK → inventory_lots.id` (nullable) | Lote FIFO consumido. NULL para items de tipo LENS_PAIR (ON_DEMAND/LAB) y TREATMENT |
+| `snapshotPurchasePrice` | `doublePrecision` (nullable)             | Costo de compra del lote consumido, para calcular margen real                      |
 
 **FK nueva:**
+
 - `lotId` → `inventory_lots.id` ON DELETE RESTRICT
 
 **Índice nuevo:**
+
 - `ix_sale_items_lot_id` (btree, uuid)
 
 **Nota sobre LENS_PAIR / TREATMENT items:**
+
 - Items tipo `LENS_PAIR` con modo `ON_DEMAND` o `LAB`: `lotId = NULL`, `snapshotPurchasePrice` se llena manualmente al registrar el costo del pedido
 - Items tipo `TREATMENT`: `lotId = NULL`, no aplica lote
 - Items tipo `PRODUCT`: `lotId` DEBE tener valor (FIFO obligatorio)
@@ -353,6 +368,7 @@ inventory_movements
 ### 5.3 `lens_catalog_items` — Cambios Mínimos
 
 **Sin cambios estructurales.** El campo `stock` se mantiene nullable porque:
+
 - `ON_DEMAND` / `LAB`: `stock = NULL` (no se trackea)
 - `STOCK`: `stock = integer` (cached counter, mismo patrón que products)
 
@@ -368,13 +384,14 @@ Para lentes en modo `STOCK`, los lotes y movimientos funcionan igual que para pr
 // src/lib/shared/enums/purchaseTypes.ts
 
 export enum PurchaseOrderStatus {
-  DRAFT = 'DRAFT',
-  CONFIRMED = 'CONFIRMED',
-  CANCELLED = 'CANCELLED'
+	DRAFT = 'DRAFT',
+	CONFIRMED = 'CONFIRMED',
+	CANCELLED = 'CANCELLED'
 }
 ```
 
 **Transiciones válidas:**
+
 - `DRAFT` → `CONFIRMED` (genera lotes + movimientos)
 - `DRAFT` → `CANCELLED` (solo si no tiene lotes)
 - `CONFIRMED` → ❌ (no se puede revertir — usar ajustes manuales)
@@ -384,19 +401,19 @@ export enum PurchaseOrderStatus {
 
 ```typescript
 export enum InventoryMovementType {
-  /** Entrada por compra confirmada */
-  PURCHASE_IN = 'PURCHASE_IN',
-  /** Salida por venta */
-  SALE_OUT = 'SALE_OUT',
-  /** Entrada por ajuste manual (corrección positiva, donación recibida) */
-  ADJUSTMENT_IN = 'ADJUSTMENT_IN',
-  /** Salida por ajuste manual (merma, error, robo, regalo) */
-  ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
-  /** Entrada por devolución de cliente (futuro) */
-  RETURN_IN = 'RETURN_IN',
-  /** Reversión por cancelación de compra:
-   *  cuando se elimina un item de PO cuyo lote no tiene ventas */
-  CANCEL_REVERT = 'CANCEL_REVERT'
+	/** Entrada por compra confirmada */
+	PURCHASE_IN = 'PURCHASE_IN',
+	/** Salida por venta */
+	SALE_OUT = 'SALE_OUT',
+	/** Entrada por ajuste manual (corrección positiva, donación recibida) */
+	ADJUSTMENT_IN = 'ADJUSTMENT_IN',
+	/** Salida por ajuste manual (merma, error, robo, regalo) */
+	ADJUSTMENT_OUT = 'ADJUSTMENT_OUT',
+	/** Entrada por devolución de cliente (futuro) */
+	RETURN_IN = 'RETURN_IN',
+	/** Reversión por cancelación de compra:
+	 *  cuando se elimina un item de PO cuyo lote no tiene ventas */
+	CANCEL_REVERT = 'CANCEL_REVERT'
 }
 ```
 
@@ -404,12 +421,12 @@ export enum InventoryMovementType {
 
 ```typescript
 export enum MovementReferenceType {
-  /** Referencia a una purchase_order */
-  PURCHASE_ORDER = 'PURCHASE_ORDER',
-  /** Referencia a una sale */
-  SALE = 'SALE',
-  /** Ajuste manual sin documento padre */
-  MANUAL_ADJUSTMENT = 'MANUAL_ADJUSTMENT'
+	/** Referencia a una purchase_order */
+	PURCHASE_ORDER = 'PURCHASE_ORDER',
+	/** Referencia a una sale */
+	SALE = 'SALE',
+	/** Ajuste manual sin documento padre */
+	MANUAL_ADJUSTMENT = 'MANUAL_ADJUSTMENT'
 }
 ```
 
@@ -417,8 +434,8 @@ export enum MovementReferenceType {
 
 ```typescript
 export enum PurchaseOrderItemType {
-  PRODUCT = 'PRODUCT',
-  LENS = 'LENS'
+	PRODUCT = 'PRODUCT',
+	LENS = 'LENS'
 }
 ```
 
@@ -459,9 +476,9 @@ DENTRO DE UNA TRANSACCIÓN (db.transaction):
       - unitSalePrice = item.unitSalePrice
       - bcvRateAtPurchase = po.bcvRate
       - isActive = true
-   
+
    b. Actualizar purchase_order_item.lotId = nuevo lot.id
-   
+
    c. Crear inventory_movement:
       - movementType = PURCHASE_IN
       - lotId = nuevo lot.id
@@ -470,11 +487,11 @@ DENTRO DE UNA TRANSACCIÓN (db.transaction):
       - quantityAfter = quantity
       - referenceType = PURCHASE_ORDER
       - referenceId = po.id
-   
+
    d. Actualizar cached counter:
       - Si PRODUCT: products.stock += quantity
       - Si LENS (STOCK): lens_catalog_items.stock += quantity
-   
+
    e. Actualizar referencia rápida en producto:
       - products.currentPurchasePrice = item.unitPurchasePrice
       - products.currentSalePrice = item.unitSalePrice
@@ -507,7 +524,7 @@ Para cada sale_item de tipo PRODUCT:
    - Si lote.quantityAvailable >= item.quantity:
      → Consumir todo de este lote
      → lotId = lote.id
-   
+
    - Si lote.quantityAvailable < item.quantity:
      → ERROR: "Stock insuficiente. Disponible: X, solicitado: Y"
      → (No split de items entre lotes — un sale_item = un lote)
@@ -620,26 +637,26 @@ Para cada sale_item con lotId != NULL:
 
 ### Reglas de Inventario
 
-| # | Regla | Enforzada en |
-|---|-------|--------------|
-| R1 | `quantityAvailable >= 0` siempre | Constraint SQL + validación en lógica |
-| R2 | No se puede vender un PRODUCT sin stock suficiente | Validación al crear sale_item |
-| R3 | `products.stock` debe ser == `SUM(lots.quantityAvailable)` | Mantener sync, agregar job de reconciliación |
-| R4 | Un `inventory_movement` nunca se edita ni elimina | Sin `updatedAt`/`deletedAt` en la tabla |
-| R5 | Una `purchase_order` CONFIRMED no se puede cancelar | Solo DRAFT → CANCELLED |
-| R6 | Para ajustar una compra confirmada, usar movimientos de ajuste | Nunca editar lotes directamente |
-| R7 | Cada `sale_item` de tipo PRODUCT debe tener `lotId` | Validación al crear |
-| R8 | `quantityDelta` en movimientos debe ser != 0 | Constraint SQL |
-| R9 | `notes` obligatorio en movimientos de tipo ADJUSTMENT_* | Validación en lógica |
+| #   | Regla                                                          | Enforzada en                                 |
+| --- | -------------------------------------------------------------- | -------------------------------------------- |
+| R1  | `quantityAvailable >= 0` siempre                               | Constraint SQL + validación en lógica        |
+| R2  | No se puede vender un PRODUCT sin stock suficiente             | Validación al crear sale_item                |
+| R3  | `products.stock` debe ser == `SUM(lots.quantityAvailable)`     | Mantener sync, agregar job de reconciliación |
+| R4  | Un `inventory_movement` nunca se edita ni elimina              | Sin `updatedAt`/`deletedAt` en la tabla      |
+| R5  | Una `purchase_order` CONFIRMED no se puede cancelar            | Solo DRAFT → CANCELLED                       |
+| R6  | Para ajustar una compra confirmada, usar movimientos de ajuste | Nunca editar lotes directamente              |
+| R7  | Cada `sale_item` de tipo PRODUCT debe tener `lotId`            | Validación al crear                          |
+| R8  | `quantityDelta` en movimientos debe ser != 0                   | Constraint SQL                               |
+| R9  | `notes` obligatorio en movimientos de tipo ADJUSTMENT\_\*      | Validación en lógica                         |
 
 ### Reglas de Precios
 
-| # | Regla | Detalle |
-|---|-------|---------|
-| P1 | El precio de venta sugerido al vender es `lot.unitSalePrice` | El vendedor puede ajustarlo |
-| P2 | El `snapshotPurchasePrice` en sale_items viene del lote consumido | Para margen real |
-| P3 | `products.currentPurchasePrice` / `currentSalePrice` se actualizan al confirmar compra | Para listados rápidos |
-| P4 | `currentPurchasePrice` / `currentSalePrice` se llenan con el valor del último lote | Cached refs para listados y cotizaciones |
+| #   | Regla                                                                                  | Detalle                                  |
+| --- | -------------------------------------------------------------------------------------- | ---------------------------------------- |
+| P1  | El precio de venta sugerido al vender es `lot.unitSalePrice`                           | El vendedor puede ajustarlo              |
+| P2  | El `snapshotPurchasePrice` en sale_items viene del lote consumido                      | Para margen real                         |
+| P3  | `products.currentPurchasePrice` / `currentSalePrice` se actualizan al confirmar compra | Para listados rápidos                    |
+| P4  | `currentPurchasePrice` / `currentSalePrice` se llenan con el valor del último lote     | Cached refs para listados y cotizaciones |
 
 ---
 
@@ -798,27 +815,32 @@ MODIFICAR:
 ## 11. Checklist de Implementación
 
 ### Etapa 1: Enums y Tipos
+
 - [ ] Crear `src/lib/shared/enums/purchaseTypes.ts`
 - [ ] Crear `src/lib/shared/enums/inventoryTypes.ts`
 - [ ] Actualizar `src/lib/shared/enums/index.ts`
 
 ### Etapa 2: Schema (tablas nuevas)
+
 - [ ] Crear `src/lib/server/db/schema/purchaseOrders.ts` (purchase_orders + purchase_order_items)
 - [ ] Crear `src/lib/server/db/schema/inventoryLots.ts`
 - [ ] Crear `src/lib/server/db/schema/inventoryMovements.ts`
 - [ ] Actualizar `src/lib/server/db/schema/index.ts` (barrel exports)
 
 ### Etapa 3: Schema (modificar existentes)
+
 - [ ] Modificar `src/lib/server/db/schema/products.ts` (eliminar campos legacy: `purchasePrice`, `salePrice`, `purchaseCurrency`, `purchaseCurrencyRate`, `purchaseUsdBcvRate`, `purchaseDate`, `normalizedCostUsd`. Agregar `currentPurchasePrice`, `currentSalePrice`, stock → NOT NULL)
 - [ ] Modificar `src/lib/server/db/schema/sales.ts` (lotId + snapshotPurchasePrice en sale_items)
 
 ### Etapa 4: Migración SQL (Fresh)
+
 - [ ] DROP todas las tablas existentes
 - [ ] Generar migración limpia con `pnpm drizzle-kit generate`
 - [ ] Revisar SQL generado manualmente
 - [ ] Aplicar migración con `pnpm drizzle-kit migrate`
 
 ### Etapa 5: Queries
+
 - [ ] Crear `src/lib/server/db/queries/purchaseOrders.ts`
 - [ ] Crear `src/lib/server/db/queries/inventoryLots.ts`
 - [ ] Crear `src/lib/server/db/queries/inventoryMovements.ts`
@@ -826,10 +848,12 @@ MODIFICAR:
 - [ ] Modificar `src/lib/server/db/queries/products.ts` (stock sync helpers)
 
 ### Etapa 6: Validación Zod
+
 - [ ] Crear schemas de validación para purchase orders
 - [ ] Crear schemas de validación para ajustes de inventario
 
 ### Etapa 7: Tests
+
 - [ ] Test: confirmar PO genera lotes + movimientos + actualiza stock
 - [ ] Test: venta FIFO consume lote correcto + genera movimiento
 - [ ] Test: venta sin stock suficiente → error
@@ -840,6 +864,7 @@ MODIFICAR:
 - [ ] Test: stock cached == sum(lotes.quantityAvailable)
 
 ### Etapa 8: Seed de Datos
+
 - [ ] Actualizar `scripts/seed-demo.ts` para crear POs de ejemplo con lotes
 - [ ] Validar que el seed genera stock correcto via lotes
 
@@ -847,15 +872,15 @@ MODIFICAR:
 
 ## Decisiones Resueltas
 
-| # | Decisión | Resolución |
-|---|----------|------------|
-| D1 | ¿Un sale_item puede consumir de múltiples lotes? | **No split.** 1 sale_item = 1 lote. Si no alcanza, error. El vendedor ajusta la cantidad. |
-| D2 | ¿Usar pgEnum o varchar para los tipos nuevos? | **pgEnum.** Alineado con el patrón existente (`sale_item_type`, `lens_catalog_source`, etc.). |
-| D3 | ¿`doublePrecision` o `numeric` para precios en tablas nuevas? | **doublePrecision.** Consistente con el schema actual. |
-| D4 | ¿Cambiar `purchasePrice`/`salePrice` semántica o deprecar? | **ELIMINAR.** Schema fresh — se dropean todos los campos de compra legacy. Solo quedan `currentPurchasePrice` / `currentSalePrice` como cached refs. |
-| D5 | ¿`lotNumber` auto-incremental o formato? | **Integer secuencial.** Consistente con `orderNumber` en sales/quotes. | 
+| #   | Decisión                                                      | Resolución                                                                                                                                           |
+| --- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | ¿Un sale_item puede consumir de múltiples lotes?              | **No split.** 1 sale_item = 1 lote. Si no alcanza, error. El vendedor ajusta la cantidad.                                                            |
+| D2  | ¿Usar pgEnum o varchar para los tipos nuevos?                 | **pgEnum.** Alineado con el patrón existente (`sale_item_type`, `lens_catalog_source`, etc.).                                                        |
+| D3  | ¿`doublePrecision` o `numeric` para precios en tablas nuevas? | **doublePrecision.** Consistente con el schema actual.                                                                                               |
+| D4  | ¿Cambiar `purchasePrice`/`salePrice` semántica o deprecar?    | **ELIMINAR.** Schema fresh — se dropean todos los campos de compra legacy. Solo quedan `currentPurchasePrice` / `currentSalePrice` como cached refs. |
+| D5  | ¿`lotNumber` auto-incremental o formato?                      | **Integer secuencial.** Consistente con `orderNumber` en sales/quotes.                                                                               |
 
 ---
 
-*Última actualización: Abril 2026*
-*Este plan debe aprobarse antes de iniciar implementación.*
+_Última actualización: Abril 2026_
+_Este plan debe aprobarse antes de iniciar implementación._
