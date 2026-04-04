@@ -81,13 +81,10 @@ export const inventoryMovements = pgTable(
 			'btree',
 			table.lensCatalogItemId.asc().nullsLast().op('uuid_ops')
 		),
-		index('ix_inventory_movements_type').using(
-			'btree',
-			table.movementType.asc().nullsLast().op('text_ops')
-		),
+		index('ix_inventory_movements_type').using('btree', table.movementType.asc().nullsLast()),
 		index('ix_inventory_movements_reference').using(
 			'btree',
-			table.referenceType.asc().nullsLast().op('text_ops'),
+			table.referenceType.asc().nullsLast(),
 			table.referenceId.asc().nullsLast().op('uuid_ops')
 		),
 		index('ix_inventory_movements_created_at').using(

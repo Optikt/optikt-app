@@ -10,7 +10,8 @@ import {
 	CreateProductSchema,
 	UpdateProductSchema,
 	ProductIdSchema,
-	ReactivateProductSchema
+	ReactivateProductSchema,
+	UpdateSalePriceSchema
 } from '$lib/schemas/products';
 import {
 	getAllProductsWithRelations,
@@ -336,3 +337,27 @@ export const reactivateProduct = command(
 		return restored;
 	}
 );
+
+export const updateSalePriceCmd = command(UpdateSalePriceSchema, async (data) => {
+	const context = getAuditContext();
+	const product = await findProductById(data.id);
+	if (!product) {
+		return { success: false as const, error: 'Producto no encontrado' };
+	}
+
+	const old = { currentSalePrice: product.currentSalePrice };
+	const updated = await updateProduct(data.id, { currentSalePrice: data.currentSalePrice });
+
+	await auditService.logUpdate(
+		'product' as never,
+		data.id,
+		old,
+		{ currentSalePrice: data.currentSalePrice },
+		context
+	);
+
+	return {
+		success: true as const,
+		currentSalePrice: updated?.currentSalePrice ?? data.currentSalePrice
+	};
+});

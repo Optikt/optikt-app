@@ -75,10 +75,7 @@ export const purchaseOrders = pgTable(
 			'btree',
 			table.orderDate.asc().nullsLast().op('timestamptz_ops')
 		),
-		index('ix_purchase_orders_status').using(
-			'btree',
-			table.status.asc().nullsLast().op('text_ops')
-		),
+		index('ix_purchase_orders_status').using('btree', table.status.asc().nullsLast()),
 		foreignKey({
 			columns: [table.supplierId],
 			foreignColumns: [suppliers.id],

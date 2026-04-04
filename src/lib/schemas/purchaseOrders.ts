@@ -83,3 +83,18 @@ export const ConfirmPurchaseOrderSchema = z.object({
 export const CancelPurchaseOrderSchema = z.object({
 	id: z.uuid()
 });
+
+// ============================================================================
+// APPLY PRICE SUGGESTIONS (after PO confirm)
+// ============================================================================
+
+export const ApplyPriceSuggestionsSchema = z.object({
+	updates: z
+		.array(
+			z.object({
+				productId: z.uuid(),
+				newSalePrice: CoercedNumber.min(0, 'Precio debe ser ≥ 0')
+			})
+		)
+		.min(1, 'Debe incluir al menos una actualización')
+});

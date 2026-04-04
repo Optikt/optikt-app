@@ -31,5 +31,6 @@ export {
 	StatusBadge,
 	TreatmentBadge,
 	SaleStatusBadge,
-	QuoteStatusBadge
+	QuoteStatusBadge,
+	PurchaseOrderStatusBadge
 } from './badges';

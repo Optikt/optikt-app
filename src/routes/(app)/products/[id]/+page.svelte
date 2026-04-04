@@ -1,6 +1,15 @@
 <script lang="ts">
 	import { Button } from 'flowbite-svelte';
-	import { ArrowLeft, Pencil, Trash2, TriangleAlert, History } from '@lucide/svelte';
+	import {
+		ArrowLeft,
+		Pencil,
+		Trash2,
+		TriangleAlert,
+		History,
+		Package,
+		Check,
+		X
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -8,13 +17,74 @@
 	import { untrack } from 'svelte';
 	import { ConfirmModal, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
-	import { deleteProductById } from '$lib/remote/products.remote';
+	import { deleteProductById, updateSalePriceCmd } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { ProductType, requiresStockTracking } from '$lib/shared/enums';
 	import { isLowStock } from '$lib/utils/products.js';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);
+	const activeLots = untrack(() => data.activeLots);
+	const fifoCost = untrack(() => data.fifoCost);
+
+	// Editable sale price
+	let currentSalePrice = $state<number | null>(product.currentSalePrice);
+	let editingPrice = $state(false);
+	let priceInput = $state('');
+	let priceSaving = $state(false);
+
+	function startEditingPrice() {
+		priceInput = currentSalePrice != null ? String(currentSalePrice) : '';
+		editingPrice = true;
+	}
+
+	function cancelEditingPrice() {
+		editingPrice = false;
+	}
+
+	async function savePrice() {
+		const value = parseFloat(priceInput);
+		if (isNaN(value) || value < 0) {
+			toast.error('Precio inválido');
+			return;
+		}
+		priceSaving = true;
+		try {
+			const result = await updateSalePriceCmd({ id: product.id, currentSalePrice: value });
+			if (result.success) {
+				currentSalePrice = value;
+				editingPrice = false;
+				toast.success('Precio de venta actualizado');
+			} else {
+				toast.error(result.error ?? 'Error actualizando precio');
+			}
+		} catch (e) {
+			console.error(e);
+			toast.error(getErrorMessage(e, 'Error actualizando precio'));
+		} finally {
+			priceSaving = false;
+		}
+	}
+
+	// Computed: real stock from lots (source of truth)
+	const realStock = activeLots.reduce(
+		(sum: number, lot: { quantityAvailable: number }) => sum + lot.quantityAvailable,
+		0
+	);
+
+	// Computed: margin based on FIFO cost (next unit to sell)
+	const fifoMargin = $derived(
+		fifoCost != null && currentSalePrice != null
+			? getProfitMargin(fifoCost, currentSalePrice)
+			: null
+	);
+
+	// Margin color class
+	const marginValue = $derived(
+		fifoCost != null && currentSalePrice != null && fifoCost > 0
+			? ((currentSalePrice - fifoCost) / fifoCost) * 100
+			: null
+	);
 
 	// Delete modal state
 	let showDeleteModal = $state(false);
@@ -128,25 +198,87 @@
 					<h3 class="mb-4 text-lg font-semibold text-slate-800">Precios</h3>
 					<div class="grid gap-4 sm:grid-cols-3">
 						<div class="rounded-lg bg-slate-50 p-4">
-							<dt class="text-sm text-slate-500">Precio Compra</dt>
+							<dt class="text-sm text-slate-500">Costo próxima unidad</dt>
 							<dd class="mt-1 font-mono text-xl font-medium text-slate-700">
-								{product.currentPurchasePrice != null
-									? formatPrice(product.currentPurchasePrice)
-									: '—'}
+								{fifoCost != null ? formatPrice(fifoCost) : '—'}
 							</dd>
+							{#if fifoCost != null}
+								<span class="text-[10px] text-slate-400">FIFO — lote más antiguo</span>
+							{/if}
 						</div>
 						<div class="rounded-lg bg-blue-50 p-4">
 							<dt class="text-sm text-blue-600">Precio Venta</dt>
-							<dd class="mt-1 font-mono text-xl font-bold text-blue-700">
-								{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
-							</dd>
+							{#if editingPrice}
+								<dd class="mt-1 flex items-center gap-1">
+									<input
+										type="number"
+										bind:value={priceInput}
+										step="0.01"
+										min="0"
+										class="w-24 rounded border border-blue-300 bg-white px-2 py-1 font-mono text-lg font-bold text-blue-700 tabular-nums focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+										onkeydown={(e) => {
+											if (e.key === 'Enter') savePrice();
+											if (e.key === 'Escape') cancelEditingPrice();
+										}}
+										disabled={priceSaving}
+									/>
+									<button
+										type="button"
+										onclick={savePrice}
+										disabled={priceSaving}
+										class="rounded p-1 text-green-600 hover:bg-green-100 disabled:opacity-50"
+									>
+										<Check class="h-4 w-4" />
+									</button>
+									<button
+										type="button"
+										onclick={cancelEditingPrice}
+										disabled={priceSaving}
+										class="rounded p-1 text-red-500 hover:bg-red-100 disabled:opacity-50"
+									>
+										<X class="h-4 w-4" />
+									</button>
+								</dd>
+							{:else}
+								<dd class="mt-1 flex items-center gap-2">
+									<span class="font-mono text-xl font-bold text-blue-700">
+										{currentSalePrice != null ? formatPrice(currentSalePrice) : '—'}
+									</span>
+									<button
+										type="button"
+										onclick={startEditingPrice}
+										class="rounded p-1 text-blue-400 hover:bg-blue-100 hover:text-blue-600"
+										title="Editar precio de venta"
+									>
+										<Pencil class="h-3.5 w-3.5" />
+									</button>
+								</dd>
+							{/if}
 						</div>
-						<div class="rounded-lg bg-green-50 p-4">
-							<dt class="text-sm text-green-600">Margen</dt>
-							<dd class="mt-1 text-xl font-bold text-green-700">
-								{product.currentPurchasePrice != null && product.currentSalePrice != null
-									? getProfitMargin(product.currentPurchasePrice, product.currentSalePrice)
-									: '—'}
+						<div
+							class="rounded-lg p-4"
+							class:bg-green-50={marginValue != null && marginValue >= 40}
+							class:bg-amber-50={marginValue != null && marginValue > 0 && marginValue < 40}
+							class:bg-red-50={marginValue != null && marginValue <= 0}
+							class:bg-slate-50={marginValue == null}
+						>
+							<dt
+								class="text-sm"
+								class:text-green-600={marginValue != null && marginValue >= 40}
+								class:text-amber-600={marginValue != null && marginValue > 0 && marginValue < 40}
+								class:text-red-600={marginValue != null && marginValue <= 0}
+								class:text-slate-500={marginValue == null}
+							>
+								Margen próxima venta
+							</dt>
+							<dd
+								class="mt-1 text-xl font-bold"
+								class:text-green-700={marginValue != null && marginValue >= 40}
+								class:text-amber-700={marginValue != null && marginValue > 0 && marginValue < 40}
+								class:text-red-700={marginValue != null && marginValue <= 0}
+								class:text-slate-700={marginValue == null}
+							>
+								{fifoMargin ?? '—'}
 							</dd>
 						</div>
 					</div>
@@ -170,12 +302,18 @@
 									{#if isLowStock(product)}
 										<span class="inline-flex items-center gap-2">
 											<TriangleAlert class="h-5 w-5" />
-											{product.stock}
+											{realStock}
 										</span>
 									{:else}
-										{product.stock ?? '—'}
+										{realStock}
 									{/if}
 								</dd>
+								<span class="text-[10px] text-slate-400"
+									>{activeLots.length} lote{activeLots.length !== 1 ? 's' : ''} activo{activeLots.length !==
+									1
+										? 's'
+										: ''}</span
+								>
 							</div>
 							<div>
 								<dt class="text-sm text-slate-500">Stock Mínimo</dt>
@@ -210,6 +348,72 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Active Lots Table (FIFO) -->
+		{#if requiresStockTracking(product.type as ProductType)}
+			<div class="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+				<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+					<h3 class="flex items-center gap-2 text-lg font-semibold text-slate-800">
+						<Package class="h-5 w-5" />
+						Lotes Activos ({activeLots.length})
+					</h3>
+					<div class="text-sm text-slate-500">
+						Stock real: <span class="font-mono font-semibold text-slate-900">{realStock}</span>
+					</div>
+				</div>
+
+				{#if activeLots.length > 0}
+					<div class="overflow-x-auto">
+						<table class="w-full text-left text-sm">
+							<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+								<tr>
+									<th class="px-6 py-3">N° Lote</th>
+									<th class="px-6 py-3 text-right">Unidades disp.</th>
+									<th class="px-6 py-3 text-right">Costo unitario</th>
+									<th class="px-6 py-3 text-right">P. Venta lote</th>
+									<th class="px-6 py-3 text-right">Fecha ingreso</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each activeLots as lot, i (lot.id)}
+									<tr
+										class="border-b border-slate-100 hover:bg-slate-50 {i === 0
+											? 'bg-blue-50'
+											: ''}"
+									>
+										<td class="px-6 py-3">
+											<span class="font-mono font-medium"
+												>LOT-{String(lot.lotNumber).padStart(4, '0')}</span
+											>
+											{#if i === 0}
+												<span
+													class="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+													>FIFO — siguiente</span
+												>
+											{/if}
+										</td>
+										<td class="px-6 py-3 text-right font-mono tabular-nums"
+											>{lot.quantityAvailable}</td
+										>
+										<td class="px-6 py-3 text-right font-mono tabular-nums"
+											>{formatPrice(lot.unitPurchasePrice)}</td
+										>
+										<td class="px-6 py-3 text-right font-mono tabular-nums"
+											>{formatPrice(lot.unitSalePrice)}</td
+										>
+										<td class="px-6 py-3 text-right text-slate-500">{formatDate(lot.createdAt)}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else}
+					<div class="px-6 py-8 text-center text-slate-400">
+						Sin lotes activos. Crea una orden de compra para ingresar stock.
+					</div>
+				{/if}
+			</div>
+		{/if}
 	</div>
 </div>
 

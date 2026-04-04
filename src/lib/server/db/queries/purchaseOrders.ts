@@ -17,7 +17,7 @@ import {
 import type { DbOrTx } from '$lib/server/db/types';
 import { PurchaseOrderStatus, PurchaseOrderItemType } from '$lib/shared/enums';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
-import { getNextLotNumber } from './inventoryLots';
+import { getNextLotNumber, getNextFifoCost } from './inventoryLots';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -324,14 +324,15 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 			createdById: confirmedById
 		});
 
-		// d. Update cached stock counter
+		// d. Update cached stock counter + FIFO-based current purchase price
+		// NOTE: currentSalePrice is NOT updated here — it requires explicit user approval
 		if (item.itemType === PurchaseOrderItemType.PRODUCT && item.productId) {
+			const fifoCost = await getNextFifoCost(item.productId, tx);
 			await tx
 				.update(products)
 				.set({
 					stock: sql`${products.stock} + ${item.quantity}`,
-					currentPurchasePrice: item.unitPurchasePrice,
-					currentSalePrice: item.unitSalePrice,
+					currentPurchasePrice: fifoCost ?? item.unitPurchasePrice,
 					updatedAt: new Date()
 				})
 				.where(eq(products.id, item.productId));

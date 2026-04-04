@@ -125,6 +125,30 @@ export async function countInventoryLots(options?: LotFilterOptions): Promise<nu
 // ---------------------------------------------------------------------------
 
 /**
+ * Get the purchase cost of the next unit that would be sold (FIFO).
+ * Returns the unitPurchasePrice of the oldest active lot with stock,
+ * or null if no lots are available.
+ */
+export async function getNextFifoCost(
+	productId: string,
+	executor: DbOrTx = db
+): Promise<number | null> {
+	const [lot] = await executor
+		.select({ unitPurchasePrice: inventoryLots.unitPurchasePrice })
+		.from(inventoryLots)
+		.where(
+			and(
+				eq(inventoryLots.productId, productId),
+				eq(inventoryLots.isActive, true),
+				gt(inventoryLots.quantityAvailable, 0)
+			)
+		)
+		.orderBy(asc(inventoryLots.createdAt))
+		.limit(1);
+	return lot?.unitPurchasePrice ?? null;
+}
+
+/**
  * Get active lots for a product in FIFO order (oldest first).
  * Used during sale creation to find which lot to consume from.
  */

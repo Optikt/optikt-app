@@ -67,6 +67,11 @@ export const UpdateProductSchema = CreateProductSchema.partial().extend({
 
 export const ProductIdSchema = EntityIdSchema();
 
+export const UpdateSalePriceSchema = z.object({
+	id: z.uuid(),
+	currentSalePrice: CoercedNumber.min(0, 'Precio debe ser ≥ 0')
+});
+
 export const ReactivateProductSchema = z.object({
 	deletedProductId: z.uuid()
 });

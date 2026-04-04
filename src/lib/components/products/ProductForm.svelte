@@ -66,7 +66,6 @@
 		description: '',
 		isTaxable: true,
 		taxRate: 16,
-		stock: 0,
 		minStock: 0,
 		imageUrl: ''
 	});
@@ -215,7 +214,6 @@
 					description: product.description ?? '',
 					isTaxable: product.isTaxable ?? true,
 					taxRate: product.taxRate ?? 16,
-					stock: product.stock ?? 0,
 					minStock: product.minStock ?? 0,
 					imageUrl: product.imageUrl ?? ''
 				};
@@ -483,29 +481,19 @@
 				{#if showStockFields}
 					<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 						<h3 class="mb-4 text-lg font-semibold text-slate-800">Inventario</h3>
-						<div class="grid gap-4 md:grid-cols-2">
-							<div>
-								<Label for="stock" class="mb-2">Stock actual</Label>
-								<input
-									type="number"
-									id="stock"
-									name="stock"
-									bind:value={formData.stock}
-									min="0"
-									class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
-								/>
-							</div>
-							<div>
-								<Label for="minStock" class="mb-2">Stock mínimo (alertas)</Label>
-								<input
-									type="number"
-									id="minStock"
-									name="minStock"
-									bind:value={formData.minStock}
-									min="0"
-									class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
-								/>
-							</div>
+						<p class="mb-3 text-xs text-slate-500">
+							El stock se gestiona automáticamente mediante órdenes de compra.
+						</p>
+						<div class="max-w-xs">
+							<Label for="minStock" class="mb-2">Stock mínimo (alertas)</Label>
+							<input
+								type="number"
+								id="minStock"
+								name="minStock"
+								bind:value={formData.minStock}
+								min="0"
+								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+							/>
 						</div>
 					</div>
 				{/if}
@@ -728,29 +716,19 @@
 			{#if showStockFields}
 				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
 					<h3 class="mb-4 text-lg font-semibold text-slate-800">Inventario</h3>
-					<div class="grid gap-4 md:grid-cols-2">
-						<div>
-							<Label for="stock" class="mb-2">Stock actual</Label>
-							<input
-								type="number"
-								id="stock"
-								name="stock"
-								bind:value={formData.stock}
-								min="0"
-								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
-							/>
-						</div>
-						<div>
-							<Label for="minStock" class="mb-2">Stock mínimo (alertas)</Label>
-							<input
-								type="number"
-								id="minStock"
-								name="minStock"
-								bind:value={formData.minStock}
-								min="0"
-								class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
-							/>
-						</div>
+					<p class="mb-3 text-xs text-slate-500">
+						El stock se gestiona automáticamente mediante órdenes de compra.
+					</p>
+					<div class="max-w-xs">
+						<Label for="minStock" class="mb-2">Stock mínimo (alertas)</Label>
+						<input
+							type="number"
+							id="minStock"
+							name="minStock"
+							bind:value={formData.minStock}
+							min="0"
+							class="block w-full rounded-lg border border-slate-300 bg-slate-50 p-2.5 text-sm"
+						/>
 					</div>
 				</div>
 			{/if}
