@@ -21,20 +21,42 @@
 	let showCancelModal = $state(false);
 	let selectedSale = $state<SaleWithRelations | null>(null);
 	let actionLoading = $state(false);
+	let cancelReason = $state('');
+	let cancelReasonError = $state('');
+
+	const CANCEL_REASON_SUGGESTIONS = [
+		'Error en el pedido',
+		'Solicitud del cliente',
+		'Producto no disponible',
+		'Error en los datos de la venta'
+	];
+
+	function selectCancelSuggestion(suggestion: string) {
+		cancelReason = suggestion;
+		cancelReasonError = '';
+	}
 
 	function openCancel(sale: SaleWithRelations) {
 		selectedSale = sale;
+		cancelReason = '';
+		cancelReasonError = '';
 		showCancelModal = true;
 	}
 
 	async function handleCancel() {
 		if (!selectedSale) return;
+		if (cancelReason.trim().length < 10) {
+			cancelReasonError = 'El motivo debe tener al menos 10 caracteres';
+			return;
+		}
+		cancelReasonError = '';
 		actionLoading = true;
 		try {
-			const result = await cancelSale({ id: selectedSale.id });
+			const result = await cancelSale({ id: selectedSale.id, reason: cancelReason.trim() });
 			if (result.success) {
 				toast.success('Venta cancelada');
 				showCancelModal = false;
+				cancelReason = '';
 				onRefresh?.();
 			} else {
 				toast.error(result.error ?? 'Error cancelando venta');
@@ -154,10 +176,43 @@
 <ConfirmModal
 	bind:open={showCancelModal}
 	title="Cancelar Venta"
-	message="¿Está seguro que desea cancelar esta venta? Se restaurará el stock de los productos y lentes."
 	confirmLabel="Cancelar Venta"
 	confirmColor="red"
 	loading={actionLoading}
 	onConfirm={handleCancel}
-	onCancel={() => (showCancelModal = false)}
-/>
+	onCancel={() => {
+		showCancelModal = false;
+		cancelReason = '';
+		cancelReasonError = '';
+	}}
+>
+	{#snippet body()}
+		<p class="mb-3 text-sm text-gray-700">
+			¿Está seguro que desea cancelar esta venta? Se restaurará el stock de los productos y lentes.
+		</p>
+		<div class="mb-2 flex flex-wrap gap-1.5">
+			{#each CANCEL_REASON_SUGGESTIONS as suggestion (suggestion)}
+				<button
+					type="button"
+					class="rounded-full border px-2.5 py-1 text-xs font-medium transition-colors {cancelReason ===
+					suggestion
+						? 'border-red-300 bg-red-50 text-red-700'
+						: 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}"
+					onclick={() => selectCancelSuggestion(suggestion)}
+				>
+					{suggestion}
+				</button>
+			{/each}
+		</div>
+		<textarea
+			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-red-400 focus:ring-1 focus:ring-red-400"
+			rows="3"
+			placeholder="Motivo de cancelación (mínimo 10 caracteres)..."
+			bind:value={cancelReason}
+			oninput={() => (cancelReasonError = '')}
+		></textarea>
+		{#if cancelReasonError}
+			<p class="mt-1 text-xs text-red-600">{cancelReasonError}</p>
+		{/if}
+	{/snippet}
+</ConfirmModal>
