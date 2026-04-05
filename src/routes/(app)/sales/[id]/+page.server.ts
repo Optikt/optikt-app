@@ -6,6 +6,8 @@ import {
 	getSalePayments
 } from '$lib/server/db/queries/sales';
 import { getLatestRates } from '$lib/server/db/queries/exchangeRates';
+import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
+import { MovementReferenceType } from '$lib/shared/enums';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -17,10 +19,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const [items, payments, latestRates] = await Promise.all([
+	const [items, payments, latestRates, movements] = await Promise.all([
 		getSaleItemsWithDetails(params.id),
 		getSalePayments(params.id, { includeVoided: true }),
-		getLatestRates()
+		getLatestRates(),
+		getMovementsWithDetails({
+			referenceType: MovementReferenceType.SALE,
+			referenceId: params.id,
+			orderSort: 'asc'
+		})
 	]);
 
 	// TODO - FIXME - This is a temporary solution to get the BCV rate for the sale's date.
@@ -37,6 +44,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		sale,
 		items,
 		payments,
-		bcvRate
+		bcvRate,
+		movements
 	};
 };

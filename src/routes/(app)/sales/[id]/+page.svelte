@@ -17,12 +17,14 @@
 	import { resolve } from '$app/paths';
 	import { SaleStatusBadge, ConfirmModal } from '$lib/components/ui';
 	import { PaymentForm, PaymentsTable } from '$lib/components/sales';
+	import { MovementsTable } from '$lib/components/purchases';
 	import { cancelSale } from '$lib/remote/sales.remote';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import { SaleStatus, DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
+	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { TaxBreakdownDisplay } from '$lib/components/ui';
 	import { untrack } from 'svelte';
@@ -33,6 +35,7 @@
 	let items = $state<SaleItemWithDetails[]>(untrack(() => data.items));
 	let payments = $state<SalePayment[]>(untrack(() => data.payments));
 	let bcvRate = $state<number>(untrack(() => data.bcvRate));
+	let movements = $state<MovementWithDetails[]>(untrack(() => data.movements));
 
 	// Derived
 	let remainingBcvUsd = $derived(Math.max(0, sale.total - sale.paidAmountBcvUsd));
@@ -498,6 +501,14 @@
 				{bcvRate}
 				onPaymentAdded={handlePaymentAdded}
 			/>
+		</div>
+	{/if}
+
+	<!-- Inventory Movements Section -->
+	{#if movements.length > 0}
+		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+			<h2 class="mb-4 text-xl font-semibold text-slate-900">Movimientos de Inventario</h2>
+			<MovementsTable {movements} />
 		</div>
 	{/if}
 </div>
