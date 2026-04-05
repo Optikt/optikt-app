@@ -17,7 +17,7 @@
 - ✅ **Vista detalle de venta** — artículos consolidados, treatments como items, pagos
 - ✅ **inventoryMode** — ON_DEMAND vs STOCK por lens catalog item
 - ✅ **Order numbers** — secuencial sin gaps (MAX+1 dentro de transacción)
-- ✅ **321 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory)
+- ✅ **347 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory, FIFO E2E scenarios)
 - ✅ **Seed de demo** — datos de ejemplo para desarrollo
 - ✅ **Presupuestos (Fase 6)** — CRUD, wizard 3 pasos, conversión a venta, estados, quoteNumber secuencial, audit logging
 - ✅ **IVA básico (Fase 7)** — tax-inclusive pricing, desglose fiscal en ventas/presupuestos, TaxToggle, default 16%
@@ -47,12 +47,12 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 
 - ✅ **Reporte de ventas: excluir canceladas de totales** — resuelto en `fix-sales-report-exclude-cancelled`. Totales solo incluyen ventas activas, tarjeta separada para anuladas, filtro por estado (activas/anuladas/todas), CSV respeta filtro.
 - **Cancelación de venta con pago parcial** — al cancelar una venta que tiene `sale_payments`, mostrar advertencia con opciones: "Marcar como por devolver" vs "Retener como penalidad". Registrar la decisión, reflejar en reportes. Dos sub-casos: devolución (nota de crédito) o retención. Depende del módulo de Credit Notes.
-- **Test de integración FIFO E2E** — test que crea lote → venta → verifica lot.quantity_available en DB → cancela → verifica rollback. Cubre single-lot y multi-lot scenarios. Incluir verificación de inventory_movements (SALE_OUT / CANCEL_REVERT).
+- ✅ **Test de integración FIFO E2E** — resuelto en `pre-redesign-tasks`. 26 tests cubriendo: single/multi-lot lifecycle, sale→cancel→rollback, ajustes, costos FIFO, audit trail de movimientos, invariante cached stock.
 - Credit Notes / RETURN_IN con reembolso y ajuste financiero
 - Conteo físico multi-item (inventario físico: ver todos los productos, ingresar stock real, el sistema genera ajustes por diferencias)
-- Historial de movimientos por venta (sección en detalle de venta mostrando qué lotes se afectaron)
+- ✅ **Historial de movimientos por venta** — resuelto en `pre-redesign-tasks`. Sección de MovementsTable en detalle de venta con movimientos SALE_OUT/CANCEL_REVERT.
 - Ajustes de inventario para lentes (catálogo de lentes con stock)
-- Exportar movimientos a CSV/PDF
+- ✅ **Exportar movimientos a CSV** — resuelto en `pre-redesign-tasks`. Botón en /purchases/movements exporta datos filtrados con fecha, tipo, producto, lote, cantidades, costo, notas, usuario.
 - Surplus / excedentes físicos de cristales
 - Fulfillment planner (unit/pair policies, procurement engine)
 - Búsqueda global con scopes/prefijos y parser óptico
@@ -82,7 +82,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] CRUD completo (todas las entidades)
 - [x] Wizard de ventas (happy path completo)
 - [x] inventoryMode ON_DEMAND / STOCK
-- [x] Tests (321)
+- [x] Tests (347)
 - [x] Fase 6 — Presupuestos
 - [x] Fase 7 — IVA básico
 - [x] Fase 8 — Dashboard real
