@@ -72,7 +72,7 @@
 				{#each activePayments as payment (payment.id)}
 					<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
 						<td class="px-4 py-3 text-sm text-slate-600">
-							{formatDate(payment.paymentDate ?? payment.createdAt, { month: 'short' })}
+							{formatDate(payment.paymentDate, { month: 'short' })}
 						</td>
 						<td class="px-4 py-3 text-sm font-medium text-slate-800">
 							{getPaymentMethodLabel(payment.paymentMethod)}
@@ -109,7 +109,7 @@
 				{#each voidedPayments as payment (payment.id)}
 					<tr class="border-t border-slate-100 bg-red-50/30 opacity-60">
 						<td class="px-4 py-3 text-sm text-slate-400 line-through">
-							{formatDate(payment.paymentDate ?? payment.createdAt, { month: 'short' })}
+							{formatDate(payment.paymentDate, { month: 'short' })}
 						</td>
 						<td class="px-4 py-3 text-sm text-slate-400 line-through">
 							{getPaymentMethodLabel(payment.paymentMethod)}

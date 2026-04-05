@@ -55,7 +55,7 @@ function buildMovementConditions(opts: MovementFilterOptions): SQL | undefined {
 	if (opts.dateTo) {
 		// dateTo is inclusive — include the entire day
 		const endOfDay = new Date(opts.dateTo);
-		endOfDay.setDate(endOfDay.getDate() + 1);
+		endOfDay.setUTCHours(23, 59, 59, 999);
 		conditions.push(lte(inventoryMovements.createdAt, endOfDay));
 	}
 

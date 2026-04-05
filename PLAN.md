@@ -45,10 +45,12 @@
 
 Estos items se agregan cuando aparezca una necesidad real en uso:
 
+- **Reporte de ventas: excluir canceladas de totales** — las ventas CANCELLED no deben sumar a "Monto Total" ni "Total Cobrado". Mostrar sección separada "Ventas anuladas" como información (no como ingresos). Agregar filtro por estado (activas / canceladas / todas). Necesario antes de producción.
+- **Cancelación de venta con pago parcial** — al cancelar una venta que tiene `sale_payments`, mostrar advertencia con opciones: "Marcar como por devolver" vs "Retener como penalidad". Registrar la decisión, reflejar en reportes. Dos sub-casos: devolución (nota de crédito) o retención. Depende del módulo de Credit Notes.
 - **Test de integración FIFO E2E** — test que crea lote → venta → verifica lot.quantity_available en DB → cancela → verifica rollback. Cubre single-lot y multi-lot scenarios. Incluir verificación de inventory_movements (SALE_OUT / CANCEL_REVERT).
+- Credit Notes / RETURN_IN con reembolso y ajuste financiero
 - Conteo físico multi-item (inventario físico: ver todos los productos, ingresar stock real, el sistema genera ajustes por diferencias)
 - Historial de movimientos por venta (sección en detalle de venta mostrando qué lotes se afectaron)
-- Credit Notes / RETURN_IN con reembolso y ajuste financiero
 - Ajustes de inventario para lentes (catálogo de lentes con stock)
 - Exportar movimientos a CSV/PDF
 - Surplus / excedentes físicos de cristales
@@ -63,14 +65,14 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 
 ## Deuda técnica conocida
 
-| ID   | Descripción                                                                                                                                                                                                                                                                                                                           | Riesgo |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function                                                                                                                                                                                                                                                                     | Medio  |
-| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                                                                                                                                                                                                | Bajo   |
-| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                                                                                                                                                                                                 | Medio  |
-| RT-4 | ~~Fallback para errores de validación no vinculados a campos visibles~~ — RESUELTO: `toastUnboundErrors()` en 13 form components + mensajes Zod custom en español                                                                                                                                                                     | ✅     |
-| RT-5 | Backfill `payment_date` en `sale_payments` — ejecutar migración que haga `UPDATE sale_payments SET payment_date = created_at WHERE payment_date IS NULL`, luego marcar la columna como `NOT NULL`. Tras eso, eliminar el `COALESCE` en `getReportPayments()` y usar directamente `salePayments.paymentDate` (quitar import de `sql`). | Bajo   |
-| RT-6 | Reemplazar `src/lib/utils/csv.ts` (helper manual) por [`export-to-csv`](https://github.com/alexcaza/export-to-csv) — paquete ligero y mantenido. Eliminar `generateCsv()` / `downloadCsv()` y sus tests.                                                                                                                              | Bajo   |
+| ID   | Descripción                                                                                                                                                                                              | Riesgo |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function                                                                                                                                        | Medio  |
+| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                                                                   | Bajo   |
+| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                                                                    | Medio  |
+| RT-4 | ~~Fallback para errores de validación no vinculados a campos visibles~~ — RESUELTO: `toastUnboundErrors()` en 13 form components + mensajes Zod custom en español                                        | ✅     |
+| RT-5 | ~~Backfill `payment_date` en `sale_payments`~~ — RESUELTO: migración 0001 backfill + NOT NULL, eliminado fallback `?? createdAt` en reports y UI                                                         | ✅     |
+| RT-6 | Reemplazar `src/lib/utils/csv.ts` (helper manual) por [`export-to-csv`](https://github.com/alexcaza/export-to-csv) — paquete ligero y mantenido. Eliminar `generateCsv()` / `downloadCsv()` y sus tests. | Bajo   |
 
 ---
 

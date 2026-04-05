@@ -122,13 +122,12 @@ export async function getReportPayments(
 	dateTo: Date
 ): Promise<{ payments: ReportPayment[]; summary: PaymentsReportSummary }> {
 	const toEnd = new Date(dateTo);
-	toEnd.setHours(23, 59, 59, 999);
+	toEnd.setUTCHours(23, 59, 59, 999);
 
 	const rows = await db
 		.select({
 			id: salePayments.id,
 			paymentDate: salePayments.paymentDate,
-			createdAt: salePayments.createdAt,
 			paymentMethod: salePayments.paymentMethod,
 			amount: salePayments.amount,
 			exchangeRate: salePayments.exchangeRate,
@@ -155,7 +154,7 @@ export async function getReportPayments(
 
 	const reportPayments: ReportPayment[] = rows.map((r) => ({
 		id: r.id,
-		paymentDate: r.paymentDate ?? r.createdAt,
+		paymentDate: r.paymentDate,
 		paymentMethod: r.paymentMethod,
 		amount: r.amount,
 		exchangeRate: r.exchangeRate,

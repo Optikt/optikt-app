@@ -130,7 +130,7 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 
 	if (opts.dateTo) {
 		const to = new Date(opts.dateTo);
-		to.setHours(23, 59, 59, 999);
+		to.setUTCHours(23, 59, 59, 999);
 		conditions.push(lte(sales.saleDate, to));
 	}
 
