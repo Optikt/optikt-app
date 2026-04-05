@@ -122,7 +122,7 @@ export async function getReportPayments(
 	dateTo: Date
 ): Promise<{ payments: ReportPayment[]; summary: PaymentsReportSummary }> {
 	const toEnd = new Date(dateTo);
-	toEnd.setHours(23, 59, 59, 999);
+	toEnd.setUTCHours(23, 59, 59, 999);
 
 	const rows = await db
 		.select({
