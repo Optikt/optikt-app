@@ -44,10 +44,19 @@ import {
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
+import { planFifoConsumption } from '$lib/utils/inventory';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
+import {
+	getActiveLotsFifo,
+	consumeFromLot,
+	returnToLot
+} from '$lib/server/db/queries/inventoryLots';
+import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
+import { inventoryMovements } from '$lib/server/db/schema';
 
 // ============================================================================
 // TYPES
@@ -269,47 +278,69 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			})
 			.returning();
 
-		// Create sale items + handle stock
+		// Create sale items + handle stock via FIFO lot consumption
 		for (const item of data.items) {
-			await tx.insert(saleItems).values({
-				id: item.id ?? crypto.randomUUID(),
-				saleId: newSale.id,
-				itemType: item.itemType,
-				parentSaleItemId: item.parentSaleItemId ?? null,
-				productId: item.productId ?? null,
-				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				supplierTreatmentId: item.supplierTreatmentId ?? null,
-				prescriptionId: item.prescriptionId ?? null,
-				odSphere: item.odSphere ?? null,
-				odCylinder: item.odCylinder ?? null,
-				odAxis: item.odAxis ?? null,
-				odAddition: item.odAddition ?? null,
-				osSphere: item.osSphere ?? null,
-				osCylinder: item.osCylinder ?? null,
-				osAxis: item.osAxis ?? null,
-				osAddition: item.osAddition ?? null,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				discount: item.discount,
-				discountType: item.discountType,
-				snapshotName: item.snapshotName ?? null,
-				snapshotSku: item.snapshotSku ?? null,
-				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotBaseCost: item.snapshotBaseCost ?? null,
-				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-				snapshotSalePrice: item.snapshotSalePrice ?? null,
-				snapshotPriceType: item.snapshotPriceType ?? null,
-				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-				snapshotTaxRate: item.snapshotTaxRate ?? null,
-				notes: item.notes ?? null,
-				createdAt: now,
-				updatedAt: now
-			});
+			const saleItemId = item.id ?? crypto.randomUUID();
+			let lotId: string | null = null;
+			let snapshotCostTotal: number | null = null;
+			let snapshotCostUnit: number | null = null;
+			let snapshotLotsCount: number | null = null;
 
-			// Decrement stock for product items
-			if (item.productId) {
+			// FIFO lot consumption for PRODUCT items
+			if (item.productId && item.itemType === SaleItemType.PRODUCT) {
+				const [product] = await tx
+					.select({ id: products.id, stock: products.stock, name: products.name })
+					.from(products)
+					.where(and(eq(products.id, item.productId), isNull(products.deletedAt)));
+
+				if (!product) {
+					throw new Error(`Producto ${item.productId} no encontrado`);
+				}
+
+				if (product.stock === null || product.stock < item.quantity) {
+					throw new Error(
+						`Stock insuficiente para ${product.name}. Disponible: ${product.stock ?? 0}, solicitado: ${item.quantity}`
+					);
+				}
+
+				// Get FIFO lots and plan consumption (pure logic)
+				const lots = await getActiveLotsFifo(item.productId, tx);
+				const plan = planFifoConsumption(lots, item.quantity);
+
+				// Execute the plan: consume lots + create movements
+				for (const alloc of plan.allocations) {
+					const updatedLot = await consumeFromLot(alloc.lotId, alloc.quantityToConsume, tx);
+
+					await createInventoryMovement(
+						{
+							movementType: InventoryMovementType.SALE_OUT,
+							lotId: alloc.lotId,
+							itemType: 'PRODUCT',
+							productId: item.productId,
+							quantityDelta: -alloc.quantityToConsume,
+							quantityBefore: alloc.quantityBeforeConsume,
+							quantityAfter: updatedLot.quantityAvailable,
+							referenceType: MovementReferenceType.SALE,
+							referenceId: newSale.id,
+							createdById: context.userId!
+						},
+						tx
+					);
+				}
+
+				lotId = plan.primaryLotId;
+				snapshotCostTotal = plan.costTotal;
+				snapshotCostUnit = plan.costUnit;
+				snapshotLotsCount = plan.lotsCount;
+
+				// Update cached stock counter
+				const newStock = product.stock - item.quantity;
+				await tx
+					.update(products)
+					.set({ stock: newStock, updatedAt: now })
+					.where(eq(products.id, item.productId));
+			} else if (item.productId) {
+				// Non-PRODUCT type but has productId (shouldn't happen, but safe fallback)
 				const [product] = await tx
 					.select({ id: products.id, stock: products.stock })
 					.from(products)
@@ -364,6 +395,47 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 						.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 				}
 			}
+
+			await tx.insert(saleItems).values({
+				id: saleItemId,
+				saleId: newSale.id,
+				itemType: item.itemType,
+				parentSaleItemId: item.parentSaleItemId ?? null,
+				productId: item.productId ?? null,
+				lensCatalogItemId: item.lensCatalogItemId ?? null,
+				supplierTreatmentId: item.supplierTreatmentId ?? null,
+				prescriptionId: item.prescriptionId ?? null,
+				lotId,
+				odSphere: item.odSphere ?? null,
+				odCylinder: item.odCylinder ?? null,
+				odAxis: item.odAxis ?? null,
+				odAddition: item.odAddition ?? null,
+				osSphere: item.osSphere ?? null,
+				osCylinder: item.osCylinder ?? null,
+				osAxis: item.osAxis ?? null,
+				osAddition: item.osAddition ?? null,
+				quantity: item.quantity,
+				unitPrice: item.unitPrice,
+				discount: item.discount,
+				discountType: item.discountType,
+				snapshotName: item.snapshotName ?? null,
+				snapshotSku: item.snapshotSku ?? null,
+				snapshotBrand: item.snapshotBrand ?? null,
+				snapshotCostTotal,
+				snapshotCostUnit,
+				snapshotLotsCount,
+				snapshotBaseCost: item.snapshotBaseCost ?? null,
+				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
+				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
+				snapshotSalePrice: item.snapshotSalePrice ?? null,
+				snapshotPriceType: item.snapshotPriceType ?? null,
+				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
+				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
+				snapshotTaxRate: item.snapshotTaxRate ?? null,
+				notes: item.notes ?? null,
+				createdAt: now,
+				updatedAt: now
+			});
 		}
 
 		return { sale: newSale, newCustomer: createdCustomer };
@@ -522,7 +594,42 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 			.from(saleItems)
 			.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
 
-		// Restore stock for product and lens items
+		// Find all SALE_OUT movements for this sale to revert lots
+		const saleOutMovements = await tx
+			.select()
+			.from(inventoryMovements)
+			.where(
+				and(
+					eq(inventoryMovements.referenceType, MovementReferenceType.SALE),
+					eq(inventoryMovements.referenceId, data.id),
+					eq(inventoryMovements.movementType, InventoryMovementType.SALE_OUT)
+				)
+			);
+
+		// Revert lot consumption for each SALE_OUT movement
+		for (const movement of saleOutMovements) {
+			const quantityToReturn = Math.abs(movement.quantityDelta);
+			const updatedLot = await returnToLot(movement.lotId, quantityToReturn, tx);
+
+			// Create CANCEL_REVERT movement
+			await createInventoryMovement(
+				{
+					movementType: InventoryMovementType.CANCEL_REVERT,
+					lotId: movement.lotId,
+					itemType: 'PRODUCT',
+					productId: movement.productId!,
+					quantityDelta: quantityToReturn,
+					quantityBefore: updatedLot.quantityAvailable - quantityToReturn,
+					quantityAfter: updatedLot.quantityAvailable,
+					referenceType: MovementReferenceType.SALE,
+					referenceId: data.id,
+					createdById: context.userId!
+				},
+				tx
+			);
+		}
+
+		// Restore cached stock for product and lens items
 		for (const item of items) {
 			if (item.productId) {
 				const [product] = await tx

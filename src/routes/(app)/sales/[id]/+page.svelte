@@ -270,6 +270,7 @@
 						<th class="px-4 py-3 text-left text-sm font-semibold text-slate-600">Artículo</th>
 						<th class="px-4 py-3 text-center text-sm font-semibold text-slate-600">Tipo</th>
 						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Cant.</th>
+						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Costo</th>
 						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">
 							Precio Unit.
 						</th>
@@ -315,6 +316,20 @@
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono text-sm">{group.quantity}</td>
+							<td class="px-4 py-3 text-right text-sm text-slate-400">
+								{#if group.item.snapshotCostUnit != null}
+									<span class="font-mono">{formatPrice(group.item.snapshotCostUnit)}</span>
+									{#if group.item.snapshotLotsCount != null && group.item.snapshotLotsCount > 1}
+										<span
+											class="ml-1 inline-block rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500"
+											title="Costo promedio de {group.item.snapshotLotsCount} lotes"
+											>×{group.item.snapshotLotsCount}</span
+										>
+									{/if}
+								{:else}
+									—
+								{/if}
+							</td>
 							<td class="px-4 py-3 text-right font-mono text-sm">
 								{formatPrice(group.item.unitPrice)}
 							</td>
@@ -360,6 +375,7 @@
 									>
 								</td>
 								<td class="px-4 py-3 text-right font-mono text-sm">{treatment.quantity}</td>
+								<td class="px-4 py-3 text-right font-mono text-sm text-slate-400">—</td>
 								<td class="px-4 py-3 text-right font-mono text-sm">
 									{formatPrice(treatment.unitPrice)}
 								</td>

@@ -128,8 +128,12 @@ export const saleItems = pgTable(
 		snapshotSku: varchar('snapshot_sku'),
 		/** Brand name (PRODUCT) or Supplier name (LENS_PAIR, TREATMENT) */
 		snapshotBrand: varchar('snapshot_brand'),
-		/** Purchase cost from the consumed lot (for real margin calculation) */
-		snapshotPurchasePrice: doublePrecision('snapshot_purchase_price'),
+		/** Total real cost of this line (sum of consumed_qty × lot.unit_purchase_price across all lots) */
+		snapshotCostTotal: doublePrecision('snapshot_cost_total'),
+		/** Weighted average unit cost (snapshotCostTotal / quantity) */
+		snapshotCostUnit: doublePrecision('snapshot_cost_unit'),
+		/** Number of distinct FIFO lots consumed for this line item */
+		snapshotLotsCount: integer('snapshot_lots_count'),
 		/** Lens: per-unit cost price from catalog */
 		snapshotBaseCost: doublePrecision('snapshot_base_cost'),
 		/** Lens: mounting price from catalog */

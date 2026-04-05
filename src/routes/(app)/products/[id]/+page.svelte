@@ -239,10 +239,10 @@
 										<X class="h-4 w-4" />
 									</button>
 								</dd>
-							{:else}
+							{:else if currentSalePrice != null}
 								<dd class="mt-1 flex items-center gap-2">
 									<span class="font-mono text-xl font-bold text-blue-700">
-										{currentSalePrice != null ? formatPrice(currentSalePrice) : '—'}
+										{formatPrice(currentSalePrice)}
 									</span>
 									<button
 										type="button"
@@ -251,6 +251,17 @@
 										title="Editar precio de venta"
 									>
 										<Pencil class="h-3.5 w-3.5" />
+									</button>
+								</dd>
+							{:else}
+								<dd class="mt-1">
+									<button
+										type="button"
+										onclick={startEditingPrice}
+										class="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
+									>
+										<Pencil class="h-3.5 w-3.5" />
+										Establecer precio
 									</button>
 								</dd>
 							{/if}
