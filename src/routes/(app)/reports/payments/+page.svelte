@@ -53,7 +53,7 @@
 			'Cliente'
 		];
 		const rows = payments.map((p) => [
-			p.paymentDate ? formatDate(p.paymentDate, { dateStyle: 'short' }) : '—',
+			formatDate(p.paymentDate, { dateStyle: 'short' }),
 			getPaymentMethodLabel(p.paymentMethod),
 			p.amount.toFixed(2),
 			p.bcvRate.toFixed(2),
@@ -125,7 +125,7 @@
 						onclick={() => goto(resolve(`/sales/${payment.saleId}`))}
 					>
 						<td class="px-4 py-3">
-							{payment.paymentDate ? formatDate(payment.paymentDate, { dateStyle: 'medium' }) : '—'}
+							{formatDate(payment.paymentDate, { dateStyle: 'medium' })}
 						</td>
 						<td class="px-4 py-3">{getPaymentMethodLabel(payment.paymentMethod)}</td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(payment.amount)}</td>

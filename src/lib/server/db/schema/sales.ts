@@ -239,7 +239,7 @@ export const salePayments = pgTable(
 		/** BCV Bs/$ official rate at payment time (always required) */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
 		/** Date when the payment was actually received */
-		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'date' }),
+		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'date' }).notNull(),
 		/** Computed BCV USD equivalent: for Bs methods = amount / bcvRate, otherwise = (amount * exchangeRate) / bcvRate */
 		amountBcvUsd: doublePrecision('amount_bcv_usd').notNull(),
 		/** Payment reference number (transfer ref, etc.) */

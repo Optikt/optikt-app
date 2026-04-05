@@ -128,7 +128,6 @@ export async function getReportPayments(
 		.select({
 			id: salePayments.id,
 			paymentDate: salePayments.paymentDate,
-			createdAt: salePayments.createdAt,
 			paymentMethod: salePayments.paymentMethod,
 			amount: salePayments.amount,
 			exchangeRate: salePayments.exchangeRate,
@@ -155,7 +154,7 @@ export async function getReportPayments(
 
 	const reportPayments: ReportPayment[] = rows.map((r) => ({
 		id: r.id,
-		paymentDate: r.paymentDate ?? r.createdAt,
+		paymentDate: r.paymentDate,
 		paymentMethod: r.paymentMethod,
 		amount: r.amount,
 		exchangeRate: r.exchangeRate,
