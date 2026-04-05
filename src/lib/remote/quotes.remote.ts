@@ -42,6 +42,10 @@ import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq, and, isNull } from 'drizzle-orm';
 import { products, lensCatalogItems } from '$lib/server/db/schema';
+import { planFifoConsumption } from '$lib/utils/inventory';
+import { getActiveLotsFifo, consumeFromLot } from '$lib/server/db/queries/inventoryLots';
+import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
+import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums/inventoryTypes';
 
 // ============================================================================
 // HELPERS
@@ -500,52 +504,73 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 			})
 			.returning();
 
-		// Create sale items from quote items + handle stock
+		// Create sale items from quote items + handle stock via FIFO
 		for (const item of items) {
 			const newId = idMap.get(item.id)!;
 			const parentSaleItemId = item.parentQuoteItemId
 				? (idMap.get(item.parentQuoteItemId) ?? null)
 				: null;
 
-			await tx.insert(saleItems).values({
-				id: newId,
-				saleId: newSale.id,
-				itemType: item.itemType,
-				parentSaleItemId,
-				productId: item.productId ?? null,
-				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				supplierTreatmentId: item.supplierTreatmentId ?? null,
-				prescriptionId: null,
-				odSphere: item.odSphere ?? null,
-				odCylinder: item.odCylinder ?? null,
-				odAxis: item.odAxis ?? null,
-				odAddition: item.odAddition ?? null,
-				osSphere: item.osSphere ?? null,
-				osCylinder: item.osCylinder ?? null,
-				osAxis: item.osAxis ?? null,
-				osAddition: item.osAddition ?? null,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				discount: item.discount,
-				discountType: item.discountType,
-				snapshotName: item.snapshotName ?? null,
-				snapshotSku: item.snapshotSku ?? null,
-				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotBaseCost: item.snapshotBaseCost ?? null,
-				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-				snapshotSalePrice: item.snapshotSalePrice ?? null,
-				snapshotPriceType: item.snapshotPriceType ?? null,
-				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-				snapshotTaxRate: item.snapshotTaxRate ?? null,
-				notes: item.notes ?? null,
-				createdAt: now,
-				updatedAt: now
-			});
+			let lotId: string | null = null;
+			let snapshotCostTotal: number | null = null;
+			let snapshotCostUnit: number | null = null;
+			let snapshotLotsCount: number | null = null;
 
-			// Decrement stock for product items
-			if (item.productId) {
+			// FIFO lot consumption for PRODUCT items
+			if (item.productId && item.itemType === SaleItemType.PRODUCT) {
+				const [product] = await tx
+					.select({ id: products.id, stock: products.stock, name: products.name })
+					.from(products)
+					.where(and(eq(products.id, item.productId), isNull(products.deletedAt)));
+
+				if (!product) {
+					throw new Error(`Producto ${item.productId} no encontrado`);
+				}
+
+				if (product.stock === null || product.stock < item.quantity) {
+					throw new Error(
+						`Stock insuficiente para ${product.name}. Disponible: ${product.stock ?? 0}, solicitado: ${item.quantity}`
+					);
+				}
+
+				// Get FIFO lots and plan consumption (pure logic)
+				const lots = await getActiveLotsFifo(item.productId, tx);
+				const plan = planFifoConsumption(lots, item.quantity);
+
+				// Execute the plan: consume lots + create movements
+				for (const alloc of plan.allocations) {
+					const updatedLot = await consumeFromLot(alloc.lotId, alloc.quantityToConsume, tx);
+
+					await createInventoryMovement(
+						{
+							movementType: InventoryMovementType.SALE_OUT,
+							lotId: alloc.lotId,
+							itemType: 'PRODUCT',
+							productId: item.productId,
+							quantityDelta: -alloc.quantityToConsume,
+							quantityBefore: alloc.quantityBeforeConsume,
+							quantityAfter: updatedLot.quantityAvailable,
+							referenceType: MovementReferenceType.SALE,
+							referenceId: newSale.id,
+							createdById: context.userId!
+						},
+						tx
+					);
+				}
+
+				lotId = plan.primaryLotId;
+				snapshotCostTotal = plan.costTotal;
+				snapshotCostUnit = plan.costUnit;
+				snapshotLotsCount = plan.lotsCount;
+
+				// Update cached stock counter
+				const newStock = product.stock - item.quantity;
+				await tx
+					.update(products)
+					.set({ stock: newStock, updatedAt: now })
+					.where(eq(products.id, item.productId));
+			} else if (item.productId) {
+				// Non-PRODUCT type but has productId (safe fallback)
 				const [product] = await tx
 					.select({ id: products.id, stock: products.stock })
 					.from(products)
@@ -565,6 +590,47 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 						.where(eq(products.id, item.productId));
 				}
 			}
+
+			await tx.insert(saleItems).values({
+				id: newId,
+				saleId: newSale.id,
+				itemType: item.itemType,
+				parentSaleItemId,
+				productId: item.productId ?? null,
+				lensCatalogItemId: item.lensCatalogItemId ?? null,
+				supplierTreatmentId: item.supplierTreatmentId ?? null,
+				lotId,
+				prescriptionId: null,
+				odSphere: item.odSphere ?? null,
+				odCylinder: item.odCylinder ?? null,
+				odAxis: item.odAxis ?? null,
+				odAddition: item.odAddition ?? null,
+				osSphere: item.osSphere ?? null,
+				osCylinder: item.osCylinder ?? null,
+				osAxis: item.osAxis ?? null,
+				osAddition: item.osAddition ?? null,
+				quantity: item.quantity,
+				unitPrice: item.unitPrice,
+				discount: item.discount,
+				discountType: item.discountType,
+				snapshotName: item.snapshotName ?? null,
+				snapshotSku: item.snapshotSku ?? null,
+				snapshotBrand: item.snapshotBrand ?? null,
+				snapshotCostTotal,
+				snapshotCostUnit,
+				snapshotLotsCount,
+				snapshotBaseCost: item.snapshotBaseCost ?? null,
+				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
+				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
+				snapshotSalePrice: item.snapshotSalePrice ?? null,
+				snapshotPriceType: item.snapshotPriceType ?? null,
+				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
+				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
+				snapshotTaxRate: item.snapshotTaxRate ?? null,
+				notes: item.notes ?? null,
+				createdAt: now,
+				updatedAt: now
+			});
 
 			// Decrement stock for lens catalog items with STOCK inventory mode
 			if (item.lensCatalogItemId) {
