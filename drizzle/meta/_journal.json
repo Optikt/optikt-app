@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774759019348,
-      "tag": "0000_new_vector",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1774802083739,
-      "tag": "0001_easy_katie_power",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1774814512827,
-      "tag": "0002_light_shaman",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1774821690328,
-      "tag": "0003_brave_firedrake",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1774826189481,
-      "tag": "0004_late_lenny_balinger",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1774833777154,
-      "tag": "0005_handy_colleen_wing",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1774889800000,
-      "tag": "0006_payment_date_for_sale_payments",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1774925116834,
-      "tag": "0007_quotes_and_quote_items",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1775006291046,
-      "tag": "0008_burly_mephistopheles",
+      "when": 1775242087744,
+      "tag": "0000_cloudy_swordsman",
       "breakpoints": true
     }
   ]

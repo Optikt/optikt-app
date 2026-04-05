@@ -9,11 +9,13 @@ import {
 	desc,
 	ilike,
 	count,
+	sql,
 	type AnyColumn,
 	type SQL
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
+import type { DbOrTx } from '$lib/server/db/types';
 
 // Product with related brand and supplier data
 export type ProductWithRelations = Product & {
@@ -23,7 +25,13 @@ export type ProductWithRelations = Product & {
 };
 
 /** Sortable product columns */
-export type ProductOrderBy = 'name' | 'sku' | 'salePrice' | 'stock' | 'createdAt' | 'updatedAt';
+export type ProductOrderBy =
+	| 'name'
+	| 'sku'
+	| 'currentSalePrice'
+	| 'stock'
+	| 'createdAt'
+	| 'updatedAt';
 
 /** Options for filtering products (shared between query and count) */
 export interface ProductFilterOptions {
@@ -59,7 +67,7 @@ export interface GetProductsOptions extends ProductFilterOptions {
 const ORDER_COLUMNS: Record<ProductOrderBy, AnyColumn> = {
 	name: products.name,
 	sku: products.sku,
-	salePrice: products.salePrice,
+	currentSalePrice: products.currentSalePrice,
 	stock: products.stock,
 	createdAt: products.createdAt,
 	updatedAt: products.updatedAt
@@ -280,4 +288,44 @@ export async function restoreProduct(id: string): Promise<Product | null> {
 		.where(eq(products.id, id))
 		.returning();
 	return product ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Stock sync helpers (called inside transactions)
+// ---------------------------------------------------------------------------
+
+/**
+ * Increment product stock by the given amount.
+ * Used when confirming POs, reverting sales, or adjustment-in.
+ */
+export async function incrementProductStock(
+	productId: string,
+	quantity: number,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(products)
+		.set({
+			stock: sql`${products.stock} + ${quantity}`,
+			updatedAt: new Date()
+		})
+		.where(eq(products.id, productId));
+}
+
+/**
+ * Decrement product stock by the given amount.
+ * Used when creating sales or adjustment-out.
+ */
+export async function decrementProductStock(
+	productId: string,
+	quantity: number,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(products)
+		.set({
+			stock: sql`${products.stock} - ${quantity}`,
+			updatedAt: new Date()
+		})
+		.where(eq(products.id, productId));
 }

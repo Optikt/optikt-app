@@ -1,2 +1,0 @@
-CREATE TYPE "public"."lens_inventory_mode" AS ENUM('ON_DEMAND', 'STOCK');--> statement-breakpoint
-ALTER TABLE "lens_catalog_items" ADD COLUMN "inventory_mode" "lens_inventory_mode" DEFAULT 'ON_DEMAND' NOT NULL;

@@ -4,7 +4,13 @@
 	import { untrack } from 'svelte';
 	import { createPrescriptionForm, updatePrescriptionForm } from '$lib/remote/prescriptions.remote';
 	import { FormInput, FormDatepicker, ConfirmModal } from '$lib/components/ui';
-	import { scrollToFirstError, getErrorMessage, getFullName, dateFromUTC } from '$lib/utils';
+	import {
+		scrollToFirstError,
+		toastUnboundErrors,
+		getErrorMessage,
+		getFullName,
+		dateFromUTC
+	} from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { LensType, ALL_LENS_TYPES, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
@@ -172,6 +178,7 @@
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 
@@ -186,6 +193,7 @@
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 

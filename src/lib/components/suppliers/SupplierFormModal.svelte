@@ -11,7 +11,7 @@
 		WhatsAppInput,
 		InstagramInput
 	} from '$lib/components/ui';
-	import { scrollToFirstError } from '$lib/utils';
+	import { scrollToFirstError, toastUnboundErrors } from '$lib/utils';
 	import type { Supplier } from '$lib/server/db/schema';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import SupplierReactivateModal from './SupplierReactivateModal.svelte';
@@ -107,6 +107,7 @@
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 
@@ -140,6 +141,7 @@
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 

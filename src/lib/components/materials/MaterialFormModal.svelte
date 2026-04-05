@@ -6,6 +6,7 @@
 	import { FormInput, FormTextarea } from '$lib/components/ui';
 	import MaterialReactivateModal from './MaterialReactivateModal.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import { toastUnboundErrors } from '$lib/utils';
 	import type { Material } from '$lib/server/db/schema';
 	import type { CreateEntityResult } from '$lib/types';
 	import { MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS } from '$lib/shared/enums/productTypes';
@@ -72,6 +73,7 @@
 	function handleCreateResult(formEl: HTMLFormElement) {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
 			return; // Stay open, show errors
 		}
 
@@ -96,6 +98,7 @@
 	function handleUpdateResult(formEl: HTMLFormElement) {
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
 			return; // Stay open, show errors
 		}
 

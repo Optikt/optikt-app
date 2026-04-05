@@ -30,6 +30,8 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		description: 'Descripción',
 		purchasePrice: 'Precio de compra',
 		salePrice: 'Precio de venta',
+		currentPurchasePrice: 'Precio compra (ref.)',
+		currentSalePrice: 'Precio venta (ref.)',
 		stock: 'Stock',
 		minStock: 'Stock mínimo',
 		imageUrl: 'Imagen',

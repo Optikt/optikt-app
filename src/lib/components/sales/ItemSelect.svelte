@@ -55,7 +55,7 @@
 			sku: p.sku ?? '',
 			brand: p.brand?.name ?? '',
 			stock: p.stock,
-			price: p.salePrice,
+			price: p.currentSalePrice ?? 0,
 			productType: p.type,
 			source: undefined
 		}))
@@ -104,7 +104,7 @@
 		if (newId && onselect) {
 			if (kind === 'product') {
 				const product = products.find((p) => p.id === newId);
-				if (product) onselect(newId, product.salePrice);
+				if (product) onselect(newId, product.currentSalePrice ?? 0);
 			} else {
 				const lens = lensItems.find((l) => l.id === newId);
 				if (lens) {

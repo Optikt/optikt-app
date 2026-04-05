@@ -18,5 +18,10 @@ export * from './prescriptions';
 export * from './sales';
 export * from './quotes';
 
+// Purchase & Inventory
+export * from './purchaseOrders';
+export * from './inventoryLots';
+export * from './inventoryMovements';
+
 // Audit / History
 export * from './changeHistory';

@@ -12,8 +12,8 @@
 			sku: string;
 			name: string;
 			type: string;
-			purchasePrice?: number | null;
-			salePrice?: number | null;
+			currentPurchasePrice?: number | null;
+			currentSalePrice?: number | null;
 			stock?: number | null;
 		} | null;
 		onSuccess?: () => void;
@@ -73,16 +73,16 @@
 						<dt class="font-medium text-gray-600">Tipo:</dt>
 						<dd class="text-gray-900">{candidate.type}</dd>
 					</div>
-					{#if candidate.purchasePrice != null}
+					{#if candidate.currentPurchasePrice != null}
 						<div class="flex gap-2">
 							<dt class="font-medium text-gray-600">Precio compra:</dt>
-							<dd class="font-mono text-gray-900">${candidate.purchasePrice.toFixed(2)}</dd>
+							<dd class="font-mono text-gray-900">${candidate.currentPurchasePrice.toFixed(2)}</dd>
 						</div>
 					{/if}
-					{#if candidate.salePrice != null}
+					{#if candidate.currentSalePrice != null}
 						<div class="flex gap-2">
 							<dt class="font-medium text-gray-600">Precio venta:</dt>
-							<dd class="font-mono text-gray-900">${candidate.salePrice.toFixed(2)}</dd>
+							<dd class="font-mono text-gray-900">${candidate.currentSalePrice.toFixed(2)}</dd>
 						</div>
 					{/if}
 					{#if candidate.stock !== null}

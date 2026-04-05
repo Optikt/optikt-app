@@ -17,6 +17,7 @@ import { products } from './products';
 import { lensCatalogItems } from './lenses';
 import { prescriptions } from './prescriptions';
 import { supplierTreatments } from './suppliers';
+import { inventoryLots } from './inventoryLots';
 import { enumValues } from './utils';
 import { SaleItemType } from '../../../shared/enums/lensTypes';
 
@@ -100,6 +101,8 @@ export const saleItems = pgTable(
 		parentSaleItemId: uuid('parent_sale_item_id'),
 		/** FK: only for TREATMENT items → which lab treatment */
 		supplierTreatmentId: uuid('supplier_treatment_id'),
+		/** FK: FIFO lot consumed (null for LENS_PAIR ON_DEMAND/LAB and TREATMENT) */
+		lotId: uuid('lot_id'),
 
 		// --- Prescription snapshot (only for LENS_PAIR) ---
 		prescriptionId: uuid('prescription_id'),
@@ -125,6 +128,12 @@ export const saleItems = pgTable(
 		snapshotSku: varchar('snapshot_sku'),
 		/** Brand name (PRODUCT) or Supplier name (LENS_PAIR, TREATMENT) */
 		snapshotBrand: varchar('snapshot_brand'),
+		/** Total real cost of this line (sum of consumed_qty × lot.unit_purchase_price across all lots) */
+		snapshotCostTotal: doublePrecision('snapshot_cost_total'),
+		/** Weighted average unit cost (snapshotCostTotal / quantity) */
+		snapshotCostUnit: doublePrecision('snapshot_cost_unit'),
+		/** Number of distinct FIFO lots consumed for this line item */
+		snapshotLotsCount: integer('snapshot_lots_count'),
 		/** Lens: per-unit cost price from catalog */
 		snapshotBaseCost: doublePrecision('snapshot_base_cost'),
 		/** Lens: mounting price from catalog */
@@ -168,6 +177,7 @@ export const saleItems = pgTable(
 			'btree',
 			table.parentSaleItemId.asc().nullsLast().op('uuid_ops')
 		),
+		index('ix_sale_items_lot_id').using('btree', table.lotId.asc().nullsLast().op('uuid_ops')),
 		foreignKey({
 			columns: [table.lensCatalogItemId],
 			foreignColumns: [lensCatalogItems.id],
@@ -197,6 +207,11 @@ export const saleItems = pgTable(
 			columns: [table.supplierTreatmentId],
 			foreignColumns: [supplierTreatments.id],
 			name: 'sale_items_supplier_treatment_id_fkey'
+		}).onDelete('restrict'),
+		foreignKey({
+			columns: [table.lotId],
+			foreignColumns: [inventoryLots.id],
+			name: 'sale_items_lot_id_fkey'
 		}).onDelete('restrict')
 	]
 );

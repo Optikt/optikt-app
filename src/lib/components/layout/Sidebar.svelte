@@ -17,7 +17,8 @@
 		PanelLeftClose,
 		PanelLeftOpen,
 		Settings,
-		FileText
+		FileText,
+		ClipboardList
 	} from '@lucide/svelte';
 	import { Dropdown, DropdownItem, DropdownHeader, DropdownGroup } from 'flowbite-svelte';
 	import { UserRole, isAdminRole } from '$lib/shared/enums';
@@ -46,7 +47,8 @@
 		layers: Layers,
 		reports: ChartColumn,
 		shield: Shield,
-		quotes: FileText
+		quotes: FileText,
+		purchases: ClipboardList
 	};
 
 	// Navigation items
@@ -59,7 +61,8 @@
 		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },
 		{ href: '/materials', label: 'Materiales', icon: 'layers' },
-		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' }
+		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' },
+		{ href: '/purchases', label: 'Compras', icon: 'purchases' }
 	] as const;
 
 	// Only show reports and users for admins

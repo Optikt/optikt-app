@@ -15,3 +15,5 @@ export * from './search';
 export * from './sales';
 export * from './reports';
 export * from './quotes';
+export * from './purchaseOrders';
+export * from './inventory';

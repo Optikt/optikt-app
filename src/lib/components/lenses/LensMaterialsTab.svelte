@@ -2,7 +2,7 @@
 	import { Button, Input, Badge } from 'flowbite-svelte';
 	import { Plus, Pencil, Trash2, X, Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import {
 		listLensMaterials,
 		createLensMaterialForm,
@@ -133,6 +133,8 @@
 											toast.success('Material creado');
 											showAddRow = false;
 											await refreshMaterials();
+										} else {
+											toastUnboundErrors(allIssues);
 										}
 									} catch (e) {
 										console.error(e);
@@ -210,6 +212,8 @@
 												toast.success('Material actualizado');
 												editingId = null;
 												await refreshMaterials();
+											} else {
+												toastUnboundErrors(allIssues);
 											}
 										} catch (e) {
 											console.error(e);

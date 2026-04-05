@@ -15,7 +15,7 @@
 		TREATMENT_CATEGORY_LABELS,
 		getTreatmentCategoryLabel
 	} from '$lib/shared/enums';
-	import { getErrorMessage, formatPrice, generateUUID } from '$lib/utils';
+	import { getErrorMessage, formatPrice, generateUUID, toastUnboundErrors } from '$lib/utils';
 	import { ConfirmModal } from '$lib/components/ui';
 	import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 
@@ -86,7 +86,10 @@
 
 	function handleCreateResult() {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
-		if (allIssues.length > 0) return;
+		if (allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
+			return;
+		}
 
 		toast.success('Tratamiento creado');
 		showCreateForm = false;
@@ -107,7 +110,10 @@
 
 	function handleEditResult() {
 		const allIssues = currentEditForm.fields.allIssues?.() ?? [];
-		if (allIssues.length > 0) return;
+		if (allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
+			return;
+		}
 
 		toast.success('Tratamiento actualizado');
 		editingId = null;

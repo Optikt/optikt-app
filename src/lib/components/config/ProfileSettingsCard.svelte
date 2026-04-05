@@ -3,7 +3,7 @@
 	import { User, Lock, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateProfileForm } from '$lib/remote/profile.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { FormInput } from '$lib/components/ui';
 	import ChangePasswordModal from './ChangePasswordModal.svelte';
@@ -57,6 +57,8 @@
 				if (allIssues.length === 0) {
 					toast.success('Perfil actualizado exitosamente');
 					onUpdate?.();
+				} else {
+					toastUnboundErrors(allIssues);
 				}
 			} catch (e) {
 				console.error(e);

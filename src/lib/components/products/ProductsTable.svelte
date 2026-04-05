@@ -110,7 +110,7 @@
 				{product.brand?.name || '—'}
 			</TableBodyCell>
 			<TableBodyCell class="font-mono text-slate-700">
-				{formatPrice(product.salePrice)}
+				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
 			</TableBodyCell>
 			<TableBodyCell>
 				{#if product.stock !== null}

@@ -23,7 +23,7 @@
 		getLensTypeLabel,
 		getPriceTypeLabel
 	} from '$lib/shared/enums';
-	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
+	import { scrollToFirstError, toastUnboundErrors, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 	import { resolve } from '$app/paths';
@@ -416,6 +416,7 @@
 		if (allIssues.length > 0) {
 			toast.error('Por favor corrige los errores del formulario');
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 		const result = currentCreateForm.result;
@@ -429,6 +430,7 @@
 		if (allIssues.length > 0) {
 			toast.error('Por favor corrige los errores del formulario');
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 		toast.success('Lente actualizado');

@@ -3,7 +3,7 @@
 	import { Lock } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { changePasswordForm } from '$lib/remote/profile.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { PasswordField } from '$lib/components/ui';
 	import { untrack } from 'svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -59,6 +59,8 @@
 				if (allIssues.length === 0) {
 					toast.success('Contraseña actualizada exitosamente');
 					handleClose();
+				} else {
+					toastUnboundErrors(allIssues);
 				}
 			} catch (e) {
 				console.error(e);

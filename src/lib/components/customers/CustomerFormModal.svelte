@@ -5,7 +5,7 @@
 	import { createCustomerForm, updateCustomerForm } from '$lib/remote/customers.remote';
 	import type { CreateEntityResult } from '$lib/types';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
-	import { scrollToFirstError, getErrorMessage, dateFromUTC } from '$lib/utils';
+	import { scrollToFirstError, toastUnboundErrors, getErrorMessage, dateFromUTC } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { Customer } from '$lib/server/db/schema';
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
@@ -102,6 +102,7 @@
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 
@@ -124,6 +125,7 @@
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 

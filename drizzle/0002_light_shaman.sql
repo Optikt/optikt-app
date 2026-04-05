@@ -1,1 +1,0 @@
-ALTER TABLE "lens_catalog_items" ADD COLUMN "sale_price" double precision;

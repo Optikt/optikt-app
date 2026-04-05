@@ -40,8 +40,8 @@ import type { QuoteItemInput } from '$lib/schemas/quotes';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
-import { eq, and, isNull } from 'drizzle-orm';
-import { products, lensCatalogItems } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 
 // ============================================================================
 // HELPERS
@@ -500,12 +500,21 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 			})
 			.returning();
 
-		// Create sale items from quote items + handle stock
+		// Create sale items from quote items + handle stock via FIFO
 		for (const item of items) {
 			const newId = idMap.get(item.id)!;
 			const parentSaleItemId = item.parentQuoteItemId
 				? (idMap.get(item.parentQuoteItemId) ?? null)
 				: null;
+
+			let lotId: string | null = null;
+			let snapshotCostTotal: number | null = null;
+			let snapshotCostUnit: number | null = null;
+			let snapshotLotsCount: number | null = null;
+
+			// FIFO lot consumption + stock decrement (shared logic)
+			({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
+				await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!));
 
 			await tx.insert(saleItems).values({
 				id: newId,
@@ -515,6 +524,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				productId: item.productId ?? null,
 				lensCatalogItemId: item.lensCatalogItemId ?? null,
 				supplierTreatmentId: item.supplierTreatmentId ?? null,
+				lotId,
 				prescriptionId: null,
 				odSphere: item.odSphere ?? null,
 				odCylinder: item.odCylinder ?? null,
@@ -531,6 +541,9 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				snapshotName: item.snapshotName ?? null,
 				snapshotSku: item.snapshotSku ?? null,
 				snapshotBrand: item.snapshotBrand ?? null,
+				snapshotCostTotal,
+				snapshotCostUnit,
+				snapshotLotsCount,
 				snapshotBaseCost: item.snapshotBaseCost ?? null,
 				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
 				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
@@ -543,57 +556,6 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				createdAt: now,
 				updatedAt: now
 			});
-
-			// Decrement stock for product items
-			if (item.productId) {
-				const [product] = await tx
-					.select({ id: products.id, stock: products.stock })
-					.from(products)
-					.where(and(eq(products.id, item.productId), isNull(products.deletedAt)));
-
-				if (!product) throw new Error(`Producto ${item.productId} no encontrado`);
-				if (product.stock !== null) {
-					const newStock = product.stock - item.quantity;
-					if (newStock < 0) {
-						throw new Error(
-							`Stock insuficiente para el producto. Disponible: ${product.stock}, solicitado: ${item.quantity}`
-						);
-					}
-					await tx
-						.update(products)
-						.set({ stock: newStock, updatedAt: now })
-						.where(eq(products.id, item.productId));
-				}
-			}
-
-			// Decrement stock for lens catalog items with STOCK inventory mode
-			if (item.lensCatalogItemId) {
-				const [lens] = await tx
-					.select({
-						id: lensCatalogItems.id,
-						stock: lensCatalogItems.stock,
-						inventoryMode: lensCatalogItems.inventoryMode
-					})
-					.from(lensCatalogItems)
-					.where(
-						and(eq(lensCatalogItems.id, item.lensCatalogItemId), isNull(lensCatalogItems.deletedAt))
-					);
-
-				if (!lens) throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
-				if (lens.inventoryMode === 'STOCK') {
-					const currentStock = lens.stock ?? 0;
-					const newStock = currentStock - item.quantity;
-					if (newStock < 0) {
-						throw new Error(
-							`Stock insuficiente para el lente. Disponible: ${currentStock}, solicitado: ${item.quantity}`
-						);
-					}
-					await tx
-						.update(lensCatalogItems)
-						.set({ stock: newStock, updatedAt: now })
-						.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
-				}
-			}
 		}
 
 		// Mark quote as converted

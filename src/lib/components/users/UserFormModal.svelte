@@ -5,7 +5,7 @@
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
 	import { createUserForm, updateUserForm } from '$lib/remote/users.remote';
 	import { FormInput, PasswordField } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { UserListItem, CreateUserResult } from '$lib/types/users';
 
@@ -79,6 +79,7 @@
 		// Check for validation issues first
 		const allIssues = currentCreateForm.fields.allIssues?.();
 		if (allIssues && allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
 			return;
 		}
 
@@ -100,6 +101,7 @@
 		// Check for validation issues first
 		const allIssues = currentUpdateForm.fields.allIssues?.();
 		if (allIssues && allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
 			return;
 		}
 
