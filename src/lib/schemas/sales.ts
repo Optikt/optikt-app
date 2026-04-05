@@ -175,7 +175,7 @@ export const UpdateSaleStatusSchema = z.object({
 
 export const CancelSaleSchema = z.object({
 	id: z.uuid('ID de venta inválido'),
-	reason: z.string().min(1, 'Motivo de cancelación requerido').optional()
+	reason: z.string().min(10, 'El motivo debe tener al menos 10 caracteres')
 });
 
 // ============================================================================

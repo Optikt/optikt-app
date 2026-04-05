@@ -5,7 +5,7 @@
  * Reuses existing query functions where possible and provides
  * flat projections + aggregation for the reports UI.
  */
-import { eq, isNull, and, gte, lte, desc } from 'drizzle-orm';
+import { eq, isNull, and, gte, lte, desc, ne } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { salePayments, sales, customers } from '$lib/server/db/schema';
 import { getAllSales } from './sales';
@@ -153,6 +153,7 @@ export async function getReportPayments(
 			and(
 				isNull(salePayments.voidedAt),
 				isNull(sales.deletedAt),
+				ne(sales.status, 'CANCELLED'),
 				gte(salePayments.paymentDate, dateFrom),
 				lte(salePayments.paymentDate, toEnd)
 			)

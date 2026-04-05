@@ -110,6 +110,20 @@
 	// Action state
 	let actionLoading = $state(false);
 	let showCancelModal = $state(false);
+	let cancelReason = $state('');
+	let cancelReasonError = $state('');
+
+	const CANCEL_REASON_SUGGESTIONS = [
+		'Error en el pedido',
+		'Solicitud del cliente',
+		'Producto no disponible',
+		'Error en los datos de la venta'
+	];
+
+	function selectCancelSuggestion(suggestion: string) {
+		cancelReason = suggestion;
+		cancelReasonError = '';
+	}
 
 	function customerName(): string {
 		if (!sale.customer) return '—';
@@ -129,12 +143,18 @@
 	}
 
 	async function handleCancel() {
+		if (cancelReason.trim().length < 10) {
+			cancelReasonError = 'El motivo debe tener al menos 10 caracteres';
+			return;
+		}
+		cancelReasonError = '';
 		actionLoading = true;
 		try {
-			const result = await cancelSale({ id: sale.id });
+			const result = await cancelSale({ id: sale.id, reason: cancelReason.trim() });
 			if (result.success) {
 				toast.success('Venta cancelada');
 				showCancelModal = false;
+				cancelReason = '';
 				await invalidateAll();
 				sale = data.sale;
 				items = data.items;
@@ -144,6 +164,7 @@
 				toast.error(result.error ?? 'Error cancelando venta');
 			}
 		} catch (e) {
+			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cancelando venta'));
 		} finally {
 			actionLoading = false;
@@ -258,6 +279,26 @@
 			<div class="mt-4 flex items-start gap-3 rounded-lg bg-amber-50 p-4">
 				<FileText class="mt-0.5 h-5 w-5 text-amber-500" />
 				<p class="text-base text-slate-700">{sale.notes}</p>
+			</div>
+		{/if}
+
+		{#if isCancelled && sale.cancellationReason}
+			<div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+				<div class="flex items-start gap-3">
+					<CircleX class="mt-0.5 h-5 w-5 text-red-500" />
+					<div class="space-y-1">
+						<p class="text-sm font-semibold text-red-700">Motivo de cancelación</p>
+						<p class="text-sm text-red-800">{sale.cancellationReason}</p>
+						<div class="flex flex-wrap gap-4 pt-1 text-xs text-red-600">
+							{#if sale.cancelledAt}
+								<span>{formatDate(sale.cancelledAt)}</span>
+							{/if}
+							{#if sale.cancelledBy}
+								<span>Por: {sale.cancelledBy.fullName}</span>
+							{/if}
+						</div>
+					</div>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -517,10 +558,43 @@
 <ConfirmModal
 	bind:open={showCancelModal}
 	title="Cancelar Venta"
-	message="¿Está seguro que desea cancelar esta venta? Se restaurará el stock de los productos y lentes."
 	confirmLabel="Cancelar Venta"
 	confirmColor="red"
 	loading={actionLoading}
 	onConfirm={handleCancel}
-	onCancel={() => (showCancelModal = false)}
-/>
+	onCancel={() => {
+		showCancelModal = false;
+		cancelReason = '';
+		cancelReasonError = '';
+	}}
+>
+	{#snippet body()}
+		<p class="mb-3 text-sm text-gray-700">
+			¿Está seguro que desea cancelar esta venta? Se restaurará el stock de los productos y lentes.
+		</p>
+		<div class="mb-2 flex flex-wrap gap-1.5">
+			{#each CANCEL_REASON_SUGGESTIONS as suggestion (suggestion)}
+				<button
+					type="button"
+					class="rounded-full border px-2.5 py-1 text-xs font-medium transition-colors {cancelReason ===
+					suggestion
+						? 'border-red-300 bg-red-50 text-red-700'
+						: 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}"
+					onclick={() => selectCancelSuggestion(suggestion)}
+				>
+					{suggestion}
+				</button>
+			{/each}
+		</div>
+		<textarea
+			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-red-400 focus:ring-1 focus:ring-red-400"
+			rows="3"
+			placeholder="Motivo de cancelación (mínimo 10 caracteres)..."
+			bind:value={cancelReason}
+			oninput={() => (cancelReasonError = '')}
+		></textarea>
+		{#if cancelReasonError}
+			<p class="mt-1 text-xs text-red-600">{cancelReasonError}</p>
+		{/if}
+	{/snippet}
+</ConfirmModal>

@@ -550,14 +550,14 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 			}
 		}
 
-		// Update sale status
+		// Update sale status and cancellation info
 		await updateSale(
 			data.id,
 			{
 				status: SaleStatus.CANCELLED,
-				notes: data.reason
-					? `${existing.notes ?? ''}\n[Cancelada]: ${data.reason}`.trim()
-					: existing.notes
+				cancellationReason: data.reason,
+				cancelledAt: now,
+				cancelledById: context.userId!
 			},
 			tx
 		);
