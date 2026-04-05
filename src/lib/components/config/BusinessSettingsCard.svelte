@@ -3,7 +3,7 @@
 	import { Building2, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSettingsForm } from '$lib/remote/settings.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { FormInput, FormTextarea, RifInput } from '$lib/components/ui';
 	import type { Settings } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
@@ -60,6 +60,8 @@
 				if (allIssues.length === 0) {
 					toast.success('Configuración guardada exitosamente');
 					onUpdate?.();
+				} else {
+					toastUnboundErrors(allIssues);
 				}
 			} catch (e) {
 				console.error(e);

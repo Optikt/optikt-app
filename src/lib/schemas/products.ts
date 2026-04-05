@@ -41,9 +41,9 @@ export const CreateProductSchema = z.object({
 	// brandId is optional and can be null
 	brandId: OptionalPendingEntitySchema().optional(),
 	// supplierId is REQUIRED - must be a valid UUID or pending ID
-	supplierId: PendingEntitySchema(),
+	supplierId: PendingEntitySchema('pending_', 'Seleccione un proveedor'),
 	// materialId is REQUIRED - must be a valid UUID or pending material ID
-	materialId: PendingEntitySchema('pending_material_'),
+	materialId: PendingEntitySchema('pending_material_', 'Seleccione un material'),
 	// Pending entity names (sent when ID is pending_*)
 	pendingBrandName: z.string().optional(),
 	pendingSupplierName: z.string().optional(),

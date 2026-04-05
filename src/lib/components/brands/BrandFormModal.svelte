@@ -6,6 +6,7 @@
 	import { FormInput, FormTextarea } from '$lib/components/ui';
 	import BrandReactivateModal from './BrandReactivateModal.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import { toastUnboundErrors } from '$lib/utils';
 	import type { Brand } from '$lib/server/db/schema';
 	import type { CreateEntityResult } from '$lib/types';
 
@@ -71,6 +72,7 @@
 	function handleCreateResult(formEl: HTMLFormElement) {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
 			return; // Stay open, show errors
 		}
 
@@ -97,6 +99,7 @@
 	function handleUpdateResult(formEl: HTMLFormElement) {
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
+			toastUnboundErrors(allIssues);
 			return; // Stay open, show errors
 		}
 

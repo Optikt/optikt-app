@@ -231,14 +231,14 @@ export const EntityIdSchema = (entityName?: string) =>
 /**
  * Pending entity ID - UUID or pending_* string (for inline creation)
  */
-export const PendingEntitySchema = (prefix = 'pending_') =>
-	z.union([z.uuid(), z.string().startsWith(prefix)]);
+export const PendingEntitySchema = (prefix = 'pending_', message?: string) =>
+	z.union([z.uuid(), z.string().startsWith(prefix)], message ? { error: message } : {});
 
 /**
  * Optional pending entity ID - allows empty, UUID, or pending_* string
  */
-export const OptionalPendingEntitySchema = (prefix = 'pending_') =>
-	z.union([z.literal(''), PendingEntitySchema(prefix)]);
+export const OptionalPendingEntitySchema = (prefix = 'pending_', message?: string) =>
+	z.union([z.literal(''), PendingEntitySchema(prefix, message)]);
 
 // =============================================================================
 // DOMAIN-SPECIFIC SCHEMAS

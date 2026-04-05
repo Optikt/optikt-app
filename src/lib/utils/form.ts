@@ -3,6 +3,7 @@
  */
 
 import type { RemoteFormIssue } from '@sveltejs/kit';
+import { toast } from 'svelte-sonner';
 
 /**
  * Scrolls to the first form input with an error.
@@ -36,4 +37,36 @@ export function getFormErrorMessage(
 	if (typeof error === 'string') return error;
 	if (error.length > 0) return error[0].message;
 	return null;
+}
+
+/**
+ * Toasts validation errors that have no visible DOM representation.
+ * Checks each issue's field name against the DOM — if no element with that
+ * `name` attribute has Flowbite's red border styling, the error is considered
+ * "unbound" and gets surfaced as a toast so it's never silently swallowed.
+ */
+export function toastUnboundErrors(allIssues: RemoteFormIssue[]): void {
+	if (allIssues.length === 0) return;
+
+	// Wait for DOM to render error styles (same timing as scrollToFirstError)
+	setTimeout(() => {
+		for (const issue of allIssues) {
+			const fieldName = String(issue.path[0] ?? '');
+			if (!fieldName) {
+				toast.error(issue.message);
+				continue;
+			}
+
+			const field = document.querySelector(`[name="${CSS.escape(fieldName)}"]`);
+			const hasVisibleError =
+				field?.matches('.border-red-500, [class*="border-red"]') ||
+				field?.parentElement?.querySelector(
+					'.text-red-500, .text-red-600, .text-red-700, .border-red-500'
+				) !== null;
+
+			if (!hasVisibleError) {
+				toast.error(issue.message);
+			}
+		}
+	}, 100);
 }

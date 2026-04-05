@@ -12,7 +12,7 @@
 		type SelectOption,
 		type PendingEntity
 	} from '$lib/components/ui';
-	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
+	import { scrollToFirstError, toastUnboundErrors, getFormErrorMessage } from '$lib/utils';
 	import {
 		ProductType,
 		ALL_PRODUCT_TYPES,
@@ -253,6 +253,7 @@
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 
@@ -267,6 +268,7 @@
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			scrollToFirstError();
+			toastUnboundErrors(allIssues);
 			return;
 		}
 

@@ -86,11 +86,11 @@ const RangesJsonSchema = z
 
 const BaseLensCatalogItemSchema = z.object({
 	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),
-	supplierId: PendingEntitySchema(),
+	supplierId: PendingEntitySchema('pending_', 'Seleccione un proveedor'),
 	name: NameSchema(),
 	type: z.enum(LensType, 'Tipo de lente requerido'),
 	technology: z.string().max(100).optional(),
-	materialId: PendingEntitySchema('pending_material_'),
+	materialId: PendingEntitySchema('pending_material_', 'Seleccione un material'),
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialRefractiveIndex: RefractiveIndexSchema.optional(),
