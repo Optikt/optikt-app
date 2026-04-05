@@ -45,10 +45,12 @@
 
 Estos items se agregan cuando aparezca una necesidad real en uso:
 
+- **Reporte de ventas: excluir canceladas de totales** — las ventas CANCELLED no deben sumar a "Monto Total" ni "Total Cobrado". Mostrar sección separada "Ventas anuladas" como información (no como ingresos). Agregar filtro por estado (activas / canceladas / todas). Necesario antes de producción.
+- **Cancelación de venta con pago parcial** — al cancelar una venta que tiene `sale_payments`, mostrar advertencia con opciones: "Marcar como por devolver" vs "Retener como penalidad". Registrar la decisión, reflejar en reportes. Dos sub-casos: devolución (nota de crédito) o retención. Depende del módulo de Credit Notes.
 - **Test de integración FIFO E2E** — test que crea lote → venta → verifica lot.quantity_available en DB → cancela → verifica rollback. Cubre single-lot y multi-lot scenarios. Incluir verificación de inventory_movements (SALE_OUT / CANCEL_REVERT).
+- Credit Notes / RETURN_IN con reembolso y ajuste financiero
 - Conteo físico multi-item (inventario físico: ver todos los productos, ingresar stock real, el sistema genera ajustes por diferencias)
 - Historial de movimientos por venta (sección en detalle de venta mostrando qué lotes se afectaron)
-- Credit Notes / RETURN_IN con reembolso y ajuste financiero
 - Ajustes de inventario para lentes (catálogo de lentes con stock)
 - Exportar movimientos a CSV/PDF
 - Surplus / excedentes físicos de cristales
