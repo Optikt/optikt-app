@@ -8,7 +8,9 @@
 		FileText,
 		CheckCircle,
 		XCircle,
-		Package
+		Package,
+		ArrowRightLeft,
+		RotateCcw
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -20,26 +22,37 @@
 		cancelPurchaseOrderCmd,
 		applyPriceSuggestionsCmd
 	} from '$lib/remote/purchaseOrders.remote';
+	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
 	import type { PriceSuggestion } from '$lib/remote/purchaseOrders.remote';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
-	import { PurchaseOrderStatus, getPurchaseOrderItemTypeLabel } from '$lib/shared/enums';
+	import {
+		PurchaseOrderStatus,
+		getPurchaseOrderItemTypeLabel,
+		getInventoryMovementTypeLabel
+	} from '$lib/shared/enums';
 	import type {
 		PurchaseOrderWithRelations,
 		PurchaseOrderItemWithProduct
 	} from '$lib/server/db/queries/purchaseOrders';
+	import type { InventoryMovement, InventoryLot } from '$lib/server/db/schema';
 	import { untrack, tick } from 'svelte';
 
 	let { data } = $props();
 	let purchaseOrder = $state<PurchaseOrderWithRelations>(untrack(() => data.purchaseOrder));
 	let items = $state<PurchaseOrderItemWithProduct[]>(untrack(() => data.items));
+	let movements = $state<InventoryMovement[]>(untrack(() => data.movements));
+	let lotsMap = $state<Record<string, InventoryLot>>(untrack(() => data.lotsMap));
 
 	/** Re-sync local state from server data after invalidation */
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
 		items = data.items;
+		movements = data.movements;
+		lotsMap = data.lotsMap;
 	}
 
 	let isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
+	let isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
 
 	let actionLoading = $state(false);
 	let showConfirmModal = $state(false);
@@ -47,6 +60,52 @@
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
 	let priceLoading = $state(false);
+
+	// Lot reversal state
+	let revertLoading = $state(false);
+	let showRevertModal = $state(false);
+	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
+
+	function canRevertLot(item: PurchaseOrderItemWithProduct): boolean {
+		if (!item.lotId) return false;
+		const lot = lotsMap[item.lotId];
+		if (!lot) return false;
+		return lot.quantityAvailable === lot.quantityInitial;
+	}
+
+	function openRevertModal(item: PurchaseOrderItemWithProduct) {
+		if (!item.lotId) return;
+		const lot = lotsMap[item.lotId];
+		if (!lot) return;
+		revertTarget = {
+			lotId: item.lotId,
+			productName: item.product?.name ?? 'Producto desconocido',
+			quantity: lot.quantityInitial
+		};
+		showRevertModal = true;
+	}
+
+	async function handleRevertLot() {
+		if (!revertTarget) return;
+		revertLoading = true;
+		try {
+			const result = await revertFullLotCmd({ lotId: revertTarget.lotId });
+			if (result.success) {
+				toast.success('Lote revertido exitosamente');
+				showRevertModal = false;
+				revertTarget = null;
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error revirtiendo lote');
+			}
+		} catch (e) {
+			console.error(e);
+			toast.error(getErrorMessage(e, 'Error revirtiendo lote'));
+		} finally {
+			revertLoading = false;
+		}
+	}
 
 	let totalItems = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
 	let totalPurchase = $derived(
@@ -252,6 +311,10 @@
 						<th class="px-6 py-3 text-right">Precio Compra</th>
 						<th class="px-6 py-3 text-right">Precio Venta</th>
 						<th class="px-6 py-3 text-right">Subtotal Compra</th>
+						{#if isConfirmed}
+							<th class="px-6 py-3 text-right">Lote</th>
+							<th class="px-6 py-3"></th>
+						{/if}
 					</tr>
 				</thead>
 				<tbody>
@@ -288,10 +351,35 @@
 							<td class="px-6 py-3 text-right font-mono font-medium tabular-nums">
 								{formatPrice(item.unitPurchasePrice * item.quantity)}
 							</td>
+							{#if isConfirmed}
+								<td class="px-6 py-3 text-right font-mono text-sm">
+									{#if item.lotId && lotsMap[item.lotId]}
+										<span>L-{String(lotsMap[item.lotId].lotNumber).padStart(4, '0')}</span>
+										<span class="ml-1 text-xs text-slate-400">
+											({lotsMap[item.lotId].quantityAvailable}/{lotsMap[item.lotId]
+												.quantityInitial})
+										</span>
+									{:else}
+										<span class="text-slate-400">—</span>
+									{/if}
+								</td>
+								<td class="px-6 py-3 text-right">
+									{#if canRevertLot(item)}
+										<button
+											type="button"
+											class="inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+											onclick={() => openRevertModal(item)}
+										>
+											<RotateCcw class="h-3 w-3" />
+											Revertir
+										</button>
+									{/if}
+								</td>
+							{/if}
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="6" class="px-6 py-8 text-center text-slate-400">
+							<td colspan={isConfirmed ? 8 : 6} class="px-6 py-8 text-center text-slate-400">
 								No hay ítems en esta orden
 							</td>
 						</tr>
@@ -322,6 +410,70 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Movements History (only for confirmed POs) -->
+	{#if isConfirmed && movements.length > 0}
+		<div class="mt-8 rounded-xl border border-slate-200 bg-white">
+			<div class="border-b border-slate-200 px-6 py-4">
+				<h2 class="flex items-center gap-2 text-lg font-semibold text-slate-900">
+					<ArrowRightLeft class="h-5 w-5" />
+					Movimientos generados ({movements.length})
+				</h2>
+			</div>
+
+			<div class="overflow-x-auto">
+				<table class="w-full text-left text-sm">
+					<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
+						<tr>
+							<th class="px-6 py-3">Fecha</th>
+							<th class="px-6 py-3">Tipo</th>
+							<th class="px-6 py-3 text-right">Cantidad</th>
+							<th class="px-6 py-3 text-right">Antes</th>
+							<th class="px-6 py-3 text-right">Después</th>
+							<th class="px-6 py-3">Notas</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each movements as movement (movement.id)}
+							{@const isInflow = movement.quantityDelta > 0}
+							<tr class="border-b border-slate-100 hover:bg-slate-50">
+								<td class="px-6 py-3 text-sm text-slate-600">
+									{formatDate(movement.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
+								</td>
+								<td class="px-6 py-3">
+									<span
+										class="inline-block rounded px-2 py-0.5 text-xs font-medium {isInflow
+											? 'bg-emerald-50 text-emerald-700'
+											: 'bg-red-50 text-red-700'}"
+									>
+										{getInventoryMovementTypeLabel(movement.movementType)}
+									</span>
+								</td>
+								<td class="px-6 py-3 text-right">
+									<span
+										class="font-mono text-sm font-medium tabular-nums {isInflow
+											? 'text-emerald-600'
+											: 'text-red-600'}"
+									>
+										{isInflow ? '+' : ''}{movement.quantityDelta}
+									</span>
+								</td>
+								<td class="px-6 py-3 text-right font-mono text-sm text-slate-500 tabular-nums">
+									{movement.quantityBefore}
+								</td>
+								<td class="px-6 py-3 text-right font-mono text-sm text-slate-500 tabular-nums">
+									{movement.quantityAfter}
+								</td>
+								<td class="max-w-xs truncate px-6 py-3 text-sm text-slate-500">
+									{movement.notes ?? '—'}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Meta info -->
 	<div class="mt-6 flex flex-wrap gap-6 text-xs text-slate-400">
@@ -364,4 +516,21 @@
 	loading={priceLoading}
 	onApply={handleApplyPrices}
 	onSkip={handleSkipPrices}
+/>
+
+<!-- Revert Lot Modal -->
+<ConfirmModal
+	bind:open={showRevertModal}
+	title="Revertir Lote Completo"
+	message={revertTarget
+		? `¿Estás seguro de revertir el lote de "${revertTarget.productName}" (${revertTarget.quantity} unidades)? Esto vaciará el lote y reducirá el stock del producto.`
+		: ''}
+	confirmLabel="Revertir Lote"
+	confirmColor="red"
+	loading={revertLoading}
+	onConfirm={handleRevertLot}
+	onCancel={() => {
+		showRevertModal = false;
+		revertTarget = null;
+	}}
 />

@@ -4,13 +4,16 @@ import {
 	ListInventoryMovementsSchema,
 	ListInventoryLotsSchema
 } from './inventory';
+import { InventoryMovementType, AdjustmentReason } from '$lib/shared/enums';
 
 describe('ManualAdjustmentSchema', () => {
 	it('accepts a valid positive adjustment', () => {
 		const result = ManualAdjustmentSchema.safeParse({
 			lotId: '00000000-0000-4000-8000-000000000001',
-			quantityDelta: 5,
-			notes: 'Encontradas en bodega'
+			adjustmentType: InventoryMovementType.ADJUSTMENT_IN,
+			quantity: 5,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			notes: 'Encontradas en bodega durante conteo'
 		});
 		expect(result.success).toBe(true);
 	});
@@ -18,26 +21,32 @@ describe('ManualAdjustmentSchema', () => {
 	it('accepts a valid negative adjustment', () => {
 		const result = ManualAdjustmentSchema.safeParse({
 			lotId: '00000000-0000-4000-8000-000000000001',
-			quantityDelta: -3,
-			notes: 'Merma por daño'
+			adjustmentType: InventoryMovementType.ADJUSTMENT_OUT,
+			quantity: 3,
+			reason: AdjustmentReason.DAMAGE,
+			notes: 'Merma por daño en almacén'
 		});
 		expect(result.success).toBe(true);
 	});
 
-	it('rejects zero delta', () => {
+	it('rejects quantity of zero', () => {
 		const result = ManualAdjustmentSchema.safeParse({
 			lotId: '00000000-0000-4000-8000-000000000001',
-			quantityDelta: 0,
-			notes: 'No change'
+			adjustmentType: InventoryMovementType.ADJUSTMENT_OUT,
+			quantity: 0,
+			reason: AdjustmentReason.DAMAGE,
+			notes: 'No change needed'
 		});
 		expect(result.success).toBe(false);
 	});
 
-	it('requires notes', () => {
+	it('requires notes of at least 10 characters', () => {
 		const result = ManualAdjustmentSchema.safeParse({
 			lotId: '00000000-0000-4000-8000-000000000001',
-			quantityDelta: 1,
-			notes: ''
+			adjustmentType: InventoryMovementType.ADJUSTMENT_IN,
+			quantity: 1,
+			reason: AdjustmentReason.OTHER,
+			notes: 'short'
 		});
 		expect(result.success).toBe(false);
 	});
@@ -45,8 +54,35 @@ describe('ManualAdjustmentSchema', () => {
 	it('requires a valid lot UUID', () => {
 		const result = ManualAdjustmentSchema.safeParse({
 			lotId: 'not-a-uuid',
-			quantityDelta: 1,
-			notes: 'Test'
+			adjustmentType: InventoryMovementType.ADJUSTMENT_IN,
+			quantity: 1,
+			reason: AdjustmentReason.OTHER,
+			notes: 'Test reason with enough chars'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('forces ADJUSTMENT_IN for CUSTOMER_RETURN', () => {
+		const result = ManualAdjustmentSchema.safeParse({
+			lotId: '00000000-0000-4000-8000-000000000001',
+			adjustmentType: InventoryMovementType.ADJUSTMENT_OUT,
+			quantity: 1,
+			reason: AdjustmentReason.CUSTOMER_RETURN,
+			notes: 'Cliente devolvió montura sin reembolso'
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.adjustmentType).toBe(InventoryMovementType.ADJUSTMENT_IN);
+		}
+	});
+
+	it('requires a valid reason enum value', () => {
+		const result = ManualAdjustmentSchema.safeParse({
+			lotId: '00000000-0000-4000-8000-000000000001',
+			adjustmentType: InventoryMovementType.ADJUSTMENT_IN,
+			quantity: 1,
+			reason: 'INVALID_REASON',
+			notes: 'Some notes that are long enough'
 		});
 		expect(result.success).toBe(false);
 	});

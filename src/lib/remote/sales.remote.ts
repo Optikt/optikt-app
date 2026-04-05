@@ -46,16 +46,12 @@ import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/e
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
-import { planFifoConsumption } from '$lib/utils/inventory';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
-import {
-	getActiveLotsFifo,
-	consumeFromLot,
-	returnToLot
-} from '$lib/server/db/queries/inventoryLots';
+import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
+import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { inventoryMovements } from '$lib/server/db/schema';
 
 // ============================================================================
@@ -281,120 +277,10 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		// Create sale items + handle stock via FIFO lot consumption
 		for (const item of data.items) {
 			const saleItemId = item.id ?? crypto.randomUUID();
-			let lotId: string | null = null;
-			let snapshotCostTotal: number | null = null;
-			let snapshotCostUnit: number | null = null;
-			let snapshotLotsCount: number | null = null;
 
-			// FIFO lot consumption for PRODUCT items
-			if (item.productId && item.itemType === SaleItemType.PRODUCT) {
-				const [product] = await tx
-					.select({ id: products.id, stock: products.stock, name: products.name })
-					.from(products)
-					.where(and(eq(products.id, item.productId), isNull(products.deletedAt)));
-
-				if (!product) {
-					throw new Error(`Producto ${item.productId} no encontrado`);
-				}
-
-				if (product.stock === null || product.stock < item.quantity) {
-					throw new Error(
-						`Stock insuficiente para ${product.name}. Disponible: ${product.stock ?? 0}, solicitado: ${item.quantity}`
-					);
-				}
-
-				// Get FIFO lots and plan consumption (pure logic)
-				const lots = await getActiveLotsFifo(item.productId, tx);
-				const plan = planFifoConsumption(lots, item.quantity);
-
-				// Execute the plan: consume lots + create movements
-				for (const alloc of plan.allocations) {
-					const updatedLot = await consumeFromLot(alloc.lotId, alloc.quantityToConsume, tx);
-
-					await createInventoryMovement(
-						{
-							movementType: InventoryMovementType.SALE_OUT,
-							lotId: alloc.lotId,
-							itemType: 'PRODUCT',
-							productId: item.productId,
-							quantityDelta: -alloc.quantityToConsume,
-							quantityBefore: alloc.quantityBeforeConsume,
-							quantityAfter: updatedLot.quantityAvailable,
-							referenceType: MovementReferenceType.SALE,
-							referenceId: newSale.id,
-							createdById: context.userId!
-						},
-						tx
-					);
-				}
-
-				lotId = plan.primaryLotId;
-				snapshotCostTotal = plan.costTotal;
-				snapshotCostUnit = plan.costUnit;
-				snapshotLotsCount = plan.lotsCount;
-
-				// Update cached stock counter
-				const newStock = product.stock - item.quantity;
-				await tx
-					.update(products)
-					.set({ stock: newStock, updatedAt: now })
-					.where(eq(products.id, item.productId));
-			} else if (item.productId) {
-				// Non-PRODUCT type but has productId (shouldn't happen, but safe fallback)
-				const [product] = await tx
-					.select({ id: products.id, stock: products.stock })
-					.from(products)
-					.where(and(eq(products.id, item.productId), isNull(products.deletedAt)));
-
-				if (!product) {
-					throw new Error(`Producto ${item.productId} no encontrado`);
-				}
-
-				if (product.stock !== null) {
-					const newStock = product.stock - item.quantity;
-					if (newStock < 0) {
-						throw new Error(
-							`Stock insuficiente para el producto. Disponible: ${product.stock}, solicitado: ${item.quantity}`
-						);
-					}
-					await tx
-						.update(products)
-						.set({ stock: newStock, updatedAt: now })
-						.where(eq(products.id, item.productId));
-				}
-			}
-
-			// Decrement stock for lens catalog items with STOCK inventory mode
-			if (item.lensCatalogItemId) {
-				const [lens] = await tx
-					.select({
-						id: lensCatalogItems.id,
-						stock: lensCatalogItems.stock,
-						inventoryMode: lensCatalogItems.inventoryMode
-					})
-					.from(lensCatalogItems)
-					.where(
-						and(eq(lensCatalogItems.id, item.lensCatalogItemId), isNull(lensCatalogItems.deletedAt))
-					);
-
-				if (!lens) {
-					throw new Error(`Lente ${item.lensCatalogItemId} no encontrado`);
-				}
-
-				if (lens.inventoryMode === 'STOCK') {
-					const currentStock = lens.stock ?? 0;
-					const newStock = currentStock - item.quantity;
-					if (newStock < 0) {
-						throw new Error(
-							`Stock insuficiente para el lente. Disponible: ${currentStock}, solicitado: ${item.quantity}`
-						);
-					}
-					await tx
-						.update(lensCatalogItems)
-						.set({ stock: newStock, updatedAt: now })
-						.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
-				}
-			}
+			// FIFO lot consumption + stock decrement (shared logic)
+			const { lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
+				await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!);
 
 			await tx.insert(saleItems).values({
 				id: saleItemId,

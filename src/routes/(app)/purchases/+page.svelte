@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, Select, Toggle } from 'flowbite-svelte';
-	import { Plus } from '@lucide/svelte';
+	import { Plus, ArrowRightLeft } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -70,6 +70,9 @@
 		</div>
 		<Button color="blue" onclick={openCreate}>
 			<Plus class="mr-2 h-5 w-5" /> Nueva Orden
+		</Button>
+		<Button color="alternative" onclick={() => goto(resolve('/purchases/movements'))}>
+			<ArrowRightLeft class="mr-2 h-4 w-4" /> Movimientos
 		</Button>
 	</div>
 

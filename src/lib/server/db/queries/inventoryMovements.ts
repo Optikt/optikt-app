@@ -1,6 +1,12 @@
-import { eq, and, desc, asc, count, type SQL, type AnyColumn } from 'drizzle-orm';
+import { eq, and, desc, asc, count, gte, lte, type SQL, type AnyColumn } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { inventoryMovements, type NewInventoryMovement } from '$lib/server/db/schema';
+import {
+	inventoryMovements,
+	inventoryLots,
+	products,
+	users,
+	type NewInventoryMovement
+} from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 
 // ---------------------------------------------------------------------------
@@ -16,6 +22,8 @@ export interface MovementFilterOptions {
 	movementType?: string;
 	referenceType?: string;
 	referenceId?: string;
+	dateFrom?: string;
+	dateTo?: string;
 }
 
 export interface GetMovementsOptions extends MovementFilterOptions {
@@ -43,6 +51,13 @@ function buildMovementConditions(opts: MovementFilterOptions): SQL | undefined {
 	if (opts.movementType) conditions.push(eq(inventoryMovements.movementType, opts.movementType));
 	if (opts.referenceType) conditions.push(eq(inventoryMovements.referenceType, opts.referenceType));
 	if (opts.referenceId) conditions.push(eq(inventoryMovements.referenceId, opts.referenceId));
+	if (opts.dateFrom) conditions.push(gte(inventoryMovements.createdAt, new Date(opts.dateFrom)));
+	if (opts.dateTo) {
+		// dateTo is inclusive — include the entire day
+		const endOfDay = new Date(opts.dateTo);
+		endOfDay.setDate(endOfDay.getDate() + 1);
+		conditions.push(lte(inventoryMovements.createdAt, endOfDay));
+	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
 }
@@ -118,4 +133,64 @@ export async function getMovementsByReference(referenceType: string, referenceId
 			)
 		)
 		.orderBy(asc(inventoryMovements.createdAt));
+}
+
+// ---------------------------------------------------------------------------
+// Rich queries (with joins for display)
+// ---------------------------------------------------------------------------
+
+/**
+ * Movement with joined product name, lot number, and user name for display.
+ */
+export type MovementWithDetails = Awaited<ReturnType<typeof getMovementsWithDetails>>[number];
+
+/**
+ * List movements with product, lot, and user details for display.
+ * Same filtering as getInventoryMovements but includes joined data.
+ */
+export async function getMovementsWithDetails(options?: GetMovementsOptions) {
+	const opts = options ?? {};
+	const where = buildMovementConditions(opts);
+
+	const orderFn = opts.orderSort === 'asc' ? asc : desc;
+	const orderClause = opts.orderBy
+		? orderFn(ORDER_COLUMNS[opts.orderBy])
+		: desc(inventoryMovements.createdAt);
+
+	const base = db
+		.select({
+			id: inventoryMovements.id,
+			movementType: inventoryMovements.movementType,
+			lotId: inventoryMovements.lotId,
+			lotNumber: inventoryLots.lotNumber,
+			itemType: inventoryMovements.itemType,
+			productId: inventoryMovements.productId,
+			productName: products.name,
+			productSku: products.sku,
+			lensCatalogItemId: inventoryMovements.lensCatalogItemId,
+			quantityDelta: inventoryMovements.quantityDelta,
+			quantityBefore: inventoryMovements.quantityBefore,
+			quantityAfter: inventoryMovements.quantityAfter,
+			referenceType: inventoryMovements.referenceType,
+			referenceId: inventoryMovements.referenceId,
+			notes: inventoryMovements.notes,
+			unitCostAtAdjustment: inventoryMovements.unitCostAtAdjustment,
+			totalCostAtAdjustment: inventoryMovements.totalCostAtAdjustment,
+			adjustmentReportCategory: inventoryMovements.adjustmentReportCategory,
+			createdById: inventoryMovements.createdById,
+			createdByName: users.fullName,
+			createdAt: inventoryMovements.createdAt
+		})
+		.from(inventoryMovements)
+		.leftJoin(inventoryLots, eq(inventoryMovements.lotId, inventoryLots.id))
+		.leftJoin(products, eq(inventoryMovements.productId, products.id))
+		.leftJoin(users, eq(inventoryMovements.createdById, users.id))
+		.$dynamic();
+
+	if (where) base.where(where);
+	base.orderBy(orderClause);
+	if (opts.limit) base.limit(opts.limit);
+	if (opts.offset) base.offset(opts.offset);
+
+	return base;
 }

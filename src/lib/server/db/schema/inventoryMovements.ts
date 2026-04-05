@@ -6,6 +6,7 @@ import {
 	uuid,
 	timestamp,
 	integer,
+	doublePrecision,
 	foreignKey
 } from 'drizzle-orm/pg-core';
 import { inventoryLots } from './inventoryLots';
@@ -63,6 +64,12 @@ export const inventoryMovements = pgTable(
 		referenceId: uuid('reference_id').notNull(),
 		/** Reason / notes (required for ADJUSTMENT_* types) */
 		notes: varchar(),
+		/** Cost per unit at time of adjustment (from lot.unitPurchasePrice). NULL for ADJUSTMENT_IN */
+		unitCostAtAdjustment: doublePrecision('unit_cost_at_adjustment'),
+		/** Total cost = unitCostAtAdjustment × quantity. NULL for ADJUSTMENT_IN */
+		totalCostAtAdjustment: doublePrecision('total_cost_at_adjustment'),
+		/** Report category for profit reports. NULL for ADJUSTMENT_IN */
+		adjustmentReportCategory: varchar('adjustment_report_category'),
 		createdById: uuid('created_by_id').notNull(),
 		/** NEVER edited — immutable timestamp */
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()

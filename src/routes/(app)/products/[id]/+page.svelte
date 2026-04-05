@@ -8,24 +8,56 @@
 		History,
 		Package,
 		Check,
-		X
+		X,
+		SlidersHorizontal,
+		ArrowRightLeft
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { formatPrice, formatDate, getProfitMargin } from '$lib/utils';
 	import { untrack } from 'svelte';
-	import { ConfirmModal, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
+	import { ConfirmModal, ProductTypeBadge, StatusBadge, TablePagination } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
+	import { MovementsTable } from '$lib/components/purchases';
 	import { deleteProductById, updateSalePriceCmd } from '$lib/remote/products.remote';
+	import { listInventoryMovements } from '$lib/remote/inventory.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { ProductType, requiresStockTracking } from '$lib/shared/enums';
 	import { isLowStock } from '$lib/utils/products.js';
+	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
+	import type { PaginatedResult } from '$lib/types';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);
 	const activeLots = untrack(() => data.activeLots);
 	const fifoCost = untrack(() => data.fifoCost);
+
+	// Movement history state
+	let movementsData = $state<PaginatedResult<MovementWithDetails>>({
+		items: untrack(() => data.productMovements),
+		total: untrack(() => data.productMovementsCount),
+		page: 1,
+		perPage: 10,
+		totalPages: Math.ceil(untrack(() => data.productMovementsCount) / 10)
+	});
+	let movementsLoading = $state(false);
+
+	async function fetchProductMovements(page = 1) {
+		movementsLoading = true;
+		try {
+			movementsData = await listInventoryMovements({
+				page,
+				perPage: 10,
+				productId: product.id
+			});
+		} catch (e) {
+			console.error(e);
+			toast.error(getErrorMessage(e, 'Error cargando movimientos'));
+		} finally {
+			movementsLoading = false;
+		}
+	}
 
 	// Editable sale price
 	let currentSalePrice = $state<number | null>(product.currentSalePrice);
@@ -368,8 +400,20 @@
 						<Package class="h-5 w-5" />
 						Lotes Activos ({activeLots.length})
 					</h3>
-					<div class="text-sm text-slate-500">
-						Stock real: <span class="font-mono font-semibold text-slate-900">{realStock}</span>
+					<div class="flex items-center gap-4">
+						<span class="text-sm text-slate-500">
+							Stock real: <span class="font-mono font-semibold text-slate-900">{realStock}</span>
+						</span>
+						{#if activeLots.length > 0}
+							<Button
+								size="xs"
+								color="alternative"
+								href={resolve(`/products/${product.id}/adjustments`)}
+							>
+								<SlidersHorizontal class="mr-1.5 h-3.5 w-3.5" />
+								Ajustar
+							</Button>
+						{/if}
 					</div>
 				</div>
 
@@ -421,6 +465,50 @@
 				{:else}
 					<div class="px-6 py-8 text-center text-slate-400">
 						Sin lotes activos. Crea una orden de compra para ingresar stock.
+					</div>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Movement History -->
+		{#if requiresStockTracking(product.type as ProductType)}
+			<div class="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+				<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+					<h3 class="flex items-center gap-2 text-lg font-semibold text-slate-800">
+						<ArrowRightLeft class="h-5 w-5" />
+						Historial de Movimientos
+						<span class="text-sm font-normal text-slate-500">({movementsData.total})</span>
+					</h3>
+					{#if movementsData.total > 0}
+						<a
+							href={resolve(`/purchases/movements?productId=${product.id}`)}
+							class="text-sm font-medium text-blue-600 hover:text-blue-700"
+						>
+							Ver todos →
+						</a>
+					{/if}
+				</div>
+
+				{#if movementsData.total > 0}
+					<MovementsTable
+						movements={movementsData.items}
+						loading={movementsLoading}
+						hideProductColumn
+					/>
+					{#if movementsData.totalPages > 1}
+						<div class="border-t border-slate-200 px-6 py-3">
+							<TablePagination
+								page={movementsData.page}
+								perPage={movementsData.perPage}
+								total={movementsData.total}
+								totalPages={movementsData.totalPages}
+								onPageChange={(p) => fetchProductMovements(p)}
+							/>
+						</div>
+					{/if}
+				{:else}
+					<div class="px-6 py-8 text-center text-slate-400">
+						Sin movimientos registrados para este producto.
 					</div>
 				{/if}
 			</div>
