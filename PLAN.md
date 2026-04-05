@@ -45,7 +45,7 @@
 
 Estos items se agregan cuando aparezca una necesidad real en uso:
 
-- **Reporte de ventas: excluir canceladas de totales** — las ventas CANCELLED no deben sumar a "Monto Total" ni "Total Cobrado". Mostrar sección separada "Ventas anuladas" como información (no como ingresos). Agregar filtro por estado (activas / canceladas / todas). Necesario antes de producción.
+- ✅ **Reporte de ventas: excluir canceladas de totales** — resuelto en `fix-sales-report-exclude-cancelled`. Totales solo incluyen ventas activas, tarjeta separada para anuladas, filtro por estado (activas/anuladas/todas), CSV respeta filtro.
 - **Cancelación de venta con pago parcial** — al cancelar una venta que tiene `sale_payments`, mostrar advertencia con opciones: "Marcar como por devolver" vs "Retener como penalidad". Registrar la decisión, reflejar en reportes. Dos sub-casos: devolución (nota de crédito) o retención. Depende del módulo de Credit Notes.
 - **Test de integración FIFO E2E** — test que crea lote → venta → verifica lot.quantity_available en DB → cancela → verifica rollback. Cubre single-lot y multi-lot scenarios. Incluir verificación de inventory_movements (SALE_OUT / CANCEL_REVERT).
 - Credit Notes / RETURN_IN con reembolso y ajuste financiero
