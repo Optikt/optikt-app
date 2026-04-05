@@ -42,6 +42,8 @@ export interface SalesReportSummary {
 	count: number;
 	totalAmount: number;
 	totalPaid: number;
+	cancelledCount: number;
+	cancelledAmount: number;
 }
 
 export interface ReportPayment {
@@ -101,10 +103,15 @@ export async function getReportSales(
 		sellerName: r.seller?.fullName ?? null
 	}));
 
+	const active = reportSales.filter((s) => s.status !== 'CANCELLED');
+	const cancelled = reportSales.filter((s) => s.status === 'CANCELLED');
+
 	const summary: SalesReportSummary = {
-		count: reportSales.length,
-		totalAmount: reportSales.reduce((acc, s) => acc + s.total, 0),
-		totalPaid: reportSales.reduce((acc, s) => acc + s.paidAmountBcvUsd, 0)
+		count: active.length,
+		totalAmount: active.reduce((acc, s) => acc + s.total, 0),
+		totalPaid: active.reduce((acc, s) => acc + s.paidAmountBcvUsd, 0),
+		cancelledCount: cancelled.length,
+		cancelledAmount: cancelled.reduce((acc, s) => acc + s.total, 0)
 	};
 
 	return { sales: reportSales, summary };
