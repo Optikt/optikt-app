@@ -17,7 +17,7 @@
 - ✅ **Vista detalle de venta** — artículos consolidados, treatments como items, pagos
 - ✅ **inventoryMode** — ON_DEMAND vs STOCK por lens catalog item
 - ✅ **Order numbers** — secuencial sin gaps (MAX+1 dentro de transacción)
-- ✅ **327 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory)
+- ✅ **321 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory)
 - ✅ **Seed de demo** — datos de ejemplo para desarrollo
 - ✅ **Presupuestos (Fase 6)** — CRUD, wizard 3 pasos, conversión a venta, estados, quoteNumber secuencial, audit logging
 - ✅ **IVA básico (Fase 7)** — tax-inclusive pricing, desglose fiscal en ventas/presupuestos, TaxToggle, default 16%
@@ -65,14 +65,14 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 
 ## Deuda técnica conocida
 
-| ID   | Descripción                                                                                                                                                                                              | Riesgo |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function                                                                                                                                        | Medio  |
-| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                                                                   | Bajo   |
-| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                                                                    | Medio  |
-| RT-4 | ~~Fallback para errores de validación no vinculados a campos visibles~~ — RESUELTO: `toastUnboundErrors()` en 13 form components + mensajes Zod custom en español                                        | ✅     |
-| RT-5 | ~~Backfill `payment_date` en `sale_payments`~~ — RESUELTO: migración 0001 backfill + NOT NULL, eliminado fallback `?? createdAt` en reports y UI                                                         | ✅     |
-| RT-6 | Reemplazar `src/lib/utils/csv.ts` (helper manual) por [`export-to-csv`](https://github.com/alexcaza/export-to-csv) — paquete ligero y mantenido. Eliminar `generateCsv()` / `downloadCsv()` y sus tests. | Bajo   |
+| ID   | Descripción                                                                                                                                                       | Riesgo |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a key único y factory function                                                                                                 | Medio  |
+| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos                                                                                            | Bajo   |
+| RT-3 | Componente genérico `ReactivateEntityModal` (5 modals casi idénticos)                                                                                             | Medio  |
+| RT-4 | ~~Fallback para errores de validación no vinculados a campos visibles~~ — RESUELTO: `toastUnboundErrors()` en 13 form components + mensajes Zod custom en español | ✅     |
+| RT-5 | ~~Backfill `payment_date` en `sale_payments`~~ — RESUELTO: migración 0001 backfill + NOT NULL, eliminado fallback `?? createdAt` en reports y UI                  | ✅     |
+| RT-6 | ~~Reemplazar `csv.ts` manual por `export-to-csv`~~ — RESUELTO: `downloadCsv()` usa `export-to-csv` internamente, eliminado `generateCsv()` y 6 tests manuales     | ✅     |
 
 ---
 
@@ -82,7 +82,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] CRUD completo (todas las entidades)
 - [x] Wizard de ventas (happy path completo)
 - [x] inventoryMode ON_DEMAND / STOCK
-- [x] Tests (327)
+- [x] Tests (321)
 - [x] Fase 6 — Presupuestos
 - [x] Fase 7 — IVA básico
 - [x] Fase 8 — Dashboard real
