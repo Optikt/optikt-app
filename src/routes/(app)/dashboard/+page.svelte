@@ -6,7 +6,8 @@
 		UserPlus,
 		FileText,
 		Eye,
-		ChartColumn
+		ChartColumn,
+		FilePlus
 	} from '@lucide/svelte';
 	import {
 		DashboardHeader,
@@ -57,7 +58,7 @@
 
 	const actions = [
 		{ label: 'Nuevo Cliente', href: '/customers', icon: UserPlus },
-		{ label: 'Presupuesto', href: '/quotes/new', icon: FileText },
+		{ label: 'Nuevo Presupuesto', href: '/quotes/new', icon: FilePlus },
 		{ label: 'Catálogo', href: '/lenses', icon: Eye },
 		{ label: 'Reportes', href: '/reports', icon: ChartColumn }
 	] as const;
