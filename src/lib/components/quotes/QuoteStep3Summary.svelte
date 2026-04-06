@@ -281,11 +281,11 @@
 									{@const Icon = getProductTypeIcon(productType)}
 									<span
 										class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
-										{badgeColor === 'blue' ? 'bg-blue-100 text-blue-700' : ''}
-										{badgeColor === 'green' ? 'bg-green-100 text-green-700' : ''}
-										{badgeColor === 'purple' ? 'bg-purple-100 text-purple-700' : ''}
-										{badgeColor === 'yellow' ? 'bg-amber-100 text-amber-700' : ''}
-										{badgeColor === 'gray' ? 'bg-slate-100 text-slate-700' : ''}"
+										{badgeColor === 'info' ? 'bg-info-container text-on-info-container' : ''}
+										{badgeColor === 'success' ? 'bg-success-container text-on-success-container' : ''}
+										{badgeColor === 'purple' ? 'bg-purple-container text-on-purple-container' : ''}
+										{badgeColor === 'warning' ? 'bg-warning-container text-on-warning-container' : ''}
+										{badgeColor === 'neutral' ? 'bg-surface-container-high text-on-surface-variant' : ''}"
 									>
 										<Icon class="h-3 w-3" />
 										{getProductTypeLabel(productType)}

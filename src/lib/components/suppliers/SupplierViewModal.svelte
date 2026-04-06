@@ -45,7 +45,7 @@
 						<p class="mt-1 font-mono text-sm text-slate-500">{supplier.rif}</p>
 					{/if}
 				</div>
-				<SupplierTypeBadge type={supplier.type} size="sm" />
+				<SupplierTypeBadge type={supplier.type} class="text-sm" />
 			</div>
 
 			<!-- Contact Information -->
