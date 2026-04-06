@@ -14,18 +14,19 @@
 ## Fase 0 — Design Tokens & Foundation
 
 **Fuente:** Stitch brand system + tokens base  
-**Estado:** pendiente (Stitch WIP)
+**Estado:** en progreso (tokens base implementados; faltan componentes base y RT-2)
 
 ### Entregables
 
-- [ ] Paleta de colores semánticos (primary, secondary, accent, success, warning, error, neutral)
-- [ ] Tipografía (font family, scale, weights, letter-spacing)
-- [ ] Spacing scale (4px grid)
-- [ ] Border radius system
-- [ ] Depth strategy (shadows/borders)
-- [ ] Tailwind config actualizado (`tailwind.config.ts` — extend colors, fonts, etc.)
-- [ ] `layout.css` actualizado (global resets, base tokens)
+- [x] Paleta base de colores semánticos (primary, secondary, accent, error, neutral, surface)
+- [x] Tipografía base (Inter + Space Grotesk)
+- [x] Spacing scale (4px grid)
+- [x] Border radius system
+- [x] Depth strategy (shadows/borders)
+- [x] Theme global actualizado en Tailwind v4 vía `src/routes/layout.css` (este repo no usa `tailwind.config.ts`)
+- [x] `layout.css` actualizado (global resets, base tokens)
 - [ ] Componentes base actualizados si aplica (Button, Badge, Card wrappers)
+- [ ] Extender colores semánticos restantes para estados (`success`, `warning`) al tocar badges/reportes
 
 ### Deuda técnica a resolver aquí
 
@@ -36,12 +37,19 @@
 ## Fase 1 — Login
 
 **Fuente:** Stitch login screen  
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/login` — [src/routes/(auth)/login/+page.svelte](src/routes/(auth)/login/+page.svelte)
-- [ ] `(auth)/+layout.svelte` — [src/routes/(auth)/+layout.svelte](src/routes/(auth)/+layout.svelte)
+- [x] `/login` — [src/routes/(auth)/login/+page.svelte](<src/routes/(auth)/login/+page.svelte>)
+- [x] `(auth)/+layout.svelte` — [src/routes/(auth)/+layout.svelte](<src/routes/(auth)/+layout.svelte>) (verificado; sin cambios visuales requeridos)
+
+### Notas de implementación
+
+- Imagotipo izquierdo: `/static/imagotipos/vertical/optikt-white-yellow.png`
+- Logo derecho: `/static/logos/optikt-original.png`
+- Versión del login: inyectada desde `package.json`
+- Validación: `pnpm build`, `pnpm lint` y tests unitarios en verde
 
 ---
 
@@ -172,61 +180,61 @@
 
 ## Inventario completo de pantallas (32 pages + 4 layouts)
 
-| #  | Ruta                             | Fase | Estado   |
-|----|----------------------------------|------|----------|
-| L1 | `+layout.svelte` (root)         | 0    | pendiente |
-| L2 | `(auth)/+layout.svelte`         | 1    | pendiente |
-| L3 | `(app)/+layout.svelte`          | 2    | pendiente |
-| L4 | `products/[id]/+layout.svelte`  | 6    | pendiente |
-| 1  | `/login`                        | 1    | pendiente |
-| 2  | `/dashboard`                    | 2    | pendiente |
-| 3  | `/customers`                    | 3    | pendiente |
-| 4  | `/customers/[id]`               | 3    | pendiente |
-| 5  | `/sales`                        | 4    | pendiente |
-| 6  | `/sales/[id]`                   | 4    | pendiente |
-| 7  | `/sales/new`                    | 4    | pendiente |
-| 8  | `/quotes`                       | 5    | pendiente |
-| 9  | `/quotes/[id]`                  | 5    | pendiente |
-| 10 | `/quotes/new`                   | 5    | pendiente |
-| 11 | `/products`                     | 6    | pendiente |
-| 12 | `/products/create`              | 6    | pendiente |
-| 13 | `/products/[id]`                | 6    | pendiente |
-| 14 | `/products/[id]/update`         | 6    | pendiente |
-| 15 | `/products/[id]/adjustments`    | 6    | pendiente |
-| 16 | `/lenses`                       | 7    | pendiente |
-| 17 | `/lenses/create`                | 7    | pendiente |
-| 18 | `/lenses/[id]`                  | 7    | pendiente |
-| 19 | `/lenses/[id]/edit`             | 7    | pendiente |
-| 20 | `/purchases`                    | 8    | pendiente |
-| 21 | `/purchases/new`                | 8    | pendiente |
-| 22 | `/purchases/[id]`               | 8    | pendiente |
-| 23 | `/purchases/movements`          | 8    | pendiente |
-| 24 | `/config`                       | 9    | pendiente |
-| 25 | `/brands`                       | 9    | pendiente |
-| 26 | `/materials`                    | 9    | pendiente |
-| 27 | `/suppliers`                    | 9    | pendiente |
-| 28 | `/users`                        | 9    | pendiente |
-| 29 | `/reports`                      | 10   | pendiente |
-| 30 | `/reports/sales`                | 10   | pendiente |
-| 31 | `/reports/payments`             | 10   | pendiente |
-| 32 | `/reports/inventory`            | 10   | pendiente |
+| #   | Ruta                           | Fase | Estado     |
+| --- | ------------------------------ | ---- | ---------- |
+| L1  | `+layout.svelte` (root)        | 0    | pendiente  |
+| L2  | `(auth)/+layout.svelte`        | 1    | completada |
+| L3  | `(app)/+layout.svelte`         | 2    | pendiente  |
+| L4  | `products/[id]/+layout.svelte` | 6    | pendiente  |
+| 1   | `/login`                       | 1    | completada |
+| 2   | `/dashboard`                   | 2    | pendiente  |
+| 3   | `/customers`                   | 3    | pendiente  |
+| 4   | `/customers/[id]`              | 3    | pendiente  |
+| 5   | `/sales`                       | 4    | pendiente  |
+| 6   | `/sales/[id]`                  | 4    | pendiente  |
+| 7   | `/sales/new`                   | 4    | pendiente  |
+| 8   | `/quotes`                      | 5    | pendiente  |
+| 9   | `/quotes/[id]`                 | 5    | pendiente  |
+| 10  | `/quotes/new`                  | 5    | pendiente  |
+| 11  | `/products`                    | 6    | pendiente  |
+| 12  | `/products/create`             | 6    | pendiente  |
+| 13  | `/products/[id]`               | 6    | pendiente  |
+| 14  | `/products/[id]/update`        | 6    | pendiente  |
+| 15  | `/products/[id]/adjustments`   | 6    | pendiente  |
+| 16  | `/lenses`                      | 7    | pendiente  |
+| 17  | `/lenses/create`               | 7    | pendiente  |
+| 18  | `/lenses/[id]`                 | 7    | pendiente  |
+| 19  | `/lenses/[id]/edit`            | 7    | pendiente  |
+| 20  | `/purchases`                   | 8    | pendiente  |
+| 21  | `/purchases/new`               | 8    | pendiente  |
+| 22  | `/purchases/[id]`              | 8    | pendiente  |
+| 23  | `/purchases/movements`         | 8    | pendiente  |
+| 24  | `/config`                      | 9    | pendiente  |
+| 25  | `/brands`                      | 9    | pendiente  |
+| 26  | `/materials`                   | 9    | pendiente  |
+| 27  | `/suppliers`                   | 9    | pendiente  |
+| 28  | `/users`                       | 9    | pendiente  |
+| 29  | `/reports`                     | 10   | pendiente  |
+| 30  | `/reports/sales`               | 10   | pendiente  |
+| 31  | `/reports/payments`            | 10   | pendiente  |
+| 32  | `/reports/inventory`           | 10   | pendiente  |
 
 ---
 
 ## Deuda técnica (se resuelve durante el redesign)
 
-| ID   | Descripción                                              | Se resuelve en |
-|------|----------------------------------------------------------|----------------|
-| RT-1 | Estandarizar `ReactivateXxxSchema` a factory function    | Fase 6         |
-| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()`        | Fase 0         |
-| RT-3 | Componente genérico `ReactivateEntityModal`               | Fase 4         |
+| ID   | Descripción                                           | Se resuelve en |
+| ---- | ----------------------------------------------------- | -------------- |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a factory function | Fase 6         |
+| RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()`     | Fase 0         |
+| RT-3 | Componente genérico `ReactivateEntityModal`           | Fase 4         |
 
 ---
 
 ## Flujo de trabajo por fase
 
 1. Diseñar en Stitch → exportar tokens/mockups
-2. Crear sub-branch `ui-redesign/fase-N-nombre`
+2. Crear sub-branch `redesign/<scope>` desde `ui-redesign`
 3. Implementar cambios visuales (sin tocar lógica de negocio)
 4. Revisar en localhost — comparar con mockup
 5. `pnpm lint && pnpm test` — 0 errores
