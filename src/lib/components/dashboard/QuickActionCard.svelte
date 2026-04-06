@@ -13,6 +13,8 @@
 	} = $props();
 </script>
 
+<!-- disable rule here since we already resolved the path name after passing it -->
+<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
 	{href}
 	class="flex flex-col items-center gap-2.5 rounded-xl bg-white/10 p-4 no-underline transition-all duration-150 hover:bg-white/20"
