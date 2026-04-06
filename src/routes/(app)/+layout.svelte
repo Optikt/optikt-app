@@ -12,12 +12,12 @@
 	});
 </script>
 
-<div class="flex min-h-screen flex-col">
+<div class="flex h-screen flex-col overflow-hidden">
 	<!-- Full-width top navbar -->
 	<AppNavbar {user} />
 
 	<!-- Sidebar + Content below navbar -->
-	<div class="flex flex-1">
+	<div class="flex min-h-0 flex-1">
 		<Sidebar {user} />
 
 		<main class="flex-1 overflow-y-auto bg-surface">
