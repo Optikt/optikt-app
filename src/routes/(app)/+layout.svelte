@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
+	import { fade } from 'svelte/transition';
 	import { setUiConfig } from '$lib/context';
 	import { AppNavbar, Sidebar } from '$lib/components/layout';
 
@@ -28,7 +30,11 @@
 		<Sidebar {user} />
 
 		<main bind:this={mainEl} class="flex-1 overflow-y-auto bg-surface">
-			{@render children()}
+			{#key page.url.pathname}
+				<div in:fade={{ duration: 200 }}>
+					{@render children()}
+				</div>
+			{/key}
 		</main>
 	</div>
 </div>
