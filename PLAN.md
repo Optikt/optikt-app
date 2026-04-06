@@ -51,7 +51,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - ✅ **Exportar movimientos a CSV** — resuelto en `pre-redesign-tasks`. Botón en /purchases/movements exporta datos filtrados con fecha, tipo, producto, lote, cantidades, costo, notas, usuario.
 - ✅ **Cancelación de venta con pago parcial** — resuelto: decisión binaria retener/reembolsar por el monto completo pagado. El servidor auto-asigna `refundAmount = paidAmountBcvUsd`. Para ajustes parciales se usa registro manual de gasto.
 - **Módulo de Ingresos y Egresos** — registro de gastos operativos (impuestos, salarios, alquileres, ajustes manuales de reembolso parcial, etc.). Complementa cancelaciones con retención. Permite contabilidad básica sin depender del libro contable.
-- Credit Notes / RETURN_IN con reembolso y ajuste financiero
+- **Credit Notes / RETURN_IN** — devolución parcial de artículos con ajuste financiero e inventario. Tablas nuevas: `credit_notes` y `return_items` (aditivas, no modifica lo existente). Nuevo tipo de movimiento `RETURN_IN` (reutiliza `returnToLot()` de CANCEL_REVERT). UI: botón "Devolver artículos" en detalle de venta, selector de items/cantidades, vista de notas de crédito por cliente. **Caso común** (cancelación total) ya resuelto con el flujo actual. **Caso raro** (devolver 1 de N artículos) es lo que necesita esta feature. **Workaround temporal**: cancelar la venta completa y crear una nueva sin el artículo devuelto.
 - Conteo físico multi-item (inventario físico: ver todos los productos, ingresar stock real, el sistema genera ajustes por diferencias)
 - Ajustes de inventario para lentes (catálogo de lentes con stock)
 - Surplus / excedentes físicos de cristales
