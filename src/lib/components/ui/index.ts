@@ -24,6 +24,7 @@ export type { SelectOption, PendingEntity } from './CreatableSelect.svelte';
 
 // Badge components
 export {
+	AppBadge,
 	ProductTypeBadge,
 	SupplierTypeBadge,
 	LensTypeBadge,

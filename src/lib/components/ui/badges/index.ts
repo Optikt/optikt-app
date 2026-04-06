@@ -1,3 +1,4 @@
+export { default as AppBadge } from './AppBadge.svelte';
 export { default as ProductTypeBadge } from './ProductTypeBadge.svelte';
 export { default as SupplierTypeBadge } from './SupplierTypeBadge.svelte';
 export { default as LensTypeBadge } from './LensTypeBadge.svelte';
