@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setUiConfig } from '$lib/context';
-	import { Sidebar, CommandSearch } from '$lib/components/layout';
+	import { AppNavbar, Sidebar } from '$lib/components/layout';
 
 	let { children, data } = $props();
 
@@ -12,19 +12,15 @@
 	});
 </script>
 
-<div class="flex min-h-screen">
-	<Sidebar {user} />
+<div class="flex min-h-screen flex-col">
+	<!-- Full-width top navbar -->
+	<AppNavbar {user} />
 
-	<!-- Main content -->
-	<div class="flex min-h-screen flex-1 flex-col overflow-y-auto bg-slate-50 print:bg-white">
-		<!-- Global search bar -->
-		<header
-			class="sticky top-0 z-40 flex items-center gap-4 border-b border-slate-200 bg-white/80 px-8 py-3 backdrop-blur-sm print:hidden"
-		>
-			<CommandSearch />
-		</header>
+	<!-- Sidebar + Content below navbar -->
+	<div class="flex flex-1">
+		<Sidebar {user} />
 
-		<main class="flex-1">
+		<main class="flex-1 overflow-y-auto bg-surface">
 			{@render children()}
 		</main>
 	</div>
