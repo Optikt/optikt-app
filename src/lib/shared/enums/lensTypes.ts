@@ -2,6 +2,8 @@
  * Lens related enums
  */
 
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 export enum LensType {
 	MONOFOCAL = 'MONOFOCAL',
 	BIFOCAL = 'BIFOCAL',
@@ -112,15 +114,13 @@ export function getTreatmentCategoryLabel(cat: string): string {
 
 // ── Badge colors ────────────────────────────────────────────────────────
 
-export const lensTypeBadgeColors: Record<LensType, 'blue' | 'green' | 'purple' | 'yellow'> = {
-	[LensType.MONOFOCAL]: 'blue',
-	[LensType.BIFOCAL]: 'green',
+export const lensTypeBadgeColors: Record<LensType, BadgeVariant> = {
+	[LensType.MONOFOCAL]: 'info',
+	[LensType.BIFOCAL]: 'success',
 	[LensType.PROGRESSIVE]: 'purple',
-	[LensType.OCCUPATIONAL]: 'yellow'
+	[LensType.OCCUPATIONAL]: 'warning'
 };
 
-export type LensTypeColor = (typeof lensTypeBadgeColors)[LensType];
-
-export function getLensTypeBadgeColor(type: string): LensTypeColor {
-	return lensTypeBadgeColors[type as LensType] ?? 'blue';
+export function getLensTypeBadgeColor(type: string): BadgeVariant {
+	return lensTypeBadgeColors[type as LensType] ?? 'info';
 }

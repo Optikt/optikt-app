@@ -1,29 +1,24 @@
 <script lang="ts">
-	import { Badge } from 'flowbite-svelte';
+	import AppBadge from './AppBadge.svelte';
+	import type { BadgeVariant } from '$lib/shared/badge-variants';
 
 	interface Props {
 		/** Whether the item is active */
 		active: boolean;
-		/** Badge size */
-		size?: 'xs' | 'sm' | 'default';
 		/** Additional CSS classes */
 		class?: string;
 		/** Custom labels for active/inactive states */
 		labels?: { active?: string; inactive?: string };
 	}
 
-	let { active, size = 'xs', class: className = '', labels = {} }: Props = $props();
+	let { active, class: className = '', labels = {} }: Props = $props();
 
 	const activeLabel = $derived(labels.active ?? 'Activo');
 	const inactiveLabel = $derived(labels.inactive ?? 'Inactivo');
 
-	const sizeClasses: Record<string, string> = {
-		xs: 'text-xs',
-		sm: 'text-sm',
-		default: ''
-	};
+	const variant: BadgeVariant = $derived(active ? 'success' : 'neutral');
 </script>
 
-<Badge color={active ? 'green' : 'gray'} class="{sizeClasses[size]} {className}">
+<AppBadge {variant} class={className}>
 	{active ? activeLabel : inactiveLabel}
-</Badge>
+</AppBadge>

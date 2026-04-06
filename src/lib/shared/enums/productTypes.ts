@@ -3,6 +3,8 @@
  * Defines the types of products in inventory
  */
 
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 export enum ProductType {
 	/** Eyeglass frames */
 	FRAME = 'FRAME',
@@ -32,21 +34,19 @@ export function getProductTypeLabel(type: string): string {
 /**
  * Product type badge colors
  */
-export const typeColors: Record<ProductType, 'blue' | 'green' | 'purple' | 'yellow'> = {
-	[ProductType.FRAME]: 'blue',
-	[ProductType.SUNGLASSES]: 'green',
+export const typeColors: Record<ProductType, BadgeVariant> = {
+	[ProductType.FRAME]: 'info',
+	[ProductType.SUNGLASSES]: 'success',
 	[ProductType.CONTACT_LENS]: 'purple',
-	[ProductType.ACCESSORY]: 'yellow'
+	[ProductType.ACCESSORY]: 'warning'
 };
 
-export type ProductTypeColor = (typeof typeColors)[ProductType];
-
-export function getProductTypeBadgeColor(type: string): ProductTypeColor | 'gray' {
-	return typeColors[type as ProductType] ?? 'gray';
+export function getProductTypeBadgeColor(type: string): BadgeVariant {
+	return typeColors[type as ProductType] ?? 'neutral';
 }
 
 /** @deprecated Use getProductTypeBadgeColor instead */
-export function getProductTypeColor(type: string): ProductTypeColor | 'gray' {
+export function getProductTypeColor(type: string): BadgeVariant {
 	return getProductTypeBadgeColor(type);
 }
 

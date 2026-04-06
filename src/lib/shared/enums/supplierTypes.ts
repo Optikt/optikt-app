@@ -3,6 +3,8 @@
  * Defines the types of suppliers in the optical business
  */
 
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 export enum SupplierType {
 	/** Distribuidor de productos terminados (monturas, lentes terminados, accesorios) */
 	DISTRIBUTOR = 'DISTRIBUTOR',
@@ -26,19 +28,17 @@ export function getSupplierTypeLabel(type: string): string {
 	return SUPPLIER_TYPE_LABELS[type as SupplierType] ?? type;
 }
 
-export const supplierTypeColors: Record<SupplierType, 'blue' | 'green' | 'purple'> = {
-	[SupplierType.DISTRIBUTOR]: 'blue',
-	[SupplierType.LABORATORY]: 'green',
+export const supplierTypeColors: Record<SupplierType, BadgeVariant> = {
+	[SupplierType.DISTRIBUTOR]: 'info',
+	[SupplierType.LABORATORY]: 'success',
 	[SupplierType.BOTH]: 'purple'
 };
 
-export type SupplierTypeColor = (typeof supplierTypeColors)[SupplierType];
-
-export function getSupplierTypeBadgeColor(type: string): SupplierTypeColor {
-	return supplierTypeColors[type as SupplierType] ?? 'blue';
+export function getSupplierTypeBadgeColor(type: string): BadgeVariant {
+	return supplierTypeColors[type as SupplierType] ?? 'info';
 }
 
 /** @deprecated Use getSupplierTypeBadgeColor instead */
-export function getSupplierBadgeColor(type: string): SupplierTypeColor {
+export function getSupplierBadgeColor(type: string): BadgeVariant {
 	return getSupplierTypeBadgeColor(type);
 }

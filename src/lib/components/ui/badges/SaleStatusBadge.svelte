@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Badge } from 'flowbite-svelte';
+	import AppBadge from './AppBadge.svelte';
 	import { getSaleStatusLabel, getSaleStatusBadgeColor } from '$lib/shared/enums';
 
 	interface Props {
@@ -9,6 +9,6 @@
 	let { status }: Props = $props();
 </script>
 
-<Badge color={getSaleStatusBadgeColor(status)} class="text-xs font-medium">
+<AppBadge variant={getSaleStatusBadgeColor(status)}>
 	{getSaleStatusLabel(status)}
-</Badge>
+</AppBadge>

@@ -3,6 +3,8 @@
  * Status workflow and item types for the purchase/inventory module
  */
 
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 // ============================================================================
 // PURCHASE ORDER STATUS
 // ============================================================================
@@ -27,16 +29,14 @@ export function getPurchaseOrderStatusLabel(status: string): string {
 	return PURCHASE_ORDER_STATUS_LABELS[status as PurchaseOrderStatus] ?? status;
 }
 
-export const purchaseOrderStatusColors: Record<PurchaseOrderStatus, 'yellow' | 'green' | 'red'> = {
-	[PurchaseOrderStatus.DRAFT]: 'yellow',
-	[PurchaseOrderStatus.CONFIRMED]: 'green',
-	[PurchaseOrderStatus.CANCELLED]: 'red'
+export const purchaseOrderStatusColors: Record<PurchaseOrderStatus, BadgeVariant> = {
+	[PurchaseOrderStatus.DRAFT]: 'warning',
+	[PurchaseOrderStatus.CONFIRMED]: 'success',
+	[PurchaseOrderStatus.CANCELLED]: 'error'
 };
 
-export type PurchaseOrderStatusColor = (typeof purchaseOrderStatusColors)[PurchaseOrderStatus];
-
-export function getPurchaseOrderStatusBadgeColor(status: string): PurchaseOrderStatusColor {
-	return purchaseOrderStatusColors[status as PurchaseOrderStatus] ?? 'yellow';
+export function getPurchaseOrderStatusBadgeColor(status: string): BadgeVariant {
+	return purchaseOrderStatusColors[status as PurchaseOrderStatus] ?? 'warning';
 }
 
 // ============================================================================

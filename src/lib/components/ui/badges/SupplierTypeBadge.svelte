@@ -1,25 +1,17 @@
 <script lang="ts">
-	import { Badge } from 'flowbite-svelte';
+	import AppBadge from './AppBadge.svelte';
 	import { SupplierType, getSupplierTypeBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
 
 	interface Props {
 		/** The supplier type value */
 		type: SupplierType | string;
-		/** Badge size */
-		size?: 'xs' | 'sm' | 'default';
 		/** Additional CSS classes */
 		class?: string;
 	}
 
-	let { type, size = 'xs', class: className = '' }: Props = $props();
-
-	const sizeClasses: Record<string, string> = {
-		xs: 'text-xs',
-		sm: 'text-sm',
-		default: ''
-	};
+	let { type, class: className = '' }: Props = $props();
 </script>
 
-<Badge color={getSupplierTypeBadgeColor(type)} class="{sizeClasses[size]} {className}">
+<AppBadge variant={getSupplierTypeBadgeColor(type)} class={className}>
 	{getSupplierTypeLabel(type)}
-</Badge>
+</AppBadge>

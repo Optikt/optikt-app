@@ -3,6 +3,8 @@
  * Status workflow, payment methods, and discount types for the sales module
  */
 
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 // ============================================================================
 // SALE STATUS
 // ============================================================================
@@ -25,16 +27,14 @@ export function getSaleStatusLabel(status: string): string {
 	return SALE_STATUS_LABELS[status as SaleStatus] ?? status;
 }
 
-export const saleStatusColors: Record<SaleStatus, 'yellow' | 'green' | 'red'> = {
-	[SaleStatus.PENDING]: 'yellow',
-	[SaleStatus.COMPLETED]: 'green',
-	[SaleStatus.CANCELLED]: 'red'
+export const saleStatusColors: Record<SaleStatus, BadgeVariant> = {
+	[SaleStatus.PENDING]: 'warning',
+	[SaleStatus.COMPLETED]: 'success',
+	[SaleStatus.CANCELLED]: 'error'
 };
 
-export type SaleStatusColor = (typeof saleStatusColors)[SaleStatus];
-
-export function getSaleStatusBadgeColor(status: string): SaleStatusColor {
-	return saleStatusColors[status as SaleStatus] ?? 'yellow';
+export function getSaleStatusBadgeColor(status: string): BadgeVariant {
+	return saleStatusColors[status as SaleStatus] ?? 'warning';
 }
 
 // ============================================================================

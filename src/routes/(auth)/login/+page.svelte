@@ -1,36 +1,70 @@
 <script lang="ts">
-	import { Card } from '$lib/components/ui';
 	import { LoginForm } from '$lib/components/forms';
-	import { BackgroundLogin } from '$lib/components/background';
+
+	const appVersion = __APP_VERSION__;
 </script>
 
 <svelte:head>
 	<title>Login - Optikt</title>
-	<meta name="description" content="Sign in to Optikt Optical Management System" />
+	<meta name="description" content="Inicie sesión en Optikt — Sistema de Gestión Óptica" />
 </svelte:head>
 
-<div
-	class="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-slate-800 to-slate-900 p-4"
->
-	<BackgroundLogin />
+<div class="flex min-h-screen">
+	<!-- ── Left Panel — Brand showcase ──────────────────────────────────── -->
+	<div
+		class="relative hidden w-1/2 flex-col justify-between overflow-hidden p-10 lg:flex"
+		style="background: linear-gradient(160deg, var(--color-brand-navy) 0%, var(--color-brand-navy-dark) 100%)"
+	>
+		<!-- Top spacer -->
+		<div></div>
 
-	<Card variant="glass" padding="lg" class="animate-fade-in relative z-10 w-full max-w-[420px]">
-		<!-- Logo -->
-		<div class="mb-8 text-center">
+		<!-- Logo + tagline (centered) -->
+		<div class="mx-auto flex max-w-lg flex-col items-center text-center">
 			<img
-				src="/logos/optikt-original.png"
-				alt="Optikt Logo"
-				class="mx-auto mb-4 h-20 w-20 object-contain"
+				src="/imagotipos/vertical/optikt-white-yellow.png"
+				alt="Optikt"
+				class="mb-8 h-48 w-auto object-contain xl:h-56"
 			/>
-			<h1 class="text-gradient m-0 text-2xl font-extrabold">Optikt</h1>
-			<p class="mt-1 text-sm text-slate-500">Sistema de Gestión Interna</p>
+			<p class="text-lg leading-relaxed text-white/60">
+				Transformando la visión, impulsando tu negocio.
+			</p>
 		</div>
 
-		<!-- Login Form Component -->
-		<LoginForm />
+		<!-- Version (bottom-left) -->
+		<!-- brand-gold -->
+		<!-- <p class="text-xs tracking-widest text-white/30 uppercase">Optik-T App v{appVersion}</p> -->
+		<p class="text-xs tracking-widest text-brand-gold/80 uppercase">Optik-T App v{appVersion}</p>
+	</div>
 
-		<p class="mt-8 text-center text-xs text-slate-400">
-			&copy; {new Date().getFullYear()} Optikt. Todos los derechos reservados.
-		</p>
-	</Card>
+	<!-- ── Right Panel — Login form ────────────────────────────────────── -->
+	<div
+		class="flex w-full flex-col items-center justify-center px-6 py-10 lg:w-1/2"
+		style="background-color: var(--color-surface-container-low)"
+	>
+		<!-- System badge (top-right) -->
+		<div class="absolute top-6 right-8 hidden items-center gap-2 lg:flex">
+			<span class="text-xs tracking-wide text-on-surface-variant uppercase">
+				Sistema Operativo
+			</span>
+			<span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+		</div>
+
+		<div class="w-full max-w-sm">
+			<!-- Logo -->
+			<div class="mb-10 text-center">
+				<img
+					src="/logos/optikt-original.png"
+					alt="Optikt Logo"
+					class="mx-auto mb-6 h-16 w-16 object-contain"
+				/>
+				<h2 class="font-heading text-3xl font-bold text-on-surface">Bienvenido de nuevo</h2>
+				<p class="mt-2 text-base text-on-surface-variant">
+					Ingrese sus credenciales para acceder al panel de control.
+				</p>
+			</div>
+
+			<!-- Login Form -->
+			<LoginForm />
+		</div>
+	</div>
 </div>
