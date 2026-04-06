@@ -58,6 +58,16 @@ export const sales = pgTable(
 		cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'date' }),
 		/** Who cancelled the sale */
 		cancelledById: uuid('cancelled_by_id'),
+		/** Refund disposition: REFUNDED | RETAINED | NO_PAYMENT */
+		refundStatus: varchar('refund_status', { length: 20 }),
+		/** Amount refunded or retained (USD BCV) */
+		refundAmount: doublePrecision('refund_amount'),
+		/** Notes about the refund/retention decision */
+		refundNotes: varchar('refund_notes', { length: 500 }),
+		/** When the refund/retention decision was recorded */
+		refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' }),
+		/** Who recorded the refund/retention decision */
+		refundedById: uuid('refunded_by_id'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
@@ -88,6 +98,11 @@ export const sales = pgTable(
 			columns: [table.cancelledById],
 			foreignColumns: [users.id],
 			name: 'sales_cancelled_by_id_fkey'
+		}).onDelete('set null'),
+		foreignKey({
+			columns: [table.refundedById],
+			foreignColumns: [users.id],
+			name: 'sales_refunded_by_id_fkey'
 		}).onDelete('set null')
 	]
 );

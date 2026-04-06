@@ -20,7 +20,12 @@
 	import { MovementsTable } from '$lib/components/purchases';
 	import { cancelSale } from '$lib/remote/sales.remote';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
-	import { SaleStatus, DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
+	import {
+		SaleStatus,
+		DiscountType,
+		RefundStatus,
+		getTreatmentCategoryLabel
+	} from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
@@ -113,6 +118,12 @@
 	let cancelReason = $state('');
 	let cancelReasonError = $state('');
 
+	// Refund state for cancel modal
+	let hasPriorPayments = $derived(sale.paidAmountBcvUsd > 0);
+	let refundStatus = $state<string>(RefundStatus.RETAINED);
+	let refundNotes = $state('');
+	let refundNotesError = $state('');
+
 	const CANCEL_REASON_SUGGESTIONS = [
 		'Error en el pedido',
 		'Solicitud del cliente',
@@ -148,13 +159,37 @@
 			return;
 		}
 		cancelReasonError = '';
+
+		// Validate refund fields when payments exist
+		let hasRefundError = false;
+		if (hasPriorPayments) {
+			const needsDetails =
+				refundStatus === RefundStatus.REFUNDED || refundStatus === RefundStatus.RETAINED;
+			if (needsDetails) {
+				if (!refundNotes || refundNotes.trim().length < 10) {
+					refundNotesError = 'La nota debe tener al menos 10 caracteres';
+					hasRefundError = true;
+				} else {
+					refundNotesError = '';
+				}
+			}
+		}
+		if (hasRefundError) return;
+
 		actionLoading = true;
 		try {
-			const result = await cancelSale({ id: sale.id, reason: cancelReason.trim() });
+			const result = await cancelSale({
+				id: sale.id,
+				reason: cancelReason.trim(),
+				refundStatus: hasPriorPayments ? refundStatus : RefundStatus.NO_PAYMENT,
+				refundNotes: hasPriorPayments ? refundNotes.trim() : undefined
+			});
 			if (result.success) {
 				toast.success('Venta cancelada');
 				showCancelModal = false;
 				cancelReason = '';
+				refundStatus = RefundStatus.RETAINED;
+				refundNotes = '';
 				await invalidateAll();
 				sale = data.sale;
 				items = data.items;
@@ -300,6 +335,46 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Refund/retention info -->
+			{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
+				{@const isRefunded = sale.refundStatus === RefundStatus.REFUNDED}
+				<div
+					class="mt-3 rounded-lg border p-4 {isRefunded
+						? 'border-red-200 bg-red-50'
+						: 'border-amber-200 bg-amber-50'}"
+				>
+					<div class="flex items-start gap-3">
+						<div class="space-y-1">
+							<p class="text-sm font-semibold {isRefunded ? 'text-red-700' : 'text-amber-700'}">
+								{isRefunded ? 'Reembolso emitido' : 'Depósito retenido'}:
+								<span class="tabular-nums">{formatPrice(sale.refundAmount ?? 0)}</span>
+							</p>
+							{#if sale.refundNotes}
+								<p class="text-sm {isRefunded ? 'text-red-800' : 'text-amber-800'}">
+									{sale.refundNotes}
+								</p>
+							{/if}
+							<div
+								class="flex flex-wrap gap-4 pt-1 text-xs {isRefunded
+									? 'text-red-600'
+									: 'text-amber-600'}"
+							>
+								{#if sale.refundedAt}
+									<span>{formatDate(sale.refundedAt)}</span>
+								{/if}
+								{#if sale.refundedBy}
+									<span>Por: {sale.refundedBy.fullName}</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+				</div>
+			{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
+				<div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+					<p class="text-sm text-slate-600">Sin pagos previos — no aplica reembolso.</p>
+				</div>
+			{/if}
 		{/if}
 	</div>
 
@@ -566,6 +641,9 @@
 		showCancelModal = false;
 		cancelReason = '';
 		cancelReasonError = '';
+		refundStatus = RefundStatus.RETAINED;
+		refundNotes = '';
+		refundNotesError = '';
 	}}
 >
 	{#snippet body()}
@@ -595,6 +673,67 @@
 		></textarea>
 		{#if cancelReasonError}
 			<p class="mt-1 text-xs text-red-600">{cancelReasonError}</p>
+		{/if}
+
+		<!-- Refund section: only when sale has prior payments -->
+		{#if hasPriorPayments}
+			<div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+				<p class="mb-1 text-sm font-semibold text-amber-800">
+					Esta venta tiene pagos por {formatPrice(sale.paidAmountBcvUsd)}.
+				</p>
+				<p class="mb-3 text-sm text-amber-700">¿Qué desea hacer con este monto?</p>
+				<div class="mb-3 flex gap-3">
+					<label
+						class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors {refundStatus ===
+						RefundStatus.RETAINED
+							? 'border-amber-400 bg-amber-100 text-amber-800'
+							: 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}"
+					>
+						<input
+							type="radio"
+							name="refundStatus"
+							value={RefundStatus.RETAINED}
+							bind:group={refundStatus}
+							class="accent-amber-600"
+						/>
+						Retener — {formatPrice(sale.paidAmountBcvUsd)} se quedan en el negocio
+					</label>
+					<label
+						class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors {refundStatus ===
+						RefundStatus.REFUNDED
+							? 'border-red-400 bg-red-100 text-red-800'
+							: 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}"
+					>
+						<input
+							type="radio"
+							name="refundStatus"
+							value={RefundStatus.REFUNDED}
+							bind:group={refundStatus}
+							class="accent-red-600"
+						/>
+						Reembolsar — {formatPrice(sale.paidAmountBcvUsd)} se devuelven al cliente
+					</label>
+				</div>
+				<p class="mb-3 text-xs text-amber-600">
+					Para reembolsos parciales, seleccione «Retener» y registre el ajuste como gasto manual.
+				</p>
+				<div>
+					<label for="refundNotes" class="mb-1 block text-xs font-medium text-slate-700">
+						Nota ({refundStatus === RefundStatus.REFUNDED ? 'reembolso' : 'retención'})
+					</label>
+					<textarea
+						id="refundNotes"
+						class="w-full rounded-lg border border-slate-300 p-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+						rows="2"
+						placeholder="Detalle sobre la decisión (mínimo 10 caracteres)..."
+						bind:value={refundNotes}
+						oninput={() => (refundNotesError = '')}
+					></textarea>
+					{#if refundNotesError}
+						<p class="mt-1 text-xs text-red-600">{refundNotesError}</p>
+					{/if}
+				</div>
+			</div>
 		{/if}
 	{/snippet}
 </ConfirmModal>
