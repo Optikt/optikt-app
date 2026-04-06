@@ -13,43 +13,76 @@
 @custom-variant direct-children (& > *);
 @custom-variant penultimate (&:nth-last-child(2));
 @custom-variant not-last (&:not(:last-child));
+/* ── Optikt Clarity — Design Tokens from Stitch ──────────────────────────── */
 @theme {
-	/* Primary colors (used by Flowbite for focus states) - set to brand-blue */
-	--color-primary-50: #f0fafb;
-	--color-primary-100: #d9f2f5;
-	--color-primary-200: #b8e6ec;
-	--color-primary-300: #7fcbd7;
-	--color-primary-400: #5bbdcc;
-	--color-primary-500: #4eb5c5;
-	--color-primary-600: #3a9aa9;
-	--color-primary-700: #337f8b;
-	--color-primary-800: #2d6872;
-	--color-primary-900: #28565f;
+	/* Flowbite primary scale — mapped to sky-blue (tertiary) for focus/interactive */
+	--color-primary-50: #f0f9fd;
+	--color-primary-100: #d4eef8;
+	--color-primary-200: #a8ddf1;
+	--color-primary-300: #7ad2f3;
+	--color-primary-400: #419ebd;
+	--color-primary-500: #3897b5;
+	--color-primary-600: #2d7a94;
+	--color-primary-700: #256476;
+	--color-primary-800: #1e4f5e;
+	--color-primary-900: #19424e;
 
-	--color-secondary-50: #f0f9ff;
-	--color-secondary-100: #e0f2fe;
-	--color-secondary-200: #bae6fd;
-	--color-secondary-300: #7dd3fc;
-	--color-secondary-400: #38bdf8;
-	--color-secondary-500: #0ea5e9;
-	--color-secondary-600: #0284c7;
-	--color-secondary-700: #0369a1;
-	--color-secondary-800: #075985;
-	--color-secondary-900: #0c4a6e;
+	/* Flowbite secondary scale — mapped to golden-yellow */
+	--color-secondary-50: #fffceb;
+	--color-secondary-100: #fff6c6;
+	--color-secondary-200: #ffe080;
+	--color-secondary-300: #fcd01e;
+	--color-secondary-400: #edc200;
+	--color-secondary-500: #d4a800;
+	--color-secondary-600: #a88200;
+	--color-secondary-700: #725c00;
+	--color-secondary-800: #564500;
+	--color-secondary-900: #231b00;
 }
 
-/* Theme Configuration */
 @theme {
-	/* Primary Brand Colors */
-	--color-brand-blue: #4eb5c5;
-	--color-brand-blue-light: #7fcbd7;
-	--color-brand-blue-dark: #3a9aa9;
-	--color-brand-yellow: #f5c842;
-	--color-brand-yellow-light: #f9db7a;
-	--color-brand-yellow-dark: #e0b530;
-	--color-brand-navy: #2c3e50;
+	/* ── Brand Core ──────────────────────────────────────────────────────── */
+	/* Navy — primary authority */
+	--color-brand-navy: #152346;
+	--color-brand-navy-dark: #000d2f;
+	--color-brand-navy-light: #38466b;
 
-	/* Typography */
+	/* Sky-blue — interactive accent */
+	--color-brand-blue: #419ebd;
+	--color-brand-blue-light: #7ad2f3;
+	--color-brand-blue-dark: #3897b5;
+
+	/* Golden-yellow — CTAs & highlights */
+	--color-brand-gold: #fcd01e;
+	--color-brand-gold-dark: #edc200;
+	--color-brand-gold-light: #ffe080;
+	--color-brand-yellow: #fcd01e; /* compat alias */
+
+	/* ── Surface hierarchy (tonal layering, no hard borders) ────────────── */
+	--color-surface: #fbf8fc;
+	--color-surface-dim: #dbd9dd;
+	--color-surface-container-lowest: #ffffff;
+	--color-surface-container-low: #f5f3f6;
+	--color-surface-container: #efedf1;
+	--color-surface-container-high: #eae7eb;
+	--color-surface-container-highest: #e4e2e5;
+
+	/* ── On-colors (text on surfaces) ───────────────────────────────────── */
+	--color-on-surface: #1b1b1e;
+	--color-on-surface-variant: #45464e;
+	--color-on-primary: #ffffff;
+	--color-on-secondary: #6f5900;
+	--color-outline: #75777f;
+	--color-outline-variant: #c6c6cf;
+
+	/* ── Error ───────────────────────────────────────────────────────────── */
+	--color-error: #ba1a1a;
+	--color-error-container: #ffdad6;
+	--color-on-error: #ffffff;
+	--color-on-error-container: #93000a;
+
+	/* ── Typography ──────────────────────────────────────────────────────── */
+	--font-family-heading: 'Space Grotesk', system-ui, sans-serif;
 	--font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -154,7 +187,9 @@ html {
 }
 
 body {
-	@apply bg-white leading-relaxed text-slate-900;
+	background-color: var(--color-surface);
+	color: var(--color-on-surface);
+	@apply leading-relaxed;
 }
 
 /* Animations */
@@ -191,6 +226,11 @@ body {
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
 	background-clip: text;
+}
+
+/* Heading font utility */
+.font-heading {
+	font-family: var(--font-family-heading);
 }
 
 /* Glass Card (premium card effect) */
