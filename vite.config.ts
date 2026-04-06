@@ -2,9 +2,13 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
+import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
+	define: {
+		__APP_VERSION__: JSON.stringify(pkg.version)
+	},
 	server: {
 		allowedHosts: ['elitebook.taild8f0b9.ts.net', 'nanezx-elitebook.taild8f0b9.ts.net'],
 		watch: {
