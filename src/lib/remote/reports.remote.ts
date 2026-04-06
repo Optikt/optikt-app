@@ -9,6 +9,7 @@ import type {
 	ReportSale,
 	SalesReportSummary,
 	ReportPayment,
+	RefundEntry,
 	PaymentsReportSummary,
 	InventoryLensItem
 } from '$lib/server/db/queries/reports';
@@ -25,6 +26,7 @@ export interface SalesReportResult {
 
 export interface PaymentsReportResult {
 	payments: ReportPayment[];
+	refunds: RefundEntry[];
 	summary: PaymentsReportSummary;
 }
 

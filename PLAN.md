@@ -46,13 +46,14 @@
 Estos items se agregan cuando aparezca una necesidad real en uso:
 
 - ✅ **Reporte de ventas: excluir canceladas de totales** — resuelto en `fix-sales-report-exclude-cancelled`. Totales solo incluyen ventas activas, tarjeta separada para anuladas, filtro por estado (activas/anuladas/todas), CSV respeta filtro.
-- **Cancelación de venta con pago parcial** — al cancelar una venta que tiene `sale_payments`, mostrar advertencia con opciones: "Marcar como por devolver" vs "Retener como penalidad". Registrar la decisión, reflejar en reportes. Dos sub-casos: devolución (nota de crédito) o retención. Depende del módulo de Credit Notes.
 - ✅ **Test de integración FIFO E2E** — resuelto en `pre-redesign-tasks`. 26 tests cubriendo: single/multi-lot lifecycle, sale→cancel→rollback, ajustes, costos FIFO, audit trail de movimientos, invariante cached stock.
+- ✅ **Historial de movimientos por venta** — resuelto en `pre-redesign-tasks`. Sección de MovementsTable en detalle de venta con movimientos SALE_OUT/CANCEL_REVERT.
+- ✅ **Exportar movimientos a CSV** — resuelto en `pre-redesign-tasks`. Botón en /purchases/movements exporta datos filtrados con fecha, tipo, producto, lote, cantidades, costo, notas, usuario.
+- ✅ **Cancelación de venta con pago parcial** — resuelto: decisión binaria retener/reembolsar por el monto completo pagado. El servidor auto-asigna `refundAmount = paidAmountBcvUsd`. Para ajustes parciales se usa registro manual de gasto.
+- **Módulo de Ingresos y Egresos** — registro de gastos operativos (impuestos, salarios, alquileres, ajustes manuales de reembolso parcial, etc.). Complementa cancelaciones con retención. Permite contabilidad básica sin depender del libro contable.
 - Credit Notes / RETURN_IN con reembolso y ajuste financiero
 - Conteo físico multi-item (inventario físico: ver todos los productos, ingresar stock real, el sistema genera ajustes por diferencias)
-- ✅ **Historial de movimientos por venta** — resuelto en `pre-redesign-tasks`. Sección de MovementsTable en detalle de venta con movimientos SALE_OUT/CANCEL_REVERT.
 - Ajustes de inventario para lentes (catálogo de lentes con stock)
-- ✅ **Exportar movimientos a CSV** — resuelto en `pre-redesign-tasks`. Botón en /purchases/movements exporta datos filtrados con fecha, tipo, producto, lote, cantidades, costo, notas, usuario.
 - Surplus / excedentes físicos de cristales
 - Fulfillment planner (unit/pair policies, procurement engine)
 - Búsqueda global con scopes/prefijos y parser óptico

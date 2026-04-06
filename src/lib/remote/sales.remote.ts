@@ -42,7 +42,7 @@ import {
 	type Customer
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
+import { SaleStatus, RefundStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
@@ -550,14 +550,22 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 			}
 		}
 
-		// Update sale status
+		// Update sale status, cancellation info, and refund disposition
+		const hasPriorPayments = existing.paidAmountBcvUsd > 0;
+		const refundStatus = hasPriorPayments ? data.refundStatus : RefundStatus.NO_PAYMENT;
+
 		await updateSale(
 			data.id,
 			{
 				status: SaleStatus.CANCELLED,
-				notes: data.reason
-					? `${existing.notes ?? ''}\n[Cancelada]: ${data.reason}`.trim()
-					: existing.notes
+				cancellationReason: data.reason,
+				cancelledAt: now,
+				cancelledById: context.userId!,
+				refundStatus,
+				refundAmount: hasPriorPayments ? existing.paidAmountBcvUsd : null,
+				refundNotes: hasPriorPayments ? (data.refundNotes ?? null) : null,
+				refundedAt: now,
+				refundedById: context.userId!
 			},
 			tx
 		);

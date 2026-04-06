@@ -14,6 +14,7 @@ import {
 	type AnyColumn,
 	type SQL
 } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
@@ -40,6 +41,8 @@ import {
 export type SaleWithRelations = Sale & {
 	customer: { id: string; firstName: string; lastName: string; idNumber: string | null } | null;
 	seller: { id: string; fullName: string } | null;
+	cancelledBy: { id: string; fullName: string } | null;
+	refundedBy: { id: string; fullName: string } | null;
 };
 
 export type SaleItemWithDetails = SaleItem & {
@@ -205,7 +208,9 @@ export async function getAllSales(options?: GetSalesOptions): Promise<SaleWithRe
 	return results.map((r) => ({
 		...r.sale,
 		customer: r.customer?.id ? r.customer : null,
-		seller: r.seller?.id ? r.seller : null
+		seller: r.seller?.id ? r.seller : null,
+		cancelledBy: null,
+		refundedBy: null
 	}));
 }
 
@@ -252,6 +257,8 @@ export async function findSaleByIdWithRelations(
 	{ deleted }: { deleted?: boolean } = {}
 ): Promise<SaleWithRelations | null> {
 	const filter = deleted ? eq(sales.id, id) : and(eq(sales.id, id), isNull(sales.deletedAt));
+	const cancelledByUser = alias(users, 'cancelled_by_user');
+	const refundedByUser = alias(users, 'refunded_by_user');
 
 	const [result] = await db
 		.select({
@@ -262,11 +269,15 @@ export async function findSaleByIdWithRelations(
 				lastName: customers.lastName,
 				idNumber: customers.idNumber
 			},
-			seller: { id: users.id, fullName: users.fullName }
+			seller: { id: users.id, fullName: users.fullName },
+			cancelledBy: { id: cancelledByUser.id, fullName: cancelledByUser.fullName },
+			refundedBy: { id: refundedByUser.id, fullName: refundedByUser.fullName }
 		})
 		.from(sales)
 		.leftJoin(customers, eq(sales.customerId, customers.id))
 		.leftJoin(users, eq(sales.sellerId, users.id))
+		.leftJoin(cancelledByUser, eq(sales.cancelledById, cancelledByUser.id))
+		.leftJoin(refundedByUser, eq(sales.refundedById, refundedByUser.id))
 		.where(filter!);
 
 	if (!result) return null;
@@ -274,7 +285,9 @@ export async function findSaleByIdWithRelations(
 	return {
 		...result.sale,
 		customer: result.customer?.id ? result.customer : null,
-		seller: result.seller?.id ? result.seller : null
+		seller: result.seller?.id ? result.seller : null,
+		cancelledBy: result.cancelledBy?.id ? result.cancelledBy : null,
+		refundedBy: result.refundedBy?.id ? result.refundedBy : null
 	};
 }
 

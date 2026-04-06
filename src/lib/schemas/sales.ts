@@ -16,7 +16,9 @@ import {
 	ALL_SALE_STATUSES,
 	ALL_PAYMENT_METHODS,
 	ALL_DISCOUNT_TYPES,
-	DiscountType
+	ALL_REFUND_STATUSES,
+	DiscountType,
+	RefundStatus
 } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
@@ -173,10 +175,27 @@ export const UpdateSaleStatusSchema = z.object({
 // CANCEL SALE SCHEMA
 // ============================================================================
 
-export const CancelSaleSchema = z.object({
-	id: z.uuid('ID de venta inválido'),
-	reason: z.string().min(1, 'Motivo de cancelación requerido').optional()
-});
+export const CancelSaleSchema = z
+	.object({
+		id: z.uuid('ID de venta inválido'),
+		reason: z.string().min(10, 'El motivo debe tener al menos 10 caracteres'),
+		refundStatus: z.enum(ALL_REFUND_STATUSES, 'Estado de reembolso inválido'),
+		refundNotes: z.string().optional()
+	})
+	.superRefine((data, ctx) => {
+		const needsRefundDetails =
+			data.refundStatus === RefundStatus.REFUNDED || data.refundStatus === RefundStatus.RETAINED;
+
+		if (needsRefundDetails) {
+			if (!data.refundNotes || data.refundNotes.trim().length < 10) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ['refundNotes'],
+					message: 'La nota de reembolso debe tener al menos 10 caracteres'
+				});
+			}
+		}
+	});
 
 // ============================================================================
 // ID SCHEMAS
@@ -199,4 +218,5 @@ export type ListSalesInput = z.infer<typeof ListSalesSchema>;
 export type InlineCustomerInput = z.infer<typeof InlineCustomerSchema>;
 export type AddPaymentInput = z.infer<typeof AddPaymentSchema>;
 export type VoidPaymentInput = z.infer<typeof VoidPaymentSchema>;
+export type CancelSaleInput = z.infer<typeof CancelSaleSchema>;
 export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;

@@ -102,3 +102,25 @@ export const DISCOUNT_TYPE_LABELS: Record<DiscountType, string> = {
 	[DiscountType.FIXED]: 'Fijo ($)',
 	[DiscountType.PERCENTAGE]: 'Porcentaje (%)'
 };
+
+// ============================================================================
+// REFUND STATUS (set when a sale is cancelled)
+// ============================================================================
+
+export enum RefundStatus {
+	REFUNDED = 'REFUNDED',
+	RETAINED = 'RETAINED',
+	NO_PAYMENT = 'NO_PAYMENT'
+}
+
+export const ALL_REFUND_STATUSES = Object.values(RefundStatus) as [string, ...string[]];
+
+export const REFUND_STATUS_LABELS: Record<RefundStatus, string> = {
+	[RefundStatus.REFUNDED]: 'Reembolsado',
+	[RefundStatus.RETAINED]: 'Retenido',
+	[RefundStatus.NO_PAYMENT]: 'Sin pagos'
+};
+
+export function getRefundStatusLabel(status: string): string {
+	return REFUND_STATUS_LABELS[status as RefundStatus] ?? status;
+}

@@ -13,12 +13,21 @@
 	} from '$lib/utils';
 	import { fetchPaymentsReport } from '$lib/remote/reports.remote';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';
-	import type { ReportPayment, PaymentsReportSummary } from '$lib/server/db/queries/reports';
+	import type {
+		ReportPayment,
+		RefundEntry,
+		PaymentsReportSummary
+	} from '$lib/server/db/queries/reports';
 
 	let { data } = $props();
-	let { payments: initialPayments, summary: initialSummary } = untrack(() => data);
+	let {
+		payments: initialPayments,
+		refunds: initialRefunds,
+		summary: initialSummary
+	} = untrack(() => data);
 
 	let payments = $state<ReportPayment[]>(initialPayments);
+	let refunds = $state<RefundEntry[]>(initialRefunds);
 	let summary = $state<PaymentsReportSummary>(initialSummary);
 	let loading = $state(false);
 
@@ -32,6 +41,7 @@
 		try {
 			const result = await fetchPaymentsReport({ dateFrom, dateTo });
 			payments = result.payments;
+			refunds = result.refunds;
 			summary = result.summary;
 		} catch (e) {
 			console.error(e);
@@ -91,8 +101,24 @@
 			<p class="text-2xl font-bold text-slate-900">{summary.countPayments}</p>
 		</div>
 		<div class="glass-card p-4">
-			<p class="text-sm text-slate-500">Monto Total (USD BCV)</p>
-			<p class="text-2xl font-bold text-slate-900">{formatPrice(summary.totalBcvUsd)}</p>
+			<p class="text-sm text-slate-500">Ingresos Brutos (USD BCV)</p>
+			<p class="text-2xl font-bold text-slate-900">{formatPrice(summary.grossBcvUsd)}</p>
+		</div>
+		{#if summary.refundedBcvUsd > 0}
+			<div class="glass-card border-red-200 p-4">
+				<p class="text-sm text-red-500">Reembolsos</p>
+				<p class="text-2xl font-bold text-red-600">-{formatPrice(summary.refundedBcvUsd)}</p>
+			</div>
+		{/if}
+		{#if summary.retainedBcvUsd > 0}
+			<div class="glass-card border-amber-200 p-4">
+				<p class="text-sm text-amber-500">Depósitos Retenidos</p>
+				<p class="text-2xl font-bold text-amber-600">{formatPrice(summary.retainedBcvUsd)}</p>
+			</div>
+		{/if}
+		<div class="glass-card p-4">
+			<p class="text-sm text-slate-500">Ingresos Netos (USD BCV)</p>
+			<p class="text-2xl font-bold text-emerald-600">{formatPrice(summary.netBcvUsd)}</p>
 		</div>
 		{#each summary.byMethod as { method, total, count } (method)}
 			<div class="glass-card p-4">
@@ -127,7 +153,15 @@
 						<td class="px-4 py-3">
 							{formatDate(payment.paymentDate, { dateStyle: 'medium' })}
 						</td>
-						<td class="px-4 py-3">{getPaymentMethodLabel(payment.paymentMethod)}</td>
+						<td class="px-4 py-3">
+							{getPaymentMethodLabel(payment.paymentMethod)}
+							{#if payment.isRetained}
+								<span
+									class="ml-1 inline-block rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+									>Retenido</span
+								>
+							{/if}
+						</td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(payment.amount)}</td>
 						<td class="px-4 py-3 text-right font-mono">{payment.bcvRate.toFixed(2)}</td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(payment.amountBcvUsd)}</td>
@@ -149,4 +183,44 @@
 			</tbody>
 		</table>
 	</div>
+
+	<!-- Refunds section -->
+	{#if refunds.length > 0}
+		<div class="mt-6">
+			<h3 class="mb-3 text-lg font-semibold text-slate-900">Reembolsos Emitidos</h3>
+			<div class="glass-card overflow-hidden">
+				<table class="w-full text-left text-sm">
+					<thead class="border-b border-slate-200 bg-red-50 text-xs text-red-600 uppercase">
+						<tr>
+							<th class="px-4 py-3">Fecha</th>
+							<th class="px-4 py-3">Venta</th>
+							<th class="px-4 py-3">Cliente</th>
+							<th class="px-4 py-3 text-right">Monto Reembolsado</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-slate-100">
+						{#each refunds as refund (refund.saleId)}
+							<tr
+								class="cursor-pointer hover:bg-red-50/50"
+								onclick={() => goto(resolve(`/sales/${refund.saleId}`))}
+							>
+								<td class="px-4 py-3">
+									{refund.cancelledAt
+										? formatDate(refund.cancelledAt, { dateStyle: 'medium' })
+										: '—'}
+								</td>
+								<td class="px-4 py-3 font-mono text-xs text-slate-400">
+									#{refund.saleOrderNumber}
+								</td>
+								<td class="px-4 py-3">{refund.customerName ?? '—'}</td>
+								<td class="px-4 py-3 text-right font-mono font-bold text-red-600">
+									-{formatPrice(refund.refundAmount)}
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	{/if}
 </div>

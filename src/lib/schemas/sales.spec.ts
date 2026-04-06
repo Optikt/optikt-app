@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { SaleItemSchema, CreateSaleSchema } from '$lib/schemas/sales';
+import { SaleItemSchema, CreateSaleSchema, CancelSaleSchema } from '$lib/schemas/sales';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { DiscountType } from '$lib/shared/enums';
+import { DiscountType, RefundStatus } from '$lib/shared/enums';
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -182,6 +182,154 @@ describe('CreateSaleSchema', () => {
 			},
 			saleDate: '2025-01-15',
 			items: [makeProductItem()]
+		});
+		expect(result.success).toBe(true);
+	});
+});
+
+// ── CancelSaleSchema ────────────────────────────────────────────────────
+
+describe('CancelSaleSchema', () => {
+	const validBase = {
+		id: crypto.randomUUID(),
+		reason: 'Solicitud del cliente por error',
+		refundStatus: RefundStatus.NO_PAYMENT
+	};
+
+	it('accepts a valid cancellation with reason >= 10 chars', () => {
+		const result = CancelSaleSchema.safeParse(validBase);
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects when reason is missing', () => {
+		const result = CancelSaleSchema.safeParse({
+			id: crypto.randomUUID(),
+			refundStatus: RefundStatus.NO_PAYMENT
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects when reason is too short (< 10 chars)', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			reason: 'corto'
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			const reasonError = result.error.issues.find((i) => i.path.includes('reason'));
+			expect(reasonError?.message).toBe('El motivo debe tener al menos 10 caracteres');
+		}
+	});
+
+	it('rejects when reason is empty string', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			reason: ''
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects when id is invalid', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			id: 'not-a-uuid'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts exactly 10 characters', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			reason: '1234567890'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects when refundStatus is missing', () => {
+		const result = CancelSaleSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: 'Solicitud del cliente por error'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid refundStatus', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			refundStatus: 'INVALID'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	// ── Refund validation (REFUNDED) ──────────────────────────────────
+
+	it('accepts REFUNDED with valid notes', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			refundStatus: RefundStatus.REFUNDED,
+			refundNotes: 'Reembolso completo al cliente'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects REFUNDED without refundNotes', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			refundStatus: RefundStatus.REFUNDED
+		});
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			const notesError = result.error.issues.find((i) => i.path.includes('refundNotes'));
+			expect(notesError).toBeDefined();
+		}
+	});
+
+	it('rejects REFUNDED with refundNotes too short', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			refundStatus: RefundStatus.REFUNDED,
+			refundNotes: 'corto'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	// ── Refund validation (RETAINED) ──────────────────────────────────
+
+	it('accepts RETAINED with valid notes', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			refundStatus: RefundStatus.RETAINED,
+			refundNotes: 'Cliente acepta retener como depósito'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects RETAINED without refundNotes', () => {
+		const result = CancelSaleSchema.safeParse({
+			...validBase,
+			refundStatus: RefundStatus.RETAINED
+		});
+		expect(result.success).toBe(false);
+	});
+
+	// ── NO_PAYMENT (no refund details needed) ─────────────────────────
+
+	it('accepts NO_PAYMENT without refundAmount/refundNotes', () => {
+		const result = CancelSaleSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: 'Venta sin pagos registrados',
+			refundStatus: RefundStatus.NO_PAYMENT
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts NO_PAYMENT even with extra refundAmount/refundNotes', () => {
+		const result = CancelSaleSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: 'Venta sin pagos registrados',
+			refundStatus: RefundStatus.NO_PAYMENT,
+			refundAmount: 0,
+			refundNotes: ''
 		});
 		expect(result.success).toBe(true);
 	});
