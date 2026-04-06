@@ -3,9 +3,9 @@
 	import { resolve } from '$app/paths';
 </script>
 
-<header class="mb-8 flex items-end justify-between gap-4">
+<header class="mb-4 flex items-end justify-between gap-2">
 	<div>
-		<p class="mb-1 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+		<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
 			Panel de Control
 		</p>
 		<h1 class="font-heading m-0 text-3xl font-bold text-brand-navy">Centro de Operaciones</h1>

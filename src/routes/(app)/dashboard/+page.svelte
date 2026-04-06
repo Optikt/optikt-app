@@ -69,18 +69,18 @@
 	<meta name="description" content="Optikt Dashboard - Centro de Operaciones" />
 </svelte:head>
 
-<div class="p-6">
+<div class="p-4">
 	<DashboardHeader />
 
 	<!-- Balance Card -->
 	{#if stats.pendingPayments.count > 0}
-		<section class="mb-8">
+		<section class="mb-4">
 			<BalanceCard amount={stats.pendingPayments.amount} count={stats.pendingPayments.count} />
 		</section>
 	{/if}
 
 	<!-- Stat Cards -->
-	<section class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+	<section class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 		{#each statCards as stat (stat.label)}
 			<StatCard {...stat} />
 		{/each}
