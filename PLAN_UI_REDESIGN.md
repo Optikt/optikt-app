@@ -14,7 +14,7 @@
 ## Fase 0 — Design Tokens & Foundation
 
 **Fuente:** Stitch brand system + tokens base  
-**Estado:** en progreso (tokens base implementados; faltan componentes base y RT-2)
+**Estado:** completada
 
 ### Entregables
 
@@ -25,12 +25,12 @@
 - [x] Depth strategy (shadows/borders)
 - [x] Theme global actualizado en Tailwind v4 vía `src/routes/layout.css` (este repo no usa `tailwind.config.ts`)
 - [x] `layout.css` actualizado (global resets, base tokens)
-- [ ] Componentes base actualizados si aplica (Button, Badge, Card wrappers)
-- [ ] Extender colores semánticos restantes para estados (`success`, `warning`) al tocar badges/reportes
+- [x] Componentes base actualizados: `AppBadge` reemplaza Flowbite `Badge`, todos los domain badges migrados
+- [x] Colores semánticos completos: `success` (#12B76A), `warning` (#F79009), `info`, `purple` con container/on-container
 
-### Deuda técnica a resolver aquí
+### Deuda técnica resuelta
 
-- **RT-2** — Consolidar `getXxxLabel()` / `getXxxBadgeColor()` en helpers genéricos (al definir colores semánticos)
+- [x] **RT-2** — Consolidado: `BadgeVariant` type (`success | warning | error | neutral | info | purple`), todas las funciones `getXxxBadgeColor()` ahora retornan `BadgeVariant` en vez de colores Flowbite. 9 badge components migrados a `AppBadge`.
 
 ---
 
