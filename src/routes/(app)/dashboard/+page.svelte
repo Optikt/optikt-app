@@ -48,7 +48,7 @@
 		},
 		{
 			label: 'Bajo Stock Mínimo',
-			value: String(lowStockTotal).padStart(2, '0'),
+			value: String(lowStockTotal),
 			icon: TriangleAlert,
 			color: 'orange' as const,
 			subtitle: lowStockTotal > 0 ? 'Crítico' : undefined
