@@ -2,6 +2,9 @@
  * User Roles Enum
  * Shared between client and server for type safety
  */
+
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 export enum UserRole {
 	SUPERADMIN = 'SUPERADMIN',
 	ADMIN = 'ADMIN',
@@ -13,21 +16,19 @@ export enum UserRole {
 /**
  * Role badge colors for consistent UI display
  */
-export const roleBadgeColors: Record<UserRole, 'yellow' | 'purple' | 'blue' | 'green' | 'gray'> = {
-	[UserRole.SUPERADMIN]: 'yellow',
+export const roleBadgeColors: Record<UserRole, BadgeVariant> = {
+	[UserRole.SUPERADMIN]: 'warning',
 	[UserRole.ADMIN]: 'purple',
-	[UserRole.MANAGER]: 'blue',
-	[UserRole.SELLER]: 'green',
-	[UserRole.VIEWER]: 'gray'
+	[UserRole.MANAGER]: 'info',
+	[UserRole.SELLER]: 'success',
+	[UserRole.VIEWER]: 'neutral'
 };
-
-export type UserRoleColor = (typeof roleBadgeColors)[UserRole];
 
 /**
  * Get the badge color for a user role
  */
-export function getUserRoleBadgeColor(role: string): UserRoleColor {
-	return roleBadgeColors[role as UserRole] ?? 'gray';
+export function getUserRoleBadgeColor(role: string): BadgeVariant {
+	return roleBadgeColors[role as UserRole] ?? 'neutral';
 }
 
 /**

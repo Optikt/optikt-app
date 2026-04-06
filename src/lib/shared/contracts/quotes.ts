@@ -3,6 +3,8 @@
  * Status workflow, labels, and badge colors
  */
 
+import type { BadgeVariant } from '$lib/shared/badge-variants';
+
 export enum QuoteStatus {
 	DRAFT = 'DRAFT',
 	CONVERTED = 'CONVERTED',
@@ -23,15 +25,13 @@ export function getQuoteStatusLabel(status: string): string {
 	return QUOTE_STATUS_LABELS[status as QuoteStatus] ?? status;
 }
 
-export const quoteStatusColors: Record<QuoteStatus, 'yellow' | 'blue' | 'gray' | 'red'> = {
-	[QuoteStatus.DRAFT]: 'yellow',
-	[QuoteStatus.CONVERTED]: 'blue',
-	[QuoteStatus.EXPIRED]: 'gray',
-	[QuoteStatus.CANCELLED]: 'red'
+export const quoteStatusColors: Record<QuoteStatus, BadgeVariant> = {
+	[QuoteStatus.DRAFT]: 'warning',
+	[QuoteStatus.CONVERTED]: 'info',
+	[QuoteStatus.EXPIRED]: 'neutral',
+	[QuoteStatus.CANCELLED]: 'error'
 };
 
-export type QuoteStatusColor = (typeof quoteStatusColors)[QuoteStatus];
-
-export function getQuoteStatusBadgeColor(status: string): QuoteStatusColor {
-	return quoteStatusColors[status as QuoteStatus] ?? 'yellow';
+export function getQuoteStatusBadgeColor(status: string): BadgeVariant {
+	return quoteStatusColors[status as QuoteStatus] ?? 'warning';
 }

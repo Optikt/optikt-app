@@ -38,13 +38,13 @@ describe('getQuoteStatusLabel', () => {
 
 describe('getQuoteStatusBadgeColor', () => {
 	it('returns correct badge colors', () => {
-		expect(getQuoteStatusBadgeColor('DRAFT')).toBe('yellow');
-		expect(getQuoteStatusBadgeColor('CONVERTED')).toBe('blue');
-		expect(getQuoteStatusBadgeColor('EXPIRED')).toBe('gray');
-		expect(getQuoteStatusBadgeColor('CANCELLED')).toBe('red');
+		expect(getQuoteStatusBadgeColor('DRAFT')).toBe('warning');
+		expect(getQuoteStatusBadgeColor('CONVERTED')).toBe('info');
+		expect(getQuoteStatusBadgeColor('EXPIRED')).toBe('neutral');
+		expect(getQuoteStatusBadgeColor('CANCELLED')).toBe('error');
 	});
 
-	it('returns yellow (default) for unknown status', () => {
-		expect(getQuoteStatusBadgeColor('SOME_INVALID')).toBe('yellow');
+	it('returns warning (default) for unknown status', () => {
+		expect(getQuoteStatusBadgeColor('SOME_INVALID')).toBe('warning');
 	});
 });
