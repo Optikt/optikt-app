@@ -1,29 +1,20 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
 	import { Plus } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-
-	let { userName }: { userName: string } = $props();
-
-	const greeting = $derived(() => {
-		const hour = new Date().getHours();
-		if (hour < 12) return 'Buenos días';
-		if (hour < 18) return 'Buenas tardes';
-		return 'Buenas noches';
-	});
 </script>
 
-<header class="mb-8 flex flex-wrap items-start justify-between gap-4">
+<header class="mb-4 flex items-end justify-between gap-2">
 	<div>
-		<h1 class="m-0 text-[1.75rem] font-bold text-brand-navy sm:text-xl">
-			{greeting()}, <span class="text-gradient">{userName}</span>
-		</h1>
-		<p class="mt-1 text-slate-500">Bienvenido al sistema de gestión Optikt</p>
+		<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+			Panel de Control
+		</p>
+		<h1 class="font-heading m-0 text-3xl font-bold text-brand-navy">Centro de Operaciones</h1>
 	</div>
-	<div class="flex items-center gap-4">
-		<Button href={resolve('/sales/new')} color="blue">
-			<Plus class="mr-2 h-5 w-5" />
-			Nueva Venta
-		</Button>
-	</div>
+	<a
+		href={resolve('/sales/new')}
+		class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy no-underline shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+	>
+		<Plus size={18} />
+		NUEVA VENTA
+	</a>
 </header>

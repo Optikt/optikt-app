@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
+	import { fade } from 'svelte/transition';
 	import { setUiConfig } from '$lib/context';
-	import { Sidebar, CommandSearch } from '$lib/components/layout';
+	import { AppNavbar, Sidebar } from '$lib/components/layout';
 
 	let { children, data } = $props();
 
@@ -10,22 +13,28 @@
 	setUiConfig({
 		sidebarCollapsed: () => data.sidebarCollapsed
 	});
+
+	let mainEl = $state<HTMLElement>();
+
+	afterNavigate(() => {
+		mainEl?.scrollTo(0, 0);
+	});
 </script>
 
-<div class="flex min-h-screen">
-	<Sidebar {user} />
+<div class="flex h-screen flex-col overflow-hidden">
+	<!-- Full-width top navbar -->
+	<AppNavbar {user} />
 
-	<!-- Main content -->
-	<div class="flex min-h-screen flex-1 flex-col overflow-y-auto bg-slate-50 print:bg-white">
-		<!-- Global search bar -->
-		<header
-			class="sticky top-0 z-40 flex items-center gap-4 border-b border-slate-200 bg-white/80 px-8 py-3 backdrop-blur-sm print:hidden"
-		>
-			<CommandSearch />
-		</header>
+	<!-- Sidebar + Content below navbar -->
+	<div class="flex min-h-0 flex-1">
+		<Sidebar {user} />
 
-		<main class="flex-1">
-			{@render children()}
+		<main bind:this={mainEl} class="flex-1 overflow-y-auto bg-surface">
+			{#key page.url.pathname}
+				<div in:fade={{ duration: 200 }}>
+					{@render children()}
+				</div>
+			{/key}
 		</main>
 	</div>
 </div>

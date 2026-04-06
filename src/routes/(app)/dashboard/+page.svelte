@@ -4,154 +4,114 @@
 		ShoppingCart,
 		TriangleAlert,
 		UserPlus,
-		PackagePlus,
-		Eye,
 		FileText,
-		CreditCard,
-		ArrowRight
+		Eye,
+		ChartColumn,
+		FilePlus
 	} from '@lucide/svelte';
 	import {
 		DashboardHeader,
+		BalanceCard,
 		StatCard,
 		QuickActionCard,
-		RecentSalesTable,
-		LowStockList
+		RecentSalesTable
 	} from '$lib/components/dashboard';
 	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();
 
-	const user = $derived(data.user);
-	const { stats, recentSales, lowStockItems } = $derived(data);
+	const { stats, recentSales } = $derived(data);
 
 	const lowStockTotal = $derived(stats.lowStockProducts + stats.lowStockLenses);
 
 	const statCards = $derived([
-		{ label: 'Clientes', value: String(stats.totalCustomers), icon: Users, color: 'blue' as const },
 		{
-			label: 'Ventas Hoy',
-			value:
-				stats.salesToday.count > 0
-					? `${stats.salesToday.count} · ${formatPrice(stats.salesToday.total)}`
-					: '0',
-			icon: ShoppingCart,
-			color: 'green' as const
+			label: 'Total Clientes',
+			value: String(stats.totalCustomers),
+			icon: Users,
+			color: 'blue' as const,
+			subtitle: undefined
 		},
 		{
-			label: 'Presupuestos Pendientes',
+			label: 'Ventas de Hoy',
+			value: stats.salesToday.count > 0 ? `${stats.salesToday.count}` : '0',
+			icon: ShoppingCart,
+			color: 'green' as const,
+			subtitle: stats.salesToday.count > 0 ? formatPrice(stats.salesToday.total) : undefined
+		},
+		{
+			label: 'Presupuestos Pend.',
 			value: String(stats.pendingQuotes),
 			icon: FileText,
-			color: 'purple' as const
+			color: 'purple' as const,
+			subtitle: stats.pendingQuotes > 0 ? 'Activos' : undefined
 		},
 		{
-			label: 'Bajo Stock',
+			label: 'Bajo Stock Mínimo',
 			value: String(lowStockTotal),
 			icon: TriangleAlert,
-			color: 'orange' as const
+			color: 'orange' as const,
+			subtitle: lowStockTotal > 0 ? 'Crítico' : undefined
 		}
 	]);
 
-	// Quick actions
 	const actions = [
-		{ label: 'Nuevo Cliente', href: '/customers', icon: UserPlus, color: 'blue' as const },
-		{
-			label: 'Agregar Producto',
-			href: '/products',
-			icon: PackagePlus,
-			color: 'purple' as const
-		},
-		{
-			label: 'Registrar Venta',
-			href: '/sales',
-			icon: ShoppingCart,
-			color: 'green' as const
-		},
-		{ label: 'Catálogo de Lentes', href: '/lenses', icon: Eye, color: 'teal' as const }
+		{ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus },
+		{ label: 'Nuevo Presupuesto', href: resolve('/quotes/new'), icon: FilePlus },
+		{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye },
+		{ label: 'Reportes', href: resolve('/reports'), icon: ChartColumn }
 	] as const;
 </script>
 
 <svelte:head>
 	<title>Dashboard - Optikt</title>
-	<meta name="description" content="Optikt Dashboard - Vista general del sistema" />
+	<meta name="description" content="Optikt Dashboard - Centro de Operaciones" />
 </svelte:head>
 
-<div class="mx-auto max-w-[1400px] p-8 sm:p-4">
-	<DashboardHeader userName={user.fullName} />
+<div class="p-4">
+	<DashboardHeader />
 
-	<!-- Quick Stats -->
-	<section class="mb-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+	<!-- Balance Card -->
+	{#if stats.pendingPayments.count > 0}
+		<section class="mb-4">
+			<BalanceCard amount={stats.pendingPayments.amount} count={stats.pendingPayments.count} />
+		</section>
+	{/if}
+
+	<!-- Stat Cards -->
+	<section class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 		{#each statCards as stat (stat.label)}
 			<StatCard {...stat} />
 		{/each}
 	</section>
 
-	<!-- Pending Payments Banner -->
-	{#if stats.pendingPayments.count > 0}
-		<section class="mb-8">
-			<a
-				href="{resolve('/sales')}?status=PENDING"
-				class="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-6 py-4 no-underline transition-colors hover:bg-amber-100"
-			>
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600"
-					>
-						<CreditCard size={20} />
-					</div>
-					<div>
-						<p class="text-sm font-semibold text-amber-800">
-							{stats.pendingPayments.count} venta{stats.pendingPayments.count !== 1 ? 's' : ''} con cobro
-							pendiente
-						</p>
-						<p class="font-mono text-xs text-amber-600">
-							{formatPrice(stats.pendingPayments.amount)} por cobrar
-						</p>
-					</div>
-				</div>
-				<ArrowRight size={18} class="text-amber-400" />
-			</a>
-		</section>
-	{/if}
-
-	<!-- Content Grid: Recent Sales + Low Stock -->
-	<section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-		<!-- Recent Sales -->
-		<div class="glass-card p-6">
+	<!-- Bottom Grid: Recent Sales + Quick Actions -->
+	<section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+		<!-- Ventas Recientes (2/3 width) -->
+		<div class="glass-card p-6 lg:col-span-2">
 			<div class="mb-4 flex items-center justify-between">
-				<h2 class="text-lg font-semibold text-brand-navy">Ventas Recientes</h2>
+				<h2 class="font-heading text-lg font-semibold text-brand-navy">Ventas Recientes</h2>
 				<a
 					href={resolve('/sales')}
-					class="text-sm text-slate-400 no-underline transition-colors hover:text-brand-blue"
+					class="text-xs font-semibold tracking-wider text-brand-blue uppercase no-underline transition-colors hover:text-brand-blue-dark"
 				>
-					Ver todas
+					Ver Todas
 				</a>
 			</div>
 			<RecentSalesTable sales={recentSales} />
 		</div>
 
-		<!-- Low Stock -->
-		<div class="glass-card p-6">
-			<div class="mb-4 flex items-center justify-between">
-				<h2 class="text-lg font-semibold text-brand-navy">Bajo Stock</h2>
-				<a
-					href="{resolve('/products')}?lowStockOnly=true"
-					class="text-sm text-slate-400 no-underline transition-colors hover:text-brand-blue"
-				>
-					Ver todos
-				</a>
+		<!-- Acciones Rápidas (1/3 width) - dark navy card -->
+		<div class="self-start rounded-xl bg-brand-navy p-6">
+			<h2 class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase">
+				Acciones Rápidas
+			</h2>
+			<div class="grid grid-cols-2 gap-3">
+				{#each actions as action (action.href)}
+					<QuickActionCard {...action} />
+				{/each}
 			</div>
-			<LowStockList items={lowStockItems} />
-		</div>
-	</section>
-
-	<!-- Quick Actions -->
-	<section class="mt-8">
-		<h2 class="mb-4 text-xl font-semibold text-brand-navy">Acciones Rápidas</h2>
-		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-			{#each actions as action (action.href)}
-				<QuickActionCard {...action} />
-			{/each}
 		</div>
 	</section>
 </div>

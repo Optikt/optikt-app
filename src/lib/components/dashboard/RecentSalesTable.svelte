@@ -5,33 +5,49 @@
 	import type { RecentSale } from '$lib/server/db/queries/dashboard';
 
 	let { sales }: { sales: RecentSale[] } = $props();
+
+	function getInitials(sale: RecentSale): string {
+		if (!sale.customer) return '??';
+		const first = sale.customer.firstName?.charAt(0) ?? '';
+		const last = sale.customer.lastName?.charAt(0) ?? '';
+		return `${first}${last}`.toUpperCase();
+	}
+
+	function getCustomerName(sale: RecentSale): string {
+		if (!sale.customer) return 'Sin cliente';
+		return `${sale.customer.firstName} ${sale.customer.lastName}`;
+	}
 </script>
 
 {#if sales.length === 0}
 	<p class="py-8 text-center text-sm text-slate-400">No hay ventas recientes</p>
 {:else}
-	<div class="divide-y divide-slate-100">
+	<div class="divide-y divide-slate-200">
 		{#each sales as sale (sale.id)}
 			<a
 				href={resolve(`/sales/${sale.id}`)}
-				class="flex items-center justify-between gap-4 px-1 py-3 no-underline transition-colors hover:bg-slate-50"
+				class="flex items-center gap-3 rounded-lg px-3 py-4 no-underline transition-colors hover:bg-slate-50"
 			>
-				<div class="min-w-0 flex-1">
-					<div class="flex items-center gap-2">
-						<span class="font-mono text-xs text-slate-400">#{sale.orderNumber}</span>
-						<SaleStatusBadge status={sale.status} />
-					</div>
-					<p class="mt-0.5 truncate text-sm text-slate-700">
-						{sale.customer ? `${sale.customer.firstName} ${sale.customer.lastName}` : 'Sin cliente'}
-					</p>
+				<div
+					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-navy text-xs font-semibold text-white"
+				>
+					{getInitials(sale)}
 				</div>
-				<div class="text-right">
+				<div class="min-w-0 flex-1">
+					<p class="truncate text-sm font-medium text-slate-800">{getCustomerName(sale)}</p>
+					<div class="mt-0.5 flex items-center gap-2">
+						<span class="font-mono text-xs text-slate-400">Venta #{sale.orderNumber}</span>
+						<span class="text-xs text-slate-300">•</span>
+						<span class="text-xs text-slate-400"
+							>{formatDate(sale.saleDate, { month: 'short' })}</span
+						>
+					</div>
+				</div>
+				<div class="flex items-center gap-3">
 					<span class="font-mono text-sm font-semibold text-slate-800">
 						{formatPrice(sale.total)}
 					</span>
-					<p class="mt-0.5 text-xs text-slate-400">
-						{formatDate(sale.saleDate, { month: 'short' })}
-					</p>
+					<SaleStatusBadge status={sale.status} />
 				</div>
 			</a>
 		{/each}
