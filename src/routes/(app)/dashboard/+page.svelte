@@ -103,7 +103,7 @@
 		</div>
 
 		<!-- Acciones Rápidas (1/3 width) - dark navy card -->
-		<div class="rounded-xl bg-brand-navy p-6">
+		<div class="self-start rounded-xl bg-brand-navy p-6">
 			<h2 class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase">
 				Acciones Rápidas
 			</h2>
