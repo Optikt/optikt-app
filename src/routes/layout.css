@@ -75,11 +75,31 @@
 	--color-outline: #75777f;
 	--color-outline-variant: #c6c6cf;
 
+	/* ── Success (Teal-Green from Stitch) ────────────────────────────────── */
+	--color-success: #12b76a;
+	--color-success-container: #d1fadf;
+	--color-on-success-container: #027a48;
+
+	/* ── Warning (Warm Amber from Stitch) ────────────────────────────────── */
+	--color-warning: #f79009;
+	--color-warning-container: #fef0c7;
+	--color-on-warning-container: #b54708;
+
 	/* ── Error ───────────────────────────────────────────────────────────── */
 	--color-error: #ba1a1a;
 	--color-error-container: #ffdad6;
 	--color-on-error: #ffffff;
 	--color-on-error-container: #93000a;
+
+	/* ── Info (brand-blue tonal) ─────────────────────────────────────────── */
+	--color-info: #419ebd;
+	--color-info-container: #d4eef8;
+	--color-on-info-container: #1e4f5e;
+
+	/* ── Purple (categorical differentiator) ─────────────────────────────── */
+	--color-purple: #7c3aed;
+	--color-purple-container: #ede9fe;
+	--color-on-purple-container: #5b21b6;
 
 	/* ── Typography ──────────────────────────────────────────────────────── */
 	--font-family-heading: 'Space Grotesk', system-ui, sans-serif;
