@@ -80,6 +80,4 @@
 			{/each}
 		{/if}
 	</nav>
-
-
 </aside>
