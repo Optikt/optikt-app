@@ -57,10 +57,10 @@
 	]);
 
 	const actions = [
-		{ label: 'Nuevo Cliente', href: '/customers', icon: UserPlus },
-		{ label: 'Nuevo Presupuesto', href: '/quotes/new', icon: FilePlus },
-		{ label: 'Catálogo', href: '/lenses', icon: Eye },
-		{ label: 'Reportes', href: '/reports', icon: ChartColumn }
+		{ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus },
+		{ label: 'Nuevo Presupuesto', href: resolve('/quotes/new'), icon: FilePlus },
+		{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye },
+		{ label: 'Reportes', href: resolve('/reports'), icon: ChartColumn }
 	] as const;
 </script>
 

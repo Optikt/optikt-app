@@ -76,7 +76,7 @@
 		{#if isAdmin}
 			<div class="mx-4 my-2 h-px bg-slate-200"></div>
 			{#each adminItems as item (item.href)}
-				<NavLink href={item.href} label={item.label} icon={iconMap[item.icon]} />
+				<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} />
 			{/each}
 		{/if}
 	</nav>
