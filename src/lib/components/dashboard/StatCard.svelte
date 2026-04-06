@@ -38,9 +38,11 @@
 			{subtitle}
 		</span>
 	{/if}
-	<div class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg {iconBg[color]}">
-		<Icon size={20} />
+	<div class="mb-3 flex items-center gap-3">
+		<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {iconBg[color]}">
+			<Icon size={20} />
+		</div>
+		<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">{label}</p>
 	</div>
 	<p class="font-heading text-3xl font-bold text-brand-navy">{value}</p>
-	<p class="mt-0.5 text-xs font-semibold tracking-wider text-slate-400 uppercase">{label}</p>
 </div>
