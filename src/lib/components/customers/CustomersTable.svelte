@@ -1,29 +1,74 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { User, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
+	import { Eye, Trash2, RotateCcw, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { deleteCustomerById } from '$lib/remote/customers.remote';
 	import { getErrorMessage, getFullName } from '$lib/utils';
-	import { DataTable, ConfirmModal, StatusBadge } from '$lib/components/ui';
+	import { ConfirmModal, DataGrid, StatusBadge } from '$lib/components/ui';
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 
 	interface Props {
 		customers: Customer[];
+		page: number;
+		perPage: number;
+		total: number;
+		totalPages: number;
 		loading?: boolean;
-		onEdit: (customer: Customer) => void;
 		onRefresh?: () => void;
+		onPageChange: (page: number) => void;
 	}
 
-	let { customers, loading = false, onEdit, onRefresh }: Props = $props();
+	let {
+		customers,
+		page,
+		perPage,
+		total,
+		totalPages,
+		loading = false,
+		onRefresh,
+		onPageChange
+	}: Props = $props();
 
 	// Modal state
 	let showDeleteModal = $state(false);
 	let showReactivateModal = $state(false);
 	let selectedCustomer = $state<Customer | null>(null);
 	let deleteLoading = $state(false);
+
+	const columns = [
+		{ key: 'name', label: 'Cliente' },
+		{ key: 'idNumber', label: 'Cédula' },
+		{ key: 'phone', label: 'Teléfono' },
+		{ key: 'email', label: 'Email' },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
+
+	const avatarColors = [
+		'bg-brand-blue/15 text-brand-blue',
+		'bg-purple-container text-on-purple-container',
+		'bg-success-container text-on-success-container',
+		'bg-warning-container text-on-warning-container',
+		'bg-info-container text-on-info-container',
+		'bg-error-container text-on-error-container',
+		'bg-brand-gold/20 text-brand-navy',
+		'bg-brand-navy/10 text-brand-navy'
+	];
+
+	function getInitials(customer: Customer): string {
+		return `${customer.firstName?.charAt(0) ?? ''}${customer.lastName?.charAt(0) ?? ''}`.toUpperCase();
+	}
+
+	function getAvatarColor(customer: Customer): string {
+		const name = `${customer.firstName ?? ''}${customer.lastName ?? ''}`;
+		let hash = 0;
+		for (let i = 0; i < name.length; i++) {
+			hash = name.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return avatarColors[Math.abs(hash) % avatarColors.length];
+	}
 
 	function openDelete(customer: Customer) {
 		selectedCustomer = customer;
@@ -53,52 +98,92 @@
 	}
 </script>
 
-<DataTable
+<DataGrid
+	{columns}
 	items={customers}
+	{page}
+	{perPage}
+	{total}
+	{totalPages}
 	{loading}
-	emptyIcon={User}
+	itemLabel="clientes"
 	emptyTitle="No hay clientes"
-	emptyDescription="Agrega tu primer cliente para comenzar"
-	defaultActions="view,edit,delete,reactivate"
-	onView={(c) => goto(resolve(`/customers/${c.id}`))}
-	onEdit={(c) => onEdit(c)}
-	onDelete={openDelete}
-	onReactivate={openReactivate}
-	viewIcon={Eye}
-	editIcon={SquarePen}
-	deleteIcon={Trash2}
-	reactivateIcon={RotateCcw}
+	emptySubtitle="Agrega tu primer cliente para comenzar"
+	{onPageChange}
 >
-	{#snippet header()}
-		<TableHeadCell class="font-semibold">Cliente</TableHeadCell>
-		<TableHeadCell class="font-semibold">Cédula</TableHeadCell>
-		<TableHeadCell class="font-semibold">Teléfono</TableHeadCell>
-		<TableHeadCell class="font-semibold">Email</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+	{#snippet emptyIcon()}
+		<Users class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
 	{#snippet row(customer)}
-		<TableBodyCell>
-			<div class="flex items-center gap-3">
-				<div>
-					<div class="font-medium text-slate-900">{getFullName(customer)}</div>
+		<tr
+			class="cursor-pointer bg-surface-container-lowest transition-colors hover:bg-surface-container-low"
+			onclick={() => goto(resolve(`/customers/${customer.id}`))}
+		>
+			<td class="px-4 py-3">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold {getAvatarColor(
+							customer
+						)}"
+					>
+						{getInitials(customer)}
+					</div>
+					<span class="font-medium text-on-surface">{getFullName(customer)}</span>
 				</div>
-			</div>
-		</TableBodyCell>
-		<TableBodyCell>
-			<span class="font-mono text-sm text-slate-600">{customer.idNumber ?? '—'}</span>
-		</TableBodyCell>
-		<TableBodyCell>
-			<span class="text-slate-600">{customer.primaryPhone}</span>
-		</TableBodyCell>
-		<TableBodyCell>
-			<span class="text-slate-600">{customer.email ?? '—'}</span>
-		</TableBodyCell>
-		<TableBodyCell>
-			<StatusBadge active={!customer.deletedAt} />
-		</TableBodyCell>
+			</td>
+			<td class="px-4 py-3">
+				<span class="font-mono text-sm text-on-surface-variant">{customer.idNumber ?? '—'}</span>
+			</td>
+			<td class="px-4 py-3">
+				<span class="text-on-surface-variant">{customer.primaryPhone ?? '—'}</span>
+			</td>
+			<td class="px-4 py-3">
+				<span class="text-on-surface-variant">{customer.email ?? '—'}</span>
+			</td>
+			<td class="px-4 py-3">
+				<StatusBadge active={!customer.deletedAt} />
+			</td>
+			<td class="px-4 py-3 text-right">
+				<div class="flex items-center justify-end gap-1">
+					<button
+						onclick={(e) => {
+							e.stopPropagation();
+							goto(resolve(`/customers/${customer.id}`));
+						}}
+						class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
+						title="Ver detalles"
+					>
+						<Eye class="h-4 w-4" />
+					</button>
+					{#if customer.deletedAt}
+						<button
+							onclick={(e) => {
+								e.stopPropagation();
+								openReactivate(customer);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant hover:bg-success-container hover:text-on-success-container"
+							title="Reactivar"
+						>
+							<RotateCcw class="h-4 w-4" />
+						</button>
+					{:else}
+						<button
+							onclick={(e) => {
+								e.stopPropagation();
+								openDelete(customer);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
+							title="Eliminar"
+						>
+							<Trash2 class="h-4 w-4" />
+						</button>
+					{/if}
+				</div>
+			</td>
+		</tr>
 	{/snippet}
-</DataTable>
+</DataGrid>
 
 <!-- Delete Confirmation -->
 <ConfirmModal

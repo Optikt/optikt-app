@@ -1,20 +1,18 @@
 <script lang="ts">
-	import { Button, Toggle } from 'flowbite-svelte';
-	import { Plus } from '@lucide/svelte';
+	import { Plus, Search, UserPlus, TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { listCustomers } from '$lib/remote/customers.remote';
-	import { CustomersTable, CustomerFormModal } from '$lib/components/customers';
+	import { CustomersTable } from '$lib/components/customers';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
 
 	// Server data
 	let { data } = $props();
-	let { initialCustomers, totalCount } = untrack(() => data);
+	let { initialCustomers, totalCount, newThisMonth, pendingSalesCustomers } = untrack(() => data);
 
 	// Data state - initialize from server
 	let customersData = $state<PaginatedResult<Customer>>({
@@ -29,10 +27,6 @@
 	// Filter state
 	let search = $state('');
 	let includeDeleted = $state(false);
-
-	// Form modal state
-	let showFormModal = $state(false);
-	let selectedCustomer = $state<Customer | null>(null);
 
 	// Fetch customers (for filtering/pagination)
 	async function fetchCustomers(page = 1) {
@@ -57,88 +51,100 @@
 		clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => fetchCustomers(1), 300);
 	}
-
-	// Modal handlers
-	function openCreate() {
-		selectedCustomer = null;
-		showFormModal = true;
-	}
-
-	function openEdit(customer: Customer) {
-		selectedCustomer = customer;
-		showFormModal = true;
-	}
-
-	function handleFormSuccess(createdCustomerId?: string) {
-		showFormModal = false;
-		if (createdCustomerId) {
-			// Redirect to the new customer's detail page
-			goto(resolve(`/customers/${createdCustomerId}`));
-		} else {
-			// Just refresh the list (for edits)
-			fetchCustomers(customersData.page);
-		}
-	}
 </script>
 
 <svelte:head>
 	<title>Clientes - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<!-- Header -->
-	<div class="mb-6 flex items-center justify-between">
+<div class="p-6">
+	<!-- Header — matches DashboardHeader pattern -->
+	<header class="mb-6 flex items-end justify-between gap-2">
 		<div>
-			<h1 class="text-2xl font-bold text-slate-900">Clientes</h1>
-			<p class="text-slate-500">Gestión de clientes de la óptica</p>
+			<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">Directorio</p>
+			<h1 class="font-heading m-0 text-3xl font-bold text-brand-navy">Clientes</h1>
 		</div>
-		<Button color="blue" onclick={openCreate}>
-			<Plus class="mr-2 h-4 w-4" />
-			Agregar Cliente
-		</Button>
-	</div>
-
-	<!-- Filters -->
-	<div
-		class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4"
-	>
-		<SearchInput
-			bind:value={search}
-			placeholder="Buscar por nombre, cédula, teléfono..."
-			oninput={handleSearch}
-			class="min-w-64 flex-1"
-		/>
-		<Toggle
-			bind:checked={includeDeleted}
-			onchange={() => fetchCustomers(1)}
-			class="text-sm text-slate-600"
+		<button
+			onclick={() => goto(resolve('/customers/new'))}
+			class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
 		>
-			Mostrar eliminados
-		</Toggle>
+			<Plus size={18} />
+			NUEVO CLIENTE
+		</button>
+	</header>
+
+	<!-- Search Container -->
+	<div class="mb-6 flex flex-wrap items-stretch gap-4">
+		<!-- Search Card -->
+		<div class="glass-card flex-1 p-4">
+			<p class="mb-3 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+				Búsqueda Avanzada
+			</p>
+			<div class="relative">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
+				<input
+					type="search"
+					placeholder="Buscar por nombre, cédula, teléfono o email..."
+					bind:value={search}
+					oninput={handleSearch}
+					class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-10 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				/>
+			</div>
+		</div>
+
+		<!-- Filter Card -->
+		<div class="glass-card flex w-56 flex-col justify-center p-4">
+			<p class="mb-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">Filtros</p>
+			<label class="flex items-center gap-2.5">
+				<input
+					type="checkbox"
+					bind:checked={includeDeleted}
+					onchange={() => fetchCustomers(1)}
+					class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+				/>
+				<span class="text-sm text-on-surface-variant">Mostrar eliminados</span>
+			</label>
+		</div>
 	</div>
 
-	<!-- Table -->
+	<!-- Table + Pagination -->
 	<CustomersTable
 		customers={customersData.items}
-		{loading}
-		onEdit={openEdit}
-		onRefresh={() => fetchCustomers(customersData.page)}
-	/>
-
-	<!-- Pagination -->
-	<TablePagination
 		page={customersData.page}
 		perPage={customersData.perPage}
 		total={customersData.total}
 		totalPages={customersData.totalPages}
+		{loading}
+		onRefresh={() => fetchCustomers(customersData.page)}
 		onPageChange={fetchCustomers}
 	/>
-</div>
 
-<!-- Form Modal -->
-<CustomerFormModal
-	bind:open={showFormModal}
-	customer={selectedCustomer}
-	onSuccess={handleFormSuccess}
-	onClose={() => (showFormModal = false)}
-/>
+	<!-- Summary Cards -->
+	<div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+		<div class="glass-card relative p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-navy text-brand-gold"
+				>
+					<UserPlus size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Nuevos Clientes</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">+{newThisMonth}</p>
+			<p class="mt-2 text-sm text-on-surface-variant">Registrados este mes</p>
+		</div>
+
+		<div class="glass-card relative p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-error-container text-on-error-container"
+				>
+					<TriangleAlert size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Pendientes</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{pendingSalesCustomers}</p>
+			<p class="mt-2 text-sm text-on-surface-variant">Clientes con ventas pendientes</p>
+		</div>
+	</div>
+</div>

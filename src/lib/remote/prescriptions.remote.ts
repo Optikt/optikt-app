@@ -91,7 +91,79 @@ export const getPrescription = query(
 );
 
 /**
- * Create a new prescription
+ * Shared prescription creation logic
+ */
+async function performCreatePrescription(
+	data: {
+		customerId: string;
+		prescriptionDate: string;
+		isCurrent?: boolean;
+		odSphere?: number | null;
+		odCylinder?: number | null;
+		odAxis?: number | null;
+		odAddition?: number | null;
+		osSphere?: number | null;
+		osCylinder?: number | null;
+		osAxis?: number | null;
+		osAddition?: number | null;
+		dp?: number | null;
+		npRight?: number | null;
+		npLeft?: number | null;
+		treatmentAntiReflective?: boolean;
+		treatmentBlueBlock?: boolean;
+		treatmentPhotochromic?: boolean;
+		treatmentOther?: string;
+		recommendedLensType?: string | null;
+		notes?: string | null;
+		doctorName?: string | null;
+	},
+	context: ReturnType<typeof getAuditContext>
+): Promise<Prescription> {
+	// If this is set as current, unset other current prescriptions for this customer
+	if (data.isCurrent) {
+		const existingPrescriptions = await getCustomerPrescriptions(data.customerId);
+		for (const p of existingPrescriptions) {
+			if (p.isCurrent) {
+				await updatePrescription(p.id, { isCurrent: false });
+			}
+		}
+	}
+
+	// Build treatments object
+	const treatments = buildTreatments(data);
+
+	// Create prescription with normalized optical values (0 → null)
+	const prescription = await createPrescription({
+		customerId: data.customerId,
+		prescriptionDate: new Date(data.prescriptionDate),
+		odSphere: normalizeOpticalValue(data.odSphere),
+		odCylinder: normalizeOpticalValue(data.odCylinder),
+		odAxis: normalizeOpticalValue(data.odAxis),
+		odAddition: normalizeOpticalValue(data.odAddition),
+		osSphere: normalizeOpticalValue(data.osSphere),
+		osCylinder: normalizeOpticalValue(data.osCylinder),
+		osAxis: normalizeOpticalValue(data.osAxis),
+		osAddition: normalizeOpticalValue(data.osAddition),
+		dp: data.dp ?? null,
+		npRight: data.npRight ?? null,
+		npLeft: data.npLeft ?? null,
+		treatments,
+		recommendedLensType: data.recommendedLensType ?? null,
+		notes: data.notes ?? null,
+		doctorName: data.doctorName ?? null,
+		isCurrent: data.isCurrent ?? false
+	});
+
+	// Log audit
+	await auditService.logCreate('prescription', prescription, context, {
+		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+	});
+
+	return prescription;
+}
+
+/**
+ * Create a new prescription (form-based)
  */
 export const createPrescriptionForm = form(
 	CreatePrescriptionSchema,
@@ -104,47 +176,25 @@ export const createPrescriptionForm = form(
 			invalid(issue.customerId('Cliente no encontrado'));
 		}
 
-		// If this is set as current, unset other current prescriptions for this customer
-		if (data.isCurrent) {
-			const existingPrescriptions = await getCustomerPrescriptions(data.customerId);
-			for (const p of existingPrescriptions) {
-				if (p.isCurrent) {
-					await updatePrescription(p.id, { isCurrent: false });
-				}
-			}
+		return performCreatePrescription(data, context);
+	}
+);
+
+/**
+ * Create a new prescription (command-based, for programmatic use)
+ */
+export const createPrescriptionCommand = command(
+	CreatePrescriptionSchema,
+	async (data): Promise<{ success: boolean; entity?: Prescription; error?: string }> => {
+		const context = getAuditContext();
+
+		const customer = await findCustomerById(data.customerId);
+		if (!customer) {
+			return { success: false, error: 'Cliente no encontrado' };
 		}
 
-		// Build treatments object
-		const treatments = buildTreatments(data);
-
-		// Create prescription with normalized optical values (0 → null)
-		const prescription = await createPrescription({
-			customerId: data.customerId,
-			prescriptionDate: new Date(data.prescriptionDate),
-			odSphere: normalizeOpticalValue(data.odSphere),
-			odCylinder: normalizeOpticalValue(data.odCylinder),
-			odAxis: normalizeOpticalValue(data.odAxis),
-			odAddition: normalizeOpticalValue(data.odAddition),
-			osSphere: normalizeOpticalValue(data.osSphere),
-			osCylinder: normalizeOpticalValue(data.osCylinder),
-			osAxis: normalizeOpticalValue(data.osAxis),
-			osAddition: normalizeOpticalValue(data.osAddition),
-			dp: data.dp ?? null,
-			npRight: data.npRight ?? null,
-			npLeft: data.npLeft ?? null,
-			treatments,
-			recommendedLensType: data.recommendedLensType ?? null,
-			notes: data.notes ?? null,
-			doctorName: data.doctorName ?? null,
-			isCurrent: data.isCurrent ?? false
-		});
-
-		// Log audit
-		await auditService.logCreate('prescription', prescription, context, {
-			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
-		});
-
-		return prescription;
+		const prescription = await performCreatePrescription(data, context);
+		return { success: true, entity: prescription };
 	}
 );
 
