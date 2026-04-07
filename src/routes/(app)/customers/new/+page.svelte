@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { ArrowLeft, ChevronDown } from '@lucide/svelte';
+	import { ChevronDown, Eye, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
-	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
+	import { FormInput, FormTextarea, FormDatepicker, IdInput, PageHeader } from '$lib/components/ui';
 	import { createCustomerForm } from '$lib/remote/customers.remote';
 	import { createPrescriptionCommand } from '$lib/remote/prescriptions.remote';
 	import { scrollToFirstError, toastUnboundErrors, getErrorMessage } from '$lib/utils';
@@ -123,24 +123,12 @@
 </svelte:head>
 
 <div class="p-6">
-	<!-- Back link -->
-	<button
-		onclick={() => goto(resolve('/customers'))}
-		class="mb-4 flex items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-brand-blue"
-	>
-		<ArrowLeft class="h-4 w-4" />
-		Volver a clientes
-	</button>
-
-	<!-- Title -->
-	<div class="mb-6">
-		<h1 class="font-[family-name:--font-family-heading] text-2xl font-bold text-on-surface">
-			Nuevo Cliente
-		</h1>
-		<p class="text-on-surface-variant">
-			Completa los datos del cliente y opcionalmente agrega su primera fórmula óptica
-		</p>
-	</div>
+	<PageHeader
+		title="Nuevo Cliente"
+		subtitle="Completa los datos del cliente y opcionalmente agrega su primera fórmula óptica"
+		backLabel="Volver a clientes"
+		backHref="/customers"
+	/>
 
 	<form
 		{...currentCustomerForm.enhance(async ({ submit }) => {
@@ -204,9 +192,7 @@
 		<div class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6">
 			<div class="mb-5 flex items-center gap-2.5">
 				<div class="h-6 w-1.5 rounded-full bg-brand-gold"></div>
-				<h2 class="font-[family-name:--font-family-heading] text-lg font-semibold text-on-surface">
-					Información Personal
-				</h2>
+				<h2 class="font-heading text-lg font-semibold text-on-surface">Información Personal</h2>
 			</div>
 
 			<div class="space-y-4">
@@ -284,34 +270,38 @@
 		<!-- Section 2: Prescription (Collapsible) -->
 		<div class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest">
 			<!-- Accordion header -->
-			<button
-				type="button"
-				onclick={() => (showPrescription = !showPrescription)}
-				class="flex w-full items-center justify-between p-6"
-			>
-				<div class="flex items-center gap-2.5">
+			<div class="flex items-center justify-between p-6">
+				<div class="flex items-center gap-3">
 					<div
-						class="h-6 w-1.5 rounded-full"
-						class:bg-brand-gold={showPrescription}
-						class:bg-outline-variant={!showPrescription}
-					></div>
-					<div class="text-left">
-						<h2
-							class="font-[family-name:--font-family-heading] text-lg font-semibold text-on-surface"
-						>
-							Fórmula Óptica
-						</h2>
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {showPrescription
+							? 'bg-brand-blue text-white'
+							: 'bg-surface-container-high text-outline'}"
+					>
+						<Eye size={20} />
+					</div>
+					<div>
+						<h2 class="font-heading text-xl font-semibold text-on-surface">Fórmula Óptica</h2>
 						<p class="text-sm text-on-surface-variant">
 							Agrega la primera fórmula del cliente (opcional)
 						</p>
 					</div>
 				</div>
-				<ChevronDown
-					class="h-5 w-5 text-on-surface-variant transition-transform duration-200 {showPrescription
-						? 'rotate-180'
-						: ''}"
-				/>
-			</button>
+				<button
+					type="button"
+					onclick={() => (showPrescription = !showPrescription)}
+					class={showPrescription
+						? 'inline-flex items-center gap-1.5 rounded-lg bg-brand-gold px-4 py-2 text-xs font-bold tracking-wider text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark hover:shadow-md'
+						: 'inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/50 px-4 py-2 text-xs font-bold tracking-wider text-on-surface-variant uppercase transition-colors hover:border-brand-blue hover:text-brand-blue'}
+				>
+					{#if showPrescription}
+						<ChevronDown size={14} class="rotate-180" />
+						NO AGREGAR FÓRMULA
+					{:else}
+						<Plus size={14} />
+						AGREGAR FÓRMULA
+					{/if}
+				</button>
+			</div>
 
 			<!-- Accordion content -->
 			{#if showPrescription}
@@ -321,33 +311,33 @@
 				>
 					<div class="space-y-5">
 						<!-- Top row: Date, Lens Type, Doctor, Current toggle -->
-						<div class="grid gap-4 sm:grid-cols-3">
+						<div class="grid items-end gap-4 sm:grid-cols-3">
 							<div>
 								<label
 									for="rxDate"
-									class="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+									class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
 								>
-									Fecha de Fórmula <span class="text-error">*</span>
+									Fecha de Fórmula<span class="text-error">*</span>
 								</label>
 								<input
 									id="rxDate"
 									type="date"
 									bind:value={rxData.prescriptionDate}
 									max={today.toISOString().slice(0, 10)}
-									class="w-full rounded-lg border-none bg-surface-container-high p-3 text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+									class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 								/>
 							</div>
 							<div>
 								<label
 									for="lensType"
-									class="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+									class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
 								>
 									Tipo de Lente
 								</label>
 								<select
 									id="lensType"
 									bind:value={rxData.recommendedLensType}
-									class="w-full rounded-lg border-none bg-surface-container-high p-3 text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+									class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 								>
 									<option value="">— Seleccionar —</option>
 									{#each Object.entries(LENS_TYPE_LABELS) as [value, label] (value)}
@@ -358,16 +348,16 @@
 							<div>
 								<label
 									for="doctorName"
-									class="mb-1.5 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+									class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
 								>
 									Doctor
 								</label>
 								<input
 									id="doctorName"
 									type="text"
-									placeholder="Nombre del doctor"
+									placeholder="Nombre del profesional"
 									bind:value={rxData.doctorName}
-									class="w-full rounded-lg border-none bg-surface-container-high p-3 text-sm text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
+									class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
 								/>
 							</div>
 						</div>
@@ -379,20 +369,24 @@
 								bind:checked={rxData.isCurrent}
 								class="h-4 w-4 rounded border-outline-variant text-brand-gold focus:ring-brand-gold"
 							/>
-							<span class="text-sm font-medium text-on-surface">Marcar como fórmula actual</span>
+							<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
+								>Fórmula Actual</span
+							>
 						</label>
 
 						<!-- OD / OS side by side -->
 						<div class="grid gap-5 lg:grid-cols-2">
 							<!-- OD -->
 							<div class="rounded-xl bg-surface-container-low p-5">
-								<div class="mb-4 flex items-center gap-2">
+								<div class="mb-4 flex items-center gap-2.5">
 									<div
 										class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
 									>
 										OD
 									</div>
-									<span class="text-sm font-semibold text-on-surface">Ojo Derecho</span>
+									<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
+										>Ojo Derecho (OD)</span
+									>
 								</div>
 								<div
 									class="grid grid-cols-2 gap-3"
@@ -412,7 +406,7 @@
 											inputmode="decimal"
 											placeholder="-2.00"
 											bind:value={rxData.odSphere}
-											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 										/>
 									</div>
 									<div>
@@ -427,7 +421,7 @@
 											inputmode="decimal"
 											placeholder="-0.50"
 											bind:value={rxData.odCylinder}
-											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 										/>
 									</div>
 									<div>
@@ -442,7 +436,7 @@
 											inputmode="numeric"
 											placeholder="180"
 											bind:value={rxData.odAxis}
-											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 										/>
 									</div>
 									{#if showAddition}
@@ -458,7 +452,7 @@
 												inputmode="decimal"
 												placeholder="+1.50"
 												bind:value={rxData.odAddition}
-												class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+												class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 											/>
 										</div>
 									{/if}
@@ -467,13 +461,15 @@
 
 							<!-- OS -->
 							<div class="rounded-xl bg-surface-container-low p-5">
-								<div class="mb-4 flex items-center gap-2">
+								<div class="mb-4 flex items-center gap-2.5">
 									<div
 										class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-blue text-[10px] font-bold text-white"
 									>
 										OS
 									</div>
-									<span class="text-sm font-semibold text-on-surface">Ojo Izquierdo</span>
+									<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
+										>Ojo Izquierdo (OS)</span
+									>
 								</div>
 								<div
 									class="grid grid-cols-2 gap-3"
@@ -493,7 +489,7 @@
 											inputmode="decimal"
 											placeholder="-1.75"
 											bind:value={rxData.osSphere}
-											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 										/>
 									</div>
 									<div>
@@ -508,7 +504,7 @@
 											inputmode="decimal"
 											placeholder="-0.25"
 											bind:value={rxData.osCylinder}
-											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 										/>
 									</div>
 									<div>
@@ -523,7 +519,7 @@
 											inputmode="numeric"
 											placeholder="175"
 											bind:value={rxData.osAxis}
-											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 										/>
 									</div>
 									{#if showAddition}
@@ -539,7 +535,7 @@
 												inputmode="decimal"
 												placeholder="+1.50"
 												bind:value={rxData.osAddition}
-												class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
+												class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
 											/>
 										</div>
 									{/if}
@@ -547,115 +543,143 @@
 							</div>
 						</div>
 
-						<!-- Distances -->
-						<div>
-							<h3
-								class="mb-3 text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-							>
-								Distancias
-							</h3>
-							<div class="grid grid-cols-3 gap-4">
-								<div>
-									<label for="rx-dp" class="mb-1 block text-xs text-on-surface-variant"
-										>DP (mm)</label
-									>
-									<input
-										id="rx-dp"
-										type="text"
-										inputmode="numeric"
-										placeholder="62"
-										bind:value={rxData.dp}
-										class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
-									/>
-								</div>
-								<div>
-									<label for="rx-np-right" class="mb-1 block text-xs text-on-surface-variant"
-										>NP Derecho (mm)</label
-									>
-									<input
-										id="rx-np-right"
-										type="text"
-										inputmode="numeric"
-										placeholder="31"
-										bind:value={rxData.npRight}
-										class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
-									/>
-								</div>
-								<div>
-									<label for="rx-np-left" class="mb-1 block text-xs text-on-surface-variant"
-										>NP Izquierdo (mm)</label
-									>
-									<input
-										id="rx-np-left"
-										type="text"
-										inputmode="numeric"
-										placeholder="31"
-										bind:value={rxData.npLeft}
-										class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-sm text-on-surface focus:bg-surface-container-highest focus:ring-0"
-									/>
+						<!-- Distances + Treatments side by side -->
+						<div class="grid gap-6 lg:grid-cols-2">
+							<!-- Distances -->
+							<div>
+								<h3
+									class="mb-3 text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
+								>
+									Distancias
+								</h3>
+								<div class="grid grid-cols-3 gap-3">
+									<div class="text-center">
+										<label
+											for="rx-dp"
+											class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+											>DP (mm)</label
+										>
+										<input
+											id="rx-dp"
+											type="text"
+											inputmode="numeric"
+											placeholder="62"
+											bind:value={rxData.dp}
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
+										/>
+									</div>
+									<div class="text-center">
+										<label
+											for="rx-np-right"
+											class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+											>NP Der</label
+										>
+										<input
+											id="rx-np-right"
+											type="text"
+											inputmode="numeric"
+											placeholder="31"
+											bind:value={rxData.npRight}
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
+										/>
+									</div>
+									<div class="text-center">
+										<label
+											for="rx-np-left"
+											class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+											>NP Izq</label
+										>
+										<input
+											id="rx-np-left"
+											type="text"
+											inputmode="numeric"
+											placeholder="31"
+											bind:value={rxData.npLeft}
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
+										/>
+									</div>
 								</div>
 							</div>
-						</div>
 
-						<!-- Treatments -->
-						<div>
-							<h3
-								class="mb-3 text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-							>
-								Tratamientos
-							</h3>
-							<div class="flex flex-wrap gap-x-6 gap-y-3">
-								<label class="flex items-center gap-2">
-									<input
-										type="checkbox"
-										bind:checked={rxData.treatmentAntiReflective}
-										class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
-									/>
-									<span class="text-sm text-on-surface">Antireflejo</span>
-								</label>
-								<label class="flex items-center gap-2">
-									<input
-										type="checkbox"
-										bind:checked={rxData.treatmentBlueBlock}
-										class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
-									/>
-									<span class="text-sm text-on-surface">Blueblock</span>
-								</label>
-								<label class="flex items-center gap-2">
-									<input
-										type="checkbox"
-										bind:checked={rxData.treatmentPhotochromic}
-										class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
-									/>
-									<span class="text-sm text-on-surface">Fotocromático</span>
-								</label>
-							</div>
-
-							{#if rxData.treatmentOther !== undefined}
-								<div class="mt-3">
-									<input
-										type="text"
-										placeholder="Otros tratamientos..."
-										bind:value={rxData.treatmentOther}
-										class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-sm text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
-									/>
+							<!-- Treatments -->
+							<div>
+								<h3
+									class="mb-3 text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
+								>
+									Tratamientos
+								</h3>
+								<div class="flex flex-wrap gap-x-5 gap-y-3">
+									<label class="flex items-center gap-2">
+										<input
+											type="checkbox"
+											bind:checked={rxData.treatmentAntiReflective}
+											class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+										/>
+										<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
+											>Antireflejo</span
+										>
+									</label>
+									<label class="flex items-center gap-2">
+										<input
+											type="checkbox"
+											bind:checked={rxData.treatmentBlueBlock}
+											class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+										/>
+										<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
+											>Blueblock</span
+										>
+									</label>
+									<label class="flex items-center gap-2">
+										<input
+											type="checkbox"
+											bind:checked={rxData.treatmentPhotochromic}
+											class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+										/>
+										<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
+											>Fotocromático</span
+										>
+									</label>
+									<label class="flex items-center gap-2">
+										<input
+											type="checkbox"
+											class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+											checked={rxData.treatmentOther !== ''}
+											onchange={() => {
+												if (rxData.treatmentOther) rxData.treatmentOther = '';
+											}}
+										/>
+										<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
+											>Otros</span
+										>
+									</label>
 								</div>
-							{/if}
+
+								{#if rxData.treatmentOther !== undefined}
+									<div class="mt-3">
+										<input
+											type="text"
+											placeholder="Otros tratamientos..."
+											bind:value={rxData.treatmentOther}
+											class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-base text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
+										/>
+									</div>
+								{/if}
+							</div>
 						</div>
 
 						<!-- Prescription notes -->
 						<div>
 							<label
 								for="rx-notes"
-								class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-								>Notas de fórmula</label
+								class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
+								>Notas de Fórmula</label
 							>
 							<textarea
 								id="rx-notes"
-								placeholder="Observaciones adicionales..."
-								rows={2}
+								placeholder="Observaciones técnicas, requerimientos específicos del paciente o detalles del tallado..."
+								rows={3}
 								bind:value={rxData.notes}
-								class="w-full rounded-lg border-none bg-surface-container-high p-3 text-sm text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
+								class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
 							></textarea>
 						</div>
 					</div>
@@ -675,14 +699,14 @@
 			<button
 				type="submit"
 				disabled={isSubmitting}
-				class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 font-semibold text-brand-navy transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-gold/30 disabled:opacity-60 disabled:hover:translate-y-0"
+				class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md disabled:opacity-60"
 			>
 				{#if isSubmitting}
 					<span
 						class="h-4 w-4 animate-spin rounded-full border-2 border-brand-navy/30 border-t-brand-navy"
 					></span>
 				{/if}
-				Crear Cliente
+				CREAR CLIENTE
 			</button>
 		</div>
 	</form>

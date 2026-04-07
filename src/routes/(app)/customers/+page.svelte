@@ -6,6 +6,7 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { listCustomers } from '$lib/remote/customers.remote';
 	import { CustomersTable } from '$lib/components/customers';
+	import { PageHeader } from '$lib/components/ui';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
@@ -58,20 +59,17 @@
 </svelte:head>
 
 <div class="p-6">
-	<!-- Header — matches DashboardHeader pattern -->
-	<header class="mb-6 flex items-end justify-between gap-2">
-		<div>
-			<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">Directorio</p>
-			<h1 class="font-heading m-0 text-3xl font-bold text-brand-navy">Clientes</h1>
-		</div>
-		<button
-			onclick={() => goto(resolve('/customers/new'))}
-			class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-		>
-			<Plus size={18} />
-			NUEVO CLIENTE
-		</button>
-	</header>
+	<PageHeader title="Clientes" subtitle="Directorio">
+		{#snippet actions()}
+			<button
+				onclick={() => goto(resolve('/customers/new'))}
+				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+			>
+				<Plus size={18} />
+				NUEVO CLIENTE
+			</button>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Search Container -->
 	<div class="mb-6 flex flex-wrap items-stretch gap-4">
