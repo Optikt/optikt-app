@@ -45,6 +45,8 @@ export const prescriptions = pgTable(
 		// Nasopupilar (NP) - per-eye measurements
 		npRight: doublePrecision('np_right'),
 		npLeft: doublePrecision('np_left'),
+		// Altura (segment height) - for bifocal/progressive lenses
+		altura: doublePrecision(),
 		// Treatments
 		treatments: json('treatments').$type<PrescriptionTreatments>(),
 		// Additional
