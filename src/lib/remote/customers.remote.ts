@@ -6,7 +6,7 @@ import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListCustomersSchema,
-	CreateCustomerSchema,
+	CreateCustomerWithPrescriptionSchema,
 	UpdateCustomerSchema,
 	CustomerIdSchema,
 	ReactivateCustomerSchema
@@ -16,6 +16,7 @@ import {
 	findCustomerById,
 	findCustomerByIdNumber,
 	createCustomer,
+	createPrescription,
 	updateCustomer,
 	deleteCustomer,
 	restoreCustomer
@@ -23,6 +24,8 @@ import {
 import type { Customer } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
+import { db } from '$lib/server/db';
+import { toPrescriptionInsert } from '$lib/utils/prescription';
 
 /**
  * List customers with pagination and search
@@ -55,45 +58,6 @@ export const listCustomers = query(
 		const customers = allCustomers.slice(offset, offset + perPage);
 
 		return { items: customers, total, page, perPage, totalPages };
-	}
-);
-
-/**
- * Create a new customer with form validation
- */
-export const createCustomerForm = form(
-	CreateCustomerSchema,
-	async (data, issue): Promise<CreateEntityResult<Customer>> => {
-		const { idNumber, birthDate, ...rest } = data;
-
-		// Check for duplicate idNumber if provided
-		if (idNumber) {
-			const existingCustomer = await findCustomerByIdNumber(idNumber);
-			if (existingCustomer) {
-				invalid(issue.idNumber('Ya existe un cliente con este número de cédula'));
-			}
-
-			// Check for deleted customer with same idNumber (for reactivation)
-			const deletedCustomer = await findCustomerByIdNumber(idNumber, { deleted: true });
-			if (deletedCustomer) {
-				return {
-					success: false,
-					message: 'Ya existe un cliente eliminado con este número de cédula. ¿Desea reactivarlo?',
-					reactivationCandidate: deletedCustomer
-				};
-			}
-		}
-
-		const customer = await createCustomer({
-			...rest,
-			idNumber: idNumber || null,
-			birthDate: birthDate ? new Date(birthDate) : null
-		});
-
-		// Log the creation
-		await auditService.logCreate('customer', customer, getAuditContext());
-
-		return { success: true, message: 'Cliente creado exitosamente', entity: customer };
 	}
 );
 
@@ -196,5 +160,70 @@ export const reactivateCustomer = command(
 		await auditService.logRestore('customer', customer, getAuditContext());
 
 		return customer;
+	}
+);
+
+/**
+ * Create a customer with an optional prescription in a single atomic operation.
+ * If prescription data is present, both customer and prescription are created
+ * inside a transaction (all-or-nothing).
+ */
+export const createCustomerWithPrescription = form(
+	CreateCustomerWithPrescriptionSchema,
+	async (data, issue): Promise<CreateEntityResult<Customer>> => {
+		const { prescription, idNumber, birthDate, ...customerFields } = data;
+		const context = getAuditContext();
+
+		// Check for duplicate idNumber
+		if (idNumber) {
+			const existing = await findCustomerByIdNumber(idNumber);
+			if (existing) {
+				invalid(issue.idNumber('Ya existe un cliente con este número de cédula'));
+			}
+
+			const deleted = await findCustomerByIdNumber(idNumber, { deleted: true });
+			if (deleted) {
+				return {
+					success: false,
+					message: 'Ya existe un cliente eliminado con este número de cédula. ¿Desea reactivarlo?',
+					reactivationCandidate: deleted
+				};
+			}
+		}
+
+		// Create customer + optional prescription in a single transaction
+		const result = await db.transaction(async (tx) => {
+			const customer = await createCustomer(
+				{
+					...customerFields,
+					idNumber: idNumber || null,
+					birthDate: birthDate ? new Date(birthDate) : null
+				},
+				tx
+			);
+
+			let createdPrescription = null;
+			if (prescription) {
+				createdPrescription = await createPrescription(
+					toPrescriptionInsert(customer.id, {
+						...prescription,
+						isCurrent: prescription.isCurrent ?? true
+					}),
+					tx
+				);
+			}
+
+			return { customer, prescription: createdPrescription };
+		});
+
+		// Audit logs — best effort, after transaction
+		await auditService.logCreate('customer', result.customer, context);
+		if (result.prescription) {
+			await auditService.logCreate('prescription', result.prescription, context, {
+				excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+			});
+		}
+
+		return { success: true, message: 'Cliente creado exitosamente', entity: result.customer };
 	}
 );
