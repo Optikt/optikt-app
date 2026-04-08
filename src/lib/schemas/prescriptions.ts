@@ -95,6 +95,13 @@ export const DpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
  */
 export const NpSchema = OptionalCoercedInteger({ min: 10, max: 80 });
 
+/**
+ * Altura (segment height) validation - for bifocal/progressive lenses
+ * Ranges typically from 10 to 40mm, always positive
+ * Uses OptionalCoercedInteger to distinguish empty string from intentional 0
+ */
+export const AlturaSchema = OptionalCoercedInteger({ min: 10, max: 40 });
+
 // =============================================================================
 // TREATMENTS SCHEMA
 // =============================================================================
@@ -142,6 +149,8 @@ const PrescriptionBaseSchema = z.object({
 	// Nasopupilar (NP) - per-eye
 	npRight: NpSchema.optional(),
 	npLeft: NpSchema.optional(),
+	// Altura (segment height) - for bifocal/progressive lenses
+	altura: AlturaSchema.optional(),
 	// Treatments (separate fields for form compatibility)
 	treatmentAntiReflective: TreatmentAntiReflectiveSchema,
 	treatmentBlueBlock: TreatmentBlueBlockSchema,
@@ -154,6 +163,18 @@ const PrescriptionBaseSchema = z.object({
 	// Current prescription flag
 	isCurrent: CoercedBoolean.optional()
 });
+
+/**
+ * Prescription fields schema (without customerId)
+ * Used to embed prescription data inside other schemas (e.g. customer creation)
+ */
+export const PrescriptionFieldsSchema = PrescriptionBaseSchema.omit({ customerId: true })
+	.superRefine(requireSphereOrCylinder('osSphere', 'osCylinder'))
+	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
+	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
+
+export type PrescriptionFieldsInput = z.infer<typeof PrescriptionFieldsSchema>;
 
 /**
  * Create prescription schema
