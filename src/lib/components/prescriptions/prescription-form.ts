@@ -1,4 +1,6 @@
 import type { RemoteFormIssue } from '@sveltejs/kit';
+import type { Prescription } from '$lib/server/db/schema';
+import { dateFromUTC, dateToISODateString } from '$lib/utils';
 
 export interface PrescriptionFormData {
 	prescriptionDate: string;
@@ -36,7 +38,7 @@ export type PrescriptionFieldIssues = Partial<
 
 export function createPrescriptionFormData(): PrescriptionFormData {
 	return {
-		prescriptionDate: new Date().toISOString().slice(0, 10),
+		prescriptionDate: dateToISODateString(new Date()),
 		recommendedLensType: '',
 		doctorName: '',
 		isCurrent: true,
@@ -57,5 +59,36 @@ export function createPrescriptionFormData(): PrescriptionFormData {
 		treatmentPhotochromic: false,
 		treatmentOther: '',
 		notes: ''
+	};
+}
+
+function toInputValue(value: number | null | undefined): string {
+	if (value === null || value === undefined) return '';
+	return String(value);
+}
+
+export function prescriptionToFormData(prescription: Prescription): PrescriptionFormData {
+	return {
+		prescriptionDate: dateToISODateString(dateFromUTC(prescription.prescriptionDate)),
+		recommendedLensType: prescription.recommendedLensType ?? '',
+		doctorName: prescription.doctorName ?? '',
+		isCurrent: prescription.isCurrent,
+		odSphere: toInputValue(prescription.odSphere),
+		odCylinder: toInputValue(prescription.odCylinder),
+		odAxis: toInputValue(prescription.odAxis),
+		odAddition: toInputValue(prescription.odAddition),
+		osSphere: toInputValue(prescription.osSphere),
+		osCylinder: toInputValue(prescription.osCylinder),
+		osAxis: toInputValue(prescription.osAxis),
+		osAddition: toInputValue(prescription.osAddition),
+		dp: toInputValue(prescription.dp),
+		npRight: toInputValue(prescription.npRight),
+		npLeft: toInputValue(prescription.npLeft),
+		altura: toInputValue(prescription.altura),
+		treatmentAntiReflective: prescription.treatments?.antiReflective ?? false,
+		treatmentBlueBlock: prescription.treatments?.blueBlock ?? false,
+		treatmentPhotochromic: prescription.treatments?.photochromic ?? false,
+		treatmentOther: prescription.treatments?.other ?? '',
+		notes: prescription.notes ?? ''
 	};
 }

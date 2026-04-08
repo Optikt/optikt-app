@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
+	import { Eye, FileText, Layers3, Ruler } from '@lucide/svelte';
 	import { LensType, LENS_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
-	import { getFormErrorMessage } from '$lib/utils';
+	import { dateToISODateString, getFormErrorMessage } from '$lib/utils';
 	import type {
 		PrescriptionFieldIssues,
 		PrescriptionFormData,
@@ -28,11 +29,9 @@
 		data.recommendedLensType !== '' && data.recommendedLensType !== LensType.MONOFOCAL
 	);
 
-	const showAltura = $derived(
-		showAddition && (parseFloat(data.odAddition) > 0 || parseFloat(data.osAddition) > 0)
-	);
+	const showAltura = $derived(showAddition);
 
-	const maxPrescriptionDate = $derived(availableTo.toISOString().slice(0, 10));
+	const maxPrescriptionDate = $derived(dateToISODateString(availableTo));
 
 	function fieldName(
 		field: PrescriptionFormFieldName,
@@ -48,286 +47,227 @@
 	function getIssues(field: PrescriptionFormFieldName): RemoteFormIssue[] | undefined {
 		return issues?.[field]?.issues?.();
 	}
+
+	function hasFieldError(field: PrescriptionFormFieldName): boolean {
+		return (getIssues(field)?.length ?? 0) > 0;
+	}
+
+	function treatmentCardClass(selected: boolean): string {
+		return selected
+			? 'border-brand-blue/30 bg-brand-blue/10 text-brand-navy shadow-[var(--ds-shadow-sm)]'
+			: 'border-outline-variant/15 bg-surface text-on-surface';
+	}
 </script>
 
 {#snippet fieldError(field: PrescriptionFormFieldName)}
 	{@const message = getFormErrorMessage(getIssues(field) ?? null)}
 	{#if message}
-		<p class="mt-1 text-xs text-red-600">{message}</p>
+		<p class="form-field-error mt-1 text-xs font-medium text-error">{message}</p>
 	{/if}
 {/snippet}
 
-<div class="space-y-5">
-	<div class="grid items-end gap-4 sm:grid-cols-3">
-		<div>
+{#snippet eyeInput(
+	field: PrescriptionFormFieldName,
+	id: string,
+	label: string,
+	placeholder: string,
+	inputmode: 'decimal' | 'numeric'
+)}
+	{@const fieldHasError = hasFieldError(field)}
+	<div class="space-y-1.5">
+		<div
+			class={`rounded-2xl border p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors duration-200 ${fieldHasError ? 'border-error/45 bg-error-container/35 focus-within:border-error/60' : 'border-outline-variant/15 bg-surface-container-low focus-within:border-brand-blue/35 focus-within:bg-surface-container-lowest'}`}
+		>
 			<label
-				for="rxDate"
-				class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
+				for={id}
+				class="mb-2 block text-[10px] font-bold tracking-[0.2em] text-on-surface-variant uppercase"
 			>
-				Fecha de Fórmula<span class="text-error">*</span>
+				{label}
 			</label>
 			<input
-				id="rxDate"
-				name={fieldName('prescriptionDate')}
-				type="date"
-				bind:value={data.prescriptionDate}
-				max={maxPrescriptionDate}
-				class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-			/>
-			{@render fieldError('prescriptionDate')}
-		</div>
-		<div>
-			<label
-				for="lensType"
-				class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
-			>
-				Tipo de Lente
-			</label>
-			<select
-				id="lensType"
-				name={fieldName('recommendedLensType', { omitWhenEmpty: true })}
-				bind:value={data.recommendedLensType}
-				class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-			>
-				<option value="">— Seleccionar —</option>
-				{#each Object.entries(LENS_TYPE_LABELS) as [value, label] (value)}
-					<option {value}>{label}</option>
-				{/each}
-			</select>
-			{@render fieldError('recommendedLensType')}
-		</div>
-		<div>
-			<label
-				for="doctorName"
-				class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
-			>
-				Doctor
-			</label>
-			<input
-				id="doctorName"
-				name={fieldName('doctorName')}
+				{id}
+				name={fieldName(field)}
 				type="text"
-				placeholder="Nombre del profesional"
-				bind:value={data.doctorName}
-				class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
+				{inputmode}
+				{placeholder}
+				bind:value={data[field]}
+				aria-invalid={fieldHasError ? 'true' : undefined}
+				data-field-error={fieldHasError ? 'true' : undefined}
+				class="w-full border-0 bg-transparent px-0 py-1 text-center font-mono text-lg font-black text-brand-navy tabular-nums focus:ring-0"
 			/>
-			{@render fieldError('doctorName')}
 		</div>
+		{@render fieldError(field)}
 	</div>
+{/snippet}
 
-	{#if showCurrentToggle}
-		<label class="flex items-center gap-2.5">
-			<input type="hidden" name={fieldName('isCurrent')} value="false" />
-			<input
-				type="checkbox"
-				name={fieldName('isCurrent')}
-				bind:checked={data.isCurrent}
-				class="h-4 w-4 rounded border-outline-variant text-brand-gold focus:ring-brand-gold"
-			/>
-			<span class="text-sm font-bold tracking-wider text-on-surface uppercase">Fórmula Actual</span>
-		</label>
-	{/if}
-
-	<div class="grid gap-5 lg:grid-cols-2">
-		<div class="rounded-xl bg-surface-container-low p-5">
-			<div class="mb-4 flex items-center gap-2.5">
-				<div
-					class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
+<div class="space-y-8">
+	<section
+		class="rounded-[24px] border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-sm)]"
+	>
+		<div class="grid gap-6 md:grid-cols-4 md:items-end">
+			<div>
+				<label
+					for="lensType"
+					class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
 				>
-					OD
-				</div>
-				<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
-					>Ojo Derecho (OD)</span
+					Tipo de Lente<span class="text-error">*</span>
+				</label>
+				<select
+					id="lensType"
+					name={fieldName('recommendedLensType')}
+					bind:value={data.recommendedLensType}
+					aria-invalid={hasFieldError('recommendedLensType') ? 'true' : undefined}
+					data-field-error={hasFieldError('recommendedLensType') ? 'true' : undefined}
+					required
+					class={`w-full rounded-xl border px-4 py-3 text-sm text-on-surface shadow-sm focus:ring-0 ${hasFieldError('recommendedLensType') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
 				>
+					<option value="">Seleccionar</option>
+					{#each Object.entries(LENS_TYPE_LABELS) as [value, label] (value)}
+						<option {value}>{label}</option>
+					{/each}
+				</select>
+				{@render fieldError('recommendedLensType')}
 			</div>
+
+			<div>
+				<label
+					for="doctorName"
+					class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
+				>
+					Optometrista<span class="text-error">*</span>
+				</label>
+				<input
+					id="doctorName"
+					name={fieldName('doctorName')}
+					type="text"
+					placeholder="Nombre del profesional"
+					bind:value={data.doctorName}
+					aria-invalid={hasFieldError('doctorName') ? 'true' : undefined}
+					data-field-error={hasFieldError('doctorName') ? 'true' : undefined}
+					required
+					class={`w-full rounded-xl border px-4 py-3 text-sm text-on-surface shadow-sm placeholder:text-outline focus:ring-0 ${hasFieldError('doctorName') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
+				/>
+				{@render fieldError('doctorName')}
+			</div>
+
+			<div>
+				<label
+					for="rxDate"
+					class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
+				>
+					Fecha de Fórmula<span class="text-error">*</span>
+				</label>
+				<input
+					id="rxDate"
+					name={fieldName('prescriptionDate')}
+					type="date"
+					bind:value={data.prescriptionDate}
+					max={maxPrescriptionDate}
+					aria-invalid={hasFieldError('prescriptionDate') ? 'true' : undefined}
+					data-field-error={hasFieldError('prescriptionDate') ? 'true' : undefined}
+					class={`w-full rounded-xl border px-4 py-3 text-sm text-on-surface shadow-sm focus:ring-0 ${hasFieldError('prescriptionDate') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
+				/>
+				{@render fieldError('prescriptionDate')}
+			</div>
+
+			{#if showCurrentToggle}
+				<div class="flex items-center justify-start pt-2 md:justify-end md:pb-2">
+					<label
+						class="inline-flex items-center gap-3 rounded-2xl border border-brand-gold/25 bg-brand-gold/10 px-4 py-3 shadow-[var(--ds-shadow-sm)]"
+					>
+						<input
+							type="hidden"
+							name={fieldName('isCurrent')}
+							value={data.isCurrent ? 'true' : 'false'}
+						/>
+						<input
+							type="checkbox"
+							bind:checked={data.isCurrent}
+							class="h-4 w-4 rounded border border-brand-gold/30 bg-surface-container-lowest text-brand-navy focus:ring-0"
+						/>
+						<span class="text-[11px] font-bold tracking-[0.18em] text-brand-navy uppercase"
+							>Fórmula Actual</span
+						>
+					</label>
+				</div>
+			{/if}
+		</div>
+	</section>
+
+	<section class="grid gap-8 xl:grid-cols-2">
+		<div
+			class="overflow-hidden rounded-[24px] border border-outline-variant/20 bg-surface-container-lowest shadow-[var(--ds-shadow-md)]"
+		>
+			<div class="flex items-center justify-between bg-brand-navy px-5 py-4">
+				<h2 class="font-heading text-lg font-black tracking-[0.06em] text-white uppercase">
+					Ojo Derecho (OD)
+				</h2>
+				<Eye class="h-4 w-4 text-brand-gold" />
+			</div>
+			<div class="p-6">
+				<div
+					class="grid grid-cols-2 gap-4"
+					class:lg:grid-cols-4={showAddition}
+					class:lg:grid-cols-3={!showAddition}
+				>
+					{@render eyeInput('odSphere', 'od-sphere', 'Esfera', '-2.00', 'decimal')}
+					{@render eyeInput('odCylinder', 'od-cylinder', 'Cilindro', '-0.50', 'decimal')}
+					{@render eyeInput('odAxis', 'od-axis', 'Eje', '180', 'numeric')}
+					{#if showAddition}
+						{@render eyeInput('odAddition', 'od-addition', 'Adición', '+1.50', 'decimal')}
+					{/if}
+				</div>
+			</div>
+		</div>
+
+		<div
+			class="overflow-hidden rounded-[24px] border border-outline-variant/20 bg-surface-container-lowest shadow-[var(--ds-shadow-md)]"
+		>
+			<div class="flex items-center justify-between bg-brand-blue px-5 py-4">
+				<h2 class="font-heading text-lg font-black tracking-[0.06em] text-white uppercase">
+					Ojo Izquierdo (OS)
+				</h2>
+				<Eye class="h-4 w-4 text-brand-gold" />
+			</div>
+			<div class="p-6">
+				<div
+					class="grid grid-cols-2 gap-4"
+					class:lg:grid-cols-4={showAddition}
+					class:lg:grid-cols-3={!showAddition}
+				>
+					{@render eyeInput('osSphere', 'os-sphere', 'Esfera', '-1.75', 'decimal')}
+					{@render eyeInput('osCylinder', 'os-cylinder', 'Cilindro', '-0.25', 'decimal')}
+					{@render eyeInput('osAxis', 'os-axis', 'Eje', '175', 'numeric')}
+					{#if showAddition}
+						{@render eyeInput('osAddition', 'os-addition', 'Adición', '+1.50', 'decimal')}
+					{/if}
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<div class="grid gap-8 xl:grid-cols-2">
+		<section
+			class="rounded-[24px] border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-sm)]"
+		>
+			<div class="mb-6 flex items-center gap-3">
+				<span
+					class="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-blue/12 text-brand-blue"
+				>
+					<Ruler class="h-4 w-4" />
+				</span>
+				<h3 class="text-[11px] font-bold tracking-[0.2em] text-brand-navy uppercase">Distancias</h3>
+			</div>
+
 			<div
-				class="grid grid-cols-2 gap-3"
-				class:grid-cols-2={!showAddition}
-				class:sm:grid-cols-4={showAddition}
-				class:sm:grid-cols-3={!showAddition}
+				class="grid gap-4 sm:grid-cols-2"
+				class:xl:grid-cols-4={showAltura}
+				class:xl:grid-cols-3={!showAltura}
 			>
 				<div>
-					<label
-						for="od-sphere"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Esfera
-					</label>
-					<input
-						id="od-sphere"
-						name={fieldName('odSphere')}
-						type="text"
-						inputmode="decimal"
-						placeholder="-2.00"
-						bind:value={data.odSphere}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('odSphere')}
-				</div>
-				<div>
-					<label
-						for="od-cylinder"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Cilindro
-					</label>
-					<input
-						id="od-cylinder"
-						name={fieldName('odCylinder')}
-						type="text"
-						inputmode="decimal"
-						placeholder="-0.50"
-						bind:value={data.odCylinder}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('odCylinder')}
-				</div>
-				<div>
-					<label
-						for="od-axis"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Eje
-					</label>
-					<input
-						id="od-axis"
-						name={fieldName('odAxis')}
-						type="text"
-						inputmode="numeric"
-						placeholder="180"
-						bind:value={data.odAxis}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('odAxis')}
-				</div>
-				{#if showAddition}
-					<div>
-						<label
-							for="od-addition"
-							class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-						>
-							Adición
-						</label>
-						<input
-							id="od-addition"
-							name={fieldName('odAddition')}
-							type="text"
-							inputmode="decimal"
-							placeholder="+1.50"
-							bind:value={data.odAddition}
-							class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-						/>
-						{@render fieldError('odAddition')}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="rounded-xl bg-surface-container-low p-5">
-			<div class="mb-4 flex items-center gap-2.5">
-				<div
-					class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-blue text-[10px] font-bold text-white"
-				>
-					OS
-				</div>
-				<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
-					>Ojo Izquierdo (OS)</span
-				>
-			</div>
-			<div
-				class="grid grid-cols-2 gap-3"
-				class:grid-cols-2={!showAddition}
-				class:sm:grid-cols-4={showAddition}
-				class:sm:grid-cols-3={!showAddition}
-			>
-				<div>
-					<label
-						for="os-sphere"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Esfera
-					</label>
-					<input
-						id="os-sphere"
-						name={fieldName('osSphere')}
-						type="text"
-						inputmode="decimal"
-						placeholder="-1.75"
-						bind:value={data.osSphere}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('osSphere')}
-				</div>
-				<div>
-					<label
-						for="os-cylinder"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Cilindro
-					</label>
-					<input
-						id="os-cylinder"
-						name={fieldName('osCylinder')}
-						type="text"
-						inputmode="decimal"
-						placeholder="-0.25"
-						bind:value={data.osCylinder}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('osCylinder')}
-				</div>
-				<div>
-					<label
-						for="os-axis"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Eje
-					</label>
-					<input
-						id="os-axis"
-						name={fieldName('osAxis')}
-						type="text"
-						inputmode="numeric"
-						placeholder="175"
-						bind:value={data.osAxis}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('osAxis')}
-				</div>
-				{#if showAddition}
-					<div>
-						<label
-							for="os-addition"
-							class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-						>
-							Adición
-						</label>
-						<input
-							id="os-addition"
-							name={fieldName('osAddition')}
-							type="text"
-							inputmode="decimal"
-							placeholder="+1.50"
-							bind:value={data.osAddition}
-							class="w-full rounded-lg border-none bg-surface-container-high p-2.5 font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-						/>
-						{@render fieldError('osAddition')}
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-
-	<div class="grid gap-6 lg:grid-cols-2">
-		<div>
-			<h3 class="mb-3 text-sm font-semibold tracking-wider text-on-surface-variant uppercase">
-				Distancias
-			</h3>
-			<div class="grid grid-cols-3 gap-3">
-				<div class="text-center">
 					<label
 						for="rx-dp"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+						class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
 					>
 						DP (mm)
 					</label>
@@ -338,14 +278,17 @@
 						inputmode="numeric"
 						placeholder="62"
 						bind:value={data.dp}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
+						aria-invalid={hasFieldError('dp') ? 'true' : undefined}
+						data-field-error={hasFieldError('dp') ? 'true' : undefined}
+						class={`w-full rounded-2xl border px-4 py-3 text-right font-mono font-bold text-brand-navy tabular-nums shadow-sm focus:ring-0 ${hasFieldError('dp') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
 					/>
 					{@render fieldError('dp')}
 				</div>
-				<div class="text-center">
+
+				<div>
 					<label
 						for="rx-np-right"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+						class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
 					>
 						NP Der
 					</label>
@@ -356,14 +299,17 @@
 						inputmode="numeric"
 						placeholder="31"
 						bind:value={data.npRight}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
+						aria-invalid={hasFieldError('npRight') ? 'true' : undefined}
+						data-field-error={hasFieldError('npRight') ? 'true' : undefined}
+						class={`w-full rounded-2xl border px-4 py-3 text-right font-mono font-bold text-brand-navy tabular-nums shadow-sm focus:ring-0 ${hasFieldError('npRight') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
 					/>
 					{@render fieldError('npRight')}
 				</div>
-				<div class="text-center">
+
+				<div>
 					<label
 						for="rx-np-left"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
+						class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
 					>
 						NP Izq
 					</label>
@@ -374,114 +320,136 @@
 						inputmode="numeric"
 						placeholder="31"
 						bind:value={data.npLeft}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
+						aria-invalid={hasFieldError('npLeft') ? 'true' : undefined}
+						data-field-error={hasFieldError('npLeft') ? 'true' : undefined}
+						class={`w-full rounded-2xl border px-4 py-3 text-right font-mono font-bold text-brand-navy tabular-nums shadow-sm focus:ring-0 ${hasFieldError('npLeft') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
 					/>
 					{@render fieldError('npLeft')}
 				</div>
-			</div>
-			{#if showAltura}
-				<div class="mt-3 w-1/3 text-center">
-					<label
-						for="rx-altura"
-						class="mb-1 block text-xs font-semibold tracking-wider text-on-surface-variant uppercase"
-					>
-						Altura (mm)
-					</label>
-					<input
-						id="rx-altura"
-						name={fieldName('altura')}
-						type="text"
-						inputmode="numeric"
-						placeholder="18"
-						bind:value={data.altura}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-center font-mono text-base text-on-surface focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('altura')}
-				</div>
-			{/if}
-		</div>
 
-		<div>
-			<h3 class="mb-3 text-sm font-semibold tracking-wider text-on-surface-variant uppercase">
-				Tratamientos
-			</h3>
-			<div class="flex flex-wrap gap-x-5 gap-y-3">
-				<label class="flex items-center gap-2">
+				{#if showAltura}
+					<div>
+						<label
+							for="rx-altura"
+							class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
+						>
+							Altura (mm)
+						</label>
+						<input
+							id="rx-altura"
+							name={fieldName('altura')}
+							type="text"
+							inputmode="numeric"
+							placeholder="18"
+							bind:value={data.altura}
+							aria-invalid={hasFieldError('altura') ? 'true' : undefined}
+							data-field-error={hasFieldError('altura') ? 'true' : undefined}
+							class={`w-full rounded-2xl border px-4 py-3 text-right font-mono font-bold text-brand-navy tabular-nums shadow-sm focus:ring-0 ${hasFieldError('altura') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
+						/>
+						{@render fieldError('altura')}
+					</div>
+				{/if}
+			</div>
+		</section>
+
+		<section
+			class="rounded-[24px] border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-sm)]"
+		>
+			<div class="mb-6 flex items-center gap-3">
+				<span
+					class="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-gold/18 text-brand-navy"
+				>
+					<Layers3 class="h-4 w-4" />
+				</span>
+				<h3 class="text-[11px] font-bold tracking-[0.2em] text-brand-navy uppercase">
+					Tratamientos
+				</h3>
+			</div>
+
+			<div class="grid gap-3 sm:grid-cols-2">
+				<label
+					class={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors duration-200 ${treatmentCardClass(data.treatmentAntiReflective)}`}
+				>
 					<input
 						type="checkbox"
 						name={fieldName('treatmentAntiReflective')}
 						bind:checked={data.treatmentAntiReflective}
-						class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+						class="h-4 w-4 rounded border border-outline-variant/20 bg-surface-container-high text-brand-blue focus:ring-0"
 					/>
-					<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
-						>Antireflejo</span
-					>
+					<span class="text-sm font-semibold">Antireflejo</span>
 				</label>
-				<label class="flex items-center gap-2">
+
+				<label
+					class={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors duration-200 ${treatmentCardClass(data.treatmentBlueBlock)}`}
+				>
 					<input
 						type="checkbox"
 						name={fieldName('treatmentBlueBlock')}
 						bind:checked={data.treatmentBlueBlock}
-						class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+						class="h-4 w-4 rounded border border-outline-variant/20 bg-surface-container-high text-brand-blue focus:ring-0"
 					/>
-					<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
-						>Blueblock</span
-					>
+					<span class="text-sm font-semibold">Blueblock</span>
 				</label>
-				<label class="flex items-center gap-2">
+
+				<label
+					class={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-colors duration-200 ${treatmentCardClass(data.treatmentPhotochromic)}`}
+				>
 					<input
 						type="checkbox"
 						name={fieldName('treatmentPhotochromic')}
 						bind:checked={data.treatmentPhotochromic}
-						class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
+						class="h-4 w-4 rounded border border-outline-variant/20 bg-surface-container-high text-brand-blue focus:ring-0"
 					/>
-					<span class="text-xs font-semibold tracking-wider text-on-surface uppercase"
-						>Fotocromático</span
-					>
-				</label>
-				<label class="flex items-center gap-2">
-					<input
-						type="checkbox"
-						class="h-4 w-4 rounded border-outline-variant text-brand-blue focus:ring-brand-blue"
-						checked={data.treatmentOther !== ''}
-						onchange={() => {
-							if (data.treatmentOther) data.treatmentOther = '';
-						}}
-					/>
-					<span class="text-xs font-semibold tracking-wider text-on-surface uppercase">Otros</span>
+					<span class="text-sm font-semibold">Fotocromático</span>
 				</label>
 			</div>
 
-			{#if data.treatmentOther !== undefined}
-				<div class="mt-3">
-					<input
-						type="text"
-						name={fieldName('treatmentOther')}
-						placeholder="Otros tratamientos..."
-						bind:value={data.treatmentOther}
-						class="w-full rounded-lg border-none bg-surface-container-high p-2.5 text-base text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
-					/>
-					{@render fieldError('treatmentOther')}
-				</div>
-			{/if}
-		</div>
+			<div class="mt-4">
+				<label
+					for="rx-treatment-other"
+					class="mb-2 block text-[11px] font-bold tracking-[0.18em] text-on-surface-variant uppercase"
+				>
+					Otro Tratamiento
+				</label>
+				<input
+					id="rx-treatment-other"
+					type="text"
+					name={fieldName('treatmentOther')}
+					placeholder="Descripción adicional"
+					bind:value={data.treatmentOther}
+					aria-invalid={hasFieldError('treatmentOther') ? 'true' : undefined}
+					data-field-error={hasFieldError('treatmentOther') ? 'true' : undefined}
+					class={`w-full rounded-2xl border px-4 py-3 text-sm text-on-surface shadow-sm placeholder:text-outline focus:ring-0 ${hasFieldError('treatmentOther') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
+				/>
+				{@render fieldError('treatmentOther')}
+			</div>
+		</section>
 	</div>
 
-	<div>
-		<label
-			for="rx-notes"
-			class="mb-1.5 block text-sm font-semibold tracking-wider text-on-surface-variant uppercase"
-		>
-			Notas de Fórmula
-		</label>
+	<section
+		class="rounded-[24px] border border-outline-variant/20 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-sm)]"
+	>
+		<div class="mb-4 flex items-center gap-3">
+			<span
+				class="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-navy/10 text-brand-navy"
+			>
+				<FileText class="h-4 w-4" />
+			</span>
+			<h3 class="text-[11px] font-bold tracking-[0.2em] text-brand-navy uppercase">
+				Observaciones
+			</h3>
+		</div>
+
 		<textarea
 			id="rx-notes"
 			name={fieldName('notes')}
-			placeholder="Observaciones técnicas, requerimientos específicos del paciente o detalles del tallado..."
-			rows={3}
+			placeholder="Notas clínicas adicionales, especificaciones de montaje o consideraciones del paciente..."
+			rows={5}
 			bind:value={data.notes}
-			class="w-full rounded-lg border-none bg-surface-container-high p-3 text-base text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
+			aria-invalid={hasFieldError('notes') ? 'true' : undefined}
+			data-field-error={hasFieldError('notes') ? 'true' : undefined}
+			class={`min-h-[160px] w-full resize-none rounded-2xl border px-4 py-3 text-sm text-on-surface shadow-sm placeholder:text-outline focus:ring-0 ${hasFieldError('notes') ? 'border-error/45 bg-error-container/35 focus:border-error/60' : 'border-outline-variant/15 bg-surface-container-lowest focus:border-brand-blue'}`}
 		></textarea>
 		{@render fieldError('notes')}
-	</div>
+	</section>
 </div>

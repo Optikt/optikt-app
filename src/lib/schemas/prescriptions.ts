@@ -13,6 +13,14 @@ import {
 	OptionalCoercedInteger
 } from './common';
 
+const LensTypeSchema = z
+	.string()
+	.trim()
+	.min(1, 'Tipo de lente es requerido')
+	.refine((value) => Object.values(LensType).includes(value as LensType), 'Tipo de lente inválido');
+
+const DoctorNameSchema = z.string().trim().min(1, 'Doctor es requerido').max(100);
+
 function requireSphereOrCylinder<T extends Record<string, unknown>>(
 	sphereKey: keyof T,
 	cylinderKey: keyof T
@@ -157,9 +165,9 @@ const PrescriptionBaseSchema = z.object({
 	treatmentPhotochromic: TreatmentPhotochromicSchema,
 	treatmentOther: TreatmentOtherSchema,
 	// Additional
-	recommendedLensType: z.enum(LensType, 'Tipo de lente inválido').optional(),
+	recommendedLensType: LensTypeSchema,
 	notes: z.string().optional(),
-	doctorName: z.string().max(100).optional(),
+	doctorName: DoctorNameSchema,
 	// Current prescription flag
 	isCurrent: CoercedBoolean.optional()
 });

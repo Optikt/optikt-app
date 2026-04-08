@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AxisSchema, CreatePrescriptionSchema } from './prescriptions';
+import { LensType } from '$lib/shared/enums/lensTypes';
 
 // =============================================================================
 // Axis Schema
@@ -74,9 +75,26 @@ describe('CreatePrescriptionSchema - requireAxisWhenCylinder', () => {
 	const validBaseData = {
 		customerId: '123e4567-e89b-12d3-a456-426614174000',
 		prescriptionDate: '2024-01-15',
+		recommendedLensType: LensType.PROGRESSIVE,
+		doctorName: 'Dr. Martinez',
 		odSphere: -2.0,
 		osSphere: -2.0
 	};
+
+	it('requires lens type and doctor name', () => {
+		const result = CreatePrescriptionSchema.safeParse({
+			...validBaseData,
+			recommendedLensType: '',
+			doctorName: ''
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			const messages = result.error.issues.map((issue) => issue.message);
+			expect(messages).toContain('Tipo de lente es requerido');
+			expect(messages).toContain('Doctor es requerido');
+		}
+	});
 
 	it('requires axis when cylinder is provided (right eye)', () => {
 		const result = CreatePrescriptionSchema.safeParse({
