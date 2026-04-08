@@ -7,20 +7,24 @@ import { toast } from 'svelte-sonner';
 
 /**
  * Scrolls to the first form input with an error.
- * Finds the first element with Flowbite's error border styling and scrolls to it.
+ * Finds the first field marked as invalid and scrolls it into view.
  * Useful for long forms where errors may be off-screen after submission.
  */
 export function scrollToFirstError(): void {
 	// Wait for DOM to update with error styles
 	setTimeout(() => {
-		// Find first input/textarea with error (Flowbite uses border-red-500 for error inputs)
 		const firstError = document.querySelector(
-			'.border-red-500, [class*="border-red"], [class*="ring-red"]'
+			'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"], [class*="ring-red"], .form-field-error'
 		) as HTMLElement | null;
 
 		if (firstError) {
 			firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			firstError.focus();
+
+			const focusTarget = firstError.matches('input, select, textarea, button')
+				? firstError
+				: (firstError.querySelector('input, select, textarea, button') as HTMLElement | null);
+
+			focusTarget?.focus();
 		}
 	}, 50);
 }
@@ -59,9 +63,11 @@ export function toastUnboundErrors(allIssues: RemoteFormIssue[]): void {
 
 			const field = document.querySelector(`[name="${CSS.escape(fieldName)}"]`);
 			const hasVisibleError =
-				field?.matches('.border-red-500, [class*="border-red"]') ||
+				field?.matches(
+					'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"]'
+				) ||
 				field?.parentElement?.querySelector(
-					'.text-red-500, .text-red-600, .text-red-700, .border-red-500'
+					'.form-field-error, .text-error, .text-red-500, .text-red-600, .text-red-700, .border-red-500'
 				) !== null;
 
 			if (!hasVisibleError) {

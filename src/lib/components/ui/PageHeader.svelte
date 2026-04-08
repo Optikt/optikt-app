@@ -8,14 +8,24 @@
 		subtitle?: string;
 		backLabel?: string;
 		backHref?: string;
+		backOnClick?: () => void;
 		actions?: Snippet;
 	}
 
-	let { title, subtitle, backLabel, backHref, actions }: Props = $props();
+	let { title, subtitle, backLabel, backHref, backOnClick, actions }: Props = $props();
 </script>
 
 <div class="mb-6">
-	{#if backLabel && backHref}
+	{#if backLabel && backOnClick}
+		<button
+			type="button"
+			onclick={backOnClick}
+			class="mb-3 flex items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-brand-blue"
+		>
+			<ArrowLeft size={16} />
+			{backLabel}
+		</button>
+	{:else if backLabel && backHref}
 		<!-- eslint-disable-next-line svelte/valid-compile -->
 		<a
 			href={resolve(backHref as '/')}
@@ -26,7 +36,7 @@
 		</a>
 	{/if}
 
-	<header class="flex items-end justify-between gap-2">
+	<header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 		<div>
 			{#if subtitle}
 				<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
