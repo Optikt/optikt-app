@@ -160,7 +160,7 @@
 	</a>
 
 	<!-- Profile Header -->
-	<div class="mb-6 flex items-center justify-between">
+	<div class="mb-6 flex items-center gap-4">
 		<div class="flex items-center gap-4">
 			<div
 				class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-blue/15 text-2xl font-bold text-brand-blue"
@@ -180,15 +180,6 @@
 				{/if}
 			</div>
 		</div>
-		{#if !isEditing}
-			<button
-				onclick={startEditing}
-				class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:border-brand-blue hover:text-brand-blue"
-			>
-				<SquarePen class="h-4 w-4" />
-				Editar Perfil
-			</button>
-		{/if}
 	</div>
 
 	<!-- Two-Column Layout -->
@@ -330,11 +321,21 @@
 			{:else}
 				<!-- READ MODE — Personal Info Card -->
 				<div class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6">
-					<div class="mb-5 flex items-center gap-2.5">
-						<User class="h-5 w-5 text-brand-blue" />
-						<h2 class="font-heading text-base font-bold tracking-wider text-on-surface uppercase">
-							Información Personal
-						</h2>
+					<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+						<div class="flex items-center gap-2.5">
+							<User class="h-5 w-5 text-brand-blue" />
+							<h2 class="font-heading text-base font-bold tracking-wider text-on-surface uppercase">
+								Información Personal
+							</h2>
+						</div>
+						<button
+							type="button"
+							onclick={startEditing}
+							class="inline-flex items-center gap-1.5 self-start rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:border-brand-blue hover:text-brand-blue sm:self-auto"
+						>
+							<SquarePen class="h-4 w-4" />
+							Editar Perfil
+						</button>
 					</div>
 
 					<div class="grid grid-cols-1 gap-y-5 sm:grid-cols-2">
@@ -431,6 +432,33 @@
 						>
 					</div>
 
+					{#if currentPrescription.recommendedLensType || currentPrescription.doctorName}
+						<div class="mb-4 grid gap-3 border-b border-white/10 pb-4 sm:grid-cols-2">
+							{#if currentPrescription.recommendedLensType}
+								<div
+									class="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"
+								>
+									<span class="text-[11px] font-bold tracking-[0.18em] text-white/55 uppercase">
+										Tipo de Lente
+									</span>
+									<LensTypeBadge type={currentPrescription.recommendedLensType} class="shrink-0" />
+								</div>
+							{/if}
+							{#if currentPrescription.doctorName}
+								<div
+									class="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"
+								>
+									<span class="text-[11px] font-bold tracking-[0.18em] text-white/55 uppercase">
+										Doctor
+									</span>
+									<span class="truncate text-right text-sm font-medium text-white">
+										{currentPrescription.doctorName}
+									</span>
+								</div>
+							{/if}
+						</div>
+					{/if}
+
 					<!-- OD -->
 					<div class="mb-3 rounded-xl bg-white/10 p-4">
 						<div class="mb-2 flex items-center gap-2">
@@ -479,61 +507,51 @@
 						{/if}
 					</div>
 
-					<!-- Details -->
-					<div class="space-y-2 text-sm text-white/70">
-						<div class="flex items-center justify-between">
-							<span>DP/NP</span>
-							<span class="font-mono text-white">{formatDpNp(currentPrescription)}</span>
+					<div class="mt-4 space-y-4 border-t border-white/10 pt-4">
+						<div class="grid gap-2 text-sm text-white/70 sm:grid-cols-2">
+							<div class="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2">
+								<span>DP/NP</span>
+								<span class="font-mono text-white">{formatDpNp(currentPrescription)}</span>
+							</div>
+							{#if currentPrescription.altura != null}
+								<div
+									class="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"
+								>
+									<span>Altura</span>
+									<span class="font-mono text-white">{currentPrescription.altura}mm</span>
+								</div>
+							{/if}
 						</div>
-						{#if currentPrescription.altura != null}
-							<div class="flex items-center justify-between">
-								<span>Altura</span>
-								<span class="font-mono text-white">{currentPrescription.altura}mm</span>
-							</div>
-						{/if}
-						{#if currentPrescription.doctorName}
-							<div class="flex items-center justify-between">
-								<span>Doctor</span>
-								<span class="text-white">{currentPrescription.doctorName}</span>
-							</div>
-						{/if}
-						{#if currentPrescription.recommendedLensType}
-							<div class="flex items-center justify-between">
-								<span>Tipo de Lente</span>
-								<LensTypeBadge type={currentPrescription.recommendedLensType} />
+
+						{#if currentPrescription.treatments}
+							<div class="flex flex-wrap gap-2">
+								{#if currentPrescription.treatments.antiReflective}
+									<span
+										class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
+										>Antireflejo</span
+									>
+								{/if}
+								{#if currentPrescription.treatments.blueBlock}
+									<span
+										class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
+										>Blue Block</span
+									>
+								{/if}
+								{#if currentPrescription.treatments.photochromic}
+									<span
+										class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
+										>Fotocromático</span
+									>
+								{/if}
+								{#if currentPrescription.treatments.other}
+									<span
+										class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
+										>{currentPrescription.treatments.other}</span
+									>
+								{/if}
 							</div>
 						{/if}
 					</div>
-
-					<!-- Treatments -->
-					{#if currentPrescription.treatments}
-						<div class="mt-3 flex flex-wrap gap-1.5">
-							{#if currentPrescription.treatments.antiReflective}
-								<span
-									class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-									>Antireflejo</span
-								>
-							{/if}
-							{#if currentPrescription.treatments.blueBlock}
-								<span
-									class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-									>Blue Block</span
-								>
-							{/if}
-							{#if currentPrescription.treatments.photochromic}
-								<span
-									class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-									>Fotocromático</span
-								>
-							{/if}
-							{#if currentPrescription.treatments.other}
-								<span
-									class="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/90"
-									>{currentPrescription.treatments.other}</span
-								>
-							{/if}
-						</div>
-					{/if}
 				</div>
 			{:else}
 				<div
@@ -676,8 +694,8 @@
 								</td>
 								<td class="px-4 py-3">
 									{#if prescription.isCurrent}
-										<AppBadge variant="success">
-											<Star class="h-3 w-3" />
+										<AppBadge variant="success" class="gap-1.5 leading-none">
+											<Star class="mt-px h-3 w-3 shrink-0" />
 											Actual
 										</AppBadge>
 									{:else}
