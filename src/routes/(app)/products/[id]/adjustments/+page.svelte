@@ -152,7 +152,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-slate-50/50 p-8">
-	<div class="mx-auto max-w-2xl">
+	<div class="w-full">
 		<!-- Header -->
 		<div class="mb-8">
 			<a
