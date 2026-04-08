@@ -2,7 +2,7 @@
 	import { Modal, Button, Spinner } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { createCustomerForm, updateCustomerForm } from '$lib/remote/customers.remote';
+	import { createCustomerWithPrescription, updateCustomerForm } from '$lib/remote/customers.remote';
 	import type { CreateEntityResult } from '$lib/types';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
 	import { scrollToFirstError, toastUnboundErrors, getErrorMessage, dateFromUTC } from '$lib/utils';
@@ -92,7 +92,7 @@
 	});
 
 	// Form instances
-	const currentCreateForm = $derived(createCustomerForm.for(formInstanceId));
+	const currentCreateForm = $derived(createCustomerWithPrescription.for(formInstanceId));
 	const currentUpdateForm = $derived(
 		updateCustomerForm.for(`${customer?.id ?? 'new'}-${formInstanceId}`)
 	);
