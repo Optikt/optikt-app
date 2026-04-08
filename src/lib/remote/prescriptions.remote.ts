@@ -9,7 +9,8 @@ import {
 	UpdatePrescriptionSchema,
 	PrescriptionIdSchema,
 	CustomerIdForPrescriptionSchema,
-	SetCurrentPrescriptionSchema
+	SetCurrentPrescriptionSchema,
+	type PrescriptionFieldsInput
 } from '$lib/schemas/prescriptions';
 import {
 	getCustomerPrescriptions,
@@ -20,45 +21,13 @@ import {
 	deletePrescription,
 	findCustomerById
 } from '$lib/server/db/queries/customers';
-import type { Prescription, PrescriptionTreatments } from '$lib/server/db/schema';
+import type { Prescription } from '$lib/server/db/schema';
 import { auditService, getAuditContext } from '$lib/server/audit';
-
-/**
- * Normalize optical values for storage
- * Converts 0 to null for consistency in the database
- * This allows distinguishing between "not measured" and "measured as 0" during validation,
- * but normalizes to null for storage to keep data consistent
- */
-function normalizeOpticalValue(value: number | undefined | null): number | null {
-	if (value === undefined || value === null) return null;
-	// Convert 0 to null for storage consistency
-	return value === 0 ? null : value;
-}
-
-/**
- * Build treatments object from form data
- */
-function buildTreatments(data: {
-	treatmentAntiReflective?: boolean;
-	treatmentBlueBlock?: boolean;
-	treatmentPhotochromic?: boolean;
-	treatmentOther?: string;
-}): PrescriptionTreatments | null {
-	const hasAnyTreatment =
-		data.treatmentAntiReflective ||
-		data.treatmentBlueBlock ||
-		data.treatmentPhotochromic ||
-		data.treatmentOther;
-
-	if (!hasAnyTreatment) return null;
-
-	return {
-		antiReflective: data.treatmentAntiReflective ?? false,
-		blueBlock: data.treatmentBlueBlock ?? false,
-		photochromic: data.treatmentPhotochromic ?? false,
-		other: data.treatmentOther ?? null
-	};
-}
+import {
+	normalizeOpticalValue,
+	buildTreatments,
+	toPrescriptionInsert
+} from '$lib/utils/prescription';
 
 /**
  * List all prescriptions for a customer
@@ -94,29 +63,7 @@ export const getPrescription = query(
  * Shared prescription creation logic
  */
 async function performCreatePrescription(
-	data: {
-		customerId: string;
-		prescriptionDate: string;
-		isCurrent?: boolean;
-		odSphere?: number | null;
-		odCylinder?: number | null;
-		odAxis?: number | null;
-		odAddition?: number | null;
-		osSphere?: number | null;
-		osCylinder?: number | null;
-		osAxis?: number | null;
-		osAddition?: number | null;
-		dp?: number | null;
-		npRight?: number | null;
-		npLeft?: number | null;
-		treatmentAntiReflective?: boolean;
-		treatmentBlueBlock?: boolean;
-		treatmentPhotochromic?: boolean;
-		treatmentOther?: string;
-		recommendedLensType?: string | null;
-		notes?: string | null;
-		doctorName?: string | null;
-	},
+	data: PrescriptionFieldsInput & { customerId: string },
 	context: ReturnType<typeof getAuditContext>
 ): Promise<Prescription> {
 	// If this is set as current, unset other current prescriptions for this customer
@@ -129,30 +76,8 @@ async function performCreatePrescription(
 		}
 	}
 
-	// Build treatments object
-	const treatments = buildTreatments(data);
-
 	// Create prescription with normalized optical values (0 → null)
-	const prescription = await createPrescription({
-		customerId: data.customerId,
-		prescriptionDate: new Date(data.prescriptionDate),
-		odSphere: normalizeOpticalValue(data.odSphere),
-		odCylinder: normalizeOpticalValue(data.odCylinder),
-		odAxis: normalizeOpticalValue(data.odAxis),
-		odAddition: normalizeOpticalValue(data.odAddition),
-		osSphere: normalizeOpticalValue(data.osSphere),
-		osCylinder: normalizeOpticalValue(data.osCylinder),
-		osAxis: normalizeOpticalValue(data.osAxis),
-		osAddition: normalizeOpticalValue(data.osAddition),
-		dp: data.dp ?? null,
-		npRight: data.npRight ?? null,
-		npLeft: data.npLeft ?? null,
-		treatments,
-		recommendedLensType: data.recommendedLensType ?? null,
-		notes: data.notes ?? null,
-		doctorName: data.doctorName ?? null,
-		isCurrent: data.isCurrent ?? false
-	});
+	const prescription = await createPrescription(toPrescriptionInsert(data.customerId, data));
 
 	// Log audit
 	await auditService.logCreate('prescription', prescription, context, {
@@ -242,6 +167,7 @@ export const updatePrescriptionForm = form(
 		if (data.dp !== undefined) updateData.dp = data.dp ?? null;
 		if (data.npRight !== undefined) updateData.npRight = data.npRight ?? null;
 		if (data.npLeft !== undefined) updateData.npLeft = data.npLeft ?? null;
+		if (data.altura !== undefined) updateData.altura = data.altura ?? null;
 		// Build treatments if any treatment field is present
 		if (
 			data.treatmentAntiReflective !== undefined ||
