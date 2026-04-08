@@ -15,7 +15,7 @@ export function scrollToFirstError(): void {
 	setTimeout(() => {
 		// Find first input/textarea with error (Flowbite uses border-red-500 for error inputs)
 		const firstError = document.querySelector(
-			'.border-red-500, [class*="border-red"]'
+			'.border-red-500, [class*="border-red"], [class*="ring-red"]'
 		) as HTMLElement | null;
 
 		if (firstError) {
