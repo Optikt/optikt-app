@@ -333,7 +333,7 @@
 	}
 </script>
 
-<div class="mx-auto max-w-5xl space-y-8">
+<div class="w-full space-y-8">
 	<!-- Wizard Steps Indicator -->
 	<nav class="flex items-center justify-center gap-3">
 		{#each STEPS as step (step.num)}
