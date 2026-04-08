@@ -276,9 +276,12 @@ export async function findPrescriptionById(id: string): Promise<Prescription | n
 /**
  * Create a new prescription
  */
-export async function createPrescription(data: NewPrescription): Promise<Prescription> {
+export async function createPrescription(
+	data: NewPrescription,
+	executor: DbOrTx = db
+): Promise<Prescription> {
 	const now = new Date();
-	const [prescription] = await db
+	const [prescription] = await executor
 		.insert(prescriptions)
 		.values({
 			...data,
