@@ -45,11 +45,6 @@ export function getProductTypeBadgeColor(type: string): BadgeVariant {
 	return typeColors[type as ProductType] ?? 'neutral';
 }
 
-/** @deprecated Use getProductTypeBadgeColor instead */
-export function getProductTypeColor(type: string): BadgeVariant {
-	return getProductTypeBadgeColor(type);
-}
-
 /** All product types require stock tracking */
 export const STOCK_REQUIRED_TYPES: ProductType[] = [
 	ProductType.FRAME,
