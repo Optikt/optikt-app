@@ -1,82 +1,18 @@
 /**
- * Centralized date utilities — the ONLY file allowed to import date-fns / date-fns-tz.
+ * Centralized date utilities — the ONLY file allowed to import date-fns.
  *
- * All date display and serialization across the app goes through these helpers.
- * Components and server code must never import date-fns directly.
+ * All date parsing, serialization, and range logic across the app goes
+ * through these helpers. Components and server code must never import
+ * date-fns directly.
+ *
+ * Display formatting lives in $lib/utils/format.ts (uses Intl, no date-fns).
  */
-import { formatInTimeZone } from 'date-fns-tz';
 import { formatDistanceToNow, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // ---------------------------------------------------------------------------
-// Timezone
-// ---------------------------------------------------------------------------
-
-/** Browser timezone (client-side only). */
-const getUserTz = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-// ---------------------------------------------------------------------------
 // Display helpers (Date → string)
 // ---------------------------------------------------------------------------
-
-/**
- * Format a Date in the user's local timezone including date and time.
- * Example: "08/04/2026 15:30"
- */
-export function toLocalDisplay(date: Date): string {
-	return formatInTimeZone(date, getUserTz(), 'dd/MM/yyyy HH:mm', { locale: es });
-}
-
-/**
- * Format only the date portion in the user's local timezone.
- * Example: "08/04/2026"
- */
-export function toLocalDate(date: Date): string {
-	return formatInTimeZone(date, getUserTz(), 'dd/MM/yyyy', { locale: es });
-}
-
-/**
- * Format a date with configurable style using Intl (es-VE locale, UTC-safe for date-only values).
- *
- * When no `timeStyle` is specified, the date is rendered using UTC components
- * so that date-only values (stored as UTC midnight) don't shift to the previous
- * calendar day in negative-UTC timezones.
- *
- * @example
- * formatDate(date)                          // "12 de febrero de 2026"
- * formatDate(date, { month: 'short' })      // "12 feb 2026"
- * formatDate(date, { dateStyle: 'medium', timeStyle: 'short' }) // "8 abr 2026, 3:30 p. m."
- */
-export function formatDate(
-	date: Date | string | null,
-	opt: Intl.DateTimeFormatOptions = {}
-): string {
-	if (!date) return '—';
-
-	let d: Date;
-	if (typeof date === 'string') {
-		if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-			const [y, m, dy] = date.split('-').map(Number);
-			d = new Date(y, m - 1, dy);
-		} else {
-			d = new Date(date);
-		}
-	} else {
-		d = date;
-	}
-
-	const hasTime = 'timeStyle' in opt;
-	if (!hasTime && typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-		// Date-only strings: already parsed to local midnight above, nothing extra needed
-	}
-
-	const options: Intl.DateTimeFormatOptions =
-		'dateStyle' in opt || 'timeStyle' in opt
-			? opt
-			: { year: 'numeric', month: 'long', day: 'numeric', ...opt };
-
-	return new Intl.DateTimeFormat('es-VE', options).format(d);
-}
 
 /**
  * Relative time. Example: "hace 3 horas"
