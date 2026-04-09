@@ -3,6 +3,7 @@ import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { brands, products, type Brand, type NewBrand } from '$lib/server/db/schema';
 import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
+import { nowISO } from '$lib/dates';
 
 /** Sortable brand columns */
 export type BrandOrderBy = 'name' | 'createdAt' | 'updatedAt' | 'country';
@@ -107,7 +108,7 @@ export async function findBrandByName(
  * Create a new brand
  */
 export async function createBrand(data: NewBrand): Promise<Brand> {
-	const now = new Date();
+	const now = nowISO();
 	const [brand] = await db
 		.insert(brands)
 		.values({
@@ -129,7 +130,7 @@ export async function updateBrand(
 ): Promise<Brand | null> {
 	const [brand] = await db
 		.update(brands)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(brands.id, id))
 		.returning();
 	return brand ?? null;
@@ -141,7 +142,7 @@ export async function updateBrand(
 export async function deleteBrand(id: string): Promise<boolean> {
 	const result = await db
 		.update(brands)
-		.set({ deletedAt: new Date(), updatedAt: new Date() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(brands.id, id));
 	return result.count > 0;
 }
@@ -165,7 +166,7 @@ export async function restoreBrand(id: string): Promise<Brand> {
 		.update(brands)
 		.set({
 			deletedAt: null,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(brands.id, id))
 		.returning();
@@ -179,7 +180,7 @@ export async function restoreBrand(id: string): Promise<Brand> {
  */
 export async function resolvePendingBrand(
 	pendingName: string,
-	now: Date,
+	now: string,
 	executor: DbOrTx = db
 ): Promise<string> {
 	const [existing] = await executor
