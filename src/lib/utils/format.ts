@@ -5,23 +5,13 @@
 
 import type { Customer, Prescription } from '$lib/server/db/schema';
 import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
+import { fromISO, fromISODate } from '$lib/dates';
 
 // =============================================================================
 // DATE-ONLY UTILITIES — re-exported from $lib/dates (canonical source)
 // =============================================================================
 
 export { toISODate as dateToISODateString, fromISODate as parseISODateToLocal } from '$lib/dates';
-
-/**
- * Convert a date-only Date object from UTC midnight to local midnight.
- *
- * @deprecated Legacy helper — prefer fromISODate / parseISODateToLocal for
- * string→Date and toISODate / dateToISODateString for Date→string.
- */
-export function dateFromUTC(date: Date | null | undefined): Date | undefined {
-	if (!date) return undefined;
-	return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-}
 
 /**
  * Format a number as USD currency (es-VE locale)
@@ -63,14 +53,8 @@ export function formatDate(
 
 	let d: Date;
 	if (typeof date === 'string') {
-		// Check if it's a date-only string (YYYY-MM-DD)
-		if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-			// Parse as local date to avoid timezone shifts
-			const [y, m, dy] = date.split('-').map(Number);
-			d = new Date(y, m - 1, dy);
-		} else {
-			d = new Date(date);
-		}
+		// Date-only strings → parse at local midnight to avoid timezone shifts
+		d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? fromISODate(date)! : fromISO(date);
 	} else {
 		d = date;
 	}
