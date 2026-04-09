@@ -19,7 +19,8 @@ import {
 	createPrescription,
 	updatePrescription,
 	deletePrescription,
-	findCustomerById
+	findCustomerById,
+	unsetCurrentPrescriptions
 } from '$lib/server/db/queries/customers';
 import type { Prescription } from '$lib/server/db/schema';
 import { auditService, getAuditContext } from '$lib/server/audit';
@@ -28,6 +29,7 @@ import {
 	buildTreatments,
 	toPrescriptionInsert
 } from '$lib/utils/prescription';
+import { db } from '$lib/server/db';
 
 /**
  * List all prescriptions for a customer
@@ -60,26 +62,22 @@ export const getPrescription = query(
 );
 
 /**
- * Shared prescription creation logic
+ * Shared prescription creation logic.
+ * Runs inside a transaction: unsets current flag on siblings, then creates the new prescription.
  */
 async function performCreatePrescription(
 	data: PrescriptionFieldsInput & { customerId: string },
 	context: ReturnType<typeof getAuditContext>
 ): Promise<Prescription> {
-	// If this is set as current, unset other current prescriptions for this customer
-	if (data.isCurrent) {
-		const existingPrescriptions = await getCustomerPrescriptions(data.customerId);
-		for (const p of existingPrescriptions) {
-			if (p.isCurrent) {
-				await updatePrescription(p.id, { isCurrent: false });
-			}
+	const prescription = await db.transaction(async (tx) => {
+		if (data.isCurrent) {
+			await unsetCurrentPrescriptions(data.customerId, undefined, tx);
 		}
-	}
 
-	// Create prescription with normalized optical values (0 → null)
-	const prescription = await createPrescription(toPrescriptionInsert(data.customerId, data));
+		return await createPrescription(toPrescriptionInsert(data.customerId, data), tx);
+	});
 
-	// Log audit
+	// Audit log — best effort, after transaction succeeds
 	await auditService.logCreate('prescription', prescription, context, {
 		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 	});
@@ -137,16 +135,6 @@ export const updatePrescriptionForm = form(
 			invalid(issue.id('Fórmula no encontrada'));
 		}
 
-		// If setting as current, unset other current prescriptions for this customer
-		if (data.isCurrent) {
-			const existingPrescriptions = await getCustomerPrescriptions(existing.customerId);
-			for (const p of existingPrescriptions) {
-				if (p.isCurrent && p.id !== data.id) {
-					await updatePrescription(p.id, { isCurrent: false });
-				}
-			}
-		}
-
 		// Build update object with normalized optical values (0 → null)
 		const updateData: Partial<Omit<Prescription, 'id' | 'createdAt'>> = {};
 		if (data.prescriptionDate !== undefined) {
@@ -184,13 +172,19 @@ export const updatePrescriptionForm = form(
 		if (data.doctorName !== undefined) updateData.doctorName = data.doctorName ?? null;
 		if (data.isCurrent !== undefined) updateData.isCurrent = data.isCurrent;
 
-		// Update prescription
-		const updated = await updatePrescription(data.id, updateData);
+		// Unset siblings + update in a single transaction
+		const updated = await db.transaction(async (tx) => {
+			if (data.isCurrent) {
+				await unsetCurrentPrescriptions(existing.customerId, data.id, tx);
+			}
+			return await updatePrescription(data.id, updateData, tx);
+		});
+
 		if (!updated) {
 			invalid(issue.id('Error al actualizar fórmula'));
 		}
 
-		// Log audit
+		// Audit log — best effort, after transaction succeeds
 		await auditService.logUpdate('prescription', data.id, existing, updated, context, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
@@ -211,23 +205,19 @@ export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, asyn
 		return { success: false, error: 'Fórmula no encontrada' };
 	}
 
-	// If setting as current, unset other current prescriptions for this customer
-	if (data.isCurrent) {
-		const existingPrescriptions = await getCustomerPrescriptions(existing.customerId);
-		for (const p of existingPrescriptions) {
-			if (p.isCurrent && p.id !== data.id) {
-				await updatePrescription(p.id, { isCurrent: false });
-			}
+	// Unset siblings + update in a single transaction
+	const updated = await db.transaction(async (tx) => {
+		if (data.isCurrent) {
+			await unsetCurrentPrescriptions(existing.customerId, data.id, tx);
 		}
-	}
+		return await updatePrescription(data.id, { isCurrent: data.isCurrent }, tx);
+	});
 
-	// Update prescription
-	const updated = await updatePrescription(data.id, { isCurrent: data.isCurrent });
 	if (!updated) {
 		return { success: false, error: 'Error al actualizar fórmula' };
 	}
 
-	// Log audit
+	// Audit log — best effort, after transaction succeeds
 	await auditService.logUpdate('prescription', data.id, existing, updated, context, {
 		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 	});
