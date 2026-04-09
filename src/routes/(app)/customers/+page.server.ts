@@ -22,7 +22,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		db
 			.select({ count: countDistinct(sales.customerId) })
 			.from(sales)
-			.where(and(eq(sales.status, 'PENDING'), isNull(sales.deletedAt))),
+			.innerJoin(customers, eq(sales.customerId, customers.id))
+			.where(
+				and(eq(sales.status, 'PENDING'), isNull(sales.deletedAt), isNull(customers.deletedAt))
+			),
 		getAllCustomers({ orderBy: 'createdAt', orderSort: 'desc', limit: 10 })
 	]);
 
