@@ -1,6 +1,6 @@
 import type { RemoteFormIssue } from '@sveltejs/kit';
 import type { Prescription } from '$lib/server/db/schema';
-import { dateFromUTC, dateToISODateString } from '$lib/utils';
+import { dateToISODateString } from '$lib/utils';
 
 export interface PrescriptionFormData {
 	prescriptionDate: string;
@@ -69,7 +69,8 @@ function toInputValue(value: number | null | undefined): string {
 
 export function prescriptionToFormData(prescription: Prescription): PrescriptionFormData {
 	return {
-		prescriptionDate: dateToISODateString(dateFromUTC(prescription.prescriptionDate)),
+		prescriptionDate:
+			prescription.prescriptionDate?.slice(0, 10) ?? dateToISODateString(new Date()),
 		recommendedLensType: prescription.recommendedLensType ?? '',
 		doctorName: prescription.doctorName ?? '',
 		isCurrent: prescription.isCurrent,
