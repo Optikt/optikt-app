@@ -278,7 +278,7 @@
 	}
 </script>
 
-<div class="mx-auto max-w-4xl pb-24">
+<div class="w-full pb-24">
 	{#if isEditMode && product}
 		<!-- UPDATE FORM -->
 		<form

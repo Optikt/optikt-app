@@ -56,12 +56,23 @@
 ## Fase 2 — App Shell & Dashboard
 
 **Fuente:** Stitch dashboard screen  
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `(app)/+layout.svelte` — sidebar, navbar, shell general
-- [ ] `/dashboard` — StatCards, cobros pendientes, ventas recientes, bajo stock, quick actions
+- [x] `(app)/+layout.svelte` — sidebar, navbar, shell general
+- [x] `/dashboard` — StatCards, cobros pendientes, ventas recientes, bajo stock, quick actions
+
+### Notas de implementación
+
+- Navbar top-level: imagotipo horizontal, search bar, exchange rate & notifications (icon-only), user dropdown
+- Sidebar: fixed-width (w-60), nav-only (settings/logout en dropdown de navbar)
+- Root font-size: 18px para legibilidad al 100% zoom
+- Content: `p-6` sin max-width, llena área disponible
+- Page transitions: `fade` (200ms) con scroll-to-top on navigate
+- StatCards: layout horizontal (icon + label row, value below)
+- Acciones Rápidas: `self-start`, navy bg, gold icons/title
+- Validación: `pnpm lint`, 362 tests, `svelte-check` — 0 errors
 
 ---
 
@@ -184,10 +195,10 @@
 | --- | ------------------------------ | ---- | ---------- |
 | L1  | `+layout.svelte` (root)        | 0    | pendiente  |
 | L2  | `(auth)/+layout.svelte`        | 1    | completada |
-| L3  | `(app)/+layout.svelte`         | 2    | pendiente  |
+| L3  | `(app)/+layout.svelte`         | 2    | completada |
 | L4  | `products/[id]/+layout.svelte` | 6    | pendiente  |
 | 1   | `/login`                       | 1    | completada |
-| 2   | `/dashboard`                   | 2    | pendiente  |
+| 2   | `/dashboard`                   | 2    | completada |
 | 3   | `/customers`                   | 3    | pendiente  |
 | 4   | `/customers/[id]`              | 3    | pendiente  |
 | 5   | `/sales`                       | 4    | pendiente  |

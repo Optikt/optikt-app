@@ -11,6 +11,7 @@ import {
 	ListPaginationWithDeletedSchema,
 	EntityIdSchema
 } from './common';
+import { PrescriptionFieldsSchema } from './prescriptions';
 
 export const ListCustomersSchema = ListPaginationWithDeletedSchema;
 
@@ -30,6 +31,14 @@ export const CreateCustomerSchema = z.object({
 
 export const UpdateCustomerSchema = CreateCustomerSchema.partial().extend({
 	id: z.uuid()
+});
+
+/**
+ * Create customer with optional prescription.
+ * When prescription is present, both are created atomically in a single transaction.
+ */
+export const CreateCustomerWithPrescriptionSchema = CreateCustomerSchema.extend({
+	prescription: PrescriptionFieldsSchema.optional()
 });
 
 export const ReactivateCustomerSchema = z.object({

@@ -29,6 +29,13 @@
       "when": 1775779200000,
       "tag": "0003_refund_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775606279860,
+      "tag": "0004_chubby_union_jack",
+      "breakpoints": true
     }
   ]
 }

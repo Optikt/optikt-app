@@ -129,9 +129,11 @@ export const OptionalCoercedInteger = (options?: { min?: number; max?: number })
 		if (val === '' || val === null || val === undefined) {
 			return undefined;
 		}
-		// Coerce to integer
-		const num = typeof val === 'string' ? parseInt(val, 10) : Math.floor(Number(val));
-		return num;
+		if (typeof val === 'string' && val.trim() === '') {
+			return undefined;
+		}
+		const num = typeof val === 'string' ? Number(val.trim()) : Number(val);
+		return Number.isNaN(num) ? val : num;
 	}, createOptionalIntegerSchema(options));
 };
 
@@ -139,7 +141,9 @@ export const OptionalCoercedInteger = (options?: { min?: number; max?: number })
  * Helper to create the integer schema with optional constraints
  */
 function createOptionalIntegerSchema(options?: { min?: number; max?: number }) {
-	let schema = z.number().int();
+	let schema = z
+		.number({ error: 'Debe ser un número entero válido' })
+		.int('Debe ser un número entero válido');
 
 	if (options?.min !== undefined) {
 		schema = schema.min(options.min);
@@ -249,6 +253,10 @@ export const OptionalPendingEntitySchema = (prefix = 'pending_', message?: strin
  */
 export const RefractiveIndexSchema = CoercedNumber.min(1.0).max(2.0);
 
+function isQuarterStep(value: number): boolean {
+	return Math.round(value * 100) % 25 === 0;
+}
+
 // =============================================================================
 // OPTICAL VALUE SCHEMAS
 // =============================================================================
@@ -264,12 +272,15 @@ export const RefractiveIndexSchema = CoercedNumber.min(1.0).max(2.0);
 export const SphereSchema = z.preprocess(
 	(val: string | number) => {
 		if (val === '' || val === undefined || val === null) return 0;
-		return typeof val === 'string' ? parseFloat(val) : val;
+		if (typeof val === 'string' && val.trim() === '') return 0;
+		const parsed = typeof val === 'string' ? Number(val.trim()) : val;
+		return Number.isNaN(parsed) ? val : parsed;
 	},
 	z
-		.number()
+		.number({ error: 'Esfera debe ser un número válido' })
 		.min(-30, 'Esfera debe ser mayor o igual a -30')
 		.max(30, 'Esfera debe ser menor o igual a +30')
+		.refine(isQuarterStep, 'Esfera debe avanzar en pasos de 0.25')
 );
 
 /**
@@ -277,10 +288,20 @@ export const SphereSchema = z.preprocess(
  * Converts empty string to undefined, allowing validation to distinguish
  * between "user didn't enter anything" and "user entered 0"
  */
-export const OptionalSphereSchema = z.preprocess((val: string | number) => {
-	if (val === '' || val === undefined || val === null) return undefined;
-	return typeof val === 'string' ? parseFloat(val) : val;
-}, z.number().min(-30, 'Esfera debe ser mayor o igual a -30').max(30, 'Esfera debe ser menor o igual a +30').optional());
+export const OptionalSphereSchema = z.preprocess(
+	(val: string | number) => {
+		if (val === '' || val === undefined || val === null) return undefined;
+		if (typeof val === 'string' && val.trim() === '') return undefined;
+		const parsed = typeof val === 'string' ? Number(val.trim()) : val;
+		return Number.isNaN(parsed) ? val : parsed;
+	},
+	z
+		.number({ error: 'Esfera debe ser un número válido' })
+		.min(-30, 'Esfera debe ser mayor o igual a -30')
+		.max(30, 'Esfera debe ser menor o igual a +30')
+		.refine(isQuarterStep, 'Esfera debe avanzar en pasos de 0.25')
+		.optional()
+);
 
 /**
  * Cylinder power validation - -10.00 to 0.00 diopters (negative only)
@@ -293,12 +314,15 @@ export const OptionalSphereSchema = z.preprocess((val: string | number) => {
 export const CylinderSchema = z.preprocess(
 	(val: string | number) => {
 		if (val === '' || val === undefined || val === null) return 0;
-		return typeof val === 'string' ? parseFloat(val) : val;
+		if (typeof val === 'string' && val.trim() === '') return 0;
+		const parsed = typeof val === 'string' ? Number(val.trim()) : val;
+		return Number.isNaN(parsed) ? val : parsed;
 	},
 	z
-		.number()
+		.number({ error: 'Cilindro debe ser un número válido' })
 		.min(-10, 'Cilindro debe ser mayor o igual a -10')
 		.max(0, 'Cilindro debe ser negativo o cero')
+		.refine(isQuarterStep, 'Cilindro debe avanzar en pasos de 0.25')
 );
 
 /**
@@ -306,20 +330,40 @@ export const CylinderSchema = z.preprocess(
  * Converts empty string to undefined, allowing validation to distinguish
  * between "user didn't enter anything" and "user entered 0"
  */
-export const OptionalCylinderSchema = z.preprocess((val: string | number) => {
-	if (val === '' || val === undefined || val === null) return undefined;
-	return typeof val === 'string' ? parseFloat(val) : val;
-}, z.number().min(-10, 'Cilindro debe ser mayor o igual a -10').max(0, 'Cilindro debe ser negativo o cero').optional());
+export const OptionalCylinderSchema = z.preprocess(
+	(val: string | number) => {
+		if (val === '' || val === undefined || val === null) return undefined;
+		if (typeof val === 'string' && val.trim() === '') return undefined;
+		const parsed = typeof val === 'string' ? Number(val.trim()) : val;
+		return Number.isNaN(parsed) ? val : parsed;
+	},
+	z
+		.number({ error: 'Cilindro debe ser un número válido' })
+		.min(-10, 'Cilindro debe ser mayor o igual a -10')
+		.max(0, 'Cilindro debe ser negativo o cero')
+		.refine(isQuarterStep, 'Cilindro debe avanzar en pasos de 0.25')
+		.optional()
+);
 
 /**
  * Addition power validation - 0.00 to +5.00 diopters
  * For progressive/bifocal lenses
  * Steps of 0.25 diopters
  */
-export const AdditionSchema = z.preprocess((val: string | number) => {
-	if (val === '' || val === undefined || val === null) return undefined;
-	return typeof val === 'string' ? parseFloat(val) : val;
-}, z.number().min(0, 'Adición debe ser mayor o igual a 0').max(5, 'Adición debe ser menor o igual a +5').optional());
+export const AdditionSchema = z.preprocess(
+	(val: string | number) => {
+		if (val === '' || val === undefined || val === null) return undefined;
+		if (typeof val === 'string' && val.trim() === '') return undefined;
+		const parsed = typeof val === 'string' ? Number(val.trim()) : val;
+		return Number.isNaN(parsed) ? val : parsed;
+	},
+	z
+		.number({ error: 'Adición debe ser un número válido' })
+		.min(0, 'Adición debe ser mayor o igual a 0')
+		.max(5, 'Adición debe ser menor o igual a +5')
+		.refine(isQuarterStep, 'Adición debe avanzar en pasos de 0.25')
+		.optional()
+);
 
 /**
  * Optional addition schema for prescriptions

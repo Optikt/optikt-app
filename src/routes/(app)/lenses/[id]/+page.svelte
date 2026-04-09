@@ -75,7 +75,7 @@
 </svelte:head>
 
 <div class="min-h-screen bg-slate-50/50 p-4 sm:p-8">
-	<div class="mx-auto max-w-5xl">
+	<div class="w-full">
 		<!-- Back link -->
 		<a
 			href={resolve('/lenses')}

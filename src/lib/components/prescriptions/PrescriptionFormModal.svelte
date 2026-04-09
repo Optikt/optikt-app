@@ -74,6 +74,7 @@
 		dp: '' as string,
 		npRight: '' as string,
 		npLeft: '' as string,
+		altura: '' as string,
 		// Treatments
 		treatmentAntiReflective: false,
 		treatmentBlueBlock: false,
@@ -92,12 +93,18 @@
 	// Derived: whether addition fields should be disabled
 	const isMonofocal = $derived(formData.recommendedLensType === LensType.MONOFOCAL);
 
+	// Show altura field when non-monofocal and addition is positive
+	const showAltura = $derived(
+		!isMonofocal && (parseFloat(formData.odAddition) > 0 || parseFloat(formData.osAddition) > 0)
+	);
+
 	// Clear addition values when switching to monofocal
 	$effect(() => {
 		if (isMonofocal) {
 			untrack(() => {
 				formData.odAddition = '';
 				formData.osAddition = '';
+				formData.altura = '';
 			});
 		}
 	});
@@ -124,6 +131,7 @@
 						dp: prescription.dp?.toString() ?? '',
 						npRight: prescription.npRight?.toString() ?? '',
 						npLeft: prescription.npLeft?.toString() ?? '',
+						altura: prescription.altura?.toString() ?? '',
 						treatmentAntiReflective: prescription.treatments?.antiReflective ?? false,
 						treatmentBlueBlock: prescription.treatments?.blueBlock ?? false,
 						treatmentPhotochromic: prescription.treatments?.photochromic ?? false,
@@ -148,6 +156,7 @@
 						dp: '',
 						npRight: '',
 						npLeft: '',
+						altura: '',
 						treatmentAntiReflective: false,
 						treatmentBlueBlock: false,
 						treatmentPhotochromic: false,
@@ -439,6 +448,19 @@
 					error={formInstance.fields.npLeft?.issues()}
 				/>
 			</div>
+			{#if showAltura}
+				<div class="mt-2 w-1/3">
+					<FormInput
+						name="altura"
+						label="Altura (mm)"
+						type="number"
+						min={0}
+						placeholder="18"
+						bind:value={formData.altura}
+						error={formInstance.fields.altura?.issues()}
+					/>
+				</div>
+			{/if}
 		</div>
 
 		<!-- Treatments Section -->

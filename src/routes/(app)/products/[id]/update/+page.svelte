@@ -14,7 +14,7 @@
 
 <div class="min-h-screen bg-slate-50/50 p-8">
 	<!-- Header -->
-	<div class="mx-auto mb-8 max-w-4xl">
+	<div class="mb-8 w-full">
 		<a
 			href={resolve(`/products/${product.id}`)}
 			class="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"

@@ -19,9 +19,9 @@
 	}: Props = $props();
 </script>
 
-<!-- Fixed bar centered to match form max width (max-w-4xl). Appears bottom-center, buttons aligned right. -->
-<div class={'fixed bottom-6 left-1/2 z-40 w-full -translate-x-1/2 transform ' + className}>
-	<div class="mx-auto flex w-full max-w-4xl justify-end px-4">
+<!-- Fixed bar spans the available page width and keeps actions aligned to the right. -->
+<div class={'fixed inset-x-0 bottom-6 z-40 w-full ' + className}>
+	<div class="flex w-full justify-end px-4 sm:px-8">
 		<div class="flex gap-3 rounded-lg bg-black/25 p-2 shadow-md backdrop-blur-md">
 			<Button color="red" href={cancelHref} disabled={isSubmitting}>Cancelar</Button>
 			<Button type={primaryType} color="blue" disabled={isSubmitting}>
