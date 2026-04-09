@@ -5,6 +5,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { settings, type Settings } from '$lib/server/db/schema';
+import { nowISO } from '$lib/dates';
 
 /**
  * Get business settings (always returns the first/only row)
@@ -28,7 +29,7 @@ export async function updateSettings(
 			.update(settings)
 			.set({
 				...data,
-				updatedAt: new Date()
+				updatedAt: nowISO()
 			})
 			.where(eq(settings.id, existing.id))
 			.returning();
