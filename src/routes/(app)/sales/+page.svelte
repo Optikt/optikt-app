@@ -12,12 +12,12 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getErrorMessage } from '$lib/utils';
-	import { listSales } from '$lib/remote/sales.remote';
+	import { listSales, getSalesStats } from '$lib/remote/sales.remote';
 	import { SalesTable } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
 	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
-	import type { PaginatedSales } from '$lib/remote/sales.remote';
+	import type { PaginatedSales, SalesStats } from '$lib/remote/sales.remote';
 	import { untrack } from 'svelte';
 
 	// Server data
@@ -25,10 +25,10 @@
 	let {
 		initialSales,
 		totalCount,
-		monthlySalesCount,
-		pendingSalesCount,
-		completedSalesCount,
-		cancelledSalesCount
+		monthlySalesCount: initialMonthlySalesCount,
+		pendingSalesCount: initialPendingSalesCount,
+		completedSalesCount: initialCompletedSalesCount,
+		cancelledSalesCount: initialCancelledSalesCount
 	} = untrack(() => data);
 
 	// Data state
@@ -38,6 +38,12 @@
 		page: 1,
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
+	});
+	let stats = $state<SalesStats>({
+		monthlySalesCount: initialMonthlySalesCount,
+		pendingSalesCount: initialPendingSalesCount,
+		completedSalesCount: initialCompletedSalesCount,
+		cancelledSalesCount: initialCancelledSalesCount
 	});
 	let loading = $state(false);
 
@@ -63,24 +69,32 @@
 		}
 	}
 
+	async function refreshStats() {
+		try {
+			stats = await getSalesStats({});
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
 	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 	function handleSearch() {
 		clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => {
-			void fetchSales(1);
+			fetchSales(1);
 		}, 300);
 	}
 
 	// Filter change
 	function handleFilterChange() {
-		void fetchSales(1);
+		fetchSales(1);
 	}
 
 	function clearFilters() {
 		search = '';
 		statusFilter = '';
-		void fetchSales(1);
+		fetchSales(1);
 	}
 
 	let hasActiveFilters = $derived(search.trim().length > 0 || statusFilter !== '');
@@ -125,7 +139,7 @@
 					Ventas Mensuales
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{monthlySalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthlySalesCount}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -139,7 +153,7 @@
 					Ventas Pendientes
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{pendingSalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.pendingSalesCount}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -153,7 +167,7 @@
 					Ventas Completadas
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{completedSalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.completedSalesCount}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -167,7 +181,7 @@
 					Ventas Canceladas
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-error">{cancelledSalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-error">{stats.cancelledSalesCount}</p>
 		</div>
 	</div>
 
@@ -222,7 +236,10 @@
 		totalPages={salesData.totalPages}
 		{loading}
 		onView={handleView}
-		onRefresh={() => void fetchSales(salesData.page)}
-		onPageChange={(page) => void fetchSales(page)}
+		onRefresh={() => {
+			fetchSales(salesData.page);
+			refreshStats();
+		}}
+		onPageChange={(page) => fetchSales(page)}
 	/>
 </div>
