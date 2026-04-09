@@ -17,6 +17,7 @@ import {
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
+import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
 	sales,
 	saleItems,
@@ -68,10 +69,10 @@ export interface SaleFilterOptions {
 	customerId?: string;
 	/** Filter by seller ID */
 	sellerId?: string;
-	/** Filter by date range start */
-	dateFrom?: Date;
-	/** Filter by date range end (inclusive, set to end of day) */
-	dateTo?: Date;
+	/** Filter by date range start (ISO string) */
+	dateFrom?: string;
+	/** Filter by date range end (ISO string, inclusive — expanded to end of day) */
+	dateTo?: string;
 	/** Search by customer name, ID number, or seller name (case-insensitive) */
 	search?: string;
 }
@@ -132,9 +133,7 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	}
 
 	if (opts.dateTo) {
-		const to = new Date(opts.dateTo);
-		to.setUTCHours(23, 59, 59, 999);
-		conditions.push(lte(sales.saleDate, to));
+		conditions.push(lte(sales.saleDate, toUTCString(toEndOfDay(fromISODate(opts.dateTo)!))));
 	}
 
 	if (opts.search) {
@@ -295,7 +294,7 @@ export async function findSaleByIdWithRelations(
  * Create a new sale
  */
 export async function createSale(data: NewSale): Promise<Sale> {
-	const now = new Date();
+	const now = nowISO();
 	const [sale] = await db
 		.insert(sales)
 		.values({
@@ -318,7 +317,7 @@ export async function updateSale(
 ): Promise<Sale | null> {
 	const [sale] = await executor
 		.update(sales)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(sales.id, id))
 		.returning();
 	return sale ?? null;
@@ -365,7 +364,7 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
  * Create a sale item
  */
 export async function createSaleItem(data: NewSaleItem): Promise<SaleItem> {
-	const now = new Date();
+	const now = nowISO();
 	const [item] = await db
 		.insert(saleItems)
 		.values({
@@ -382,7 +381,7 @@ export async function createSaleItem(data: NewSaleItem): Promise<SaleItem> {
  * Create multiple sale items
  */
 export async function createSaleItems(items: NewSaleItem[]): Promise<SaleItem[]> {
-	const now = new Date();
+	const now = nowISO();
 	return await db
 		.insert(saleItems)
 		.values(
@@ -441,7 +440,7 @@ export async function addSalePayment(
 	data: NewSalePayment,
 	executor: DbOrTx = db
 ): Promise<SalePayment> {
-	const now = new Date();
+	const now = nowISO();
 	const [payment] = await executor
 		.insert(salePayments)
 		.values({
@@ -463,7 +462,7 @@ export async function voidSalePayment(
 ): Promise<SalePayment | null> {
 	const [payment] = await executor
 		.update(salePayments)
-		.set({ voidedAt: new Date(), updatedAt: new Date() })
+		.set({ voidedAt: nowISO(), updatedAt: nowISO() })
 		.where(and(eq(salePayments.id, id), isNull(salePayments.voidedAt)))
 		.returning();
 	return payment ?? null;
@@ -484,7 +483,7 @@ export async function recalcSalePaidAmount(saleId: string, executor: DbOrTx = db
 
 	await executor
 		.update(sales)
-		.set({ paidAmountBcvUsd: paidAmount, updatedAt: new Date() })
+		.set({ paidAmountBcvUsd: paidAmount, updatedAt: nowISO() })
 		.where(eq(sales.id, saleId));
 
 	return paidAmount;
