@@ -1,4 +1,4 @@
-import { eq, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'drizzle-orm';
+import { eq, ne, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'drizzle-orm';
 import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import {
@@ -298,14 +298,38 @@ export async function createPrescription(
  */
 export async function updatePrescription(
 	id: string,
-	data: Partial<Omit<Prescription, 'id' | 'createdAt'>>
+	data: Partial<Omit<Prescription, 'id' | 'createdAt'>>,
+	executor: DbOrTx = db
 ): Promise<Prescription | null> {
-	const [prescription] = await db
+	const [prescription] = await executor
 		.update(prescriptions)
 		.set({ ...data, updatedAt: new Date() })
 		.where(eq(prescriptions.id, id))
 		.returning();
 	return prescription ?? null;
+}
+
+/**
+ * Unset isCurrent on all prescriptions for a customer (single UPDATE query).
+ * Optionally exclude a specific prescription ID.
+ */
+export async function unsetCurrentPrescriptions(
+	customerId: string,
+	excludeId?: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	const conditions = [
+		eq(prescriptions.customerId, customerId),
+		eq(prescriptions.isCurrent, true),
+		isNull(prescriptions.deletedAt)
+	];
+	if (excludeId) {
+		conditions.push(ne(prescriptions.id, excludeId));
+	}
+	await executor
+		.update(prescriptions)
+		.set({ isCurrent: false, updatedAt: new Date() })
+		.where(and(...conditions));
 }
 
 /**
