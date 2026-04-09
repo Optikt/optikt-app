@@ -1,13 +1,20 @@
 <script lang="ts">
-	import { Button, Select } from 'flowbite-svelte';
-	import { Plus } from '@lucide/svelte';
+	import {
+		CircleX,
+		Clock3,
+		Plus,
+		ReceiptText,
+		RotateCcw,
+		Search,
+		CircleCheck
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { listSales } from '$lib/remote/sales.remote';
 	import { SalesTable } from '$lib/components/sales';
+	import { PageHeader } from '$lib/components/ui';
 	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { PaginatedSales } from '$lib/remote/sales.remote';
@@ -15,7 +22,14 @@
 
 	// Server data
 	let { data } = $props();
-	let { initialSales, totalCount } = untrack(() => data);
+	let {
+		initialSales,
+		totalCount,
+		monthlySalesCount,
+		pendingSalesCount,
+		completedSalesCount,
+		cancelledSalesCount
+	} = untrack(() => data);
 
 	// Data state
 	let salesData = $state<PaginatedSales>({
@@ -42,6 +56,7 @@
 				status: statusFilter || undefined
 			});
 		} catch (e) {
+			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando ventas'));
 		} finally {
 			loading = false;
@@ -49,16 +64,26 @@
 	}
 
 	// Debounced search
-	let searchTimeout: ReturnType<typeof setTimeout>;
+	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 	function handleSearch() {
 		clearTimeout(searchTimeout);
-		searchTimeout = setTimeout(() => fetchSales(1), 300);
+		searchTimeout = setTimeout(() => {
+			void fetchSales(1);
+		}, 300);
 	}
 
 	// Filter change
 	function handleFilterChange() {
-		fetchSales(1);
+		void fetchSales(1);
 	}
+
+	function clearFilters() {
+		search = '';
+		statusFilter = '';
+		void fetchSales(1);
+	}
+
+	let hasActiveFilters = $derived(search.trim().length > 0 || statusFilter !== '');
 
 	// Navigate to sale detail page
 	function handleView(sale: SaleWithRelations) {
@@ -70,51 +95,134 @@
 	<title>Ventas - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<!-- Header -->
-	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
-		<div>
-			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Ventas</h1>
-			<p class="mt-1 text-base text-slate-500">Gestiona las ventas de la tienda</p>
+<div class="p-6">
+	<PageHeader title="Ventas">
+		{#snippet actions()}
+			<button
+				onclick={() => goto(resolve('/sales/new'))}
+				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+			>
+				<Plus size={18} />
+				NUEVA VENTA
+			</button>
+		{/snippet}
+	</PageHeader>
+
+	<p class="-mt-3 mb-6 text-sm text-on-surface-variant">
+		Total de ventas:
+		<span class="font-semibold text-brand-navy">{salesData.total.toLocaleString('es-VE')}</span>
+	</p>
+
+	<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-highest text-brand-navy"
+				>
+					<ReceiptText size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+					Ventas Mensuales
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{monthlySalesCount}</p>
 		</div>
-		<Button color="blue" size="lg" href="/sales/new">
-			<Plus class="mr-2 h-5 w-5" />
-			Nueva Venta
-		</Button>
+
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
+				>
+					<Clock3 size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
+					Ventas Pendientes
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{pendingSalesCount}</p>
+		</div>
+
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-success-container text-on-success-container"
+				>
+					<CircleCheck size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-success-container uppercase">
+					Ventas Completadas
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{completedSalesCount}</p>
+		</div>
+
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container"
+				>
+					<CircleX size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
+					Ventas Canceladas
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-error">{cancelledSalesCount}</p>
+		</div>
 	</div>
 
-	<!-- Filters -->
 	<div
-		class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+		class="glass-card mb-6 flex flex-col gap-4 bg-surface-container-low p-4 md:flex-row md:items-center"
 	>
-		<SearchInput
-			bind:value={search}
-			placeholder="Buscar por cliente o vendedor..."
-			oninput={handleSearch}
-			class="min-w-64 flex-1"
-		/>
-		<Select bind:value={statusFilter} onchange={handleFilterChange} class="w-48">
-			<option value="">Todos los estados</option>
-			{#each ALL_SALE_STATUSES as s (s)}
-				<option value={s}>{SALE_STATUS_LABELS[s]}</option>
-			{/each}
-		</Select>
+		<div class="relative flex-1">
+			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
+			<input
+				id="sales-search"
+				name="sales-search"
+				type="search"
+				bind:value={search}
+				oninput={handleSearch}
+				placeholder="Buscar por cliente, vendedor o # de orden..."
+				class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-10 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+			/>
+		</div>
+
+		<div class="flex w-full gap-3 md:w-auto">
+			<select
+				id="sales-status-filter"
+				name="sales-status-filter"
+				bind:value={statusFilter}
+				onchange={handleFilterChange}
+				class="min-w-[220px] flex-1 rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 md:flex-none"
+			>
+				<option value="">Todos los estados</option>
+				{#each ALL_SALE_STATUSES as s (s)}
+					<option value={s}>{SALE_STATUS_LABELS[s]}</option>
+				{/each}
+			</select>
+
+			<button
+				onclick={clearFilters}
+				disabled={!hasActiveFilters}
+				class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
+					? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
+					: 'bg-surface-container-high text-outline'}"
+				title="Limpiar filtros"
+			>
+				<RotateCcw size={18} />
+			</button>
+		</div>
 	</div>
 
-	<!-- Table -->
 	<SalesTable
 		sales={salesData.sales}
-		{loading}
-		onView={handleView}
-		onRefresh={() => fetchSales(salesData.page)}
-	/>
-
-	<!-- Pagination -->
-	<TablePagination
 		page={salesData.page}
 		perPage={salesData.perPage}
 		total={salesData.total}
 		totalPages={salesData.totalPages}
-		onPageChange={(p) => fetchSales(p)}
+		{loading}
+		onView={handleView}
+		onRefresh={() => void fetchSales(salesData.page)}
+		onPageChange={(page) => void fetchSales(page)}
 	/>
 </div>

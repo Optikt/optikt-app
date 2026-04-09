@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { ShoppingCart, Eye, CircleX } from '@lucide/svelte';
+	import { CircleX, Eye, ReceiptText } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { DataTable, SaleStatusBadge, ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal, DataGrid, SaleStatusBadge } from '$lib/components/ui';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import { cancelSale } from '$lib/remote/sales.remote';
 	import { SaleStatus, RefundStatus } from '$lib/shared/enums';
@@ -10,12 +9,38 @@
 
 	interface Props {
 		sales: SaleWithRelations[];
+		page: number;
+		perPage: number;
+		total: number;
+		totalPages: number;
 		loading?: boolean;
 		onView?: (sale: SaleWithRelations) => void;
 		onRefresh?: () => void;
+		onPageChange: (page: number) => void;
 	}
 
-	let { sales, loading = false, onView, onRefresh }: Props = $props();
+	let {
+		sales,
+		page,
+		perPage,
+		total,
+		totalPages,
+		loading = false,
+		onView,
+		onRefresh,
+		onPageChange
+	}: Props = $props();
+
+	const columns = [
+		{ key: 'orderNumber', label: '# Orden' },
+		{ key: 'customer', label: 'Cliente' },
+		{ key: 'date', label: 'Fecha' },
+		{ key: 'total', label: 'Total (USD)', align: 'right' as const },
+		{ key: 'paid', label: 'Progreso de Pago' },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'seller', label: 'Vendedor' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 
 	// Cancel modal state
 	let showCancelModal = $state(false);
@@ -109,99 +134,116 @@
 		if (sale.total <= 0) return 100;
 		return Math.min(100, Math.round((sale.paidAmountBcvUsd / sale.total) * 100));
 	}
+
+	function paidLabel(sale: SaleWithRelations, pct: number): string {
+		if (pct >= 100) return 'Pago completo';
+		if (sale.paidAmountBcvUsd > 0) return `${formatPrice(sale.paidAmountBcvUsd)} abonado`;
+		return 'Sin abono';
+	}
 </script>
 
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-	<DataTable
-		items={sales}
-		{loading}
-		emptyIcon={ShoppingCart}
-		emptyTitle="No se encontraron ventas"
-		emptyDescription="Registra una venta para comenzar"
-		{onView}
-		viewIcon={Eye}
-	>
-		{#snippet header()}
-			<TableHeadCell class="text-sm font-semibold text-slate-600">#</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Fecha</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Cliente</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Vendedor</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Total</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Pagado</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Estado</TableHeadCell>
-		{/snippet}
+<DataGrid
+	{columns}
+	items={sales}
+	{page}
+	{perPage}
+	{total}
+	{totalPages}
+	{loading}
+	itemLabel="ventas"
+	emptyTitle="No se encontraron ventas"
+	emptySubtitle="Registra una venta para comenzar"
+	{onPageChange}
+>
+	{#snippet emptyIcon()}
+		<ReceiptText class="mb-3 h-10 w-10 text-outline" />
+	{/snippet}
 
-		{#snippet row(sale)}
-			<TableBodyCell class="font-mono text-sm font-semibold text-blue-600">
-				#{sale.orderNumber}
-			</TableBodyCell>
-			<TableBodyCell class="text-sm text-slate-700">
-				{formatDate(sale.saleDate, { month: 'short' })}
-			</TableBodyCell>
-			<TableBodyCell>
-				<p class="text-sm font-semibold text-slate-900">{customerName(sale)}</p>
+	{#snippet row(sale)}
+		{@const pct = paidPercent(sale)}
+		<tr
+			class="bg-surface-container-lowest transition-colors {onView
+				? 'cursor-pointer hover:bg-surface-container-low'
+				: ''}"
+			onclick={() => onView?.(sale)}
+		>
+			<td class="px-4 py-4">
+				<span class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</span>
+			</td>
+			<td class="px-4 py-4">
+				<div class="font-medium text-on-surface">{customerName(sale)}</div>
 				{#if sale.customer?.idNumber}
-					<p class="font-mono text-xs text-slate-400">{sale.customer.idNumber}</p>
+					<div class="font-mono text-xs text-outline">{sale.customer.idNumber}</div>
 				{/if}
-			</TableBodyCell>
-			<TableBodyCell class="text-sm text-slate-600">
-				{sale.seller?.fullName ?? '—'}
-			</TableBodyCell>
-			<TableBodyCell class="font-mono text-sm font-bold text-slate-900">
+			</td>
+			<td class="px-4 py-4 text-sm text-on-surface-variant">
+				{formatDate(sale.saleDate, { day: '2-digit', month: 'short', year: 'numeric' })}
+			</td>
+			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
 				{formatPrice(sale.total)}
-			</TableBodyCell>
-			<TableBodyCell>
-				{@const pct = paidPercent(sale)}
-				<div class="flex items-center gap-2">
-					<div class="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+			</td>
+			<td class="px-4 py-4">
+				<div class="max-w-32">
+					<div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
 						<div
 							class="h-full rounded-full transition-all {pct >= 100
-								? 'bg-emerald-500'
+								? 'bg-success'
 								: pct > 0
-									? 'bg-amber-400'
-									: 'bg-slate-200'}"
+									? 'bg-warning'
+									: 'bg-outline-variant'}"
 							style="width: {pct}%"
 						></div>
 					</div>
-					<span
-						class="font-mono text-sm font-medium"
-						class:text-emerald-600={pct >= 100}
-						class:text-amber-600={pct > 0 && pct < 100}
-						class:text-slate-400={pct === 0}
+					<p
+						class="mt-1 font-mono text-[10px] font-bold tracking-wider uppercase"
+						class:text-success={pct >= 100}
+						class:text-warning={pct > 0 && pct < 100}
+						class:text-outline={pct === 0}
 					>
-						{pct}%
-					</span>
+						{paidLabel(sale, pct)}
+					</p>
 				</div>
-			</TableBodyCell>
-			<TableBodyCell>
+			</td>
+			<td class="px-4 py-4">
 				<SaleStatusBadge status={sale.status} />
-			</TableBodyCell>
-		{/snippet}
-
-		{#snippet actions(sale)}
-			<div class="flex items-center gap-1">
-				{#if onView}
-					<button
-						onclick={() => onView?.(sale)}
-						class="rounded-lg p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
-						title="Ver detalle"
-					>
-						<Eye class="h-5 w-5" />
-					</button>
-				{/if}
-				{#if sale.status === SaleStatus.PENDING}
-					<button
-						onclick={() => openCancel(sale)}
-						class="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-						title="Cancelar venta"
-					>
-						<CircleX class="h-5 w-5" />
-					</button>
-				{/if}
-			</div>
-		{/snippet}
-	</DataTable>
-</div>
+			</td>
+			<td class="px-4 py-4 text-sm text-on-surface-variant">
+				{sale.seller?.fullName ?? '—'}
+			</td>
+			<td class="px-4 py-4 text-right">
+				<div class="flex items-center justify-end gap-1">
+					{#if onView}
+						<button
+							onclick={(event) => {
+								event.stopPropagation();
+								onView?.(sale);
+							}}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver detalle"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</button>
+					{/if}
+					{#if sale.status === SaleStatus.PENDING}
+						<button
+							onclick={(event) => {
+								event.stopPropagation();
+								openCancel(sale);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
+							title="Cancelar venta"
+						>
+							<CircleX class="h-4 w-4" />
+						</button>
+					{/if}
+				</div>
+			</td>
+		</tr>
+	{/snippet}
+</DataGrid>
 
 <!-- Cancel Confirmation -->
 <ConfirmModal
