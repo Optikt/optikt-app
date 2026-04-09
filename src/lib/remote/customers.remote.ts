@@ -87,7 +87,7 @@ export const updateCustomerForm = form(
 		const updated = await updateCustomer(id, {
 			...rest,
 			idNumber: idNumber || null,
-			birthDate: birthDate ? new Date(birthDate) : null
+			birthDate: birthDate || null
 		});
 
 		if (!updated) {
@@ -197,7 +197,7 @@ export const createCustomerWithPrescription = form(
 				{
 					...customerFields,
 					idNumber: idNumber || null,
-					birthDate: birthDate ? new Date(birthDate) : null
+					birthDate: birthDate || null
 				},
 				tx
 			);
