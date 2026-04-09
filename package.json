@@ -62,6 +62,8 @@
 	"dependencies": {
 		"@lucide/svelte": "^0.562.0",
 		"@node-rs/argon2": "^2.0.2",
+		"date-fns": "^4.1.0",
+		"date-fns-tz": "^3.2.0",
 		"export-to-csv": "^1.4.0",
 		"libphonenumber-js": "^1.12.33",
 		"postgres": "^3.4.7",
