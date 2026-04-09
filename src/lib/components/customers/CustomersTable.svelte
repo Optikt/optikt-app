@@ -65,7 +65,7 @@
 		const name = `${customer.firstName ?? ''}${customer.lastName ?? ''}`;
 		let hash = 0;
 		for (let i = 0; i < name.length; i++) {
-			hash = name.charCodeAt(i) + ((hash << 5) - hash);
+			hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
 		}
 		return avatarColors[Math.abs(hash) % avatarColors.length];
 	}
