@@ -6,6 +6,7 @@
 	import { resolve } from '$app/paths';
 	import { createPurchaseOrderCmd } from '$lib/remote/purchaseOrders.remote';
 	import { getErrorMessage } from '$lib/utils';
+	import { toISODate, nowUTC } from '$lib/dates';
 	import { PurchaseOrderItemType } from '$lib/shared/enums';
 
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -18,7 +19,7 @@
 	let supplierId = $state('');
 	let invoiceNumber = $state('');
 	let deliveryNoteNumber = $state('');
-	let orderDate = $state(new Date().toISOString().slice(0, 10));
+	let orderDate = $state(toISODate(nowUTC()));
 	let bcvRate = $state<number>(0);
 	let notes = $state('');
 	let saving = $state(false);
@@ -90,7 +91,7 @@
 				supplierId,
 				invoiceNumber: invoiceNumber || undefined,
 				deliveryNoteNumber: deliveryNoteNumber || undefined,
-				orderDate: new Date(orderDate).toISOString(),
+				orderDate,
 				bcvRate,
 				notes: notes || undefined,
 				items: items.map((item) => ({
