@@ -8,6 +8,7 @@ import {
 	type NewInventoryMovement
 } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
+import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,12 +52,12 @@ function buildMovementConditions(opts: MovementFilterOptions): SQL | undefined {
 	if (opts.movementType) conditions.push(eq(inventoryMovements.movementType, opts.movementType));
 	if (opts.referenceType) conditions.push(eq(inventoryMovements.referenceType, opts.referenceType));
 	if (opts.referenceId) conditions.push(eq(inventoryMovements.referenceId, opts.referenceId));
-	if (opts.dateFrom) conditions.push(gte(inventoryMovements.createdAt, new Date(opts.dateFrom)));
+	if (opts.dateFrom) conditions.push(gte(inventoryMovements.createdAt, opts.dateFrom));
 	if (opts.dateTo) {
 		// dateTo is inclusive — include the entire day
-		const endOfDay = new Date(opts.dateTo);
-		endOfDay.setUTCHours(23, 59, 59, 999);
-		conditions.push(lte(inventoryMovements.createdAt, endOfDay));
+		conditions.push(
+			lte(inventoryMovements.createdAt, toUTCString(toEndOfDay(fromISODate(opts.dateTo)!)))
+		);
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;

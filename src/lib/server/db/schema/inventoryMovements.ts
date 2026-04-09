@@ -72,7 +72,9 @@ export const inventoryMovements = pgTable(
 		adjustmentReportCategory: varchar('adjustment_report_category'),
 		createdById: uuid('created_by_id').notNull(),
 		/** NEVER edited — immutable timestamp */
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_inventory_movements_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
