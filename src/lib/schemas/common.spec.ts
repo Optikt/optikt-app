@@ -232,22 +232,19 @@ describe('OptionalCoercedInteger', () => {
 		expect(schema.safeParse(81).success).toBe(false);
 	});
 
-	it('parses string floats to integers (parseInt behavior)', () => {
-		// parseInt('50.5', 10) returns 50, which is valid
+	it('rejects string floats', () => {
 		const result = schema.safeParse('50.5');
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data).toBe(50);
-		}
+		expect(result.success).toBe(false);
 	});
 
-	it('coerces number floats to integers (Math.floor behavior)', () => {
-		// Math.floor(50.5) returns 50, which is valid
+	it('rejects number floats', () => {
 		const result = schema.safeParse(50.5);
-		expect(result.success).toBe(true);
-		if (result.success) {
-			expect(result.data).toBe(50);
-		}
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects non-numeric strings', () => {
+		const result = schema.safeParse('abc');
+		expect(result.success).toBe(false);
 	});
 
 	it('works without constraints', () => {
