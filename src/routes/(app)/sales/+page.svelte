@@ -16,20 +16,13 @@
 	import { SalesTable } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
 	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
-	import type { PaginatedSales, SalesStats } from '$lib/remote/sales.remote';
+	import type { SaleWithRelations, SalesStats } from '$lib/server/db/queries/sales';
+	import type { PaginatedSales } from '$lib/remote/sales.remote';
 	import { untrack } from 'svelte';
 
 	// Server data
 	let { data } = $props();
-	let {
-		initialSales,
-		totalCount,
-		monthlySalesCount: initialMonthlySalesCount,
-		pendingSalesCount: initialPendingSalesCount,
-		completedSalesCount: initialCompletedSalesCount,
-		cancelledSalesCount: initialCancelledSalesCount
-	} = untrack(() => data);
+	let { initialSales, totalCount, stats: initialStats } = untrack(() => data);
 
 	// Data state
 	let salesData = $state<PaginatedSales>({
@@ -39,12 +32,7 @@
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
-	let stats = $state<SalesStats>({
-		monthlySalesCount: initialMonthlySalesCount,
-		pendingSalesCount: initialPendingSalesCount,
-		completedSalesCount: initialCompletedSalesCount,
-		cancelledSalesCount: initialCancelledSalesCount
-	});
+	let stats = $state<SalesStats>(initialStats);
 	let loading = $state(false);
 
 	// Filter state
@@ -139,7 +127,7 @@
 					Ventas Mensuales
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthlySalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -153,7 +141,7 @@
 					Ventas Pendientes
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.pendingSalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.pending}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -167,7 +155,7 @@
 					Ventas Completadas
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.completedSalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.completed}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -181,7 +169,7 @@
 					Ventas Canceladas
 				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-error">{stats.cancelledSalesCount}</p>
+			<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
 		</div>
 	</div>
 
