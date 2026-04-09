@@ -13,6 +13,7 @@ import { planFifoConsumption } from '$lib/utils/inventory';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { DbOrTx } from '$lib/server/db/types';
+import { nowISO } from '$lib/dates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -112,7 +113,7 @@ export async function consumeFifoForSaleItem(
 		const newStock = product.stock - item.quantity;
 		await tx
 			.update(products)
-			.set({ stock: newStock, updatedAt: new Date() })
+			.set({ stock: newStock, updatedAt: nowISO() })
 			.where(eq(products.id, item.productId));
 	} else if (item.productId) {
 		// Non-PRODUCT type but has productId (e.g. treatment linked to a product frame).
@@ -135,7 +136,7 @@ export async function consumeFifoForSaleItem(
 			}
 			await tx
 				.update(products)
-				.set({ stock: newStock, updatedAt: new Date() })
+				.set({ stock: newStock, updatedAt: nowISO() })
 				.where(eq(products.id, item.productId));
 		}
 	}
@@ -167,7 +168,7 @@ export async function consumeFifoForSaleItem(
 			}
 			await tx
 				.update(lensCatalogItems)
-				.set({ stock: newStock, updatedAt: new Date() })
+				.set({ stock: newStock, updatedAt: nowISO() })
 				.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 		}
 	}
