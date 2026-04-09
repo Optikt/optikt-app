@@ -8,6 +8,7 @@
 import { eq, isNull, and, gte, lte, desc, ne, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { salePayments, sales, customers } from '$lib/server/db/schema';
+import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 import { getAllSales } from './sales';
 import { getLensCatalogItemsWithRelations } from './lenses';
 import { RefundStatus } from '$lib/shared/enums';
@@ -31,7 +32,7 @@ function formatCustomerName(
 export interface ReportSale {
 	id: string;
 	orderNumber: number;
-	saleDate: Date;
+	saleDate: string;
 	status: string;
 	total: number;
 	paidAmountBcvUsd: number;
@@ -49,7 +50,7 @@ export interface SalesReportSummary {
 
 export interface ReportPayment {
 	id: string;
-	paymentDate: Date;
+	paymentDate: string;
 	paymentMethod: string;
 	amount: number;
 	exchangeRate: number | null;
@@ -69,7 +70,7 @@ export interface RefundEntry {
 	customerName: string | null;
 	refundAmount: number;
 	refundStatus: string;
-	cancelledAt: Date | null;
+	cancelledAt: string | null;
 }
 
 export interface PaymentsReportSummary {
@@ -106,8 +107,8 @@ export interface InventoryLensItem {
  * Delegates to getAllSales() and flattens the relational result.
  */
 export async function getReportSales(
-	dateFrom: Date,
-	dateTo: Date
+	dateFrom: string,
+	dateTo: string
 ): Promise<{ sales: ReportSale[]; summary: SalesReportSummary }> {
 	const rows = await getAllSales({ dateFrom, dateTo });
 
@@ -146,11 +147,10 @@ export async function getReportSales(
  * Separately tracks refunded amounts.
  */
 export async function getReportPayments(
-	dateFrom: Date,
-	dateTo: Date
+	dateFrom: string,
+	dateTo: string
 ): Promise<{ payments: ReportPayment[]; refunds: RefundEntry[]; summary: PaymentsReportSummary }> {
-	const toEnd = new Date(dateTo);
-	toEnd.setUTCHours(23, 59, 59, 999);
+	const toEnd = toUTCString(toEndOfDay(fromISODate(dateTo)!));
 
 	// Include: active sales + cancelled sales with RETAINED refundStatus
 	const rows = await db
