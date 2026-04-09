@@ -113,7 +113,7 @@
 	}
 
 	function scrollPrescriptionIntoView(e: Event) {
-		(e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		(e.currentTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 	}
 
 	// Delete prescription
