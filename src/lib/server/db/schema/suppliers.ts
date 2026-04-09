@@ -42,9 +42,13 @@ export const suppliers = pgTable(
 		notes: varchar(),
 		/** Default currency this supplier uses (CurrencyCode enum) */
 		defaultCurrency: varchar('default_currency'),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_suppliers_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
@@ -74,8 +78,12 @@ export const supplierTreatments = pgTable(
 		/** Tax rate percentage (e.g. 16 for 16%) */
 		taxRate: doublePrecision('tax_rate').notNull().default(16),
 		isActive: boolean('is_active').notNull().default(true),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_supplier_treatments_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),

@@ -10,6 +10,7 @@ import {
 	type NewSupplierTreatment
 } from '$lib/server/db/schema';
 import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
+import { nowISO } from '$lib/dates';
 
 /** Sortable supplier columns */
 export type SupplierOrderBy = 'name' | 'type' | 'createdAt' | 'updatedAt';
@@ -128,7 +129,7 @@ export async function findSupplierByRif(rif: string): Promise<Supplier | null> {
  * Create a new supplier
  */
 export async function createSupplier(data: NewSupplier, executor: DbOrTx = db): Promise<Supplier> {
-	const now = new Date();
+	const now = nowISO();
 	const [supplier] = await executor
 		.insert(suppliers)
 		.values({
@@ -163,7 +164,7 @@ export async function updateSupplier(
 ): Promise<Supplier | null> {
 	const [supplier] = await executor
 		.update(suppliers)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(suppliers.id, id))
 		.returning();
 	return supplier ?? null;
@@ -175,7 +176,7 @@ export async function updateSupplier(
 export async function deleteSupplier(id: string): Promise<boolean> {
 	const result = await db
 		.update(suppliers)
-		.set({ deletedAt: new Date(), updatedAt: new Date() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(suppliers.id, id));
 	return result.count > 0;
 }
@@ -188,7 +189,7 @@ export async function restoreSupplier(id: string): Promise<Supplier> {
 		.update(suppliers)
 		.set({
 			deletedAt: null,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(suppliers.id, id))
 		.returning();
@@ -202,7 +203,7 @@ export async function restoreSupplier(id: string): Promise<Supplier> {
  */
 export async function resolvePendingSupplier(
 	pendingName: string,
-	now: Date,
+	now: string,
 	executor: DbOrTx = db
 ): Promise<string> {
 	const [existing] = await executor
@@ -274,7 +275,7 @@ export async function createSupplierTreatment(
 	data: NewSupplierTreatment,
 	executor: DbOrTx = db
 ): Promise<SupplierTreatment> {
-	const now = new Date();
+	const now = nowISO();
 	const [treatment] = await executor
 		.insert(supplierTreatments)
 		.values({
@@ -295,7 +296,7 @@ export async function updateSupplierTreatment(
 ): Promise<SupplierTreatment | null> {
 	const [treatment] = await executor
 		.update(supplierTreatments)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(supplierTreatments.id, id))
 		.returning();
 	return treatment ?? null;
