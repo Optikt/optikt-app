@@ -30,9 +30,13 @@ export const materials = pgTable(
 		productType: varchar('product_type', { length: 20 }).notNull(), // FRAME, CONTACT_LENS, ACCESSORY
 		description: varchar(),
 		isActive: boolean('is_active').notNull().default(true),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_materials_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
