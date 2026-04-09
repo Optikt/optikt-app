@@ -5,13 +5,8 @@
 	import { toast } from 'svelte-sonner';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
 	import { SaleStatusBadge } from '$lib/components/ui';
-	import {
-		formatPrice,
-		formatDate,
-		dateToISODateString,
-		downloadCsv,
-		getErrorMessage
-	} from '$lib/utils';
+	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
+	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchSalesReport } from '$lib/remote/reports.remote';
 	import { SALE_STATUS_LABELS } from '$lib/shared/enums';
 	import type { ReportSale, SalesReportSummary } from '$lib/server/db/queries/reports';
@@ -27,9 +22,8 @@
 	let statusFilter = $state<StatusFilter>('active');
 
 	// Date range state — default to current month
-	const now = new Date();
-	let dateFrom = $state(dateToISODateString(new Date(now.getFullYear(), now.getMonth(), 1)));
-	let dateTo = $state(dateToISODateString(now));
+	let dateFrom = $state(toISODate(monthStart()));
+	let dateTo = $state(toISODate(nowUTC()));
 
 	const filteredSales = $derived(
 		statusFilter === 'all'
