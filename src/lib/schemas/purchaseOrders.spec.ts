@@ -20,7 +20,7 @@ const validItem = {
 
 const baseCreatePayload = {
 	supplierId: '00000000-0000-4000-8000-000000000001',
-	orderDate: '2025-01-15T00:00:00Z',
+	orderDate: '2025-01-15',
 	bcvRate: 65.5,
 	items: [validItem]
 };
