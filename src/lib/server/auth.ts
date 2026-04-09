@@ -4,6 +4,7 @@ import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
 import * as sessionQueries from '$lib/server/db/queries/sessions';
 import * as userQueries from '$lib/server/db/queries/users';
 import { dev } from '$app/environment';
+import { fromISO, toUTCString, daysFromNow } from '$lib/dates';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
@@ -28,7 +29,7 @@ export async function createSession(
 	return await sessionQueries.createSession({
 		userId,
 		tokenHash,
-		expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
+		expiresAt: toUTCString(daysFromNow(30)),
 		ipAddress: options?.ipAddress,
 		userAgent: options?.userAgent
 	});
@@ -52,16 +53,16 @@ export async function validateSessionToken(token: string) {
 	}
 
 	// Check if session expired
-	const sessionExpired = Date.now() >= session.expiresAt.getTime();
+	const sessionExpired = Date.now() >= fromISO(session.expiresAt).getTime();
 	if (sessionExpired) {
 		await sessionQueries.deactivateSession(session.id);
 		return { session: null, user: null };
 	}
 
 	// Renew session if it's older than 15 days
-	const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15;
+	const renewSession = Date.now() >= fromISO(session.expiresAt).getTime() - DAY_IN_MS * 15;
 	if (renewSession) {
-		const newExpiresAt = new Date(Date.now() + DAY_IN_MS * 30);
+		const newExpiresAt = toUTCString(daysFromNow(30));
 		await sessionQueries.updateSessionExpiration(session.id, newExpiresAt);
 		session.expiresAt = newExpiresAt;
 	}
@@ -79,9 +80,9 @@ export async function invalidateAllUserSessions(userId: string) {
 	await sessionQueries.deactivateAllUserSessions(userId);
 }
 
-export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
+export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: string) {
 	event.cookies.set(sessionCookieName, token, {
-		expires: expiresAt,
+		expires: fromISO(expiresAt),
 		path: '/',
 		httpOnly: true,
 		secure: !dev,

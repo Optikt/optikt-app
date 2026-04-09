@@ -19,7 +19,7 @@ export interface UserListItem {
 	role: UserRole;
 	isActive: boolean;
 	isSuperuser: boolean;
-	createdAt: Date;
+	createdAt: string;
 }
 
 // Paginated response

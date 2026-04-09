@@ -1,6 +1,7 @@
 import { eq, or, and, isNull, isNotNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { users, type User, type NewUser } from '$lib/server/db/schema';
+import { nowISO } from '$lib/dates';
 
 /**
  * Find a user by their email or username (case-insensitive)
@@ -72,7 +73,7 @@ export async function findDeletedUserByUsername(username: string): Promise<User 
  * Create a new user
  */
 export async function createUser(data: NewUser): Promise<User> {
-	const now = new Date();
+	const now = nowISO();
 	const [user] = await db
 		.insert(users)
 		.values({
@@ -96,7 +97,7 @@ export async function updateUser(
 ): Promise<User> {
 	const [user] = await db
 		.update(users)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(users.id, id))
 		.returning();
 	return user;
@@ -108,7 +109,11 @@ export async function updateUser(
 export async function deleteUser(id: string): Promise<boolean> {
 	const result = await db
 		.update(users)
-		.set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
+		.set({
+			deletedAt: nowISO(),
+			isActive: false,
+			updatedAt: nowISO()
+		})
 		.where(eq(users.id, id));
 	return result.count > 0;
 }
@@ -126,7 +131,7 @@ export async function restoreUser(
 			...data,
 			deletedAt: null,
 			isActive: true,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(users.id, id))
 		.returning();

@@ -21,9 +21,13 @@ export const users = pgTable(
 		isActive: boolean('is_active').notNull().default(true),
 		isSuperuser: boolean('is_superuser').notNull().default(false),
 		role: varchar().notNull().default(UserRole.VIEWER).$type<UserRole>(),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		uniqueIndex('ix_users_email').using('btree', table.email.asc().nullsLast().op('text_ops')),
