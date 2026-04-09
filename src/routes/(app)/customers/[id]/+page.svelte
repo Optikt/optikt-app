@@ -42,9 +42,10 @@
 		getFullName,
 		scrollToFirstError,
 		toastUnboundErrors,
-		dateFromUTC
+		parseISODateToLocal
 	} from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import { nowUTC } from '$lib/dates';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
 	import { untrack } from 'svelte';
@@ -73,7 +74,7 @@
 		notes: ''
 	});
 
-	const today = new Date();
+	const today = nowUTC();
 	const currentUpdateForm = $derived(updateCustomerForm.for(`${customer.id}-${formInstanceId}`));
 
 	function startEditing() {
@@ -82,7 +83,7 @@
 			firstName: customer.firstName ?? '',
 			lastName: customer.lastName ?? '',
 			idNumber: customer.idNumber ?? '',
-			birthDate: dateFromUTC(customer.birthDate),
+			birthDate: parseISODateToLocal(customer.birthDate),
 			primaryPhone: customer.primaryPhone ?? '',
 			email: customer.email ?? '',
 			address: customer.address ?? '',
