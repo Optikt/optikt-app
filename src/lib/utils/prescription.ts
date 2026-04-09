@@ -48,7 +48,7 @@ export function toPrescriptionInsert(
 ): Omit<NewPrescription, 'id' | 'createdAt' | 'updatedAt'> {
 	return {
 		customerId,
-		prescriptionDate: new Date(data.prescriptionDate),
+		prescriptionDate: data.prescriptionDate,
 		odSphere: normalizeOpticalValue(data.odSphere),
 		odCylinder: normalizeOpticalValue(data.odCylinder),
 		odAxis: normalizeOpticalValue(data.odAxis),

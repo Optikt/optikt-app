@@ -138,7 +138,7 @@ export const updatePrescriptionForm = form(
 		// Build update object with normalized optical values (0 → null)
 		const updateData: Partial<Omit<Prescription, 'id' | 'createdAt'>> = {};
 		if (data.prescriptionDate !== undefined) {
-			updateData.prescriptionDate = new Date(data.prescriptionDate);
+			updateData.prescriptionDate = data.prescriptionDate;
 		}
 		if (data.odSphere !== undefined) updateData.odSphere = normalizeOpticalValue(data.odSphere);
 		if (data.odCylinder !== undefined)
