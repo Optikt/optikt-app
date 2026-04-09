@@ -134,13 +134,13 @@ describe('formatDate', () => {
 		expect(formatDate(null)).toBe('—');
 	});
 
-	it('formats a Date object using UTC components to avoid timezone shift', () => {
-		// Create a date at UTC midnight on March 9, 2000
-		const utcMidnight = new Date(Date.UTC(2000, 2, 9, 0, 0, 0, 0));
+	it('formats a Date object using its local date components', () => {
+		// Create a local date (as used by date pickers in the UI)
+		const localDate = new Date(2000, 2, 9); // March 9 local
 
-		const result = formatDate(utcMidnight);
+		const result = formatDate(localDate);
 
-		// Should display March 9, not March 8 (which would happen in UTC-4 timezone)
+		// Should display March 9
 		expect(result).toContain('9');
 		expect(result).toContain('marzo');
 		expect(result).toContain('2000');
