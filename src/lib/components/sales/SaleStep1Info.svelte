@@ -2,6 +2,7 @@
 	import { Button, Input, Label, Textarea } from 'flowbite-svelte';
 	import { ChevronRight, Hash } from '@lucide/svelte';
 	import { dateToISODateString } from '$lib/utils';
+	import { fromISODate } from '$lib/dates';
 	import CustomerLookupInput from './CustomerLookupInput.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { NewCustomerData } from './newSaleTypes';
@@ -55,7 +56,7 @@
 				value={dateToISODateString(saleDate)}
 				oninput={(e: Event) => {
 					const target = e.target as HTMLInputElement;
-					saleDate = new Date(target.value + 'T00:00:00');
+					saleDate = fromISODate(target.value) ?? saleDate;
 				}}
 			/>
 		</div>

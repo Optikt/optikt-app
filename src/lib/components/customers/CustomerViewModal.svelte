@@ -3,6 +3,7 @@
 	import { Phone, Mail, MapPin, Calendar, FileText, IdCard } from '@lucide/svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import { formatDate, getFullName } from '$lib/utils';
+	import { calculateAge } from '$lib/dates';
 
 	interface Props {
 		open: boolean;
@@ -10,18 +11,6 @@
 	}
 
 	let { open = $bindable(), customer }: Props = $props();
-
-	function calculateAge(birthDate: Date | null): number | null {
-		if (!birthDate) return null;
-		const today = new Date();
-		const birth = new Date(birthDate);
-		let age = today.getFullYear() - birth.getFullYear();
-		const monthDiff = today.getMonth() - birth.getMonth();
-		if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-			age--;
-		}
-		return age;
-	}
 
 	const age = $derived(calculateAge(customer.birthDate));
 </script>
