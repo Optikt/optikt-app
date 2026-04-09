@@ -28,7 +28,9 @@ export const changeHistory = pgTable(
 
 		// Change metadata
 		action: varchar('action').notNull(), // 'create', 'update', 'delete', 'restore'
-		changedAt: timestamp('changed_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+		changedAt: timestamp('changed_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
 		changedById: uuid('changed_by_id').references((): AnyPgColumn => users.id, {
 			onDelete: 'set null'
 		}),
@@ -43,7 +45,9 @@ export const changeHistory = pgTable(
 		userAgent: varchar('user_agent', { length: 255 }),
 
 		// Timestamps
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_change_history_entity').on(table.entityType, table.entityId),
