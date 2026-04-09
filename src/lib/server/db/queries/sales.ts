@@ -11,6 +11,7 @@ import {
 	ilike,
 	or,
 	count,
+	sql,
 	type AnyColumn,
 	type SQL
 } from 'drizzle-orm';
@@ -51,6 +52,13 @@ export type SaleItemWithDetails = SaleItem & {
 	lensCatalogItem: { id: string; name: string; type: string } | null;
 	supplierTreatment: { id: string; name: string; category: string } | null;
 };
+
+export interface SalesStats {
+	monthly: number;
+	pending: number;
+	completed: number;
+	cancelled: number;
+}
 
 // ============================================================================
 // QUERY OPTIONS
@@ -137,15 +145,21 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	}
 
 	if (opts.search) {
-		const pattern = `%${opts.search}%`;
-		conditions.push(
-			or(
-				ilike(customers.firstName, pattern),
-				ilike(customers.lastName, pattern),
-				ilike(customers.idNumber, pattern),
-				ilike(users.fullName, pattern)
-			)!
-		);
+		const rawSearch = opts.search.trim();
+		const pattern = `%${rawSearch}%`;
+		const searchConditions: SQL[] = [
+			ilike(customers.firstName, pattern),
+			ilike(customers.lastName, pattern),
+			ilike(customers.idNumber, pattern),
+			ilike(users.fullName, pattern)
+		];
+
+		const normalizedOrderNumber = rawSearch.replace(/^#/, '');
+		if (/^\d+$/.test(normalizedOrderNumber)) {
+			searchConditions.push(eq(sales.orderNumber, Number(normalizedOrderNumber)));
+		}
+
+		conditions.push(or(...searchConditions)!);
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
@@ -231,6 +245,27 @@ export async function countSales(options?: SaleFilterOptions): Promise<number> {
 	if (where) base.where(where);
 	const [result] = await base;
 	return result.value;
+}
+
+/**
+ * Get aggregated sales stats in a single query using conditional counts.
+ *
+ * @param monthStartIso - ISO date string for the start of the current month
+ */
+export async function getSalesStats(monthStartIso: string): Promise<SalesStats> {
+	const [row] = await db
+		.select({
+			monthly: sql<number>`count(*) filter (where ${sales.saleDate} >= ${monthStartIso})`.mapWith(
+				Number
+			),
+			pending: sql<number>`count(*) filter (where ${sales.status} = 'PENDING')`.mapWith(Number),
+			completed: sql<number>`count(*) filter (where ${sales.status} = 'COMPLETED')`.mapWith(Number),
+			cancelled: sql<number>`count(*) filter (where ${sales.status} = 'CANCELLED')`.mapWith(Number)
+		})
+		.from(sales)
+		.where(isNull(sales.deletedAt));
+
+	return row;
 }
 
 /**

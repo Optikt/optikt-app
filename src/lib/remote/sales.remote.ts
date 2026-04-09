@@ -15,6 +15,7 @@ import {
 import {
 	getAllSales,
 	countSales,
+	getSalesStats as getSalesStatsQuery,
 	findSaleById,
 	findSaleByIdWithRelations,
 	getSaleItemsWithDetails,
@@ -26,7 +27,11 @@ import {
 	updateSale,
 	getNextOrderNumber
 } from '$lib/server/db/queries/sales';
-import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
+import type {
+	SaleWithRelations,
+	SaleItemWithDetails,
+	SalesStats
+} from '$lib/server/db/queries/sales';
 import {
 	findCustomerById,
 	findCustomerByIdNumber,
@@ -53,7 +58,8 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { inventoryMovements } from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+import { monthStart, nowISO, toUTCString } from '$lib/dates';
+import { EmptySchema } from '$lib/schemas/common';
 
 // ============================================================================
 // TYPES
@@ -67,6 +73,8 @@ export interface PaginatedSales {
 	totalPages: number;
 }
 
+export type { SalesStats } from '$lib/server/db/queries/sales';
+
 export interface SaleDetail {
 	sale: SaleWithRelations;
 	items: SaleItemWithDetails[];
@@ -76,6 +84,13 @@ export interface SaleDetail {
 // ============================================================================
 // QUERIES
 // ============================================================================
+
+/**
+ * Get aggregated sales stats (monthly, pending, completed, cancelled counts)
+ */
+export const getSalesStats = query(EmptySchema, async (): Promise<SalesStats> => {
+	return getSalesStatsQuery(toUTCString(monthStart()));
+});
 
 /**
  * List sales with pagination and filters

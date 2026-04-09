@@ -79,12 +79,27 @@
 ## Fase 3 — Clientes
 
 **Fuente:** Stitch clientes screen  
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/customers` — lista con DataTable
-- [ ] `/customers/[id]` — detalle del cliente
+- [x] `/customers` — lista con DataGrid, stat cards (total, nuevos mes, ventas pendientes)
+- [x] `/customers/[id]` — detalle con perfil inline-edit, prescripción activa (navy card), historial expandible, actividad reciente
+- [x] `/customers/new` — creación de cliente con reactivación de eliminados
+
+### Notas de implementación
+
+- PR #24 (`redesign/clients`) — mergeado a `main`
+- DataGrid reutilizable para tabla de clientes con avatar por iniciales
+- Detalle: layout 2 columnas (info personal | prescripciones + actividad)
+- Prescripción activa: tarjeta navy con acentos gold, badges OD/OS
+- Edición inline (toggle edit/view) en vez de modal
+- Historial de prescripciones: filas expandibles con `transition:slide` + auto-scroll (`onintroend`)
+- `CustomersTable`: colores de avatar con hash seguro (32-bit truncation)
+- `pendingSalesCustomers`: query con `innerJoin` para excluir clientes eliminados
+- `performCreatePrescription`: envuelto en `db.transaction()` con `unsetCurrentPrescriptions` helper
+- Componentes legacy eliminados del uso: `CustomerFormModal`, `CustomerViewModal` (dead code)
+- Validación: `pnpm lint`, 369 tests, `svelte-check` — 0 errors
 
 ---
 
@@ -199,8 +214,8 @@
 | L4  | `products/[id]/+layout.svelte` | 6    | pendiente  |
 | 1   | `/login`                       | 1    | completada |
 | 2   | `/dashboard`                   | 2    | completada |
-| 3   | `/customers`                   | 3    | pendiente  |
-| 4   | `/customers/[id]`              | 3    | pendiente  |
+| 3   | `/customers`                   | 3    | completada |
+| 4   | `/customers/[id]`              | 3    | completada |
 | 5   | `/sales`                       | 4    | pendiente  |
 | 6   | `/sales/[id]`                  | 4    | pendiente  |
 | 7   | `/sales/new`                   | 4    | pendiente  |
