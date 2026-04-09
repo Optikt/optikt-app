@@ -15,7 +15,7 @@ export const ListCurrenciesSchema = z.object({
 export const UpsertExchangeRateSchema = z.object({
 	currencyCode: z.enum(ALL_CURRENCY_CODES, 'Moneda requerida'),
 	rateToVes: CoercedNumber.min(0.01, 'La tasa debe ser mayor a 0'),
-	effectiveDate: z.iso.date({ message: 'Fecha requerida (YYYY-MM-DD)' }),
+	effectiveDate: z.iso.date('Fecha requerida (YYYY-MM-DD)'),
 	source: z.string().default('manual'),
 	notes: z.string().optional()
 });
@@ -27,10 +27,10 @@ export const BatchUpsertRatesSchema = z.object({
 			rateToVes: CoercedNumber.min(0.01, 'La tasa debe ser mayor a 0')
 		})
 	),
-	effectiveDate: z.iso.date({ message: 'Fecha requerida (YYYY-MM-DD)' }),
+	effectiveDate: z.iso.date('Fecha requerida (YYYY-MM-DD)'),
 	source: z.string().default('manual')
 });
 
 export const GetRatesForDateSchema = z.object({
-	date: z.iso.date({ message: 'Fecha requerida (YYYY-MM-DD)' })
+	date: z.iso.date('Fecha requerida (YYYY-MM-DD)')
 });
