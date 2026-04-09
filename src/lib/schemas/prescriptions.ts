@@ -21,6 +21,10 @@ const LensTypeSchema = z
 
 const DoctorNameSchema = z.string().trim().min(1, 'Doctor es requerido').max(100);
 
+function lensTypeNeedsAddition(value: unknown): boolean {
+	return typeof value === 'string' && value !== '' && value !== LensType.MONOFOCAL;
+}
+
 function requireSphereOrCylinder<T extends Record<string, unknown>>(
 	sphereKey: keyof T,
 	cylinderKey: keyof T
@@ -66,6 +70,26 @@ function requireAxisWhenCylinder<T extends Record<string, unknown>>(
 	};
 }
 
+function requireAdditionWhenLensNeedsIt<T extends Record<string, unknown>>(
+	lensTypeKey: keyof T,
+	additionKey: keyof T
+) {
+	return (data: T, ctx: z.RefinementCtx) => {
+		if (!lensTypeNeedsAddition(data[lensTypeKey])) {
+			return;
+		}
+
+		const addition = data[additionKey];
+		if (addition === undefined || addition === 0) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'La adición es requerida y debe ser mayor a 0 para este tipo de lente',
+				path: [additionKey]
+			});
+		}
+	};
+}
+
 // =============================================================================
 // OPTICAL VALUE SCHEMAS (prescription-specific)
 // =============================================================================
@@ -80,14 +104,26 @@ function requireAxisWhenCylinder<T extends Record<string, unknown>>(
  *
  * This is critical for requireAxisWhenCylinder validation to work correctly.
  */
-export const AxisSchema = z.preprocess((val: number | string | undefined) => {
-	// Empty string, null, or undefined → no value provided
-	if (val === '' || val === null || val === undefined) {
-		return undefined;
-	}
-	// Coerce to number for validation
-	return typeof val === 'string' ? parseFloat(val) : val;
-}, z.number().int('Eje debe ser un número entero').min(0, 'Eje debe ser mayor o igual a 0').max(180, 'Eje debe ser menor o igual a 180').optional());
+export const AxisSchema = z.preprocess(
+	(val: number | string | undefined) => {
+		// Empty string, null, or undefined → no value provided
+		if (val === '' || val === null || val === undefined) {
+			return undefined;
+		}
+		if (typeof val === 'string' && val.trim() === '') {
+			return undefined;
+		}
+		// Coerce to number for validation
+		const parsed = typeof val === 'string' ? Number(val.trim()) : val;
+		return Number.isNaN(parsed) ? val : parsed;
+	},
+	z
+		.number({ error: 'Eje debe ser un número entero válido' })
+		.int('Eje debe ser un número entero')
+		.min(0, 'Eje debe ser mayor o igual a 0')
+		.max(180, 'Eje debe ser menor o igual a 180')
+		.optional()
+);
 
 /**
  * Distancia Pupilar (DP) validation - total pupillary distance
@@ -180,7 +216,9 @@ export const PrescriptionFieldsSchema = PrescriptionBaseSchema.omit({ customerId
 	.superRefine(requireSphereOrCylinder('osSphere', 'osCylinder'))
 	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
 	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
-	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'))
+	.superRefine(requireAdditionWhenLensNeedsIt('recommendedLensType', 'odAddition'))
+	.superRefine(requireAdditionWhenLensNeedsIt('recommendedLensType', 'osAddition'));
 
 export type PrescriptionFieldsInput = z.infer<typeof PrescriptionFieldsSchema>;
 
@@ -193,7 +231,9 @@ export const CreatePrescriptionSchema = PrescriptionBaseSchema.superRefine(
 )
 	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
 	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
-	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'))
+	.superRefine(requireAdditionWhenLensNeedsIt('recommendedLensType', 'odAddition'))
+	.superRefine(requireAdditionWhenLensNeedsIt('recommendedLensType', 'osAddition'));
 
 /**
  * Update prescription schema
@@ -206,7 +246,9 @@ export const UpdatePrescriptionSchema = PrescriptionBaseSchema.partial()
 	.superRefine(requireSphereOrCylinder('osSphere', 'osCylinder'))
 	.superRefine(requireSphereOrCylinder('odSphere', 'odCylinder'))
 	.superRefine(requireAxisWhenCylinder('osCylinder', 'osAxis'))
-	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'));
+	.superRefine(requireAxisWhenCylinder('odCylinder', 'odAxis'))
+	.superRefine(requireAdditionWhenLensNeedsIt('recommendedLensType', 'odAddition'))
+	.superRefine(requireAdditionWhenLensNeedsIt('recommendedLensType', 'osAddition'));
 
 /**
  * Set current prescription schema

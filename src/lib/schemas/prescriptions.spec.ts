@@ -75,10 +75,17 @@ describe('CreatePrescriptionSchema - requireAxisWhenCylinder', () => {
 	const validBaseData = {
 		customerId: '123e4567-e89b-12d3-a456-426614174000',
 		prescriptionDate: '2024-01-15',
-		recommendedLensType: LensType.PROGRESSIVE,
+		recommendedLensType: LensType.MONOFOCAL,
 		doctorName: 'Dr. Martinez',
 		odSphere: -2.0,
 		osSphere: -2.0
+	};
+
+	const validMultifocalData = {
+		...validBaseData,
+		recommendedLensType: LensType.PROGRESSIVE,
+		odAddition: 1.5,
+		osAddition: 1.5
 	};
 
 	it('requires lens type and doctor name', () => {
@@ -133,6 +140,14 @@ describe('CreatePrescriptionSchema - requireAxisWhenCylinder', () => {
 			odAxis: '0' // Intentional 0 should be accepted
 		});
 		expect(result.success).toBe(true);
+	});
+
+	it('rejects invalid axis strings with a field-specific message', () => {
+		const result = AxisSchema.safeParse('abc');
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error.issues[0]?.message).toBe('Eje debe ser un número entero válido');
+		}
 	});
 
 	it('does not require axis when cylinder is 0 (normalized to null on save)', () => {
@@ -190,5 +205,40 @@ describe('CreatePrescriptionSchema - requireAxisWhenCylinder', () => {
 			osCylinder: '' // Empty → undefined
 		});
 		expect(result.success).toBe(false);
+	});
+
+	it('requires addition for non-monofocal lenses', () => {
+		const result = CreatePrescriptionSchema.safeParse({
+			...validBaseData,
+			recommendedLensType: LensType.BIFOCAL,
+			odAddition: '',
+			osAddition: ''
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			const messages = result.error.issues
+				.filter((issue) => issue.path[0] === 'odAddition' || issue.path[0] === 'osAddition')
+				.map((issue) => issue.message);
+			expect(messages).toContain(
+				'La adición es requerida y debe ser mayor a 0 para este tipo de lente'
+			);
+		}
+	});
+
+	it('rejects zero addition for non-monofocal lenses', () => {
+		const result = CreatePrescriptionSchema.safeParse({
+			...validBaseData,
+			recommendedLensType: LensType.OCCUPATIONAL,
+			odAddition: '0',
+			osAddition: '0'
+		});
+
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts positive addition for non-monofocal lenses', () => {
+		const result = CreatePrescriptionSchema.safeParse(validMultifocalData);
+		expect(result.success).toBe(true);
 	});
 });
