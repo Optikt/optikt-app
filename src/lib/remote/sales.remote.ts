@@ -15,6 +15,7 @@ import {
 import {
 	getAllSales,
 	countSales,
+	getSalesStats as getSalesStatsQuery,
 	findSaleById,
 	findSaleByIdWithRelations,
 	getSaleItemsWithDetails,
@@ -26,7 +27,11 @@ import {
 	updateSale,
 	getNextOrderNumber
 } from '$lib/server/db/queries/sales';
-import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
+import type {
+	SaleWithRelations,
+	SaleItemWithDetails,
+	SalesStats
+} from '$lib/server/db/queries/sales';
 import {
 	findCustomerById,
 	findCustomerByIdNumber,
@@ -68,12 +73,7 @@ export interface PaginatedSales {
 	totalPages: number;
 }
 
-export interface SalesStats {
-	monthlySalesCount: number;
-	pendingSalesCount: number;
-	completedSalesCount: number;
-	cancelledSalesCount: number;
-}
+export type { SalesStats } from '$lib/server/db/queries/sales';
 
 export interface SaleDetail {
 	sale: SaleWithRelations;
@@ -89,15 +89,7 @@ export interface SaleDetail {
  * Get aggregated sales stats (monthly, pending, completed, cancelled counts)
  */
 export const getSalesStats = query(EmptySchema, async (): Promise<SalesStats> => {
-	const monthStartIso = toUTCString(monthStart());
-	const [monthlySalesCount, pendingSalesCount, completedSalesCount, cancelledSalesCount] =
-		await Promise.all([
-			countSales({ dateFrom: monthStartIso }),
-			countSales({ status: SaleStatus.PENDING }),
-			countSales({ status: SaleStatus.COMPLETED }),
-			countSales({ status: SaleStatus.CANCELLED })
-		]);
-	return { monthlySalesCount, pendingSalesCount, completedSalesCount, cancelledSalesCount };
+	return getSalesStatsQuery(toUTCString(monthStart()));
 });
 
 /**
