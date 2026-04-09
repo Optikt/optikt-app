@@ -53,7 +53,8 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { inventoryMovements } from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+import { monthStart, nowISO, toUTCString } from '$lib/dates';
+import { EmptySchema } from '$lib/schemas/common';
 
 // ============================================================================
 // TYPES
@@ -67,6 +68,13 @@ export interface PaginatedSales {
 	totalPages: number;
 }
 
+export interface SalesStats {
+	monthlySalesCount: number;
+	pendingSalesCount: number;
+	completedSalesCount: number;
+	cancelledSalesCount: number;
+}
+
 export interface SaleDetail {
 	sale: SaleWithRelations;
 	items: SaleItemWithDetails[];
@@ -76,6 +84,21 @@ export interface SaleDetail {
 // ============================================================================
 // QUERIES
 // ============================================================================
+
+/**
+ * Get aggregated sales stats (monthly, pending, completed, cancelled counts)
+ */
+export const getSalesStats = query(EmptySchema, async (): Promise<SalesStats> => {
+	const monthStartIso = toUTCString(monthStart());
+	const [monthlySalesCount, pendingSalesCount, completedSalesCount, cancelledSalesCount] =
+		await Promise.all([
+			countSales({ dateFrom: monthStartIso }),
+			countSales({ status: SaleStatus.PENDING }),
+			countSales({ status: SaleStatus.COMPLETED }),
+			countSales({ status: SaleStatus.CANCELLED })
+		]);
+	return { monthlySalesCount, pendingSalesCount, completedSalesCount, cancelledSalesCount };
+});
 
 /**
  * List sales with pagination and filters
