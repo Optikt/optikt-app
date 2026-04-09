@@ -5,6 +5,8 @@
  */
 
 import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
+import { fromISO, fromISODate } from '$lib/dates';
+import { formatDate } from '$lib/utils';
 
 // Re-export types for convenience (they are just types so it's okay)
 export type { EntityType, ActionType, ChangeRecord };
@@ -225,17 +227,12 @@ export function formatChangeValue(value: unknown): string {
 	if (typeof value === 'number') return value.toLocaleString('es-VE');
 	if (typeof value === 'string') {
 		// Check if it's an ISO date string
-		if (/^\d{4}-\d{2}-\d{2}(T|$)/.test(value)) {
-			try {
-				const date = new Date(value);
-				return date.toLocaleDateString('es-VE', {
-					year: 'numeric',
-					month: 'short',
-					day: 'numeric'
-				});
-			} catch {
-				return value;
-			}
+		if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+			const date = fromISODate(value);
+			return date ? formatDate(date) : value;
+		}
+		if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+			return formatDate(fromISO(value));
 		}
 		return value;
 	}

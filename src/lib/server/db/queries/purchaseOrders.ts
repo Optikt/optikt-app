@@ -18,6 +18,7 @@ import type { DbOrTx } from '$lib/server/db/types';
 import { PurchaseOrderStatus, PurchaseOrderItemType } from '$lib/shared/enums';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { getNextLotNumber, getNextFifoCost } from './inventoryLots';
+import { nowISO } from '$lib/dates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -137,7 +138,7 @@ export async function updatePurchaseOrder(
 ): Promise<PurchaseOrder> {
 	const [po] = await executor
 		.update(purchaseOrders)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(purchaseOrders.id, id))
 		.returning();
 	return po;
@@ -146,7 +147,7 @@ export async function updatePurchaseOrder(
 export async function softDeletePurchaseOrder(id: string, executor: DbOrTx = db): Promise<void> {
 	await executor
 		.update(purchaseOrders)
-		.set({ deletedAt: new Date(), updatedAt: new Date() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(purchaseOrders.id, id));
 }
 
@@ -242,7 +243,7 @@ export async function updatePurchaseOrderItem(
 ): Promise<PurchaseOrderItem> {
 	const [item] = await executor
 		.update(purchaseOrderItems)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(purchaseOrderItems.id, id))
 		.returning();
 	return item;
@@ -306,7 +307,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		// b. Link lot to PO item
 		await tx
 			.update(purchaseOrderItems)
-			.set({ lotId: lot.id, updatedAt: new Date() })
+			.set({ lotId: lot.id, updatedAt: nowISO() })
 			.where(eq(purchaseOrderItems.id, item.id));
 
 		// c. Create PURCHASE_IN movement
@@ -333,7 +334,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 				.set({
 					stock: sql`${products.stock} + ${item.quantity}`,
 					currentPurchasePrice: fifoCost ?? item.unitPurchasePrice,
-					updatedAt: new Date()
+					updatedAt: nowISO()
 				})
 				.where(eq(products.id, item.productId));
 		} else if (item.itemType === PurchaseOrderItemType.LENS && item.lensCatalogItemId) {
@@ -341,7 +342,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 				.update(lensCatalogItems)
 				.set({
 					stock: sql`coalesce(${lensCatalogItems.stock}, 0) + ${item.quantity}`,
-					updatedAt: new Date()
+					updatedAt: nowISO()
 				})
 				.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
 		}
@@ -353,8 +354,8 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		.set({
 			status: PurchaseOrderStatus.CONFIRMED,
 			confirmedById,
-			confirmedAt: new Date(),
-			updatedAt: new Date()
+			confirmedAt: nowISO(),
+			updatedAt: nowISO()
 		})
 		.where(eq(purchaseOrders.id, poId))
 		.returning();
@@ -380,7 +381,7 @@ export async function cancelPurchaseOrder(
 		.update(purchaseOrders)
 		.set({
 			status: PurchaseOrderStatus.CANCELLED,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(purchaseOrders.id, poId))
 		.returning();

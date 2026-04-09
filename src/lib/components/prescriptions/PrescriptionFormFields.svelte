@@ -3,6 +3,7 @@
 	import { Eye, FileText, Layers3, Ruler } from '@lucide/svelte';
 	import { LensType, LENS_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
 	import { dateToISODateString, getFormErrorMessage } from '$lib/utils';
+	import { nowUTC } from '$lib/dates';
 	import type {
 		PrescriptionFieldIssues,
 		PrescriptionFormData,
@@ -21,7 +22,7 @@
 		data = $bindable(),
 		issues,
 		namePrefix = 'prescription',
-		availableTo = new Date(),
+		availableTo = nowUTC(),
 		showCurrentToggle = true
 	}: Props = $props();
 

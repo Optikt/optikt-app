@@ -37,8 +37,3 @@ export const supplierTypeColors: Record<SupplierType, BadgeVariant> = {
 export function getSupplierTypeBadgeColor(type: string): BadgeVariant {
 	return supplierTypeColors[type as SupplierType] ?? 'info';
 }
-
-/** @deprecated Use getSupplierTypeBadgeColor instead */
-export function getSupplierBadgeColor(type: string): BadgeVariant {
-	return getSupplierTypeBadgeColor(type);
-}

@@ -1,4 +1,5 @@
 import type { ChangeRecord } from '$lib/server/db/schema';
+import { toUTCString } from '$lib/dates';
 
 // ============================================================================
 // DIFF UTILITIES
@@ -91,7 +92,7 @@ function isEqual(a: unknown, b: unknown): boolean {
  */
 function normalizeValue(value: unknown): unknown {
 	if (value === undefined) return null;
-	if (value instanceof Date) return value.toISOString();
+	if (value instanceof Date) return toUTCString(value);
 	if (Array.isArray(value)) return value.map(normalizeValue);
 	if (value !== null && typeof value === 'object') {
 		const normalized: Record<string, unknown> = {};

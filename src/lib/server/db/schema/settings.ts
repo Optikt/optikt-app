@@ -13,8 +13,8 @@ export const settings = pgTable('settings', {
 	businessAddress: varchar('business_address'),
 	businessWebsite: varchar('business_website'),
 	businessLogo: varchar('business_logo'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow()
 });
 
 export type Settings = typeof settings.$inferSelect;

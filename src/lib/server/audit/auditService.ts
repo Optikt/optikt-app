@@ -14,6 +14,7 @@ import {
 	createChangeRecordForDelete,
 	hasChanges
 } from './utils';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // AUDIT SERVICE
@@ -182,7 +183,7 @@ async function insertChangeHistory(params: InsertParams): Promise<void> {
 		entityType,
 		entityId,
 		action,
-		changedAt: new Date(),
+		changedAt: nowISO(),
 		changedById: context.userId ?? null,
 		changes,
 		snapshot,

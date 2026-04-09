@@ -31,6 +31,7 @@ import { resolvePendingMaterial } from '$lib/server/db/queries/materials';
 import { resolvePendingBrand } from '$lib/server/db/queries/brands';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import type { CreateEntityResult, PaginatedResult } from '$lib/types';
+import { nowISO } from '$lib/dates';
 
 // Types for paginated response
 export interface PaginatedProducts {
@@ -113,7 +114,7 @@ export const createProductForm = form(
 		// Use a transaction for atomicity - all or nothing
 		// IMPORTANT: All db operations inside must use `tx`, not `db`
 		const product = await db.transaction(async (tx) => {
-			const now = new Date();
+			const now = nowISO();
 
 			// TODO: Check whenever we found the "pending" things were deleted previously, this could fail.
 			// So we should check for that and maybe reactivate them instead of creating new ones.
@@ -201,7 +202,7 @@ export const updateProductForm = form(
 		// Use a transaction for atomicity - all or nothing
 		// IMPORTANT: All db operations inside must use `tx`, not `db`
 		const { oldProduct, updatedProduct } = await db.transaction(async (tx) => {
-			const now = new Date();
+			const now = nowISO();
 
 			// Handle pending brand
 			if (brandId && brandId.startsWith('pending_') && pendingBrandName) {

@@ -3,11 +3,11 @@ import { prescriptionToFormData } from './prescription-form';
 import type { Prescription } from '$lib/server/db/schema';
 
 describe('prescriptionToFormData', () => {
-	it('preserves the calendar date from a UTC date-only value', () => {
+	it('preserves the calendar date from an ISO timestamp string', () => {
 		const prescription = {
 			id: 'prescription-1',
 			customerId: 'customer-1',
-			prescriptionDate: new Date(Date.UTC(2026, 3, 8, 0, 0, 0, 0)),
+			prescriptionDate: '2026-04-08T00:00:00.000Z',
 			odSphere: -3,
 			odCylinder: 0,
 			odAxis: 180,
@@ -25,8 +25,8 @@ describe('prescriptionToFormData', () => {
 			notes: null,
 			doctorName: 'Dr. Propia',
 			isCurrent: true,
-			createdAt: new Date(),
-			updatedAt: new Date(),
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
 			deletedAt: null
 		} as Prescription;
 

@@ -49,17 +49,21 @@ export const purchaseOrders = pgTable(
 		deliveryNoteNumber: varchar('delivery_note_number'),
 		status: purchaseOrderStatusEnum().notNull().default('DRAFT'),
 		/** Date of the purchase */
-		orderDate: timestamp('order_date', { withTimezone: true, mode: 'date' }).notNull(),
+		orderDate: timestamp('order_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** BCV rate at time of purchase */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
 		notes: varchar(),
 		createdById: uuid('created_by_id').notNull(),
 		/** User who confirmed the PO (null until confirmed) */
 		confirmedById: uuid('confirmed_by_id'),
-		confirmedAt: timestamp('confirmed_at', { withTimezone: true, mode: 'date' }),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		confirmedAt: timestamp('confirmed_at', { withTimezone: true, mode: 'string' }),
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_purchase_orders_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
@@ -119,8 +123,12 @@ export const purchaseOrderItems = pgTable(
 		ivaRate: doublePrecision('iva_rate').notNull().default(16),
 		/** Filled when PO is confirmed — FK to the generated lot */
 		lotId: uuid('lot_id'),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_purchase_order_items_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),

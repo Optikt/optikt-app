@@ -39,7 +39,7 @@ export const sales = pgTable(
 		orderNumber: integer('order_number').notNull(),
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
-		saleDate: timestamp('sale_date', { mode: 'date' }).notNull(),
+		saleDate: timestamp('sale_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** PENDING → COMPLETED (auto when fully paid) → CANCELLED */
 		status: varchar().notNull().default('PENDING'),
 		subtotal: doublePrecision().notNull(),
@@ -55,7 +55,7 @@ export const sales = pgTable(
 		/** Reason for cancellation (required when cancelling) */
 		cancellationReason: varchar('cancellation_reason', { length: 500 }),
 		/** When the sale was cancelled */
-		cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'date' }),
+		cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'string' }),
 		/** Who cancelled the sale */
 		cancelledById: uuid('cancelled_by_id'),
 		/** Refund disposition: REFUNDED | RETAINED | NO_PAYMENT */
@@ -65,12 +65,16 @@ export const sales = pgTable(
 		/** Notes about the refund/retention decision */
 		refundNotes: varchar('refund_notes', { length: 500 }),
 		/** When the refund/retention decision was recorded */
-		refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' }),
+		refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'string' }),
 		/** Who recorded the refund/retention decision */
 		refundedById: uuid('refunded_by_id'),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_sales_customer_id').using('btree', table.customerId.asc().nullsLast().op('uuid_ops')),
@@ -180,9 +184,13 @@ export const saleItems = pgTable(
 		snapshotTaxRate: doublePrecision('snapshot_tax_rate'),
 
 		notes: varchar(),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_sale_items_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
@@ -265,16 +273,20 @@ export const salePayments = pgTable(
 		/** BCV Bs/$ official rate at payment time (always required) */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
 		/** Date when the payment was actually received */
-		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'date' }).notNull(),
+		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** Computed BCV USD equivalent: for Bs methods = amount / bcvRate, otherwise = (amount * exchangeRate) / bcvRate */
 		amountBcvUsd: doublePrecision('amount_bcv_usd').notNull(),
 		/** Payment reference number (transfer ref, etc.) */
 		reference: varchar(),
 		notes: varchar(),
 		/** Voided payment marker */
-		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_sale_payments_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),

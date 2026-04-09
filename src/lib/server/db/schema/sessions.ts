@@ -16,13 +16,17 @@ export const userSessions = pgTable(
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		userId: uuid('user_id').notNull(),
 		tokenHash: varchar('token_hash', { length: 64 }).notNull(),
-		expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+		expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
 		isActive: boolean('is_active').notNull().default(true),
 		ipAddress: varchar('ip_address', { length: 45 }),
 		userAgent: varchar('user_agent', { length: 255 }),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_user_sessions_expires_at').using(

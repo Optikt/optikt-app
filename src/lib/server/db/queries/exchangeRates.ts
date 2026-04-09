@@ -2,6 +2,7 @@ import { eq, desc, and, sql } from 'drizzle-orm';
 import { db } from '../index';
 import { currencies, exchangeRates } from '../schema';
 import type { Currency, NewCurrency, ExchangeRate, NewExchangeRate } from '../schema';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // CURRENCIES
@@ -36,7 +37,7 @@ export async function updateCurrency(
 ): Promise<Currency | undefined> {
 	const [currency] = await db
 		.update(currencies)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(currencies.id, id))
 		.returning();
 	return currency;

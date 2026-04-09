@@ -40,9 +40,13 @@ export const lensMaterials = pgTable(
 		refractiveIndex: doublePrecision('refractive_index'),
 		description: varchar(),
 		isActive: boolean('is_active').notNull().default(true),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		uniqueIndex('ix_lens_materials_code').using(
@@ -95,9 +99,13 @@ export const lensCatalogItems = pgTable(
 		stock: integer(),
 		notes: varchar(),
 		isActive: boolean('is_active').notNull().default(true),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_lens_catalog_items_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
@@ -137,8 +145,12 @@ export const lensOpticalRanges = pgTable(
 		cylinderMax: doublePrecision('cylinder_max'),
 		additionMin: doublePrecision('addition_min'),
 		additionMax: doublePrecision('addition_max'),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_lens_optical_ranges_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),

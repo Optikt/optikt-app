@@ -14,6 +14,7 @@ import {
 	type LensOpticalRange,
 	type NewLensOpticalRange
 } from '$lib/server/db/schema';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // LENS MATERIALS
@@ -51,7 +52,7 @@ export async function findLensMaterialByName(name: string): Promise<LensMaterial
 }
 
 export async function createLensMaterial(data: NewLensMaterial): Promise<LensMaterial> {
-	const now = new Date();
+	const now = nowISO();
 	const [material] = await db
 		.insert(lensMaterials)
 		.values({ ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now })
@@ -65,7 +66,7 @@ export async function updateLensMaterial(
 ): Promise<LensMaterial | null> {
 	const [updated] = await db
 		.update(lensMaterials)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(and(eq(lensMaterials.id, id), isNull(lensMaterials.deletedAt)))
 		.returning();
 	return updated ?? null;
@@ -74,7 +75,7 @@ export async function updateLensMaterial(
 export async function deleteLensMaterial(id: string): Promise<boolean> {
 	const [deleted] = await db
 		.update(lensMaterials)
-		.set({ deletedAt: new Date() })
+		.set({ deletedAt: nowISO() })
 		.where(and(eq(lensMaterials.id, id), isNull(lensMaterials.deletedAt)))
 		.returning({ id: lensMaterials.id });
 	return !!deleted;
@@ -220,7 +221,7 @@ export async function createLensCatalogItem(
 	data: NewLensCatalogItem,
 	ranges: Omit<NewLensOpticalRange, 'id' | 'lensCatalogItemId' | 'createdAt' | 'updatedAt'>[]
 ): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> {
-	const now = new Date();
+	const now = nowISO();
 	const itemId = crypto.randomUUID();
 
 	return db.transaction(async (tx) => {
@@ -251,7 +252,7 @@ export async function updateLensCatalogItem(
 	data: Partial<NewLensCatalogItem>,
 	ranges?: Omit<NewLensOpticalRange, 'id' | 'lensCatalogItemId' | 'createdAt' | 'updatedAt'>[]
 ): Promise<(LensCatalogItem & { ranges: LensOpticalRange[] }) | null> {
-	const now = new Date();
+	const now = nowISO();
 
 	return db.transaction(async (tx) => {
 		const [updated] = await tx
@@ -294,7 +295,7 @@ export async function updateLensCatalogItem(
 export async function deleteLensCatalogItem(id: string): Promise<boolean> {
 	const [deleted] = await db
 		.update(lensCatalogItems)
-		.set({ deletedAt: new Date() })
+		.set({ deletedAt: nowISO() })
 		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
 		.returning({ id: lensCatalogItems.id });
 	return !!deleted;
@@ -308,7 +309,7 @@ export async function deleteLensCatalogItem(id: string): Promise<boolean> {
 export async function resolvePendingLensMaterial(
 	pendingName: string,
 	refractiveIndex: number | null | undefined,
-	now: Date,
+	now: string,
 	executor: DbOrTx = db
 ): Promise<string> {
 	const [existing] = await executor

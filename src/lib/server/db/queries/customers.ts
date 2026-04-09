@@ -10,6 +10,7 @@ import {
 	type NewPrescription
 } from '$lib/server/db/schema';
 import type { InferSelectedRow, DbOrTx } from '$lib/server/db/types';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // CUSTOMERS
@@ -147,7 +148,7 @@ export async function searchCustomersByPhone(phone: string): Promise<Customer[]>
  * Create a new customer
  */
 export async function createCustomer(data: NewCustomer, executor: DbOrTx = db): Promise<Customer> {
-	const now = new Date();
+	const now = nowISO();
 	const [customer] = await executor
 		.insert(customers)
 		.values({
@@ -205,7 +206,7 @@ export async function updateCustomer(
 ): Promise<Customer | null> {
 	const [customer] = await db
 		.update(customers)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(customers.id, id))
 		.returning();
 	return customer ?? null;
@@ -217,7 +218,7 @@ export async function updateCustomer(
 export async function deleteCustomer(id: string): Promise<boolean> {
 	const result = await db
 		.update(customers)
-		.set({ deletedAt: new Date(), updatedAt: new Date() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(customers.id, id));
 	return result.count > 0;
 }
@@ -228,7 +229,7 @@ export async function deleteCustomer(id: string): Promise<boolean> {
 export async function restoreCustomer(id: string): Promise<Customer | null> {
 	const [customer] = await db
 		.update(customers)
-		.set({ deletedAt: null, updatedAt: new Date() })
+		.set({ deletedAt: null, updatedAt: nowISO() })
 		.where(eq(customers.id, id))
 		.returning();
 	return customer ?? null;
@@ -280,7 +281,7 @@ export async function createPrescription(
 	data: NewPrescription,
 	executor: DbOrTx = db
 ): Promise<Prescription> {
-	const now = new Date();
+	const now = nowISO();
 	const [prescription] = await executor
 		.insert(prescriptions)
 		.values({
@@ -303,7 +304,7 @@ export async function updatePrescription(
 ): Promise<Prescription | null> {
 	const [prescription] = await executor
 		.update(prescriptions)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(prescriptions.id, id))
 		.returning();
 	return prescription ?? null;
@@ -328,7 +329,7 @@ export async function unsetCurrentPrescriptions(
 	}
 	await executor
 		.update(prescriptions)
-		.set({ isCurrent: false, updatedAt: new Date() })
+		.set({ isCurrent: false, updatedAt: nowISO() })
 		.where(and(...conditions));
 }
 
@@ -338,7 +339,7 @@ export async function unsetCurrentPrescriptions(
 export async function deletePrescription(id: string): Promise<boolean> {
 	const result = await db
 		.update(prescriptions)
-		.set({ deletedAt: new Date(), updatedAt: new Date() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(prescriptions.id, id));
 	return result.count > 0;
 }

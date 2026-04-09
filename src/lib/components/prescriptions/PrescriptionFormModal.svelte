@@ -9,9 +9,10 @@
 		toastUnboundErrors,
 		getErrorMessage,
 		getFullName,
-		dateFromUTC
+		parseISODateToLocal
 	} from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import { nowUTC } from '$lib/dates';
 	import { LensType, ALL_LENS_TYPES, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
 
@@ -117,8 +118,8 @@
 				formInstanceId = generateUUID();
 				if (prescription) {
 					formData = {
-						// Convert UTC midnight (from DB) to local midnight (for Datepicker)
-						prescriptionDate: dateFromUTC(prescription.prescriptionDate),
+						// Convert ISO date string (from DB) to local midnight Date (for Datepicker)
+						prescriptionDate: parseISODateToLocal(prescription.prescriptionDate),
 						recommendedLensType: prescription.recommendedLensType ?? LensType.MONOFOCAL,
 						odSphere: prescription.odSphere?.toString() ?? '',
 						odCylinder: prescription.odCylinder?.toString() ?? '',
@@ -143,7 +144,7 @@
 					};
 				} else {
 					formData = {
-						prescriptionDate: new Date(),
+						prescriptionDate: nowUTC(),
 						recommendedLensType: LensType.MONOFOCAL,
 						odSphere: '',
 						odCylinder: '',
@@ -320,7 +321,7 @@
 				label="Fecha de Fórmula"
 				required
 				bind:value={formData.prescriptionDate}
-				availableTo={new Date()}
+				availableTo={nowUTC()}
 				error={formInstance.fields.prescriptionDate?.issues()}
 			/>
 			<div>

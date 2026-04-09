@@ -4,7 +4,6 @@ import {
 	index,
 	uuid,
 	timestamp,
-	date,
 	integer,
 	doublePrecision,
 	foreignKey,
@@ -29,7 +28,10 @@ export const prescriptions = pgTable(
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		customerId: uuid('customer_id').notNull(),
-		prescriptionDate: date('prescription_date', { mode: 'date' }).notNull(),
+		prescriptionDate: timestamp('prescription_date', {
+			withTimezone: true,
+			mode: 'string'
+		}).notNull(),
 		// Right eye (OD)
 		odSphere: doublePrecision('od_sphere'),
 		odCylinder: doublePrecision('od_cylinder'),
@@ -55,9 +57,13 @@ export const prescriptions = pgTable(
 		doctorName: varchar('doctor_name'),
 		// Current prescription flag
 		isCurrent: boolean('is_current').notNull().default(false),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_prescriptions_customer_id').using(

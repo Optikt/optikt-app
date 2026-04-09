@@ -43,8 +43,12 @@ export const inventoryLots = pgTable(
 		bcvRateAtPurchase: doublePrecision('bcv_rate_at_purchase').notNull(),
 		/** false when quantityAvailable = 0 */
 		isActive: boolean('is_active').notNull().default(true),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_inventory_lots_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),

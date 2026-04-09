@@ -22,7 +22,7 @@ export interface HistoryEntryResponse {
 	id: string;
 	action: ActionType;
 	changes: ChangeRecord;
-	changedAt: Date;
+	changedAt: string;
 	changedByName: string | null;
 	reason: string | null;
 }

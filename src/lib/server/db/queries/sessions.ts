@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { userSessions, users, type Session } from '$lib/server/db/schema';
 import { UserRole } from '$lib/shared/enums';
+import { nowISO } from '$lib/dates';
 
 // Session validation result type
 export type SessionWithUser = {
@@ -9,7 +10,7 @@ export type SessionWithUser = {
 		id: string;
 		userId: string;
 		tokenHash: string;
-		expiresAt: Date;
+		expiresAt: string;
 		isActive: boolean;
 	};
 	user: {
@@ -59,11 +60,11 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<Session
 export async function createSession(data: {
 	userId: string;
 	tokenHash: string;
-	expiresAt: Date;
+	expiresAt: string;
 	ipAddress?: string | null;
 	userAgent?: string | null;
 }): Promise<Session> {
-	const now = new Date();
+	const now = nowISO();
 	const [session] = await db
 		.insert(userSessions)
 		.values({
@@ -84,10 +85,10 @@ export async function createSession(data: {
 /**
  * Update session expiration
  */
-export async function updateSessionExpiration(sessionId: string, expiresAt: Date): Promise<void> {
+export async function updateSessionExpiration(sessionId: string, expiresAt: string): Promise<void> {
 	await db
 		.update(userSessions)
-		.set({ expiresAt, updatedAt: new Date() })
+		.set({ expiresAt, updatedAt: nowISO() })
 		.where(eq(userSessions.id, sessionId));
 }
 
@@ -97,7 +98,7 @@ export async function updateSessionExpiration(sessionId: string, expiresAt: Date
 export async function deactivateSession(sessionId: string): Promise<void> {
 	await db
 		.update(userSessions)
-		.set({ isActive: false, updatedAt: new Date() })
+		.set({ isActive: false, updatedAt: nowISO() })
 		.where(eq(userSessions.id, sessionId));
 }
 
@@ -107,7 +108,7 @@ export async function deactivateSession(sessionId: string): Promise<void> {
 export async function deactivateAllUserSessions(userId: string): Promise<void> {
 	await db
 		.update(userSessions)
-		.set({ isActive: false, updatedAt: new Date() })
+		.set({ isActive: false, updatedAt: nowISO() })
 		.where(eq(userSessions.userId, userId));
 }
 

@@ -4,70 +4,14 @@
  */
 
 import type { Customer, Prescription } from '$lib/server/db/schema';
-
-// =============================================================================
-// DATE-ONLY UTILITIES
-// =============================================================================
-//
-// PostgreSQL `date` type stores date-only values (YYYY-MM-DD) without timezone.
-// Drizzle ORM returns these as JavaScript Date objects set to UTC midnight.
-//
-// Problem: In timezones behind UTC (like Venezuela UTC-4), UTC midnight is the
-// previous calendar day in local time. This causes Datepicker to show the wrong date.
-//
-// Solution: These utilities ensure consistent handling of date-only values by
-// converting between UTC midnight (from DB) and local midnight (for UI).
-//
-
-/**
- * Convert a date-only Date object from UTC midnight to local midnight.
- *
- * Use this when loading dates from the database for display in UI components.
- *
- * @example
- * // DB returns: 2000-03-09T00:00:00.000Z (UTC midnight = March 9)
- * // In Venezuela (UTC-4), local time is March 8, 8pm
- * // This function returns: Date at local midnight March 9
- * const localDate = dateFromUTC(dbDate);
- */
-export function dateFromUTC(date: Date | null | undefined): Date | undefined {
-	if (!date) return undefined;
-	// Extract the calendar date from UTC components (the actual date stored in DB)
-	// and create a new Date at local midnight with that calendar date
-	return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-}
-
-/**
- * Convert a local Date to an ISO date string (YYYY-MM-DD) using local components.
- *
- * Use this when submitting dates to forms/APIs that expect ISO date strings.
- *
- * @example
- * // User selects March 9 in the datepicker (local time)
- * // Returns: "2000-03-09"
- * const isoString = dateToISODateString(localDate);
- */
-export function dateToISODateString(date: Date | null | undefined): string {
-	if (!date) return '';
-	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-/**
- * Parse an ISO date string (YYYY-MM-DD) to a Date at local midnight.
- *
- * Use this when parsing date strings from APIs/forms for use in UI components.
- *
- * @example
- * // Form submits: "2000-03-09"
- * // Returns: Date at local midnight March 9
- * const localDate = parseISODateToLocal("2000-03-09");
- */
-export function parseISODateToLocal(isoString: string | null | undefined): Date | undefined {
-	if (!isoString) return undefined;
-	const [y, m, d] = isoString.split('-').map(Number);
-	return new Date(y, m - 1, d);
-}
 import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
+import { fromISO, fromISODate } from '$lib/dates';
+
+// =============================================================================
+// DATE-ONLY UTILITIES — re-exported from $lib/dates (canonical source)
+// =============================================================================
+
+export { toISODate as dateToISODateString, fromISODate as parseISODateToLocal } from '$lib/dates';
 
 /**
  * Format a number as USD currency (es-VE locale)
@@ -95,11 +39,11 @@ export function formatCurrency(value: number): string {
 
 /**
  * Format a date for display (es-VE locale, long month)
- * Example: formatDate(new Date()) → "12 de febrero de 2026"
+ * Example: formatDate("2026-02-12") → "12 de febrero de 2026"
  *
- * Handles date-only values by using UTC components to avoid timezone shifts
- * that would show the wrong day. Birth dates are stored as date-only (no time),
- * so we extract UTC components to display the correct calendar date.
+ * Handles date-only strings ("YYYY-MM-DD") by parsing to local midnight
+ * to avoid timezone shifts in negative-UTC timezones.
+ * Full ISO / timestamptz strings are parsed with `new Date()`.
  */
 export function formatDate(
 	date: Date | string | null,
@@ -109,19 +53,10 @@ export function formatDate(
 
 	let d: Date;
 	if (typeof date === 'string') {
-		// Check if it's a date-only string (YYYY-MM-DD)
-		if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-			// Parse as local date to avoid timezone shifts
-			const [y, m, dy] = date.split('-').map(Number);
-			d = new Date(y, m - 1, dy);
-		} else {
-			d = new Date(date);
-		}
+		// Date-only strings → parse at local midnight to avoid timezone shifts
+		d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? fromISODate(date)! : fromISO(date);
 	} else {
-		// For Date objects representing date-only values (like birth dates),
-		// extract UTC components and create a local date to prevent timezone shift
-		// e.g., 1975-08-01T00:00:00.000Z should display as Aug 1, not July 31
-		d = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+		d = date;
 	}
 
 	// When dateStyle/timeStyle is used, individual components (year/month/day)

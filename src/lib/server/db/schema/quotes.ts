@@ -40,7 +40,7 @@ export const quotes = pgTable(
 		customerId: uuid('customer_id'),
 		/** Who created the quote */
 		sellerId: uuid('seller_id').notNull(),
-		quoteDate: timestamp('quote_date', { mode: 'date' }).notNull(),
+		quoteDate: timestamp('quote_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** DRAFT → CONVERTED | CANCELLED | EXPIRED */
 		status: quoteStatusEnum().notNull().default('DRAFT'),
 		subtotal: doublePrecision().notNull(),
@@ -53,11 +53,15 @@ export const quotes = pgTable(
 		/** FK to created sale when converted */
 		conversionSaleId: uuid('conversion_sale_id'),
 		/** Optional expiration date */
-		validUntil: timestamp('valid_until', { mode: 'date' }),
+		validUntil: timestamp('valid_until', { withTimezone: true, mode: 'string' }),
 		notes: varchar(),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_quotes_customer_id').using(
@@ -145,9 +149,13 @@ export const quoteItems = pgTable(
 		snapshotTaxRate: doublePrecision('snapshot_tax_rate'),
 
 		notes: varchar(),
-		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
-		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
 	},
 	(table) => [
 		index('ix_quote_items_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),

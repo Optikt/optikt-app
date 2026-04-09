@@ -16,6 +16,7 @@ import {
 import { db } from '$lib/server/db';
 import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
+import { nowISO } from '$lib/dates';
 
 // Product with related brand and supplier data
 export type ProductWithRelations = Product & {
@@ -261,7 +262,7 @@ export async function updateProduct(
 ): Promise<Product | null> {
 	const [product] = await db
 		.update(products)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(products.id, id))
 		.returning();
 	return product ?? null;
@@ -273,7 +274,11 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<boolean> {
 	const result = await db
 		.update(products)
-		.set({ deletedAt: new Date(), isActive: false, updatedAt: new Date() })
+		.set({
+			deletedAt: nowISO(),
+			isActive: false,
+			updatedAt: nowISO()
+		})
 		.where(eq(products.id, id));
 	return result.count > 0;
 }
@@ -284,7 +289,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
 export async function restoreProduct(id: string): Promise<Product | null> {
 	const [product] = await db
 		.update(products)
-		.set({ deletedAt: null, isActive: true, updatedAt: new Date() })
+		.set({ deletedAt: null, isActive: true, updatedAt: nowISO() })
 		.where(eq(products.id, id))
 		.returning();
 	return product ?? null;
@@ -307,7 +312,7 @@ export async function incrementProductStock(
 		.update(products)
 		.set({
 			stock: sql`${products.stock} + ${quantity}`,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(products.id, productId));
 }
@@ -325,7 +330,7 @@ export async function decrementProductStock(
 		.update(products)
 		.set({
 			stock: sql`${products.stock} - ${quantity}`,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(products.id, productId));
 }

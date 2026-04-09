@@ -8,6 +8,7 @@ import {
 	customers,
 	type Sale
 } from '$lib/server/db/schema';
+import { todayEnd, todayStart, toUTCString } from '$lib/dates';
 
 // ============================================================================
 // TYPES
@@ -44,10 +45,8 @@ export interface LowStockItem {
 
 /** Get all dashboard stats in one call (parallel queries). */
 export async function getDashboardStats(): Promise<DashboardStats> {
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	const endOfDay = new Date(today);
-	endOfDay.setHours(23, 59, 59, 999);
+	const todayStr = toUTCString(todayStart());
+	const endOfDayStr = toUTCString(todayEnd());
 
 	const [
 		salesToday,
@@ -67,8 +66,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 			.where(
 				and(
 					isNull(sales.deletedAt),
-					gte(sales.saleDate, today),
-					lte(sales.saleDate, endOfDay),
+					gte(sales.saleDate, todayStr),
+					lte(sales.saleDate, endOfDayStr),
 					sql`${sales.status} != 'CANCELLED'`
 				)
 			)

@@ -38,9 +38,7 @@ export interface PaymentsReportResult {
  * Fetch sales report for a date range
  */
 export const fetchSalesReport = query(DateRangeSchema, async (data): Promise<SalesReportResult> => {
-	const dateFrom = new Date(data.dateFrom);
-	const dateTo = new Date(data.dateTo);
-	return await getReportSales(dateFrom, dateTo);
+	return await getReportSales(data.dateFrom, data.dateTo);
 });
 
 /**
@@ -49,9 +47,7 @@ export const fetchSalesReport = query(DateRangeSchema, async (data): Promise<Sal
 export const fetchPaymentsReport = query(
 	DateRangeSchema,
 	async (data): Promise<PaymentsReportResult> => {
-		const dateFrom = new Date(data.dateFrom);
-		const dateTo = new Date(data.dateTo);
-		return await getReportPayments(dateFrom, dateTo);
+		return await getReportPayments(data.dateFrom, data.dateTo);
 	}
 );
 

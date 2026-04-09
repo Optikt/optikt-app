@@ -4,13 +4,8 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
-	import {
-		formatPrice,
-		formatDate,
-		dateToISODateString,
-		downloadCsv,
-		getErrorMessage
-	} from '$lib/utils';
+	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
+	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchPaymentsReport } from '$lib/remote/reports.remote';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';
 	import type {
@@ -32,9 +27,8 @@
 	let loading = $state(false);
 
 	// Date range state — default to current month
-	const now = new Date();
-	let dateFrom = $state(dateToISODateString(new Date(now.getFullYear(), now.getMonth(), 1)));
-	let dateTo = $state(dateToISODateString(now));
+	let dateFrom = $state(toISODate(monthStart()));
+	let dateTo = $state(toISODate(nowUTC()));
 
 	async function applyFilter() {
 		loading = true;

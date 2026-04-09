@@ -2,6 +2,7 @@
 	import { Calendar, CheckCircle2, Save, User } from '@lucide/svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import { formatDate, getFullName, parseISODateToLocal } from '$lib/utils';
+	import { nowUTC } from '$lib/dates';
 	import type { Customer } from '$lib/server/db/schema';
 	import PrescriptionFormFields from './PrescriptionFormFields.svelte';
 	import type { PrescriptionFieldIssues, PrescriptionFormData } from './prescription-form';
@@ -37,7 +38,7 @@
 
 	const title = $derived(mode === 'create' ? 'Nueva Fórmula' : 'Editar Fórmula');
 	const submitLabel = $derived(mode === 'create' ? 'Crear Fórmula' : 'Guardar Fórmula');
-	const activeDate = $derived(parseISODateToLocal(data.prescriptionDate) ?? new Date());
+	const activeDate = $derived(parseISODateToLocal(data.prescriptionDate) ?? nowUTC());
 	const dateChipLabel = $derived(
 		`${mode === 'create' ? 'Hoy' : 'Fecha'}: ${formatDate(activeDate, {
 			day: '2-digit',

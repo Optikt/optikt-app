@@ -5,8 +5,14 @@
 	import { createCustomerWithPrescription, updateCustomerForm } from '$lib/remote/customers.remote';
 	import type { CreateEntityResult } from '$lib/types';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
-	import { scrollToFirstError, toastUnboundErrors, getErrorMessage, dateFromUTC } from '$lib/utils';
+	import {
+		scrollToFirstError,
+		toastUnboundErrors,
+		getErrorMessage,
+		parseISODateToLocal
+	} from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import { nowUTC } from '$lib/dates';
 	import type { Customer } from '$lib/server/db/schema';
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
 
@@ -45,7 +51,7 @@
 	});
 
 	// Max date for birth date picker (no future dates)
-	const today = new Date();
+	const today = nowUTC();
 
 	// Reactivation modal state
 	let showReactivateModal = $state(false);
@@ -68,8 +74,8 @@
 						firstName: customer.firstName ?? '',
 						lastName: customer.lastName ?? '',
 						idNumber: customer.idNumber ?? '',
-						// Convert UTC midnight (from DB) to local midnight (for Datepicker)
-						birthDate: dateFromUTC(customer.birthDate),
+						// Convert ISO date string (from DB) to local midnight Date (for Datepicker)
+						birthDate: parseISODateToLocal(customer.birthDate),
 						primaryPhone: customer.primaryPhone ?? '',
 						email: customer.email ?? '',
 						address: customer.address ?? '',

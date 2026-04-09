@@ -36,6 +36,13 @@
       "when": 1775606279860,
       "tag": "0004_chubby_union_jack",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775865600000,
+      "tag": "0005_normalize_dates_to_timestamptz",
+      "breakpoints": true
     }
   ]
 }

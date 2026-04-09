@@ -28,6 +28,7 @@ import {
 } from '$lib/shared/enums';
 import { getErrorMessage } from '$lib/utils';
 import type { PaginatedResult } from '$lib/types';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // QUERIES
@@ -113,7 +114,7 @@ export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (
 				.set({
 					quantityAvailable: quantityAfter,
 					isActive: quantityAfter > 0,
-					updatedAt: new Date()
+					updatedAt: nowISO()
 				})
 				.where(eq(inventoryLots.id, lotId));
 
@@ -144,7 +145,7 @@ export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (
 				.update(products)
 				.set({
 					stock: sql`${products.stock} + ${quantityDelta}`,
-					updatedAt: new Date()
+					updatedAt: nowISO()
 				})
 				.where(eq(products.id, lot.productId!));
 
@@ -190,7 +191,7 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 				.set({
 					quantityAvailable: 0,
 					isActive: false,
-					updatedAt: new Date()
+					updatedAt: nowISO()
 				})
 				.where(eq(inventoryLots.id, data.lotId));
 
@@ -219,7 +220,7 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 					.update(products)
 					.set({
 						stock: sql`${products.stock} + ${quantityDelta}`,
-						updatedAt: new Date()
+						updatedAt: nowISO()
 					})
 					.where(eq(products.id, lot.productId));
 			}

@@ -6,6 +6,7 @@
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
+	import { nowUTC } from '$lib/dates';
 	import { FormInput, FormTextarea, ConfirmModal } from '$lib/components/ui';
 	import { createManualAdjustmentCmd } from '$lib/remote/inventory.remote';
 	import {
@@ -76,9 +77,7 @@
 		showsFinancialWarning && selectedLot ? selectedLot.unitPurchasePrice * parsedQuantity : 0
 	);
 
-	const currentMonth = new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' }).format(
-		new Date()
-	);
+	const currentMonth = formatDate(nowUTC(), { month: 'long', year: 'numeric' });
 
 	// Lot options for select
 	const lotOptions = $derived(

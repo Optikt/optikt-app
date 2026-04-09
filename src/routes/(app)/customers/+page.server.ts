@@ -4,14 +4,14 @@ import { getAllCustomers } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import { customers, sales } from '$lib/server/db/schema';
 import { isNull, count, countDistinct, gte, and, eq } from 'drizzle-orm';
+import { monthStart, toUTCString } from '$lib/dates';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
 		error(401, 'No autorizado');
 	}
 
-	const now = new Date();
-	const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+	const startOfMonth = toUTCString(monthStart());
 
 	const [[countResult], [newThisMonthResult], [pendingResult], customerList] = await Promise.all([
 		db.select({ count: count() }).from(customers).where(isNull(customers.deletedAt)),

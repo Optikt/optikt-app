@@ -9,6 +9,7 @@ import {
 } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
+import { nowISO } from '$lib/dates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -217,7 +218,7 @@ export async function consumeFromLot(
 		.set({
 			quantityAvailable: newAvailable,
 			isActive: newAvailable > 0,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(inventoryLots.id, lotId))
 		.returning();
@@ -243,7 +244,7 @@ export async function returnToLot(
 		.set({
 			quantityAvailable: newAvailable,
 			isActive: true,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(inventoryLots.id, lotId))
 		.returning();
@@ -290,7 +291,7 @@ export async function applyManualAdjustment(
 		.set({
 			quantityAvailable: quantityAfter,
 			isActive: quantityAfter > 0,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(inventoryLots.id, lotId));
 
@@ -319,7 +320,7 @@ export async function applyManualAdjustment(
 			.update(products)
 			.set({
 				stock: sql`${products.stock} + ${quantityDelta}`,
-				updatedAt: new Date()
+				updatedAt: nowISO()
 			})
 			.where(eq(products.id, lot.productId));
 	}

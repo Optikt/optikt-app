@@ -4,6 +4,7 @@ import {
 	getMovementsWithDetails,
 	countInventoryMovements
 } from '$lib/server/db/queries/inventoryMovements';
+import { daysAgo, nowUTC, toISODate } from '$lib/dates';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
@@ -13,11 +14,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const productId = url.searchParams.get('productId') || undefined;
 
 	// Default to last 30 days
-	const now = new Date();
-	const thirtyDaysAgo = new Date(now);
-	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-	const defaultDateFrom = thirtyDaysAgo.toISOString().slice(0, 10);
-	const defaultDateTo = now.toISOString().slice(0, 10);
+	const defaultDateFrom = toISODate(daysAgo(30));
+	const defaultDateTo = toISODate(nowUTC());
 
 	const filterOptions = {
 		productId,

@@ -12,6 +12,7 @@
 	} from '$lib/components/prescriptions/prescription-form';
 	import { createCustomerWithPrescription } from '$lib/remote/customers.remote';
 	import { scrollToFirstError, getErrorMessage, toastUnboundErrors } from '$lib/utils';
+	import { nowUTC } from '$lib/dates';
 	import type { CreateEntityResult } from '$lib/types';
 	import type { Customer } from '$lib/server/db/schema';
 	import CustomerReactivateModal from '$lib/components/customers/CustomerReactivateModal.svelte';
@@ -34,7 +35,7 @@
 
 	let rxData = $state(createPrescriptionFormData());
 
-	const today = new Date();
+	const today = nowUTC();
 
 	let showReactivateModal = $state(false);
 	let reactivationCandidate = $state<Customer | null>(null);

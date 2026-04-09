@@ -116,7 +116,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					supplierId: data.supplierId,
 					invoiceNumber: data.invoiceNumber ?? null,
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
-					orderDate: new Date(data.orderDate),
+					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
 					notes: data.notes ?? null,
 					status: PurchaseOrderStatus.DRAFT,
@@ -170,7 +170,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 		if (data.invoiceNumber !== undefined) updateData.invoiceNumber = data.invoiceNumber ?? null;
 		if (data.deliveryNoteNumber !== undefined)
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
-		if (data.orderDate) updateData.orderDate = new Date(data.orderDate);
+		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
 		if (data.notes !== undefined) updateData.notes = data.notes ?? null;
 

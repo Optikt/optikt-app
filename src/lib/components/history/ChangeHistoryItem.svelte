@@ -2,12 +2,13 @@
 	import type { ChangeRecord, EntityType, ActionType } from '$lib/server/db/schema';
 	import { actionLabels, actionIcons } from './display-utils';
 	import ChangesDiff from './ChangesDiff.svelte';
+	import { formatDate } from '$lib/utils';
 
 	interface Props {
 		entityType: EntityType;
 		action: ActionType;
 		changes: ChangeRecord;
-		changedAt: Date;
+		changedAt: string;
 		changedByName?: string | null;
 		reason?: string | null;
 		/** Optional: Map of related entity IDs to their display names */
@@ -32,12 +33,9 @@
 	};
 
 	const formattedDate = $derived(
-		changedAt.toLocaleDateString('es-VE', {
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
+		formatDate(changedAt, {
+			dateStyle: 'medium',
+			timeStyle: 'short'
 		})
 	);
 </script>

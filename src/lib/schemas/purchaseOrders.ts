@@ -40,7 +40,7 @@ export const CreatePurchaseOrderSchema = z.object({
 	supplierId: z.uuid('Proveedor es obligatorio'),
 	invoiceNumber: z.string().optional(),
 	deliveryNoteNumber: z.string().optional(),
-	orderDate: z.iso.datetime({ message: 'Fecha de orden inválida' }),
+	orderDate: z.iso.date('Fecha de orden inválida'),
 	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
 	notes: z.string().optional(),
 	items: z.array(PurchaseOrderItemSchema).min(1, 'Debe incluir al menos un ítem')
@@ -55,7 +55,7 @@ export const UpdatePurchaseOrderSchema = z.object({
 	supplierId: z.uuid().optional(),
 	invoiceNumber: z.string().optional(),
 	deliveryNoteNumber: z.string().optional(),
-	orderDate: z.iso.datetime().optional(),
+	orderDate: z.iso.date().optional(),
 	bcvRate: CoercedNumber.min(0).optional(),
 	notes: z.string().optional()
 });

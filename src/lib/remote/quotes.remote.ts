@@ -42,12 +42,13 @@ import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // HELPERS
 // ============================================================================
 
-function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now: Date) {
+function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now: string) {
 	return {
 		id: item.id ?? crypto.randomUUID(),
 		quoteId,
@@ -116,8 +117,8 @@ export const listQuotes = query(ListQuotesSchema, async (data): Promise<Paginate
 		status: data.status ?? undefined,
 		customerId: data.customerId ?? undefined,
 		sellerId: data.sellerId ?? undefined,
-		dateFrom: data.dateFrom ? new Date(data.dateFrom) : undefined,
-		dateTo: data.dateTo ? new Date(data.dateTo) : undefined,
+		dateFrom: data.dateFrom ?? undefined,
+		dateTo: data.dateTo ?? undefined,
 		search: data.search ?? undefined
 	};
 
@@ -237,7 +238,7 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 
 	// All writes in a single transaction
 	const quote = await db.transaction(async (tx) => {
-		const now = new Date();
+		const now = nowISO();
 		const quoteNumber = await getNextQuoteNumber(tx);
 
 		// Create new customer inside transaction if needed
@@ -266,13 +267,13 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 				quoteNumber,
 				customerId: customerId,
 				sellerId: context.userId!,
-				quoteDate: new Date(data.quoteDate),
+				quoteDate: data.quoteDate,
 				status: QuoteStatus.DRAFT,
 				subtotal,
 				discount: data.discount,
 				discountType: data.discountType,
 				total,
-				validUntil: data.validUntil ? new Date(data.validUntil) : null,
+				validUntil: data.validUntil ?? null,
 				notes: data.notes ?? null,
 				createdAt: now,
 				updatedAt: now
@@ -324,7 +325,7 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 	const total = Math.max(0, subtotal - globalDiscount);
 
 	const quote = await db.transaction(async (tx) => {
-		const now = new Date();
+		const now = nowISO();
 
 		// Update quote header
 		const [updated] = await tx
@@ -338,7 +339,7 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 				validUntil:
 					data.validUntil !== undefined
 						? data.validUntil
-							? new Date(data.validUntil)
+							? data.validUntil
 							: null
 						: existing.validUntil,
 				notes: data.notes !== undefined ? data.notes : existing.notes,
@@ -476,7 +477,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 
 	// All writes in a single transaction
 	const sale = await db.transaction(async (tx) => {
-		const now = new Date();
+		const now = nowISO();
 		const orderNumber = await getNextOrderNumber(tx);
 
 		// Create the sale

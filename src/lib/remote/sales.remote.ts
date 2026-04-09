@@ -53,6 +53,7 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { inventoryMovements } from '$lib/server/db/schema';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // TYPES
@@ -86,8 +87,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		status: data.status ?? undefined,
 		customerId: data.customerId ?? undefined,
 		sellerId: data.sellerId ?? undefined,
-		dateFrom: data.dateFrom ? new Date(data.dateFrom) : undefined,
-		dateTo: data.dateTo ? new Date(data.dateTo) : undefined,
+		dateFrom: data.dateFrom ?? undefined,
+		dateTo: data.dateTo ?? undefined,
 		search: data.search ?? undefined
 	};
 
@@ -229,7 +230,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 
 	// All writes in a single transaction
 	const { sale, newCustomer } = await db.transaction(async (tx) => {
-		const now = new Date();
+		const now = nowISO();
 		let customerId: string;
 		let createdCustomer: Customer | null = null;
 
@@ -261,7 +262,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				orderNumber,
 				customerId,
 				sellerId: context.userId!,
-				saleDate: new Date(data.saleDate),
+				saleDate: data.saleDate,
 				status: SaleStatus.PENDING,
 				subtotal,
 				discount: data.discount,
@@ -360,7 +361,6 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 	// Use the user-entered USD BCV amount directly (avoids floating-point drift from back-calculation)
 	const method = data.paymentMethod as PaymentMethod;
 	const amountBcvUsd = data.usdBcvAmount;
-	const paymentDate = new Date(`${data.paymentDate}T12:00:00.000Z`);
 
 	if (!isBsPaymentMethod(method) && !data.exchangeRate) {
 		return { success: false as const, error: 'Tasa de cambio requerida para este método' };
@@ -375,7 +375,7 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 				amount: data.amount,
 				exchangeRate: data.exchangeRate ?? null,
 				bcvRate: data.bcvRate,
-				paymentDate,
+				paymentDate: data.paymentDate,
 				amountBcvUsd,
 				reference: data.reference ?? null,
 				notes: data.notes ?? null
@@ -472,7 +472,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 	}
 
 	await db.transaction(async (tx) => {
-		const now = new Date();
+		const now = nowISO();
 
 		// Get all items for this sale
 		const items = await tx

@@ -31,6 +31,7 @@ import {
 } from '$lib/schemas/users';
 
 import type { UserListItem, PaginatedUsers, CreateUserResult } from '$lib/types/users';
+import { nowISO } from '$lib/dates';
 
 /**
  * List users with pagination, search, and filtering
@@ -167,7 +168,7 @@ export const createUser = command(CreateUserSchema, async (input): Promise<Creat
 		parallelism: 1
 	});
 
-	const now = new Date();
+	const now = nowISO();
 	const [newUser] = await db
 		.insert(users)
 		.values({
@@ -316,7 +317,7 @@ export const toggleUserActive = command(UserIdSchema, async (input): Promise<Use
 
 	const [updatedUser] = await db
 		.update(users)
-		.set({ isActive: !user.isActive, updatedAt: new Date() })
+		.set({ isActive: !user.isActive, updatedAt: nowISO() })
 		.where(eq(users.id, input.id))
 		.returning({
 			id: users.id,
@@ -433,7 +434,7 @@ export const createUserForm = form(
 			parallelism: 1
 		});
 
-		const now = new Date();
+		const now = nowISO();
 		const [newUser] = await db
 			.insert(users)
 			.values({

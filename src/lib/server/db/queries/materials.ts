@@ -18,6 +18,7 @@ import type { SelectedFields } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { materials, type Material, type NewMaterial } from '$lib/server/db/schema';
 import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
+import { nowISO } from '$lib/dates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -202,7 +203,7 @@ export async function findMaterialByName(
 export async function createMaterial(
 	data: Omit<NewMaterial, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<Material> {
-	const now = new Date();
+	const now = nowISO();
 	const [material] = await db
 		.insert(materials)
 		.values({
@@ -224,7 +225,7 @@ export async function updateMaterial(
 ): Promise<Material | null> {
 	const [material] = await db
 		.update(materials)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(materials.id, id))
 		.returning();
 	return material ?? null;
@@ -236,7 +237,7 @@ export async function updateMaterial(
 export async function deleteMaterial(id: string): Promise<boolean> {
 	const result = await db
 		.update(materials)
-		.set({ deletedAt: new Date(), updatedAt: new Date() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(materials.id, id));
 	return result.count > 0;
 }
@@ -250,7 +251,7 @@ export async function restoreMaterial(id: string): Promise<Material> {
 		.set({
 			deletedAt: null,
 			isActive: true,
-			updatedAt: new Date()
+			updatedAt: nowISO()
 		})
 		.where(eq(materials.id, id))
 		.returning();
@@ -265,7 +266,7 @@ export async function restoreMaterial(id: string): Promise<Material> {
 export async function resolvePendingMaterial(
 	pendingName: string,
 	productType: string,
-	now: Date,
+	now: string,
 	executor: DbOrTx = db
 ): Promise<string> {
 	const [existing] = await executor

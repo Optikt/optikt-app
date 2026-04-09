@@ -6,6 +6,7 @@
 	import { createNewQuote } from '$lib/remote/quotes.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
+	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { PatientEye } from '$lib/shared/contracts/common';
@@ -68,7 +69,7 @@
 	let customerId = $state('');
 	let selectedCustomer = $state<Customer | null>(null);
 	let newCustomer = $state<NewCustomerData | null>(null);
-	let quoteDate = $state<Date>(new Date());
+	let quoteDate = $state<Date>(nowUTC());
 	let discount = $state(0);
 	let discountType = $state<DiscountTypeEnum>(DiscountType.FIXED);
 	let notes = $state('');

@@ -15,6 +15,7 @@ import {
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
+import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
 	quotes,
 	quoteItems,
@@ -55,8 +56,8 @@ export interface QuoteFilterOptions {
 	status?: string;
 	customerId?: string;
 	sellerId?: string;
-	dateFrom?: Date;
-	dateTo?: Date;
+	dateFrom?: string;
+	dateTo?: string;
 	search?: string;
 }
 
@@ -102,9 +103,7 @@ function buildQuoteConditions(opts: QuoteFilterOptions): SQL | undefined {
 	}
 
 	if (opts.dateTo) {
-		const to = new Date(opts.dateTo);
-		to.setUTCHours(23, 59, 59, 999);
-		conditions.push(lte(quotes.quoteDate, to));
+		conditions.push(lte(quotes.quoteDate, toUTCString(toEndOfDay(fromISODate(opts.dateTo)!))));
 	}
 
 	if (opts.search) {
@@ -243,7 +242,7 @@ export async function findQuoteByIdWithRelations(
  * Create a new quote
  */
 export async function createQuote(data: NewQuote, executor: DbOrTx = db): Promise<Quote> {
-	const now = new Date();
+	const now = nowISO();
 	const [quote] = await executor
 		.insert(quotes)
 		.values({
@@ -266,7 +265,7 @@ export async function updateQuote(
 ): Promise<Quote | null> {
 	const [quote] = await executor
 		.update(quotes)
-		.set({ ...data, updatedAt: new Date() })
+		.set({ ...data, updatedAt: nowISO() })
 		.where(eq(quotes.id, id))
 		.returning();
 	return quote ?? null;
@@ -316,7 +315,7 @@ export async function createQuoteItems(
 	items: NewQuoteItem[],
 	executor: DbOrTx = db
 ): Promise<QuoteItem[]> {
-	const now = new Date();
+	const now = nowISO();
 	return await executor
 		.insert(quoteItems)
 		.values(

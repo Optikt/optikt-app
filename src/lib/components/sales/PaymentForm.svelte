@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { addPayment } from '$lib/remote/sales.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { toISODate, nowUTC } from '$lib/dates';
 	import {
 		ALL_PAYMENT_METHODS,
 		PAYMENT_METHOD_LABELS,
@@ -28,7 +29,7 @@
 	let amountEdited = $state(false);
 	let exchangeRate = $state(0);
 	let currentBcvRate = $state(0);
-	let paymentDate = $state(new Date().toISOString().slice(0, 10));
+	let paymentDate = $state(toISODate(nowUTC()));
 	let reference = $state('');
 	let notes = $state('');
 	let submitting = $state(false);
@@ -96,7 +97,7 @@
 		amountEdited = false;
 		exchangeRate = 0;
 		currentBcvRate = 0;
-		paymentDate = new Date().toISOString().slice(0, 10);
+		paymentDate = toISODate(nowUTC());
 		reference = '';
 		notes = '';
 	}
