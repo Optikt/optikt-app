@@ -32,6 +32,7 @@ import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import type { LensMaterial, LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
+import { nowISO } from '$lib/dates';
 
 // ============================================================================
 // OPTICAL RANGE COMPARISON HELPERS
@@ -226,7 +227,7 @@ export const createLensCatalogItemForm = form(
 		let { supplierId, materialId } = data;
 
 		const result = await db.transaction(async (tx) => {
-			const now = new Date();
+			const now = nowISO();
 
 			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
 				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
@@ -310,7 +311,7 @@ export const updateLensCatalogItemForm = form(
 
 		const { oldItem, result, rangesChanged, oldRangesSummary, newRangesSummary } =
 			await db.transaction(async (tx) => {
-				const now = new Date();
+				const now = nowISO();
 
 				const [existing] = await tx
 					.select()
