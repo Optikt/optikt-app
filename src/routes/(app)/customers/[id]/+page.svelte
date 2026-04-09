@@ -112,6 +112,10 @@
 		expandedPrescriptionId = expandedPrescriptionId === id ? null : id;
 	}
 
+	function scrollPrescriptionIntoView(e: Event) {
+		(e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+	}
+
 	// Delete prescription
 	let showDeleteModal = $state(false);
 	let deleteTarget = $state<Prescription | null>(null);
@@ -743,7 +747,8 @@
 									<td colspan="6">
 										<div
 											transition:slide={{ duration: 200 }}
-											class="bg-surface-container-low px-6 py-5"
+											onintroend={scrollPrescriptionIntoView}
+											class="scroll-mt-24 bg-surface-container-low px-6 py-5"
 										>
 											<div class="grid gap-5 lg:grid-cols-2">
 												<!-- OD Detail -->
