@@ -137,15 +137,21 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	}
 
 	if (opts.search) {
-		const pattern = `%${opts.search}%`;
-		conditions.push(
-			or(
-				ilike(customers.firstName, pattern),
-				ilike(customers.lastName, pattern),
-				ilike(customers.idNumber, pattern),
-				ilike(users.fullName, pattern)
-			)!
-		);
+		const rawSearch = opts.search.trim();
+		const pattern = `%${rawSearch}%`;
+		const searchConditions: SQL[] = [
+			ilike(customers.firstName, pattern),
+			ilike(customers.lastName, pattern),
+			ilike(customers.idNumber, pattern),
+			ilike(users.fullName, pattern)
+		];
+
+		const normalizedOrderNumber = rawSearch.replace(/^#/, '');
+		if (/^\d+$/.test(normalizedOrderNumber)) {
+			searchConditions.push(eq(sales.orderNumber, Number(normalizedOrderNumber)));
+		}
+
+		conditions.push(or(...searchConditions)!);
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
