@@ -1,10 +1,17 @@
 <script lang="ts">
-	import { Ban } from '@lucide/svelte';
+	import {
+		BadgeDollarSign,
+		Ban,
+		Building2,
+		CreditCard,
+		Smartphone,
+		WalletCards
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { voidPayment } from '$lib/remote/sales.remote';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
-	import { getPaymentMethodLabel } from '$lib/shared/enums';
+	import { getPaymentMethodLabel, PaymentMethod } from '$lib/shared/enums';
 	import type { SalePayment } from '$lib/server/db/schema';
 
 	interface Props {
@@ -46,89 +53,180 @@
 		}
 	}
 
-	const activePayments = $derived(payments.filter((p) => !p.voidedAt));
-	const voidedPayments = $derived(payments.filter((p) => p.voidedAt));
+	function formatOriginalAmount(payment: SalePayment): string {
+		const formatted = payment.amount.toLocaleString('es-VE', { minimumFractionDigits: 2 });
+
+		switch (payment.paymentMethod) {
+			case PaymentMethod.EFECTIVO_USD:
+				return `$${formatted}`;
+			case PaymentMethod.BINANCE_USDT:
+				return `${formatted} USDT`;
+			default:
+				return `${formatted} Bs`;
+		}
+	}
+
+	function paymentMethodTone(method: string): string {
+		switch (method) {
+			case PaymentMethod.PAGO_MOVIL_BS:
+				return 'bg-info-container text-on-info-container';
+			case PaymentMethod.TRANSFERENCIA_BS:
+				return 'bg-brand-navy/10 text-brand-navy';
+			case PaymentMethod.PUNTO_VENTA_BS:
+				return 'bg-purple-container text-on-purple-container';
+			case PaymentMethod.EFECTIVO_BS:
+				return 'bg-warning-container text-on-warning-container';
+			case PaymentMethod.EFECTIVO_USD:
+				return 'bg-success-container text-on-success-container';
+			case PaymentMethod.BINANCE_USDT:
+				return 'bg-surface-container-highest text-brand-navy';
+			default:
+				return 'bg-surface-container-high text-on-surface-variant';
+		}
+	}
+
+	function referenceText(payment: SalePayment): string {
+		if (payment.voidedAt) {
+			return payment.notes?.trim() ? `Anulado: ${payment.notes}` : 'Pago anulado';
+		}
+
+		return payment.reference?.trim() || payment.notes?.trim() || '—';
+	}
 </script>
 
 {#if payments.length === 0}
-	<p class="py-6 text-center text-base text-slate-400">No hay pagos registrados</p>
+	<div
+		class="rounded-[1.5rem] bg-surface-container-low px-6 py-10 text-center text-base text-slate-400"
+	>
+		No hay pagos registrados
+	</div>
 {:else}
-	<div class="overflow-x-auto rounded-lg border border-slate-200">
-		<table class="w-full text-sm">
-			<thead class="bg-slate-50">
-				<tr>
-					<th class="px-4 py-3 text-left text-sm font-semibold text-slate-600">Fecha</th>
-					<th class="px-4 py-3 text-left text-sm font-semibold text-slate-600">Método</th>
-					<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Monto</th>
-					<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Tasa</th>
-					<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">USD BCV</th>
-					<th class="px-4 py-3 text-left text-sm font-semibold text-slate-600">Ref.</th>
-					{#if allowVoid}
-						<th class="px-4 py-3 text-sm font-semibold text-slate-600"></th>
-					{/if}
-				</tr>
-			</thead>
-			<tbody>
-				{#each activePayments as payment (payment.id)}
-					<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
-						<td class="px-4 py-3 text-sm text-slate-600">
-							{formatDate(payment.paymentDate, { month: 'short' })}
-						</td>
-						<td class="px-4 py-3 text-sm font-medium text-slate-800">
-							{getPaymentMethodLabel(payment.paymentMethod)}
-						</td>
-						<td class="px-4 py-3 text-right font-mono text-sm text-slate-700">
-							{payment.amount.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-						</td>
-						<td class="px-4 py-3 text-right font-mono text-sm text-slate-500">
-							{#if payment.exchangeRate}
-								{payment.exchangeRate.toFixed(2)} /
-							{/if}
-							BCV {payment.bcvRate.toFixed(2)}
-						</td>
-						<td class="px-4 py-3 text-right font-mono text-sm font-semibold text-blue-700">
-							{formatPrice(payment.amountBcvUsd)}
-						</td>
-						<td class="px-4 py-3 text-sm text-slate-500">
-							{payment.reference ?? '—'}
-						</td>
+	<div class="overflow-hidden rounded-[1.5rem] bg-surface-container-low">
+		<div class="overflow-x-auto">
+			<table class="w-full min-w-[760px] text-sm">
+				<thead class="bg-surface-container-high text-left">
+					<tr>
+						<th
+							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Fecha</th
+						>
+						<th
+							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Método</th
+						>
+						<th
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Monto original</th
+						>
+						<th
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Tasa</th
+						>
+						<th
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Monto USD</th
+						>
+						<th
+							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Referencia</th
+						>
 						{#if allowVoid}
-							<td class="px-4 py-3 text-right">
-								<button
-									onclick={() => openVoid(payment)}
-									class="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-									title="Anular pago"
-								>
-									<Ban class="h-4 w-4" />
-								</button>
+							<th class="w-16 px-6 py-4"></th>
+						{/if}
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-surface-container-high">
+					{#each payments as payment (payment.id)}
+						<tr
+							class:opacity-65={payment.voidedAt}
+							class="bg-surface-container-lowest transition-colors hover:bg-surface-container-lowest/80"
+						>
+							<td class="px-6 py-5 align-top">
+								<div class:line-through={payment.voidedAt} class="font-medium text-brand-navy">
+									{formatDate(payment.paymentDate, { dateStyle: 'short' })}
+								</div>
+								<div class="mt-1 text-xs text-outline">
+									Reg. {formatDate(payment.createdAt, { hour: '2-digit', minute: '2-digit' })}
+								</div>
 							</td>
-						{/if}
-					</tr>
-				{/each}
-
-				{#each voidedPayments as payment (payment.id)}
-					<tr class="border-t border-slate-100 bg-red-50/30 opacity-60">
-						<td class="px-4 py-3 text-sm text-slate-400 line-through">
-							{formatDate(payment.paymentDate, { month: 'short' })}
-						</td>
-						<td class="px-4 py-3 text-sm text-slate-400 line-through">
-							{getPaymentMethodLabel(payment.paymentMethod)}
-						</td>
-						<td class="px-4 py-3 text-right font-mono text-sm text-slate-400 line-through">
-							{payment.amount.toLocaleString('es-VE', { minimumFractionDigits: 2 })}
-						</td>
-						<td class="px-4 py-3 text-right font-mono text-sm text-slate-400">—</td>
-						<td class="px-4 py-3 text-right font-mono text-sm text-slate-400 line-through">
-							{formatPrice(payment.amountBcvUsd)}
-						</td>
-						<td class="px-4 py-3 text-sm font-medium text-red-400">Anulado</td>
-						{#if allowVoid}
-							<td class="px-4 py-3"></td>
-						{/if}
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+							<td class="px-6 py-5 align-top">
+								<div class="flex items-center gap-3">
+									<div
+										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {paymentMethodTone(
+											payment.paymentMethod
+										)}"
+									>
+										{#if payment.paymentMethod === PaymentMethod.PAGO_MOVIL_BS}
+											<Smartphone class="h-4 w-4" />
+										{:else if payment.paymentMethod === PaymentMethod.TRANSFERENCIA_BS}
+											<Building2 class="h-4 w-4" />
+										{:else if payment.paymentMethod === PaymentMethod.PUNTO_VENTA_BS}
+											<CreditCard class="h-4 w-4" />
+										{:else if payment.paymentMethod === PaymentMethod.BINANCE_USDT}
+											<BadgeDollarSign class="h-4 w-4" />
+										{:else}
+											<WalletCards class="h-4 w-4" />
+										{/if}
+									</div>
+									<div>
+										<div
+											class:line-through={payment.voidedAt}
+											class="font-semibold text-on-surface"
+										>
+											{getPaymentMethodLabel(payment.paymentMethod)}
+										</div>
+										{#if payment.voidedAt}
+											<div
+												class="mt-1 text-xs font-semibold tracking-[0.14em] text-on-error-container uppercase"
+											>
+												Pago anulado
+											</div>
+										{/if}
+									</div>
+								</div>
+							</td>
+							<td class="px-6 py-5 text-right align-top font-mono text-sm text-on-surface-variant">
+								<span class:line-through={payment.voidedAt}>{formatOriginalAmount(payment)}</span>
+							</td>
+							<td class="px-6 py-5 text-right align-top font-mono text-sm text-outline">
+								{#if payment.exchangeRate}
+									<div>{payment.exchangeRate.toFixed(2)}</div>
+								{/if}
+								<div>BCV {payment.bcvRate.toFixed(2)}</div>
+							</td>
+							<td
+								class="px-6 py-5 text-right align-top font-mono text-base font-semibold text-brand-navy"
+							>
+								<span class:line-through={payment.voidedAt}
+									>{formatPrice(payment.amountBcvUsd)}</span
+								>
+							</td>
+							<td class="px-6 py-5 align-top text-sm text-outline">
+								<span class:italic={payment.voidedAt}>
+									{referenceText(payment)}
+								</span>
+							</td>
+							{#if allowVoid}
+								<td class="px-6 py-5 text-right align-top">
+									{#if !payment.voidedAt}
+										<button
+											type="button"
+											onclick={() => openVoid(payment)}
+											class="rounded-full bg-error-container/70 p-2 text-on-error-container transition-colors hover:bg-error-container"
+											title="Anular pago"
+										>
+											<Ban class="h-4 w-4" />
+										</button>
+									{:else}
+										<span class="inline-block h-9 w-9"></span>
+									{/if}
+								</td>
+							{/if}
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
 	</div>
 {/if}
 
