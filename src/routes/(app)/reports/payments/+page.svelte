@@ -48,6 +48,7 @@
 	function handleExportCsv() {
 		const headers = [
 			'Fecha',
+			'Registrado',
 			'Método',
 			'Monto Original',
 			'Tasa BCV',
@@ -58,6 +59,7 @@
 		];
 		const rows = payments.map((p) => [
 			formatDate(p.paymentDate, { dateStyle: 'short' }),
+			formatDate(p.createdAt, { dateStyle: 'short', timeStyle: 'short' }),
 			getPaymentMethodLabel(p.paymentMethod),
 			p.amount.toFixed(2),
 			p.bcvRate.toFixed(2),
@@ -95,25 +97,24 @@
 			<p class="text-2xl font-bold text-slate-900">{summary.countPayments}</p>
 		</div>
 		<div class="glass-card p-4">
-			<p class="text-sm text-slate-500">Ingresos Brutos (USD BCV)</p>
-			<p class="text-2xl font-bold text-slate-900">{formatPrice(summary.grossBcvUsd)}</p>
+			<p class="text-sm text-slate-500">Ingresos (USD BCV)</p>
+			<p class="text-2xl font-bold text-emerald-600">{formatPrice(summary.grossBcvUsd)}</p>
 		</div>
-		{#if summary.refundedBcvUsd > 0}
-			<div class="glass-card border-red-200 p-4">
-				<p class="text-sm text-red-500">Reembolsos</p>
-				<p class="text-2xl font-bold text-red-600">-{formatPrice(summary.refundedBcvUsd)}</p>
-			</div>
-		{/if}
 		{#if summary.retainedBcvUsd > 0}
 			<div class="glass-card border-amber-200 p-4">
 				<p class="text-sm text-amber-500">Depósitos Retenidos</p>
 				<p class="text-2xl font-bold text-amber-600">{formatPrice(summary.retainedBcvUsd)}</p>
 			</div>
 		{/if}
-		<div class="glass-card p-4">
-			<p class="text-sm text-slate-500">Ingresos Netos (USD BCV)</p>
-			<p class="text-2xl font-bold text-emerald-600">{formatPrice(summary.netBcvUsd)}</p>
-		</div>
+		{#if summary.refundCount > 0}
+			<div class="glass-card border-slate-200 p-4">
+				<p class="text-sm text-slate-500">Reembolsos Emitidos</p>
+				<p class="text-2xl font-bold text-slate-700">{formatPrice(summary.refundedBcvUsd)}</p>
+				<p class="text-xs text-slate-400">
+					{summary.refundCount} venta{summary.refundCount !== 1 ? 's' : ''}
+				</p>
+			</div>
+		{/if}
 		{#each summary.byMethod as { method, total, count } (method)}
 			<div class="glass-card p-4">
 				<p class="text-sm text-slate-500">{getPaymentMethodLabel(method)}</p>
@@ -145,7 +146,10 @@
 						onclick={() => goto(resolve(`/sales/${payment.saleId}`))}
 					>
 						<td class="px-4 py-3">
-							{formatDate(payment.paymentDate, { dateStyle: 'medium' })}
+							<div>{formatDate(payment.paymentDate, { dateStyle: 'medium' })}</div>
+							<div class="text-xs text-slate-400">
+								Reg. {formatDate(payment.createdAt, { hour: '2-digit', minute: '2-digit' })}
+							</div>
 						</td>
 						<td class="px-4 py-3">
 							{getPaymentMethodLabel(payment.paymentMethod)}

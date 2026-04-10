@@ -13,7 +13,7 @@
 		loading?: boolean;
 		icon?: Snippet;
 		onConfirm: () => void;
-		onCancel?: () => void; // Optional extra callback, modal closes automatically
+		onCancel?: () => void; // When provided, caller controls closing. Otherwise auto-closes.
 		shouldConfirm?: () => boolean | Promise<boolean>; // Determine if confirmation should be shown
 		permanent?: boolean;
 	}
@@ -37,8 +37,11 @@
 	let isChecking = $state(false);
 
 	function handleCancel() {
-		onCancel?.(); // Run extra callback if provided
-		open = false; // Always close
+		if (onCancel) {
+			onCancel(); // Caller controls closing via open binding
+		} else {
+			open = false; // Default: auto-close
+		}
 	}
 
 	async function handleConfirm() {

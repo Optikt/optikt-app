@@ -51,6 +51,7 @@ export interface SalesReportSummary {
 export interface ReportPayment {
 	id: string;
 	paymentDate: string;
+	createdAt: string;
 	paymentMethod: string;
 	amount: number;
 	exchangeRate: number | null;
@@ -74,14 +75,14 @@ export interface RefundEntry {
 }
 
 export interface PaymentsReportSummary {
-	/** Payments from active sales + retained cancellations */
+	/** Payments from active sales + retained cancellations — the real income */
 	grossBcvUsd: number;
-	/** Total refunded from cancelled sales */
+	/** Total refunded from cancelled sales (informational, NOT subtracted from gross) */
 	refundedBcvUsd: number;
+	/** Number of refunded sales in the period */
+	refundCount: number;
 	/** Total retained from cancelled sales (included in gross) */
 	retainedBcvUsd: number;
-	/** grossBcvUsd - refundedBcvUsd */
-	netBcvUsd: number;
 	countPayments: number;
 	byMethod: { method: string; total: number; count: number }[];
 }
@@ -157,6 +158,7 @@ export async function getReportPayments(
 		.select({
 			id: salePayments.id,
 			paymentDate: salePayments.paymentDate,
+			createdAt: salePayments.createdAt,
 			paymentMethod: salePayments.paymentMethod,
 			amount: salePayments.amount,
 			exchangeRate: salePayments.exchangeRate,
@@ -182,11 +184,12 @@ export async function getReportPayments(
 				lte(salePayments.paymentDate, toEnd)
 			)
 		)
-		.orderBy(desc(salePayments.paymentDate));
+		.orderBy(desc(salePayments.paymentDate), desc(salePayments.createdAt));
 
 	const reportPayments: ReportPayment[] = rows.map((r) => ({
 		id: r.id,
 		paymentDate: r.paymentDate,
+		createdAt: r.createdAt,
 		paymentMethod: r.paymentMethod,
 		amount: r.amount,
 		exchangeRate: r.exchangeRate,
@@ -250,8 +253,8 @@ export async function getReportPayments(
 	const summary: PaymentsReportSummary = {
 		grossBcvUsd,
 		refundedBcvUsd,
+		refundCount: refunds.length,
 		retainedBcvUsd,
-		netBcvUsd: grossBcvUsd - refundedBcvUsd,
 		countPayments: reportPayments.length,
 		byMethod: Array.from(methodMap.entries()).map(([method, data]) => ({
 			method,

@@ -1,3 +1,4 @@
+export { default as CancelSaleModal } from './CancelSaleModal.svelte';
 export { default as SalesTable } from './SalesTable.svelte';
 export { default as NewSaleForm } from './NewSaleForm.svelte';
 export { default as CustomerLookupInput } from './CustomerLookupInput.svelte';

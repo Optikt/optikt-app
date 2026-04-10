@@ -191,9 +191,9 @@ export async function getAllSales(options?: GetSalesOptions): Promise<SaleWithRe
 	const opts = options ?? {};
 	const where = buildSaleConditions(opts);
 
-	// Default: newest first
+	// Default: newest first (by order number)
 	const orderFn = opts.orderSort === 'asc' ? asc : desc;
-	const orderCol = opts.orderBy ? ORDER_COLUMNS[opts.orderBy] : sales.saleDate;
+	const orderCol = opts.orderBy ? ORDER_COLUMNS[opts.orderBy] : sales.orderNumber;
 
 	const base = db
 		.select({
