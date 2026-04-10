@@ -35,9 +35,67 @@
 
 **Alcance:**
 
-- Revisión visual de todas las pantallas clave (~15 screens)
-- Consistencia tipográfica, espaciado, colores semánticos
+- Alinear todas las pantallas con el design system "Precision Visionary" (brand-navy, brand-gold, brand-blue)
+- Migrar de componentes Flowbite a componentes propios (DataGrid, PageHeader, glass-card, etc.)
+- Consistencia tipográfica (Space Grotesk headings, Inter body), espaciado, colores semánticos
 - Sin cambios en lógica de negocio
+
+**Design System:** Stitch project `2149962653469234227`
+**Referencia de tokens:** "Optikt Clarity - Semantic Updates Showcase" (`2025c374`)
+
+#### Grupo A — Flujo de ventas (con mockup Stitch)
+
+| #   | Pantalla                  | Ruta                    | Mockup Stitch                                             | Estado     |
+| --- | ------------------------- | ----------------------- | --------------------------------------------------------- | ---------- |
+| A1  | Lista de ventas           | `/sales`                | "Lista de Ventas - Refinada" (`56909dd3`)                 | ✅ Hecho   |
+| A2  | Detalle de venta          | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`)     | ⬚ Pending |
+| A3  | Nueva venta (wizard)      | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)             | ⬚ Pending |
+| A4  | Fórmula / prescripción    | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)          | ⬚ Pending |
+
+#### Grupo B — Clientes (con mockup Stitch)
+
+| #   | Pantalla                  | Ruta                    | Mockup Stitch                                             | Estado     |
+| --- | ------------------------- | ----------------------- | --------------------------------------------------------- | ---------- |
+| B1  | Listado de clientes       | `/customers`            | "Listado de Clientes - Tipografía Unbounded" (`2b3e61af`)| ⬚ Pending |
+| B2  | Detalle de cliente        | `/customers/[id]`       | "Detalle de Cliente - Refinado" (`d495664a`)              | ⬚ Pending |
+| B3  | Nuevo cliente             | `/customers/new`        | "Nuevo Cliente - Refinada" (`9773df33`, `8b8204a7`)      | ⬚ Pending |
+
+#### Grupo C — Dashboard & auth (con mockup Stitch)
+
+| #   | Pantalla                  | Ruta                    | Mockup Stitch                                             | Estado     |
+| --- | ------------------------- | ----------------------- | --------------------------------------------------------- | ---------- |
+| C1  | Dashboard                 | `/dashboard`            | "Dashboard - Anotaciones Aplicadas" (`9d0e30d2`)         | ⬚ Pending |
+| C2  | Dashboard — tasas cambio  | `/dashboard`            | "Dashboard - Tasas de Cambio Abiertas" (`c393c22d`)      | ⬚ Pending |
+| C3  | Dashboard — perfil        | `/dashboard`            | "Dashboard - Perfil Abierto" (`6ec34713`)                | ⬚ Pending |
+| C4  | Dashboard — notificaciones| `/dashboard`            | "Dashboard - Notificaciones Abiertas" (`7adaf78a`)       | ⬚ Pending |
+| C5  | Login                     | `/login`                | "Login - Optik-T App" (`cd7932ab`)                       | ⬚ Pending |
+
+#### Grupo D — Páginas sin mockup (migrar a design system)
+
+Estas páginas usan Flowbite viejo. Se migran al design system sin mockup específico, usando los patrones establecidos en Grupo A–C como referencia.
+
+| #   | Pantalla                  | Ruta                    | Estado     |
+| --- | ------------------------- | ----------------------- | ---------- |
+| D1  | Productos                 | `/products`             | ⬚ Pending |
+| D2  | Marcas                    | `/brands`               | ⬚ Pending |
+| D3  | Proveedores               | `/suppliers`            | ⬚ Pending |
+| D4  | Presupuestos              | `/quotes`               | ⬚ Pending |
+| D5  | Usuarios                  | `/users`                | ⬚ Pending |
+| D6  | Compras                   | `/purchases`            | ⬚ Pending |
+| D7  | Lentes                    | `/lenses`               | ⬚ Pending |
+| D8  | Materiales                | `/materials`            | ⬚ Pending |
+| D9  | Configuración             | `/config`               | 🟡 Parcial |
+| D10 | Reportes                  | `/reports`              | 🟡 Parcial |
+
+#### Orden sugerido de ejecución
+
+1. **A2 — Detalle de venta** → destino natural del "Ver" en la lista recién hecha
+2. **A3 — Nueva venta** → completa el flujo de ventas
+3. **A4 — Fórmula** → componente compartido usado en ventas y clientes
+4. **B1–B3 — Clientes** → segundo flujo más usado
+5. **C1–C4 — Dashboard** → centro de la app, múltiples mockups disponibles
+6. **C5 — Login** → primera impresión del usuario
+7. **D1–D10 — Páginas restantes** → migración progresiva sin mockup
 
 ---
 
