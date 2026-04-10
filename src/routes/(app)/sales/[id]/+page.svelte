@@ -1,567 +1,405 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
-	import {
-		ArrowLeft,
-		User,
-		Calendar,
-		Package,
-		FileText,
-		Hash,
-		CircleX,
-		Eye,
-		FlaskConical
-	} from '@lucide/svelte';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { CircleX, ChevronDown, ChevronUp, FileText, History, Wallet } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { SaleStatusBadge } from '$lib/components/ui';
-	import { CancelSaleModal, PaymentForm, PaymentsTable } from '$lib/components/sales';
-	import { MovementsTable } from '$lib/components/purchases';
-	import { formatPrice, formatDate } from '$lib/utils';
 	import {
-		SaleStatus,
-		DiscountType,
-		RefundStatus,
-		getTreatmentCategoryLabel
-	} from '$lib/shared/enums';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
-	import type { SalePayment } from '$lib/server/db/schema';
-	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
+		CancelSaleModal,
+		PaymentForm,
+		PaymentsTable,
+		SaleBalanceCards,
+		SaleItemsTable,
+		SaleMovementsSection
+	} from '$lib/components/sales';
+	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
-	import { TaxBreakdownDisplay } from '$lib/components/ui';
-	import { untrack } from 'svelte';
+	import { formatDate, formatPrice } from '$lib/utils';
+	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
+	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
+	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
+	import type { SalePayment } from '$lib/server/db/schema';
+	import { tick, untrack } from 'svelte';
 
-	// Server data
 	let { data } = $props();
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
 	let items = $state<SaleItemWithDetails[]>(untrack(() => data.items));
 	let payments = $state<SalePayment[]>(untrack(() => data.payments));
 	let bcvRate = $state<number>(untrack(() => data.bcvRate));
 	let movements = $state<MovementWithDetails[]>(untrack(() => data.movements));
+	let showCancelModal = $state(false);
+	let showPaymentComposer = $state(false);
 
-	// Derived
+	let formattedOrderNumber = $derived(`#${String(sale.orderNumber).padStart(4, '0')}`);
 	let remainingBcvUsd = $derived(Math.max(0, sale.total - sale.paidAmountBcvUsd));
+	let paymentProgressPercent = $derived(
+		sale.total > 0 ? Math.min(100, (sale.paidAmountBcvUsd / sale.total) * 100) : 0
+	);
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
-
-	/** Main items (PRODUCT + LENS_PAIR), excluding TREATMENT rows */
-	let mainItems = $derived(items.filter((i) => i.itemType !== SaleItemType.TREATMENT));
-
-	/** Get treatment items for a given parent sale item */
-	function getTreatments(parentId: string): SaleItemWithDetails[] {
-		return items.filter(
-			(i) => i.itemType === SaleItemType.TREATMENT && i.parentSaleItemId === parentId
-		);
-	}
-
-	/** Compute tax breakdown from stored snapshot fields */
+	let showPaymentForm = $derived(isPending && remainingBcvUsd > 0.01);
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
+	let lastUpdatedLabel = $derived(
+		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
+	);
 
-	/** Grouped display rows — consolidates LENS_PAIR items that share the same catalog item */
-	interface DisplayGroup {
-		key: string;
-		item: SaleItemWithDetails;
-		quantity: number;
-		discountAmount: number;
-		lineTotal: number;
-		treatments: SaleItemWithDetails[];
+	function syncFromData() {
+		const next = untrack(() => data);
+		sale = next.sale;
+		items = next.items;
+		payments = next.payments;
+		bcvRate = next.bcvRate;
+		movements = next.movements;
 	}
-
-	let displayGroups: DisplayGroup[] = $derived.by(() => {
-		const groups: DisplayGroup[] = [];
-		const lensGroupMap = new SvelteMap<string, DisplayGroup>();
-
-		for (const item of mainItems) {
-			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
-				const existing = lensGroupMap.get(item.lensCatalogItemId);
-				if (existing) {
-					existing.quantity += item.quantity;
-					existing.discountAmount += itemDiscountAmount(item);
-					existing.lineTotal += item.unitPrice * item.quantity - itemDiscountAmount(item);
-					existing.treatments.push(...getTreatments(item.id));
-				} else {
-					const discAmt = itemDiscountAmount(item);
-					const group: DisplayGroup = {
-						key: `lens-${item.lensCatalogItemId}`,
-						item,
-						quantity: item.quantity,
-						discountAmount: discAmt,
-						lineTotal: item.unitPrice * item.quantity - discAmt,
-						treatments: [...getTreatments(item.id)]
-					};
-					lensGroupMap.set(item.lensCatalogItemId, group);
-					groups.push(group);
-				}
-			} else {
-				const discAmt = itemDiscountAmount(item);
-				groups.push({
-					key: item.id,
-					item,
-					quantity: item.quantity,
-					discountAmount: discAmt,
-					lineTotal: item.unitPrice * item.quantity - discAmt,
-					treatments: getTreatments(item.id)
-				});
-			}
-		}
-
-		return groups;
-	});
-
-	// Action state
-	let showCancelModal = $state(false);
 
 	function customerName(): string {
-		if (!sale.customer) return '—';
+		if (!sale.customer) return 'Cliente no asignado';
 		return `${sale.customer.firstName} ${sale.customer.lastName}`;
 	}
 
 	function customerIdNumber(): string {
-		return sale.customer?.idNumber ?? '';
+		return sale.customer?.idNumber ?? 'Documento no registrado';
 	}
 
-	/** Compute item effective discount amount */
-	function itemDiscountAmount(item: SaleItemWithDetails): number {
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * item.unitPrice * item.quantity;
+	function actionButtonClasses(variant: 'neutral' | 'danger'): string {
+		if (variant === 'danger') {
+			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
 		}
-		return item.discount;
+
+		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
+	}
+
+	function refundCardClasses(): string {
+		if (sale.refundStatus === RefundStatus.REFUNDED) {
+			return 'bg-error-container/70 text-on-error-container';
+		}
+
+		if (sale.refundStatus === RefundStatus.RETAINED) {
+			return 'bg-warning-container/75 text-on-warning-container';
+		}
+
+		return 'bg-surface-container-low text-on-surface-variant';
+	}
+
+	function refundDecisionTitle(): string {
+		if (sale.refundStatus === RefundStatus.REFUNDED) return 'Reembolso emitido';
+		if (sale.refundStatus === RefundStatus.RETAINED) return 'Depósito retenido';
+		return 'Sin pagos previos';
 	}
 
 	async function handleCancelSuccess() {
+		showPaymentComposer = false;
 		await invalidateAll();
-		sale = data.sale;
-		items = data.items;
-		payments = data.payments;
-		bcvRate = data.bcvRate;
+		syncFromData();
 	}
 
 	async function handlePaymentAdded(_newPaidAmount: number) {
+		showPaymentComposer = false;
 		await invalidateAll();
-		sale = data.sale;
-		items = data.items;
-		payments = data.payments;
-		bcvRate = data.bcvRate;
+		syncFromData();
 	}
 
 	async function handlePaymentVoided() {
 		await invalidateAll();
-		sale = data.sale;
-		items = data.items;
-		payments = data.payments;
-		bcvRate = data.bcvRate;
+		syncFromData();
 	}
 
 	function goBack() {
 		goto(resolve('/sales'));
 	}
+
+	function scrollToHistory() {
+		document.getElementById('sale-history')?.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start'
+		});
+	}
+
+	async function togglePaymentComposer(forceOpen?: boolean) {
+		showPaymentComposer = forceOpen ?? !showPaymentComposer;
+
+		if (showPaymentComposer) {
+			await tick();
+			document.getElementById('payment-composer')?.scrollIntoView({
+				behavior: 'smooth',
+				block: 'start'
+			});
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>Venta #{sale.orderNumber} - {customerName()} - Optikt</title>
+	<title>Venta {formattedOrderNumber} - {customerName()} - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<!-- Back button -->
-	<button
-		onclick={goBack}
-		class="mb-4 flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-blue-600"
+<div class="space-y-6 p-6">
+	<PageHeader
+		title={`Venta ${formattedOrderNumber}`}
+		subtitle="Detalle de venta"
+		backLabel="Volver a Ventas"
+		backOnClick={goBack}
 	>
-		<ArrowLeft class="h-4 w-4" />
-		Volver a ventas
-	</button>
-
-	<!-- Sale Header Card -->
-	<div class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div>
-				<div class="flex items-center gap-3">
-					<h1 class="text-3xl font-bold text-slate-900">Venta #{sale.orderNumber}</h1>
-					<SaleStatusBadge status={sale.status} />
-				</div>
-				<p class="mt-1 font-mono text-sm text-slate-400">{sale.id}</p>
-			</div>
+		{#snippet actions()}
+			<button
+				type="button"
+				onclick={scrollToHistory}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<History class="h-4 w-4" />
+				Ver historial
+			</button>
 
 			{#if isPending}
-				<div class="flex gap-2">
-					<Button color="red" outline onclick={() => (showCancelModal = true)}>
-						<CircleX class="mr-2 h-5 w-5" />
-						Cancelar Venta
-					</Button>
-				</div>
+				<button
+					type="button"
+					onclick={() => (showCancelModal = true)}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'danger'
+					)}"
+				>
+					<CircleX class="h-4 w-4" />
+					Cancelar venta
+				</button>
 			{/if}
+		{/snippet}
+	</PageHeader>
+
+	<div class="-mt-2 flex flex-wrap items-center gap-3 text-on-surface-variant">
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Orden</span>
+			<span class="font-mono text-sm font-semibold text-brand-navy">{formattedOrderNumber}</span>
 		</div>
-
-		<!-- Info grid -->
-		<div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-			<div class="flex items-center gap-3 rounded-lg bg-blue-50/60 p-3">
-				<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-					<Hash class="h-5 w-5 text-blue-600" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-slate-500">Orden</p>
-					<p class="font-mono text-base font-semibold text-blue-700">#{sale.orderNumber}</p>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-				<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-					<User class="h-5 w-5 text-blue-600" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-slate-500">Cliente</p>
-					<p class="text-base font-semibold text-slate-900">{customerName()}</p>
-					{#if customerIdNumber()}
-						<p class="font-mono text-sm text-slate-500">{customerIdNumber()}</p>
-					{/if}
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-				<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100">
-					<Calendar class="h-5 w-5 text-purple-600" />
-				</div>
-				<div>
-					<p class="text-sm font-medium text-slate-500">Fecha</p>
-					<p class="text-base text-slate-900">{formatDate(sale.saleDate)}</p>
-				</div>
-			</div>
-
-			{#if sale.seller}
-				<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-					<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-						<User class="h-5 w-5 text-amber-600" />
-					</div>
-					<div>
-						<p class="text-sm font-medium text-slate-500">Vendedor</p>
-						<p class="text-base text-slate-900">{sale.seller.fullName}</p>
-					</div>
-				</div>
-			{/if}
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Cliente</span>
+			<span class="font-semibold text-brand-navy">{customerName()}</span>
+			<span class="font-mono text-sm text-outline">{customerIdNumber()}</span>
 		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Fecha</span>
+			<span class="font-semibold text-brand-navy"
+				>{formatDate(sale.saleDate, { dateStyle: 'medium' })}</span
+			>
+		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Vendedor</span>
+			<span class="font-semibold text-brand-navy">{sale.seller?.fullName ?? 'Sin asignar'}</span>
+		</div>
+		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
+			<SaleStatusBadge status={sale.status} />
+		</div>
+	</div>
 
-		{#if sale.notes}
-			<div class="mt-4 flex items-start gap-3 rounded-lg bg-amber-50 p-4">
-				<FileText class="mt-0.5 h-5 w-5 text-amber-500" />
-				<p class="text-base text-slate-700">{sale.notes}</p>
-			</div>
-		{/if}
-
-		{#if isCancelled && sale.cancellationReason}
-			<div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-				<div class="flex items-start gap-3">
-					<CircleX class="mt-0.5 h-5 w-5 text-red-500" />
-					<div class="space-y-1">
-						<p class="text-sm font-semibold text-red-700">Motivo de cancelación</p>
-						<p class="text-sm text-red-800">{sale.cancellationReason}</p>
-						<div class="flex flex-wrap gap-4 pt-1 text-xs text-red-600">
-							{#if sale.cancelledAt}
-								<span>{formatDate(sale.cancelledAt)}</span>
-							{/if}
-							{#if sale.cancelledBy}
-								<span>Por: {sale.cancelledBy.fullName}</span>
-							{/if}
+	{#if sale.notes || isCancelled}
+		<div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.95fr)]">
+			{#if sale.notes}
+				<section class="rounded-[1.5rem] bg-surface-container-low p-6">
+					<div class="flex items-start gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-xl bg-info-container text-on-info-container"
+						>
+							<FileText class="h-5 w-5" />
+						</div>
+						<div>
+							<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Observaciones
+							</p>
+							<p class="mt-2 text-base leading-relaxed text-on-surface">{sale.notes}</p>
 						</div>
 					</div>
-				</div>
-			</div>
+				</section>
+			{/if}
 
-			<!-- Refund/retention info -->
-			{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
-				{@const isRefunded = sale.refundStatus === RefundStatus.REFUNDED}
-				<div
-					class="mt-3 rounded-lg border p-4 {isRefunded
-						? 'border-red-200 bg-red-50'
-						: 'border-amber-200 bg-amber-50'}"
-				>
+			{#if isCancelled}
+				<section class="rounded-[1.5rem] p-6 {refundCardClasses()}">
 					<div class="flex items-start gap-3">
-						<div class="space-y-1">
-							<p class="text-sm font-semibold {isRefunded ? 'text-red-700' : 'text-amber-700'}">
-								{isRefunded ? 'Reembolso emitido' : 'Depósito retenido'}:
-								<span class="tabular-nums">{formatPrice(sale.refundAmount ?? 0)}</span>
-							</p>
-							{#if sale.refundNotes}
-								<p class="text-sm {isRefunded ? 'text-red-800' : 'text-amber-800'}">
-									{sale.refundNotes}
+						<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/30">
+							<CircleX class="h-5 w-5" />
+						</div>
+						<div class="space-y-3">
+							<div>
+								<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">
+									Estado de cancelación
 								</p>
-							{/if}
-							<div
-								class="flex flex-wrap gap-4 pt-1 text-xs {isRefunded
-									? 'text-red-600'
-									: 'text-amber-600'}"
-							>
-								{#if sale.refundedAt}
-									<span>{formatDate(sale.refundedAt)}</span>
+								<h2 class="mt-2 text-2xl font-semibold text-current">{refundDecisionTitle()}</h2>
+								<p class="mt-1 text-sm leading-relaxed text-current/80">
+									{sale.cancellationReason ?? 'Sin motivo registrado'}
+								</p>
+							</div>
+
+							<div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-current/85">
+								{#if sale.cancelledAt}
+									<span
+										>{formatDate(sale.cancelledAt, {
+											dateStyle: 'medium',
+											timeStyle: 'short'
+										})}</span
+									>
 								{/if}
-								{#if sale.refundedBy}
-									<span>Por: {sale.refundedBy.fullName}</span>
+								{#if sale.cancelledBy}
+									<span>Por: {sale.cancelledBy.fullName}</span>
 								{/if}
 							</div>
+
+							{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
+								<div class="rounded-2xl bg-white/30 px-4 py-3 text-sm">
+									<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">
+										Resolución financiera
+									</p>
+									<p class="mt-1 font-mono text-lg font-semibold text-current">
+										{formatPrice(sale.refundAmount ?? 0)}
+									</p>
+									{#if sale.refundNotes}
+										<p class="mt-1 text-sm text-current/80">{sale.refundNotes}</p>
+									{/if}
+								</div>
+							{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
+								<div class="rounded-2xl bg-white/30 px-4 py-3 text-sm text-current/85">
+									Sin pagos previos, no aplica reembolso.
+								</div>
+							{/if}
 						</div>
 					</div>
-				</div>
-			{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
-				<div class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-					<p class="text-sm text-slate-600">Sin pagos previos — no aplica reembolso.</p>
-				</div>
+				</section>
 			{/if}
-		{/if}
-	</div>
-
-	<!-- Items Table -->
-	<div class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h2 class="mb-4 text-xl font-semibold text-slate-900">Artículos</h2>
-
-		<div class="overflow-x-auto rounded-lg border border-slate-200">
-			<table class="w-full text-sm">
-				<thead class="bg-slate-50">
-					<tr>
-						<th class="px-4 py-3 text-left text-sm font-semibold text-slate-600">Artículo</th>
-						<th class="px-4 py-3 text-center text-sm font-semibold text-slate-600">Tipo</th>
-						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Cant.</th>
-						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Costo</th>
-						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">
-							Precio Unit.
-						</th>
-						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Descuento</th>
-						<th class="px-4 py-3 text-right text-sm font-semibold text-slate-600">Subtotal</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each displayGroups as group (group.key)}
-						<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
-							<td class="px-4 py-3">
-								<div class="flex items-center gap-3">
-									{#if group.item.lensCatalogItem}
-										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50">
-											<Eye class="h-4 w-4 text-indigo-500" />
-										</div>
-									{:else}
-										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-											<Package class="h-4 w-4 text-slate-500" />
-										</div>
-									{/if}
-									<div>
-										<p class="text-sm font-semibold text-slate-800">
-											{group.item.product?.name ?? group.item.lensCatalogItem?.name ?? '—'}
-										</p>
-										{#if group.item.product?.sku}
-											<p class="font-mono text-xs text-slate-500">{group.item.product.sku}</p>
-										{/if}
-									</div>
-								</div>
-							</td>
-							<td class="px-4 py-3 text-center">
-								{#if group.item.lensCatalogItem}
-									<span
-										class="inline-block rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"
-										>Lente</span
-									>
-								{:else}
-									<span
-										class="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
-										>Producto</span
-									>
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-sm">{group.quantity}</td>
-							<td class="px-4 py-3 text-right text-sm text-slate-400">
-								{#if group.item.snapshotCostUnit != null}
-									<span class="font-mono">{formatPrice(group.item.snapshotCostUnit)}</span>
-									{#if group.item.snapshotLotsCount != null && group.item.snapshotLotsCount > 1}
-										<span
-											class="ml-1 inline-block rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500"
-											title="Costo promedio de {group.item.snapshotLotsCount} lotes"
-											>×{group.item.snapshotLotsCount}</span
-										>
-									{/if}
-								{:else}
-									—
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-sm">
-								{formatPrice(group.item.unitPrice)}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-sm text-red-500">
-								{#if group.discountAmount > 0}
-									-{formatPrice(group.discountAmount)}
-									{#if group.item.discountType === DiscountType.PERCENTAGE}
-										<span class="text-xs text-slate-400">({group.item.discount}%)</span>
-									{/if}
-								{:else}
-									—
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-sm font-semibold">
-								{formatPrice(group.lineTotal)}
-							</td>
-						</tr>
-						<!-- Treatment rows -->
-						{#each group.treatments as treatment (treatment.id)}
-							<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/50">
-								<td class="px-4 py-3">
-									<div class="flex items-center gap-3">
-										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
-											<FlaskConical class="h-4 w-4 text-violet-500" />
-										</div>
-										<div>
-											<p class="text-sm font-semibold text-slate-800">
-												{treatment.supplierTreatment?.name ?? '—'}
-											</p>
-											{#if treatment.supplierTreatment?.category}
-												<span
-													class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
-													>{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}</span
-												>
-											{/if}
-										</div>
-									</div>
-								</td>
-								<td class="px-4 py-3 text-center">
-									<span
-										class="inline-block rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-600"
-										>Tratamiento</span
-									>
-								</td>
-								<td class="px-4 py-3 text-right font-mono text-sm">{treatment.quantity}</td>
-								<td class="px-4 py-3 text-right font-mono text-sm text-slate-400">—</td>
-								<td class="px-4 py-3 text-right font-mono text-sm">
-									{formatPrice(treatment.unitPrice)}
-								</td>
-								<td class="px-4 py-3 text-right font-mono text-sm text-red-500">—</td>
-								<td class="px-4 py-3 text-right font-mono text-sm font-semibold text-violet-600">
-									{formatPrice(treatment.unitPrice * treatment.quantity)}
-								</td>
-							</tr>
-						{/each}
-					{/each}
-				</tbody>
-			</table>
-		</div>
-	</div>
-
-	<!-- Totals + Payment Balance -->
-	<div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-		<!-- Totals -->
-		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-			<h3 class="mb-4 text-xl font-semibold text-slate-900">Resumen</h3>
-			<div class="space-y-3">
-				<div class="flex justify-between text-base">
-					<span class="text-slate-500">Subtotal</span>
-					<span class="font-mono font-medium text-slate-700">{formatPrice(sale.subtotal)}</span>
-				</div>
-				{#if sale.discount > 0}
-					<div class="flex justify-between text-base">
-						<span class="text-slate-500">
-							Descuento
-							{#if sale.discountType === DiscountType.PERCENTAGE}
-								({sale.discount}%)
-							{/if}
-						</span>
-						<span class="font-mono font-medium text-red-500">
-							-{formatPrice(
-								sale.discountType === DiscountType.PERCENTAGE
-									? (sale.discount / 100) * sale.subtotal
-									: sale.discount
-							)}
-						</span>
-					</div>
-				{/if}
-				{#if taxBreakdown.taxAmount > 0 || taxBreakdown.exemptTotal > 0}
-					<TaxBreakdownDisplay
-						taxableBase={taxBreakdown.taxableBase}
-						exemptTotal={taxBreakdown.exemptTotal}
-						taxAmount={taxBreakdown.taxAmount}
-						variant="inline"
-					/>
-				{/if}
-				<hr class="border-slate-200" />
-				<div class="flex justify-between text-xl font-bold">
-					<span class="text-slate-800">Total</span>
-					<span class="font-mono text-blue-700">{formatPrice(sale.total)}</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- Payment balance -->
-		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-			<h3 class="mb-4 text-xl font-semibold text-slate-900">Balance de Pagos</h3>
-			<div class="space-y-3">
-				<div class="flex justify-between text-base">
-					<span class="text-slate-500">Total (USD BCV)</span>
-					<span class="font-mono font-medium text-slate-700">{formatPrice(sale.total)}</span>
-				</div>
-				<div class="flex justify-between text-base">
-					<span class="text-slate-500">Pagado (USD BCV)</span>
-					<span class="font-mono font-medium text-emerald-600"
-						>{formatPrice(sale.paidAmountBcvUsd)}</span
-					>
-				</div>
-				<hr class="border-slate-200" />
-				<div class="flex justify-between text-xl font-bold">
-					<span class="text-slate-800">Pendiente</span>
-					<span
-						class="font-mono"
-						class:text-red-600={remainingBcvUsd > 0.01}
-						class:text-emerald-600={remainingBcvUsd <= 0.01}
-					>
-						{formatPrice(remainingBcvUsd)}
-					</span>
-				</div>
-				{#if isCompleted}
-					<div class="rounded-lg bg-emerald-50 p-2 text-center">
-						<p class="text-sm font-semibold text-emerald-700">Venta completada</p>
-					</div>
-				{:else if isCancelled}
-					<div class="rounded-lg bg-red-50 p-2 text-center">
-						<p class="text-sm font-semibold text-red-600">Venta cancelada</p>
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-
-	<!-- Payments Section -->
-	<div class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h2 class="mb-4 text-xl font-semibold text-slate-900">Pagos</h2>
-
-		{#if payments.length > 0}
-			<PaymentsTable
-				{payments}
-				saleId={sale.id}
-				allowVoid={isPending}
-				onPaymentVoided={handlePaymentVoided}
-			/>
-		{:else}
-			<p class="py-6 text-center text-base text-slate-400">No hay pagos registrados</p>
-		{/if}
-	</div>
-
-	<!-- Add Payment Form (only when sale is pending) -->
-	{#if isPending && remainingBcvUsd > 0.01}
-		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-			<h2 class="mb-4 text-xl font-semibold text-slate-900">Registrar Pago</h2>
-			<PaymentForm
-				saleId={sale.id}
-				{remainingBcvUsd}
-				{bcvRate}
-				onPaymentAdded={handlePaymentAdded}
-			/>
 		</div>
 	{/if}
 
-	<!-- Inventory Movements Section -->
-	{#if movements.length > 0}
-		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-			<h2 class="mb-4 text-xl font-semibold text-slate-900">Movimientos de Inventario</h2>
-			<MovementsTable {movements} />
+	<SaleItemsTable {items} subtotal={sale.subtotal} />
+
+	<SaleBalanceCards
+		subtotal={sale.subtotal}
+		total={sale.total}
+		discountType={sale.discountType}
+		discount={sale.discount}
+		paidAmountBcvUsd={sale.paidAmountBcvUsd}
+		{remainingBcvUsd}
+		{paymentProgressPercent}
+		paymentsCount={payments.length}
+		{taxBreakdown}
+		{isCancelled}
+		{isCompleted}
+		refundStatus={sale.refundStatus}
+		refundAmount={sale.refundAmount}
+		refundDecisionTitle={refundDecisionTitle()}
+	/>
+
+	<section id="sale-history" class="space-y-4">
+		<div class="glass-card overflow-hidden">
+			<div
+				class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+			>
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+					>
+						<Wallet class="h-5 w-5" />
+					</div>
+					<div>
+						<h2 class="text-xl font-semibold text-brand-navy">Historial de pagos</h2>
+						<p class="text-sm text-on-surface-variant">
+							Registro cronológico de abonos y anulaciones.
+						</p>
+					</div>
+				</div>
+
+				<div class="text-right text-sm text-on-surface-variant">
+					<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Tasa BCV</p>
+					<p class="mt-1 font-mono text-base font-semibold text-brand-blue">
+						{bcvRate.toFixed(2)} Bs/$
+					</p>
+				</div>
+			</div>
+
+			<div class="px-6 pb-6">
+				<PaymentsTable
+					{payments}
+					saleId={sale.id}
+					allowVoid={isPending}
+					onPaymentVoided={handlePaymentVoided}
+				/>
+			</div>
 		</div>
+
+		{#if showPaymentForm}
+			<section class="glass-card overflow-hidden">
+				<div
+					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 lg:flex-row lg:items-start lg:justify-between"
+				>
+					<div>
+						<h2 class="text-xl font-semibold text-brand-navy">Registrar pago</h2>
+						<p class="mt-1 max-w-2xl text-sm text-on-surface-variant">
+							Selecciona el método y edita cualquiera de los dos montos; el otro se recalcula
+							automáticamente.
+						</p>
+					</div>
+
+					<div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+						<div
+							class="rounded-xl px-4 py-3 text-sm {remainingBcvUsd > 0.01
+								? 'bg-brand-navy text-white'
+								: 'bg-success-container text-on-success-container'}"
+						>
+							<p
+								class="text-xs font-semibold tracking-[0.14em] uppercase {remainingBcvUsd > 0.01
+									? 'text-white/68'
+									: 'text-on-success-container/70'}"
+							>
+								Pendiente actual
+							</p>
+							<p class="mt-1 font-mono text-xl font-semibold">
+								{formatPrice(remainingBcvUsd)}
+							</p>
+						</div>
+						<button
+							type="button"
+							onclick={() => togglePaymentComposer()}
+							class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition-colors hover:bg-brand-gold-dark"
+						>
+							{#if showPaymentComposer}
+								<ChevronUp class="h-4 w-4" />
+								Ocultar formulario
+							{:else}
+								<ChevronDown class="h-4 w-4" />
+								Registrar abono
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				{#if showPaymentComposer}
+					<div class="px-6 pt-6 pb-6">
+						<div id="payment-composer" class="rounded-[1.5rem] bg-surface-container-lowest p-5">
+							<PaymentForm
+								saleId={sale.id}
+								{remainingBcvUsd}
+								{bcvRate}
+								onPaymentAdded={handlePaymentAdded}
+							/>
+						</div>
+					</div>
+				{/if}
+			</section>
+		{/if}
+	</section>
+
+	<SaleMovementsSection {movements} />
+
+	{#if lastUpdatedLabel}
+		<footer class="border-t border-surface-container-high pt-6 text-sm text-outline italic">
+			Última actualización registrada {lastUpdatedLabel}
+		</footer>
 	{/if}
 </div>
 
-<!-- Cancel Confirmation -->
 <CancelSaleModal
 	bind:open={showCancelModal}
 	saleId={sale.id}

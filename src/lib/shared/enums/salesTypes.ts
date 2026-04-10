@@ -79,9 +79,9 @@ export function isBsPaymentMethod(method: PaymentMethod): boolean {
 export function getExchangeRateLabel(method: PaymentMethod): string {
 	switch (method) {
 		case PaymentMethod.EFECTIVO_USD:
-			return 'Tasa $/Bs (paralelo)';
+			return 'Tasa USD Cash (Bs/$)';
 		case PaymentMethod.BINANCE_USDT:
-			return 'Tasa USDT/Bs';
+			return 'Tasa USDT (Bs/USDT)';
 		default:
 			return '';
 	}

@@ -20,6 +20,8 @@ Thumbs.db
 !.env.test
 .venv
 .github/skills/ui-ux-pro-max/scripts/__pycache__
+.github/prompts/**/*.pyc
+.github/skills/**/*.pyc
 
 # Vite
 vite.config.js.timestamp-*
