@@ -1,45 +1,23 @@
 <script lang="ts">
-	import {
-		CircleX,
-		ChevronDown,
-		ChevronUp,
-		Eye,
-		FileText,
-		FlaskConical,
-		History,
-		Package,
-		ShoppingCart,
-		Wallet
-	} from '@lucide/svelte';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { CircleX, ChevronDown, ChevronUp, FileText, History, Wallet } from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { CancelSaleModal, PaymentForm, PaymentsTable } from '$lib/components/sales';
+	import {
+		CancelSaleModal,
+		PaymentForm,
+		PaymentsTable,
+		SaleBalanceCards,
+		SaleItemsTable,
+		SaleMovementsSection
+	} from '$lib/components/sales';
 	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { formatDate, formatPrice } from '$lib/utils';
-	import {
-		DiscountType,
-		getInventoryMovementTypeLabel,
-		getTreatmentCategoryLabel,
-		InventoryMovementType,
-		RefundStatus,
-		SaleStatus
-	} from '$lib/shared/enums';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
+	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
-	import { untrack } from 'svelte';
-
-	interface DisplayGroup {
-		key: string;
-		item: SaleItemWithDetails;
-		quantity: number;
-		discountAmount: number;
-		lineTotal: number;
-		treatments: SaleItemWithDetails[];
-	}
+	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
@@ -59,15 +37,7 @@
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let showPaymentForm = $derived(isPending && remainingBcvUsd > 0.01);
-	let saleDiscountAmount = $derived.by(() => {
-		if (sale.discountType === DiscountType.PERCENTAGE) {
-			return (sale.discount / 100) * sale.subtotal;
-		}
-
-		return sale.discount;
-	});
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
-	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
 	);
@@ -90,85 +60,12 @@
 		return sale.customer?.idNumber ?? 'Documento no registrado';
 	}
 
-	function getTreatments(parentId: string): SaleItemWithDetails[] {
-		return items.filter(
-			(item) => item.itemType === SaleItemType.TREATMENT && item.parentSaleItemId === parentId
-		);
-	}
-
-	function itemDiscountAmount(item: SaleItemWithDetails): number {
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * item.unitPrice * item.quantity;
-		}
-
-		return item.discount;
-	}
-
-	let displayGroups: DisplayGroup[] = $derived.by(() => {
-		const groups: DisplayGroup[] = [];
-		const lensGroupMap = new SvelteMap<string, DisplayGroup>();
-
-		for (const item of mainItems) {
-			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
-				const existing = lensGroupMap.get(item.lensCatalogItemId);
-				if (existing) {
-					existing.quantity += item.quantity;
-					existing.discountAmount += itemDiscountAmount(item);
-					existing.lineTotal += item.unitPrice * item.quantity - itemDiscountAmount(item);
-					existing.treatments.push(...getTreatments(item.id));
-				} else {
-					const discountAmount = itemDiscountAmount(item);
-					const group: DisplayGroup = {
-						key: `lens-${item.lensCatalogItemId}`,
-						item,
-						quantity: item.quantity,
-						discountAmount,
-						lineTotal: item.unitPrice * item.quantity - discountAmount,
-						treatments: [...getTreatments(item.id)]
-					};
-
-					lensGroupMap.set(item.lensCatalogItemId, group);
-					groups.push(group);
-				}
-			} else {
-				const discountAmount = itemDiscountAmount(item);
-				groups.push({
-					key: item.id,
-					item,
-					quantity: item.quantity,
-					discountAmount,
-					lineTotal: item.unitPrice * item.quantity - discountAmount,
-					treatments: getTreatments(item.id)
-				});
-			}
-		}
-
-		return groups;
-	});
-
 	function actionButtonClasses(variant: 'neutral' | 'danger'): string {
 		if (variant === 'danger') {
 			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
 		}
 
 		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
-	}
-
-	function itemLabel(group: DisplayGroup): string {
-		return group.item.product?.name ?? group.item.lensCatalogItem?.name ?? 'Item sin nombre';
-	}
-
-	function itemTypeLabel(item: SaleItemWithDetails): string {
-		if (item.itemType === SaleItemType.LENS_PAIR || item.lensCatalogItem) return 'Cristal';
-		return 'Producto';
-	}
-
-	function itemTypeClasses(item: SaleItemWithDetails): string {
-		if (item.itemType === SaleItemType.LENS_PAIR || item.lensCatalogItem) {
-			return 'bg-info-container text-on-info-container';
-		}
-
-		return 'bg-surface-container-high text-on-surface-variant';
 	}
 
 	function refundCardClasses(): string {
@@ -187,24 +84,6 @@
 		if (sale.refundStatus === RefundStatus.REFUNDED) return 'Reembolso emitido';
 		if (sale.refundStatus === RefundStatus.RETAINED) return 'Depósito retenido';
 		return 'Sin pagos previos';
-	}
-
-	function movementCardClasses(movementType: string): string {
-		switch (movementType) {
-			case InventoryMovementType.CANCEL_REVERT:
-			case InventoryMovementType.RETURN_IN:
-			case InventoryMovementType.PURCHASE_IN:
-			case InventoryMovementType.ADJUSTMENT_IN:
-				return 'bg-success-container/55 text-on-success-container';
-			case InventoryMovementType.SALE_OUT:
-			case InventoryMovementType.ADJUSTMENT_OUT:
-			default:
-				return 'bg-error-container/55 text-on-error-container';
-		}
-	}
-
-	function movementQuantityClasses(quantityDelta: number): string {
-		return quantityDelta > 0 ? 'text-success' : 'text-error';
 	}
 
 	async function handleCancelSuccess() {
@@ -235,15 +114,14 @@
 		});
 	}
 
-	function togglePaymentComposer(forceOpen?: boolean) {
+	async function togglePaymentComposer(forceOpen?: boolean) {
 		showPaymentComposer = forceOpen ?? !showPaymentComposer;
 
 		if (showPaymentComposer) {
-			requestAnimationFrame(() => {
-				document.getElementById('payment-composer')?.scrollIntoView({
-					behavior: 'smooth',
-					block: 'start'
-				});
+			await tick();
+			document.getElementById('payment-composer')?.scrollIntoView({
+				behavior: 'smooth',
+				block: 'start'
 			});
 		}
 	}
@@ -395,380 +273,24 @@
 		</div>
 	{/if}
 
-	<section class="glass-card overflow-hidden">
-		<div
-			class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-		>
-			<div class="flex items-center gap-3">
-				<div
-					class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-				>
-					<ShoppingCart class="h-5 w-5" />
-				</div>
-				<div>
-					<h2 class="text-xl font-semibold text-brand-navy">Artículos y servicios</h2>
-					<p class="text-sm text-on-surface-variant">
-						{displayGroups.length} línea{displayGroups.length !== 1 ? 's' : ''} principal{displayGroups.length !==
-						1
-							? 'es'
-							: ''}
-					</p>
-				</div>
-			</div>
-		</div>
+	<SaleItemsTable {items} subtotal={sale.subtotal} />
 
-		<div class="overflow-x-auto">
-			<table class="w-full min-w-[880px] text-sm">
-				<thead class="bg-surface-container-low text-left">
-					<tr>
-						<th
-							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Artículo</th
-						>
-						<th
-							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Tipo</th
-						>
-						<th
-							class="px-6 py-4 text-center text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Cant.</th
-						>
-						<th
-							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Precio unit.</th
-						>
-						<th
-							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Desc.</th
-						>
-						<th
-							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-							>Subtotal</th
-						>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-surface-container-low">
-					{#each displayGroups as group (group.key)}
-						<tr
-							class="bg-surface-container-lowest transition-colors hover:bg-surface-container-low/35"
-						>
-							<td class="px-6 py-5 align-top">
-								<div class="flex items-start gap-4">
-									<div
-										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {group
-											.item.lensCatalogItem
-											? 'bg-info-container text-on-info-container'
-											: 'bg-surface-container-low text-on-surface-variant'}"
-									>
-										{#if group.item.lensCatalogItem}
-											<Eye class="h-5 w-5" />
-										{:else}
-											<Package class="h-5 w-5" />
-										{/if}
-									</div>
-									<div>
-										<p class="text-lg leading-tight font-semibold text-brand-navy">
-											{itemLabel(group)}
-										</p>
-										<div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-outline">
-											{#if group.item.product?.sku}
-												<span class="font-mono">{group.item.product.sku}</span>
-											{/if}
-											{#if group.item.snapshotCostUnit != null}
-												<span class="font-mono">
-													Costo {formatPrice(group.item.snapshotCostUnit)}
-													{#if group.item.snapshotLotsCount != null && group.item.snapshotLotsCount > 1}
-														· {group.item.snapshotLotsCount} lotes
-													{/if}
-												</span>
-											{/if}
-										</div>
-									</div>
-								</div>
-							</td>
-							<td class="px-6 py-5 align-top">
-								<span
-									class="inline-flex rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.14em] uppercase {itemTypeClasses(
-										group.item
-									)}"
-								>
-									{itemTypeLabel(group.item)}
-								</span>
-							</td>
-							<td
-								class="px-6 py-5 text-center align-top font-mono text-lg font-semibold text-brand-navy"
-								>{group.quantity}</td
-							>
-							<td
-								class="px-6 py-5 text-right align-top font-mono text-base text-on-surface-variant"
-							>
-								{formatPrice(group.item.unitPrice)}
-							</td>
-							<td
-								class="px-6 py-5 text-right align-top font-mono text-base {group.discountAmount > 0
-									? 'text-error'
-									: 'text-outline'}"
-							>
-								{#if group.discountAmount > 0}
-									-{formatPrice(group.discountAmount)}
-									{#if group.item.discountType === DiscountType.PERCENTAGE}
-										<span class="text-xs text-outline">({group.item.discount}%)</span>
-									{/if}
-								{:else}
-									$0.00
-								{/if}
-							</td>
-							<td
-								class="px-6 py-5 text-right align-top font-mono text-lg font-bold text-brand-navy"
-							>
-								{formatPrice(group.lineTotal)}
-							</td>
-						</tr>
-
-						{#each group.treatments as treatment (treatment.id)}
-							<tr
-								class="bg-surface-container-lowest/80 transition-colors hover:bg-surface-container-low/35"
-							>
-								<td class="px-6 py-5 align-top">
-									<div class="flex items-start gap-4">
-										<div
-											class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-container text-on-purple-container"
-										>
-											<FlaskConical class="h-5 w-5" />
-										</div>
-										<div>
-											<p class="text-lg leading-tight font-semibold text-brand-navy">
-												{treatment.supplierTreatment?.name ?? 'Tratamiento'}
-											</p>
-											{#if treatment.supplierTreatment?.category}
-												<p class="mt-1 text-xs text-outline">
-													{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}
-												</p>
-											{/if}
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-5 align-top">
-									<span
-										class="inline-flex rounded-full bg-purple-container px-3 py-1 text-[10px] font-bold tracking-[0.14em] text-on-purple-container uppercase"
-									>
-										Tratamiento
-									</span>
-								</td>
-								<td
-									class="px-6 py-5 text-center align-top font-mono text-lg font-semibold text-brand-navy"
-									>{treatment.quantity}</td
-								>
-								<td
-									class="px-6 py-5 text-right align-top font-mono text-base text-on-surface-variant"
-								>
-									{formatPrice(treatment.unitPrice)}
-								</td>
-								<td class="px-6 py-5 text-right align-top font-mono text-base text-outline"
-									>$0.00</td
-								>
-								<td
-									class="px-6 py-5 text-right align-top font-mono text-lg font-bold text-brand-navy"
-								>
-									{formatPrice(treatment.unitPrice * treatment.quantity)}
-								</td>
-							</tr>
-						{/each}
-					{/each}
-				</tbody>
-				<tfoot class="bg-surface-container-low/60">
-					<tr>
-						<td
-							colspan="5"
-							class="px-6 py-5 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>
-							Subtotal general
-						</td>
-						<td class="px-6 py-5 text-right font-mono text-2xl font-bold text-brand-navy">
-							{formatPrice(sale.subtotal)}
-						</td>
-					</tr>
-				</tfoot>
-			</table>
-		</div>
-	</section>
-
-	<section class="grid gap-4 xl:grid-cols-4">
-		<div class="rounded-[1.5rem] bg-surface-container-low px-6 py-6 shadow-sm">
-			<div class="space-y-4 text-sm text-on-surface-variant">
-				<div class="flex items-center justify-between gap-4">
-					<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-						>Subtotal</span
-					>
-					<span class="font-mono text-base font-semibold text-brand-navy"
-						>{formatPrice(sale.subtotal)}</span
-					>
-				</div>
-
-				{#if saleDiscountAmount > 0}
-					<div class="flex items-center justify-between gap-4">
-						<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
-							Descuento global
-							{#if sale.discountType === DiscountType.PERCENTAGE}
-								({sale.discount}%)
-							{/if}
-						</span>
-						<span class="font-mono text-base font-semibold text-error"
-							>-{formatPrice(saleDiscountAmount)}</span
-						>
-					</div>
-				{/if}
-
-				<div class="h-px bg-surface-container-high"></div>
-
-				<div class="flex items-center justify-between gap-4">
-					<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-						>Subtotal neto</span
-					>
-					<span class="font-mono text-base font-semibold text-brand-navy"
-						>{formatPrice(sale.subtotal - saleDiscountAmount)}</span
-					>
-				</div>
-
-				{#if taxBreakdown.taxableBase > 0}
-					<div class="flex items-center justify-between gap-4">
-						<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-							>Base imponible</span
-						>
-						<span class="font-mono text-base font-semibold text-brand-navy"
-							>{formatPrice(taxBreakdown.taxableBase)}</span
-						>
-					</div>
-				{/if}
-
-				{#if taxBreakdown.exemptTotal > 0}
-					<div class="flex items-center justify-between gap-4">
-						<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-							>Exento</span
-						>
-						<span class="font-mono text-base font-semibold text-brand-navy"
-							>{formatPrice(taxBreakdown.exemptTotal)}</span
-						>
-					</div>
-				{/if}
-
-				{#if taxBreakdown.taxAmount > 0}
-					<div class="flex items-center justify-between gap-4">
-						<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-							>IVA (16%)</span
-						>
-						<span class="font-mono text-base font-semibold text-brand-navy"
-							>{formatPrice(taxBreakdown.taxAmount)}</span
-						>
-					</div>
-				{/if}
-			</div>
-
-			<div class="mt-8 border-t border-surface-container-high pt-6">
-				<p class="text-sm font-bold tracking-[0.14em] text-brand-navy uppercase">Total a pagar</p>
-				<p
-					class="mt-3 font-mono text-4xl font-bold tracking-tight text-brand-navy md:text-[2.85rem]"
-				>
-					{formatPrice(sale.total)}
-				</p>
-			</div>
-		</div>
-
-		<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
-			<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Total deuda</p>
-			<p class="mt-4 font-mono text-3xl font-bold tracking-tight text-brand-navy md:text-4xl">
-				{formatPrice(sale.total)}
-			</p>
-			<p class="mt-3 text-base text-on-surface-variant">Monto total comprometido en esta venta.</p>
-		</div>
-
-		<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
-			<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Total pagado</p>
-			<p class="mt-4 font-mono text-3xl font-bold tracking-tight text-success md:text-4xl">
-				{formatPrice(sale.paidAmountBcvUsd)}
-			</p>
-			{#if payments.length > 0}
-				<p class="mt-3 text-base text-on-surface-variant">
-					{payments.length} pago{payments.length !== 1 ? 's' : ''} registrado{payments.length !== 1
-						? 's'
-						: ''}
-				</p>
-			{:else}
-				<p class="mt-3 text-base text-on-surface-variant">Aún no se han registrado abonos.</p>
-			{/if}
-		</div>
-
-		<div
-			class="rounded-[1.5rem] px-6 py-6 shadow-[0_10px_30px_rgba(21,35,70,0.14)] {remainingBcvUsd >
-			0.01
-				? 'bg-brand-navy text-white'
-				: 'bg-success-container text-on-success-container'}"
-		>
-			<div class="flex items-start justify-between gap-4">
-				<div>
-					<p
-						class="text-xs font-semibold tracking-[0.14em] uppercase {remainingBcvUsd > 0.01
-							? 'text-white/68'
-							: 'text-on-success-container/70'}"
-					>
-						Saldo pendiente
-					</p>
-					<p
-						class="mt-4 font-mono text-3xl font-bold tracking-tight md:text-4xl {remainingBcvUsd >
-						0.01
-							? 'text-white'
-							: 'text-on-success-container'}"
-					>
-						{formatPrice(remainingBcvUsd)}
-					</p>
-				</div>
-
-				<span
-					class="rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.16em] uppercase {remainingBcvUsd >
-					0.01
-						? 'bg-brand-gold/15 text-brand-gold'
-						: 'bg-white/30 text-on-success-container'}"
-				>
-					{remainingBcvUsd > 0.01 ? 'Prioridad' : 'Cubierto'}
-				</span>
-			</div>
-
-			<div class="mt-6 h-2 rounded-full {remainingBcvUsd > 0.01 ? 'bg-white/10' : 'bg-white/35'}">
-				<div
-					class="h-full rounded-full {remainingBcvUsd > 0.01 ? 'bg-brand-gold' : 'bg-white'}"
-					style={`width: ${paymentProgressPercent}%`}
-				></div>
-			</div>
-
-			<div
-				class="mt-3 flex items-center justify-between text-sm {remainingBcvUsd > 0.01
-					? 'text-white/75'
-					: 'text-on-success-container/80'}"
-			>
-				<span>Cubierto</span>
-				<span class="font-mono font-semibold">{formatPrice(sale.paidAmountBcvUsd)}</span>
-			</div>
-
-			<div class="mt-4 space-y-3">
-				{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
-					<p
-						class="text-base {remainingBcvUsd > 0.01
-							? 'text-white/80'
-							: 'text-on-success-container/80'}"
-					>
-						{refundDecisionTitle()} por
-						<span class="font-mono font-semibold">{formatPrice(sale.refundAmount ?? 0)}</span>
-					</p>
-				{:else if remainingBcvUsd > 0.01}
-					<p class="text-base text-white/80">Este es el monto que falta para cerrar la venta.</p>
-				{:else if isCompleted}
-					<p class="text-base text-on-success-container/80">
-						La venta ya quedó completamente cubierta.
-					</p>
-				{/if}
-			</div>
-		</div>
-	</section>
+	<SaleBalanceCards
+		subtotal={sale.subtotal}
+		total={sale.total}
+		discountType={sale.discountType}
+		discount={sale.discount}
+		paidAmountBcvUsd={sale.paidAmountBcvUsd}
+		{remainingBcvUsd}
+		{paymentProgressPercent}
+		paymentsCount={payments.length}
+		{taxBreakdown}
+		{isCancelled}
+		{isCompleted}
+		refundStatus={sale.refundStatus}
+		refundAmount={sale.refundAmount}
+		refundDecisionTitle={refundDecisionTitle()}
+	/>
 
 	<section id="sale-history" class="space-y-4">
 		<div class="glass-card overflow-hidden">
@@ -869,87 +391,7 @@
 		{/if}
 	</section>
 
-	{#if movements.length > 0}
-		<section class="glass-card overflow-hidden">
-			<div class="flex items-center gap-3 bg-surface-container-lowest px-6 py-5">
-				<div
-					class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-				>
-					<Package class="h-5 w-5" />
-				</div>
-				<div>
-					<h2 class="text-xl font-semibold text-brand-navy">Movimientos de Stock</h2>
-					<p class="text-sm text-on-surface-variant">
-						Impacto de la venta sobre inventario y reversiones asociadas.
-					</p>
-				</div>
-			</div>
-
-			<div class="grid gap-4 px-6 py-6 lg:grid-cols-2">
-				{#each movements as movement (movement.id)}
-					<div class="rounded-[1.5rem] bg-surface-container-low p-5">
-						<div class="flex items-start justify-between gap-4">
-							<div class="flex items-start gap-4">
-								<div
-									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {movementCardClasses(
-										movement.movementType
-									)}"
-								>
-									<Package class="h-5 w-5" />
-								</div>
-								<div>
-									<p class="text-sm font-black tracking-[0.14em] text-brand-navy uppercase">
-										{movement.productName ?? 'Movimiento inventario'}
-									</p>
-									<div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-outline">
-										{#if movement.productSku}
-											<span class="font-mono">ID: {movement.productSku}</span>
-										{/if}
-										{#if movement.lotNumber != null}
-											<span class="font-mono"
-												>Lote L-{String(movement.lotNumber).padStart(4, '0')}</span
-											>
-										{/if}
-										<span
-											>{formatDate(movement.createdAt, {
-												dateStyle: 'medium',
-												timeStyle: 'short'
-											})}</span
-										>
-									</div>
-									{#if movement.createdByName}
-										<p class="mt-2 text-sm text-on-surface-variant">
-											Realizado por {movement.createdByName}
-										</p>
-									{/if}
-								</div>
-							</div>
-
-							<div class="text-right">
-								<p
-									class="font-mono text-xl font-bold {movementQuantityClasses(
-										movement.quantityDelta
-									)}"
-								>
-									{movement.quantityDelta > 0 ? '+' : ''}{movement.quantityDelta}
-								</p>
-								<p
-									class="mt-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-								>
-									{getInventoryMovementTypeLabel(movement.movementType)}
-								</p>
-								{#if movement.totalCostAtAdjustment != null}
-									<p class="mt-2 font-mono text-xs text-outline">
-										{formatPrice(movement.totalCostAtAdjustment)}
-									</p>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</section>
-	{/if}
+	<SaleMovementsSection {movements} />
 
 	{#if lastUpdatedLabel}
 		<footer class="border-t border-surface-container-high pt-6 text-sm text-outline italic">
