@@ -11,6 +11,7 @@
 		Eye,
 		FlaskConical
 	} from '@lucide/svelte';
+	import autoAnimate from '@formkit/auto-animate';
 	import { formatPrice } from '$lib/utils';
 	import { DiscountType, TreatmentCategory, LensCatalogSource } from '$lib/shared/enums';
 	import {
@@ -513,7 +514,7 @@
 		</Button>
 	</div>
 
-	<div class="space-y-5">
+	<div class="space-y-5" use:autoAnimate>
 		{#each items as item, index (item.id)}
 			{@const lens = item.kind === 'lens' ? getLensForDisplay(item) : undefined}
 			{@const maxStock = item.kind === 'product' ? getProductMaxStock(item) : null}
