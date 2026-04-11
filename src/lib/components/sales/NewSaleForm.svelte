@@ -197,31 +197,38 @@
 		const isClickable =
 			stepNum === 1 || (stepNum === 2 && step1Valid) || (stepNum === 3 && step1Valid && step2Valid);
 
-		const base =
-			'flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-base font-medium transition-all';
-		const state = isActive
-			? 'bg-blue-600 text-white shadow-md'
-			: isComplete
-				? 'bg-blue-50 text-blue-700'
-				: 'text-slate-400';
-		const cursor = !isClickable
-			? 'cursor-not-allowed'
-			: !isActive
-				? 'cursor-pointer hover:bg-slate-100'
-				: '';
+		const base = 'group flex flex-col items-center gap-3 text-center transition-all duration-200';
+		const state = isActive || isComplete ? 'text-brand-navy' : 'text-slate-400';
+		const cursor = !isClickable ? 'cursor-not-allowed' : 'cursor-pointer';
 		return `${base} ${state} ${cursor}`;
 	}
 
 	function stepBadgeClass(stepNum: number): string {
 		const isActive = currentStep === stepNum;
 		const isComplete = currentStep > stepNum;
-		const base = 'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold';
+		const base =
+			'flex h-12 w-12 items-center justify-center rounded-2xl font-mono text-base font-bold transition-all duration-200';
 		const state = isActive
-			? 'bg-white text-blue-600'
+			? 'bg-brand-navy text-white shadow-[0_18px_40px_rgba(21,35,70,0.18)]'
 			: isComplete
-				? 'bg-blue-600 text-white'
-				: 'bg-slate-200 text-slate-500';
+				? 'bg-brand-gold text-brand-navy shadow-sm'
+				: 'bg-surface-container-high text-outline group-hover:bg-surface-container-highest group-hover:text-brand-navy';
 		return `${base} ${state}`;
+	}
+
+	function stepLabelClass(stepNum: number): string {
+		const isActive = currentStep === stepNum;
+		const isComplete = currentStep > stepNum;
+		const base = 'text-[11px] font-semibold tracking-[0.16em] uppercase whitespace-nowrap';
+		const state =
+			isActive || isComplete
+				? 'text-brand-navy'
+				: 'text-slate-400 group-hover:text-on-surface-variant';
+		return `${base} ${state}`;
+	}
+
+	function stepConnectorClass(stepNum: number): string {
+		return `mt-6 h-px w-10 shrink-0 rounded-full sm:w-16 ${currentStep > stepNum ? 'bg-brand-gold/70' : 'bg-surface-container-high'}`;
 	}
 
 	// ============================================================================
@@ -355,35 +362,48 @@
 	}
 </script>
 
-<div class="w-full space-y-8">
-	<!-- Wizard Steps Indicator -->
-	<nav class="flex items-center justify-center gap-3">
-		{#each STEPS as step (step.num)}
-			{@const isClickable =
-				step.num === 1 ||
-				(step.num === 2 && step1Valid) ||
-				(step.num === 3 && step1Valid && step2Valid)}
-			<button
-				onclick={() => {
-					if (isClickable) goToStep(step.num);
-				}}
-				disabled={!isClickable}
-				class={stepButtonClass(step.num)}
+<div class="w-full">
+	<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between mb-2">
+		<div class="max-w-2xl space-y-2">
+			<h1
+				class="font-heading text-4xl font-bold tracking-[-0.03em] text-brand-navy sm:text-[2.75rem]"
 			>
-				<span class={stepBadgeClass(step.num)}>
-					{#if currentStep > step.num}
-						<Check class="h-4 w-4" />
-					{:else}
-						{step.num}
-					{/if}
-				</span>
-				{step.label}
-			</button>
-			{#if step.num < 3}
-				<div class="h-px w-10 {currentStep > step.num ? 'bg-blue-300' : 'bg-slate-200'}"></div>
-			{/if}
-		{/each}
-	</nav>
+				Nueva Venta
+			</h1>
+		</div>
+
+		<nav aria-label="Progreso de la venta" class="overflow-x-auto xl:-mt-4 xl:pt-0">
+			<div class="flex min-w-max items-start justify-start gap-2 px-1 sm:gap-4 xl:justify-end">
+				{#each STEPS as step (step.num)}
+					{@const isClickable =
+						step.num === 1 ||
+						(step.num === 2 && step1Valid) ||
+						(step.num === 3 && step1Valid && step2Valid)}
+					<div class="flex items-start gap-2 sm:gap-4">
+						<button
+							onclick={() => {
+								if (isClickable) goToStep(step.num);
+							}}
+							disabled={!isClickable}
+							class={stepButtonClass(step.num)}
+						>
+							<span class={stepBadgeClass(step.num)}>
+								{#if currentStep > step.num}
+									<Check class="h-4 w-4" />
+								{:else}
+									{step.num}
+								{/if}
+							</span>
+							<span class={stepLabelClass(step.num)}>{step.label}</span>
+						</button>
+						{#if step.num < 3}
+							<div class={stepConnectorClass(step.num)}></div>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		</nav>
+	</div>
 
 	<!-- Step 1: Información -->
 	<div class:hidden={currentStep !== 1}>
