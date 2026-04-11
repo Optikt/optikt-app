@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { itemLineTotal, computeItemDiscount } from './saleItemHelpers';
+import {
+	itemLineTotal,
+	step2ItemLineTotal,
+	computeItemDiscount,
+	getRequestedProductQuantity,
+	getAvailableProductStock
+} from './saleItemHelpers';
 import { DiscountType } from '$lib/shared/enums';
+import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { SaleItemRow, SelectedTreatment } from './newSaleTypes';
 import { createEmptyLensPair } from './newSaleTypes';
 
@@ -50,6 +57,16 @@ function makeTreatment(price: number, name = 'AR Angel'): SelectedTreatment {
 	};
 }
 
+function makeStockProduct(id: string, stock: number | null): ProductWithRelations {
+	return {
+		id,
+		name: id,
+		stock,
+		currentSalePrice: 0,
+		type: 'FRAME'
+	} as ProductWithRelations;
+}
+
 // ── itemLineTotal (excludes treatments — they are separate) ─────────────
 
 describe('itemLineTotal', () => {
@@ -82,6 +99,28 @@ describe('itemLineTotal', () => {
 
 	it('handles zero price', () => {
 		expect(itemLineTotal(makeProductRow({ unitPrice: 0 }))).toBe(0);
+	});
+});
+
+describe('step2ItemLineTotal', () => {
+	it('ignores discounts for product rows in Step 2', () => {
+		expect(
+			step2ItemLineTotal(
+				makeProductRow({
+					unitPrice: 120,
+					quantity: 2,
+					discount: 25,
+					discountType: DiscountType.FIXED
+				})
+			)
+		).toBe(240);
+	});
+
+	it('uses a single quantity for lens rows', () => {
+		const lens = makeLensRow();
+		lens.unitPrice = 95;
+
+		expect(step2ItemLineTotal(lens)).toBe(95);
 	});
 });
 
@@ -167,5 +206,39 @@ describe('computeItemDiscount', () => {
 				})
 			)
 		).toBe(40); // 10% of 400
+	});
+});
+
+describe('aggregate product stock helpers', () => {
+	it('sums requested quantity for the same product across rows', () => {
+		const items = [
+			makeProductRow({ id: 'item-a', productId: 'prod-1', quantity: 2 }),
+			makeProductRow({ id: 'item-b', productId: 'prod-1', quantity: 1 }),
+			makeProductRow({ id: 'item-c', productId: 'prod-2', quantity: 3 })
+		];
+
+		expect(getRequestedProductQuantity(items, 'prod-1')).toBe(3);
+		expect(getRequestedProductQuantity(items, 'prod-1', 'item-a')).toBe(1);
+	});
+
+	it('returns remaining stock excluding the current row quantity', () => {
+		const items = [
+			makeProductRow({ id: 'item-a', productId: 'prod-1', quantity: 1 }),
+			makeProductRow({ id: 'item-b', productId: 'prod-1', quantity: 2 })
+		];
+		const products = [makeStockProduct('prod-1', 4)];
+
+		expect(getAvailableProductStock(items, products, 'prod-1', 'item-a')).toBe(2);
+		expect(getAvailableProductStock(items, products, 'prod-1', 'item-b')).toBe(3);
+	});
+
+	it('returns zero when other rows already reserved the full stock', () => {
+		const items = [
+			makeProductRow({ id: 'item-a', productId: 'prod-1', quantity: 4 }),
+			makeProductRow({ id: 'item-b', productId: 'prod-1', quantity: 1 })
+		];
+		const products = [makeStockProduct('prod-1', 4)];
+
+		expect(getAvailableProductStock(items, products, 'prod-1', 'item-b')).toBe(0);
 	});
 });

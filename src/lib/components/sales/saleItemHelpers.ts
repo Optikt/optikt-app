@@ -43,6 +43,35 @@ export function getItemName(
 	return findLensItem(item, lensItems)?.name ?? '—';
 }
 
+export function getRequestedProductQuantity(
+	items: SaleItemRow[],
+	productId: string,
+	excludeItemId?: string
+): number {
+	return items.reduce((sum, item) => {
+		if (item.kind !== 'product' || item.productId !== productId || item.id === excludeItemId) {
+			return sum;
+		}
+
+		return sum + Math.max(item.quantity, 0);
+	}, 0);
+}
+
+export function getAvailableProductStock(
+	items: SaleItemRow[],
+	products: ProductWithRelations[],
+	productId: string,
+	excludeItemId?: string
+): number | null {
+	if (!productId) return null;
+
+	const product = products.find((candidate) => candidate.id === productId);
+	const stock = product?.stock ?? null;
+	if (stock === null) return null;
+
+	return Math.max(stock - getRequestedProductQuantity(items, productId, excludeItemId), 0);
+}
+
 // ============================================================================
 // PRICING
 // ============================================================================
@@ -56,6 +85,11 @@ export function computeItemDiscount(item: SaleItemRow): number {
 export function itemLineTotal(item: SaleItemRow): number {
 	const qty = item.kind === 'product' ? item.quantity : 1;
 	return item.unitPrice * qty - computeItemDiscount(item);
+}
+
+export function step2ItemLineTotal(item: SaleItemRow): number {
+	const qty = item.kind === 'product' ? item.quantity : 1;
+	return item.unitPrice * qty;
 }
 
 // ============================================================================

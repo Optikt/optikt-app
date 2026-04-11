@@ -18,6 +18,7 @@
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { PageHeader } from '$lib/components/ui';
 	import {
+		getAvailableProductStock,
 		getRequiredEyes,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
@@ -125,20 +126,7 @@
 	// ITEMS STATE
 	// ============================================================================
 
-	let items = $state<SaleItemRow[]>([
-		{
-			id: crypto.randomUUID(),
-			kind: 'product',
-			productId: '',
-			quantity: 1,
-			lensPair: null,
-			treatments: [],
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			notes: ''
-		}
-	]);
+	let items = $state<SaleItemRow[]>([]);
 
 	// ============================================================================
 	// VALIDATION
@@ -167,10 +155,10 @@
 	const hasOutOfStockItem = $derived(
 		items.some((i) => {
 			if (i.kind === 'product' && i.productId) {
-				const p = products.find((pr) => pr.id === i.productId);
-				const maxStock = p?.stock ?? null;
-				if (maxStock === null) return false;
-				return maxStock <= 0 || i.quantity > maxStock;
+				const availableForItem = getAvailableProductStock(items, products, i.productId, i.id);
+				if (availableForItem === null) return false;
+
+				return availableForItem <= 0 || i.quantity > availableForItem;
 			}
 			return false;
 		})
