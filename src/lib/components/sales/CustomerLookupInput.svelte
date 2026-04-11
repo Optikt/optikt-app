@@ -392,8 +392,8 @@
 
 	{#if mode === 'create'}
 		<div transition:slide={{ duration: 180 }} class="space-y-5">
-			<div class="grid gap-4 md:grid-cols-12">
-				<div class="md:col-span-4">
+			<div class="grid gap-4 md:grid-cols-24">
+				<div class="md:col-span-7">
 					<label class={fieldLabelClass} for="new-firstName">Nombre</label>
 					<input
 						id="new-firstName"
@@ -405,7 +405,7 @@
 					/>
 				</div>
 
-				<div class="md:col-span-4">
+				<div class="md:col-span-7">
 					<label class={fieldLabelClass} for="new-lastName">Apellido</label>
 					<input
 						id="new-lastName"
@@ -417,7 +417,7 @@
 					/>
 				</div>
 
-				<div class="md:col-span-4">
+				<div class="md:col-span-10">
 					<!-- <label class={fieldLabelClass} for="new-idNumber">Documento de identidad</label> -->
 					<label class={fieldLabelClass} for="new-idNumber">CI</label>
 					<div class="mt-2 grid gap-3 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
@@ -443,7 +443,7 @@
 					</div>
 				</div>
 
-				<div class="md:col-span-5">
+				<div class="md:col-span-12">
 					<label class={fieldLabelClass} for="new-phone">Teléfono</label>
 					<input
 						id="new-phone"
@@ -455,7 +455,7 @@
 					/>
 				</div>
 
-				<div class="md:col-span-7">
+				<div class="md:col-span-12">
 					<label class={fieldLabelClass} for="new-email">Email</label>
 					<input
 						id="new-email"
@@ -467,7 +467,7 @@
 					/>
 				</div>
 
-				<div class="md:col-span-12">
+				<div class="md:col-span-24">
 					<label class={fieldLabelClass} for="new-address">Dirección</label>
 					<textarea
 						id="new-address"
@@ -475,7 +475,7 @@
 						oninput={syncNewCustomer}
 						rows={2}
 						placeholder="Av. Principal, Centro..."
-						class={`${fieldInputClass} mt-2 min-h-24 resize-none md:max-w-[32rem]`}
+						class={`${fieldInputClass} mt-2 min-h-24 resize-none`}
 					></textarea>
 				</div>
 			</div>
