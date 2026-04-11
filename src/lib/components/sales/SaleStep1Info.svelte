@@ -58,6 +58,46 @@
 
 <div class="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
 	<aside class="space-y-4">
+		<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
+			<div class="flex items-center gap-2 text-brand-blue">
+				<Hash class="h-4 w-4" />
+				<p class={fieldLabelClass}>Detalles de la orden</p>
+			</div>
+
+			<div class="mt-5 space-y-5">
+				<div>
+					<p class={fieldLabelClass}>Número de orden</p>
+					<div
+						class="mt-2 rounded-xl bg-surface-container-high px-4 py-3 font-mono text-lg font-bold text-brand-navy"
+					>
+						#{String(nextOrderNumber ?? 0).padStart(4, '0')}
+					</div>
+				</div>
+
+				<div>
+					<label class={fieldLabelClass} for="saleDate">Fecha de venta</label>
+					<div class="relative mt-2">
+						<input
+							id="saleDate"
+							type="date"
+							value={dateToISODateString(saleDate)}
+							oninput={(e: Event) => {
+								const target = e.target as HTMLInputElement;
+								saleDate = fromISODate(target.value) ?? saleDate;
+							}}
+							class={`${fieldInputClass} pr-12`}
+						/>
+						<CalendarDays
+							class="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-outline"
+						/>
+					</div>
+					<p class="mt-2 text-xs leading-5 text-on-surface-variant">
+						Puedes modificarla si estás registrando una venta anterior.
+					</p>
+				</div>
+			</div>
+		</div>
+
 		{#if creatingCustomer}
 			<div
 				class="rounded-[1.75rem] bg-brand-navy px-6 py-7 text-white shadow-[0_18px_44px_rgba(21,35,70,0.18)]"
@@ -94,46 +134,6 @@
 				</div>
 			</div>
 		{:else}
-			<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
-				<div class="flex items-center gap-2 text-brand-blue">
-					<Hash class="h-4 w-4" />
-					<p class={fieldLabelClass}>Detalles de la orden</p>
-				</div>
-
-				<div class="mt-5 space-y-5">
-					<div>
-						<p class={fieldLabelClass}>Número de orden</p>
-						<div
-							class="mt-2 rounded-xl bg-surface-container-high px-4 py-3 font-mono text-lg font-bold text-brand-navy"
-						>
-							#{String(nextOrderNumber ?? 0).padStart(4, '0')}
-						</div>
-					</div>
-
-					<div>
-						<label class={fieldLabelClass} for="saleDate">Fecha de venta</label>
-						<div class="relative mt-2">
-							<input
-								id="saleDate"
-								type="date"
-								value={dateToISODateString(saleDate)}
-								oninput={(e: Event) => {
-									const target = e.target as HTMLInputElement;
-									saleDate = fromISODate(target.value) ?? saleDate;
-								}}
-								class={`${fieldInputClass} pr-12`}
-							/>
-							<CalendarDays
-								class="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-outline"
-							/>
-						</div>
-						<p class="mt-2 text-xs leading-5 text-on-surface-variant">
-							Puedes modificarla si estás registrando una venta anterior.
-						</p>
-					</div>
-				</div>
-			</div>
-
 			<div class="rounded-[1.5rem] bg-surface-container-lowest px-5 py-5 shadow-sm">
 				<div
 					class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gold/20 text-brand-gold-dark"

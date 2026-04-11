@@ -16,6 +16,7 @@
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
+	import { PageHeader } from '$lib/components/ui';
 	import {
 		getRequiredEyes,
 		validatePrescriptionFields,
@@ -363,47 +364,41 @@
 </script>
 
 <div class="w-full">
-	<div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between mb-2">
-		<div class="max-w-2xl space-y-2">
-			<h1
-				class="font-heading text-4xl font-bold tracking-[-0.03em] text-brand-navy sm:text-[2.75rem]"
-			>
-				Nueva Venta
-			</h1>
-		</div>
-
-		<nav aria-label="Progreso de la venta" class="overflow-x-auto xl:-mt-4 xl:pt-0">
-			<div class="flex min-w-max items-start justify-start gap-2 px-1 sm:gap-4 xl:justify-end">
-				{#each STEPS as step (step.num)}
-					{@const isClickable =
-						step.num === 1 ||
-						(step.num === 2 && step1Valid) ||
-						(step.num === 3 && step1Valid && step2Valid)}
-					<div class="flex items-start gap-2 sm:gap-4">
-						<button
-							onclick={() => {
-								if (isClickable) goToStep(step.num);
-							}}
-							disabled={!isClickable}
-							class={stepButtonClass(step.num)}
-						>
-							<span class={stepBadgeClass(step.num)}>
-								{#if currentStep > step.num}
-									<Check class="h-4 w-4" />
-								{:else}
-									{step.num}
-								{/if}
-							</span>
-							<span class={stepLabelClass(step.num)}>{step.label}</span>
-						</button>
-						{#if step.num < 3}
-							<div class={stepConnectorClass(step.num)}></div>
-						{/if}
-					</div>
-				{/each}
-			</div>
-		</nav>
-	</div>
+	<PageHeader title="Nueva Venta">
+		{#snippet actions()}
+			<nav aria-label="Progreso de la venta" class="overflow-x-auto xl:-mt-4 xl:pt-0">
+				<div class="flex min-w-max items-start justify-start gap-2 px-1 sm:gap-4 xl:justify-end">
+					{#each STEPS as step (step.num)}
+						{@const isClickable =
+							step.num === 1 ||
+							(step.num === 2 && step1Valid) ||
+							(step.num === 3 && step1Valid && step2Valid)}
+						<div class="flex items-start gap-2 sm:gap-4">
+							<button
+								onclick={() => {
+									if (isClickable) goToStep(step.num);
+								}}
+								disabled={!isClickable}
+								class={stepButtonClass(step.num)}
+							>
+								<span class={stepBadgeClass(step.num)}>
+									{#if currentStep > step.num}
+										<Check class="h-4 w-4" />
+									{:else}
+										{step.num}
+									{/if}
+								</span>
+								<span class={stepLabelClass(step.num)}>{step.label}</span>
+							</button>
+							{#if step.num < 3}
+								<div class={stepConnectorClass(step.num)}></div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</nav>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Step 1: Información -->
 	<div class:hidden={currentStep !== 1}>
