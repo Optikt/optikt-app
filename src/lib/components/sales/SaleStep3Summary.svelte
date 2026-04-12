@@ -533,7 +533,7 @@
 	</section>
 
 	<section class="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
-		<div class="rounded-[1.5rem] bg-surface-container-lowest p-6 shadow-sm sm:p-8">
+		<div class="rounded-[1.5rem] bg-surface-container-lowest p-6 shadow-sm">
 			<div class="mb-6 flex items-center gap-3">
 				<div
 					class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue"
@@ -634,10 +634,10 @@
 		</div>
 
 		<div class="space-y-4">
-			<div class="rounded-[1.5rem] bg-surface-container-low p-6 shadow-sm sm:p-8">
+			<div class="rounded-[1.5rem] bg-surface-container-low p-6 shadow-sm">
 				<div class="space-y-4 text-sm sm:text-base">
 					<div
-						class="flex items-center justify-between gap-4 border-b border-outline-variant/20 pb-4"
+						class="flex items-center justify-between gap-4 border-b border-outline-variant/50 pb4"
 					>
 						<span
 							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
@@ -650,7 +650,7 @@
 					</div>
 
 					<div
-						class="flex items-center justify-between gap-4 border-b border-outline-variant/20 pb-4"
+						class="flex items-center justify-between gap-4 border-b border-outline-variant/50 pb4"
 					>
 						<span
 							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
