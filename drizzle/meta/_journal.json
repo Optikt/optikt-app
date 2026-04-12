@@ -43,6 +43,13 @@
       "when": 1775865600000,
       "tag": "0005_normalize_dates_to_timestamptz",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776019200000,
+      "tag": "0006_pair_purchase_price",
+      "breakpoints": true
     }
   ]
 }
