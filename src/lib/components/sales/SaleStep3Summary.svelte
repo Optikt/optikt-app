@@ -271,7 +271,7 @@
 	}
 </script>
 
-<div class="space-y-4 pb-32">
+<div class="space-y-4">
 	<section class="rounded-[1.5rem] bg-surface-container-lowest p-6 shadow-sm">
 		<div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
 			<div class="space-y-3">
