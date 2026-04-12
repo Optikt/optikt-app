@@ -639,7 +639,7 @@
 	});
 </script>
 
-<div class="space-y-6 pb-28">
+<div class="space-y-6">
 	<div class="grid grid-cols-6 gap-6">
 		<!-- Cliente resumen -->
 		<div class="col-span-4 rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm">

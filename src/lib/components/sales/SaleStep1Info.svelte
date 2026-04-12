@@ -56,7 +56,7 @@
 	});
 </script>
 
-<div class="space-y-6 pb-28">
+<div class="space-y-6">
 	<div class="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
 		<aside class="space-y-4">
 			<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
