@@ -640,218 +640,224 @@
 </script>
 
 <div class="space-y-6">
-    <div class="grid grid-cols-6 gap-6">
-        <!-- Cliente resumen -->
-        <div class="rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm col-span-4">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="flex flex-wrap items-center gap-5 sm:gap-6">
-                    <div>
-                        <p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">Orden #</p>
-                        <p class="font-mono text-2xl font-bold text-white tabular-nums">
-                            {nextOrderNumber ?? '—'}
-                        </p>
-                    </div>
-                    <div class="hidden h-10 w-px bg-white/10 sm:block"></div>
-                    <div class="flex items-start gap-3">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white"
-                        >
-                            <User class="h-4 w-4" />
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-                                Cliente
-                            </p>
-                            <p class="text-lg font-semibold text-white">{displayCustomerName}</p>
-                            <p class="mt-1 font-mono text-xs text-white/60">{displayCustomerId}</p>
-                        </div>
-                    </div>
-                </div>
+	<div class="grid grid-cols-6 gap-6">
+		<!-- Cliente resumen -->
+		<div class="col-span-4 rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm">
+			<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+				<div class="flex flex-wrap items-center gap-5 sm:gap-6">
+					<div>
+						<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
+							Orden #
+						</p>
+						<p class="font-mono text-2xl font-bold text-white tabular-nums">
+							{nextOrderNumber ?? '—'}
+						</p>
+					</div>
+					<div class="hidden h-10 w-px bg-white/10 sm:block"></div>
+					<div class="flex items-start gap-3">
+						<div
+							class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white"
+						>
+							<User class="h-4 w-4" />
+						</div>
+						<div>
+							<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
+								Cliente
+							</p>
+							<p class="text-lg font-semibold text-white">{displayCustomerName}</p>
+							<p class="mt-1 font-mono text-xs text-white/60">{displayCustomerId}</p>
+						</div>
+					</div>
+				</div>
 
-                <div
-                    class="inline-flex max-w-max items-center gap-1.5 self-start rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white/75 uppercase"
-                >
-                    {#if customerPrescription}
-                        <Eye class="h-3.5 w-3.5" />
-                    {:else}
-                        <Hash class="h-3.5 w-3.5" />
-                    {/if}
-                    <span>{contextStatus}</span>
-                </div>
-            </div>
-        </div>
+				<div
+					class="inline-flex max-w-max items-center gap-1.5 self-start rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white/75 uppercase"
+				>
+					{#if customerPrescription}
+						<Eye class="h-3.5 w-3.5" />
+					{:else}
+						<Hash class="h-3.5 w-3.5" />
+					{/if}
+					<span>{contextStatus}</span>
+				</div>
+			</div>
+		</div>
 
-        <!-- Resumen parcial -->
-        <div class="rounded-[1.5rem] bg-brand-navy px-5 py-5 text-white shadow-sm col-span-2 row-span-2">
-            <p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-                Resumen parcial
-            </p>
-            <div class="mt-4 space-y-3 text-sm">
-                <div class="flex items-center justify-between gap-4 text-white/75">
-                    <span>Ítems seleccionados</span>
-                    <span class="font-mono font-semibold text-white tabular-nums">{selectedItemCount}</span>
-                </div>
-                <div class="flex items-center justify-between gap-4 text-white/75">
-                    <span>Productos y lentes</span>
-                    <span class="font-mono font-semibold text-white tabular-nums"
-                        >{formatPrice(coreItemsSubtotal)}</span
-                    >
-                </div>
-                {#if selectedTreatmentCount > 0}
-                    <div class="flex items-center justify-between gap-4 text-white/75">
-                        <span>Tratamientos ({selectedTreatmentCount})</span>
-                        <span class="font-mono font-semibold text-white tabular-nums"
-                            >{formatPrice(treatmentsSubtotal)}</span
-                        >
-                    </div>
-                {/if}
-                <div class="h-px bg-white/10"></div>
-                <div class="flex items-end justify-between gap-4">
-                    <p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-                        Total previo al resumen
-                    </p>
-                    <p class="font-mono text-2xl font-bold text-white tabular-nums">
-                        {formatPrice(partialTotal)}
-                    </p>
-                </div>
-            </div>
-        </div>
+		<!-- Resumen parcial -->
+		<div
+			class="col-span-2 row-span-2 rounded-[1.5rem] bg-brand-navy px-5 py-5 text-white shadow-sm"
+		>
+			<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
+				Resumen parcial
+			</p>
+			<div class="mt-4 space-y-3 text-sm">
+				<div class="flex items-center justify-between gap-4 text-white/75">
+					<span>Ítems seleccionados</span>
+					<span class="font-mono font-semibold text-white tabular-nums">{selectedItemCount}</span>
+				</div>
+				<div class="flex items-center justify-between gap-4 text-white/75">
+					<span>Productos y lentes</span>
+					<span class="font-mono font-semibold text-white tabular-nums"
+						>{formatPrice(coreItemsSubtotal)}</span
+					>
+				</div>
+				{#if selectedTreatmentCount > 0}
+					<div class="flex items-center justify-between gap-4 text-white/75">
+						<span>Tratamientos ({selectedTreatmentCount})</span>
+						<span class="font-mono font-semibold text-white tabular-nums"
+							>{formatPrice(treatmentsSubtotal)}</span
+						>
+					</div>
+				{/if}
+				<div class="h-px bg-white/10"></div>
+				<div class="flex items-end justify-between gap-4">
+					<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
+						Total previo al resumen
+					</p>
+					<p class="font-mono text-2xl font-bold text-white tabular-nums">
+						{formatPrice(partialTotal)}
+					</p>
+				</div>
+			</div>
+		</div>
 
-        <!-- Search bar -->
-        <div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5 col-span-4">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <div class="relative min-w-0 flex-1 lg:max-w-3xl">
-                    <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                        bind:value={quickAddQuery}
-                        oninput={handleQuickAddInput}
-                        onkeydown={handleQuickAddKeydown}
-                        onblur={handleQuickAddBlur}
-                        onfocus={() => {
-                            if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
-                        }}
-                        placeholder={quickAddPlaceholder}
-                        class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pr-10 pl-10 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-                    />
-                    {#if quickAddQuery}
-                        <button
-                            type="button"
-                            onclick={resetQuickAdd}
-                            class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
-                        >
-                            <X class="h-3.5 w-3.5" />
-                        </button>
-                    {/if}
+		<!-- Search bar -->
+		<div class="col-span-4 rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
+			<div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+				<div class="relative min-w-0 flex-1 lg:max-w-3xl">
+					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+					<input
+						bind:value={quickAddQuery}
+						oninput={handleQuickAddInput}
+						onkeydown={handleQuickAddKeydown}
+						onblur={handleQuickAddBlur}
+						onfocus={() => {
+							if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
+						}}
+						placeholder={quickAddPlaceholder}
+						class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pr-10 pl-10 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+					/>
+					{#if quickAddQuery}
+						<button
+							type="button"
+							onclick={resetQuickAdd}
+							class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+						>
+							<X class="h-3.5 w-3.5" />
+						</button>
+					{/if}
 
-                    {#if quickAddOpen}
-                        <div
-                            class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
-                        >
-                            {#if totalQuickAddResults > 0}
-                                {#if visibleProductQuickAddOptions.length > 0}
-                                    <div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-                                        <div
-                                            class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-                                        >
-                                            <Package class="h-3 w-3" />
-                                            Productos ({visibleProductQuickAddOptions.length})
-                                        </div>
-                                    </div>
-                                    {#each visibleProductQuickAddOptions as option (option.key)}
-                                        <button
-                                            type="button"
-                                            onclick={() => selectQuickAddOption(option)}
-                                            class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-                                        >
-                                            <div
-                                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
-                                            >
-                                                <Package class="h-4 w-4" />
-                                            </div>
-                                            <div class="min-w-0 flex-1">
-                                                <p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
-                                                <p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-                                                    {formatPrice(option.price)}
-                                                </p>
-                                                {#if option.stock !== null}
-                                                    <p class="text-[11px] font-medium text-emerald-600">{option.stock} disp.</p>
-                                                {/if}
-                                            </div>
-                                        </button>
-                                    {/each}
-                                {/if}
+					{#if quickAddOpen}
+						<div
+							class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+						>
+							{#if totalQuickAddResults > 0}
+								{#if visibleProductQuickAddOptions.length > 0}
+									<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
+										<div
+											class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+										>
+											<Package class="h-3 w-3" />
+											Productos ({visibleProductQuickAddOptions.length})
+										</div>
+									</div>
+									{#each visibleProductQuickAddOptions as option (option.key)}
+										<button
+											type="button"
+											onclick={() => selectQuickAddOption(option)}
+											class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+										>
+											<div
+												class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
+											>
+												<Package class="h-4 w-4" />
+											</div>
+											<div class="min-w-0 flex-1">
+												<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
+												<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
+											</div>
+											<div class="text-right">
+												<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+													{formatPrice(option.price)}
+												</p>
+												{#if option.stock !== null}
+													<p class="text-[11px] font-medium text-emerald-600">
+														{option.stock} disp.
+													</p>
+												{/if}
+											</div>
+										</button>
+									{/each}
+								{/if}
 
-                                {#if visibleLensQuickAddOptions.length > 0}
-                                    <div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-                                        <div
-                                            class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-                                        >
-                                            <Eye class="h-3 w-3" />
-                                            Lentes ({visibleLensQuickAddOptions.length})
-                                        </div>
-                                    </div>
-                                    {#each visibleLensQuickAddOptions as option (option.key)}
-                                        <button
-                                            type="button"
-                                            onclick={() => selectQuickAddOption(option)}
-                                            class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-                                        >
-                                            <div
-                                                class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
-                                            >
-                                                <Eye class="h-4 w-4" />
-                                            </div>
-                                            <div class="min-w-0 flex-1">
-                                                <p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
-                                                <p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-                                                    {formatPrice(option.price)}
-                                                </p>
-                                                {#if option.inventoryMode === 'ON_DEMAND'}
-                                                    <p class="text-[11px] font-medium text-blue-600">Por pedido</p>
-                                                {:else if option.stock !== null}
-                                                    <p class="text-[11px] font-medium text-slate-500">{option.stock} disp.</p>
-                                                {/if}
-                                            </div>
-                                        </button>
-                                    {/each}
-                                {/if}
-                            {:else}
-                                <div class="py-6 text-center">
-                                    <p class="text-sm text-slate-500">
-                                        Sin resultados para &quot;{quickAddQuery.trim()}&quot;
-                                    </p>
-                                </div>
-                            {/if}
-                        </div>
-                    {/if}
-                </div>
+								{#if visibleLensQuickAddOptions.length > 0}
+									<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
+										<div
+											class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+										>
+											<Eye class="h-3 w-3" />
+											Lentes ({visibleLensQuickAddOptions.length})
+										</div>
+									</div>
+									{#each visibleLensQuickAddOptions as option (option.key)}
+										<button
+											type="button"
+											onclick={() => selectQuickAddOption(option)}
+											class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+										>
+											<div
+												class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
+											>
+												<Eye class="h-4 w-4" />
+											</div>
+											<div class="min-w-0 flex-1">
+												<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
+												<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
+											</div>
+											<div class="text-right">
+												<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+													{formatPrice(option.price)}
+												</p>
+												{#if option.inventoryMode === 'ON_DEMAND'}
+													<p class="text-[11px] font-medium text-blue-600">Por pedido</p>
+												{:else if option.stock !== null}
+													<p class="text-[11px] font-medium text-slate-500">{option.stock} disp.</p>
+												{/if}
+											</div>
+										</button>
+									{/each}
+								{/if}
+							{:else}
+								<div class="py-6 text-center">
+									<p class="text-sm text-slate-500">
+										Sin resultados para &quot;{quickAddQuery.trim()}&quot;
+									</p>
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
 
-                <div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-                    {#each quickAddFilterOptions as option (option.value)}
-                        <button
-                            type="button"
-                            onclick={() => setQuickAddFilter(option.value)}
-                            class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
-                            option.value
-                                ? 'bg-brand-navy text-white'
-                                : 'text-slate-600 hover:bg-slate-50'}"
-                        >
-                            {option.label}
-                        </button>
-                    {/each}
-                </div>
-            </div>
-        </div>
-    </div>
+				<div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+					{#each quickAddFilterOptions as option (option.value)}
+						<button
+							type="button"
+							onclick={() => setQuickAddFilter(option.value)}
+							class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
+							option.value
+								? 'bg-brand-navy text-white'
+								: 'text-slate-600 hover:bg-slate-50'}"
+						>
+							{option.label}
+						</button>
+					{/each}
+				</div>
+			</div>
+		</div>
+	</div>
 
 	<div class="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_22rem]">
-        <!-- Artitculos de la venta -->
+		<!-- Artitculos de la venta -->
 		<div class="space-y-4">
 			<div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
 				<div class="mb-4 flex items-center justify-between gap-3">
@@ -932,9 +938,9 @@
 													{#if item.kind === 'product' && maxStock !== null}
 														<span
 															class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==
-															null && availableStock <= 3
-															? 'bg-warning-container text-on-warning-container'
-															: 'bg-success-container text-on-success-container'}"
+																null && availableStock <= 3
+																? 'bg-warning-container text-on-warning-container'
+																: 'bg-success-container text-on-success-container'}"
 														>
 															{availableStock ?? maxStock} disponibles
 														</span>
@@ -1123,15 +1129,17 @@
 											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
 												{#if eyeCount > 0 && lens}
 													{@const internalCostTotal =
-														lensBaseCost(lens, eyeCount) +
-														lens.mountingPrice +
-														lens.shippingPrice}
-													<details class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
+														lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice}
+													<details
+														class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm"
+													>
 														<summary
 															class="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"
 														>
 															<div>
-																<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
+																<p
+																	class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+																>
 																	Costo interno
 																</p>
 																<p class="mt-1 text-xs text-on-surface-variant">
@@ -1146,7 +1154,9 @@
 															</div>
 														</summary>
 
-														<div class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant">
+														<div
+															class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant"
+														>
 															<div class="flex items-center justify-between gap-3">
 																<span>
 																	Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`}
@@ -1158,16 +1168,22 @@
 															{#if lens.mountingPrice > 0}
 																<div class="flex items-center justify-between gap-3">
 																	<span>Montaje</span>
-																	<span class="font-mono text-brand-navy">{formatPrice(lens.mountingPrice)}</span>
+																	<span class="font-mono text-brand-navy"
+																		>{formatPrice(lens.mountingPrice)}</span
+																	>
 																</div>
 															{/if}
 															{#if lens.shippingPrice > 0}
 																<div class="flex items-center justify-between gap-3">
 																	<span>Envío</span>
-																	<span class="font-mono text-brand-navy">{formatPrice(lens.shippingPrice)}</span>
+																	<span class="font-mono text-brand-navy"
+																		>{formatPrice(lens.shippingPrice)}</span
+																	>
 																</div>
 															{/if}
-															<div class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy">
+															<div
+																class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
+															>
 																<span>Total</span>
 																<span class="font-mono">{formatPrice(internalCostTotal)}</span>
 															</div>
@@ -1278,7 +1294,7 @@
 			</div>
 		</div>
 
-        <!-- Fórmula compartida -->
+		<!-- Fórmula compartida -->
 		<div class="space-y-4">
 			{#if hasLensItem}
 				<div
@@ -1330,7 +1346,7 @@
 		{/if}
 	{/if}
 
-    <!-- Navegación -->
+	<!-- Navegación -->
 	<div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
 		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 			<button
