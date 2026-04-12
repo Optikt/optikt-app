@@ -23,10 +23,15 @@
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import { getLensTypeLabel, getLensSourceLabel, getPriceTypeLabel } from '$lib/shared/enums';
+	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);
+
+	const marginPercent = $derived.by(() => {
+		if (!item.salePrice || item.pairPurchasePrice <= 0) return null;
+		return ((item.salePrice - item.pairPurchasePrice) / item.pairPurchasePrice) * 100;
+	});
 
 	// Delete modal state
 	let showDeleteModal = $state(false);
@@ -286,22 +291,45 @@
 			<div class="space-y-6">
 				<!-- Pricing + Stock + Metadata (condensed into one card) -->
 				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<!-- Pricing unit hero -->
+					<!-- Pricing -->
 					<div class="mb-4 rounded-lg bg-blue-50 p-5 text-center">
-						<dt class="text-sm font-medium text-blue-600">Precio Compra</dt>
+						<dt class="text-sm font-medium text-blue-600">Costo por Par</dt>
 						<dd class="mt-1 font-mono text-3xl font-bold text-blue-700">
-							{formatPrice(item.basePrice)}
+							{formatPrice(item.pairPurchasePrice)}
 						</dd>
-						<dd class="mt-1 text-xs font-medium text-blue-500 uppercase">
-							{getPriceTypeLabel(item.priceType)}
-						</dd>
+						{#if item.priceType === 'UNIT'}
+							<dd class="mt-1 text-xs text-blue-500">
+								{formatPrice(item.basePrice)} / unidad × 2
+							</dd>
+						{/if}
 					</div>
 
 					{#if item.salePrice}
 						<div class="mb-4 flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3">
-							<span class="text-sm font-medium text-emerald-700">Precio Venta</span>
+							<span class="text-sm font-medium text-emerald-700">Precio Venta (par)</span>
 							<span class="font-mono text-lg font-bold text-emerald-700">
 								{formatPrice(item.salePrice)}
+							</span>
+						</div>
+					{/if}
+
+					{#if marginPercent != null}
+						<div
+							class="mb-4 flex items-center justify-between rounded-lg px-4 py-3 {marginPercent >= 0
+								? 'bg-emerald-50'
+								: 'bg-red-50'}"
+						>
+							<span
+								class="text-sm font-medium {marginPercent >= 0
+									? 'text-emerald-700'
+									: 'text-red-700'}">Margen por Par</span
+							>
+							<span
+								class="font-mono text-lg font-bold {marginPercent >= 0
+									? 'text-emerald-700'
+									: 'text-red-700'}"
+							>
+								{marginPercent >= 0 ? '+' : ''}{marginPercent.toFixed(0)}%
 							</span>
 						</div>
 					{/if}

@@ -24,7 +24,7 @@
 			'Proveedor',
 			'Modo Inventario',
 			'Stock',
-			'Precio Base',
+			'Costo por Par',
 			'Precio Venta'
 		];
 		const rows = items.map((i) => [
@@ -34,7 +34,7 @@
 			i.supplierName ?? '—',
 			getInventoryModeLabel(i.inventoryMode),
 			i.stock != null ? String(i.stock) : '—',
-			i.basePrice.toFixed(2),
+			i.pairPurchasePrice.toFixed(2),
 			i.salePrice != null ? i.salePrice.toFixed(2) : '—'
 		]);
 		downloadCsv('inventario-lentes.csv', headers, rows);
@@ -92,7 +92,8 @@
 							<th class="px-4 py-3">Material</th>
 							<th class="px-4 py-3">Proveedor</th>
 							<th class="px-4 py-3 text-right">Stock</th>
-							<th class="px-4 py-3 text-right">Precio</th>
+							<th class="px-4 py-3 text-right">Costo par</th>
+							<th class="px-4 py-3 text-right">Precio Venta</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100">
@@ -113,7 +114,10 @@
 									{item.stock ?? 0}
 								</td>
 								<td class="px-4 py-3 text-right font-mono">
-									{formatPrice(item.salePrice ?? item.basePrice)}
+									{formatPrice(item.pairPurchasePrice)}
+								</td>
+								<td class="px-4 py-3 text-right font-mono">
+									{item.salePrice != null ? formatPrice(item.salePrice) : '—'}
 								</td>
 							</tr>
 						{/each}
@@ -135,7 +139,8 @@
 							<th class="px-4 py-3">Tipo</th>
 							<th class="px-4 py-3">Material</th>
 							<th class="px-4 py-3">Proveedor</th>
-							<th class="px-4 py-3 text-right">Precio</th>
+							<th class="px-4 py-3 text-right">Costo par</th>
+							<th class="px-4 py-3 text-right">Precio Venta</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-100">
@@ -149,7 +154,10 @@
 								<td class="px-4 py-3">{item.materialName ?? '—'}</td>
 								<td class="px-4 py-3">{item.supplierName ?? '—'}</td>
 								<td class="px-4 py-3 text-right font-mono">
-									{formatPrice(item.salePrice ?? item.basePrice)}
+									{formatPrice(item.pairPurchasePrice)}
+								</td>
+								<td class="px-4 py-3 text-right font-mono">
+									{item.salePrice != null ? formatPrice(item.salePrice) : '—'}
 								</td>
 							</tr>
 						{/each}

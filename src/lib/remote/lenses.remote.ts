@@ -33,6 +33,12 @@ import type { LensMaterial, LensCatalogItem, LensOpticalRange } from '$lib/serve
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
 import { nowISO } from '$lib/dates';
+import { LensPriceType } from '$lib/shared/enums';
+
+/** Compute the always-per-pair purchase price from the raw basePrice and priceType. */
+function computePairPurchasePrice(basePrice: number, priceType: string): number {
+	return priceType === LensPriceType.UNIT ? basePrice * 2 : basePrice;
+}
 
 // ============================================================================
 // OPTICAL RANGE COMPARISON HELPERS
@@ -245,6 +251,8 @@ export const createLensCatalogItemForm = form(
 			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
 			const stockValue = rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
 
+			const pairPurchasePrice = computePairPurchasePrice(rest.basePrice, rest.priceType);
+
 			const [item] = await tx
 				.insert(lensCatalogItems)
 				.values({
@@ -252,6 +260,7 @@ export const createLensCatalogItemForm = form(
 					id: crypto.randomUUID(),
 					supplierId,
 					materialId,
+					pairPurchasePrice,
 					stock: stockValue,
 					createdAt: now,
 					updatedAt: now
@@ -351,6 +360,11 @@ export const updateLensCatalogItemForm = form(
 							? {}
 							: { stock: 0 };
 
+				// Recompute pairPurchasePrice from the effective basePrice and priceType
+				const effectiveBasePrice = rest.basePrice ?? existing.basePrice;
+				const effectivePriceType = rest.priceType ?? existing.priceType;
+				const pairPurchasePrice = computePairPurchasePrice(effectiveBasePrice, effectivePriceType);
+
 				const [updated] = await tx
 					.update(lensCatalogItems)
 					.set({
@@ -358,6 +372,7 @@ export const updateLensCatalogItemForm = form(
 						...(supplierId !== undefined && { supplierId }),
 						...(materialId !== undefined && { materialId }),
 						...stockOverride,
+						pairPurchasePrice,
 						updatedAt: now
 					})
 					.where(eq(lensCatalogItems.id, id))

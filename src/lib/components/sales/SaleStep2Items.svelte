@@ -512,18 +512,18 @@
 		item.unitPrice = lensSalePrice(lens, eyeCount);
 	}
 
-	/** Sale price for the lens respecting PAIR vs UNIT. Falls back to cost (base + mounting + shipping). */
-	function lensSalePrice(lens: LensCatalogItemWithRelations, eyeCount: number): number {
+	/** Sale price for the lens — salePrice is always per pair. Falls back to cost (base + mounting + shipping). */
+	function lensSalePrice(lens: LensCatalogItemWithRelations, _eyeCount: number): number {
 		if (lens.salePrice != null && lens.salePrice > 0) {
-			return lens.priceType === 'PAIR' ? lens.salePrice : lens.salePrice * eyeCount;
+			return lens.salePrice;
 		}
 		// Fallback to cost-based price
-		return lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice;
+		return lens.pairPurchasePrice + lens.mountingPrice + lens.shippingPrice;
 	}
 
-	/** Base lens cost respecting PAIR vs UNIT pricing */
-	function lensBaseCost(lens: LensCatalogItemWithRelations, eyeCount: number): number {
-		return lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
+	/** Base lens cost — always the normalized pair cost */
+	function lensBaseCost(lens: LensCatalogItemWithRelations, _eyeCount: number): number {
+		return lens.pairPurchasePrice;
 	}
 
 	// ============================================================================
