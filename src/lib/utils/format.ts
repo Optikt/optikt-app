@@ -137,6 +137,31 @@ export function formatPhone(phone: string | null | undefined): string {
 }
 
 /**
+ * Get the maximum raw discount value allowed for a given discount type and base amount.
+ * For PERCENTAGE, the maximum is always 100.
+ * For FIXED, the maximum is the base amount.
+ */
+export function getDiscountValueMax(type: string, base: number): number {
+	const safeBase = Number.isFinite(base) ? Math.max(base, 0) : 0;
+	return type === 'PERCENTAGE' ? 100 : safeBase;
+}
+
+/**
+ * Check whether a raw discount value is valid for the given type and base amount.
+ */
+export function isDiscountValueValid(value: number, type: string, base: number): boolean {
+	return Number.isFinite(value) && value >= 0 && value <= getDiscountValueMax(type, base);
+}
+
+/**
+ * Clamp a raw discount value to the valid range for the given type and base amount.
+ */
+export function clampDiscountValue(value: number, type: string, base: number): number {
+	if (!Number.isFinite(value)) return 0;
+	return Math.min(Math.max(value, 0), getDiscountValueMax(type, base));
+}
+
+/**
  * Compute the effective discount amount from a value, type, and base amount.
  * For PERCENTAGE type, calculates (value / 100) * base.
  * For FIXED type, returns the value as-is.
