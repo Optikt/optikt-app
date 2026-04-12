@@ -553,9 +553,7 @@
 			<div class="space-y-4">
 				<div class="rounded-2xl bg-surface-container-low px-4 py-4 sm:px-5">
 					<div class="flex items-center justify-between gap-4">
-						<span
-							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-						>
+						<span class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 							Subtotal bruto
 						</span>
 						<span class="font-mono text-2xl font-bold text-brand-navy">{formatPrice(subtotal)}</span
@@ -637,11 +635,9 @@
 			<div class="rounded-[1.5rem] bg-surface-container-low p-6 shadow-sm">
 				<div class="space-y-4 text-sm sm:text-base">
 					<div
-						class="flex items-center justify-between gap-4 border-b border-outline-variant/50 pb4"
+						class="pb4 flex items-center justify-between gap-4 border-b border-outline-variant/50"
 					>
-						<span
-							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-						>
+						<span class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 							Base imponible
 						</span>
 						<span class="font-mono font-semibold text-brand-navy">
@@ -650,11 +646,9 @@
 					</div>
 
 					<div
-						class="flex items-center justify-between gap-4 border-b border-outline-variant/50 pb4"
+						class="pb4 flex items-center justify-between gap-4 border-b border-outline-variant/50"
 					>
-						<span
-							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-						>
+						<span class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 							Total descuentos
 						</span>
 						<span class="font-mono font-semibold text-error">
