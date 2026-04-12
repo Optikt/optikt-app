@@ -289,7 +289,7 @@
 		</div>
 
 		<div
-			class="mt-8 grid gap-3 border-t border-outline-variant/10 pt-6 lg:grid-cols-[auto_auto_1fr_auto]"
+			class="grid gap-3 border-t border-outline-variant/10 pt-6 lg:grid-cols-[auto_auto_1fr_auto]"
 		>
 			<div
 				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
