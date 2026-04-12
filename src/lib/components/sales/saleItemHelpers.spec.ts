@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+	calculateSaleSummarySubtotal,
 	itemLineTotal,
 	step2ItemLineTotal,
 	computeItemDiscount,
+	getItemDiscountMax,
+	isItemDiscountValid,
 	getRequestedProductQuantity,
 	getAvailableProductStock
 } from './saleItemHelpers';
@@ -99,6 +102,23 @@ describe('itemLineTotal', () => {
 
 	it('handles zero price', () => {
 		expect(itemLineTotal(makeProductRow({ unitPrice: 0 }))).toBe(0);
+	});
+
+	it('clamps fixed discount to the row total for display calculations', () => {
+		expect(itemLineTotal(makeProductRow({ unitPrice: 30, quantity: 1, discount: 50 }))).toBe(0);
+	});
+
+	it('clamps percentage discount above 100% for display calculations', () => {
+		expect(
+			itemLineTotal(
+				makeProductRow({
+					unitPrice: 30,
+					quantity: 1,
+					discount: 200,
+					discountType: DiscountType.PERCENTAGE
+				})
+			)
+		).toBe(0);
 	});
 });
 
@@ -206,6 +226,30 @@ describe('computeItemDiscount', () => {
 				})
 			)
 		).toBe(40); // 10% of 400
+	});
+
+	it('flags fixed discounts above the row total as invalid', () => {
+		expect(isItemDiscountValid(makeProductRow({ unitPrice: 30, discount: 50 }))).toBe(false);
+		expect(getItemDiscountMax(makeProductRow({ unitPrice: 30, discount: 50 }))).toBe(30);
+	});
+
+	it('flags percentage discounts above 100 as invalid', () => {
+		expect(
+			isItemDiscountValid(makeProductRow({ discount: 120, discountType: DiscountType.PERCENTAGE }))
+		).toBe(false);
+		expect(
+			getItemDiscountMax(makeProductRow({ discount: 120, discountType: DiscountType.PERCENTAGE }))
+		).toBe(100);
+	});
+});
+
+describe('calculateSaleSummarySubtotal', () => {
+	it('includes treatments and clamps invalid row discounts', () => {
+		const product = makeProductRow({ unitPrice: 30, discount: 50 });
+		const lens = makeLensRow([makeTreatment(15)]);
+		lens.unitPrice = 25;
+
+		expect(calculateSaleSummarySubtotal([product, lens])).toBe(55);
 	});
 });
 
