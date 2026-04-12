@@ -3,7 +3,6 @@
 	import { Input, Label } from 'flowbite-svelte';
 	import {
 		Trash2,
-		ChevronLeft,
 		ChevronRight,
 		User,
 		Hash,
@@ -39,6 +38,7 @@
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { createEmptyLensPair } from './newSaleTypes';
+	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -639,7 +639,7 @@
 	});
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6 pb-28">
 	<div class="grid grid-cols-6 gap-6">
 		<!-- Cliente resumen -->
 		<div class="col-span-4 rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm">
@@ -1346,27 +1346,14 @@
 		{/if}
 	{/if}
 
-	<!-- Navegación -->
-	<div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
-		<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-			<button
-				type="button"
-				onclick={onprev}
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-brand-navy shadow-sm transition-colors hover:bg-surface-container-highest"
-			>
-				<ChevronLeft class="h-4 w-4" />
-				Anterior
-			</button>
-
-			<button
-				type="button"
-				onclick={onnext}
-				disabled={!valid}
-				class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-5 py-3 text-sm font-semibold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-outline disabled:shadow-none"
-			>
-				Siguiente
-				<ChevronRight class="h-4 w-4" />
-			</button>
-		</div>
-	</div>
+	<SaleWizardFloatingActions
+		showBack={true}
+		primaryLabel="Continuar"
+		primaryDisabled={!valid}
+		primaryKind="next"
+		summaryLabel="Total previo"
+		summaryValue={formatPrice(partialTotal)}
+		onBack={onprev}
+		onPrimary={onnext}
+	/>
 </div>

@@ -1,39 +1,38 @@
 <script lang="ts">
-	import { Button, Select, Input, Spinner } from 'flowbite-svelte';
 	import {
-		ShoppingCart,
-		ChevronLeft,
-		User,
 		Calendar,
+		Eye,
 		FileText,
 		Hash,
-		Eye,
 		Package,
-		FlaskConical
+		ReceiptText,
+		ShoppingCart,
+		User
 	} from '@lucide/svelte';
-	import { resolve } from '$app/paths';
-	import { formatPrice, dateToISODateString } from '$lib/utils';
+	import { formatPrice } from '$lib/utils';
 	import {
+		buildTaxItemsFromWizard,
+		findLensItem,
 		findProduct,
-		itemLineTotal,
-		getItemName as _getItemName,
 		getEnabledEyeCount,
-		buildTaxItemsFromWizard
+		getItemName as _getItemName,
+		itemLineTotal
 	} from './saleItemHelpers';
 	import {
 		ALL_DISCOUNT_TYPES,
 		DiscountType,
+		getTreatmentCategoryLabel,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
+	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
+	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { getProductTypeLabel, getProductTypeBadgeColor } from '$lib/shared/enums/productTypes';
-	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { Customer } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
-	import { getTreatmentCategoryLabel } from '$lib/shared/enums';
-	import { computeTaxBreakdown } from '$lib/shared/tax';
-	import { TaxBreakdownDisplay } from '$lib/components/ui';
+	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from './newSaleTypes';
+	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
+	import { decomposePrice, type TaxBreakdown, type TaxableItem } from '$lib/shared/tax';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -51,6 +50,11 @@
 		canSubmit: boolean;
 		onprev: () => void;
 		onsubmit: () => void;
+	}
+
+	interface TaxDisplayMeta {
+		label: string;
+		className: string;
 	}
 
 	let {
@@ -71,40 +75,103 @@
 		onsubmit
 	}: Props = $props();
 
-	// ============================================================================
-	// CONFIRMATION STATE
-	// ============================================================================
-
-	// ============================================================================
-	// DERIVED TOTALS
-	// ============================================================================
-
 	const subtotal = $derived(
 		items.reduce((acc, item) => {
 			let itemTotal = itemLineTotal(item);
-			// Add treatment totals (treatments are separate from unitPrice now)
 			if (item.kind === 'lens') {
 				const eyeCount = getEnabledEyeCount(item);
-				itemTotal += item.treatments.reduce((sum, t) => sum + t.price * eyeCount, 0);
+				itemTotal += item.treatments.reduce(
+					(sum, treatment) => sum + treatment.price * eyeCount,
+					0
+				);
 			}
 			return acc + itemTotal;
 		}, 0)
 	);
 
-	const globalDiscountAmount = $derived(
+	const rawGlobalDiscountAmount = $derived(
 		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
 	);
 
-	const total = $derived(Math.max(0, subtotal - globalDiscountAmount));
+	const appliedGlobalDiscount = $derived(Math.min(Math.max(rawGlobalDiscountAmount, 0), subtotal));
+
+	const total = $derived(Math.max(0, subtotal - appliedGlobalDiscount));
 
 	const canSubmitFinal = $derived(canSubmit);
 
-	// ============================================================================
-	// HELPERS
-	// ============================================================================
+	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems));
+
+	const adjustedTaxBreakdown = $derived.by(() =>
+		computeAdjustedTaxBreakdown(taxItems, appliedGlobalDiscount)
+	);
+
+	const taxableRates = $derived.by(() =>
+		Array.from(
+			new Set(
+				taxItems.filter((item) => item.isTaxable && item.taxRate > 0).map((item) => item.taxRate)
+			)
+		)
+	);
+
+	const taxSummaryLabel = $derived.by(() => {
+		if (taxableRates.length === 1) {
+			return `IVA (${formatTaxRate(taxableRates[0])}%)`;
+		}
+		return 'IVA';
+	});
+
+	const statusMeta = $derived.by(() => {
+		if (submitting) {
+			return {
+				label: 'Registrando venta',
+				className: 'bg-brand-blue/10 text-brand-blue'
+			};
+		}
+
+		if (canSubmitFinal) {
+			return {
+				label: 'Revision final',
+				className: 'bg-warning-container text-on-warning-container'
+			};
+		}
+
+		return {
+			label: 'Ajustes pendientes',
+			className: 'bg-error-container text-on-error-container'
+		};
+	});
+
+	const displayCustomerName = $derived.by(() => {
+		if (newCustomer?.firstName || newCustomer?.lastName) {
+			return `${newCustomer.firstName} ${newCustomer.lastName}`.trim();
+		}
+
+		if (selectedCustomer) {
+			return `${selectedCustomer.firstName} ${selectedCustomer.lastName}`.trim();
+		}
+
+		if (customerId) return 'Cliente asociado';
+		return 'Venta sin cliente';
+	});
+
+	const displayCustomerDocument = $derived.by(() => {
+		if (newCustomer?.idNumber) return newCustomer.idNumber;
+		if (selectedCustomer?.idNumber) return selectedCustomer.idNumber;
+		return 'Sin documento';
+	});
+
+	const displaySaleDate = $derived.by(() => formatDisplayDate(saleDate));
+
+	const totalRenderedRows = $derived.by(() =>
+		items.reduce((count, item) => count + 1 + item.treatments.length, 0)
+	);
 
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
 		return findProduct(item, products);
+	}
+
+	function getLens(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
+		return findLensItem(item, lensItems);
 	}
 
 	function getItemName(item: SaleItemRow): string {
@@ -112,392 +179,557 @@
 	}
 
 	function getItemProductType(item: SaleItemRow): string | null {
-		const p = getProduct(item);
-		return p?.type ?? null;
+		return getProduct(item)?.type ?? null;
 	}
 
-	/** Compute lens cost breakdown from lens item */
-	function getLensCostBreakdown(item: SaleItemRow) {
-		if (item.kind !== 'lens' || !item.lensPair) return null;
-		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
-		if (!lens) return null;
-
-		const eyeCount = getEnabledEyeCount(item);
-		if (eyeCount === 0) return null;
-
-		const unitBasePrice = lens.basePrice;
-		const basePrice = lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
-		const mountingPrice = lens.mountingPrice;
-		const shippingPrice = lens.shippingPrice;
-		const totalCost = basePrice + mountingPrice + shippingPrice;
-		const isPair = lens.priceType === 'PAIR';
-
-		return { unitBasePrice, basePrice, mountingPrice, shippingPrice, totalCost, eyeCount, isPair };
+	function formatDisplayDate(date: Date): string {
+		return new Intl.DateTimeFormat('es-VE', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric'
+		}).format(date);
 	}
 
-	// ============================================================================
-	// TAX BREAKDOWN
-	// ============================================================================
+	function formatTaxRate(rate: number): string {
+		return Number.isInteger(rate) ? String(rate) : rate.toFixed(2);
+	}
 
-	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems));
-	const taxBreakdown = $derived(computeTaxBreakdown(taxItems));
+	function getTaxMeta(isTaxable: boolean, taxRate: number): TaxDisplayMeta {
+		if (isTaxable && taxRate > 0) {
+			return {
+				label: `IVA ${formatTaxRate(taxRate)}%`,
+				className: 'bg-success-container text-on-success-container'
+			};
+		}
+
+		return {
+			label: 'Exento',
+			className: 'bg-surface-container-high text-on-surface-variant'
+		};
+	}
+
+	function getItemTaxMeta(item: SaleItemRow): TaxDisplayMeta {
+		if (item.kind === 'product') {
+			const product = getProduct(item);
+			return getTaxMeta(product?.isTaxable ?? true, product?.taxRate ?? 16);
+		}
+
+		const lens = getLens(item);
+		return getTaxMeta(lens?.isTaxable ?? false, lens?.taxRate ?? 16);
+	}
+
+	function getTreatmentTaxMeta(treatment: SelectedTreatment): TaxDisplayMeta {
+		return getTaxMeta(treatment.isTaxable, treatment.taxRate);
+	}
+
+	function computeAdjustedTaxBreakdown(
+		itemsForTax: TaxableItem[],
+		globalDiscountValue: number
+	): TaxBreakdown {
+		const subtotalBeforeGlobal = itemsForTax.reduce((sum, item) => {
+			const gross = item.unitPrice * item.quantity;
+			const lineDiscount =
+				item.discountType === DiscountType.PERCENTAGE
+					? gross * (item.discount / 100)
+					: item.discount;
+			return sum + Math.max(0, gross - lineDiscount);
+		}, 0);
+
+		const discountRatio =
+			subtotalBeforeGlobal > 0
+				? Math.min(Math.max(globalDiscountValue, 0), subtotalBeforeGlobal) / subtotalBeforeGlobal
+				: 0;
+
+		let taxableBase = 0;
+		let exemptTotal = 0;
+		let taxAmount = 0;
+
+		for (const item of itemsForTax) {
+			const gross = item.unitPrice * item.quantity;
+			const lineDiscount =
+				item.discountType === DiscountType.PERCENTAGE
+					? gross * (item.discount / 100)
+					: item.discount;
+			const lineAfterLocalDiscount = Math.max(0, gross - lineDiscount);
+			const adjustedLineTotal = lineAfterLocalDiscount * (1 - discountRatio);
+
+			if (item.isTaxable && item.taxRate > 0) {
+				const { base, tax } = decomposePrice(adjustedLineTotal, item.taxRate);
+				taxableBase += base;
+				taxAmount += tax;
+			} else {
+				exemptTotal += adjustedLineTotal;
+			}
+		}
+
+		return {
+			taxableBase,
+			exemptTotal,
+			taxAmount,
+			total: taxableBase + exemptTotal + taxAmount
+		};
+	}
 </script>
 
-<div class="space-y-6">
-	<!-- Row 1: Customer + Sale Info side by side -->
-	<div class="grid gap-5 lg:grid-cols-5">
-		<!-- Customer Info — blue accent card (3/5 width) -->
-		<div
-			class="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/60 p-6 shadow-sm lg:col-span-3"
-		>
-			<div class="mb-3 flex items-center gap-2">
-				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
-					<User class="h-4 w-4 text-white" />
-				</div>
-				<p class="text-sm font-bold tracking-widest text-blue-600 uppercase">Cliente</p>
+<div class="space-y-4 pb-32">
+	<section class="rounded-[1.5rem] bg-surface-container-lowest p-6 shadow-sm">
+		<div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+			<div class="space-y-3">
+				<p class="text-sm font-semibold tracking-[0.2em] text-brand-blue uppercase">
+					Paso 3 - Confirmacion
+				</p>
 			</div>
-			{#if newCustomer}
-				<p class="text-xl font-bold text-slate-900">
-					{newCustomer.firstName}
-					{newCustomer.lastName}
-				</p>
-				<p class="mt-1 font-mono text-base text-slate-500">{newCustomer.idNumber}</p>
-				{#if newCustomer.primaryPhone}
-					<p class="mt-1 text-base text-slate-600">Tel: {newCustomer.primaryPhone}</p>
-				{/if}
-				<div
-					class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700"
-				>
-					Nuevo cliente — será creado al registrar
-				</div>
-			{:else if selectedCustomer}
-				<p class="text-xl font-bold text-slate-900">
-					{selectedCustomer.firstName}
-					{selectedCustomer.lastName}
-				</p>
-				<div class="mt-2 space-y-1 text-base text-slate-600">
-					<p>
-						Doc: <span class="font-mono font-semibold text-slate-700"
-							>{selectedCustomer.idNumber}</span
-						>
-					</p>
-					{#if selectedCustomer.primaryPhone}
-						<p>Tel: <span class="font-medium">{selectedCustomer.primaryPhone}</span></p>
-					{/if}
-					{#if selectedCustomer.email}
-						<p>{selectedCustomer.email}</p>
-					{/if}
-				</div>
-			{:else if customerId}
-				<p class="text-lg text-slate-700">Cliente seleccionado</p>
-			{/if}
+
+			<div
+				class="inline-flex items-center gap-2 rounded-full border border-current/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] uppercase {statusMeta.className}"
+			>
+				<span class="h-2 w-2 rounded-full bg-current opacity-70"></span>
+				<span>{statusMeta.label}</span>
+			</div>
 		</div>
 
-		<!-- Sale Details — right column (2/5 width) -->
-		<div class="flex flex-col gap-4 lg:col-span-2">
-			<!-- Order + Date + Items — single merged card -->
+		<div
+			class="mt-8 grid gap-3 border-t border-outline-variant/10 pt-6 lg:grid-cols-[auto_auto_1fr_auto]"
+		>
 			<div
-				class="rounded-xl border border-blue-300 bg-gradient-to-br from-blue-500 to-blue-600 p-5 shadow-sm"
+				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
 			>
-				{#if nextOrderNumber}
-					<div class="mb-4 flex items-center gap-2">
-						<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
-							<Hash class="h-3.5 w-3.5 text-white" />
-						</div>
-						<p class="text-xs font-bold tracking-widest text-blue-100 uppercase">Nº de Orden</p>
-					</div>
-					<p class="mb-4 font-mono text-3xl font-bold text-white">#{nextOrderNumber}</p>
-				{/if}
-				<div class="flex items-center gap-4 border-t border-white/20 pt-4">
-					<div class="flex flex-1 items-center gap-2">
-						<Calendar class="h-4 w-4 text-blue-200" />
-						<div>
-							<p class="text-xs text-blue-200">Fecha</p>
-							<p class="font-mono text-sm font-semibold text-white">
-								{dateToISODateString(saleDate)}
-							</p>
-						</div>
-					</div>
-					<div class="h-8 w-px bg-white/20"></div>
-					<div class="flex flex-1 items-center gap-2">
-						<ShoppingCart class="h-4 w-4 text-blue-200" />
-						<div>
-							<p class="text-xs text-blue-200">Artículos</p>
-							<p class="font-mono text-sm font-semibold text-white">
-								{items.length}
-							</p>
-						</div>
-					</div>
-				</div>
+				<Hash class="h-4 w-4 text-brand-blue" />
+				<span>Orden</span>
+				<span class="font-mono font-semibold text-brand-navy"
+					>#{nextOrderNumber ?? 'Pendiente'}</span
+				>
 			</div>
+
+			<div
+				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
+			>
+				<User class="h-4 w-4 text-brand-blue" />
+				<span class="font-medium text-brand-navy">{displayCustomerName}</span>
+				<span class="font-mono text-xs text-outline">({displayCustomerDocument})</span>
+			</div>
+
 			{#if notes}
 				<div
-					class="flex-1 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/60 p-5 shadow-sm"
+					class="hidden rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant xl:flex xl:items-center xl:gap-2"
 				>
-					<div class="mb-2 flex items-center gap-2">
-						<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500">
-							<FileText class="h-3.5 w-3.5 text-white" />
-						</div>
-						<p class="text-xs font-bold tracking-widest text-amber-600 uppercase">Notas</p>
-					</div>
-					<p class="text-base text-slate-700">{notes}</p>
+					<FileText class="h-4 w-4 text-brand-blue" />
+					<span class="line-clamp-1">{notes}</span>
 				</div>
 			{/if}
-		</div>
-	</div>
 
-	<!-- Row 2: All Items Table (products + lenses unified) -->
-	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<p class="mb-3 text-sm font-bold tracking-widest text-slate-500 uppercase">Detalle de Ítems</p>
-		<div class="overflow-x-auto rounded-lg border border-slate-200">
-			<table class="w-full text-left">
-				<thead class="bg-slate-100 text-sm text-slate-600">
-					<tr>
-						<th class="px-4 py-3 font-semibold">Tipo</th>
-						<th class="px-4 py-3 font-semibold">Producto / Lente</th>
-						<th class="px-4 py-3 text-right font-semibold">Cant.</th>
-						<th class="px-4 py-3 text-right font-semibold">P. Unit.</th>
-						<th class="px-4 py-3 text-right font-semibold">Desc.</th>
-						<th class="px-4 py-3 text-right font-semibold">Subtotal</th>
+			<div
+				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant lg:justify-self-end"
+			>
+				<Calendar class="h-4 w-4 text-brand-blue" />
+				<span>{displaySaleDate}</span>
+			</div>
+		</div>
+	</section>
+
+	<section class="overflow-hidden rounded-[1.5rem] bg-surface-container-lowest shadow-sm">
+		<div class="overflow-x-auto">
+			<table class="min-w-full border-separate border-spacing-0">
+				<thead>
+					<tr class="bg-brand-navy text-left text-white">
+						<th class="px-6 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase"
+							>Descripcion del item</th
+						>
+						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase">Cant.</th>
+						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase"
+							>P. Unitario</th
+						>
+						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase">Impuesto</th
+						>
+						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase"
+							>Descuento</th
+						>
+						<th class="px-6 py-5 text-right text-[10px] font-semibold tracking-[0.18em] uppercase"
+							>Subtotal</th
+						>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-slate-100">
-					{#each items as item (item.id)}
-						{@const productType = getItemProductType(item)}
-						<tr class="text-slate-700 hover:bg-slate-50/50">
-							<td class="px-4 py-3">
-								{#if item.kind === 'lens'}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
+
+				<tbody class="bg-surface-container-lowest text-on-surface">
+					{#each items as item, itemIndex (item.id)}
+						{@const product = item.kind === 'product' ? getProduct(item) : undefined}
+						{@const lens = item.kind === 'lens' ? getLens(item) : undefined}
+						{@const productType = item.kind === 'product' ? getItemProductType(item) : null}
+						{@const itemTaxMeta = getItemTaxMeta(item)}
+						<tr class={itemIndex > 0 ? 'bg-surface-container-low/30' : ''}>
+							<td class="px-6 py-5">
+								<div class="flex items-center gap-4">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {item.kind ===
+										'lens'
+											? 'bg-brand-gold/15 text-brand-navy'
+											: 'bg-brand-blue/10 text-brand-blue'}"
 									>
-										<Eye class="h-3 w-3" />
-										Lente
-									</span>
-								{:else if productType}
-									{@const badgeColor = getProductTypeBadgeColor(productType)}
-									{@const Icon = getProductTypeIcon(productType)}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold
-										{badgeColor === 'info' ? 'bg-info-container text-on-info-container' : ''}
-										{badgeColor === 'success' ? 'bg-success-container text-on-success-container' : ''}
-										{badgeColor === 'purple' ? 'bg-purple-container text-on-purple-container' : ''}
-										{badgeColor === 'warning' ? 'bg-warning-container text-on-warning-container' : ''}
-										{badgeColor === 'neutral' ? 'bg-surface-container-high text-on-surface-variant' : ''}"
-									>
-										<Icon class="h-3 w-3" />
-										{getProductTypeLabel(productType)}
-									</span>
-								{:else}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700"
-									>
-										<Package class="h-3 w-3" />
-										Producto
-									</span>
-								{/if}
-							</td>
-							<td class="px-4 py-3">
-								<p class="text-base font-medium">{getItemName(item)}</p>
-								{#if item.kind === 'product' && getProduct(item)}
-									{@const product = getProduct(item)!}
-									<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-										{#if product.sku}
-											<span class="font-mono text-slate-400">{product.sku}</span>
-										{/if}
-										{#if product.brand}
-											<span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600"
-												>{product.brand.name}</span
-											>
+										{#if item.kind === 'lens'}
+											<Eye class="h-5 w-5" />
+										{:else if productType}
+											{@const ProductIcon = getProductTypeIcon(productType)}
+											<ProductIcon class="h-5 w-5" />
+										{:else}
+											<Package class="h-5 w-5" />
 										{/if}
 									</div>
-								{/if}
+
+									<div class="min-w-0">
+										{#if item.kind === 'product'}
+											<p
+												class="text-[10px] font-semibold tracking-[0.16em] text-brand-blue uppercase"
+											>
+												{productType ? getProductTypeLabel(productType) : 'Producto'}
+											</p>
+										{:else}
+											<p
+												class="text-[10px] font-semibold tracking-[0.16em] text-brand-blue uppercase"
+											>
+												Lente
+											</p>
+										{/if}
+
+										<p class="text-sm font-semibold text-brand-navy sm:text-base">
+											{getItemName(item)}
+										</p>
+
+										<div
+											class="mt-1 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant"
+										>
+											{#if item.kind === 'product'}
+												{#if product?.sku}
+													<span class="font-mono">Ref: {product.sku}</span>
+												{/if}
+												{#if product?.brand}
+													<span>{product.sku ? '·' : ''} {product.brand.name}</span>
+												{/if}
+											{:else if lens}
+												<span>{getLensTypeLabel(lens.type)}</span>
+												<span>· {getLensSourceLabel(lens.source)}</span>
+												{#if lens.material}
+													<span>· {lens.material.name}</span>
+												{/if}
+											{/if}
+										</div>
+									</div>
+								</div>
 							</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{item.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{formatPrice(item.unitPrice)}</td
-							>
-							<td class="px-2 py-2">
-								<div class="flex items-center justify-end gap-1">
-									<Input
+
+							<td class="px-4 py-5 font-mono text-sm font-semibold text-brand-navy">
+								{item.kind === 'product' ? item.quantity : 1}
+							</td>
+
+							<td class="px-4 py-5 font-mono text-sm text-on-surface-variant">
+								{formatPrice(item.unitPrice)}
+							</td>
+
+							<td class="px-4 py-5">
+								<span
+									class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] uppercase {itemTaxMeta.className}"
+								>
+									{itemTaxMeta.label}
+								</span>
+							</td>
+
+							<td class="px-4 py-5">
+								<div class="flex items-center gap-1.5">
+									<select
+										bind:value={item.discountType}
+										class="rounded-lg bg-surface-container-low px-2 py-2 text-xs font-semibold text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+									>
+										{#each ALL_DISCOUNT_TYPES as dt (dt)}
+											<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
+										{/each}
+									</select>
+									<input
 										type="number"
 										bind:value={item.discount}
 										step="0.01"
 										min="0"
-										class="w-20 text-right font-mono text-sm"
+										class="w-20 rounded-lg bg-surface-container-low px-3 py-2 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 									/>
-									<Select bind:value={item.discountType} class="w-14 shrink-0 text-sm">
-										{#each ALL_DISCOUNT_TYPES as dt (dt)}
-											<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
-										{/each}
-									</Select>
 								</div>
 							</td>
-							<td class="px-4 py-3 text-right font-mono text-base font-semibold"
-								>{formatPrice(itemLineTotal(item))}</td
+
+							<td
+								class="px-6 py-5 text-right font-mono text-sm font-bold text-brand-navy sm:text-base"
 							>
+								{formatPrice(itemLineTotal(item))}
+							</td>
 						</tr>
-						<!-- Lens cost breakdown -->
-						{#if item.kind === 'lens' && item.lensPair}
-							{@const costBreakdown = getLensCostBreakdown(item)}
-							{#if costBreakdown && costBreakdown.totalCost > 0}
-								<tr class="bg-slate-50/60">
-									<td class="px-4 py-2" colspan="6">
-										<div
-											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
-										>
-											<span
-												>Cristales{costBreakdown.isPair
-													? ' (par)'
-													: costBreakdown.eyeCount > 1
-														? ` ${formatPrice(costBreakdown.unitBasePrice)} × ${costBreakdown.eyeCount}`
-														: ''}:
-												<span class="font-mono font-medium text-slate-500"
-													>{formatPrice(costBreakdown.basePrice)}</span
-												></span
-											>
-											{#if costBreakdown.mountingPrice > 0}
-												<span
-													>Montaje: <span class="font-mono font-medium text-slate-500"
-														>{formatPrice(costBreakdown.mountingPrice)}</span
-													></span
+
+						{#if item.kind === 'lens' && item.treatments.length > 0}
+							{@const treatmentEyeCount = getEnabledEyeCount(item)}
+							{#each item.treatments as treatment (treatment.supplierTreatmentId)}
+								{@const treatmentTaxMeta = getTreatmentTaxMeta(treatment)}
+								<tr class="bg-surface-container-low/20 text-on-surface-variant">
+									<td class="px-6 py-4">
+										<div class="flex items-start gap-3 pl-4 sm:pl-8">
+											<span class="mt-2 h-1.5 w-1.5 rounded-full bg-brand-blue"></span>
+											<div>
+												<p
+													class="text-[10px] font-semibold tracking-[0.16em] text-brand-blue uppercase"
 												>
-											{/if}
-											{#if costBreakdown.shippingPrice > 0}
-												<span
-													>Envío: <span class="font-mono font-medium text-slate-500"
-														>{formatPrice(costBreakdown.shippingPrice)}</span
-													></span
-												>
-											{/if}
-											<span class="font-semibold text-slate-500"
-												>Costo: <span class="font-mono">{formatPrice(costBreakdown.totalCost)}</span
-												></span
-											>
+													Tratamiento
+												</p>
+												<div class="flex flex-wrap items-center gap-2">
+													<p class="text-sm font-semibold text-brand-navy">{treatment.name}</p>
+													<span
+														class="rounded-full bg-brand-blue/10 px-2 py-0.5 text-[10px] font-semibold text-brand-blue uppercase"
+													>
+														{getTreatmentCategoryLabel(treatment.category)}
+													</span>
+												</div>
+											</div>
 										</div>
 									</td>
-								</tr>
-							{/if}
-							<!-- Treatment items -->
-							{#if item.treatments.length > 0}
-								{@const treatmentEyeCount = getEnabledEyeCount(item)}
-								{#each item.treatments as treatment (treatment.supplierTreatmentId)}
-									<tr class="border-t border-violet-100 bg-violet-50/30 text-slate-700">
-										<td class="px-4 py-3">
-											<span
-												class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
-											>
-												<FlaskConical class="h-3 w-3" />
-												Tratamiento
-											</span>
-										</td>
-										<td class="px-4 py-3">
-											<div class="flex items-center gap-2">
-												<p class="text-base font-medium text-violet-800">{treatment.name}</p>
-												<span
-													class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
-													>{getTreatmentCategoryLabel(treatment.category)}</span
-												>
-											</div>
-										</td>
-										<td class="px-4 py-3 text-right font-mono text-base">{treatmentEyeCount}</td>
-										<td class="px-2 py-2">
-											<Input
-												type="number"
-												bind:value={treatment.price}
-												step="0.01"
-												min="0"
-												class="w-24 text-right font-mono text-sm"
-											/>
-										</td>
-										<td class="px-4 py-3 text-right font-mono text-base text-red-500">—</td>
-										<td
-											class="px-4 py-3 text-right font-mono text-base font-semibold text-violet-700"
-											>{formatPrice(treatment.price * treatmentEyeCount)}</td
+
+									<td class="px-4 py-4 font-mono text-sm">{treatmentEyeCount}</td>
+
+									<td class="px-4 py-4">
+										<input
+											type="number"
+											bind:value={treatment.price}
+											step="0.01"
+											min="0"
+											class="w-24 rounded-lg bg-surface-container-low px-3 py-2 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+										/>
+									</td>
+
+									<td class="px-4 py-4">
+										<span
+											class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] uppercase {treatmentTaxMeta.className}"
 										>
-									</tr>
-								{/each}
-							{/if}
+											{treatmentTaxMeta.label}
+										</span>
+									</td>
+
+									<td class="px-4 py-4">
+										<div class="flex items-center gap-1 opacity-55 grayscale">
+											<span
+												class="rounded-md bg-surface-container-high px-2 py-1 text-[10px] font-semibold text-outline"
+											>
+												$
+											</span>
+											<span
+												class="rounded-md bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold text-outline"
+											>
+												0
+											</span>
+										</div>
+									</td>
+
+									<td class="px-6 py-4 text-right font-mono text-sm font-bold text-brand-navy">
+										{formatPrice(treatment.price * treatmentEyeCount)}
+									</td>
+								</tr>
+							{/each}
 						{/if}
 					{/each}
 				</tbody>
 			</table>
 		</div>
-	</div>
+	</section>
 
-	<!-- Row 4: Discount + Tax + Total -->
-	<div class="grid gap-5 lg:grid-cols-2">
-		<!-- Discount -->
-		<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-			<p class="mb-4 text-sm font-bold tracking-widest text-slate-500 uppercase">Descuento</p>
-			<div class="space-y-3">
-				<div class="flex items-center justify-between gap-4 text-base">
-					<span class="text-slate-600">Subtotal</span>
-					<span class="font-mono font-semibold text-slate-800">{formatPrice(subtotal)}</span>
+	<section class="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
+		<div class="rounded-[1.5rem] bg-surface-container-lowest p-6 shadow-sm sm:p-8">
+			<div class="mb-6 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue"
+				>
+					<ReceiptText class="h-5 w-5" />
 				</div>
-				<div class="flex items-center justify-between gap-2 text-base">
-					<span class="text-slate-600">Descuento General</span>
-					<div class="flex items-center gap-1">
-						<Input
-							type="number"
-							bind:value={discount}
-							step="0.01"
-							min="0"
-							class="w-24 text-right font-mono"
-						/>
-						<Select bind:value={discountType} class="w-16">
-							{#each ALL_DISCOUNT_TYPES as dt (dt)}
-								<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
-							{/each}
-						</Select>
+				<div>
+					<p class="text-[11px] font-semibold tracking-[0.18em] text-brand-blue uppercase">
+						Ajustes globales
+					</p>
+					<h3 class="font-heading text-xl font-bold tracking-[-0.02em] text-brand-navy">
+						Cierre comercial
+					</h3>
+				</div>
+			</div>
+
+			<div class="space-y-4">
+				<div class="rounded-2xl bg-surface-container-low px-4 py-4 sm:px-5">
+					<div class="flex items-center justify-between gap-4">
+						<span
+							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
+							Subtotal bruto
+						</span>
+						<span class="font-mono text-2xl font-bold text-brand-navy">{formatPrice(subtotal)}</span
+						>
 					</div>
 				</div>
-				{#if globalDiscountAmount > 0}
-					<div class="flex justify-between text-base">
-						<span class="text-slate-400">Descuento aplicado</span>
-						<span class="font-mono font-semibold text-red-500"
-							>-{formatPrice(globalDiscountAmount)}</span
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<div class="rounded-2xl bg-surface-container-low px-4 py-4">
+						<p
+							class="mb-3 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 						>
+							Tipo descuento
+						</p>
+						<div class="grid grid-cols-2 gap-2">
+							<button
+								type="button"
+								onclick={() => {
+									discountType = DiscountType.FIXED;
+								}}
+								class="rounded-xl px-3 py-2 text-sm font-semibold transition-colors {discountType ===
+								DiscountType.FIXED
+									? 'bg-brand-navy text-white'
+									: 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high'}"
+							>
+								Monto ($)
+							</button>
+							<button
+								type="button"
+								onclick={() => {
+									discountType = DiscountType.PERCENTAGE;
+								}}
+								class="rounded-xl px-3 py-2 text-sm font-semibold transition-colors {discountType ===
+								DiscountType.PERCENTAGE
+									? 'bg-brand-navy text-white'
+									: 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high'}"
+							>
+								Porc. (%)
+							</button>
+						</div>
+					</div>
+
+					<div class="rounded-2xl bg-surface-container-low px-4 py-4">
+						<p
+							class="mb-3 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
+							Valor
+						</p>
+						<div class="relative">
+							<input
+								type="number"
+								bind:value={discount}
+								step="0.01"
+								min="0"
+								class="w-full rounded-xl bg-surface-container-lowest py-3 pr-10 pl-10 text-right font-mono text-lg font-semibold text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+							/>
+							<span
+								class="absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold text-outline"
+							>
+								{discountType === DiscountType.FIXED ? '$' : '%'}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				{#if notes}
+					<div class="rounded-2xl bg-warning-container/45 px-4 py-4 sm:px-5">
+						<div class="mb-2 flex items-center gap-2 text-on-warning-container">
+							<FileText class="h-4 w-4" />
+							<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">Notas</p>
+						</div>
+						<p class="text-sm text-on-warning-container sm:text-base">{notes}</p>
 					</div>
 				{/if}
 			</div>
 		</div>
 
-		<!-- Tax Breakdown + Total stacked -->
-		<div class="flex flex-col gap-4">
-			<TaxBreakdownDisplay
-				taxableBase={taxBreakdown.taxableBase}
-				exemptTotal={taxBreakdown.exemptTotal}
-				taxAmount={taxBreakdown.taxAmount}
-				subtotal={taxBreakdown.total}
-			/>
+		<div class="space-y-4">
+			<div class="rounded-[1.5rem] bg-surface-container-low p-6 shadow-sm sm:p-8">
+				<div class="space-y-4 text-sm sm:text-base">
+					<div
+						class="flex items-center justify-between gap-4 border-b border-outline-variant/20 pb-4"
+					>
+						<span
+							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
+							Base imponible
+						</span>
+						<span class="font-mono font-semibold text-brand-navy">
+							{formatPrice(adjustedTaxBreakdown.taxableBase)}
+						</span>
+					</div>
 
-			<!-- Total — big blue accent -->
+					<div
+						class="flex items-center justify-between gap-4 border-b border-outline-variant/20 pb-4"
+					>
+						<span
+							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
+							Total descuentos
+						</span>
+						<span class="font-mono font-semibold text-error">
+							-{formatPrice(appliedGlobalDiscount)}
+						</span>
+					</div>
+
+					<div class="flex items-center justify-between gap-4">
+						<div class="flex items-center gap-2">
+							<span
+								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+							>
+								{taxSummaryLabel}
+							</span>
+							<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
+						</div>
+						<span class="font-mono font-semibold text-brand-navy">
+							{formatPrice(adjustedTaxBreakdown.taxAmount)}
+						</span>
+					</div>
+
+					{#if adjustedTaxBreakdown.exemptTotal > 0}
+						<div class="flex items-center justify-between gap-4">
+							<span
+								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+							>
+								Exento
+							</span>
+							<span class="font-mono font-semibold text-brand-navy">
+								{formatPrice(adjustedTaxBreakdown.exemptTotal)}
+							</span>
+						</div>
+					{/if}
+				</div>
+			</div>
+
 			<div
-				class="flex flex-1 flex-col justify-center rounded-xl border border-blue-200 bg-gradient-to-br from-blue-600 to-blue-700 p-6 shadow-lg"
+				class="relative overflow-hidden rounded-[1.5rem] bg-brand-navy px-6 py-7 text-white shadow-[0_24px_60px_rgba(21,35,70,0.22)] sm:px-8"
 			>
-				<p class="mb-2 text-sm font-bold tracking-widest text-blue-200 uppercase">Total a Pagar</p>
-				<p class="font-mono text-4xl font-bold text-white">{formatPrice(total)}</p>
-				<p class="mt-2 text-base text-blue-200">
-					{items.length} artículo{items.length !== 1 ? 's' : ''}
-				</p>
+				<div class="absolute top-0 right-0 h-40 w-40 rounded-full bg-brand-gold/10 blur-3xl"></div>
+				<div class="relative z-10 flex items-end justify-between gap-6">
+					<div>
+						<p class="text-xs font-semibold tracking-[0.24em] text-brand-gold uppercase">
+							Total neto a pagar
+						</p>
+						<p class="mt-3 font-mono text-4xl font-bold tracking-[-0.04em] text-white sm:text-5xl">
+							{formatPrice(total)}
+						</p>
+						<p class="mt-3 text-sm text-white/65 sm:text-base">
+							{items.length} articulo{items.length !== 1 ? 's' : ''} · {totalRenderedRows} fila{totalRenderedRows !==
+							1
+								? 's'
+								: ''} revisadas
+						</p>
+					</div>
+
+					<div
+						class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-gold text-brand-navy shadow-lg shadow-black/15"
+					>
+						<ShoppingCart class="h-8 w-8" />
+					</div>
+				</div>
 			</div>
 		</div>
-	</div>
-</div>
+	</section>
 
-<!-- Step 3 Navigation -->
-<div class="mt-6 flex justify-between">
-	<Button color="light" size="lg" onclick={onprev}>
-		<ChevronLeft class="mr-1 h-4 w-4" />
-		Anterior
-	</Button>
-	<div class="flex gap-3">
-		<Button color="light" size="lg" href={resolve('/sales')}>Cancelar</Button>
-		<Button color="blue" size="lg" disabled={!canSubmitFinal} onclick={onsubmit}>
-			{#if submitting}
-				<Spinner size="4" class="mr-2" />
-			{/if}
-			<ShoppingCart class="mr-2 h-4 w-4" />
-			Registrar Venta
-		</Button>
-	</div>
+	<SaleWizardFloatingActions
+		showBack={true}
+		primaryLabel="Confirmar y Registrar Venta"
+		primaryDisabled={!canSubmitFinal}
+		primaryLoading={submitting}
+		primaryKind="confirm"
+		summaryLabel="Total"
+		summaryValue={formatPrice(total)}
+		onBack={onprev}
+		onPrimary={onsubmit}
+	/>
 </div>
