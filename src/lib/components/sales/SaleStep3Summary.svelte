@@ -9,17 +9,20 @@
 		ShoppingCart,
 		User
 	} from '@lucide/svelte';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
 	import {
+		calculateSaleSummarySubtotal,
 		buildTaxItemsFromWizard,
 		findLensItem,
 		findProduct,
 		getEnabledEyeCount,
+		getItemDiscountBase,
+		getItemDiscountMax,
 		getItemName as _getItemName,
+		isItemDiscountValid,
 		itemLineTotal
 	} from './saleItemHelpers';
 	import {
-		ALL_DISCOUNT_TYPES,
 		DiscountType,
 		getTreatmentCategoryLabel,
 		type DiscountType as DiscountTypeEnum
@@ -75,19 +78,7 @@
 		onsubmit
 	}: Props = $props();
 
-	const subtotal = $derived(
-		items.reduce((acc, item) => {
-			let itemTotal = itemLineTotal(item);
-			if (item.kind === 'lens') {
-				const eyeCount = getEnabledEyeCount(item);
-				itemTotal += item.treatments.reduce(
-					(sum, treatment) => sum + treatment.price * eyeCount,
-					0
-				);
-			}
-			return acc + itemTotal;
-		}, 0)
-	);
+	const subtotal = $derived(calculateSaleSummarySubtotal(items));
 
 	const rawGlobalDiscountAmount = $derived(
 		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
@@ -97,7 +88,13 @@
 
 	const total = $derived(Math.max(0, subtotal - appliedGlobalDiscount));
 
-	const canSubmitFinal = $derived(canSubmit);
+	const globalDiscountMax = $derived(getDiscountValueMax(discountType, subtotal));
+
+	const hasInvalidGlobalDiscount = $derived(
+		!isDiscountValueValid(discount, discountType, subtotal)
+	);
+
+	const canSubmitFinal = $derived(canSubmit && !hasInvalidGlobalDiscount);
 
 	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems));
 
@@ -222,6 +219,12 @@
 		return getTaxMeta(treatment.isTaxable, treatment.taxRate);
 	}
 
+	function getDiscountToggleButtonClass(isActive: boolean): string {
+		return isActive
+			? 'bg-brand-navy text-white shadow-sm'
+			: 'text-on-surface-variant hover:bg-surface-container-high';
+	}
+
 	function computeAdjustedTaxBreakdown(
 		itemsForTax: TaxableItem[],
 		globalDiscountValue: number
@@ -272,59 +275,66 @@
 </script>
 
 <div class="space-y-4">
-	<section class="rounded-[1.5rem] bg-surface-container-lowest p-6 shadow-sm">
-		<div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-			<div class="space-y-3">
-				<p class="text-sm font-semibold tracking-[0.2em] text-brand-blue uppercase">
+	<section class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-5 shadow-sm sm:px-7">
+		<div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-5">
+			<div class="shrink-0 xl:pr-2">
+				<p class="text-[12px] font-semibold tracking-[0.24em] text-brand-blue uppercase">
 					Paso 3 - Confirmacion
 				</p>
 			</div>
 
 			<div
-				class="inline-flex items-center gap-2 rounded-full border border-current/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] uppercase {statusMeta.className}"
+				class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap xl:items-center"
+			>
+				<div
+					class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
+				>
+					<Hash class="h-4 w-4 text-brand-blue" />
+					<span>Orden</span>
+					<span class="font-mono font-semibold text-brand-navy"
+						>#{nextOrderNumber ?? 'Pendiente'}</span
+					>
+				</div>
+
+				<div
+					class="inline-flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
+				>
+					<User class="h-4 w-4 shrink-0 text-brand-blue" />
+					<span class="truncate font-medium text-brand-navy">{displayCustomerName}</span>
+					<span class="shrink-0 font-mono text-xs text-outline">({displayCustomerDocument})</span>
+				</div>
+
+				<div
+					class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant xl:ml-auto"
+				>
+					<Calendar class="h-4 w-4 text-brand-blue" />
+					<span>{displaySaleDate}</span>
+				</div>
+			</div>
+
+			<div
+				class="inline-flex shrink-0 items-center gap-2 rounded-full border border-current/10 px-4 py-2 text-[11px] font-semibold tracking-[0.18em] uppercase {statusMeta.className}"
 			>
 				<span class="h-2 w-2 rounded-full bg-current opacity-70"></span>
 				<span>{statusMeta.label}</span>
 			</div>
 		</div>
 
-		<div
-			class="grid gap-3 border-t border-outline-variant/10 pt-6 lg:grid-cols-[auto_auto_1fr_auto]"
-		>
-			<div
-				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
-			>
-				<Hash class="h-4 w-4 text-brand-blue" />
-				<span>Orden</span>
-				<span class="font-mono font-semibold text-brand-navy"
-					>#{nextOrderNumber ?? 'Pendiente'}</span
-				>
-			</div>
-
-			<div
-				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
-			>
-				<User class="h-4 w-4 text-brand-blue" />
-				<span class="font-medium text-brand-navy">{displayCustomerName}</span>
-				<span class="font-mono text-xs text-outline">({displayCustomerDocument})</span>
-			</div>
-
-			{#if notes}
+		{#if notes}
+			<div class="mt-4 border-t border-outline-variant/10 pt-4">
 				<div
-					class="hidden rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant xl:flex xl:items-center xl:gap-2"
+					class="flex items-start gap-3 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
 				>
-					<FileText class="h-4 w-4 text-brand-blue" />
-					<span class="line-clamp-1">{notes}</span>
+					<FileText class="mt-0.5 h-4 w-4 shrink-0 text-brand-blue" />
+					<div class="min-w-0">
+						<p class="text-[10px] font-semibold tracking-[0.18em] text-brand-blue uppercase">
+							Notas
+						</p>
+						<p class="mt-1 line-clamp-2">{notes}</p>
+					</div>
 				</div>
-			{/if}
-
-			<div
-				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant lg:justify-self-end"
-			>
-				<Calendar class="h-4 w-4 text-brand-blue" />
-				<span>{displaySaleDate}</span>
 			</div>
-		</div>
+		{/if}
 	</section>
 
 	<section class="overflow-hidden rounded-[1.5rem] bg-surface-container-lowest shadow-sm">
@@ -433,23 +443,54 @@
 							</td>
 
 							<td class="px-4 py-5">
-								<div class="flex items-center gap-1.5">
-									<select
-										bind:value={item.discountType}
-										class="rounded-lg bg-surface-container-low px-2 py-2 text-xs font-semibold text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-									>
-										{#each ALL_DISCOUNT_TYPES as dt (dt)}
-											<option value={dt}>{dt === 'FIXED' ? '$' : '%'}</option>
-										{/each}
-									</select>
+								<div class="flex items-center gap-2">
+									<div class="inline-flex shrink-0 rounded-lg bg-surface-container-low p-1">
+										<button
+											type="button"
+											onclick={() => {
+												item.discountType = DiscountType.FIXED;
+											}}
+											class="flex h-8 w-8 items-center justify-center rounded-md text-sm font-semibold transition-colors {getDiscountToggleButtonClass(
+												item.discountType === DiscountType.FIXED
+											)}"
+											aria-label="Descuento fijo"
+										>
+											$
+										</button>
+										<button
+											type="button"
+											onclick={() => {
+												item.discountType = DiscountType.PERCENTAGE;
+											}}
+											class="flex h-8 w-8 items-center justify-center rounded-md text-sm font-semibold transition-colors {getDiscountToggleButtonClass(
+												item.discountType === DiscountType.PERCENTAGE
+											)}"
+											aria-label="Descuento porcentual"
+										>
+											%
+										</button>
+									</div>
 									<input
 										type="number"
 										bind:value={item.discount}
 										step="0.01"
 										min="0"
-										class="w-20 rounded-lg bg-surface-container-low px-3 py-2 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+										max={getItemDiscountMax(item)}
+										class="w-20 rounded-lg px-3 py-2 text-right font-mono text-sm focus:outline-none {isItemDiscountValid(
+											item
+										)
+											? 'bg-surface-container-low text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'
+											: 'border border-error bg-error-container/35 text-error focus:border-error focus:ring-2 focus:ring-error/15'}"
+										aria-invalid={!isItemDiscountValid(item)}
 									/>
 								</div>
+								{#if !isItemDiscountValid(item)}
+									<p class="mt-2 text-[10px] font-semibold text-error">
+										Max: {item.discountType === DiscountType.PERCENTAGE
+											? '100%'
+											: formatPrice(getItemDiscountBase(item))}
+									</p>
+								{/if}
 							</td>
 
 							<td
@@ -608,7 +649,11 @@
 								bind:value={discount}
 								step="0.01"
 								min="0"
-								class="w-full rounded-xl bg-surface-container-lowest py-3 pr-10 pl-10 text-right font-mono text-lg font-semibold text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+								max={globalDiscountMax}
+								class="w-full rounded-xl py-3 pr-10 pl-10 text-right font-mono text-lg font-semibold focus:outline-none {hasInvalidGlobalDiscount
+									? 'border border-error bg-error-container/35 text-error focus:border-error focus:ring-2 focus:ring-error/15'
+									: 'bg-surface-container-lowest text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15'}"
+								aria-invalid={hasInvalidGlobalDiscount}
 							/>
 							<span
 								class="absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold text-outline"
@@ -616,6 +661,11 @@
 								{discountType === DiscountType.FIXED ? '$' : '%'}
 							</span>
 						</div>
+						{#if hasInvalidGlobalDiscount}
+							<p class="mt-2 text-[10px] font-semibold text-error">
+								Max: {discountType === DiscountType.PERCENTAGE ? '100%' : formatPrice(subtotal)}
+							</p>
+						{/if}
 					</div>
 				</div>
 

@@ -6,6 +6,7 @@
 	import { createSale } from '$lib/remote/sales.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
+	import { isDiscountValueValid } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
@@ -18,8 +19,10 @@
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { PageHeader } from '$lib/components/ui';
 	import {
+		calculateSaleSummarySubtotal,
 		getAvailableProductStock,
 		getRequiredEyes,
+		isItemDiscountValid,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
 	} from './saleItemHelpers';
@@ -174,7 +177,17 @@
 
 	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
 
-	const canSubmit = $derived(step1Valid && step2Valid && !submitting);
+	const subtotal = $derived(calculateSaleSummarySubtotal(items));
+
+	const hasInvalidItemDiscount = $derived(items.some((item) => !isItemDiscountValid(item)));
+
+	const hasInvalidGlobalDiscount = $derived(
+		!isDiscountValueValid(discount, discountType, subtotal)
+	);
+
+	const canSubmit = $derived(
+		step1Valid && step2Valid && !hasInvalidItemDiscount && !hasInvalidGlobalDiscount && !submitting
+	);
 
 	// ============================================================================
 	// STEP NAVIGATION HELPERS
@@ -225,6 +238,11 @@
 	// ============================================================================
 
 	async function handleSubmit() {
+		if (hasInvalidItemDiscount || hasInvalidGlobalDiscount) {
+			toast.error('Revise los descuentos antes de registrar la venta');
+			return;
+		}
+
 		if (!canSubmit) return;
 		submitting = true;
 
