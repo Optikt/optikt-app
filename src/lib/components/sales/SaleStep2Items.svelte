@@ -640,8 +640,9 @@
 </script>
 
 <div class="space-y-6">
+<!-- <div class="space-y-6 grid grid-cols-2"> -->
 	<div class="rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm">
-		<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+		<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 			<div class="flex flex-wrap items-center gap-5 sm:gap-6">
 				<div>
 					<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">Orden #</p>
@@ -667,7 +668,7 @@
 			</div>
 
 			<div
-				class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-white/75 uppercase"
+				class="inline-flex max-w-max items-center gap-1.5 self-start rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white/75 uppercase"
 			>
 				{#if customerPrescription}
 					<Eye class="h-3.5 w-3.5" />
@@ -891,9 +892,9 @@
 													{#if item.kind === 'product' && maxStock !== null}
 														<span
 															class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==
-																null && availableStock <= 3
-																? 'bg-warning-container text-on-warning-container'
-																: 'bg-success-container text-on-success-container'}"
+															null && availableStock <= 3
+															? 'bg-warning-container text-on-warning-container'
+															: 'bg-success-container text-on-success-container'}"
 														>
 															{availableStock ?? maxStock} disponibles
 														</span>
@@ -1081,53 +1082,57 @@
 
 											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
 												{#if eyeCount > 0 && lens}
-													<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
-														<p
-															class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+													{@const internalCostTotal =
+														lensBaseCost(lens, eyeCount) +
+														lens.mountingPrice +
+														lens.shippingPrice}
+													<details class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
+														<summary
+															class="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"
 														>
-															Costo interno
-														</p>
-														<div class="mt-3 space-y-2 text-sm text-on-surface-variant">
+															<div>
+																<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
+																	Costo interno
+																</p>
+																<p class="mt-1 text-xs text-on-surface-variant">
+																	Ver desglose de cristales, montaje y envío
+																</p>
+															</div>
+															<div class="flex items-center gap-2">
+																<span class="font-mono text-sm font-semibold text-brand-navy">
+																	{formatPrice(internalCostTotal)}
+																</span>
+																<ChevronRight class="h-4 w-4 text-on-surface-variant" />
+															</div>
+														</summary>
+
+														<div class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant">
 															<div class="flex items-center justify-between gap-3">
-																<span
-																	>Cristales{lens.priceType === 'PAIR'
-																		? ' (par)'
-																		: ` × ${eyeCount}`}</span
-																>
-																<span class="font-mono text-brand-navy"
-																	>{formatPrice(lensBaseCost(lens, eyeCount))}</span
-																>
+																<span>
+																	Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`}
+																</span>
+																<span class="font-mono text-brand-navy">
+																	{formatPrice(lensBaseCost(lens, eyeCount))}
+																</span>
 															</div>
 															{#if lens.mountingPrice > 0}
 																<div class="flex items-center justify-between gap-3">
 																	<span>Montaje</span>
-																	<span class="font-mono text-brand-navy"
-																		>{formatPrice(lens.mountingPrice)}</span
-																	>
+																	<span class="font-mono text-brand-navy">{formatPrice(lens.mountingPrice)}</span>
 																</div>
 															{/if}
 															{#if lens.shippingPrice > 0}
 																<div class="flex items-center justify-between gap-3">
 																	<span>Envío</span>
-																	<span class="font-mono text-brand-navy"
-																		>{formatPrice(lens.shippingPrice)}</span
-																	>
+																	<span class="font-mono text-brand-navy">{formatPrice(lens.shippingPrice)}</span>
 																</div>
 															{/if}
-															<div
-																class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
-															>
+															<div class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy">
 																<span>Total</span>
-																<span class="font-mono"
-																	>{formatPrice(
-																		lensBaseCost(lens, eyeCount) +
-																			lens.mountingPrice +
-																			lens.shippingPrice
-																	)}</span
-																>
+																<span class="font-mono">{formatPrice(internalCostTotal)}</span>
 															</div>
 														</div>
-													</div>
+													</details>
 												{/if}
 
 												{#if availableTreatments.length > 0}
@@ -1234,38 +1239,7 @@
 		</div>
 
 		<div class="space-y-4">
-			{#if hasLensItem}
-				<div
-					class="rounded-[1.6rem] border border-[#dbe6f8] bg-[linear-gradient(180deg,#f7faff_0%,#eff4fb_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:px-5"
-				>
-					<div class="mb-4 flex items-center gap-3">
-						<div
-							class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-brand-blue shadow-sm"
-						>
-							<Eye class="h-4 w-4" />
-						</div>
-						<div>
-							<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-								Fórmula compartida
-							</p>
-							<h4 class="text-base font-semibold text-brand-navy">
-								Parámetros ópticos de la venta
-							</h4>
-						</div>
-					</div>
-
-					<div class="rounded-[1.25rem] bg-white/92 px-3.5 py-3.5 shadow-sm ring-1 ring-white/80">
-						<PrescriptionInput
-							bind:values={prescriptionValues}
-							existingPrescription={customerPrescription}
-							showAddition={prescriptionValues.lensType !== 'MONOFOCAL'}
-							compact={true}
-							errors={visibleRxErrors}
-						/>
-					</div>
-				</div>
-			{/if}
-
+		<!-- <div class="space-y-4 xl:-mt-24 xl:sticky xl:top-6"> -->
 			<div class="rounded-[1.5rem] bg-brand-navy px-5 py-5 text-white shadow-sm">
 				<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
 					Resumen parcial
@@ -1300,6 +1274,38 @@
 					</div>
 				</div>
 			</div>
+
+			{#if hasLensItem}
+				<div
+					class="rounded-[1.6rem] border border-[#dbe6f8] bg-[linear-gradient(180deg,#f7faff_0%,#eff4fb_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:px-5"
+				>
+					<div class="mb-4 flex items-center gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-brand-blue shadow-sm"
+						>
+							<Eye class="h-4 w-4" />
+						</div>
+						<div>
+							<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
+								Fórmula compartida
+							</p>
+							<h4 class="text-base font-semibold text-brand-navy">
+								Parámetros ópticos de la venta
+							</h4>
+						</div>
+					</div>
+
+					<div class="rounded-[1.25rem] bg-white/92 px-3.5 py-3.5 shadow-sm ring-1 ring-white/80">
+						<PrescriptionInput
+							bind:values={prescriptionValues}
+							existingPrescription={customerPrescription}
+							showAddition={prescriptionValues.lensType !== 'MONOFOCAL'}
+							compact={true}
+							errors={visibleRxErrors}
+						/>
+					</div>
+				</div>
+			{/if}
 		</div>
 	</div>
 
