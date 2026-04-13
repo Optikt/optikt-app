@@ -50,6 +50,13 @@
       "when": 1776019200000,
       "tag": "0006_pair_purchase_price",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776093117077,
+      "tag": "0007_clumsy_human_robot",
+      "breakpoints": true
     }
   ]
 }
