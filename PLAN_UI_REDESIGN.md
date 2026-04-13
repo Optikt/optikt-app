@@ -116,7 +116,7 @@
 
 ### Notas de implementación (PR #30 — `redesign/sale-wizard`)
 
-- Design system completo: glass-card, brand-navy/gold/blue, surface-container-*, semantic colors
+- Design system completo: glass-card, brand-navy/gold/blue, surface-container-\*, semantic colors
 - Cero dependencias Flowbite — todo componentes propios (PageHeader, DataGrid, SaleStatusBadge, ConfirmModal)
 - Costos internos editables en wizard (`costOverrides` en SaleStep2Items) y post-venta (inline edit en SaleItemsTable)
 - Filtro "Envío pendiente" en lista con toggle Truck + subquery EXISTS
