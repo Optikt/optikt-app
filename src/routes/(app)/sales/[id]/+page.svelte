@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { CircleX, ChevronDown, ChevronUp, FileText, History, Wallet } from '@lucide/svelte';
+	import autoAnimate from '@formkit/auto-animate';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
@@ -299,7 +300,7 @@
 		refundDecisionTitle={refundDecisionTitle()}
 	/>
 
-	<section id="sale-history" class="space-y-4">
+	<section id="sale-history" class="space-y-4" use:autoAnimate>
 		<div class="glass-card overflow-hidden">
 			<div
 				class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"

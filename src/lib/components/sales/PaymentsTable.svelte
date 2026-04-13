@@ -7,6 +7,7 @@
 		Smartphone,
 		WalletCards
 	} from '@lucide/svelte';
+	import autoAnimate from '@formkit/auto-animate';
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { voidPayment } from '$lib/remote/sales.remote';
@@ -135,7 +136,7 @@
 						{/if}
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-surface-container-high">
+				<tbody class="divide-y divide-surface-container-high" use:autoAnimate>
 					{#each payments as payment (payment.id)}
 						<tr
 							class:opacity-65={payment.voidedAt}
