@@ -7,7 +7,7 @@ import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { SaleItemRow } from './newSaleTypes';
 import { LensType } from '$lib/shared/enums/lensTypes';
-import { computeDiscount } from '$lib/utils';
+import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
 import { decomposePrice, type TaxableItem } from '$lib/shared/tax';
 
 // ============================================================================
@@ -43,19 +43,75 @@ export function getItemName(
 	return findLensItem(item, lensItems)?.name ?? '—';
 }
 
+export function getRequestedProductQuantity(
+	items: SaleItemRow[],
+	productId: string,
+	excludeItemId?: string
+): number {
+	return items.reduce((sum, item) => {
+		if (item.kind !== 'product' || item.productId !== productId || item.id === excludeItemId) {
+			return sum;
+		}
+
+		return sum + Math.max(item.quantity, 0);
+	}, 0);
+}
+
+export function getAvailableProductStock(
+	items: SaleItemRow[],
+	products: ProductWithRelations[],
+	productId: string,
+	excludeItemId?: string
+): number | null {
+	if (!productId) return null;
+
+	const product = products.find((candidate) => candidate.id === productId);
+	const stock = product?.stock ?? null;
+	if (stock === null) return null;
+
+	return Math.max(stock - getRequestedProductQuantity(items, productId, excludeItemId), 0);
+}
+
 // ============================================================================
 // PRICING
 // ============================================================================
 
 export function computeItemDiscount(item: SaleItemRow): number {
-	const qty = item.kind === 'product' ? item.quantity : 1;
-	const lineTotal = item.unitPrice * qty;
-	return computeDiscount(item.discount, item.discountType, lineTotal);
+	const lineTotal = getItemDiscountBase(item);
+	const discountValue = clampDiscountValue(item.discount, item.discountType, lineTotal);
+	return computeDiscount(discountValue, item.discountType, lineTotal);
 }
 
 export function itemLineTotal(item: SaleItemRow): number {
+	return getItemDiscountBase(item) - computeItemDiscount(item);
+}
+
+export function step2ItemLineTotal(item: SaleItemRow): number {
 	const qty = item.kind === 'product' ? item.quantity : 1;
-	return item.unitPrice * qty - computeItemDiscount(item);
+	return item.unitPrice * qty;
+}
+
+export function getItemDiscountBase(item: SaleItemRow): number {
+	const qty = item.kind === 'product' ? item.quantity : 1;
+	return item.unitPrice * qty;
+}
+
+export function getItemDiscountMax(item: SaleItemRow): number {
+	return item.discountType === 'PERCENTAGE' ? 100 : getItemDiscountBase(item);
+}
+
+export function isItemDiscountValid(item: SaleItemRow): boolean {
+	return isDiscountValueValid(item.discount, item.discountType, getItemDiscountBase(item));
+}
+
+export function getLensTreatmentsTotal(item: SaleItemRow): number {
+	if (item.kind !== 'lens') return 0;
+	const eyeCount = getEnabledEyeCount(item);
+	return item.treatments.reduce((sum, treatment) => sum + treatment.price * eyeCount, 0);
+}
+
+export function calculateSaleSummarySubtotal(items: SaleItemRow[]): number {
+	return items.reduce((acc, item) => acc + itemLineTotal(item) + getLensTreatmentsTotal(item), 0);
 }
 
 // ============================================================================

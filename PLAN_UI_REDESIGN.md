@@ -106,13 +106,24 @@
 ## Fase 4 — Ventas
 
 **Fuente:** Stitch sales list + sale detail screens  
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/sales` — lista de ventas (SalesTable, filtros, badges)
-- [ ] `/sales/[id]` — detalle de venta (artículos, pagos, movimientos, cancel modal, refund info)
-- [ ] `/sales/new` — wizard de venta (3 pasos)
+- [x] `/sales` — lista de ventas (SalesTable, DataGrid, filtros por estado y envío pendiente, stat cards)
+- [x] `/sales/[id]` — detalle de venta (artículos con costos editables inline, pagos, movimientos, cancel modal, refund info)
+- [x] `/sales/new` — wizard de venta (3 pasos, costos editables en Step 2, shippingCostPending)
+
+### Notas de implementación (PR #30 — `redesign/sale-wizard`)
+
+- Design system completo: glass-card, brand-navy/gold/blue, surface-container-\*, semantic colors
+- Cero dependencias Flowbite — todo componentes propios (PageHeader, DataGrid, SaleStatusBadge, ConfirmModal)
+- Costos internos editables en wizard (`costOverrides` en SaleStep2Items) y post-venta (inline edit en SaleItemsTable)
+- Filtro "Envío pendiente" en lista con toggle Truck + subquery EXISTS
+- `UpdateSaleItemCostsSchema`, `updateSaleItemCosts()` query, `updateItemCosts` remote command con audit logging
+- Fila "Costo interno total" en footer de SaleItemsTable
+- Migración `0007_clumsy_human_robot.sql` (shipping_cost_pending) corregida
+- Validación: 392 tests, svelte-check 0 errors, lint 0 errors
 
 ### Deuda técnica a resolver aquí
 
@@ -216,9 +227,9 @@
 | 2   | `/dashboard`                   | 2    | completada |
 | 3   | `/customers`                   | 3    | completada |
 | 4   | `/customers/[id]`              | 3    | completada |
-| 5   | `/sales`                       | 4    | pendiente  |
-| 6   | `/sales/[id]`                  | 4    | pendiente  |
-| 7   | `/sales/new`                   | 4    | pendiente  |
+| 5   | `/sales`                       | 4    | completada |
+| 6   | `/sales/[id]`                  | 4    | completada |
+| 7   | `/sales/new`                   | 4    | completada |
 | 8   | `/quotes`                      | 5    | pendiente  |
 | 9   | `/quotes/[id]`                 | 5    | pendiente  |
 | 10  | `/quotes/new`                  | 5    | pendiente  |

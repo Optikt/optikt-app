@@ -92,11 +92,11 @@
 	}
 </script>
 
-<div class="space-y-3">
+<div class:space-y-3={!_compact} class:space-y-2.5={_compact}>
 	<!-- Autofill banner -->
 	{#if canAutofill}
 		<div
-			class="flex items-center gap-3 rounded-lg border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3"
+			class="flex items-center gap-3 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3"
 		>
 			<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500">
 				<Eye class="h-4 w-4 text-white" />
@@ -133,16 +133,24 @@
 	{/if}
 
 	<!-- Lens type selector + Copy OD → OI -->
-	<div class="flex items-center gap-3">
-		<Label class="shrink-0 text-sm font-semibold text-slate-700">Tipo de lente</Label>
-		<Select bind:value={values.lensType} class="w-44">
+	<div class={_compact ? 'space-y-2' : 'flex items-center gap-3'}>
+		<Label
+			class={_compact
+				? 'text-[11px] font-semibold tracking-[0.16em] text-slate-500 uppercase'
+				: 'shrink-0 text-sm font-semibold text-slate-700'}
+		>
+			Tipo de lente
+		</Label>
+		<Select bind:value={values.lensType} class={_compact ? 'w-full' : 'w-44'}>
 			{#each lensTypeOptions as opt (opt.value)}
 				<option value={opt.value}>{opt.name}</option>
 			{/each}
 		</Select>
 		<button
 			type="button"
-			class="ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
+			class={_compact
+				? 'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100'
+				: 'ml-auto inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50'}
 			onclick={() => {
 				values.oiSphere = values.odSphere;
 				values.oiCylinder = values.odCylinder;
@@ -156,16 +164,24 @@
 	</div>
 
 	<!-- Eye values -->
-	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+	<div class={_compact ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 gap-4 md:grid-cols-2'}>
 		<!-- Right Eye (OD) -->
-		<div class="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/50 p-3">
+		<div
+			class={_compact
+				? 'rounded-[1rem] border border-blue-200/80 bg-[linear-gradient(180deg,#f4f8ff_0%,#edf4ff_100%)] p-3.5 shadow-sm'
+				: 'rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/50 p-3'}
+		>
 			<div class="mb-2 flex items-center gap-2">
 				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500">
 					<Eye class="h-3 w-3 text-white" />
 				</div>
-				<h5 class="text-sm font-bold text-blue-800">OD — Ojo Derecho</h5>
+				<h5 class="text-sm font-semibold text-blue-800">OD — Ojo Derecho</h5>
 			</div>
-			<div class="grid grid-cols-2 gap-2 {!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}">
+			<div
+				class={_compact
+					? 'grid grid-cols-2 gap-2.5'
+					: `grid grid-cols-2 gap-2 ${!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
+			>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Esfera</Label>
 					<Input
@@ -194,7 +210,7 @@
 						<p class="mt-0.5 text-xs text-red-500">{errors.odCylinder}</p>
 					{/if}
 				</div>
-				<div>
+				<div class={_compact && isMonofocal ? 'col-span-2' : ''}>
 					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
 					<Input
 						type="number"
@@ -231,15 +247,21 @@
 
 		<!-- Left Eye (OI) -->
 		<div
-			class="rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-violet-50/50 p-3"
+			class={_compact
+				? 'rounded-[1rem] border border-violet-200/80 bg-[linear-gradient(180deg,#fbf6ff_0%,#f4ecff_100%)] p-3.5 shadow-sm'
+				: 'rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-violet-50/50 p-3'}
 		>
 			<div class="mb-2 flex items-center gap-2">
 				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
 					<Eye class="h-3 w-3 text-white" />
 				</div>
-				<h5 class="text-sm font-bold text-violet-800">OI — Ojo Izquierdo</h5>
+				<h5 class="text-sm font-semibold text-violet-800">OI — Ojo Izquierdo</h5>
 			</div>
-			<div class="grid grid-cols-2 gap-2 {!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}">
+			<div
+				class={_compact
+					? 'grid grid-cols-2 gap-2.5'
+					: `grid grid-cols-2 gap-2 ${!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
+			>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Esfera</Label>
 					<Input
@@ -268,7 +290,7 @@
 						<p class="mt-0.5 text-xs text-red-500">{errors.oiCylinder}</p>
 					{/if}
 				</div>
-				<div>
+				<div class={_compact && isMonofocal ? 'col-span-2' : ''}>
 					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
 					<Input
 						type="number"

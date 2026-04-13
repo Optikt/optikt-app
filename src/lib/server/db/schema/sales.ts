@@ -183,6 +183,9 @@ export const saleItems = pgTable(
 		/** Tax rate at time of sale (e.g. 16) */
 		snapshotTaxRate: doublePrecision('snapshot_tax_rate'),
 
+		/** Whether the shipping cost is pending (unknown at time of sale) */
+		shippingCostPending: boolean('shipping_cost_pending').default(false),
+
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

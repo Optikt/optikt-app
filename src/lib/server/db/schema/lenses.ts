@@ -83,7 +83,10 @@ export const lensCatalogItems = pgTable(
 
 		// --- Pricing ---
 		priceType: lensPriceTypeEnum('price_type').notNull().default('UNIT'),
+		// Cost price
 		basePrice: doublePrecision('base_price').notNull(),
+		/** Always = cost of two lenses. Computed on save, never edited directly. */
+		pairPurchasePrice: doublePrecision('pair_purchase_price').notNull().default(0),
 		salePrice: doublePrecision('sale_price'),
 		mountingPrice: doublePrecision('mounting_price').notNull().default(0),
 		shippingPrice: doublePrecision('shipping_price').notNull().default(0),

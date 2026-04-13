@@ -273,7 +273,14 @@
 		</div>
 	{/if}
 
-	<SaleItemsTable {items} subtotal={sale.subtotal} />
+	<SaleItemsTable
+		{items}
+		subtotal={sale.subtotal}
+		onCostsUpdated={async () => {
+			await invalidateAll();
+			syncFromData();
+		}}
+	/>
 
 	<SaleBalanceCards
 		subtotal={sale.subtotal}

@@ -6,6 +6,7 @@
 	import { createSale } from '$lib/remote/sales.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
+	import { isDiscountValueValid } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
@@ -16,8 +17,12 @@
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
+	import { PageHeader } from '$lib/components/ui';
 	import {
+		calculateSaleSummarySubtotal,
+		getAvailableProductStock,
 		getRequiredEyes,
+		isItemDiscountValid,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
 	} from './saleItemHelpers';
@@ -124,20 +129,7 @@
 	// ITEMS STATE
 	// ============================================================================
 
-	let items = $state<SaleItemRow[]>([
-		{
-			id: crypto.randomUUID(),
-			kind: 'product',
-			productId: '',
-			quantity: 1,
-			lensPair: null,
-			treatments: [],
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			notes: ''
-		}
-	]);
+	let items = $state<SaleItemRow[]>([]);
 
 	// ============================================================================
 	// VALIDATION
@@ -166,10 +158,10 @@
 	const hasOutOfStockItem = $derived(
 		items.some((i) => {
 			if (i.kind === 'product' && i.productId) {
-				const p = products.find((pr) => pr.id === i.productId);
-				const maxStock = p?.stock ?? null;
-				if (maxStock === null) return false;
-				return maxStock <= 0 || i.quantity > maxStock;
+				const availableForItem = getAvailableProductStock(items, products, i.productId, i.id);
+				if (availableForItem === null) return false;
+
+				return availableForItem <= 0 || i.quantity > availableForItem;
 			}
 			return false;
 		})
@@ -185,7 +177,17 @@
 
 	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
 
-	const canSubmit = $derived(step1Valid && step2Valid && !submitting);
+	const subtotal = $derived(calculateSaleSummarySubtotal(items));
+
+	const hasInvalidItemDiscount = $derived(items.some((item) => !isItemDiscountValid(item)));
+
+	const hasInvalidGlobalDiscount = $derived(
+		!isDiscountValueValid(discount, discountType, subtotal)
+	);
+
+	const canSubmit = $derived(
+		step1Valid && step2Valid && !hasInvalidItemDiscount && !hasInvalidGlobalDiscount && !submitting
+	);
 
 	// ============================================================================
 	// STEP NAVIGATION HELPERS
@@ -197,31 +199,38 @@
 		const isClickable =
 			stepNum === 1 || (stepNum === 2 && step1Valid) || (stepNum === 3 && step1Valid && step2Valid);
 
-		const base =
-			'flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-base font-medium transition-all';
-		const state = isActive
-			? 'bg-blue-600 text-white shadow-md'
-			: isComplete
-				? 'bg-blue-50 text-blue-700'
-				: 'text-slate-400';
-		const cursor = !isClickable
-			? 'cursor-not-allowed'
-			: !isActive
-				? 'cursor-pointer hover:bg-slate-100'
-				: '';
+		const base = 'group flex flex-col items-center gap-3 text-center transition-all duration-200';
+		const state = isActive || isComplete ? 'text-brand-navy' : 'text-slate-400';
+		const cursor = !isClickable ? 'cursor-not-allowed' : 'cursor-pointer';
 		return `${base} ${state} ${cursor}`;
 	}
 
 	function stepBadgeClass(stepNum: number): string {
 		const isActive = currentStep === stepNum;
 		const isComplete = currentStep > stepNum;
-		const base = 'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold';
+		const base =
+			'flex h-12 w-12 items-center justify-center rounded-2xl font-mono text-base font-bold transition-all duration-200';
 		const state = isActive
-			? 'bg-white text-blue-600'
+			? 'bg-brand-navy text-white shadow-[0_18px_40px_rgba(21,35,70,0.18)]'
 			: isComplete
-				? 'bg-blue-600 text-white'
-				: 'bg-slate-200 text-slate-500';
+				? 'bg-brand-gold text-brand-navy shadow-sm'
+				: 'bg-surface-container-high text-outline group-hover:bg-surface-container-highest group-hover:text-brand-navy';
 		return `${base} ${state}`;
+	}
+
+	function stepLabelClass(stepNum: number): string {
+		const isActive = currentStep === stepNum;
+		const isComplete = currentStep > stepNum;
+		const base = 'text-[11px] font-semibold tracking-[0.16em] uppercase whitespace-nowrap';
+		const state =
+			isActive || isComplete
+				? 'text-brand-navy'
+				: 'text-slate-400 group-hover:text-on-surface-variant';
+		return `${base} ${state}`;
+	}
+
+	function stepConnectorClass(stepNum: number): string {
+		return `mt-6 h-px w-10 shrink-0 rounded-full sm:w-16 ${currentStep > stepNum ? 'bg-brand-gold/70' : 'bg-surface-container-high'}`;
 	}
 
 	// ============================================================================
@@ -229,6 +238,11 @@
 	// ============================================================================
 
 	async function handleSubmit() {
+		if (hasInvalidItemDiscount || hasInvalidGlobalDiscount) {
+			toast.error('Revise los descuentos antes de registrar la venta');
+			return;
+		}
+
 		if (!canSubmit) return;
 		submitting = true;
 
@@ -297,13 +311,16 @@
 						notes: item.notes || undefined,
 						snapshotName: lens?.name,
 						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotBaseCost: lens?.basePrice,
-						snapshotMountingPrice: lens?.mountingPrice,
-						snapshotShippingPrice: lens?.shippingPrice,
+						snapshotBaseCost: item.costOverrides?.baseCost ?? lens?.pairPurchasePrice,
+						snapshotMountingPrice: item.costOverrides?.mountingPrice ?? lens?.mountingPrice,
+						snapshotShippingPrice: item.shippingCostPending
+							? undefined
+							: (item.costOverrides?.shippingPrice ?? lens?.shippingPrice),
 						snapshotSalePrice: lens?.salePrice ?? undefined,
 						snapshotPriceType: lens?.priceType,
 						snapshotIsTaxable: lens?.isTaxable ?? false,
-						snapshotTaxRate: lens?.taxRate ?? 16
+						snapshotTaxRate: lens?.taxRate ?? 16,
+						shippingCostPending: item.shippingCostPending || undefined
 					});
 
 					isFirstEye = false;
@@ -355,35 +372,42 @@
 	}
 </script>
 
-<div class="w-full space-y-8">
-	<!-- Wizard Steps Indicator -->
-	<nav class="flex items-center justify-center gap-3">
-		{#each STEPS as step (step.num)}
-			{@const isClickable =
-				step.num === 1 ||
-				(step.num === 2 && step1Valid) ||
-				(step.num === 3 && step1Valid && step2Valid)}
-			<button
-				onclick={() => {
-					if (isClickable) goToStep(step.num);
-				}}
-				disabled={!isClickable}
-				class={stepButtonClass(step.num)}
-			>
-				<span class={stepBadgeClass(step.num)}>
-					{#if currentStep > step.num}
-						<Check class="h-4 w-4" />
-					{:else}
-						{step.num}
-					{/if}
-				</span>
-				{step.label}
-			</button>
-			{#if step.num < 3}
-				<div class="h-px w-10 {currentStep > step.num ? 'bg-blue-300' : 'bg-slate-200'}"></div>
-			{/if}
-		{/each}
-	</nav>
+<div class="w-full">
+	<PageHeader title="Nueva Venta">
+		{#snippet actions()}
+			<nav aria-label="Progreso de la venta" class="overflow-x-auto xl:-mt-4 xl:pt-0">
+				<div class="flex min-w-max items-start justify-start gap-2 px-1 sm:gap-4 xl:justify-end">
+					{#each STEPS as step (step.num)}
+						{@const isClickable =
+							step.num === 1 ||
+							(step.num === 2 && step1Valid) ||
+							(step.num === 3 && step1Valid && step2Valid)}
+						<div class="flex items-start gap-2 sm:gap-4">
+							<button
+								onclick={() => {
+									if (isClickable) goToStep(step.num);
+								}}
+								disabled={!isClickable}
+								class={stepButtonClass(step.num)}
+							>
+								<span class={stepBadgeClass(step.num)}>
+									{#if currentStep > step.num}
+										<Check class="h-4 w-4" />
+									{:else}
+										{step.num}
+									{/if}
+								</span>
+								<span class={stepLabelClass(step.num)}>{step.label}</span>
+							</button>
+							{#if step.num < 3}
+								<div class={stepConnectorClass(step.num)}></div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</nav>
+		{/snippet}
+	</PageHeader>
 
 	<!-- Step 1: Información -->
 	<div class:hidden={currentStep !== 1}>

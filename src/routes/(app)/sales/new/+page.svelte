@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ArrowLeft } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { NewSaleForm } from '$lib/components/sales';
 
@@ -10,25 +9,21 @@
 	<title>Nueva Venta - Optikt</title>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-50/50 p-8">
-	<!-- Header -->
-	<div class="mb-8 w-full">
-		<a
-			href={resolve('/sales')}
-			class="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-blue-600"
-		>
-			<ArrowLeft class="h-4 w-4" />
-			Volver a ventas
-		</a>
-		<h1 class="text-3xl font-bold tracking-tight text-slate-900">Nueva Venta</h1>
-		<p class="mt-1 text-base text-slate-500">Registra una nueva venta en el sistema</p>
-	</div>
+<div class="bg-slate px-4 py-3 sm:px-6 lg:px-8">
+	<div class="w-full">
+		<div class="mb-2 space-y-3">
+			<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				<a href={resolve('/sales')} class="transition-colors hover:text-brand-blue">Ventas</a>
+				<span class="mx-2 text-outline">›</span>
+				<span class="text-brand-navy">Nueva venta</span>
+			</p>
+		</div>
 
-	<!-- Form -->
-	<NewSaleForm
-		products={data.products}
-		lensItems={data.lensItems}
-		suppliers={data.suppliers}
-		nextOrderNumber={data.nextOrderNumber}
-	/>
+		<NewSaleForm
+			products={data.products}
+			lensItems={data.lensItems}
+			suppliers={data.suppliers}
+			nextOrderNumber={data.nextOrderNumber}
+		/>
+	</div>
 </div>

@@ -34,7 +34,8 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 	customerId: z.uuid().optional(),
 	sellerId: z.uuid().optional(),
 	dateFrom: z.iso.date().optional(),
-	dateTo: z.iso.date().optional()
+	dateTo: z.iso.date().optional(),
+	shippingCostPending: z.boolean().optional()
 });
 
 // ============================================================================
@@ -88,6 +89,9 @@ export const SaleItemSchema = z.object({
 	// Tax snapshot
 	snapshotIsTaxable: z.boolean().optional(),
 	snapshotTaxRate: CoercedNumber.optional(),
+
+	// Shipping cost pending flag
+	shippingCostPending: z.boolean().optional(),
 
 	notes: z.string().optional()
 });
@@ -196,6 +200,18 @@ export const CancelSaleSchema = z
 			}
 		}
 	});
+
+// ============================================================================
+// UPDATE SALE ITEM COSTS SCHEMA
+// ============================================================================
+
+export const UpdateSaleItemCostsSchema = z.object({
+	saleItemId: z.uuid('ID de artículo requerido'),
+	snapshotBaseCost: CoercedNumber.nonnegative().nullable(),
+	snapshotMountingPrice: CoercedNumber.nonnegative().nullable(),
+	snapshotShippingPrice: CoercedNumber.nonnegative().nullable(),
+	shippingCostPending: z.boolean()
+});
 
 // ============================================================================
 // ID SCHEMAS

@@ -83,6 +83,8 @@ export interface SaleFilterOptions {
 	dateTo?: string;
 	/** Search by customer name, ID number, or seller name (case-insensitive) */
 	search?: string;
+	/** Filter sales that have at least one item with shippingCostPending = true */
+	shippingCostPending?: boolean;
 }
 
 /** Options for querying sales with relations */
@@ -160,6 +162,12 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 		}
 
 		conditions.push(or(...searchConditions)!);
+	}
+
+	if (opts.shippingCostPending) {
+		conditions.push(
+			sql`exists (select 1 from ${saleItems} where ${saleItems.saleId} = ${sales.id} and ${saleItems.shippingCostPending} = true and ${saleItems.deletedAt} is null)`
+		);
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
@@ -428,6 +436,27 @@ export async function createSaleItems(items: NewSaleItem[]): Promise<SaleItem[]>
 			}))
 		)
 		.returning();
+}
+
+/**
+ * Update a sale item's internal cost fields
+ */
+export async function updateSaleItemCosts(
+	id: string,
+	data: {
+		snapshotBaseCost: number | null;
+		snapshotMountingPrice: number | null;
+		snapshotShippingPrice: number | null;
+		shippingCostPending: boolean;
+	},
+	executor: DbOrTx = db
+): Promise<SaleItem | null> {
+	const [item] = await executor
+		.update(saleItems)
+		.set({ ...data, updatedAt: nowISO() })
+		.where(eq(saleItems.id, id))
+		.returning();
+	return item ?? null;
 }
 
 // ============================================================================

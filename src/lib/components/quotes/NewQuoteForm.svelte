@@ -135,7 +135,9 @@
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
-			notes: ''
+			notes: '',
+			costOverrides: null,
+			shippingCostPending: false
 		}
 	]);
 
@@ -275,7 +277,7 @@
 						notes: item.notes || undefined,
 						snapshotName: lens?.name,
 						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotBaseCost: lens?.basePrice,
+						snapshotBaseCost: lens?.pairPurchasePrice,
 						snapshotMountingPrice: lens?.mountingPrice,
 						snapshotShippingPrice: lens?.shippingPrice,
 						snapshotSalePrice: lens?.salePrice ?? undefined,

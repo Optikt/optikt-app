@@ -184,7 +184,10 @@
 			</div>
 			<span class="font-medium">{opt.name}</span>
 			{#if opt.inventoryMode === 'STOCK' && opt.stock !== null && opt.stock <= 0}
-				<span class="font-semibold text-red-600">⚠ Sin stock</span>
+				<span class="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+					<TriangleAlert class="h-3 w-3" />
+					Sin stock
+				</span>
 			{:else if opt.inventoryMode === 'ON_DEMAND'}
 				<span class="text-xs font-medium text-sky-600">Por pedido</span>
 			{/if}
