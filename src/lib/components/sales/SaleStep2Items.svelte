@@ -1069,9 +1069,10 @@
 									</div>
 
 									{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-										<div class="space-y-3 rounded-[1rem] bg-surface-container-low px-4 py-4">
+										<div class="space-y-3 rounded-[1rem] bg-surface-container-low p-4">
 											<div
 												class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between"
+												use:autoAnimate
 											>
 												<div class="flex flex-wrap items-center gap-2">
 													<span class="text-sm font-medium text-on-surface-variant"
@@ -1129,7 +1130,7 @@
 												{/if}
 											</div>
 
-											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
+											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>
 												{#if eyeCount > 0 && lens && item.costOverrides}
 													{@const co = item.costOverrides}
 													{@const effectiveShipping = item.shippingCostPending
@@ -1139,6 +1140,7 @@
 														co.baseCost + co.mountingPrice + effectiveShipping}
 													<details
 														class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm"
+														use:autoAnimate={{duration: 3000}}
 													>
 														<summary
 															class="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"
