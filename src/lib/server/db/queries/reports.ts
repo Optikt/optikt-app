@@ -93,7 +93,7 @@ export interface InventoryLensItem {
 	type: string;
 	stock: number | null;
 	inventoryMode: string;
-	basePrice: number;
+	pairPurchasePrice: number;
 	salePrice: number | null;
 	materialName: string | null;
 	supplierName: string | null;
@@ -283,7 +283,7 @@ export async function getInventoryReport(): Promise<InventoryLensItem[]> {
 		type: item.type,
 		stock: item.stock,
 		inventoryMode: item.inventoryMode,
-		basePrice: item.basePrice,
+		pairPurchasePrice: item.pairPurchasePrice,
 		salePrice: item.salePrice,
 		materialName: item.material?.name ?? null,
 		supplierName: item.supplier?.name ?? null

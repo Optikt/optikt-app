@@ -4,7 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, formatPrice } from '$lib/utils';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import { LensCatalogSource, getLensSourceLabel, getPriceTypeLabel } from '$lib/shared/enums';
+	import { LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { goto } from '$app/navigation';
@@ -65,8 +65,9 @@
 		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
 		<TableHeadCell class="font-semibold">Material</TableHeadCell>
 		<TableHeadCell class="font-semibold">Rangos</TableHeadCell>
-		<TableHeadCell class="text-right font-semibold">Precio Compra</TableHeadCell>
+		<TableHeadCell class="text-right font-semibold">Costo por Par</TableHeadCell>
 		<TableHeadCell class="text-right font-semibold">Precio Venta</TableHeadCell>
+		<TableHeadCell class="text-right font-semibold">Margen</TableHeadCell>
 	{/snippet}
 
 	{#snippet row(item)}
@@ -146,14 +147,27 @@
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell class="text-right font-mono font-medium text-slate-800">
-			{formatPrice(item.basePrice)}
-			<span class="font-normal text-slate-400">
-				({getPriceTypeLabel(item.priceType)})
-			</span>
+			{formatPrice(item.pairPurchasePrice)}
+			{#if item.priceType === 'UNIT'}
+				<span class="font-normal text-slate-400">(×2 unid.)</span>
+			{/if}
 		</TableBodyCell>
 		<TableBodyCell class="text-right font-mono font-medium">
 			{#if item.salePrice}
 				<span class="text-emerald-700">{formatPrice(item.salePrice)}</span>
+			{:else}
+				<span class="text-slate-400">—</span>
+			{/if}
+		</TableBodyCell>
+		<TableBodyCell class="text-right font-mono font-medium">
+			{@const margin =
+				item.salePrice && item.pairPurchasePrice > 0
+					? ((item.salePrice - item.pairPurchasePrice) / item.pairPurchasePrice) * 100
+					: null}
+			{#if margin != null}
+				<span class={margin >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+					{margin >= 0 ? '+' : ''}{margin.toFixed(0)}%
+				</span>
 			{:else}
 				<span class="text-slate-400">—</span>
 			{/if}

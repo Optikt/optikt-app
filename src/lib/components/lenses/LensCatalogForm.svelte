@@ -24,6 +24,7 @@
 		getPriceTypeLabel
 	} from '$lib/shared/enums';
 	import { scrollToFirstError, toastUnboundErrors, getFormErrorMessage } from '$lib/utils';
+	import { formatPrice } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 	import { resolve } from '$app/paths';
@@ -116,6 +117,19 @@
 		inventoryMode: (initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
 		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
 		notes: initialItem?.notes ?? ''
+	});
+
+	// Live pair purchase price — always the cost of two lenses
+	let livePairPurchasePrice = $derived.by(() => {
+		const base = parseFloat(formData.basePrice) || 0;
+		return formData.priceType === LensPriceType.UNIT ? base * 2 : base;
+	});
+
+	// Live margin percentage: ((salePrice - pairCost) / pairCost) × 100
+	let liveMarginPercent = $derived.by(() => {
+		const sale = parseFloat(formData.salePrice) || 0;
+		if (sale <= 0 || livePairPurchasePrice <= 0) return null;
+		return ((sale - livePairPurchasePrice) / livePairPurchasePrice) * 100;
 	});
 
 	// Dynamic optical ranges
@@ -694,9 +708,10 @@
 		</div>
 
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<!-- Precio Proveedor -->
 			<div>
 				<Label for="lc_price" class="mb-2">
-					Precio Compra ($) *
+					Precio Proveedor ($) *
 					<span class="ml-1 text-xs font-normal text-slate-400">
 						({formData.priceType === LensPriceType.PAIR ? 'par' : 'unidad'})
 					</span>
@@ -712,12 +727,25 @@
 					required
 				/>
 			</div>
+
+			<!-- Costo por Par (live, read-only) -->
+			<div>
+				<Label class="mb-2 text-sm text-slate-600">Costo por Par</Label>
+				<div
+					class="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-semibold text-slate-700"
+				>
+					{formatPrice(livePairPurchasePrice)}
+					{#if formData.priceType === LensPriceType.UNIT}
+						<span class="ml-1.5 text-[11px] font-normal text-slate-400">(×2 unid.)</span>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Precio Venta (siempre por par) -->
 			<div>
 				<Label for="lc_sale_price" class="mb-2">
 					Precio Venta ($)
-					<span class="ml-1 text-xs font-normal text-slate-400">
-						({formData.priceType === LensPriceType.PAIR ? 'par' : 'unidad'})
-					</span>
+					<span class="ml-1 text-xs font-normal text-slate-400">(por par)</span>
 				</Label>
 				<Input
 					id="lc_sale_price"
@@ -731,6 +759,28 @@
 				/>
 				<p class="mt-1 text-[11px] text-slate-400">Se usa como precio sugerido en ventas</p>
 			</div>
+
+			<!-- Margen por par -->
+			<div>
+				<Label class="mb-2 text-sm text-slate-600">Margen por Par</Label>
+				<div
+					class="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-semibold {liveMarginPercent !=
+						null && liveMarginPercent >= 0
+						? 'text-emerald-600'
+						: liveMarginPercent != null
+							? 'text-red-600'
+							: 'text-slate-400'}"
+				>
+					{#if liveMarginPercent != null}
+						{liveMarginPercent >= 0 ? '+' : ''}{liveMarginPercent.toFixed(0)}%
+					{:else}
+						—
+					{/if}
+				</div>
+			</div>
+		</div>
+
+		<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			<div>
 				<Label for="lc_mounting_price" class="mb-2">
 					Montaje ($)

@@ -1,6 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { itemLineTotal, computeItemDiscount } from './saleItemHelpers';
+import {
+	calculateSaleSummarySubtotal,
+	itemLineTotal,
+	step2ItemLineTotal,
+	computeItemDiscount,
+	getItemDiscountMax,
+	isItemDiscountValid,
+	getRequestedProductQuantity,
+	getAvailableProductStock
+} from './saleItemHelpers';
 import { DiscountType } from '$lib/shared/enums';
+import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { SaleItemRow, SelectedTreatment } from './newSaleTypes';
 import { createEmptyLensPair } from './newSaleTypes';
 
@@ -18,6 +28,8 @@ function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
+		costOverrides: null,
+		shippingCostPending: false,
 		...overrides
 	};
 }
@@ -35,7 +47,9 @@ function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
 		unitPrice: 50,
 		discount: 0,
 		discountType: DiscountType.FIXED,
-		notes: ''
+		notes: '',
+		costOverrides: null,
+		shippingCostPending: false
 	};
 }
 
@@ -48,6 +62,16 @@ function makeTreatment(price: number, name = 'AR Angel'): SelectedTreatment {
 		isTaxable: true,
 		taxRate: 16
 	};
+}
+
+function makeStockProduct(id: string, stock: number | null): ProductWithRelations {
+	return {
+		id,
+		name: id,
+		stock,
+		currentSalePrice: 0,
+		type: 'FRAME'
+	} as ProductWithRelations;
 }
 
 // ── itemLineTotal (excludes treatments — they are separate) ─────────────
@@ -82,6 +106,45 @@ describe('itemLineTotal', () => {
 
 	it('handles zero price', () => {
 		expect(itemLineTotal(makeProductRow({ unitPrice: 0 }))).toBe(0);
+	});
+
+	it('clamps fixed discount to the row total for display calculations', () => {
+		expect(itemLineTotal(makeProductRow({ unitPrice: 30, quantity: 1, discount: 50 }))).toBe(0);
+	});
+
+	it('clamps percentage discount above 100% for display calculations', () => {
+		expect(
+			itemLineTotal(
+				makeProductRow({
+					unitPrice: 30,
+					quantity: 1,
+					discount: 200,
+					discountType: DiscountType.PERCENTAGE
+				})
+			)
+		).toBe(0);
+	});
+});
+
+describe('step2ItemLineTotal', () => {
+	it('ignores discounts for product rows in Step 2', () => {
+		expect(
+			step2ItemLineTotal(
+				makeProductRow({
+					unitPrice: 120,
+					quantity: 2,
+					discount: 25,
+					discountType: DiscountType.FIXED
+				})
+			)
+		).toBe(240);
+	});
+
+	it('uses a single quantity for lens rows', () => {
+		const lens = makeLensRow();
+		lens.unitPrice = 95;
+
+		expect(step2ItemLineTotal(lens)).toBe(95);
 	});
 });
 
@@ -167,5 +230,63 @@ describe('computeItemDiscount', () => {
 				})
 			)
 		).toBe(40); // 10% of 400
+	});
+
+	it('flags fixed discounts above the row total as invalid', () => {
+		expect(isItemDiscountValid(makeProductRow({ unitPrice: 30, discount: 50 }))).toBe(false);
+		expect(getItemDiscountMax(makeProductRow({ unitPrice: 30, discount: 50 }))).toBe(30);
+	});
+
+	it('flags percentage discounts above 100 as invalid', () => {
+		expect(
+			isItemDiscountValid(makeProductRow({ discount: 120, discountType: DiscountType.PERCENTAGE }))
+		).toBe(false);
+		expect(
+			getItemDiscountMax(makeProductRow({ discount: 120, discountType: DiscountType.PERCENTAGE }))
+		).toBe(100);
+	});
+});
+
+describe('calculateSaleSummarySubtotal', () => {
+	it('includes treatments and clamps invalid row discounts', () => {
+		const product = makeProductRow({ unitPrice: 30, discount: 50 });
+		const lens = makeLensRow([makeTreatment(15)]);
+		lens.unitPrice = 25;
+
+		expect(calculateSaleSummarySubtotal([product, lens])).toBe(55);
+	});
+});
+
+describe('aggregate product stock helpers', () => {
+	it('sums requested quantity for the same product across rows', () => {
+		const items = [
+			makeProductRow({ id: 'item-a', productId: 'prod-1', quantity: 2 }),
+			makeProductRow({ id: 'item-b', productId: 'prod-1', quantity: 1 }),
+			makeProductRow({ id: 'item-c', productId: 'prod-2', quantity: 3 })
+		];
+
+		expect(getRequestedProductQuantity(items, 'prod-1')).toBe(3);
+		expect(getRequestedProductQuantity(items, 'prod-1', 'item-a')).toBe(1);
+	});
+
+	it('returns remaining stock excluding the current row quantity', () => {
+		const items = [
+			makeProductRow({ id: 'item-a', productId: 'prod-1', quantity: 1 }),
+			makeProductRow({ id: 'item-b', productId: 'prod-1', quantity: 2 })
+		];
+		const products = [makeStockProduct('prod-1', 4)];
+
+		expect(getAvailableProductStock(items, products, 'prod-1', 'item-a')).toBe(2);
+		expect(getAvailableProductStock(items, products, 'prod-1', 'item-b')).toBe(3);
+	});
+
+	it('returns zero when other rows already reserved the full stock', () => {
+		const items = [
+			makeProductRow({ id: 'item-a', productId: 'prod-1', quantity: 4 }),
+			makeProductRow({ id: 'item-b', productId: 'prod-1', quantity: 1 })
+		];
+		const products = [makeStockProduct('prod-1', 4)];
+
+		expect(getAvailableProductStock(items, products, 'prod-1', 'item-b')).toBe(0);
 	});
 });

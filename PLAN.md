@@ -17,7 +17,7 @@
 - ✅ **Vista detalle de venta** — artículos consolidados, treatments como items, pagos
 - ✅ **inventoryMode** — ON_DEMAND vs STOCK por lens catalog item
 - ✅ **Order numbers** — secuencial sin gaps (MAX+1 dentro de transacción)
-- ✅ **347 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory, FIFO E2E scenarios)
+- ✅ **392 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory, FIFO E2E scenarios)
 - ✅ **Seed de demo** — datos de ejemplo para desarrollo
 - ✅ **Presupuestos (Fase 6)** — CRUD, wizard 3 pasos, conversión a venta, estados, quoteNumber secuencial, audit logging
 - ✅ **IVA básico (Fase 7)** — tax-inclusive pricing, desglose fiscal en ventas/presupuestos, TaxToggle, default 16%
@@ -26,6 +26,7 @@
 - ✅ **FIFO Inventory** — lotes, movimientos inmutables, costo FIFO, weighted average cost, ajustes manuales, `consumeFifoForSaleItem()` compartido
 - ✅ **Órdenes de Compra** — CRUD, confirmación con creación de lotes, sugerencia de precios, reversión de lotes
 - ✅ **Historial de Movimientos** — página unificada `/purchases/movements`, sección en detalle de producto, filtro por fecha/tipo/documento
+- ✅ **Costos internos de venta** — costos editables (cristales, montaje, envío) en wizard y post-venta, `shippingCostPending` flag, total costo interno en detalle, filtro "Envío pendiente" en lista de ventas, `updateItemCosts` remote command
 
 ---
 
@@ -35,6 +36,14 @@
 
 - ✅ **Reporte de pagos: reembolsos no deben restar ingresos** — Los reembolsos se mostraban como ingreso negativo en `/reports/payments`. Corregido: `netBcvUsd` ya no resta refunds (el pago ya está excluido de gross). La tabla de reembolsos se mantiene como historial informativo.
 - ✅ **Cancel modal: sin default + confirmación doble** — Modal de cancelación de venta con pagos previos: sin opción pre-seleccionada (el usuario debe elegir explícitamente retener o reembolsar), "Reembolsar" a la izquierda, segundo modal de confirmación antes de ejecutar. Extraído a `CancelSaleModal` compartido (`SalesTable` + detalle de venta).
+- ✅ **Migración malformada** — `0007_clumsy_human_robot.sql` tenía trailing garbage de un merge incorrecto. Corregido.
+
+### Mejoras completadas en flujo de ventas (Fase 10-A)
+
+- ✅ **Costos internos editables en wizard** — `SaleStep2Items`: layout compactado y horizontal, inputs editables para cristales/montaje/envío con `costOverrides`, checkbox "Envío pendiente" (`shippingCostPending`)
+- ✅ **Costos internos visibles y editables post-venta** — `SaleItemsTable`: desglose inline (cristales, montaje, envío) con botón editar (pencil), modo edición inline con save/cancel, link "Agregar" para lentes sin costos, fila "Costo interno total" en footer
+- ✅ **Filtro envío pendiente** — Botón toggle "Envío pendiente" con icono Truck en `/sales`, subquery EXISTS en `buildSaleConditions`, propagado por `ListSalesSchema` → `listSales` → `getAllSales`
+- ✅ **Backend completo** — `UpdateSaleItemCostsSchema`, `updateSaleItemCosts()` query, `updateItemCosts` remote command con audit logging
 
 ### Fase 10 — Rediseño UI/UX
 
@@ -53,8 +62,8 @@
 | #   | Pantalla               | Ruta                    | Mockup Stitch                                        | Estado    |
 | --- | ---------------------- | ----------------------- | ---------------------------------------------------- | --------- |
 | A1  | Lista de ventas        | `/sales`                | "Lista de Ventas - Refinada" (`56909dd3`)            | ✅ Hecho  |
-| A2  | Detalle de venta       | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`) | ⬚ Pending |
-| A3  | Nueva venta (wizard)   | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)         | ⬚ Pending |
+| A2  | Detalle de venta       | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`) | ✅ Hecho  |
+| A3  | Nueva venta (wizard)   | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)         | ✅ Hecho  |
 | A4  | Fórmula / prescripción | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)      | ⬚ Pending |
 
 #### Grupo B — Clientes (con mockup Stitch)
@@ -94,8 +103,8 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 
 #### Orden sugerido de ejecución
 
-1. **A2 — Detalle de venta** → destino natural del "Ver" en la lista recién hecha
-2. **A3 — Nueva venta** → completa el flujo de ventas
+1. **A2 — Detalle de venta** → costos internos editables + total costo interno hechos; falta rediseño visual completo del mockup
+2. **A3 — Nueva venta** → Step 2 compactado + costos editables + shippingCostPending hechos; falta rediseño visual completo
 3. **A4 — Fórmula** → componente compartido usado en ventas y clientes
 4. **B1–B3 — Clientes** → segundo flujo más usado
 5. **C1–C4 — Dashboard** → centro de la app, múltiples mockups disponibles
@@ -146,7 +155,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] CRUD completo (todas las entidades)
 - [x] Wizard de ventas (happy path completo)
 - [x] inventoryMode ON_DEMAND / STOCK
-- [x] Tests (347)
+- [x] Tests (392)
 - [x] Fase 6 — Presupuestos
 - [x] Fase 7 — IVA básico
 - [x] Fase 8 — Dashboard real

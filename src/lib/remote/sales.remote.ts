@@ -10,7 +10,8 @@ import {
 	CancelSaleSchema,
 	AddPaymentSchema,
 	VoidPaymentSchema,
-	CustomerLookupSchema
+	CustomerLookupSchema,
+	UpdateSaleItemCostsSchema
 } from '$lib/schemas/sales';
 import {
 	getAllSales,
@@ -25,7 +26,8 @@ import {
 	voidSalePayment,
 	recalcSalePaidAmount,
 	updateSale,
-	getNextOrderNumber
+	getNextOrderNumber,
+	updateSaleItemCosts
 } from '$lib/server/db/queries/sales';
 import type {
 	SaleWithRelations,
@@ -104,7 +106,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		sellerId: data.sellerId ?? undefined,
 		dateFrom: data.dateFrom ?? undefined,
 		dateTo: data.dateTo ?? undefined,
-		search: data.search ?? undefined
+		search: data.search ?? undefined,
+		shippingCostPending: data.shippingCostPending ?? undefined
 	};
 
 	const [salesPage, total] = await Promise.all([
@@ -334,6 +337,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
 				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
 				snapshotTaxRate: item.snapshotTaxRate ?? null,
+				shippingCostPending: item.shippingCostPending ?? false,
 				notes: item.notes ?? null,
 				createdAt: now,
 				updatedAt: now
@@ -595,4 +599,40 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 	}
 
 	return { success: true };
+});
+
+/**
+ * Update the internal cost fields of a sale item.
+ * Allows editing snapshotBaseCost, snapshotMountingPrice, snapshotShippingPrice,
+ * and shippingCostPending after a sale has been created.
+ */
+export const updateItemCosts = command(UpdateSaleItemCostsSchema, async (data) => {
+	const context = getAuditContext();
+
+	// Fetch the existing item for audit comparison
+	const [existing] = await db
+		.select()
+		.from(saleItems)
+		.where(and(eq(saleItems.id, data.saleItemId), isNull(saleItems.deletedAt)));
+
+	if (!existing) {
+		return { success: false as const, error: 'Artículo de venta no encontrado' };
+	}
+
+	const item = await updateSaleItemCosts(data.saleItemId, {
+		snapshotBaseCost: data.snapshotBaseCost,
+		snapshotMountingPrice: data.snapshotMountingPrice,
+		snapshotShippingPrice: data.snapshotShippingPrice,
+		shippingCostPending: data.shippingCostPending
+	});
+
+	if (!item) {
+		return { success: false as const, error: 'Error al actualizar costos' };
+	}
+
+	await auditService.logUpdate('sale_item', data.saleItemId, existing, item, context, {
+		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+	});
+
+	return { success: true as const };
 });

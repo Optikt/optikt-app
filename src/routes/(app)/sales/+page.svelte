@@ -6,7 +6,8 @@
 		ReceiptText,
 		RotateCcw,
 		Search,
-		CircleCheck
+		CircleCheck,
+		Truck
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -38,6 +39,7 @@
 	// Filter state
 	let search = $state('');
 	let statusFilter = $state<SaleStatus | ''>('');
+	let shippingPendingFilter = $state(false);
 
 	// Fetch sales
 	async function fetchSales(page = 1) {
@@ -47,7 +49,8 @@
 				page,
 				perPage: 10,
 				search: search || undefined,
-				status: statusFilter || undefined
+				status: statusFilter || undefined,
+				shippingCostPending: shippingPendingFilter || undefined
 			});
 		} catch (e) {
 			console.error(e);
@@ -82,10 +85,13 @@
 	function clearFilters() {
 		search = '';
 		statusFilter = '';
+		shippingPendingFilter = false;
 		fetchSales(1);
 	}
 
-	let hasActiveFilters = $derived(search.trim().length > 0 || statusFilter !== '');
+	let hasActiveFilters = $derived(
+		search.trim().length > 0 || statusFilter !== '' || shippingPendingFilter
+	);
 
 	// Navigate to sale detail page
 	function handleView(sale: SaleWithRelations) {
@@ -202,6 +208,20 @@
 					<option value={s}>{SALE_STATUS_LABELS[s]}</option>
 				{/each}
 			</select>
+
+			<button
+				onclick={() => {
+					shippingPendingFilter = !shippingPendingFilter;
+					handleFilterChange();
+				}}
+				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors {shippingPendingFilter
+					? 'bg-warning-container text-on-warning-container'
+					: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}"
+				title="Filtrar ventas con envío pendiente"
+			>
+				<Truck size={16} />
+				<span class="hidden sm:inline">Envío pendiente</span>
+			</button>
 
 			<button
 				onclick={clearFilters}
