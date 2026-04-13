@@ -1294,7 +1294,7 @@
 			</div>
 		</div>
 
-		<!-- Fórmula compartida -->
+		<!-- Forrmula del Paciente -->
 		<div class="space-y-4">
 			{#if hasLensItem}
 				<div
@@ -1308,7 +1308,7 @@
 						</div>
 						<div>
 							<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-								Fórmula compartida
+								Fórmula
 							</p>
 							<h4 class="text-base font-semibold text-brand-navy">
 								Parámetros ópticos de la venta
