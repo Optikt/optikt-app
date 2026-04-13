@@ -106,13 +106,22 @@
 ## Fase 4 — Ventas
 
 **Fuente:** Stitch sales list + sale detail screens  
-**Estado:** pendiente
+**Estado:** funcional (lógica completa, rediseño visual pendiente)
 
 ### Pantallas
 
-- [ ] `/sales` — lista de ventas (SalesTable, filtros, badges)
-- [ ] `/sales/[id]` — detalle de venta (artículos, pagos, movimientos, cancel modal, refund info)
-- [ ] `/sales/new` — wizard de venta (3 pasos)
+- [x] `/sales` — lista de ventas (SalesTable, filtros, badges, filtro "Envío pendiente")
+- [x] `/sales/[id]` — detalle de venta (artículos con costos editables, pagos, movimientos, cancel modal, refund info)
+- [x] `/sales/new` — wizard de venta (3 pasos, costos editables en Step 2, shippingCostPending)
+
+### Funcionalidad completada (PR #30 — `redesign/sale-wizard`)
+
+- [x] **Costos internos editables en wizard** — `SaleStep2Items`: layout compactado y horizontal, inputs para cristales/montaje/envío con `costOverrides`, checkbox "Envío pendiente"
+- [x] **Costos visibles y editables post-venta** — `SaleItemsTable`: desglose inline con botón editar (pencil), modo edición inline, link "Agregar" para lentes sin costos, fila "Costo interno total" en footer
+- [x] **Filtro envío pendiente en lista** — Botón toggle con icono Truck, subquery EXISTS en `buildSaleConditions`
+- [x] **Backend** — `UpdateSaleItemCostsSchema`, `updateSaleItemCosts()` query, `updateItemCosts` remote command, `shippingCostPending` en DB/schema/Zod
+- [x] **Migración** — `0007_clumsy_human_robot.sql` (shipping_cost_pending column) corregida
+
 
 ### Deuda técnica a resolver aquí
 
@@ -216,9 +225,9 @@
 | 2   | `/dashboard`                   | 2    | completada |
 | 3   | `/customers`                   | 3    | completada |
 | 4   | `/customers/[id]`              | 3    | completada |
-| 5   | `/sales`                       | 4    | pendiente  |
-| 6   | `/sales/[id]`                  | 4    | pendiente  |
-| 7   | `/sales/new`                   | 4    | pendiente  |
+| 5   | `/sales`                       | 4    | funcional  |
+| 6   | `/sales/[id]`                  | 4    | funcional  |
+| 7   | `/sales/new`                   | 4    | funcional  |
 | 8   | `/quotes`                      | 5    | pendiente  |
 | 9   | `/quotes/[id]`                 | 5    | pendiente  |
 | 10  | `/quotes/new`                  | 5    | pendiente  |
