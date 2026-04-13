@@ -92,6 +92,7 @@
 	let quickAddQuery = $state('');
 	let quickAddOpen = $state(false);
 	let quickAddFilter = $state<QuickAddFilter>('all');
+	let costOpenFor = $state<string | null>(null);
 
 	const quickAddPlaceholder = $derived.by(() => {
 		if (quickAddFilter === 'product') return 'Buscar producto por nombre o código...';
@@ -1130,7 +1131,10 @@
 												{/if}
 											</div>
 
-											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>
+											<div
+												class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
+												use:autoAnimate
+											>
 												{#if eyeCount > 0 && lens && item.costOverrides}
 													{@const co = item.costOverrides}
 													{@const effectiveShipping = item.shippingCostPending
@@ -1138,20 +1142,24 @@
 														: co.shippingPrice}
 													{@const internalCostTotal =
 														co.baseCost + co.mountingPrice + effectiveShipping}
-													<details
+													<div
 														class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm"
-														use:autoAnimate={{duration: 3000}}
+														use:autoAnimate
 													>
-														<summary
-															class="flex cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden"
+														<button
+															type="button"
+															onclick={() => {
+																costOpenFor = costOpenFor === item.id ? null : item.id;
+															}}
+															class="flex w-full cursor-pointer items-center justify-between gap-3"
 														>
 															<div>
 																<p
-																	class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+																	class="text-start text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
 																>
 																	Costo interno
 																</p>
-																<p class="mt-1 text-xs text-on-surface-variant">
+																<p class="mt-1 text-justify text-xs text-on-surface-variant">
 																	Editar desglose de cristales, montaje y envío
 																</p>
 															</div>
@@ -1165,77 +1173,87 @@
 																		>Envío pendiente</span
 																	>
 																{/if}
-																<ChevronRight class="h-4 w-4 text-on-surface-variant" />
+																<ChevronRight
+																	class="h-4 w-4 text-on-surface-variant transition-transform {costOpenFor ===
+																	item.id
+																		? 'rotate-90'
+																		: ''}"
+																/>
 															</div>
-														</summary>
+														</button>
 
-														<div
-															class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant"
-														>
-															<div class="flex items-center justify-between gap-3">
-																<span class="shrink-0">
-																	Cristales × {eyeCount}
-																	<!-- Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`} -->
-																</span>
-																<input
-																	type="number"
-																	bind:value={co.baseCost}
-																	step="0.01"
-																	min="0"
-																	class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																/>
-															</div>
-															<div class="flex items-center justify-between gap-3">
-																<span class="shrink-0">Montaje</span>
-																<input
-																	type="number"
-																	bind:value={co.mountingPrice}
-																	step="0.01"
-																	min="0"
-																	class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																/>
-															</div>
-															<div class="flex items-center justify-between gap-3">
-																<span class="shrink-0">Envío</span>
-																<div class="flex items-center gap-2">
-																	{#if item.shippingCostPending}
-																		<span class="text-xs text-on-surface-variant/60 italic"
-																			>Pendiente</span
-																		>
-																	{:else}
-																		<input
-																			type="number"
-																			bind:value={co.shippingPrice}
-																			step="0.01"
-																			min="0"
-																			class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																		/>
-																	{/if}
+														{#if costOpenFor === item.id}
+															<div
+																class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant"
+															>
+																<div class="flex items-center justify-between gap-3">
+																	<span class="shrink-0">
+																		Cristales × {eyeCount}
+																		<!-- Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`} -->
+																	</span>
+																	<input
+																		type="number"
+																		bind:value={co.baseCost}
+																		step="0.01"
+																		min="0"
+																		class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
+																	/>
+																</div>
+																<div class="flex items-center justify-between gap-3">
+																	<span class="shrink-0">Montaje</span>
+																	<input
+																		type="number"
+																		bind:value={co.mountingPrice}
+																		step="0.01"
+																		min="0"
+																		class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
+																	/>
+																</div>
+																<div class="flex items-center justify-between gap-3">
+																	<span class="shrink-0">Envío</span>
+																	<div class="flex items-center gap-2">
+																		{#if item.shippingCostPending}
+																			<span class="text-xs text-on-surface-variant/60 italic"
+																				>Pendiente</span
+																			>
+																		{:else}
+																			<input
+																				type="number"
+																				bind:value={co.shippingPrice}
+																				step="0.01"
+																				min="0"
+																				class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
+																			/>
+																		{/if}
+																	</div>
+																</div>
+																<label
+																	class="flex cursor-pointer items-center gap-2 text-xs text-on-surface-variant"
+																>
+																	<input
+																		type="checkbox"
+																		bind:checked={item.shippingCostPending}
+																		class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+																	/>
+																	<span>Costo de envío pendiente</span>
+																</label>
+																<div
+																	class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
+																>
+																	<span>Total</span>
+																	<span class="font-mono">{formatPrice(internalCostTotal)}</span>
 																</div>
 															</div>
-															<label
-																class="flex cursor-pointer items-center gap-2 text-xs text-on-surface-variant"
-															>
-																<input
-																	type="checkbox"
-																	bind:checked={item.shippingCostPending}
-																	class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-																/>
-																<span>Costo de envío pendiente</span>
-															</label>
-															<div
-																class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
-															>
-																<span>Total</span>
-																<span class="font-mono">{formatPrice(internalCostTotal)}</span>
-															</div>
-														</div>
-													</details>
+														{/if}
+													</div>
 												{/if}
 
 												{#if availableTreatments.length > 0}
 													<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
-														<div class="mb-3 flex items-center justify-between gap-3" use:autoAnimate>
+														<div
+															class="mb-3 flex items-center justify-between gap-3"
+															use:autoAnimate
+														>
 															<div class="flex items-center gap-2">
 																<FlaskConical class="h-4 w-4 text-brand-blue" />
 																<p
