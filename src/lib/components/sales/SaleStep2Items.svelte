@@ -1062,7 +1062,7 @@
 									{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 										<div class="space-y-3 rounded-[1rem] bg-surface-container-low px-4 py-4">
 											<div
-												class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
+												class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between"
 											>
 												<div class="flex flex-wrap items-center gap-2">
 													<span class="text-sm font-medium text-on-surface-variant"
@@ -1098,33 +1098,27 @@
 													</label>
 												</div>
 
-												{#if eyeCount > 0}
-													<p class="text-xs font-medium text-on-surface-variant">
-														{eyeCount === 2
-															? 'Par completo habilitado'
-															: 'Configuración por un solo ojo'}
-													</p>
-												{:else}
+                                                {#if rangeWarnings.length > 0}
+                                                    <div
+                                                        class="rounded-xl bg-warning-container/60 px-4 py-3 text-on-warning-container"
+                                                    >
+                                                        <p class="text-[11px] font-semibold tracking-[0.16em] uppercase">
+                                                            Fuera de rango óptico
+                                                        </p>
+                                                        <ul class="mt-2 space-y-1 text-sm">
+                                                            {#each rangeWarnings as warning (warning)}
+                                                                <li>{warning}</li>
+                                                            {/each}
+                                                        </ul>
+                                                    </div>
+                                                {/if}
+
+												{#if eyeCount == 0}
 													<p class="text-xs font-medium text-red-600">
 														Debe habilitar al menos un ojo
 													</p>
 												{/if}
 											</div>
-
-											{#if rangeWarnings.length > 0}
-												<div
-													class="rounded-xl bg-warning-container/60 px-4 py-3 text-on-warning-container"
-												>
-													<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">
-														Fuera de rango óptico
-													</p>
-													<ul class="mt-2 space-y-1 text-sm">
-														{#each rangeWarnings as warning (warning)}
-															<li>{warning}</li>
-														{/each}
-													</ul>
-												</div>
-											{/if}
 
 											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
 												{#if eyeCount > 0 && lens}
