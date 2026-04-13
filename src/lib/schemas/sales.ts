@@ -201,6 +201,18 @@ export const CancelSaleSchema = z
 	});
 
 // ============================================================================
+// UPDATE SALE ITEM COSTS SCHEMA
+// ============================================================================
+
+export const UpdateSaleItemCostsSchema = z.object({
+	saleItemId: z.uuid('ID de artículo requerido'),
+	snapshotBaseCost: CoercedNumber.nonnegative().nullable(),
+	snapshotMountingPrice: CoercedNumber.nonnegative().nullable(),
+	snapshotShippingPrice: CoercedNumber.nonnegative().nullable(),
+	shippingCostPending: z.boolean()
+});
+
+// ============================================================================
 // ID SCHEMAS
 // ============================================================================
 

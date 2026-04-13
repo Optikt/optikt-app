@@ -1,9 +1,20 @@
 <script lang="ts">
-	import { Eye, FlaskConical, Package, ShoppingCart, Truck } from '@lucide/svelte';
+	import {
+		Check,
+		Eye,
+		FlaskConical,
+		Package,
+		Pencil,
+		ShoppingCart,
+		Truck,
+		X
+	} from '@lucide/svelte';
 	import { SvelteMap } from 'svelte/reactivity';
+	import { toast } from 'svelte-sonner';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
+	import { updateItemCosts } from '$lib/remote/sales.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
 
 	interface DisplayGroup {
@@ -18,9 +29,18 @@
 	interface Props {
 		items: SaleItemWithDetails[];
 		subtotal: number;
+		onCostsUpdated?: () => void;
 	}
 
-	let { items, subtotal }: Props = $props();
+	let { items, subtotal, onCostsUpdated }: Props = $props();
+
+	// Edit state
+	let editingItemId = $state<string | null>(null);
+	let editBaseCost = $state(0);
+	let editMounting = $state(0);
+	let editShipping = $state(0);
+	let editShippingPending = $state(false);
+	let saving = $state(false);
 
 	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
@@ -95,6 +115,71 @@
 		}
 
 		return 'bg-surface-container-high text-on-surface-variant';
+	}
+
+	// ── Total internal cost ──────────────────────────────────────────────
+	let totalInternalCost = $derived.by(() => {
+		let total = 0;
+		for (const item of items) {
+			if (item.itemType === SaleItemType.LENS_PAIR) {
+				const base = item.snapshotBaseCost ?? 0;
+				const mounting = item.snapshotMountingPrice ?? 0;
+				const shipping = item.shippingCostPending ? 0 : (item.snapshotShippingPrice ?? 0);
+				total += (base + mounting + shipping) * item.quantity;
+			} else if (item.snapshotCostUnit != null) {
+				total += item.snapshotCostUnit * item.quantity;
+			}
+		}
+		return total;
+	});
+
+	let hasAnyCost = $derived(
+		items.some(
+			(i) =>
+				i.snapshotBaseCost != null ||
+				i.snapshotMountingPrice != null ||
+				i.snapshotShippingPrice != null ||
+				i.snapshotCostUnit != null
+		)
+	);
+
+	// ── Edit helpers ─────────────────────────────────────────────────────
+	function startEdit(item: SaleItemWithDetails) {
+		editingItemId = item.id;
+		editBaseCost = item.snapshotBaseCost ?? 0;
+		editMounting = item.snapshotMountingPrice ?? 0;
+		editShipping = item.snapshotShippingPrice ?? 0;
+		editShippingPending = item.shippingCostPending ?? false;
+	}
+
+	function cancelEdit() {
+		editingItemId = null;
+	}
+
+	async function saveEdit() {
+		if (!editingItemId) return;
+		saving = true;
+		try {
+			const result = await updateItemCosts({
+				saleItemId: editingItemId,
+				snapshotBaseCost: editBaseCost,
+				snapshotMountingPrice: editMounting,
+				snapshotShippingPrice: editShippingPending ? null : editShipping,
+				shippingCostPending: editShippingPending
+			});
+			if (result.success) {
+				toast.success('Costos actualizados');
+				editingItemId = null;
+				onCostsUpdated?.();
+			} else {
+				toast.error(result.error);
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error('Error al actualizar costos');
+		} finally {
+			saving = false;
+		}
 	}
 </script>
 
@@ -185,45 +270,130 @@
 										{/if}
 									</div>
 									{#if group.item.itemType === SaleItemType.LENS_PAIR && (group.item.snapshotBaseCost != null || group.item.snapshotMountingPrice != null || group.item.snapshotShippingPrice != null)}
-										{@const baseCost = group.item.snapshotBaseCost ?? 0}
-										{@const mounting = group.item.snapshotMountingPrice ?? 0}
-										{@const shipping = group.item.snapshotShippingPrice ?? 0}
-										{@const isPending = group.item.shippingCostPending ?? false}
-										{@const costTotal = baseCost + mounting + (isPending ? 0 : shipping)}
-										<div
-											class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
-										>
-											<span
-												>Cristales: <span class="font-mono text-brand-navy"
-													>{formatPrice(baseCost)}</span
-												></span
-											>
-											{#if mounting > 0}
-												<span
-													>Montaje: <span class="font-mono text-brand-navy"
-														>{formatPrice(mounting)}</span
-													></span
-												>
-											{/if}
-											{#if isPending}
-												<span
-													class="inline-flex items-center gap-1 rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
-												>
-													<Truck class="h-3 w-3" />
+										{#if editingItemId === group.item.id}
+											<div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+												<label class="flex items-center gap-1">
+													<span class="text-on-surface-variant">Cristales:</span>
+													<input
+														type="number"
+														step="0.01"
+														min="0"
+														bind:value={editBaseCost}
+														class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+													/>
+												</label>
+												<label class="flex items-center gap-1">
+													<span class="text-on-surface-variant">Montaje:</span>
+													<input
+														type="number"
+														step="0.01"
+														min="0"
+														bind:value={editMounting}
+														class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+													/>
+												</label>
+												{#if !editShippingPending}
+													<label class="flex items-center gap-1">
+														<span class="text-on-surface-variant">Envío:</span>
+														<input
+															type="number"
+															step="0.01"
+															min="0"
+															bind:value={editShipping}
+															class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+														/>
+													</label>
+												{/if}
+												<label class="flex items-center gap-1.5 text-on-surface-variant">
+													<input
+														type="checkbox"
+														bind:checked={editShippingPending}
+														class="h-3.5 w-3.5 rounded border-outline-variant accent-brand-blue"
+													/>
 													Envío pendiente
-												</span>
-											{:else if shipping > 0}
+												</label>
+												<div class="flex items-center gap-1">
+													<button
+														type="button"
+														onclick={saveEdit}
+														disabled={saving}
+														class="inline-flex items-center justify-center rounded-md bg-brand-blue p-1.5 text-white transition-colors hover:bg-brand-blue/80 disabled:opacity-50"
+														title="Guardar"
+													>
+														<Check class="h-3.5 w-3.5" />
+													</button>
+													<button
+														type="button"
+														onclick={cancelEdit}
+														disabled={saving}
+														class="inline-flex items-center justify-center rounded-md bg-surface-container-high p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest disabled:opacity-50"
+														title="Cancelar"
+													>
+														<X class="h-3.5 w-3.5" />
+													</button>
+												</div>
+											</div>
+										{:else}
+											{@const baseCost = group.item.snapshotBaseCost ?? 0}
+											{@const mounting = group.item.snapshotMountingPrice ?? 0}
+											{@const shipping = group.item.snapshotShippingPrice ?? 0}
+											{@const isPending = group.item.shippingCostPending ?? false}
+											{@const costTotal = baseCost + mounting + (isPending ? 0 : shipping)}
+											<div
+												class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
+											>
 												<span
-													>Envío: <span class="font-mono text-brand-navy"
-														>{formatPrice(shipping)}</span
+													>Cristales: <span class="font-mono text-brand-navy"
+														>{formatPrice(baseCost)}</span
 													></span
 												>
-											{/if}
-											<span class="font-semibold"
-												>Total: <span class="font-mono text-brand-navy"
-													>{formatPrice(costTotal)}</span
-												></span
+												{#if mounting > 0}
+													<span
+														>Montaje: <span class="font-mono text-brand-navy"
+															>{formatPrice(mounting)}</span
+														></span
+													>
+												{/if}
+												{#if isPending}
+													<span
+														class="inline-flex items-center gap-1 rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
+													>
+														<Truck class="h-3 w-3" />
+														Envío pendiente
+													</span>
+												{:else if shipping > 0}
+													<span
+														>Envío: <span class="font-mono text-brand-navy"
+															>{formatPrice(shipping)}</span
+														></span
+													>
+												{/if}
+												<span class="font-semibold"
+													>Total: <span class="font-mono text-brand-navy"
+														>{formatPrice(costTotal)}</span
+													></span
+												>
+												<button
+													type="button"
+													onclick={() => startEdit(group.item)}
+													class="inline-flex items-center justify-center rounded-md p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-navy"
+													title="Editar costos"
+												>
+													<Pencil class="h-3.5 w-3.5" />
+												</button>
+											</div>
+										{/if}
+									{:else if group.item.itemType === SaleItemType.LENS_PAIR}
+										<div class="mt-2 flex items-center gap-2 text-xs text-outline">
+											<span>Sin costos registrados</span>
+											<button
+												type="button"
+												onclick={() => startEdit(group.item)}
+												class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-brand-blue transition-colors hover:bg-surface-container-high"
 											>
+												<Pencil class="h-3 w-3" />
+												Agregar
+											</button>
 										</div>
 									{/if}
 								</div>
@@ -314,6 +484,21 @@
 				{/each}
 			</tbody>
 			<tfoot class="bg-surface-container-low/60">
+				{#if hasAnyCost}
+					<tr class="border-b border-surface-container-low">
+						<td
+							colspan="5"
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						>
+							Costo interno total
+						</td>
+						<td
+							class="px-6 py-4 text-right font-mono text-lg font-semibold text-on-surface-variant"
+						>
+							{formatPrice(totalInternalCost)}
+						</td>
+					</tr>
+				{/if}
 				<tr>
 					<td
 						colspan="5"

@@ -430,6 +430,27 @@ export async function createSaleItems(items: NewSaleItem[]): Promise<SaleItem[]>
 		.returning();
 }
 
+/**
+ * Update a sale item's internal cost fields
+ */
+export async function updateSaleItemCosts(
+	id: string,
+	data: {
+		snapshotBaseCost: number | null;
+		snapshotMountingPrice: number | null;
+		snapshotShippingPrice: number | null;
+		shippingCostPending: boolean;
+	},
+	executor: DbOrTx = db
+): Promise<SaleItem | null> {
+	const [item] = await executor
+		.update(saleItems)
+		.set({ ...data, updatedAt: nowISO() })
+		.where(eq(saleItems.id, id))
+		.returning();
+	return item ?? null;
+}
+
 // ============================================================================
 // SALE PAYMENTS
 // ============================================================================
