@@ -1269,7 +1269,7 @@
 															{/if}
 														</div>
 
-														<div class="space-y-2">
+														<div class="space-y-2" use:autoAnimate>
 															{#each availableTreatments as treatment (treatment.id)}
 																{@const selected = isTreatmentSelected(item, treatment.id)}
 																{@const selectedTreatment = item.treatments.find(
