@@ -62,8 +62,8 @@
 | #   | Pantalla               | Ruta                    | Mockup Stitch                                        | Estado    |
 | --- | ---------------------- | ----------------------- | ---------------------------------------------------- | --------- |
 | A1  | Lista de ventas        | `/sales`                | "Lista de Ventas - Refinada" (`56909dd3`)            | ✅ Hecho  |
-| A2  | Detalle de venta       | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`) | 🟡 Parcial |
-| A3  | Nueva venta (wizard)   | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)         | 🟡 Parcial |
+| A2  | Detalle de venta       | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`) | ✅ Hecho    |
+| A3  | Nueva venta (wizard)   | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)         | ✅ Hecho    |
 | A4  | Fórmula / prescripción | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)      | ⬚ Pending |
 
 #### Grupo B — Clientes (con mockup Stitch)
