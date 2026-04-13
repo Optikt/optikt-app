@@ -311,13 +311,16 @@
 						notes: item.notes || undefined,
 						snapshotName: lens?.name,
 						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotBaseCost: lens?.pairPurchasePrice,
-						snapshotMountingPrice: lens?.mountingPrice,
-						snapshotShippingPrice: lens?.shippingPrice,
+						snapshotBaseCost: item.costOverrides?.baseCost ?? lens?.pairPurchasePrice,
+						snapshotMountingPrice: item.costOverrides?.mountingPrice ?? lens?.mountingPrice,
+						snapshotShippingPrice: item.shippingCostPending
+							? undefined
+							: (item.costOverrides?.shippingPrice ?? lens?.shippingPrice),
 						snapshotSalePrice: lens?.salePrice ?? undefined,
 						snapshotPriceType: lens?.priceType,
 						snapshotIsTaxable: lens?.isTaxable ?? false,
-						snapshotTaxRate: lens?.taxRate ?? 16
+						snapshotTaxRate: lens?.taxRate ?? 16,
+						shippingCostPending: item.shippingCostPending || undefined
 					});
 
 					isFirstEye = false;

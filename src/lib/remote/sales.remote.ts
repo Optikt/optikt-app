@@ -334,6 +334,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
 				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
 				snapshotTaxRate: item.snapshotTaxRate ?? null,
+				shippingCostPending: item.shippingCostPending ?? false,
 				notes: item.notes ?? null,
 				createdAt: now,
 				updatedAt: now

@@ -26,6 +26,13 @@ export interface LensPairEntry {
 	oi: LensEyeEntry;
 }
 
+/** Internal cost overrides — allows the user to edit cost values in the wizard */
+export interface CostOverrides {
+	baseCost: number;
+	mountingPrice: number;
+	shippingPrice: number;
+}
+
 export interface SaleItemRow {
 	id: string;
 	kind: ItemKind;
@@ -41,6 +48,10 @@ export interface SaleItemRow {
 	discount: number;
 	discountType: DiscountTypeEnum;
 	notes: string;
+	// Internal cost overrides (only when kind === 'lens')
+	costOverrides: CostOverrides | null;
+	/** When true, shipping cost is unknown at sale time and will be filled later */
+	shippingCostPending: boolean;
 }
 
 export interface NewCustomerData {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Eye, FlaskConical, Package, ShoppingCart } from '@lucide/svelte';
+	import { Eye, FlaskConical, Package, ShoppingCart, Truck } from '@lucide/svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
@@ -184,6 +184,48 @@
 											</span>
 										{/if}
 									</div>
+									{#if group.item.itemType === SaleItemType.LENS_PAIR && (group.item.snapshotBaseCost != null || group.item.snapshotMountingPrice != null || group.item.snapshotShippingPrice != null)}
+										{@const baseCost = group.item.snapshotBaseCost ?? 0}
+										{@const mounting = group.item.snapshotMountingPrice ?? 0}
+										{@const shipping = group.item.snapshotShippingPrice ?? 0}
+										{@const isPending = group.item.shippingCostPending ?? false}
+										{@const costTotal = baseCost + mounting + (isPending ? 0 : shipping)}
+										<div
+											class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
+										>
+											<span
+												>Cristales: <span class="font-mono text-brand-navy"
+													>{formatPrice(baseCost)}</span
+												></span
+											>
+											{#if mounting > 0}
+												<span
+													>Montaje: <span class="font-mono text-brand-navy"
+														>{formatPrice(mounting)}</span
+													></span
+												>
+											{/if}
+											{#if isPending}
+												<span
+													class="inline-flex items-center gap-1 rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
+												>
+													<Truck class="h-3 w-3" />
+													Envío pendiente
+												</span>
+											{:else if shipping > 0}
+												<span
+													>Envío: <span class="font-mono text-brand-navy"
+														>{formatPrice(shipping)}</span
+													></span
+												>
+											{/if}
+											<span class="font-semibold"
+												>Total: <span class="font-mono text-brand-navy"
+													>{formatPrice(costTotal)}</span
+												></span
+											>
+										</div>
+									{/if}
 								</div>
 							</div>
 						</td>

@@ -38,7 +38,9 @@ function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
 		unitPrice: 100,
 		discount: 0,
 		discountType: DiscountType.FIXED,
-		notes: ''
+		notes: '',
+		costOverrides: null,
+		shippingCostPending: false
 	};
 }
 

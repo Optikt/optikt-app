@@ -193,7 +193,9 @@
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
-			notes: ''
+			notes: '',
+			costOverrides: null,
+			shippingCostPending: false
 		};
 	}
 
@@ -213,6 +215,17 @@
 
 		item.lensPair = createEmptyLensPair();
 		item.lensPair.catalogItemId = option.id;
+
+		// Initialize cost overrides from catalog values
+		const lens = lensItems.find((l) => l.id === option.id);
+		if (lens) {
+			item.costOverrides = {
+				baseCost: lens.pairPurchasePrice,
+				mountingPrice: lens.mountingPrice,
+				shippingPrice: lens.shippingPrice
+			};
+		}
+
 		syncPrescription(item);
 		recalcSuggestedPrice(item);
 		return item;
@@ -519,11 +532,6 @@
 		}
 		// Fallback to cost-based price
 		return lens.pairPurchasePrice + lens.mountingPrice + lens.shippingPrice;
-	}
-
-	/** Base lens cost — always the normalized pair cost */
-	function lensBaseCost(lens: LensCatalogItemWithRelations, _eyeCount: number): number {
-		return lens.pairPurchasePrice;
 	}
 
 	// ============================================================================
@@ -1098,20 +1106,20 @@
 													</label>
 												</div>
 
-                                                {#if rangeWarnings.length > 0}
-                                                    <div
-                                                        class="rounded-xl bg-warning-container/60 px-4 py-3 text-on-warning-container"
-                                                    >
-                                                        <p class="text-[11px] font-semibold tracking-[0.16em] uppercase">
-                                                            Fuera de rango óptico
-                                                        </p>
-                                                        <ul class="mt-2 space-y-1 text-sm">
-                                                            {#each rangeWarnings as warning (warning)}
-                                                                <li>{warning}</li>
-                                                            {/each}
-                                                        </ul>
-                                                    </div>
-                                                {/if}
+												{#if rangeWarnings.length > 0}
+													<div
+														class="rounded-xl bg-warning-container/60 px-4 py-3 text-on-warning-container"
+													>
+														<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">
+															Fuera de rango óptico
+														</p>
+														<ul class="mt-2 space-y-1 text-sm">
+															{#each rangeWarnings as warning (warning)}
+																<li>{warning}</li>
+															{/each}
+														</ul>
+													</div>
+												{/if}
 
 												{#if eyeCount == 0}
 													<p class="text-xs font-medium text-red-600">
@@ -1121,9 +1129,13 @@
 											</div>
 
 											<div class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-												{#if eyeCount > 0 && lens}
+												{#if eyeCount > 0 && lens && item.costOverrides}
+													{@const co = item.costOverrides}
+													{@const effectiveShipping = item.shippingCostPending
+														? 0
+														: co.shippingPrice}
 													{@const internalCostTotal =
-														lensBaseCost(lens, eyeCount) + lens.mountingPrice + lens.shippingPrice}
+														co.baseCost + co.mountingPrice + effectiveShipping}
 													<details
 														class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm"
 													>
@@ -1137,13 +1149,19 @@
 																	Costo interno
 																</p>
 																<p class="mt-1 text-xs text-on-surface-variant">
-																	Ver desglose de cristales, montaje y envío
+																	Editar desglose de cristales, montaje y envío
 																</p>
 															</div>
 															<div class="flex items-center gap-2">
 																<span class="font-mono text-sm font-semibold text-brand-navy">
 																	{formatPrice(internalCostTotal)}
 																</span>
+																{#if item.shippingCostPending}
+																	<span
+																		class="rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
+																		>Envío pendiente</span
+																	>
+																{/if}
 																<ChevronRight class="h-4 w-4 text-on-surface-variant" />
 															</div>
 														</summary>
@@ -1152,29 +1170,56 @@
 															class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant"
 														>
 															<div class="flex items-center justify-between gap-3">
-																<span>
-																	Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`}
+																<span class="shrink-0">
+																	Cristales × {eyeCount}
+																	<!-- Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`} -->
 																</span>
-																<span class="font-mono text-brand-navy">
-																	{formatPrice(lensBaseCost(lens, eyeCount))}
-																</span>
+																<input
+																	type="number"
+																	bind:value={co.baseCost}
+																	step="0.01"
+																	min="0"
+																	class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
+																/>
 															</div>
-															{#if lens.mountingPrice > 0}
-																<div class="flex items-center justify-between gap-3">
-																	<span>Montaje</span>
-																	<span class="font-mono text-brand-navy"
-																		>{formatPrice(lens.mountingPrice)}</span
-																	>
+															<div class="flex items-center justify-between gap-3">
+																<span class="shrink-0">Montaje</span>
+																<input
+																	type="number"
+																	bind:value={co.mountingPrice}
+																	step="0.01"
+																	min="0"
+																	class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
+																/>
+															</div>
+															<div class="flex items-center justify-between gap-3">
+																<span class="shrink-0">Envío</span>
+																<div class="flex items-center gap-2">
+																	{#if item.shippingCostPending}
+																		<span class="text-xs text-on-surface-variant/60 italic"
+																			>Pendiente</span
+																		>
+																	{:else}
+																		<input
+																			type="number"
+																			bind:value={co.shippingPrice}
+																			step="0.01"
+																			min="0"
+																			class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
+																		/>
+																	{/if}
 																</div>
-															{/if}
-															{#if lens.shippingPrice > 0}
-																<div class="flex items-center justify-between gap-3">
-																	<span>Envío</span>
-																	<span class="font-mono text-brand-navy"
-																		>{formatPrice(lens.shippingPrice)}</span
-																	>
-																</div>
-															{/if}
+															</div>
+															<label
+																class="flex cursor-pointer items-center gap-2 text-xs text-on-surface-variant"
+															>
+																<input
+																	type="checkbox"
+																	bind:checked={item.shippingCostPending}
+																	class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+																/>
+																<span>Costo de envío pendiente</span>
+															</label>
 															<div
 																class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
 															>

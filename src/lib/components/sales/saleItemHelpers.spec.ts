@@ -28,6 +28,8 @@ function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
+		costOverrides: null,
+		shippingCostPending: false,
 		...overrides
 	};
 }
@@ -45,7 +47,9 @@ function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
 		unitPrice: 50,
 		discount: 0,
 		discountType: DiscountType.FIXED,
-		notes: ''
+		notes: '',
+		costOverrides: null,
+		shippingCostPending: false
 	};
 }
 

@@ -135,7 +135,9 @@
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
-			notes: ''
+			notes: '',
+			costOverrides: null,
+			shippingCostPending: false
 		}
 	]);
 

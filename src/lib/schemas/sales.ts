@@ -89,6 +89,9 @@ export const SaleItemSchema = z.object({
 	snapshotIsTaxable: z.boolean().optional(),
 	snapshotTaxRate: CoercedNumber.optional(),
 
+	// Shipping cost pending flag
+	shippingCostPending: z.boolean().optional(),
+
 	notes: z.string().optional()
 });
 
