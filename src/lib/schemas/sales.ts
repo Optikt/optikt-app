@@ -34,7 +34,8 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 	customerId: z.uuid().optional(),
 	sellerId: z.uuid().optional(),
 	dateFrom: z.iso.date().optional(),
-	dateTo: z.iso.date().optional()
+	dateTo: z.iso.date().optional(),
+	shippingCostPending: z.boolean().optional()
 });
 
 // ============================================================================

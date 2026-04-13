@@ -106,7 +106,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		sellerId: data.sellerId ?? undefined,
 		dateFrom: data.dateFrom ?? undefined,
 		dateTo: data.dateTo ?? undefined,
-		search: data.search ?? undefined
+		search: data.search ?? undefined,
+		shippingCostPending: data.shippingCostPending ?? undefined
 	};
 
 	const [salesPage, total] = await Promise.all([
