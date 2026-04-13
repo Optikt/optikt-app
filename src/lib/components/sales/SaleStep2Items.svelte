@@ -1235,7 +1235,7 @@
 
 												{#if availableTreatments.length > 0}
 													<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
-														<div class="mb-3 flex items-center justify-between gap-3">
+														<div class="mb-3 flex items-center justify-between gap-3" use:autoAnimate>
 															<div class="flex items-center gap-2">
 																<FlaskConical class="h-4 w-4 text-brand-blue" />
 																<p
@@ -1261,6 +1261,7 @@
 																	class="rounded-xl px-3 py-2 transition-colors {selected
 																		? 'bg-surface-container-low'
 																		: 'bg-surface hover:bg-surface-container-low'}"
+																	use:autoAnimate
 																>
 																	<label class="flex cursor-pointer items-center gap-3">
 																		<input
