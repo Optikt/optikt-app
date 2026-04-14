@@ -1,42 +1,54 @@
 <script lang="ts">
-	import {
-		TableHeadCell,
-		TableBodyCell,
-		Modal,
-		Button,
-		Input,
-		Label,
-		Spinner
-	} from 'flowbite-svelte';
-	import { TriangleAlert, Package, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
+	import { Eye, Package, RotateCcw, SquarePen, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { formatPrice } from '$lib/utils';
-	import { DataTable, ProductTypeBadge, StatusBadge } from '$lib/components/ui';
-	import { isLowStock } from '$lib/utils/products';
 	import { deleteProductById } from '$lib/remote/products.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { AppBadge, ConfirmModal, DataGrid, ProductTypeBadge } from '$lib/components/ui';
+	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { isLowStock } from '$lib/utils/products';
 	import ProductReactivateModal from './ProductReactivateModal.svelte';
 
 	interface Props {
 		products: ProductWithRelations[];
+		page: number;
+		perPage: number;
+		total: number;
+		totalPages: number;
 		loading?: boolean;
 		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
 		onRefresh?: () => void;
+		onPageChange: (page: number) => void;
 	}
 
-	let { products, loading = false, onView, onEdit, onRefresh }: Props = $props();
+	let {
+		products,
+		page,
+		perPage,
+		total,
+		totalPages,
+		loading = false,
+		onView,
+		onEdit,
+		onRefresh,
+		onPageChange
+	}: Props = $props();
 
-	// Modal state
 	let showDeleteModal = $state(false);
 	let showReactivateModal = $state(false);
 	let selectedProduct = $state<ProductWithRelations | null>(null);
 	let deleteLoading = $state(false);
 	let confirmInput = $state('');
 
-	// For safety, user must type product SKU to confirm
-	const canConfirm = $derived(confirmInput === selectedProduct?.sku);
+	const columns = [
+		{ key: 'product', label: 'Producto' },
+		{ key: 'sku', label: 'SKU' },
+		{ key: 'type', label: 'Categoría' },
+		{ key: 'brand', label: 'Marca' },
+		{ key: 'stock', label: 'Stock' },
+		{ key: 'price', label: 'Precio', align: 'right' as const },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 
 	function openDelete(product: ProductWithRelations) {
 		selectedProduct = product;
@@ -50,13 +62,15 @@
 	}
 
 	async function handleDelete() {
-		if (!selectedProduct || !canConfirm) return;
+		if (!selectedProduct) return;
 
 		deleteLoading = true;
 		try {
 			await deleteProductById({ id: selectedProduct.id });
 			toast.success('Producto eliminado exitosamente');
 			showDeleteModal = false;
+			selectedProduct = null;
+			confirmInput = '';
 			onRefresh?.();
 		} catch (e) {
 			console.error(e);
@@ -66,107 +80,182 @@
 		}
 	}
 
-	function closeModal() {
-		showDeleteModal = false;
-		selectedProduct = null;
-		confirmInput = '';
+	function requireSkuConfirmation(): boolean {
+		if (!selectedProduct) return false;
+		if (confirmInput !== selectedProduct.sku) {
+			toast.error(`Escriba ${selectedProduct.sku} para confirmar`);
+			return false;
+		}
+
+		return true;
+	}
+
+	function stockBadgeVariant(product: ProductWithRelations): 'success' | 'warning' | 'error' | 'neutral' {
+		if (product.deletedAt) return 'neutral';
+		if (product.stock === 0) return 'error';
+		if (isLowStock(product)) return 'warning';
+		return 'success';
+	}
+
+	function stockLabel(product: ProductWithRelations): string {
+		if (product.deletedAt) return 'Eliminado';
+		if (product.stock === 0) return 'Agotado';
+		if (isLowStock(product)) return 'Stock bajo';
+		return 'En stock';
 	}
 </script>
 
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-	<DataTable
-		items={products}
-		{loading}
-		emptyIcon={Package}
-		emptyTitle="No se encontraron productos"
-		emptyDescription="Agrega un producto para comenzar"
-		defaultActions="view,edit,delete,reactivate"
-		{onView}
-		{onEdit}
-		onDelete={openDelete}
-		onReactivate={openReactivate}
-		viewIcon={Eye}
-		editIcon={SquarePen}
-		deleteIcon={Trash2}
-		reactivateIcon={RotateCcw}
-	>
-		{#snippet header()}
-			<TableHeadCell class="font-semibold text-slate-600">SKU</TableHeadCell>
-			<TableHeadCell class="font-semibold text-slate-600">Nombre</TableHeadCell>
-			<TableHeadCell class="font-semibold text-slate-600">Tipo</TableHeadCell>
-			<TableHeadCell class="font-semibold text-slate-600">Marca</TableHeadCell>
-			<TableHeadCell class="font-semibold text-slate-600">Precio</TableHeadCell>
-			<TableHeadCell class="font-semibold text-slate-600">Stock</TableHeadCell>
-			<TableHeadCell class="font-semibold text-slate-600">Estado</TableHeadCell>
-		{/snippet}
+<DataGrid
+	{columns}
+	items={products}
+	{page}
+	{perPage}
+	{total}
+	{totalPages}
+	{loading}
+	itemLabel="productos"
+	emptyTitle="No se encontraron productos"
+	emptySubtitle="Agrega un producto para comenzar"
+	{onPageChange}
+>
+	{#snippet emptyIcon()}
+		<Package class="mb-3 h-10 w-10 text-outline" />
+	{/snippet}
 
-		{#snippet row(product)}
-			<TableBodyCell class="font-mono text-sm text-slate-700">{product.sku}</TableBodyCell>
-			<TableBodyCell class="font-medium text-slate-900">{product.name}</TableBodyCell>
-			<TableBodyCell>
-				<ProductTypeBadge type={product.type} />
-			</TableBodyCell>
-			<TableBodyCell class="text-slate-600">
-				{product.brand?.name || '—'}
-			</TableBodyCell>
-			<TableBodyCell class="font-mono text-slate-700">
-				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
-			</TableBodyCell>
-			<TableBodyCell>
-				{#if product.stock !== null}
-					<span
-						class="inline-flex items-center gap-1 font-mono"
-						class:text-red-600={isLowStock(product)}
-						class:text-slate-700={!isLowStock(product)}
-					>
-						{#if isLowStock(product)}
-							<TriangleAlert class="h-4 w-4" />
+	{#snippet row(product)}
+		<tr
+			class="bg-surface-container-lowest transition-colors {onView
+				? 'cursor-pointer hover:bg-surface-container-low'
+				: ''}"
+			onclick={() => onView?.(product)}
+		>
+			<td class="px-4 py-4">
+				<div class="min-w-[16rem]">
+					<p class="font-medium text-on-surface">{product.name}</p>
+					<div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-outline">
+						<span>{product.supplier?.name ?? 'Sin proveedor'}</span>
+						{#if product.deletedAt}
+							<AppBadge variant="neutral">Inactivo</AppBadge>
 						{/if}
-						{product.stock}
-					</span>
-				{:else}
-					<span class="text-slate-400">—</span>
-				{/if}
-			</TableBodyCell>
-			<TableBodyCell>
-				<StatusBadge active={!product.deletedAt} />
-			</TableBodyCell>
-		{/snippet}
-	</DataTable>
-</div>
+					</div>
+				</div>
+			</td>
+			<td class="px-4 py-4">
+				<span class="font-mono text-sm text-on-surface-variant">{product.sku}</span>
+			</td>
+			<td class="px-4 py-4">
+				<ProductTypeBadge type={product.type} />
+			</td>
+			<td class="px-4 py-4 text-sm text-on-surface-variant">
+				{product.brand?.name ?? '—'}
+			</td>
+			<td class="px-4 py-4">
+				<div class="flex items-center gap-2">
+					<AppBadge variant={stockBadgeVariant(product)}>{stockLabel(product)}</AppBadge>
+					<span class="font-mono text-sm font-semibold text-brand-navy">{product.stock}</span>
+				</div>
+			</td>
+			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
+				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
+			</td>
+			<td class="px-4 py-4 text-right">
+				<div class="flex items-center justify-end gap-1">
+					{#if onView}
+						<button
+							type="button"
+							onclick={(event) => {
+								event.stopPropagation();
+								onView?.(product);
+							}}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver producto"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</button>
+					{/if}
 
-<!-- Delete Confirm Modal -->
-<Modal bind:open={showDeleteModal} title="Eliminar Producto" size="sm">
-	<div class="flex flex-col gap-4">
-		<p class="text-slate-600">
-			¿Está seguro que desea eliminar el producto <strong>{selectedProduct?.sku}</strong> (
-			{selectedProduct?.name})?
-		</p>
+					{#if onEdit && !product.deletedAt}
+						<button
+							type="button"
+							onclick={(event) => {
+								event.stopPropagation();
+								onEdit?.(product);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+							title="Editar producto"
+						>
+							<SquarePen class="h-4 w-4" />
+						</button>
+					{/if}
 
-		<!-- Confirmation input -->
-		<div>
-			<Label for="confirmSku" class="mb-2">
-				Escriba <strong class="text-red-600">{selectedProduct?.sku}</strong> para confirmar:
-			</Label>
-			<Input
-				id="confirmSku"
-				bind:value={confirmInput}
-				placeholder="Escriba el SKU del producto"
-				class="placeholder:text-slate-400"
-			/>
+					{#if product.deletedAt}
+						<button
+							type="button"
+							onclick={(event) => {
+								event.stopPropagation();
+								openReactivate(product);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-success-container hover:text-on-success-container"
+							title="Reactivar producto"
+						>
+							<RotateCcw class="h-4 w-4" />
+						</button>
+					{:else}
+						<button
+							type="button"
+							onclick={(event) => {
+								event.stopPropagation();
+								openDelete(product);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+							title="Eliminar producto"
+						>
+							<Trash2 class="h-4 w-4" />
+						</button>
+					{/if}
+				</div>
+			</td>
+		</tr>
+	{/snippet}
+</DataGrid>
+
+<ConfirmModal
+	bind:open={showDeleteModal}
+	title="Eliminar Producto"
+	confirmLabel="Eliminar"
+	confirmColor="red"
+	loading={deleteLoading}
+	onConfirm={handleDelete}
+	shouldConfirm={requireSkuConfirmation}
+	onCancel={() => {
+		showDeleteModal = false;
+		confirmInput = '';
+	}}
+>
+	{#snippet body()}
+		<div class="space-y-4">
+			<p class="text-sm text-gray-700">
+				Esto eliminará el producto <strong>{selectedProduct?.name}</strong>. Para confirmar, escriba el SKU
+				<strong>{selectedProduct?.sku}</strong>.
+			</p>
+			<div>
+				<label for="confirmSku" class="mb-2 block text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+					Confirmación por SKU
+				</label>
+				<input
+					id="confirmSku"
+					bind:value={confirmInput}
+					placeholder="Escriba el SKU del producto"
+					class="w-full rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline focus:border-brand-blue focus:outline-none"
+				/>
+			</div>
 		</div>
-	</div>
+	{/snippet}
+</ConfirmModal>
 
-	<div class="mt-6 flex justify-end gap-2">
-		<Button color="light" onclick={closeModal}>Cancelar</Button>
-		<Button color="red" disabled={!canConfirm || deleteLoading} onclick={handleDelete}>
-			{#if deleteLoading}<Spinner size="4" class="mr-2" />{/if}
-			Eliminar
-		</Button>
-	</div>
-</Modal>
-
-<!-- Reactivate Modal -->
 <ProductReactivateModal
 	bind:open={showReactivateModal}
 	candidate={selectedProduct}
