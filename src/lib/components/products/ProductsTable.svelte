@@ -90,7 +90,9 @@
 		return true;
 	}
 
-	function stockBadgeVariant(product: ProductWithRelations): 'success' | 'warning' | 'error' | 'neutral' {
+	function stockBadgeVariant(
+		product: ProductWithRelations
+	): 'success' | 'warning' | 'error' | 'neutral' {
 		if (product.deletedAt) return 'neutral';
 		if (product.stock === 0) return 'error';
 		if (isLowStock(product)) return 'warning';
@@ -238,11 +240,15 @@
 	{#snippet body()}
 		<div class="space-y-4">
 			<p class="text-sm text-gray-700">
-				Esto eliminará el producto <strong>{selectedProduct?.name}</strong>. Para confirmar, escriba el SKU
+				Esto eliminará el producto <strong>{selectedProduct?.name}</strong>. Para confirmar, escriba
+				el SKU
 				<strong>{selectedProduct?.sku}</strong>.
 			</p>
 			<div>
-				<label for="confirmSku" class="mb-2 block text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+				<label
+					for="confirmSku"
+					class="mb-2 block text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+				>
 					Confirmación por SKU
 				</label>
 				<input

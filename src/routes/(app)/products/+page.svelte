@@ -173,7 +173,9 @@
 	</div>
 
 	<section class="glass-card bg-surface-container-low p-4">
-		<div class="grid gap-3 xl:grid-cols-[minmax(240px,0.9fr)_180px_180px_180px_auto_auto] xl:items-center">
+		<div
+			class="grid gap-3 xl:grid-cols-[minmax(240px,0.9fr)_180px_180px_180px_auto_auto] xl:items-center"
+		>
 			<div class="relative">
 				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
 				<input
