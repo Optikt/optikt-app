@@ -143,7 +143,7 @@
 
 ### Notas de implementación (PR #33 — `redesign/budget`)
 
-- Todas las pantallas de quotes migradas al design system (glass-card, brand-navy/gold/blue, surface-container-*)
+- Todas las pantallas de quotes migradas al design system (glass-card, brand-navy/gold/blue, surface-container-\*)
 - Cero dependencias Flowbite en las rutas y componentes activos
 - `QuoteStep1Info.svelte` es dead code (el wizard usa `SaleStep1Info` compartido)
 - `QuotesTable.svelte` usa `DataGrid` + `QuoteStatusBadge` con tokens semánticos
