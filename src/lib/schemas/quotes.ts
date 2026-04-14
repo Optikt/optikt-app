@@ -29,7 +29,8 @@ export const ListQuotesSchema = ListPaginationSchema.extend({
 	customerId: z.uuid().optional(),
 	sellerId: z.uuid().optional(),
 	dateFrom: z.iso.date().optional(),
-	dateTo: z.iso.date().optional()
+	dateTo: z.iso.date().optional(),
+	search: z.string().trim().optional()
 });
 
 // ============================================================================

@@ -9,13 +9,14 @@
 		Truck,
 		X
 	} from '@lucide/svelte';
-	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
 	import { updateItemCosts } from '$lib/remote/sales.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
+	import { buildPersistedDisplayGroups } from './saleItemHelpers';
 
 	interface DisplayGroup {
 		key: string;
@@ -44,73 +45,32 @@
 
 	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
-	function getTreatments(parentId: string): SaleItemWithDetails[] {
-		return items.filter(
-			(item) => item.itemType === SaleItemType.TREATMENT && item.parentSaleItemId === parentId
+	let displayGroups: DisplayGroup[] = $derived.by(() =>
+		buildPersistedDisplayGroups(
+			items,
+			mainItems,
+			SaleItemType.LENS_PAIR,
+			SaleItemType.TREATMENT,
+			(item) => item.parentSaleItemId
+		)
+	);
+
+	function itemLabel(group: DisplayGroup): string {
+		return (
+			group.item.snapshotName ??
+			group.item.product?.name ??
+			group.item.lensCatalogItem?.name ??
+			'Item sin nombre'
 		);
 	}
 
-	function itemDiscountAmount(item: SaleItemWithDetails): number {
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * item.unitPrice * item.quantity;
-		}
-
-		return item.discount;
-	}
-
-	let displayGroups: DisplayGroup[] = $derived.by(() => {
-		const groups: DisplayGroup[] = [];
-		const lensGroupMap = new SvelteMap<string, DisplayGroup>();
-
-		for (const item of mainItems) {
-			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
-				const existing = lensGroupMap.get(item.lensCatalogItemId);
-				if (existing) {
-					existing.quantity += item.quantity;
-					existing.discountAmount += itemDiscountAmount(item);
-					existing.lineTotal += item.unitPrice * item.quantity - itemDiscountAmount(item);
-					existing.treatments.push(...getTreatments(item.id));
-				} else {
-					const discountAmount = itemDiscountAmount(item);
-					const group: DisplayGroup = {
-						key: `lens-${item.lensCatalogItemId}`,
-						item,
-						quantity: item.quantity,
-						discountAmount,
-						lineTotal: item.unitPrice * item.quantity - discountAmount,
-						treatments: [...getTreatments(item.id)]
-					};
-
-					lensGroupMap.set(item.lensCatalogItemId, group);
-					groups.push(group);
-				}
-			} else {
-				const discountAmount = itemDiscountAmount(item);
-				groups.push({
-					key: item.id,
-					item,
-					quantity: item.quantity,
-					discountAmount,
-					lineTotal: item.unitPrice * item.quantity - discountAmount,
-					treatments: getTreatments(item.id)
-				});
-			}
-		}
-
-		return groups;
-	});
-
-	function itemLabel(group: DisplayGroup): string {
-		return group.item.product?.name ?? group.item.lensCatalogItem?.name ?? 'Item sin nombre';
-	}
-
 	function itemTypeLabel(item: SaleItemWithDetails): string {
-		if (item.itemType === SaleItemType.LENS_PAIR || item.lensCatalogItem) return 'Cristal';
+		if (item.itemType === SaleItemType.LENS_PAIR) return 'Cristal';
 		return 'Producto';
 	}
 
 	function itemTypeClasses(item: SaleItemWithDetails): string {
-		if (item.itemType === SaleItemType.LENS_PAIR || item.lensCatalogItem) {
+		if (item.itemType === SaleItemType.LENS_PAIR) {
 			return 'bg-info-container text-on-info-container';
 		}
 
@@ -124,7 +84,9 @@
 	let totalInternalCost = $derived.by(() => {
 		let total = 0;
 		for (const group of displayGroups) {
-			if (group.item.itemType === SaleItemType.LENS_PAIR) {
+			if (group.item.snapshotCostTotal != null) {
+				total += group.item.snapshotCostTotal;
+			} else if (group.item.itemType === SaleItemType.LENS_PAIR) {
 				const base = group.item.snapshotBaseCost ?? 0;
 				const mounting = group.item.snapshotMountingPrice ?? 0;
 				const shipping = group.item.shippingCostPending
@@ -141,6 +103,7 @@
 	let hasAnyCost = $derived(
 		displayGroups.some(
 			(g) =>
+				g.item.snapshotCostTotal != null ||
 				g.item.snapshotBaseCost != null ||
 				g.item.snapshotMountingPrice != null ||
 				g.item.snapshotShippingPrice != null ||
@@ -240,6 +203,8 @@
 			</thead>
 			<tbody class="divide-y divide-surface-container-low">
 				{#each displayGroups as group (group.key)}
+					{@const odSummary = formatPrescriptionEye(group.item, 'od')}
+					{@const osSummary = formatPrescriptionEye(group.item, 'os')}
 					<tr
 						class="bg-surface-container-lowest transition-colors hover:bg-surface-container-low/35"
 					>
@@ -247,11 +212,11 @@
 							<div class="flex items-start gap-4">
 								<div
 									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {group.item
-										.lensCatalogItem
+										.itemType === SaleItemType.LENS_PAIR
 										? 'bg-info-container text-on-info-container'
 										: 'bg-surface-container-low text-on-surface-variant'}"
 								>
-									{#if group.item.lensCatalogItem}
+									{#if group.item.itemType === SaleItemType.LENS_PAIR}
 										<Eye class="h-5 w-5" />
 									{:else}
 										<Package class="h-5 w-5" />
@@ -262,8 +227,10 @@
 										{itemLabel(group)}
 									</p>
 									<div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-outline">
-										{#if group.item.product?.sku}
-											<span class="font-mono">{group.item.product.sku}</span>
+										{#if group.item.snapshotSku ?? group.item.product?.sku}
+											<span class="font-mono"
+												>{group.item.snapshotSku ?? group.item.product?.sku}</span
+											>
 										{/if}
 										{#if group.item.snapshotCostUnit != null}
 											<span class="font-mono">
@@ -274,6 +241,16 @@
 											</span>
 										{/if}
 									</div>
+									{#if group.item.itemType === SaleItemType.LENS_PAIR && hasPrescriptionSnapshot(group.item) && (odSummary || osSummary)}
+										<div class="mt-2 space-y-1 text-xs text-on-surface-variant">
+											{#if odSummary}
+												<p class="font-mono">{odSummary}</p>
+											{/if}
+											{#if osSummary}
+												<p class="font-mono">{osSummary}</p>
+											{/if}
+										</div>
+									{/if}
 									{#if group.item.itemType === SaleItemType.LENS_PAIR && (group.item.snapshotBaseCost != null || group.item.snapshotMountingPrice != null || group.item.snapshotShippingPrice != null)}
 										{#if editingItemId === group.item.id}
 											<div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -343,7 +320,9 @@
 											{@const mounting = group.item.snapshotMountingPrice ?? 0}
 											{@const shipping = group.item.snapshotShippingPrice ?? 0}
 											{@const isPending = group.item.shippingCostPending ?? false}
-											{@const costTotal = baseCost + mounting + (isPending ? 0 : shipping)}
+											{@const costTotal =
+												group.item.snapshotCostTotal ??
+												baseCost + mounting + (isPending ? 0 : shipping)}
 											<div
 												class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
 											>

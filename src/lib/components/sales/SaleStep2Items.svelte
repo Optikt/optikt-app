@@ -50,6 +50,15 @@
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
 		nextOrderNumber?: number;
+		entityNumberLabel?: string;
+		customerFallbackName?: string;
+		customerFallbackDocument?: string;
+		newCustomerContextLabel?: string;
+		selectedCustomerContextLabel?: string;
+		noCustomerContextLabel?: string;
+		itemsSectionTitle?: string;
+		prescriptionSectionTitle?: string;
+		onCancel?: () => void;
 		valid: boolean;
 		onnext: () => void;
 		onprev: () => void;
@@ -64,6 +73,15 @@
 		products,
 		lensItems,
 		nextOrderNumber,
+		entityNumberLabel = 'Orden #',
+		customerFallbackName = 'Venta de mostrador',
+		customerFallbackDocument = 'Sin cliente asignado',
+		newCustomerContextLabel = 'Cliente nuevo en esta venta',
+		selectedCustomerContextLabel = 'Cliente asociado',
+		noCustomerContextLabel = 'Venta sin cliente',
+		itemsSectionTitle = 'Artículos de la venta',
+		prescriptionSectionTitle = 'Parámetros ópticos de la venta',
+		onCancel,
 		valid,
 		onnext,
 		onprev
@@ -631,33 +649,33 @@
 		if (newCustomer) return `${newCustomer.firstName} ${newCustomer.lastName}`.trim();
 		if (selectedCustomer)
 			return `${selectedCustomer.firstName} ${selectedCustomer.lastName}`.trim();
-		return 'Venta de mostrador';
+		return customerFallbackName;
 	});
 
 	const displayCustomerId = $derived.by(() => {
 		if (newCustomer) return newCustomer.idNumber || 'Cliente nuevo sin documento';
 		if (selectedCustomer) return selectedCustomer.idNumber;
-		return 'Sin cliente asignado';
+		return customerFallbackDocument;
 	});
 
 	const contextStatus = $derived.by(() => {
 		if (customerPrescription) return 'Fórmula previa disponible';
-		if (newCustomer) return 'Cliente nuevo en esta venta';
-		if (selectedCustomer) return 'Cliente asociado';
+		if (newCustomer) return newCustomerContextLabel;
+		if (selectedCustomer) return selectedCustomerContextLabel;
 		if (selectedLensCount > 0) return 'Fórmula manual requerida';
-		return 'Venta sin cliente';
+		return noCustomerContextLabel;
 	});
 </script>
 
-<div class="space-y-6">
-	<div class="grid grid-cols-6 gap-6">
+<div class="space-y-4">
+	<div class="grid grid-cols-6 gap-4">
 		<!-- Cliente resumen -->
 		<div class="col-span-4 rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm">
 			<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div class="flex flex-wrap items-center gap-5 sm:gap-6">
 					<div>
 						<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-							Orden #
+							{entityNumberLabel}
 						</p>
 						<p class="font-mono text-2xl font-bold text-white tabular-nums">
 							{nextOrderNumber ?? '—'}
@@ -866,14 +884,14 @@
 		</div>
 	</div>
 
-	<div class="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_22rem]">
-		<!-- Artitculos de la venta -->
+	<div class="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_22rem]">
+		<!-- Articulos del flujo -->
 		<div class="space-y-4">
 			<div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
 				<div class="mb-4 flex items-center justify-between gap-3">
 					<div>
 						<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">Paso 2</p>
-						<h3 class="text-lg font-semibold text-brand-navy">Artículos de la venta</h3>
+						<h3 class="text-lg font-semibold text-brand-navy">{itemsSectionTitle}</h3>
 					</div>
 					<span
 						class="rounded-full bg-surface-container-lowest px-3 py-1 text-xs font-semibold text-on-surface-variant"
@@ -1355,7 +1373,7 @@
 			</div>
 		</div>
 
-		<!-- Forrmula del Paciente -->
+		<!-- Formula del paciente -->
 		<div class="space-y-4">
 			{#if hasLensItem}
 				<div
@@ -1371,9 +1389,7 @@
 							<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
 								Fórmula
 							</p>
-							<h4 class="text-base font-semibold text-brand-navy">
-								Parámetros ópticos de la venta
-							</h4>
+							<h4 class="text-base font-semibold text-brand-navy">{prescriptionSectionTitle}</h4>
 						</div>
 					</div>
 
@@ -1409,6 +1425,7 @@
 
 	<SaleWizardFloatingActions
 		showBack={true}
+		{onCancel}
 		primaryLabel="Continuar"
 		primaryDisabled={!valid}
 		primaryKind="next"

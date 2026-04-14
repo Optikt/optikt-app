@@ -37,7 +37,9 @@ import type {
 import {
 	findCustomerById,
 	findCustomerByIdNumber,
-	createCustomer
+	createCustomer,
+	createPrescription,
+	unsetCurrentPrescriptions
 } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import {
@@ -46,7 +48,8 @@ import {
 	products,
 	lensCatalogItems,
 	type SalePayment,
-	type Customer
+	type Customer,
+	type Prescription
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, RefundStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
@@ -62,6 +65,8 @@ import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { inventoryMovements } from '$lib/server/db/schema';
 import { monthStart, nowISO, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
+import { toPrescriptionInsert } from '$lib/utils/prescription';
+import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
 
 // ============================================================================
 // TYPES
@@ -81,6 +86,31 @@ export interface SaleDetail {
 	sale: SaleWithRelations;
 	items: SaleItemWithDetails[];
 	payments: SalePayment[];
+}
+
+function resolveLensSnapshotCosts(item: {
+	itemType: string;
+	quantity: number;
+	snapshotBaseCost?: number | null;
+	snapshotMountingPrice?: number | null;
+	snapshotShippingPrice?: number | null;
+	shippingCostPending?: boolean | null;
+}): { snapshotCostTotal: number | null; snapshotCostUnit: number | null } {
+	if (item.itemType !== SaleItemType.LENS_PAIR) {
+		return { snapshotCostTotal: null, snapshotCostUnit: null };
+	}
+
+	const snapshotCostTotal = computeLensSnapshotCostTotal({
+		snapshotBaseCost: item.snapshotBaseCost,
+		snapshotMountingPrice: item.snapshotMountingPrice,
+		snapshotShippingPrice: item.snapshotShippingPrice,
+		shippingCostPending: item.shippingCostPending
+	});
+
+	return {
+		snapshotCostTotal,
+		snapshotCostUnit: computeSnapshotCostUnit(snapshotCostTotal, item.quantity)
+	};
 }
 
 // ============================================================================
@@ -245,12 +275,14 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 	const subtotal = itemsSubtotal;
 	const globalDiscount = computeDiscount(data.discount, data.discountType, subtotal);
 	const total = Math.max(0, subtotal - globalDiscount);
+	const hasLensItems = data.items.some((item) => item.itemType === SaleItemType.LENS_PAIR);
 
 	// All writes in a single transaction
-	const { sale, newCustomer } = await db.transaction(async (tx) => {
+	const { sale, newCustomer, prescription } = await db.transaction(async (tx) => {
 		const now = nowISO();
 		let customerId: string;
 		let createdCustomer: Customer | null = null;
+		let createdPrescription: Prescription | null = null;
 
 		if (existingCustomerId) {
 			customerId = existingCustomerId;
@@ -269,6 +301,17 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			);
 			customerId = customer.id;
 			createdCustomer = customer;
+		}
+
+		if (data.prescription && hasLensItems) {
+			await unsetCurrentPrescriptions(customerId, undefined, tx);
+			createdPrescription = await createPrescription(
+				toPrescriptionInsert(customerId, {
+					...data.prescription,
+					isCurrent: true
+				}),
+				tx
+			);
 		}
 
 		// Create the sale header
@@ -300,6 +343,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			// FIFO lot consumption + stock decrement (shared logic)
 			const { lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
 				await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!);
+			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
 			await tx.insert(saleItems).values({
 				id: saleItemId,
@@ -309,7 +353,10 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				productId: item.productId ?? null,
 				lensCatalogItemId: item.lensCatalogItemId ?? null,
 				supplierTreatmentId: item.supplierTreatmentId ?? null,
-				prescriptionId: item.prescriptionId ?? null,
+				prescriptionId:
+					item.itemType === SaleItemType.LENS_PAIR
+						? (createdPrescription?.id ?? item.prescriptionId ?? null)
+						: null,
 				lotId,
 				odSphere: item.odSphere ?? null,
 				odCylinder: item.odCylinder ?? null,
@@ -326,8 +373,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				snapshotName: item.snapshotName ?? null,
 				snapshotSku: item.snapshotSku ?? null,
 				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotCostTotal,
-				snapshotCostUnit,
+				snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+				snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
 				snapshotLotsCount,
 				snapshotBaseCost: item.snapshotBaseCost ?? null,
 				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
@@ -344,12 +391,18 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 			});
 		}
 
-		return { sale: newSale, newCustomer: createdCustomer };
+		return { sale: newSale, newCustomer: createdCustomer, prescription: createdPrescription };
 	});
 
 	// Audit logs (best-effort, after transaction succeeds)
 	if (newCustomer) {
 		await auditService.logCreate('customer', newCustomer, context, {
+			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+		});
+	}
+
+	if (prescription) {
+		await auditService.logCreate('prescription', prescription, context, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
 	}
@@ -619,10 +672,21 @@ export const updateItemCosts = command(UpdateSaleItemCostsSchema, async (data) =
 		return { success: false as const, error: 'Artículo de venta no encontrado' };
 	}
 
-	const item = await updateSaleItemCosts(data.saleItemId, {
+	const lensSnapshotCosts = resolveLensSnapshotCosts({
+		itemType: existing.itemType,
+		quantity: existing.quantity,
 		snapshotBaseCost: data.snapshotBaseCost,
 		snapshotMountingPrice: data.snapshotMountingPrice,
 		snapshotShippingPrice: data.snapshotShippingPrice,
+		shippingCostPending: data.shippingCostPending
+	});
+
+	const item = await updateSaleItemCosts(data.saleItemId, {
+		snapshotBaseCost: data.snapshotBaseCost,
+		snapshotMountingPrice: data.snapshotMountingPrice,
+		snapshotShippingPrice: data.shippingCostPending ? null : data.snapshotShippingPrice,
+		snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? existing.snapshotCostTotal,
+		snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? existing.snapshotCostUnit,
 		shippingCostPending: data.shippingCostPending
 	});
 

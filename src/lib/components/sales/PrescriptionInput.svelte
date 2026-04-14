@@ -18,6 +18,7 @@
 		oiAxis: string;
 		oiAddition: string;
 		lensType: string;
+		doctorName: string;
 	}
 
 	import type { PrescriptionFieldErrors } from './saleItemHelpers';
@@ -74,6 +75,9 @@
 		if (existingPrescription.recommendedLensType) {
 			values.lensType = existingPrescription.recommendedLensType;
 		}
+		if (existingPrescription.doctorName) {
+			values.doctorName = existingPrescription.doctorName;
+		}
 		autofillApplied = true;
 	}
 
@@ -90,47 +94,120 @@
 		if (v == null) return '—';
 		return v >= 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
 	}
+
+	function hasCylinder(value: number | null | undefined): boolean {
+		return value != null && value !== 0;
+	}
+
+	function hasAddition(value: number | null | undefined): boolean {
+		return value != null && value !== 0;
+	}
+
+	function isPrescriptionMonofocal(prescription: Prescription | null): boolean {
+		return prescription?.recommendedLensType === LensType.MONOFOCAL;
+	}
+
+	function formatAxis(value: number | null | undefined): string {
+		if (value == null) return '—';
+		return `${Math.round(value)}°`;
+	}
+
+	function formatEyeSummary(
+		eyeLabel: 'OD' | 'OI',
+		sphere: number | null | undefined,
+		cylinder: number | null | undefined,
+		axis: number | null | undefined,
+		addition: number | null | undefined,
+		isMonofocalLens: boolean
+	): string {
+		const parts = [`${eyeLabel} ${formatOpt(sphere)}`];
+
+		if (hasCylinder(cylinder)) {
+			parts.push(`CIL ${formatOpt(cylinder)}`);
+			parts.push(`EJE ${formatAxis(axis)}`);
+		}
+
+		if (!isMonofocalLens && hasAddition(addition)) {
+			parts.push(`ADD ${formatOpt(addition)}`);
+		}
+
+		return parts.join(' · ');
+	}
 </script>
 
 <div class:space-y-3={!_compact} class:space-y-2.5={_compact}>
 	<!-- Autofill banner -->
 	{#if canAutofill}
+		{@const existingLensType =
+			existingPrescription?.recommendedLensType != null
+				? getLensTypeLabel(existingPrescription.recommendedLensType)
+				: 'Fórmula guardada'}
+		{@const existingIsMonofocal = isPrescriptionMonofocal(existingPrescription)}
 		<div
-			class="flex items-center gap-3 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3"
+			class="flex flex-col gap-3 rounded-xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 sm:items-center"
 		>
-			<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500">
-				<Eye class="h-4 w-4 text-white" />
-			</div>
-			<div class="flex-1">
-				<p class="text-sm font-bold text-emerald-800">¡Fórmula encontrada para este paciente!</p>
-				<p class="mt-0.5 text-xs text-emerald-600">
-					<span class="font-mono font-semibold">
-						OD {formatOpt(existingPrescription?.odSphere)} / {formatOpt(
-							existingPrescription?.odCylinder
-						)}
-					</span>
-					<span class="mx-1.5 text-emerald-400">·</span>
-					<span class="font-mono font-semibold">
-						OI {formatOpt(existingPrescription?.osSphere)} / {formatOpt(
-							existingPrescription?.osCylinder
-						)}
-					</span>
+			<div class="min-w-0 flex-1">
+				<p class="text-sm leading-tight font-bold text-emerald-800">
+					¡Fórmula encontrada para este paciente!
 				</p>
+				<div class="mt-1 text-xs font-semibold tracking-[0.14em] text-emerald-700 uppercase">
+					{existingLensType}
+				</div>
+				<div class="mt-2 grid gap-1.5 text-xs text-emerald-700">
+					<span class="font-mono font-semibold break-words">
+						{formatEyeSummary(
+							'OD',
+							existingPrescription?.odSphere,
+							existingPrescription?.odCylinder,
+							existingPrescription?.odAxis,
+							existingPrescription?.odAddition,
+							existingIsMonofocal
+						)}
+					</span>
+					<span class="font-mono font-semibold break-words">
+						{formatEyeSummary(
+							'OI',
+							existingPrescription?.osSphere,
+							existingPrescription?.osCylinder,
+							existingPrescription?.osAxis,
+							existingPrescription?.osAddition,
+							existingIsMonofocal
+						)}
+					</span>
+				</div>
 			</div>
-			<button
-				class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700"
-				onclick={applyAutofill}
-			>
-				Usar fórmula
-			</button>
-			<button
-				class="rounded-lg px-3 py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-100"
-				onclick={dismissAutofill}
-			>
-				Ignorar
-			</button>
+			<div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+				<button
+					type="button"
+					class="min-w-0 flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-700 sm:flex-none"
+					onclick={applyAutofill}
+				>
+					Usar fórmula
+				</button>
+				<button
+					type="button"
+					class="min-w-0 rounded-lg px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+					onclick={dismissAutofill}
+				>
+					Ignorar
+				</button>
+			</div>
 		</div>
 	{/if}
+
+	<!-- Doctor name -->
+	<div class={_compact ? 'space-y-1' : 'space-y-1'}>
+		<Label class="text-xs font-medium text-slate-600">Médico / Optómetra</Label>
+		<Input
+			type="text"
+			placeholder="Nombre del doctor"
+			bind:value={values.doctorName}
+			class="text-sm {errors?.doctorName ? '!border-red-400' : ''}"
+		/>
+		{#if errors?.doctorName}
+			<p class="mt-0.5 text-xs text-red-500">{errors.doctorName}</p>
+		{/if}
+	</div>
 
 	<!-- Lens type selector + Copy OD → OI -->
 	<div class={_compact ? 'space-y-2' : 'flex items-center gap-3'}>

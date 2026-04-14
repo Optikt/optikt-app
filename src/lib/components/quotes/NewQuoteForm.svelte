@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -8,20 +7,20 @@
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { PatientEye } from '$lib/shared/contracts/common';
+	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { QuoteItemInput } from '$lib/schemas/quotes';
 	import type { PrescriptionValues } from '$lib/components/sales/PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
+	import { WizardHeader } from '$lib/components/ui';
 	import {
 		getRequiredEyes,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
 	} from '$lib/components/sales/saleItemHelpers';
-	import QuoteStep1Info from './QuoteStep1Info.svelte';
+	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
+	import SaleStep1Info from '$lib/components/sales/SaleStep1Info.svelte';
 	import SaleStep2Items from '$lib/components/sales/SaleStep2Items.svelte';
 	import QuoteStep3Summary from './QuoteStep3Summary.svelte';
 
@@ -60,6 +59,14 @@
 
 	function prevStep() {
 		if (currentStep > 1) currentStep = (currentStep - 1) as WizardStep;
+	}
+
+	function canNavigateToStep(stepNum: number): boolean {
+		return stepNum === 1 || stepNum === 2 || (stepNum === 3 && step2Valid);
+	}
+
+	function goToQuotes() {
+		goto(resolve('/quotes'));
 	}
 
 	// ============================================================================
@@ -117,29 +124,15 @@
 		oiCylinder: '',
 		oiAxis: '',
 		oiAddition: '',
-		lensType: LensType.MONOFOCAL
+		lensType: LensType.MONOFOCAL,
+		doctorName: ''
 	});
 
 	// ============================================================================
 	// ITEMS STATE
 	// ============================================================================
 
-	let items = $state<SaleItemRow[]>([
-		{
-			id: crypto.randomUUID(),
-			kind: 'product',
-			productId: '',
-			quantity: 1,
-			lensPair: null,
-			treatments: [],
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			notes: '',
-			costOverrides: null,
-			shippingCostPending: false
-		}
-	]);
+	let items = $state<SaleItemRow[]>([]);
 
 	// ============================================================================
 	// VALIDATION
@@ -176,38 +169,6 @@
 	// STEP NAVIGATION HELPERS
 	// ============================================================================
 
-	function stepButtonClass(stepNum: number): string {
-		const isActive = currentStep === stepNum;
-		const isComplete = currentStep > stepNum;
-		const isClickable = stepNum === 1 || stepNum === 2 || (stepNum === 3 && step2Valid);
-
-		const base =
-			'flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-base font-medium transition-all';
-		const state = isActive
-			? 'bg-blue-600 text-white shadow-md'
-			: isComplete
-				? 'bg-blue-50 text-blue-700'
-				: 'text-slate-400';
-		const cursor = !isClickable
-			? 'cursor-not-allowed'
-			: !isActive
-				? 'cursor-pointer hover:bg-slate-100'
-				: '';
-		return `${base} ${state} ${cursor}`;
-	}
-
-	function stepBadgeClass(stepNum: number): string {
-		const isActive = currentStep === stepNum;
-		const isComplete = currentStep > stepNum;
-		const base = 'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold';
-		const state = isActive
-			? 'bg-white text-blue-600'
-			: isComplete
-				? 'bg-blue-600 text-white'
-				: 'bg-slate-200 text-slate-500';
-		return `${base} ${state}`;
-	}
-
 	// ============================================================================
 	// SUBMIT
 	// ============================================================================
@@ -217,96 +178,7 @@
 		submitting = true;
 
 		try {
-			const quoteItems: QuoteItemInput[] = [];
-
-			for (const item of items) {
-				if (item.kind === 'product') {
-					const product = products.find((p) => p.id === item.productId);
-					quoteItems.push({
-						itemType: SaleItemType.PRODUCT,
-						productId: item.productId,
-						quantity: item.quantity,
-						unitPrice: item.unitPrice,
-						discount: item.discount,
-						discountType: item.discountType,
-						notes: item.notes || undefined,
-						snapshotName: product?.name,
-						snapshotSku: product?.sku ?? undefined,
-						snapshotBrand: product?.brand?.name ?? undefined,
-						snapshotIsTaxable: product?.isTaxable ?? true,
-						snapshotTaxRate: product?.taxRate ?? 16
-					});
-					continue;
-				}
-
-				// Lens items: build per-eye items
-				if (!item.lensPair) continue;
-
-				const pair = item.lensPair;
-				const lens = lensItems.find((l) => l.id === pair.catalogItemId);
-				const eyes = [
-					{ entry: pair.od, eye: PatientEye.OD, suffix: 'od' as const },
-					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
-				];
-
-				// unitPrice is already lens-only (treatments are sent as separate items)
-				const enabledEyes = eyes.filter(({ entry }) => entry.enabled);
-				const eyeCount = enabledEyes.length;
-				const perEyeUnitPrice = eyeCount > 0 ? item.unitPrice / eyeCount : 0;
-
-				const parentLensItemId = crypto.randomUUID();
-				let isFirstEye = true;
-
-				for (const { entry } of eyes) {
-					if (!entry.enabled) continue;
-
-					const lensItemId = isFirstEye ? parentLensItemId : crypto.randomUUID();
-
-					quoteItems.push({
-						id: lensItemId,
-						itemType: SaleItemType.LENS_PAIR,
-						lensCatalogItemId: pair.catalogItemId,
-						odSphere: entry.prescription.sphere ?? undefined,
-						odCylinder: entry.prescription.cylinder ?? undefined,
-						odAxis: entry.prescription.axis ?? undefined,
-						odAddition: entry.prescription.addition ?? undefined,
-						quantity: 1,
-						unitPrice: perEyeUnitPrice,
-						discount: item.discountType === DiscountType.FIXED && !isFirstEye ? 0 : item.discount,
-						discountType: item.discountType,
-						notes: item.notes || undefined,
-						snapshotName: lens?.name,
-						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotBaseCost: lens?.pairPurchasePrice,
-						snapshotMountingPrice: lens?.mountingPrice,
-						snapshotShippingPrice: lens?.shippingPrice,
-						snapshotSalePrice: lens?.salePrice ?? undefined,
-						snapshotPriceType: lens?.priceType,
-						snapshotIsTaxable: lens?.isTaxable ?? false,
-						snapshotTaxRate: lens?.taxRate ?? 16
-					});
-
-					isFirstEye = false;
-				}
-
-				// Treatment items linked to parent lens
-				for (const t of item.treatments) {
-					quoteItems.push({
-						itemType: SaleItemType.TREATMENT,
-						parentQuoteItemId: parentLensItemId,
-						supplierTreatmentId: t.supplierTreatmentId,
-						quantity: eyeCount,
-						unitPrice: t.price,
-						discount: 0,
-						discountType: DiscountType.FIXED,
-						snapshotName: t.name,
-						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotTreatmentCategory: t.category,
-						snapshotIsTaxable: t.isTaxable,
-						snapshotTaxRate: t.taxRate
-					});
-				}
-			}
+			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems);
 
 			const result = await createNewQuote({
 				customerId: customerId || undefined,
@@ -337,42 +209,47 @@
 </script>
 
 <div class="w-full space-y-8">
-	<!-- Wizard Steps Indicator -->
-	<nav class="flex items-center justify-center gap-3">
-		{#each STEPS as step (step.num)}
-			{@const isClickable = step.num === 1 || step.num === 2 || (step.num === 3 && step2Valid)}
-			<button
-				onclick={() => {
-					if (isClickable) goToStep(step.num);
-				}}
-				disabled={!isClickable}
-				class={stepButtonClass(step.num)}
-			>
-				<span class={stepBadgeClass(step.num)}>
-					{#if currentStep > step.num}
-						<Check class="h-4 w-4" />
-					{:else}
-						{step.num}
-					{/if}
-				</span>
-				{step.label}
-			</button>
-			{#if step.num < 3}
-				<div class="h-px w-10 {currentStep > step.num ? 'bg-blue-300' : 'bg-slate-200'}"></div>
-			{/if}
-		{/each}
-	</nav>
+	<WizardHeader
+		title="Nuevo Presupuesto"
+		steps={STEPS}
+		{currentStep}
+		{canNavigateToStep}
+		onStepSelect={(step) => goToStep(step as WizardStep)}
+	/>
 
 	<!-- Step 1: Información -->
 	<div class:hidden={currentStep !== 1}>
-		<QuoteStep1Info
+		<SaleStep1Info
 			bind:customerId
 			bind:selectedCustomer
 			bind:newCustomer
-			bind:quoteDate
+			bind:saleDate={quoteDate}
+			bind:secondaryDate={validUntil}
 			bind:notes
-			bind:validUntil
-			{nextQuoteNumber}
+			entityPanelLabel="Detalles del presupuesto"
+			entityNumberLabel="Número de presupuesto"
+			entityNumberValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
+			primaryDateLabel="Fecha del presupuesto"
+			primaryDateHelp="Define la fecha base del presupuesto para su seguimiento comercial."
+			secondaryDateLabel="Válido hasta"
+			customerHint="Puedes asociar un cliente ahora o continuar sin cliente y asignarlo después, antes de convertir el presupuesto en venta."
+			stepTitle="Prepara la información base del presupuesto"
+			stepDescription="Usa la misma búsqueda y registro inline de ventas para asociar un cliente, definir vigencia y dejar contexto comercial antes de cargar productos."
+			notesLabel="Nota del presupuesto"
+			notesDescription="Deja observaciones comerciales, condiciones de validez o contexto útil para quien convierta este presupuesto en venta."
+			notesPlaceholder="Ej: precio sujeto a cambio, vigencia limitada, observaciones del cliente..."
+			notesRows={4}
+			workflowName="presupuesto"
+			helperDefaultCopy="Busca por cédula o RIF para reutilizar un cliente existente. Si aún no existe, puedes registrarlo inline o dejar el presupuesto sin cliente y asignarlo más adelante."
+			creatingCardValue="Cliente para presupuesto"
+			creatingGuidePoints={[
+				'Registra datos reales para que luego la conversión a venta no requiera correcciones manuales.',
+				'Si todavía no tienes el cliente confirmado, puedes continuar y asociarlo antes de convertir el presupuesto.'
+			]}
+			summaryLabel="Presupuesto"
+			summaryValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
+			valid={true}
+			nextOrderNumber={nextQuoteNumber}
 			onnext={nextStep}
 		/>
 	</div>
@@ -388,6 +265,15 @@
 			{products}
 			{lensItems}
 			nextOrderNumber={nextQuoteNumber}
+			entityNumberLabel="Presupuesto #"
+			customerFallbackName="Presupuesto sin cliente"
+			customerFallbackDocument="Cliente opcional"
+			newCustomerContextLabel="Cliente nuevo para este presupuesto"
+			selectedCustomerContextLabel="Cliente asociado al presupuesto"
+			noCustomerContextLabel="Presupuesto sin cliente"
+			itemsSectionTitle="Artículos del presupuesto"
+			prescriptionSectionTitle="Parámetros ópticos del presupuesto"
+			onCancel={goToQuotes}
 			valid={step2Valid}
 			onnext={nextStep}
 			onprev={prevStep}

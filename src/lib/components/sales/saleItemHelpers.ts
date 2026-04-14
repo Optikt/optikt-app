@@ -127,6 +127,120 @@ export interface PrescriptionFieldErrors {
 	oiCylinder?: string;
 	oiAxis?: string;
 	oiAddition?: string;
+	doctorName?: string;
+}
+
+export interface PersistedDisplayGroup<
+	T extends {
+		id: string;
+		itemType: string;
+		lensCatalogItemId: string | null;
+		quantity: number;
+		unitPrice: number;
+		discount: number;
+		discountType: string;
+	}
+> {
+	key: string;
+	item: T;
+	quantity: number;
+	discountAmount: number;
+	lineTotal: number;
+	treatments: T[];
+}
+
+export function buildPersistedDisplayGroups<
+	T extends {
+		id: string;
+		itemType: string;
+		lensCatalogItemId: string | null;
+		odSphere?: number | null;
+		odCylinder?: number | null;
+		odAxis?: number | null;
+		odAddition?: number | null;
+		osSphere?: number | null;
+		osCylinder?: number | null;
+		osAxis?: number | null;
+		osAddition?: number | null;
+		quantity: number;
+		unitPrice: number;
+		discount: number;
+		discountType: string;
+	}
+>(
+	items: T[],
+	mainItems: T[],
+	lensPairType: string,
+	treatmentType: string,
+	getParentId: (item: T) => string | null | undefined
+): PersistedDisplayGroup<T>[] {
+	const groups: PersistedDisplayGroup<T>[] = [];
+	const lensGroupMap = new Map<string, PersistedDisplayGroup<T>>();
+
+	function isLegacySplitLensItem(item: T): boolean {
+		const hasOdValues =
+			item.odSphere != null ||
+			item.odCylinder != null ||
+			item.odAxis != null ||
+			item.odAddition != null;
+		const hasOsValues =
+			item.osSphere != null ||
+			item.osCylinder != null ||
+			item.osAxis != null ||
+			item.osAddition != null;
+
+		// Legacy sales/quotes stored one row per eye but always wrote the Rx into OD fields.
+		// Only those ambiguous historical rows should be merged for display.
+		return hasOdValues && !hasOsValues;
+	}
+
+	function getTreatments(parentId: string): T[] {
+		return items.filter(
+			(item) => item.itemType === treatmentType && getParentId(item) === parentId
+		);
+	}
+
+	for (const item of mainItems) {
+		const discountAmount = computeDiscount(
+			item.discount,
+			item.discountType,
+			item.unitPrice * item.quantity
+		);
+		const lineTotal = item.unitPrice * item.quantity - discountAmount;
+
+		if (item.itemType === lensPairType && item.lensCatalogItemId && isLegacySplitLensItem(item)) {
+			const existing = lensGroupMap.get(item.lensCatalogItemId);
+			if (existing) {
+				existing.quantity += item.quantity;
+				existing.discountAmount += discountAmount;
+				existing.lineTotal += lineTotal;
+				existing.treatments.push(...getTreatments(item.id));
+			} else {
+				const group: PersistedDisplayGroup<T> = {
+					key: `lens-${item.lensCatalogItemId}`,
+					item,
+					quantity: item.quantity,
+					discountAmount,
+					lineTotal,
+					treatments: [...getTreatments(item.id)]
+				};
+
+				lensGroupMap.set(item.lensCatalogItemId, group);
+				groups.push(group);
+			}
+		} else {
+			groups.push({
+				key: item.id,
+				item,
+				quantity: item.quantity,
+				discountAmount,
+				lineTotal,
+				treatments: getTreatments(item.id)
+			});
+		}
+	}
+
+	return groups;
 }
 
 /** Determine which eyes need Rx validation based on enabled lens items */
@@ -183,12 +297,17 @@ export function validatePrescriptionFields(
 		oiAxis: string;
 		oiAddition: string;
 		lensType: string;
+		doctorName: string;
 	},
 	needsOd: boolean,
 	needsOi: boolean
 ): PrescriptionFieldErrors {
 	const errors: PrescriptionFieldErrors = {};
 	const requiresAddition = values.lensType !== LensType.MONOFOCAL;
+
+	if (!values.doctorName || values.doctorName.trim() === '') {
+		errors.doctorName = 'Doctor es requerido';
+	}
 
 	if (needsOd) {
 		const od = validateEyeFields(

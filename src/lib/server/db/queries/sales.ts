@@ -447,6 +447,8 @@ export async function updateSaleItemCosts(
 		snapshotBaseCost: number | null;
 		snapshotMountingPrice: number | null;
 		snapshotShippingPrice: number | null;
+		snapshotCostTotal: number | null;
+		snapshotCostUnit: number | null;
 		shippingCostPending: boolean;
 	},
 	executor: DbOrTx = db

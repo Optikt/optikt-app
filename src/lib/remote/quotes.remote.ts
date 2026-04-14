@@ -15,6 +15,7 @@ import {
 import {
 	getAllQuotes,
 	countQuotes,
+	getQuoteStats as getQuoteStatsQuery,
 	findQuoteById,
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails,
@@ -22,27 +23,37 @@ import {
 	updateQuote,
 	deleteQuoteItems
 } from '$lib/server/db/queries/quotes';
-import type { QuoteWithRelations, QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type {
+	QuoteWithRelations,
+	QuoteItemWithDetails,
+	QuoteStats
+} from '$lib/server/db/queries/quotes';
 import {
 	findCustomerById,
 	resolveInlineCustomer,
 	createCustomer,
-	findCustomerByIdNumber
+	findCustomerByIdNumber,
+	createPrescription,
+	unsetCurrentPrescriptions
 } from '$lib/server/db/queries/customers';
 import { getNextOrderNumber } from '$lib/server/db/queries/sales';
 import { db } from '$lib/server/db';
-import { quotes, quoteItems, sales, saleItems } from '$lib/server/db/schema';
+import { quotes, quoteItems, sales, saleItems, type Prescription } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { SaleStatus } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { ALL_LENS_TYPES, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import { computeDiscount, normalizeIdNumber } from '$lib/utils';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
+import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
-import { nowISO } from '$lib/dates';
+import { monthStart, nowISO, toUTCString } from '$lib/dates';
+import { EmptySchema } from '$lib/schemas/common';
+import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
+import { toPrescriptionInsert } from '$lib/utils/prescription';
 
 // ============================================================================
 // HELPERS
@@ -86,6 +97,90 @@ function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now: string
 	};
 }
 
+function resolveLensSnapshotCosts(item: {
+	itemType: string;
+	quantity: number;
+	snapshotBaseCost?: number | null;
+	snapshotMountingPrice?: number | null;
+	snapshotShippingPrice?: number | null;
+}): { snapshotCostTotal: number | null; snapshotCostUnit: number | null } {
+	if (item.itemType !== SaleItemType.LENS_PAIR) {
+		return { snapshotCostTotal: null, snapshotCostUnit: null };
+	}
+
+	const snapshotCostTotal = computeLensSnapshotCostTotal({
+		snapshotBaseCost: item.snapshotBaseCost,
+		snapshotMountingPrice: item.snapshotMountingPrice,
+		snapshotShippingPrice: item.snapshotShippingPrice,
+		shippingCostPending: false
+	});
+
+	return {
+		snapshotCostTotal,
+		snapshotCostUnit: computeSnapshotCostUnit(snapshotCostTotal, item.quantity)
+	};
+}
+
+function firstDefined<T>(values: Array<T | null | undefined>): T | undefined {
+	return values.find((value): value is T => value != null);
+}
+
+function derivePrescriptionFromQuoteItems(
+	items: QuoteItemWithDetails[],
+	prescriptionDate: string
+): PrescriptionFieldsInput | undefined {
+	const lensItems = items.filter((item) => item.itemType === SaleItemType.LENS_PAIR);
+	if (lensItems.length === 0) return undefined;
+
+	const odSphere = firstDefined(lensItems.map((item) => item.odSphere));
+	const odCylinder = firstDefined(lensItems.map((item) => item.odCylinder));
+	const odAxis = firstDefined(lensItems.map((item) => item.odAxis));
+	const odAddition = firstDefined(lensItems.map((item) => item.odAddition));
+	const osSphere = firstDefined(lensItems.map((item) => item.osSphere));
+	const osCylinder = firstDefined(lensItems.map((item) => item.osCylinder));
+	const osAxis = firstDefined(lensItems.map((item) => item.osAxis));
+	const osAddition = firstDefined(lensItems.map((item) => item.osAddition));
+
+	if (
+		[odSphere, odCylinder, odAxis, odAddition, osSphere, osCylinder, osAxis, osAddition].every(
+			(value) => value == null
+		)
+	) {
+		return undefined;
+	}
+
+	const recommendedLensTypeCandidate = firstDefined(
+		lensItems.map((item) => item.lensCatalogItem?.type)
+	);
+	const recommendedLensType = ALL_LENS_TYPES.includes(recommendedLensTypeCandidate as LensType)
+		? (recommendedLensTypeCandidate as LensType)
+		: LensType.MONOFOCAL;
+
+	return {
+		prescriptionDate,
+		odSphere,
+		odCylinder,
+		odAxis,
+		odAddition,
+		osSphere,
+		osCylinder,
+		osAxis,
+		osAddition,
+		dp: undefined,
+		npRight: undefined,
+		npLeft: undefined,
+		altura: undefined,
+		treatmentAntiReflective: false,
+		treatmentBlueBlock: false,
+		treatmentPhotochromic: false,
+		treatmentOther: undefined,
+		recommendedLensType,
+		notes: undefined,
+		doctorName: '',
+		isCurrent: true
+	};
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -103,9 +198,15 @@ export interface QuoteDetail {
 	items: QuoteItemWithDetails[];
 }
 
+export type { QuoteStats } from '$lib/server/db/queries/quotes';
+
 // ============================================================================
 // QUERIES
 // ============================================================================
+
+export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> => {
+	return getQuoteStatsQuery(toUTCString(monthStart()));
+});
 
 /**
  * List quotes with pagination and filters
@@ -476,9 +577,19 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 	}
 
 	// All writes in a single transaction
-	const sale = await db.transaction(async (tx) => {
+	const { sale, prescription } = await db.transaction(async (tx) => {
 		const now = nowISO();
 		const orderNumber = await getNextOrderNumber(tx);
+		const prescriptionPayload = derivePrescriptionFromQuoteItems(items, now.slice(0, 10));
+		let createdPrescription: Prescription | null = null;
+
+		if (prescriptionPayload) {
+			await unsetCurrentPrescriptions(quote.customerId!, undefined, tx);
+			createdPrescription = await createPrescription(
+				toPrescriptionInsert(quote.customerId!, prescriptionPayload),
+				tx
+			);
+		}
 
 		// Create the sale
 		const [newSale] = await tx
@@ -516,6 +627,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 			// FIFO lot consumption + stock decrement (shared logic)
 			({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
 				await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!));
+			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
 			await tx.insert(saleItems).values({
 				id: newId,
@@ -526,7 +638,8 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				lensCatalogItemId: item.lensCatalogItemId ?? null,
 				supplierTreatmentId: item.supplierTreatmentId ?? null,
 				lotId,
-				prescriptionId: null,
+				prescriptionId:
+					item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null,
 				odSphere: item.odSphere ?? null,
 				odCylinder: item.odCylinder ?? null,
 				odAxis: item.odAxis ?? null,
@@ -542,8 +655,8 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				snapshotName: item.snapshotName ?? null,
 				snapshotSku: item.snapshotSku ?? null,
 				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotCostTotal,
-				snapshotCostUnit,
+				snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+				snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
 				snapshotLotsCount,
 				snapshotBaseCost: item.snapshotBaseCost ?? null,
 				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
@@ -569,10 +682,16 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 			})
 			.where(eq(quotes.id, data.id));
 
-		return newSale;
+		return { sale: newSale, prescription: createdPrescription };
 	});
 
 	// Audit logs (best-effort)
+	if (prescription) {
+		await auditService.logCreate('prescription', prescription, context, {
+			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
+		});
+	}
+
 	await auditService.logCreate('sale', sale, context, {
 		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 	});

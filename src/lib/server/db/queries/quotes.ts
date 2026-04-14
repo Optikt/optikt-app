@@ -10,6 +10,7 @@ import {
 	ilike,
 	or,
 	count,
+	sql,
 	type AnyColumn,
 	type SQL
 } from 'drizzle-orm';
@@ -44,6 +45,13 @@ export type QuoteItemWithDetails = QuoteItem & {
 	lensCatalogItem: { id: string; name: string; type: string } | null;
 	supplierTreatment: { id: string; name: string; category: string } | null;
 };
+
+export interface QuoteStats {
+	monthly: number;
+	draft: number;
+	converted: number;
+	cancelled: number;
+}
 
 // ============================================================================
 // QUERY OPTIONS
@@ -189,6 +197,27 @@ export async function countQuotes(options?: QuoteFilterOptions): Promise<number>
 	if (where) base.where(where);
 	const [result] = await base;
 	return result.value;
+}
+
+/**
+ * Get aggregated quote stats in a single query using conditional counts.
+ */
+export async function getQuoteStats(monthStartIso: string): Promise<QuoteStats> {
+	const [row] = await db
+		.select({
+			monthly: sql<number>`count(*) filter (where ${quotes.quoteDate} >= ${monthStartIso})`.mapWith(
+				Number
+			),
+			draft: sql<number>`count(*) filter (where ${quotes.status} = 'DRAFT')`.mapWith(Number),
+			converted: sql<number>`count(*) filter (where ${quotes.status} = 'CONVERTED')`.mapWith(
+				Number
+			),
+			cancelled: sql<number>`count(*) filter (where ${quotes.status} = 'CANCELLED')`.mapWith(Number)
+		})
+		.from(quotes)
+		.where(isNull(quotes.deletedAt));
+
+	return row;
 }
 
 /**

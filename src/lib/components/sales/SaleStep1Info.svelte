@@ -12,8 +12,32 @@
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
 		saleDate: Date;
+		secondaryDate?: string;
 		notes: string;
 		nextOrderNumber?: number;
+		entityPanelLabel?: string;
+		entityNumberLabel?: string;
+		entityNumberValue?: string;
+		primaryDateLabel?: string;
+		primaryDateHelp?: string;
+		secondaryDateLabel?: string;
+		customerHint?: string;
+		stepLabel?: string;
+		stepTitle?: string;
+		stepDescription?: string;
+		notesLabel?: string;
+		notesDescription?: string;
+		notesPlaceholder?: string;
+		notesRows?: number;
+		workflowName?: string;
+		helperDefaultTitle?: string;
+		helperSelectedTitle?: string;
+		helperDefaultCopy?: string;
+		creatingCardValue?: string;
+		creatingGuidePoints?: string[];
+		summaryLabel?: string;
+		summaryValue?: string;
+		primaryLabel?: string;
 		valid: boolean;
 		onnext: () => void;
 	}
@@ -23,8 +47,35 @@
 		selectedCustomer = $bindable(),
 		newCustomer = $bindable(),
 		saleDate = $bindable(),
+		secondaryDate = $bindable(''),
 		notes = $bindable(),
 		nextOrderNumber,
+		entityPanelLabel = 'Detalles de la orden',
+		entityNumberLabel = 'Número de orden',
+		entityNumberValue,
+		primaryDateLabel = 'Fecha de venta',
+		primaryDateHelp = 'Puedes modificarla si estás registrando una venta anterior.',
+		secondaryDateLabel,
+		customerHint = '',
+		stepLabel = 'Paso 1 · Información',
+		stepTitle = 'Selecciona o registra al cliente',
+		stepDescription = 'Busca por documento para reutilizar un cliente existente o crea uno nuevo desde este mismo paso.',
+		notesLabel = 'Nota de la venta',
+		notesDescription = 'Usa este espacio para acuerdos especiales, observaciones del cliente o contexto para el equipo.',
+		notesPlaceholder = 'Ej: montura propia, prioridad de entrega, indicaciones internas...',
+		notesRows = 6,
+		workflowName = 'venta',
+		helperDefaultTitle = 'Nota del sistema',
+		helperSelectedTitle = 'Cliente listo para asociar',
+		helperDefaultCopy = 'Busca por cédula o RIF para reutilizar un cliente existente. Si aún no existe, abre el registro inline desde el botón de nuevo cliente.',
+		creatingCardValue = 'Cliente particular',
+		creatingGuidePoints = [
+			'Usa nombre y apellido reales para mantener el historial clínico y comercial limpio.',
+			'Si el documento ya existe, vuelve a búsqueda y selecciona el cliente antes de continuar.'
+		],
+		summaryLabel = 'Orden',
+		summaryValue,
+		primaryLabel = 'Continuar',
 		valid,
 		onnext
 	}: Props = $props();
@@ -36,24 +87,26 @@
 		'w-full rounded-xl border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 
 	let helperTitle = $derived(
-		creatingCustomer
-			? 'Alta inline'
-			: selectedCustomer
-				? 'Cliente listo para asociar'
-				: 'Nota del sistema'
+		creatingCustomer ? 'Alta inline' : selectedCustomer ? helperSelectedTitle : helperDefaultTitle
 	);
 
 	let helperCopy = $derived.by(() => {
 		if (creatingCustomer) {
-			return 'Completa nombre, apellido y documento para registrar al cliente sin salir de la venta.';
+			return `Completa nombre, apellido y documento para registrar al cliente sin salir del ${workflowName}.`;
 		}
 
 		if (selectedCustomer) {
-			return `La venta quedará vinculada a ${selectedCustomer.firstName} ${selectedCustomer.lastName}. Puedes continuar o buscar otro cliente.`;
+			return `El ${workflowName} quedará vinculado a ${selectedCustomer.firstName} ${selectedCustomer.lastName}. Puedes continuar o buscar otro cliente.`;
 		}
 
-		return 'Busca por cédula o RIF para reutilizar un cliente existente. Si aún no existe, abre el registro inline desde el botón de nuevo cliente.';
+		return helperDefaultCopy;
 	});
+
+	const resolvedEntityNumberValue = $derived(
+		entityNumberValue ?? `#${String(nextOrderNumber ?? 0).padStart(4, '0')}`
+	);
+
+	const resolvedSummaryValue = $derived(summaryValue ?? resolvedEntityNumberValue);
 </script>
 
 <div class="space-y-6">
@@ -62,21 +115,21 @@
 			<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
 				<div class="flex items-center gap-2 text-brand-blue">
 					<Hash class="h-4 w-4" />
-					<p class={fieldLabelClass}>Detalles de la orden</p>
+					<p class={fieldLabelClass}>{entityPanelLabel}</p>
 				</div>
 
 				<div class="mt-5 space-y-5">
 					<div>
-						<p class={fieldLabelClass}>Número de orden</p>
+						<p class={fieldLabelClass}>{entityNumberLabel}</p>
 						<div
 							class="mt-2 rounded-xl bg-surface-container-high px-4 py-3 font-mono text-lg font-bold text-brand-navy"
 						>
-							#{String(nextOrderNumber ?? 0).padStart(4, '0')}
+							{resolvedEntityNumberValue}
 						</div>
 					</div>
 
 					<div>
-						<label class={fieldLabelClass} for="saleDate">Fecha de venta</label>
+						<label class={fieldLabelClass} for="saleDate">{primaryDateLabel}</label>
 						<div class="relative mt-2">
 							<input
 								id="saleDate"
@@ -92,10 +145,25 @@
 								class="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-outline"
 							/>
 						</div>
-						<p class="mt-2 text-xs leading-5 text-on-surface-variant">
-							Puedes modificarla si estás registrando una venta anterior.
-						</p>
+						<p class="mt-2 text-xs leading-5 text-on-surface-variant">{primaryDateHelp}</p>
 					</div>
+
+					{#if secondaryDateLabel}
+						<div>
+							<label class={fieldLabelClass} for="secondaryDate">{secondaryDateLabel}</label>
+							<div class="relative mt-2">
+								<input
+									id="secondaryDate"
+									type="date"
+									bind:value={secondaryDate}
+									class={`${fieldInputClass} pr-12`}
+								/>
+								<CalendarDays
+									class="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-outline"
+								/>
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -119,7 +187,7 @@
 						<p class="text-[10px] font-semibold tracking-[0.18em] text-white/55 uppercase">
 							Tipo de registro
 						</p>
-						<p class="mt-2 text-sm font-semibold text-white">Cliente particular</p>
+						<p class="mt-2 text-sm font-semibold text-white">{creatingCardValue}</p>
 					</div>
 				</div>
 
@@ -128,13 +196,9 @@
 						Guía rápida
 					</p>
 					<div class="mt-4 space-y-3 text-sm leading-6 text-on-surface-variant">
-						<p>
-							Usa nombre y apellido reales para mantener el historial clínico y comercial limpio.
-						</p>
-						<p>
-							Si el documento ya existe, vuelve a búsqueda y selecciona el cliente antes de
-							continuar.
-						</p>
+						{#each creatingGuidePoints as point (point)}
+							<p>{point}</p>
+						{/each}
 					</div>
 				</div>
 			{:else}
@@ -156,21 +220,21 @@
 			<div class="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
 				<div class="space-y-2">
 					<p class="text-[11px] font-semibold tracking-[0.18em] text-brand-blue uppercase">
-						Paso 1 · Información
+						{stepLabel}
 					</p>
 					<h2
 						class="font-heading text-2xl font-bold tracking-[-0.03em] text-brand-navy sm:text-[2.1rem]"
 					>
-						Selecciona o registra al cliente
+						{stepTitle}
 					</h2>
-					<p class="max-w-2xl text-sm leading-6 text-on-surface-variant">
-						Busca por documento para reutilizar un cliente existente o crea uno nuevo desde este
-						mismo paso.
-					</p>
+					<p class="max-w-2xl text-sm leading-6 text-on-surface-variant">{stepDescription}</p>
 				</div>
 
 				<div class="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(17rem,0.95fr)]">
 					<div class="rounded-[1.5rem] bg-surface-container-low p-5 sm:p-6">
+						{#if customerHint}
+							<p class="mb-4 text-sm leading-6 text-on-surface-variant">{customerHint}</p>
+						{/if}
 						<CustomerLookupInput
 							bind:customerId
 							bind:newCustomer
@@ -180,16 +244,13 @@
 					</div>
 
 					<div class="rounded-[1.5rem] bg-surface-container-low p-5 sm:p-6">
-						<label for="notes" class={fieldLabelClass}>Nota de la venta</label>
-						<p class="mt-2 text-sm leading-6 text-on-surface-variant">
-							Usa este espacio para acuerdos especiales, observaciones del cliente o contexto para
-							el equipo.
-						</p>
+						<label for="notes" class={fieldLabelClass}>{notesLabel}</label>
+						<p class="mt-2 text-sm leading-6 text-on-surface-variant">{notesDescription}</p>
 						<textarea
 							id="notes"
 							bind:value={notes}
-							rows={creatingCustomer ? 8 : 6}
-							placeholder="Ej: montura propia, prioridad de entrega, indicaciones internas..."
+							rows={creatingCustomer ? Math.max(notesRows, 8) : notesRows}
+							placeholder={notesPlaceholder}
 							class={`${fieldInputClass} mt-3 min-h-40 resize-none`}
 						></textarea>
 					</div>
@@ -199,11 +260,11 @@
 	</div>
 
 	<SaleWizardFloatingActions
-		primaryLabel="Continuar"
+		{primaryLabel}
 		primaryDisabled={!valid}
 		primaryKind="next"
-		summaryLabel="Orden"
-		summaryValue={nextOrderNumber ? `#${String(nextOrderNumber).padStart(4, '0')}` : 'Pendiente'}
+		{summaryLabel}
+		summaryValue={resolvedSummaryValue}
 		onPrimary={onnext}
 	/>
 </div>

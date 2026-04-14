@@ -1,14 +1,17 @@
 import type { PageServerLoad } from './$types';
-import { getAllQuotes, countQuotes } from '$lib/server/db/queries/quotes';
+import { getAllQuotes, countQuotes, getQuoteStats } from '$lib/server/db/queries/quotes';
+import { monthStart, toUTCString } from '$lib/dates';
 
 export const load: PageServerLoad = async () => {
-	const [initialQuotes, totalCount] = await Promise.all([
+	const [initialQuotes, totalCount, stats] = await Promise.all([
 		getAllQuotes({ limit: 10 }),
-		countQuotes()
+		countQuotes(),
+		getQuoteStats(toUTCString(monthStart()))
 	]);
 
 	return {
 		initialQuotes,
-		totalCount
+		totalCount,
+		stats
 	};
 };

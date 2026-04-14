@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { EconomicBreakdownCard } from '$lib/components/ui';
 	import { formatPrice } from '$lib/utils';
-	import { DiscountType, RefundStatus } from '$lib/shared/enums';
+	import { RefundStatus } from '$lib/shared/enums';
 
 	interface TaxBreakdown {
 		taxableBase: number;
@@ -41,94 +42,10 @@
 		refundAmount,
 		refundDecisionTitle
 	}: Props = $props();
-
-	let saleDiscountAmount = $derived.by(() => {
-		if (discountType === DiscountType.PERCENTAGE) {
-			return (discount / 100) * subtotal;
-		}
-
-		return discount;
-	});
 </script>
 
 <section class="grid gap-4 xl:grid-cols-4">
-	<div class="rounded-[1.5rem] bg-surface-container-low px-6 py-6 shadow-sm">
-		<div class="space-y-4 text-sm text-on-surface-variant">
-			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>Subtotal</span
-				>
-				<span class="font-mono text-base font-semibold text-brand-navy"
-					>{formatPrice(subtotal)}</span
-				>
-			</div>
-
-			{#if saleDiscountAmount > 0}
-				<div class="flex items-center justify-between gap-4">
-					<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
-						Descuento global
-						{#if discountType === DiscountType.PERCENTAGE}
-							({discount}%)
-						{/if}
-					</span>
-					<span class="font-mono text-base font-semibold text-error"
-						>-{formatPrice(saleDiscountAmount)}</span
-					>
-				</div>
-			{/if}
-
-			<div class="h-px bg-surface-container-high"></div>
-
-			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>Subtotal neto</span
-				>
-				<span class="font-mono text-base font-semibold text-brand-navy"
-					>{formatPrice(subtotal - saleDiscountAmount)}</span
-				>
-			</div>
-
-			{#if taxBreakdown.taxableBase > 0}
-				<div class="flex items-center justify-between gap-4">
-					<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-						>Base imponible</span
-					>
-					<span class="font-mono text-base font-semibold text-brand-navy"
-						>{formatPrice(taxBreakdown.taxableBase)}</span
-					>
-				</div>
-			{/if}
-
-			{#if taxBreakdown.exemptTotal > 0}
-				<div class="flex items-center justify-between gap-4">
-					<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-						>Exento</span
-					>
-					<span class="font-mono text-base font-semibold text-brand-navy"
-						>{formatPrice(taxBreakdown.exemptTotal)}</span
-					>
-				</div>
-			{/if}
-
-			{#if taxBreakdown.taxAmount > 0}
-				<div class="flex items-center justify-between gap-4">
-					<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-						>IVA (16%)</span
-					>
-					<span class="font-mono text-base font-semibold text-brand-navy"
-						>{formatPrice(taxBreakdown.taxAmount)}</span
-					>
-				</div>
-			{/if}
-		</div>
-
-		<div class="mt-8 border-t border-surface-container-high pt-6">
-			<p class="text-sm font-bold tracking-[0.14em] text-brand-navy uppercase">Total a pagar</p>
-			<p class="mt-3 font-mono text-4xl font-bold tracking-tight text-brand-navy md:text-[2.85rem]">
-				{formatPrice(total)}
-			</p>
-		</div>
-	</div>
+	<EconomicBreakdownCard {subtotal} {total} {discountType} {discount} {taxBreakdown} />
 
 	<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
 		<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Total deuda</p>

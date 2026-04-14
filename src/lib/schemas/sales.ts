@@ -22,6 +22,7 @@ import {
 } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
+import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 
@@ -121,6 +122,7 @@ export const CreateSaleSchema = z
 		discount: CoercedNumber.min(0).default(0),
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 		notes: z.string().optional(),
+		prescription: PrescriptionFieldsSchema.optional(),
 		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto')
 	})
 	.refine((data) => data.customerId || data.newCustomer, {
