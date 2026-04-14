@@ -18,6 +18,7 @@
 		oiAxis: string;
 		oiAddition: string;
 		lensType: string;
+		doctorName: string;
 	}
 
 	import type { PrescriptionFieldErrors } from './saleItemHelpers';
@@ -73,6 +74,9 @@
 		values.oiAddition = existingPrescription.osAddition?.toString() ?? '';
 		if (existingPrescription.recommendedLensType) {
 			values.lensType = existingPrescription.recommendedLensType;
+		}
+		if (existingPrescription.doctorName) {
+			values.doctorName = existingPrescription.doctorName;
 		}
 		autofillApplied = true;
 	}
@@ -190,6 +194,20 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- Doctor name -->
+	<div class={_compact ? 'space-y-1' : 'space-y-1'}>
+		<Label class="text-xs font-medium text-slate-600">Médico / Optómetra</Label>
+		<Input
+			type="text"
+			placeholder="Nombre del doctor"
+			bind:value={values.doctorName}
+			class="text-sm {errors?.doctorName ? '!border-red-400' : ''}"
+		/>
+		{#if errors?.doctorName}
+			<p class="mt-0.5 text-xs text-red-500">{errors.doctorName}</p>
+		{/if}
+	</div>
 
 	<!-- Lens type selector + Copy OD → OI -->
 	<div class={_compact ? 'space-y-2' : 'flex items-center gap-3'}>

@@ -127,6 +127,7 @@ export interface PrescriptionFieldErrors {
 	oiCylinder?: string;
 	oiAxis?: string;
 	oiAddition?: string;
+	doctorName?: string;
 }
 
 export interface PersistedDisplayGroup<
@@ -153,6 +154,14 @@ export function buildPersistedDisplayGroups<
 		id: string;
 		itemType: string;
 		lensCatalogItemId: string | null;
+		odSphere?: number | null;
+		odCylinder?: number | null;
+		odAxis?: number | null;
+		odAddition?: number | null;
+		osSphere?: number | null;
+		osCylinder?: number | null;
+		osAxis?: number | null;
+		osAddition?: number | null;
 		quantity: number;
 		unitPrice: number;
 		discount: number;
@@ -168,6 +177,23 @@ export function buildPersistedDisplayGroups<
 	const groups: PersistedDisplayGroup<T>[] = [];
 	const lensGroupMap = new Map<string, PersistedDisplayGroup<T>>();
 
+	function isLegacySplitLensItem(item: T): boolean {
+		const hasOdValues =
+			item.odSphere != null ||
+			item.odCylinder != null ||
+			item.odAxis != null ||
+			item.odAddition != null;
+		const hasOsValues =
+			item.osSphere != null ||
+			item.osCylinder != null ||
+			item.osAxis != null ||
+			item.osAddition != null;
+
+		// Legacy sales/quotes stored one row per eye but always wrote the Rx into OD fields.
+		// Only those ambiguous historical rows should be merged for display.
+		return hasOdValues && !hasOsValues;
+	}
+
 	function getTreatments(parentId: string): T[] {
 		return items.filter(
 			(item) => item.itemType === treatmentType && getParentId(item) === parentId
@@ -182,7 +208,7 @@ export function buildPersistedDisplayGroups<
 		);
 		const lineTotal = item.unitPrice * item.quantity - discountAmount;
 
-		if (item.itemType === lensPairType && item.lensCatalogItemId) {
+		if (item.itemType === lensPairType && item.lensCatalogItemId && isLegacySplitLensItem(item)) {
 			const existing = lensGroupMap.get(item.lensCatalogItemId);
 			if (existing) {
 				existing.quantity += item.quantity;
@@ -271,12 +297,17 @@ export function validatePrescriptionFields(
 		oiAxis: string;
 		oiAddition: string;
 		lensType: string;
+		doctorName: string;
 	},
 	needsOd: boolean,
 	needsOi: boolean
 ): PrescriptionFieldErrors {
 	const errors: PrescriptionFieldErrors = {};
 	const requiresAddition = values.lensType !== LensType.MONOFOCAL;
+
+	if (!values.doctorName || values.doctorName.trim() === '') {
+		errors.doctorName = 'Doctor es requerido';
+	}
 
 	if (needsOd) {
 		const od = validateEyeFields(

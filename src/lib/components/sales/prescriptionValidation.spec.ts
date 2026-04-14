@@ -19,6 +19,7 @@ function makeValues(overrides: Partial<Record<string, string>> = {}) {
 		oiAxis: '',
 		oiAddition: '',
 		lensType: 'MONOFOCAL',
+		doctorName: 'Dr. Test',
 		...overrides
 	};
 }

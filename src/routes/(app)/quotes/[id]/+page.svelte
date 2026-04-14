@@ -32,6 +32,7 @@
 		buildPersistedDisplayGroups,
 		computeSnapshotTaxBreakdown
 	} from '$lib/components/sales/saleItemHelpers';
+	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
@@ -391,6 +392,8 @@
 				<tbody class="divide-y divide-surface-container-low">
 					{#each displayGroups as group (group.key)}
 						{@const item = group.item}
+						{@const odSummary = formatPrescriptionEye(item, 'od')}
+						{@const osSummary = formatPrescriptionEye(item, 'os')}
 						<tr
 							class="bg-surface-container-lowest transition-colors hover:bg-surface-container-low/35"
 						>
@@ -410,7 +413,7 @@
 									</div>
 									<div>
 										<p class="text-lg leading-tight font-semibold text-brand-navy">
-											{item.snapshotName ?? '—'}
+											{item.snapshotName ?? item.product?.name ?? item.lensCatalogItem?.name ?? '—'}
 										</p>
 										{#if item.snapshotSku}
 											<span class="font-mono text-xs text-slate-400">{item.snapshotSku}</span>
@@ -420,6 +423,16 @@
 												class="ml-2 rounded bg-surface-container-low px-1.5 py-0.5 text-xs font-medium text-slate-600"
 												>{item.snapshotBrand}</span
 											>
+										{/if}
+										{#if item.itemType === SaleItemType.LENS_PAIR && hasPrescriptionSnapshot(item) && (odSummary || osSummary)}
+											<div class="mt-2 space-y-1 text-xs text-on-surface-variant">
+												{#if odSummary}
+													<p class="font-mono">{odSummary}</p>
+												{/if}
+												{#if osSummary}
+													<p class="font-mono">{osSummary}</p>
+												{/if}
+											</div>
 										{/if}
 									</div>
 								</div>

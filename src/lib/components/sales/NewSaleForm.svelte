@@ -8,11 +8,9 @@
 	import { isDiscountValueValid } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { PatientEye } from '$lib/shared/contracts/common';
+	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { SaleItemInput } from '$lib/schemas/sales';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
@@ -25,6 +23,7 @@
 		validatePrescriptionFields,
 		hasPrescriptionErrors
 	} from './saleItemHelpers';
+	import { buildPrescriptionPayload, buildSaleItemsFromWizard } from './wizardSubmission';
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
 	import SaleStep3Summary from './SaleStep3Summary.svelte';
@@ -121,7 +120,8 @@
 		oiCylinder: '',
 		oiAxis: '',
 		oiAddition: '',
-		lensType: LensType.MONOFOCAL
+		lensType: LensType.MONOFOCAL,
+		doctorName: ''
 	});
 
 	// ============================================================================
@@ -212,103 +212,13 @@
 		submitting = true;
 
 		try {
-			const saleItems: SaleItemInput[] = [];
-
-			for (const item of items) {
-				if (item.kind === 'product') {
-					const product = products.find((p) => p.id === item.productId);
-					saleItems.push({
-						itemType: SaleItemType.PRODUCT,
-						productId: item.productId,
-						quantity: item.quantity,
-						unitPrice: item.unitPrice,
-						discount: item.discount,
-						discountType: item.discountType,
-						notes: item.notes || undefined,
-						snapshotName: product?.name,
-						snapshotSku: product?.sku ?? undefined,
-						snapshotBrand: product?.brand?.name ?? undefined,
-						snapshotIsTaxable: product?.isTaxable ?? true,
-						snapshotTaxRate: product?.taxRate ?? 16
-					});
-					continue;
-				}
-
-				// Lens items: build per-eye items
-				if (!item.lensPair) continue;
-
-				const pair = item.lensPair;
-				const lens = lensItems.find((l) => l.id === pair.catalogItemId);
-				const eyes = [
-					{ entry: pair.od, eye: PatientEye.OD, suffix: 'od' as const },
-					{ entry: pair.oi, eye: PatientEye.OI, suffix: 'oi' as const }
-				];
-
-				// unitPrice is already lens-only (treatments are sent as separate items)
-				const enabledEyes = eyes.filter(({ entry }) => entry.enabled);
-				const eyeCount = enabledEyes.length;
-				const perEyeUnitPrice = eyeCount > 0 ? item.unitPrice / eyeCount : 0;
-
-				// Generate a stable parent ID for the first lens eye item
-				// so treatment items can reference it
-				const parentLensItemId = crypto.randomUUID();
-				let isFirstEye = true;
-
-				for (const { entry } of eyes) {
-					if (!entry.enabled) continue;
-
-					const lensItemId = isFirstEye ? parentLensItemId : crypto.randomUUID();
-
-					saleItems.push({
-						id: lensItemId,
-						itemType: SaleItemType.LENS_PAIR,
-						lensCatalogItemId: pair.catalogItemId,
-						prescriptionId: customerPrescription?.id,
-						odSphere: entry.prescription.sphere ?? undefined,
-						odCylinder: entry.prescription.cylinder ?? undefined,
-						odAxis: entry.prescription.axis ?? undefined,
-						odAddition: entry.prescription.addition ?? undefined,
-						quantity: 1,
-						unitPrice: perEyeUnitPrice,
-						// FIXED discount goes on first eye only; PERCENTAGE works on each eye
-						discount: item.discountType === DiscountType.FIXED && !isFirstEye ? 0 : item.discount,
-						discountType: item.discountType,
-						notes: item.notes || undefined,
-						snapshotName: lens?.name,
-						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotBaseCost: item.costOverrides?.baseCost ?? lens?.pairPurchasePrice,
-						snapshotMountingPrice: item.costOverrides?.mountingPrice ?? lens?.mountingPrice,
-						snapshotShippingPrice: item.shippingCostPending
-							? undefined
-							: (item.costOverrides?.shippingPrice ?? lens?.shippingPrice),
-						snapshotSalePrice: lens?.salePrice ?? undefined,
-						snapshotPriceType: lens?.priceType,
-						snapshotIsTaxable: lens?.isTaxable ?? false,
-						snapshotTaxRate: lens?.taxRate ?? 16,
-						shippingCostPending: item.shippingCostPending || undefined
-					});
-
-					isFirstEye = false;
-				}
-
-				// Emit treatment items linked to the parent lens item
-				for (const t of item.treatments) {
-					saleItems.push({
-						itemType: SaleItemType.TREATMENT,
-						parentSaleItemId: parentLensItemId,
-						supplierTreatmentId: t.supplierTreatmentId,
-						quantity: eyeCount,
-						unitPrice: t.price,
-						discount: 0,
-						discountType: DiscountType.FIXED,
-						snapshotName: t.name,
-						snapshotBrand: lens?.supplier?.name ?? undefined,
-						snapshotTreatmentCategory: t.category,
-						snapshotIsTaxable: t.isTaxable,
-						snapshotTaxRate: t.taxRate
-					});
-				}
-			}
+			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
+			const prescription = items.some((item) => item.kind === 'lens')
+				? (buildPrescriptionPayload(
+						prescriptionValues,
+						dateToISODateString(saleDate)
+					) as Parameters<typeof createSale>[0]['prescription'])
+				: undefined;
 
 			const result = await createSale({
 				customerId: customerId || undefined,
@@ -318,6 +228,7 @@
 				discount,
 				discountType,
 				notes: notes || undefined,
+				prescription,
 				items: saleItems
 			});
 
