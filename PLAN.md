@@ -17,7 +17,7 @@
 - ✅ **Vista detalle de venta** — artículos consolidados, treatments como items, pagos
 - ✅ **inventoryMode** — ON_DEMAND vs STOCK por lens catalog item
 - ✅ **Order numbers** — secuencial sin gaps (MAX+1 dentro de transacción)
-- ✅ **392 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory, FIFO E2E scenarios)
+- ✅ **404 tests** — Vitest (schemas, helpers, validación Rx, quotes, tax, inventory, FIFO E2E scenarios)
 - ✅ **Seed de demo** — datos de ejemplo para desarrollo
 - ✅ **Presupuestos (Fase 6)** — CRUD, wizard 3 pasos, conversión a venta, estados, quoteNumber secuencial, audit logging
 - ✅ **IVA básico (Fase 7)** — tax-inclusive pricing, desglose fiscal en ventas/presupuestos, TaxToggle, default 16%
@@ -45,6 +45,16 @@
 - ✅ **Filtro envío pendiente** — Botón toggle "Envío pendiente" con icono Truck en `/sales`, subquery EXISTS en `buildSaleConditions`, propagado por `ListSalesSchema` → `listSales` → `getAllSales`
 - ✅ **Backend completo** — `UpdateSaleItemCostsSchema`, `updateSaleItemCosts()` query, `updateItemCosts` remote command con audit logging
 
+### Refactor modelo de lentes y prescripciones (Fase 10-B)
+
+- ✅ **Modelo comercial de cristales: 1 fila LENS_PAIR por par** — el wizard ahora serializa una única fila `LENS_PAIR` con ambos ojos (OD+OS) en vez de una fila por ojo. Helpers centralizados en `wizardSubmission.ts` (`buildSaleItemsFromWizard`, `buildQuoteItemsFromWizard`, `buildPrescriptionPayload`)
+- ✅ **Creación de prescripción activa al registrar venta** — `sales.remote.ts` crea prescripción dentro de la transacción cuando la venta tiene lentes con datos de Rx. Se vincula `prescriptionId` a los items LENS_PAIR
+- ✅ **Derivación de prescripción al convertir cotización a venta** — `quotes.remote.ts` extrae valores ópticos de los items LENS_PAIR de la cotización (`derivePrescriptionFromQuoteItems`), crea prescripción activa y vincula a los items de la venta
+- ✅ **Costos canónicos de cristales** — `computeLensSnapshotCostTotal()` y `computeSnapshotCostUnit()` en `saleItemCosts.ts`, persistidos como `snapshotCostTotal` en sale items
+- ✅ **Snapshot de prescripción en detalle de venta** — `hasPrescriptionSnapshot()` y `formatPrescriptionEye()` en `prescriptionSnapshot.ts`, renderizados en `SaleItemsTable`
+- ✅ **Campo doctor/optómetra en prescripción de venta** — Input "Médico / Optómetra" en `PrescriptionInput.svelte`, validación client-side y server-side, autofill desde prescripción existente del paciente
+- ✅ **Fix runtime `value.trim()` en inputs numéricos** — `WizardPrescriptionValues` acepta `string | number`, `hasPrescriptionValues` usa `String(value).trim()`
+
 ### Fase 10 — Rediseño UI/UX
 
 **Alcance:**
@@ -64,7 +74,7 @@
 | A1  | Lista de ventas        | `/sales`                | "Lista de Ventas - Refinada" (`56909dd3`)            | ✅ Hecho  |
 | A2  | Detalle de venta       | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`) | ✅ Hecho  |
 | A3  | Nueva venta (wizard)   | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)         | ✅ Hecho  |
-| A4  | Fórmula / prescripción | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)      | ⬚ Pending |
+| A4  | Fórmula / prescripción | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)      | 🟡 Parcial |
 
 #### Grupo B — Clientes (con mockup Stitch)
 
@@ -93,7 +103,7 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 | D1  | Productos     | `/products`  | ⬚ Pending  |
 | D2  | Marcas        | `/brands`    | ⬚ Pending  |
 | D3  | Proveedores   | `/suppliers` | ⬚ Pending  |
-| D4  | Presupuestos  | `/quotes`    | ⬚ Pending  |
+| D4  | Presupuestos  | `/quotes`    | ✅ Hecho   |
 | D5  | Usuarios      | `/users`     | ⬚ Pending  |
 | D6  | Compras       | `/purchases` | ⬚ Pending  |
 | D7  | Lentes        | `/lenses`    | ⬚ Pending  |
@@ -103,13 +113,14 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 
 #### Orden sugerido de ejecución
 
-1. **A2 — Detalle de venta** → costos internos editables + total costo interno hechos; falta rediseño visual completo del mockup
-2. **A3 — Nueva venta** → Step 2 compactado + costos editables + shippingCostPending hechos; falta rediseño visual completo
-3. **A4 — Fórmula** → componente compartido usado en ventas y clientes
-4. **B1–B3 — Clientes** → segundo flujo más usado
-5. **C1–C4 — Dashboard** → centro de la app, múltiples mockups disponibles
-6. **C5 — Login** → primera impresión del usuario
-7. **D1–D10 — Páginas restantes** → migración progresiva sin mockup
+1. ~~**A2 — Detalle de venta**~~ ✅
+2. ~~**A3 — Nueva venta**~~ ✅
+3. **A4 — Fórmula** → componente compartido parcial (funcional con doctor + autofill, falta rediseño visual completo del mockup Stitch `70394b9c`)
+4. ~~**B1–B3 — Clientes**~~ ✅
+5. ~~**C1–C4 — Dashboard**~~ ✅
+6. ~~**C5 — Login**~~ ✅
+7. ~~**D4 — Presupuestos**~~ ✅ (lista, detalle, wizard, conversión a venta — todos redesigned)
+8. **D1–D3, D5–D10 — Páginas restantes** → migración progresiva sin mockup
 
 ---
 
@@ -155,7 +166,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - [x] CRUD completo (todas las entidades)
 - [x] Wizard de ventas (happy path completo)
 - [x] inventoryMode ON_DEMAND / STOCK
-- [x] Tests (392)
+- [x] Tests (404)
 - [x] Fase 6 — Presupuestos
 - [x] Fase 7 — IVA básico
 - [x] Fase 8 — Dashboard real

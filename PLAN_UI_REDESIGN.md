@@ -133,13 +133,33 @@
 
 ## Fase 5 — Presupuestos
 
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/quotes` — lista
-- [ ] `/quotes/[id]` — detalle
-- [ ] `/quotes/new` — wizard
+- [x] `/quotes` — lista con DataGrid, stat cards, filtros por estado, búsqueda
+- [x] `/quotes/[id]` — detalle con PageHeader, EconomicBreakdownCard, tabla de items con design tokens, conversión a venta
+- [x] `/quotes/new` — wizard 3 pasos (reutiliza SaleStep1Info + SaleStep2Items + QuoteStep3Summary)
+
+### Notas de implementación (PR #33 — `redesign/budget`)
+
+- Todas las pantallas de quotes migradas al design system (glass-card, brand-navy/gold/blue, surface-container-*)
+- Cero dependencias Flowbite en las rutas y componentes activos
+- `QuoteStep1Info.svelte` es dead code (el wizard usa `SaleStep1Info` compartido)
+- `QuotesTable.svelte` usa `DataGrid` + `QuoteStatusBadge` con tokens semánticos
+- Detalle muestra items con tabla plain + design tokens, metadata en badges tipo pill
+
+### Refactor backend (mismo PR)
+
+- **Modelo comercial LENS_PAIR**: 1 fila por par (ambos ojos), no 1 fila por ojo
+- **Helpers centralizados**: `wizardSubmission.ts` (`buildSaleItemsFromWizard`, `buildQuoteItemsFromWizard`, `buildPrescriptionPayload`)
+- **Prescripción activa al crear venta**: `sales.remote.ts` crea Rx dentro de transacción
+- **Prescripción al convertir cotización → venta**: `derivePrescriptionFromQuoteItems()` en `quotes.remote.ts`
+- **Costos canónicos**: `snapshotCostTotal` persistido, `computeLensSnapshotCostTotal()` helper
+- **Snapshot Rx en detalle**: `hasPrescriptionSnapshot()`, `formatPrescriptionEye()`
+- **Campo doctor**: input "Médico / Optómetra" en `PrescriptionInput.svelte`, validación client+server, autofill
+- **Fix runtime**: `WizardPrescriptionValues` acepta `string | number` (inputs type=number)
+- Validación: 404 tests, svelte-check 0 errors, lint 0 errors
 
 ---
 
@@ -230,9 +250,9 @@
 | 5   | `/sales`                       | 4    | completada |
 | 6   | `/sales/[id]`                  | 4    | completada |
 | 7   | `/sales/new`                   | 4    | completada |
-| 8   | `/quotes`                      | 5    | pendiente  |
-| 9   | `/quotes/[id]`                 | 5    | pendiente  |
-| 10  | `/quotes/new`                  | 5    | pendiente  |
+| 8   | `/quotes`                      | 5    | completada |
+| 9   | `/quotes/[id]`                 | 5    | completada |
+| 10  | `/quotes/new`                  | 5    | completada |
 | 11  | `/products`                    | 6    | pendiente  |
 | 12  | `/products/create`             | 6    | pendiente  |
 | 13  | `/products/[id]`               | 6    | pendiente  |
