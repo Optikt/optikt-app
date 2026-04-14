@@ -72,28 +72,33 @@
 	}
 
 	// ── Total internal cost ──────────────────────────────────────────────
+	// Use displayGroups so that lens pairs (OD + OI) are counted only once.
+	// snapshotBaseCost = pairPurchasePrice is stored on each eye item, so
+	// iterating raw items would double-count when both eyes are enabled.
 	let totalInternalCost = $derived.by(() => {
 		let total = 0;
-		for (const item of items) {
-			if (item.itemType === SaleItemType.LENS_PAIR) {
-				const base = item.snapshotBaseCost ?? 0;
-				const mounting = item.snapshotMountingPrice ?? 0;
-				const shipping = item.shippingCostPending ? 0 : (item.snapshotShippingPrice ?? 0);
-				total += (base + mounting + shipping) * item.quantity;
-			} else if (item.snapshotCostUnit != null) {
-				total += item.snapshotCostUnit * item.quantity;
+		for (const group of displayGroups) {
+			if (group.item.itemType === SaleItemType.LENS_PAIR) {
+				const base = group.item.snapshotBaseCost ?? 0;
+				const mounting = group.item.snapshotMountingPrice ?? 0;
+				const shipping = group.item.shippingCostPending
+					? 0
+					: (group.item.snapshotShippingPrice ?? 0);
+				total += base + mounting + shipping;
+			} else if (group.item.snapshotCostUnit != null) {
+				total += group.item.snapshotCostUnit * group.quantity;
 			}
 		}
 		return total;
 	});
 
 	let hasAnyCost = $derived(
-		items.some(
-			(i) =>
-				i.snapshotBaseCost != null ||
-				i.snapshotMountingPrice != null ||
-				i.snapshotShippingPrice != null ||
-				i.snapshotCostUnit != null
+		displayGroups.some(
+			(g) =>
+				g.item.snapshotBaseCost != null ||
+				g.item.snapshotMountingPrice != null ||
+				g.item.snapshotShippingPrice != null ||
+				g.item.snapshotCostUnit != null
 		)
 	);
 
