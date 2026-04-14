@@ -119,14 +119,16 @@
 		const eyeCount = getEnabledEyeCount(item);
 		if (eyeCount === 0) return null;
 
-		const unitBasePrice = lens.basePrice;
-		const basePrice = lens.priceType === 'PAIR' ? lens.basePrice : lens.basePrice * eyeCount;
+		// pairPurchasePrice already accounts for priceType:
+		// UNIT lenses: pairPurchasePrice = basePrice × 2 (always buy a full pair)
+		// PAIR lenses: pairPurchasePrice = basePrice
+		// Using pairPurchasePrice ensures correct cost even when only 1 eye is sold.
+		const basePrice = lens.pairPurchasePrice;
 		const mountingPrice = lens.mountingPrice;
 		const shippingPrice = lens.shippingPrice;
 		const totalCost = basePrice + mountingPrice + shippingPrice;
-		const isPair = lens.priceType === 'PAIR';
 
-		return { unitBasePrice, basePrice, mountingPrice, shippingPrice, totalCost, eyeCount, isPair };
+		return { basePrice, mountingPrice, shippingPrice, totalCost, eyeCount };
 	}
 
 	// ============================================================================
@@ -348,11 +350,7 @@
 											class="ml-4 flex flex-wrap items-center gap-x-4 gap-y-0.5 text-xs text-slate-400"
 										>
 											<span
-												>Cristales{costBreakdown.isPair
-													? ' (par)'
-													: costBreakdown.eyeCount > 1
-														? ` ${formatPrice(costBreakdown.unitBasePrice)} × ${costBreakdown.eyeCount}`
-														: ''}:
+												>Cristales (par):
 												<span class="font-mono font-medium text-slate-500"
 													>{formatPrice(costBreakdown.basePrice)}</span
 												></span
