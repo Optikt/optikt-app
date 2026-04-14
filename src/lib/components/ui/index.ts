@@ -4,6 +4,7 @@ export { default as Button } from './Button.svelte';
 export { default as DataTable } from './DataTable.svelte';
 export { default as DataGrid } from './DataGrid.svelte';
 export { default as PageHeader } from './PageHeader.svelte';
+export { default as WizardHeader } from './WizardHeader.svelte';
 export { default as ActionButton } from './ActionButton.svelte';
 export { default as RowActions } from './RowActions.svelte';
 export { default as FormInput } from './FormInput.svelte';
@@ -21,6 +22,7 @@ export { default as IdInput } from './IdInput.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
 export { default as BaseSelect } from './BaseSelect.svelte';
 export { default as TaxBreakdownDisplay } from './TaxBreakdownDisplay.svelte';
+export { default as EconomicBreakdownCard } from './EconomicBreakdownCard.svelte';
 export { default as TaxToggle } from './TaxToggle.svelte';
 export type { SelectOption, PendingEntity } from './CreatableSelect.svelte';
 

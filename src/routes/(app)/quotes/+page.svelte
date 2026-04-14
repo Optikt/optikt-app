@@ -1,12 +1,19 @@
 <script lang="ts">
-	import { Button, Select } from 'flowbite-svelte';
-	import { Plus } from '@lucide/svelte';
+	import {
+		Plus,
+		Search,
+		RotateCcw,
+		ClipboardList,
+		FileClock,
+		BadgeCheck,
+		CircleX
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
+	import { PageHeader } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
-	import { listQuotes } from '$lib/remote/quotes.remote';
+	import { listQuotes, getQuoteStats } from '$lib/remote/quotes.remote';
 	import { QuotesTable } from '$lib/components/quotes';
 	import {
 		ALL_QUOTE_STATUSES,
@@ -14,12 +21,12 @@
 		type QuoteStatus
 	} from '$lib/shared/contracts/quotes';
 	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
-	import type { PaginatedQuotes } from '$lib/remote/quotes.remote';
+	import type { PaginatedQuotes, QuoteStats } from '$lib/remote/quotes.remote';
 	import { untrack } from 'svelte';
 
 	// Server data
 	let { data } = $props();
-	let { initialQuotes, totalCount } = untrack(() => data);
+	let { initialQuotes, totalCount, stats: initialStats } = untrack(() => data);
 
 	// Data state
 	let quotesData = $state<PaginatedQuotes>({
@@ -29,6 +36,7 @@
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
+	let stats = $state<QuoteStats>(initialStats);
 	let loading = $state(false);
 
 	// Filter state
@@ -52,6 +60,14 @@
 		}
 	}
 
+	async function refreshStats() {
+		try {
+			stats = await getQuoteStats({});
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
 	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	function handleSearch() {
@@ -64,6 +80,14 @@
 		fetchQuotes(1);
 	}
 
+	function clearFilters() {
+		search = '';
+		statusFilter = '';
+		fetchQuotes(1);
+	}
+
+	let hasActiveFilters = $derived(search.trim().length > 0 || statusFilter !== '');
+
 	// Navigate to quote detail page
 	function handleView(quote: QuoteWithRelations) {
 		goto(resolve(`/quotes/${quote.id}`));
@@ -75,54 +99,136 @@
 </svelte:head>
 
 <div class="p-8">
-	<!-- Header -->
-	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
-		<div>
-			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Presupuestos</h1>
-			<p class="mt-1 text-base text-slate-500">Gestiona los presupuestos de la tienda</p>
+	<PageHeader title="Presupuestos">
+		{#snippet actions()}
+			<button
+				onclick={() => goto(resolve('/quotes/new'))}
+				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+			>
+				<Plus size={18} />
+				NUEVO PRESUPUESTO
+			</button>
+		{/snippet}
+	</PageHeader>
+
+	<p class="-mt-3 mb-6 text-sm text-on-surface-variant">
+		Total de presupuestos:
+		<span class="font-semibold text-brand-navy">{quotesData.total.toLocaleString('es-VE')}</span>
+	</p>
+
+	<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-highest text-brand-navy"
+				>
+					<ClipboardList size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+					Presupuestos Mensuales
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
 		</div>
-		<Button color="blue" size="lg" href="/quotes/new">
-			<Plus class="mr-2 h-5 w-5" />
-			Nuevo Presupuesto
-		</Button>
+
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
+				>
+					<FileClock size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
+					Borradores
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.draft}</p>
+		</div>
+
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-info-container text-on-info-container"
+				>
+					<BadgeCheck size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-info-container uppercase">
+					Convertidos
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.converted}</p>
+		</div>
+
+		<div class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container"
+				>
+					<CircleX size={20} />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
+					Cancelados
+				</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
+		</div>
 	</div>
 
-	<!-- Filters -->
 	<div
-		class="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+		class="glass-card mb-6 flex flex-col gap-4 bg-surface-container-low p-4 md:flex-row md:items-center"
 	>
-		<SearchInput
-			bind:value={search}
-			placeholder="Buscar por cliente o vendedor..."
-			oninput={handleSearch}
-			class="min-w-64 flex-1"
-		/>
-		<Select bind:value={statusFilter} onchange={handleFilterChange} class="w-48">
-			<option value="">Todos los estados</option>
-			{#each ALL_QUOTE_STATUSES as s (s)}
-				<option value={s}>{QUOTE_STATUS_LABELS[s]}</option>
-			{/each}
-		</Select>
-	</div>
-
-	<!-- Table -->
-	<QuotesTable
-		quotes={quotesData.quotes}
-		{loading}
-		onView={handleView}
-		onRefresh={() => fetchQuotes(quotesData.page)}
-	/>
-
-	<!-- Pagination -->
-	{#if quotesData.totalPages > 1}
-		<div class="mt-4">
-			<TablePagination
-				page={quotesData.page}
-				totalPages={quotesData.totalPages}
-				total={quotesData.total}
-				perPage={quotesData.perPage}
-				onPageChange={(page) => fetchQuotes(page)}
+		<div class="relative flex-1">
+			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
+			<input
+				id="quotes-search"
+				name="quotes-search"
+				type="search"
+				bind:value={search}
+				oninput={handleSearch}
+				placeholder="Buscar por cliente, vendedor o # de presupuesto..."
+				class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-10 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 			/>
 		</div>
-	{/if}
+
+		<div class="flex w-full gap-3 md:w-auto">
+			<select
+				id="quotes-status-filter"
+				name="quotes-status-filter"
+				bind:value={statusFilter}
+				onchange={handleFilterChange}
+				class="min-w-[220px] flex-1 rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 md:flex-none"
+			>
+				<option value="">Todos los estados</option>
+				{#each ALL_QUOTE_STATUSES as s (s)}
+					<option value={s}>{QUOTE_STATUS_LABELS[s]}</option>
+				{/each}
+			</select>
+
+			<button
+				onclick={clearFilters}
+				disabled={!hasActiveFilters}
+				class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
+					? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
+					: 'bg-surface-container-high text-outline'}"
+				title="Limpiar filtros"
+			>
+				<RotateCcw size={18} />
+			</button>
+		</div>
+	</div>
+
+	<QuotesTable
+		quotes={quotesData.quotes}
+		page={quotesData.page}
+		perPage={quotesData.perPage}
+		total={quotesData.total}
+		totalPages={quotesData.totalPages}
+		{loading}
+		onView={handleView}
+		onRefresh={() => {
+			fetchQuotes(quotesData.page);
+			refreshStats();
+		}}
+		onPageChange={(page) => fetchQuotes(page)}
+	/>
 </div>

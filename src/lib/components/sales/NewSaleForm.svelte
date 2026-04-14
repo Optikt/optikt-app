@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -17,7 +16,7 @@
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
-	import { PageHeader } from '$lib/components/ui';
+	import { WizardHeader } from '$lib/components/ui';
 	import {
 		calculateSaleSummarySubtotal,
 		getAvailableProductStock,
@@ -193,44 +192,10 @@
 	// STEP NAVIGATION HELPERS
 	// ============================================================================
 
-	function stepButtonClass(stepNum: number): string {
-		const isActive = currentStep === stepNum;
-		const isComplete = currentStep > stepNum;
-		const isClickable =
-			stepNum === 1 || (stepNum === 2 && step1Valid) || (stepNum === 3 && step1Valid && step2Valid);
-
-		const base = 'group flex flex-col items-center gap-3 text-center transition-all duration-200';
-		const state = isActive || isComplete ? 'text-brand-navy' : 'text-slate-400';
-		const cursor = !isClickable ? 'cursor-not-allowed' : 'cursor-pointer';
-		return `${base} ${state} ${cursor}`;
-	}
-
-	function stepBadgeClass(stepNum: number): string {
-		const isActive = currentStep === stepNum;
-		const isComplete = currentStep > stepNum;
-		const base =
-			'flex h-12 w-12 items-center justify-center rounded-2xl font-mono text-base font-bold transition-all duration-200';
-		const state = isActive
-			? 'bg-brand-navy text-white shadow-[0_18px_40px_rgba(21,35,70,0.18)]'
-			: isComplete
-				? 'bg-brand-gold text-brand-navy shadow-sm'
-				: 'bg-surface-container-high text-outline group-hover:bg-surface-container-highest group-hover:text-brand-navy';
-		return `${base} ${state}`;
-	}
-
-	function stepLabelClass(stepNum: number): string {
-		const isActive = currentStep === stepNum;
-		const isComplete = currentStep > stepNum;
-		const base = 'text-[11px] font-semibold tracking-[0.16em] uppercase whitespace-nowrap';
-		const state =
-			isActive || isComplete
-				? 'text-brand-navy'
-				: 'text-slate-400 group-hover:text-on-surface-variant';
-		return `${base} ${state}`;
-	}
-
-	function stepConnectorClass(stepNum: number): string {
-		return `mt-6 h-px w-10 shrink-0 rounded-full sm:w-16 ${currentStep > stepNum ? 'bg-brand-gold/70' : 'bg-surface-container-high'}`;
+	function canNavigateToStep(stepNum: number): boolean {
+		return (
+			stepNum === 1 || (stepNum === 2 && step1Valid) || (stepNum === 3 && step1Valid && step2Valid)
+		);
 	}
 
 	// ============================================================================
@@ -373,41 +338,13 @@
 </script>
 
 <div class="w-full">
-	<PageHeader title="Nueva Venta">
-		{#snippet actions()}
-			<nav aria-label="Progreso de la venta" class="overflow-x-auto xl:-mt-4 xl:pt-0">
-				<div class="flex min-w-max items-start justify-start gap-2 px-1 sm:gap-4 xl:justify-end">
-					{#each STEPS as step (step.num)}
-						{@const isClickable =
-							step.num === 1 ||
-							(step.num === 2 && step1Valid) ||
-							(step.num === 3 && step1Valid && step2Valid)}
-						<div class="flex items-start gap-2 sm:gap-4">
-							<button
-								onclick={() => {
-									if (isClickable) goToStep(step.num);
-								}}
-								disabled={!isClickable}
-								class={stepButtonClass(step.num)}
-							>
-								<span class={stepBadgeClass(step.num)}>
-									{#if currentStep > step.num}
-										<Check class="h-4 w-4" />
-									{:else}
-										{step.num}
-									{/if}
-								</span>
-								<span class={stepLabelClass(step.num)}>{step.label}</span>
-							</button>
-							{#if step.num < 3}
-								<div class={stepConnectorClass(step.num)}></div>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			</nav>
-		{/snippet}
-	</PageHeader>
+	<WizardHeader
+		title="Nueva Venta"
+		steps={STEPS}
+		{currentStep}
+		{canNavigateToStep}
+		onStepSelect={(step) => goToStep(step as WizardStep)}
+	/>
 
 	<!-- Step 1: Información -->
 	<div class:hidden={currentStep !== 1}>

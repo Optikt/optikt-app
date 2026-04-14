@@ -129,6 +129,94 @@ export interface PrescriptionFieldErrors {
 	oiAddition?: string;
 }
 
+export interface PersistedDisplayGroup<
+	T extends {
+		id: string;
+		itemType: string;
+		lensCatalogItemId: string | null;
+		quantity: number;
+		unitPrice: number;
+		discount: number;
+		discountType: string;
+	}
+> {
+	key: string;
+	item: T;
+	quantity: number;
+	discountAmount: number;
+	lineTotal: number;
+	treatments: T[];
+}
+
+export function buildPersistedDisplayGroups<
+	T extends {
+		id: string;
+		itemType: string;
+		lensCatalogItemId: string | null;
+		quantity: number;
+		unitPrice: number;
+		discount: number;
+		discountType: string;
+	}
+>(
+	items: T[],
+	mainItems: T[],
+	lensPairType: string,
+	treatmentType: string,
+	getParentId: (item: T) => string | null | undefined
+): PersistedDisplayGroup<T>[] {
+	const groups: PersistedDisplayGroup<T>[] = [];
+	const lensGroupMap = new Map<string, PersistedDisplayGroup<T>>();
+
+	function getTreatments(parentId: string): T[] {
+		return items.filter(
+			(item) => item.itemType === treatmentType && getParentId(item) === parentId
+		);
+	}
+
+	for (const item of mainItems) {
+		const discountAmount = computeDiscount(
+			item.discount,
+			item.discountType,
+			item.unitPrice * item.quantity
+		);
+		const lineTotal = item.unitPrice * item.quantity - discountAmount;
+
+		if (item.itemType === lensPairType && item.lensCatalogItemId) {
+			const existing = lensGroupMap.get(item.lensCatalogItemId);
+			if (existing) {
+				existing.quantity += item.quantity;
+				existing.discountAmount += discountAmount;
+				existing.lineTotal += lineTotal;
+				existing.treatments.push(...getTreatments(item.id));
+			} else {
+				const group: PersistedDisplayGroup<T> = {
+					key: `lens-${item.lensCatalogItemId}`,
+					item,
+					quantity: item.quantity,
+					discountAmount,
+					lineTotal,
+					treatments: [...getTreatments(item.id)]
+				};
+
+				lensGroupMap.set(item.lensCatalogItemId, group);
+				groups.push(group);
+			}
+		} else {
+			groups.push({
+				key: item.id,
+				item,
+				quantity: item.quantity,
+				discountAmount,
+				lineTotal,
+				treatments: getTreatments(item.id)
+			});
+		}
+	}
+
+	return groups;
+}
+
 /** Determine which eyes need Rx validation based on enabled lens items */
 export function getRequiredEyes(items: SaleItemRow[]): { needsOd: boolean; needsOi: boolean } {
 	let needsOd = false;

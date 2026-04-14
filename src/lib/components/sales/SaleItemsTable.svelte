@@ -9,13 +9,13 @@
 		Truck,
 		X
 	} from '@lucide/svelte';
-	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
 	import { updateItemCosts } from '$lib/remote/sales.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import { buildPersistedDisplayGroups } from './saleItemHelpers';
 
 	interface DisplayGroup {
 		key: string;
@@ -44,61 +44,15 @@
 
 	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
-	function getTreatments(parentId: string): SaleItemWithDetails[] {
-		return items.filter(
-			(item) => item.itemType === SaleItemType.TREATMENT && item.parentSaleItemId === parentId
-		);
-	}
-
-	function itemDiscountAmount(item: SaleItemWithDetails): number {
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * item.unitPrice * item.quantity;
-		}
-
-		return item.discount;
-	}
-
-	let displayGroups: DisplayGroup[] = $derived.by(() => {
-		const groups: DisplayGroup[] = [];
-		const lensGroupMap = new SvelteMap<string, DisplayGroup>();
-
-		for (const item of mainItems) {
-			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
-				const existing = lensGroupMap.get(item.lensCatalogItemId);
-				if (existing) {
-					existing.quantity += item.quantity;
-					existing.discountAmount += itemDiscountAmount(item);
-					existing.lineTotal += item.unitPrice * item.quantity - itemDiscountAmount(item);
-					existing.treatments.push(...getTreatments(item.id));
-				} else {
-					const discountAmount = itemDiscountAmount(item);
-					const group: DisplayGroup = {
-						key: `lens-${item.lensCatalogItemId}`,
-						item,
-						quantity: item.quantity,
-						discountAmount,
-						lineTotal: item.unitPrice * item.quantity - discountAmount,
-						treatments: [...getTreatments(item.id)]
-					};
-
-					lensGroupMap.set(item.lensCatalogItemId, group);
-					groups.push(group);
-				}
-			} else {
-				const discountAmount = itemDiscountAmount(item);
-				groups.push({
-					key: item.id,
-					item,
-					quantity: item.quantity,
-					discountAmount,
-					lineTotal: item.unitPrice * item.quantity - discountAmount,
-					treatments: getTreatments(item.id)
-				});
-			}
-		}
-
-		return groups;
-	});
+	let displayGroups: DisplayGroup[] = $derived.by(() =>
+		buildPersistedDisplayGroups(
+			items,
+			mainItems,
+			SaleItemType.LENS_PAIR,
+			SaleItemType.TREATMENT,
+			(item) => item.parentSaleItemId
+		)
+	);
 
 	function itemLabel(group: DisplayGroup): string {
 		return group.item.product?.name ?? group.item.lensCatalogItem?.name ?? 'Item sin nombre';

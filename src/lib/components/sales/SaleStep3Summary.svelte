@@ -39,14 +39,29 @@
 
 	interface Props {
 		items: SaleItemRow[];
-		customerId: string;
+		customerId?: string;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
 		saleDate: Date;
+		secondaryContextDate?: Date | null;
+		secondaryContextLabel?: string;
 		discount: number;
 		discountType: DiscountTypeEnum;
 		notes: string;
 		nextOrderNumber?: number;
+		entityLabel?: string;
+		entityValue?: string;
+		customerFallbackName?: string;
+		customerFallbackDocument?: string;
+		submittingStatusLabel?: string;
+		readyStatusLabel?: string;
+		pendingStatusLabel?: string;
+		adjustmentsEyebrow?: string;
+		adjustmentsTitle?: string;
+		totalCardEyebrow?: string;
+		primaryLabel?: string;
+		cancelLabel?: string;
+		onCancel?: () => void;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
 		submitting: boolean;
@@ -62,14 +77,29 @@
 
 	let {
 		items,
-		customerId,
+		customerId = '',
 		selectedCustomer,
 		newCustomer,
 		saleDate,
+		secondaryContextDate = null,
+		secondaryContextLabel,
 		discount = $bindable(),
 		discountType = $bindable(),
 		notes,
 		nextOrderNumber,
+		entityLabel = 'Orden',
+		entityValue,
+		customerFallbackName = 'Venta sin cliente',
+		customerFallbackDocument = 'Sin documento',
+		submittingStatusLabel = 'Registrando venta',
+		readyStatusLabel = 'Revision final',
+		pendingStatusLabel = 'Ajustes pendientes',
+		adjustmentsEyebrow = 'Ajustes globales',
+		adjustmentsTitle = 'Cierre comercial',
+		totalCardEyebrow = 'Total neto a pagar',
+		primaryLabel = 'Confirmar y Registrar Venta',
+		cancelLabel = 'Cancelar',
+		onCancel,
 		products,
 		lensItems,
 		submitting,
@@ -120,20 +150,20 @@
 	const statusMeta = $derived.by(() => {
 		if (submitting) {
 			return {
-				label: 'Registrando venta',
+				label: submittingStatusLabel,
 				className: 'bg-brand-blue/10 text-brand-blue'
 			};
 		}
 
 		if (canSubmitFinal) {
 			return {
-				label: 'Revision final',
+				label: readyStatusLabel,
 				className: 'bg-warning-container text-on-warning-container'
 			};
 		}
 
 		return {
-			label: 'Ajustes pendientes',
+			label: pendingStatusLabel,
 			className: 'bg-error-container text-on-error-container'
 		};
 	});
@@ -148,16 +178,22 @@
 		}
 
 		if (customerId) return 'Cliente asociado';
-		return 'Venta sin cliente';
+		return customerFallbackName;
 	});
 
 	const displayCustomerDocument = $derived.by(() => {
 		if (newCustomer?.idNumber) return newCustomer.idNumber;
 		if (selectedCustomer?.idNumber) return selectedCustomer.idNumber;
-		return 'Sin documento';
+		return customerFallbackDocument;
 	});
 
 	const displaySaleDate = $derived.by(() => formatDisplayDate(saleDate));
+
+	const displaySecondaryContextDate = $derived.by(() =>
+		secondaryContextDate ? formatDisplayDate(secondaryContextDate) : null
+	);
+
+	const displayEntityValue = $derived.by(() => entityValue ?? `#${nextOrderNumber ?? 'Pendiente'}`);
 
 	const totalRenderedRows = $derived.by(() =>
 		items.reduce((count, item) => count + 1 + item.treatments.length, 0)
@@ -290,10 +326,8 @@
 					class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
 				>
 					<Hash class="h-4 w-4 text-brand-blue" />
-					<span>Orden</span>
-					<span class="font-mono font-semibold text-brand-navy"
-						>#{nextOrderNumber ?? 'Pendiente'}</span
-					>
+					<span>{entityLabel}</span>
+					<span class="font-mono font-semibold text-brand-navy">{displayEntityValue}</span>
 				</div>
 
 				<div
@@ -310,6 +344,16 @@
 					<Calendar class="h-4 w-4 text-brand-blue" />
 					<span>{displaySaleDate}</span>
 				</div>
+
+				{#if displaySecondaryContextDate && secondaryContextLabel}
+					<div
+						class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
+					>
+						<Calendar class="h-4 w-4 text-brand-blue" />
+						<span class="text-outline">{secondaryContextLabel}</span>
+						<span class="font-medium text-brand-navy">{displaySecondaryContextDate}</span>
+					</div>
+				{/if}
 			</div>
 
 			<div
@@ -528,14 +572,8 @@
 
 									<td class="px-4 py-4 font-mono text-sm">{treatmentEyeCount}</td>
 
-									<td class="px-4 py-4">
-										<input
-											type="number"
-											bind:value={treatment.price}
-											step="0.01"
-											min="0"
-											class="w-24 rounded-lg bg-surface-container-low px-3 py-2 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-										/>
+									<td class="px-4 py-4 font-mono text-sm text-on-surface-variant">
+										{formatPrice(treatment.price)}
 									</td>
 
 									<td class="px-4 py-4">
@@ -583,10 +621,10 @@
 				</div>
 				<div>
 					<p class="text-[11px] font-semibold tracking-[0.18em] text-brand-blue uppercase">
-						Ajustes globales
+						{adjustmentsEyebrow}
 					</p>
 					<h3 class="font-heading text-xl font-bold tracking-[-0.02em] text-brand-navy">
-						Cierre comercial
+						{adjustmentsTitle}
 					</h3>
 				</div>
 			</div>
@@ -742,7 +780,7 @@
 				<div class="relative z-10 flex items-end justify-between gap-6">
 					<div>
 						<p class="text-xs font-semibold tracking-[0.24em] text-brand-gold uppercase">
-							Total neto a pagar
+							{totalCardEyebrow}
 						</p>
 						<p class="mt-3 font-mono text-4xl font-bold tracking-[-0.04em] text-white sm:text-5xl">
 							{formatPrice(total)}
@@ -767,7 +805,9 @@
 
 	<SaleWizardFloatingActions
 		showBack={true}
-		primaryLabel="Confirmar y Registrar Venta"
+		{onCancel}
+		{cancelLabel}
+		{primaryLabel}
 		primaryDisabled={!canSubmitFinal}
 		primaryLoading={submitting}
 		primaryKind="confirm"

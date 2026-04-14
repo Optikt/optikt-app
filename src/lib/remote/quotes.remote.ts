@@ -15,6 +15,7 @@ import {
 import {
 	getAllQuotes,
 	countQuotes,
+	getQuoteStats as getQuoteStatsQuery,
 	findQuoteById,
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails,
@@ -22,7 +23,11 @@ import {
 	updateQuote,
 	deleteQuoteItems
 } from '$lib/server/db/queries/quotes';
-import type { QuoteWithRelations, QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type {
+	QuoteWithRelations,
+	QuoteItemWithDetails,
+	QuoteStats
+} from '$lib/server/db/queries/quotes';
 import {
 	findCustomerById,
 	resolveInlineCustomer,
@@ -42,7 +47,8 @@ import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
-import { nowISO } from '$lib/dates';
+import { monthStart, nowISO, toUTCString } from '$lib/dates';
+import { EmptySchema } from '$lib/schemas/common';
 
 // ============================================================================
 // HELPERS
@@ -103,9 +109,15 @@ export interface QuoteDetail {
 	items: QuoteItemWithDetails[];
 }
 
+export type { QuoteStats } from '$lib/server/db/queries/quotes';
+
 // ============================================================================
 // QUERIES
 // ============================================================================
+
+export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> => {
+	return getQuoteStatsQuery(toUTCString(monthStart()));
+});
 
 /**
  * List quotes with pagination and filters

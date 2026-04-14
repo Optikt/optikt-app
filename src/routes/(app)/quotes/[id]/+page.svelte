@@ -1,25 +1,24 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
 	import {
-		ArrowLeft,
-		User,
-		Calendar,
 		Package,
 		FileText,
-		Hash,
 		CircleX,
 		Eye,
 		FlaskConical,
 		ArrowRightCircle,
-		Clock,
 		UserPlus,
-		Save
+		Save,
+		ClipboardList
 	} from '@lucide/svelte';
-	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { QuoteStatusBadge, ConfirmModal } from '$lib/components/ui';
+	import {
+		QuoteStatusBadge,
+		ConfirmModal,
+		PageHeader,
+		EconomicBreakdownCard
+	} from '$lib/components/ui';
 	import { cancelQuote, convertQuoteToSale, assignQuoteCustomer } from '$lib/remote/quotes.remote';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
@@ -29,24 +28,22 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import CustomerLookupInput from '$lib/components/sales/CustomerLookupInput.svelte';
-	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
-	import { TaxBreakdownDisplay } from '$lib/components/ui';
+	import {
+		buildPersistedDisplayGroups,
+		computeSnapshotTaxBreakdown
+	} from '$lib/components/sales/saleItemHelpers';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();
 	let quote = $state<QuoteWithRelations>(untrack(() => data.quote));
 	let items = $state<QuoteItemWithDetails[]>(untrack(() => data.items));
 
+	let formattedQuoteNumber = $derived(`P-${String(quote.quoteNumber).padStart(4, '0')}`);
 	let isDraft = $derived(quote.status === QuoteStatus.DRAFT);
 	let isConverted = $derived(quote.status === QuoteStatus.CONVERTED);
+	let isCancelled = $derived(quote.status === QuoteStatus.CANCELLED);
 
 	let mainItems = $derived(items.filter((i) => i.itemType !== SaleItemType.TREATMENT));
-
-	function getTreatments(parentId: string): QuoteItemWithDetails[] {
-		return items.filter(
-			(i) => i.itemType === SaleItemType.TREATMENT && i.parentQuoteItemId === parentId
-		);
-	}
 
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
 
@@ -59,46 +56,15 @@
 		treatments: QuoteItemWithDetails[];
 	}
 
-	let displayGroups: DisplayGroup[] = $derived.by(() => {
-		const groups: DisplayGroup[] = [];
-		const lensGroupMap = new SvelteMap<string, DisplayGroup>();
-
-		for (const item of mainItems) {
-			if (item.itemType === SaleItemType.LENS_PAIR && item.lensCatalogItemId) {
-				const existing = lensGroupMap.get(item.lensCatalogItemId);
-				if (existing) {
-					existing.quantity += item.quantity;
-					existing.discountAmount += itemDiscountAmount(item);
-					existing.lineTotal += item.unitPrice * item.quantity - itemDiscountAmount(item);
-					existing.treatments.push(...getTreatments(item.id));
-				} else {
-					const discAmt = itemDiscountAmount(item);
-					const group: DisplayGroup = {
-						key: `lens-${item.lensCatalogItemId}`,
-						item,
-						quantity: item.quantity,
-						discountAmount: discAmt,
-						lineTotal: item.unitPrice * item.quantity - discAmt,
-						treatments: [...getTreatments(item.id)]
-					};
-					lensGroupMap.set(item.lensCatalogItemId, group);
-					groups.push(group);
-				}
-			} else {
-				const discAmt = itemDiscountAmount(item);
-				groups.push({
-					key: item.id,
-					item,
-					quantity: item.quantity,
-					discountAmount: discAmt,
-					lineTotal: item.unitPrice * item.quantity - discAmt,
-					treatments: getTreatments(item.id)
-				});
-			}
-		}
-
-		return groups;
-	});
+	let displayGroups: DisplayGroup[] = $derived.by(() =>
+		buildPersistedDisplayGroups(
+			items,
+			mainItems,
+			SaleItemType.LENS_PAIR,
+			SaleItemType.TREATMENT,
+			(item) => item.parentQuoteItemId
+		)
+	);
 
 	let actionLoading = $state(false);
 	let showCancelModal = $state(false);
@@ -119,11 +85,12 @@
 		return quote.customer?.idNumber ?? '';
 	}
 
-	function itemDiscountAmount(item: QuoteItemWithDetails): number {
-		if (item.discountType === DiscountType.PERCENTAGE) {
-			return (item.discount / 100) * item.unitPrice * item.quantity;
+	function actionButtonClasses(variant: 'neutral' | 'danger'): string {
+		if (variant === 'danger') {
+			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
 		}
-		return item.discount;
+
+		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
 	}
 
 	async function handleAssignCustomer() {
@@ -202,298 +169,418 @@
 	<title>Presupuesto P-{quote.quoteNumber} - {customerName()} - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<button
-		onclick={goBack}
-		class="mb-4 flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-blue-600"
+<div class="space-y-6 p-6">
+	<PageHeader
+		title={`Presupuesto ${formattedQuoteNumber}`}
+		subtitle="Detalle de presupuesto"
+		backLabel="Volver a Presupuestos"
+		backOnClick={goBack}
 	>
-		<ArrowLeft class="h-4 w-4" />
-		Volver a presupuestos
-	</button>
+		{#snippet actions()}
+			{#if isDraft && quote.customer}
+				<button
+					type="button"
+					onclick={() => (showConvertModal = true)}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<ArrowRightCircle class="h-4 w-4" />
+					Convertir a venta
+				</button>
+			{/if}
 
-	<!-- Quote Header Card -->
-	<div class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div>
-				<div class="flex items-center gap-3">
-					<h1 class="text-3xl font-bold text-slate-900">Presupuesto P-{quote.quoteNumber}</h1>
-					<QuoteStatusBadge status={quote.status} />
-				</div>
-				<p class="mt-1 font-mono text-sm text-slate-400">{quote.id}</p>
-			</div>
-			<div class="flex gap-2">
-				{#if isDraft && quote.customer}
-					<Button color="blue" onclick={() => (showConvertModal = true)} disabled={actionLoading}>
-						<ArrowRightCircle class="mr-2 h-5 w-5" />
-						Convertir a Venta
-					</Button>
-				{/if}
-				{#if isDraft}
-					<Button
-						color="red"
-						outline
-						onclick={() => (showCancelModal = true)}
-						disabled={actionLoading}
-					>
-						<CircleX class="mr-2 h-5 w-5" />
-						Cancelar
-					</Button>
-				{/if}
-			</div>
+			{#if isDraft}
+				<button
+					type="button"
+					onclick={() => (showCancelModal = true)}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'danger'
+					)}"
+				>
+					<CircleX class="h-4 w-4" />
+					Cancelar presupuesto
+				</button>
+			{/if}
+		{/snippet}
+	</PageHeader>
+
+	<div class="-mt-2 flex flex-wrap items-center gap-3 text-on-surface-variant">
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Número</span>
+			<span class="font-mono text-sm font-semibold text-brand-navy">{formattedQuoteNumber}</span>
 		</div>
-
-		<!-- Info grid -->
-		<div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-			<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-4">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-					<Hash class="h-5 w-5 text-blue-600" />
-				</div>
-				<div>
-					<p class="text-xs text-slate-400">Nº Presupuesto</p>
-					<p class="font-mono text-lg font-bold text-slate-900">P-{quote.quoteNumber}</p>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-4">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-					<User class="h-5 w-5 text-emerald-600" />
-				</div>
-				<div>
-					<p class="text-xs text-slate-400">Cliente</p>
-					<p class="text-base font-semibold text-slate-900">{customerName()}</p>
-					{#if customerIdNumber()}
-						<p class="font-mono text-xs text-slate-400">{customerIdNumber()}</p>
-					{/if}
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-4">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-					<Calendar class="h-5 w-5 text-amber-600" />
-				</div>
-				<div>
-					<p class="text-xs text-slate-400">Fecha</p>
-					<p class="font-mono text-base font-semibold text-slate-900">
-						{formatDate(quote.quoteDate, { month: 'short' })}
-					</p>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-4">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100">
-					{#if quote.validUntil}
-						<Clock class="h-5 w-5 text-violet-600" />
-					{:else}
-						<User class="h-5 w-5 text-violet-600" />
-					{/if}
-				</div>
-				<div>
-					{#if quote.validUntil}
-						<p class="text-xs text-slate-400">Válido hasta</p>
-						<p class="font-mono text-base font-semibold text-slate-900">
-							{formatDate(quote.validUntil, { month: 'short' })}
-						</p>
-					{:else}
-						<p class="text-xs text-slate-400">Vendedor</p>
-						<p class="text-base font-semibold text-slate-900">
-							{quote.seller?.fullName ?? '—'}
-						</p>
-					{/if}
-				</div>
-			</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Cliente</span>
+			<span class="font-semibold text-brand-navy">{customerName()}</span>
+			<span class="font-mono text-sm text-outline">{customerIdNumber() || 'Sin documento'}</span>
 		</div>
-
-		{#if quote.notes}
-			<div class="mt-4 flex items-start gap-3 rounded-lg bg-amber-50 p-4">
-				<FileText class="mt-0.5 h-5 w-5 text-amber-500" />
-				<p class="text-base text-slate-700">{quote.notes}</p>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Fecha</span>
+			<span class="font-semibold text-brand-navy"
+				>{formatDate(quote.quoteDate, { dateStyle: 'medium' })}</span
+			>
+		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Vendedor</span>
+			<span class="font-semibold text-brand-navy">{quote.seller?.fullName ?? 'Sin asignar'}</span>
+		</div>
+		{#if quote.validUntil}
+			<div
+				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+			>
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+					>Válido hasta</span
+				>
+				<span class="font-semibold text-brand-navy"
+					>{formatDate(quote.validUntil, { dateStyle: 'medium' })}</span
+				>
 			</div>
 		{/if}
-
-		{#if isConverted && quote.conversionSaleId}
-			<div class="mt-4 flex items-center gap-3 rounded-lg bg-blue-50 p-4">
-				<ArrowRightCircle class="h-5 w-5 text-blue-500" />
-				<p class="text-base text-slate-700">
-					Este presupuesto fue convertido a venta.
-					<a
-						href={resolve(`/sales/${quote.conversionSaleId}`)}
-						class="font-semibold text-blue-600 hover:underline"
-					>
-						Ver venta
-					</a>
-				</p>
-			</div>
-		{/if}
-
-		{#if isDraft && !quote.customer}
-			<div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-				<div class="mb-3 flex items-center gap-2">
-					<UserPlus class="h-4 w-4 text-slate-500" />
-					<p class="text-sm font-medium text-slate-700">
-						Asignar cliente para poder convertir a venta
-					</p>
-				</div>
-				<div class="flex items-end gap-3">
-					<div class="flex-1">
-						<CustomerLookupInput
-							bind:customerId={assignCustomerId}
-							bind:selectedCustomer={assignSelectedCustomer}
-							bind:newCustomer={assignNewCustomer}
-						/>
-					</div>
-					<Button
-						color="blue"
-						size="sm"
-						onclick={handleAssignCustomer}
-						disabled={assigningCustomer ||
-							(!assignCustomerId && !(assignNewCustomer?.firstName && assignNewCustomer?.lastName))}
-					>
-						<Save class="mr-1.5 h-4 w-4" />
-						Guardar
-					</Button>
-				</div>
-			</div>
-		{/if}
+		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
+			<QuoteStatusBadge status={quote.status} />
+		</div>
 	</div>
 
-	<!-- Items Table -->
-	<div class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h2 class="mb-4 text-xl font-semibold text-slate-900">Artículos</h2>
-		<div class="overflow-x-auto rounded-lg border border-slate-200">
+	{#if quote.notes || isCancelled}
+		<div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.95fr)]">
+			{#if quote.notes}
+				<section class="rounded-[1.5rem] bg-surface-container-low p-6">
+					<div class="flex items-start gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-xl bg-info-container text-on-info-container"
+						>
+							<FileText class="h-5 w-5" />
+						</div>
+						<div>
+							<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+								Observaciones
+							</p>
+							<p class="mt-2 text-base leading-relaxed text-on-surface">{quote.notes}</p>
+						</div>
+					</div>
+				</section>
+			{/if}
+
+			{#if isCancelled}
+				<section class="rounded-[1.5rem] bg-error-container/70 p-6 text-on-error-container">
+					<div class="flex items-start gap-3">
+						<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/30">
+							<CircleX class="h-5 w-5" />
+						</div>
+						<div>
+							<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">Estado</p>
+							<h2 class="mt-2 text-2xl font-semibold text-current">Presupuesto cancelado</h2>
+							<p class="mt-1 text-sm leading-relaxed text-current/80">
+								Este presupuesto ya no puede convertirse en venta ni recibir nuevas acciones.
+							</p>
+						</div>
+					</div>
+				</section>
+			{/if}
+		</div>
+	{/if}
+
+	{#if isConverted && quote.conversionSaleId}
+		<div
+			class="flex items-center gap-3 rounded-[1.5rem] bg-info-container/55 p-4 text-on-info-container"
+		>
+			<ArrowRightCircle class="h-5 w-5 text-blue-500" />
+			<p class="text-base text-slate-700">
+				Este presupuesto fue convertido a venta.
+				<a
+					href={resolve(`/sales/${quote.conversionSaleId}`)}
+					class="font-semibold text-blue-600 hover:underline"
+				>
+					Ver venta
+				</a>
+			</p>
+		</div>
+	{/if}
+
+	{#if isDraft && !quote.customer}
+		<div class="rounded-[1.5rem] border border-surface-container-high bg-surface-container-low p-5">
+			<div class="mb-3 flex items-center gap-2">
+				<UserPlus class="h-4 w-4 text-slate-500" />
+				<p class="text-sm font-medium text-slate-700">
+					Asignar cliente para poder convertir a venta
+				</p>
+			</div>
+			<div class="flex items-end gap-3">
+				<div class="flex-1">
+					<CustomerLookupInput
+						bind:customerId={assignCustomerId}
+						bind:selectedCustomer={assignSelectedCustomer}
+						bind:newCustomer={assignNewCustomer}
+					/>
+				</div>
+				<button
+					type="button"
+					onclick={handleAssignCustomer}
+					disabled={assigningCustomer ||
+						(!assignCustomerId && !(assignNewCustomer?.firstName && assignNewCustomer?.lastName))}
+					class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-3 text-sm font-semibold text-brand-navy transition disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-outline"
+				>
+					<Save class="h-4 w-4" />
+					Guardar
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<section class="glass-card overflow-hidden">
+		<div
+			class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+		>
+			<div class="flex items-center gap-3">
+				<div
+					class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+				>
+					<ClipboardList class="h-5 w-5" />
+				</div>
+				<div>
+					<h2 class="text-xl font-semibold text-brand-navy">Artículos y servicios</h2>
+					<p class="text-sm text-on-surface-variant">
+						{displayGroups.length} línea{displayGroups.length !== 1 ? 's' : ''} principal{displayGroups.length !==
+						1
+							? 'es'
+							: ''}
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="overflow-x-auto">
 			<table class="w-full text-sm">
-				<thead class="bg-slate-100 text-slate-600">
+				<thead class="bg-surface-container-low text-left">
 					<tr>
-						<th class="px-4 py-3 text-left font-semibold">Tipo</th>
-						<th class="px-4 py-3 text-left font-semibold">Artículo</th>
-						<th class="px-4 py-3 text-right font-semibold">Cant.</th>
-						<th class="px-4 py-3 text-right font-semibold">P. Unit.</th>
-						<th class="px-4 py-3 text-right font-semibold">Desc.</th>
-						<th class="px-4 py-3 text-right font-semibold">Subtotal</th>
+						<th
+							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Artículo</th
+						>
+						<th
+							class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Tipo</th
+						>
+						<th
+							class="px-6 py-4 text-center text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Cant.</th
+						>
+						<th
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Precio unit.</th
+						>
+						<th
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Desc.</th
+						>
+						<th
+							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+							>Subtotal</th
+						>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-slate-100">
+				<tbody class="divide-y divide-surface-container-low">
 					{#each displayGroups as group (group.key)}
 						{@const item = group.item}
-						<tr class="text-slate-700 hover:bg-slate-50/50">
-							<td class="px-4 py-3">
-								{#if item.itemType === SaleItemType.LENS_PAIR}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
+						<tr
+							class="bg-surface-container-lowest transition-colors hover:bg-surface-container-low/35"
+						>
+							<td class="px-6 py-5 align-top">
+								<div class="flex items-start gap-4">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {item.itemType ===
+										SaleItemType.LENS_PAIR
+											? 'bg-info-container text-on-info-container'
+											: 'bg-surface-container-low text-on-surface-variant'}"
 									>
-										<Eye class="h-3 w-3" />
-										Lente
-									</span>
-								{:else}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700"
-									>
-										<Package class="h-3 w-3" />
-										Producto
-									</span>
-								{/if}
-							</td>
-							<td class="px-4 py-3">
-								<p class="text-base font-medium">{item.snapshotName ?? '—'}</p>
-								{#if item.snapshotSku}
-									<span class="font-mono text-xs text-slate-400">{item.snapshotSku}</span>
-								{/if}
-								{#if item.snapshotBrand}
-									<span
-										class="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600"
-										>{item.snapshotBrand}</span
-									>
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-base">{group.quantity}</td>
-							<td class="px-4 py-3 text-right font-mono text-base">
-								{formatPrice(item.unitPrice)}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-base text-red-500">
-								{#if group.discountAmount > 0}
-									-{formatPrice(group.discountAmount)}
-								{:else}
-									—
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-right font-mono text-base font-semibold">
-								{formatPrice(group.lineTotal)}
-							</td>
-						</tr>
-						<!-- Treatments -->
-						{#each group.treatments as treatment (treatment.id)}
-							<tr class="border-t border-violet-100 bg-violet-50/30 text-slate-700">
-								<td class="px-4 py-2">
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700"
-									>
-										<FlaskConical class="h-3 w-3" />
-										Tratamiento
-									</span>
-								</td>
-								<td class="px-4 py-2">
-									<div class="flex items-center gap-2">
-										<p class="text-sm font-medium text-violet-800">
-											{treatment.snapshotName ?? treatment.supplierTreatment?.name ?? '—'}
+										{#if item.itemType === SaleItemType.LENS_PAIR}
+											<Eye class="h-5 w-5" />
+										{:else}
+											<Package class="h-5 w-5" />
+										{/if}
+									</div>
+									<div>
+										<p class="text-lg leading-tight font-semibold text-brand-navy">
+											{item.snapshotName ?? '—'}
 										</p>
-										{#if treatment.snapshotTreatmentCategory}
+										{#if item.snapshotSku}
+											<span class="font-mono text-xs text-slate-400">{item.snapshotSku}</span>
+										{/if}
+										{#if item.snapshotBrand}
 											<span
-												class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600"
-												>{getTreatmentCategoryLabel(treatment.snapshotTreatmentCategory)}</span
+												class="ml-2 rounded bg-surface-container-low px-1.5 py-0.5 text-xs font-medium text-slate-600"
+												>{item.snapshotBrand}</span
 											>
 										{/if}
 									</div>
+								</div>
+							</td>
+							<td class="px-6 py-5 align-top">
+								<span
+									class="inline-flex rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.14em] uppercase {item.itemType ===
+									SaleItemType.LENS_PAIR
+										? 'bg-info-container text-on-info-container'
+										: 'bg-surface-container-high text-on-surface-variant'}"
+								>
+									{item.itemType === SaleItemType.LENS_PAIR ? 'Cristal' : 'Producto'}
+								</span>
+							</td>
+							<td
+								class="px-6 py-5 text-center align-top font-mono text-lg font-semibold text-brand-navy"
+								>{group.quantity}</td
+							>
+							<td
+								class="px-6 py-5 text-right align-top font-mono text-base text-on-surface-variant"
+							>
+								{formatPrice(item.unitPrice)}
+							</td>
+							<td
+								class="px-6 py-5 text-right align-top font-mono text-base {group.discountAmount > 0
+									? 'text-error'
+									: 'text-outline'}"
+							>
+								{#if group.discountAmount > 0}
+									-{formatPrice(group.discountAmount)}
+									{#if item.discountType === DiscountType.PERCENTAGE}
+										<span class="text-xs text-outline">({item.discount}%)</span>
+									{/if}
+								{:else}
+									$0.00
+								{/if}
+							</td>
+							<td
+								class="px-6 py-5 text-right align-top font-mono text-lg font-bold text-brand-navy"
+							>
+								{formatPrice(group.lineTotal)}
+							</td>
+						</tr>
+
+						{#each group.treatments as treatment (treatment.id)}
+							<tr
+								class="bg-surface-container-lowest/80 transition-colors hover:bg-surface-container-low/35"
+							>
+								<td class="px-6 py-5 align-top">
+									<div class="flex items-start gap-4">
+										<div
+											class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-container text-on-purple-container"
+										>
+											<FlaskConical class="h-5 w-5" />
+										</div>
+										<div>
+											<p class="text-lg leading-tight font-semibold text-brand-navy">
+												{treatment.supplierTreatment?.name ??
+													treatment.snapshotName ??
+													'Tratamiento'}
+											</p>
+											{#if treatment.snapshotTreatmentCategory}
+												<p class="mt-1 text-xs text-outline">
+													{getTreatmentCategoryLabel(treatment.snapshotTreatmentCategory)}
+												</p>
+											{/if}
+										</div>
+									</div>
 								</td>
-								<td class="px-4 py-2 text-right font-mono text-sm">{treatment.quantity}</td>
-								<td class="px-4 py-2 text-right font-mono text-sm">
+								<td class="px-6 py-5 align-top">
+									<span
+										class="inline-flex rounded-full bg-purple-container px-3 py-1 text-[10px] font-bold tracking-[0.14em] text-on-purple-container uppercase"
+										>Tratamiento</span
+									>
+								</td>
+								<td
+									class="px-6 py-5 text-center align-top font-mono text-lg font-semibold text-brand-navy"
+									>{treatment.quantity}</td
+								>
+								<td
+									class="px-6 py-5 text-right align-top font-mono text-base text-on-surface-variant"
+								>
 									{formatPrice(treatment.unitPrice)}
 								</td>
-								<td class="px-4 py-2 text-right font-mono text-sm text-red-500">—</td>
-								<td class="px-4 py-2 text-right font-mono text-sm font-semibold text-violet-700">
+								<td class="px-6 py-5 text-right align-top font-mono text-base text-outline"
+									>$0.00</td
+								>
+								<td
+									class="px-6 py-5 text-right align-top font-mono text-lg font-bold text-brand-navy"
+								>
 									{formatPrice(treatment.unitPrice * treatment.quantity)}
 								</td>
 							</tr>
 						{/each}
 					{/each}
 				</tbody>
+				<tfoot class="bg-surface-container-low/60">
+					<tr>
+						<td
+							colspan="5"
+							class="px-6 py-5 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+						>
+							Subtotal general
+						</td>
+						<td class="px-6 py-5 text-right font-mono text-2xl font-bold text-brand-navy">
+							{formatPrice(quote.subtotal)}
+						</td>
+					</tr>
+				</tfoot>
 			</table>
 		</div>
-	</div>
+	</section>
 
-	<!-- Totals -->
-	<div class="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h2 class="mb-4 text-xl font-semibold text-slate-900">Resumen</h2>
-		<div class="space-y-3">
-			<div class="flex justify-between text-base">
-				<span class="text-slate-600">Subtotal</span>
-				<span class="font-mono font-semibold text-slate-800">{formatPrice(quote.subtotal)}</span>
-			</div>
-			{#if quote.discount > 0}
-				<div class="flex justify-between text-base">
-					<span class="text-slate-600">
-						Descuento
-						{#if quote.discountType === DiscountType.PERCENTAGE}
-							({quote.discount}%)
-						{/if}
-					</span>
-					<span class="font-mono font-semibold text-red-500">
-						-{formatPrice(quote.subtotal - quote.total)}
-					</span>
-				</div>
-			{/if}
-			{#if taxBreakdown.taxAmount > 0 || taxBreakdown.exemptTotal > 0}
-				<TaxBreakdownDisplay
-					taxableBase={taxBreakdown.taxableBase}
-					exemptTotal={taxBreakdown.exemptTotal}
-					taxAmount={taxBreakdown.taxAmount}
-					variant="inline"
-				/>
-			{/if}
-			<div class="flex justify-between border-t border-slate-200 pt-3 text-lg">
-				<span class="font-bold text-slate-900">Total</span>
-				<span class="font-mono text-xl font-bold text-blue-600">{formatPrice(quote.total)}</span>
-			</div>
+	<section class="grid gap-4 xl:grid-cols-3">
+		<EconomicBreakdownCard
+			subtotal={quote.subtotal}
+			total={quote.total}
+			discountType={quote.discountType}
+			discount={quote.discount}
+			{taxBreakdown}
+			totalLabel="Total estimado"
+		/>
+
+		<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
+			<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Monto a cobrar</p>
+			<p class="mt-4 font-mono text-3xl font-bold tracking-tight text-brand-navy md:text-4xl">
+				{formatPrice(quote.total)}
+			</p>
+			<p class="mt-3 text-base text-on-surface-variant">
+				Desglose estimado del importe que se cobraría al convertir este presupuesto en venta.
+			</p>
 		</div>
-	</div>
+
+		<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
+			<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+				Siguiente acción
+			</p>
+			<p class="mt-4 text-2xl font-semibold tracking-tight text-brand-navy">
+				{#if isDraft && quote.customer}
+					Listo para convertir
+				{:else if isDraft}
+					Asignar cliente
+				{:else if isConverted}
+					Ir a la venta creada
+				{:else}
+					Sin acciones disponibles
+				{/if}
+			</p>
+			<p class="mt-3 text-base text-on-surface-variant">
+				{#if isDraft && quote.customer}
+					Este presupuesto ya tiene cliente asociado y puede convertirse directamente a venta.
+				{:else if isDraft}
+					Necesitas asignar un cliente antes de convertir el presupuesto a venta.
+				{:else if isConverted}
+					El documento ya fue convertido y ahora el seguimiento continúa en la venta resultante.
+				{:else}
+					El documento quedó fuera del flujo activo y se conserva solo como referencia.
+				{/if}
+			</p>
+		</div>
+	</section>
 </div>
 
 <!-- Cancel Confirmation -->

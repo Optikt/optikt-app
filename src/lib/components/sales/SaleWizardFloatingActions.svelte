@@ -7,6 +7,7 @@
 		showBack?: boolean;
 		backLabel?: string;
 		cancelLabel?: string;
+		onCancel?: () => void;
 		primaryLabel: string;
 		primaryDisabled?: boolean;
 		primaryLoading?: boolean;
@@ -21,6 +22,7 @@
 		showBack = false,
 		backLabel = 'Atras',
 		cancelLabel = 'Cancelar',
+		onCancel,
 		primaryLabel,
 		primaryDisabled = false,
 		primaryLoading = false,
@@ -48,13 +50,24 @@
 				</button>
 			{/if}
 
-			<a
-				href={resolve('/sales')}
-				class="inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-error transition-colors hover:bg-error-container/60"
-			>
-				<Ban class="h-4 w-4" />
-				<span>{cancelLabel}</span>
-			</a>
+			{#if onCancel}
+				<button
+					type="button"
+					onclick={onCancel}
+					class="inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-error transition-colors hover:bg-error-container/60"
+				>
+					<Ban class="h-4 w-4" />
+					<span>{cancelLabel}</span>
+				</button>
+			{:else}
+				<a
+					href={resolve('/sales')}
+					class="inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-error transition-colors hover:bg-error-container/60"
+				>
+					<Ban class="h-4 w-4" />
+					<span>{cancelLabel}</span>
+				</a>
+			{/if}
 		</div>
 
 		<div class="flex flex-wrap items-center justify-end gap-4">

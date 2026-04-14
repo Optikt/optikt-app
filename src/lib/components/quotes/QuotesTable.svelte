@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { FileText, Eye, CircleX } from '@lucide/svelte';
+	import { Eye, CircleX, ClipboardList } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { DataTable, QuoteStatusBadge, ConfirmModal } from '$lib/components/ui';
+	import { DataGrid, QuoteStatusBadge, ConfirmModal } from '$lib/components/ui';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import { cancelQuote } from '$lib/remote/quotes.remote';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
@@ -10,12 +9,37 @@
 
 	interface Props {
 		quotes: QuoteWithRelations[];
+		page: number;
+		perPage: number;
+		total: number;
+		totalPages: number;
 		loading?: boolean;
 		onView?: (quote: QuoteWithRelations) => void;
 		onRefresh?: () => void;
+		onPageChange: (page: number) => void;
 	}
 
-	let { quotes, loading = false, onView, onRefresh }: Props = $props();
+	let {
+		quotes,
+		page,
+		perPage,
+		total,
+		totalPages,
+		loading = false,
+		onView,
+		onRefresh,
+		onPageChange
+	}: Props = $props();
+
+	const columns = [
+		{ key: 'quoteNumber', label: '# Presupuesto' },
+		{ key: 'customer', label: 'Cliente' },
+		{ key: 'date', label: 'Fecha' },
+		{ key: 'total', label: 'Total (USD)', align: 'right' as const },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'seller', label: 'Vendedor' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 
 	// Cancel modal state
 	let showCancelModal = $state(false);
@@ -53,73 +77,87 @@
 	}
 </script>
 
-<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-	<DataTable
-		items={quotes}
-		{loading}
-		emptyIcon={FileText}
-		emptyTitle="No se encontraron presupuestos"
-		emptyDescription="Crea un presupuesto para comenzar"
-		{onView}
-		viewIcon={Eye}
-	>
-		{#snippet header()}
-			<TableHeadCell class="text-sm font-semibold text-slate-600">#</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Fecha</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Cliente</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Vendedor</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Total</TableHeadCell>
-			<TableHeadCell class="text-sm font-semibold text-slate-600">Estado</TableHeadCell>
-		{/snippet}
+<DataGrid
+	{columns}
+	items={quotes}
+	{page}
+	{perPage}
+	{total}
+	{totalPages}
+	{loading}
+	itemLabel="presupuestos"
+	emptyTitle="No se encontraron presupuestos"
+	emptySubtitle="Crea un presupuesto para comenzar"
+	{onPageChange}
+>
+	{#snippet emptyIcon()}
+		<ClipboardList class="mb-3 h-10 w-10 text-outline" />
+	{/snippet}
 
-		{#snippet row(quote)}
-			<TableBodyCell class="font-mono text-sm font-semibold text-blue-600">
-				P-{quote.quoteNumber}
-			</TableBodyCell>
-			<TableBodyCell class="text-sm text-slate-700">
-				{formatDate(quote.quoteDate, { month: 'short' })}
-			</TableBodyCell>
-			<TableBodyCell>
-				<p class="text-sm font-semibold text-slate-900">{customerName(quote)}</p>
+	{#snippet row(quote)}
+		<tr
+			class="bg-surface-container-lowest transition-colors {onView
+				? 'cursor-pointer hover:bg-surface-container-low'
+				: ''}"
+			onclick={() => onView?.(quote)}
+		>
+			<td class="px-4 py-4">
+				<span class="font-mono text-sm font-semibold text-brand-blue">P-{quote.quoteNumber}</span>
+			</td>
+			<td class="px-4 py-4">
+				<div class="font-medium text-on-surface">{customerName(quote)}</div>
 				{#if quote.customer?.idNumber}
-					<p class="font-mono text-xs text-slate-400">{quote.customer.idNumber}</p>
+					<div class="font-mono text-xs text-outline">{quote.customer.idNumber}</div>
 				{/if}
-			</TableBodyCell>
-			<TableBodyCell class="text-sm text-slate-600">
-				{quote.seller?.fullName ?? '—'}
-			</TableBodyCell>
-			<TableBodyCell class="font-mono text-sm font-bold text-slate-900">
+			</td>
+			<td class="px-4 py-4 text-sm text-on-surface-variant">
+				{formatDate(quote.quoteDate, { day: '2-digit', month: 'short', year: 'numeric' })}
+			</td>
+			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
 				{formatPrice(quote.total)}
-			</TableBodyCell>
-			<TableBodyCell>
+			</td>
+			<td class="px-4 py-4">
 				<QuoteStatusBadge status={quote.status} />
-			</TableBodyCell>
-		{/snippet}
-
-		{#snippet actions(quote)}
-			<div class="flex items-center gap-1">
-				{#if onView}
-					<button
-						onclick={() => onView?.(quote)}
-						class="rounded-lg p-2 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
-						title="Ver detalle"
-					>
-						<Eye class="h-5 w-5" />
-					</button>
-				{/if}
-				{#if quote.status === QuoteStatus.DRAFT}
-					<button
-						onclick={() => openCancel(quote)}
-						class="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
-						title="Cancelar presupuesto"
-					>
-						<CircleX class="h-5 w-5" />
-					</button>
-				{/if}
-			</div>
-		{/snippet}
-	</DataTable>
-</div>
+			</td>
+			<td class="px-4 py-4 text-sm text-on-surface-variant">
+				{quote.seller?.fullName ?? '—'}
+			</td>
+			<td class="px-4 py-4 text-right">
+				<div class="flex items-center justify-end gap-1">
+					{#if onView}
+						<button
+							onclick={(event) => {
+								event.stopPropagation();
+								onView?.(quote);
+							}}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver detalle"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</button>
+					{/if}
+					{#if quote.status === QuoteStatus.DRAFT}
+						<button
+							onclick={(event) => {
+								event.stopPropagation();
+								openCancel(quote);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
+							title="Cancelar presupuesto"
+						>
+							<CircleX class="h-4 w-4" />
+						</button>
+					{:else}
+						<span class="inline-block w-7"></span>
+					{/if}
+				</div>
+			</td>
+		</tr>
+	{/snippet}
+</DataGrid>
 
 <!-- Cancel Confirmation -->
 <ConfirmModal
