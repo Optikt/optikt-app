@@ -120,6 +120,7 @@
 	{#snippet row(item)}
 		{@const displayRanges = collapseRangesForDisplay(item.ranges ?? [])}
 		{@const primaryRange = displayRanges[0]}
+		{@const extraRanges = displayRanges.slice(1)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -197,12 +198,59 @@
 								</div>
 							{/if}
 
-							{#if displayRanges.length > 1}
-								<span
-									class="inline-flex rounded-md bg-brand-blue-light/30 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-brand-blue-dark uppercase"
-								>
-									+{displayRanges.length - 1} rango{displayRanges.length === 2 ? '' : 's'}
-								</span>
+							{#if extraRanges.length > 0}
+								<div class="group relative z-10 focus-within:z-40 hover:z-40">
+									<button
+										type="button"
+										aria-label={`Ver los ${displayRanges.length} rangos del lente`}
+										onclick={(event) => event.stopPropagation()}
+										class="inline-flex cursor-help rounded-md bg-brand-blue-light/30 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-brand-blue-dark uppercase transition-colors hover:bg-brand-blue-light/45 focus-visible:ring-2 focus-visible:ring-brand-blue/35 focus-visible:outline-none"
+									>
+										+{extraRanges.length} rango{extraRanges.length === 1 ? '' : 's'}
+									</button>
+
+									<div
+										class="pointer-events-none invisible absolute right-0 bottom-full z-50 mb-2 w-72 translate-y-1 rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-3 opacity-0 shadow-lg transition-all duration-150 ease-out group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+									>
+										<p class="text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">
+											Todos los rangos
+										</p>
+										<div class="mt-2 space-y-2">
+											{#each displayRanges as range, rangeIndex (range.id)}
+												<div class="rounded-xl bg-surface-container-low px-3 py-2">
+													<p
+														class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+													>
+														Rango {rangeIndex + 1}
+													</p>
+													<div class="mt-1.5 space-y-1 text-xs text-on-surface-variant">
+														<p>
+															<span class="font-semibold text-outline">Esfera:</span>
+															<span class="ml-1 font-mono text-on-surface">{range.sphereLabel}</span
+															>
+														</p>
+														{#if range.cylinderLabel}
+															<p>
+																<span class="font-semibold text-outline">Cilindro:</span>
+																<span class="ml-1 font-mono text-on-surface"
+																	>{range.cylinderLabel}</span
+																>
+															</p>
+														{/if}
+														{#if range.additionLabel}
+															<p>
+																<span class="font-semibold text-outline">Adición:</span>
+																<span class="ml-1 font-mono text-on-surface"
+																	>{range.additionLabel}</span
+																>
+															</p>
+														{/if}
+													</div>
+												</div>
+											{/each}
+										</div>
+									</div>
+								</div>
 							{/if}
 						</div>
 					{:else}
