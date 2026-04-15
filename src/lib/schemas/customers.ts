@@ -9,7 +9,8 @@ import {
 	NameSchema,
 	OptionalEmailSchema,
 	ListPaginationWithDeletedSchema,
-	EntityIdSchema
+	EntityIdSchema,
+	ReactivateEntitySchema
 } from './common';
 import { PrescriptionFieldsSchema } from './prescriptions';
 
@@ -41,6 +42,4 @@ export const CreateCustomerWithPrescriptionSchema = CreateCustomerSchema.extend(
 	prescription: PrescriptionFieldsSchema.optional()
 });
 
-export const ReactivateCustomerSchema = z.object({
-	id: z.uuid()
-});
+export const ReactivateCustomerSchema = ReactivateEntitySchema('id');

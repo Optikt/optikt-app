@@ -12,7 +12,8 @@ import {
 	OptionalPasswordSchema,
 	NameSchema,
 	ListPaginationWithInactiveSchema,
-	EntityIdSchema
+	EntityIdSchema,
+	ReactivateEntitySchema
 } from './common';
 
 export const ListUsersSchema = ListPaginationWithInactiveSchema.extend({
@@ -36,6 +37,4 @@ export const UpdateUserSchema = CreateUserSchema.partial().extend({
 
 export const UserIdSchema = EntityIdSchema();
 
-export const ReactivateUserSchema = CreateUserSchema.extend({
-	deletedUserId: z.uuid()
-});
+export const ReactivateUserSchema = ReactivateEntitySchema('deletedUserId', CreateUserSchema.shape);

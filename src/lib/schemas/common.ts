@@ -251,6 +251,24 @@ export const OptionalPasswordSchema = z.union([z.literal(''), PasswordSchema]);
 export const EntityIdSchema = (entityName?: string) =>
 	z.object({ id: z.uuid(entityName ? `${entityName} inválido` : 'ID inválido') });
 
+/**
+ * Factory for reactivation schemas.
+ * Reuses a consistent deleted-entity id field and optionally merges extra fields.
+ */
+export const ReactivateEntitySchema = <
+	TFieldName extends string,
+	TExtra extends z.ZodRawShape = Record<never, never>
+>(
+	deletedIdField: TFieldName,
+	extraFields?: TExtra
+) => {
+	const shape = {
+		[deletedIdField]: z.uuid('ID inválido')
+	} as unknown as { [K in TFieldName]: z.ZodUUID };
+
+	return z.object(shape).extend(extraFields ?? ({} as TExtra));
+};
+
 // =============================================================================
 // PENDING ENTITY SCHEMAS
 // =============================================================================
