@@ -69,7 +69,9 @@
 	}
 </script>
 
-<section class="relative overflow-hidden rounded-xl bg-[linear-gradient(160deg,var(--color-brand-navy-dark),var(--color-brand-navy))] p-8 text-on-primary shadow-[var(--ds-shadow-lg)]">
+<section
+	class="relative overflow-hidden rounded-xl bg-[linear-gradient(160deg,var(--color-brand-navy-dark),var(--color-brand-navy))] p-8 text-on-primary shadow-[var(--ds-shadow-lg)]"
+>
 	<div class="absolute top-0 right-0 h-40 w-40 rounded-full bg-brand-blue/15 blur-3xl"></div>
 
 	<div class="relative z-10 flex h-full flex-col justify-between gap-8">
@@ -170,7 +172,7 @@
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-white/60 uppercase">
 				Valorizacion de inventario
 			</p>
-			<p class="mt-2 font-heading text-3xl font-bold tracking-[-0.03em] text-white">
+			<p class="font-heading mt-2 text-3xl font-bold tracking-[-0.03em] text-white">
 				{formatPrice(inventoryValuation)}
 			</p>
 		</div>

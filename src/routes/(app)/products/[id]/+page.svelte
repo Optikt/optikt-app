@@ -76,8 +76,12 @@
 	<div class="mx-auto max-w-7xl space-y-8">
 		<section class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 			<div class="space-y-3">
-				<nav class="flex items-center gap-2 text-[0.7rem] font-bold tracking-[0.18em] text-outline uppercase">
-					<a href={resolve('/products')} class="transition-colors hover:text-brand-blue">Inventario</a>
+				<nav
+					class="flex items-center gap-2 text-[0.7rem] font-bold tracking-[0.18em] text-outline uppercase"
+				>
+					<a href={resolve('/products')} class="transition-colors hover:text-brand-blue"
+						>Inventario</a
+					>
 					<ChevronRight class="h-3.5 w-3.5" />
 					<span class="text-brand-blue">{getProductTypeLabel(product.type)}</span>
 				</nav>
@@ -128,7 +132,7 @@
 			<div class="xl:col-span-8">
 				<ProductIdentityCard
 					{product}
-					realStock={realStock}
+					{realStock}
 					activeLotsCount={activeLots.length}
 					{stockHealth}
 				/>
@@ -138,7 +142,7 @@
 					productId={product.id}
 					salePrice={product.currentSalePrice}
 					{fifoCost}
-					inventoryValuation={inventoryValuation}
+					{inventoryValuation}
 				/>
 			</div>
 		</div>
@@ -146,7 +150,7 @@
 		{#if stockTracked}
 			<div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
 				<div class="xl:col-span-7">
-					<ProductLotsCard activeLots={activeLots} productId={product.id} realStock={realStock} />
+					<ProductLotsCard {activeLots} productId={product.id} {realStock} />
 				</div>
 				<div class="xl:col-span-5">
 					<ProductMovementFeed
@@ -180,7 +184,10 @@
 				<strong>{product.sku}</strong>.
 			</p>
 			<div>
-				<label for="confirmProductSku" class="mb-2 block text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+				<label
+					for="confirmProductSku"
+					class="mb-2 block text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+				>
 					Confirmacion por SKU
 				</label>
 				<input

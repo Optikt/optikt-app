@@ -1,13 +1,5 @@
 <script lang="ts">
-	import {
-		ArrowLeft,
-		Boxes,
-		Coins,
-		History,
-		Minus,
-		Plus,
-		ShieldCheck
-	} from '@lucide/svelte';
+	import { ArrowLeft, Boxes, Coins, History, Minus, Plus, ShieldCheck } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -61,7 +53,9 @@
 	const isOutflow = $derived(adjustmentType === InventoryMovementType.ADJUSTMENT_OUT);
 	const detailsEnabled = $derived(selectedLot != null);
 	const directionEnabled = $derived(detailsEnabled && selectedReason != null);
-	const detailsComplete = $derived(selectedReason != null && adjustmentType != null && parsedQuantity > 0);
+	const detailsComplete = $derived(
+		selectedReason != null && adjustmentType != null && parsedQuantity > 0
+	);
 	const notesRemaining = $derived(getNotesRemaining(notes));
 	const quantityError = $derived.by(() => {
 		if (parsedQuantity <= 0) return null;
@@ -207,14 +201,17 @@
 						Ajuste de Inventario
 					</h1>
 					<p class="max-w-2xl text-sm leading-7 text-on-surface-variant">
-						Modifica niveles de stock con precision. Cada accion conserva lote, costo historico y motivo operativo.
+						Modifica niveles de stock con precision. Cada accion conserva lote, costo historico y
+						motivo operativo.
 					</p>
 				</div>
 			</div>
 
 			<div class="glass-card bg-surface-container-lowest px-5 py-4 lg:min-w-[21rem]">
 				<div class="flex items-center gap-4">
-					<div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-container text-brand-navy">
+					<div
+						class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-container text-brand-navy"
+					>
 						<Boxes class="h-5 w-5" />
 					</div>
 					<div class="min-w-0">
@@ -232,14 +229,17 @@
 
 		{#if activeLots.length === 0}
 			<section class="glass-card bg-surface-container-lowest px-8 py-14 text-center">
-				<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-brand-navy">
+				<div
+					class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-brand-navy"
+				>
 					<Boxes class="h-6 w-6" />
 				</div>
-				<h2 class="mt-5 font-heading text-2xl font-bold tracking-[-0.02em] text-brand-navy">
+				<h2 class="font-heading mt-5 text-2xl font-bold tracking-[-0.02em] text-brand-navy">
 					No hay lotes activos para ajustar
 				</h2>
 				<p class="mx-auto mt-2 max-w-xl text-sm text-on-surface-variant">
-					Este flujo solo funciona sobre stock existente. Si necesitas ingresar unidades nuevas, usa una compra o reabastece primero el producto.
+					Este flujo solo funciona sobre stock existente. Si necesitas ingresar unidades nuevas, usa
+					una compra o reabastece primero el producto.
 				</p>
 				<div class="mt-8 flex justify-center">
 					<a
@@ -257,7 +257,7 @@
 				</div>
 
 				<div class="space-y-8 lg:col-span-9">
-					<AdjustmentLotSelectionCard activeLots={activeLots} bind:selectedLotId />
+					<AdjustmentLotSelectionCard {activeLots} bind:selectedLotId />
 
 					<section
 						class={`glass-card bg-surface-container-lowest p-8 transition-opacity ${detailsEnabled ? 'opacity-100' : 'opacity-70'}`}
@@ -281,13 +281,17 @@
 
 						<div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
 							<div class="space-y-2">
-								<label for="reason" class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase">
+								<label
+									for="reason"
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
 									Motivo
 								</label>
 								<select
 									id="reason"
 									value={reason}
-									onchange={(event) => handleReasonChange((event.currentTarget as HTMLSelectElement).value)}
+									onchange={(event) =>
+										handleReasonChange((event.currentTarget as HTMLSelectElement).value)}
 									disabled={!detailsEnabled}
 									class="w-full rounded-xl border-0 bg-surface-container-low px-4 py-3 text-sm text-brand-navy focus:ring-2 focus:ring-brand-blue disabled:cursor-not-allowed disabled:opacity-60"
 								>
@@ -299,13 +303,16 @@
 							</div>
 
 							<fieldset class="space-y-2">
-								<legend class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase">
+								<legend
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
 									Direccion del ajuste
 								</legend>
 								<div class="grid grid-cols-2 gap-2">
 									<button
 										type="button"
-										disabled={!directionEnabled || !allowedAdjustmentTypes.includes(InventoryMovementType.ADJUSTMENT_IN)}
+										disabled={!directionEnabled ||
+											!allowedAdjustmentTypes.includes(InventoryMovementType.ADJUSTMENT_IN)}
 										onclick={() => (selectedAdjustmentType = InventoryMovementType.ADJUSTMENT_IN)}
 										class={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${adjustmentType === InventoryMovementType.ADJUSTMENT_IN ? 'bg-brand-navy text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'} disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-outline disabled:hover:bg-surface-container-low`}
 									>
@@ -314,7 +321,8 @@
 									</button>
 									<button
 										type="button"
-										disabled={!directionEnabled || !allowedAdjustmentTypes.includes(InventoryMovementType.ADJUSTMENT_OUT)}
+										disabled={!directionEnabled ||
+											!allowedAdjustmentTypes.includes(InventoryMovementType.ADJUSTMENT_OUT)}
 										onclick={() => (selectedAdjustmentType = InventoryMovementType.ADJUSTMENT_OUT)}
 										class={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${adjustmentType === InventoryMovementType.ADJUSTMENT_OUT ? 'bg-brand-navy text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'} disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-outline disabled:hover:bg-surface-container-low`}
 									>
@@ -326,7 +334,10 @@
 							</fieldset>
 
 							<div class="space-y-2">
-								<label for="adjustment-quantity" class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase">
+								<label
+									for="adjustment-quantity"
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
 									Cantidad a ajustar
 								</label>
 								<FormInput
@@ -343,7 +354,10 @@
 							</div>
 
 							<div class="space-y-2">
-								<label for="adjustment-notes" class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase">
+								<label
+									for="adjustment-notes"
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
 									Notas internas
 								</label>
 								<textarea
@@ -368,7 +382,7 @@
 						unitCost={selectedLot?.unitPurchasePrice ?? null}
 						projectedQuantity={projectedLotQuantity}
 						{currentMonth}
-						reportCategory={reportCategory}
+						{reportCategory}
 					/>
 
 					<section class="glass-card bg-surface-container-lowest p-8">
@@ -378,7 +392,9 @@
 									<p class="text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase">
 										Resumen final
 									</p>
-									<h2 class="mt-2 font-heading text-2xl font-bold tracking-[-0.02em] text-brand-navy">
+									<h2
+										class="font-heading mt-2 text-2xl font-bold tracking-[-0.02em] text-brand-navy"
+									>
 										Listo para registrar
 									</h2>
 								</div>
@@ -387,23 +403,38 @@
 									<div class="rounded-xl bg-surface-container-low px-5 py-4">
 										<p class="text-sm text-on-surface-variant">
 											{#if isOutflow}
-												Salida de <span class="font-mono font-semibold text-brand-navy">{parsedQuantity}</span>
-												uds del lote <span class="font-mono font-semibold text-brand-navy">LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span>.
+												Salida de <span class="font-mono font-semibold text-brand-navy"
+													>{parsedQuantity}</span
+												>
+												uds del lote
+												<span class="font-mono font-semibold text-brand-navy"
+													>LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span
+												>.
 											{:else}
-												Entrada de <span class="font-mono font-semibold text-brand-navy">{parsedQuantity}</span>
-												uds al lote <span class="font-mono font-semibold text-brand-navy">LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span>.
+												Entrada de <span class="font-mono font-semibold text-brand-navy"
+													>{parsedQuantity}</span
+												>
+												uds al lote
+												<span class="font-mono font-semibold text-brand-navy"
+													>LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span
+												>.
 											{/if}
 										</p>
 										<p class="mt-2 text-sm text-on-surface-variant">
 											Stock del lote:
-											<span class="font-mono font-semibold text-brand-navy">{selectedLot.quantityAvailable}</span>
+											<span class="font-mono font-semibold text-brand-navy"
+												>{selectedLot.quantityAvailable}</span
+											>
 											→
-											<span class="font-mono font-semibold text-brand-navy">{projectedLotQuantity}</span>
+											<span class="font-mono font-semibold text-brand-navy"
+												>{projectedLotQuantity}</span
+											>
 										</p>
 									</div>
 								{:else}
 									<p class="text-sm text-on-surface-variant">
-										Completa la seleccion del lote, el motivo y la cantidad para revisar el resultado antes de confirmar.
+										Completa la seleccion del lote, el motivo y la cantidad para revisar el
+										resultado antes de confirmar.
 									</p>
 								{/if}
 							</div>
@@ -422,7 +453,9 @@
 									class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md disabled:cursor-not-allowed disabled:bg-surface-container-highest disabled:text-outline disabled:hover:bg-surface-container-highest"
 								>
 									{#if isSubmitting}
-										<span class="h-4 w-4 animate-spin rounded-full border-2 border-brand-navy/25 border-t-brand-navy"></span>
+										<span
+											class="h-4 w-4 animate-spin rounded-full border-2 border-brand-navy/25 border-t-brand-navy"
+										></span>
 									{/if}
 									Registrar ajuste
 								</button>
@@ -462,7 +495,9 @@
 						<Coins class="h-4 w-4" />
 						<p class="text-[0.68rem] font-bold tracking-[0.16em] uppercase">Costo FIFO actual</p>
 					</div>
-					<p class="mt-2 font-mono text-brand-navy">{fifoCost != null ? formatPrice(fifoCost) : 'Sin stock activo'}</p>
+					<p class="mt-2 font-mono text-brand-navy">
+						{fifoCost != null ? formatPrice(fifoCost) : 'Sin stock activo'}
+					</p>
 				</div>
 			</div>
 		{/if}

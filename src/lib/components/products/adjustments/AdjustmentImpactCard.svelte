@@ -42,7 +42,9 @@
 
 		<div class="flex-1 space-y-4">
 			<div class="flex flex-wrap items-center gap-3">
-				<h3 class={`font-heading text-xl font-bold tracking-[-0.02em] ${showLoss ? 'text-on-error-container' : 'text-brand-navy'}`}>
+				<h3
+					class={`font-heading text-xl font-bold tracking-[-0.02em] ${showLoss ? 'text-on-error-container' : 'text-brand-navy'}`}
+				>
 					3. Impacto del Ajuste
 				</h3>
 				<AppBadge variant={showLoss ? 'error' : enabled ? 'info' : 'neutral'}>
@@ -50,24 +52,31 @@
 				</AppBadge>
 			</div>
 
-			<p class={`max-w-3xl text-sm ${showLoss ? 'text-on-error-container' : 'text-on-surface-variant'}`}>
+			<p
+				class={`max-w-3xl text-sm ${showLoss ? 'text-on-error-container' : 'text-on-surface-variant'}`}
+			>
 				{#if showLoss}
 					Esta salida registrara una perdida directa en el reporte de {currentMonth} bajo la categoria
 					"{reportCategory}".
 				{:else if enabled}
-					El movimiento quedara documentado como "{reportCategory}" y se reflejara en la trazabilidad del inventario.
+					El movimiento quedara documentado como "{reportCategory}" y se reflejara en la
+					trazabilidad del inventario.
 				{:else}
-					El impacto aparece en cuanto eliges lote, motivo y cantidad. Si el motivo implica perdida operativa,
-					se mostrara aqui el costo real del ajuste.
+					El impacto aparece en cuanto eliges lote, motivo y cantidad. Si el motivo implica perdida
+					operativa, se mostrara aqui el costo real del ajuste.
 				{/if}
 			</p>
 
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<div class={`rounded-xl px-4 py-4 ${showLoss ? 'bg-white/70' : 'bg-surface-container-low'}`}>
+				<div
+					class={`rounded-xl px-4 py-4 ${showLoss ? 'bg-white/70' : 'bg-surface-container-low'}`}
+				>
 					<p class="text-[0.65rem] font-bold tracking-[0.16em] text-outline uppercase">
 						{showLoss ? 'Valor unitario' : 'Categoria'}
 					</p>
-					<p class={`mt-2 text-lg font-semibold ${showLoss ? 'font-mono text-brand-navy' : 'text-brand-navy'}`}>
+					<p
+						class={`mt-2 text-lg font-semibold ${showLoss ? 'font-mono text-brand-navy' : 'text-brand-navy'}`}
+					>
 						{#if showLoss}
 							{unitCost != null ? formatPrice(unitCost) : '—'}
 						{:else}
@@ -76,11 +85,15 @@
 					</p>
 				</div>
 
-				<div class={`rounded-xl px-4 py-4 ${showLoss ? 'bg-white/70' : 'bg-surface-container-low'}`}>
+				<div
+					class={`rounded-xl px-4 py-4 ${showLoss ? 'bg-white/70' : 'bg-surface-container-low'}`}
+				>
 					<p class="text-[0.65rem] font-bold tracking-[0.16em] text-outline uppercase">
 						{showLoss ? 'Perdida estimada' : 'Stock proyectado del lote'}
 					</p>
-					<p class={`mt-2 text-lg font-semibold ${showLoss ? 'font-mono text-error' : 'font-mono text-brand-navy'}`}>
+					<p
+						class={`mt-2 text-lg font-semibold ${showLoss ? 'font-mono text-error' : 'font-mono text-brand-navy'}`}
+					>
 						{#if showLoss}
 							-{formatPrice(estimatedLoss)}
 						{:else}

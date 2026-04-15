@@ -9,7 +9,9 @@
 	let { steps }: Props = $props();
 </script>
 
-<div class="relative space-y-7 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-surface-container-high">
+<div
+	class="relative space-y-7 before:absolute before:top-4 before:bottom-4 before:left-4 before:w-px before:bg-surface-container-high"
+>
 	{#each steps as step (step.id)}
 		<div class="relative flex items-center gap-5">
 			<div
@@ -28,7 +30,9 @@
 				>
 					{step.title}
 				</p>
-				<p class={`text-sm ${step.status === 'upcoming' ? 'text-outline' : 'text-on-surface-variant'}`}>
+				<p
+					class={`text-sm ${step.status === 'upcoming' ? 'text-outline' : 'text-on-surface-variant'}`}
+				>
 					{step.description}
 				</p>
 			</div>

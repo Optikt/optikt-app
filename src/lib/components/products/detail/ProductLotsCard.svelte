@@ -51,10 +51,18 @@
 			<table class="min-w-full border-separate [border-spacing:0_0.6rem] text-left">
 				<thead>
 					<tr>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Lote</th>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Stock</th>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Costo u.</th>
-						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Ingreso</th>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
+							>Lote</th
+						>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
+							>Stock</th
+						>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
+							>Costo u.</th
+						>
+						<th class="px-2 pb-2 text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase"
+							>Ingreso</th
+						>
 					</tr>
 				</thead>
 				<tbody>
@@ -86,7 +94,9 @@
 		</div>
 	{:else}
 		<div class="mt-6 rounded-xl bg-surface-container-low px-6 py-10 text-center">
-			<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-outline">
+			<div
+				class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-outline"
+			>
 				<Layers3 class="h-5 w-5" />
 			</div>
 			<p class="mt-4 font-semibold text-brand-navy">No hay lotes activos para este producto</p>

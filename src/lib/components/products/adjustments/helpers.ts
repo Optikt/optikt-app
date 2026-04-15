@@ -78,10 +78,7 @@ export function getAllowedAdjustmentTypes(
 		case AdjustmentReason.SAMPLE:
 		case AdjustmentReason.ENTRY_ERROR:
 		case AdjustmentReason.OTHER:
-			return [
-				InventoryMovementType.ADJUSTMENT_IN,
-				InventoryMovementType.ADJUSTMENT_OUT
-			];
+			return [InventoryMovementType.ADJUSTMENT_IN, InventoryMovementType.ADJUSTMENT_OUT];
 	}
 }
 

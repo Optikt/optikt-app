@@ -78,7 +78,11 @@
 		<div class="mt-8 space-y-5">
 			{#each visibleMovements as movement (movement.id)}
 				<div class="flex items-start gap-4">
-					<div class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full {iconWrapperClass(movement.movementType)}">
+					<div
+						class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full {iconWrapperClass(
+							movement.movementType
+						)}"
+					>
 						{#if movement.movementType === InventoryMovementType.PURCHASE_IN}
 							<PackagePlus class="h-4 w-4" />
 						{:else if movement.movementType === InventoryMovementType.SALE_OUT}
@@ -103,8 +107,12 @@
 						</div>
 
 						<div class="flex items-center justify-between gap-4">
-							<p class="min-w-0 truncate text-[0.75rem] text-on-surface-variant">{metaText(movement)}</p>
-							<p class="whitespace-nowrap text-[0.65rem] font-bold tracking-[0.14em] text-outline uppercase">
+							<p class="min-w-0 truncate text-[0.75rem] text-on-surface-variant">
+								{metaText(movement)}
+							</p>
+							<p
+								class="text-[0.65rem] font-bold tracking-[0.14em] whitespace-nowrap text-outline uppercase"
+							>
 								{formatDate(movement.createdAt, {
 									day: '2-digit',
 									month: 'short',
@@ -125,7 +133,9 @@
 		</a>
 	{:else}
 		<div class="mt-8 rounded-xl bg-surface-container-low px-6 py-10 text-center">
-			<div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-outline">
+			<div
+				class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-outline"
+			>
 				<History class="h-5 w-5" />
 			</div>
 			<p class="mt-4 font-semibold text-brand-navy">Sin movimientos registrados</p>

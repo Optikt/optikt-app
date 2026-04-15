@@ -36,7 +36,9 @@
 		<h2 class="font-heading text-2xl font-bold tracking-[-0.02em] text-brand-navy">
 			Identidad del Producto
 		</h2>
-		<div class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-low text-outline">
+		<div
+			class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-container-low text-outline"
+		>
 			<Info class="h-4 w-4" />
 		</div>
 	</div>
@@ -82,7 +84,9 @@
 	<div class="mt-8 rounded-xl bg-surface-container-low p-6">
 		<div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 			<div class="flex items-center gap-4">
-				<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-info-container text-on-info-container">
+				<div
+					class="flex h-12 w-12 items-center justify-center rounded-xl bg-info-container text-on-info-container"
+				>
 					<Package class="h-5 w-5" />
 				</div>
 				<div>
