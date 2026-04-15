@@ -5,6 +5,7 @@
 import { query, form, command } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { eq, isNull, and } from 'drizzle-orm';
+import { z } from 'zod';
 import {
 	ListProductsSchema,
 	CreateProductSchema,
@@ -16,6 +17,7 @@ import {
 import {
 	getAllProductsWithRelations,
 	countProducts,
+	getProductInventoryStats as getProductInventoryStatsQuery,
 	findProductById,
 	findProductBySku,
 	updateProduct,
@@ -40,6 +42,12 @@ export interface PaginatedProducts {
 	page: number;
 	perPage: number;
 	totalPages: number;
+}
+
+export interface ProductInventoryStats {
+	total: number;
+	lowStock: number;
+	outOfStock: number;
 }
 
 // Types for create result
@@ -78,6 +86,11 @@ export const listProducts = query(
 			totalPages: Math.ceil(total / perPage)
 		};
 	}
+);
+
+export const getProductInventoryStats = query(
+	z.object({}),
+	async (): Promise<ProductInventoryStats> => getProductInventoryStatsQuery()
 );
 
 /**

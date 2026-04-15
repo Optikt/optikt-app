@@ -116,11 +116,6 @@
 		{/snippet}
 	</PageHeader>
 
-	<p class="-mt-3 mb-6 text-sm text-on-surface-variant">
-		Total de ventas:
-		<span class="font-semibold text-brand-navy">{salesData.total.toLocaleString('es-VE')}</span>
-	</p>
-
 	<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 		<div class="glass-card p-5">
 			<div class="mb-3 flex items-center gap-3">

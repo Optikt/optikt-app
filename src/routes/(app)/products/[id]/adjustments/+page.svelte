@@ -1,110 +1,141 @@
 <script lang="ts">
-	import { Button, Select, Label, Helper } from 'flowbite-svelte';
-	import { ArrowLeft, Plus, Minus, AlertTriangle } from '@lucide/svelte';
+	import { ArrowLeft, Boxes, Coins, History, Minus, Plus, ShieldCheck } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
-	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
+	import AdjustmentImpactCard from '$lib/components/products/adjustments/AdjustmentImpactCard.svelte';
+	import AdjustmentLotSelectionCard from '$lib/components/products/adjustments/AdjustmentLotSelectionCard.svelte';
+	import AdjustmentStepRail from '$lib/components/products/adjustments/AdjustmentStepRail.svelte';
+	import {
+		buildAdjustmentSteps,
+		getAllowedAdjustmentTypes,
+		getDefaultAdjustmentType,
+		getNotesRemaining,
+		getProjectedLotQuantity,
+		type ManualAdjustmentType
+	} from '$lib/components/products/adjustments/helpers';
+	import { AppBadge, ConfirmModal, FormInput } from '$lib/components/ui';
 	import { nowUTC } from '$lib/dates';
-	import { FormInput, FormTextarea, ConfirmModal } from '$lib/components/ui';
 	import { createManualAdjustmentCmd } from '$lib/remote/inventory.remote';
 	import {
-		InventoryMovementType,
 		AdjustmentReason,
-		ALL_ADJUSTMENT_REASONS,
 		ADJUSTMENT_REASON_LABELS,
+		ADJUSTMENT_REPORT_CATEGORIES,
+		ALL_ADJUSTMENT_REASONS,
+		InventoryMovementType,
 		LOSS_REASONS,
-		ADJUSTMENT_REPORT_CATEGORIES
+		MovementReferenceType
 	} from '$lib/shared/enums';
 	import type { InventoryLot } from '$lib/server/db/schema';
+	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);
 	const activeLots = untrack(() => data.activeLots) as InventoryLot[];
+	const fifoCost = untrack(() => data.fifoCost) as number | null;
+	const productMovements = untrack(() => data.productMovements);
 
-	// Form state
 	let selectedLotId = $state('');
-	let adjustmentType = $state<string>(InventoryMovementType.ADJUSTMENT_OUT);
+	let selectedAdjustmentType = $state<ManualAdjustmentType | null>(null);
 	let quantity = $state('');
 	let reason = $state('');
 	let notes = $state('');
 	let isSubmitting = $state(false);
-
-	// Confirm modal for financial-impact adjustments
 	let showConfirmModal = $state(false);
 
-	const selectedLot = $derived(activeLots.find((l) => l.id === selectedLotId) ?? null);
-
-	const isOutflow = $derived(adjustmentType === InventoryMovementType.ADJUSTMENT_OUT);
-
+	const selectedLot = $derived(activeLots.find((lot) => lot.id === selectedLotId) ?? null);
+	const realStock = $derived(activeLots.reduce((sum, lot) => sum + lot.quantityAvailable, 0));
 	const parsedQuantity = $derived(parseInt(quantity, 10) || 0);
-
-	// CUSTOMER_RETURN forces ADJUSTMENT_IN
-	const isCustomerReturn = $derived(reason === AdjustmentReason.CUSTOMER_RETURN);
-	$effect(() => {
-		if (isCustomerReturn) {
-			untrack(() => {
-				adjustmentType = InventoryMovementType.ADJUSTMENT_IN;
-			});
-		}
-	});
-
-	// Validation
+	const selectedReason = $derived(reason === '' ? null : (reason as AdjustmentReason));
+	const allowedAdjustmentTypes = $derived(getAllowedAdjustmentTypes(selectedReason));
+	const adjustmentType = $derived(selectedAdjustmentType);
+	const isOutflow = $derived(adjustmentType === InventoryMovementType.ADJUSTMENT_OUT);
+	const detailsEnabled = $derived(selectedLot != null);
+	const directionEnabled = $derived(detailsEnabled && selectedReason != null);
+	const detailsComplete = $derived(
+		selectedReason != null && adjustmentType != null && parsedQuantity > 0
+	);
+	const notesRemaining = $derived(getNotesRemaining(notes));
 	const quantityError = $derived.by(() => {
-		if (parsedQuantity <= 0) return null; // don't show until user types
+		if (parsedQuantity <= 0) return null;
 		if (isOutflow && selectedLot && parsedQuantity > selectedLot.quantityAvailable) {
-			return `Máximo disponible: ${selectedLot.quantityAvailable}`;
+			return `Maximo disponible: ${selectedLot.quantityAvailable}`;
 		}
 		return null;
 	});
-
-	const canSubmit = $derived(
-		selectedLotId !== '' &&
-			reason !== '' &&
-			parsedQuantity > 0 &&
-			notes.length >= 10 &&
-			!quantityError &&
-			!isSubmitting
+	const projectedLotQuantity = $derived(
+		selectedLot && adjustmentType != null
+			? getProjectedLotQuantity(selectedLot.quantityAvailable, parsedQuantity, isOutflow)
+			: null
 	);
-
-	// Financial impact warning
+	const selectedReasonLabel = $derived(
+		reason ? ADJUSTMENT_REASON_LABELS[reason as AdjustmentReason] : null
+	);
+	const reportCategory = $derived(
+		reason ? ADJUSTMENT_REPORT_CATEGORIES[reason as AdjustmentReason] : null
+	);
 	const showsFinancialWarning = $derived(
 		isOutflow && LOSS_REASONS.includes(reason as AdjustmentReason) && selectedLot != null
 	);
-
 	const estimatedLoss = $derived(
 		showsFinancialWarning && selectedLot ? selectedLot.unitPurchasePrice * parsedQuantity : 0
 	);
-
+	const canSubmit = $derived(
+		selectedLotId !== '' &&
+			selectedReason != null &&
+			adjustmentType != null &&
+			parsedQuantity > 0 &&
+			notesRemaining === 0 &&
+			!quantityError &&
+			!isSubmitting
+	);
+	const steps = $derived(
+		buildAdjustmentSteps({
+			hasLot: selectedLotId !== '',
+			hasDetails: detailsComplete,
+			isReady: canSubmit
+		})
+	);
 	const currentMonth = formatDate(nowUTC(), { month: 'long', year: 'numeric' });
-
-	// Lot options for select
-	const lotOptions = $derived(
-		activeLots.map((lot) => ({
-			value: lot.id,
-			name: `LOT-${String(lot.lotNumber).padStart(4, '0')} — ${lot.quantityAvailable} uds — ${formatPrice(lot.unitPurchasePrice)}/ud`
-		}))
+	const lastManualAdjustment = $derived(
+		productMovements.find(
+			(movement) => movement.referenceType === MovementReferenceType.MANUAL_ADJUSTMENT
+		) ?? null
 	);
 
-	// Reason options for select
-	const reasonOptions = $derived(
-		ALL_ADJUSTMENT_REASONS.map((r) => ({
-			value: r,
-			name: ADJUSTMENT_REASON_LABELS[r]
-		}))
-	);
+	const reasonOptions = ALL_ADJUSTMENT_REASONS.map((value) => ({
+		value,
+		label: ADJUSTMENT_REASON_LABELS[value]
+	}));
+	const directionHint = $derived.by(() => {
+		if (!detailsEnabled) {
+			return 'Selecciona un lote para continuar.';
+		}
 
-	// Type options for select
-	const typeOptions = [
-		{ value: InventoryMovementType.ADJUSTMENT_OUT, name: 'Salida (-)' },
-		{ value: InventoryMovementType.ADJUSTMENT_IN, name: 'Entrada (+)' }
-	];
+		if (selectedReason == null) {
+			return 'Selecciona un motivo para habilitar direcciones validas.';
+		}
+
+		if (allowedAdjustmentTypes.length === 1) {
+			return adjustmentType === InventoryMovementType.ADJUSTMENT_IN
+				? 'Este motivo solo admite incremento.'
+				: 'Este motivo solo admite reduccion.';
+		}
+
+		return 'Selecciona la direccion del ajuste segun el caso.';
+	});
+
+	function handleReasonChange(nextReason: string) {
+		reason = nextReason;
+		selectedAdjustmentType = getDefaultAdjustmentType(
+			nextReason === '' ? null : (nextReason as AdjustmentReason)
+		);
+	}
 
 	function handleSubmit() {
 		if (!canSubmit) return;
 
-		// Show confirmation modal for financial-impact adjustments
 		if (showsFinancialWarning) {
 			showConfirmModal = true;
 			return;
@@ -118,13 +149,16 @@
 		isSubmitting = true;
 
 		try {
+			if (adjustmentType == null || selectedReason == null) {
+				toast.error('Completa motivo y direccion del ajuste');
+				return;
+			}
+
 			const result = await createManualAdjustmentCmd({
 				lotId: selectedLotId,
-				adjustmentType: adjustmentType as
-					| InventoryMovementType.ADJUSTMENT_IN
-					| InventoryMovementType.ADJUSTMENT_OUT,
+				adjustmentType,
 				quantity: parsedQuantity,
-				reason: reason as AdjustmentReason,
+				reason: selectedReason,
 				notes
 			});
 
@@ -133,13 +167,13 @@
 				toast.success(
 					`${label} registrada: ${parsedQuantity} uds. Stock del lote: ${result.newQuantityAvailable}`
 				);
-				goto(resolve(`/products/${product.id}`));
+				await goto(resolve(`/products/${product.id}`), { invalidateAll: true });
 			} else {
 				toast.error(result.error ?? 'Error al registrar ajuste');
 			}
-		} catch (e) {
-			console.error('Error creating adjustment:', e);
-			toast.error(getErrorMessage(e, 'Error al registrar ajuste'));
+		} catch (error) {
+			console.error('Error creating adjustment:', error);
+			toast.error(getErrorMessage(error, 'Error al registrar ajuste'));
 		} finally {
 			isSubmitting = false;
 		}
@@ -150,190 +184,330 @@
 	<title>Ajuste de Inventario — {product.name} - Optikt</title>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-50/50 p-8">
-	<div class="w-full">
-		<!-- Header -->
-		<div class="mb-8">
-			<a
-				href={resolve(`/products/${product.id}`)}
-				class="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
-			>
-				<ArrowLeft class="h-4 w-4" />
-				Volver a {product.name}
-			</a>
+<div class="min-h-screen bg-surface px-6 py-8 xl:px-8">
+	<div class="mx-auto max-w-7xl space-y-10">
+		<section class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+			<div class="space-y-3">
+				<a
+					href={resolve(`/products/${product.id}`)}
+					class="inline-flex items-center gap-2 text-[0.72rem] font-bold tracking-[0.18em] text-brand-blue uppercase transition-colors hover:text-brand-navy"
+				>
+					<ArrowLeft class="h-4 w-4" />
+					Detalle producto
+				</a>
 
-			<h1 class="text-2xl font-bold tracking-tight text-slate-900">Ajuste Manual de Inventario</h1>
-			<p class="mt-1 text-sm text-slate-500">
-				{product.name} — SKU: <span class="font-mono">{product.sku}</span>
-			</p>
-		</div>
+				<div class="space-y-2">
+					<h1 class="font-heading text-4xl font-extrabold tracking-[-0.04em] text-brand-navy">
+						Ajuste de Inventario
+					</h1>
+					<p class="max-w-2xl text-sm leading-7 text-on-surface-variant">
+						Modifica niveles de stock con precision. Cada accion conserva lote, costo historico y
+						motivo operativo.
+					</p>
+				</div>
+			</div>
+
+			<div class="glass-card bg-surface-container-lowest px-5 py-4 lg:min-w-[21rem]">
+				<div class="flex items-center gap-4">
+					<div
+						class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-container text-brand-navy"
+					>
+						<Boxes class="h-5 w-5" />
+					</div>
+					<div class="min-w-0">
+						<p class="text-[0.65rem] font-bold tracking-[0.16em] text-outline uppercase">
+							Producto SKU: {product.sku}
+						</p>
+						<p class="truncate text-lg font-semibold text-brand-navy">{product.name}</p>
+						<p class="mt-1 text-sm text-on-surface-variant">
+							{realStock} uds disponibles en {activeLots.length} lotes activos
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
 
 		{#if activeLots.length === 0}
-			<div class="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-				<p class="text-slate-500">Este producto no tiene lotes activos para ajustar.</p>
-				<Button color="alternative" class="mt-4" href={resolve(`/products/${product.id}`)}>
-					Volver al producto
-				</Button>
-			</div>
+			<section class="glass-card bg-surface-container-lowest px-8 py-14 text-center">
+				<div
+					class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-brand-navy"
+				>
+					<Boxes class="h-6 w-6" />
+				</div>
+				<h2 class="font-heading mt-5 text-2xl font-bold tracking-[-0.02em] text-brand-navy">
+					No hay lotes activos para ajustar
+				</h2>
+				<p class="mx-auto mt-2 max-w-xl text-sm text-on-surface-variant">
+					Este flujo solo funciona sobre stock existente. Si necesitas ingresar unidades nuevas, usa
+					una compra o reabastece primero el producto.
+				</p>
+				<div class="mt-8 flex justify-center">
+					<a
+						href={resolve(`/products/${product.id}`)}
+						class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low px-5 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+					>
+						Volver al producto
+					</a>
+				</div>
+			</section>
 		{:else}
-			<div class="space-y-6">
-				<!-- Lot Selection -->
-				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<h3 class="mb-4 text-lg font-semibold text-slate-800">1. Seleccionar Lote</h3>
-					<div>
-						<Label for="lot-select" class="mb-2">Lote</Label>
-						<Select
-							id="lot-select"
-							bind:value={selectedLotId}
-							items={[{ value: '', name: 'Seleccionar lote...' }, ...lotOptions]}
-						/>
-					</div>
-
-					{#if selectedLot}
-						<div class="mt-4 grid grid-cols-3 gap-4 rounded-lg bg-slate-50 p-4 text-sm">
-							<div>
-								<dt class="text-slate-500">Disponible</dt>
-								<dd class="font-mono font-semibold text-slate-900">
-									{selectedLot.quantityAvailable} uds
-								</dd>
-							</div>
-							<div>
-								<dt class="text-slate-500">Costo unitario</dt>
-								<dd class="font-mono font-semibold text-slate-900">
-									{formatPrice(selectedLot.unitPurchasePrice)}
-								</dd>
-							</div>
-							<div>
-								<dt class="text-slate-500">Fecha ingreso</dt>
-								<dd class="text-slate-700">{formatDate(selectedLot.createdAt)}</dd>
-							</div>
-						</div>
-					{/if}
+			<div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
+				<div class="lg:col-span-3">
+					<AdjustmentStepRail {steps} />
 				</div>
 
-				<!-- Adjustment Details -->
-				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<h3 class="mb-4 text-lg font-semibold text-slate-800">2. Detalle del Ajuste</h3>
+				<div class="space-y-8 lg:col-span-9">
+					<AdjustmentLotSelectionCard {activeLots} bind:selectedLotId />
 
-					<div class="space-y-4">
-						<!-- Type -->
-						<div>
-							<Label for="adjustment-type" class="mb-2">Tipo de ajuste</Label>
-							<Select
-								id="adjustment-type"
-								bind:value={adjustmentType}
-								items={typeOptions}
-								disabled={isCustomerReturn}
-							/>
-							{#if isCustomerReturn}
-								<Helper class="mt-1" color="blue">Las devoluciones siempre son entrada (+)</Helper>
-							{/if}
-						</div>
-
-						<!-- Reason -->
-						<div>
-							<Label for="reason-select" class="mb-2">Motivo</Label>
-							<Select
-								id="reason-select"
-								bind:value={reason}
-								items={[{ value: '', name: 'Seleccionar motivo...' }, ...reasonOptions]}
-							/>
-						</div>
-
-						<!-- Quantity -->
-						<div>
-							<FormInput
-								label="Cantidad"
-								type="number"
-								bind:value={quantity}
-								min="1"
-								max={isOutflow && selectedLot ? String(selectedLot.quantityAvailable) : undefined}
-								placeholder="Ej: 5"
-								error={quantityError}
-							/>
-						</div>
-
-						<!-- Notes -->
-						<div>
-							<FormTextarea
-								label="Notas (mínimo 10 caracteres)"
-								bind:value={notes}
-								placeholder="Describir el motivo del ajuste con detalle..."
-								rows={3}
-								error={notes.length > 0 && notes.length < 10
-									? `${10 - notes.length} caracteres más requeridos`
-									: null}
-							/>
-						</div>
-					</div>
-				</div>
-
-				<!-- Financial Impact Warning -->
-				{#if showsFinancialWarning && parsedQuantity > 0}
-					<div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
-						<div class="flex items-start gap-3">
-							<AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+					<section
+						class={`glass-card bg-surface-container-lowest p-8 transition-opacity ${detailsEnabled ? 'opacity-100' : 'opacity-70'}`}
+					>
+						<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 							<div>
-								<p class="font-medium text-amber-800">Impacto financiero</p>
-								<p class="mt-1 text-sm text-amber-700">
-									Esta acción registrará una pérdida de
-									<span class="font-mono font-semibold">
-										{formatPrice(estimatedLoss)}
-									</span>
-									como "{ADJUSTMENT_REPORT_CATEGORIES[reason as AdjustmentReason]}" en el reporte de {currentMonth}.
+								<h2 class="font-heading text-2xl font-bold tracking-[-0.02em] text-brand-navy">
+									2. Detalles del Ajuste
+								</h2>
+								<p class="mt-1 text-sm text-on-surface-variant">
+									Define direccion, motivo y contexto del movimiento antes de registrarlo.
 								</p>
 							</div>
-						</div>
-					</div>
-				{/if}
 
-				<!-- Summary & Submit -->
-				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					{#if selectedLot && parsedQuantity > 0}
-						<div class="mb-4 rounded-lg bg-slate-50 p-4 text-sm">
-							<p class="font-medium text-slate-700">
-								Resumen:
-								{#if isOutflow}
-									<Minus class="inline h-4 w-4 text-red-500" />
-									<span class="font-mono text-red-600">{parsedQuantity}</span> uds del lote
-								{:else}
-									<Plus class="inline h-4 w-4 text-green-500" />
-									<span class="font-mono text-green-600">{parsedQuantity}</span> uds al lote
-								{/if}
-								<span class="font-mono">
-									LOT-{String(selectedLot.lotNumber).padStart(4, '0')}
-								</span>
-							</p>
-							<p class="mt-1 text-slate-500">
-								Stock del lote: {selectedLot.quantityAvailable} →
-								<span class="font-mono font-semibold">
-									{selectedLot.quantityAvailable + (isOutflow ? -parsedQuantity : parsedQuantity)}
-								</span>
-							</p>
-						</div>
-					{/if}
-
-					<div class="flex justify-end gap-3">
-						<Button color="alternative" href={resolve(`/products/${product.id}`)}>Cancelar</Button>
-						<Button color="blue" onclick={handleSubmit} disabled={!canSubmit}>
-							{#if isSubmitting}
-								Registrando...
-							{:else}
-								Registrar Ajuste
+							{#if selectedReasonLabel}
+								<AppBadge variant={showsFinancialWarning ? 'error' : 'info'}>
+									{selectedReasonLabel}
+								</AppBadge>
 							{/if}
-						</Button>
+						</div>
+
+						<div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+							<div class="space-y-2">
+								<label
+									for="reason"
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
+									Motivo
+								</label>
+								<select
+									id="reason"
+									value={reason}
+									onchange={(event) =>
+										handleReasonChange((event.currentTarget as HTMLSelectElement).value)}
+									disabled={!detailsEnabled}
+									class="w-full rounded-xl border-0 bg-surface-container-low px-4 py-3 text-sm text-brand-navy focus:ring-2 focus:ring-brand-blue disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									<option value="">Selecciona motivo...</option>
+									{#each reasonOptions as option (option.value)}
+										<option value={option.value}>{option.label}</option>
+									{/each}
+								</select>
+							</div>
+
+							<fieldset class="space-y-2">
+								<legend
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
+									Direccion del ajuste
+								</legend>
+								<div class="grid grid-cols-2 gap-2">
+									<button
+										type="button"
+										disabled={!directionEnabled ||
+											!allowedAdjustmentTypes.includes(InventoryMovementType.ADJUSTMENT_IN)}
+										onclick={() => (selectedAdjustmentType = InventoryMovementType.ADJUSTMENT_IN)}
+										class={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${adjustmentType === InventoryMovementType.ADJUSTMENT_IN ? 'bg-brand-navy text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'} disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-outline disabled:hover:bg-surface-container-low`}
+									>
+										<Plus class="h-4 w-4" />
+										Incremento
+									</button>
+									<button
+										type="button"
+										disabled={!directionEnabled ||
+											!allowedAdjustmentTypes.includes(InventoryMovementType.ADJUSTMENT_OUT)}
+										onclick={() => (selectedAdjustmentType = InventoryMovementType.ADJUSTMENT_OUT)}
+										class={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${adjustmentType === InventoryMovementType.ADJUSTMENT_OUT ? 'bg-brand-navy text-white' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'} disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-outline disabled:hover:bg-surface-container-low`}
+									>
+										<Minus class="h-4 w-4" />
+										Reduccion
+									</button>
+								</div>
+								<p class="text-xs text-on-surface-variant">{directionHint}</p>
+							</fieldset>
+
+							<div class="space-y-2">
+								<label
+									for="adjustment-quantity"
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
+									Cantidad a ajustar
+								</label>
+								<FormInput
+									id="adjustment-quantity"
+									bind:value={quantity}
+									type="number"
+									min="1"
+									max={isOutflow && selectedLot ? String(selectedLot.quantityAvailable) : undefined}
+									placeholder="0"
+									disabled={!detailsEnabled}
+									error={quantityError}
+									class="!rounded-xl !border-0 !bg-surface-container-low !px-4 !py-3 !text-sm !text-brand-navy !shadow-none"
+								/>
+							</div>
+
+							<div class="space-y-2">
+								<label
+									for="adjustment-notes"
+									class="block text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase"
+								>
+									Notas internas
+								</label>
+								<textarea
+									id="adjustment-notes"
+									bind:value={notes}
+									rows="3"
+									placeholder="Escribe el contexto del ajuste con detalle..."
+									disabled={!detailsEnabled}
+									class="w-full rounded-xl border-0 bg-surface-container-low px-4 py-3 text-sm text-brand-navy placeholder:text-slate-400 focus:ring-2 focus:ring-brand-blue disabled:cursor-not-allowed disabled:opacity-60"
+								></textarea>
+								{#if notes.length > 0 && notesRemaining > 0}
+									<p class="text-sm text-error">{notesRemaining} caracteres mas requeridos</p>
+								{/if}
+							</div>
+						</div>
+					</section>
+
+					<AdjustmentImpactCard
+						enabled={detailsComplete}
+						showLoss={showsFinancialWarning && parsedQuantity > 0}
+						{estimatedLoss}
+						unitCost={selectedLot?.unitPurchasePrice ?? null}
+						projectedQuantity={projectedLotQuantity}
+						{currentMonth}
+						{reportCategory}
+					/>
+
+					<section class="glass-card bg-surface-container-lowest p-8">
+						<div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+							<div class="space-y-4">
+								<div>
+									<p class="text-[0.68rem] font-bold tracking-[0.18em] text-outline uppercase">
+										Resumen final
+									</p>
+									<h2
+										class="font-heading mt-2 text-2xl font-bold tracking-[-0.02em] text-brand-navy"
+									>
+										Listo para registrar
+									</h2>
+								</div>
+
+								{#if selectedLot && parsedQuantity > 0 && adjustmentType != null}
+									<div class="rounded-xl bg-surface-container-low px-5 py-4">
+										<p class="text-sm text-on-surface-variant">
+											{#if isOutflow}
+												Salida de <span class="font-mono font-semibold text-brand-navy"
+													>{parsedQuantity}</span
+												>
+												uds del lote
+												<span class="font-mono font-semibold text-brand-navy"
+													>LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span
+												>.
+											{:else}
+												Entrada de <span class="font-mono font-semibold text-brand-navy"
+													>{parsedQuantity}</span
+												>
+												uds al lote
+												<span class="font-mono font-semibold text-brand-navy"
+													>LOT-{String(selectedLot.lotNumber).padStart(4, '0')}</span
+												>.
+											{/if}
+										</p>
+										<p class="mt-2 text-sm text-on-surface-variant">
+											Stock del lote:
+											<span class="font-mono font-semibold text-brand-navy"
+												>{selectedLot.quantityAvailable}</span
+											>
+											→
+											<span class="font-mono font-semibold text-brand-navy"
+												>{projectedLotQuantity}</span
+											>
+										</p>
+									</div>
+								{:else}
+									<p class="text-sm text-on-surface-variant">
+										Completa la seleccion del lote, el motivo y la cantidad para revisar el
+										resultado antes de confirmar.
+									</p>
+								{/if}
+							</div>
+
+							<div class="flex flex-wrap items-center gap-3">
+								<a
+									href={resolve(`/products/${product.id}`)}
+									class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low px-5 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+								>
+									Cancelar ajuste
+								</a>
+								<button
+									type="button"
+									onclick={handleSubmit}
+									disabled={!canSubmit}
+									class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md disabled:cursor-not-allowed disabled:bg-surface-container-highest disabled:text-outline disabled:hover:bg-surface-container-highest"
+								>
+									{#if isSubmitting}
+										<span
+											class="h-4 w-4 animate-spin rounded-full border-2 border-brand-navy/25 border-t-brand-navy"
+										></span>
+									{/if}
+									Registrar ajuste
+								</button>
+							</div>
+						</div>
+					</section>
+				</div>
+			</div>
+
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<div class="rounded-xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">
+					<div class="flex items-center gap-3 text-brand-navy">
+						<ShieldCheck class="h-4 w-4" />
+						<p class="text-[0.68rem] font-bold tracking-[0.16em] uppercase">Audit log activo</p>
 					</div>
+					<p class="mt-2">Cada ajuste crea un movimiento inmutable sobre el lote seleccionado.</p>
+				</div>
+
+				<div class="rounded-xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">
+					<div class="flex items-center gap-3 text-brand-navy">
+						<History class="h-4 w-4" />
+						<p class="text-[0.68rem] font-bold tracking-[0.16em] uppercase">Ultimo ajuste manual</p>
+					</div>
+					<p class="mt-2">
+						{lastManualAdjustment
+							? formatDate(lastManualAdjustment.createdAt, {
+									day: '2-digit',
+									month: 'short',
+									year: 'numeric'
+								})
+							: 'Sin ajustes manuales registrados'}
+					</p>
+				</div>
+
+				<div class="rounded-xl bg-surface-container-low px-4 py-4 text-sm text-on-surface-variant">
+					<div class="flex items-center gap-3 text-brand-navy">
+						<Coins class="h-4 w-4" />
+						<p class="text-[0.68rem] font-bold tracking-[0.16em] uppercase">Costo FIFO actual</p>
+					</div>
+					<p class="mt-2 font-mono text-brand-navy">
+						{fifoCost != null ? formatPrice(fifoCost) : 'Sin stock activo'}
+					</p>
 				</div>
 			</div>
 		{/if}
 	</div>
 </div>
 
-<!-- Financial Impact Confirmation Modal -->
 <ConfirmModal
 	bind:open={showConfirmModal}
-	title="Confirmar pérdida operativa"
-	message={`Esta acción registrará una pérdida de ${formatPrice(estimatedLoss)} como "${reason ? ADJUSTMENT_REPORT_CATEGORIES[reason as AdjustmentReason] : ''}" en el reporte de ${currentMonth}.`}
+	title="Confirmar perdida operativa"
+	message={`Esta accion registrara una perdida de ${formatPrice(estimatedLoss)} como "${reason ? ADJUSTMENT_REPORT_CATEGORIES[reason as AdjustmentReason] : ''}" en el reporte de ${currentMonth}.`}
 	confirmLabel="Confirmar ajuste"
 	confirmColor="red"
 	loading={isSubmitting}

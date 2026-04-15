@@ -16,7 +16,8 @@ import {
 	ListPaginationSchema,
 	OptionalUrlSchema,
 	CoercedNumber,
-	CoercedBoolean
+	CoercedBoolean,
+	ReactivateEntitySchema
 } from './common';
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
@@ -47,9 +48,7 @@ export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({
 
 export const SupplierIdSchema = EntityIdSchema();
 
-export const ReactivateSupplierSchema = z.object({
-	deletedSupplierId: z.uuid()
-});
+export const ReactivateSupplierSchema = ReactivateEntitySchema('deletedSupplierId');
 
 // ============================================================================
 // SUPPLIER TREATMENTS

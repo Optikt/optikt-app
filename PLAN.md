@@ -100,7 +100,7 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 
 | #   | Pantalla      | Ruta         | Estado     |
 | --- | ------------- | ------------ | ---------- |
-| D1  | Productos     | `/products`  | ⬚ Pending  |
+| D1  | Productos     | `/products`  | ✅ Hecho   |
 | D2  | Marcas        | `/brands`    | ⬚ Pending  |
 | D3  | Proveedores   | `/suppliers` | ⬚ Pending  |
 | D4  | Presupuestos  | `/quotes`    | ✅ Hecho   |
@@ -135,6 +135,7 @@ Estos items se agregan cuando aparezca una necesidad real en uso:
 - ✅ **Cancelación de venta con pago parcial** — resuelto: decisión binaria retener/reembolsar por el monto completo pagado. El servidor auto-asigna `refundAmount = paidAmountBcvUsd`. Para ajustes parciales se usa registro manual de gasto.
 - **Módulo de Ingresos y Egresos** — registro de gastos operativos (impuestos, salarios, alquileres, ajustes manuales de reembolso parcial, etc.). Complementa cancelaciones con retención. Permite contabilidad básica sin depender del libro contable.
 - **Credit Notes / RETURN_IN** — devolución parcial de artículos con ajuste financiero e inventario. Tablas nuevas: `credit_notes` y `return_items` (aditivas, no modifica lo existente). Nuevo tipo de movimiento `RETURN_IN` (reutiliza `returnToLot()` de CANCEL_REVERT). UI: botón "Devolver artículos" en detalle de venta, selector de items/cantidades, vista de notas de crédito por cliente. **Caso común** (cancelación total) ya resuelto con el flujo actual. **Caso raro** (devolver 1 de N artículos) es lo que necesita esta feature. **Workaround temporal**: cancelar la venta completa y crear una nueva sin el artículo devuelto.
+- **Reporte de pérdidas operativas** — vista agregada de pérdidas por período y categoría (Pérdidas operativas, Muestras y cortesías, Errores de entrada, etc.). La infraestructura de datos ya existe: cada ajuste manual persiste `adjustmentReportCategory` y `totalCostAtAdjustment` en `inventoryMovements`. Falta: query de agregación en `reports.ts`, ruta `/reports/losses`, tarjeta en el índice de reportes, y exportación CSV.
 - Conteo físico multi-item (inventario físico: ver todos los productos, ingresar stock real, el sistema genera ajustes por diferencias)
 - Ajustes de inventario para lentes (catálogo de lentes con stock)
 - Surplus / excedentes físicos de cristales

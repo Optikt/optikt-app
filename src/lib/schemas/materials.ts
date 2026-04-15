@@ -8,7 +8,12 @@ import {
 	ProductType,
 	type MaterialCategory
 } from '$lib/shared/enums/productTypes';
-import { NameSchema, EntityIdSchema, ListPaginationWithDeletedSchema } from './common';
+import {
+	NameSchema,
+	EntityIdSchema,
+	ListPaginationWithDeletedSchema,
+	ReactivateEntitySchema
+} from './common';
 
 export const MaterialCategories = MATERIAL_CATEGORIES;
 export type { MaterialCategory };
@@ -30,9 +35,7 @@ export const UpdateMaterialSchema = CreateMaterialSchema.partial().extend({
 	id: z.uuid()
 });
 
-export const ReactivateMaterialSchema = z.object({
-	deletedMaterialId: z.uuid()
-});
+export const ReactivateMaterialSchema = ReactivateEntitySchema('deletedMaterialId');
 
 /**
  * Quick create schema - minimal fields for inline creation

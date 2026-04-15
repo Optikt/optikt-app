@@ -7,7 +7,8 @@ import {
 	NameSchema,
 	ListPaginationWithDeletedSchema,
 	EntityIdSchema,
-	OptionalUrlSchema
+	OptionalUrlSchema,
+	ReactivateEntitySchema
 } from './common';
 
 export const ListBrandsSchema = ListPaginationWithDeletedSchema;
@@ -25,9 +26,7 @@ export const UpdateBrandSchema = CreateBrandSchema.partial().extend({
 
 export const BrandIdSchema = EntityIdSchema();
 
-export const ReactivateBrandSchema = z.object({
-	deletedBrandId: z.uuid()
-});
+export const ReactivateBrandSchema = ReactivateEntitySchema('deletedBrandId');
 
 /**
  * Quick create schema - We already have minimal fields for inline creation.

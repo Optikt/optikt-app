@@ -13,7 +13,8 @@ import {
 	EntityIdSchema,
 	OptionalPendingEntitySchema,
 	PendingEntitySchema,
-	ListPaginationSchema
+	ListPaginationSchema,
+	ReactivateEntitySchema
 } from './common';
 
 // Single source of truth for SKU validation
@@ -72,6 +73,4 @@ export const UpdateSalePriceSchema = z.object({
 	currentSalePrice: CoercedNumber.min(0, 'Precio debe ser ≥ 0')
 });
 
-export const ReactivateProductSchema = z.object({
-	deletedProductId: z.uuid()
-});
+export const ReactivateProductSchema = ReactivateEntitySchema('deletedProductId');

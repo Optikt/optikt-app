@@ -46,6 +46,10 @@
 		onchange?: (option: SelectOption | null) => void;
 		/** Error message to display below the select */
 		error?: string | null;
+		/** Label class override */
+		labelClass?: string;
+		/** Visual variant for the select control */
+		variant?: 'default' | 'tonal';
 	};
 
 	let {
@@ -59,7 +63,9 @@
 		creatable = false,
 		onCreatePending,
 		onchange,
-		error = null
+		error = null,
+		labelClass,
+		variant = 'default'
 	}: Props = $props();
 
 	// Track local options (newly created pending ones)
@@ -132,6 +138,7 @@
 
 	<BaseSelect
 		{label}
+		{labelClass}
 		{required}
 		{placeholder}
 		{disabled}
@@ -142,6 +149,7 @@
 		creatablePrefix="Crear: "
 		keepCreated={false}
 		onChange={handleChange}
+		{variant}
 		hasError={!!error}
 	/>
 

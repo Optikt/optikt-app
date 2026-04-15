@@ -166,19 +166,26 @@
 ## Fase 6 — Productos & Inventario
 
 **Fuente:** Stitch inventario screen  
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/products` — lista con DataTable
-- [ ] `/products/create` — formulario de creación
-- [ ] `/products/[id]` — detalle (info, stock, movimientos, ajustes)
-- [ ] `/products/[id]/update` — edición
-- [ ] `/products/[id]/adjustments` — ajustes de inventario
+- [x] `/products` — lista con DataGrid, stat cards, filtros y acciones
+- [x] `/products/create` — formulario de creación
+- [x] `/products/[id]` — detalle (info, stock, movimientos, ajustes)
+- [x] `/products/[id]/update` — edición
+- [x] `/products/[id]/adjustments` — ajustes de inventario
 
-### Deuda técnica a resolver aquí
+### Notas de implementación
 
-- **RT-1** — Estandarizar `ReactivateXxxSchema` a factory function (al tocar reactivar producto)
+- Create/update comparten `ProductForm.svelte` con layout compacto alineado al mockup de Stitch
+- `/products` usa `PageHeader`, stat cards, filtros y `ProductsTable` sobre `DataGrid`
+- Detalle y ajustes ya muestran stock, movimientos y costos sin depender de Flowbite legacy
+- `ProductReactivateModal` mantiene el flujo de reactivación y RT-1 quedó resuelto en schemas compartidos
+
+### Deuda técnica resuelta
+
+- [x] **RT-1** — Estandarizar `ReactivateXxxSchema` a factory function
 
 ---
 
@@ -235,46 +242,45 @@
 
 ---
 
-## Inventario completo de pantallas (32 pages + 4 layouts)
+## Inventario completo de pantallas (32 pages + 3 layouts)
 
-| #   | Ruta                           | Fase | Estado     |
-| --- | ------------------------------ | ---- | ---------- |
-| L1  | `+layout.svelte` (root)        | 0    | pendiente  |
-| L2  | `(auth)/+layout.svelte`        | 1    | completada |
-| L3  | `(app)/+layout.svelte`         | 2    | completada |
-| L4  | `products/[id]/+layout.svelte` | 6    | pendiente  |
-| 1   | `/login`                       | 1    | completada |
-| 2   | `/dashboard`                   | 2    | completada |
-| 3   | `/customers`                   | 3    | completada |
-| 4   | `/customers/[id]`              | 3    | completada |
-| 5   | `/sales`                       | 4    | completada |
-| 6   | `/sales/[id]`                  | 4    | completada |
-| 7   | `/sales/new`                   | 4    | completada |
-| 8   | `/quotes`                      | 5    | completada |
-| 9   | `/quotes/[id]`                 | 5    | completada |
-| 10  | `/quotes/new`                  | 5    | completada |
-| 11  | `/products`                    | 6    | pendiente  |
-| 12  | `/products/create`             | 6    | pendiente  |
-| 13  | `/products/[id]`               | 6    | pendiente  |
-| 14  | `/products/[id]/update`        | 6    | pendiente  |
-| 15  | `/products/[id]/adjustments`   | 6    | pendiente  |
-| 16  | `/lenses`                      | 7    | pendiente  |
-| 17  | `/lenses/create`               | 7    | pendiente  |
-| 18  | `/lenses/[id]`                 | 7    | pendiente  |
-| 19  | `/lenses/[id]/edit`            | 7    | pendiente  |
-| 20  | `/purchases`                   | 8    | pendiente  |
-| 21  | `/purchases/new`               | 8    | pendiente  |
-| 22  | `/purchases/[id]`              | 8    | pendiente  |
-| 23  | `/purchases/movements`         | 8    | pendiente  |
-| 24  | `/config`                      | 9    | pendiente  |
-| 25  | `/brands`                      | 9    | pendiente  |
-| 26  | `/materials`                   | 9    | pendiente  |
-| 27  | `/suppliers`                   | 9    | pendiente  |
-| 28  | `/users`                       | 9    | pendiente  |
-| 29  | `/reports`                     | 10   | pendiente  |
-| 30  | `/reports/sales`               | 10   | pendiente  |
-| 31  | `/reports/payments`            | 10   | pendiente  |
-| 32  | `/reports/inventory`           | 10   | pendiente  |
+| #   | Ruta                         | Fase | Estado     |
+| --- | ---------------------------- | ---- | ---------- |
+| L1  | `+layout.svelte` (root)      | 0    | pendiente  |
+| L2  | `(auth)/+layout.svelte`      | 1    | completada |
+| L3  | `(app)/+layout.svelte`       | 2    | completada |
+| 1   | `/login`                     | 1    | completada |
+| 2   | `/dashboard`                 | 2    | completada |
+| 3   | `/customers`                 | 3    | completada |
+| 4   | `/customers/[id]`            | 3    | completada |
+| 5   | `/sales`                     | 4    | completada |
+| 6   | `/sales/[id]`                | 4    | completada |
+| 7   | `/sales/new`                 | 4    | completada |
+| 8   | `/quotes`                    | 5    | completada |
+| 9   | `/quotes/[id]`               | 5    | completada |
+| 10  | `/quotes/new`                | 5    | completada |
+| 11  | `/products`                  | 6    | completada |
+| 12  | `/products/create`           | 6    | completada |
+| 13  | `/products/[id]`             | 6    | completada |
+| 14  | `/products/[id]/update`      | 6    | completada |
+| 15  | `/products/[id]/adjustments` | 6    | completada |
+| 16  | `/lenses`                    | 7    | pendiente  |
+| 17  | `/lenses/create`             | 7    | pendiente  |
+| 18  | `/lenses/[id]`               | 7    | pendiente  |
+| 19  | `/lenses/[id]/edit`          | 7    | pendiente  |
+| 20  | `/purchases`                 | 8    | pendiente  |
+| 21  | `/purchases/new`             | 8    | pendiente  |
+| 22  | `/purchases/[id]`            | 8    | pendiente  |
+| 23  | `/purchases/movements`       | 8    | pendiente  |
+| 24  | `/config`                    | 9    | pendiente  |
+| 25  | `/brands`                    | 9    | pendiente  |
+| 26  | `/materials`                 | 9    | pendiente  |
+| 27  | `/suppliers`                 | 9    | pendiente  |
+| 28  | `/users`                     | 9    | pendiente  |
+| 29  | `/reports`                   | 10   | pendiente  |
+| 30  | `/reports/sales`             | 10   | pendiente  |
+| 31  | `/reports/payments`          | 10   | pendiente  |
+| 32  | `/reports/inventory`         | 10   | pendiente  |
 
 ---
 
@@ -282,7 +288,7 @@
 
 | ID   | Descripción                                           | Se resuelve en |
 | ---- | ----------------------------------------------------- | -------------- |
-| RT-1 | Estandarizar `ReactivateXxxSchema` a factory function | Fase 6         |
+| RT-1 | Estandarizar `ReactivateXxxSchema` a factory function | ✅ Resuelto    |
 | RT-2 | Consolidar `getXxxLabel()` / `getXxxBadgeColor()`     | Fase 0         |
 | RT-3 | Componente genérico `ReactivateEntityModal`           | Fase 4         |
 

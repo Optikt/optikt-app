@@ -46,6 +46,10 @@
 		keepCreated?: boolean;
 		/** Whether the field has an error */
 		hasError?: boolean;
+		/** Label class override */
+		labelClass?: string;
+		/** Visual variant for the select control */
+		variant?: 'default' | 'tonal';
 		/** Content rendered below the select (stock warnings, error messages, etc.) */
 		footer?: Snippet;
 	}
@@ -68,13 +72,15 @@
 		creatablePrefix,
 		keepCreated,
 		hasError = false,
+		labelClass = 'mb-1.5 text-sm',
+		variant = 'default',
 		footer
 	}: Props = $props();
 </script>
 
 <div>
 	{#if label}
-		<Label class="mb-1.5 text-sm">
+		<Label class={labelClass}>
 			{label}{#if required}<span class="ml-0.5 text-red-500">*</span>{/if}
 		</Label>
 	{/if}
@@ -94,7 +100,7 @@
 		{createHandler}
 		{creatablePrefix}
 		{keepCreated}
-		class="base-select {hasError ? 'base-select-error' : ''}"
+		class={`base-select ${hasError ? 'base-select-error' : ''} ${variant === 'tonal' ? 'base-select-tonal' : ''}`}
 	/>
 
 	{#if footer}
@@ -135,6 +141,16 @@
 		--sv-dropdown-height: 280px;
 		--sv-dropdown-active-bg: #f8fafc;
 		--sv-dropdown-selected-bg: #eff6ff;
+	}
+
+	:global(.base-select-tonal) {
+		--sv-bg: var(--color-surface-container-low);
+		--sv-border: 1px solid rgba(198, 198, 207, 0.45);
+		--sv-placeholder-color: var(--color-outline);
+		--sv-item-selected-bg: rgba(65, 158, 189, 0.08);
+		--sv-highlight-bg: rgba(65, 158, 189, 0.12);
+		--sv-dropdown-active-bg: var(--color-surface-container-low);
+		--sv-dropdown-selected-bg: rgba(65, 158, 189, 0.12);
 	}
 
 	/* ── Error state ───────────────────────────────────────────────────── */

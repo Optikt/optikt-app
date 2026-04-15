@@ -4,6 +4,7 @@ import {
 	isNotNull,
 	and,
 	or,
+	gt,
 	lte,
 	asc,
 	desc,
@@ -62,6 +63,12 @@ export interface GetProductsOptions extends ProductFilterOptions {
 	limit?: number;
 	/** Number of results to skip (for pagination) */
 	offset?: number;
+}
+
+export interface ProductInventoryStats {
+	total: number;
+	lowStock: number;
+	outOfStock: number;
 }
 
 /** Column map for orderBy */
@@ -179,6 +186,50 @@ export async function countProducts(options?: ProductFilterOptions): Promise<num
 	if (where) base.where(where);
 	const [result] = await base;
 	return result.value;
+}
+
+async function countProductsMatching(extraConditions: SQL[]): Promise<number> {
+	const conditions: SQL[] = [];
+	const baseConditions = buildProductConditions({});
+
+	if (baseConditions) {
+		conditions.push(baseConditions);
+	}
+
+	conditions.push(...extraConditions);
+
+	const [result] = await db
+		.select({ value: count() })
+		.from(products)
+		.where(and(...conditions));
+
+	return result.value;
+}
+
+export async function countLowStockProducts(): Promise<number> {
+	return countProductsMatching([
+		isNotNull(products.minStock),
+		gt(products.stock, 0),
+		lte(products.stock, products.minStock)
+	]);
+}
+
+export async function countOutOfStockProducts(): Promise<number> {
+	return countProductsMatching([eq(products.stock, 0)]);
+}
+
+export async function getProductInventoryStats(): Promise<ProductInventoryStats> {
+	const [total, lowStock, outOfStock] = await Promise.all([
+		countProducts(),
+		countLowStockProducts(),
+		countOutOfStockProducts()
+	]);
+
+	return {
+		total,
+		lowStock,
+		outOfStock
+	};
 }
 
 /**
