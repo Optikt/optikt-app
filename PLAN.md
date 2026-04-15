@@ -100,7 +100,7 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 
 | #   | Pantalla      | Ruta         | Estado     |
 | --- | ------------- | ------------ | ---------- |
-| D1  | Productos     | `/products`  | ⬚ Pending  |
+| D1  | Productos     | `/products`  | ✅ Hecho   |
 | D2  | Marcas        | `/brands`    | ⬚ Pending  |
 | D3  | Proveedores   | `/suppliers` | ⬚ Pending  |
 | D4  | Presupuestos  | `/quotes`    | ✅ Hecho   |
