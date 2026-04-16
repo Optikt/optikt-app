@@ -139,46 +139,23 @@
 </script>
 
 <div class="space-y-6">
-	<div class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_220px]">
-		<section class="rounded-[1.75rem] bg-surface-container-lowest p-6 shadow-sm">
-			<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-				<div class="space-y-2">
-					<p class="text-xs font-semibold tracking-[0.22em] text-brand-gold uppercase">
-						Biblioteca técnica
-					</p>
-					<h2 class="font-heading text-2xl font-bold text-brand-navy">Materiales de Lente</h2>
-					<p class="max-w-2xl text-sm leading-7 text-on-surface-variant">
-						Centraliza materiales ópticos, códigos internos e índices refractivos para que todo el
-						catálogo de lentes comparta la misma base técnica.
-					</p>
-				</div>
-
-				<div
-					class="flex h-14 w-14 items-center justify-center rounded-2xl bg-info-container text-on-info-container"
-				>
-					<FlaskConical class="h-6 w-6" />
-				</div>
-			</div>
-
-			<div class="mt-4 flex flex-wrap gap-2">
-				<div
-					class="rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-				>
-					{stats.withIndex} con índice cargado
-				</div>
-				<div
-					class="rounded-full bg-warning-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-warning-container uppercase"
-				>
-					{stats.withoutIndex} por completar
-				</div>
-			</div>
-		</section>
-
-		<section class="rounded-[1.75rem] bg-brand-navy p-6 text-white shadow-sm">
-			<p class="text-xs font-semibold tracking-[0.22em] text-brand-gold uppercase">Total</p>
-			<p class="font-heading mt-4 text-4xl font-bold">{stats.total}</p>
-			<p class="mt-2 text-sm text-white/75">materiales registrados</p>
-		</section>
+	<div class="flex flex-wrap gap-2">
+		<div
+			class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+		>
+			<FlaskConical class="h-3.5 w-3.5" />
+			{stats.total} materiales
+		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-full bg-info-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-info-container uppercase"
+		>
+			{stats.withIndex} con índice cargado
+		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-full bg-warning-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-warning-container uppercase"
+		>
+			{stats.withoutIndex} por completar
+		</div>
 	</div>
 
 	<section class="glass-card bg-surface-container-low p-4">
