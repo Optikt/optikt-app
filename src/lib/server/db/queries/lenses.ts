@@ -86,7 +86,7 @@ export async function deleteLensMaterial(id: string): Promise<boolean> {
 // ============================================================================
 
 export type LensCatalogItemWithRelations = LensCatalogItem & {
-	material: { id: string; name: string; code: string } | null;
+	material: { id: string; name: string; code: string; refractiveIndex: number | null } | null;
 	supplier: { id: string; name: string } | null;
 	ranges: LensOpticalRange[];
 };
@@ -123,7 +123,12 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	const results = await db
 		.select({
 			item: lensCatalogItems,
-			material: { id: lensMaterials.id, name: lensMaterials.name, code: lensMaterials.code },
+			material: {
+				id: lensMaterials.id,
+				name: lensMaterials.name,
+				code: lensMaterials.code,
+				refractiveIndex: lensMaterials.refractiveIndex
+			},
 			supplier: { id: suppliers.id, name: suppliers.name }
 		})
 		.from(lensCatalogItems)
@@ -194,7 +199,12 @@ export async function findLensCatalogItemByIdWithRelations(
 	const [result] = await db
 		.select({
 			item: lensCatalogItems,
-			material: { id: lensMaterials.id, name: lensMaterials.name, code: lensMaterials.code },
+			material: {
+				id: lensMaterials.id,
+				name: lensMaterials.name,
+				code: lensMaterials.code,
+				refractiveIndex: lensMaterials.refractiveIndex
+			},
 			supplier: { id: suppliers.id, name: suppliers.name }
 		})
 		.from(lensCatalogItems)
