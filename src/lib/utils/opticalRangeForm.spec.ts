@@ -315,6 +315,8 @@ describe('range helpers', () => {
 
 		const validation = validateOpticalRangeEntry(entry);
 
-		expect(validation.addition).toContain('Debe ingresar un rango de adición valido, no puede ser 0');
+		expect(validation.addition).toContain(
+			'Debe ingresar un rango de adición valido, no puede ser 0'
+		);
 	});
 });

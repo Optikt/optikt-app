@@ -734,7 +734,7 @@
 							range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE ? 'Interior' : 'Hasta'}
 						<div class="rounded-xl bg-surface-container-low p-5" use:autoAnimate>
 							<div class="grid gap-4 lg:grid-cols-12">
-							<div class={showAddition ? 'lg:col-span-4' : 'lg:col-span-6'}>
+								<div class={showAddition ? 'lg:col-span-4' : 'lg:col-span-6'}>
 									<div class={rangeHeaderRowWithToggleClass}>
 										<Label class={fieldLabelClass}>Esfera (ESF)</Label>
 										<button
@@ -879,47 +879,47 @@
 								</div>
 
 								{#if showAddition}
-								<div class="lg:col-span-4">
-									<div class={rangeHeaderRowClass}>
-										<Label class={fieldLabelClass}>Adicion (ADD)</Label>
+									<div class="lg:col-span-4">
+										<div class={rangeHeaderRowClass}>
+											<Label class={fieldLabelClass}>Adicion (ADD)</Label>
+										</div>
+										<div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+											<div>
+												<p class={rangeSubLabelClass}>Minimo</p>
+												<Input
+													bind:value={range.additionMin}
+													aria-invalid={additionHasErrors}
+													type="number"
+													min="0"
+													max="5"
+													step="0.25"
+													placeholder="Min"
+													class={getRangeInputClass(additionHasErrors)}
+												/>
+											</div>
+											<span class="pb-2 text-xs text-outline">/</span>
+											<div>
+												<p class={rangeSubLabelClass}>Maximo</p>
+												<Input
+													bind:value={range.additionMax}
+													aria-invalid={additionHasErrors}
+													type="number"
+													min="0"
+													max="5"
+													step="0.25"
+													placeholder="Max"
+													class={getRangeInputClass(additionHasErrors)}
+												/>
+											</div>
+										</div>
+										{#if additionErrors.length > 0}
+											<div class="mt-2 space-y-1">
+												{#each additionErrors as err (`addition-${i}-${err}`)}
+													<p class="text-xs text-error">{err}</p>
+												{/each}
+											</div>
+										{/if}
 									</div>
-									<div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
-										<div>
-											<p class={rangeSubLabelClass}>Minimo</p>
-											<Input
-												bind:value={range.additionMin}
-												aria-invalid={additionHasErrors}
-												type="number"
-												min="0"
-												max="5"
-												step="0.25"
-												placeholder="Min"
-												class={getRangeInputClass(additionHasErrors)}
-											/>
-										</div>
-										<span class="pb-2 text-xs text-outline">/</span>
-										<div>
-											<p class={rangeSubLabelClass}>Maximo</p>
-											<Input
-												bind:value={range.additionMax}
-												aria-invalid={additionHasErrors}
-												type="number"
-												min="0"
-												max="5"
-												step="0.25"
-												placeholder="Max"
-												class={getRangeInputClass(additionHasErrors)}
-											/>
-										</div>
-									</div>
-									{#if additionErrors.length > 0}
-										<div class="mt-2 space-y-1">
-											{#each additionErrors as err (`addition-${i}-${err}`)}
-												<p class="text-xs text-error">{err}</p>
-											{/each}
-										</div>
-									{/if}
-								</div>
 								{/if}
 							</div>
 

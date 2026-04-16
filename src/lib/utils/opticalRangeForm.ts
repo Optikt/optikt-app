@@ -253,10 +253,7 @@ export function validateOpticalRangeEntry(
 		cylinderMax !== undefined &&
 		(cylinderMin === 0) !== (cylinderMax === 0)
 	) {
-		pushUniqueError(
-			validation.cylinder,
-			'Si un extremo de cilindro es 0, ambos deben ser 0'
-		);
+		pushUniqueError(validation.cylinder, 'Si un extremo de cilindro es 0, ambos deben ser 0');
 	}
 
 	const additionMin = parseOptionalNumber(entry.additionMin);
