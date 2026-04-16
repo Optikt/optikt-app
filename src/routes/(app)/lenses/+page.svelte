@@ -4,6 +4,7 @@
 	import { FlaskConical, LibraryBig, Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { LensCatalogTable, LensMaterialsTab } from '$lib/components/lenses';
+	import { PageHeader } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
 	import {
@@ -50,8 +51,6 @@
 	const pageTitle = $derived(
 		activeTab === 'catalog' ? 'Catálogo de Lentes' : 'Materiales de Lentes'
 	);
-
-	const pageEyebrow = $derived(activeTab === 'catalog' ? 'Curaduría óptica' : 'Biblioteca técnica');
 
 	const pageDescription = $derived(
 		activeTab === 'catalog'
@@ -122,77 +121,73 @@
 </svelte:head>
 
 <div class="space-y-6 p-6">
-	<section class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_auto] xl:items-end">
-		<div class="space-y-3">
-			<p class="text-xs font-semibold tracking-[0.24em] text-brand-gold uppercase">{pageEyebrow}</p>
-			<h1 class="font-heading text-3xl font-bold tracking-tight text-brand-navy sm:text-4xl">
-				{pageTitle}
-			</h1>
-			<p class="max-w-3xl text-sm leading-7 text-on-surface-variant sm:text-base">
-				{pageDescription}
-			</p>
+	<PageHeader title={pageTitle}>
+		{#snippet actions()}
+			<div class="flex gap-3">
+				{#if activeTab === 'catalog'}
+					<button
+						type="button"
+						onclick={openCreateLens}
+						class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
+					>
+						<Plus class="h-4 w-4" />
+						Nuevo lente
+					</button>
+				{/if}
 
-			{#if activeTab === 'catalog'}
-				<div class="flex flex-wrap gap-2 pt-1">
-					<div
-						class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+				<div class="inline-flex rounded-2xl bg-surface-container-high p-1 shadow-sm">
+					<button
+						type="button"
+						onclick={() => (activeTab = 'catalog')}
+						aria-pressed={activeTab === 'catalog'}
+						class="rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:px-5 {activeTab ===
+						'catalog'
+							? 'bg-brand-navy text-white'
+							: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
 					>
-						<LibraryBig class="h-3.5 w-3.5" />
-						{catalogSummary.total} lentes
-					</div>
-					<div
-						class="inline-flex items-center gap-2 rounded-full bg-info-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-info-container uppercase"
+						Catálogo
+					</button>
+					<button
+						type="button"
+						onclick={() => (activeTab = 'materials')}
+						aria-pressed={activeTab === 'materials'}
+						class="rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:px-5 {activeTab ===
+						'materials'
+							? 'bg-brand-navy text-white'
+							: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
 					>
-						{catalogSummary.finished} terminados
-					</div>
-					<div
-						class="inline-flex items-center gap-2 rounded-full bg-warning-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-warning-container uppercase"
-					>
-						<FlaskConical class="h-3.5 w-3.5" />
-						{catalogSummary.lab} laboratorio
-					</div>
+						Materiales
+					</button>
 				</div>
-			{/if}
-		</div>
-
-		<div class="flex flex-col gap-3 xl:items-end">
-			<div class="inline-flex rounded-2xl bg-surface-container-high p-1 shadow-sm">
-				<button
-					type="button"
-					onclick={() => (activeTab = 'catalog')}
-					aria-pressed={activeTab === 'catalog'}
-					class="rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:px-5 {activeTab ===
-					'catalog'
-						? 'bg-brand-navy text-white'
-						: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
-				>
-					Catálogo
-				</button>
-				<button
-					type="button"
-					onclick={() => (activeTab = 'materials')}
-					aria-pressed={activeTab === 'materials'}
-					class="rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:px-5 {activeTab ===
-					'materials'
-						? 'bg-brand-navy text-white'
-						: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
-				>
-					Materiales
-				</button>
 			</div>
+		{/snippet}
+	</PageHeader>
 
-			{#if activeTab === 'catalog'}
-				<button
-					type="button"
-					onclick={openCreateLens}
-					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
-				>
-					<Plus class="h-4 w-4" />
-					Nuevo lente
-				</button>
-			{/if}
+	<p class="max-w-3xl text-sm leading-7 text-on-surface-variant sm:text-base">
+		{pageDescription}
+	</p>
+
+	{#if activeTab === 'catalog'}
+		<div class="flex flex-wrap gap-2">
+			<div
+				class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+			>
+				<LibraryBig class="h-3.5 w-3.5" />
+				{catalogSummary.total} lentes
+			</div>
+			<div
+				class="inline-flex items-center gap-2 rounded-full bg-info-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-info-container uppercase"
+			>
+				{catalogSummary.finished} terminados
+			</div>
+			<div
+				class="inline-flex items-center gap-2 rounded-full bg-warning-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-warning-container uppercase"
+			>
+				<FlaskConical class="h-3.5 w-3.5" />
+				{catalogSummary.lab} laboratorio
+			</div>
 		</div>
-	</section>
+	{/if}
 
 	{#if activeTab === 'catalog'}
 		<section class="glass-card bg-surface-container-low p-4">

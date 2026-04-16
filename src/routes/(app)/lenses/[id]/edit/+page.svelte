@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { ArrowLeft } from '@lucide/svelte';
-	import { resolve } from '$app/paths';
 	import { LensCatalogForm } from '$lib/components/lenses';
+	import { PageHeader } from '$lib/components/ui';
 
 	let { data } = $props();
 </script>
@@ -10,18 +9,13 @@
 	<title>Editar Lente - Optikt</title>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-50/50 p-8">
-	<div class="mb-8 w-full">
-		<a
-			href={resolve('/lenses')}
-			class="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
-		>
-			<ArrowLeft class="h-4 w-4" />
-			Volver al catálogo
-		</a>
-		<h1 class="text-3xl font-bold tracking-tight text-slate-900">Editar Lente de Catálogo</h1>
-		<p class="text-slate-500">{data.item.name}</p>
-	</div>
+<div class="w-full px-4 py-6 sm:px-6 lg:px-8 xl:px-8">
+	<PageHeader
+		title="Editar Lente de Catálogo"
+		subtitle={data.item.name}
+		backLabel="Volver al catálogo"
+		backHref="/lenses"
+	/>
 
 	<LensCatalogForm
 		item={data.item}
