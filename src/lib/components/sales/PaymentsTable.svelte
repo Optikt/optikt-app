@@ -7,7 +7,7 @@
 		Smartphone,
 		WalletCards
 	} from '@lucide/svelte';
-	import autoAnimate from '@formkit/auto-animate';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { voidPayment } from '$lib/remote/sales.remote';

@@ -4,7 +4,6 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
 	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
 	import {
 		CreatableSelect,
@@ -14,11 +13,20 @@
 	} from '$lib/components/ui';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
+		SPHERE_RANGE_MODE,
+		collapseOpticalRangesForForm,
+		createEmptyOpticalRangeEntry,
+		expandOpticalRanges,
+		getOpticalRangePreview,
+		toContinuousSphereValues,
+		toInverseDuplicateSphereValues,
+		type OpticalRangeFormEntry
+	} from '$lib/utils/opticalRangeForm';
+	import {
 		LensType,
 		LensCatalogSource,
 		LensPriceType,
 		LensInventoryMode,
-		LENS_SOURCE_LABELS,
 		ALL_LENS_TYPES,
 		getLensTypeLabel,
 		getPriceTypeLabel
@@ -28,28 +36,7 @@
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 	import { resolve } from '$app/paths';
-
-	/** UI-level range entry (before expansion) */
-	type RangeEntry = {
-		symmetric: boolean;
-		absMin: string;
-		absMax: string;
-		sphereMin: string;
-		sphereMax: string;
-		cylinderMin: string;
-		cylinderMax: string;
-		additionMin: string;
-		additionMax: string;
-	};
-
-	type ExpandedRange = {
-		sphereMin: number;
-		sphereMax: number;
-		cylinderMin?: number;
-		cylinderMax?: number;
-		additionMin?: number;
-		additionMax?: number;
-	};
+	import { autoAnimate } from '@formkit/auto-animate';
 
 	type Props = {
 		item?: LensCatalogItem | null;
@@ -57,6 +44,9 @@
 		materials: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
 		cancelHref?: string;
+		formId?: string;
+		showActions?: boolean;
+		isSubmitting?: boolean;
 	};
 
 	let {
@@ -64,15 +54,28 @@
 		existingRanges = [],
 		materials = [],
 		suppliers = [],
-		cancelHref = '/lenses'
+		cancelHref = '/lenses',
+		formId = 'lens-catalog-form',
+		showActions = true,
+		isSubmitting = $bindable(false)
 	}: Props = $props();
 
 	// Capture initial values (item comes from PageServerLoad, doesn't change)
 	const initialItem = untrack(() => item);
 	const initialRanges = untrack(() => existingRanges);
 
-	let isSubmitting = $state(false);
 	const isEdit = $derived(!!item);
+	const helperTextClass = 'mt-1.5 text-xs text-on-surface-variant';
+	const formCardClass =
+		'rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6 md:p-8';
+	const sectionTitleClass = 'font-heading text-lg font-semibold text-on-surface';
+	const fieldLabelClass = 'text-xs font-semibold tracking-[0.12em] text-outline uppercase';
+	const rangeSubLabelClass =
+		'mb-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase';
+	const rangeHeaderRowClass = 'mb-2 flex h-6 items-center';
+	const rangeHeaderRowWithToggleClass = `${rangeHeaderRowClass} gap-2`;
+	const selectionCardClass =
+		'min-h-[96px] rounded-xl border px-4 py-4 text-left transition-all duration-150 ease-[cubic-bezier(0.25,1,0.5,1)]';
 
 	// Form instance
 	let formInstanceId = $state(generateUUID());
@@ -107,7 +110,7 @@
 		// Pricing
 		priceType: (initialItem?.priceType as LensPriceType) ?? LensPriceType.UNIT,
 		basePrice: initialItem?.basePrice?.toString() ?? '0',
-		salePrice: initialItem?.salePrice?.toString() ?? '',
+		salePrice: initialItem?.salePrice?.toString() ?? '0',
 		mountingPrice: initialItem?.mountingPrice?.toString() ?? '0',
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
 		// Tax
@@ -125,30 +128,35 @@
 		return formData.priceType === LensPriceType.UNIT ? base * 2 : base;
 	});
 
-	// Live margin percentage: ((salePrice - pairCost) / pairCost) × 100
+	let liveOperationalCost = $derived.by(() => {
+		const mounting = parseFloat(formData.mountingPrice) || 0;
+		const shipping = parseFloat(formData.shippingPrice) || 0;
+		return livePairPurchasePrice + mounting + shipping;
+	});
+
+	let liveGrossProfit = $derived.by(() => {
+		const sale = parseFloat(formData.salePrice) || 0;
+		if (sale <= 0) return null;
+		return sale - liveOperationalCost;
+	});
+
+	// Gross margin over sale price, aligned with the summary card.
 	let liveMarginPercent = $derived.by(() => {
 		const sale = parseFloat(formData.salePrice) || 0;
-		if (sale <= 0 || livePairPurchasePrice <= 0) return null;
-		return ((sale - livePairPurchasePrice) / livePairPurchasePrice) * 100;
+		if (sale <= 0 || liveGrossProfit == null) return null;
+		return (liveGrossProfit / sale) * 100;
+	});
+
+	let totalWithTax = $derived.by(() => {
+		const sale = parseFloat(formData.salePrice) || 0;
+		const taxRate = parseFloat(formData.taxRate) || 0;
+		if (sale <= 0) return 0;
+		return formData.isTaxable ? sale * (1 + taxRate / 100) : sale;
 	});
 
 	// Dynamic optical ranges
-	function createEmptyRange(): RangeEntry {
-		return {
-			symmetric: true,
-			absMin: '0.00',
-			absMax: '0.00',
-			sphereMin: '0.00',
-			sphereMax: '0.00',
-			cylinderMin: '',
-			cylinderMax: '',
-			additionMin: '',
-			additionMax: ''
-		};
-	}
-
-	let ranges = $state<RangeEntry[]>(
-		initialRanges.length > 0 ? collapseSymmetricRanges(initialRanges) : []
+	let ranges = $state<OpticalRangeFormEntry[]>(
+		initialRanges.length > 0 ? collapseOpticalRangesForForm(initialRanges) : []
 	);
 
 	// Start with one empty range for FINISHED lenses (new items only)
@@ -156,7 +164,7 @@
 		if (ranges.length === 0 && !item) {
 			untrack(() => {
 				if (formData.source === LensCatalogSource.FINISHED) {
-					ranges = [createEmptyRange()];
+					ranges = [createEmptyOpticalRangeEntry()];
 				}
 			});
 		}
@@ -188,6 +196,22 @@
 	const supplierOptions = $derived<SelectOption[]>(
 		suppliers.map((s) => ({ id: s.id, name: s.name }))
 	);
+
+	const supplierHelperText = $derived.by(() => {
+		if (!formData.supplierId) return 'Selecciona o crea el proveedor responsable de este lente.';
+		if (formData.supplierId.startsWith('pending_')) {
+			return 'Este proveedor no existe. Se creara un nuevo registro al guardar.';
+		}
+		return 'Este proveedor ya esta registrado en el sistema.';
+	});
+
+	const materialHelperText = $derived.by(() => {
+		if (!formData.materialId) return 'Selecciona o crea el material base del cristal.';
+		if (formData.materialId.startsWith('pending_')) {
+			return 'Este material no existe. Se creara un nuevo registro al guardar.';
+		}
+		return 'Este material ya esta registrado y listo para reutilizar.';
+	});
 
 	// Auto-name generation
 	let autoNameEnabled = $state(!initialItem); // Auto-name only for new items
@@ -230,160 +254,41 @@
 
 	// ── Range helpers ────────────────────────────────────────────
 	function addRange() {
-		ranges = [...ranges, createEmptyRange()];
+		ranges = [...ranges, createEmptyOpticalRangeEntry()];
 	}
 
 	function removeRange(index: number) {
 		ranges = ranges.filter((_, i) => i !== index);
 	}
 
-	/** Convert a single DB range to a non-symmetric RangeEntry */
-	function toPlainEntry(r: LensOpticalRange): RangeEntry {
-		return {
-			symmetric: false,
-			absMin: '0.00',
-			absMax: '0.00',
-			sphereMin: r.sphereMin.toFixed(2),
-			sphereMax: r.sphereMax.toFixed(2),
-			cylinderMin: r.cylinderMin != null ? r.cylinderMin.toFixed(2) : '',
-			cylinderMax: r.cylinderMax != null ? r.cylinderMax.toFixed(2) : '',
-			additionMin: r.additionMin != null ? r.additionMin.toFixed(2) : '',
-			additionMax: r.additionMax != null ? r.additionMax.toFixed(2) : ''
-		};
-	}
-
-	/**
-	 * Collapse DB rows back into UI RangeEntry items.
-	 * Each DB row maps to one plain (non-symmetric) entry.
-	 */
-	function collapseSymmetricRanges(dbRanges: LensOpticalRange[]): RangeEntry[] {
-		return dbRanges.map(toPlainEntry);
-	}
-
-	/**
-	 * Expand UI range entries into flat DB range objects.
-	 * When symmetric (±) is ON:
-	 *   - If absMin is 0: one continuous range from -absMax to +absMax
-	 *   - Otherwise: two ranges (negative side and positive side)
-	 */
-	function expandRanges(): ExpandedRange[] {
-		const result: ExpandedRange[] = [];
-
-		for (const r of ranges) {
-			const cylA = r.cylinderMin ? parseFloat(r.cylinderMin) : undefined;
-			const cylB = r.cylinderMax ? parseFloat(r.cylinderMax) : undefined;
-			const addA = r.additionMin ? parseFloat(r.additionMin) : undefined;
-			const addB = r.additionMax ? parseFloat(r.additionMax) : undefined;
-
-			// Normalize min ≤ max ordering
-			const hasCyl = cylA !== undefined && !isNaN(cylA) && cylB !== undefined && !isNaN(cylB);
-			const hasAdd = addA !== undefined && !isNaN(addA) && addB !== undefined && !isNaN(addB);
-
-			const base = {
-				...(hasCyl && { cylinderMin: Math.min(cylA, cylB), cylinderMax: Math.max(cylA, cylB) }),
-				...(hasAdd && { additionMin: Math.min(addA, addB), additionMax: Math.max(addA, addB) })
-			};
-
-			if (r.symmetric) {
-				const absMin = parseFloat(r.absMin) || 0;
-				const absMax = parseFloat(r.absMax) || 0;
-
-				if (absMin === 0) {
-					// Continuous range: -absMax to +absMax (includes 0)
-					result.push({ sphereMin: -absMax, sphereMax: absMax, ...base });
-				} else {
-					// Two sub-ranges: negative and positive sides
-					result.push({ sphereMin: -absMax, sphereMax: -absMin, ...base });
-					result.push({ sphereMin: absMin, sphereMax: absMax, ...base });
-				}
-			} else {
-				const sphMin = parseFloat(r.sphereMin) || 0;
-				const sphMax = parseFloat(r.sphereMax) || 0;
-				result.push({ sphereMin: sphMin, sphereMax: sphMax, ...base });
-			}
+	function toggleSphereMode(range: OpticalRangeFormEntry) {
+		if (range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE) {
+			range.sphereMode = SPHERE_RANGE_MODE.CONTINUOUS;
+			const continuousValues = toContinuousSphereValues(range.inverseOuter);
+			range.sphereMin = continuousValues.sphereMin;
+			range.sphereMax = continuousValues.sphereMax;
+			return;
 		}
 
-		// Deduplicate exact-same ranges (keep first occurrence)
-		const seen = new SvelteSet<string>();
-		return result.filter((r) => {
-			const key = [
-				r.sphereMin,
-				r.sphereMax,
-				r.cylinderMin,
-				r.cylinderMax,
-				r.additionMin,
-				r.additionMax
-			].join('|');
-			if (seen.has(key)) return false;
-			seen.add(key);
-			return true;
-		});
+		range.sphereMode = SPHERE_RANGE_MODE.INVERSE_DUPLICATE;
+		const inverseValues = toInverseDuplicateSphereValues(range.sphereMin, range.sphereMax);
+		range.inverseOuter = inverseValues.inverseOuter;
+		range.inverseInner = inverseValues.inverseInner;
 	}
 
-	/** Serialized ranges for the hidden input */
-	const serializedRanges = $derived(JSON.stringify(expandRanges()));
+	const serializedRanges = $derived(JSON.stringify(expandOpticalRanges(ranges)));
 
-	/** Human-readable preview of what a range entry will generate */
-	function rangePreview(r: RangeEntry): string[] {
-		const fmt = (n: number) => (n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2));
-		const lines: string[] = [];
-
-		// Build sphere descriptions
-		if (r.symmetric) {
-			const absMin = parseFloat(r.absMin) || 0;
-			const absMax = parseFloat(r.absMax) || 0;
-
-			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : null;
-			const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : null;
-			const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
-			const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
-
-			const cylPart =
-				cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
-					? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
-					: '';
-			const addPart =
-				addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
-					? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
-					: '';
-
-			if (absMin === 0) {
-				lines.push(`Esf ${fmt(-absMax)} a ${fmt(absMax)}${cylPart}${addPart}`);
-			} else {
-				lines.push(`Esf ${fmt(-absMax)} a ${fmt(-absMin)}${cylPart}${addPart}`);
-				lines.push(`Esf ${fmt(absMin)} a ${fmt(absMax)}${cylPart}${addPart}`);
-			}
-		} else {
-			const sMin = parseFloat(r.sphereMin) || 0;
-			const sMax = parseFloat(r.sphereMax) || 0;
-
-			const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : null;
-			const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : null;
-			const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
-			const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
-
-			const cylPart =
-				cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax)
-					? ` · Cil ${fmt(cylMin)} a ${fmt(cylMax)}`
-					: '';
-			const addPart =
-				addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax)
-					? ` · Add ${fmt(addMin)} a ${fmt(addMax)}`
-					: '';
-
-			lines.push(`Esf ${fmt(sMin)} a ${fmt(sMax)}${cylPart}${addPart}`);
-		}
-
-		return lines;
-	}
-
-	/** Validate a range entry and return error messages */
-	function getRangeErrors(r: RangeEntry): string[] {
+	function getRangeErrors(r: OpticalRangeFormEntry): string[] {
 		const errors: string[] = [];
-		if (r.symmetric) {
-			const absMin = parseFloat(r.absMin) || 0;
-			const absMax = parseFloat(r.absMax) || 0;
-			if (absMin > absMax) errors.push('Esfera: el mínimo absoluto no puede ser mayor al máximo');
+		if (r.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE) {
+			const inverseOuter = parseFloat(r.inverseOuter) || 0;
+			const inverseInner = parseFloat(r.inverseInner) || 0;
+			if (inverseInner > inverseOuter) {
+				errors.push('Esfera: el límite interior no puede ser mayor al exterior');
+			}
+			if (inverseInner === 0 && inverseOuter > 0) {
+				errors.push('Esfera: usa rango continuo si el centro también está incluido');
+			}
 		} else {
 			const sMin = parseFloat(r.sphereMin) || 0;
 			const sMax = parseFloat(r.sphereMax) || 0;
@@ -402,7 +307,6 @@
 		return errors;
 	}
 
-	// ── Pending entity handlers ──────────────────────────────────
 	function handleCreatePendingSupplier(name: string): SelectOption {
 		const pendingId = `pending_supplier_${generateUUID()}`;
 		pendingSuppliers = [...pendingSuppliers, { pendingId, name }];
@@ -424,7 +328,6 @@
 		return null;
 	}
 
-	// Handle create result
 	function handleCreateResult() {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
@@ -438,7 +341,6 @@
 		goto(resolve(result ? `/lenses/${result.id}` : '/lenses'));
 	}
 
-	// Handle update result
 	function handleUpdateResult() {
 		const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
@@ -452,10 +354,10 @@
 	}
 </script>
 
-<div class="w-full pb-24">
+<div class="w-full">
 	{#if isEdit && item}
-		<!-- UPDATE FORM -->
 		<form
+			id={formId}
 			{...currentUpdateForm.enhance(async ({ submit }) => {
 				isSubmitting = true;
 				try {
@@ -473,11 +375,13 @@
 			<input type="hidden" name="id" value={item.id} />
 			{@render pendingHiddenInputs()}
 			{@render formFields()}
-			{@render formActions()}
+			{#if showActions}
+				{@render formActions()}
+			{/if}
 		</form>
 	{:else}
-		<!-- CREATE FORM -->
 		<form
+			id={formId}
 			{...currentCreateForm.enhance(async ({ submit }) => {
 				isSubmitting = true;
 				try {
@@ -494,7 +398,9 @@
 		>
 			{@render pendingHiddenInputs()}
 			{@render formFields()}
-			{@render formActions()}
+			{#if showActions}
+				{@render formActions()}
+			{/if}
 		</form>
 	{/if}
 </div>
@@ -517,7 +423,6 @@
 {/snippet}
 
 {#snippet formFields()}
-	<!-- Hidden inputs for all sections -->
 	<input type="hidden" name="source" value={formData.source} />
 	<input type="hidden" name="hasAr" value={String(formData.hasAr)} />
 	<input type="hidden" name="hasBluecut" value={String(formData.hasBluecut)} />
@@ -525,628 +430,668 @@
 	<input type="hidden" name="priceType" value={formData.priceType} />
 	<input type="hidden" name="ranges" value={serializedRanges} />
 
-	<!-- ================================================================
-	     1. IDENTIDAD
-	     ================================================================ -->
-	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h3 class="mb-1 text-lg font-semibold text-slate-800">Identidad del Cristal</h3>
-		<p class="mb-4 text-xs text-slate-400">
-			Define qué es este cristal: origen, proveedor, material y características ópticas propias.
-		</p>
+	<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+		<div class="space-y-6 lg:col-span-7">
+			<section class={formCardClass}>
+				<div class="flex items-center gap-2">
+					<span class="h-2 w-2 rounded-full bg-brand-gold"></span>
+					<h3 class={sectionTitleClass}>Identificacion del producto</h3>
+				</div>
 
-		<!-- Source selector -->
-		<div class="mb-5 grid gap-3 sm:grid-cols-2">
-			<button
-				type="button"
-				class="rounded-lg border-2 p-4 text-left transition-all {formData.source ===
-				LensCatalogSource.LAB
-					? 'border-blue-500 bg-blue-50/50'
-					: 'border-slate-200 hover:border-slate-300'}"
-				onclick={() => (formData.source = LensCatalogSource.LAB)}
-			>
-				<p class="font-semibold text-slate-800">{LENS_SOURCE_LABELS.LAB}</p>
-				<p class="text-sm text-slate-500">Cristal elaborado a medida en laboratorio</p>
-			</button>
-			<button
-				type="button"
-				class="rounded-lg border-2 p-4 text-left transition-all {formData.source ===
-				LensCatalogSource.FINISHED
-					? 'border-indigo-500 bg-indigo-50/50'
-					: 'border-slate-200 hover:border-slate-300'}"
-				onclick={() => (formData.source = LensCatalogSource.FINISHED)}
-			>
-				<p class="font-semibold text-slate-800">{LENS_SOURCE_LABELS.FINISHED}</p>
-				<p class="text-sm text-slate-500">Cristal pre-fabricado con graduación lista</p>
-			</button>
-		</div>
-
-		<!-- Name -->
-		<div>
-			<div class="mb-2 flex items-center justify-between">
-				<Label for="lc_name">Nombre *</Label>
-				{#if !isEdit}
-					<label class="flex items-center gap-1.5 text-xs text-slate-500">
-						<input
-							type="checkbox"
-							bind:checked={autoNameEnabled}
-							class="h-3.5 w-3.5 rounded border-slate-300"
+				<div class="mt-6 grid gap-x-6 gap-y-5 md:grid-cols-2">
+					<div>
+						<CreatableSelect
+							label="Proveedor *"
+							name="supplierId"
+							bind:value={formData.supplierId}
+							options={supplierOptions}
+							placeholder="Ej: Essilor"
+							required
+							creatable
+							onCreatePending={handleCreatePendingSupplier}
+							error={activeForm.fields.supplierId?.issues()
+								? getFormErrorMessage(activeForm.fields.supplierId.issues())
+								: null}
 						/>
-						Auto-generar
-					</label>
-				{/if}
-			</div>
-			{#if autoNameEnabled}
-				<input type="hidden" name="name" value={formData.name} />
-			{/if}
-			<Input
-				id="lc_name"
-				name={autoNameEnabled ? undefined : 'name'}
-				bind:value={formData.name}
-				placeholder="Ej: Novak · CR39 · Monofocal"
-				class="placeholder:text-slate-400"
-				required
-				disabled={autoNameEnabled}
-			/>
-			{#if activeForm.fields.name?.issues()}
-				<p class="mt-1 text-xs text-red-500">
-					{getFormErrorMessage(activeForm.fields.name.issues())}
-				</p>
-			{/if}
-			{#if autoNameEnabled}
-				<p class="mt-1 text-xs text-slate-400">
-					Se genera automáticamente desde los campos seleccionados
-				</p>
-			{/if}
-		</div>
-
-		<!-- Supplier + Material -->
-		<div class="mt-4 grid gap-4 md:grid-cols-2">
-			<CreatableSelect
-				label="Proveedor *"
-				name="supplierId"
-				bind:value={formData.supplierId}
-				options={supplierOptions}
-				placeholder="Buscar proveedor..."
-				required
-				creatable
-				onCreatePending={handleCreatePendingSupplier}
-				error={activeForm.fields.supplierId?.issues()
-					? getFormErrorMessage(activeForm.fields.supplierId.issues())
-					: null}
-			/>
-			<CreatableSelect
-				label="Material *"
-				name="materialId"
-				bind:value={formData.materialId}
-				options={materialOptions}
-				placeholder="Buscar material..."
-				required
-				creatable
-				onCreatePending={handleCreatePendingMaterial}
-				error={activeForm.fields.materialId?.issues()
-					? getFormErrorMessage(activeForm.fields.materialId.issues())
-					: null}
-			/>
-		</div>
-
-		<!-- Type -->
-		<div class="mt-4 grid gap-4 md:grid-cols-2">
-			<div>
-				<Label for="lc_type" class="mb-2">Tipo *</Label>
-				<Select id="lc_type" name="type" bind:value={formData.type} required class="max-w-xs">
-					{#each ALL_LENS_TYPES as t (t)}
-						<option value={t}>{getLensTypeLabel(t)}</option>
-					{/each}
-				</Select>
-			</div>
-			<div>
-				<Label for="lc_technology" class="mb-2">
-					Tecnología
-					<span class="ml-1 text-xs font-normal text-slate-400">(opcional)</span>
-				</Label>
-				<Input
-					id="lc_technology"
-					name="technology"
-					bind:value={formData.technology}
-					placeholder="Ej: Accuracy, Slim, Digital..."
-					class="placeholder:text-slate-400"
-				/>
-			</div>
-		</div>
-
-		<!-- Inherent traits -->
-		<div class="mt-5 border-t border-slate-100 pt-5">
-			<p class="mb-3 text-sm font-medium text-slate-600">Rasgos inherentes</p>
-			<div class="flex flex-wrap gap-6">
-				<Checkbox bind:checked={formData.hasAr}>Antirreflejo (AR)</Checkbox>
-				<Checkbox bind:checked={formData.hasBluecut}>Filtro azul (Bluecut)</Checkbox>
-				<Checkbox bind:checked={formData.isPhotochromic}>Fotocromático</Checkbox>
-			</div>
-		</div>
-	</div>
-
-	<!-- ================================================================
-	     2. PRECIOS Y DISPONIBILIDAD
-	     ================================================================ -->
-	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h3 class="mb-1 text-lg font-semibold text-slate-800">Precios y Disponibilidad</h3>
-		<p class="mb-4 text-xs text-slate-400">
-			Precio de compra al proveedor, precio de venta sugerido y tipo de cobro.
-		</p>
-
-		<!-- Price type selector -->
-		<div class="mb-5">
-			<Label class="mb-2 text-sm text-slate-600">¿Cómo cobra el proveedor?</Label>
-			<div class="grid gap-3 sm:grid-cols-2">
-				<button
-					type="button"
-					class="rounded-lg border-2 p-3 text-left transition-all {formData.priceType ===
-					LensPriceType.UNIT
-						? 'border-blue-500 bg-blue-50/50'
-						: 'border-slate-200 hover:border-slate-300'}"
-					onclick={() => (formData.priceType = LensPriceType.UNIT)}
-				>
-					<p class="text-sm font-semibold text-slate-800">
-						{getPriceTypeLabel(LensPriceType.UNIT)}
-					</p>
-					<p class="text-xs text-slate-500">El precio base es por un solo cristal</p>
-				</button>
-				<button
-					type="button"
-					class="rounded-lg border-2 p-3 text-left transition-all {formData.priceType ===
-					LensPriceType.PAIR
-						? 'border-indigo-500 bg-indigo-50/50'
-						: 'border-slate-200 hover:border-slate-300'}"
-					onclick={() => (formData.priceType = LensPriceType.PAIR)}
-				>
-					<p class="text-sm font-semibold text-slate-800">
-						{getPriceTypeLabel(LensPriceType.PAIR)}
-					</p>
-					<p class="text-xs text-slate-500">El precio base incluye ambos cristales</p>
-				</button>
-			</div>
-		</div>
-
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-			<!-- Precio Proveedor -->
-			<div>
-				<Label for="lc_price" class="mb-2">
-					Precio Proveedor ($) *
-					<span class="ml-1 text-xs font-normal text-slate-400">
-						({formData.priceType === LensPriceType.PAIR ? 'par' : 'unidad'})
-					</span>
-				</Label>
-				<Input
-					id="lc_price"
-					name="basePrice"
-					bind:value={formData.basePrice}
-					type="number"
-					step="0.01"
-					min="0"
-					class="font-mono"
-					required
-				/>
-			</div>
-
-			<!-- Costo por Par (live, read-only) -->
-			<div>
-				<Label class="mb-2 text-sm text-slate-600">Costo por Par</Label>
-				<div
-					class="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-semibold text-slate-700"
-				>
-					{formatPrice(livePairPurchasePrice)}
-					{#if formData.priceType === LensPriceType.UNIT}
-						<span class="ml-1.5 text-[11px] font-normal text-slate-400">(×2 unid.)</span>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Precio Venta (siempre por par) -->
-			<div>
-				<Label for="lc_sale_price" class="mb-2">
-					Precio Venta ($)
-					<span class="ml-1 text-xs font-normal text-slate-400">(por par)</span>
-				</Label>
-				<Input
-					id="lc_sale_price"
-					name="salePrice"
-					bind:value={formData.salePrice}
-					type="number"
-					step="0.01"
-					min="0"
-					placeholder="Ej: 35.00"
-					class="font-mono placeholder:text-slate-400"
-				/>
-				<p class="mt-1 text-[11px] text-slate-400">Se usa como precio sugerido en ventas</p>
-			</div>
-
-			<!-- Margen por par -->
-			<div>
-				<Label class="mb-2 text-sm text-slate-600">Margen por Par</Label>
-				<div
-					class="flex h-[42px] items-center rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-sm font-semibold {liveMarginPercent !=
-						null && liveMarginPercent >= 0
-						? 'text-emerald-600'
-						: liveMarginPercent != null
-							? 'text-red-600'
-							: 'text-slate-400'}"
-				>
-					{#if liveMarginPercent != null}
-						{liveMarginPercent >= 0 ? '+' : ''}{liveMarginPercent.toFixed(0)}%
-					{:else}
-						—
-					{/if}
-				</div>
-			</div>
-		</div>
-
-		<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-			<div>
-				<Label for="lc_mounting_price" class="mb-2">
-					Montaje ($)
-					<span class="ml-1 text-xs font-normal text-slate-400">(par)</span>
-				</Label>
-				<Input
-					id="lc_mounting_price"
-					name="mountingPrice"
-					bind:value={formData.mountingPrice}
-					type="number"
-					step="0.01"
-					min="0"
-					placeholder="0.00"
-					class="font-mono placeholder:text-slate-400"
-				/>
-			</div>
-			<div>
-				<Label for="lc_shipping" class="mb-2">Envío ($)</Label>
-				<Input
-					id="lc_shipping"
-					name="shippingPrice"
-					bind:value={formData.shippingPrice}
-					type="number"
-					step="0.01"
-					min="0"
-					placeholder="0.00"
-					class="font-mono placeholder:text-slate-400"
-				/>
-			</div>
-
-			<!-- Tax (IVA) -->
-			<div class="col-span-full">
-				<TaxToggle bind:checked={formData.isTaxable} bind:taxRate={formData.taxRate} />
-				<p class="mt-1 text-[11px] text-slate-400">Los cristales son exentos de IVA por defecto</p>
-			</div>
-			{#if formData.source === LensCatalogSource.FINISHED}
-				<div>
-					<Label class="mb-2">Modo de Inventario</Label>
-					<input type="hidden" name="inventoryMode" value={formData.inventoryMode} />
-					<div class="flex gap-2">
-						<button
-							type="button"
-							class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors {formData.inventoryMode ===
-							LensInventoryMode.ON_DEMAND
-								? 'border-sky-300 bg-sky-50 text-sky-700'
-								: 'border-slate-200 text-slate-500 hover:bg-slate-50'}"
-							onclick={() => (formData.inventoryMode = LensInventoryMode.ON_DEMAND)}
-						>
-							Por demanda
-						</button>
-						<button
-							type="button"
-							class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors {formData.inventoryMode ===
-							LensInventoryMode.STOCK
-								? 'border-teal-300 bg-teal-50 text-teal-700'
-								: 'border-slate-200 text-slate-500 hover:bg-slate-50'}"
-							onclick={() => (formData.inventoryMode = LensInventoryMode.STOCK)}
-						>
-							En inventario
-						</button>
+						<p class={helperTextClass}>{supplierHelperText}</p>
 					</div>
-					{#if formData.inventoryMode === LensInventoryMode.ON_DEMAND}
-						<p class="mt-1.5 flex items-center gap-1 text-xs text-sky-600">
-							<span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" aria-hidden="true"
-							></span>
-							Se pide al proveedor cuando se vende
+
+					<div>
+						<CreatableSelect
+							label="Material *"
+							name="materialId"
+							bind:value={formData.materialId}
+							options={materialOptions}
+							placeholder="Ej: Policarbonato 1.59"
+							required
+							creatable
+							onCreatePending={handleCreatePendingMaterial}
+							error={activeForm.fields.materialId?.issues()
+								? getFormErrorMessage(activeForm.fields.materialId.issues())
+								: null}
+						/>
+						<p
+							class="mt-1.5 text-xs {formData.materialId.startsWith('pending_')
+								? 'text-error'
+								: 'text-on-surface-variant'}"
+						>
+							{materialHelperText}
 						</p>
-					{/if}
-				</div>
-				{#if formData.inventoryMode === LensInventoryMode.STOCK}
-					<div>
-						<Label for="lc_stock" class="mb-2">Cantidad en Stock</Label>
-						<Input
-							id="lc_stock"
-							name="stock"
-							bind:value={formData.stock}
-							type="number"
-							min="0"
-							placeholder="0"
-							class="font-mono placeholder:text-slate-400"
-						/>
-						{#if Number(formData.stock) > 0}
-							<p class="mt-1.5 flex items-center gap-1 text-xs text-teal-600">
-								<span class="inline-block h-1.5 w-1.5 rounded-full bg-teal-500" aria-hidden="true"
-								></span>
-								{formData.stock} unidad{Number(formData.stock) !== 1 ? 'es' : ''} en inventario
-							</p>
-						{:else}
-							<p class="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-								<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-400" aria-hidden="true"
-								></span>
-								Sin stock
-							</p>
-						{/if}
 					</div>
-				{/if}
-			{:else}
-				<!-- LAB lenses are always on-demand -->
-				<input type="hidden" name="inventoryMode" value={LensInventoryMode.ON_DEMAND} />
-			{/if}
-		</div>
-	</div>
 
-	<!-- ================================================================
-	     3. RANGOS ÓPTICOS
-	     ================================================================ -->
-	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<div class="mb-1 flex items-center justify-between">
-			<div class="flex items-center gap-1.5">
-				<h3 class="text-lg font-semibold text-slate-800">Rangos Ópticos</h3>
-				<Info id="help-ranges" class="h-4 w-4 cursor-help text-slate-400" />
-				<Popover triggeredBy="#help-ranges" class="w-72 text-sm" trigger="hover">
-					<p class="mb-1 font-medium">¿Qué son los rangos?</p>
-					<p>
-						Definen qué graduaciones puede cubrir este cristal: esfera (miopía/hipermetropía),
-						cilindro (astigmatismo) y adición (para progresivos/bifocales). Si el paciente cae fuera
-						del rango, este cristal no le sirve.
-					</p>
-				</Popover>
-			</div>
-			<button
-				type="button"
-				class="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
-				onclick={addRange}
-			>
-				+ Agregar rango
-			</button>
-		</div>
-		<p class="mb-4 text-xs text-slate-400">
-			{#if formData.source === LensCatalogSource.LAB}
-				Opcional para cristales de laboratorio. Muchos proveedores no publican rangos específicos.
-			{:else}
-				Graduaciones que cubre este cristal. Usa ± para rangos simétricos (positivo y negativo).
-			{/if}
-		</p>
-
-		{#if ranges.length === 0}
-			<div class="rounded-lg border border-dashed border-slate-300 bg-slate-50/50 p-6 text-center">
-				<p class="text-sm text-slate-500">
-					{#if formData.source === LensCatalogSource.LAB}
-						Sin rangos definidos — se consultará al proveedor por disponibilidad.
-					{:else}
-						Agrega al menos un rango óptico para este cristal terminado.
-					{/if}
-				</p>
-				<button
-					type="button"
-					class="mt-3 inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
-					onclick={addRange}
-				>
-					+ Agregar rango
-				</button>
-			</div>
-		{/if}
-
-		{#each ranges as range, i (i)}
-			{@const rangeErrors = getRangeErrors(range)}
-			<div
-				class="relative mb-4 rounded-lg border bg-slate-50/50 p-4 pr-10 {rangeErrors.length > 0
-					? 'border-red-300'
-					: 'border-slate-200'}"
-			>
-				<button
-					type="button"
-					class="absolute top-2 right-2 rounded p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
-					onclick={() => removeRange(i)}
-					title="Eliminar rango"
-				>
-					<svg
-						class="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-					</svg>
-				</button>
-
-				<div class="mb-1 text-xs font-medium text-slate-500 uppercase">Rango {i + 1}</div>
-
-				<!-- Sphere with ± toggle -->
-				<div class="grid gap-4 md:grid-cols-2">
 					<div>
-						<div class="mb-2 flex items-center gap-2">
-							<Label>Esfera *</Label>
+						<p class={fieldLabelClass}>Origen (fuente)</p>
+						<div class="mt-2 flex rounded-lg bg-surface-container-low p-1">
 							<button
 								type="button"
-								class="rounded-md border px-2 py-0.5 text-xs font-semibold transition-colors {range.symmetric
-									? 'border-blue-300 bg-blue-50 text-blue-700'
-									: 'border-slate-300 bg-white text-slate-500 hover:border-slate-400'}"
-								onclick={() => {
-									range.symmetric = !range.symmetric;
-									if (range.symmetric) {
-										// Convert explicit to symmetric
-										const sMin = Math.abs(parseFloat(range.sphereMin) || 0);
-										const sMax = Math.abs(parseFloat(range.sphereMax) || 0);
-										range.absMin = Math.min(sMin, sMax).toFixed(2);
-										range.absMax = Math.max(sMin, sMax).toFixed(2);
-									} else {
-										// Convert symmetric to explicit
-										const absMax = parseFloat(range.absMax) || 0;
-										range.sphereMin = (-absMax).toFixed(2);
-										range.sphereMax = absMax.toFixed(2);
-									}
-								}}
-								title={range.symmetric
-									? 'Modo ±: positivo y negativo'
-									: 'Modo explícito: min a max'}
+								class="flex-1 rounded-md px-3 py-2 text-[10px] font-bold tracking-[0.14em] uppercase transition-all {formData.source ===
+								LensCatalogSource.FINISHED
+									? 'bg-white text-brand-navy shadow-sm'
+									: 'text-outline hover:text-brand-navy'}"
+								onclick={() => (formData.source = LensCatalogSource.FINISHED)}>Terminado</button
 							>
-								±
+							<button
+								type="button"
+								class="flex-1 rounded-md px-3 py-2 text-[10px] font-bold tracking-[0.14em] uppercase transition-all {formData.source ===
+								LensCatalogSource.LAB
+									? 'bg-white text-brand-navy shadow-sm'
+									: 'text-outline hover:text-brand-navy'}"
+								onclick={() => (formData.source = LensCatalogSource.LAB)}>Laboratorio</button
+							>
+						</div>
+					</div>
+
+					<div>
+						<Label for="lc_type" class={fieldLabelClass}>Tipo de lente</Label>
+						<Select
+							id="lc_type"
+							name="type"
+							bind:value={formData.type}
+							required
+							class="mt-2 rounded-xl border-0 bg-surface-container-low"
+						>
+							{#each ALL_LENS_TYPES as t (t)}
+								<option value={t}>{getLensTypeLabel(t)}</option>
+							{/each}
+						</Select>
+					</div>
+
+					<div class="md:col-span-2">
+						<Label for="lc_technology" class={fieldLabelClass}>Tecnologia de fabricacion</Label>
+						<Input
+							id="lc_technology"
+							name="technology"
+							bind:value={formData.technology}
+							placeholder="Ej: Digital Freeform High Definition"
+							class="mt-2 rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
+						/>
+					</div>
+
+					<div class="md:col-span-2">
+						<div class="mb-2 flex items-center justify-between">
+							<Label for="lc_name" class={fieldLabelClass}>Nombre tecnico</Label>
+							{#if !isEdit}
+								<label
+									class="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant"
+								>
+									<input
+										type="checkbox"
+										bind:checked={autoNameEnabled}
+										class="h-3.5 w-3.5 rounded border-outline-variant"
+									/>
+									Auto-generar
+								</label>
+							{/if}
+						</div>
+						{#if autoNameEnabled}
+							<input type="hidden" name="name" value={formData.name} />
+						{/if}
+						<Input
+							id="lc_name"
+							name={autoNameEnabled ? undefined : 'name'}
+							bind:value={formData.name}
+							placeholder="Ej: Essilor · Policarbonato · Monofocal"
+							class="rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
+							required
+							disabled={autoNameEnabled}
+						/>
+						{#if activeForm.fields.name?.issues()}
+							<p class="mt-1 text-xs text-error">
+								{getFormErrorMessage(activeForm.fields.name.issues())}
+							</p>
+						{:else if autoNameEnabled}
+							<p class={helperTextClass}>
+								Se genera automaticamente con proveedor, material, tecnologia y tipo.
+							</p>
+						{/if}
+					</div>
+
+					<div class="border-t border-outline-variant/20 pt-4 md:col-span-2">
+						<p class={fieldLabelClass}>Tratamientos incluidos</p>
+						<div class="mt-4 grid gap-3 md:grid-cols-3">
+							<label
+								class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
+							>
+								<span>Antirreflejo (AR)</span>
+								<Checkbox bind:checked={formData.hasAr} />
+							</label>
+							<label
+								class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
+							>
+								<span>Proteccion Bluecut</span>
+								<Checkbox bind:checked={formData.hasBluecut} />
+							</label>
+							<label
+								class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
+							>
+								<span>Fotocromatico</span>
+								<Checkbox bind:checked={formData.isPhotochromic} />
+							</label>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class={formCardClass}>
+				<div class="flex items-center justify-between gap-4">
+					<div class="flex items-center gap-2">
+						<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
+						<h3 class={sectionTitleClass}>Rangos opticos</h3>
+						<Info id="help-ranges" class="h-4 w-4 cursor-help text-outline" />
+						<Popover triggeredBy="#help-ranges" class="w-72 text-sm" trigger="hover">
+							<p class="mb-1 font-medium">¿Qué son los rangos?</p>
+							<p>
+								Definen qué graduaciones puede cubrir este cristal. La esfera puede ser continua
+								como -4.00 a +4.00, o un duplicado inverso como ±4.00 a ±2.00, que guarda dos rangos
+								espejo y deja libre el centro.
+							</p>
+						</Popover>
+					</div>
+					<button
+						type="button"
+						class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-brand-blue transition-colors hover:bg-info-container/35 hover:text-brand-navy"
+						onclick={addRange}
+					>
+						<span aria-hidden="true">+</span>
+						Agregar rango
+					</button>
+				</div>
+
+				<div class="mt-6 space-y-4" use:autoAnimate>
+					{#if ranges.length === 0}
+						<div class="rounded-xl bg-surface-container-low px-6 py-8 text-center">
+							<p class="text-sm text-on-surface-variant">
+								{formData.source === LensCatalogSource.LAB
+									? 'Sin rangos definidos. El laboratorio confirmará disponibilidad por pedido.'
+									: 'Agrega al menos un rango para este lente terminado.'}
+							</p>
+						</div>
+					{/if}
+
+					{#each ranges as range, i (i)}
+						{@const rangeErrors = getRangeErrors(range)}
+						{@const previewLines = getOpticalRangePreview(range)}
+						{@const sphereModeToggleId = `range-sphere-mode-${i}`}
+						{@const sphereStartLabel =
+							range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE ? 'Exterior' : 'Desde'}
+						{@const sphereEndLabel =
+							range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE ? 'Interior' : 'Hasta'}
+						<div class="rounded-xl bg-surface-container-low p-5" use:autoAnimate>
+							<div class="grid gap-4 lg:grid-cols-12">
+								<div class="lg:col-span-4">
+									<div class={rangeHeaderRowWithToggleClass}>
+										<Label class={fieldLabelClass}>Esfera (ESF)</Label>
+										<button
+											id={sphereModeToggleId}
+											type="button"
+											aria-pressed={range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
+											class="inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs leading-none font-semibold transition-colors {range.sphereMode ===
+											SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+												? 'border-brand-blue/60 bg-brand-navy text-white'
+												: 'border-outline-variant/40 bg-white text-brand-navy hover:border-brand-blue/40 hover:text-brand-blue'}"
+											onclick={() => toggleSphereMode(range)}
+										>
+											±
+										</button>
+										<Popover
+											triggeredBy={`#${sphereModeToggleId}`}
+											class="w-72 text-sm"
+											trigger="hover"
+										>
+											<p class="font-medium text-on-surface">
+												{range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+													? 'Duplicado inverso activado'
+													: 'Duplicado inverso desactivado'}
+											</p>
+											<p class="mt-1 text-on-surface-variant">
+												{range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+													? 'Los campos pasan a ser ± exterior e ± interior, y al guardar se crean dos rangos espejo.'
+													: 'Los campos se leen como desde y hasta, y al guardar se crea un solo rango continuo.'}
+											</p>
+										</Popover>
+									</div>
+									<div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+										{#if range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
+											<div>
+												<p class={rangeSubLabelClass}>{sphereStartLabel}</p>
+												<Input
+													bind:value={range.inverseOuter}
+													type="number"
+													step="0.25"
+													placeholder="4.00"
+													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+												/>
+											</div>
+										{:else}
+											<div>
+												<p class={rangeSubLabelClass}>{sphereStartLabel}</p>
+												<Input
+													bind:value={range.sphereMin}
+													type="number"
+													step="0.25"
+													placeholder="-4.00"
+													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+												/>
+											</div>
+										{/if}
+										<span class="pb-2 text-xs text-outline">/</span>
+										{#if range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
+											<div>
+												<p class={rangeSubLabelClass}>{sphereEndLabel}</p>
+												<Input
+													bind:value={range.inverseInner}
+													type="number"
+													step="0.25"
+													placeholder="2.00"
+													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+												/>
+											</div>
+										{:else}
+											<div>
+												<p class={rangeSubLabelClass}>{sphereEndLabel}</p>
+												<Input
+													bind:value={range.sphereMax}
+													type="number"
+													step="0.25"
+													placeholder="+4.00"
+													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+												/>
+											</div>
+										{/if}
+									</div>
+								</div>
+
+								<div class="lg:col-span-4">
+									<div class={rangeHeaderRowClass}>
+										<Label class={fieldLabelClass}>Cilindro (CIL)</Label>
+									</div>
+									<div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+										<div>
+											<p class={rangeSubLabelClass}>Minimo</p>
+											<Input
+												bind:value={range.cylinderMin}
+												type="number"
+												step="0.25"
+												placeholder="Min"
+												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+											/>
+										</div>
+										<span class="pb-2 text-xs text-outline">/</span>
+										<div>
+											<p class={rangeSubLabelClass}>Maximo</p>
+											<Input
+												bind:value={range.cylinderMax}
+												type="number"
+												step="0.25"
+												placeholder="Max"
+												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+											/>
+										</div>
+									</div>
+								</div>
+
+								<div class="lg:col-span-4">
+									<div class={rangeHeaderRowClass}>
+										<Label class={fieldLabelClass}>Adicion (ADD)</Label>
+									</div>
+									<div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+										<div>
+											<p class={rangeSubLabelClass}>Minimo</p>
+											<Input
+												bind:value={range.additionMin}
+												type="number"
+												step="0.25"
+												placeholder="Min"
+												disabled={!showAddition}
+												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm disabled:opacity-50"
+											/>
+										</div>
+										<span class="pb-2 text-xs text-outline">/</span>
+										<div>
+											<p class={rangeSubLabelClass}>Maximo</p>
+											<Input
+												bind:value={range.additionMax}
+												type="number"
+												step="0.25"
+												placeholder="Max"
+												disabled={!showAddition}
+												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm disabled:opacity-50"
+											/>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div
+								class="mt-4 flex items-end justify-between gap-3 border-t border-outline-variant/20 pt-4"
+							>
+								<div class="space-y-1">
+									<p class={fieldLabelClass}>Resultado</p>
+									{#each previewLines as line, li (`${i}-${li}`)}
+										<p class="font-mono leading-tight font-semibold text-on-surface tabular-nums">
+											{line}
+										</p>
+									{/each}
+								</div>
+								<button
+									type="button"
+									class="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error"
+									onclick={() => removeRange(i)}>Quitar</button
+								>
+							</div>
+
+							{#if rangeErrors.length > 0}
+								<div class="mt-3 space-y-1">
+									{#each rangeErrors as err (err)}
+										<p class="text-xs text-error">{err}</p>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/each}
+
+					{#if activeForm.fields.ranges?.issues()}
+						<p class="text-xs text-error">
+							{getFormErrorMessage(activeForm.fields.ranges.issues())}
+						</p>
+					{/if}
+				</div>
+			</section>
+		</div>
+
+		<div class="space-y-6 lg:col-span-5">
+			<section class={formCardClass}>
+				<div class="flex items-center gap-2">
+					<span class="h-2 w-2 rounded-full bg-error"></span>
+					<h3 class={sectionTitleClass}>Estructura de costos y venta</h3>
+				</div>
+
+				<div class="mt-6 space-y-4">
+					<div>
+						<p class={fieldLabelClass}>Como cobra el proveedor</p>
+						<div class="mt-3 grid gap-3 sm:grid-cols-2">
+							<button
+								type="button"
+								aria-pressed={formData.priceType === LensPriceType.UNIT}
+								class="{selectionCardClass} {formData.priceType === LensPriceType.UNIT
+									? 'border-brand-blue/60 bg-brand-navy text-white shadow-sm shadow-brand-navy/10'
+									: 'border-outline-variant/40 bg-surface-container-low text-on-surface-variant hover:border-brand-blue/30 hover:bg-surface'}"
+								onclick={() => (formData.priceType = LensPriceType.UNIT)}
+							>
+								<div>
+									<p
+										class="text-sm font-semibold {formData.priceType === LensPriceType.UNIT
+											? 'text-white'
+											: 'text-on-surface'}"
+									>
+										{getPriceTypeLabel(LensPriceType.UNIT)}
+									</p>
+									<p
+										class="mt-1 text-xs leading-5 {formData.priceType === LensPriceType.UNIT
+											? 'text-white/75'
+											: 'text-on-surface-variant'}"
+									>
+										El costo base corresponde a un solo lente.
+									</p>
+								</div>
+							</button>
+							<button
+								type="button"
+								aria-pressed={formData.priceType === LensPriceType.PAIR}
+								class="{selectionCardClass} {formData.priceType === LensPriceType.PAIR
+									? 'border-brand-blue/60 bg-brand-navy text-white shadow-sm shadow-brand-navy/10'
+									: 'border-outline-variant/40 bg-surface-container-low text-on-surface-variant hover:border-brand-blue/30 hover:bg-surface'}"
+								onclick={() => (formData.priceType = LensPriceType.PAIR)}
+							>
+								<div>
+									<p
+										class="text-sm font-semibold {formData.priceType === LensPriceType.PAIR
+											? 'text-white'
+											: 'text-on-surface'}"
+									>
+										{getPriceTypeLabel(LensPriceType.PAIR)}
+									</p>
+									<p
+										class="mt-1 text-xs leading-5 {formData.priceType === LensPriceType.PAIR
+											? 'text-white/75'
+											: 'text-on-surface-variant'}"
+									>
+										El costo base ya incluye el par completo.
+									</p>
+								</div>
 							</button>
 						</div>
+					</div>
 
-						{#if range.symmetric}
-							<!-- Symmetric mode: ±absMin to ±absMax -->
-							<div class="flex items-center gap-2">
-								<span class="text-sm font-medium text-blue-600">±</span>
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<Label for="lc_price" class={fieldLabelClass}>Costo proveedor (base)</Label>
+							<div class="relative mt-2">
+								<span
+									class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs text-outline"
+									>$</span
+								>
 								<Input
-									bind:value={range.absMin}
+									id="lc_price"
+									name="basePrice"
+									bind:value={formData.basePrice}
 									type="number"
-									step="0.25"
+									step="0.01"
 									min="0"
-									placeholder="Ej: 0.00"
-									size="sm"
-									class="font-mono placeholder:text-slate-400"
-								/>
-								<span class="text-slate-400">a</span>
-								<span class="text-sm font-medium text-blue-600">±</span>
-								<Input
-									bind:value={range.absMax}
-									type="number"
-									step="0.25"
-									min="0"
-									placeholder="Ej: 6.00"
-									size="sm"
-									class="font-mono placeholder:text-slate-400"
+									class="rounded-xl border-0 bg-surface-container-low pl-7 font-mono"
+									required
 								/>
 							</div>
+						</div>
+						<div>
+							<p class={fieldLabelClass}>Costo por par (calculado)</p>
+							<div
+								class="bg-secondary-container/20 mt-2 flex h-[42px] items-center rounded-xl px-4 font-mono text-sm font-bold text-brand-blue"
+							>
+								$ {livePairPurchasePrice.toFixed(2)}
+							</div>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-3 gap-3">
+						<div>
+							<Label for="lc_mounting_price" class={fieldLabelClass}>Montaje</Label>
+							<Input
+								id="lc_mounting_price"
+								name="mountingPrice"
+								bind:value={formData.mountingPrice}
+								type="number"
+								step="0.01"
+								min="0"
+								class="mt-2 rounded-xl border-0 bg-surface-container-low font-mono"
+							/>
+						</div>
+						<div>
+							<Label for="lc_shipping" class={fieldLabelClass}>Envio</Label>
+							<Input
+								id="lc_shipping"
+								name="shippingPrice"
+								bind:value={formData.shippingPrice}
+								type="number"
+								step="0.01"
+								min="0"
+								class="mt-2 rounded-xl border-0 bg-surface-container-low font-mono"
+							/>
+						</div>
+						<div>
+							<Label for="lc_sale_price" class={fieldLabelClass}>Precio venta</Label>
+							<Input
+								id="lc_sale_price"
+								name="salePrice"
+								bind:value={formData.salePrice}
+								type="number"
+								step="0.01"
+								min="0"
+								class="mt-2 rounded-xl border-0 bg-brand-navy font-mono font-bold text-white"
+							/>
+						</div>
+					</div>
+
+					<div class="rounded-xl bg-surface-container-high/40 px-5 py-5">
+						<div class="flex items-start justify-between gap-4">
+							<div>
+								<p class={fieldLabelClass}>Margen estimado</p>
+								<p
+									class="font-heading mt-2 text-3xl font-semibold tracking-[-0.02em] text-brand-navy tabular-nums"
+								>
+									{liveMarginPercent != null ? `${liveMarginPercent.toFixed(1)}%` : '—'}
+								</p>
+							</div>
+							<div class="text-right">
+								<p class={fieldLabelClass}>Utilidad bruta</p>
+								<p class="mt-2 font-mono text-2xl font-semibold text-brand-blue tabular-nums">
+									{liveGrossProfit != null ? formatPrice(liveGrossProfit) : '—'}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex flex-col gap-3 pt-1">
+						<div class="flex items-center justify-between gap-4">
+							<TaxToggle
+								bind:checked={formData.isTaxable}
+								bind:taxRate={formData.taxRate}
+								label="Gravable (IVA)"
+							/>
+							<p class="text-xs text-on-surface-variant">
+								Total con impuesto: {formatPrice(totalWithTax)}
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class={formCardClass}>
+				<div class="flex items-center gap-2">
+					<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
+					<h3 class={sectionTitleClass}>Gestion</h3>
+				</div>
+
+				<div class="mt-6 space-y-6">
+					<div>
+						<p class={fieldLabelClass}>Modalidad de inventario</p>
+						{#if formData.source === LensCatalogSource.FINISHED}
+							<input type="hidden" name="inventoryMode" value={formData.inventoryMode} />
+							<div class="mt-3 grid gap-3 sm:grid-cols-2">
+								<button
+									type="button"
+									aria-pressed={formData.inventoryMode === LensInventoryMode.STOCK}
+									class="{selectionCardClass} {formData.inventoryMode === LensInventoryMode.STOCK
+										? 'border-brand-blue/60 bg-brand-navy text-white shadow-sm shadow-brand-navy/10'
+										: 'border-outline-variant/40 bg-surface-container-low text-on-surface-variant hover:border-brand-blue/30 hover:bg-surface'}"
+									onclick={() => (formData.inventoryMode = LensInventoryMode.STOCK)}
+								>
+									<div>
+										<p
+											class="text-sm font-semibold {formData.inventoryMode ===
+											LensInventoryMode.STOCK
+												? 'text-white'
+												: 'text-on-surface'}"
+										>
+											Stock
+										</p>
+										<p
+											class="mt-1 text-xs leading-5 {formData.inventoryMode ===
+											LensInventoryMode.STOCK
+												? 'text-white/75'
+												: 'text-on-surface-variant'}"
+										>
+											Se descuenta del inventario disponible.
+										</p>
+									</div>
+								</button>
+								<button
+									type="button"
+									aria-pressed={formData.inventoryMode === LensInventoryMode.ON_DEMAND}
+									class="{selectionCardClass} {formData.inventoryMode ===
+									LensInventoryMode.ON_DEMAND
+										? 'border-brand-blue/60 bg-brand-navy text-white shadow-sm shadow-brand-navy/10'
+										: 'border-outline-variant/40 bg-surface-container-low text-on-surface-variant hover:border-brand-blue/30 hover:bg-surface'}"
+									onclick={() => (formData.inventoryMode = LensInventoryMode.ON_DEMAND)}
+								>
+									<div>
+										<p
+											class="text-sm font-semibold {formData.inventoryMode ===
+											LensInventoryMode.ON_DEMAND
+												? 'text-white'
+												: 'text-on-surface'}"
+										>
+											Bajo pedido
+										</p>
+										<p
+											class="mt-1 text-xs leading-5 {formData.inventoryMode ===
+											LensInventoryMode.ON_DEMAND
+												? 'text-white/75'
+												: 'text-on-surface-variant'}"
+										>
+											Se compra al proveedor cuando se confirma la venta.
+										</p>
+									</div>
+								</button>
+							</div>
+
+							{#if formData.inventoryMode === LensInventoryMode.STOCK}
+								<div class="mt-4">
+									<Label for="lc_stock" class={fieldLabelClass}>Cantidad en stock</Label>
+									<Input
+										id="lc_stock"
+										name="stock"
+										bind:value={formData.stock}
+										type="number"
+										min="0"
+										class="mt-2 rounded-xl border-0 bg-surface-container-low font-mono"
+									/>
+								</div>
+							{/if}
 						{:else}
-							<!-- Explicit mode: sphereMin to sphereMax -->
-							<div class="flex items-center gap-2">
-								<Input
-									bind:value={range.sphereMin}
-									type="number"
-									step="0.25"
-									placeholder="Ej: -6.00"
-									size="sm"
-									class="font-mono placeholder:text-slate-400"
-								/>
-								<span class="text-slate-400">a</span>
-								<Input
-									bind:value={range.sphereMax}
-									type="number"
-									step="0.25"
-									placeholder="Ej: +6.00"
-									size="sm"
-									class="font-mono placeholder:text-slate-400"
-								/>
+							<input type="hidden" name="inventoryMode" value={LensInventoryMode.ON_DEMAND} />
+							<div
+								class="mt-3 rounded-xl border border-brand-gold/25 bg-brand-gold/10 px-4 py-4 text-sm text-on-surface-variant"
+							>
+								Los lentes de laboratorio se gestionan siempre bajo pedido.
 							</div>
 						{/if}
 					</div>
 
-					<div>
-						<Label class="mb-2">Cilindro</Label>
-						<div class="flex items-center gap-2">
-							<Input
-								bind:value={range.cylinderMin}
-								type="number"
-								step="0.25"
-								max="0"
-								placeholder="Ej: -4.00"
-								size="sm"
-								class="font-mono placeholder:text-slate-400"
-							/>
-							<span class="text-slate-400">a</span>
-							<Input
-								bind:value={range.cylinderMax}
-								type="number"
-								step="0.25"
-								max="0"
-								placeholder="Ej: 0.00"
-								size="sm"
-								class="font-mono placeholder:text-slate-400"
-							/>
-						</div>
+					<div class="rounded-xl bg-surface-container-low px-4 py-4">
+						<p class={fieldLabelClass}>Notas internas</p>
+						<Textarea
+							id="lc_notes"
+							name="notes"
+							bind:value={formData.notes}
+							rows={3}
+							placeholder="Acuerdos con proveedor, restricciones o notas operativas..."
+							class="mt-3 rounded-xl border-0 bg-white"
+						/>
 					</div>
 				</div>
-
-				{#if showAddition}
-					<div class="mt-3">
-						<Label class="mb-2">Adición</Label>
-						<div class="flex items-center gap-2" style="max-width: 50%;">
-							<Input
-								bind:value={range.additionMin}
-								type="number"
-								step="0.25"
-								min="0"
-								max="4.00"
-								placeholder="Ej: 0.75"
-								size="sm"
-								class="font-mono placeholder:text-slate-400"
-							/>
-							<span class="text-slate-400">a</span>
-							<Input
-								bind:value={range.additionMax}
-								type="number"
-								step="0.25"
-								min="0"
-								max="4.00"
-								placeholder="Ej: 3.50"
-								size="sm"
-								class="font-mono placeholder:text-slate-400"
-							/>
-						</div>
-					</div>
-				{/if}
-
-				<!-- Inline validation errors -->
-				{#if rangeErrors.length > 0}
-					<div class="mt-2 space-y-1">
-						{#each rangeErrors as err (err)}
-							<p class="text-xs text-red-600">{err}</p>
-						{/each}
-					</div>
-				{/if}
-
-				<!-- Unified range preview -->
-				<div class="mt-3 rounded-md border border-blue-100 bg-blue-50/60 px-3 py-2">
-					<p class="mb-0.5 text-[10px] font-semibold tracking-wide text-blue-400 uppercase">
-						Resultado
-					</p>
-					{#each rangePreview(range) as line, li (li)}
-						<p class="font-mono text-xs leading-relaxed text-blue-700">
-							{#if rangePreview(range).length > 1}
-								<span class="mr-1 text-blue-400">{li + 1}.</span>
-							{/if}
-							{line}
-						</p>
-					{/each}
-				</div>
-			</div>
-		{/each}
-
-		{#if activeForm.fields.ranges?.issues()}
-			<p class="mt-1 text-xs text-red-500">
-				{getFormErrorMessage(activeForm.fields.ranges.issues())}
-			</p>
-		{/if}
-	</div>
-
-	<!-- ================================================================
-	     4. NOTAS
-	     ================================================================ -->
-	<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-		<h3 class="mb-1 text-lg font-semibold text-slate-800">Notas</h3>
-		<p class="mb-3 text-xs text-slate-400">
-			Información interna: observaciones, restricciones, detalles del proveedor, etc.
-		</p>
-		<Textarea
-			id="lc_notes"
-			name="notes"
-			bind:value={formData.notes}
-			rows={3}
-			placeholder="Notas adicionales sobre este cristal..."
-		/>
+			</section>
+		</div>
 	</div>
 {/snippet}
 
