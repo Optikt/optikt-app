@@ -57,6 +57,9 @@ function parseOptionalBounds(minValue: string, maxValue: string): OptionalBounds
 
 	if (!hasMin || !hasMax) return {};
 
+	// Both zero means "not set" — won't be saved
+	if (min === 0 && max === 0) return {};
+
 	return {
 		min: Math.min(min!, max!),
 		max: Math.max(min!, max!)
@@ -140,12 +143,28 @@ export function hasOpticalRangeValidationErrors(validation: OpticalRangeValidati
 	);
 }
 
-export function validateOpticalRangeEntry(entry: OpticalRangeFormEntry): OpticalRangeValidation {
+export type ValidateOpticalRangeOptions = {
+	requireAddition?: boolean;
+	skipAddition?: boolean;
+};
+
+export function validateOpticalRangeEntry(
+	entry: OpticalRangeFormEntry,
+	options: ValidateOpticalRangeOptions = {}
+): OpticalRangeValidation {
 	const validation = createEmptyOpticalRangeValidation();
 
 	if (entry.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE) {
 		const inverseOuter = parseOptionalNumber(entry.inverseOuter);
 		const inverseInner = parseOptionalNumber(entry.inverseInner);
+
+		if (inverseOuter === undefined) {
+			pushUniqueError(validation.sphere, 'Ingresa el límite exterior de esfera');
+		}
+
+		if (inverseInner === undefined) {
+			pushUniqueError(validation.sphere, 'Ingresa el límite interior de esfera');
+		}
 
 		if (inverseOuter !== undefined) {
 			validateSphereValue(inverseOuter, validation.sphere);
@@ -189,6 +208,14 @@ export function validateOpticalRangeEntry(entry: OpticalRangeFormEntry): Optical
 		const sphereMin = parseOptionalNumber(entry.sphereMin);
 		const sphereMax = parseOptionalNumber(entry.sphereMax);
 
+		if (sphereMin === undefined) {
+			pushUniqueError(validation.sphere, 'Ingresa el valor mínimo de esfera');
+		}
+
+		if (sphereMax === undefined) {
+			pushUniqueError(validation.sphere, 'Ingresa el valor máximo de esfera');
+		}
+
 		if (sphereMin !== undefined) {
 			validateSphereValue(sphereMin, validation.sphere);
 		}
@@ -205,6 +232,14 @@ export function validateOpticalRangeEntry(entry: OpticalRangeFormEntry): Optical
 	const cylinderMin = parseOptionalNumber(entry.cylinderMin);
 	const cylinderMax = parseOptionalNumber(entry.cylinderMax);
 
+	if (cylinderMin === undefined) {
+		pushUniqueError(validation.cylinder, 'Ingresa el valor mínimo de cilindro');
+	}
+
+	if (cylinderMax === undefined) {
+		pushUniqueError(validation.cylinder, 'Ingresa el valor máximo de cilindro');
+	}
+
 	if (cylinderMin !== undefined) {
 		validateCylinderValue(cylinderMin, validation.cylinder);
 	}
@@ -213,15 +248,73 @@ export function validateOpticalRangeEntry(entry: OpticalRangeFormEntry): Optical
 		validateCylinderValue(cylinderMax, validation.cylinder);
 	}
 
+	if (
+		cylinderMin !== undefined &&
+		cylinderMax !== undefined &&
+		(cylinderMin === 0) !== (cylinderMax === 0)
+	) {
+		pushUniqueError(
+			validation.cylinder,
+			'Si un extremo de cilindro es 0, ambos deben ser 0'
+		);
+	}
+
 	const additionMin = parseOptionalNumber(entry.additionMin);
 	const additionMax = parseOptionalNumber(entry.additionMax);
 
-	if (additionMin !== undefined) {
-		validateAdditionValue(additionMin, validation.addition);
+	if (!options.skipAddition) {
+		if (additionMin === undefined) {
+			pushUniqueError(validation.addition, 'Ingresa el valor mínimo de adición');
+		}
+
+		if (additionMax === undefined) {
+			pushUniqueError(validation.addition, 'Ingresa el valor máximo de adición');
+		}
+
+		if (options.requireAddition) {
+			const bothEmpty = additionMin === undefined && additionMax === undefined;
+			const bothZero = additionMin === 0 && additionMax === 0;
+
+			if (bothEmpty || bothZero) {
+				pushUniqueError(
+					validation.addition,
+					'Los lentes bifocales, progresivos u ocupacionales requieren adición distinta de 0'
+				);
+			}
+		}
+
+		if (additionMin !== undefined) {
+			validateAdditionValue(additionMin, validation.addition);
+		}
+
+		if (additionMax !== undefined) {
+			validateAdditionValue(additionMax, validation.addition);
+		}
+
+		if (
+			additionMin !== undefined &&
+			additionMax !== undefined &&
+			(additionMin === 0) !== (additionMax === 0)
+		) {
+			pushUniqueError(
+				validation.addition,
+				'Debe ingresar un rango de adición valido, no puede ser 0'
+			);
+		}
 	}
 
-	if (additionMax !== undefined) {
-		validateAdditionValue(additionMax, validation.addition);
+	// All-zero range is meaningless
+	const sphereValues =
+		entry.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+			? [parseOptionalNumber(entry.inverseOuter), parseOptionalNumber(entry.inverseInner)]
+			: [parseOptionalNumber(entry.sphereMin), parseOptionalNumber(entry.sphereMax)];
+
+	const allValues = options.skipAddition
+		? [...sphereValues, cylinderMin, cylinderMax]
+		: [...sphereValues, cylinderMin, cylinderMax, additionMin, additionMax];
+
+	if (allValues.every((v) => v === 0)) {
+		pushUniqueError(validation.sphere, 'El rango no puede tener todos los valores en 0');
 	}
 
 	return validation;
@@ -306,10 +399,10 @@ function createInverseDuplicateEntry(
 export function createEmptyOpticalRangeEntry(): OpticalRangeFormEntry {
 	return {
 		sphereMode: SPHERE_RANGE_MODE.CONTINUOUS,
-		inverseOuter: '0.00',
-		inverseInner: '0.00',
-		sphereMin: '0.00',
-		sphereMax: '0.00',
+		inverseOuter: '',
+		inverseInner: '',
+		sphereMin: '',
+		sphereMax: '',
 		cylinderMin: '',
 		cylinderMax: '',
 		additionMin: '',

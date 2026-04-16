@@ -169,9 +169,152 @@ describe('range helpers', () => {
 
 	it('allows reversed negative cylinder inputs because saved bounds are normalized', () => {
 		const entry = createEmptyOpticalRangeEntry();
-		entry.cylinderMin = '0.00';
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '2.00';
+		entry.cylinderMin = '-0.25';
 		entry.cylinderMax = '-3.00';
+		entry.additionMin = '0';
+		entry.additionMax = '0';
 
 		expect(validateOpticalRangeEntry(entry).cylinder).toEqual([]);
+	});
+
+	it('flags empty cylinder field', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.cylinderMin = '-2.00';
+		entry.cylinderMax = '';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.cylinder).toContain('Ingresa el valor máximo de cilindro');
+	});
+
+	it('flags empty addition field', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.additionMin = '1.00';
+		entry.additionMax = '';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.addition).toContain('Ingresa el valor máximo de adición');
+	});
+
+	it('flags empty sphere field', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMax = '2.00'; // only max filled
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.sphere).toContain('Ingresa el valor mínimo de esfera');
+	});
+
+	it('requires non-zero addition when requireAddition is true', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '2.00';
+		entry.cylinderMin = '0';
+		entry.cylinderMax = '0';
+		entry.additionMin = '0';
+		entry.additionMax = '0';
+
+		const v1 = validateOpticalRangeEntry(entry, { requireAddition: true });
+		expect(v1.addition).toContain(
+			'Los lentes bifocales, progresivos u ocupacionales requieren adición distinta de 0'
+		);
+
+		// valid addition range
+		entry.additionMin = '0.75';
+		entry.additionMax = '2.50';
+		const v2 = validateOpticalRangeEntry(entry, { requireAddition: true });
+		expect(v2.addition).toEqual([]);
+	});
+
+	it('does not require addition when requireAddition is false', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.additionMin = '0';
+		entry.additionMax = '0';
+
+		const validation = validateOpticalRangeEntry(entry, { requireAddition: false });
+
+		expect(validation.addition).not.toContain(
+			'Los lentes bifocales, progresivos u ocupacionales requieren adición distinta de 0'
+		);
+	});
+
+	it('rejects all-zero range as meaningless', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '0.00';
+		entry.cylinderMin = '0';
+		entry.cylinderMax = '0';
+		entry.additionMin = '0';
+		entry.additionMax = '0';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.sphere).toContain('El rango no puede tener todos los valores en 0');
+	});
+
+	it('allows range when at least one value is non-zero', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '-2.00';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.sphere).not.toContain('El rango no puede tener todos los valores en 0');
+	});
+
+	it('flags cylinder when one endpoint is 0 and the other is not', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '2.00';
+		entry.cylinderMin = '0';
+		entry.cylinderMax = '-2';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.cylinder).toContain('Si un extremo de cilindro es 0, ambos deben ser 0');
+	});
+
+	it('allows cylinder when both endpoints are 0', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '2.00';
+		entry.cylinderMin = '0';
+		entry.cylinderMax = '0';
+		entry.additionMin = '0';
+		entry.additionMax = '0';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.cylinder).toEqual([]);
+	});
+
+	it('allows cylinder when both endpoints are non-zero', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '2.00';
+		entry.cylinderMin = '-0.25';
+		entry.cylinderMax = '-4.00';
+		entry.additionMin = '0';
+		entry.additionMax = '0';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.cylinder).toEqual([]);
+	});
+
+	it('flags addition when one endpoint is 0 and the other is not', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.sphereMin = '0.00';
+		entry.sphereMax = '2.00';
+		entry.cylinderMin = '0';
+		entry.cylinderMax = '0';
+		entry.additionMin = '0';
+		entry.additionMax = '2.50';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.addition).toContain('Debe ingresar un rango de adición valido, no puede ser 0');
 	});
 });

@@ -373,7 +373,14 @@
 		toastUnboundErrors(allIssues.filter((issue) => !isRenderedRangeIssue(issue)));
 	}
 
-	const clientRangeValidations = $derived.by(() => ranges.map(validateOpticalRangeEntry));
+	const clientRangeValidations = $derived.by(() =>
+		ranges.map((r) =>
+			validateOpticalRangeEntry(r, {
+				requireAddition: showAddition,
+				skipAddition: !showAddition
+			})
+		)
+	);
 	const hasClientRangeErrors = $derived.by(() =>
 		clientRangeValidations.some(hasOpticalRangeValidationErrors)
 	);
@@ -525,7 +532,7 @@
 							name="supplierId"
 							bind:value={formData.supplierId}
 							options={supplierOptions}
-							placeholder="Ej: Essilor"
+							placeholder="Ej: Novak"
 							required
 							creatable
 							onCreatePending={handleCreatePendingSupplier}
@@ -542,7 +549,7 @@
 							name="materialId"
 							bind:value={formData.materialId}
 							options={materialOptions}
-							placeholder="Ej: Policarbonato 1.59"
+							placeholder="Ej: Policarbonato"
 							required
 							creatable
 							onCreatePending={handleCreatePendingMaterial}
@@ -630,7 +637,7 @@
 							id="lc_name"
 							name={autoNameEnabled ? undefined : 'name'}
 							bind:value={formData.name}
-							placeholder="Ej: Essilor · Policarbonato · Monofocal"
+							placeholder="Ej: Novak · Policarbonato · Monofocal"
 							class="rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
 							required
 							disabled={autoNameEnabled}
@@ -727,7 +734,7 @@
 							range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE ? 'Interior' : 'Hasta'}
 						<div class="rounded-xl bg-surface-container-low p-5" use:autoAnimate>
 							<div class="grid gap-4 lg:grid-cols-12">
-								<div class="lg:col-span-4">
+							<div class={showAddition ? 'lg:col-span-4' : 'lg:col-span-6'}>
 									<div class={rangeHeaderRowWithToggleClass}>
 										<Label class={fieldLabelClass}>Esfera (ESF)</Label>
 										<button
@@ -829,7 +836,7 @@
 									{/if}
 								</div>
 
-								<div class="lg:col-span-4">
+								<div class={showAddition ? 'lg:col-span-4' : 'lg:col-span-6'}>
 									<div class={rangeHeaderRowClass}>
 										<Label class={fieldLabelClass}>Cilindro (CIL)</Label>
 									</div>
@@ -871,6 +878,7 @@
 									{/if}
 								</div>
 
+								{#if showAddition}
 								<div class="lg:col-span-4">
 									<div class={rangeHeaderRowClass}>
 										<Label class={fieldLabelClass}>Adicion (ADD)</Label>
@@ -886,8 +894,7 @@
 												max="5"
 												step="0.25"
 												placeholder="Min"
-												disabled={!showAddition}
-												class={getRangeInputClass(additionHasErrors, 'disabled:opacity-50')}
+												class={getRangeInputClass(additionHasErrors)}
 											/>
 										</div>
 										<span class="pb-2 text-xs text-outline">/</span>
@@ -901,8 +908,7 @@
 												max="5"
 												step="0.25"
 												placeholder="Max"
-												disabled={!showAddition}
-												class={getRangeInputClass(additionHasErrors, 'disabled:opacity-50')}
+												class={getRangeInputClass(additionHasErrors)}
 											/>
 										</div>
 									</div>
@@ -914,6 +920,7 @@
 										</div>
 									{/if}
 								</div>
+								{/if}
 							</div>
 
 							<div
