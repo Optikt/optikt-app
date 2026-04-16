@@ -30,6 +30,12 @@ export type ExpandedOpticalRange = {
 	additionMax?: number;
 };
 
+export type OpticalRangeValidation = {
+	sphere: string[];
+	cylinder: string[];
+	addition: string[];
+};
+
 type OptionalBounds = {
 	min?: number;
 	max?: number;
@@ -55,6 +61,170 @@ function parseOptionalBounds(minValue: string, maxValue: string): OptionalBounds
 		min: Math.min(min!, max!),
 		max: Math.max(min!, max!)
 	};
+}
+
+function parseOptionalNumber(value: string | number | null | undefined): number | undefined {
+	if (value == null) return undefined;
+	if (typeof value === 'number') return Number.isNaN(value) ? undefined : value;
+
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+
+	const parsed = Number(trimmed);
+	return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function isQuarterStep(value: number): boolean {
+	return Math.abs(value * 4 - Math.round(value * 4)) < 1e-9;
+}
+
+function pushUniqueError(errors: string[], message: string) {
+	if (!errors.includes(message)) {
+		errors.push(message);
+	}
+}
+
+function validateSphereValue(value: number, errors: string[]) {
+	if (value < -30) {
+		pushUniqueError(errors, 'Esfera debe ser mayor o igual a -30');
+	}
+
+	if (value > 30) {
+		pushUniqueError(errors, 'Esfera debe ser menor o igual a +30');
+	}
+
+	if (!isQuarterStep(value)) {
+		pushUniqueError(errors, 'Esfera debe avanzar en pasos de 0.25');
+	}
+}
+
+function validateCylinderValue(value: number, errors: string[]) {
+	if (value < -10) {
+		pushUniqueError(errors, 'Cilindro debe ser mayor o igual a -10');
+	}
+
+	if (value > 0) {
+		pushUniqueError(errors, 'Cilindro debe ser negativo o cero');
+	}
+
+	if (!isQuarterStep(value)) {
+		pushUniqueError(errors, 'Cilindro debe avanzar en pasos de 0.25');
+	}
+}
+
+function validateAdditionValue(value: number, errors: string[]) {
+	if (value < 0) {
+		pushUniqueError(errors, 'Adición debe ser mayor o igual a 0');
+	}
+
+	if (value > 5) {
+		pushUniqueError(errors, 'Adición debe ser menor o igual a +5');
+	}
+
+	if (!isQuarterStep(value)) {
+		pushUniqueError(errors, 'Adición debe avanzar en pasos de 0.25');
+	}
+}
+
+export function createEmptyOpticalRangeValidation(): OpticalRangeValidation {
+	return {
+		sphere: [],
+		cylinder: [],
+		addition: []
+	};
+}
+
+export function hasOpticalRangeValidationErrors(validation: OpticalRangeValidation): boolean {
+	return (
+		validation.sphere.length > 0 || validation.cylinder.length > 0 || validation.addition.length > 0
+	);
+}
+
+export function validateOpticalRangeEntry(entry: OpticalRangeFormEntry): OpticalRangeValidation {
+	const validation = createEmptyOpticalRangeValidation();
+
+	if (entry.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE) {
+		const inverseOuter = parseOptionalNumber(entry.inverseOuter);
+		const inverseInner = parseOptionalNumber(entry.inverseInner);
+
+		if (inverseOuter !== undefined) {
+			validateSphereValue(inverseOuter, validation.sphere);
+			if (inverseOuter < 0) {
+				pushUniqueError(
+					validation.sphere,
+					'Esfera debe ser mayor o igual a 0 en duplicado inverso'
+				);
+			}
+		}
+
+		if (inverseInner !== undefined) {
+			validateSphereValue(inverseInner, validation.sphere);
+			if (inverseInner < 0) {
+				pushUniqueError(
+					validation.sphere,
+					'Esfera debe ser mayor o igual a 0 en duplicado inverso'
+				);
+			}
+		}
+
+		if (inverseOuter !== undefined && inverseInner !== undefined && inverseInner > inverseOuter) {
+			pushUniqueError(
+				validation.sphere,
+				'Esfera: el límite interior no puede ser mayor al exterior'
+			);
+		}
+
+		if (
+			inverseOuter !== undefined &&
+			inverseInner !== undefined &&
+			inverseInner === 0 &&
+			inverseOuter > 0
+		) {
+			pushUniqueError(
+				validation.sphere,
+				'Esfera: usa rango continuo si el centro también está incluido'
+			);
+		}
+	} else {
+		const sphereMin = parseOptionalNumber(entry.sphereMin);
+		const sphereMax = parseOptionalNumber(entry.sphereMax);
+
+		if (sphereMin !== undefined) {
+			validateSphereValue(sphereMin, validation.sphere);
+		}
+
+		if (sphereMax !== undefined) {
+			validateSphereValue(sphereMax, validation.sphere);
+		}
+
+		if (sphereMin !== undefined && sphereMax !== undefined && sphereMin > sphereMax) {
+			pushUniqueError(validation.sphere, 'Esfera mínima debe ser ≤ esfera máxima');
+		}
+	}
+
+	const cylinderMin = parseOptionalNumber(entry.cylinderMin);
+	const cylinderMax = parseOptionalNumber(entry.cylinderMax);
+
+	if (cylinderMin !== undefined) {
+		validateCylinderValue(cylinderMin, validation.cylinder);
+	}
+
+	if (cylinderMax !== undefined) {
+		validateCylinderValue(cylinderMax, validation.cylinder);
+	}
+
+	const additionMin = parseOptionalNumber(entry.additionMin);
+	const additionMax = parseOptionalNumber(entry.additionMax);
+
+	if (additionMin !== undefined) {
+		validateAdditionValue(additionMin, validation.addition);
+	}
+
+	if (additionMax !== undefined) {
+		validateAdditionValue(additionMax, validation.addition);
+	}
+
+	return validation;
 }
 
 function getSecondarySignature(range: LensOpticalRange): string {

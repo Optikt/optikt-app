@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Label, Input, Select, Checkbox, Textarea, Popover } from 'flowbite-svelte';
 	import { Info } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
@@ -14,13 +15,17 @@
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
 		SPHERE_RANGE_MODE,
+		createEmptyOpticalRangeValidation,
 		collapseOpticalRangesForForm,
 		createEmptyOpticalRangeEntry,
 		expandOpticalRanges,
 		getOpticalRangePreview,
+		hasOpticalRangeValidationErrors,
 		toContinuousSphereValues,
 		toInverseDuplicateSphereValues,
-		type OpticalRangeFormEntry
+		validateOpticalRangeEntry,
+		type OpticalRangeFormEntry,
+		type OpticalRangeValidation
 	} from '$lib/utils/opticalRangeForm';
 	import {
 		LensType,
@@ -76,14 +81,10 @@
 	const rangeHeaderRowWithToggleClass = `${rangeHeaderRowClass} gap-2`;
 	const selectionCardClass =
 		'min-h-[96px] rounded-xl border px-4 py-4 text-left transition-all duration-150 ease-[cubic-bezier(0.25,1,0.5,1)]';
+	const rangeInputBaseClass = 'rounded-xl bg-white px-3 py-2 font-mono text-sm';
 
 	// Form instance
 	let formInstanceId = $state(generateUUID());
-	$effect(() => {
-		untrack(() => {
-			formInstanceId = generateUUID();
-		});
-	});
 
 	const currentCreateForm = $derived(createLensCatalogItemForm.for(formInstanceId));
 	const currentUpdateForm = $derived(
@@ -278,33 +279,130 @@
 
 	const serializedRanges = $derived(JSON.stringify(expandOpticalRanges(ranges)));
 
-	function getRangeErrors(r: OpticalRangeFormEntry): string[] {
-		const errors: string[] = [];
-		if (r.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE) {
-			const inverseOuter = parseFloat(r.inverseOuter) || 0;
-			const inverseInner = parseFloat(r.inverseInner) || 0;
-			if (inverseInner > inverseOuter) {
-				errors.push('Esfera: el límite interior no puede ser mayor al exterior');
+	type RangeValidationGroup = 'sphere' | 'cylinder' | 'addition';
+
+	function getRangeInputClass(hasError: boolean, extraClass = ''): string {
+		return `${rangeInputBaseClass} ${
+			hasError
+				? 'border border-error/40 ring-1 ring-error/15 focus:border-error focus:ring-error/20'
+				: 'border-0'
+		} ${extraClass}`.trim();
+	}
+
+	function pushUniqueValidationMessage(errors: string[], message: string) {
+		if (!errors.includes(message)) {
+			errors.push(message);
+		}
+	}
+
+	function mergeRangeValidation(
+		clientValidation: OpticalRangeValidation,
+		serverValidation?: OpticalRangeValidation
+	): OpticalRangeValidation {
+		const merged = createEmptyOpticalRangeValidation();
+
+		for (const group of ['sphere', 'cylinder', 'addition'] as const) {
+			for (const message of clientValidation[group]) {
+				pushUniqueValidationMessage(merged[group], message);
 			}
-			if (inverseInner === 0 && inverseOuter > 0) {
-				errors.push('Esfera: usa rango continuo si el centro también está incluido');
+
+			for (const message of serverValidation?.[group] ?? []) {
+				pushUniqueValidationMessage(merged[group], message);
 			}
-		} else {
-			const sMin = parseFloat(r.sphereMin) || 0;
-			const sMax = parseFloat(r.sphereMax) || 0;
-			if (sMin > sMax) errors.push('Esfera: el mínimo no puede ser mayor al máximo');
 		}
-		const cylMin = r.cylinderMin ? parseFloat(r.cylinderMin) : null;
-		const cylMax = r.cylinderMax ? parseFloat(r.cylinderMax) : null;
-		if (cylMin !== null && cylMax !== null && !isNaN(cylMin) && !isNaN(cylMax) && cylMin > cylMax) {
-			errors.push('Cilindro: el mínimo no puede ser mayor al máximo');
+
+		return merged;
+	}
+
+	function getRangeIssueLocation(
+		issue: RemoteFormIssue
+	): { index?: number; field?: string } | null {
+		if (Array.isArray(issue.path) && issue.path[0] === 'ranges') {
+			return {
+				index: typeof issue.path[1] === 'number' ? issue.path[1] : undefined,
+				field:
+					typeof issue.path[2] === 'string'
+						? issue.path[2]
+						: typeof issue.path[1] === 'string'
+							? issue.path[1]
+							: undefined
+			};
 		}
-		const addMin = r.additionMin ? parseFloat(r.additionMin) : null;
-		const addMax = r.additionMax ? parseFloat(r.additionMax) : null;
-		if (addMin !== null && addMax !== null && !isNaN(addMin) && !isNaN(addMax) && addMin > addMax) {
-			errors.push('Adición: el mínimo no puede ser mayor al máximo');
+
+		return null;
+	}
+
+	function getRangeValidationGroup(field?: string): RangeValidationGroup | null {
+		if (!field) return null;
+		if (field.startsWith('sphere')) return 'sphere';
+		if (field.startsWith('cylinder')) return 'cylinder';
+		if (field.startsWith('addition')) return 'addition';
+		return null;
+	}
+
+	function buildServerRangeValidations(issues: RemoteFormIssue[]): OpticalRangeValidation[] {
+		const validations: OpticalRangeValidation[] = [];
+
+		for (const issue of issues) {
+			const location = getRangeIssueLocation(issue);
+			if (!location || location.index === undefined) continue;
+
+			const group = getRangeValidationGroup(location.field);
+			if (!group) continue;
+
+			const validation = validations[location.index] ?? createEmptyOpticalRangeValidation();
+			pushUniqueValidationMessage(validation[group], issue.message);
+			validations[location.index] = validation;
 		}
-		return errors;
+
+		return validations;
+	}
+
+	function getRootRangeIssues(issues: RemoteFormIssue[]): RemoteFormIssue[] {
+		return issues.filter((issue) => {
+			const location = getRangeIssueLocation(issue);
+			return location !== null && location.index === undefined;
+		});
+	}
+
+	function isRenderedRangeIssue(issue: RemoteFormIssue): boolean {
+		return getRangeIssueLocation(issue) !== null;
+	}
+
+	function toastUnboundNonRangeIssues(allIssues: RemoteFormIssue[]) {
+		toastUnboundErrors(allIssues.filter((issue) => !isRenderedRangeIssue(issue)));
+	}
+
+	const clientRangeValidations = $derived.by(() => ranges.map(validateOpticalRangeEntry));
+	const hasClientRangeErrors = $derived.by(() =>
+		clientRangeValidations.some(hasOpticalRangeValidationErrors)
+	);
+	const rangeServerIssues = $derived.by(() => activeForm.fields.allIssues?.() ?? []);
+	const serverRangeValidations = $derived.by(() => buildServerRangeValidations(rangeServerIssues));
+	const rootRangeIssues = $derived.by(() => getRootRangeIssues(rangeServerIssues));
+
+	async function runValidatedSubmit(
+		submit: () => Promise<void>,
+		onSuccess: () => void,
+		fallbackMessage: string
+	) {
+		isSubmitting = true;
+
+		try {
+			if (hasClientRangeErrors) {
+				toast.error('Corrige los errores marcados en los rangos ópticos');
+				scrollToFirstError();
+				return;
+			}
+
+			await submit();
+			onSuccess();
+		} catch (e) {
+			console.error(e);
+			toast.error(e instanceof Error ? e.message : fallbackMessage);
+		} finally {
+			isSubmitting = false;
+		}
 	}
 
 	function handleCreatePendingSupplier(name: string): SelectOption {
@@ -333,7 +431,7 @@
 		if (allIssues.length > 0) {
 			toast.error('Por favor corrige los errores del formulario');
 			scrollToFirstError();
-			toastUnboundErrors(allIssues);
+			toastUnboundNonRangeIssues(allIssues);
 			return;
 		}
 		const result = currentCreateForm.result;
@@ -346,7 +444,7 @@
 		if (allIssues.length > 0) {
 			toast.error('Por favor corrige los errores del formulario');
 			scrollToFirstError();
-			toastUnboundErrors(allIssues);
+			toastUnboundNonRangeIssues(allIssues);
 			return;
 		}
 		toast.success('Lente actualizado');
@@ -359,16 +457,7 @@
 		<form
 			id={formId}
 			{...currentUpdateForm.enhance(async ({ submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleUpdateResult();
-				} catch (e) {
-					console.error(e);
-					toast.error(e instanceof Error ? e.message : 'Error actualizando lente');
-				} finally {
-					isSubmitting = false;
-				}
+				await runValidatedSubmit(submit, handleUpdateResult, 'Error actualizando lente');
 			})}
 			class="space-y-6"
 		>
@@ -383,16 +472,7 @@
 		<form
 			id={formId}
 			{...currentCreateForm.enhance(async ({ submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleCreateResult();
-				} catch (e) {
-					console.error(e);
-					toast.error(e instanceof Error ? e.message : 'Error creando lente');
-				} finally {
-					isSubmitting = false;
-				}
+				await runValidatedSubmit(submit, handleCreateResult, 'Error creando lente');
 			})}
 			class="space-y-6"
 		>
@@ -629,7 +709,16 @@
 					{/if}
 
 					{#each ranges as range, i (i)}
-						{@const rangeErrors = getRangeErrors(range)}
+						{@const rangeValidation = mergeRangeValidation(
+							clientRangeValidations[i] ?? createEmptyOpticalRangeValidation(),
+							serverRangeValidations[i]
+						)}
+						{@const sphereErrors = rangeValidation.sphere}
+						{@const cylinderErrors = rangeValidation.cylinder}
+						{@const additionErrors = rangeValidation.addition}
+						{@const sphereHasErrors = sphereErrors.length > 0}
+						{@const cylinderHasErrors = cylinderErrors.length > 0}
+						{@const additionHasErrors = additionErrors.length > 0}
 						{@const previewLines = getOpticalRangePreview(range)}
 						{@const sphereModeToggleId = `range-sphere-mode-${i}`}
 						{@const sphereStartLabel =
@@ -676,10 +765,13 @@
 												<p class={rangeSubLabelClass}>{sphereStartLabel}</p>
 												<Input
 													bind:value={range.inverseOuter}
+													aria-invalid={sphereHasErrors}
 													type="number"
+													min="0"
+													max="30"
 													step="0.25"
 													placeholder="4.00"
-													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+													class={getRangeInputClass(sphereHasErrors)}
 												/>
 											</div>
 										{:else}
@@ -687,10 +779,13 @@
 												<p class={rangeSubLabelClass}>{sphereStartLabel}</p>
 												<Input
 													bind:value={range.sphereMin}
+													aria-invalid={sphereHasErrors}
 													type="number"
+													min="-30"
+													max="30"
 													step="0.25"
 													placeholder="-4.00"
-													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+													class={getRangeInputClass(sphereHasErrors)}
 												/>
 											</div>
 										{/if}
@@ -700,10 +795,13 @@
 												<p class={rangeSubLabelClass}>{sphereEndLabel}</p>
 												<Input
 													bind:value={range.inverseInner}
+													aria-invalid={sphereHasErrors}
 													type="number"
+													min="0"
+													max="30"
 													step="0.25"
 													placeholder="2.00"
-													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+													class={getRangeInputClass(sphereHasErrors)}
 												/>
 											</div>
 										{:else}
@@ -711,14 +809,24 @@
 												<p class={rangeSubLabelClass}>{sphereEndLabel}</p>
 												<Input
 													bind:value={range.sphereMax}
+													aria-invalid={sphereHasErrors}
 													type="number"
+													min="-30"
+													max="30"
 													step="0.25"
 													placeholder="+4.00"
-													class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+													class={getRangeInputClass(sphereHasErrors)}
 												/>
 											</div>
 										{/if}
 									</div>
+									{#if sphereErrors.length > 0}
+										<div class="mt-2 space-y-1">
+											{#each sphereErrors as err (`sphere-${i}-${err}`)}
+												<p class="text-xs text-error">{err}</p>
+											{/each}
+										</div>
+									{/if}
 								</div>
 
 								<div class="lg:col-span-4">
@@ -730,10 +838,13 @@
 											<p class={rangeSubLabelClass}>Minimo</p>
 											<Input
 												bind:value={range.cylinderMin}
+												aria-invalid={cylinderHasErrors}
 												type="number"
+												min="-10"
+												max="0"
 												step="0.25"
 												placeholder="Min"
-												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+												class={getRangeInputClass(cylinderHasErrors)}
 											/>
 										</div>
 										<span class="pb-2 text-xs text-outline">/</span>
@@ -741,13 +852,23 @@
 											<p class={rangeSubLabelClass}>Maximo</p>
 											<Input
 												bind:value={range.cylinderMax}
+												aria-invalid={cylinderHasErrors}
 												type="number"
+												min="-10"
+												max="0"
 												step="0.25"
 												placeholder="Max"
-												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm"
+												class={getRangeInputClass(cylinderHasErrors)}
 											/>
 										</div>
 									</div>
+									{#if cylinderErrors.length > 0}
+										<div class="mt-2 space-y-1">
+											{#each cylinderErrors as err (`cylinder-${i}-${err}`)}
+												<p class="text-xs text-error">{err}</p>
+											{/each}
+										</div>
+									{/if}
 								</div>
 
 								<div class="lg:col-span-4">
@@ -759,11 +880,14 @@
 											<p class={rangeSubLabelClass}>Minimo</p>
 											<Input
 												bind:value={range.additionMin}
+												aria-invalid={additionHasErrors}
 												type="number"
+												min="0"
+												max="5"
 												step="0.25"
 												placeholder="Min"
 												disabled={!showAddition}
-												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm disabled:opacity-50"
+												class={getRangeInputClass(additionHasErrors, 'disabled:opacity-50')}
 											/>
 										</div>
 										<span class="pb-2 text-xs text-outline">/</span>
@@ -771,14 +895,24 @@
 											<p class={rangeSubLabelClass}>Maximo</p>
 											<Input
 												bind:value={range.additionMax}
+												aria-invalid={additionHasErrors}
 												type="number"
+												min="0"
+												max="5"
 												step="0.25"
 												placeholder="Max"
 												disabled={!showAddition}
-												class="rounded-xl border-0 bg-white px-3 py-2 font-mono text-sm disabled:opacity-50"
+												class={getRangeInputClass(additionHasErrors, 'disabled:opacity-50')}
 											/>
 										</div>
 									</div>
+									{#if additionErrors.length > 0}
+										<div class="mt-2 space-y-1">
+											{#each additionErrors as err (`addition-${i}-${err}`)}
+												<p class="text-xs text-error">{err}</p>
+											{/each}
+										</div>
+									{/if}
 								</div>
 							</div>
 
@@ -799,21 +933,15 @@
 									onclick={() => removeRange(i)}>Quitar</button
 								>
 							</div>
-
-							{#if rangeErrors.length > 0}
-								<div class="mt-3 space-y-1">
-									{#each rangeErrors as err (err)}
-										<p class="text-xs text-error">{err}</p>
-									{/each}
-								</div>
-							{/if}
 						</div>
 					{/each}
 
-					{#if activeForm.fields.ranges?.issues()}
-						<p class="text-xs text-error">
-							{getFormErrorMessage(activeForm.fields.ranges.issues())}
-						</p>
+					{#if rootRangeIssues.length > 0}
+						<div class="space-y-1">
+							{#each rootRangeIssues as issue, issueIndex (`range-root-${issueIndex}-${issue.message}`)}
+								<p class="text-xs text-error">{issue.message}</p>
+							{/each}
+						</div>
 					{/if}
 				</div>
 			</section>

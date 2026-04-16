@@ -4,12 +4,15 @@ import type { LensOpticalRange } from '$lib/server/db/schema/lenses';
 
 import {
 	SPHERE_RANGE_MODE,
+	hasOpticalRangeValidationErrors,
 	collapseOpticalRangesForForm,
+	createEmptyOpticalRangeValidation,
 	createEmptyOpticalRangeEntry,
 	expandOpticalRanges,
 	getOpticalRangePreview,
 	toContinuousSphereValues,
-	toInverseDuplicateSphereValues
+	toInverseDuplicateSphereValues,
+	validateOpticalRangeEntry
 } from './opticalRangeForm';
 
 function lensRange(
@@ -117,6 +120,14 @@ describe('collapseOpticalRangesForForm', () => {
 });
 
 describe('range helpers', () => {
+	it('creates an empty validation object with no errors', () => {
+		expect(createEmptyOpticalRangeValidation()).toEqual({
+			sphere: [],
+			cylinder: [],
+			addition: []
+		});
+	});
+
 	it('builds a preview that explains the two stored mirrored ranges', () => {
 		const entry = createEmptyOpticalRangeEntry();
 		entry.sphereMode = SPHERE_RANGE_MODE.INVERSE_DUPLICATE;
@@ -140,5 +151,27 @@ describe('range helpers', () => {
 			sphereMin: '-4.00',
 			sphereMax: '4.00'
 		});
+	});
+
+	it('flags invalid cylinder and addition signs before submit', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.cylinderMin = '-3.00';
+		entry.cylinderMax = '0.25';
+		entry.additionMin = '-0.25';
+		entry.additionMax = '3.00';
+
+		const validation = validateOpticalRangeEntry(entry);
+
+		expect(validation.cylinder).toContain('Cilindro debe ser negativo o cero');
+		expect(validation.addition).toContain('Adición debe ser mayor o igual a 0');
+		expect(hasOpticalRangeValidationErrors(validation)).toBe(true);
+	});
+
+	it('allows reversed negative cylinder inputs because saved bounds are normalized', () => {
+		const entry = createEmptyOpticalRangeEntry();
+		entry.cylinderMin = '0.00';
+		entry.cylinderMax = '-3.00';
+
+		expect(validateOpticalRangeEntry(entry).cylinder).toEqual([]);
 	});
 });
