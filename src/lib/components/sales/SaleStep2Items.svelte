@@ -12,7 +12,7 @@
 		Package,
 		X
 	} from '@lucide/svelte';
-	import autoAnimate from '@formkit/auto-animate';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import { formatPrice } from '$lib/utils';
 	import { DiscountType, TreatmentCategory, LensCatalogSource } from '$lib/shared/enums';
 	import {

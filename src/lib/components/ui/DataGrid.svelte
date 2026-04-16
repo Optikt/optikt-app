@@ -62,7 +62,9 @@
 		></div>
 	</div>
 {:else if items.length > 0}
-	<div class="overflow-hidden rounded-xl border border-outline-variant/30">
+	<div
+		class="relative overflow-visible rounded-xl border border-outline-variant/30 bg-surface-container-lowest"
+	>
 		<table class="w-full">
 			<thead>
 				<tr class="bg-brand-navy">

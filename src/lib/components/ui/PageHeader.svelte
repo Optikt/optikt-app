@@ -36,7 +36,7 @@
 		</a>
 	{/if}
 
-	<header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+	<header class="flex flex-col gap-3 sm:flex-row sm:justify-between">
 		<div>
 			{#if subtitle}
 				<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">

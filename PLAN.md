@@ -106,7 +106,7 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 | D4  | Presupuestos  | `/quotes`    | ✅ Hecho   |
 | D5  | Usuarios      | `/users`     | ⬚ Pending  |
 | D6  | Compras       | `/purchases` | ⬚ Pending  |
-| D7  | Lentes        | `/lenses`    | ⬚ Pending  |
+| D7  | Lentes        | `/lenses`    | ✅ Hecho   |
 | D8  | Materiales    | `/materials` | ⬚ Pending  |
 | D9  | Configuración | `/config`    | 🟡 Parcial |
 | D10 | Reportes      | `/reports`   | 🟡 Parcial |

@@ -1,63 +1,34 @@
 <script lang="ts">
-	import { Badge, Button } from 'flowbite-svelte';
-	import {
-		ArrowLeft,
-		Pencil,
-		Trash2,
-		History,
-		Eye,
-		Shield,
-		Sun,
-		Layers,
-		Package,
-		FlaskConical,
-		Target
-	} from '@lucide/svelte';
+	import { Pencil, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { formatPrice, formatDate } from '$lib/utils';
 	import { untrack } from 'svelte';
-	import { ConfirmModal } from '$lib/components/ui';
 	import { ChangeHistoryModal } from '$lib/components/history';
+	import { ConfirmModal, PageHeader } from '$lib/components/ui';
+	import LensDetailHeroCard from '$lib/components/lenses/detail/LensDetailHeroCard.svelte';
+	import LensDetailOperationPanel from '$lib/components/lenses/detail/LensDetailOperationPanel.svelte';
+	import LensDetailOpticalPanel from '$lib/components/lenses/detail/LensDetailOpticalPanel.svelte';
+	import LensDetailSidebar from '$lib/components/lenses/detail/LensDetailSidebar.svelte';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import { getLensTypeLabel, getLensSourceLabel } from '$lib/shared/enums';
+	import type { PageData } from './$types';
 
-	let { data } = $props();
-	const item = untrack(() => data.item);
+	let { data }: { data: PageData } = $props();
+	let { item } = untrack(() => data);
 
-	const marginPercent = $derived.by(() => {
-		if (!item.salePrice || item.pairPurchasePrice <= 0) return null;
-		return ((item.salePrice - item.pairPurchasePrice) / item.pairPurchasePrice) * 100;
-	});
-
-	// Delete modal state
 	let showDeleteModal = $state(false);
 	let deleteLoading = $state(false);
-
-	// History modal state
 	let showHistoryModal = $state(false);
 
-	// Related names map for history display
 	const relatedNames = $derived({
 		...(item.supplier ? { [item.supplier.id]: item.supplier.name } : {}),
 		...(item.material ? { [item.material.id]: item.material.name } : {})
 	});
 
-	// Optical range display
-	const displayRanges = collapseRangesForDisplay(item.ranges);
-
-	// Features list — simplified boolean model
-	const features = $derived.by(() => {
-		const list: { label: string; icon: typeof Sun; active: boolean }[] = [
-			{ label: 'Fotocromático', icon: Sun, active: item.isPhotochromic ?? false },
-			{ label: 'Blue Cut', icon: Shield, active: item.hasBluecut ?? false },
-			{ label: 'Antirreflejo', icon: Eye, active: item.hasAr ?? false }
-		];
-		return list;
-	});
+	function openEdit() {
+		goto(resolve(`/lenses/${item.id}/edit`));
+	}
 
 	async function confirmDelete() {
 		deleteLoading = true;
@@ -65,9 +36,9 @@
 			await deleteLensCatalogItemById({ id: item.id });
 			toast.success('Lente eliminado correctamente');
 			goto(resolve('/lenses'));
-		} catch (e) {
-			console.error(e);
-			toast.error(getErrorMessage(e, 'Error eliminando lente'));
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error eliminando lente'));
 		} finally {
 			deleteLoading = false;
 			showDeleteModal = false;
@@ -79,329 +50,43 @@
 	<title>{item.name} - Catálogo de Lentes - Optikt</title>
 </svelte:head>
 
-<div class="min-h-screen bg-slate-50/50 p-4 sm:p-8">
-	<div class="w-full">
-		<!-- Back link -->
-		<a
-			href={resolve('/lenses')}
-			class="mb-6 inline-flex items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-slate-700"
-		>
-			<ArrowLeft class="h-4 w-4" />
-			Volver al catálogo
-		</a>
-
-		<!-- Header Section -->
-		<div class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-			<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-				<div class="min-w-0 flex-1">
-					<div class="flex flex-wrap items-center gap-2.5">
-						<h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-							{item.name}
-						</h1>
-						{#if !item.isActive}
-							<Badge color="red">Inactivo</Badge>
-						{/if}
-					</div>
-				</div>
-
-				<div class="flex flex-shrink-0 gap-2">
-					<Button size="sm" color="light" onclick={() => (showHistoryModal = true)}>
-						<History class="mr-1.5 h-4 w-4" />
-						Historial
-					</Button>
-					<Button size="sm" color="alternative" href={`/lenses/${item.id}/edit`}>
-						<Pencil class="mr-1.5 h-4 w-4" />
-						Editar
-					</Button>
-					<Button size="sm" color="red" outline onclick={() => (showDeleteModal = true)}>
-						<Trash2 class="mr-1.5 h-4 w-4" />
-						Eliminar
-					</Button>
-				</div>
+<div class="space-y-6 p-6">
+	<PageHeader
+		title={item.name}
+		subtitle="Detalle de lente"
+		backLabel="Volver al catálogo"
+		backHref="/lenses"
+	>
+		{#snippet actions()}
+			<div class="flex items-center gap-3">
+				<button
+					type="button"
+					onclick={() => (showDeleteModal = true)}
+					class="inline-flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-xs font-bold tracking-[0.18em] text-on-error-container uppercase transition-colors hover:brightness-[0.98]"
+				>
+					<Trash2 class="h-4 w-4" />
+					Eliminar
+				</button>
+				<button
+					type="button"
+					onclick={openEdit}
+					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.18em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
+				>
+					<Pencil class="h-4 w-4" />
+					Editar lente
+				</button>
 			</div>
+		{/snippet}
+	</PageHeader>
+
+	<LensDetailHeroCard {item} />
+
+	<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+		<div class="space-y-6">
+			<LensDetailOpticalPanel {item} />
+			<LensDetailOperationPanel {item} />
 		</div>
-
-		<!-- Content Grid -->
-		<div class="grid gap-6 lg:grid-cols-3">
-			<!-- Main content (2 cols) -->
-			<div class="space-y-6 lg:col-span-2">
-				<!-- General Info + Features Card (condensed) -->
-				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<h3 class="mb-5 flex items-center gap-2 text-lg font-semibold text-slate-800">
-						<FlaskConical class="h-5 w-5 text-indigo-500" />
-						Información General
-					</h3>
-					<dl class="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-						<div>
-							<dt class="text-sm font-medium text-slate-500">Proveedor</dt>
-							<dd class="mt-0.5 text-slate-800">
-								{#if item.supplier}
-									<a
-										href={resolve(`/suppliers`)}
-										class="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
-									>
-										{item.supplier.name}
-									</a>
-								{:else}
-									<span class="text-slate-400">—</span>
-								{/if}
-							</dd>
-						</div>
-						<div>
-							<dt class="text-sm font-medium text-slate-500">Material</dt>
-							<dd class="mt-0.5 text-slate-800">
-								{#if item.material}
-									<span class="font-medium">{item.material.name}</span>
-									<span class="ml-1 text-xs text-slate-400">({item.material.code})</span>
-								{:else}
-									<span class="text-slate-400">—</span>
-								{/if}
-							</dd>
-						</div>
-						<div>
-							<dt class="text-sm font-medium text-slate-500">Tipo de Lente</dt>
-							<dd class="mt-0.5 text-slate-800">
-								{getLensTypeLabel(item.type)}
-							</dd>
-						</div>
-						<div>
-							<dt class="text-sm font-medium text-slate-500">Origen</dt>
-							<dd class="mt-0.5 text-slate-800">
-								{getLensSourceLabel(item.source)}
-							</dd>
-						</div>
-						{#if item.technology}
-							<div>
-								<dt class="text-sm font-medium text-slate-500">Tecnología</dt>
-								<dd class="mt-0.5 text-slate-800">{item.technology}</dd>
-							</div>
-						{/if}
-					</dl>
-
-					<!-- Characteristics section within the same card -->
-					<div class="mt-6 border-t border-slate-100 pt-5">
-						<h4 class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-							<Layers class="h-4 w-4 text-violet-500" />
-							Características
-						</h4>
-						<div class="flex flex-wrap gap-2.5">
-							{#each features as feat (feat.label)}
-								<div
-									class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium {feat.active
-										? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-										: 'bg-slate-50 text-slate-400 ring-1 ring-slate-200'}"
-								>
-									<feat.icon class="h-3.5 w-3.5" />
-									{feat.label}
-									{#if feat.active}
-										<span
-											class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-white"
-											>✓</span
-										>
-									{:else}
-										<span
-											class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] text-slate-400"
-											>✕</span
-										>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-				</div>
-
-				<!-- Optical Ranges Card -->
-				{#if displayRanges.length > 0}
-					<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-						<h3 class="mb-5 flex items-center gap-2 text-lg font-semibold text-slate-800">
-							<Target class="h-5 w-5 text-blue-500" />
-							Rangos Ópticos
-							<span
-								class="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700"
-							>
-								{displayRanges.length}
-							</span>
-						</h3>
-
-						<div class="space-y-3">
-							{#each displayRanges as range, i (range.id)}
-								<div
-									class="rounded-lg border border-slate-100 bg-slate-50/80 p-4 transition-colors hover:bg-slate-50"
-								>
-									<div class="mb-2 flex items-center gap-2">
-										<span
-											class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700"
-										>
-											{i + 1}
-										</span>
-										{#if range.symmetric}
-											<Badge color="purple" class="text-xs">Simétrico ±</Badge>
-										{/if}
-									</div>
-									<div
-										class="grid gap-4"
-										class:sm:grid-cols-2={!range.additionLabel}
-										class:sm:grid-cols-3={!!range.additionLabel}
-									>
-										<div>
-											<dt class="text-xs font-medium tracking-wider text-slate-400 uppercase">
-												Esfera
-											</dt>
-											<dd class="mt-0.5 font-mono text-sm font-semibold text-slate-800">
-												{range.sphereLabel}
-											</dd>
-										</div>
-										{#if range.cylinderLabel}
-											<div>
-												<dt class="text-xs font-medium tracking-wider text-slate-400 uppercase">
-													Cilindro
-												</dt>
-												<dd class="mt-0.5 font-mono text-sm font-semibold text-slate-800">
-													{range.cylinderLabel}
-												</dd>
-											</div>
-										{/if}
-										{#if range.additionLabel}
-											<div>
-												<dt class="text-xs font-medium tracking-wider text-slate-400 uppercase">
-													Adición
-												</dt>
-												<dd class="mt-0.5 font-mono text-sm font-semibold text-slate-800">
-													{range.additionLabel}
-												</dd>
-											</div>
-										{/if}
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				<!-- Notes -->
-				{#if item.notes}
-					<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-						<h3 class="mb-3 text-lg font-semibold text-slate-800">Notas</h3>
-						<p class="whitespace-pre-wrap text-slate-600">{item.notes}</p>
-					</div>
-				{/if}
-			</div>
-
-			<!-- Sidebar (1 col) -->
-			<div class="space-y-6">
-				<!-- Pricing + Stock + Metadata (condensed into one card) -->
-				<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-					<!-- Pricing -->
-					<div class="mb-4 rounded-lg bg-blue-50 p-5 text-center">
-						<dt class="text-sm font-medium text-blue-600">Costo por Par</dt>
-						<dd class="mt-1 font-mono text-3xl font-bold text-blue-700">
-							{formatPrice(item.pairPurchasePrice)}
-						</dd>
-						{#if item.priceType === 'UNIT'}
-							<dd class="mt-1 text-xs text-blue-500">
-								{formatPrice(item.basePrice)} / unidad × 2
-							</dd>
-						{/if}
-					</div>
-
-					{#if item.salePrice}
-						<div class="mb-4 flex items-center justify-between rounded-lg bg-emerald-50 px-4 py-3">
-							<span class="text-sm font-medium text-emerald-700">Precio Venta (par)</span>
-							<span class="font-mono text-lg font-bold text-emerald-700">
-								{formatPrice(item.salePrice)}
-							</span>
-						</div>
-					{/if}
-
-					{#if marginPercent != null}
-						<div
-							class="mb-4 flex items-center justify-between rounded-lg px-4 py-3 {marginPercent >= 0
-								? 'bg-emerald-50'
-								: 'bg-red-50'}"
-						>
-							<span
-								class="text-sm font-medium {marginPercent >= 0
-									? 'text-emerald-700'
-									: 'text-red-700'}">Margen por Par</span
-							>
-							<span
-								class="font-mono text-lg font-bold {marginPercent >= 0
-									? 'text-emerald-700'
-									: 'text-red-700'}"
-							>
-								{marginPercent >= 0 ? '+' : ''}{marginPercent.toFixed(0)}%
-							</span>
-						</div>
-					{/if}
-
-					{#if item.mountingPrice > 0 || item.shippingPrice > 0}
-						<div class="mb-4 space-y-2 text-sm">
-							{#if item.mountingPrice > 0}
-								<div class="flex items-center justify-between">
-									<span class="text-slate-500">Montaje</span>
-									<span class="font-mono font-medium text-slate-700"
-										>{formatPrice(item.mountingPrice)}</span
-									>
-								</div>
-							{/if}
-							{#if item.shippingPrice > 0}
-								<div class="flex items-center justify-between">
-									<span class="text-slate-500">Envío</span>
-									<span class="font-mono font-medium text-slate-700"
-										>{formatPrice(item.shippingPrice)}</span
-									>
-								</div>
-							{/if}
-						</div>
-					{/if}
-
-					<!-- Inventario -->
-					<div class="border-t border-slate-100 pt-4">
-						{#if item.inventoryMode === 'ON_DEMAND'}
-							<div class="mb-4 flex items-center justify-between">
-								<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
-									<Package class="h-4 w-4 text-sky-500" />
-									Inventario
-								</span>
-								<span class="text-sm font-semibold text-sky-600">Por demanda</span>
-							</div>
-						{:else}
-							<div class="mb-4 flex items-center justify-between">
-								<span class="flex items-center gap-1.5 text-sm font-medium text-slate-500">
-									<Package class="h-4 w-4 text-teal-500" />
-									Stock
-								</span>
-								<span
-									class="text-xl font-bold {(item.stock ?? 0) <= 0
-										? 'text-red-600'
-										: 'text-slate-900'}">{item.stock ?? 0}</span
-								>
-							</div>
-						{/if}
-					</div>
-
-					<div class="border-t border-slate-100 pt-4">
-						<h4 class="mb-3 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-							Sistema
-						</h4>
-						<dl class="space-y-2 text-sm">
-							<div class="flex items-center justify-between">
-								<dt class="text-slate-500">ID</dt>
-								<dd class="max-w-[180px] truncate font-mono text-xs text-slate-600">{item.id}</dd>
-							</div>
-							<div class="flex items-center justify-between">
-								<dt class="text-slate-500">Creado</dt>
-								<dd class="text-slate-700">{formatDate(item.createdAt)}</dd>
-							</div>
-							<div class="flex items-center justify-between">
-								<dt class="text-slate-500">Actualizado</dt>
-								<dd class="text-slate-700">{formatDate(item.updatedAt)}</dd>
-							</div>
-						</dl>
-					</div>
-				</div>
-			</div>
-		</div>
+		<LensDetailSidebar {item} onOpenHistory={() => (showHistoryModal = true)} />
 	</div>
 </div>
 

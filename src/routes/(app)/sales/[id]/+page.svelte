@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CircleX, ChevronDown, ChevronUp, FileText, History, Wallet } from '@lucide/svelte';
-	import autoAnimate from '@formkit/auto-animate';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
