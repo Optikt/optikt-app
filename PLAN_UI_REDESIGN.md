@@ -191,14 +191,26 @@
 
 ## Fase 7 — Lentes
 
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/lenses` — lista/catálogo
-- [ ] `/lenses/create` — creación
-- [ ] `/lenses/[id]` — detalle
-- [ ] `/lenses/[id]/edit` — edición
+- [x] `/lenses` — lista/catálogo con DataGrid, filtros, stat cards, tooltip de rangos
+- [x] `/lenses/create` — creación con PageHeader y layout actualizado
+- [x] `/lenses/[id]` — detalle con HeroCard, OpticalPanel, OperationPanel, Sidebar
+- [x] `/lenses/[id]/edit` — edición con PageHeader
+
+### Notas de implementación (PR — `redesign/lenses`)
+
+- **Detalle**: 2-column layout (420px sidebar). Left column: HeroCard (badges con iconos Lucide, 4-col metric grid, treatments) → OpticalPanel (compact linear range cards, 2-col grid, symmetry ± detection) → OperationPanel (inventario, precio, IVA, treatments). Right column: Sidebar (commercial summary dark navy card + history)
+- **Rangos ópticos**: `collapseRangesForDisplay()` reescrita — detecta rangos self-symmetric (e.g. -5 a +5 → ±5.00), merge de pares inversos via `areInversePair()`, labels abreviados (Esf/Cil/Add)
+- **Validación de rangos**: `opticalRangeForm.ts` con validaciones detalladas para sphere, cylinder, addition — 322 lines de tests
+- **Lista**: filtros mejorados, navegación, tooltip de rangos extra en `LensCatalogTable`
+- **Materiales**: `LensMaterialsTab` refactored con estadísticas mejoradas
+- **Componentes nuevos**: `LensDetailHeroCard`, `LensDetailOpticalPanel`, `LensDetailOperationPanel`, `LensDetailSidebar`, `detail/helpers.ts` (con tests)
+- **DB query**: `findLensCatalogItem` ahora incluye `refractiveIndex` del material
+- Cero dependencias Flowbite en rutas de lentes
+- Validación: 444 tests, svelte-check 0 errors, lint 0 errors
 
 ---
 
@@ -264,10 +276,10 @@
 | 13  | `/products/[id]`             | 6    | completada |
 | 14  | `/products/[id]/update`      | 6    | completada |
 | 15  | `/products/[id]/adjustments` | 6    | completada |
-| 16  | `/lenses`                    | 7    | pendiente  |
-| 17  | `/lenses/create`             | 7    | pendiente  |
-| 18  | `/lenses/[id]`               | 7    | pendiente  |
-| 19  | `/lenses/[id]/edit`          | 7    | pendiente  |
+| 16  | `/lenses`                    | 7    | completada |
+| 17  | `/lenses/create`             | 7    | completada |
+| 18  | `/lenses/[id]`               | 7    | completada |
+| 19  | `/lenses/[id]/edit`          | 7    | completada |
 | 20  | `/purchases`                 | 8    | pendiente  |
 | 21  | `/purchases/new`             | 8    | pendiente  |
 | 22  | `/purchases/[id]`            | 8    | pendiente  |
