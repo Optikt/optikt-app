@@ -173,7 +173,7 @@ export async function getPurchaseOrderRelatedMovements(
 		.select()
 		.from(inventoryMovements)
 		.where(or(...conditions))
-		.orderBy(asc(inventoryMovements.createdAt));
+		.orderBy(desc(inventoryMovements.createdAt));
 }
 
 // ---------------------------------------------------------------------------

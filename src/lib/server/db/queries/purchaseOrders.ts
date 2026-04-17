@@ -11,6 +11,7 @@ import {
 	type SQL,
 	type AnyColumn
 } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import {
 	purchaseOrders,
@@ -44,6 +45,7 @@ export type PurchaseOrderWithRelations = PurchaseOrder & {
 
 export type PurchaseOrderItemWithProduct = PurchaseOrderItem & {
 	product: { id: string; name: string; sku: string } | null;
+	lensCatalogItem: { id: string; name: string; type: string } | null;
 };
 
 export type PurchaseOrderOrderBy = 'orderNumber' | 'orderDate' | 'createdAt' | 'status';
@@ -140,30 +142,33 @@ export async function findPurchaseOrderById(
 export async function findPurchaseOrderByIdWithRelations(
 	id: string
 ): Promise<PurchaseOrderWithRelations | null> {
-	const createdByUsers = users;
-	// Alias for confirmed_by user — use a subquery approach instead
-	const results = await db
+	const confirmedByUser = alias(users, 'confirmed_by_user');
+	const [result] = await db
 		.select({
 			po: purchaseOrders,
 			supplier: { id: suppliers.id, name: suppliers.name },
 			createdBy: {
-				id: createdByUsers.id,
-				fullName: createdByUsers.fullName
+				id: users.id,
+				fullName: users.fullName
+			},
+			confirmedBy: {
+				id: confirmedByUser.id,
+				fullName: confirmedByUser.fullName
 			}
 		})
 		.from(purchaseOrders)
 		.leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
-		.leftJoin(createdByUsers, eq(purchaseOrders.createdById, createdByUsers.id))
+		.leftJoin(users, eq(purchaseOrders.createdById, users.id))
+		.leftJoin(confirmedByUser, eq(purchaseOrders.confirmedById, confirmedByUser.id))
 		.where(eq(purchaseOrders.id, id));
 
-	if (results.length === 0) return null;
+	if (!result) return null;
 
-	const r = results[0];
 	return {
-		...r.po,
-		supplier: r.supplier?.id ? r.supplier : null,
-		createdBy: r.createdBy?.id ? r.createdBy : null,
-		confirmedBy: null // loaded separately if needed
+		...result.po,
+		supplier: result.supplier?.id ? result.supplier : null,
+		createdBy: result.createdBy?.id ? result.createdBy : null,
+		confirmedBy: result.confirmedBy?.id ? result.confirmedBy : null
 	};
 }
 
@@ -294,16 +299,23 @@ export async function getPurchaseOrderItems(
 	const results = await executor
 		.select({
 			item: purchaseOrderItems,
-			product: { id: products.id, name: products.name, sku: products.sku }
+			product: { id: products.id, name: products.name, sku: products.sku },
+			lensCatalogItem: {
+				id: lensCatalogItems.id,
+				name: lensCatalogItems.name,
+				type: lensCatalogItems.type
+			}
 		})
 		.from(purchaseOrderItems)
 		.leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+		.leftJoin(lensCatalogItems, eq(purchaseOrderItems.lensCatalogItemId, lensCatalogItems.id))
 		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId))
 		.orderBy(asc(purchaseOrderItems.createdAt));
 
 	return results.map((r) => ({
 		...r.item,
-		product: r.product?.id ? r.product : null
+		product: r.product?.id ? r.product : null,
+		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null
 	}));
 }
 
