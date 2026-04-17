@@ -186,4 +186,9 @@ describe('ListPurchaseOrdersSchema', () => {
 		});
 		expect(result.success).toBe(true);
 	});
+
+	it('accepts search filter', () => {
+		const result = ListPurchaseOrdersSchema.safeParse({ search: 'PO-0042' });
+		expect(result.success).toBe(true);
+	});
 });

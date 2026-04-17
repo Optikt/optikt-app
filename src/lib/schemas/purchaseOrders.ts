@@ -13,6 +13,7 @@ const ALL_ITEM_TYPES = Object.values(PurchaseOrderItemType) as [string, ...strin
 // ============================================================================
 
 export const ListPurchaseOrdersSchema = ListPaginationWithDeletedSchema.extend({
+	search: z.string().trim().max(120).optional(),
 	status: z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']).optional(),
 	supplierId: z.uuid().optional()
 });

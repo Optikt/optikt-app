@@ -15,6 +15,7 @@ import {
 import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
+	getPurchaseOrderListStats as getPurchaseOrderListStatsQuery,
 	findPurchaseOrderById,
 	findPurchaseOrderByIdWithRelations,
 	createPurchaseOrder,
@@ -27,6 +28,7 @@ import {
 } from '$lib/server/db/queries/purchaseOrders';
 import { updateProduct, findProductById } from '$lib/server/db/queries/products';
 import type {
+	PurchaseOrderListStats,
 	PurchaseOrderWithRelations,
 	PurchaseOrderItemWithProduct
 } from '$lib/server/db/queries/purchaseOrders';
@@ -63,6 +65,7 @@ export const listPurchaseOrders = query(
 	async (data): Promise<PaginatedResult<PurchaseOrderWithRelations>> => {
 		const { page, perPage } = data;
 		const filterOptions = {
+			search: data.search ?? undefined,
 			status: data.status ?? undefined,
 			supplierId: data.supplierId ?? undefined,
 			includeDeleted: data.includeDeleted
@@ -95,6 +98,13 @@ export const getPurchaseOrderDetail = query(
 export const getSuppliersList = query(z.object({}), async (): Promise<Supplier[]> => {
 	return getAllSuppliers({ includeDeleted: false });
 });
+
+export const getPurchaseOrderListStats = query(
+	z.object({}),
+	async (): Promise<PurchaseOrderListStats> => {
+		return getPurchaseOrderListStatsQuery();
+	}
+);
 
 // ============================================================================
 // COMMANDS

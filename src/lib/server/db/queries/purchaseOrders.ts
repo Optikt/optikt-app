@@ -1,4 +1,16 @@
-import { eq, and, isNull, asc, desc, count, sql, type SQL, type AnyColumn } from 'drizzle-orm';
+import {
+	eq,
+	and,
+	isNull,
+	asc,
+	desc,
+	count,
+	gte,
+	lt,
+	sql,
+	type SQL,
+	type AnyColumn
+} from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	purchaseOrders,
@@ -38,8 +50,16 @@ export type PurchaseOrderOrderBy = 'orderNumber' | 'orderDate' | 'createdAt' | '
 
 export interface PurchaseOrderFilterOptions {
 	includeDeleted?: boolean;
+	search?: string;
 	status?: string;
 	supplierId?: string;
+}
+
+export interface PurchaseOrderListStats {
+	total: number;
+	confirmed: number;
+	draft: number;
+	monthlySpend: number;
 }
 
 export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
@@ -64,6 +84,22 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 	const conditions: SQL[] = [];
 
 	if (!opts.includeDeleted) conditions.push(isNull(purchaseOrders.deletedAt));
+	if (opts.search?.trim()) {
+		const searchTerm = opts.search.trim();
+		const pattern = `%${searchTerm}%`;
+		conditions.push(sql`(
+			cast(${purchaseOrders.orderNumber} as text) ilike ${pattern}
+			or concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0')) ilike ${pattern}
+			or coalesce(${purchaseOrders.invoiceNumber}, '') ilike ${pattern}
+			or coalesce(${purchaseOrders.deliveryNoteNumber}, '') ilike ${pattern}
+			or exists (
+				select 1
+				from ${suppliers}
+				where ${suppliers.id} = ${purchaseOrders.supplierId}
+					and ${suppliers.name} ilike ${pattern}
+			)
+		)`);
+	}
 	if (opts.status) conditions.push(eq(purchaseOrders.status, opts.status));
 	if (opts.supplierId) conditions.push(eq(purchaseOrders.supplierId, opts.supplierId));
 
@@ -194,6 +230,41 @@ export async function countPurchaseOrders(options?: PurchaseOrderFilterOptions):
 	if (where) base.where(where);
 	const [result] = await base;
 	return result.value;
+}
+
+export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStats> {
+	const now = new Date();
+	const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+	const nextMonthStart = new Date(
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+	).toISOString();
+
+	const [total, confirmed, draft, spendResult] = await Promise.all([
+		countPurchaseOrders(),
+		countPurchaseOrders({ status: PurchaseOrderStatus.CONFIRMED }),
+		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT }),
+		db
+			.select({
+				value: sql<number>`coalesce(sum(${purchaseOrderItems.quantity} * ${purchaseOrderItems.unitPurchasePrice}), 0)`
+			})
+			.from(purchaseOrderItems)
+			.innerJoin(purchaseOrders, eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id))
+			.where(
+				and(
+					isNull(purchaseOrders.deletedAt),
+					eq(purchaseOrders.status, PurchaseOrderStatus.CONFIRMED),
+					gte(purchaseOrders.orderDate, monthStart),
+					lt(purchaseOrders.orderDate, nextMonthStart)
+				)
+			)
+	]);
+
+	return {
+		total,
+		confirmed,
+		draft,
+		monthlySpend: Number(spendResult[0]?.value ?? 0)
+	};
 }
 
 // ---------------------------------------------------------------------------
