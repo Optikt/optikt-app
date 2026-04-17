@@ -45,6 +45,7 @@ export const listInventoryMovements = query(
 			lensCatalogItemId: data.lensCatalogItemId ?? undefined,
 			movementType: data.movementType ?? undefined,
 			referenceType: data.referenceType ?? undefined,
+			search: data.search ?? undefined,
 			dateFrom: data.dateFrom ?? undefined,
 			dateTo: data.dateTo ?? undefined
 		};
@@ -214,7 +215,7 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 					quantityAfter: 0,
 					referenceType: MovementReferenceType.PURCHASE_ORDER,
 					referenceId: purchaseOrderId,
-					notes: 'ENTRY_ERROR: Reversión completa de lote',
+					notes: 'Reversión completa de lote',
 					createdById: user.id
 				},
 				tx

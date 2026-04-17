@@ -1,140 +1,287 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
-	import { ClipboardList, Eye } from '@lucide/svelte';
+	import { ClipboardList } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { DataTable, ActionButton } from '$lib/components/ui';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { AppBadge, DataGrid } from '$lib/components/ui';
+	import { formatDate } from '$lib/utils';
 	import {
 		getInventoryMovementTypeLabel,
 		getMovementReferenceTypeLabel,
-		MovementReferenceType,
-		InventoryMovementType
+		InventoryMovementType,
+		MovementReferenceType
 	} from '$lib/shared/enums';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 
 	interface Props {
 		movements: MovementWithDetails[];
+		page: number;
+		perPage: number;
+		total: number;
+		totalPages: number;
 		loading?: boolean;
-		hideProductColumn?: boolean;
+		onPageChange: (page: number) => void;
 	}
 
-	let { movements, loading = false, hideProductColumn = false }: Props = $props();
+	let {
+		movements,
+		page,
+		perPage,
+		total,
+		totalPages,
+		loading = false,
+		onPageChange
+	}: Props = $props();
 
-	function movementTypeClass(type: string): string {
+	const columns = [
+		{ key: 'date', label: 'Fecha y hora' },
+		{ key: 'type', label: 'Tipo' },
+		{ key: 'reference', label: 'Referencia' },
+		{ key: 'item', label: 'Artículo' },
+		{ key: 'lot', label: 'Lote' },
+		{ key: 'quantity', label: 'Cant.', align: 'right' as const },
+		{ key: 'actor', label: 'Usuario' }
+	];
+
+	function movementBadgeVariant(type: string): 'success' | 'error' | 'warning' | 'neutral' {
 		switch (type) {
 			case InventoryMovementType.PURCHASE_IN:
 			case InventoryMovementType.ADJUSTMENT_IN:
 			case InventoryMovementType.RETURN_IN:
 			case InventoryMovementType.CANCEL_REVERT:
-				return 'text-emerald-700 bg-emerald-50';
+				return 'success';
 			case InventoryMovementType.SALE_OUT:
+				return 'error';
 			case InventoryMovementType.ADJUSTMENT_OUT:
-				return 'text-red-700 bg-red-50';
+				return 'warning';
 			default:
-				return 'text-slate-700 bg-slate-50';
+				return 'neutral';
 		}
 	}
 
-	function navigateToReference(movement: MovementWithDetails) {
+	function movementBadgeLabel(type: string): string {
+		switch (type) {
+			case InventoryMovementType.PURCHASE_IN:
+			case InventoryMovementType.ADJUSTMENT_IN:
+			case InventoryMovementType.RETURN_IN:
+			case InventoryMovementType.CANCEL_REVERT:
+				return 'Entrada';
+			case InventoryMovementType.SALE_OUT:
+				return 'Salida';
+			case InventoryMovementType.ADJUSTMENT_OUT:
+				return 'Ajuste';
+			default:
+				return getInventoryMovementTypeLabel(type);
+		}
+	}
+
+	function movementReferenceCode(movement: MovementWithDetails): string {
+		if (movement.referenceCode) return movement.referenceCode;
+		if (movement.referenceType === MovementReferenceType.MANUAL_ADJUSTMENT) return 'Ajuste manual';
+		return getMovementReferenceTypeLabel(movement.referenceType);
+	}
+
+	function movementReferenceDetail(movement: MovementWithDetails): string {
+		return getMovementReferenceTypeLabel(movement.referenceType);
+	}
+
+	function movementItemName(movement: MovementWithDetails): string {
+		return movement.itemName ?? movement.productName ?? movement.lensName ?? 'Ítem no disponible';
+	}
+
+	function movementItemMeta(movement: MovementWithDetails): string {
+		if (movement.itemCode) return movement.itemCode;
+		return movement.itemType === 'LENS' ? 'Cristal' : 'Producto';
+	}
+
+	function movementItemLabel(movement: MovementWithDetails): string {
+		return movement.itemType === 'LENS' ? 'Lente' : 'Producto';
+	}
+
+	function movementItemVariant(movement: MovementWithDetails): 'info' | 'neutral' {
+		return movement.itemType === 'LENS' ? 'info' : 'neutral';
+	}
+
+	function movementLotCode(movement: MovementWithDetails): string {
+		return movement.lotNumber != null
+			? `L-${String(movement.lotNumber).padStart(4, '0')}`
+			: 'Sin lote';
+	}
+
+	function movementQuantityClass(type: string): string {
+		switch (movementBadgeVariant(type)) {
+			case 'success':
+				return 'text-success';
+			case 'error':
+				return 'text-error';
+			case 'warning':
+				return 'text-on-warning-container';
+			default:
+				return 'text-brand-navy';
+		}
+	}
+
+	function actorInitials(name: string | null): string {
+		if (!name) return '—';
+		return name
+			.split(/\s+/)
+			.filter(Boolean)
+			.slice(0, 2)
+			.map((part) => part[0]?.toUpperCase() ?? '')
+			.join('');
+	}
+
+	function canOpenReference(movement: MovementWithDetails): boolean {
+		if (movement.referenceType === MovementReferenceType.PURCHASE_ORDER) return true;
+		if (movement.referenceType === MovementReferenceType.SALE) return true;
+		if (movement.referenceType === MovementReferenceType.MANUAL_ADJUSTMENT) {
+			return Boolean(movement.productId || movement.lensCatalogItemId);
+		}
+
+		return false;
+	}
+
+	function openReference(movement: MovementWithDetails) {
 		if (movement.referenceType === MovementReferenceType.PURCHASE_ORDER) {
 			goto(resolve(`/purchases/${movement.referenceId}`));
-		} else if (movement.referenceType === MovementReferenceType.SALE) {
+			return;
+		}
+
+		if (movement.referenceType === MovementReferenceType.SALE) {
 			goto(resolve(`/sales/${movement.referenceId}`));
-		} else if (
-			movement.referenceType === MovementReferenceType.MANUAL_ADJUSTMENT &&
-			movement.productId
-		) {
+			return;
+		}
+
+		if (movement.referenceType === MovementReferenceType.MANUAL_ADJUSTMENT) {
+			if (movement.productId) {
+				goto(resolve(`/products/${movement.productId}`));
+				return;
+			}
+
+			if (movement.lensCatalogItemId) {
+				goto(resolve(`/lenses/${movement.lensCatalogItemId}`));
+			}
+		}
+	}
+
+	function canOpenItem(movement: MovementWithDetails): boolean {
+		return Boolean(movement.productId || movement.lensCatalogItemId);
+	}
+
+	function openItem(movement: MovementWithDetails) {
+		if (movement.productId) {
 			goto(resolve(`/products/${movement.productId}`));
+			return;
+		}
+
+		if (movement.lensCatalogItemId) {
+			goto(resolve(`/lenses/${movement.lensCatalogItemId}`));
 		}
 	}
 </script>
 
-<DataTable
+<DataGrid
+	{columns}
 	items={movements}
+	{page}
+	{perPage}
+	{total}
+	{totalPages}
 	{loading}
-	emptyIcon={ClipboardList}
+	itemLabel="movimientos"
 	emptyTitle="No se encontraron movimientos"
-	emptyDescription="Los movimientos se generan al confirmar compras, registrar ventas o realizar ajustes manuales"
+	emptySubtitle="Ajusta los filtros o espera nuevos movimientos para ver historial"
+	{onPageChange}
 >
-	{#snippet header()}
-		<TableHeadCell class="font-semibold">Fecha</TableHeadCell>
-		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
-		<TableHeadCell class="font-semibold">Documento</TableHeadCell>
-		{#if !hideProductColumn}
-			<TableHeadCell class="font-semibold">Producto</TableHeadCell>
-		{/if}
-		<TableHeadCell class="w-20 font-semibold">Lote</TableHeadCell>
-		<TableHeadCell class="text-right font-semibold">Cantidad</TableHeadCell>
-		<TableHeadCell class="text-right font-semibold">Costo</TableHeadCell>
-		<TableHeadCell class="font-semibold">Realizado por</TableHeadCell>
+	{#snippet emptyIcon()}
+		<ClipboardList class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
 	{#snippet row(movement)}
-		<TableBodyCell>
-			<span class="text-sm text-slate-600">
-				{formatDate(movement.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
-			</span>
-		</TableBodyCell>
-		<TableBodyCell>
-			<span
-				class="inline-block rounded px-2 py-0.5 text-xs font-medium {movementTypeClass(
-					movement.movementType
-				)}"
-			>
-				{getInventoryMovementTypeLabel(movement.movementType)}
-			</span>
-		</TableBodyCell>
-		<TableBodyCell>
-			<span class="text-sm text-slate-600">
-				{getMovementReferenceTypeLabel(movement.referenceType)}
-			</span>
-		</TableBodyCell>
-		{#if !hideProductColumn}
-			<TableBodyCell>
-				{#if movement.productName}
-					<div>
-						<span class="font-medium">{movement.productName}</span>
-						{#if movement.productSku}
-							<span class="ml-2 font-mono text-xs text-slate-400">{movement.productSku}</span>
-						{/if}
-					</div>
+		<tr class="bg-surface-container-lowest transition-colors hover:bg-surface-container-low">
+			<td class="px-4 py-4 align-top">
+				<div class="flex flex-col">
+					<span class="font-medium text-brand-navy">
+						{formatDate(movement.createdAt, { dateStyle: 'medium' })}
+					</span>
+					<span class="mt-1 font-mono text-xs text-outline">
+						{formatDate(movement.createdAt, { timeStyle: 'short' })}
+					</span>
+				</div>
+			</td>
+			<td class="px-4 py-4 align-top">
+				<AppBadge variant={movementBadgeVariant(movement.movementType)}>
+					{movementBadgeLabel(movement.movementType)}
+				</AppBadge>
+			</td>
+			<td class="px-4 py-4 align-top">
+				{#if canOpenReference(movement)}
+					<button
+						type="button"
+						onclick={() => openReference(movement)}
+						class="font-mono text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+					>
+						{movementReferenceCode(movement)}
+					</button>
 				{:else}
-					<span class="text-slate-400">—</span>
+					<p class="font-mono text-sm font-semibold text-brand-navy">
+						{movementReferenceCode(movement)}
+					</p>
 				{/if}
-			</TableBodyCell>
-		{/if}
-		<TableBodyCell>
-			{#if movement.lotNumber != null}
-				<span class="font-mono text-sm">L-{String(movement.lotNumber).padStart(4, '0')}</span>
-			{:else}
-				<span class="text-slate-400">—</span>
-			{/if}
-		</TableBodyCell>
-		<TableBodyCell class="text-right">
-			<span
-				class="font-mono text-sm font-medium tabular-nums {movement.quantityDelta > 0
-					? 'text-emerald-600'
-					: 'text-red-600'}"
-			>
-				{movement.quantityDelta > 0 ? '+' : ''}{movement.quantityDelta}
-			</span>
-		</TableBodyCell>
-		<TableBodyCell class="text-right">
-			{#if movement.totalCostAtAdjustment != null}
-				<span class="font-mono text-sm text-slate-600 tabular-nums">
-					{formatPrice(movement.totalCostAtAdjustment)}
-				</span>
-			{:else}
-				<span class="text-slate-400">—</span>
-			{/if}
-		</TableBodyCell>
-		<TableBodyCell>
-			<span class="text-sm text-slate-600">{movement.createdByName ?? '—'}</span>
-		</TableBodyCell>
+				<p class="mt-1 text-sm text-on-surface-variant">{movementReferenceDetail(movement)}</p>
+				{#if movement.notes}
+					<p class="mt-1 line-clamp-2 text-xs leading-relaxed text-outline">
+						{movement.notes}
+					</p>
+				{/if}
+			</td>
+			<td class="px-4 py-4 align-top">
+				<div class="flex min-w-[15rem] items-start gap-3">
+					<AppBadge variant={movementItemVariant(movement)}>{movementItemLabel(movement)}</AppBadge>
+					<div class="min-w-0">
+						{#if canOpenItem(movement)}
+							<button
+								type="button"
+								onclick={() => openItem(movement)}
+								class="text-left font-medium text-on-surface transition-colors hover:text-brand-blue"
+							>
+								{movementItemName(movement)}
+							</button>
+						{:else}
+							<p class="font-medium text-on-surface">{movementItemName(movement)}</p>
+						{/if}
+						<p class="mt-1 font-mono text-xs text-outline">{movementItemMeta(movement)}</p>
+					</div>
+				</div>
+			</td>
+			<td class="px-4 py-4 align-top">
+				<span class="font-mono text-sm font-semibold text-brand-navy"
+					>{movementLotCode(movement)}</span
+				>
+			</td>
+			<td class="px-4 py-4 text-right align-top">
+				<p
+					class="font-mono text-sm font-semibold tabular-nums {movementQuantityClass(
+						movement.movementType
+					)}"
+				>
+					{movement.quantityDelta > 0 ? '+' : ''}{movement.quantityDelta}
+				</p>
+				<p class="mt-1 font-mono text-xs text-outline">
+					{movement.quantityBefore} → {movement.quantityAfter}
+				</p>
+			</td>
+			<td class="px-4 py-4 align-top">
+				<div class="flex items-center gap-2">
+					<div
+						class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
+					>
+						{actorInitials(movement.createdByName)}
+					</div>
+					<span class="text-sm text-on-surface-variant">
+						{movement.createdByName ?? 'Usuario no disponible'}
+					</span>
+				</div>
+			</td>
+		</tr>
 	{/snippet}
-
-	{#snippet actions(movement)}
-		<ActionButton icon={Eye} title="Ver referencia" onclick={() => navigateToReference(movement)} />
-	{/snippet}
-</DataTable>
+</DataGrid>
