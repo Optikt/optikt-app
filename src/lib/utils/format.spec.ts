@@ -82,7 +82,7 @@ describe('parseISODateToLocal', () => {
 
 describe('formatDate', () => {
 	it('returns em-dash for null input', () => {
-		expect(formatDate(null)).toBe('—');
+		expect(formatDate(null)).toBe('-');
 	});
 
 	it('formats a Date object using its local date components', () => {

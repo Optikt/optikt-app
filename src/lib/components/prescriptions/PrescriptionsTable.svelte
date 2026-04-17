@@ -88,7 +88,7 @@
 			{formatLensType(prescription.recommendedLensType)}
 		</TableBodyCell>
 		<TableBodyCell class="whitespace-nowrap text-slate-600">
-			{prescription.doctorName ?? '—'}
+			{prescription.doctorName ?? '-'}
 		</TableBodyCell>
 		<TableBodyCell>
 			{#if prescription.isCurrent}
@@ -97,7 +97,7 @@
 					Actual
 				</Badge>
 			{:else}
-				<span class="text-slate-400">—</span>
+				<span class="text-slate-400">-</span>
 			{/if}
 		</TableBodyCell>
 	{/snippet}

@@ -15,7 +15,7 @@ import { products } from './products';
 import { lensCatalogItems } from './lenses';
 
 // ============================================================================
-// INVENTORY LOTS — Real inventory units (one lot per PO item)
+// INVENTORY LOTS - Real inventory units (one lot per PO item)
 // ============================================================================
 
 export const inventoryLots = pgTable(

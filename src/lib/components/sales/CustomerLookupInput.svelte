@@ -107,7 +107,7 @@
 		}
 	}
 
-	/** Handle digit input — only allow numbers, max 10 digits */
+	/** Handle digit input - only allow numbers, max 10 digits */
 	function handleDigitsInput(e: Event) {
 		const input = e.target as HTMLInputElement;
 		idDigits = input.value.replace(/\D/g, '').slice(0, 10);

@@ -44,14 +44,14 @@
 	const productOptions = $derived(
 		supplierProducts.map((product) => ({
 			id: product.id,
-			label: `${product.sku} — ${product.name}`
+			label: `${product.sku} - ${product.name}`
 		}))
 	);
 
 	const lensOptions = $derived(
 		supplierLensItems.map((lens) => ({
 			id: lens.id,
-			label: `${lens.name} — ${getLensTypeLabel(lens.type)}`
+			label: `${lens.name} - ${getLensTypeLabel(lens.type)}`
 		}))
 	);
 

@@ -95,7 +95,7 @@
 			<SupplierTypeBadge type={supplier.type} />
 		</TableBodyCell>
 		<TableBodyCell>
-			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '—'}</span>
+			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '-'}</span>
 		</TableBodyCell>
 		<TableBodyCell>{supplier.primaryPhone}</TableBodyCell>
 		<TableBodyCell>
@@ -105,7 +105,7 @@
 					<span class="text-xs text-slate-500"> ({supplier.contactRole})</span>
 				{/if}
 			{:else}
-				—
+				-
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell>

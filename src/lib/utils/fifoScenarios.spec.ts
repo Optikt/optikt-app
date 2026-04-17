@@ -31,14 +31,14 @@ interface Movement {
 
 /**
  * Simulates the DB layer for FIFO operations.
- * Tracks lots, movements, and cached stock — mirrors the real DB behavior.
+ * Tracks lots, movements, and cached stock - mirrors the real DB behavior.
  */
 class FifoSimulator {
 	lots: MemoryLot[] = [];
 	movements: Movement[] = [];
 	cachedStock = 0;
 
-	/** Simulate confirming a PO — creates lots and PURCHASE_IN movements */
+	/** Simulate confirming a PO - creates lots and PURCHASE_IN movements */
 	addLot(id: string, quantity: number, price: number, poId = 'po-1'): void {
 		this.lots.push({
 			id,
@@ -319,7 +319,7 @@ describe('FIFO E2E Scenarios', () => {
 
 			expect(sim.cachedStock).toBe(1);
 
-			// Cancel s2 — restores 2 to A and 2 to B
+			// Cancel s2 - restores 2 to A and 2 to B
 			sim.cancelSale('s2');
 			expect(sim.findLot('lot-A')!.quantityAvailable).toBe(2);
 			expect(sim.findLot('lot-B')!.quantityAvailable).toBe(3);
@@ -366,7 +366,7 @@ describe('FIFO E2E Scenarios', () => {
 			expect(sim.findLot('lot-1')!.quantityAvailable).toBe(7);
 			expect(sim.cachedStock).toBe(7);
 
-			// Sale of 5 — should work, 7 available
+			// Sale of 5 - should work, 7 available
 			sim.sell('s1', 5);
 			expect(sim.findLot('lot-1')!.quantityAvailable).toBe(2);
 			expect(sim.cachedStock).toBe(2);
@@ -405,7 +405,7 @@ describe('FIFO E2E Scenarios', () => {
 			// Adjust lot-A back with 1 unit (e.g., customer return)
 			sim.adjust('lot-A', 1);
 
-			// New sale should consume from lot-A first (FIFO — it's older)
+			// New sale should consume from lot-A first (FIFO - it's older)
 			const plan = sim.sell('s2', 2);
 			expect(plan.allocations[0].lotId).toBe('lot-A');
 			expect(plan.allocations[0].quantityToConsume).toBe(1);
@@ -434,7 +434,7 @@ describe('FIFO E2E Scenarios', () => {
 			sim.addLot('expensive-old', 3, 100);
 			sim.addLot('cheap-new', 10, 5);
 
-			// Sell 2 — should cost 2×$100 = $200 (FIFO, not cheapest)
+			// Sell 2 - should cost 2×$100 = $200 (FIFO, not cheapest)
 			const plan = sim.sell('sale-1', 2);
 			expect(plan.costTotal).toBe(200);
 			expect(plan.costUnit).toBe(100);
@@ -591,7 +591,7 @@ describe('FIFO E2E Scenarios', () => {
 			sim.sell('s1', 3);
 			sim.cancelSale('s1');
 
-			// Should work now — stock is restored
+			// Should work now - stock is restored
 			const plan = sim.sell('s2', 2);
 			expect(plan.allocations).toHaveLength(1);
 			expect(sim.findLot('lot-1')!.quantityAvailable).toBe(1);

@@ -20,7 +20,7 @@ import {
 } from '../../../shared/enums/lensTypes';
 
 // ============================================================================
-// LENS ENUMS — derived from shared enums (single source of truth)
+// LENS ENUMS - derived from shared enums (single source of truth)
 // ============================================================================
 
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
@@ -134,7 +134,7 @@ export const lensCatalogItems = pgTable(
 );
 
 // ============================================================================
-// LENS OPTICAL RANGES (simplified — removed mirrorGroup)
+// LENS OPTICAL RANGES (simplified - removed mirrorGroup)
 // ============================================================================
 
 export const lensOpticalRanges = pgTable(

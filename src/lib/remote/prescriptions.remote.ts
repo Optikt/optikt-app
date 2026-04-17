@@ -77,7 +77,7 @@ async function performCreatePrescription(
 		return await createPrescription(toPrescriptionInsert(data.customerId, data), tx);
 	});
 
-	// Audit log — best effort, after transaction succeeds
+	// Audit log - best effort, after transaction succeeds
 	await auditService.logCreate('prescription', prescription, context, {
 		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 	});
@@ -184,7 +184,7 @@ export const updatePrescriptionForm = form(
 			invalid(issue.id('Error al actualizar fórmula'));
 		}
 
-		// Audit log — best effort, after transaction succeeds
+		// Audit log - best effort, after transaction succeeds
 		await auditService.logUpdate('prescription', data.id, existing, updated, context, {
 			excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 		});
@@ -217,7 +217,7 @@ export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, asyn
 		return { success: false, error: 'Error al actualizar fórmula' };
 	}
 
-	// Audit log — best effort, after transaction succeeds
+	// Audit log - best effort, after transaction succeeds
 	await auditService.logUpdate('prescription', data.id, existing, updated, context, {
 		excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
 	});

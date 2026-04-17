@@ -291,7 +291,7 @@ export async function updateLensCatalogItem(
 					? await tx.insert(lensOpticalRanges).values(rangeValues).returning()
 					: [];
 		} else {
-			// No range change — fetch current
+			// No range change - fetch current
 			insertedRanges = await tx
 				.select()
 				.from(lensOpticalRanges)

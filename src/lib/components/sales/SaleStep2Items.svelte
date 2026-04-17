@@ -324,7 +324,7 @@
 		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
 		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
 		if (!lens?.supplier) return [];
-		// FINISHED lenses come with coatings already applied — no treatments to add
+		// FINISHED lenses come with coatings already applied - no treatments to add
 		if (lens.source === LensCatalogSource.FINISHED) return [];
 		return treatmentCache[lens.supplier.id] ?? [];
 	}
@@ -545,7 +545,7 @@
 		item.unitPrice = lensSalePrice(lens, eyeCount);
 	}
 
-	/** Sale price for the lens — salePrice is always per pair. Falls back to cost (base + mounting + shipping). */
+	/** Sale price for the lens - salePrice is always per pair. Falls back to cost (base + mounting + shipping). */
 	function lensSalePrice(lens: LensCatalogItemWithRelations, _eyeCount: number): number {
 		if (lens.salePrice != null && lens.salePrice > 0) {
 			return lens.salePrice;
@@ -678,7 +678,7 @@
 							{entityNumberLabel}
 						</p>
 						<p class="font-mono text-2xl font-bold text-white tabular-nums">
-							{nextOrderNumber ?? '—'}
+							{nextOrderNumber ?? '-'}
 						</p>
 					</div>
 					<div class="hidden h-10 w-px bg-white/10 sm:block"></div>

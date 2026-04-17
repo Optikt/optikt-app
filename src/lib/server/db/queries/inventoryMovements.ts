@@ -73,7 +73,7 @@ function buildMovementConditions(opts: MovementFilterOptions): SQL | undefined {
 	if (opts.referenceId) conditions.push(eq(inventoryMovements.referenceId, opts.referenceId));
 	if (opts.dateFrom) conditions.push(gte(inventoryMovements.createdAt, opts.dateFrom));
 	if (opts.dateTo) {
-		// dateTo is inclusive — include the entire day
+		// dateTo is inclusive - include the entire day
 		conditions.push(
 			lte(inventoryMovements.createdAt, toUTCString(toEndOfDay(fromISODate(opts.dateTo)!)))
 		);

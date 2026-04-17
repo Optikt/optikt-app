@@ -1,7 +1,7 @@
 /**
  * Tax utilities for IVA-inclusive pricing.
  *
- * All prices in the system are **tax-inclusive** — the sale price IS what
+ * All prices in the system are **tax-inclusive** - the sale price IS what
  * the customer pays. These helpers decompose that price into base + tax
  * for display and reporting purposes.
  */
@@ -30,7 +30,7 @@ export interface TaxBreakdown {
 	exemptTotal: number;
 	/** Total IVA amount */
 	taxAmount: number;
-	/** Grand total (taxableBase + taxAmount + exemptTotal) — should equal sum of all line totals */
+	/** Grand total (taxableBase + taxAmount + exemptTotal) - should equal sum of all line totals */
 	total: number;
 }
 

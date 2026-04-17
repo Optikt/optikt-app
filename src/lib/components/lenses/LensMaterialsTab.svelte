@@ -134,7 +134,7 @@
 	}
 
 	function formatIndex(value: number | null): string {
-		return value == null ? '—' : value.toFixed(2);
+		return value == null ? '-' : value.toFixed(2);
 	}
 </script>
 
@@ -545,7 +545,7 @@
 									{formatIndex(material.refractiveIndex)}
 								</td>
 								<td class="px-6 py-5 text-sm text-on-surface-variant">
-									{material.description ?? '—'}
+									{material.description ?? '-'}
 								</td>
 								<td class="px-6 py-5 text-right">
 									<AppBadge variant="success">Activo</AppBadge>

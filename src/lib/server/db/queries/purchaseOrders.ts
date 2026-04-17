@@ -120,7 +120,7 @@ export async function getNextPONumber(executor: DbOrTx = db): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
-// CRUD — Purchase Orders
+// CRUD - Purchase Orders
 // ---------------------------------------------------------------------------
 
 export async function createPurchaseOrder(
@@ -273,7 +273,7 @@ export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStat
 }
 
 // ---------------------------------------------------------------------------
-// CRUD — Purchase Order Items
+// CRUD - Purchase Order Items
 // ---------------------------------------------------------------------------
 
 export async function createPurchaseOrderItem(
@@ -350,7 +350,7 @@ export async function deletePurchaseOrderItem(id: string, executor: DbOrTx = db)
 }
 
 // ---------------------------------------------------------------------------
-// PO Confirmation — The core transaction
+// PO Confirmation - The core transaction
 // ---------------------------------------------------------------------------
 
 /**
@@ -422,7 +422,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		});
 
 		// d. Update cached stock counter + FIFO-based current purchase price
-		// NOTE: currentSalePrice is NOT updated here — it requires explicit user approval
+		// NOTE: currentSalePrice is NOT updated here - it requires explicit user approval
 		if (item.itemType === PurchaseOrderItemType.PRODUCT && item.productId) {
 			const fifoCost = await getNextFifoCost(item.productId, tx);
 			await tx

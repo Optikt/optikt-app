@@ -222,7 +222,7 @@ export const actionIcons: Record<ActionType, string> = {
  * Handles different types of values (booleans, dates, arrays, etc.)
  */
 export function formatChangeValue(value: unknown): string {
-	if (value === null || value === undefined) return '—';
+	if (value === null || value === undefined) return '-';
 	if (typeof value === 'boolean') return value ? 'Sí' : 'No';
 	if (typeof value === 'number') return value.toLocaleString('es-VE');
 	if (typeof value === 'string') {

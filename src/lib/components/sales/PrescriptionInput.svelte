@@ -28,9 +28,9 @@
 		values: PrescriptionValues;
 		/** Optional existing prescription to auto-fill from */
 		existingPrescription?: Prescription | null;
-		/** Whether addition fields are visible (non-monofocal) — reserved for future use */
+		/** Whether addition fields are visible (non-monofocal) - reserved for future use */
 		showAddition?: boolean;
-		/** Compact mode for inline use — reserved for future use */
+		/** Compact mode for inline use - reserved for future use */
 		compact?: boolean;
 		/** Per-field validation errors */
 		errors?: PrescriptionFieldErrors;
@@ -91,7 +91,7 @@
 	}));
 
 	function formatOpt(v: number | null | undefined): string {
-		if (v == null) return '—';
+		if (v == null) return '-';
 		return v >= 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
 	}
 
@@ -108,7 +108,7 @@
 	}
 
 	function formatAxis(value: number | null | undefined): string {
-		if (value == null) return '—';
+		if (value == null) return '-';
 		return `${Math.round(value)}°`;
 	}
 
@@ -252,7 +252,7 @@
 				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500">
 					<Eye class="h-3 w-3 text-white" />
 				</div>
-				<h5 class="text-sm font-semibold text-blue-800">OD — Ojo Derecho</h5>
+				<h5 class="text-sm font-semibold text-blue-800">OD - Ojo Derecho</h5>
 			</div>
 			<div
 				class={_compact
@@ -332,7 +332,7 @@
 				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
 					<Eye class="h-3 w-3 text-white" />
 				</div>
-				<h5 class="text-sm font-semibold text-violet-800">OI — Ojo Izquierdo</h5>
+				<h5 class="text-sm font-semibold text-violet-800">OI - Ojo Izquierdo</h5>
 			</div>
 			<div
 				class={_compact

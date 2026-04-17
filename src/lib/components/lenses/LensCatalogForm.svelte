@@ -96,7 +96,7 @@
 	let pendingSuppliers = $state<PendingEntity[]>([]);
 	let pendingMaterials = $state<PendingEntity[]>([]);
 
-	// Form data — numeric fields are strings because they bind to <Input type="number">
+	// Form data - numeric fields are strings because they bind to <Input type="number">
 	let formData = $state({
 		source: (initialItem?.source as LensCatalogSource) ?? LensCatalogSource.LAB,
 		supplierId: initialItem?.supplierId ?? '',
@@ -123,7 +123,7 @@
 		notes: initialItem?.notes ?? ''
 	});
 
-	// Live pair purchase price — always the cost of two lenses
+	// Live pair purchase price - always the cost of two lenses
 	let livePairPurchasePrice = $derived.by(() => {
 		const base = parseFloat(formData.basePrice) || 0;
 		return formData.priceType === LensPriceType.UNIT ? base * 2 : base;
@@ -1094,13 +1094,13 @@
 								<p
 									class="font-heading mt-2 text-3xl font-semibold tracking-[-0.02em] text-brand-navy tabular-nums"
 								>
-									{liveMarginPercent != null ? `${liveMarginPercent.toFixed(1)}%` : '—'}
+									{liveMarginPercent != null ? `${liveMarginPercent.toFixed(1)}%` : '-'}
 								</p>
 							</div>
 							<div class="text-right">
 								<p class={fieldLabelClass}>Utilidad bruta</p>
 								<p class="mt-2 font-mono text-2xl font-semibold text-brand-blue tabular-nums">
-									{liveGrossProfit != null ? formatPrice(liveGrossProfit) : '—'}
+									{liveGrossProfit != null ? formatPrice(liveGrossProfit) : '-'}
 								</p>
 							</div>
 						</div>

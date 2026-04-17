@@ -41,7 +41,7 @@
 
 	function itemTitle(): string {
 		if (product) {
-			return `${product.sku} — ${product.name}`;
+			return `${product.sku} - ${product.name}`;
 		}
 
 		if (lensItem) {

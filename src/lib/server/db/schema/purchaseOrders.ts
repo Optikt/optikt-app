@@ -121,7 +121,7 @@ export const purchaseOrderItems = pgTable(
 		appliesIva: boolean('applies_iva').notNull().default(true),
 		/** IVA rate percentage (e.g. 16) */
 		ivaRate: doublePrecision('iva_rate').notNull().default(16),
-		/** Filled when PO is confirmed — FK to the generated lot */
+		/** Filled when PO is confirmed - FK to the generated lot */
 		lotId: uuid('lot_id'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()

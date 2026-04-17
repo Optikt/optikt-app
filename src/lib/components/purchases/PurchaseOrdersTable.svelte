@@ -42,7 +42,7 @@
 	}
 
 	function getInitials(value: string | null | undefined): string {
-		if (!value) return '—';
+		if (!value) return '-';
 		return value
 			.split(' ')
 			.filter(Boolean)

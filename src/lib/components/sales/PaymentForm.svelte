@@ -93,7 +93,7 @@
 	}
 
 	function formatNativeAmount(value: number): string {
-		if (!paymentMethod || value <= 0) return '—';
+		if (!paymentMethod || value <= 0) return '-';
 
 		const formatted = value.toLocaleString('es-VE', {
 			minimumFractionDigits: 2,

@@ -79,7 +79,7 @@ export interface SaleFilterOptions {
 	sellerId?: string;
 	/** Filter by date range start (ISO string) */
 	dateFrom?: string;
-	/** Filter by date range end (ISO string, inclusive — expanded to end of day) */
+	/** Filter by date range end (ISO string, inclusive - expanded to end of day) */
 	dateTo?: string;
 	/** Search by customer name, ID number, or seller name (case-insensitive) */
 	search?: string;

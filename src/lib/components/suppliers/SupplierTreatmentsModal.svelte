@@ -152,7 +152,7 @@
 <Modal
 	bind:open
 	size="lg"
-	title="Tratamientos — {supplier?.name ?? ''}"
+	title="Tratamientos - {supplier?.name ?? ''}"
 	outsideclose
 	onclose={handleClose}
 >

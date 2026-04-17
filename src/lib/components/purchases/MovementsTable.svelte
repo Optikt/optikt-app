@@ -140,7 +140,7 @@
 	}
 
 	function actorInitials(name: string | null): string {
-		if (!name) return '—';
+		if (!name) return '-';
 		return name
 			.split(/\s+/)
 			.filter(Boolean)

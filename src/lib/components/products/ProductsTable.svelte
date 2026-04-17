@@ -149,7 +149,7 @@
 				<ProductTypeBadge type={product.type} />
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{product.brand?.name ?? '—'}
+				{product.brand?.name ?? '-'}
 			</td>
 			<td class="px-4 py-4">
 				<div class="flex items-center gap-2">
@@ -158,7 +158,7 @@
 				</div>
 			</td>
 			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
-				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
+				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">
