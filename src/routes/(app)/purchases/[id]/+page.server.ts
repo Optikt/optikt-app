@@ -4,9 +4,8 @@ import {
 	findPurchaseOrderByIdWithRelations,
 	getPurchaseOrderItems
 } from '$lib/server/db/queries/purchaseOrders';
-import { getMovementsByReference } from '$lib/server/db/queries/inventoryMovements';
+import { getPurchaseOrderRelatedMovements } from '$lib/server/db/queries/inventoryMovements';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
-import { MovementReferenceType } from '$lib/shared/enums';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -18,14 +17,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Orden de compra no encontrada');
 	}
 
-	const [items, movements] = await Promise.all([
-		getPurchaseOrderItems(params.id),
-		getMovementsByReference(MovementReferenceType.PURCHASE_ORDER, params.id)
-	]);
+	const items = await getPurchaseOrderItems(params.id);
 
 	// Load lots for items that have been confirmed (have lotId)
-	const lotIds = items.map((i) => i.lotId).filter(Boolean) as string[];
-	const lots = await Promise.all(lotIds.map((id) => findLotById(id)));
+	const lotIds = items.map((item) => item.lotId).filter(Boolean) as string[];
+	const [movements, lots] = await Promise.all([
+		getPurchaseOrderRelatedMovements(params.id, lotIds),
+		Promise.all(lotIds.map((id) => findLotById(id)))
+	]);
 	const lotsMap = Object.fromEntries(lots.filter(Boolean).map((l) => [l!.id, l!]));
 
 	return {

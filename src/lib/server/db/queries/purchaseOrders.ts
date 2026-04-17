@@ -307,6 +307,19 @@ export async function getPurchaseOrderItems(
 	}));
 }
 
+export async function findPurchaseOrderIdByLotId(
+	lotId: string,
+	executor: DbOrTx = db
+): Promise<string | null> {
+	const [result] = await executor
+		.select({ purchaseOrderId: purchaseOrderItems.purchaseOrderId })
+		.from(inventoryLots)
+		.innerJoin(purchaseOrderItems, eq(inventoryLots.purchaseOrderItemId, purchaseOrderItems.id))
+		.where(eq(inventoryLots.id, lotId));
+
+	return result?.purchaseOrderId ?? null;
+}
+
 export async function updatePurchaseOrderItem(
 	id: string,
 	data: Partial<PurchaseOrderItem>,

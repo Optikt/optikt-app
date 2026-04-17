@@ -1,4 +1,16 @@
-import { eq, and, desc, asc, count, gte, lte, type SQL, type AnyColumn } from 'drizzle-orm';
+import {
+	eq,
+	and,
+	or,
+	inArray,
+	desc,
+	asc,
+	count,
+	gte,
+	lte,
+	type SQL,
+	type AnyColumn
+} from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	inventoryMovements,
@@ -8,6 +20,7 @@ import {
 	type NewInventoryMovement
 } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
+import { MovementReferenceType } from '$lib/shared/enums';
 import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 
 // ---------------------------------------------------------------------------
@@ -133,6 +146,33 @@ export async function getMovementsByReference(referenceType: string, referenceId
 				eq(inventoryMovements.referenceId, referenceId)
 			)
 		)
+		.orderBy(asc(inventoryMovements.createdAt));
+}
+
+export async function getPurchaseOrderRelatedMovements(
+	purchaseOrderId: string,
+	lotIds: string[] = []
+) {
+	const conditions: SQL[] = [
+		and(
+			eq(inventoryMovements.referenceType, MovementReferenceType.PURCHASE_ORDER),
+			eq(inventoryMovements.referenceId, purchaseOrderId)
+		)!
+	];
+
+	if (lotIds.length > 0) {
+		conditions.push(
+			and(
+				inArray(inventoryMovements.lotId, lotIds),
+				eq(inventoryMovements.referenceType, MovementReferenceType.MANUAL_ADJUSTMENT)
+			)!
+		);
+	}
+
+	return db
+		.select()
+		.from(inventoryMovements)
+		.where(or(...conditions))
 		.orderBy(asc(inventoryMovements.createdAt));
 }
 

@@ -11,6 +11,7 @@ import {
 import { requireRole } from '$lib/server/guards';
 import { db } from '$lib/server/db';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
+import { findPurchaseOrderIdByLotId } from '$lib/server/db/queries/purchaseOrders';
 import {
 	createInventoryMovement,
 	getMovementsWithDetails,
@@ -173,6 +174,11 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 		return { success: false as const, error: 'Lote no encontrado' };
 	}
 
+	const purchaseOrderId = await findPurchaseOrderIdByLotId(data.lotId);
+	if (!purchaseOrderId) {
+		return { success: false as const, error: 'No se pudo determinar la orden de compra del lote' };
+	}
+
 	// Can only revert if NO units have been consumed (sold, adjusted out, etc.)
 	if (lot.quantityAvailable !== lot.quantityInitial) {
 		return {
@@ -206,8 +212,8 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 					quantityDelta,
 					quantityBefore: lot.quantityAvailable,
 					quantityAfter: 0,
-					referenceType: MovementReferenceType.MANUAL_ADJUSTMENT,
-					referenceId: data.lotId,
+					referenceType: MovementReferenceType.PURCHASE_ORDER,
+					referenceId: purchaseOrderId,
 					notes: 'ENTRY_ERROR: Reversión completa de lote',
 					createdById: user.id
 				},
