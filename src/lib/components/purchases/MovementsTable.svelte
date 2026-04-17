@@ -5,8 +5,10 @@
 	import { AppBadge, DataGrid } from '$lib/components/ui';
 	import { formatDate } from '$lib/utils';
 	import {
+		getAdjustmentReasonLabel,
 		getInventoryMovementTypeLabel,
 		getMovementReferenceTypeLabel,
+		AdjustmentReason,
 		InventoryMovementType,
 		MovementReferenceType
 	} from '$lib/shared/enums';
@@ -82,6 +84,23 @@
 
 	function movementReferenceDetail(movement: MovementWithDetails): string {
 		return getMovementReferenceTypeLabel(movement.referenceType);
+	}
+
+	function movementNotes(movement: MovementWithDetails): string {
+		if (!movement.notes) return '';
+
+		const separatorIndex = movement.notes.indexOf(':');
+		if (separatorIndex === -1) return movement.notes;
+
+		const rawReason = movement.notes.slice(0, separatorIndex).trim();
+		const detail = movement.notes.slice(separatorIndex + 1).trim();
+
+		if (!Object.values(AdjustmentReason).includes(rawReason as AdjustmentReason)) {
+			return movement.notes;
+		}
+
+		const localizedReason = getAdjustmentReasonLabel(rawReason);
+		return detail ? `${localizedReason}: ${detail}` : localizedReason;
 	}
 
 	function movementItemName(movement: MovementWithDetails): string {
@@ -230,7 +249,7 @@
 				<p class="mt-1 text-sm text-on-surface-variant">{movementReferenceDetail(movement)}</p>
 				{#if movement.notes}
 					<p class="mt-1 line-clamp-2 text-xs leading-relaxed text-outline">
-						{movement.notes}
+						{movementNotes(movement)}
 					</p>
 				{/if}
 			</td>
