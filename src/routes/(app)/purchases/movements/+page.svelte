@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronDown, Download, RotateCcw, Search } from '@lucide/svelte';
+	import { Download, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
