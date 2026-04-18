@@ -42,18 +42,25 @@
 		supplierId === '' ? [] : lensItems.filter((lens) => lens.supplierId === supplierId)
 	);
 
+	const addedProductIds = $derived(new Set(items.map((i) => i.productId).filter(Boolean)));
+	const addedLensIds = $derived(new Set(items.map((i) => i.lensCatalogItemId).filter(Boolean)));
+
 	const productOptions = $derived(
-		supplierProducts.map((product) => ({
-			id: product.id,
-			label: `${product.sku} - ${product.name}`
-		}))
+		supplierProducts
+			.filter((product) => !addedProductIds.has(product.id))
+			.map((product) => ({
+				id: product.id,
+				label: `${product.sku} - ${product.name}`
+			}))
 	);
 
 	const lensOptions = $derived(
-		supplierLensItems.map((lens) => ({
-			id: lens.id,
-			label: `${lens.name} - ${getLensTypeLabel(lens.type)}`
-		}))
+		supplierLensItems
+			.filter((lens) => !addedLensIds.has(lens.id))
+			.map((lens) => ({
+				id: lens.id,
+				label: `${lens.name} - ${getLensTypeLabel(lens.type)}`
+			}))
 	);
 
 	const selectedProduct = $derived(

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { FileText } from '@lucide/svelte';
+	import { BaseSelect } from '$lib/components/ui';
 	import { PurchaseDocumentType, getPurchaseDocumentTypeLabel } from '$lib/shared/enums';
 	import { autoAnimate } from '@formkit/auto-animate';
 
@@ -36,7 +37,6 @@
 		'text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase';
 	const inputClass =
 		'w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60';
-	const selectClass = `${inputClass} appearance-none pr-10`;
 
 	const isInvoice = $derived(documentType === PurchaseDocumentType.INVOICE);
 	const notesTooShort = $derived(notes.length > 0 && notes.length < 6);
@@ -58,19 +58,13 @@
 		<div class="grid gap-4 lg:grid-cols-8">
 			<div class="col-span-2 space-y-1.5">
 				<p class={fieldLabelClass}>Proveedor</p>
-				<div class="relative">
-					<select
-						bind:value={supplierId}
-						class={selectClass}
-						aria-label="Proveedor"
-						disabled={supplierLocked}
-					>
-						<option value="">Seleccione un proveedor...</option>
-						{#each suppliers as supplier (supplier.id)}
-							<option value={supplier.id}>{supplier.name}</option>
-						{/each}
-					</select>
-				</div>
+				<BaseSelect
+					bind:value={supplierId}
+					options={suppliers}
+					placeholder="Buscar proveedor..."
+					variant="tonal"
+					disabled={supplierLocked}
+				/>
 				{#if supplierLocked}
 					<p class="text-xs leading-5 text-on-surface-variant">
 						El proveedor queda bloqueado mientras existan líneas agregadas.
