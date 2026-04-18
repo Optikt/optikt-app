@@ -36,7 +36,7 @@
 
 	const inputClass =
 		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
-	const compactInputClass = `${inputClass} h-10 text-right font-mono tabular-nums`;
+	const compactInputClass = `${inputClass} h-10 text-right font-mono text-sm tabular-nums`;
 
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
 	const lineTax = $derived(calculateDraftItemTax(item));
@@ -141,11 +141,11 @@
 
 <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-sm ring-1 ring-outline-variant/20">
 	<div
-		class="grid gap-3 xl:grid-cols-[54px_minmax(120px,1fr)_64px_88px_88px_94px_100px_28px] xl:items-center"
+		class="grid gap-3 xl:grid-cols-[48px_minmax(160px,1fr)_72px_152px_92px_96px_110px_28px] xl:items-center"
 	>
 		<div class="space-y-2">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Tipo
 			</p>
@@ -172,7 +172,7 @@
 
 		<div class="space-y-2">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Artículo
 			</p>
@@ -188,7 +188,7 @@
 
 		<div class="space-y-2">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Cant.
 			</p>
@@ -203,12 +203,12 @@
 
 		<div class="space-y-2">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Costo unit.
 			</p>
 			{#if item.appliesIva}
-				<div class="flex flex-col gap-1">
+				<div class="space-y-1.5">
 					<div class="relative">
 						<input
 							type="number"
@@ -216,11 +216,11 @@
 							step="0.01"
 							value={preTaxUnitCost}
 							onchange={handlePreTaxInput}
-							class="{compactInputClass} pr-10"
+							class="{compactInputClass} pr-12"
 							aria-label="Costo unitario sin IVA"
 						/>
 						<span
-							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[9px] font-semibold tracking-wider text-outline uppercase"
+							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-semibold tracking-wider text-outline uppercase"
 							>s/IVA</span
 						>
 					</div>
@@ -230,11 +230,11 @@
 							min="0"
 							step="0.01"
 							bind:value={item.unitPurchasePrice}
-							class="{compactInputClass} pr-10"
+							class="{compactInputClass} pr-12"
 							aria-label="Costo unitario con IVA"
 						/>
 						<span
-							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[9px] font-semibold tracking-wider text-brand-blue uppercase"
+							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-semibold tracking-wider text-brand-blue uppercase"
 							>c/IVA</span
 						>
 					</div>
@@ -253,7 +253,7 @@
 
 		<div class="space-y-2">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Venta sugerida
 			</p>
@@ -269,7 +269,7 @@
 
 		<div class="space-y-2">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Impuesto
 			</p>
@@ -304,7 +304,7 @@
 
 		<div class="space-y-2 xl:text-right">
 			<p
-				class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase xl:hidden"
+				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
 				Total fila
 			</p>

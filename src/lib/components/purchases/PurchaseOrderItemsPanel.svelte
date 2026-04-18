@@ -223,7 +223,7 @@
 		</p>
 	</div>
 
-	<div class="mt-6 space-y-4">
+	<div class="mt-5 space-y-3">
 		{#if items.length === 0}
 			<div
 				class="rounded-2xl border border-dashed border-outline-variant/50 bg-surface-container-low px-5 py-8 text-center text-sm text-on-surface-variant"
@@ -232,13 +232,13 @@
 			</div>
 		{:else}
 			<div class="overflow-x-auto pb-1">
-				<div class="min-w-[680px] space-y-3">
+				<div class="min-w-[820px] space-y-3">
 					<div
-						class="hidden xl:grid xl:grid-cols-[54px_minmax(120px,1fr)_64px_88px_88px_94px_100px_28px] xl:gap-3"
+						class="hidden xl:grid xl:grid-cols-[48px_minmax(160px,1fr)_72px_152px_92px_96px_110px_28px] xl:gap-3"
 					>
 						{#each ['Tipo', 'Artículo', 'Cant.', 'Costo', 'Venta', 'IVA', 'Total', ''] as label, index (label + index)}
 							<div
-								class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
+								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 							>
 								{label}
 							</div>

@@ -12,6 +12,7 @@
 	import { getErrorMessage } from '$lib/utils';
 	import PurchaseOrderDocumentPanel from './PurchaseOrderDocumentPanel.svelte';
 	import PurchaseOrderItemsPanel from './PurchaseOrderItemsPanel.svelte';
+	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
 		isDraftItemConfigured,
@@ -142,24 +143,21 @@
 		</div>
 	</div>
 
-	<div class="grid gap-6 xl:grid-cols-12">
-		<div class="xl:col-span-4">
-			<PurchaseOrderDocumentPanel
-				{suppliers}
-				bind:supplierId
-				bind:documentType
-				bind:orderDate
-				bind:bcvRate
-				bind:invoiceNumber
-				bind:deliveryNoteNumber
-				bind:notes
-				{supplierLocked}
-				{summary}
-			/>
-		</div>
+	<div class="space-y-5">
+		<PurchaseOrderDocumentPanel
+			{suppliers}
+			bind:supplierId
+			bind:documentType
+			bind:orderDate
+			bind:bcvRate
+			bind:invoiceNumber
+			bind:deliveryNoteNumber
+			bind:notes
+			{supplierLocked}
+		/>
 
-		<div class="xl:col-span-8">
-			<PurchaseOrderItemsPanel bind:items {products} {lensItems} {supplierId} {documentType} />
-		</div>
+		<PurchaseOrderItemsPanel bind:items {products} {lensItems} {supplierId} {documentType} />
+
+		<PurchaseOrderSummaryPanel {summary} {bcvRate} />
 	</div>
 </div>
