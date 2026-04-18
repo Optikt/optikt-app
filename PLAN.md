@@ -74,7 +74,7 @@
 | A1  | Lista de ventas        | `/sales`                | "Lista de Ventas - Refinada" (`56909dd3`)            | ✅ Hecho   |
 | A2  | Detalle de venta       | `/sales/[id]`           | "Detalle de Venta - Optikt" (`2aca5925`, `73d3f5f1`) | ✅ Hecho   |
 | A3  | Nueva venta (wizard)   | `/sales/new`            | "Nueva Venta (Paso 1) - Optikt" (`fbf6a888`)         | ✅ Hecho   |
-| A4  | Fórmula / prescripción | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)      | 🟡 Parcial |
+| A4  | Fórmula / prescripción | (componente compartido) | "Nueva Fórmula - Versión Colorida" (`70394b9c`)      | ✅ Hecho |
 
 #### Grupo B — Clientes (con mockup Stitch)
 
@@ -115,7 +115,7 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 
 1. ~~**A2 — Detalle de venta**~~ ✅
 2. ~~**A3 — Nueva venta**~~ ✅
-3. **A4 — Fórmula** → componente compartido parcial (funcional con doctor + autofill, falta rediseño visual completo del mockup Stitch `70394b9c`)
+3. ~~**A4 — Fórmula**~~ ✅
 4. ~~**B1–B3 — Clientes**~~ ✅
 5. ~~**C1–C4 — Dashboard**~~ ✅
 6. ~~**C5 — Login**~~ ✅
