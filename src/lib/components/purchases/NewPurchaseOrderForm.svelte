@@ -6,7 +6,7 @@
 	import { nowUTC, toISODate } from '$lib/dates';
 	import { PageHeader } from '$lib/components/ui';
 	import { createPurchaseOrderCmd } from '$lib/remote/purchaseOrders.remote';
-	import { PurchaseOrderItemType } from '$lib/shared/enums';
+	import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { getErrorMessage } from '$lib/utils';
@@ -32,6 +32,7 @@
 	let { suppliers, products, lensItems }: Props = $props();
 
 	let supplierId = $state('');
+	let documentType = $state(PurchaseDocumentType.INVOICE);
 	let invoiceNumber = $state('');
 	let deliveryNoteNumber = $state('');
 	let orderDate = $state(toISODate(nowUTC()));
@@ -47,6 +48,7 @@
 		supplierId !== '' &&
 			orderDate !== '' &&
 			bcvRate > 0 &&
+			notes.length >= 6 &&
 			items.length > 0 &&
 			items.every(
 				(item) =>
@@ -69,11 +71,12 @@
 		try {
 			const result = await createPurchaseOrderCmd({
 				supplierId,
+				documentType,
 				invoiceNumber: invoiceNumber || undefined,
 				deliveryNoteNumber: deliveryNoteNumber || undefined,
 				orderDate,
 				bcvRate,
-				notes: notes || undefined,
+				notes,
 				items: items.map((item) => ({
 					itemType: item.itemType,
 					productId:
@@ -144,6 +147,7 @@
 			<PurchaseOrderDocumentPanel
 				{suppliers}
 				bind:supplierId
+				bind:documentType
 				bind:orderDate
 				bind:bcvRate
 				bind:invoiceNumber
@@ -155,7 +159,7 @@
 		</div>
 
 		<div class="xl:col-span-8">
-			<PurchaseOrderItemsPanel bind:items {products} {lensItems} {supplierId} />
+			<PurchaseOrderItemsPanel bind:items {products} {lensItems} {supplierId} {documentType} />
 		</div>
 	</div>
 </div>

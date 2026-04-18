@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { PurchaseOrderItemType } from '$lib/shared/enums';
+import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 import { LensPriceType, LensType } from '$lib/shared/enums/lensTypes';
 
 import {
@@ -58,16 +58,40 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(item.ivaRate).toBe(16);
 	});
 
+	it('creates an exempt draft row for delivery note', () => {
+		const item = createEmptyPurchaseOrderDraftItem(
+			PurchaseOrderItemType.PRODUCT,
+			PurchaseDocumentType.DELIVERY_NOTE
+		);
+
+		expect(item.appliesIva).toBe(false);
+		expect(item.ivaRate).toBe(16);
+	});
+
 	it('hydrates product defaults into a draft row', () => {
 		const item = createEmptyPurchaseOrderDraftItem();
 		applyProductDefaults(item, makeProduct());
 
 		expect(item.productId).toBe('product-1');
 		expect(item.lensCatalogItemId).toBe('');
-		expect(item.unitPurchasePrice).toBe(18);
+		expect(item.unitPurchasePrice).toBe(20.88);
 		expect(item.unitSalePrice).toBe(42);
 		expect(item.appliesIva).toBe(true);
 		expect(item.ivaRate).toBe(16);
+	});
+
+	it('hydrates product defaults as exempt for delivery note', () => {
+		const item = createEmptyPurchaseOrderDraftItem(
+			PurchaseOrderItemType.PRODUCT,
+			PurchaseDocumentType.DELIVERY_NOTE
+		);
+		applyProductDefaults(
+			item,
+			makeProduct({ isTaxable: true }),
+			PurchaseDocumentType.DELIVERY_NOTE
+		);
+
+		expect(item.appliesIva).toBe(false);
 	});
 
 	it('hydrates lens defaults using pair purchase price when applicable', () => {

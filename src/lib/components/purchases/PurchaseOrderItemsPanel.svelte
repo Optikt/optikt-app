@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Plus } from '@lucide/svelte';
 	import { AppBadge, BaseSelect } from '$lib/components/ui';
-	import { PurchaseOrderItemType } from '$lib/shared/enums';
+	import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -25,9 +25,10 @@
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
 		supplierId: string;
+		documentType: PurchaseDocumentType;
 	}
 
-	let { items = $bindable(), products, lensItems, supplierId }: Props = $props();
+	let { items = $bindable(), products, lensItems, supplierId, documentType }: Props = $props();
 
 	let pendingItemType = $state(PurchaseOrderItemType.PRODUCT);
 	let pendingProductId = $state('');
@@ -116,13 +117,13 @@
 	function addLine() {
 		if (!canAddLine) return;
 
-		const nextItem = createEmptyPurchaseOrderDraftItem(pendingItemType);
+		const nextItem = createEmptyPurchaseOrderDraftItem(pendingItemType, documentType);
 
 		if (pendingItemType === PurchaseOrderItemType.PRODUCT && selectedProduct) {
-			applyProductDefaults(nextItem, selectedProduct);
+			applyProductDefaults(nextItem, selectedProduct, documentType);
 			pendingProductId = '';
 		} else if (pendingItemType === PurchaseOrderItemType.LENS && selectedLens) {
-			applyLensDefaults(nextItem, selectedLens);
+			applyLensDefaults(nextItem, selectedLens, documentType);
 			pendingLensCatalogItemId = '';
 		}
 
@@ -230,27 +231,31 @@
 				Todavía no hay líneas en la orden. Busca un artículo arriba y agrégalo a la lista.
 			</div>
 		{:else}
-			<div
-				class="hidden xl:grid xl:grid-cols-[120px_minmax(320px,1.8fr)_90px_140px_140px_120px_120px_44px] xl:gap-4"
-			>
-				{#each ['Tipo', 'Artículo', 'Cant.', 'Costo unit.', 'Venta sugerida', 'Impuesto', 'Total', ''] as label, index (label + index)}
+			<div class="overflow-x-auto pb-1">
+				<div class="min-w-[680px] space-y-3">
 					<div
-						class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
+						class="hidden xl:grid xl:grid-cols-[54px_minmax(120px,1fr)_64px_88px_88px_94px_100px_28px] xl:gap-3"
 					>
-						{label}
+						{#each ['Tipo', 'Artículo', 'Cant.', 'Costo', 'Venta', 'IVA', 'Total', ''] as label, index (label + index)}
+							<div
+								class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
+							>
+								{label}
+							</div>
+						{/each}
 					</div>
-				{/each}
-			</div>
 
-			{#each items as item, index (item.id)}
-				<PurchaseOrderItemRow
-					bind:item={items[index]}
-					product={products.find((product) => product.id === item.productId) ?? null}
-					lensItem={lensItems.find((lens) => lens.id === item.lensCatalogItemId) ?? null}
-					showRemove={true}
-					onremove={() => removeLine(item.id)}
-				/>
-			{/each}
+					{#each items as item, index (item.id)}
+						<PurchaseOrderItemRow
+							bind:item={items[index]}
+							product={products.find((product) => product.id === item.productId) ?? null}
+							lensItem={lensItems.find((lens) => lens.id === item.lensCatalogItemId) ?? null}
+							showRemove={true}
+							onremove={() => removeLine(item.id)}
+						/>
+					{/each}
+				</div>
+			</div>
 		{/if}
 	</div>
 </section>

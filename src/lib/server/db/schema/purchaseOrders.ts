@@ -14,7 +14,11 @@ import {
 import { suppliers } from './suppliers';
 import { users } from './users';
 import { enumValues } from './utils';
-import { PurchaseOrderStatus, PurchaseOrderItemType } from '../../../shared/enums/purchaseTypes';
+import {
+	PurchaseOrderStatus,
+	PurchaseOrderItemType,
+	PurchaseDocumentType
+} from '../../../shared/enums/purchaseTypes';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
 
@@ -25,6 +29,11 @@ import { lensCatalogItems } from './lenses';
 export const purchaseOrderStatusEnum = pgEnum(
 	'purchase_order_status',
 	enumValues(PurchaseOrderStatus)
+);
+
+export const purchaseDocumentTypeEnum = pgEnum(
+	'purchase_document_type',
+	enumValues(PurchaseDocumentType)
 );
 
 export const purchaseOrderItemTypeEnum = pgEnum(
@@ -48,6 +57,8 @@ export const purchaseOrders = pgTable(
 		/** Delivery note number */
 		deliveryNoteNumber: varchar('delivery_note_number'),
 		status: purchaseOrderStatusEnum().notNull().default('DRAFT'),
+		/** INVOICE = Factura, DELIVERY_NOTE = Nota de entrega */
+		documentType: purchaseDocumentTypeEnum('document_type').notNull().default('INVOICE'),
 		/** Date of the purchase */
 		orderDate: timestamp('order_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** BCV rate at time of purchase */

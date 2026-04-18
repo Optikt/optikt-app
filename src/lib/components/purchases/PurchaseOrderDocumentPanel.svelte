@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Calculator, ChevronDown, FileText } from '@lucide/svelte';
+	import { Calculator, FileText } from '@lucide/svelte';
+	import { PurchaseDocumentType, getPurchaseDocumentTypeLabel } from '$lib/shared/enums';
 	import type { PurchaseOrderSummary } from './purchaseOrderDraft';
 	import { formatPrice } from '$lib/utils';
 
@@ -12,6 +13,7 @@
 		suppliers: SupplierOption[];
 		supplierId: string;
 		supplierLocked?: boolean;
+		documentType: PurchaseDocumentType;
 		orderDate: string;
 		bcvRate: number;
 		invoiceNumber: string;
@@ -24,6 +26,7 @@
 		suppliers,
 		supplierId = $bindable(),
 		supplierLocked = false,
+		documentType = $bindable(),
 		orderDate = $bindable(),
 		bcvRate = $bindable(),
 		invoiceNumber = $bindable(),
@@ -38,7 +41,9 @@
 		'w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60';
 	const selectClass = `${inputClass} appearance-none pr-10`;
 
+	const isInvoice = $derived(documentType === PurchaseDocumentType.INVOICE);
 	const totalInBs = $derived(summary.total * Number(bcvRate || 0));
+	const notesTooShort = $derived(notes.length > 0 && notes.length < 6);
 
 	function formatVes(amount: number): string {
 		return `Bs. ${new Intl.NumberFormat('es-VE', {
@@ -76,15 +81,36 @@
 							<option value={supplier.id}>{supplier.name}</option>
 						{/each}
 					</select>
-					<ChevronDown
-						class="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-outline"
-					/>
 				</div>
 				{#if supplierLocked}
 					<p class="text-xs leading-5 text-on-surface-variant">
 						El proveedor queda bloqueado mientras existan líneas agregadas.
 					</p>
 				{/if}
+			</div>
+
+			<div class="space-y-2">
+				<p class={fieldLabelClass}>Tipo de documento</p>
+				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
+					{#each Object.values(PurchaseDocumentType) as docType (docType)}
+						<button
+							type="button"
+							onclick={() => (documentType = docType)}
+							class={`rounded-lg px-3.5 py-2.5 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
+								documentType === docType
+									? 'bg-brand-navy text-white'
+									: 'text-on-surface-variant hover:text-brand-navy'
+							}`}
+						>
+							{getPurchaseDocumentTypeLabel(docType)}
+						</button>
+					{/each}
+				</div>
+				<p class="text-xs leading-5 text-on-surface-variant">
+					{isInvoice
+						? 'Los ítems se marcan con IVA 16% por defecto.'
+						: 'Los ítems se marcan como exentos por defecto.'}
+				</p>
 			</div>
 
 			<div class="grid gap-4 sm:grid-cols-2">
@@ -137,14 +163,21 @@
 			</div>
 
 			<div class="space-y-2">
-				<p class={fieldLabelClass}>Observaciones</p>
+				<p class={fieldLabelClass}>
+					Observaciones <span class="text-error">*</span>
+				</p>
 				<textarea
 					bind:value={notes}
 					rows="4"
-					class={`${inputClass} min-h-[7rem] resize-y`}
+					class={`${inputClass} min-h-[7rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
 					placeholder="Observaciones internas o acuerdos con proveedor..."
 					aria-label="Observaciones"
+					required
+					minlength={6}
 				></textarea>
+				{#if notesTooShort}
+					<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
+				{/if}
 			</div>
 		</div>
 	</section>

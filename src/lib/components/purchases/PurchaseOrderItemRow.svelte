@@ -1,7 +1,12 @@
 <script lang="ts">
-	import { Trash2 } from '@lucide/svelte';
-	import { AppBadge } from '$lib/components/ui';
-	import { PurchaseOrderItemType, getLensTypeLabel, getPriceTypeLabel } from '$lib/shared/enums';
+	import { Eye, Glasses, Package, Sun, Trash2 } from '@lucide/svelte';
+	import {
+		ProductType,
+		PurchaseOrderItemType,
+		getLensTypeLabel,
+		getPriceTypeLabel,
+		getProductTypeLabel
+	} from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -9,6 +14,7 @@
 		calculateDraftItemSubtotal,
 		calculateDraftItemTax,
 		calculateDraftItemTotal,
+		getPreTaxUnitPrice,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
 
@@ -29,14 +35,33 @@
 	}: Props = $props();
 
 	const inputClass =
-		'w-full rounded-lg border-none bg-surface-container-high px-3 py-3 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+	const compactInputClass = `${inputClass} h-10 text-right font-mono tabular-nums`;
 
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
 	const lineTax = $derived(calculateDraftItemTax(item));
 	const lineTotal = $derived(calculateDraftItemTotal(item));
+	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
+
+	function round2(n: number): number {
+		return Math.round(n * 100) / 100;
+	}
 
 	function toggleTaxable() {
-		item.appliesIva = !item.appliesIva;
+		if (item.appliesIva) {
+			item.unitPurchasePrice = round2(item.unitPurchasePrice / (1 + item.ivaRate / 100));
+			item.appliesIva = false;
+		} else {
+			item.appliesIva = true;
+			item.unitPurchasePrice = round2(item.unitPurchasePrice * (1 + item.ivaRate / 100));
+		}
+	}
+
+	function handlePreTaxInput(e: Event) {
+		const val = parseFloat((e.currentTarget as HTMLInputElement).value);
+		if (!isNaN(val) && val >= 0) {
+			item.unitPurchasePrice = round2(val * (1 + item.ivaRate / 100));
+		}
 	}
 
 	function itemTitle(): string {
@@ -72,11 +97,51 @@
 			? 'Selecciona un producto para autocompletar precios e IVA.'
 			: 'Selecciona un lente para autocompletar costo, venta sugerida e IVA.';
 	}
+
+	function compactItemCode(): string {
+		if (product) {
+			return product.sku;
+		}
+
+		if (lensItem) {
+			const lensTypeLabel = getLensTypeLabel(lensItem.type);
+			const lensTypeCode = lensTypeLabel.slice(0, 4).toUpperCase();
+			const materialCode = lensItem.material?.code?.toUpperCase();
+
+			return materialCode ? `${materialCode}-${lensTypeCode}` : lensTypeCode;
+		}
+
+		return item.itemType === PurchaseOrderItemType.PRODUCT ? 'SKU' : 'LENTE';
+	}
+
+	function typeLabel(): string {
+		if (product) {
+			return getProductTypeLabel(product.type);
+		}
+
+		if (lensItem) {
+			return `Lente ${getLensTypeLabel(lensItem.type)}`;
+		}
+
+		return item.itemType === PurchaseOrderItemType.PRODUCT ? 'Producto' : 'Lente';
+	}
+
+	function totalTooltip(): string {
+		const parts = [`Subtotal (s/IVA): ${formatPrice(lineSubtotal)}`];
+
+		if (lineTax > 0) {
+			parts.push(`IVA ${item.ivaRate}%: ${formatPrice(lineTax)}`);
+		}
+
+		parts.push(`Total (costo real): ${formatPrice(lineTotal)}`);
+
+		return parts.join(' · ');
+	}
 </script>
 
-<div class="rounded-2xl bg-surface-container-lowest p-4 shadow-sm ring-1 ring-outline-variant/20">
+<div class="rounded-2xl bg-surface-container-lowest p-3 shadow-sm ring-1 ring-outline-variant/20">
 	<div
-		class="grid gap-4 xl:grid-cols-[120px_minmax(320px,1.8fr)_90px_140px_140px_120px_120px_44px] xl:items-start"
+		class="grid gap-3 xl:grid-cols-[54px_minmax(120px,1fr)_64px_88px_88px_94px_100px_28px] xl:items-center"
 	>
 		<div class="space-y-2">
 			<p
@@ -84,10 +149,24 @@
 			>
 				Tipo
 			</p>
-			<div class="flex min-h-[3.25rem] items-center">
-				<AppBadge variant={item.itemType === PurchaseOrderItemType.PRODUCT ? 'neutral' : 'info'}>
-					{item.itemType === PurchaseOrderItemType.PRODUCT ? 'Producto' : 'Lente'}
-				</AppBadge>
+			<div class="flex h-10 items-center">
+				<div
+					class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+					title={typeLabel()}
+					aria-label={typeLabel()}
+				>
+					{#if product?.type === ProductType.SUNGLASSES}
+						<Sun class="h-4 w-4" />
+					{:else if product?.type === ProductType.ACCESSORY}
+						<Package class="h-4 w-4" />
+					{:else if product?.type === ProductType.CONTACT_LENS}
+						<Eye class="h-4 w-4" />
+					{:else if item.itemType === PurchaseOrderItemType.LENS}
+						<Eye class="h-4 w-4" />
+					{:else}
+						<Glasses class="h-4 w-4" />
+					{/if}
+				</div>
 			</div>
 		</div>
 
@@ -97,12 +176,12 @@
 			>
 				Artículo
 			</p>
-			<div class="rounded-xl bg-surface-container-high px-4 py-3">
-				<p class="truncate text-sm font-semibold text-brand-navy" title={itemTitle()}>
-					{itemTitle()}
-				</p>
-				<p class="mt-1 text-xs leading-5 text-on-surface-variant">
-					{selectionMeta()}
+			<div
+				class="flex h-10 items-center rounded-xl bg-surface-container-high px-3"
+				title={`${itemTitle()}${selectionMeta() ? `\n${selectionMeta()}` : ''}`}
+			>
+				<p class="truncate font-mono text-sm font-semibold text-brand-navy">
+					{compactItemCode()}
 				</p>
 			</div>
 		</div>
@@ -117,7 +196,7 @@
 				type="number"
 				min="1"
 				bind:value={item.quantity}
-				class={inputClass}
+				class={compactInputClass}
 				aria-label="Cantidad"
 			/>
 		</div>
@@ -128,14 +207,48 @@
 			>
 				Costo unit.
 			</p>
-			<input
-				type="number"
-				min="0"
-				step="0.01"
-				bind:value={item.unitPurchasePrice}
-				class={`${inputClass} text-right font-mono tabular-nums`}
-				aria-label="Costo unitario"
-			/>
+			{#if item.appliesIva}
+				<div class="flex flex-col gap-1">
+					<div class="relative">
+						<input
+							type="number"
+							min="0"
+							step="0.01"
+							value={preTaxUnitCost}
+							onchange={handlePreTaxInput}
+							class="{compactInputClass} pr-10"
+							aria-label="Costo unitario sin IVA"
+						/>
+						<span
+							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[9px] font-semibold tracking-wider text-outline uppercase"
+							>s/IVA</span
+						>
+					</div>
+					<div class="relative">
+						<input
+							type="number"
+							min="0"
+							step="0.01"
+							bind:value={item.unitPurchasePrice}
+							class="{compactInputClass} pr-10"
+							aria-label="Costo unitario con IVA"
+						/>
+						<span
+							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[9px] font-semibold tracking-wider text-brand-blue uppercase"
+							>c/IVA</span
+						>
+					</div>
+				</div>
+			{:else}
+				<input
+					type="number"
+					min="0"
+					step="0.01"
+					bind:value={item.unitPurchasePrice}
+					class={compactInputClass}
+					aria-label="Costo unitario"
+				/>
+			{/if}
 		</div>
 
 		<div class="space-y-2">
@@ -149,7 +262,7 @@
 				min="0"
 				step="0.01"
 				bind:value={item.unitSalePrice}
-				class={`${inputClass} text-right font-mono tabular-nums`}
+				class={compactInputClass}
 				aria-label="Venta sugerida"
 			/>
 		</div>
@@ -160,32 +273,33 @@
 			>
 				Impuesto
 			</p>
-			<button
-				type="button"
-				onclick={toggleTaxable}
-				class={`inline-flex w-full items-center justify-center rounded-lg px-3 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-					item.appliesIva
-						? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
-						: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
-				}`}
-			>
-				{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
-			</button>
+			<div class="flex h-10 items-center gap-1.5">
+				<button
+					type="button"
+					onclick={toggleTaxable}
+					class={`inline-flex h-10 shrink-0 items-center justify-center rounded-lg px-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors ${
+						item.appliesIva
+							? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
+							: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
+					}`}
+					title={item.appliesIva ? 'Gravable con IVA' : 'Exento de IVA'}
+				>
+					{item.appliesIva ? 'IVA' : 'EX'}
+				</button>
 
-			{#if item.appliesIva}
-				<div class="flex items-center gap-2">
+				{#if item.appliesIva}
 					<input
 						type="number"
 						min="0"
 						max="100"
 						step="0.01"
 						bind:value={item.ivaRate}
-						class={`${inputClass} px-3 py-2 text-right font-mono text-xs tabular-nums`}
+						class="h-10 w-12 rounded-lg border-none bg-surface-container-high px-2 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 						aria-label="Tasa de IVA"
+						title="Tasa de IVA (%)"
 					/>
-					<span class="text-xs font-semibold text-on-surface-variant">%</span>
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</div>
 
 		<div class="space-y-2 xl:text-right">
@@ -194,26 +308,24 @@
 			>
 				Total fila
 			</p>
-			<p class="font-mono text-base font-semibold text-brand-navy tabular-nums">
+			<p
+				class="flex h-10 items-center font-mono text-base font-semibold text-brand-navy tabular-nums xl:justify-end"
+				title={totalTooltip()}
+			>
 				{formatPrice(lineTotal)}
-			</p>
-			<p class="text-xs text-on-surface-variant">
-				{lineTax > 0
-					? `${formatPrice(lineSubtotal)} + IVA ${formatPrice(lineTax)}`
-					: formatPrice(lineSubtotal)}
 			</p>
 		</div>
 
-		<div class="flex items-start justify-end xl:pt-9">
+		<div class="flex h-10 items-center justify-end">
 			{#if showRemove}
 				<button
 					type="button"
 					onclick={onremove}
-					class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
+					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
 					aria-label="Eliminar línea"
 					title="Eliminar línea"
 				>
-					<Trash2 class="h-4 w-4" />
+					<Trash2 class="h-3.5 w-3.5" />
 				</button>
 			{/if}
 		</div>

@@ -124,11 +124,12 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				{
 					orderNumber,
 					supplierId: data.supplierId,
+					documentType: data.documentType,
 					invoiceNumber: data.invoiceNumber ?? null,
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					notes: data.notes ?? null,
+					notes: data.notes,
 					status: PurchaseOrderStatus.DRAFT,
 					createdById: context.userId!
 				},
