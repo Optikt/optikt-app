@@ -139,7 +139,6 @@
 	}
 </script>
 
-
 <div class="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4 shadow-sm">
 	<div
 		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_128px_32px] xl:items-center xl:gap-4"
@@ -297,7 +296,7 @@
 						max="100"
 						step="0.01"
 						bind:value={item.ivaRate}
-						class="h-10 w-16 rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+						class="h-10 w-16 [appearance:textfield] rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 						aria-label="Tasa de IVA"
 						title="Tasa de IVA (%)"
 					/>
