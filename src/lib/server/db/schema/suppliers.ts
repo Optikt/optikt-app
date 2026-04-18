@@ -58,7 +58,7 @@ export const suppliers = pgTable(
 );
 
 // ============================================================================
-// SUPPLIER TREATMENTS — optional extras a lab offers for tallado lenses
+// SUPPLIER TREATMENTS - optional extras a lab offers for tallado lenses
 // ============================================================================
 
 export const treatmentCategoryEnum = pgEnum('treatment_category', enumValues(TreatmentCategory));
@@ -71,7 +71,7 @@ export const supplierTreatments = pgTable(
 		name: varchar().notNull(),
 		category: treatmentCategoryEnum().notNull(),
 		price: doublePrecision().notNull(),
-		/** Sale price (what the customer pays). Nullable — fallback to cost price if not set */
+		/** Sale price (what the customer pays). Nullable - fallback to cost price if not set */
 		salePrice: doublePrecision('sale_price'),
 		/** Whether this treatment is subject to tax (IVA) */
 		isTaxable: boolean('is_taxable').notNull().default(true),

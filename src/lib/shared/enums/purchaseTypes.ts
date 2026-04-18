@@ -60,3 +60,21 @@ export const PURCHASE_ORDER_ITEM_TYPE_LABELS: Record<PurchaseOrderItemType, stri
 export function getPurchaseOrderItemTypeLabel(status: string): string {
 	return PURCHASE_ORDER_ITEM_TYPE_LABELS[status as PurchaseOrderItemType] ?? status;
 }
+
+// ============================================================================
+// PURCHASE DOCUMENT TYPE (Factura vs Nota de Entrega)
+// ============================================================================
+
+export enum PurchaseDocumentType {
+	INVOICE = 'INVOICE',
+	DELIVERY_NOTE = 'DELIVERY_NOTE'
+}
+
+export const PURCHASE_DOCUMENT_TYPE_LABELS: Record<PurchaseDocumentType, string> = {
+	[PurchaseDocumentType.INVOICE]: 'Factura',
+	[PurchaseDocumentType.DELIVERY_NOTE]: 'Nota de Entrega'
+};
+
+export function getPurchaseDocumentTypeLabel(type: string): string {
+	return PURCHASE_DOCUMENT_TYPE_LABELS[type as PurchaseDocumentType] ?? type;
+}

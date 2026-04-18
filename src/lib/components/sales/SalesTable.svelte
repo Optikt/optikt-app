@@ -51,7 +51,7 @@
 	}
 
 	function customerName(sale: SaleWithRelations): string {
-		if (!sale.customer) return '—';
+		if (!sale.customer) return '-';
 		return `${sale.customer.firstName} ${sale.customer.lastName}`;
 	}
 
@@ -133,7 +133,7 @@
 				<SaleStatusBadge status={sale.status} />
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{sale.seller?.fullName ?? '—'}
+				{sale.seller?.fullName ?? '-'}
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">

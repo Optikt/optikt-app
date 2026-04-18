@@ -152,7 +152,7 @@ export const createProductForm = form(
 			const [existingSku] = await tx.select().from(products).where(eq(products.sku, sku));
 
 			if (existingSku) {
-				// If it's soft-deleted, just restore it (race condition guard — normally caught earlier)
+				// If it's soft-deleted, just restore it (race condition guard - normally caught earlier)
 				if (existingSku.deletedAt) {
 					const [reactivated] = await tx
 						.update(products)

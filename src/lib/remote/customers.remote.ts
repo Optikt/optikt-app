@@ -216,7 +216,7 @@ export const createCustomerWithPrescription = form(
 			return { customer, prescription: createdPrescription };
 		});
 
-		// Audit logs — best effort, after transaction
+		// Audit logs - best effort, after transaction
 		await auditService.logCreate('customer', result.customer, context);
 		if (result.prescription) {
 			await auditService.logCreate('prescription', result.prescription, context, {

@@ -106,7 +106,7 @@
 						<p class="font-medium text-slate-900">
 							{prescription.recommendedLensType
 								? getLensTypeLabel(prescription.recommendedLensType)
-								: '—'}
+								: '-'}
 						</p>
 					</div>
 				</div>
@@ -215,7 +215,7 @@
 							<Badge color="gray">Otros: {prescription.treatments.other}</Badge>
 						{/if}
 						{#if !prescription.treatments.antiReflective && !prescription.treatments.blueBlock && !prescription.treatments.photochromic && !prescription.treatments.other}
-							<span class="text-slate-400">—</span>
+							<span class="text-slate-400">-</span>
 						{/if}
 					</div>
 				</div>

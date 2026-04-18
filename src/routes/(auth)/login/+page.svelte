@@ -6,11 +6,11 @@
 
 <svelte:head>
 	<title>Login - Optikt</title>
-	<meta name="description" content="Inicie sesión en Optikt — Sistema de Gestión Óptica" />
+	<meta name="description" content="Inicie sesión en Optikt - Sistema de Gestión Óptica" />
 </svelte:head>
 
 <div class="flex min-h-screen">
-	<!-- ── Left Panel — Brand showcase ──────────────────────────────────── -->
+	<!-- ── Left Panel - Brand showcase ──────────────────────────────────── -->
 	<div
 		class="relative hidden w-1/2 flex-col justify-between overflow-hidden p-10 lg:flex"
 		style="background: linear-gradient(160deg, var(--color-brand-navy) 0%, var(--color-brand-navy-dark) 100%)"
@@ -36,7 +36,7 @@
 		<p class="text-xs tracking-widest text-brand-gold/80 uppercase">Optik-T App v{appVersion}</p>
 	</div>
 
-	<!-- ── Right Panel — Login form ────────────────────────────────────── -->
+	<!-- ── Right Panel - Login form ────────────────────────────────────── -->
 	<div
 		class="flex w-full flex-col items-center justify-center px-6 py-10 lg:w-1/2"
 		style="background-color: var(--color-surface-container-low)"

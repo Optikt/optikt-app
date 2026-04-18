@@ -45,7 +45,7 @@ export function getFormErrorMessage(
 
 /**
  * Toasts validation errors that have no visible DOM representation.
- * Checks each issue's field name against the DOM — if no element with that
+ * Checks each issue's field name against the DOM - if no element with that
  * `name` attribute has Flowbite's red border styling, the error is considered
  * "unbound" and gets surfaced as a toast so it's never silently swallowed.
  */

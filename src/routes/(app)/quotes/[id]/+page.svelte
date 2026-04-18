@@ -413,7 +413,7 @@
 									</div>
 									<div>
 										<p class="text-lg leading-tight font-semibold text-brand-navy">
-											{item.snapshotName ?? item.product?.name ?? item.lensCatalogItem?.name ?? '—'}
+											{item.snapshotName ?? item.product?.name ?? item.lensCatalogItem?.name ?? '-'}
 										</p>
 										{#if item.snapshotSku}
 											<span class="font-mono text-xs text-slate-400">{item.snapshotSku}</span>

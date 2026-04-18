@@ -123,7 +123,7 @@
 					<div class="flex items-start justify-between gap-4">
 						<div>
 							<p class="font-heading text-5xl font-extrabold tracking-[-0.04em] text-white">
-								{currentSalePrice != null ? formatPrice(currentSalePrice) : '—'}
+								{currentSalePrice != null ? formatPrice(currentSalePrice) : '-'}
 							</p>
 							{#if currentSalePrice == null}
 								<p class="mt-2 text-sm text-white/70">Sin precio definido</p>
@@ -149,7 +149,7 @@
 						Costo FIFO siguiente unidad
 					</p>
 					<p class="font-mono text-lg font-semibold text-white">
-						{fifoCost != null ? formatPrice(fifoCost) : '—'}
+						{fifoCost != null ? formatPrice(fifoCost) : '-'}
 					</p>
 				</div>
 				<div class="flex items-center justify-between gap-4">
@@ -158,7 +158,7 @@
 					</p>
 					<div class="text-right">
 						<p class="text-3xl font-bold text-brand-gold">
-							{marginPercent != null ? getProfitMargin(fifoCost ?? 0, currentSalePrice ?? 0) : '—'}
+							{marginPercent != null ? getProfitMargin(fifoCost ?? 0, currentSalePrice ?? 0) : '-'}
 						</p>
 						<p class="text-[0.6rem] font-bold tracking-[0.16em] text-brand-gold/80 uppercase">
 							{marginLabel}

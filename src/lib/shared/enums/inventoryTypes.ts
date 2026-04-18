@@ -110,7 +110,7 @@ export function getAdjustmentReasonLabel(reason: string): string {
  * Maps an adjustment reason to a report category for profit reports.
  * Only DAMAGE and SAMPLE reduce profit (real losses).
  * PHYSICAL_COUNT, ENTRY_ERROR, OTHER are informational (data corrections).
- * CUSTOMER_RETURN is informational (no cost impact — unit comes back).
+ * CUSTOMER_RETURN is informational (no cost impact - unit comes back).
  */
 export const ADJUSTMENT_REPORT_CATEGORIES: Record<AdjustmentReason, string> = {
 	[AdjustmentReason.DAMAGE]: 'Pérdidas operativas',

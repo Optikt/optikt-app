@@ -78,21 +78,21 @@
 
 #### Grupo B — Clientes (con mockup Stitch)
 
-| #   | Pantalla            | Ruta              | Mockup Stitch                                             | Estado    |
-| --- | ------------------- | ----------------- | --------------------------------------------------------- | --------- |
-| B1  | Listado de clientes | `/customers`      | "Listado de Clientes - Tipografía Unbounded" (`2b3e61af`) | ⬚ Pending |
-| B2  | Detalle de cliente  | `/customers/[id]` | "Detalle de Cliente - Refinado" (`d495664a`)              | ⬚ Pending |
-| B3  | Nuevo cliente       | `/customers/new`  | "Nuevo Cliente - Refinada" (`9773df33`, `8b8204a7`)       | ⬚ Pending |
+| #   | Pantalla            | Ruta              | Mockup Stitch                                             | Estado   |
+| --- | ------------------- | ----------------- | --------------------------------------------------------- | -------- |
+| B1  | Listado de clientes | `/customers`      | "Listado de Clientes — Tipografía Unbounded" (`2b3e61af`) | ✅ Hecho |
+| B2  | Detalle de cliente  | `/customers/[id]` | "Detalle de Cliente — Refinado" (`d495664a`)              | ✅ Hecho |
+| B3  | Nuevo cliente       | `/customers/new`  | "Nuevo Cliente — Refinada" (`9773df33`, `8b8204a7`)       | ✅ Hecho |
 
 #### Grupo C — Dashboard & auth (con mockup Stitch)
 
-| #   | Pantalla                   | Ruta         | Mockup Stitch                                       | Estado    |
-| --- | -------------------------- | ------------ | --------------------------------------------------- | --------- |
-| C1  | Dashboard                  | `/dashboard` | "Dashboard - Anotaciones Aplicadas" (`9d0e30d2`)    | ⬚ Pending |
-| C2  | Dashboard — tasas cambio   | `/dashboard` | "Dashboard - Tasas de Cambio Abiertas" (`c393c22d`) | ⬚ Pending |
-| C3  | Dashboard — perfil         | `/dashboard` | "Dashboard - Perfil Abierto" (`6ec34713`)           | ⬚ Pending |
-| C4  | Dashboard — notificaciones | `/dashboard` | "Dashboard - Notificaciones Abiertas" (`7adaf78a`)  | ⬚ Pending |
-| C5  | Login                      | `/login`     | "Login - Optik-T App" (`cd7932ab`)                  | ⬚ Pending |
+| #   | Pantalla                   | Ruta         | Mockup Stitch                                       | Estado   |
+| --- | -------------------------- | ------------ | --------------------------------------------------- | -------- |
+| C1  | Dashboard                  | `/dashboard` | "Dashboard — Anotaciones Aplicadas" (`9d0e30d2`)    | ✅ Hecho |
+| C2  | Dashboard — tasas cambio   | `/dashboard` | "Dashboard — Tasas de Cambio Abiertas" (`c393c22d`) | ✅ Hecho |
+| C3  | Dashboard — perfil         | `/dashboard` | "Dashboard — Perfil Abierto" (`6ec34713`)           | ✅ Hecho |
+| C4  | Dashboard — notificaciones | `/dashboard` | "Dashboard — Notificaciones Abiertas" (`7adaf78a`)  | ✅ Hecho |
+| C5  | Login                      | `/login`     | "Login — Optik-T App" (`cd7932ab`)                  | ✅ Hecho |
 
 #### Grupo D — Páginas sin mockup (migrar a design system)
 
@@ -105,7 +105,7 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 | D3  | Proveedores   | `/suppliers` | ⬚ Pending  |
 | D4  | Presupuestos  | `/quotes`    | ✅ Hecho   |
 | D5  | Usuarios      | `/users`     | ⬚ Pending  |
-| D6  | Compras       | `/purchases` | ⬚ Pending  |
+| D6  | Compras       | `/purchases` | ✅ Hecho   |
 | D7  | Lentes        | `/lenses`    | ✅ Hecho   |
 | D8  | Materiales    | `/materials` | ⬚ Pending  |
 | D9  | Configuración | `/config`    | 🟡 Parcial |
@@ -120,7 +120,9 @@ Estas páginas usan Flowbite viejo. Se migran al design system sin mockup espec�
 5. ~~**C1–C4 — Dashboard**~~ ✅
 6. ~~**C5 — Login**~~ ✅
 7. ~~**D4 — Presupuestos**~~ ✅ (lista, detalle, wizard, conversión a venta — todos redesigned)
-8. **D1–D3, D5–D10 — Páginas restantes** → migración progresiva sin mockup
+8. ~~**D6 — Compras**~~ ✅ (lista, nueva orden, detalle, movimientos — todos redesigned)
+9. **D2, D3, D5, D8 — Catálogos** → brands, suppliers, users, materials (legacy Flowbite)
+10. **D9, D10 — Config & Reportes** → parcialmente migrados, falta PageHeader + design tokens completos
 
 ---
 

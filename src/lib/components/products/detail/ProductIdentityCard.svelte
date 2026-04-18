@@ -23,7 +23,7 @@
 	const materialLabel = $derived(
 		product.material
 			? [product.material.name, product.material.code].filter(Boolean).join(' · ')
-			: '—'
+			: '-'
 	);
 	const stockUnitsLabel = $derived(realStock === 1 ? 'unidad total' : 'unidades totales');
 	const lotsLabel = $derived(
@@ -46,11 +46,11 @@
 	<div class="mt-8 grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-3">
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Marca</p>
-			<p class="text-lg font-semibold text-brand-navy">{product.brand?.name ?? '—'}</p>
+			<p class="text-lg font-semibold text-brand-navy">{product.brand?.name ?? '-'}</p>
 		</div>
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Proveedor</p>
-			<p class="text-lg font-semibold text-brand-navy">{product.supplier?.name ?? '—'}</p>
+			<p class="text-lg font-semibold text-brand-navy">{product.supplier?.name ?? '-'}</p>
 		</div>
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Material</p>
@@ -58,7 +58,7 @@
 		</div>
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Color</p>
-			<p class="text-lg font-semibold text-brand-navy">{product.color || '—'}</p>
+			<p class="text-lg font-semibold text-brand-navy">{product.color || '-'}</p>
 		</div>
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Genero</p>
@@ -66,7 +66,7 @@
 		</div>
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Tamano</p>
-			<p class="text-lg font-semibold text-brand-navy">{product.size || '—'}</p>
+			<p class="text-lg font-semibold text-brand-navy">{product.size || '-'}</p>
 		</div>
 		<div class="space-y-1">
 			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Categoria</p>
@@ -109,7 +109,7 @@
 				</p>
 				<div class="mt-1 flex items-center gap-2 lg:justify-end">
 					<p class="font-heading text-2xl font-bold tracking-[-0.03em] text-brand-navy">
-						{product.minStock ?? '—'}
+						{product.minStock ?? '-'}
 					</p>
 					<AppBadge variant={stockHealth.variant}>{stockHealth.label}</AppBadge>
 				</div>

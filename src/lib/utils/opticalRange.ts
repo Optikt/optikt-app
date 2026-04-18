@@ -7,7 +7,7 @@ export function formatDiopter(n: number): string {
 
 /** Format a generic optical range (min a max) */
 export function formatRange(min: number | null, max: number | null): string {
-	if (min === null && max === null) return '—';
+	if (min === null && max === null) return '-';
 	if (min !== null && max !== null) return `${formatDiopter(min)} a ${formatDiopter(max)}`;
 	if (min !== null) return `desde ${formatDiopter(min)}`;
 	return `hasta ${formatDiopter(max!)}`;
@@ -95,7 +95,7 @@ export function collapseRangesForDisplay(ranges: LensOpticalRange[]): DisplayRan
 		}
 		if (merged) continue;
 
-		// Plain range — no symmetry
+		// Plain range - no symmetry
 		used.add(r.id);
 		result.push({
 			id: r.id,

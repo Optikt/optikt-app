@@ -1,5 +1,5 @@
 /**
- * Pure FIFO lot allocation logic — no DB dependencies.
+ * Pure FIFO lot allocation logic - no DB dependencies.
  */
 
 export interface FifoLotInput {

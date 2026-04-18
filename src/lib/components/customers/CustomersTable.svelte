@@ -133,13 +133,13 @@
 				</div>
 			</td>
 			<td class="px-4 py-3">
-				<span class="font-mono text-sm text-on-surface-variant">{customer.idNumber ?? '—'}</span>
+				<span class="font-mono text-sm text-on-surface-variant">{customer.idNumber ?? '-'}</span>
 			</td>
 			<td class="px-4 py-3">
-				<span class="text-on-surface-variant">{customer.primaryPhone ?? '—'}</span>
+				<span class="text-on-surface-variant">{customer.primaryPhone ?? '-'}</span>
 			</td>
 			<td class="px-4 py-3">
-				<span class="text-on-surface-variant">{customer.email ?? '—'}</span>
+				<span class="text-on-surface-variant">{customer.email ?? '-'}</span>
 			</td>
 			<td class="px-4 py-3">
 				<StatusBadge active={!customer.deletedAt} />

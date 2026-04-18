@@ -30,12 +30,12 @@
 		const rows = items.map((i) => [
 			i.name,
 			getLensTypeLabel(i.type),
-			i.materialName ?? '—',
-			i.supplierName ?? '—',
+			i.materialName ?? '-',
+			i.supplierName ?? '-',
 			getInventoryModeLabel(i.inventoryMode),
-			i.stock != null ? String(i.stock) : '—',
+			i.stock != null ? String(i.stock) : '-',
 			i.pairPurchasePrice.toFixed(2),
-			i.salePrice != null ? i.salePrice.toFixed(2) : '—'
+			i.salePrice != null ? i.salePrice.toFixed(2) : '-'
 		]);
 		downloadCsv('inventario-lentes.csv', headers, rows);
 	}
@@ -104,8 +104,8 @@
 							>
 								<td class="px-4 py-3 font-medium">{item.name}</td>
 								<td class="px-4 py-3">{getLensTypeLabel(item.type)}</td>
-								<td class="px-4 py-3">{item.materialName ?? '—'}</td>
-								<td class="px-4 py-3">{item.supplierName ?? '—'}</td>
+								<td class="px-4 py-3">{item.materialName ?? '-'}</td>
+								<td class="px-4 py-3">{item.supplierName ?? '-'}</td>
 								<td
 									class="px-4 py-3 text-right font-mono {(item.stock ?? 0) <= 0
 										? 'font-bold text-red-600'
@@ -117,7 +117,7 @@
 									{formatPrice(item.pairPurchasePrice)}
 								</td>
 								<td class="px-4 py-3 text-right font-mono">
-									{item.salePrice != null ? formatPrice(item.salePrice) : '—'}
+									{item.salePrice != null ? formatPrice(item.salePrice) : '-'}
 								</td>
 							</tr>
 						{/each}
@@ -151,13 +151,13 @@
 							>
 								<td class="px-4 py-3 font-medium">{item.name}</td>
 								<td class="px-4 py-3">{getLensTypeLabel(item.type)}</td>
-								<td class="px-4 py-3">{item.materialName ?? '—'}</td>
-								<td class="px-4 py-3">{item.supplierName ?? '—'}</td>
+								<td class="px-4 py-3">{item.materialName ?? '-'}</td>
+								<td class="px-4 py-3">{item.supplierName ?? '-'}</td>
 								<td class="px-4 py-3 text-right font-mono">
 									{formatPrice(item.pairPurchasePrice)}
 								</td>
 								<td class="px-4 py-3 text-right font-mono">
-									{item.salePrice != null ? formatPrice(item.salePrice) : '—'}
+									{item.salePrice != null ? formatPrice(item.salePrice) : '-'}
 								</td>
 							</tr>
 						{/each}

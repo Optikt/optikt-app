@@ -255,7 +255,7 @@ export const getQuoteDetail = query(QuoteIdSchema, async (data): Promise<QuoteDe
 
 /**
  * Create a new quote with items in a single transaction.
- * No stock changes — quotes are informational until converted.
+ * No stock changes - quotes are informational until converted.
  */
 export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 	const context = getAuditContext();

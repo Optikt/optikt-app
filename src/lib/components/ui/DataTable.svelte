@@ -177,7 +177,7 @@
 		return !!defaultActions?.includes('delete') && !!defaultActions?.includes('reactivate');
 	}
 
-	/** Build per-item actions on demand — avoids $derived signal timing issues during teardown */
+	/** Build per-item actions on demand - avoids $derived signal timing issues during teardown */
 	function buildItemActions(item: T): TableAction[] {
 		if (!defaultActions) return [];
 

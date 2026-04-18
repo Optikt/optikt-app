@@ -45,10 +45,10 @@ export interface FifoConsumptionResult {
  * 2. Non-PRODUCT items with productId: simple stock decrement (no lots)
  * 3. STOCK-mode lens items: simple stock decrement (no lots)
  *
- * @param tx      — drizzle transaction instance
- * @param saleId  — the sale id for movement references
- * @param item    — item with productId, lensCatalogItemId, itemType, quantity
- * @param userId  — for movement audit trail
+ * @param tx      - drizzle transaction instance
+ * @param saleId  - the sale id for movement references
+ * @param item    - item with productId, lensCatalogItemId, itemType, quantity
+ * @param userId  - for movement audit trail
  * @returns lot details for snapshot fields on the sale_item row
  */
 export async function consumeFifoForSaleItem(
@@ -117,7 +117,7 @@ export async function consumeFifoForSaleItem(
 			.where(eq(products.id, item.productId));
 	} else if (item.productId) {
 		// Non-PRODUCT type but has productId (e.g. treatment linked to a product frame).
-		// Only decrements the cached counter — no FIFO lots involved.
+		// Only decrements the cached counter - no FIFO lots involved.
 		const [product] = await tx
 			.select({ id: products.id, stock: products.stock })
 			.from(products)

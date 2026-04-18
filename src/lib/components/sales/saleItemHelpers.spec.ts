@@ -74,7 +74,7 @@ function makeStockProduct(id: string, stock: number | null): ProductWithRelation
 	} as ProductWithRelations;
 }
 
-// ── itemLineTotal (excludes treatments — they are separate) ─────────────
+// ── itemLineTotal (excludes treatments - they are separate) ─────────────
 
 describe('itemLineTotal', () => {
 	it('computes product line total correctly', () => {
@@ -151,7 +151,7 @@ describe('step2ItemLineTotal', () => {
 // ── treatmentsTotal (used in Step 2 and Step 3) ─────────────────────────
 
 describe('treatmentsTotal', () => {
-	// This function is defined inline in Step 2 and Step 3 — test the logic here
+	// This function is defined inline in Step 2 and Step 3 - test the logic here
 	function treatmentsTotal(item: SaleItemRow): number {
 		return item.treatments.reduce((sum, t) => sum + t.price, 0);
 	}

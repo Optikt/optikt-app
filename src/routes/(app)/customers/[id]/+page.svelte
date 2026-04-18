@@ -324,7 +324,7 @@
 					</form>
 				</div>
 			{:else}
-				<!-- READ MODE — Personal Info Card -->
+				<!-- READ MODE - Personal Info Card -->
 				<div class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6">
 					<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div class="flex items-center gap-2.5">
@@ -350,7 +350,7 @@
 								>Nombre</span
 							>
 							<p class="mt-0.5 text-sm font-medium text-on-surface">
-								{customer.firstName ?? '—'}
+								{customer.firstName ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -359,7 +359,7 @@
 								>Apellido</span
 							>
 							<p class="mt-0.5 text-sm font-medium text-on-surface">
-								{customer.lastName ?? '—'}
+								{customer.lastName ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -368,7 +368,7 @@
 								>Cédula</span
 							>
 							<p class="mt-0.5 font-mono text-sm text-on-surface">
-								{customer.idNumber ?? '—'}
+								{customer.idNumber ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -377,7 +377,7 @@
 								>Fecha de Nacimiento</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.birthDate ? formatDate(customer.birthDate) : '—'}
+								{customer.birthDate ? formatDate(customer.birthDate) : '-'}
 							</p>
 						</div>
 						<div>
@@ -386,7 +386,7 @@
 								>Teléfono</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.primaryPhone ?? '—'}
+								{customer.primaryPhone ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -395,7 +395,7 @@
 								>Correo</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.email ?? '—'}
+								{customer.email ?? '-'}
 							</p>
 						</div>
 						<div class="sm:col-span-2">
@@ -404,7 +404,7 @@
 								>Dirección</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.address ?? '—'}
+								{customer.address ?? '-'}
 							</p>
 						</div>
 						{#if customer.notes}
@@ -684,7 +684,7 @@
 									{#if prescription.recommendedLensType}
 										<LensTypeBadge type={prescription.recommendedLensType} />
 									{:else}
-										<span class="text-sm text-outline">—</span>
+										<span class="text-sm text-outline">-</span>
 									{/if}
 								</td>
 								<td class="px-4 py-3 font-mono text-sm text-on-surface-variant">
@@ -704,7 +704,7 @@
 											Actual
 										</AppBadge>
 									{:else}
-										<span class="text-sm text-outline">—</span>
+										<span class="text-sm text-outline">-</span>
 									{/if}
 								</td>
 								<td class="px-4 py-3 text-right">

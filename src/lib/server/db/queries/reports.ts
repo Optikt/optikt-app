@@ -75,7 +75,7 @@ export interface RefundEntry {
 }
 
 export interface PaymentsReportSummary {
-	/** Payments from active sales + retained cancellations — the real income */
+	/** Payments from active sales + retained cancellations - the real income */
 	grossBcvUsd: number;
 	/** Total refunded from cancelled sales (informational, NOT subtracted from gross) */
 	refundedBcvUsd: number;

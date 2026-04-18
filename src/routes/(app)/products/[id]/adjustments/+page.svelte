@@ -181,7 +181,7 @@
 </script>
 
 <svelte:head>
-	<title>Ajuste de Inventario — {product.name} - Optikt</title>
+	<title>Ajuste de Inventario - {product.name} - Optikt</title>
 </svelte:head>
 
 <div class="min-h-screen bg-surface px-6 py-8 xl:px-8">

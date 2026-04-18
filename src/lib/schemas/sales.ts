@@ -44,11 +44,11 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 // ============================================================================
 
 // ============================================================================
-// SALE ITEM SCHEMA (redesigned — PRODUCT | LENS_PAIR | TREATMENT)
+// SALE ITEM SCHEMA (redesigned - PRODUCT | LENS_PAIR | TREATMENT)
 // ============================================================================
 
 export const SaleItemSchema = z.object({
-	/** Optional client-generated UUID — used to link treatment items to their parent lens item */
+	/** Optional client-generated UUID - used to link treatment items to their parent lens item */
 	id: z.uuid().optional(),
 	itemType: z.enum(ALL_SALE_ITEM_TYPES),
 	/** FK: only for PRODUCT items */

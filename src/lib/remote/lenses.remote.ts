@@ -296,7 +296,7 @@ export const createLensCatalogItemForm = form(
 			return { ...item, ranges: insertedRanges };
 		});
 
-		// Log the creation after transaction succeeds (exclude ranges — they are separate entities)
+		// Log the creation after transaction succeeds (exclude ranges - they are separate entities)
 		await auditService.logCreate('lens_catalog_item', result, getAuditContext(), {
 			excludeFields: ['ranges']
 		});
@@ -380,7 +380,7 @@ export const updateLensCatalogItemForm = form(
 
 				if (!updated) invalid('Error actualizando item');
 
-				// Handle optical ranges — only delete/reinsert if semantically changed
+				// Handle optical ranges - only delete/reinsert if semantically changed
 				let insertedRanges: LensOpticalRange[] = [];
 				let rangesChanged = false;
 				let oldRangesSummary = '';
@@ -404,10 +404,10 @@ export const updateLensCatalogItemForm = form(
 					});
 
 					if (rangesAreEqual(currentRanges, normalizedNew)) {
-						// Ranges haven't changed — keep existing rows
+						// Ranges haven't changed - keep existing rows
 						insertedRanges = currentRanges;
 					} else {
-						// Ranges changed — delete and reinsert
+						// Ranges changed - delete and reinsert
 						rangesChanged = true;
 						oldRangesSummary = summarizeRanges(currentRanges.map(toRangeSemantic));
 						newRangesSummary = summarizeRanges(normalizedNew.map(toRangeSemantic));
@@ -442,7 +442,7 @@ export const updateLensCatalogItemForm = form(
 		// Log the update after transaction succeeds
 		const auditCtx = getAuditContext();
 
-		// Calculate field-level diff (exclude ranges — handled separately as summary)
+		// Calculate field-level diff (exclude ranges - handled separately as summary)
 		const fieldChanges = calculateDiff(oldItem, result, ['ranges']);
 
 		// Add optical range changes as a human-readable summary

@@ -189,7 +189,7 @@ export const lookupCustomer = query(CustomerLookupSchema, async (data) => {
 export const createSale = command(CreateSaleSchema, async (data) => {
 	const context = getAuditContext();
 
-	// Validate customer reference (reads only — safe outside transaction)
+	// Validate customer reference (reads only - safe outside transaction)
 	let existingCustomerId: string | null = null;
 
 	if (data.customerId) {
@@ -265,7 +265,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		}
 	}
 
-	// Calculate totals from items (pure computation — safe outside transaction)
+	// Calculate totals from items (pure computation - safe outside transaction)
 	const itemsSubtotal = data.items.reduce((acc, item) => {
 		const lineTotal = item.unitPrice * item.quantity;
 		const itemDiscount = computeDiscount(item.discount, item.discountType, lineTotal);

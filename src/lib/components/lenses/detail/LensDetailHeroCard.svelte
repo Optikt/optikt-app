@@ -67,7 +67,7 @@
 			<p class="mt-2 text-base font-semibold text-brand-navy">
 				{item.material?.name ?? 'Sin material'}
 			</p>
-			<p class="mt-1 text-sm text-on-surface-variant">{item.material?.code ?? '—'}</p>
+			<p class="mt-1 text-sm text-on-surface-variant">{item.material?.code ?? '-'}</p>
 		</div>
 
 		<div class="rounded-[1.25rem] bg-surface-container-low px-4 py-4">

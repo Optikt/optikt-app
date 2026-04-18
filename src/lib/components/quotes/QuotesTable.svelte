@@ -120,7 +120,7 @@
 				<QuoteStatusBadge status={quote.status} />
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{quote.seller?.fullName ?? '—'}
+				{quote.seller?.fullName ?? '-'}
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">

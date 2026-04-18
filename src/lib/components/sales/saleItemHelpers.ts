@@ -38,9 +38,9 @@ export function getItemName(
 	lensItems: LensCatalogItemWithRelations[]
 ): string {
 	if (item.kind === 'product') {
-		return findProduct(item, products)?.name ?? '—';
+		return findProduct(item, products)?.name ?? '-';
 	}
-	return findLensItem(item, lensItems)?.name ?? '—';
+	return findLensItem(item, lensItems)?.name ?? '-';
 }
 
 export function getRequestedProductQuantity(

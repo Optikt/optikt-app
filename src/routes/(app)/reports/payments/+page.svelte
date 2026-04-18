@@ -26,7 +26,7 @@
 	let summary = $state<PaymentsReportSummary>(initialSummary);
 	let loading = $state(false);
 
-	// Date range state — default to current month
+	// Date range state - default to current month
 	let dateFrom = $state(toISODate(monthStart()));
 	let dateTo = $state(toISODate(nowUTC()));
 
@@ -66,7 +66,7 @@
 			p.amountBcvUsd.toFixed(2),
 			p.reference ?? '',
 			String(p.saleOrderNumber),
-			p.customerName ?? '—'
+			p.customerName ?? '-'
 		]);
 		downloadCsv(`pagos-${dateFrom}-a-${dateTo}.csv`, headers, rows);
 	}
@@ -164,12 +164,12 @@
 						<td class="px-4 py-3 text-right font-mono">{payment.bcvRate.toFixed(2)}</td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(payment.amountBcvUsd)}</td>
 						<td class="px-4 py-3 font-mono text-xs text-slate-400">
-							{payment.reference ?? '—'}
+							{payment.reference ?? '-'}
 						</td>
 						<td class="px-4 py-3 font-mono text-xs text-slate-400">
 							#{payment.saleOrderNumber}
 						</td>
-						<td class="px-4 py-3">{payment.customerName ?? '—'}</td>
+						<td class="px-4 py-3">{payment.customerName ?? '-'}</td>
 					</tr>
 				{:else}
 					<tr>
@@ -205,12 +205,12 @@
 								<td class="px-4 py-3">
 									{refund.cancelledAt
 										? formatDate(refund.cancelledAt, { dateStyle: 'medium' })
-										: '—'}
+										: '-'}
 								</td>
 								<td class="px-4 py-3 font-mono text-xs text-slate-400">
 									#{refund.saleOrderNumber}
 								</td>
-								<td class="px-4 py-3">{refund.customerName ?? '—'}</td>
+								<td class="px-4 py-3">{refund.customerName ?? '-'}</td>
 								<td class="px-4 py-3 text-right font-mono font-bold text-red-600">
 									-{formatPrice(refund.refundAmount)}
 								</td>

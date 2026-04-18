@@ -109,7 +109,7 @@ describe('planFifoConsumption', () => {
 	// ── Primary lot / purchase price ─────────────────────────────────────
 
 	it('primary purchase price reflects the oldest lot, not the cheapest', () => {
-		// FIFO ≠ lowest cost — the oldest lot may be more expensive
+		// FIFO ≠ lowest cost - the oldest lot may be more expensive
 		const lots = [lot('expensive-old', 5, 999), lot('cheap-new', 5, 1)];
 		const plan = planFifoConsumption(lots, 3);
 
@@ -173,8 +173,8 @@ describe('planFifoConsumption', () => {
 		expect(plan.allocations[0].lotId).toBe('A');
 	});
 
-	it('preserves lot order — never skips to a later lot with more stock', () => {
-		// A has 1, B has 100 — FIFO should still start with A
+	it('preserves lot order - never skips to a later lot with more stock', () => {
+		// A has 1, B has 100 - FIFO should still start with A
 		const lots = [lot('A', 1, 50), lot('B', 100, 10)];
 		const plan = planFifoConsumption(lots, 2);
 

@@ -78,7 +78,7 @@
 						class={`mt-2 text-lg font-semibold ${showLoss ? 'font-mono text-brand-navy' : 'text-brand-navy'}`}
 					>
 						{#if showLoss}
-							{unitCost != null ? formatPrice(unitCost) : '—'}
+							{unitCost != null ? formatPrice(unitCost) : '-'}
 						{:else}
 							{enabled ? reportCategory : 'Sin datos suficientes'}
 						{/if}
@@ -97,7 +97,7 @@
 						{#if showLoss}
 							-{formatPrice(estimatedLoss)}
 						{:else}
-							{projectedQuantity != null ? `${projectedQuantity} uds` : '—'}
+							{projectedQuantity != null ? `${projectedQuantity} uds` : '-'}
 						{/if}
 					</p>
 				</div>

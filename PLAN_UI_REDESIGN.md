@@ -216,14 +216,23 @@
 
 ## Fase 8 — Compras & Movimientos
 
-**Estado:** pendiente
+**Estado:** completada
 
 ### Pantallas
 
-- [ ] `/purchases` — lista de órdenes de compra
-- [ ] `/purchases/new` — nueva orden
-- [ ] `/purchases/[id]` — detalle de orden
-- [ ] `/purchases/movements` — historial unificado de movimientos
+- [x] `/purchases` — lista de órdenes de compra con DataGrid, stat cards, filtros por estado
+- [x] `/purchases/new` — formulario de nueva orden (3 paneles: documento, artículos, resumen)
+- [x] `/purchases/[id]` — detalle de orden con PageHeader, artículos, pagos, confirmación
+- [x] `/purchases/movements` — historial unificado de movimientos con filtros y exportación CSV
+
+### Notas de implementación (branch `redesign/purchases`)
+
+- **Nueva orden**: layout vertical stacking (DocumentPanel → ItemsPanel → SummaryPanel), proveedor con Svelecte searchable, artículos ya agregados se filtran del selector
+- **ItemRow**: grid compacto con costos s/IVA y c/IVA side-by-side, labels inline absolute-positioned en desktop, spinners ocultos via `[appearance:textfield]`
+- **SummaryPanel**: extraído a componente independiente, navy bg con KPI cards + desglose
+- **DocumentPanel**: layout horizontal 4-col grid, toggle factura/nota de entrega
+- Cero dependencias Flowbite en rutas de compras
+- Validación: svelte-check 0 errors, lint 0 errors
 
 ---
 
@@ -280,10 +289,10 @@
 | 17  | `/lenses/create`             | 7    | completada |
 | 18  | `/lenses/[id]`               | 7    | completada |
 | 19  | `/lenses/[id]/edit`          | 7    | completada |
-| 20  | `/purchases`                 | 8    | pendiente  |
-| 21  | `/purchases/new`             | 8    | pendiente  |
-| 22  | `/purchases/[id]`            | 8    | pendiente  |
-| 23  | `/purchases/movements`       | 8    | pendiente  |
+| 20  | `/purchases`                 | 8    | completada |
+| 21  | `/purchases/new`             | 8    | completada |
+| 22  | `/purchases/[id]`            | 8    | completada |
+| 23  | `/purchases/movements`       | 8    | completada |
 | 24  | `/config`                    | 9    | pendiente  |
 | 25  | `/brands`                    | 9    | pendiente  |
 | 26  | `/materials`                 | 9    | pendiente  |

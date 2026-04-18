@@ -116,7 +116,7 @@
 
 	{#snippet row(brand)}
 		<TableBodyCell class="font-medium">{brand.name}</TableBodyCell>
-		<TableBodyCell>{brand.country ?? '—'}</TableBodyCell>
+		<TableBodyCell>{brand.country ?? '-'}</TableBodyCell>
 		<TableBodyCell>
 			{#if brand.website}
 				<a
@@ -128,7 +128,7 @@
 					{brand.website}
 				</a>
 			{:else}
-				—
+				-
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell>

@@ -112,7 +112,7 @@ export const sales = pgTable(
 );
 
 // ============================================================================
-// SALE ITEMS (redesigned — PRODUCT | LENS_PAIR | TREATMENT)
+// SALE ITEMS (redesigned - PRODUCT | LENS_PAIR | TREATMENT)
 // ============================================================================
 
 export const saleItems = pgTable(
