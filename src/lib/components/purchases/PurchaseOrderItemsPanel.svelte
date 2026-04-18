@@ -232,9 +232,9 @@
 			</div>
 		{:else}
 			<div class="overflow-x-auto pb-1">
-				<div class="min-w-[820px] space-y-3">
+				<div class="min-w-[960px] space-y-4">
 					<div
-						class="hidden xl:grid xl:grid-cols-[48px_minmax(160px,1fr)_72px_152px_92px_96px_110px_28px] xl:gap-3"
+						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_128px_32px] xl:gap-4"
 					>
 						{#each ['Tipo', 'Artículo', 'Cant.', 'Costo', 'Venta', 'IVA', 'Total', ''] as label, index (label + index)}
 							<div

@@ -35,7 +35,7 @@
 	}: Props = $props();
 
 	const inputClass =
-		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
 	const compactInputClass = `${inputClass} h-10 text-right font-mono text-sm tabular-nums`;
 
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
@@ -139,9 +139,10 @@
 	}
 </script>
 
-<div class="rounded-2xl bg-surface-container-lowest p-3 shadow-sm ring-1 ring-outline-variant/20">
+
+<div class="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4 shadow-sm">
 	<div
-		class="grid gap-3 xl:grid-cols-[48px_minmax(160px,1fr)_72px_152px_92px_96px_110px_28px] xl:items-center"
+		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_128px_32px] xl:items-center xl:gap-4"
 	>
 		<div class="space-y-2">
 			<p
@@ -177,7 +178,7 @@
 				Artículo
 			</p>
 			<div
-				class="flex h-10 items-center rounded-xl bg-surface-container-high px-3"
+				class="flex h-10 items-center rounded-xl bg-surface-container-high px-4"
 				title={`${itemTitle()}${selectionMeta() ? `\n${selectionMeta()}` : ''}`}
 			>
 				<p class="truncate font-mono text-sm font-semibold text-brand-navy">
@@ -208,35 +209,37 @@
 				Costo unit.
 			</p>
 			{#if item.appliesIva}
-				<div class="space-y-1.5">
-					<div class="relative">
+				<div class="grid grid-cols-2 gap-2 xl:items-center">
+					<div class="relative space-y-1 xl:space-y-0">
+						<p
+							class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase xl:pointer-events-none xl:absolute xl:top-1/2 xl:left-3 xl:z-10 xl:-translate-y-1/2"
+						>
+							s/IVA
+						</p>
 						<input
 							type="number"
 							min="0"
 							step="0.01"
 							value={preTaxUnitCost}
 							onchange={handlePreTaxInput}
-							class="{compactInputClass} pr-12"
+							class={`${compactInputClass} xl:px-3.5 xl:pl-[3.6rem]`}
 							aria-label="Costo unitario sin IVA"
 						/>
-						<span
-							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-semibold tracking-wider text-outline uppercase"
-							>s/IVA</span
-						>
 					</div>
-					<div class="relative">
+					<div class="relative space-y-1 xl:space-y-0">
+						<p
+							class="text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase xl:pointer-events-none xl:absolute xl:top-1/2 xl:left-3 xl:z-10 xl:-translate-y-1/2"
+						>
+							c/IVA
+						</p>
 						<input
 							type="number"
 							min="0"
 							step="0.01"
 							bind:value={item.unitPurchasePrice}
-							class="{compactInputClass} pr-12"
+							class={`${compactInputClass} xl:px-3.5 xl:pl-[3.8rem]`}
 							aria-label="Costo unitario con IVA"
 						/>
-						<span
-							class="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-[10px] font-semibold tracking-wider text-brand-blue uppercase"
-							>c/IVA</span
-						>
 					</div>
 				</div>
 			{:else}
@@ -277,7 +280,7 @@
 				<button
 					type="button"
 					onclick={toggleTaxable}
-					class={`inline-flex h-10 shrink-0 items-center justify-center rounded-lg px-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors ${
+					class={`inline-flex h-10 min-w-[3.5rem] shrink-0 items-center justify-center rounded-lg px-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors ${
 						item.appliesIva
 							? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
 							: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
@@ -294,7 +297,7 @@
 						max="100"
 						step="0.01"
 						bind:value={item.ivaRate}
-						class="h-10 w-12 rounded-lg border-none bg-surface-container-high px-2 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						class="h-10 w-16 rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 						aria-label="Tasa de IVA"
 						title="Tasa de IVA (%)"
 					/>
