@@ -5,8 +5,9 @@
 import { error, invalid } from '@sveltejs/kit';
 import { command, form } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import { getCurrentUser, requireUserAdmin } from '$lib/server/guards';
+import { getCurrentUser, requireAdmin, requireUserAdmin } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
+import { isManagerDeletingProtectedRole, isLastAdmin } from '$lib/shared/user-deletion-rules';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
 import {
@@ -17,7 +18,8 @@ import {
 	findDeletedUserByUsername,
 	updateUser as dbUpdateUser,
 	deleteUser as dbDeleteUser,
-	restoreUser as dbRestoreUser
+	restoreUser as dbRestoreUser,
+	countActiveAdmins
 } from '$lib/server/db/queries/users';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
@@ -339,7 +341,7 @@ export const toggleUserActive = command(UserIdSchema, async (input): Promise<Use
 export const deleteUserById = command(
 	UserIdSchema,
 	async (input): Promise<{ success: boolean }> => {
-		requireUserAdmin();
+		const currentUser = requireAdmin();
 
 		const user = await findUserById(input.id);
 		if (!user) {
@@ -352,9 +354,21 @@ export const deleteUserById = command(
 		}
 
 		// Prevent deleting oneself
-		const currentUser = getCurrentUser();
-		if (currentUser && currentUser.id === user.id) {
+		if (currentUser.id === user.id) {
 			error(400, 'No puedes eliminar tu propia cuenta');
+		}
+
+		// MANAGER cannot delete ADMIN or other MANAGER
+		if (isManagerDeletingProtectedRole(currentUser.role, user.role)) {
+			error(403, 'Un Manager no puede eliminar Admins ni otros Managers');
+		}
+
+		// Cannot delete the last ADMIN
+		if (user.role === UserRole.ADMIN) {
+			const adminCount = await countActiveAdmins();
+			if (isLastAdmin(user.role, adminCount)) {
+				error(400, 'No se puede eliminar el último administrador del sistema');
+			}
 		}
 
 		const deleted = await dbDeleteUser(input.id);
