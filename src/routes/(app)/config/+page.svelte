@@ -40,7 +40,6 @@
 			<ProfileSettingsCard {user} onUpdate={handleUpdate} />
 		{/if}
 
-		<!-- FIXME: Settings is always null here -->
 		<!-- Business Settings (admin only) -->
 		{#if isAdmin && settings}
 			<BusinessSettingsCard {settings} onUpdate={handleUpdate} />
