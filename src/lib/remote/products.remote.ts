@@ -3,6 +3,7 @@
  * Server-side functions for product management
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import { eq, isNull, and } from 'drizzle-orm';
 import { z } from 'zod';
@@ -64,6 +65,8 @@ export interface CreateProductResult {
 export const listProducts = query(
 	ListProductsSchema,
 	async (data): Promise<PaginatedResult<ProductWithRelations>> => {
+		requireAuth();
+
 		const { page, perPage, ...filters } = data;
 		const offset = (page - 1) * perPage;
 
@@ -90,7 +93,11 @@ export const listProducts = query(
 
 export const getProductInventoryStats = query(
 	z.object({}),
-	async (): Promise<ProductInventoryStats> => getProductInventoryStatsQuery()
+	async (): Promise<ProductInventoryStats> => {
+		requireAuth();
+
+		return getProductInventoryStatsQuery();
+	}
 );
 
 /**
@@ -100,6 +107,8 @@ export const getProductInventoryStats = query(
 export const createProductForm = form(
 	CreateProductSchema,
 	async (data, issue): Promise<CreateEntityResult<Product>> => {
+		requireAdmin();
+
 		const {
 			sku,
 			pendingBrandName,
@@ -201,6 +210,8 @@ export const createProductForm = form(
 export const updateProductForm = form(
 	UpdateProductSchema,
 	async (data, issue): Promise<Product> => {
+		requireAdmin();
+
 		const {
 			id,
 			sku,
@@ -288,6 +299,8 @@ export const updateProductForm = form(
  * Delete a product (soft delete)
  */
 export const deleteProductById = command(ProductIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const { id } = data;
 
 	const existing = await findProductById(id);
@@ -307,6 +320,8 @@ export const deleteProductById = command(ProductIdSchema, async (data): Promise<
 export const toggleProductActive = command(
 	ProductIdSchema,
 	async (data): Promise<{ isActive: boolean }> => {
+		requireAdmin();
+
 		const { id } = data;
 
 		const existing = await findProductById(id);
@@ -332,6 +347,8 @@ export const toggleProductActive = command(
 export const reactivateProduct = command(
 	ReactivateProductSchema,
 	async (data): Promise<Product> => {
+		requireAdmin();
+
 		const { deletedProductId } = data;
 
 		// Verify the product exists and is deleted
@@ -353,6 +370,8 @@ export const reactivateProduct = command(
 );
 
 export const updateSalePriceCmd = command(UpdateSalePriceSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	const product = await findProductById(data.id);
 	if (!product) {

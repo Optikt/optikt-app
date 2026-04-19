@@ -3,6 +3,7 @@
  * Server-side functions for quote management
  */
 import { query, command } from '$app/server';
+import { requireAuth, requireRole } from '$lib/server/guards';
 import {
 	ListQuotesSchema,
 	CreateQuoteSchema,
@@ -40,7 +41,7 @@ import { getNextOrderNumber } from '$lib/server/db/queries/sales';
 import { db } from '$lib/server/db';
 import { quotes, quoteItems, sales, saleItems, type Prescription } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { SaleStatus } from '$lib/shared/enums';
+import { SaleStatus, UserRole } from '$lib/shared/enums';
 import { ALL_LENS_TYPES, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import { computeDiscount, normalizeIdNumber } from '$lib/utils';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
@@ -205,6 +206,8 @@ export type { QuoteStats } from '$lib/server/db/queries/quotes';
 // ============================================================================
 
 export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> => {
+	requireAuth();
+
 	return getQuoteStatsQuery(toUTCString(monthStart()));
 });
 
@@ -212,6 +215,8 @@ export const getQuoteStats = query(EmptySchema, async (): Promise<QuoteStats> =>
  * List quotes with pagination and filters
  */
 export const listQuotes = query(ListQuotesSchema, async (data): Promise<PaginatedQuotes> => {
+	requireAuth();
+
 	const { page, perPage } = data;
 
 	const filterOptions = {
@@ -241,6 +246,8 @@ export const listQuotes = query(ListQuotesSchema, async (data): Promise<Paginate
  * Get full quote detail (quote + items)
  */
 export const getQuoteDetail = query(QuoteIdSchema, async (data): Promise<QuoteDetail | null> => {
+	requireAuth();
+
 	const quoteWithRelations = await findQuoteByIdWithRelations(data.id);
 	if (!quoteWithRelations) return null;
 
@@ -258,6 +265,8 @@ export const getQuoteDetail = query(QuoteIdSchema, async (data): Promise<QuoteDe
  * No stock changes - quotes are informational until converted.
  */
 export const createNewQuote = command(CreateQuoteSchema, async (data) => {
+	requireAuth();
+
 	const context = getAuditContext();
 
 	// Validate customer if provided
@@ -402,6 +411,8 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
  * Replaces all items.
  */
 export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
+	requireAuth();
+
 	const context = getAuditContext();
 
 	const existing = await findQuoteById(data.id);
@@ -470,6 +481,8 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
  * Assign a customer to a DRAFT quote (existing customer or create new inline).
  */
 export const assignQuoteCustomer = command(AssignQuoteCustomerSchema, async (data) => {
+	requireAuth();
+
 	const context = getAuditContext();
 
 	const quote = await findQuoteById(data.id);
@@ -512,6 +525,8 @@ export const assignQuoteCustomer = command(AssignQuoteCustomerSchema, async (dat
  * Cancel a quote (DRAFT → CANCELLED)
  */
 export const cancelQuote = command(CancelQuoteSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 	const context = getAuditContext();
 
 	const quote = await findQuoteById(data.id);
@@ -540,6 +555,8 @@ export const cancelQuote = command(CancelQuoteSchema, async (data) => {
  * Customer must be assigned to the quote before conversion.
  */
 export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 	const context = getAuditContext();
 
 	const quote = await findQuoteById(data.id);

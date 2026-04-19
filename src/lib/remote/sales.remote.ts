@@ -3,6 +3,7 @@
  * Server-side functions for sale management
  */
 import { query, command } from '$app/server';
+import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
 import {
 	ListSalesSchema,
 	CreateSaleSchema,
@@ -52,7 +53,13 @@ import {
 	type Prescription
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
-import { SaleStatus, RefundStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
+import {
+	SaleStatus,
+	RefundStatus,
+	isBsPaymentMethod,
+	type PaymentMethod,
+	UserRole
+} from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
@@ -121,6 +128,8 @@ function resolveLensSnapshotCosts(item: {
  * Get aggregated sales stats (monthly, pending, completed, cancelled counts)
  */
 export const getSalesStats = query(EmptySchema, async (): Promise<SalesStats> => {
+	requireAuth();
+
 	return getSalesStatsQuery(toUTCString(monthStart()));
 });
 
@@ -128,6 +137,8 @@ export const getSalesStats = query(EmptySchema, async (): Promise<SalesStats> =>
  * List sales with pagination and filters
  */
 export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedSales> => {
+	requireAuth();
+
 	const { page, perPage } = data;
 
 	const filterOptions = {
@@ -158,6 +169,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
  * Get full sale detail (sale + items + payments)
  */
 export const getSaleDetail = query(SaleIdSchema, async (data): Promise<SaleDetail | null> => {
+	requireAuth();
+
 	const saleWithRelations = await findSaleByIdWithRelations(data.id);
 	if (!saleWithRelations) return null;
 
@@ -173,6 +186,8 @@ export const getSaleDetail = query(SaleIdSchema, async (data): Promise<SaleDetai
  * Look up a customer by document ID (cédula/RIF)
  */
 export const lookupCustomer = query(CustomerLookupSchema, async (data) => {
+	requireAuth();
+
 	const normalized = normalizeIdNumber(data.idNumber);
 	const customer = await findCustomerByIdNumber(normalized);
 	return { customer: customer ?? null };
@@ -187,6 +202,8 @@ export const lookupCustomer = query(CustomerLookupSchema, async (data) => {
  * Persists items with prescriptions and decrements product stock.
  */
 export const createSale = command(CreateSaleSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 	const context = getAuditContext();
 
 	// Validate customer reference (reads only - safe outside transaction)
@@ -420,6 +437,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
  * Auto-completes sale if fully paid.
  */
 export const addPayment = command(AddPaymentSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 	const context = getAuditContext();
 
 	const sale = await findSaleById(data.saleId);
@@ -487,6 +506,8 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
  * Re-opens sale to PENDING if it was COMPLETED and is now underpaid.
  */
 export const voidPayment = command(VoidPaymentSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 
 	const sale = await findSaleById(data.saleId);
@@ -533,6 +554,8 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
  * Cancel a sale and restore stock for product/lens items.
  */
 export const cancelSale = command(CancelSaleSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 
 	const existing = await findSaleById(data.id);
@@ -660,6 +683,8 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
  * and shippingCostPending after a sale has been created.
  */
 export const updateItemCosts = command(UpdateSaleItemCostsSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 
 	// Fetch the existing item for audit comparison

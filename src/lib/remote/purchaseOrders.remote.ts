@@ -3,6 +3,7 @@
  * Server-side functions for purchase order management
  */
 import { query, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { z } from 'zod';
 import {
 	ListPurchaseOrdersSchema,
@@ -63,6 +64,8 @@ export interface PurchaseOrderDetail {
 export const listPurchaseOrders = query(
 	ListPurchaseOrdersSchema,
 	async (data): Promise<PaginatedResult<PurchaseOrderWithRelations>> => {
+		requireAuth();
+
 		const { page, perPage } = data;
 		const filterOptions = {
 			search: data.search ?? undefined,
@@ -88,6 +91,8 @@ export const listPurchaseOrders = query(
 export const getPurchaseOrderDetail = query(
 	ConfirmPurchaseOrderSchema, // reuse { id: z.uuid() }
 	async (data): Promise<PurchaseOrderDetail | null> => {
+		requireAuth();
+
 		const po = await findPurchaseOrderByIdWithRelations(data.id);
 		if (!po) return null;
 		const items = await getPurchaseOrderItems(data.id);
@@ -96,12 +101,16 @@ export const getPurchaseOrderDetail = query(
 );
 
 export const getSuppliersList = query(z.object({}), async (): Promise<Supplier[]> => {
+	requireAuth();
+
 	return getAllSuppliers({ includeDeleted: false });
 });
 
 export const getPurchaseOrderListStats = query(
 	z.object({}),
 	async (): Promise<PurchaseOrderListStats> => {
+		requireAuth();
+
 		return getPurchaseOrderListStatsQuery();
 	}
 );
@@ -111,6 +120,8 @@ export const getPurchaseOrderListStats = query(
 // ============================================================================
 
 export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	if (!context.userId) {
 		return { success: false as const, error: 'No autorizado' };
@@ -166,6 +177,8 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 });
 
 export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	const existing = await findPurchaseOrderById(data.id);
 	if (!existing) {
@@ -200,6 +213,8 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 });
 
 export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	if (!context.userId) {
 		return { success: false as const, error: 'No autorizado', priceSuggestions: [] };
@@ -254,6 +269,8 @@ export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async
 });
 
 export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 
 	try {
@@ -278,6 +295,8 @@ export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (
 });
 
 export const applyPriceSuggestionsCmd = command(ApplyPriceSuggestionsSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	if (!context.userId) {
 		return { success: false as const, error: 'No autorizado' };

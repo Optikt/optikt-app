@@ -3,6 +3,7 @@
  * Server-side functions for brand management
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListBrandsSchema,
@@ -37,6 +38,8 @@ export interface BrandDeleteCheck {
  * List brands with pagination and search
  */
 export const listBrands = query(ListBrandsSchema, async (data): Promise<PaginatedResult<Brand>> => {
+	requireAuth();
+
 	const { page, perPage, search, includeDeleted } = data;
 
 	// Get brands from DB (single query handles the includeDeleted filter)
@@ -68,6 +71,8 @@ export const listBrands = query(ListBrandsSchema, async (data): Promise<Paginate
 export const createBrandForm = form(
 	CreateBrandSchema,
 	async (data, issue): Promise<CreateEntityResult<Brand>> => {
+		requireAdmin();
+
 		const { name, ...rest } = data;
 
 		// Check for duplicate ACTIVE name
@@ -102,6 +107,8 @@ export const createBrandForm = form(
  * Update an existing brand with form validation
  */
 export const updateBrandForm = form(UpdateBrandSchema, async (data, issue): Promise<Brand> => {
+	requireAdmin();
+
 	const { id, name, ...rest } = data;
 
 	// Check if brand exists
@@ -134,6 +141,8 @@ export const updateBrandForm = form(UpdateBrandSchema, async (data, issue): Prom
  * Delete a brand (soft delete)
  */
 export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const { id } = data;
 
 	const existing = await findBrandById(id);
@@ -152,6 +161,8 @@ export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void
  * Returns product count for confirmation modal
  */
 export const checkBrandCanDelete = query(BrandIdSchema, async (data): Promise<BrandDeleteCheck> => {
+	requireAuth();
+
 	const { id } = data;
 
 	const brand = await findBrandById(id);
@@ -175,6 +186,8 @@ export const checkBrandCanDelete = query(BrandIdSchema, async (data): Promise<Br
 export const quickCreateBrand = command(
 	QuickCreateBrandSchema,
 	async (data): Promise<{ id: string; name: string }> => {
+		requireAdmin();
+
 		const { name } = data;
 
 		// Check for duplicate
@@ -197,6 +210,8 @@ export const quickCreateBrand = command(
  * Reactivate a deleted brand with new data
  */
 export const reactivateBrand = command(ReactivateBrandSchema, async (data): Promise<Brand> => {
+	requireAdmin();
+
 	const { deletedBrandId } = data;
 
 	// Verify the brand exists and is deleted

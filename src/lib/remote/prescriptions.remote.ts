@@ -3,6 +3,8 @@
  * Server-side functions for prescription management
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import { invalid } from '@sveltejs/kit';
 import {
 	CreatePrescriptionSchema,
@@ -37,6 +39,8 @@ import { db } from '$lib/server/db';
 export const listPrescriptions = query(
 	CustomerIdForPrescriptionSchema,
 	async (data): Promise<Prescription[]> => {
+		requireAuth();
+
 		return await getCustomerPrescriptions(data.customerId);
 	}
 );
@@ -47,6 +51,8 @@ export const listPrescriptions = query(
 export const getLatestCustomerPrescription = query(
 	CustomerIdForPrescriptionSchema,
 	async (data): Promise<Prescription | null> => {
+		requireAuth();
+
 		return await getLatestPrescription(data.customerId);
 	}
 );
@@ -57,6 +63,8 @@ export const getLatestCustomerPrescription = query(
 export const getPrescription = query(
 	PrescriptionIdSchema,
 	async (data): Promise<Prescription | null> => {
+		requireAuth();
+
 		return await findPrescriptionById(data.id);
 	}
 );
@@ -91,6 +99,8 @@ async function performCreatePrescription(
 export const createPrescriptionForm = form(
 	CreatePrescriptionSchema,
 	async (data, issue): Promise<Prescription> => {
+		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 		const context = getAuditContext();
 
 		// Verify customer exists
@@ -109,6 +119,8 @@ export const createPrescriptionForm = form(
 export const createPrescriptionCommand = command(
 	CreatePrescriptionSchema,
 	async (data): Promise<{ success: boolean; entity?: Prescription; error?: string }> => {
+		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 		const context = getAuditContext();
 
 		const customer = await findCustomerById(data.customerId);
@@ -127,6 +139,8 @@ export const createPrescriptionCommand = command(
 export const updatePrescriptionForm = form(
 	UpdatePrescriptionSchema,
 	async (data, issue): Promise<Prescription> => {
+		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 		const context = getAuditContext();
 
 		// Get existing prescription
@@ -197,6 +211,8 @@ export const updatePrescriptionForm = form(
  * Set a prescription as current/not current
  */
 export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, async (data) => {
+	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 	const context = getAuditContext();
 
 	// Get existing prescription
@@ -229,6 +245,8 @@ export const setCurrentPrescription = command(SetCurrentPrescriptionSchema, asyn
  * Delete a prescription (soft delete)
  */
 export const deletePrescriptionCommand = command(PrescriptionIdSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 
 	// Get existing prescription

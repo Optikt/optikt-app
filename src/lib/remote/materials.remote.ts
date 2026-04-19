@@ -3,6 +3,7 @@
  * Server-side functions for unified materials management
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListMaterialsSchema,
@@ -32,6 +33,8 @@ import { auditService, getAuditContext } from '$lib/server/audit';
 export const listMaterials = query(
 	ListMaterialsSchema,
 	async (params): Promise<PaginatedResult<Material>> => {
+		requireAuth();
+
 		const { page, perPage, search, includeDeleted, productType } = params;
 		const offset = (page - 1) * perPage;
 
@@ -61,6 +64,8 @@ export const listMaterials = query(
  * Find a material by ID
  */
 export const getMaterialById = query(MaterialIdSchema, async (data): Promise<Material | null> => {
+	requireAuth();
+
 	const { id } = data;
 	const material = await findMaterialById(id);
 	if (!material) {
@@ -76,6 +81,8 @@ export const getMaterialById = query(MaterialIdSchema, async (data): Promise<Mat
 export const createMaterialForm = form(
 	CreateMaterialSchema,
 	async (data, issue): Promise<CreateEntityResult<Material>> => {
+		requireAdmin();
+
 		const { name, code, productType, description } = data;
 
 		// Check for duplicate ACTIVE name + productType
@@ -118,6 +125,8 @@ export const createMaterialForm = form(
 export const updateMaterialForm = form(
 	UpdateMaterialSchema,
 	async (data, issue): Promise<Material> => {
+		requireAdmin();
+
 		const { id, name, code, productType, description } = data;
 
 		// Check if material exists
@@ -156,6 +165,8 @@ export const updateMaterialForm = form(
  * Delete a material (soft delete)
  */
 export const deleteMaterialById = command(MaterialIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const { id } = data;
 
 	const existing = await findMaterialById(id);
@@ -176,6 +187,8 @@ export const deleteMaterialById = command(MaterialIdSchema, async (data): Promis
 export const quickCreateMaterial = command(
 	QuickCreateMaterialSchema,
 	async (data): Promise<{ id: string; name: string; productType: string }> => {
+		requireAdmin();
+
 		const { name, productType = 'FRAME' } = data;
 
 		// Check for duplicate (same name + productType)
@@ -218,6 +231,8 @@ export const quickCreateMaterial = command(
 export const reactivateMaterial = command(
 	ReactivateMaterialSchema,
 	async (data): Promise<Material> => {
+		requireAdmin();
+
 		const { deletedMaterialId } = data;
 
 		// Verify the material exists and is deleted

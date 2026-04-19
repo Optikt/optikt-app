@@ -3,6 +3,7 @@
  * Handles business settings get/update (admin only for updates)
  */
 import { query, form } from '$app/server';
+import { requireAdmin, requireUserAdmin } from '$lib/server/guards';
 import { EmptySchema } from '$lib/schemas/common';
 import { UpdateSettingsSchema } from '$lib/schemas/settings';
 import {
@@ -17,6 +18,8 @@ import type { Settings } from '$lib/server/db/schema';
  * Get business settings
  */
 export const getSettings = query(EmptySchema, async (): Promise<Settings | null> => {
+	requireAdmin();
+
 	const settings = await getSettingsQuery();
 	return settings;
 });
@@ -25,6 +28,8 @@ export const getSettings = query(EmptySchema, async (): Promise<Settings | null>
  * Update business settings (to be protected by page-level auth check)
  */
 export const updateSettingsForm = form(UpdateSettingsSchema, async (data): Promise<Settings> => {
+	requireUserAdmin();
+
 	// Validation is done by schema, just update
 	const updated = await updateSettingsQuery({
 		businessName: data.businessName || undefined,
