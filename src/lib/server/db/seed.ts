@@ -11,13 +11,13 @@ const ARGON2_OPTIONS = {
 	parallelism: 1
 };
 
-export async function seedSuperAdmin() {
+export async function seedAdmin() {
 	const email = 'optikt.vision@gmail.com';
 	const username = 'optikt';
-	const password = 'SuperAdmin_123';
+	const password = 'Admin_123';
 	const fullName = 'Optikt Admin';
 
-	// Check if superadmin already exists
+	// Check if admin already exists
 	const [existingUser] = await db
 		.select()
 		.from(table.users)
@@ -25,7 +25,7 @@ export async function seedSuperAdmin() {
 		.limit(1);
 
 	if (existingUser) {
-		console.log('⚠️  Superadmin already exists, skipping seed.');
+		console.log('⚠️ Aadmin already exists, skipping seed.');
 		return existingUser;
 	}
 
@@ -40,14 +40,14 @@ export async function seedSuperAdmin() {
 			hashedPassword,
 			isActive: true,
 			isSuperuser: true,
-			role: UserRole.SUPERADMIN
+			role: UserRole.ADMIN
 		})
 		.returning();
 
-	console.log('✅ Superadmin created successfully!');
+	console.log('✅ Admin created successfully!');
 	console.log(`   Email: ${email}`);
 	console.log(`   Username: ${username}`);
-	console.log(`   Role: SUPERADMIN`);
+	console.log(`   Role: ADMIN`);
 
 	return user;
 }
