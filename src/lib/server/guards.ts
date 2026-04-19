@@ -46,19 +46,15 @@ export function requireRole(...allowedRoles: UserRole[]) {
 }
 
 /**
- * Require admin role (SUPERADMIN, ADMIN, or MANAGER)
+ * Require admin role (ADMIN or MANAGER)
  */
 export function requireAdmin() {
-	return requireRole(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER);
+	return requireRole(UserRole.ADMIN, UserRole.MANAGER);
 }
 
 /**
- * Require superuser - throws 403 if not superadmin
+ * Require ADMIN-only access (e.g. user management, settings)
  */
-export function requireSuperuser() {
-	const user = requireAuth();
-	if (!user.isSuperuser) {
-		error(403, 'Solo superadmin puede realizar esta acción');
-	}
-	return user;
+export function requireUserAdmin() {
+	return requireRole(UserRole.ADMIN);
 }
