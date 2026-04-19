@@ -318,13 +318,6 @@
 						</p>
 					</div>
 				</div>
-
-				<div class="text-right text-sm text-on-surface-variant">
-					<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Tasa BCV</p>
-					<p class="mt-1 font-mono text-base font-semibold text-brand-blue">
-						{bcvRate.toFixed(2)} Bs/$
-					</p>
-				</div>
 			</div>
 
 			<div class="px-6 pb-6">
