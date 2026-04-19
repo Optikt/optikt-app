@@ -6,7 +6,7 @@ Tareas obligatorias antes de usar la app en la óptica.
 
 ## 1. Simplificar roles (eliminar SUPERADMIN)
 
-**Estado:** pendiente
+**Estado:** ✅ completado
 
 Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERADMIN, ADMIN y MANAGER hacen prácticamente lo mismo. Se simplifica a **4 roles**:
 
@@ -19,12 +19,12 @@ Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERA
 
 ### Cambios técnicos
 
-- [ ] Eliminar `SUPERADMIN` del enum `UserRole` en `src/lib/shared/enums/roles.ts`
-- [ ] Actualizar `guards.ts`: `requireAdmin()` → `ADMIN + MANAGER`, nuevo `requireUserAdmin()` → solo `ADMIN`
-- [ ] Actualizar `users.remote.ts`: usar `requireUserAdmin()` en vez de `requireAdmin()`
-- [ ] Migración DB: convertir usuarios con rol `SUPERADMIN` → `ADMIN`
-- [ ] Actualizar `isAdminRole()`, `isSuperAdminRole()` → eliminar/simplificar
-- [ ] Actualizar UI que referencia SUPERADMIN (badges, selects de roles, etc.)
+- [x] Eliminar `SUPERADMIN` del enum `UserRole` en `src/lib/shared/enums/roles.ts`
+- [x] Actualizar `guards.ts`: `requireAdmin()` → `ADMIN + MANAGER`, nuevo `requireUserAdmin()` → solo `ADMIN`
+- [x] Actualizar `users.remote.ts`: usar `requireUserAdmin()` en vez de `requireAdmin()`
+- [x] Migración DB: convertir usuarios con rol `SUPERADMIN` → `ADMIN`
+- [x] Actualizar `isAdminRole()`, `isSuperAdminRole()` → eliminar/simplificar
+- [x] Actualizar UI que referencia SUPERADMIN (badges, selects de roles, etc.)
 - [ ] Regla: no se puede eliminar el último ADMIN del sistema
 - [ ] Regla: MANAGER no puede eliminar ADMIN ni otros MANAGER
 
@@ -32,7 +32,7 @@ Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERA
 
 ## 2. Auth guards en remote functions
 
-**Estado:** pendiente
+**Estado:** ✅ completado (95 funciones protegidas en 16 archivos)
 
 17 de 20 archivos remote no tienen guards. El layout solo protege la carga de páginas, no las invocaciones directas de remote functions.
 
@@ -197,7 +197,7 @@ Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERA
 
 ## 3. Quitar "Tasa BCV" del detalle de venta
 
-**Estado:** pendiente
+**Estado:** ✅ completado
 
 El card de historial de pagos muestra "TASA BCV 0.00 Bs/$" en la esquina superior. No tiene sentido porque la tasa BCV ya se guarda **por pago individual** (campo `bcvRate` en `sale_payments`). El valor global es confuso y muestra 0.00.
 
