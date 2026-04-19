@@ -25,8 +25,8 @@ Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERA
 - [x] Migración DB: convertir usuarios con rol `SUPERADMIN` → `ADMIN`
 - [x] Actualizar `isAdminRole()`, `isSuperAdminRole()` → eliminar/simplificar
 - [x] Actualizar UI que referencia SUPERADMIN (badges, selects de roles, etc.)
-- [ ] Regla: no se puede eliminar el último ADMIN del sistema
-- [ ] Regla: MANAGER no puede eliminar ADMIN ni otros MANAGER
+- [x] Regla: no se puede eliminar el último ADMIN del sistema
+- [x] Regla: MANAGER no puede eliminar ADMIN ni otros MANAGER
 
 ---
 
