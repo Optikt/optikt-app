@@ -10,12 +10,12 @@ Tareas obligatorias antes de usar la app en la óptica.
 
 Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERADMIN, ADMIN y MANAGER hacen prácticamente lo mismo. Se simplifica a **4 roles**:
 
-| Rol | Descripción |
-| --- | --- |
-| **ADMIN** | Acceso total. Único que gestiona usuarios. Mínimo 1 debe existir en el sistema. |
-| **MANAGER** | Igual que ADMIN excepto: no puede crear/editar/eliminar usuarios, no puede eliminar admins ni managers. |
-| **SELLER** | Operacional: vender, cobrar, crear clientes y prescripciones, crear presupuestos. No puede tocar catálogos ni inventario. |
-| **VIEWER** | Solo lectura. Puede crear y editar presupuestos, pero no convertir a venta ni realizar acciones destructivas. |
+| Rol         | Descripción                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **ADMIN**   | Acceso total. Único que gestiona usuarios. Mínimo 1 debe existir en el sistema.                                           |
+| **MANAGER** | Igual que ADMIN excepto: no puede crear/editar/eliminar usuarios, no puede eliminar admins ni managers.                   |
+| **SELLER**  | Operacional: vender, cobrar, crear clientes y prescripciones, crear presupuestos. No puede tocar catálogos ni inventario. |
+| **VIEWER**  | Solo lectura. Puede crear y editar presupuestos, pero no convertir a venta ni realizar acciones destructivas.             |
 
 ### Cambios técnicos
 
@@ -47,149 +47,149 @@ Actualmente hay 5 roles (SUPERADMIN, ADMIN, MANAGER, SELLER, VIEWER) pero SUPERA
 
 #### Ventas
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver ventas / detalle | ✅ | ✅ | ✅ | ✅ |
-| Crear venta | ✅ | ✅ | ✅ | ❌ |
-| Agregar pago | ✅ | ✅ | ✅ | ❌ |
-| Anular pago | ✅ | ✅ | ❌ | ❌ |
-| Cancelar venta | ✅ | ✅ | ❌ | ❌ |
-| Editar costos internos | ✅ | ✅ | ❌ | ❌ |
+| Acción                 | ADMIN | MANAGER | SELLER | VIEWER |
+| ---------------------- | :---: | :-----: | :----: | :----: |
+| Ver ventas / detalle   |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear venta            |  ✅   |   ✅    |   ✅   |   ❌   |
+| Agregar pago           |  ✅   |   ✅    |   ✅   |   ❌   |
+| Anular pago            |  ✅   |   ✅    |   ❌   |   ❌   |
+| Cancelar venta         |  ✅   |   ✅    |   ❌   |   ❌   |
+| Editar costos internos |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Presupuestos
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver presupuestos | ✅ | ✅ | ✅ | ✅ |
-| Crear presupuesto | ✅ | ✅ | ✅ | ✅ |
-| Editar presupuesto (draft) | ✅ | ✅ | ✅ | ✅ |
-| Asignar cliente | ✅ | ✅ | ✅ | ✅ |
-| Cancelar presupuesto | ✅ | ✅ | ✅ | ❌ |
-| Convertir a venta | ✅ | ✅ | ✅ | ❌ |
+| Acción                     | ADMIN | MANAGER | SELLER | VIEWER |
+| -------------------------- | :---: | :-----: | :----: | :----: |
+| Ver presupuestos           |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear presupuesto          |  ✅   |   ✅    |   ✅   |   ✅   |
+| Editar presupuesto (draft) |  ✅   |   ✅    |   ✅   |   ✅   |
+| Asignar cliente            |  ✅   |   ✅    |   ✅   |   ✅   |
+| Cancelar presupuesto       |  ✅   |   ✅    |   ✅   |   ❌   |
+| Convertir a venta          |  ✅   |   ✅    |   ✅   |   ❌   |
 
 #### Clientes
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver clientes | ✅ | ✅ | ✅ | ✅ |
-| Crear cliente | ✅ | ✅ | ✅ | ❌ |
-| Editar cliente | ✅ | ✅ | ✅ | ❌ |
-| Eliminar cliente | ✅ | ✅ | ❌ | ❌ |
-| Reactivar cliente | ✅ | ✅ | ❌ | ❌ |
+| Acción            | ADMIN | MANAGER | SELLER | VIEWER |
+| ----------------- | :---: | :-----: | :----: | :----: |
+| Ver clientes      |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear cliente     |  ✅   |   ✅    |   ✅   |   ❌   |
+| Editar cliente    |  ✅   |   ✅    |   ✅   |   ❌   |
+| Eliminar cliente  |  ✅   |   ✅    |   ❌   |   ❌   |
+| Reactivar cliente |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Prescripciones
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver prescripciones | ✅ | ✅ | ✅ | ✅ |
-| Crear prescripción | ✅ | ✅ | ✅ | ❌ |
-| Editar prescripción | ✅ | ✅ | ✅ | ❌ |
-| Marcar como actual | ✅ | ✅ | ✅ | ❌ |
-| Eliminar prescripción | ✅ | ✅ | ❌ | ❌ |
+| Acción                | ADMIN | MANAGER | SELLER | VIEWER |
+| --------------------- | :---: | :-----: | :----: | :----: |
+| Ver prescripciones    |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear prescripción    |  ✅   |   ✅    |   ✅   |   ❌   |
+| Editar prescripción   |  ✅   |   ✅    |   ✅   |   ❌   |
+| Marcar como actual    |  ✅   |   ✅    |   ✅   |   ❌   |
+| Eliminar prescripción |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Productos
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver productos | ✅ | ✅ | ✅ | ✅ |
-| Crear producto | ✅ | ✅ | ❌ | ❌ |
-| Editar producto | ✅ | ✅ | ❌ | ❌ |
-| Eliminar / reactivar | ✅ | ✅ | ❌ | ❌ |
-| Toggle activo | ✅ | ✅ | ❌ | ❌ |
-| Actualizar precio venta | ✅ | ✅ | ❌ | ❌ |
+| Acción                  | ADMIN | MANAGER | SELLER | VIEWER |
+| ----------------------- | :---: | :-----: | :----: | :----: |
+| Ver productos           |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear producto          |  ✅   |   ✅    |   ❌   |   ❌   |
+| Editar producto         |  ✅   |   ✅    |   ❌   |   ❌   |
+| Eliminar / reactivar    |  ✅   |   ✅    |   ❌   |   ❌   |
+| Toggle activo           |  ✅   |   ✅    |   ❌   |   ❌   |
+| Actualizar precio venta |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Lentes (Catálogo)
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver catálogo | ✅ | ✅ | ✅ | ✅ |
-| Crear / editar / eliminar lente | ✅ | ✅ | ❌ | ❌ |
-| CRUD materiales de lente | ✅ | ✅ | ❌ | ❌ |
+| Acción                          | ADMIN | MANAGER | SELLER | VIEWER |
+| ------------------------------- | :---: | :-----: | :----: | :----: |
+| Ver catálogo                    |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear / editar / eliminar lente |  ✅   |   ✅    |   ❌   |   ❌   |
+| CRUD materiales de lente        |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Compras (Órdenes de compra)
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver órdenes | ✅ | ✅ | ✅ | ✅ |
-| Crear orden | ✅ | ✅ | ❌ | ❌ |
-| Editar orden (draft) | ✅ | ✅ | ❌ | ❌ |
-| Confirmar orden | ✅ | ✅ | ❌ | ❌ |
-| Cancelar orden | ✅ | ✅ | ❌ | ❌ |
-| Aplicar sugerencias de precio | ✅ | ✅ | ❌ | ❌ |
+| Acción                        | ADMIN | MANAGER | SELLER | VIEWER |
+| ----------------------------- | :---: | :-----: | :----: | :----: |
+| Ver órdenes                   |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear orden                   |  ✅   |   ✅    |   ❌   |   ❌   |
+| Editar orden (draft)          |  ✅   |   ✅    |   ❌   |   ❌   |
+| Confirmar orden               |  ✅   |   ✅    |   ❌   |   ❌   |
+| Cancelar orden                |  ✅   |   ✅    |   ❌   |   ❌   |
+| Aplicar sugerencias de precio |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Inventario
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver movimientos | ✅ | ✅ | ✅ | ✅ |
-| Ajuste manual | ✅ | ❌ | ❌ | ❌ |
-| Revertir lote completo | ✅ | ❌ | ❌ | ❌ |
+| Acción                 | ADMIN | MANAGER | SELLER | VIEWER |
+| ---------------------- | :---: | :-----: | :----: | :----: |
+| Ver movimientos        |  ✅   |   ✅    |   ✅   |   ✅   |
+| Ajuste manual          |  ✅   |   ❌    |   ❌   |   ❌   |
+| Revertir lote completo |  ✅   |   ❌    |   ❌   |   ❌   |
 
 #### Catálogos (Marcas, Proveedores, Materiales)
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver | ✅ | ✅ | ✅ | ✅ |
-| Crear / editar | ✅ | ✅ | ❌ | ❌ |
-| Eliminar / reactivar | ✅ | ✅ | ❌ | ❌ |
-| Quick-create (inline desde forms) | ✅ | ✅ | ❌ | ❌ |
-| CRUD treatments (proveedores) | ✅ | ✅ | ❌ | ❌ |
+| Acción                            | ADMIN | MANAGER | SELLER | VIEWER |
+| --------------------------------- | :---: | :-----: | :----: | :----: |
+| Ver                               |  ✅   |   ✅    |   ✅   |   ✅   |
+| Crear / editar                    |  ✅   |   ✅    |   ❌   |   ❌   |
+| Eliminar / reactivar              |  ✅   |   ✅    |   ❌   |   ❌   |
+| Quick-create (inline desde forms) |  ✅   |   ✅    |   ❌   |   ❌   |
+| CRUD treatments (proveedores)     |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Usuarios
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver usuarios | ✅ | ❌ | ❌ | ❌ |
-| Crear / editar / eliminar usuario | ✅ | ❌ | ❌ | ❌ |
-| Toggle activo | ✅ | ❌ | ❌ | ❌ |
-| Reactivar usuario | ✅ | ❌ | ❌ | ❌ |
+| Acción                            | ADMIN | MANAGER | SELLER | VIEWER |
+| --------------------------------- | :---: | :-----: | :----: | :----: |
+| Ver usuarios                      |  ✅   |   ❌    |   ❌   |   ❌   |
+| Crear / editar / eliminar usuario |  ✅   |   ❌    |   ❌   |   ❌   |
+| Toggle activo                     |  ✅   |   ❌    |   ❌   |   ❌   |
+| Reactivar usuario                 |  ✅   |   ❌    |   ❌   |   ❌   |
 
 #### Configuración (Settings)
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver configuración | ✅ | ✅ | ❌ | ❌ |
-| Editar configuración | ✅ | ❌ | ❌ | ❌ |
+| Acción               | ADMIN | MANAGER | SELLER | VIEWER |
+| -------------------- | :---: | :-----: | :----: | :----: |
+| Ver configuración    |  ✅   |   ✅    |   ❌   |   ❌   |
+| Editar configuración |  ✅   |   ❌    |   ❌   |   ❌   |
 
 #### Tasas de cambio
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver tasas | ✅ | ✅ | ✅ | ✅ |
-| Guardar / editar tasa | ✅ | ✅ | ❌ | ❌ |
-| Eliminar tasa | ✅ | ✅ | ❌ | ❌ |
+| Acción                | ADMIN | MANAGER | SELLER | VIEWER |
+| --------------------- | :---: | :-----: | :----: | :----: |
+| Ver tasas             |  ✅   |   ✅    |   ✅   |   ✅   |
+| Guardar / editar tasa |  ✅   |   ✅    |   ❌   |   ❌   |
+| Eliminar tasa         |  ✅   |   ✅    |   ❌   |   ❌   |
 
 #### Reportes, Búsqueda, Historial, Perfil
 
-| Acción | ADMIN | MANAGER | SELLER | VIEWER |
-| --- | :-: | :-: | :-: | :-: |
-| Ver reportes | ✅ | ✅ | ✅ | ✅ |
-| Búsqueda global | ✅ | ✅ | ✅ | ✅ |
-| Ver historial de entidad | ✅ | ✅ | ✅ | ✅ |
-| Editar perfil propio | ✅ | ✅ | ✅ | ✅ |
-| Cambiar contraseña propia | ✅ | ✅ | ✅ | ✅ |
-| Login / logout | ✅ | ✅ | ✅ | ✅ |
+| Acción                    | ADMIN | MANAGER | SELLER | VIEWER |
+| ------------------------- | :---: | :-----: | :----: | :----: |
+| Ver reportes              |  ✅   |   ✅    |   ✅   |   ✅   |
+| Búsqueda global           |  ✅   |   ✅    |   ✅   |   ✅   |
+| Ver historial de entidad  |  ✅   |   ✅    |   ✅   |   ✅   |
+| Editar perfil propio      |  ✅   |   ✅    |   ✅   |   ✅   |
+| Cambiar contraseña propia |  ✅   |   ✅    |   ✅   |   ✅   |
+| Login / logout            |  ✅   |   ✅    |   ✅   |   ✅   |
 
 ### Archivos remote a proteger (15)
 
-| Archivo | Reads | Writes | Guard para writes |
-| --- | --- | --- | --- |
-| `sales.remote.ts` | 4 | 5 | crear/pagar: excl. VIEWER · anular/cancelar/costos: ADMIN+MGR |
-| `quotes.remote.ts` | 3 | 5 | crear/editar/asignar: todos · cancelar/convertir: excl. VIEWER |
-| `customers.remote.ts` | 1 | 4 | crear/editar: excl. VIEWER · eliminar/reactivar: ADMIN+MGR |
-| `prescriptions.remote.ts` | 3 | 5 | crear/editar/actual: excl. VIEWER · eliminar: ADMIN+MGR |
-| `products.remote.ts` | 2 | 5 | todos: ADMIN+MGR |
-| `brands.remote.ts` | 2 | 4 | todos: ADMIN+MGR |
-| `suppliers.remote.ts` | 2 | 7 | todos: ADMIN+MGR |
-| `materials.remote.ts` | 2 | 4 | todos: ADMIN+MGR |
-| `lenses.remote.ts` | 2 | 5 | todos: ADMIN+MGR |
-| `purchaseOrders.remote.ts` | 4 | 5 | todos: ADMIN+MGR |
-| `inventory.remote.ts` | 1 | 2 | ya protegido — actualizar a solo ADMIN |
-| `exchangeRates.remote.ts` | 3 | 3 | guardar/eliminar: ADMIN+MGR |
-| `settings.remote.ts` | 1 | 1 | editar: solo ADMIN |
-| `search.remote.ts` | 1 | 0 | solo requireAuth |
-| `history.remote.ts` | 1 | 0 | solo requireAuth |
-| `reports.remote.ts` | 3 | 0 | solo requireAuth |
+| Archivo                    | Reads | Writes | Guard para writes                                              |
+| -------------------------- | ----- | ------ | -------------------------------------------------------------- |
+| `sales.remote.ts`          | 4     | 5      | crear/pagar: excl. VIEWER · anular/cancelar/costos: ADMIN+MGR  |
+| `quotes.remote.ts`         | 3     | 5      | crear/editar/asignar: todos · cancelar/convertir: excl. VIEWER |
+| `customers.remote.ts`      | 1     | 4      | crear/editar: excl. VIEWER · eliminar/reactivar: ADMIN+MGR     |
+| `prescriptions.remote.ts`  | 3     | 5      | crear/editar/actual: excl. VIEWER · eliminar: ADMIN+MGR        |
+| `products.remote.ts`       | 2     | 5      | todos: ADMIN+MGR                                               |
+| `brands.remote.ts`         | 2     | 4      | todos: ADMIN+MGR                                               |
+| `suppliers.remote.ts`      | 2     | 7      | todos: ADMIN+MGR                                               |
+| `materials.remote.ts`      | 2     | 4      | todos: ADMIN+MGR                                               |
+| `lenses.remote.ts`         | 2     | 5      | todos: ADMIN+MGR                                               |
+| `purchaseOrders.remote.ts` | 4     | 5      | todos: ADMIN+MGR                                               |
+| `inventory.remote.ts`      | 1     | 2      | ya protegido — actualizar a solo ADMIN                         |
+| `exchangeRates.remote.ts`  | 3     | 3      | guardar/eliminar: ADMIN+MGR                                    |
+| `settings.remote.ts`       | 1     | 1      | editar: solo ADMIN                                             |
+| `search.remote.ts`         | 1     | 0      | solo requireAuth                                               |
+| `history.remote.ts`        | 1     | 0      | solo requireAuth                                               |
+| `reports.remote.ts`        | 3     | 0      | solo requireAuth                                               |
 
 **Excluidos:** `auth.remote.ts` (pre-auth), `profile.remote.ts` (ya protegido).
 
