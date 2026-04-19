@@ -18,8 +18,6 @@
 		const base =
 			'inline-flex items-center px-2 py-0.5 rounded-full text-[0.6rem] font-semibold uppercase tracking-wide';
 		switch (role) {
-			case UserRole.SUPERADMIN:
-				return `${base} text-white bg-gradient-to-r from-amber-500 to-amber-600`;
 			case UserRole.ADMIN:
 				return `${base} text-white bg-gradient-to-r from-violet-500 to-violet-600`;
 			case UserRole.MANAGER:
