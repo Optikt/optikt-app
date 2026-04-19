@@ -6,7 +6,6 @@
 import type { BadgeVariant } from '$lib/shared/badge-variants';
 
 export enum UserRole {
-	SUPERADMIN = 'SUPERADMIN',
 	ADMIN = 'ADMIN',
 	MANAGER = 'MANAGER',
 	SELLER = 'SELLER',
@@ -17,7 +16,6 @@ export enum UserRole {
  * Role badge colors for consistent UI display
  */
 export const roleBadgeColors: Record<UserRole, BadgeVariant> = {
-	[UserRole.SUPERADMIN]: 'warning',
 	[UserRole.ADMIN]: 'purple',
 	[UserRole.MANAGER]: 'info',
 	[UserRole.SELLER]: 'success',
@@ -36,14 +34,7 @@ export function getUserRoleBadgeColor(role: string): BadgeVariant {
  */
 export function isAdminRole(role: UserRole | undefined | null): boolean {
 	if (!role) return false;
-	return role === UserRole.SUPERADMIN || role === UserRole.ADMIN || role === UserRole.MANAGER;
-}
-
-/**
- * Helper function to check if a role is superadmin
- */
-export function isSuperAdminRole(role: UserRole | undefined | null): boolean {
-	return role === UserRole.SUPERADMIN;
+	return role === UserRole.ADMIN || role === UserRole.MANAGER;
 }
 
 /**
