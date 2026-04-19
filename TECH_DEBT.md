@@ -2,15 +2,15 @@
 
 ### BLOCKERS (arreglar antes de usar)
 
-1. **Remote functions sin auth guards** — 17 de 20 archivos remote (`sales`, `brands`, `customers`, `purchaseOrders`, etc.) no tienen `requireAuth()`. El layout guard solo protege carga de páginas, no invocaciones directas de remote functions. Un atacante podría invocar endpoints de escritura sin sesión.
+1. ~~**Remote functions sin auth guards**~~ — ✅ Resuelto: 95 funciones protegidas en 16 archivos con guards basados en roles.
 
-2. **`updateSettingsForm` sin protección** — Cualquiera podría modificar la configuración del negocio.
+2. ~~**`updateSettingsForm` sin protección**~~ — ✅ Resuelto: protegido con `requireUserAdmin()`.
 
 ### HIGH (arreglar pronto)
 
-3. **Config page rota** — Hay un `<!-- FIXME: Settings is always null here -->` en `/config`. La funcionalidad de configuración del negocio nunca se renderiza.
+3. ~~**Config page rota**~~ — ✅ Resuelto: `getSettings()` ahora auto-crea la fila singleton si no existe
 
-4. **Tasa BCV no se persiste por venta** — El detalle de venta usa la tasa más reciente en vez de la histórica. Si la tasa BCV cambia, los reportes de ventas anteriores mostrarán montos incorrectos en bolívares.
+4. ~~**Tasa BCV no se persiste por venta**~~ — ✅ Resuelto: se eliminó el display engañoso. La tasa BCV ya se guarda por pago individual
 
 5. **50+ archivos aún importan flowbite-svelte** — No solo las 4 páginas legacy, sino también wrappers UI (`FormInput`, `BaseSelect`, `ConfirmModal`, `DataTable`, etc.) y componentes de dominio (modals, forms, `PrescriptionInput`, `ReportHeader`). Son dos sistemas de UI paralelos.
 

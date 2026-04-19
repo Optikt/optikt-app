@@ -203,21 +203,21 @@ El card de historial de pagos muestra "TASA BCV 0.00 Bs/$" en la esquina superio
 
 ### Cambios
 
-- [ ] Eliminar el div "Tasa BCV / X.XX Bs/$" de `src/routes/(app)/sales/[id]/+page.svelte`
-- [ ] Eliminar `getLatestRates()` y `bcvRate` de `src/routes/(app)/sales/[id]/+page.server.ts` si ya no se usa en ninguna otra parte de la página
-- [ ] Eliminar el comentario TODO/FIXME asociado
+- [x] Eliminar el div "Tasa BCV / X.XX Bs/$" de `src/routes/(app)/sales/[id]/+page.svelte`
+- [x] ~~Eliminar `getLatestRates()` y `bcvRate` de `+page.server.ts`~~ — se mantiene porque `PaymentForm` lo usa como tasa por defecto
+- [x] Eliminar el comentario TODO/FIXME asociado
 
 ---
 
 ## 4. Plan IVA configurable (post-release, Fase 9)
 
-**Estado:** pendiente — se hará cuando se migre `/config`
+**Estado:** pendiente — `/config` ya es funcional ✅
 
 Actualmente el IVA 16% está hardcoded como `.default(16)` en 8 archivos (schemas de Zod y columnas de Drizzle). Funciona porque cada venta/compra ya guarda su tasa como snapshot.
 
 ### Plan
 
-- [ ] Arreglar bug "Settings is always null" en `/config` (FIXME existente)
+- [x] Arreglar bug "Settings is always null" en `/config` — `getSettings()` ahora auto-crea la fila singleton
 - [ ] Agregar campo `defaultTaxRate` a la tabla `business_settings`
 - [ ] Extraer constante `DEFAULT_TAX_RATE = 16` como fallback temporal
 - [ ] Los formularios de nueva venta/compra/producto leen el default de Settings
@@ -229,8 +229,8 @@ Actualmente el IVA 16% está hardcoded como `.default(16)` en 8 archivos (schema
 ## Orden de ejecución
 
 1. **Crear `TODO_PRERELEASE.md`** ← este archivo ✅
-2. **Quitar "Tasa BCV"** del detalle de venta (fix visual rápido)
-3. **Simplificar roles** (eliminar SUPERADMIN, ajustar enum + guards + DB)
-4. **Auth guards** en los 15 archivos remote (depende de paso 3)
-5. **Verificación:** `pnpm check && pnpm lint && pnpm test` — 0 errores
+2. **Quitar "Tasa BCV"** del detalle de venta ✅
+3. **Simplificar roles** (eliminar SUPERADMIN) ✅
+4. **Auth guards** en 16 archivos remote (95 funciones) ✅
+5. **Verificación:** `pnpm check && pnpm vitest run` — 0 errores ✅
 6. **IVA configurable** — diferido a Fase 9 (migración de `/config`)
