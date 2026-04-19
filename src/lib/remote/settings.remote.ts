@@ -17,11 +17,10 @@ import type { Settings } from '$lib/server/db/schema';
 /**
  * Get business settings
  */
-export const getSettings = query(EmptySchema, async (): Promise<Settings | null> => {
+export const getSettings = query(EmptySchema, async (): Promise<Settings> => {
 	requireAdmin();
 
-	const settings = await getSettingsQuery();
-	return settings;
+	return getSettingsQuery();
 });
 
 /**
