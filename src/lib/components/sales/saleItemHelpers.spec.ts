@@ -59,8 +59,7 @@ function makeTreatment(price: number, name = 'AR Angel'): SelectedTreatment {
 		name,
 		category: 'AR',
 		price,
-		isTaxable: true,
-		taxRate: 16
+		isTaxable: true
 	};
 }
 

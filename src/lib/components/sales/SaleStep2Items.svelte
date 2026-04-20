@@ -342,8 +342,7 @@
 					name: treatment.name,
 					category: treatment.category,
 					price: treatment.salePrice ?? treatment.price,
-					isTaxable: treatment.isTaxable,
-					taxRate: treatment.taxRate
+					isTaxable: treatment.isTaxable
 				}
 			];
 		}

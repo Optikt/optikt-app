@@ -18,6 +18,7 @@
 		isDraftItemConfigured,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
+	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SupplierOption = {
 		id: string;
@@ -28,9 +29,10 @@
 		suppliers: SupplierOption[];
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
+		defaultTaxRate?: number;
 	}
 
-	let { suppliers, products, lensItems }: Props = $props();
+	let { suppliers, products, lensItems, defaultTaxRate = DEFAULT_TAX_RATE }: Props = $props();
 
 	let supplierId = $state('');
 	let documentType = $state(PurchaseDocumentType.INVOICE);
@@ -156,7 +158,14 @@
 			{supplierLocked}
 		/>
 
-		<PurchaseOrderItemsPanel bind:items {products} {lensItems} {supplierId} {documentType} />
+		<PurchaseOrderItemsPanel
+			bind:items
+			{products}
+			{lensItems}
+			{supplierId}
+			{documentType}
+			{defaultTaxRate}
+		/>
 
 		<PurchaseOrderSummaryPanel {summary} {bcvRate} />
 	</div>

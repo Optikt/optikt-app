@@ -55,7 +55,6 @@ export const CreateProductSchema = z.object({
 	size: z.string().optional(),
 	description: z.string().optional(),
 	isTaxable: CoercedBoolean.default(true),
-	taxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser mayor o igual a 0').default(16),
 	stock: CoercedInteger.min(0).optional(),
 	minStock: CoercedInteger.min(0).optional(),
 	imageUrl: z.string().optional()

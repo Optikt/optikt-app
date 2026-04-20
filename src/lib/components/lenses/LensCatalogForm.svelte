@@ -116,7 +116,6 @@
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
 		// Tax
 		isTaxable: initialItem?.isTaxable ?? false,
-		taxRate: initialItem?.taxRate?.toString() ?? '16',
 		// Inventory
 		inventoryMode: (initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
 		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
@@ -150,9 +149,8 @@
 
 	let totalWithTax = $derived.by(() => {
 		const sale = parseFloat(formData.salePrice) || 0;
-		const taxRate = parseFloat(formData.taxRate) || 0;
 		if (sale <= 0) return 0;
-		return formData.isTaxable ? sale * (1 + taxRate / 100) : sale;
+		return sale;
 	});
 
 	// Dynamic optical ranges
@@ -1110,7 +1108,6 @@
 						<div class="flex items-center justify-between gap-4">
 							<TaxToggle
 								bind:checked={formData.isTaxable}
-								bind:taxRate={formData.taxRate}
 								label="Gravable (IVA)"
 							/>
 							<p class="text-xs text-on-surface-variant">

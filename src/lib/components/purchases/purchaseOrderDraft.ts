@@ -2,6 +2,7 @@ import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 import { LensPriceType } from '$lib/shared/enums/lensTypes';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 export interface PurchaseOrderDraftItem {
 	id: string;
@@ -27,7 +28,8 @@ export interface PurchaseOrderSummary {
 
 export function createEmptyPurchaseOrderDraftItem(
 	itemType: PurchaseOrderItemType = PurchaseOrderItemType.PRODUCT,
-	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE
+	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE,
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): PurchaseOrderDraftItem {
 	const isInvoice = documentType === PurchaseDocumentType.INVOICE;
 
@@ -40,14 +42,15 @@ export function createEmptyPurchaseOrderDraftItem(
 		unitPurchasePrice: 0,
 		unitSalePrice: 0,
 		appliesIva: isInvoice,
-		ivaRate: 16
+		ivaRate: defaultTaxRate
 	};
 }
 
 export function resetDraftItemType(
 	item: PurchaseOrderDraftItem,
 	itemType: PurchaseOrderItemType,
-	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE
+	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE,
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): PurchaseOrderDraftItem {
 	const isInvoice = documentType === PurchaseDocumentType.INVOICE;
 
@@ -58,7 +61,7 @@ export function resetDraftItemType(
 	item.unitPurchasePrice = 0;
 	item.unitSalePrice = 0;
 	item.appliesIva = isInvoice;
-	item.ivaRate = 16;
+	item.ivaRate = defaultTaxRate;
 
 	return item;
 }
@@ -70,7 +73,7 @@ export function applyProductDefaults(
 ): PurchaseOrderDraftItem {
 	const isInvoice = documentType === PurchaseDocumentType.INVOICE;
 	const preTax = Number(product.currentPurchasePrice ?? 0);
-	const rate = Number(product.taxRate ?? 16);
+	const rate = DEFAULT_TAX_RATE;
 	const taxable = isInvoice ? product.isTaxable : false;
 
 	item.itemType = PurchaseOrderItemType.PRODUCT;
@@ -93,7 +96,7 @@ export function applyLensDefaults(
 	const preTax = Number(
 		lens.priceType === LensPriceType.PAIR ? lens.pairPurchasePrice : lens.basePrice
 	);
-	const rate = Number(lens.taxRate ?? 16);
+	const rate = DEFAULT_TAX_RATE;
 	const taxable = isInvoice ? lens.isTaxable : false;
 
 	item.itemType = PurchaseOrderItemType.LENS;

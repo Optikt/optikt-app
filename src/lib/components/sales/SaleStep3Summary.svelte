@@ -35,7 +35,12 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from './newSaleTypes';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
-	import { decomposePrice, type TaxBreakdown, type TaxableItem } from '$lib/shared/tax';
+	import {
+		decomposePrice,
+		DEFAULT_TAX_RATE,
+		type TaxBreakdown,
+		type TaxableItem
+	} from '$lib/shared/tax';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -244,15 +249,15 @@
 	function getItemTaxMeta(item: SaleItemRow): TaxDisplayMeta {
 		if (item.kind === 'product') {
 			const product = getProduct(item);
-			return getTaxMeta(product?.isTaxable ?? true, product?.taxRate ?? 16);
+			return getTaxMeta(product?.isTaxable ?? true, DEFAULT_TAX_RATE);
 		}
 
 		const lens = getLens(item);
-		return getTaxMeta(lens?.isTaxable ?? false, lens?.taxRate ?? 16);
+		return getTaxMeta(lens?.isTaxable ?? false, DEFAULT_TAX_RATE);
 	}
 
 	function getTreatmentTaxMeta(treatment: SelectedTreatment): TaxDisplayMeta {
-		return getTaxMeta(treatment.isTaxable, treatment.taxRate);
+		return getTaxMeta(treatment.isTaxable, DEFAULT_TAX_RATE);
 	}
 
 	function getDiscountToggleButtonClass(isActive: boolean): string {

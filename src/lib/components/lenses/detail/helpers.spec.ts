@@ -32,7 +32,7 @@ describe('lens detail helpers', () => {
 	});
 
 	it('formats tax summary labels', () => {
-		expect(getLensTaxSummary(false, 16)).toBe('Exento');
-		expect(getLensTaxSummary(true, 16)).toBe('IVA 16%');
+		expect(getLensTaxSummary(false)).toBe('Exento');
+		expect(getLensTaxSummary(true)).toBe('IVA activo');
 	});
 });

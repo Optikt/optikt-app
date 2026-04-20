@@ -13,4 +13,5 @@
 	suppliers={data.suppliers}
 	products={data.products}
 	lensItems={data.lensItems}
+	defaultTaxRate={data.defaultTaxRate}
 />

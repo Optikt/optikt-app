@@ -5,6 +5,7 @@ import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import type { SaleItemInput } from '$lib/schemas/sales';
 import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import type { z } from 'zod';
 
 import type { SaleItemRow } from './newSaleTypes';
@@ -58,7 +59,7 @@ function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWith
 		snapshotSalePrice: lens?.salePrice ?? undefined,
 		snapshotPriceType: lens?.priceType,
 		snapshotIsTaxable: lens?.isTaxable ?? false,
-		snapshotTaxRate: lens?.taxRate ?? 16
+		snapshotTaxRate: DEFAULT_TAX_RATE
 	};
 }
 
@@ -84,7 +85,7 @@ export function buildSaleItemsFromWizard(
 				snapshotSku: product?.sku ?? undefined,
 				snapshotBrand: product?.brand?.name ?? undefined,
 				snapshotIsTaxable: product?.isTaxable ?? true,
-				snapshotTaxRate: product?.taxRate ?? 16
+				snapshotTaxRate: DEFAULT_TAX_RATE
 			});
 			continue;
 		}
@@ -153,7 +154,7 @@ export function buildSaleItemsFromWizard(
 				snapshotBrand: lensPairItem.snapshotBrand,
 				snapshotTreatmentCategory: treatment.category,
 				snapshotIsTaxable: treatment.isTaxable,
-				snapshotTaxRate: treatment.taxRate
+				snapshotTaxRate: DEFAULT_TAX_RATE
 			});
 		}
 	}
@@ -183,7 +184,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotSku: product?.sku ?? undefined,
 				snapshotBrand: product?.brand?.name ?? undefined,
 				snapshotIsTaxable: product?.isTaxable ?? true,
-				snapshotTaxRate: product?.taxRate ?? 16
+				snapshotTaxRate: DEFAULT_TAX_RATE
 			});
 			continue;
 		}
@@ -251,7 +252,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotBrand: lensPairItem.snapshotBrand,
 				snapshotTreatmentCategory: treatment.category,
 				snapshotIsTaxable: treatment.isTaxable,
-				snapshotTaxRate: treatment.taxRate
+				snapshotTaxRate: DEFAULT_TAX_RATE
 			});
 		}
 	}

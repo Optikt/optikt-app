@@ -20,7 +20,6 @@ const lensItems = [
 		salePrice: 25,
 		priceType: LensPriceType.PAIR,
 		isTaxable: false,
-		taxRate: 16,
 		supplier: { name: 'Novak' }
 	}
 ] as const;
@@ -47,8 +46,7 @@ const lensRow: SaleItemRow = {
 			name: 'Antirreflejo',
 			category: 'AR',
 			price: 5,
-			isTaxable: true,
-			taxRate: 16
+			isTaxable: true
 		}
 	],
 	unitPrice: 25,

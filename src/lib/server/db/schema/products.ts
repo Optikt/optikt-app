@@ -35,8 +35,6 @@ export const products = pgTable(
 		currentSalePrice: doublePrecision('current_sale_price'),
 		/** Whether this product is subject to tax (IVA) */
 		isTaxable: boolean('is_taxable').notNull().default(true),
-		/** Tax rate percentage (e.g. 16 for 16%) */
-		taxRate: doublePrecision('tax_rate').notNull().default(16),
 		/** Cached counter: SUM(inventory_lots.quantityAvailable) */
 		stock: integer().notNull().default(0),
 		minStock: integer('min_stock'),

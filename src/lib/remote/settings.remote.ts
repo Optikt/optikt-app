@@ -37,7 +37,8 @@ export const updateSettingsForm = form(UpdateSettingsSchema, async (data): Promi
 		businessEmail: data.businessEmail || undefined,
 		businessAddress: data.businessAddress || undefined,
 		businessWebsite: data.businessWebsite || undefined,
-		businessLogo: data.businessLogo || undefined
+		businessLogo: data.businessLogo || undefined,
+		defaultTaxRate: data.defaultTaxRate
 	});
 
 	return updated;

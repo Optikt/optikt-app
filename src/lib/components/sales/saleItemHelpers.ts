@@ -7,6 +7,7 @@ import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { SaleItemRow } from './newSaleTypes';
 import { LensType } from '$lib/shared/enums/lensTypes';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
 import { decomposePrice, type TaxableItem } from '$lib/shared/tax';
 
@@ -374,7 +375,7 @@ export function buildTaxItemsFromWizard(
 				discount: item.discount,
 				discountType: item.discountType,
 				isTaxable: product?.isTaxable ?? true,
-				taxRate: product?.taxRate ?? 16
+				taxRate: DEFAULT_TAX_RATE
 			});
 		} else if (item.kind === 'lens') {
 			const lens = lensItems.find((l) => l.id === item.lensPair?.catalogItemId);
@@ -384,7 +385,7 @@ export function buildTaxItemsFromWizard(
 				discount: item.discount,
 				discountType: item.discountType,
 				isTaxable: lens?.isTaxable ?? false,
-				taxRate: lens?.taxRate ?? 16
+				taxRate: DEFAULT_TAX_RATE
 			});
 			const eyeCount = getEnabledEyeCount(item);
 			for (const t of item.treatments) {
@@ -394,7 +395,7 @@ export function buildTaxItemsFromWizard(
 					discount: 0,
 					discountType: 'FIXED',
 					isTaxable: t.isTaxable,
-					taxRate: t.taxRate
+					taxRate: DEFAULT_TAX_RATE
 				});
 			}
 		}

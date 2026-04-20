@@ -270,24 +270,6 @@
 										</button>
 										<span class="text-xs text-slate-600">IVA</span>
 									</div>
-									{#if editTaxable}
-										<div class="w-20">
-											<label
-												for="edit-taxRate-{treatment.id}"
-												class="mb-1 block text-[11px] font-medium text-slate-500">Tasa %</label
-											>
-											<input
-												id="edit-taxRate-{treatment.id}"
-												name="taxRate"
-												type="number"
-												step="0.01"
-												min="0"
-												value={treatment.taxRate}
-												class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
-												placeholder="16"
-											/>
-										</div>
-									{/if}
 								</div>
 							</form>
 						{:else}
@@ -309,7 +291,7 @@
 								{#if treatment.isTaxable}
 									<span
 										class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
-										>IVA {treatment.taxRate}%</span
+										>IVA</span
 									>
 								{/if}
 								<span class="text-right font-mono text-xs text-slate-400" title="Costo">
@@ -437,24 +419,6 @@
 							</button>
 							<span class="text-xs text-slate-600">IVA</span>
 						</div>
-						{#if createTaxable}
-							<div class="w-20">
-								<label
-									for="create-taxRate"
-									class="mb-1 block text-[11px] font-medium text-slate-500">Tasa %</label
-								>
-								<input
-									id="create-taxRate"
-									name="taxRate"
-									type="number"
-									step="0.01"
-									min="0"
-									value="16"
-									class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
-									placeholder="16"
-								/>
-							</div>
-						{/if}
 					</div>
 				</form>
 			{/if}

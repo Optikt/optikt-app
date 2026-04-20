@@ -1,4 +1,4 @@
-import { pgTable, varchar, uuid, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, uuid, timestamp, doublePrecision } from 'drizzle-orm/pg-core';
 
 /**
  * Business Settings Table
@@ -13,6 +13,7 @@ export const settings = pgTable('settings', {
 	businessAddress: varchar('business_address'),
 	businessWebsite: varchar('business_website'),
 	businessLogo: varchar('business_logo'),
+	defaultTaxRate: doublePrecision('default_tax_rate').notNull().default(16),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull().defaultNow()
 });
