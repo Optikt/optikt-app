@@ -223,6 +223,7 @@
 		total={quotesData.total}
 		totalPages={quotesData.totalPages}
 		{loading}
+		canManage={canAct}
 		onView={handleView}
 		onRefresh={() => {
 			fetchQuotes(quotesData.page);

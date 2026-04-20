@@ -242,6 +242,7 @@
 		total={salesData.total}
 		totalPages={salesData.totalPages}
 		{loading}
+		canManage={canAct}
 		onView={handleView}
 		onRefresh={() => {
 			fetchSales(salesData.page);

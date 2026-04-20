@@ -2,6 +2,7 @@
 	import {
 		Users,
 		ShoppingCart,
+		ShoppingBag,
 		TriangleAlert,
 		UserPlus,
 		FileText,
@@ -60,16 +61,23 @@
 	]);
 
 	const actions = $derived.by(() => {
+		if (!canAct) {
+			return [
+				{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye },
+				{ label: 'Ventas', href: resolve('/sales'), icon: ShoppingCart },
+				{ label: 'Presupuestos', href: resolve('/quotes'), icon: FileText },
+				{ label: 'Productos', href: resolve('/products'), icon: ShoppingBag }
+			];
+		}
+
 		const next = [{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye }];
 
-		if (canAct) {
-			next.unshift({ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus });
-			next.splice(1, 0, {
-				label: 'Nuevo Presupuesto',
-				href: resolve('/quotes/new'),
-				icon: FilePlus
-			});
-		}
+		next.unshift({ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus });
+		next.splice(1, 0, {
+			label: 'Nuevo Presupuesto',
+			href: resolve('/quotes/new'),
+			icon: FilePlus
+		});
 
 		if (isAdmin) {
 			next.push({ label: 'Reportes', href: resolve('/reports'), icon: ChartColumn });

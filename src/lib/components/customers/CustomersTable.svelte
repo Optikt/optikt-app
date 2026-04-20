@@ -16,6 +16,7 @@
 		total: number;
 		totalPages: number;
 		loading?: boolean;
+		canManage?: boolean;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -27,6 +28,7 @@
 		total,
 		totalPages,
 		loading = false,
+		canManage = true,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -71,11 +73,15 @@
 	}
 
 	function openDelete(customer: Customer) {
+		if (!canManage) return;
+
 		selectedCustomer = customer;
 		showDeleteModal = true;
 	}
 
 	function openReactivate(customer: Customer) {
+		if (!canManage) return;
+
 		selectedCustomer = customer;
 		showReactivateModal = true;
 	}
@@ -156,28 +162,30 @@
 					>
 						<Eye class="h-4 w-4" />
 					</button>
-					{#if customer.deletedAt}
-						<button
-							onclick={(e) => {
-								e.stopPropagation();
-								openReactivate(customer);
-							}}
-							class="rounded-md p-1.5 text-on-surface-variant hover:bg-success-container hover:text-on-success-container"
-							title="Reactivar"
-						>
-							<RotateCcw class="h-4 w-4" />
-						</button>
-					{:else}
-						<button
-							onclick={(e) => {
-								e.stopPropagation();
-								openDelete(customer);
-							}}
-							class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
-							title="Eliminar"
-						>
-							<Trash2 class="h-4 w-4" />
-						</button>
+					{#if canManage}
+						{#if customer.deletedAt}
+							<button
+								onclick={(e) => {
+									e.stopPropagation();
+									openReactivate(customer);
+								}}
+								class="rounded-md p-1.5 text-on-surface-variant hover:bg-success-container hover:text-on-success-container"
+								title="Reactivar"
+							>
+								<RotateCcw class="h-4 w-4" />
+							</button>
+						{:else}
+							<button
+								onclick={(e) => {
+									e.stopPropagation();
+									openDelete(customer);
+								}}
+								class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
+								title="Eliminar"
+							>
+								<Trash2 class="h-4 w-4" />
+							</button>
+						{/if}
 					{/if}
 				</div>
 			</td>

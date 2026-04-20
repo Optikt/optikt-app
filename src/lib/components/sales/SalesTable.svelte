@@ -13,6 +13,7 @@
 		total: number;
 		totalPages: number;
 		loading?: boolean;
+		canManage?: boolean;
 		onView?: (sale: SaleWithRelations) => void;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
@@ -25,6 +26,7 @@
 		total,
 		totalPages,
 		loading = false,
+		canManage = true,
 		onView,
 		onRefresh,
 		onPageChange
@@ -46,6 +48,8 @@
 	let selectedSale = $state<SaleWithRelations | null>(null);
 
 	function openCancel(sale: SaleWithRelations) {
+		if (!canManage) return;
+
 		selectedSale = sale;
 		showCancelModal = true;
 	}
@@ -152,7 +156,7 @@
 							</span>
 						</button>
 					{/if}
-					{#if sale.status === SaleStatus.PENDING}
+					{#if canManage && sale.status === SaleStatus.PENDING}
 						<button
 							onclick={(event) => {
 								event.stopPropagation();
@@ -163,7 +167,7 @@
 						>
 							<CircleX class="h-4 w-4" />
 						</button>
-					{:else}
+					{:else if canManage}
 						<span class="inline-block w-7"></span>
 					{/if}
 				</div>

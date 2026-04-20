@@ -22,10 +22,11 @@
 	interface Props {
 		open: boolean;
 		supplier: Supplier | null;
+		canManage?: boolean;
 		onClose: () => void;
 	}
 
-	let { open = $bindable(), supplier, onClose }: Props = $props();
+	let { open = $bindable(), supplier, canManage = true, onClose }: Props = $props();
 
 	// Data
 	let treatments = $state<SupplierTreatment[]>([]);
@@ -74,6 +75,8 @@
 
 	// Create handlers
 	function openCreate() {
+		if (!canManage) return;
+
 		createInstanceId = generateUUID();
 		createTaxable = true;
 		showCreateForm = true;
@@ -98,6 +101,8 @@
 
 	// Edit handlers
 	function startEdit(treatment: SupplierTreatment) {
+		if (!canManage) return;
+
 		editInstanceId = generateUUID();
 		editingId = treatment.id;
 		editTaxable = treatment.isTaxable;
@@ -122,6 +127,8 @@
 
 	// Delete handlers
 	function openDelete(treatment: SupplierTreatment) {
+		if (!canManage) return;
+
 		deletingTreatment = treatment;
 		showDeleteModal = true;
 	}
@@ -167,12 +174,16 @@
 				<div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center">
 					<FlaskConical class="mx-auto mb-3 h-8 w-8 text-slate-400" />
 					<p class="text-sm font-medium text-slate-600">No hay tratamientos registrados</p>
-					<p class="mt-1 text-xs text-slate-400">Agrega tratamientos que este laboratorio ofrece</p>
+					<p class="mt-1 text-xs text-slate-400">
+						{canManage
+							? 'Agrega tratamientos que este laboratorio ofrece'
+							: 'Este proveedor no tiene tratamientos registrados'}
+					</p>
 				</div>
 			{:else}
 				<div class="divide-y divide-slate-100 rounded-lg border border-slate-200">
 					{#each treatments as treatment (treatment.id)}
-						{#if editingId === treatment.id}
+						{#if canManage && editingId === treatment.id}
 							<!-- Inline edit form -->
 							<form
 								{...currentEditForm.enhance(async ({ submit }) => {
@@ -308,22 +319,24 @@
 										>Inactivo</span
 									>
 								{/if}
-								<div class="flex gap-1">
-									<button
-										type="button"
-										class="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600"
-										onclick={() => startEdit(treatment)}
-									>
-										<Pencil class="h-3.5 w-3.5" />
-									</button>
-									<button
-										type="button"
-										class="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-										onclick={() => openDelete(treatment)}
-									>
-										<Trash2 class="h-3.5 w-3.5" />
-									</button>
-								</div>
+								{#if canManage}
+									<div class="flex gap-1">
+										<button
+											type="button"
+											class="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600"
+											onclick={() => startEdit(treatment)}
+										>
+											<Pencil class="h-3.5 w-3.5" />
+										</button>
+										<button
+											type="button"
+											class="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+											onclick={() => openDelete(treatment)}
+										>
+											<Trash2 class="h-3.5 w-3.5" />
+										</button>
+									</div>
+								{/if}
 							</div>
 						{/if}
 					{/each}
@@ -331,7 +344,7 @@
 			{/if}
 
 			<!-- Create form (inline at bottom) -->
-			{#if showCreateForm && supplier}
+			{#if canManage && showCreateForm && supplier}
 				<form
 					{...currentCreateForm.enhance(async ({ submit }) => {
 						await submit();
@@ -426,13 +439,13 @@
 	{/if}
 
 	{#snippet footer()}
-		<div class="flex w-full items-center justify-between">
-			{#if !showCreateForm && !loading}
+		<div class="flex w-full items-center {canManage ? 'justify-between' : 'justify-end'}">
+			{#if canManage && !showCreateForm && !loading}
 				<Button size="sm" color="blue" outline onclick={openCreate}>
 					<Plus class="mr-1.5 h-4 w-4" />
 					Agregar Tratamiento
 				</Button>
-			{:else}
+			{:else if canManage}
 				<div></div>
 			{/if}
 			<Button size="sm" color="light" onclick={handleClose}>Cerrar</Button>

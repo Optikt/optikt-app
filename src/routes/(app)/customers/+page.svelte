@@ -117,6 +117,7 @@
 		total={customersData.total}
 		totalPages={customersData.totalPages}
 		{loading}
+		canManage={canAct}
 		onRefresh={() => fetchCustomers(customersData.page)}
 		onPageChange={fetchCustomers}
 	/>

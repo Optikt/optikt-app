@@ -184,5 +184,6 @@
 <SupplierTreatmentsModal
 	bind:open={showTreatmentsModal}
 	supplier={selectedSupplier}
+	canManage={canManage}
 	onClose={() => (selectedSupplier = null)}
 />
