@@ -30,10 +30,11 @@
 	interface Props {
 		items: SaleItemWithDetails[];
 		subtotal: number;
+		allowCostEdit?: boolean;
 		onCostsUpdated?: () => void;
 	}
 
-	let { items, subtotal, onCostsUpdated }: Props = $props();
+	let { items, subtotal, allowCostEdit = true, onCostsUpdated }: Props = $props();
 
 	// Edit state
 	let editingItemId = $state<string | null>(null);
@@ -113,6 +114,8 @@
 
 	// ── Edit helpers ─────────────────────────────────────────────────────
 	function startEdit(item: SaleItemWithDetails) {
+		if (!allowCostEdit) return;
+
 		editingItemId = item.id;
 		editBaseCost = item.snapshotBaseCost ?? 0;
 		editMounting = item.snapshotMountingPrice ?? 0;
@@ -357,27 +360,31 @@
 														>{formatPrice(costTotal)}</span
 													></span
 												>
-												<button
-													type="button"
-													onclick={() => startEdit(group.item)}
-													class="inline-flex items-center justify-center rounded-md p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-navy"
-													title="Editar costos"
-												>
-													<Pencil class="h-3.5 w-3.5" />
-												</button>
+												{#if allowCostEdit}
+													<button
+														type="button"
+														onclick={() => startEdit(group.item)}
+														class="inline-flex items-center justify-center rounded-md p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-navy"
+														title="Editar costos"
+													>
+														<Pencil class="h-3.5 w-3.5" />
+													</button>
+												{/if}
 											</div>
 										{/if}
 									{:else if group.item.itemType === SaleItemType.LENS_PAIR}
 										<div class="mt-2 flex items-center gap-2 text-xs text-outline">
 											<span>Sin costos registrados</span>
-											<button
-												type="button"
-												onclick={() => startEdit(group.item)}
-												class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-brand-blue transition-colors hover:bg-surface-container-high"
-											>
-												<Pencil class="h-3 w-3" />
-												Agregar
-											</button>
+											{#if allowCostEdit}
+												<button
+													type="button"
+													onclick={() => startEdit(group.item)}
+													class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-brand-blue transition-colors hover:bg-surface-container-high"
+												>
+													<Pencil class="h-3 w-3" />
+													Agregar
+												</button>
+											{/if}
 										</div>
 									{/if}
 								</div>

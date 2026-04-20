@@ -30,9 +30,10 @@
 		movements: MovementItem[];
 		total: number;
 		productId: string;
+		canManageInventory?: boolean;
 	}
 
-	let { movements, total, productId }: Props = $props();
+	let { movements, total, productId, canManageInventory = true }: Props = $props();
 
 	const visibleMovements = $derived(movements.slice(0, 5));
 
@@ -125,12 +126,14 @@
 			{/each}
 		</div>
 
-		<a
-			href={resolve(`/purchases/movements?productId=${productId}`)}
-			class="mt-8 block rounded-lg bg-surface-container-low px-4 py-3 text-center text-[0.75rem] font-bold tracking-[0.18em] text-outline uppercase transition-colors hover:bg-surface-container hover:text-brand-blue"
-		>
-			Ver todos los movimientos
-		</a>
+		{#if canManageInventory}
+			<a
+				href={resolve(`/purchases/movements?productId=${productId}`)}
+				class="mt-8 block rounded-lg bg-surface-container-low px-4 py-3 text-center text-[0.75rem] font-bold tracking-[0.18em] text-outline uppercase transition-colors hover:bg-surface-container hover:text-brand-blue"
+			>
+				Ver todos los movimientos
+			</a>
+		{/if}
 	{:else}
 		<div class="mt-8 rounded-xl bg-surface-container-low px-6 py-10 text-center">
 			<div

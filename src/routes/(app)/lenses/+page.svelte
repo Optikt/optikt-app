@@ -12,6 +12,7 @@
 		ALL_LENS_TYPES,
 		getLensSourceLabel,
 		getLensTypeLabel,
+		isAdminRole,
 		LensCatalogSource,
 		LensType
 	} from '$lib/shared/enums';
@@ -33,6 +34,7 @@
 	let supplierFilter = $state('');
 	let materialFilter = $state('');
 	let page = $state(1);
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	const hasActiveFilters = $derived(
 		search.trim().length > 0 ||
@@ -124,7 +126,7 @@
 	<PageHeader title={pageTitle}>
 		{#snippet actions()}
 			<div class="flex gap-3">
-				{#if activeTab === 'catalog'}
+				{#if isAdmin && activeTab === 'catalog'}
 					<button
 						type="button"
 						onclick={openCreateLens}
@@ -284,9 +286,10 @@
 			onRefresh={fetchCatalog}
 			onPageChange={handleCatalogPageChange}
 			onView={(item) => openLensDetail(item.id)}
-			onEdit={(item) => openLensEdit(item.id)}
+			onEdit={isAdmin ? (item) => openLensEdit(item.id) : undefined}
+			canManage={isAdmin}
 		/>
 	{:else}
-		<LensMaterialsTab initialMaterials={materials} />
+		<LensMaterialsTab initialMaterials={materials} canManage={isAdmin} />
 	{/if}
 </div>

@@ -17,6 +17,7 @@
 		loading?: boolean;
 		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
+		canManage?: boolean;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -30,6 +31,7 @@
 		loading = false,
 		onView,
 		onEdit,
+		canManage = true,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -179,7 +181,7 @@
 						</button>
 					{/if}
 
-					{#if onEdit && !product.deletedAt}
+					{#if canManage && onEdit && !product.deletedAt}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -193,7 +195,7 @@
 						</button>
 					{/if}
 
-					{#if product.deletedAt}
+					{#if canManage && product.deletedAt}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -205,7 +207,7 @@
 						>
 							<RotateCcw class="h-4 w-4" />
 						</button>
-					{:else}
+					{:else if canManage}
 						<button
 							type="button"
 							onclick={(event) => {

@@ -30,11 +30,19 @@ export function getUserRoleBadgeColor(role: string): BadgeVariant {
 }
 
 /**
- * Helper function to check if a role has admin privileges
+ * Helper function to check if a role has admin privileges (ADMIN or MANAGER)
  */
 export function isAdminRole(role: UserRole | undefined | null): boolean {
 	if (!role) return false;
 	return role === UserRole.ADMIN || role === UserRole.MANAGER;
+}
+
+/**
+ * Helper to check if a role can perform operations (anything except VIEWER)
+ */
+export function canOperate(role: UserRole | undefined | null): boolean {
+	if (!role) return false;
+	return role !== UserRole.VIEWER;
 }
 
 /**

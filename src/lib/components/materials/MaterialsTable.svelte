@@ -22,11 +22,12 @@
 	interface Props {
 		materials: Material[];
 		loading?: boolean;
-		onEdit: (material: Material) => void;
+		onEdit?: (material: Material) => void;
+		canManage?: boolean;
 		onRefresh?: () => void;
 	}
 
-	let { materials, loading = false, onEdit, onRefresh }: Props = $props();
+	let { materials, loading = false, onEdit, canManage = true, onRefresh }: Props = $props();
 
 	// Modal state
 	let showDeleteModal = $state(false);
@@ -45,12 +46,16 @@
 	}
 
 	function openDelete(material: Material) {
+		if (!canManage) return;
+
 		selectedMaterial = material;
 		confirmInput = '';
 		showDeleteModal = true;
 	}
 
 	function openReactivate(material: Material) {
+		if (!canManage) return;
+
 		selectedMaterial = material;
 		showReactivateModal = true;
 	}
@@ -85,11 +90,11 @@
 	emptyIcon={Tag}
 	emptyTitle="No se encontraron materiales"
 	emptyDescription="Agrega un material para comenzar"
-	defaultActions="view,edit,delete,reactivate"
+	defaultActions={canManage ? 'view,edit,delete,reactivate' : 'view'}
 	onView={openView}
-	onEdit={(m) => onEdit(m)}
-	onDelete={openDelete}
-	onReactivate={openReactivate}
+	onEdit={canManage && onEdit ? (m) => onEdit(m) : undefined}
+	onDelete={canManage ? openDelete : undefined}
+	onReactivate={canManage ? openReactivate : undefined}
 	viewIcon={Eye}
 	editIcon={SquarePen}
 	deleteIcon={Trash2}
@@ -187,15 +192,17 @@
 
 	<div class="mt-6 flex justify-end gap-2">
 		<Button color="light" onclick={() => (selectedMaterial = null)}>Cerrar</Button>
-		<Button
-			color="blue"
-			onclick={() => {
-				if (selectedMaterial) onEdit(selectedMaterial);
-			}}
-		>
-			<SquarePen class="mr-1.5 h-4 w-4" />
-			Editar
-		</Button>
+		{#if canManage && onEdit}
+			<Button
+				color="blue"
+				onclick={() => {
+					if (selectedMaterial) onEdit(selectedMaterial);
+				}}
+			>
+				<SquarePen class="mr-1.5 h-4 w-4" />
+				Editar
+			</Button>
+		{/if}
 	</div>
 </Modal>
 

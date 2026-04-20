@@ -49,11 +49,11 @@
 		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },
 		{ href: '/materials', label: 'Materiales', icon: 'layers' },
-		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' },
-		{ href: '/purchases', label: 'Compras', icon: 'purchases' }
+		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' }
 	] as const;
 
 	const adminItems = [
+		{ href: '/purchases', label: 'Compras', icon: 'purchases' },
 		{ href: '/reports', label: 'Reportes', icon: 'reports' },
 		{ href: '/users', label: 'Usuarios', icon: 'shield' }
 	] as const;

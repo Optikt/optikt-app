@@ -13,6 +13,7 @@
 	} from '$lib/components/sales';
 	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import { canOperate } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
@@ -34,10 +35,11 @@
 	let paymentProgressPercent = $derived(
 		sale.total > 0 ? Math.min(100, (sale.paidAmountBcvUsd / sale.total) * 100) : 0
 	);
+	let canAct = $derived(canOperate(data.user.role));
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
-	let showPaymentForm = $derived(isPending && remainingBcvUsd > 0.01);
+	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
@@ -151,7 +153,7 @@
 				Ver historial
 			</button>
 
-			{#if isPending}
+			{#if canAct && isPending}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -277,6 +279,7 @@
 	<SaleItemsTable
 		{items}
 		subtotal={sale.subtotal}
+		allowCostEdit={canAct}
 		onCostsUpdated={async () => {
 			await invalidateAll();
 			syncFromData();
@@ -324,7 +327,7 @@
 				<PaymentsTable
 					{payments}
 					saleId={sale.id}
-					allowVoid={isPending}
+					allowVoid={canAct && isPending}
 					onPaymentVoided={handlePaymentVoided}
 				/>
 			</div>

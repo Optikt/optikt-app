@@ -16,9 +16,10 @@
 
 	interface Props {
 		initialMaterials: LensMaterial[];
+		canManage?: boolean;
 	}
 
-	let { initialMaterials }: Props = $props();
+	let { initialMaterials, canManage = true }: Props = $props();
 
 	let materials = $state<LensMaterial[]>(untrack(() => initialMaterials));
 	let search = $state('');
@@ -86,6 +87,8 @@
 	}
 
 	function startAdd() {
+		if (!canManage) return;
+
 		editingId = null;
 		showComposer = true;
 		resetDraft();
@@ -93,6 +96,8 @@
 	}
 
 	function startEdit(material: LensMaterial) {
+		if (!canManage) return;
+
 		editingId = material.id;
 		showComposer = true;
 		draftName = material.name;
@@ -109,6 +114,8 @@
 	}
 
 	function openDelete(material: LensMaterial) {
+		if (!canManage) return;
+
 		selectedMaterial = material;
 		showDeleteModal = true;
 	}
@@ -172,19 +179,21 @@
 				/>
 			</div>
 
-			<button
-				type="button"
-				onclick={startAdd}
-				class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
-			>
-				<Plus class="h-4 w-4" />
-				Nuevo material
-			</button>
+			{#if canManage}
+				<button
+					type="button"
+					onclick={startAdd}
+					class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
+				>
+					<Plus class="h-4 w-4" />
+					Nuevo material
+				</button>
+			{/if}
 		</div>
 	</section>
 
 	<div class="space-y-6" use:autoAnimate>
-		{#if showComposer}
+		{#if canManage && showComposer}
 			<section class="rounded-2xl bg-surface-container-lowest p-5 shadow-sm">
 				<div class="mb-4 flex items-start justify-between gap-4">
 					<div>
@@ -497,17 +506,19 @@
 						>
 							Estado
 						</th>
-						<th
-							class="px-6 py-4 text-right text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-						>
-							Acciones
-						</th>
+						{#if canManage}
+							<th
+								class="px-6 py-4 text-right text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
+							>
+								Acciones
+							</th>
+						{/if}
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-surface-container-low" use:autoAnimate>
 					{#if filteredMaterials.length === 0}
 						<tr>
-							<td colspan="6" class="px-6 py-12 text-center">
+							<td colspan={canManage ? 6 : 5} class="px-6 py-12 text-center">
 								<div class="mx-auto max-w-md space-y-2">
 									<p class="font-medium text-on-surface-variant">No hay materiales para mostrar</p>
 									<p class="text-sm text-outline">
@@ -550,27 +561,29 @@
 								<td class="px-6 py-5 text-right">
 									<AppBadge variant="success">Activo</AppBadge>
 								</td>
-								<td class="px-6 py-5 text-right">
-									<div class="flex items-center justify-end gap-1">
-										<button
-											type="button"
-											onclick={() => startEdit(material)}
-											class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-											title="Editar material"
-										>
-											<Pencil class="h-4 w-4" />
-										</button>
+								{#if canManage}
+									<td class="px-6 py-5 text-right">
+										<div class="flex items-center justify-end gap-1">
+											<button
+												type="button"
+												onclick={() => startEdit(material)}
+												class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+												title="Editar material"
+											>
+												<Pencil class="h-4 w-4" />
+											</button>
 
-										<button
-											type="button"
-											onclick={() => openDelete(material)}
-											class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-											title="Eliminar material"
-										>
-											<Trash2 class="h-4 w-4" />
-										</button>
-									</div>
-								</td>
+											<button
+												type="button"
+												onclick={() => openDelete(material)}
+												class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+												title="Eliminar material"
+											>
+												<Trash2 class="h-4 w-4" />
+											</button>
+										</div>
+									</td>
+								{/if}
 							</tr>
 						{/each}
 					{/if}

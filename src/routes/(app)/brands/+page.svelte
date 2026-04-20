@@ -3,6 +3,7 @@
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
+	import { isAdminRole } from '$lib/shared/enums';
 	import { getErrorMessage } from '$lib/utils';
 	import { listBrands } from '$lib/remote/brands.remote';
 	import { BrandsTable, BrandFormModal } from '$lib/components/brands';
@@ -23,6 +24,7 @@
 		totalPages: Math.ceil(totalCount / 10)
 	});
 	let loading = $state(false);
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	// Filter state
 	let search = $state('');
@@ -83,10 +85,12 @@
 			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Marcas</h1>
 			<p class="text-slate-500">Gestiona el catálogo de marcas</p>
 		</div>
-		<Button color="blue" onclick={openCreate}>
-			<Plus class="mr-2 h-5 w-5" />
-			Agregar Marca
-		</Button>
+		{#if isAdmin}
+			<Button color="blue" onclick={openCreate}>
+				<Plus class="mr-2 h-5 w-5" />
+				Agregar Marca
+			</Button>
+		{/if}
 	</div>
 
 	<!-- Filters -->
@@ -113,6 +117,7 @@
 		brands={brandsData.items}
 		{loading}
 		onEdit={openEdit}
+		canManage={isAdmin}
 		onRefresh={() => fetchBrands(brandsData.page)}
 	/>
 

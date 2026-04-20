@@ -16,9 +16,10 @@
 		activeLots: ActiveLot[];
 		productId: string;
 		realStock: number;
+		canManageInventory?: boolean;
 	}
 
-	let { activeLots, productId, realStock }: Props = $props();
+	let { activeLots, productId, realStock, canManageInventory = true }: Props = $props();
 </script>
 
 <section class="glass-card bg-surface-container-lowest p-8">
@@ -36,13 +37,15 @@
 			<p class="text-sm text-on-surface-variant">
 				Stock real: <span class="font-mono font-semibold text-brand-navy">{realStock}</span>
 			</p>
-			<a
-				href={resolve(`/products/${productId}/adjustments`)}
-				class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low px-4 py-2.5 text-sm font-semibold text-brand-blue transition-colors hover:bg-surface-container"
-			>
-				<ArrowRightLeft class="h-4 w-4" />
-				Ajustar stock
-			</a>
+			{#if canManageInventory}
+				<a
+					href={resolve(`/products/${productId}/adjustments`)}
+					class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low px-4 py-2.5 text-sm font-semibold text-brand-blue transition-colors hover:bg-surface-container"
+				>
+					<ArrowRightLeft class="h-4 w-4" />
+					Ajustar stock
+				</a>
+			{/if}
 		</div>
 	</div>
 

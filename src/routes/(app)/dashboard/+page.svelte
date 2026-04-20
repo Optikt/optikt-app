@@ -16,12 +16,15 @@
 		QuickActionCard,
 		RecentSalesTable
 	} from '$lib/components/dashboard';
+	import { canOperate, isAdminRole } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();
 
 	const { stats, recentSales } = $derived(data);
+	const canAct = $derived(canOperate(data.user.role));
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	const lowStockTotal = $derived(stats.lowStockProducts + stats.lowStockLenses);
 
@@ -56,12 +59,24 @@
 		}
 	]);
 
-	const actions = [
-		{ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus },
-		{ label: 'Nuevo Presupuesto', href: resolve('/quotes/new'), icon: FilePlus },
-		{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye },
-		{ label: 'Reportes', href: resolve('/reports'), icon: ChartColumn }
-	] as const;
+	const actions = $derived.by(() => {
+		const next = [{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye }];
+
+		if (canAct) {
+			next.unshift({ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus });
+			next.splice(1, 0, {
+				label: 'Nuevo Presupuesto',
+				href: resolve('/quotes/new'),
+				icon: FilePlus
+			});
+		}
+
+		if (isAdmin) {
+			next.push({ label: 'Reportes', href: resolve('/reports'), icon: ChartColumn });
+		}
+
+		return next;
+	});
 </script>
 
 <svelte:head>
@@ -70,7 +85,7 @@
 </svelte:head>
 
 <div class="p-4">
-	<DashboardHeader />
+	<DashboardHeader showPrimaryAction={canAct} />
 
 	<!-- Balance Card -->
 	{#if stats.pendingPayments.count > 0}
