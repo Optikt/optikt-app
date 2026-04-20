@@ -36,7 +36,13 @@
 		defaultTaxRate?: number;
 	}
 
-	let { products, lensItems, suppliers: _suppliers, nextOrderNumber, defaultTaxRate }: Props = $props();
+	let {
+		products,
+		lensItems,
+		suppliers: _suppliers,
+		nextOrderNumber,
+		defaultTaxRate
+	}: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE

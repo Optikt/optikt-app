@@ -243,6 +243,8 @@
 		totalPages={salesData.totalPages}
 		{loading}
 		canManage={canAct}
+		currentUserId={data.user.id}
+		currentUserRole={data.user.role}
 		onView={handleView}
 		onRefresh={() => {
 			fetchSales(salesData.page);

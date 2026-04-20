@@ -39,7 +39,11 @@ function hasPrescriptionValues(values: WizardPrescriptionValues): boolean {
 	].some((value) => value != null && String(value).trim() !== '');
 }
 
-function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWithRelations[], defaultTaxRate: number) {
+function buildLensPairItemBase(
+	item: SaleItemRow,
+	lensItems: LensCatalogItemWithRelations[],
+	defaultTaxRate: number
+) {
 	if (item.kind !== 'lens' || !item.lensPair) return null;
 
 	const lens = lensItems.find((candidate) => candidate.id === item.lensPair?.catalogItemId);

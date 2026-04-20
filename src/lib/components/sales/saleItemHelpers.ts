@@ -305,8 +305,9 @@ export function validatePrescriptionFields(
 ): PrescriptionFieldErrors {
 	const errors: PrescriptionFieldErrors = {};
 	const requiresAddition = values.lensType !== LensType.MONOFOCAL;
+	const needsPrescription = needsOd || needsOi;
 
-	if (!values.doctorName || values.doctorName.trim() === '') {
+	if (needsPrescription && (!values.doctorName || values.doctorName.trim() === '')) {
 		errors.doctorName = 'Doctor es requerido';
 	}
 

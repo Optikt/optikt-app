@@ -58,7 +58,8 @@ import {
 	RefundStatus,
 	isBsPaymentMethod,
 	type PaymentMethod,
-	UserRole
+	UserRole,
+	canManageSaleByOwner
 } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
@@ -506,13 +507,17 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
  * Re-opens sale to PENDING if it was COMPLETED and is now underpaid.
  */
 export const voidPayment = command(VoidPaymentSchema, async (data) => {
-	requireAdmin();
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
 	const context = getAuditContext();
 
 	const sale = await findSaleById(data.saleId);
 	if (!sale) {
 		return { success: false as const, error: 'Venta no encontrada' };
+	}
+
+	if (!canManageSaleByOwner(user.role, user.id, sale.sellerId)) {
+		return { success: false as const, error: 'No tienes permisos para anular pagos de esta venta' };
 	}
 
 	const payment = await findPaymentById(data.id);
@@ -554,7 +559,7 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
  * Cancel a sale and restore stock for product/lens items.
  */
 export const cancelSale = command(CancelSaleSchema, async (data) => {
-	requireAdmin();
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
 	const context = getAuditContext();
 
@@ -562,6 +567,11 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 	if (!existing) {
 		return { success: false, error: 'Venta no encontrada' };
 	}
+
+	if (!canManageSaleByOwner(user.role, user.id, existing.sellerId)) {
+		return { success: false as const, error: 'No tienes permisos para cancelar esta venta' };
+	}
+
 	if (existing.status === SaleStatus.CANCELLED) {
 		return { success: false, error: 'La venta ya está cancelada' };
 	}

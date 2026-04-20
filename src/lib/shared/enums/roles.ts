@@ -46,6 +46,31 @@ export function canOperate(role: UserRole | undefined | null): boolean {
 }
 
 /**
+ * Admin and manager can manage any sale.
+ * Sellers can only manage sales that they created.
+ * Viewers cannot manage sales.
+ */
+export function canManageSaleByOwner(
+	role: UserRole | undefined | null,
+	currentUserId: string | undefined | null,
+	saleSellerId: string | undefined | null
+): boolean {
+	if (role === UserRole.ADMIN || role === UserRole.MANAGER) {
+		return true;
+	}
+
+	if (role !== UserRole.SELLER) {
+		return false;
+	}
+
+	if (!currentUserId || !saleSellerId) {
+		return false;
+	}
+
+	return currentUserId === saleSellerId;
+}
+
+/**
  * Get all role values as an array
  */
 export const ALL_ROLES = Object.values(UserRole);

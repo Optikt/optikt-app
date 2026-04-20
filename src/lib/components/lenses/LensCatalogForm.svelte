@@ -1106,10 +1106,7 @@
 
 					<div class="flex flex-col gap-3 pt-1">
 						<div class="flex items-center justify-between gap-4">
-							<TaxToggle
-								bind:checked={formData.isTaxable}
-								label="Gravable (IVA)"
-							/>
+							<TaxToggle bind:checked={formData.isTaxable} label="Gravable (IVA)" />
 							<p class="text-xs text-on-surface-variant">
 								Total con impuesto: {formatPrice(totalWithTax)}
 							</p>

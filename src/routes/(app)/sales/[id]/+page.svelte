@@ -13,7 +13,7 @@
 	} from '$lib/components/sales';
 	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
-	import { canOperate } from '$lib/shared/enums';
+	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
@@ -36,6 +36,7 @@
 		sale.total > 0 ? Math.min(100, (sale.paidAmountBcvUsd / sale.total) * 100) : 0
 	);
 	let canAct = $derived(canOperate(data.user.role));
+	let canManageSale = $derived(canManageSaleByOwner(data.user.role, data.user.id, sale.sellerId));
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
@@ -153,7 +154,7 @@
 				Ver historial
 			</button>
 
-			{#if canAct && isPending}
+			{#if canManageSale && isPending}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -327,7 +328,7 @@
 				<PaymentsTable
 					{payments}
 					saleId={sale.id}
-					allowVoid={canAct && isPending}
+					allowVoid={canManageSale && isPending}
 					onPaymentVoided={handlePaymentVoided}
 				/>
 			</div>

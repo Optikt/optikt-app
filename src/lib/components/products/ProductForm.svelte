@@ -687,7 +687,6 @@
 						<div class="mt-4">
 							<TaxToggle
 								bind:checked={formData.isTaxable}
-
 								label="Aplica IVA"
 								ariaLabel="Alternar IVA del producto"
 							/>

@@ -3,7 +3,7 @@
 	import { DataGrid, SaleStatusBadge } from '$lib/components/ui';
 	import { CancelSaleModal } from '$lib/components/sales';
 	import { formatPrice, formatDate } from '$lib/utils';
-	import { SaleStatus } from '$lib/shared/enums';
+	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
 
 	interface Props {
@@ -14,6 +14,8 @@
 		totalPages: number;
 		loading?: boolean;
 		canManage?: boolean;
+		currentUserId?: string;
+		currentUserRole?: UserRole;
 		onView?: (sale: SaleWithRelations) => void;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
@@ -27,6 +29,8 @@
 		totalPages,
 		loading = false,
 		canManage = true,
+		currentUserId,
+		currentUserRole,
 		onView,
 		onRefresh,
 		onPageChange
@@ -48,10 +52,18 @@
 	let selectedSale = $state<SaleWithRelations | null>(null);
 
 	function openCancel(sale: SaleWithRelations) {
-		if (!canManage) return;
+		if (!canCancelSale(sale)) return;
 
 		selectedSale = sale;
 		showCancelModal = true;
+	}
+
+	function canCancelSale(sale: SaleWithRelations): boolean {
+		return (
+			canManage &&
+			sale.status === SaleStatus.PENDING &&
+			canManageSaleByOwner(currentUserRole, currentUserId, sale.sellerId)
+		);
 	}
 
 	function customerName(sale: SaleWithRelations): string {
@@ -90,6 +102,7 @@
 
 	{#snippet row(sale)}
 		{@const pct = paidPercent(sale)}
+		{@const canCancel = canCancelSale(sale)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -156,7 +169,7 @@
 							</span>
 						</button>
 					{/if}
-					{#if canManage && sale.status === SaleStatus.PENDING}
+					{#if canCancel}
 						<button
 							onclick={(event) => {
 								event.stopPropagation();

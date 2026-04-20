@@ -68,6 +68,21 @@ describe('validatePrescriptionFields', () => {
 		expect(hasPrescriptionErrors(errors)).toBe(false);
 	});
 
+	it('does not require doctor when no eyes are needed', () => {
+		const errors = validatePrescriptionFields(makeValues({ doctorName: '' }), false, false);
+		expect(errors.doctorName).toBeUndefined();
+		expect(hasPrescriptionErrors(errors)).toBe(false);
+	});
+
+	it('requires doctor when a lens prescription is needed', () => {
+		const errors = validatePrescriptionFields(
+			makeValues({ odSphere: '-2.00', doctorName: '' }),
+			true,
+			false
+		);
+		expect(errors.doctorName).toBeDefined();
+	});
+
 	it('requires sphere or cylinder for OD', () => {
 		const errors = validatePrescriptionFields(makeValues(), true, false);
 		expect(errors.odSphere).toBeDefined();
