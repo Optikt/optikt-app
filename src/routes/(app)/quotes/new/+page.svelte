@@ -25,6 +25,7 @@
 			lensItems={data.lensItems}
 			suppliers={data.suppliers}
 			nextQuoteNumber={data.nextQuoteNumber}
+			defaultTaxRate={data.defaultTaxRate}
 		/>
 	</div>
 </div>

@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import {
 	getAllPurchaseOrders,
 	getPurchaseOrderListStats
@@ -7,9 +8,7 @@ import {
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user) {
-		error(401, 'No autorizado');
-	}
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 
 	const [initialPurchaseOrders, suppliers, stats] = await Promise.all([
 		getAllPurchaseOrders({ limit: 10, orderBy: 'orderDate', orderSort: 'desc' }),

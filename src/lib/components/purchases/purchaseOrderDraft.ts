@@ -69,11 +69,12 @@ export function resetDraftItemType(
 export function applyProductDefaults(
 	item: PurchaseOrderDraftItem,
 	product: ProductWithRelations,
-	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE
+	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE,
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): PurchaseOrderDraftItem {
 	const isInvoice = documentType === PurchaseDocumentType.INVOICE;
 	const preTax = Number(product.currentPurchasePrice ?? 0);
-	const rate = DEFAULT_TAX_RATE;
+	const rate = defaultTaxRate;
 	const taxable = isInvoice ? product.isTaxable : false;
 
 	item.itemType = PurchaseOrderItemType.PRODUCT;
@@ -90,13 +91,14 @@ export function applyProductDefaults(
 export function applyLensDefaults(
 	item: PurchaseOrderDraftItem,
 	lens: LensCatalogItemWithRelations,
-	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE
+	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE,
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): PurchaseOrderDraftItem {
 	const isInvoice = documentType === PurchaseDocumentType.INVOICE;
 	const preTax = Number(
 		lens.priceType === LensPriceType.PAIR ? lens.pairPurchasePrice : lens.basePrice
 	);
-	const rate = DEFAULT_TAX_RATE;
+	const rate = defaultTaxRate;
 	const taxable = isInvoice ? lens.isTaxable : false;
 
 	item.itemType = PurchaseOrderItemType.LENS;

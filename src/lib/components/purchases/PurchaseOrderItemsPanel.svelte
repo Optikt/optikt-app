@@ -140,10 +140,10 @@
 		);
 
 		if (pendingItemType === PurchaseOrderItemType.PRODUCT && selectedProduct) {
-			applyProductDefaults(nextItem, selectedProduct, documentType);
+			applyProductDefaults(nextItem, selectedProduct, documentType, defaultTaxRate);
 			pendingProductId = '';
 		} else if (pendingItemType === PurchaseOrderItemType.LENS && selectedLens) {
-			applyLensDefaults(nextItem, selectedLens, documentType);
+			applyLensDefaults(nextItem, selectedLens, documentType, defaultTaxRate);
 			pendingLensCatalogItemId = '';
 		}
 

@@ -54,6 +54,7 @@
 		discountType: DiscountTypeEnum;
 		notes: string;
 		nextOrderNumber?: number;
+		defaultTaxRate?: number;
 		entityLabel?: string;
 		entityValue?: string;
 		customerFallbackName?: string;
@@ -92,6 +93,7 @@
 		discountType = $bindable(),
 		notes,
 		nextOrderNumber,
+		defaultTaxRate = DEFAULT_TAX_RATE,
 		entityLabel = 'Orden',
 		entityValue,
 		customerFallbackName = 'Venta sin cliente',
@@ -131,7 +133,7 @@
 
 	const canSubmitFinal = $derived(canSubmit && !hasInvalidGlobalDiscount);
 
-	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems));
+	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems, defaultTaxRate));
 
 	const adjustedTaxBreakdown = $derived.by(() =>
 		computeAdjustedTaxBreakdown(taxItems, appliedGlobalDiscount)
@@ -249,15 +251,15 @@
 	function getItemTaxMeta(item: SaleItemRow): TaxDisplayMeta {
 		if (item.kind === 'product') {
 			const product = getProduct(item);
-			return getTaxMeta(product?.isTaxable ?? true, DEFAULT_TAX_RATE);
+			return getTaxMeta(product?.isTaxable ?? true, defaultTaxRate);
 		}
 
 		const lens = getLens(item);
-		return getTaxMeta(lens?.isTaxable ?? false, DEFAULT_TAX_RATE);
+		return getTaxMeta(lens?.isTaxable ?? false, defaultTaxRate);
 	}
 
 	function getTreatmentTaxMeta(treatment: SelectedTreatment): TaxDisplayMeta {
-		return getTaxMeta(treatment.isTaxable, DEFAULT_TAX_RATE);
+		return getTaxMeta(treatment.isTaxable, defaultTaxRate);
 	}
 
 	function getDiscountToggleButtonClass(isActive: boolean): string {

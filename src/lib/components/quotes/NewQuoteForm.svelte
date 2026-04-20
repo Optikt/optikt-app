@@ -29,9 +29,10 @@
 		lensItems: LensCatalogItemWithRelations[];
 		suppliers: Supplier[];
 		nextQuoteNumber?: number;
+		defaultTaxRate?: number;
 	}
 
-	let { products, lensItems, suppliers: _suppliers, nextQuoteNumber }: Props = $props();
+	let { products, lensItems, suppliers: _suppliers, nextQuoteNumber, defaultTaxRate }: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE
@@ -178,7 +179,7 @@
 		submitting = true;
 
 		try {
-			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems);
+			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems, defaultTaxRate);
 
 			const result = await createNewQuote({
 				customerId: customerId || undefined,
@@ -292,6 +293,7 @@
 			{notes}
 			{validUntil}
 			{nextQuoteNumber}
+			{defaultTaxRate}
 			{products}
 			{lensItems}
 			{submitting}

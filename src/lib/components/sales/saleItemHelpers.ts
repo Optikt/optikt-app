@@ -363,7 +363,8 @@ export function getEnabledEyeCount(item: SaleItemRow): number {
 export function buildTaxItemsFromWizard(
 	items: SaleItemRow[],
 	products: ProductWithRelations[],
-	lensItems: LensCatalogItemWithRelations[]
+	lensItems: LensCatalogItemWithRelations[],
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): TaxableItem[] {
 	const result: TaxableItem[] = [];
 	for (const item of items) {
@@ -375,7 +376,7 @@ export function buildTaxItemsFromWizard(
 				discount: item.discount,
 				discountType: item.discountType,
 				isTaxable: product?.isTaxable ?? true,
-				taxRate: DEFAULT_TAX_RATE
+				taxRate: defaultTaxRate
 			});
 		} else if (item.kind === 'lens') {
 			const lens = lensItems.find((l) => l.id === item.lensPair?.catalogItemId);
@@ -385,7 +386,7 @@ export function buildTaxItemsFromWizard(
 				discount: item.discount,
 				discountType: item.discountType,
 				isTaxable: lens?.isTaxable ?? false,
-				taxRate: DEFAULT_TAX_RATE
+				taxRate: defaultTaxRate
 			});
 			const eyeCount = getEnabledEyeCount(item);
 			for (const t of item.treatments) {
@@ -395,7 +396,7 @@ export function buildTaxItemsFromWizard(
 					discount: 0,
 					discountType: 'FIXED',
 					isTaxable: t.isTaxable,
-					taxRate: DEFAULT_TAX_RATE
+					taxRate: defaultTaxRate
 				});
 			}
 		}

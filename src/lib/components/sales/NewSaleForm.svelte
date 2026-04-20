@@ -33,9 +33,10 @@
 		lensItems: LensCatalogItemWithRelations[];
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
+		defaultTaxRate?: number;
 	}
 
-	let { products, lensItems, suppliers: _suppliers, nextOrderNumber }: Props = $props();
+	let { products, lensItems, suppliers: _suppliers, nextOrderNumber, defaultTaxRate }: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE
@@ -212,7 +213,7 @@
 		submitting = true;
 
 		try {
-			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
+			const saleItems = buildSaleItemsFromWizard(items, products, lensItems, defaultTaxRate);
 			const prescription = items.some((item) => item.kind === 'lens')
 				? (buildPrescriptionPayload(
 						prescriptionValues,
@@ -300,6 +301,7 @@
 			bind:discountType
 			{notes}
 			{nextOrderNumber}
+			{defaultTaxRate}
 			{products}
 			{lensItems}
 			{submitting}

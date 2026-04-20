@@ -3,8 +3,11 @@ import { getAllBrands } from '$lib/server/db/queries/brands';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { getAllMaterials } from '$lib/server/db/queries/materials';
 import { brands, suppliers, materials } from '$lib/server/db/schema';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 	const [brandsList, suppliersList, materialsList] = await Promise.all([
 		getAllBrands({ columns: { id: brands.id, name: brands.name } }),
 		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } }),

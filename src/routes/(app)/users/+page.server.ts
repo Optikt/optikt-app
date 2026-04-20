@@ -1,17 +1,16 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
 import { isNull, desc, count } from 'drizzle-orm';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 
 /**
  * Load initial users data for SSR
  * Only handles initial page load - all interactions use remote functions
  */
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user) {
-		error(401, 'No autorizado');
-	}
+	requirePageRole(locals, UserRole.ADMIN);
 
 	// Get initial users (first page, active only)
 	const [countResult] = await db
