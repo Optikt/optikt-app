@@ -1,9 +1,9 @@
 /**
  * Settings Remote Functions
- * Handles business settings get/update (admin only for updates)
+ * Handles business settings get/update (ADMIN only)
  */
 import { query, form } from '$app/server';
-import { requireAdmin, requireUserAdmin } from '$lib/server/guards';
+import { requireUserAdmin } from '$lib/server/guards';
 import { EmptySchema } from '$lib/schemas/common';
 import { UpdateSettingsSchema } from '$lib/schemas/settings';
 import {
@@ -18,13 +18,13 @@ import type { Settings } from '$lib/server/db/schema';
  * Get business settings
  */
 export const getSettings = query(EmptySchema, async (): Promise<Settings> => {
-	requireAdmin();
+	requireUserAdmin();
 
 	return getSettingsQuery();
 });
 
 /**
- * Update business settings (to be protected by page-level auth check)
+ * Update business settings (ADMIN only)
  */
 export const updateSettingsForm = form(UpdateSettingsSchema, async (data): Promise<Settings> => {
 	requireUserAdmin();
