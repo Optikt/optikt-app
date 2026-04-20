@@ -18,7 +18,7 @@
 
 6. **Dead code**: `CustomerViewModal`, `SupplierViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable`, `PurchaseCurrencyInput` — exportados pero nunca importados.
 
-7. **IVA 16% hardcoded en 8 archivos** — Si el IVA cambia, hay que tocar 8 archivos. Debería ser `DEFAULT_TAX_RATE = 16`.
+7. ~~**IVA 16% hardcoded en 8 archivos**~~ — ✅ Resuelto: `DEFAULT_TAX_RATE = 16` como constante, `settings.defaultTaxRate` configurable en `/config`, formularios leen el valor desde el app layout.
 
 8. **`DataTable` vs `DataGrid` duplicados** — Dos implementaciones de tabla con APIs distintas.
 

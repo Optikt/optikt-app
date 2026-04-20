@@ -209,20 +209,22 @@ El card de historial de pagos muestra "TASA BCV 0.00 Bs/$" en la esquina superio
 
 ---
 
-## 4. Plan IVA configurable (post-release, Fase 9)
+## 4. IVA configurable desde /config
 
-**Estado:** pendiente — `/config` ya es funcional ✅
+**Estado:** completado ✅
 
-Actualmente el IVA 16% está hardcoded como `.default(16)` en 8 archivos (schemas de Zod y columnas de Drizzle). Funciona porque cada venta/compra ya guarda su tasa como snapshot.
+El IVA 16% ya no está hardcoded. Se lee de `settings.defaultTaxRate` y se pasa a todos los formularios desde el app layout.
 
-### Plan
+### Cambios realizados
 
 - [x] Arreglar bug "Settings is always null" en `/config` — `getSettings()` ahora auto-crea la fila singleton
-- [ ] Agregar campo `defaultTaxRate` a la tabla `business_settings`
-- [ ] Extraer constante `DEFAULT_TAX_RATE = 16` como fallback temporal
-- [ ] Los formularios de nueva venta/compra/producto leen el default de Settings
-- [ ] Los snapshots existentes no se tocan — ya tienen su tasa guardada
-- [ ] Si el IVA cambia, solo se actualiza en Settings y afecta nuevas operaciones
+- [x] Agregar campo `defaultTaxRate` a la tabla `settings` (migración 0010)
+- [x] Extraer constante `DEFAULT_TAX_RATE = 16` en `$lib/shared/tax.ts` como fallback
+- [x] App layout carga `defaultTaxRate` y lo pasa a todas las páginas
+- [x] Formularios de producto, lente, orden de compra, venta y presupuesto usan el valor configurable
+- [x] Schemas Zod usan `DEFAULT_TAX_RATE` en `.default()`
+- [x] Los snapshots existentes no se tocan — ya tienen su tasa guardada
+- [x] 0 errores, 0 warnings, 460/460 tests
 
 ---
 
@@ -233,4 +235,4 @@ Actualmente el IVA 16% está hardcoded como `.default(16)` en 8 archivos (schema
 3. **Simplificar roles** (eliminar SUPERADMIN) ✅
 4. **Auth guards** en 16 archivos remote (95 funciones) ✅
 5. **Verificación:** `pnpm check && pnpm vitest run` — 0 errores ✅
-6. **IVA configurable** — diferido a Fase 9 (migración de `/config`)
+6. **IVA configurable** — `defaultTaxRate` en settings, formularios leen de config, constante `DEFAULT_TAX_RATE` ✅
