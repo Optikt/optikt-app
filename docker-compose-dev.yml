@@ -5,9 +5,6 @@ services:
       - .env.dev
     ports:
       - '3000:3000'
-    environment:
-      ORIGIN: ${ORIGIN}
-      DATABASE_URL: ${DATABASE_URL_DOCKER}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     restart: unless-stopped
