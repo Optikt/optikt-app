@@ -569,7 +569,7 @@ CREATE INDEX "ix_lens_optical_ranges_id" ON "lens_optical_ranges" USING btree ("
 CREATE INDEX "ix_lens_optical_ranges_item_id" ON "lens_optical_ranges" USING btree ("lens_catalog_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_customer_id" ON "prescriptions" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_id" ON "prescriptions" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_prescriptions_prescription_date" ON "prescriptions" USING btree ("prescription_date" date_ops);--> statement-breakpoint
+CREATE INDEX "ix_prescriptions_prescription_date" ON "prescriptions" USING btree ("prescription_date");--> statement-breakpoint
 CREATE INDEX "ix_sale_items_id" ON "sale_items" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_items_lens_catalog_item_id" ON "sale_items" USING btree ("lens_catalog_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_items_prescription_id" ON "sale_items" USING btree ("prescription_id" uuid_ops);--> statement-breakpoint

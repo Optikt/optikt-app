@@ -2472,8 +2472,7 @@
               "expression": "prescription_date",
               "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "date_ops"
+              "nulls": "last"
             }
           ],
           "isUnique": false,
