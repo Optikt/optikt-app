@@ -1,11 +1,13 @@
 services:
   app:
     image: optikt-app
+    env_file:
+      - .env.dev
     ports:
       - '3000:3000'
     environment:
-      ORIGIN: http://localhost:3000
-      DATABASE_URL: postgres://optikt:Optikt_123@host.docker.internal:5432/optikt_db
+      ORIGIN: ${ORIGIN}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     restart: unless-stopped

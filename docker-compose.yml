@@ -1,9 +1,11 @@
 services:
   app:
     image: optikt-app
+    env_file:
+      - .env
     ports:
       - '3000:3000'
     environment:
-      ORIGIN: http://localhost:3000
-      DATABASE_URL: postgresql://user:password@db-host:5432/optikt
+      ORIGIN: ${ORIGIN}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
     restart: unless-stopped
