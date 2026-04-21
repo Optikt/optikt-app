@@ -20,7 +20,8 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:seed": "tsx scripts/seed-db.ts",
-		"svelte:doctor": "svelte-doctor check"
+		"svelte:doctor": "svelte-doctor check",
+		"test:coverage": "vitest --run --coverage"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.4.0",
@@ -35,6 +36,7 @@
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/node": "^22",
 		"@vitest/browser-playwright": "^4.0.15",
+		"@vitest/coverage-v8": "^4.1.4",
 		"drizzle-kit": "^0.31.8",
 		"drizzle-orm": "^0.45.0",
 		"eslint": "^9.39.1",
