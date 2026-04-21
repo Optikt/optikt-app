@@ -35,7 +35,12 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from './newSaleTypes';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
-	import { decomposePrice, type TaxBreakdown, type TaxableItem } from '$lib/shared/tax';
+	import {
+		decomposePrice,
+		DEFAULT_TAX_RATE,
+		type TaxBreakdown,
+		type TaxableItem
+	} from '$lib/shared/tax';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -49,6 +54,7 @@
 		discountType: DiscountTypeEnum;
 		notes: string;
 		nextOrderNumber?: number;
+		defaultTaxRate?: number;
 		entityLabel?: string;
 		entityValue?: string;
 		customerFallbackName?: string;
@@ -87,6 +93,7 @@
 		discountType = $bindable(),
 		notes,
 		nextOrderNumber,
+		defaultTaxRate = DEFAULT_TAX_RATE,
 		entityLabel = 'Orden',
 		entityValue,
 		customerFallbackName = 'Venta sin cliente',
@@ -126,7 +133,7 @@
 
 	const canSubmitFinal = $derived(canSubmit && !hasInvalidGlobalDiscount);
 
-	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems));
+	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems, defaultTaxRate));
 
 	const adjustedTaxBreakdown = $derived.by(() =>
 		computeAdjustedTaxBreakdown(taxItems, appliedGlobalDiscount)
@@ -244,15 +251,15 @@
 	function getItemTaxMeta(item: SaleItemRow): TaxDisplayMeta {
 		if (item.kind === 'product') {
 			const product = getProduct(item);
-			return getTaxMeta(product?.isTaxable ?? true, product?.taxRate ?? 16);
+			return getTaxMeta(product?.isTaxable ?? true, defaultTaxRate);
 		}
 
 		const lens = getLens(item);
-		return getTaxMeta(lens?.isTaxable ?? false, lens?.taxRate ?? 16);
+		return getTaxMeta(lens?.isTaxable ?? false, defaultTaxRate);
 	}
 
 	function getTreatmentTaxMeta(treatment: SelectedTreatment): TaxDisplayMeta {
-		return getTaxMeta(treatment.isTaxable, treatment.taxRate);
+		return getTaxMeta(treatment.isTaxable, defaultTaxRate);
 	}
 
 	function getDiscountToggleButtonClass(isActive: boolean): string {

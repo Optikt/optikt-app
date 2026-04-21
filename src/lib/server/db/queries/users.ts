@@ -1,4 +1,5 @@
-import { eq, or, and, isNull, isNotNull } from 'drizzle-orm';
+import { eq, or, and, isNull, isNotNull, count } from 'drizzle-orm';
+import { UserRole } from '$lib/shared/enums';
 import { db } from '$lib/server/db';
 import { users, type User, type NewUser } from '$lib/server/db/schema';
 import { nowISO } from '$lib/dates';
@@ -116,6 +117,17 @@ export async function deleteUser(id: string): Promise<boolean> {
 		})
 		.where(eq(users.id, id));
 	return result.count > 0;
+}
+
+/**
+ * Count active (non-deleted) users with ADMIN role
+ */
+export async function countActiveAdmins(): Promise<number> {
+	const [result] = await db
+		.select({ count: count() })
+		.from(users)
+		.where(and(eq(users.role, UserRole.ADMIN), isNull(users.deletedAt)));
+	return result.count;
 }
 
 /**

@@ -20,6 +20,7 @@
 		EconomicBreakdownCard
 	} from '$lib/components/ui';
 	import { cancelQuote, convertQuoteToSale, assignQuoteCustomer } from '$lib/remote/quotes.remote';
+	import { canOperate } from '$lib/shared/enums';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
@@ -40,6 +41,7 @@
 	let items = $state<QuoteItemWithDetails[]>(untrack(() => data.items));
 
 	let formattedQuoteNumber = $derived(`P-${String(quote.quoteNumber).padStart(4, '0')}`);
+	let canAct = $derived(canOperate(data.user.role));
 	let isDraft = $derived(quote.status === QuoteStatus.DRAFT);
 	let isConverted = $derived(quote.status === QuoteStatus.CONVERTED);
 	let isCancelled = $derived(quote.status === QuoteStatus.CANCELLED);
@@ -178,7 +180,7 @@
 		backOnClick={goBack}
 	>
 		{#snippet actions()}
-			{#if isDraft && quote.customer}
+			{#if canAct && isDraft && quote.customer}
 				<button
 					type="button"
 					onclick={() => (showConvertModal = true)}
@@ -191,7 +193,7 @@
 				</button>
 			{/if}
 
-			{#if isDraft}
+			{#if canAct && isDraft}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -307,7 +309,7 @@
 		</div>
 	{/if}
 
-	{#if isDraft && !quote.customer}
+	{#if canAct && isDraft && !quote.customer}
 		<div class="rounded-[1.5rem] border border-surface-container-high bg-surface-container-low p-5">
 			<div class="mb-3 flex items-center gap-2">
 				<UserPlus class="h-4 w-4 text-slate-500" />

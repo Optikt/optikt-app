@@ -10,9 +10,10 @@
 		salePrice: number | null;
 		fifoCost: number | null;
 		inventoryValuation: number;
+		editable?: boolean;
 	}
 
-	let { productId, salePrice, fifoCost, inventoryValuation }: Props = $props();
+	let { productId, salePrice, fifoCost, inventoryValuation, editable = true }: Props = $props();
 
 	let currentSalePrice = $state<number | null>(untrack(() => salePrice));
 	let editingPrice = $state(false);
@@ -34,6 +35,8 @@
 	});
 
 	function startEditingPrice() {
+		if (!editable) return;
+
 		priceInput = currentSalePrice != null ? String(currentSalePrice) : '';
 		editingPrice = true;
 	}
@@ -130,14 +133,16 @@
 							{/if}
 						</div>
 
-						<button
-							type="button"
-							onclick={startEditingPrice}
-							class="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/16"
-							aria-label="Editar precio de venta"
-						>
-							<Pencil class="h-4 w-4" />
-						</button>
+						{#if editable}
+							<button
+								type="button"
+								onclick={startEditingPrice}
+								class="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/16"
+								aria-label="Editar precio de venta"
+							>
+								<Pencil class="h-4 w-4" />
+							</button>
+						{/if}
 					</div>
 				{/if}
 			</div>

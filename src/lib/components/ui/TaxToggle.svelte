@@ -1,28 +1,21 @@
 <script lang="ts">
 	interface Props {
 		checked: boolean;
-		taxRate: number | string;
 		/** Label shown next to the toggle. */
 		label?: string;
 		/** Name attribute for the hidden isTaxable input. Set to null to skip the hidden input. */
 		name?: string | null;
-		/** Name attribute for the taxRate input. */
-		taxRateName?: string;
 		/** aria-label for the toggle button. */
 		ariaLabel?: string;
 		ontoggle?: (checked: boolean) => void;
-		ontaxratechange?: (value: string) => void;
 	}
 
 	let {
 		checked = $bindable(),
-		taxRate = $bindable(),
 		label = 'Gravable (IVA)',
 		name = 'isTaxable',
-		taxRateName = 'taxRate',
 		ariaLabel = label,
-		ontoggle,
-		ontaxratechange
+		ontoggle
 	}: Props = $props();
 
 	function toggle() {
@@ -54,21 +47,4 @@
 		</button>
 		<span class="text-sm text-slate-700">{label}</span>
 	</label>
-	{#if checked}
-		<div class="flex items-center gap-2">
-			<input
-				type="number"
-				name={taxRateName}
-				value={taxRate}
-				oninput={(e) => {
-					taxRate = e.currentTarget.value;
-					ontaxratechange?.(e.currentTarget.value);
-				}}
-				step="0.01"
-				min="0"
-				class="w-20 rounded-lg border border-slate-300 bg-slate-50 p-2 text-right font-mono text-sm"
-			/>
-			<span class="text-sm text-slate-500">%</span>
-		</div>
-	{/if}
 </div>

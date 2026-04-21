@@ -3,6 +3,7 @@
  * Server-side functions for supplier management
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListSuppliersSchema,
@@ -42,6 +43,8 @@ import { auditService, getAuditContext } from '$lib/server/audit';
 export const listSuppliers = query(
 	ListSuppliersSchema,
 	async (data): Promise<PaginatedResult<Supplier>> => {
+		requireAuth();
+
 		const { page, perPage, search, type, includeDeleted } = data;
 
 		// Get suppliers (active only or all if includeDeleted)
@@ -80,6 +83,8 @@ export const listSuppliers = query(
 export const createSupplierForm = form(
 	CreateSupplierSchema,
 	async (data, issue): Promise<CreateEntityResult<Supplier>> => {
+		requireAdmin();
+
 		const { name, rif, ...rest } = data;
 
 		// Check for duplicate ACTIVE name
@@ -127,6 +132,8 @@ export const createSupplierForm = form(
 export const updateSupplierForm = form(
 	UpdateSupplierSchema,
 	async (data, issue): Promise<Supplier> => {
+		requireAdmin();
+
 		const { id, name, rif, ...rest } = data;
 
 		// Check if supplier exists
@@ -171,6 +178,8 @@ export const updateSupplierForm = form(
  * Delete a supplier (soft delete)
  */
 export const deleteSupplierById = command(SupplierIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const { id } = data;
 
 	const existing = await findSupplierById(id);
@@ -191,6 +200,8 @@ export const deleteSupplierById = command(SupplierIdSchema, async (data): Promis
 export const quickCreateSupplier = command(
 	QuickCreateSupplierSchema,
 	async (data): Promise<{ id: string; name: string }> => {
+		requireAdmin();
+
 		const { name } = data;
 
 		// Check for duplicate
@@ -219,6 +230,8 @@ export const quickCreateSupplier = command(
 export const reactivateSupplier = command(
 	ReactivateSupplierSchema,
 	async (data): Promise<Supplier> => {
+		requireAdmin();
+
 		const { deletedSupplierId } = data;
 
 		// Verify the supplier exists and is deleted
@@ -247,6 +260,8 @@ export const reactivateSupplier = command(
 export const listSupplierTreatments = query(
 	SupplierTreatmentQuerySchema,
 	async (data): Promise<SupplierTreatment[]> => {
+		requireAuth();
+
 		return getSupplierTreatments(data.supplierId);
 	}
 );
@@ -257,6 +272,8 @@ export const listSupplierTreatments = query(
 export const createSupplierTreatmentForm = form(
 	CreateSupplierTreatmentSchema,
 	async (data, issue): Promise<SupplierTreatment> => {
+		requireAdmin();
+
 		// Check supplier exists
 		const supplier = await findSupplierById(data.supplierId);
 		if (!supplier) {
@@ -283,6 +300,8 @@ export const createSupplierTreatmentForm = form(
 export const updateSupplierTreatmentForm = form(
 	UpdateSupplierTreatmentSchema,
 	async (data, issue): Promise<SupplierTreatment> => {
+		requireAdmin();
+
 		const { id, name, ...rest } = data;
 
 		const existing = await findSupplierTreatmentById(id);
@@ -315,6 +334,8 @@ export const updateSupplierTreatmentForm = form(
 export const deleteSupplierTreatmentById = command(
 	SupplierTreatmentIdSchema,
 	async (data): Promise<void> => {
+		requireAdmin();
+
 		const existing = await findSupplierTreatmentById(data.id);
 		if (!existing) {
 			throw new Error('Tratamiento no encontrado');

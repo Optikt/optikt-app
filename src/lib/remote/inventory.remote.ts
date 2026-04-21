@@ -8,7 +8,7 @@ import {
 	ListInventoryMovementsSchema,
 	RevertLotSchema
 } from '$lib/schemas/inventory';
-import { requireRole } from '$lib/server/guards';
+import { requireAuth, requireRole } from '$lib/server/guards';
 import { db } from '$lib/server/db';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
 import { findPurchaseOrderIdByLotId } from '$lib/server/db/queries/purchaseOrders';
@@ -38,6 +38,8 @@ import { nowISO } from '$lib/dates';
 export const listInventoryMovements = query(
 	ListInventoryMovementsSchema,
 	async (data): Promise<PaginatedResult<MovementWithDetails>> => {
+		requireAuth();
+
 		const { page, perPage } = data;
 		const filterOptions = {
 			lotId: data.lotId ?? undefined,
@@ -67,8 +69,8 @@ export const listInventoryMovements = query(
 // ============================================================================
 
 export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (data) => {
-	// Only ADMIN and SUPERADMIN can create manual adjustments
-	const user = requireRole(UserRole.SUPERADMIN, UserRole.ADMIN);
+	// Only ADMIN can create manual adjustments
+	const user = requireRole(UserRole.ADMIN);
 
 	const { lotId, adjustmentType, quantity, reason, notes } = data;
 
@@ -168,7 +170,7 @@ export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (
 });
 
 export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
-	const user = requireRole(UserRole.SUPERADMIN, UserRole.ADMIN);
+	const user = requireRole(UserRole.ADMIN);
 
 	const lot = await findLotById(data.lotId);
 	if (!lot) {

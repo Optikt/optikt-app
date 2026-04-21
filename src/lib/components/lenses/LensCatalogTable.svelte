@@ -23,6 +23,7 @@
 		loading?: boolean;
 		onView?: (item: LensCatalogItemWithRelations) => void;
 		onEdit?: (item: LensCatalogItemWithRelations) => void;
+		canManage?: boolean;
 		onRefresh?: () => void | Promise<void>;
 		onPageChange: (page: number) => void;
 	}
@@ -36,6 +37,7 @@
 		loading = false,
 		onView,
 		onEdit,
+		canManage = true,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -305,7 +307,7 @@
 						</button>
 					{/if}
 
-					{#if onEdit}
+					{#if canManage && onEdit}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -319,17 +321,19 @@
 						</button>
 					{/if}
 
-					<button
-						type="button"
-						onclick={(event) => {
-							event.stopPropagation();
-							openDelete(item);
-						}}
-						class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-						title="Eliminar lente"
-					>
-						<Trash2 class="h-4 w-4" />
-					</button>
+					{#if canManage}
+						<button
+							type="button"
+							onclick={(event) => {
+								event.stopPropagation();
+								openDelete(item);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+							title="Eliminar lente"
+						>
+							<Trash2 class="h-4 w-4" />
+						</button>
+					{/if}
 				</div>
 			</td>
 		</tr>

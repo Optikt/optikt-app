@@ -3,6 +3,8 @@
  * Server-side functions for customer management
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListCustomersSchema,
@@ -33,6 +35,8 @@ import { toPrescriptionInsert } from '$lib/utils/prescription';
 export const listCustomers = query(
 	ListCustomersSchema,
 	async (data): Promise<PaginatedResult<Customer>> => {
+		requireAuth();
+
 		const { page, perPage, search, includeDeleted } = data;
 
 		// Get all customers (active or all including deleted)
@@ -67,6 +71,8 @@ export const listCustomers = query(
 export const updateCustomerForm = form(
 	UpdateCustomerSchema,
 	async (data, issue): Promise<Customer> => {
+		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 		const { id, idNumber, birthDate, ...rest } = data;
 
 		// Check customer exists
@@ -106,6 +112,8 @@ export const updateCustomerForm = form(
  * Delete a customer (soft delete)
  */
 export const deleteCustomerById = command(CustomerIdSchema, async (data): Promise<boolean> => {
+	requireAdmin();
+
 	const existing = await findCustomerById(data.id);
 	if (!existing) {
 		invalid('Cliente no encontrado');
@@ -126,6 +134,8 @@ export const deleteCustomerById = command(CustomerIdSchema, async (data): Promis
 export const reactivateCustomerForm = form(
 	ReactivateCustomerSchema,
 	async (data): Promise<Customer> => {
+		requireAdmin();
+
 		const { id } = data;
 
 		// Check if customer exists and is deleted
@@ -148,6 +158,8 @@ export const reactivateCustomerForm = form(
 export const reactivateCustomer = command(
 	ReactivateCustomerSchema,
 	async (data): Promise<Customer> => {
+		requireAdmin();
+
 		const { id } = data;
 
 		const customer = await restoreCustomer(id);
@@ -171,6 +183,8 @@ export const reactivateCustomer = command(
 export const createCustomerWithPrescription = form(
 	CreateCustomerWithPrescriptionSchema,
 	async (data, issue): Promise<CreateEntityResult<Customer>> => {
+		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
 		const { prescription, idNumber, birthDate, ...customerFields } = data;
 		const context = getAuditContext();
 

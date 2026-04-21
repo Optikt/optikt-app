@@ -5,6 +5,7 @@
 import { z } from 'zod';
 import { CoercedNumber, CoercedInteger, ListPaginationWithDeletedSchema } from './common';
 import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_ITEM_TYPES = Object.values(PurchaseOrderItemType) as [string, ...string[]];
 const ALL_DOCUMENT_TYPES = Object.values(PurchaseDocumentType) as [string, ...string[]];
@@ -32,7 +33,7 @@ export const PurchaseOrderItemSchema = z.object({
 	unitPurchasePrice: CoercedNumber.min(0, 'Precio de compra debe ser ≥ 0'),
 	unitSalePrice: CoercedNumber.min(0, 'Precio de venta debe ser ≥ 0'),
 	appliesIva: z.boolean().default(true),
-	ivaRate: CoercedNumber.min(0).max(100).default(16)
+	ivaRate: CoercedNumber.min(0).max(100).default(DEFAULT_TAX_RATE)
 });
 
 // ============================================================================

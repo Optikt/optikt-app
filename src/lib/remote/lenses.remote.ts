@@ -3,6 +3,7 @@
  * Server-side functions for managing lens materials, treatments, and catalog items
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
@@ -140,12 +141,16 @@ function summarizeRanges(ranges: RangeSemantic[]): string {
 // ============================================================================
 
 export const listLensMaterials = query('unchecked', async (): Promise<LensMaterial[]> => {
+	requireAuth();
+
 	return getAllLensMaterials();
 });
 
 export const createLensMaterialForm = form(
 	CreateLensMaterialSchema,
 	async (data, issue): Promise<LensMaterial> => {
+		requireAdmin();
+
 		// Check for duplicate name
 		const existingName = await findLensMaterialByName(data.name);
 		if (existingName) {
@@ -167,6 +172,8 @@ export const createLensMaterialForm = form(
 export const updateLensMaterialForm = form(
 	UpdateLensMaterialSchema,
 	async (data, issue): Promise<LensMaterial> => {
+		requireAdmin();
+
 		const { id, ...updates } = data;
 
 		const existing = await findLensMaterialById(id);
@@ -194,6 +201,8 @@ export const updateLensMaterialForm = form(
 );
 
 export const deleteLensMaterialById = command(LensIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const existing = await findLensMaterialById(data.id);
 	if (!existing) throw new Error('Material no encontrado');
 
@@ -210,6 +219,8 @@ export const deleteLensMaterialById = command(LensIdSchema, async (data): Promis
 export const listLensCatalog = query(
 	ListLensCatalogSchema,
 	async (data): Promise<LensCatalogItemWithRelations[]> => {
+		requireAuth();
+
 		return getLensCatalogItemsWithRelations({
 			search: data.search,
 			source: data.source,
@@ -223,6 +234,8 @@ export const listLensCatalog = query(
 export const createLensCatalogItemForm = form(
 	CreateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
+		requireAdmin();
+
 		const {
 			pendingSupplierName,
 			pendingMaterialName,
@@ -308,6 +321,8 @@ export const createLensCatalogItemForm = form(
 export const updateLensCatalogItemForm = form(
 	UpdateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
+		requireAdmin();
+
 		const {
 			id,
 			pendingSupplierName,
@@ -463,6 +478,8 @@ export const updateLensCatalogItemForm = form(
 );
 
 export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const existing = await findLensCatalogItemById(data.id);
 	if (!existing) throw new Error('Item de catálogo no encontrado');
 

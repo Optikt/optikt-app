@@ -1,19 +1,13 @@
 /**
  * Config Page Server Load
- * Loads settings for admin users
+ * Loads profile settings for all users and business settings for ADMIN only
  */
 import type { PageServerLoad } from './$types';
-import { isAdminRole } from '$lib/shared/enums';
 import { getSettings } from '$lib/server/db/queries';
+import { UserRole } from '$lib/shared/enums';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const user = locals.user;
-
-	// Only load settings for admin users
-	let settings = null;
-	if (user && isAdminRole(user.role)) {
-		settings = await getSettings();
-	}
+	const settings = locals.user?.role === UserRole.ADMIN ? await getSettings() : null;
 
 	return {
 		settings

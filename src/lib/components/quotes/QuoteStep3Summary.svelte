@@ -19,6 +19,7 @@
 		notes: string;
 		validUntil: string;
 		nextQuoteNumber?: number;
+		defaultTaxRate?: number;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
 		submitting: boolean;
@@ -37,6 +38,7 @@
 		notes,
 		validUntil,
 		nextQuoteNumber,
+		defaultTaxRate,
 		products,
 		lensItems,
 		submitting,
@@ -63,6 +65,7 @@
 	bind:discountType
 	{notes}
 	nextOrderNumber={nextQuoteNumber}
+	{defaultTaxRate}
 	entityLabel="Presupuesto"
 	entityValue={quoteReference}
 	customerFallbackName="Presupuesto sin cliente"

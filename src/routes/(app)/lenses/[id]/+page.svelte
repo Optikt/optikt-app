@@ -11,6 +11,7 @@
 	import LensDetailOpticalPanel from '$lib/components/lenses/detail/LensDetailOpticalPanel.svelte';
 	import LensDetailSidebar from '$lib/components/lenses/detail/LensDetailSidebar.svelte';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
+	import { isAdminRole } from '$lib/shared/enums';
 	import { getErrorMessage } from '$lib/utils';
 	import type { PageData } from './$types';
 
@@ -20,6 +21,7 @@
 	let showDeleteModal = $state(false);
 	let deleteLoading = $state(false);
 	let showHistoryModal = $state(false);
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	const relatedNames = $derived({
 		...(item.supplier ? { [item.supplier.id]: item.supplier.name } : {}),
@@ -58,24 +60,26 @@
 		backHref="/lenses"
 	>
 		{#snippet actions()}
-			<div class="flex items-center gap-3">
-				<button
-					type="button"
-					onclick={() => (showDeleteModal = true)}
-					class="inline-flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-xs font-bold tracking-[0.18em] text-on-error-container uppercase transition-colors hover:brightness-[0.98]"
-				>
-					<Trash2 class="h-4 w-4" />
-					Eliminar
-				</button>
-				<button
-					type="button"
-					onclick={openEdit}
-					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.18em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
-				>
-					<Pencil class="h-4 w-4" />
-					Editar lente
-				</button>
-			</div>
+			{#if isAdmin}
+				<div class="flex items-center gap-3">
+					<button
+						type="button"
+						onclick={() => (showDeleteModal = true)}
+						class="inline-flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-xs font-bold tracking-[0.18em] text-on-error-container uppercase transition-colors hover:brightness-[0.98]"
+					>
+						<Trash2 class="h-4 w-4" />
+						Eliminar
+					</button>
+					<button
+						type="button"
+						onclick={openEdit}
+						class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.18em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
+					>
+						<Pencil class="h-4 w-4" />
+						Editar lente
+					</button>
+				</div>
+			{/if}
 		{/snippet}
 	</PageHeader>
 

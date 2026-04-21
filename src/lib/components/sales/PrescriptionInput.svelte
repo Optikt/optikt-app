@@ -28,6 +28,10 @@
 		values: PrescriptionValues;
 		/** Optional existing prescription to auto-fill from */
 		existingPrescription?: Prescription | null;
+		/** Active lens type coming from the selected catalog lens, when it can be inferred */
+		selectedCatalogLensType?: string | null;
+		/** Whether there are multiple selected catalog lens types in the operation */
+		hasMixedCatalogLensTypes?: boolean;
 		/** Whether addition fields are visible (non-monofocal) - reserved for future use */
 		showAddition?: boolean;
 		/** Compact mode for inline use - reserved for future use */
@@ -39,6 +43,8 @@
 	let {
 		values = $bindable(),
 		existingPrescription = null,
+		selectedCatalogLensType = null,
+		hasMixedCatalogLensTypes = false,
 		showAddition: _showAddition = false,
 		compact: _compact = false,
 		errors = {}
@@ -72,7 +78,11 @@
 		values.oiCylinder = existingPrescription.osCylinder?.toString() ?? '';
 		values.oiAxis = existingPrescription.osAxis?.toString() ?? '';
 		values.oiAddition = existingPrescription.osAddition?.toString() ?? '';
-		if (existingPrescription.recommendedLensType) {
+		if (
+			existingPrescription.recommendedLensType &&
+			selectedCatalogLensType === null &&
+			!hasMixedCatalogLensTypes
+		) {
 			values.lensType = existingPrescription.recommendedLensType;
 		}
 		if (existingPrescription.doctorName) {

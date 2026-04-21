@@ -30,12 +30,12 @@ async function main() {
 
 	const email = 'optikt.vision@gmail.com';
 	const username = 'optikt';
-	const password = 'SuperAdmin_123';
+	const password = 'Admin_123';
 	const fullName = 'Optikt Admin';
 
-	console.log('🔍 Checking for existing superadmin...');
+	console.log('🔍 Checking for existing admin...');
 
-	// Check if superadmin already exists
+	// Check if admin already exists
 	const [existingUser] = await db
 		.select()
 		.from(schema.users)
@@ -43,7 +43,7 @@ async function main() {
 		.limit(1);
 
 	if (existingUser) {
-		console.log('⚠️  Superadmin already exists, skipping seed.');
+		console.log('⚠️  Admin already exists, skipping seed.');
 		await client.end();
 		return;
 	}
@@ -51,7 +51,7 @@ async function main() {
 	console.log('🔐 Hashing password...');
 	const hashedPassword = await hash(password, ARGON2_OPTIONS);
 
-	console.log('👤 Creating superadmin user...');
+	console.log('👤 Creating admin user...');
 	const [user] = await db
 		.insert(schema.users)
 		.values({
@@ -61,16 +61,16 @@ async function main() {
 			hashedPassword,
 			isActive: true,
 			isSuperuser: true,
-			role: UserRole.SUPERADMIN
+			role: UserRole.ADMIN
 		})
 		.returning();
 
-	console.log('\n✅ Superadmin created successfully!');
+	console.log('\n✅ Admin created successfully!');
 	console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 	console.log(`   ID:       ${user.id}`);
 	console.log(`   Email:    ${email}`);
 	console.log(`   Username: ${username}`);
-	console.log(`   Role:     SUPERADMIN`);
+	console.log(`   Role:     ADMIN`);
 	console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
 	await client.end();

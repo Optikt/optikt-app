@@ -15,6 +15,7 @@
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import { WizardHeader } from '$lib/components/ui';
 	import {
+		buildStep2PrescriptionConfirmation,
 		getRequiredEyes,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
@@ -22,6 +23,7 @@
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import SaleStep1Info from '$lib/components/sales/SaleStep1Info.svelte';
 	import SaleStep2Items from '$lib/components/sales/SaleStep2Items.svelte';
+	import PrescriptionValidationModal from '$lib/components/sales/PrescriptionValidationModal.svelte';
 	import QuoteStep3Summary from './QuoteStep3Summary.svelte';
 
 	interface Props {
@@ -29,9 +31,16 @@
 		lensItems: LensCatalogItemWithRelations[];
 		suppliers: Supplier[];
 		nextQuoteNumber?: number;
+		defaultTaxRate?: number;
 	}
 
-	let { products, lensItems, suppliers: _suppliers, nextQuoteNumber }: Props = $props();
+	let {
+		products,
+		lensItems,
+		suppliers: _suppliers,
+		nextQuoteNumber,
+		defaultTaxRate
+	}: Props = $props();
 
 	// ============================================================================
 	// WIZARD STATE
@@ -39,6 +48,7 @@
 
 	type WizardStep = 1 | 2 | 3;
 	let currentStep = $state<WizardStep>(1);
+	let showPrescriptionValidationModal = $state(false);
 
 	const STEPS = [
 		{ num: 1 as const, label: 'Información' },
@@ -47,11 +57,21 @@
 	];
 
 	function goToStep(step: WizardStep) {
+		if (step === 3 && currentStep !== 3) {
+			if (!step2Valid) return;
+			showPrescriptionValidationModal = true;
+			return;
+		}
+
 		currentStep = step;
 	}
 
 	function nextStep() {
-		if (currentStep === 2 && !step2Valid) return;
+		if (currentStep === 2) {
+			if (!step2Valid) return;
+			showPrescriptionValidationModal = true;
+			return;
+		}
 		if (currentStep < 3) {
 			currentStep = (currentStep + 1) as WizardStep;
 		}
@@ -67,6 +87,15 @@
 
 	function goToQuotes() {
 		goto(resolve('/quotes'));
+	}
+
+	function handlePrescriptionValidationCancel() {
+		showPrescriptionValidationModal = false;
+	}
+
+	function handlePrescriptionValidationConfirm() {
+		showPrescriptionValidationModal = false;
+		currentStep = 3;
 	}
 
 	// ============================================================================
@@ -134,6 +163,10 @@
 
 	let items = $state<SaleItemRow[]>([]);
 
+	const step2PrescriptionConfirmation = $derived(
+		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+	);
+
 	// ============================================================================
 	// VALIDATION
 	// ============================================================================
@@ -178,7 +211,7 @@
 		submitting = true;
 
 		try {
-			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems);
+			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems, defaultTaxRate);
 
 			const result = await createNewQuote({
 				customerId: customerId || undefined,
@@ -292,6 +325,7 @@
 			{notes}
 			{validUntil}
 			{nextQuoteNumber}
+			{defaultTaxRate}
 			{products}
 			{lensItems}
 			{submitting}
@@ -300,4 +334,12 @@
 			onsubmit={handleSubmit}
 		/>
 	</div>
+
+	<PrescriptionValidationModal
+		bind:open={showPrescriptionValidationModal}
+		confirmation={step2PrescriptionConfirmation}
+		workflowLabel="presupuesto"
+		onCancel={handlePrescriptionValidationCancel}
+		onConfirm={handlePrescriptionValidationConfirm}
+	/>
 </div>

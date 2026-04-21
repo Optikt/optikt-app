@@ -12,6 +12,7 @@
 		createEmptyPurchaseOrderDraftItem,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
+	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SelectOption = {
 		id: string;
@@ -26,9 +27,17 @@
 		lensItems: LensCatalogItemWithRelations[];
 		supplierId: string;
 		documentType: PurchaseDocumentType;
+		defaultTaxRate?: number;
 	}
 
-	let { items = $bindable(), products, lensItems, supplierId, documentType }: Props = $props();
+	let {
+		items = $bindable(),
+		products,
+		lensItems,
+		supplierId,
+		documentType,
+		defaultTaxRate = DEFAULT_TAX_RATE
+	}: Props = $props();
 
 	let pendingItemType = $state(PurchaseOrderItemType.PRODUCT);
 	let pendingProductId = $state('');
@@ -124,13 +133,17 @@
 	function addLine() {
 		if (!canAddLine) return;
 
-		const nextItem = createEmptyPurchaseOrderDraftItem(pendingItemType, documentType);
+		const nextItem = createEmptyPurchaseOrderDraftItem(
+			pendingItemType,
+			documentType,
+			defaultTaxRate
+		);
 
 		if (pendingItemType === PurchaseOrderItemType.PRODUCT && selectedProduct) {
-			applyProductDefaults(nextItem, selectedProduct, documentType);
+			applyProductDefaults(nextItem, selectedProduct, documentType, defaultTaxRate);
 			pendingProductId = '';
 		} else if (pendingItemType === PurchaseOrderItemType.LENS && selectedLens) {
-			applyLensDefaults(nextItem, selectedLens, documentType);
+			applyLensDefaults(nextItem, selectedLens, documentType, defaultTaxRate);
 			pendingLensCatalogItemId = '';
 		}
 

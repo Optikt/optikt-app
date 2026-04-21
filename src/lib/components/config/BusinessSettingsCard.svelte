@@ -23,6 +23,7 @@
 	let businessEmail = $state(untrack(() => settings.businessEmail ?? ''));
 	let businessAddress = $state(untrack(() => settings.businessAddress ?? ''));
 	let businessWebsite = $state(untrack(() => settings.businessWebsite ?? ''));
+	let defaultTaxRate = $state(untrack(() => settings.defaultTaxRate?.toString() ?? '16'));
 	let loading = $state(false);
 
 	// Form instance
@@ -36,6 +37,7 @@
 		businessEmail = settings.businessEmail ?? '';
 		businessAddress = settings.businessAddress ?? '';
 		businessWebsite = settings.businessWebsite ?? '';
+		defaultTaxRate = settings.defaultTaxRate?.toString() ?? '16';
 		formInstanceId = generateUUID();
 	}
 </script>
@@ -115,6 +117,18 @@
 			bind:value={businessWebsite}
 			placeholder="https://www.optica.com"
 		/>
+
+		<div class="grid gap-4 sm:grid-cols-2">
+			<FormInput
+				label="Tasa de Impuesto por Defecto (%)"
+				type="number"
+				name="defaultTaxRate"
+				bind:value={defaultTaxRate}
+				placeholder="16"
+				error={currentForm.fields.defaultTaxRate?.issues()}
+			/>
+			<div></div>
+		</div>
 
 		<FormTextarea
 			label="Dirección"

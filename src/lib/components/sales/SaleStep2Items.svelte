@@ -28,7 +28,10 @@
 		findProduct,
 		findLensItem,
 		getAvailableProductStock,
+		getLensRangeWarningsForItem,
+		getLensTypeSuggestionState,
 		getRequiredEyes,
+		buildStep2PrescriptionConfirmation,
 		step2ItemLineTotal,
 		validatePrescriptionFields,
 		hasPrescriptionErrors
@@ -342,8 +345,7 @@
 					name: treatment.name,
 					category: treatment.category,
 					price: treatment.salePrice ?? treatment.price,
-					isTaxable: treatment.isTaxable,
-					taxRate: treatment.taxRate
+					isTaxable: treatment.isTaxable
 				}
 			];
 		}
@@ -489,6 +491,58 @@
 
 	const visibleRxErrors: PrescriptionFieldErrors = $derived(anyRxFieldFilled ? rxErrors : {});
 
+	const step2PrescriptionConfirmation = $derived(
+		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+	);
+
+	const lensTypeSuggestion = $derived(
+		getLensTypeSuggestionState(items, lensItems, customerPrescription?.recommendedLensType ?? null)
+	);
+
+	type LensTypeDecisionContext = {
+		catalogLensType: string;
+		prescriptionLensType: string;
+	};
+
+	let lensTypeDecisionContext = $state<LensTypeDecisionContext | null>(null);
+	let lastLensTypeSuggestionSignature = '';
+
+	$effect(() => {
+		const suggestionSignature = `${lensTypeSuggestion.catalogLensTypes.join('|')}::${lensTypeSuggestion.conflictingPrescriptionLensType ?? ''}`;
+
+		if (suggestionSignature === lastLensTypeSuggestionSignature) return;
+
+		untrack(() => {
+			lastLensTypeSuggestionSignature = suggestionSignature;
+			lensTypeDecisionContext = null;
+
+			if (lensTypeSuggestion.hasMixedCatalogLensTypes || !lensTypeSuggestion.catalogLensType) {
+				return;
+			}
+
+			prescriptionValues.lensType = lensTypeSuggestion.catalogLensType;
+
+			if (lensTypeSuggestion.conflictingPrescriptionLensType) {
+				lensTypeDecisionContext = {
+					catalogLensType: lensTypeSuggestion.catalogLensType,
+					prescriptionLensType: lensTypeSuggestion.conflictingPrescriptionLensType
+				};
+			}
+		});
+	});
+
+	function keepCatalogLensType() {
+		if (!lensTypeDecisionContext) return;
+		prescriptionValues.lensType = lensTypeDecisionContext.catalogLensType;
+		lensTypeDecisionContext = null;
+	}
+
+	function useExistingPrescriptionLensType() {
+		if (!lensTypeDecisionContext) return;
+		prescriptionValues.lensType = lensTypeDecisionContext.prescriptionLensType;
+		lensTypeDecisionContext = null;
+	}
+
 	// ============================================================================
 	// VALIDATION REASONS (for "Siguiente" button feedback)
 	// ============================================================================
@@ -558,70 +612,10 @@
 	// OPTICAL RANGE VALIDATION
 	// ============================================================================
 
-	/** Check if a value falls within [min, max]. Returns true if no range boundary defined. */
-	function inRange(value: number | null, min: number | null, max: number | null): boolean {
-		if (value === null || value === 0) return true; // no value to check
-		if (min !== null && value < min) return false;
-		if (max !== null && value > max) return false;
-		return true;
-	}
-
-	/** Returns warning messages if the prescription doesn't fit any of the lens's optical ranges. */
 	function getRangeWarnings(item: SaleItemRow): string[] {
-		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
 		if (!anyRxFieldFilled) return [];
-
-		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
-		if (!lens || lens.ranges.length === 0) return [];
-
-		const warnings: string[] = [];
-		const eyes: {
-			label: string;
-			enabled: boolean;
-			sphere: string;
-			cylinder: string;
-			addition: string;
-		}[] = [
-			{
-				label: 'OD',
-				enabled: item.lensPair.od.enabled,
-				sphere: prescriptionValues.odSphere,
-				cylinder: prescriptionValues.odCylinder,
-				addition: prescriptionValues.odAddition
-			},
-			{
-				label: 'OI',
-				enabled: item.lensPair.oi.enabled,
-				sphere: prescriptionValues.oiSphere,
-				cylinder: prescriptionValues.oiCylinder,
-				addition: prescriptionValues.oiAddition
-			}
-		];
-
-		for (const eye of eyes) {
-			if (!eye.enabled) continue;
-			const sphere = parseNullableNum(eye.sphere);
-			const cylinder = parseNullableNum(eye.cylinder);
-			const addition = parseNullableNum(eye.addition);
-
-			// Check if prescription fits at least one range
-			const fitsAny = lens.ranges.some(
-				(r) =>
-					inRange(sphere, r.sphereMin, r.sphereMax) &&
-					inRange(cylinder, r.cylinderMin ?? null, r.cylinderMax ?? null) &&
-					inRange(addition, r.additionMin ?? null, r.additionMax ?? null)
-			);
-
-			if (!fitsAny) {
-				const parts: string[] = [];
-				if (sphere !== null) parts.push(`Esf ${sphere >= 0 ? '+' : ''}${sphere.toFixed(2)}`);
-				if (cylinder !== null) parts.push(`Cil ${cylinder >= 0 ? '+' : ''}${cylinder.toFixed(2)}`);
-				if (addition !== null) parts.push(`Add ${addition >= 0 ? '+' : ''}${addition.toFixed(2)}`);
-				warnings.push(`${eye.label} (${parts.join(', ')}) fuera del rango óptico del cristal`);
-			}
-		}
-
-		return warnings;
+		if (item.kind !== 'lens') return [];
+		return getLensRangeWarningsForItem(item.id, step2PrescriptionConfirmation);
 	}
 
 	const selectedItemCount = $derived(items.length);
@@ -1394,9 +1388,65 @@
 					</div>
 
 					<div class="rounded-[1.25rem] bg-white/92 px-3.5 py-3.5 shadow-sm ring-1 ring-white/80">
+						{#if lensTypeSuggestion.hasMixedCatalogLensTypes}
+							<div
+								class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950"
+							>
+								<div class="flex items-start gap-2.5">
+									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0" />
+									<div>
+										<p class="text-sm font-semibold">Tipos de cristal distintos detectados</p>
+										<p class="mt-1 text-sm leading-6 text-amber-900">
+											Hay cristales de tipos distintos en la misma operación. Por eso el tipo de
+											lente de la prescripción ya no se sincroniza automáticamente y debes revisarlo
+											de forma manual antes de continuar.
+										</p>
+									</div>
+								</div>
+							</div>
+						{:else if lensTypeDecisionContext}
+							<div
+								class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950"
+							>
+								<div class="flex items-start gap-2.5">
+									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0" />
+									<div class="min-w-0 flex-1">
+										<p class="text-sm font-semibold">Confirma el tipo de lente base</p>
+										<p class="mt-1 text-sm leading-6 text-amber-900">
+											El cristal seleccionado es
+											<strong>{getLensTypeLabel(lensTypeDecisionContext.catalogLensType)}</strong>,
+											pero la fórmula guardada del cliente venía como
+											<strong
+												>{getLensTypeLabel(lensTypeDecisionContext.prescriptionLensType)}</strong
+											>. Por defecto tomamos el tipo del cristal. Confirma si quieres mantenerlo o
+											volver al tipo de la fórmula previa.
+										</p>
+										<div class="mt-3 flex flex-wrap gap-2">
+											<button
+												type="button"
+												onclick={keepCatalogLensType}
+												class="rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700"
+											>
+												Mantener {getLensTypeLabel(lensTypeDecisionContext.catalogLensType)}
+											</button>
+											<button
+												type="button"
+												onclick={useExistingPrescriptionLensType}
+												class="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
+											>
+												Usar {getLensTypeLabel(lensTypeDecisionContext.prescriptionLensType)}
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						{/if}
+
 						<PrescriptionInput
 							bind:values={prescriptionValues}
 							existingPrescription={customerPrescription}
+							selectedCatalogLensType={lensTypeSuggestion.catalogLensType}
+							hasMixedCatalogLensTypes={lensTypeSuggestion.hasMixedCatalogLensTypes}
 							showAddition={prescriptionValues.lensType !== 'MONOFOCAL'}
 							compact={true}
 							errors={visibleRxErrors}

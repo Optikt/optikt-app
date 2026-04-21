@@ -3,6 +3,7 @@
  * Server-side functions for fetching entity change history
  */
 import { query } from '$app/server';
+import { requireAuth } from '$lib/server/guards';
 import { z } from 'zod';
 import { getEntityHistory, getEntityHistoryCount } from '$lib/server/db/queries/changeHistory';
 import { ALL_ENTITY_TYPES } from '$lib/server/db/schema';
@@ -39,6 +40,8 @@ export interface EntityHistoryResponse {
 export const getHistory = query(
 	GetEntityHistorySchema,
 	async (data): Promise<EntityHistoryResponse> => {
+		requireAuth();
+
 		const { entityType, entityId, limit, offset } = data;
 
 		const [entries, total] = await Promise.all([

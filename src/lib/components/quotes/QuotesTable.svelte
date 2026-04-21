@@ -14,6 +14,7 @@
 		total: number;
 		totalPages: number;
 		loading?: boolean;
+		canManage?: boolean;
 		onView?: (quote: QuoteWithRelations) => void;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
@@ -26,6 +27,7 @@
 		total,
 		totalPages,
 		loading = false,
+		canManage = true,
 		onView,
 		onRefresh,
 		onPageChange
@@ -47,6 +49,8 @@
 	let actionLoading = $state(false);
 
 	function openCancel(quote: QuoteWithRelations) {
+		if (!canManage) return;
+
 		selectedQuote = quote;
 		showCancelModal = true;
 	}
@@ -139,7 +143,7 @@
 							</span>
 						</button>
 					{/if}
-					{#if quote.status === QuoteStatus.DRAFT}
+					{#if canManage && quote.status === QuoteStatus.DRAFT}
 						<button
 							onclick={(event) => {
 								event.stopPropagation();
@@ -150,7 +154,7 @@
 						>
 							<CircleX class="h-4 w-4" />
 						</button>
-					{:else}
+					{:else if canManage}
 						<span class="inline-block w-7"></span>
 					{/if}
 				</div>

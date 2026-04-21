@@ -3,6 +3,7 @@
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
+	import { isAdminRole } from '$lib/shared/enums';
 	import { getErrorMessage } from '$lib/utils';
 	import { listSuppliers } from '$lib/remote/suppliers.remote';
 	import { SuppliersTable, SupplierFormModal } from '$lib/components/suppliers';
@@ -24,6 +25,7 @@
 		totalPages: Math.ceil(totalCount / 10)
 	});
 	let loading = $state(false);
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	// Filter state
 	let search = $state('');
@@ -91,10 +93,12 @@
 			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Proveedores</h1>
 			<p class="text-slate-500">Gestiona los proveedores del sistema</p>
 		</div>
-		<Button color="blue" onclick={openCreate}>
-			<Plus class="mr-2 h-5 w-5" />
-			Agregar Proveedor
-		</Button>
+		{#if isAdmin}
+			<Button color="blue" onclick={openCreate}>
+				<Plus class="mr-2 h-5 w-5" />
+				Agregar Proveedor
+			</Button>
+		{/if}
 	</div>
 
 	<!-- Filters -->
@@ -127,6 +131,7 @@
 		suppliers={suppliersData.items}
 		{loading}
 		onEdit={openEdit}
+		canManage={isAdmin}
 		onRefresh={() => fetchSuppliers(suppliersData.page)}
 	/>
 

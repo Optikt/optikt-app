@@ -16,6 +16,7 @@
 	import { listSales, getSalesStats } from '$lib/remote/sales.remote';
 	import { SalesTable } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
+	import { canOperate } from '$lib/shared/enums';
 	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
 	import type { SaleWithRelations, SalesStats } from '$lib/server/db/queries/sales';
 	import type { PaginatedSales } from '$lib/remote/sales.remote';
@@ -35,6 +36,7 @@
 	});
 	let stats = $state<SalesStats>(initialStats);
 	let loading = $state(false);
+	const canAct = $derived(canOperate(data.user.role));
 
 	// Filter state
 	let search = $state('');
@@ -106,13 +108,15 @@
 <div class="p-6">
 	<PageHeader title="Ventas">
 		{#snippet actions()}
-			<button
-				onclick={() => goto(resolve('/sales/new'))}
-				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-			>
-				<Plus size={18} />
-				NUEVA VENTA
-			</button>
+			{#if canAct}
+				<button
+					onclick={() => goto(resolve('/sales/new'))}
+					class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+				>
+					<Plus size={18} />
+					NUEVA VENTA
+				</button>
+			{/if}
 		{/snippet}
 	</PageHeader>
 
@@ -238,6 +242,9 @@
 		total={salesData.total}
 		totalPages={salesData.totalPages}
 		{loading}
+		canManage={canAct}
+		currentUserId={data.user.id}
+		currentUserRole={data.user.role}
 		onView={handleView}
 		onRefresh={() => {
 			fetchSales(salesData.page);

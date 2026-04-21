@@ -1,5 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import {
 	findPurchaseOrderByIdWithRelations,
 	getPurchaseOrderItems
@@ -8,9 +10,7 @@ import { getPurchaseOrderRelatedMovements } from '$lib/server/db/queries/invento
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	if (!locals.user) {
-		error(401, 'No autorizado');
-	}
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 
 	const purchaseOrder = await findPurchaseOrderByIdWithRelations(params.id);
 	if (!purchaseOrder) {

@@ -6,7 +6,6 @@
 import type { BadgeVariant } from '$lib/shared/badge-variants';
 
 export enum UserRole {
-	SUPERADMIN = 'SUPERADMIN',
 	ADMIN = 'ADMIN',
 	MANAGER = 'MANAGER',
 	SELLER = 'SELLER',
@@ -17,7 +16,6 @@ export enum UserRole {
  * Role badge colors for consistent UI display
  */
 export const roleBadgeColors: Record<UserRole, BadgeVariant> = {
-	[UserRole.SUPERADMIN]: 'warning',
 	[UserRole.ADMIN]: 'purple',
 	[UserRole.MANAGER]: 'info',
 	[UserRole.SELLER]: 'success',
@@ -32,18 +30,44 @@ export function getUserRoleBadgeColor(role: string): BadgeVariant {
 }
 
 /**
- * Helper function to check if a role has admin privileges
+ * Helper function to check if a role has admin privileges (ADMIN or MANAGER)
  */
 export function isAdminRole(role: UserRole | undefined | null): boolean {
 	if (!role) return false;
-	return role === UserRole.SUPERADMIN || role === UserRole.ADMIN || role === UserRole.MANAGER;
+	return role === UserRole.ADMIN || role === UserRole.MANAGER;
 }
 
 /**
- * Helper function to check if a role is superadmin
+ * Helper to check if a role can perform operations (anything except VIEWER)
  */
-export function isSuperAdminRole(role: UserRole | undefined | null): boolean {
-	return role === UserRole.SUPERADMIN;
+export function canOperate(role: UserRole | undefined | null): boolean {
+	if (!role) return false;
+	return role !== UserRole.VIEWER;
+}
+
+/**
+ * Admin and manager can manage any sale.
+ * Sellers can only manage sales that they created.
+ * Viewers cannot manage sales.
+ */
+export function canManageSaleByOwner(
+	role: UserRole | undefined | null,
+	currentUserId: string | undefined | null,
+	saleSellerId: string | undefined | null
+): boolean {
+	if (role === UserRole.ADMIN || role === UserRole.MANAGER) {
+		return true;
+	}
+
+	if (role !== UserRole.SELLER) {
+		return false;
+	}
+
+	if (!currentUserId || !saleSellerId) {
+		return false;
+	}
+
+	return currentUserId === saleSellerId;
 }
 
 /**

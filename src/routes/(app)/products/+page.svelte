@@ -11,7 +11,12 @@
 		type ProductInventoryStats
 	} from '$lib/remote/products.remote';
 	import { ProductsTable } from '$lib/components/products';
-	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS, type ProductType } from '$lib/shared/enums';
+	import {
+		ALL_PRODUCT_TYPES,
+		PRODUCT_TYPE_LABELS,
+		isAdminRole,
+		type ProductType
+	} from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { PaginatedResult } from '$lib/types';
 	import { untrack } from 'svelte';
@@ -28,6 +33,7 @@
 	});
 	let stats = $state<ProductInventoryStats>(initialStats);
 	let loading = $state(false);
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	let search = $state('');
 	let typeFilter = $state<ProductType | ''>('');
@@ -111,14 +117,16 @@
 <div class="space-y-6 p-6">
 	<PageHeader title="Productos" subtitle="Inventario">
 		{#snippet actions()}
-			<button
-				type="button"
-				onclick={() => goto(resolve('/products/create'))}
-				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-			>
-				<Plus class="h-4 w-4" />
-				NUEVO PRODUCTO
-			</button>
+			{#if isAdmin}
+				<button
+					type="button"
+					onclick={() => goto(resolve('/products/create'))}
+					class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+				>
+					<Plus class="h-4 w-4" />
+					NUEVO PRODUCTO
+				</button>
+			{/if}
 		{/snippet}
 	</PageHeader>
 
@@ -273,7 +281,8 @@
 		totalPages={productsData.totalPages}
 		{loading}
 		onView={handleView}
-		onEdit={handleEdit}
+		onEdit={isAdmin ? handleEdit : undefined}
+		canManage={isAdmin}
 		onRefresh={() => {
 			fetchProducts(productsData.page);
 			refreshStats();

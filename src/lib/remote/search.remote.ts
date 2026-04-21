@@ -3,6 +3,7 @@
  * Searches across products and lab lens catalog
  */
 import { query } from '$app/server';
+import { requireAuth } from '$lib/server/guards';
 import { UniversalSearchSchema } from '$lib/schemas/search';
 import { db } from '$lib/server/db';
 import {
@@ -47,6 +48,8 @@ const MAX_RESULTS = 8;
 export const universalSearch = query(
 	UniversalSearchSchema,
 	async (data): Promise<SearchResults> => {
+		requireAuth();
+
 		const searchText = data.query.toLowerCase().trim();
 
 		const [productResults, lensResults] = await Promise.all([

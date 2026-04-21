@@ -6,6 +6,12 @@
  * for display and reporting purposes.
  */
 
+/**
+ * Compile-time fallback tax rate.
+ * The runtime value comes from settings.defaultTaxRate.
+ */
+export const DEFAULT_TAX_RATE = 16;
+
 /** Decompose a tax-inclusive price into base and tax amounts. */
 export function decomposePrice(price: number, taxRate: number): { base: number; tax: number } {
 	if (taxRate <= 0) return { base: price, tax: 0 };
