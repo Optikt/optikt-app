@@ -10,7 +10,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U optikt']
+      test: ['CMD-SHELL', 'pg_isready -U optikt -d optikt_db']
       interval: 10s
       timeout: 5s
       retries: 5
