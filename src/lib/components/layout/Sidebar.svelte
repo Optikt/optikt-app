@@ -59,9 +59,7 @@
 	] as const;
 
 	// Items visible only to ADMIN
-	const adminOnlyItems = [
-		{ href: '/users', label: 'Usuarios', icon: 'shield' }
-	] as const;
+	const adminOnlyItems = [{ href: '/users', label: 'Usuarios', icon: 'shield' }] as const;
 
 	const isAdminOrManager = $derived(isAdminRole(user.role));
 	const isAdmin = $derived(user.role === UserRole.ADMIN);

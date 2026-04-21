@@ -136,10 +136,7 @@ describe('buildStep2PrescriptionConfirmation', () => {
 
 		const confirmation = makeConfirmation({}, [makeConfirmationLensRow()], [lens]);
 
-		expect(confirmation.items[0]?.eyes.map((eye) => eye.status)).toEqual([
-			'in-range',
-			'in-range'
-		]);
+		expect(confirmation.items[0]?.eyes.map((eye) => eye.status)).toEqual(['in-range', 'in-range']);
 		expect(getLensRangeWarningsForItem('row-1', confirmation)).toHaveLength(0);
 	});
 
@@ -250,51 +247,51 @@ describe('buildStep2PrescriptionConfirmation', () => {
 	});
 });
 
-	describe('getLensTypeSuggestionState', () => {
-		it('returns the single catalog lens type when all selected lenses match', () => {
-			const firstRow = makeConfirmationLensRow('row-1');
-			const secondRow = makeConfirmationLensRow('row-2');
+describe('getLensTypeSuggestionState', () => {
+	it('returns the single catalog lens type when all selected lenses match', () => {
+		const firstRow = makeConfirmationLensRow('row-1');
+		const secondRow = makeConfirmationLensRow('row-2');
 
-			const state = getLensTypeSuggestionState(
-				[firstRow, secondRow],
-				[makeLensItem(), makeLensItem({ id: 'lens-2' })],
-				null
-			);
+		const state = getLensTypeSuggestionState(
+			[firstRow, secondRow],
+			[makeLensItem(), makeLensItem({ id: 'lens-2' })],
+			null
+		);
 
-			expect(state.catalogLensType).toBe(LensType.MONOFOCAL);
-			expect(state.hasMixedCatalogLensTypes).toBe(false);
-		});
-
-		it('flags a conflict when the existing prescription type differs from the selected catalog lens', () => {
-			const state = getLensTypeSuggestionState(
-				[makeConfirmationLensRow()],
-				[makeLensItem({ type: LensType.PROGRESSIVE })],
-				LensType.MONOFOCAL
-			);
-
-			expect(state.catalogLensType).toBe(LensType.PROGRESSIVE);
-			expect(state.conflictingPrescriptionLensType).toBe(LensType.MONOFOCAL);
-		});
-
-		it('detects mixed lens types and disables automatic single-type suggestion', () => {
-			const firstRow = makeConfirmationLensRow('row-1');
-			const secondRow = makeConfirmationLensRow('row-2');
-			secondRow.lensPair!.catalogItemId = 'lens-2';
-
-			const state = getLensTypeSuggestionState(
-				[firstRow, secondRow],
-				[
-					makeLensItem({ id: 'lens-1', type: LensType.MONOFOCAL }),
-					makeLensItem({ id: 'lens-2', type: LensType.PROGRESSIVE })
-				],
-				LensType.MONOFOCAL
-			);
-
-			expect(state.catalogLensType).toBeNull();
-			expect(state.hasMixedCatalogLensTypes).toBe(true);
-			expect(state.catalogLensTypes).toEqual([LensType.MONOFOCAL, LensType.PROGRESSIVE]);
-		});
+		expect(state.catalogLensType).toBe(LensType.MONOFOCAL);
+		expect(state.hasMixedCatalogLensTypes).toBe(false);
 	});
+
+	it('flags a conflict when the existing prescription type differs from the selected catalog lens', () => {
+		const state = getLensTypeSuggestionState(
+			[makeConfirmationLensRow()],
+			[makeLensItem({ type: LensType.PROGRESSIVE })],
+			LensType.MONOFOCAL
+		);
+
+		expect(state.catalogLensType).toBe(LensType.PROGRESSIVE);
+		expect(state.conflictingPrescriptionLensType).toBe(LensType.MONOFOCAL);
+	});
+
+	it('detects mixed lens types and disables automatic single-type suggestion', () => {
+		const firstRow = makeConfirmationLensRow('row-1');
+		const secondRow = makeConfirmationLensRow('row-2');
+		secondRow.lensPair!.catalogItemId = 'lens-2';
+
+		const state = getLensTypeSuggestionState(
+			[firstRow, secondRow],
+			[
+				makeLensItem({ id: 'lens-1', type: LensType.MONOFOCAL }),
+				makeLensItem({ id: 'lens-2', type: LensType.PROGRESSIVE })
+			],
+			LensType.MONOFOCAL
+		);
+
+		expect(state.catalogLensType).toBeNull();
+		expect(state.hasMixedCatalogLensTypes).toBe(true);
+		expect(state.catalogLensTypes).toEqual([LensType.MONOFOCAL, LensType.PROGRESSIVE]);
+	});
+});
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 

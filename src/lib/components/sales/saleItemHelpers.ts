@@ -537,9 +537,7 @@ export function buildStep2PrescriptionConfirmation(
 
 			const rangeWarnings = eyes
 				.filter((eye) => eye.status === 'out-of-range')
-				.map(
-					(eye) => `${eye.eye} (${eye.prescriptionSummary}) fuera del rango óptico del cristal`
-				);
+				.map((eye) => `${eye.eye} (${eye.prescriptionSummary}) fuera del rango óptico del cristal`);
 
 			return {
 				itemId: item.id,

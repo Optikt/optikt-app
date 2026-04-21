@@ -61,13 +61,7 @@
 	}
 </script>
 
-<Modal
-	bind:open
-	size="lg"
-	title="Confirmar revisión óptica"
-	permanent
-	onclose={handleClose}
->
+<Modal bind:open size="lg" title="Confirmar revisión óptica" permanent onclose={handleClose}>
 	<div class="space-y-4">
 		<div class="rounded-[1.25rem] border border-slate-200 bg-surface-container-low px-4 py-4">
 			<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
@@ -78,26 +72,24 @@
 			</h3>
 			<p class="mt-2 text-sm leading-6 text-on-surface-variant">
 				{#if confirmation.hasLensItems}
-					Confirma que la fórmula ingresada para esta {workflowLabel} corresponde al cristal
-					seleccionado y que encaja con el catálogo cuando existan rangos ópticos cargados.
+					Confirma que la fórmula ingresada para esta {workflowLabel} corresponde al cristal seleccionado
+					y que encaja con el catálogo cuando existan rangos ópticos cargados.
 				{:else}
-					Esta {workflowLabel} no incluye cristales. No hay validación óptica pendiente, pero
-					dejamos esta confirmación antes de pasar al resumen.
+					Esta {workflowLabel} no incluye cristales. No hay validación óptica pendiente, pero dejamos
+					esta confirmación antes de pasar al resumen.
 				{/if}
 			</p>
 		</div>
 
 		{#if confirmation.hasMultipleLenses}
-			<div
-				class="rounded-[1rem] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950"
-			>
+			<div class="rounded-[1rem] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
 				<div class="flex items-start gap-3">
 					<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
 					<div>
 						<p class="text-sm font-semibold">Múltiples lentes en una misma operación</p>
 						<p class="mt-1 text-sm leading-6 text-amber-900">
-							No es el caso habitual. Normalmente conviene separar cada par en ventas o
-							presupuestos distintos, aunque puedes continuar si este caso lo requiere.
+							No es el caso habitual. Normalmente conviene separar cada par en ventas o presupuestos
+							distintos, aunque puedes continuar si este caso lo requiere.
 						</p>
 					</div>
 				</div>
@@ -131,7 +123,8 @@
 							<span
 								class="rounded-full bg-surface-container-low px-3 py-1 text-xs font-semibold text-on-surface-variant"
 							>
-								{item.eyes.length} {item.eyes.length === 1 ? 'ojo validado' : 'ojos validados'}
+								{item.eyes.length}
+								{item.eyes.length === 1 ? 'ojo validado' : 'ojos validados'}
 							</span>
 						</div>
 
@@ -146,7 +139,9 @@
 									<div>
 										<p class="text-sm font-semibold">{getTypeStatusLabel(item)}</p>
 										<p class="mt-1 text-sm leading-6">
-											Catálogo: {item.catalogLensType ? getLensTypeLabel(item.catalogLensType) : 'Sin tipo'}
+											Catálogo: {item.catalogLensType
+												? getLensTypeLabel(item.catalogLensType)
+												: 'Sin tipo'}
 											· Prescripción: {getLensTypeLabel(item.prescriptionLensType)}
 										</p>
 									</div>
@@ -164,8 +159,8 @@
 											{#if item.hasRanges}
 												Se comparó la fórmula con los rangos cargados para este cristal.
 											{:else}
-												Este cristal no tiene rangos definidos. Confirma la fórmula y luego
-												consulta con el laboratorio antes de cerrar el caso.
+												Este cristal no tiene rangos definidos. Confirma la fórmula y luego consulta
+												con el laboratorio antes de cerrar el caso.
 											{/if}
 										</p>
 									</div>
@@ -175,9 +170,7 @@
 
 						<div class="mt-4 space-y-2">
 							{#each item.eyes as eye (eye.eye)}
-								<div
-									class={`rounded-[0.9rem] border px-4 py-3 ${getEyeStatusClasses(eye)}`}
-								>
+								<div class={`rounded-[0.9rem] border px-4 py-3 ${getEyeStatusClasses(eye)}`}>
 									<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 										<div>
 											<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">

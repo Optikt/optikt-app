@@ -496,11 +496,7 @@
 	);
 
 	const lensTypeSuggestion = $derived(
-		getLensTypeSuggestionState(
-			items,
-			lensItems,
-			customerPrescription?.recommendedLensType ?? null
-		)
+		getLensTypeSuggestionState(items, lensItems, customerPrescription?.recommendedLensType ?? null)
 	);
 
 	type LensTypeDecisionContext = {
@@ -1393,21 +1389,25 @@
 
 					<div class="rounded-[1.25rem] bg-white/92 px-3.5 py-3.5 shadow-sm ring-1 ring-white/80">
 						{#if lensTypeSuggestion.hasMixedCatalogLensTypes}
-							<div class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950">
+							<div
+								class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950"
+							>
 								<div class="flex items-start gap-2.5">
 									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0" />
 									<div>
 										<p class="text-sm font-semibold">Tipos de cristal distintos detectados</p>
 										<p class="mt-1 text-sm leading-6 text-amber-900">
-											Hay cristales de tipos distintos en la misma operación. Por eso el tipo de lente
-											de la prescripción ya no se sincroniza automáticamente y debes revisarlo de forma
-											manual antes de continuar.
+											Hay cristales de tipos distintos en la misma operación. Por eso el tipo de
+											lente de la prescripción ya no se sincroniza automáticamente y debes revisarlo
+											de forma manual antes de continuar.
 										</p>
 									</div>
 								</div>
 							</div>
 						{:else if lensTypeDecisionContext}
-							<div class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950">
+							<div
+								class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950"
+							>
 								<div class="flex items-start gap-2.5">
 									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0" />
 									<div class="min-w-0 flex-1">
@@ -1416,9 +1416,10 @@
 											El cristal seleccionado es
 											<strong>{getLensTypeLabel(lensTypeDecisionContext.catalogLensType)}</strong>,
 											pero la fórmula guardada del cliente venía como
-											<strong>{getLensTypeLabel(lensTypeDecisionContext.prescriptionLensType)}</strong>.
-											Por defecto tomamos el tipo del cristal. Confirma si quieres mantenerlo o volver
-											al tipo de la fórmula previa.
+											<strong
+												>{getLensTypeLabel(lensTypeDecisionContext.prescriptionLensType)}</strong
+											>. Por defecto tomamos el tipo del cristal. Confirma si quieres mantenerlo o
+											volver al tipo de la fórmula previa.
 										</p>
 										<div class="mt-3 flex flex-wrap gap-2">
 											<button
