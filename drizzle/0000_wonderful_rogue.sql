@@ -581,7 +581,7 @@ CREATE INDEX "ix_sale_payments_id" ON "sale_payments" USING btree ("id" uuid_ops
 CREATE INDEX "ix_sale_payments_sale_id" ON "sale_payments" USING btree ("sale_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sales_customer_id" ON "sales" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sales_id" ON "sales" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_sales_sale_date" ON "sales" USING btree ("sale_date" timestamp_ops);--> statement-breakpoint
+CREATE INDEX "ix_sales_sale_date" ON "sales" USING btree ("sale_date");--> statement-breakpoint
 CREATE INDEX "ix_sales_seller_id" ON "sales" USING btree ("seller_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_sales_order_number" ON "sales" USING btree ("order_number" int4_ops);--> statement-breakpoint
 CREATE INDEX "ix_quote_items_id" ON "quote_items" USING btree ("id" uuid_ops);--> statement-breakpoint
@@ -591,7 +591,7 @@ CREATE INDEX "ix_quote_items_lens_catalog_item_id" ON "quote_items" USING btree 
 CREATE INDEX "ix_quote_items_parent_id" ON "quote_items" USING btree ("parent_quote_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_quotes_customer_id" ON "quotes" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_quotes_id" ON "quotes" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_quotes_quote_date" ON "quotes" USING btree ("quote_date" timestamp_ops);--> statement-breakpoint
+CREATE INDEX "ix_quotes_quote_date" ON "quotes" USING btree ("quote_date");--> statement-breakpoint
 CREATE INDEX "ix_quotes_seller_id" ON "quotes" USING btree ("seller_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_quotes_quote_number" ON "quotes" USING btree ("quote_number" int4_ops);--> statement-breakpoint
 CREATE INDEX "ix_purchase_order_items_id" ON "purchase_order_items" USING btree ("id" uuid_ops);--> statement-breakpoint

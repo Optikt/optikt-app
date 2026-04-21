@@ -3298,8 +3298,7 @@
               "expression": "sale_date",
               "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "timestamp_ops"
+              "nulls": "last"
             }
           ],
           "isUnique": false,
@@ -3917,8 +3916,7 @@
               "expression": "quote_date",
               "isExpression": false,
               "asc": true,
-              "nulls": "last",
-              "opclass": "timestamp_ops"
+              "nulls": "last"
             }
           ],
           "isUnique": false,

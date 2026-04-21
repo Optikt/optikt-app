@@ -81,7 +81,7 @@ export const sales = pgTable(
 		index('ix_sales_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
 		index('ix_sales_sale_date').using(
 			'btree',
-			table.saleDate.asc().nullsLast().op('timestamp_ops')
+			table.saleDate.asc().nullsLast()
 		),
 		index('ix_sales_seller_id').using('btree', table.sellerId.asc().nullsLast().op('uuid_ops')),
 		uniqueIndex('ix_sales_order_number').using(
