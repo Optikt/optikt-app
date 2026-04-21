@@ -35,17 +35,17 @@
 
 **Pendiente por pagina**
 
-| Ruta                 | Estado    | Alcance pendiente |
-| -------------------- | --------- | ----------------- |
-| `/brands`            | pendiente | Migrar al design system la vista principal y cualquier flujo activo asociado de marcas. |
-| `/suppliers`         | pendiente | Migrar al design system la vista principal y los flujos activos de proveedores. |
+| Ruta                 | Estado    | Alcance pendiente                                                                        |
+| -------------------- | --------- | ---------------------------------------------------------------------------------------- |
+| `/brands`            | pendiente | Migrar al design system la vista principal y cualquier flujo activo asociado de marcas.  |
+| `/suppliers`         | pendiente | Migrar al design system la vista principal y los flujos activos de proveedores.          |
 | `/users`             | pendiente | Migrar al design system la gestion de usuarios sin reintroducir permisos inconsistentes. |
-| `/materials`         | pendiente | Migrar materiales al mismo lenguaje visual que productos y lentes. |
-| `/config`            | parcial   | Completar PageHeader, tokens, formularios y limpieza visual restante. |
-| `/reports`           | parcial   | Terminar hub de reportes con layout y tokens consistentes. |
-| `/reports/sales`     | pendiente | Redesign completo del reporte de ventas. |
-| `/reports/payments`  | pendiente | Redesign completo del reporte de pagos. |
-| `/reports/inventory` | pendiente | Redesign completo del reporte de inventario. |
+| `/materials`         | pendiente | Migrar materiales al mismo lenguaje visual que productos y lentes.                       |
+| `/config`            | parcial   | Completar PageHeader, tokens, formularios y limpieza visual restante.                    |
+| `/reports`           | parcial   | Terminar hub de reportes con layout y tokens consistentes.                               |
+| `/reports/sales`     | pendiente | Redesign completo del reporte de ventas.                                                 |
+| `/reports/payments`  | pendiente | Redesign completo del reporte de pagos.                                                  |
+| `/reports/inventory` | pendiente | Redesign completo del reporte de inventario.                                             |
 
 **Orden sugerido**
 
