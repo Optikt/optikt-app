@@ -1,31 +1,63 @@
-name: Docker Build
+name: Docker Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump to publish
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: docker-release
+  cancel-in-progress: false
 
 jobs:
   docker:
-    name: Build And Push Docker Image
+    name: Bump Version And Publish Docker Image
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
+      - name: Ensure release runs from default branch
+        run: |
+          if [ "$GITHUB_REF_NAME" != "${{ github.event.repository.default_branch }}" ]; then
+            echo "This workflow must run from ${{ github.event.repository.default_branch }}."
+            exit 1
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      - name: Bump package version
+        run: npm version "${{ inputs.bump }}" --no-git-tag-version
+
       - name: Read package version
         id: version
         run: |
           VERSION="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit version bump and tag release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore(release): v${{ steps.version.outputs.version }}"
+          git tag "v${{ steps.version.outputs.version }}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -49,3 +81,6 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/optikt-app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Push release commit and tag
+        run: git push origin HEAD:${GITHUB_REF_NAME} --follow-tags

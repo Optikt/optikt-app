@@ -51,13 +51,19 @@ docker build -t optikt-app .
 
 ### Publish a new image to Docker Hub
 
-Versioning follows the `version` field in `package.json`.
+Publishing is manual from GitHub Actions. The workflow bumps `package.json`, creates the release commit and tag, and then pushes the Docker image.
 
-1. Bump `version` in `package.json` (e.g. `0.1.0` → `0.2.0`).
-2. Commit and push to `main`.
-3. The workflow at `.github/workflows/docker-build.yml` builds and pushes:
-   - `DOCKER_USERNAME/optikt-app:v<package.json version>`
-   - `DOCKER_USERNAME/optikt-app:latest`
+1. Open GitHub Actions and run the workflow at `.github/workflows/docker-build.yml`.
+2. Select the `main` branch.
+3. Choose the version bump: `patch`, `minor`, or `major`.
+4. The workflow will:
+
+- bump the `version` field in `package.json`
+- create a commit `chore(release): vX.Y.Z`
+- create the tag `vX.Y.Z`
+- build and push these Docker tags:
+- `DOCKER_USERNAME/optikt-app:v<package.json version>`
+- `DOCKER_USERNAME/optikt-app:latest`
 
 Required repository secrets: `DOCKER_USERNAME`, `DOCKER_PASSWORD`.
 
