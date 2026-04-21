@@ -16,6 +16,7 @@
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { WizardHeader } from '$lib/components/ui';
 	import {
+		buildStep2PrescriptionConfirmation,
 		calculateSaleSummarySubtotal,
 		getAvailableProductStock,
 		getRequiredEyes,
@@ -27,6 +28,7 @@
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
 	import SaleStep3Summary from './SaleStep3Summary.svelte';
+	import PrescriptionValidationModal from './PrescriptionValidationModal.svelte';
 
 	interface Props {
 		products: ProductWithRelations[];
@@ -50,6 +52,7 @@
 
 	type WizardStep = 1 | 2 | 3;
 	let currentStep = $state<WizardStep>(1);
+	let showPrescriptionValidationModal = $state(false);
 
 	const STEPS = [
 		{ num: 1 as const, label: 'Información' },
@@ -58,12 +61,22 @@
 	];
 
 	function goToStep(step: WizardStep) {
+		if (step === 3 && currentStep !== 3) {
+			if (!step1Valid || !step2Valid) return;
+			showPrescriptionValidationModal = true;
+			return;
+		}
+
 		currentStep = step;
 	}
 
 	function nextStep() {
 		if (currentStep === 1 && !step1Valid) return;
-		if (currentStep === 2 && !step2Valid) return;
+		if (currentStep === 2) {
+			if (!step2Valid) return;
+			showPrescriptionValidationModal = true;
+			return;
+		}
 		if (currentStep < 3) {
 			currentStep = (currentStep + 1) as WizardStep;
 		}
@@ -137,6 +150,10 @@
 
 	let items = $state<SaleItemRow[]>([]);
 
+	const step2PrescriptionConfirmation = $derived(
+		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+	);
+
 	// ============================================================================
 	// VALIDATION
 	// ============================================================================
@@ -203,6 +220,15 @@
 		return (
 			stepNum === 1 || (stepNum === 2 && step1Valid) || (stepNum === 3 && step1Valid && step2Valid)
 		);
+	}
+
+	function handlePrescriptionValidationCancel() {
+		showPrescriptionValidationModal = false;
+	}
+
+	function handlePrescriptionValidationConfirm() {
+		showPrescriptionValidationModal = false;
+		currentStep = 3;
 	}
 
 	// ============================================================================
@@ -316,4 +342,12 @@
 			onsubmit={handleSubmit}
 		/>
 	</div>
+
+	<PrescriptionValidationModal
+		bind:open={showPrescriptionValidationModal}
+		confirmation={step2PrescriptionConfirmation}
+		workflowLabel="venta"
+		onCancel={handlePrescriptionValidationCancel}
+		onConfirm={handlePrescriptionValidationConfirm}
+	/>
 </div>

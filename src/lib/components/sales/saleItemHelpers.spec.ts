@@ -1,18 +1,300 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { ProductWithRelations } from '$lib/server/db/queries/products';
+import { DiscountType } from '$lib/shared/enums';
 import {
+	LensCatalogSource,
+	LensInventoryMode,
+	LensPriceType,
+	LensType
+} from '$lib/shared/enums/lensTypes';
+
+import {
+	buildStep2PrescriptionConfirmation,
 	calculateSaleSummarySubtotal,
+	computeItemDiscount,
+	getAvailableProductStock,
+	getItemDiscountMax,
+	getLensRangeWarningsForItem,
+	getLensTypeSuggestionState,
+	getRequestedProductQuantity,
+	isItemDiscountValid,
 	itemLineTotal,
 	step2ItemLineTotal,
-	computeItemDiscount,
-	getItemDiscountMax,
-	isItemDiscountValid,
-	getRequestedProductQuantity,
-	getAvailableProductStock
+	type Step2PrescriptionConfirmation
 } from './saleItemHelpers';
-import { DiscountType } from '$lib/shared/enums';
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import type { SaleItemRow, SelectedTreatment } from './newSaleTypes';
-import { createEmptyLensPair } from './newSaleTypes';
+import { createEmptyLensPair, type SaleItemRow, type SelectedTreatment } from './newSaleTypes';
+
+function makeLensItem(
+	overrides: Partial<LensCatalogItemWithRelations> = {}
+): LensCatalogItemWithRelations {
+	return {
+		id: 'lens-1',
+		source: LensCatalogSource.LAB,
+		supplierId: 'supplier-1',
+		name: 'Alpha Lens',
+		type: LensType.MONOFOCAL,
+		technology: null,
+		materialId: 'material-1',
+		hasAr: false,
+		hasBluecut: false,
+		isPhotochromic: false,
+		priceType: LensPriceType.PAIR,
+		basePrice: 10,
+		pairPurchasePrice: 20,
+		salePrice: 30,
+		mountingPrice: 2,
+		shippingPrice: 1,
+		isTaxable: false,
+		inventoryMode: LensInventoryMode.ON_DEMAND,
+		stock: null,
+		notes: null,
+		isActive: true,
+		deletedAt: null,
+		createdAt: '2026-04-20T00:00:00.000Z',
+		updatedAt: '2026-04-20T00:00:00.000Z',
+		material: null,
+		supplier: null,
+		ranges: [],
+		...overrides
+	};
+}
+
+function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
+	const lensPair = createEmptyLensPair();
+	lensPair.catalogItemId = 'lens-1';
+
+	return {
+		id,
+		kind: 'lens',
+		productId: '',
+		quantity: 1,
+		lensPair,
+		treatments: [],
+		unitPrice: 30,
+		discount: 0,
+		discountType: DiscountType.FIXED,
+		notes: '',
+		costOverrides: null,
+		shippingCostPending: false
+	};
+}
+
+function makeConfirmation(
+	overrides: Partial<Parameters<typeof buildStep2PrescriptionConfirmation>[2]> = {},
+	items: SaleItemRow[] = [makeConfirmationLensRow()],
+	lensItems: LensCatalogItemWithRelations[] = [makeLensItem()]
+): Step2PrescriptionConfirmation {
+	return buildStep2PrescriptionConfirmation(items, lensItems, {
+		odSphere: '1.00',
+		odCylinder: '-0.50',
+		odAxis: '90',
+		odAddition: '',
+		oiSphere: '1.25',
+		oiCylinder: '-0.25',
+		oiAxis: '85',
+		oiAddition: '',
+		lensType: LensType.MONOFOCAL,
+		...overrides
+	});
+}
+
+describe('buildStep2PrescriptionConfirmation', () => {
+	it('marks matching lens type when prescription matches catalog', () => {
+		const confirmation = makeConfirmation();
+
+		expect(confirmation.hasLensItems).toBe(true);
+		expect(confirmation.items[0]?.typeMatches).toBe(true);
+	});
+
+	it('marks lens type mismatch when prescription and catalog differ', () => {
+		const confirmation = makeConfirmation({ lensType: LensType.PROGRESSIVE });
+
+		expect(confirmation.items[0]?.typeMatches).toBe(false);
+		expect(confirmation.items[0]?.catalogLensType).toBe(LensType.MONOFOCAL);
+		expect(confirmation.items[0]?.prescriptionLensType).toBe(LensType.PROGRESSIVE);
+	});
+
+	it('marks enabled eyes as in range when prescription fits the catalog', () => {
+		const lens = makeLensItem({
+			ranges: [
+				{
+					id: 'range-1',
+					lensCatalogItemId: 'lens-1',
+					sphereMin: -2,
+					sphereMax: 2,
+					cylinderMin: -2,
+					cylinderMax: 0,
+					additionMin: null,
+					additionMax: null,
+					createdAt: '2026-04-20T00:00:00.000Z',
+					updatedAt: '2026-04-20T00:00:00.000Z'
+				}
+			]
+		});
+
+		const confirmation = makeConfirmation({}, [makeConfirmationLensRow()], [lens]);
+
+		expect(confirmation.items[0]?.eyes.map((eye) => eye.status)).toEqual([
+			'in-range',
+			'in-range'
+		]);
+		expect(getLensRangeWarningsForItem('row-1', confirmation)).toHaveLength(0);
+	});
+
+	it('marks eyes outside of range when no optical range matches', () => {
+		const lens = makeLensItem({
+			ranges: [
+				{
+					id: 'range-1',
+					lensCatalogItemId: 'lens-1',
+					sphereMin: -1,
+					sphereMax: 1,
+					cylinderMin: -1,
+					cylinderMax: 0,
+					additionMin: null,
+					additionMax: null,
+					createdAt: '2026-04-20T00:00:00.000Z',
+					updatedAt: '2026-04-20T00:00:00.000Z'
+				}
+			]
+		});
+
+		const confirmation = makeConfirmation(
+			{ odSphere: '3.50', oiSphere: '0.75' },
+			[makeConfirmationLensRow()],
+			[lens]
+		);
+
+		expect(confirmation.items[0]?.eyes[0]?.status).toBe('out-of-range');
+		expect(getLensRangeWarningsForItem('row-1', confirmation)).toHaveLength(1);
+	});
+
+	it('marks eyes for lab review when the lens has no defined ranges', () => {
+		const confirmation = makeConfirmation();
+
+		expect(confirmation.items[0]?.hasRanges).toBe(false);
+		expect(confirmation.items[0]?.eyes.map((eye) => eye.status)).toEqual([
+			'lab-review',
+			'lab-review'
+		]);
+	});
+
+	it('flags multiple lenses in the same operation', () => {
+		const secondLens = makeLensItem({ id: 'lens-2', name: 'Beta Lens' });
+		const firstRow = makeConfirmationLensRow('row-1');
+		const secondRow = makeConfirmationLensRow('row-2');
+		secondRow.lensPair!.catalogItemId = 'lens-2';
+
+		const confirmation = makeConfirmation({}, [firstRow, secondRow], [makeLensItem(), secondLens]);
+
+		expect(confirmation.lensCount).toBe(2);
+		expect(confirmation.hasMultipleLenses).toBe(true);
+	});
+
+	it('returns a neutral state when there are no lens items', () => {
+		const confirmation = buildStep2PrescriptionConfirmation(
+			[
+				{
+					id: 'product-1',
+					kind: 'product',
+					productId: 'product-1',
+					quantity: 1,
+					lensPair: null,
+					treatments: [],
+					unitPrice: 10,
+					discount: 0,
+					discountType: DiscountType.FIXED,
+					notes: '',
+					costOverrides: null,
+					shippingCostPending: false
+				}
+			],
+			[makeLensItem()],
+			{
+				odSphere: '',
+				odCylinder: '',
+				odAxis: '',
+				odAddition: '',
+				oiSphere: '',
+				oiCylinder: '',
+				oiAxis: '',
+				oiAddition: '',
+				lensType: LensType.MONOFOCAL
+			}
+		);
+
+		expect(confirmation.hasLensItems).toBe(false);
+		expect(confirmation.items).toEqual([]);
+	});
+
+	it('accepts numeric prescription values without crashing while editing', () => {
+		const confirmation = buildStep2PrescriptionConfirmation(
+			[makeConfirmationLensRow()],
+			[makeLensItem()],
+			{
+				odSphere: 1,
+				odCylinder: -0.5,
+				odAxis: 90,
+				odAddition: 0,
+				oiSphere: '',
+				oiCylinder: '',
+				oiAxis: '',
+				oiAddition: '',
+				lensType: LensType.MONOFOCAL
+			}
+		);
+
+		expect(confirmation.items[0]?.eyes[0]?.prescriptionSummary).toContain('Esf +1.00');
+	});
+});
+
+	describe('getLensTypeSuggestionState', () => {
+		it('returns the single catalog lens type when all selected lenses match', () => {
+			const firstRow = makeConfirmationLensRow('row-1');
+			const secondRow = makeConfirmationLensRow('row-2');
+
+			const state = getLensTypeSuggestionState(
+				[firstRow, secondRow],
+				[makeLensItem(), makeLensItem({ id: 'lens-2' })],
+				null
+			);
+
+			expect(state.catalogLensType).toBe(LensType.MONOFOCAL);
+			expect(state.hasMixedCatalogLensTypes).toBe(false);
+		});
+
+		it('flags a conflict when the existing prescription type differs from the selected catalog lens', () => {
+			const state = getLensTypeSuggestionState(
+				[makeConfirmationLensRow()],
+				[makeLensItem({ type: LensType.PROGRESSIVE })],
+				LensType.MONOFOCAL
+			);
+
+			expect(state.catalogLensType).toBe(LensType.PROGRESSIVE);
+			expect(state.conflictingPrescriptionLensType).toBe(LensType.MONOFOCAL);
+		});
+
+		it('detects mixed lens types and disables automatic single-type suggestion', () => {
+			const firstRow = makeConfirmationLensRow('row-1');
+			const secondRow = makeConfirmationLensRow('row-2');
+			secondRow.lensPair!.catalogItemId = 'lens-2';
+
+			const state = getLensTypeSuggestionState(
+				[firstRow, secondRow],
+				[
+					makeLensItem({ id: 'lens-1', type: LensType.MONOFOCAL }),
+					makeLensItem({ id: 'lens-2', type: LensType.PROGRESSIVE })
+				],
+				LensType.MONOFOCAL
+			);
+
+			expect(state.catalogLensType).toBeNull();
+			expect(state.hasMixedCatalogLensTypes).toBe(true);
+			expect(state.catalogLensTypes).toEqual([LensType.MONOFOCAL, LensType.PROGRESSIVE]);
+		});
+	});
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
