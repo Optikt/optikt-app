@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+env:
+    DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+    DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+    DOCKER_PASSWORD
+
 jobs:
   docker:
     name: Build And Push Docker Image

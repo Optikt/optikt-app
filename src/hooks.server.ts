@@ -26,10 +26,10 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 };
 
 export const handleError: HandleServerError = ({ error }) => {
-    const err = error as { message?: string; cause?: unknown };
-    console.error('[handleError]', err?.message);
-    if (err?.cause) console.error('[handleError cause]', err.cause);
-    return { message: 'Internal Error' };
+	const err = error as { message?: string; cause?: unknown };
+	console.error('[handleError]', err?.message);
+	if (err?.cause) console.error('[handleError cause]', err.cause);
+	return { message: 'Internal Error' };
 };
 
 export const handle: Handle = handleAuth;
