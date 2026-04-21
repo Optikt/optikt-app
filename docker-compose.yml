@@ -1,0 +1,9 @@
+services:
+  app:
+    image: optikt-app
+    ports:
+      - '3000:3000'
+    environment:
+      ORIGIN: http://localhost:3000
+      DATABASE_URL: postgresql://user:password@db-host:5432/optikt
+    restart: unless-stopped
