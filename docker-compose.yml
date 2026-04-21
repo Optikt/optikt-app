@@ -1,0 +1,11 @@
+services:
+  app:
+    image: optikt-app
+    env_file:
+      - .env
+    ports:
+      - '3000:3000'
+    environment:
+      ORIGIN: ${ORIGIN}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+    restart: unless-stopped

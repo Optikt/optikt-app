@@ -1,7 +1,23 @@
-import { relations } from "drizzle-orm/relations";
-import { lensMaterials, lensCatalogItems, lensOpticalRanges, suppliers, supplierTreatments, customers, prescriptions, brands, products, saleItems, sales, users, userSessions, quotes, quoteItems } from "./schema";
+import { relations } from 'drizzle-orm/relations';
+import {
+	brands,
+	customers,
+	lensCatalogItems,
+	lensMaterials,
+	lensOpticalRanges,
+	prescriptions,
+	products,
+	quoteItems,
+	quotes,
+	saleItems,
+	sales,
+	supplierTreatments,
+	suppliers,
+	userSessions,
+	users
+} from './schema';
 
-export const lensCatalogItemsRelations = relations(lensCatalogItems, ({one, many}) => ({
+export const lensCatalogItemsRelations = relations(lensCatalogItems, ({ one, many }) => ({
 	lensMaterial: one(lensMaterials, {
 		fields: [lensCatalogItems.materialId],
 		references: [lensMaterials.id]
@@ -11,48 +27,48 @@ export const lensCatalogItemsRelations = relations(lensCatalogItems, ({one, many
 		references: [suppliers.id]
 	}),
 	saleItems: many(saleItems),
-	opticalRanges: many(lensOpticalRanges),
+	opticalRanges: many(lensOpticalRanges)
 }));
 
-export const lensOpticalRangesRelations = relations(lensOpticalRanges, ({one}) => ({
+export const lensOpticalRangesRelations = relations(lensOpticalRanges, ({ one }) => ({
 	lensCatalogItem: one(lensCatalogItems, {
 		fields: [lensOpticalRanges.lensCatalogItemId],
 		references: [lensCatalogItems.id]
-	}),
+	})
 }));
 
-export const lensMaterialsRelations = relations(lensMaterials, ({many}) => ({
-	lensCatalogItems: many(lensCatalogItems),
+export const lensMaterialsRelations = relations(lensMaterials, ({ many }) => ({
+	lensCatalogItems: many(lensCatalogItems)
 }));
 
-export const suppliersRelations = relations(suppliers, ({many}) => ({
+export const suppliersRelations = relations(suppliers, ({ many }) => ({
 	lensCatalogItems: many(lensCatalogItems),
 	products: many(products),
-	supplierTreatments: many(supplierTreatments),
+	supplierTreatments: many(supplierTreatments)
 }));
 
-export const supplierTreatmentsRelations = relations(supplierTreatments, ({one, many}) => ({
+export const supplierTreatmentsRelations = relations(supplierTreatments, ({ one, many }) => ({
 	supplier: one(suppliers, {
 		fields: [supplierTreatments.supplierId],
 		references: [suppliers.id]
 	}),
-	saleItems: many(saleItems),
+	saleItems: many(saleItems)
 }));
 
-export const prescriptionsRelations = relations(prescriptions, ({one}) => ({
+export const prescriptionsRelations = relations(prescriptions, ({ one }) => ({
 	customer: one(customers, {
 		fields: [prescriptions.customerId],
 		references: [customers.id]
-	}),
+	})
 }));
 
-export const customersRelations = relations(customers, ({many}) => ({
+export const customersRelations = relations(customers, ({ many }) => ({
 	prescriptions: many(prescriptions),
 	sales: many(sales),
-	quotes: many(quotes),
+	quotes: many(quotes)
 }));
 
-export const productsRelations = relations(products, ({one, many}) => ({
+export const productsRelations = relations(products, ({ one, many }) => ({
 	brand: one(brands, {
 		fields: [products.brandId],
 		references: [brands.id]
@@ -61,14 +77,14 @@ export const productsRelations = relations(products, ({one, many}) => ({
 		fields: [products.supplierId],
 		references: [suppliers.id]
 	}),
-	saleItems: many(saleItems),
+	saleItems: many(saleItems)
 }));
 
-export const brandsRelations = relations(brands, ({many}) => ({
-	products: many(products),
+export const brandsRelations = relations(brands, ({ many }) => ({
+	products: many(products)
 }));
 
-export const saleItemsRelations = relations(saleItems, ({one, many}) => ({
+export const saleItemsRelations = relations(saleItems, ({ one, many }) => ({
 	lensCatalogItem: one(lensCatalogItems, {
 		fields: [saleItems.lensCatalogItemId],
 		references: [lensCatalogItems.id]
@@ -92,10 +108,10 @@ export const saleItemsRelations = relations(saleItems, ({one, many}) => ({
 	supplierTreatment: one(supplierTreatments, {
 		fields: [saleItems.supplierTreatmentId],
 		references: [supplierTreatments.id]
-	}),
+	})
 }));
 
-export const salesRelations = relations(sales, ({one, many}) => ({
+export const salesRelations = relations(sales, ({ one, many }) => ({
 	saleItems: many(saleItems),
 	customer: one(customers, {
 		fields: [sales.customerId],
@@ -104,23 +120,23 @@ export const salesRelations = relations(sales, ({one, many}) => ({
 	user: one(users, {
 		fields: [sales.sellerId],
 		references: [users.id]
-	}),
+	})
 }));
 
-export const usersRelations = relations(users, ({many}) => ({
+export const usersRelations = relations(users, ({ many }) => ({
 	sales: many(sales),
 	quotes: many(quotes),
-	userSessions: many(userSessions),
+	userSessions: many(userSessions)
 }));
 
-export const userSessionsRelations = relations(userSessions, ({one}) => ({
+export const userSessionsRelations = relations(userSessions, ({ one }) => ({
 	user: one(users, {
 		fields: [userSessions.userId],
 		references: [users.id]
-	}),
+	})
 }));
 
-export const quotesRelations = relations(quotes, ({one, many}) => ({
+export const quotesRelations = relations(quotes, ({ one, many }) => ({
 	quoteItems: many(quoteItems),
 	customer: one(customers, {
 		fields: [quotes.customerId],
@@ -133,10 +149,10 @@ export const quotesRelations = relations(quotes, ({one, many}) => ({
 	conversionSale: one(sales, {
 		fields: [quotes.conversionSaleId],
 		references: [sales.id]
-	}),
+	})
 }));
 
-export const quoteItemsRelations = relations(quoteItems, ({one, many}) => ({
+export const quoteItemsRelations = relations(quoteItems, ({ one, many }) => ({
 	quote: one(quotes, {
 		fields: [quoteItems.quoteId],
 		references: [quotes.id]
@@ -160,5 +176,5 @@ export const quoteItemsRelations = relations(quoteItems, ({one, many}) => ({
 	supplierTreatment: one(supplierTreatments, {
 		fields: [quoteItems.supplierTreatmentId],
 		references: [supplierTreatments.id]
-	}),
+	})
 }));
