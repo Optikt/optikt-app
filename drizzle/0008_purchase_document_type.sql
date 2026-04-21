@@ -1,2 +1,0 @@
-CREATE TYPE "public"."purchase_document_type" AS ENUM('INVOICE', 'DELIVERY_NOTE');--> statement-breakpoint
-ALTER TABLE "purchase_orders" ADD COLUMN "document_type" "purchase_document_type" DEFAULT 'INVOICE' NOT NULL;
