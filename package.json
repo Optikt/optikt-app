@@ -19,7 +19,7 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
-		"db:seed": "tsx scripts/seed-db.ts",
+		"db:bootstrap": "node scripts/bootstrap.js",
 		"svelte:doctor": "svelte-doctor check"
 	},
 	"devDependencies": {
@@ -36,7 +36,6 @@
 		"@types/node": "^22",
 		"@vitest/browser-playwright": "^4.0.15",
 		"drizzle-kit": "^0.31.8",
-		"drizzle-orm": "^0.45.0",
 		"eslint": "^9.39.1",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.14.0",
@@ -64,6 +63,7 @@
 		"@lucide/svelte": "^0.562.0",
 		"@node-rs/argon2": "^2.0.2",
 		"date-fns": "^4.1.0",
+		"drizzle-orm": "^0.45.0",
 		"export-to-csv": "^1.4.0",
 		"libphonenumber-js": "^1.12.33",
 		"postgres": "^3.4.7",

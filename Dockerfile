@@ -31,6 +31,10 @@ ENV PORT=3000
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/build ./build
 COPY --from=build --chown=node:node /app/package.json ./package.json
+# Migrations + bootstrap script are needed at runtime to auto-migrate/seed.
+COPY --from=build --chown=node:node /app/drizzle ./drizzle
+COPY --chown=node:node scripts/bootstrap.js ./scripts/bootstrap.js
+COPY --chown=node:node scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
 USER node
 EXPOSE 3000
-CMD ["node", "build"]
+CMD ["./scripts/docker-entrypoint.sh"]
