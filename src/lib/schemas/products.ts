@@ -51,6 +51,7 @@ export const CreateProductSchema = z.object({
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialCategory: z.enum(MaterialCategories).optional(),
 	gender: z.string().optional(),
+	personalCode: z.string().optional(),
 	color: z.string().optional(),
 	size: z.string().optional(),
 	description: z.string().optional(),

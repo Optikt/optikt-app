@@ -33,6 +33,8 @@ export const products = pgTable(
 		currentPurchasePrice: doublePrecision('current_purchase_price'),
 		/** Cached: sale price from the most recent lot */
 		currentSalePrice: doublePrecision('current_sale_price'),
+		/** Manufacturer/brand code printed on the product (e.g. on temples) */
+		personalCode: varchar('personal_code'),
 		/** Whether this product is subject to tax (IVA) */
 		isTaxable: boolean('is_taxable').notNull().default(true),
 		/** Cached counter: SUM(inventory_lots.quantityAvailable) */

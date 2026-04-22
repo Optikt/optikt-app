@@ -221,7 +221,7 @@
 		untrack(() => {
 			formInstanceId = generateUUID();
 			if (product) {
-				isAutoSku = false;
+				isAutoSku = true;
 				formData = {
 					sku: product.sku ?? '',
 					name: product.name ?? '',

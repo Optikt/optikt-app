@@ -1,5 +1,5 @@
 {
-  "id": "daf98949-bc49-44eb-bb60-d51b48bc7d27",
+  "id": "de1c9868-e6b8-400c-b34c-82e4540e41b5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1574,6 +1574,12 @@
         "current_sale_price": {
           "name": "current_sale_price",
           "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "personal_code": {
+          "name": "personal_code",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },

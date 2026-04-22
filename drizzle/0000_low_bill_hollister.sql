@@ -176,6 +176,7 @@ CREATE TABLE "products" (
 	"description" varchar,
 	"current_purchase_price" double precision,
 	"current_sale_price" double precision,
+	"personal_code" varchar,
 	"is_taxable" boolean DEFAULT true NOT NULL,
 	"stock" integer DEFAULT 0 NOT NULL,
 	"min_stock" integer,
