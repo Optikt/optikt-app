@@ -221,7 +221,7 @@
 		untrack(() => {
 			formInstanceId = generateUUID();
 			if (product) {
-				isAutoSku = true;
+				isAutoSku = product.isAutoSku ?? false;
 				formData = {
 					sku: product.sku ?? '',
 					name: product.name ?? '',
@@ -230,7 +230,7 @@
 					supplierId: product.supplierId ?? '',
 					materialId: product.materialId ?? '',
 					gender: product.gender ?? ProductGender.NO_APLICA,
-					personalCode: '',
+					personalCode: product.personalCode ?? '',
 					color: product.color ?? '',
 					size: product.size ?? '',
 					description: product.description ?? '',
@@ -362,6 +362,7 @@
 	{#if isEditMode && product}
 		<input type="hidden" name="id" value={product.id} />
 	{/if}
+	<input type="hidden" name="isAutoSku" value={isAutoSku ? 'true' : 'false'} />
 
 	{#if formData.brandId?.startsWith('pending_')}
 		<input type="hidden" name="pendingBrandName" value={getPendingName(formData.brandId) ?? ''} />

@@ -35,6 +35,8 @@ export const products = pgTable(
 		currentSalePrice: doublePrecision('current_sale_price'),
 		/** Manufacturer/brand code printed on the product (e.g. on temples) */
 		personalCode: varchar('personal_code'),
+		/** Whether this product's SKU was auto-generated from its attributes */
+		isAutoSku: boolean('is_auto_sku').notNull().default(false),
 		/** Whether this product is subject to tax (IVA) */
 		isTaxable: boolean('is_taxable').notNull().default(true),
 		/** Cached counter: SUM(inventory_lots.quantityAvailable) */

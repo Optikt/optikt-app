@@ -52,6 +52,7 @@ export const CreateProductSchema = z.object({
 	pendingMaterialCategory: z.enum(MaterialCategories).optional(),
 	gender: z.string().optional(),
 	personalCode: z.string().optional(),
+	isAutoSku: CoercedBoolean.default(false),
 	color: z.string().optional(),
 	size: z.string().optional(),
 	description: z.string().optional(),
