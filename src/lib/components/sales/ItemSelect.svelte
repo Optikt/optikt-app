@@ -4,7 +4,7 @@
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice, normalizeSingleSelectValue } from '$lib/utils';
 	import { getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
@@ -78,6 +78,7 @@
 
 	const options = $derived(kind === 'product' ? productOptions : lensOptions);
 	const placeholder = $derived(kind === 'product' ? 'Buscar producto...' : 'Buscar lente...');
+	const visibleValue = $derived(normalizeSingleSelectValue(value, options as SelectOption[], 'id'));
 
 	/** Currently selected item's stock (works for both products and lenses) */
 	const selectedStock = $derived.by((): number | null => {
@@ -121,7 +122,7 @@
 	{label}
 	{placeholder}
 	{options}
-	{value}
+	value={visibleValue}
 	valueField="id"
 	labelField="label"
 	onChange={handleChange}

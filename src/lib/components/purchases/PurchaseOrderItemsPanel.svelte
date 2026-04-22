@@ -7,6 +7,11 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import PurchaseOrderItemRow from './PurchaseOrderItemRow.svelte';
 	import {
+		getSingleSelectValue,
+		normalizeSingleSelectValue,
+		type SelectChangeValue
+	} from '$lib/utils';
+	import {
 		applyLensDefaults,
 		applyProductDefaults,
 		createEmptyPurchaseOrderDraftItem,
@@ -18,8 +23,6 @@
 		id: string;
 		label: string;
 	};
-
-	type SelectChange = SelectOption | SelectOption[] | string | string[] | null | undefined;
 
 	interface Props {
 		items: PurchaseOrderDraftItem[];
@@ -81,13 +84,11 @@
 	);
 
 	const visibleProductValue = $derived(
-		supplierProducts.some((product) => product.id === pendingProductId) ? pendingProductId : ''
+		normalizeSingleSelectValue(pendingProductId, productOptions, 'id')
 	);
 
 	const visibleLensValue = $derived(
-		supplierLensItems.some((lens) => lens.id === pendingLensCatalogItemId)
-			? pendingLensCatalogItemId
-			: ''
+		normalizeSingleSelectValue(pendingLensCatalogItemId, lensOptions, 'id')
 	);
 
 	const canAddLine = $derived(
@@ -101,26 +102,8 @@
 		pendingItemType === PurchaseOrderItemType.PRODUCT ? productOptions.length : lensOptions.length
 	);
 
-	function normalizeSelectValue(selected: SelectChange): string {
-		if (typeof selected === 'string') {
-			return selected;
-		}
-
-		if (Array.isArray(selected)) {
-			const first = selected[0];
-
-			if (typeof first === 'string') {
-				return first;
-			}
-
-			return first?.id ?? '';
-		}
-
-		if (selected && typeof selected === 'object' && 'id' in selected) {
-			return selected.id;
-		}
-
-		return '';
+	function normalizeSelectValue(selected: SelectChangeValue | null | undefined): string {
+		return getSingleSelectValue(selected, 'id');
 	}
 
 	function setPendingType(itemType: PurchaseOrderItemType) {
@@ -196,7 +179,7 @@
 						variant="tonal"
 						disabled={supplierId === '' || productOptions.length === 0}
 						onChange={(selected) => {
-							pendingProductId = normalizeSelectValue(selected as SelectChange);
+							pendingProductId = normalizeSelectValue(selected as SelectChangeValue);
 						}}
 					/>
 				{:else}
@@ -211,7 +194,7 @@
 						variant="tonal"
 						disabled={supplierId === '' || lensOptions.length === 0}
 						onChange={(selected) => {
-							pendingLensCatalogItemId = normalizeSelectValue(selected as SelectChange);
+							pendingLensCatalogItemId = normalizeSelectValue(selected as SelectChangeValue);
 						}}
 					/>
 				{/if}
