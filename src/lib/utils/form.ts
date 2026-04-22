@@ -5,6 +5,56 @@
 import type { RemoteFormIssue } from '@sveltejs/kit';
 import { toast } from 'svelte-sonner';
 
+const ERROR_FIELD_SELECTORS =
+	'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"], [class*="ring-red"]';
+
+const ERROR_MESSAGE_SELECTORS =
+	'.form-field-error, .text-error, .text-red-500, .text-red-600, .text-red-700, .border-red-500';
+
+function escapeSelectorValue(value: string): string {
+	if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+		return CSS.escape(value);
+	}
+
+	return value.replace(/["\\]/g, '\\$&');
+}
+
+function hasRenderedIssue(fieldName: string): boolean {
+	const escapedFieldName = escapeSelectorValue(fieldName);
+	const fieldWrapper = document.querySelector(`[data-form-field="${escapedFieldName}"]`);
+
+	if (fieldWrapper) {
+		return fieldWrapper.getAttribute('data-field-error') === 'true';
+	}
+
+	const field = document.querySelector(`[name="${escapedFieldName}"]`);
+	if (!field) {
+		return false;
+	}
+
+	return (
+		field.matches(ERROR_FIELD_SELECTORS) ||
+		field.closest('[data-field-error="true"]') !== null ||
+		field.parentElement?.querySelector(ERROR_MESSAGE_SELECTORS) !== null
+	);
+}
+
+export function issuePathToFieldNames(path: ReadonlyArray<string | number>): string[] {
+	const segments = path.map((segment) => String(segment)).filter(Boolean);
+	if (segments.length === 0) return [];
+
+	const dotNotation = segments.join('.');
+	const bracketNotation = segments.reduce((fieldName, segment, index) => {
+		if (index === 0) {
+			return segment;
+		}
+
+		return /^\d+$/.test(segment) ? `${fieldName}[${segment}]` : `${fieldName}.${segment}`;
+	}, '');
+
+	return Array.from(new Set([dotNotation, bracketNotation]));
+}
+
 /**
  * Scrolls to the first form input with an error.
  * Finds the first field marked as invalid and scrolls it into view.
@@ -54,23 +104,15 @@ export function toastUnboundErrors(allIssues: RemoteFormIssue[]): void {
 
 	// Wait for DOM to render error styles (same timing as scrollToFirstError)
 	setTimeout(() => {
+		const toastedIssues = new Set<string>();
+
 		for (const issue of allIssues) {
-			const fieldName = String(issue.path[0] ?? '');
-			if (!fieldName) {
-				toast.error(issue.message);
-				continue;
-			}
+			const fieldNames = issuePathToFieldNames(issue.path);
+			const hasVisibleError = fieldNames.some(hasRenderedIssue);
+			const toastKey = `${fieldNames[0] ?? '__root__'}:${issue.message}`;
 
-			const field = document.querySelector(`[name="${CSS.escape(fieldName)}"]`);
-			const hasVisibleError =
-				field?.matches(
-					'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"]'
-				) ||
-				field?.parentElement?.querySelector(
-					'.form-field-error, .text-error, .text-red-500, .text-red-600, .text-red-700, .border-red-500'
-				) !== null;
-
-			if (!hasVisibleError) {
+			if (!hasVisibleError && !toastedIssues.has(toastKey)) {
+				toastedIssues.add(toastKey);
 				toast.error(issue.message);
 			}
 		}
