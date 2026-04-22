@@ -2,6 +2,12 @@
 	import Svelecte from 'svelecte';
 	import { Label } from 'flowbite-svelte';
 	import type { Snippet } from 'svelte';
+	import {
+		getSingleSelectValue,
+		normalizeSingleSelectValue,
+		type SelectChangeValue,
+		type SelectOptionRecord
+	} from '$lib/utils';
 
 	interface Props {
 		/** Selected value (ID) */
@@ -76,6 +82,31 @@
 		variant = 'default',
 		footer
 	}: Props = $props();
+
+	let svelecteValue = $state<string | null>('');
+
+	$effect(() => {
+		const normalizedValue = normalizeSingleSelectValue(
+			value,
+			options as SelectOptionRecord[],
+			valueField
+		);
+
+		if (svelecteValue !== normalizedValue) {
+			svelecteValue = normalizedValue;
+		}
+
+		if (value !== normalizedValue) {
+			value = normalizedValue;
+		}
+	});
+
+	function handleChange(selected: object | object[] | string | string[] | null | undefined) {
+		const nextValue = getSingleSelectValue(selected as SelectChangeValue, valueField);
+		svelecteValue = nextValue;
+		value = nextValue;
+		onChange?.(selected);
+	}
 </script>
 
 <div>
@@ -89,13 +120,13 @@
 		{placeholder}
 		{disabled}
 		{options}
-		bind:value
+		bind:value={svelecteValue}
 		{valueField}
 		{labelField}
 		{renderer}
 		{option}
 		{selection}
-		{onChange}
+		onChange={handleChange}
 		{creatable}
 		{createHandler}
 		{creatablePrefix}
