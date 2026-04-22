@@ -25,6 +25,10 @@ services:
       NODE_ENV: production
       ORIGIN: ${ORIGIN}
       DATABASE_URL: postgresql://optikt:${DB_PASSWORD}@postgres:5432/optikt_db
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      PUBLIC_SENTRY_ENVIRONMENT: ${PUBLIC_SENTRY_ENVIRONMENT:-production}
     ports:
       - '3000:3000'
 
