@@ -3,6 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { untrack } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput, PageHeader } from '$lib/components/ui';
 	import PrescriptionFormFields from '$lib/components/prescriptions/PrescriptionFormFields.svelte';
@@ -11,13 +12,19 @@
 		type PrescriptionFieldIssues
 	} from '$lib/components/prescriptions/prescription-form';
 	import { createCustomerWithPrescription } from '$lib/remote/customers.remote';
-	import { scrollToFirstError, getErrorMessage, toastUnboundErrors } from '$lib/utils';
+	import {
+		scrollToFirstError,
+		getErrorMessage,
+		toastUnboundErrors,
+		generateUUID
+	} from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import type { CreateEntityResult } from '$lib/types';
 	import type { Customer } from '$lib/server/db/schema';
 	import CustomerReactivateModal from '$lib/components/customers/CustomerReactivateModal.svelte';
 
-	const currentForm = $derived(createCustomerWithPrescription.for('new-customer'));
+	let formInstanceId = $state(generateUUID());
+	const currentForm = $derived(createCustomerWithPrescription.for(formInstanceId));
 
 	let isSubmitting = $state(false);
 	let showPrescription = $state(false);
@@ -42,16 +49,33 @@
 
 	const rxFields = $derived(currentForm.fields.prescription as PrescriptionFieldIssues | undefined);
 
+	function resetFormInstance() {
+		untrack(() => {
+			formInstanceId = generateUUID();
+		});
+	}
+
 	function handleReactivationSuccess() {
 		showReactivateModal = false;
 		reactivationCandidate = null;
 		goto(resolve('/customers'));
+	}
+
+	function handleUnhandledSubmissionRejection() {
+		if (!isSubmitting) {
+			return;
+		}
+
+		isSubmitting = false;
+		resetFormInstance();
 	}
 </script>
 
 <svelte:head>
 	<title>Nuevo Cliente - Optikt</title>
 </svelte:head>
+
+<svelte:window onunhandledrejection={handleUnhandledSubmissionRejection} />
 
 <div class="p-6">
 	<PageHeader
@@ -100,6 +124,7 @@
 				);
 				goto(resolve(`/customers/${customerId}`));
 			} catch (e) {
+				resetFormInstance();
 				console.error(e);
 				toast.error(getErrorMessage(e, 'Error creando cliente'));
 			} finally {

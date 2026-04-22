@@ -39,7 +39,7 @@
 </script>
 
 <!-- Wrapper div ensures this is a single item when used -->
-<div>
+<div data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
 		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
 	{/if}
@@ -52,6 +52,7 @@
 		{rows}
 		class={['w-full placeholder:text-slate-400', className]}
 		bind:value
+		aria-invalid={hasError}
 		{required}
 	/>
 	{#if displayError}
