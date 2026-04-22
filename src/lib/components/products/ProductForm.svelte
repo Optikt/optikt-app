@@ -466,20 +466,18 @@
 						{/if}
 					</div>
 
-					{#if isAutoSku}
-						<div class="xl:col-span-4">
-							<label for="personalCode" class={fieldLabelClass}>Codigo propio</label>
-							<input
-								id="personalCode"
-								name="personalCode"
-								bind:value={formData.personalCode}
-								placeholder="82"
-								class={getFieldClass(null, 'font-mono tracking-[0.16em] uppercase')}
-							/>
-						</div>
-					{/if}
+					<div class="xl:col-span-4">
+						<label for="personalCode" class={fieldLabelClass}>Codigo propio</label>
+						<input
+							id="personalCode"
+							name="personalCode"
+							bind:value={formData.personalCode}
+							placeholder="82"
+							class={getFieldClass(null, 'font-mono tracking-[0.16em] uppercase')}
+						/>
+					</div>
 
-					<div class={`md:col-span-2 ${isAutoSku ? 'xl:col-span-8' : 'xl:col-span-12'}`}>
+					<div class="md:col-span-2 xl:col-span-8">
 						<label for="name" class={fieldLabelClass}>Nombre del producto</label>
 						<input
 							id="name"
