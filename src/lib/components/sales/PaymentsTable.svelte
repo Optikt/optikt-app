@@ -91,7 +91,7 @@
 			return payment.notes?.trim() ? `Anulado: ${payment.notes}` : 'Pago anulado';
 		}
 
-		return payment.reference?.trim() || payment.notes?.trim() || '—';
+		return payment.reference?.trim() || payment.notes?.trim() || '-';
 	}
 </script>
 

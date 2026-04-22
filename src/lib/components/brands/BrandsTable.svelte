@@ -19,11 +19,12 @@
 	interface Props {
 		brands: Brand[];
 		loading?: boolean;
-		onEdit: (brand: Brand) => void;
+		onEdit?: (brand: Brand) => void;
+		canManage?: boolean;
 		onRefresh?: () => void;
 	}
 
-	let { brands, loading = false, onEdit, onRefresh }: Props = $props();
+	let { brands, loading = false, onEdit, canManage = true, onRefresh }: Props = $props();
 
 	// Modal state
 	let showDeleteModal = $state(false);
@@ -45,6 +46,8 @@
 	}
 
 	async function openDelete(brand: Brand) {
+		if (!canManage) return;
+
 		selectedBrand = brand;
 		confirmInput = '';
 		checkingDelete = true;
@@ -62,6 +65,8 @@
 	}
 
 	function openReactivate(brand: Brand) {
+		if (!canManage) return;
+
 		selectedBrand = brand;
 		showReactivateModal = true;
 	}
@@ -97,14 +102,14 @@
 	emptyIcon={Tag}
 	emptyTitle="No se encontraron marcas"
 	emptyDescription="Agrega una marca para comenzar"
-	defaultActions="view,edit,delete,reactivate"
+	defaultActions={canManage ? 'view,edit,delete,reactivate' : 'view'}
 	onView={openView}
 	viewIcon={Eye}
-	onEdit={(b) => onEdit(b)}
+	onEdit={canManage && onEdit ? (b) => onEdit(b) : undefined}
 	editIcon={SquarePen}
-	onDelete={openDelete}
+	onDelete={canManage ? openDelete : undefined}
 	deleteIcon={Trash2}
-	onReactivate={openReactivate}
+	onReactivate={canManage ? openReactivate : undefined}
 	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
@@ -116,7 +121,7 @@
 
 	{#snippet row(brand)}
 		<TableBodyCell class="font-medium">{brand.name}</TableBodyCell>
-		<TableBodyCell>{brand.country ?? '—'}</TableBodyCell>
+		<TableBodyCell>{brand.country ?? '-'}</TableBodyCell>
 		<TableBodyCell>
 			{#if brand.website}
 				<a
@@ -128,7 +133,7 @@
 					{brand.website}
 				</a>
 			{:else}
-				—
+				-
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell>
@@ -192,9 +197,11 @@
 	bind:open={showViewModal}
 	brand={selectedBrand}
 	onClose={() => (selectedBrand = null)}
-	onEdit={() => {
-		if (selectedBrand) onEdit(selectedBrand);
-	}}
+	onEdit={canManage && onEdit
+		? () => {
+				if (selectedBrand) onEdit(selectedBrand);
+			}
+		: undefined}
 />
 
 <!-- Reactivate Modal -->

@@ -4,6 +4,7 @@ CREATE TYPE "public"."lens_inventory_mode" AS ENUM('ON_DEMAND', 'STOCK');--> sta
 CREATE TYPE "public"."lens_price_type" AS ENUM('UNIT', 'PAIR');--> statement-breakpoint
 CREATE TYPE "public"."sale_item_type" AS ENUM('PRODUCT', 'LENS_PAIR', 'TREATMENT');--> statement-breakpoint
 CREATE TYPE "public"."quote_status" AS ENUM('DRAFT', 'CONVERTED', 'EXPIRED', 'CANCELLED');--> statement-breakpoint
+CREATE TYPE "public"."purchase_document_type" AS ENUM('INVOICE', 'DELIVERY_NOTE');--> statement-breakpoint
 CREATE TYPE "public"."purchase_order_item_type" AS ENUM('PRODUCT', 'LENS');--> statement-breakpoint
 CREATE TYPE "public"."purchase_order_status" AS ENUM('DRAFT', 'CONFIRMED', 'CANCELLED');--> statement-breakpoint
 CREATE TYPE "public"."inventory_movement_type" AS ENUM('PURCHASE_IN', 'SALE_OUT', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'RETURN_IN', 'CANCEL_REVERT');--> statement-breakpoint
@@ -40,7 +41,7 @@ CREATE TABLE "customers" (
 	"first_name" varchar NOT NULL,
 	"last_name" varchar NOT NULL,
 	"id_number" varchar,
-	"birth_date" date,
+	"birth_date" timestamp with time zone,
 	"primary_phone" varchar NOT NULL,
 	"email" varchar,
 	"address" varchar,
@@ -66,7 +67,7 @@ CREATE TABLE "exchange_rates" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"currency_id" uuid NOT NULL,
 	"rate_to_ves" double precision NOT NULL,
-	"effective_date" date NOT NULL,
+	"effective_date" timestamp with time zone NOT NULL,
 	"source" varchar DEFAULT 'manual' NOT NULL,
 	"notes" varchar,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -94,7 +95,6 @@ CREATE TABLE "supplier_treatments" (
 	"price" double precision NOT NULL,
 	"sale_price" double precision,
 	"is_taxable" boolean DEFAULT true NOT NULL,
-	"tax_rate" double precision DEFAULT 16 NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -132,6 +132,7 @@ CREATE TABLE "settings" (
 	"business_address" varchar,
 	"business_website" varchar,
 	"business_logo" varchar,
+	"default_tax_rate" double precision DEFAULT 16 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -176,7 +177,6 @@ CREATE TABLE "products" (
 	"current_purchase_price" double precision,
 	"current_sale_price" double precision,
 	"is_taxable" boolean DEFAULT true NOT NULL,
-	"tax_rate" double precision DEFAULT 16 NOT NULL,
 	"stock" integer DEFAULT 0 NOT NULL,
 	"min_stock" integer,
 	"image_url" varchar,
@@ -199,11 +199,11 @@ CREATE TABLE "lens_catalog_items" (
 	"is_photochromic" boolean DEFAULT false NOT NULL,
 	"price_type" "lens_price_type" DEFAULT 'UNIT' NOT NULL,
 	"base_price" double precision NOT NULL,
+	"pair_purchase_price" double precision DEFAULT 0 NOT NULL,
 	"sale_price" double precision,
 	"mounting_price" double precision DEFAULT 0 NOT NULL,
 	"shipping_price" double precision DEFAULT 0 NOT NULL,
 	"is_taxable" boolean DEFAULT false NOT NULL,
-	"tax_rate" double precision DEFAULT 16 NOT NULL,
 	"inventory_mode" "lens_inventory_mode" DEFAULT 'ON_DEMAND' NOT NULL,
 	"stock" integer,
 	"notes" varchar,
@@ -241,7 +241,7 @@ CREATE TABLE "lens_optical_ranges" (
 CREATE TABLE "prescriptions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"customer_id" uuid NOT NULL,
-	"prescription_date" date NOT NULL,
+	"prescription_date" timestamp with time zone NOT NULL,
 	"od_sphere" double precision,
 	"od_cylinder" double precision,
 	"od_axis" integer,
@@ -253,6 +253,7 @@ CREATE TABLE "prescriptions" (
 	"dp" double precision,
 	"np_right" double precision,
 	"np_left" double precision,
+	"altura" double precision,
 	"treatments" json,
 	"recommended_lens_type" varchar,
 	"notes" varchar,
@@ -288,7 +289,9 @@ CREATE TABLE "sale_items" (
 	"snapshot_name" varchar,
 	"snapshot_sku" varchar,
 	"snapshot_brand" varchar,
-	"snapshot_purchase_price" double precision,
+	"snapshot_cost_total" double precision,
+	"snapshot_cost_unit" double precision,
+	"snapshot_lots_count" integer,
 	"snapshot_base_cost" double precision,
 	"snapshot_mounting_price" double precision,
 	"snapshot_shipping_price" double precision,
@@ -297,6 +300,7 @@ CREATE TABLE "sale_items" (
 	"snapshot_treatment_category" varchar,
 	"snapshot_is_taxable" boolean,
 	"snapshot_tax_rate" double precision,
+	"shipping_cost_pending" boolean DEFAULT false,
 	"notes" varchar,
 	"deleted_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -310,7 +314,7 @@ CREATE TABLE "sale_payments" (
 	"amount" double precision NOT NULL,
 	"exchange_rate" double precision,
 	"bcv_rate" double precision NOT NULL,
-	"payment_date" timestamp with time zone,
+	"payment_date" timestamp with time zone NOT NULL,
 	"amount_bcv_usd" double precision NOT NULL,
 	"reference" varchar,
 	"notes" varchar,
@@ -324,7 +328,7 @@ CREATE TABLE "sales" (
 	"order_number" integer NOT NULL,
 	"customer_id" uuid NOT NULL,
 	"seller_id" uuid NOT NULL,
-	"sale_date" timestamp NOT NULL,
+	"sale_date" timestamp with time zone NOT NULL,
 	"status" varchar DEFAULT 'PENDING' NOT NULL,
 	"subtotal" double precision NOT NULL,
 	"discount" double precision DEFAULT 0 NOT NULL,
@@ -332,6 +336,14 @@ CREATE TABLE "sales" (
 	"total" double precision NOT NULL,
 	"paid_amount_bcv_usd" double precision DEFAULT 0 NOT NULL,
 	"notes" varchar,
+	"cancellation_reason" varchar(500),
+	"cancelled_at" timestamp with time zone,
+	"cancelled_by_id" uuid,
+	"refund_status" varchar(20),
+	"refund_amount" double precision,
+	"refund_notes" varchar(500),
+	"refunded_at" timestamp with time zone,
+	"refunded_by_id" uuid,
 	"deleted_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -379,14 +391,14 @@ CREATE TABLE "quotes" (
 	"quote_number" integer NOT NULL,
 	"customer_id" uuid,
 	"seller_id" uuid NOT NULL,
-	"quote_date" timestamp NOT NULL,
+	"quote_date" timestamp with time zone NOT NULL,
 	"status" "quote_status" DEFAULT 'DRAFT' NOT NULL,
 	"subtotal" double precision NOT NULL,
 	"discount" double precision DEFAULT 0 NOT NULL,
 	"discount_type" varchar DEFAULT 'FIXED' NOT NULL,
 	"total" double precision NOT NULL,
 	"conversion_sale_id" uuid,
-	"valid_until" timestamp,
+	"valid_until" timestamp with time zone,
 	"notes" varchar,
 	"deleted_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -416,6 +428,7 @@ CREATE TABLE "purchase_orders" (
 	"invoice_number" varchar,
 	"delivery_note_number" varchar,
 	"status" "purchase_order_status" DEFAULT 'DRAFT' NOT NULL,
+	"document_type" "purchase_document_type" DEFAULT 'INVOICE' NOT NULL,
 	"order_date" timestamp with time zone NOT NULL,
 	"bcv_rate" double precision NOT NULL,
 	"notes" varchar,
@@ -457,6 +470,9 @@ CREATE TABLE "inventory_movements" (
 	"reference_type" "movement_reference_type" NOT NULL,
 	"reference_id" uuid NOT NULL,
 	"notes" varchar,
+	"unit_cost_at_adjustment" double precision,
+	"total_cost_at_adjustment" double precision,
+	"adjustment_report_category" varchar,
 	"created_by_id" uuid NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -481,6 +497,8 @@ ALTER TABLE "sale_items" ADD CONSTRAINT "sale_items_lot_id_fkey" FOREIGN KEY ("l
 ALTER TABLE "sale_payments" ADD CONSTRAINT "sale_payments_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."sales"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sales" ADD CONSTRAINT "sales_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sales" ADD CONSTRAINT "sales_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sales" ADD CONSTRAINT "sales_cancelled_by_id_fkey" FOREIGN KEY ("cancelled_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sales" ADD CONSTRAINT "sales_refunded_by_id_fkey" FOREIGN KEY ("refunded_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quote_items" ADD CONSTRAINT "quote_items_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."quotes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quote_items" ADD CONSTRAINT "quote_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "quote_items" ADD CONSTRAINT "quote_items_lens_catalog_item_id_fkey" FOREIGN KEY ("lens_catalog_item_id") REFERENCES "public"."lens_catalog_items"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -515,8 +533,8 @@ CREATE UNIQUE INDEX "ix_currencies_code" ON "currencies" USING btree ("code" tex
 CREATE INDEX "ix_currencies_id" ON "currencies" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_exchange_rates_id" ON "exchange_rates" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_exchange_rates_currency_id" ON "exchange_rates" USING btree ("currency_id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_exchange_rates_effective_date" ON "exchange_rates" USING btree ("effective_date" date_ops);--> statement-breakpoint
-CREATE UNIQUE INDEX "ix_exchange_rates_currency_date" ON "exchange_rates" USING btree ("currency_id" uuid_ops,"effective_date" date_ops);--> statement-breakpoint
+CREATE INDEX "ix_exchange_rates_effective_date" ON "exchange_rates" USING btree ("effective_date" timestamptz_ops);--> statement-breakpoint
+CREATE UNIQUE INDEX "ix_exchange_rates_currency_date" ON "exchange_rates" USING btree ("currency_id" uuid_ops,"effective_date" timestamptz_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_users_email" ON "users" USING btree ("email" text_ops);--> statement-breakpoint
 CREATE INDEX "ix_users_id" ON "users" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_users_username" ON "users" USING btree ("username" text_ops);--> statement-breakpoint
@@ -551,7 +569,7 @@ CREATE INDEX "ix_lens_optical_ranges_id" ON "lens_optical_ranges" USING btree ("
 CREATE INDEX "ix_lens_optical_ranges_item_id" ON "lens_optical_ranges" USING btree ("lens_catalog_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_customer_id" ON "prescriptions" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_prescriptions_id" ON "prescriptions" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_prescriptions_prescription_date" ON "prescriptions" USING btree ("prescription_date" date_ops);--> statement-breakpoint
+CREATE INDEX "ix_prescriptions_prescription_date" ON "prescriptions" USING btree ("prescription_date");--> statement-breakpoint
 CREATE INDEX "ix_sale_items_id" ON "sale_items" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_items_lens_catalog_item_id" ON "sale_items" USING btree ("lens_catalog_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sale_items_prescription_id" ON "sale_items" USING btree ("prescription_id" uuid_ops);--> statement-breakpoint
@@ -563,7 +581,7 @@ CREATE INDEX "ix_sale_payments_id" ON "sale_payments" USING btree ("id" uuid_ops
 CREATE INDEX "ix_sale_payments_sale_id" ON "sale_payments" USING btree ("sale_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sales_customer_id" ON "sales" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_sales_id" ON "sales" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_sales_sale_date" ON "sales" USING btree ("sale_date" timestamp_ops);--> statement-breakpoint
+CREATE INDEX "ix_sales_sale_date" ON "sales" USING btree ("sale_date");--> statement-breakpoint
 CREATE INDEX "ix_sales_seller_id" ON "sales" USING btree ("seller_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_sales_order_number" ON "sales" USING btree ("order_number" int4_ops);--> statement-breakpoint
 CREATE INDEX "ix_quote_items_id" ON "quote_items" USING btree ("id" uuid_ops);--> statement-breakpoint
@@ -573,7 +591,7 @@ CREATE INDEX "ix_quote_items_lens_catalog_item_id" ON "quote_items" USING btree 
 CREATE INDEX "ix_quote_items_parent_id" ON "quote_items" USING btree ("parent_quote_item_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_quotes_customer_id" ON "quotes" USING btree ("customer_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_quotes_id" ON "quotes" USING btree ("id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_quotes_quote_date" ON "quotes" USING btree ("quote_date" timestamp_ops);--> statement-breakpoint
+CREATE INDEX "ix_quotes_quote_date" ON "quotes" USING btree ("quote_date");--> statement-breakpoint
 CREATE INDEX "ix_quotes_seller_id" ON "quotes" USING btree ("seller_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_quotes_quote_number" ON "quotes" USING btree ("quote_number" int4_ops);--> statement-breakpoint
 CREATE INDEX "ix_purchase_order_items_id" ON "purchase_order_items" USING btree ("id" uuid_ops);--> statement-breakpoint
@@ -584,7 +602,7 @@ CREATE INDEX "ix_purchase_orders_id" ON "purchase_orders" USING btree ("id" uuid
 CREATE UNIQUE INDEX "ix_purchase_orders_order_number" ON "purchase_orders" USING btree ("order_number" int4_ops);--> statement-breakpoint
 CREATE INDEX "ix_purchase_orders_supplier_id" ON "purchase_orders" USING btree ("supplier_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_purchase_orders_order_date" ON "purchase_orders" USING btree ("order_date" timestamptz_ops);--> statement-breakpoint
-CREATE INDEX "ix_purchase_orders_status" ON "purchase_orders" USING btree ("status" text_ops);--> statement-breakpoint
+CREATE INDEX "ix_purchase_orders_status" ON "purchase_orders" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "ix_inventory_lots_id" ON "inventory_lots" USING btree ("id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "ix_inventory_lots_lot_number" ON "inventory_lots" USING btree ("lot_number" int4_ops);--> statement-breakpoint
 CREATE INDEX "ix_inventory_lots_product_id" ON "inventory_lots" USING btree ("product_id" uuid_ops);--> statement-breakpoint
@@ -596,6 +614,6 @@ CREATE INDEX "ix_inventory_movements_id" ON "inventory_movements" USING btree ("
 CREATE INDEX "ix_inventory_movements_lot_id" ON "inventory_movements" USING btree ("lot_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_inventory_movements_product_id" ON "inventory_movements" USING btree ("product_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_inventory_movements_lens_id" ON "inventory_movements" USING btree ("lens_catalog_item_id" uuid_ops);--> statement-breakpoint
-CREATE INDEX "ix_inventory_movements_type" ON "inventory_movements" USING btree ("movement_type" text_ops);--> statement-breakpoint
-CREATE INDEX "ix_inventory_movements_reference" ON "inventory_movements" USING btree ("reference_type" text_ops,"reference_id" uuid_ops);--> statement-breakpoint
+CREATE INDEX "ix_inventory_movements_type" ON "inventory_movements" USING btree ("movement_type");--> statement-breakpoint
+CREATE INDEX "ix_inventory_movements_reference" ON "inventory_movements" USING btree ("reference_type","reference_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "ix_inventory_movements_created_at" ON "inventory_movements" USING btree ("created_at" timestamptz_ops);

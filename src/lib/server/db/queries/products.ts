@@ -39,7 +39,7 @@ export type ProductOrderBy =
 export interface ProductFilterOptions {
 	/** Include soft-deleted products in results (default: false) */
 	includeDeleted?: boolean;
-	/** Include inactive products in results (default: false — only active shown) */
+	/** Include inactive products in results (default: false - only active shown) */
 	includeInactive?: boolean;
 	/** Search by name or SKU (case-insensitive) */
 	search?: string;

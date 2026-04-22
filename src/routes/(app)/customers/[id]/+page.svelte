@@ -44,6 +44,7 @@
 		toastUnboundErrors,
 		parseISODateToLocal
 	} from '$lib/utils';
+	import { canOperate } from '$lib/shared/enums';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { nowUTC } from '$lib/dates';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
@@ -55,6 +56,7 @@
 	let customer = $state<Customer>(untrack(() => data.customer));
 	let prescriptions = $state<Prescription[]>(untrack(() => data.prescriptions));
 	const recentSales = untrack(() => data.recentSales) as SaleWithRelations[];
+	const canAct = $derived(canOperate(data.user.role));
 
 	// Derived: current prescription
 	const currentPrescription = $derived(prescriptions.find((p) => p.isCurrent) ?? null);
@@ -78,6 +80,8 @@
 	const currentUpdateForm = $derived(updateCustomerForm.for(`${customer.id}-${formInstanceId}`));
 
 	function startEditing() {
+		if (!canAct) return;
+
 		formInstanceId = generateUUID();
 		editData = {
 			firstName: customer.firstName ?? '',
@@ -123,6 +127,8 @@
 	let deleteLoading = $state(false);
 
 	function openDeletePrescription(p: Prescription) {
+		if (!canAct) return;
+
 		deleteTarget = p;
 		showDeleteModal = true;
 	}
@@ -324,7 +330,7 @@
 					</form>
 				</div>
 			{:else}
-				<!-- READ MODE — Personal Info Card -->
+				<!-- READ MODE - Personal Info Card -->
 				<div class="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-6">
 					<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div class="flex items-center gap-2.5">
@@ -333,14 +339,16 @@
 								Información Personal
 							</h2>
 						</div>
-						<button
-							type="button"
-							onclick={startEditing}
-							class="inline-flex items-center gap-1.5 self-start rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:border-brand-blue hover:text-brand-blue sm:self-auto"
-						>
-							<SquarePen class="h-4 w-4" />
-							Editar Perfil
-						</button>
+						{#if canAct}
+							<button
+								type="button"
+								onclick={startEditing}
+								class="inline-flex items-center gap-1.5 self-start rounded-lg border border-outline-variant/40 px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:border-brand-blue hover:text-brand-blue sm:self-auto"
+							>
+								<SquarePen class="h-4 w-4" />
+								Editar Perfil
+							</button>
+						{/if}
 					</div>
 
 					<div class="grid grid-cols-1 gap-y-5 sm:grid-cols-2">
@@ -350,7 +358,7 @@
 								>Nombre</span
 							>
 							<p class="mt-0.5 text-sm font-medium text-on-surface">
-								{customer.firstName ?? '—'}
+								{customer.firstName ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -359,7 +367,7 @@
 								>Apellido</span
 							>
 							<p class="mt-0.5 text-sm font-medium text-on-surface">
-								{customer.lastName ?? '—'}
+								{customer.lastName ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -368,7 +376,7 @@
 								>Cédula</span
 							>
 							<p class="mt-0.5 font-mono text-sm text-on-surface">
-								{customer.idNumber ?? '—'}
+								{customer.idNumber ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -377,7 +385,7 @@
 								>Fecha de Nacimiento</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.birthDate ? formatDate(customer.birthDate) : '—'}
+								{customer.birthDate ? formatDate(customer.birthDate) : '-'}
 							</p>
 						</div>
 						<div>
@@ -386,7 +394,7 @@
 								>Teléfono</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.primaryPhone ?? '—'}
+								{customer.primaryPhone ?? '-'}
 							</p>
 						</div>
 						<div>
@@ -395,7 +403,7 @@
 								>Correo</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.email ?? '—'}
+								{customer.email ?? '-'}
 							</p>
 						</div>
 						<div class="sm:col-span-2">
@@ -404,7 +412,7 @@
 								>Dirección</span
 							>
 							<p class="mt-0.5 text-sm text-on-surface">
-								{customer.address ?? '—'}
+								{customer.address ?? '-'}
 							</p>
 						</div>
 						{#if customer.notes}
@@ -564,13 +572,15 @@
 				>
 					<Glasses class="mb-3 h-10 w-10 text-white/30" />
 					<p class="text-sm font-medium text-white/60">Sin fórmula activa</p>
-					<button
-						onclick={() => goto(resolve(`/customers/${customer.id}/prescriptions/new`))}
-						class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-gold px-3 py-1.5 text-xs font-bold text-brand-navy shadow-sm hover:bg-brand-gold-dark hover:shadow-md"
-					>
-						<Plus class="h-3.5 w-3.5" />
-						Agregar Fórmula
-					</button>
+					{#if canAct}
+						<button
+							onclick={() => goto(resolve(`/customers/${customer.id}/prescriptions/new`))}
+							class="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-brand-gold px-3 py-1.5 text-xs font-bold text-brand-navy shadow-sm hover:bg-brand-gold-dark hover:shadow-md"
+						>
+							<Plus class="h-3.5 w-3.5" />
+							Agregar Fórmula
+						</button>
+					{/if}
 				</div>
 			{/if}
 
@@ -630,13 +640,15 @@
 						: ''}
 				</p>
 			</div>
-			<button
-				onclick={() => goto(resolve(`/customers/${customer.id}/prescriptions/new`))}
-				class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-			>
-				<Plus class="h-4 w-4" />
-				Nueva Fórmula
-			</button>
+			{#if canAct}
+				<button
+					onclick={() => goto(resolve(`/customers/${customer.id}/prescriptions/new`))}
+					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+				>
+					<Plus class="h-4 w-4" />
+					Nueva Fórmula
+				</button>
+			{/if}
 		</div>
 
 		{#if prescriptions.length > 0}
@@ -684,7 +696,7 @@
 									{#if prescription.recommendedLensType}
 										<LensTypeBadge type={prescription.recommendedLensType} />
 									{:else}
-										<span class="text-sm text-outline">—</span>
+										<span class="text-sm text-outline">-</span>
 									{/if}
 								</td>
 								<td class="px-4 py-3 font-mono text-sm text-on-surface-variant">
@@ -704,33 +716,37 @@
 											Actual
 										</AppBadge>
 									{:else}
-										<span class="text-sm text-outline">—</span>
+										<span class="text-sm text-outline">-</span>
 									{/if}
 								</td>
 								<td class="px-4 py-3 text-right">
 									<div class="flex items-center justify-end gap-1">
-										<button
-											onclick={(e) => {
-												e.stopPropagation();
-												goto(
-													resolve(`/customers/${customer.id}/prescriptions/${prescription.id}/edit`)
-												);
-											}}
-											class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
-											title="Editar"
-										>
-											<SquarePen class="h-4 w-4" />
-										</button>
-										<button
-											onclick={(e) => {
-												e.stopPropagation();
-												openDeletePrescription(prescription);
-											}}
-											class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
-											title="Eliminar"
-										>
-											<Trash2 class="h-4 w-4" />
-										</button>
+										{#if canAct}
+											<button
+												onclick={(e) => {
+													e.stopPropagation();
+													goto(
+														resolve(
+															`/customers/${customer.id}/prescriptions/${prescription.id}/edit`
+														)
+													);
+												}}
+												class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
+												title="Editar"
+											>
+												<SquarePen class="h-4 w-4" />
+											</button>
+											<button
+												onclick={(e) => {
+													e.stopPropagation();
+													openDeletePrescription(prescription);
+												}}
+												class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
+												title="Eliminar"
+											>
+												<Trash2 class="h-4 w-4" />
+											</button>
+										{/if}
 										<div
 											class="ml-1 transition-transform duration-200 {expandedPrescriptionId ===
 											prescription.id

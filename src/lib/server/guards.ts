@@ -2,9 +2,27 @@
  * Auth Guards for Remote Functions
  * Reusable security helpers using getRequestEvent()
  */
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
 import { UserRole } from '$lib/shared/enums';
+
+// ============================================================================
+// PAGE-LEVEL GUARDS (for +page.server.ts / +layout.server.ts load functions)
+// ============================================================================
+
+/**
+ * Require specific role(s) at the page level.
+ * Redirects to /dashboard if user lacks the required role.
+ */
+export function requirePageRole(locals: App.Locals, ...allowedRoles: UserRole[]): void {
+	if (!locals.user || !allowedRoles.includes(locals.user.role)) {
+		redirect(302, '/dashboard');
+	}
+}
+
+// ============================================================================
+// REMOTE FUNCTION GUARDS (use getRequestEvent())
+// ============================================================================
 
 /**
  * Get current user from request (via hooks.server.ts)
@@ -46,19 +64,15 @@ export function requireRole(...allowedRoles: UserRole[]) {
 }
 
 /**
- * Require admin role (SUPERADMIN, ADMIN, or MANAGER)
+ * Require admin role (ADMIN or MANAGER)
  */
 export function requireAdmin() {
-	return requireRole(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER);
+	return requireRole(UserRole.ADMIN, UserRole.MANAGER);
 }
 
 /**
- * Require superuser - throws 403 if not superadmin
+ * Require ADMIN-only access (e.g. user management, settings)
  */
-export function requireSuperuser() {
-	const user = requireAuth();
-	if (!user.isSuperuser) {
-		error(403, 'Solo superadmin puede realizar esta acción');
-	}
-	return user;
+export function requireUserAdmin() {
+	return requireRole(UserRole.ADMIN);
 }

@@ -1,5 +1,5 @@
 /**
- * Centralized date utilities — the ONLY file allowed to import date-fns.
+ * Centralized date utilities - the ONLY file allowed to import date-fns.
  *
  * All date parsing, serialization, and range logic across the app goes
  * through these helpers. Components and server code must never import
@@ -58,7 +58,7 @@ export function fromISO(iso: string): Date {
 
 /**
  * Parse an ISO date-only string ("YYYY-MM-DD") to a Date at local midnight.
- * Also accepts full ISO timestamps ("YYYY-MM-DDT...") — only the date part is used.
+ * Also accepts full ISO timestamps ("YYYY-MM-DDT...") - only the date part is used.
  * Use for date-only values from forms, API, or timestamp columns storing dates.
  */
 export function fromISODate(iso: string | null | undefined): Date | undefined {

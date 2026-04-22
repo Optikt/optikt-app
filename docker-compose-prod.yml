@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: optikt
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: optikt_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U optikt -d optikt_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  optikt-app:
+    image: optikt/optikt-app:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      ORIGIN: ${ORIGIN}
+      DATABASE_URL: postgresql://optikt:${DB_PASSWORD}@postgres:5432/optikt_db
+    ports:
+      - '3000:3000'
+
+volumes:
+  postgres_data:

@@ -49,7 +49,7 @@
 			<div class="rounded-[1.25rem] bg-surface-container-low px-4 py-4">
 				<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">IVA</p>
 				<p class="mt-2 text-base font-semibold text-brand-navy">
-					{getLensTaxSummary(item.isTaxable, item.taxRate)}
+					{getLensTaxSummary(item.isTaxable)}
 				</p>
 			</div>
 		</div>

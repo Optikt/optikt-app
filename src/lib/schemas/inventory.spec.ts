@@ -111,6 +111,13 @@ describe('ListInventoryMovementsSchema', () => {
 		});
 		expect(result.success).toBe(true);
 	});
+
+	it('accepts search filter', () => {
+		const result = ListInventoryMovementsSchema.safeParse({
+			search: 'PO-0001'
+		});
+		expect(result.success).toBe(true);
+	});
 });
 
 describe('ListInventoryLotsSchema', () => {

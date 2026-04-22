@@ -33,7 +33,7 @@ export interface MaterialFilterOptions {
 	search?: string;
 	/** Filter by product type */
 	productType?: string;
-	/** Include inactive materials (default: false — active only) */
+	/** Include inactive materials (default: false - active only) */
 	includeInactive?: boolean;
 }
 

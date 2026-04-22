@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { UserRole, isAdminRole, isSuperAdminRole, ALL_ROLES } from './roles';
+import { UserRole, isAdminRole, ALL_ROLES, canManageSaleByOwner } from './roles';
 
 describe('UserRole enum', () => {
 	it('has all expected roles', () => {
-		expect(UserRole.SUPERADMIN).toBe('SUPERADMIN');
 		expect(UserRole.ADMIN).toBe('ADMIN');
 		expect(UserRole.MANAGER).toBe('MANAGER');
 		expect(UserRole.SELLER).toBe('SELLER');
@@ -11,8 +10,7 @@ describe('UserRole enum', () => {
 	});
 
 	it('ALL_ROLES contains all roles', () => {
-		expect(ALL_ROLES).toHaveLength(5);
-		expect(ALL_ROLES).toContain(UserRole.SUPERADMIN);
+		expect(ALL_ROLES).toHaveLength(4);
 		expect(ALL_ROLES).toContain(UserRole.ADMIN);
 		expect(ALL_ROLES).toContain(UserRole.MANAGER);
 		expect(ALL_ROLES).toContain(UserRole.SELLER);
@@ -21,10 +19,6 @@ describe('UserRole enum', () => {
 });
 
 describe('isAdminRole', () => {
-	it('returns true for SUPERADMIN', () => {
-		expect(isAdminRole(UserRole.SUPERADMIN)).toBe(true);
-	});
-
 	it('returns true for ADMIN', () => {
 		expect(isAdminRole(UserRole.ADMIN)).toBe(true);
 	});
@@ -50,32 +44,33 @@ describe('isAdminRole', () => {
 	});
 });
 
-describe('isSuperAdminRole', () => {
-	it('returns true for SUPERADMIN', () => {
-		expect(isSuperAdminRole(UserRole.SUPERADMIN)).toBe(true);
+describe('canManageSaleByOwner', () => {
+	it('allows ADMIN to manage any sale', () => {
+		expect(canManageSaleByOwner(UserRole.ADMIN, 'user-1', 'user-2')).toBe(true);
 	});
 
-	it('returns false for ADMIN', () => {
-		expect(isSuperAdminRole(UserRole.ADMIN)).toBe(false);
+	it('allows MANAGER to manage any sale', () => {
+		expect(canManageSaleByOwner(UserRole.MANAGER, 'user-1', 'user-2')).toBe(true);
 	});
 
-	it('returns false for MANAGER', () => {
-		expect(isSuperAdminRole(UserRole.MANAGER)).toBe(false);
+	it('allows SELLER to manage own sale', () => {
+		expect(canManageSaleByOwner(UserRole.SELLER, 'user-1', 'user-1')).toBe(true);
 	});
 
-	it('returns false for SELLER', () => {
-		expect(isSuperAdminRole(UserRole.SELLER)).toBe(false);
+	it('prevents SELLER from managing another seller sale', () => {
+		expect(canManageSaleByOwner(UserRole.SELLER, 'user-1', 'user-2')).toBe(false);
 	});
 
-	it('returns false for VIEWER', () => {
-		expect(isSuperAdminRole(UserRole.VIEWER)).toBe(false);
+	it('prevents SELLER from managing sale without ownership context', () => {
+		expect(canManageSaleByOwner(UserRole.SELLER, 'user-1', null)).toBe(false);
+		expect(canManageSaleByOwner(UserRole.SELLER, null, 'user-1')).toBe(false);
 	});
 
-	it('returns false for null', () => {
-		expect(isSuperAdminRole(null)).toBe(false);
+	it('prevents VIEWER from managing any sale', () => {
+		expect(canManageSaleByOwner(UserRole.VIEWER, 'user-1', 'user-1')).toBe(false);
 	});
 
-	it('returns false for undefined', () => {
-		expect(isSuperAdminRole(undefined)).toBe(false);
+	it('prevents unknown role from managing any sale', () => {
+		expect(canManageSaleByOwner(undefined, 'user-1', 'user-1')).toBe(false);
 	});
 });

@@ -8,9 +8,10 @@ import {
 	ListInventoryMovementsSchema,
 	RevertLotSchema
 } from '$lib/schemas/inventory';
-import { requireRole } from '$lib/server/guards';
+import { requireAuth, requireRole } from '$lib/server/guards';
 import { db } from '$lib/server/db';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
+import { findPurchaseOrderIdByLotId } from '$lib/server/db/queries/purchaseOrders';
 import {
 	createInventoryMovement,
 	getMovementsWithDetails,
@@ -37,6 +38,8 @@ import { nowISO } from '$lib/dates';
 export const listInventoryMovements = query(
 	ListInventoryMovementsSchema,
 	async (data): Promise<PaginatedResult<MovementWithDetails>> => {
+		requireAuth();
+
 		const { page, perPage } = data;
 		const filterOptions = {
 			lotId: data.lotId ?? undefined,
@@ -44,6 +47,7 @@ export const listInventoryMovements = query(
 			lensCatalogItemId: data.lensCatalogItemId ?? undefined,
 			movementType: data.movementType ?? undefined,
 			referenceType: data.referenceType ?? undefined,
+			search: data.search ?? undefined,
 			dateFrom: data.dateFrom ?? undefined,
 			dateTo: data.dateTo ?? undefined
 		};
@@ -65,8 +69,8 @@ export const listInventoryMovements = query(
 // ============================================================================
 
 export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (data) => {
-	// Only ADMIN and SUPERADMIN can create manual adjustments
-	const user = requireRole(UserRole.SUPERADMIN, UserRole.ADMIN);
+	// Only ADMIN can create manual adjustments
+	const user = requireRole(UserRole.ADMIN);
 
 	const { lotId, adjustmentType, quantity, reason, notes } = data;
 
@@ -166,11 +170,16 @@ export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (
 });
 
 export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
-	const user = requireRole(UserRole.SUPERADMIN, UserRole.ADMIN);
+	const user = requireRole(UserRole.ADMIN);
 
 	const lot = await findLotById(data.lotId);
 	if (!lot) {
 		return { success: false as const, error: 'Lote no encontrado' };
+	}
+
+	const purchaseOrderId = await findPurchaseOrderIdByLotId(data.lotId);
+	if (!purchaseOrderId) {
+		return { success: false as const, error: 'No se pudo determinar la orden de compra del lote' };
 	}
 
 	// Can only revert if NO units have been consumed (sold, adjusted out, etc.)
@@ -206,9 +215,9 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 					quantityDelta,
 					quantityBefore: lot.quantityAvailable,
 					quantityAfter: 0,
-					referenceType: MovementReferenceType.MANUAL_ADJUSTMENT,
-					referenceId: data.lotId,
-					notes: 'ENTRY_ERROR: Reversión completa de lote',
+					referenceType: MovementReferenceType.PURCHASE_ORDER,
+					referenceId: purchaseOrderId,
+					notes: 'Reversión completa de lote',
 					createdById: user.id
 				},
 				tx

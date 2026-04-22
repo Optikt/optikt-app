@@ -1,41 +1,40 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
 	import {
-		ArrowLeft,
-		Truck,
-		Calendar,
-		Hash,
-		FileText,
-		CheckCircle,
-		XCircle,
-		Package,
 		ArrowRightLeft,
-		RotateCcw
+		Calendar,
+		CheckCircle,
+		FileText,
+		Hash,
+		Package,
+		RotateCcw,
+		ScrollText,
+		Truck,
+		XCircle
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { PurchaseOrderStatusBadge, ConfirmModal } from '$lib/components/ui';
 	import { PriceSuggestionModal } from '$lib/components/purchases';
-	import {
-		confirmPurchaseOrderCmd,
-		cancelPurchaseOrderCmd,
-		applyPriceSuggestionsCmd
-	} from '$lib/remote/purchaseOrders.remote';
+	import { AppBadge, ConfirmModal, PageHeader, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
-	import type { PriceSuggestion } from '$lib/remote/purchaseOrders.remote';
-	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import {
-		PurchaseOrderStatus,
+		applyPriceSuggestionsCmd,
+		cancelPurchaseOrderCmd,
+		confirmPurchaseOrderCmd,
+		type PriceSuggestion
+	} from '$lib/remote/purchaseOrders.remote';
+	import {
+		getInventoryMovementTypeLabel,
 		getPurchaseOrderItemTypeLabel,
-		getInventoryMovementTypeLabel
+		PurchaseOrderStatus
 	} from '$lib/shared/enums';
 	import type {
-		PurchaseOrderWithRelations,
-		PurchaseOrderItemWithProduct
+		PurchaseOrderItemWithProduct,
+		PurchaseOrderWithRelations
 	} from '$lib/server/db/queries/purchaseOrders';
-	import type { InventoryMovement, InventoryLot } from '$lib/server/db/schema';
-	import { untrack, tick } from 'svelte';
+	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
+	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
+	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
 	let purchaseOrder = $state<PurchaseOrderWithRelations>(untrack(() => data.purchaseOrder));
@@ -43,7 +42,16 @@
 	let movements = $state<InventoryMovement[]>(untrack(() => data.movements));
 	let lotsMap = $state<Record<string, InventoryLot>>(untrack(() => data.lotsMap));
 
-	/** Re-sync local state from server data after invalidation */
+	let actionLoading = $state(false);
+	let showConfirmModal = $state(false);
+	let showCancelModal = $state(false);
+	let showPriceSuggestionModal = $state(false);
+	let priceSuggestions = $state<PriceSuggestion[]>([]);
+	let priceLoading = $state(false);
+	let revertLoading = $state(false);
+	let showRevertModal = $state(false);
+	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
+
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
 		items = data.items;
@@ -51,35 +59,114 @@
 		lotsMap = data.lotsMap;
 	}
 
-	let isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
-	let isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
+	const formattedOrderNumber = $derived(`PO-${String(purchaseOrder.orderNumber).padStart(4, '0')}`);
+	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
+	const isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
+	const detailSubtitle = $derived.by(() => {
+		if (purchaseOrder.status === PurchaseOrderStatus.DRAFT) {
+			return 'Pendiente por confirmar y generar inventario';
+		}
 
-	let actionLoading = $state(false);
-	let showConfirmModal = $state(false);
-	let showCancelModal = $state(false);
-	let showPriceSuggestionModal = $state(false);
-	let priceSuggestions = $state<PriceSuggestion[]>([]);
-	let priceLoading = $state(false);
+		if (purchaseOrder.status === PurchaseOrderStatus.CANCELLED) {
+			return 'Orden cancelada y cerrada para nuevas acciones';
+		}
 
-	// Lot reversal state
-	let revertLoading = $state(false);
-	let showRevertModal = $state(false);
-	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
+		return 'Revisión de detalles y movimientos de inventario';
+	});
+	const totalUnits = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
+	const totalPurchase = $derived(
+		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
+	);
+	const totalSale = $derived(
+		items.reduce((sum, item) => sum + item.unitSalePrice * item.quantity, 0)
+	);
+
+	function goBack() {
+		goto(resolve('/purchases'));
+	}
+
+	function scrollToMovements() {
+		document.getElementById('purchase-movements')?.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start'
+		});
+	}
+
+	function formatBcvRate(rate: number): string {
+		return `${new Intl.NumberFormat('es-VE', {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(rate)} VES`;
+	}
+
+	function actionButtonClasses(variant: 'neutral' | 'success' | 'danger'): string {
+		if (variant === 'success') {
+			return 'bg-success-container text-on-success-container hover:bg-success-container/80';
+		}
+
+		if (variant === 'danger') {
+			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
+		}
+
+		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
+	}
+
+	function itemDisplayName(item: PurchaseOrderItemWithProduct): string {
+		return item.product?.name ?? item.lensCatalogItem?.name ?? 'Ítem no disponible';
+	}
+
+	function itemDisplayMeta(item: PurchaseOrderItemWithProduct): string {
+		if (item.product?.sku) return item.product.sku;
+		if (item.lensCatalogItem?.type) return item.lensCatalogItem.type;
+		return getPurchaseOrderItemTypeLabel(item.itemType);
+	}
+
+	function itemBadgeVariant(item: PurchaseOrderItemWithProduct): 'neutral' | 'info' {
+		return item.lensCatalogItem ? 'info' : 'neutral';
+	}
+
+	function lotForItem(item: PurchaseOrderItemWithProduct): InventoryLot | null {
+		return item.lotId ? (lotsMap[item.lotId] ?? null) : null;
+	}
+
+	function formatLotCode(lotId: string | null): string {
+		if (!lotId) return 'Sin lote';
+		const lot = lotsMap[lotId];
+		if (!lot) return 'Sin lote';
+		return `L-${String(lot.lotNumber).padStart(4, '0')}`;
+	}
+
+	function purchaseLineTotal(item: PurchaseOrderItemWithProduct): number {
+		return item.unitPurchasePrice * item.quantity;
+	}
+
+	function movementItemName(movement: InventoryMovement): string {
+		const item = items.find((entry) => entry.lotId === movement.lotId);
+		return item ? itemDisplayName(item) : 'Ítem relacionado';
+	}
+
+	function movementDescription(movement: InventoryMovement): string {
+		if (movement.notes) return movement.notes;
+
+		const lotLabel = formatLotCode(movement.lotId);
+		const itemName = movementItemName(movement);
+		const prefix = movement.quantityDelta > 0 ? 'Entrada registrada' : 'Ajuste registrado';
+		return `${prefix} para ${itemName} (${lotLabel}).`;
+	}
 
 	function canRevertLot(item: PurchaseOrderItemWithProduct): boolean {
-		if (!item.lotId) return false;
-		const lot = lotsMap[item.lotId];
-		if (!lot) return false;
-		return lot.quantityAvailable === lot.quantityInitial;
+		const lot = lotForItem(item);
+		return lot ? lot.quantityAvailable === lot.quantityInitial : false;
 	}
 
 	function openRevertModal(item: PurchaseOrderItemWithProduct) {
 		if (!item.lotId) return;
 		const lot = lotsMap[item.lotId];
 		if (!lot) return;
+
 		revertTarget = {
 			lotId: item.lotId,
-			productName: item.product?.name ?? 'Producto desconocido',
+			productName: itemDisplayName(item),
 			quantity: lot.quantityInitial
 		};
 		showRevertModal = true;
@@ -88,45 +175,37 @@
 	async function handleRevertLot() {
 		if (!revertTarget) return;
 		revertLoading = true;
+
 		try {
 			const result = await revertFullLotCmd({ lotId: revertTarget.lotId });
 			if (result.success) {
-				toast.success('Lote revertido exitosamente');
+				toast.success('Recepción del lote deshecha correctamente');
 				showRevertModal = false;
 				revertTarget = null;
 				await invalidateAll();
 				syncFromData();
 			} else {
-				toast.error(result.error ?? 'Error revirtiendo lote');
+				toast.error(result.error ?? 'Error deshaciendo la recepción del lote');
 			}
-		} catch (e) {
-			console.error(e);
-			toast.error(getErrorMessage(e, 'Error revirtiendo lote'));
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error deshaciendo la recepción del lote'));
 		} finally {
 			revertLoading = false;
 		}
 	}
 
-	let totalItems = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
-	let totalPurchase = $derived(
-		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
-	);
-	let totalSale = $derived(
-		items.reduce((sum, item) => sum + item.unitSalePrice * item.quantity, 0)
-	);
-
 	async function handleConfirm() {
 		actionLoading = true;
+
 		try {
 			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
 			if (result.success) {
 				showConfirmModal = false;
 				purchaseOrder = { ...purchaseOrder, status: PurchaseOrderStatus.CONFIRMED };
 
-				// Show price suggestion modal if there are differences
 				if (result.priceSuggestions && result.priceSuggestions.length > 0) {
 					priceSuggestions = result.priceSuggestions;
-					// Wait for confirm modal to fully close before opening the next one
 					await tick();
 					showPriceSuggestionModal = true;
 					toast.success('Orden confirmada. Revisa las sugerencias de precio.');
@@ -138,9 +217,9 @@
 			} else {
 				toast.error(result.error ?? 'Error confirmando la orden');
 			}
-		} catch (e) {
-			console.error(e);
-			toast.error(getErrorMessage(e, 'Error confirmando orden de compra'));
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
 		} finally {
 			actionLoading = false;
 		}
@@ -148,6 +227,7 @@
 
 	async function handleApplyPrices(updates: { productId: string; newSalePrice: number }[]) {
 		priceLoading = true;
+
 		try {
 			const result = await applyPriceSuggestionsCmd({ updates });
 			if (result.success) {
@@ -159,9 +239,9 @@
 			} else {
 				toast.error(result.error ?? 'Error actualizando precios');
 			}
-		} catch (e) {
-			console.error(e);
-			toast.error(getErrorMessage(e, 'Error actualizando precios'));
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error actualizando precios'));
 		} finally {
 			priceLoading = false;
 		}
@@ -176,6 +256,7 @@
 
 	async function handleCancel() {
 		actionLoading = true;
+
 		try {
 			const result = await cancelPurchaseOrderCmd({ id: purchaseOrder.id });
 			if (result.success) {
@@ -187,9 +268,9 @@
 			} else {
 				toast.error(result.error ?? 'Error cancelando la orden');
 			}
-		} catch (e) {
-			console.error(e);
-			toast.error(getErrorMessage(e, 'Error cancelando orden de compra'));
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error cancelando orden de compra'));
 		} finally {
 			actionLoading = false;
 		}
@@ -197,299 +278,446 @@
 </script>
 
 <svelte:head>
-	<title>Orden PO-{String(purchaseOrder.orderNumber).padStart(4, '0')} - Optikt</title>
+	<title>{formattedOrderNumber} - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<!-- Back + header -->
-	<div class="mb-6">
-		<button
-			type="button"
-			class="mb-4 flex cursor-pointer items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700"
-			onclick={() => goto(resolve('/purchases'))}
-		>
-			<ArrowLeft class="h-4 w-4" />
-			Volver a Órdenes de Compra
-		</button>
-
-		<div class="flex flex-wrap items-center justify-between gap-4">
-			<div class="flex items-center gap-4">
-				<h1 class="text-3xl font-bold tracking-tight text-slate-900">
-					PO-{String(purchaseOrder.orderNumber).padStart(4, '0')}
-				</h1>
-				<PurchaseOrderStatusBadge status={purchaseOrder.status} />
-			</div>
+<div class="space-y-6 p-6">
+	<PageHeader
+		title={formattedOrderNumber}
+		subtitle={detailSubtitle}
+		backLabel="Volver a órdenes"
+		backOnClick={goBack}
+	>
+		{#snippet actions()}
+			{#if isConfirmed && movements.length > 0}
+				<button
+					type="button"
+					onclick={scrollToMovements}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<ArrowRightLeft class="h-4 w-4" />
+					Ver movimientos
+				</button>
+			{/if}
 
 			{#if isDraft}
-				<div class="flex gap-2">
-					<Button color="green" onclick={() => (showConfirmModal = true)}>
-						<CheckCircle class="mr-2 h-4 w-4" /> Confirmar
-					</Button>
-					<Button color="red" outline onclick={() => (showCancelModal = true)}>
-						<XCircle class="mr-2 h-4 w-4" /> Cancelar
-					</Button>
-				</div>
+				<button
+					type="button"
+					onclick={() => (showConfirmModal = true)}
+					disabled={actionLoading}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+						'success'
+					)}"
+				>
+					<CheckCircle class="h-4 w-4" />
+					Confirmar orden
+				</button>
+				<button
+					type="button"
+					onclick={() => (showCancelModal = true)}
+					disabled={actionLoading}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+						'danger'
+					)}"
+				>
+					<XCircle class="h-4 w-4" />
+					Cancelar orden
+				</button>
 			{/if}
+		{/snippet}
+	</PageHeader>
+
+	<div class="-mt-2 flex flex-wrap items-center gap-3 text-on-surface-variant">
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Orden</span>
+			<span class="font-mono text-sm font-semibold text-brand-navy">{formattedOrderNumber}</span>
+		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Proveedor</span
+			>
+			<span class="font-semibold text-brand-navy"
+				>{purchaseOrder.supplier?.name ?? 'Sin proveedor'}</span
+			>
+		</div>
+		<div
+			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+		>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Factura</span>
+			<span class="font-mono text-sm font-semibold text-brand-navy">
+				{purchaseOrder.invoiceNumber ?? 'Sin registrar'}
+			</span>
+		</div>
+		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
+			<PurchaseOrderStatusBadge status={purchaseOrder.status} />
 		</div>
 	</div>
 
-	<!-- PO Info Cards -->
-	<div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-xl border border-slate-200 bg-white p-4">
-			<div class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500">
-				<Truck class="h-4 w-4" /> Proveedor
-			</div>
-			<p class="text-lg font-semibold text-slate-900">
-				{purchaseOrder.supplier?.name ?? '—'}
-			</p>
-		</div>
-
-		<div class="rounded-xl border border-slate-200 bg-white p-4">
-			<div class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500">
-				<Calendar class="h-4 w-4" /> Fecha de Orden
-			</div>
-			<p class="text-lg font-semibold text-slate-900">
-				{formatDate(purchaseOrder.orderDate)}
-			</p>
-		</div>
-
-		<div class="rounded-xl border border-slate-200 bg-white p-4">
-			<div class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500">
-				<Hash class="h-4 w-4" /> N° Factura
-			</div>
-			<p class="font-mono text-lg font-semibold text-slate-900">
-				{purchaseOrder.invoiceNumber ?? '—'}
-			</p>
-		</div>
-
-		<div class="rounded-xl border border-slate-200 bg-white p-4">
-			<div class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-500">
-				<FileText class="h-4 w-4" /> Tasa BCV
-			</div>
-			<p class="font-mono text-lg font-semibold text-slate-900 tabular-nums">
-				{formatPrice(purchaseOrder.bcvRate)}
-			</p>
-		</div>
-	</div>
-
-	<!-- Additional info row -->
-	{#if purchaseOrder.deliveryNoteNumber || purchaseOrder.notes}
-		<div class="mb-8 rounded-xl border border-slate-200 bg-white p-4">
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				{#if purchaseOrder.deliveryNoteNumber}
-					<div>
-						<span class="text-sm font-medium text-slate-500">N° Nota de Entrega</span>
-						<p class="mt-1 font-mono text-sm text-slate-900">{purchaseOrder.deliveryNoteNumber}</p>
+	<div class="grid gap-6 xl:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)]">
+		<div class="space-y-6">
+			<section class="glass-card overflow-hidden">
+				<div
+					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+				>
+					<div class="flex items-center gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+						>
+							<FileText class="h-5 w-5" />
+						</div>
+						<div>
+							<h2 class="text-xl font-semibold text-brand-navy">Detalles de la orden</h2>
+							<p class="text-sm text-on-surface-variant">
+								Contexto documental y condiciones financieras de la compra.
+							</p>
+						</div>
 					</div>
-				{/if}
-				{#if purchaseOrder.notes}
-					<div>
-						<span class="text-sm font-medium text-slate-500">Notas</span>
-						<p class="mt-1 text-sm text-slate-700">{purchaseOrder.notes}</p>
+				</div>
+
+				<div class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4">
+					<div class="rounded-2xl bg-surface-container-low p-4">
+						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+							<Truck class="h-4 w-4" />
+							Proveedor
+						</div>
+						<p class="mt-3 text-base font-semibold text-brand-navy">
+							{purchaseOrder.supplier?.name ?? 'Sin proveedor asignado'}
+						</p>
 					</div>
-				{/if}
-			</div>
-		</div>
-	{/if}
+					<div class="rounded-2xl bg-surface-container-low p-4">
+						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+							<Calendar class="h-4 w-4" />
+							Fecha de orden
+						</div>
+						<p class="mt-3 text-base font-semibold text-brand-navy">
+							{formatDate(purchaseOrder.orderDate, { dateStyle: 'medium' })}
+						</p>
+					</div>
+					<div class="rounded-2xl bg-surface-container-low p-4">
+						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+							<Hash class="h-4 w-4" />
+							N.º de factura
+						</div>
+						<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
+							{purchaseOrder.invoiceNumber ?? 'Sin registrar'}
+						</p>
+					</div>
+					<div class="rounded-2xl bg-surface-container-low p-4">
+						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+							<ScrollText class="h-4 w-4" />
+							Tasa BCV
+						</div>
+						<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
+							{formatBcvRate(purchaseOrder.bcvRate)}
+						</p>
+					</div>
+				</div>
 
-	<!-- Items Table -->
-	<div class="rounded-xl border border-slate-200 bg-white">
-		<div class="border-b border-slate-200 px-6 py-4">
-			<h2 class="flex items-center gap-2 text-lg font-semibold text-slate-900">
-				<Package class="h-5 w-5" />
-				Ítems ({items.length})
-			</h2>
-		</div>
-
-		<div class="overflow-x-auto">
-			<table class="w-full text-left text-sm">
-				<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
-					<tr>
-						<th class="px-6 py-3">Tipo</th>
-						<th class="px-6 py-3">Producto / Lente</th>
-						<th class="px-6 py-3 text-right">Cantidad</th>
-						<th class="px-6 py-3 text-right">Precio Compra</th>
-						<th class="px-6 py-3 text-right">Precio Venta</th>
-						<th class="px-6 py-3 text-right">Subtotal Compra</th>
-						{#if isConfirmed}
-							<th class="px-6 py-3 text-right">Lote</th>
-							<th class="px-6 py-3"></th>
+				{#if purchaseOrder.deliveryNoteNumber || purchaseOrder.notes}
+					<div class="grid gap-4 border-t border-outline-variant/15 px-6 py-6 md:grid-cols-2">
+						{#if purchaseOrder.deliveryNoteNumber}
+							<div class="rounded-2xl bg-surface-container-low p-4">
+								<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+									Nota de entrega
+								</p>
+								<p class="mt-2 font-mono text-sm font-semibold text-brand-navy">
+									{purchaseOrder.deliveryNoteNumber}
+								</p>
+							</div>
 						{/if}
-					</tr>
-				</thead>
-				<tbody>
-					{#each items as item (item.id)}
-						<tr class="border-b border-slate-100 hover:bg-slate-50">
-							<td class="px-6 py-3">
-								<span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-									{getPurchaseOrderItemTypeLabel(item.itemType)}
-								</span>
-							</td>
-							<td class="px-6 py-3 font-medium">
-								{#if item.product}
-									<div>
-										<span>{item.product.name}</span>
-										<span class="ml-2 font-mono text-xs text-slate-400">{item.product.sku}</span>
-									</div>
-								{:else}
-									<span class="text-slate-400">—</span>
-								{/if}
-							</td>
-							<td class="px-6 py-3 text-right font-mono tabular-nums">{item.quantity}</td>
-							<td class="px-6 py-3 text-right font-mono tabular-nums"
-								>{formatPrice(item.unitPurchasePrice)}</td
-							>
-							<td class="px-6 py-3 text-right font-mono tabular-nums">
-								{formatPrice(item.unitSalePrice)}
-								{#if item.appliesIva}
-									<span
-										class="ml-1 text-[10px] font-medium text-emerald-600"
-										title="Incluye IVA {item.ivaRate}%">IVA</span
-									>
-								{/if}
-							</td>
-							<td class="px-6 py-3 text-right font-mono font-medium tabular-nums">
-								{formatPrice(item.unitPurchasePrice * item.quantity)}
-							</td>
+						{#if purchaseOrder.notes}
+							<div class="rounded-2xl bg-surface-container-low p-4">
+								<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+									Notas internas
+								</p>
+								<p class="mt-2 text-sm leading-relaxed text-on-surface">
+									{purchaseOrder.notes}
+								</p>
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</section>
+
+			<section class="glass-card overflow-hidden">
+				<div
+					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+				>
+					<div class="flex items-center gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+						>
+							<Package class="h-5 w-5" />
+						</div>
+						<div>
+							<h2 class="text-xl font-semibold text-brand-navy">Artículos recibidos</h2>
+						</div>
+					</div>
+					<AppBadge variant="neutral">{items.length} ítems</AppBadge>
+				</div>
+
+				<div class="overflow-x-auto xl:overflow-visible">
+					<table class="min-w-full table-fixed text-left text-sm xl:w-full">
+						<colgroup>
+							<col class="w-[11%]" />
+							<col class="w-[23%]" />
+							<col class="w-[8%]" />
+							<col class="w-[12%]" />
+							<col class="w-[14%]" />
+							<col class="w-[14%]" />
 							{#if isConfirmed}
-								<td class="px-6 py-3 text-right font-mono text-sm">
-									{#if item.lotId && lotsMap[item.lotId]}
-										<span>L-{String(lotsMap[item.lotId].lotNumber).padStart(4, '0')}</span>
-										<span class="ml-1 text-xs text-slate-400">
-											({lotsMap[item.lotId].quantityAvailable}/{lotsMap[item.lotId]
-												.quantityInitial})
-										</span>
-									{:else}
-										<span class="text-slate-400">—</span>
-									{/if}
-								</td>
-								<td class="px-6 py-3 text-right">
-									{#if canRevertLot(item)}
-										<button
-											type="button"
-											class="inline-flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
-											onclick={() => openRevertModal(item)}
-										>
-											<RotateCcw class="h-3 w-3" />
-											Revertir
-										</button>
-									{/if}
-								</td>
+								<col class="w-[18%]" />
 							{/if}
-						</tr>
-					{:else}
-						<tr>
-							<td colspan={isConfirmed ? 8 : 6} class="px-6 py-8 text-center text-slate-400">
-								No hay ítems en esta orden
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-
-		<!-- Totals -->
-		<div class="border-t border-slate-200 bg-slate-50 px-6 py-4">
-			<div class="flex justify-end gap-8">
-				<div class="text-right">
-					<span class="text-sm text-slate-500">Total Unidades</span>
-					<p class="font-mono text-lg font-semibold tabular-nums">{totalItems}</p>
+						</colgroup>
+						<thead
+							class="bg-surface-container-high/70 text-[11px] tracking-[0.18em] text-slate-500 uppercase"
+						>
+							<tr>
+								<th class="px-4 py-3.5">Tipo</th>
+								<th class="px-4 py-3.5">Artículo</th>
+								<th class="px-4 py-3.5 text-right">Cantidad</th>
+								<th class="px-4 py-3.5 text-right">Costo unitario</th>
+								<th class="px-4 py-3.5 text-right">Total compra</th>
+								<th class="px-4 py-3.5 text-right">Venta sugerida</th>
+								{#if isConfirmed}
+									<th class="px-4 py-3.5 text-right">Lote</th>
+								{/if}
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-outline-variant/15">
+							{#each items as item (item.id)}
+								{@const lot = lotForItem(item)}
+								<tr class="align-top transition-colors hover:bg-surface-container-low/60">
+									<td class="px-4 py-3.5">
+										<AppBadge variant={itemBadgeVariant(item)}>
+											{getPurchaseOrderItemTypeLabel(item.itemType)}
+										</AppBadge>
+									</td>
+									<td class="px-4 py-3.5">
+										<p class="max-w-[13rem] text-[15px] leading-5 font-semibold text-brand-navy">
+											{itemDisplayName(item)}
+										</p>
+										<p
+											class="mt-1 font-mono text-[11px] leading-4 tracking-[0.12em] break-words text-outline uppercase"
+										>
+											{itemDisplayMeta(item)}
+										</p>
+									</td>
+									<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
+										{item.quantity}
+									</td>
+									<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
+										{formatPrice(item.unitPurchasePrice)}
+									</td>
+									<td
+										class="px-4 py-3.5 text-right font-mono font-semibold text-brand-navy tabular-nums"
+									>
+										{formatPrice(purchaseLineTotal(item))}
+									</td>
+									<td class="px-4 py-3.5 text-right">
+										<div class="font-mono text-brand-blue tabular-nums">
+											{formatPrice(item.unitSalePrice)}
+										</div>
+										{#if item.appliesIva}
+											<p
+												class="mt-1 text-[10px] font-semibold tracking-[0.14em] text-success uppercase"
+											>
+												IVA {item.ivaRate}%
+											</p>
+										{/if}
+									</td>
+									{#if isConfirmed}
+										<td class="px-4 py-3.5 text-right">
+											{#if lot}
+												<div class="flex items-start justify-end gap-2">
+													<p class="font-mono text-sm font-semibold text-brand-navy">
+														{formatLotCode(item.lotId)}
+													</p>
+													{#if canRevertLot(item)}
+														<button
+															type="button"
+															onclick={() => openRevertModal(item)}
+															title="Deshacer recepción completa del lote"
+															aria-label="Deshacer recepción completa del lote"
+															class="inline-flex h-7 w-7 items-center justify-center rounded-md text-error transition-colors hover:bg-error-container/60 hover:text-on-error-container"
+														>
+															<RotateCcw class="h-3.5 w-3.5" />
+														</button>
+													{/if}
+												</div>
+												<p class="mt-1 text-xs text-on-surface-variant">
+													Disponible {lot.quantityAvailable}/{lot.quantityInitial}
+												</p>
+											{:else}
+												<span class="text-sm text-outline">Sin lote</span>
+											{/if}
+										</td>
+									{/if}
+								</tr>
+							{:else}
+								<tr>
+									<td colspan={isConfirmed ? 7 : 6} class="px-4 py-12 text-center">
+										<p class="text-sm font-semibold text-on-surface-variant">
+											No hay ítems en esta orden.
+										</p>
+										<p class="mt-1 text-sm text-outline">
+											La cabecera está creada, pero aún no tiene líneas registradas.
+										</p>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
-				<div class="text-right">
-					<span class="text-sm text-slate-500">Total Compra</span>
-					<p class="font-mono text-lg font-semibold text-slate-900 tabular-nums">
-						{formatPrice(totalPurchase)}
-					</p>
-				</div>
-				<div class="text-right">
-					<span class="text-sm text-slate-500">Total Venta (estimado)</span>
-					<p class="font-mono text-lg font-semibold text-blue-600 tabular-nums">
-						{formatPrice(totalSale)}
-					</p>
-				</div>
-			</div>
-		</div>
-	</div>
+			</section>
 
-	<!-- Movements History (only for confirmed POs) -->
-	{#if isConfirmed && movements.length > 0}
-		<div class="mt-8 rounded-xl border border-slate-200 bg-white">
-			<div class="border-b border-slate-200 px-6 py-4">
-				<h2 class="flex items-center gap-2 text-lg font-semibold text-slate-900">
-					<ArrowRightLeft class="h-5 w-5" />
-					Movimientos generados ({movements.length})
-				</h2>
-			</div>
+			<section id="purchase-movements" class="glass-card overflow-hidden">
+				<div
+					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+				>
+					<div class="flex items-center gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+						>
+							<ArrowRightLeft class="h-5 w-5" />
+						</div>
+						<h2 class="text-xl font-semibold text-brand-navy">Movimientos generados</h2>
+					</div>
+					<AppBadge variant="neutral">{movements.length} movimientos</AppBadge>
+				</div>
 
-			<div class="overflow-x-auto">
-				<table class="w-full text-left text-sm">
-					<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase">
-						<tr>
-							<th class="px-6 py-3">Fecha</th>
-							<th class="px-6 py-3">Tipo</th>
-							<th class="px-6 py-3 text-right">Cantidad</th>
-							<th class="px-6 py-3 text-right">Antes</th>
-							<th class="px-6 py-3 text-right">Después</th>
-							<th class="px-6 py-3">Notas</th>
-						</tr>
-					</thead>
-					<tbody>
+				{#if movements.length > 0}
+					<div class="divide-y divide-outline-variant/15">
 						{#each movements as movement (movement.id)}
 							{@const isInflow = movement.quantityDelta > 0}
-							<tr class="border-b border-slate-100 hover:bg-slate-50">
-								<td class="px-6 py-3 text-sm text-slate-600">
-									{formatDate(movement.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
-								</td>
-								<td class="px-6 py-3">
-									<span
-										class="inline-block rounded px-2 py-0.5 text-xs font-medium {isInflow
-											? 'bg-emerald-50 text-emerald-700'
-											: 'bg-red-50 text-red-700'}"
-									>
-										{getInventoryMovementTypeLabel(movement.movementType)}
-									</span>
-								</td>
-								<td class="px-6 py-3 text-right">
-									<span
-										class="font-mono text-sm font-medium tabular-nums {isInflow
-											? 'text-emerald-600'
-											: 'text-red-600'}"
-									>
-										{isInflow ? '+' : ''}{movement.quantityDelta}
-									</span>
-								</td>
-								<td class="px-6 py-3 text-right font-mono text-sm text-slate-500 tabular-nums">
-									{movement.quantityBefore}
-								</td>
-								<td class="px-6 py-3 text-right font-mono text-sm text-slate-500 tabular-nums">
-									{movement.quantityAfter}
-								</td>
-								<td class="max-w-xs truncate px-6 py-3 text-sm text-slate-500">
-									{movement.notes ?? '—'}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</div>
-	{/if}
+							<article class="space-y-3 px-6 py-5">
+								<div class="flex flex-wrap items-start justify-between gap-3">
+									<div class="space-y-2">
+										<AppBadge variant={isInflow ? 'success' : 'error'}>
+											{getInventoryMovementTypeLabel(movement.movementType)}
+										</AppBadge>
+										<p class="text-sm font-semibold text-brand-navy">
+											{movementItemName(movement)}
+										</p>
+									</div>
+									<p class="text-xs font-semibold tracking-[0.14em] text-outline uppercase">
+										{formatDate(movement.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
+									</p>
+								</div>
 
-	<!-- Meta info -->
-	<div class="mt-6 flex flex-wrap gap-6 text-xs text-slate-400">
-		<span>Creado por: {purchaseOrder.createdBy?.fullName ?? '—'}</span>
-		<span>Creado: {formatDate(purchaseOrder.createdAt)}</span>
-		{#if purchaseOrder.confirmedAt}
-			<span>Confirmado: {formatDate(purchaseOrder.confirmedAt)}</span>
-		{/if}
+								<p class="text-sm leading-relaxed text-on-surface-variant">
+									{movementDescription(movement)}
+								</p>
+
+								<div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
+									<span class="rounded-full bg-surface-container-low px-3 py-1.5 font-mono">
+										{formatLotCode(movement.lotId)}
+									</span>
+									<span class="font-mono tabular-nums {isInflow ? 'text-success' : 'text-error'}">
+										{isInflow ? '+' : ''}{movement.quantityDelta} unidades
+									</span>
+									<span class="font-mono tabular-nums">
+										{movement.quantityBefore} → {movement.quantityAfter}
+									</span>
+								</div>
+							</article>
+						{/each}
+					</div>
+				{:else}
+					<div class="px-6 py-10 text-center">
+						<p class="text-sm font-semibold text-on-surface-variant">Sin movimientos todavía.</p>
+					</div>
+				{/if}
+			</section>
+		</div>
+
+		<aside class="space-y-6">
+			<section
+				class="rounded-[1.75rem] bg-brand-navy p-6 text-white shadow-[0_28px_60px_-32px_rgba(15,23,42,0.8)]"
+			>
+				<p class="text-[11px] font-semibold tracking-[0.18em] text-brand-gold uppercase">
+					Resumen de valores
+				</p>
+				<div class="mt-6 space-y-5">
+					<div class="rounded-2xl bg-white/8 p-4">
+						<p class="text-sm text-white/70">Unidades totales</p>
+						<p class="mt-2 font-mono text-3xl font-semibold tabular-nums">{totalUnits}</p>
+					</div>
+					<div class="rounded-2xl bg-white/8 p-4">
+						<p class="text-sm text-white/70">Costo de compra</p>
+						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
+							{formatPrice(totalPurchase)}
+						</p>
+					</div>
+					<div class="rounded-2xl bg-white/8 p-4">
+						<p class="text-sm text-white/70">Valor estimado de venta</p>
+						<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
+							{formatPrice(totalSale)}
+						</p>
+					</div>
+				</div>
+			</section>
+
+			<section class="glass-card overflow-hidden">
+				<div
+					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+				>
+					<div class="flex items-center gap-3">
+						<div
+							class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+						>
+							<ScrollText class="h-5 w-5" />
+						</div>
+						<h2 class="text-xl font-semibold text-brand-navy">Registro de auditoría</h2>
+					</div>
+				</div>
+
+				<div class="space-y-4 px-6 py-6">
+					<div class="rounded-2xl bg-surface-container-low p-4">
+						<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Creado por
+						</p>
+						<p class="mt-2 font-semibold text-brand-navy">
+							{purchaseOrder.createdBy?.fullName ?? 'Usuario no disponible'}
+						</p>
+						<p class="mt-1 text-sm text-on-surface-variant">
+							{formatDate(purchaseOrder.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
+						</p>
+					</div>
+
+					<div class="rounded-2xl bg-surface-container-low p-4">
+						<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+							Confirmado por
+						</p>
+						{#if purchaseOrder.confirmedAt}
+							<p class="mt-2 font-semibold text-brand-navy">
+								{purchaseOrder.confirmedBy?.fullName ?? 'Usuario no disponible'}
+							</p>
+							<p class="mt-1 text-sm text-on-surface-variant">
+								{formatDate(purchaseOrder.confirmedAt, {
+									dateStyle: 'medium',
+									timeStyle: 'short'
+								})}
+							</p>
+						{:else}
+							<p class="mt-2 text-sm text-on-surface-variant">Pendiente de confirmación.</p>
+						{/if}
+					</div>
+				</div>
+			</section>
+		</aside>
 	</div>
 </div>
 
-<!-- Confirm PO Modal -->
 <ConfirmModal
 	bind:open={showConfirmModal}
 	title="Confirmar Orden de Compra"
-	message="Al confirmar esta orden, se crearán los lotes de inventario y se actualizará el stock de los productos. Esta acción no se puede deshacer."
+	message="Al confirmar esta orden se crearán los lotes de inventario y se actualizará el stock de los productos. Esta acción no se puede deshacer."
 	confirmLabel="Confirmar Orden"
 	confirmColor="green"
 	loading={actionLoading}
@@ -497,11 +725,10 @@
 	onCancel={() => (showConfirmModal = false)}
 />
 
-<!-- Cancel PO Modal -->
 <ConfirmModal
 	bind:open={showCancelModal}
 	title="Cancelar Orden de Compra"
-	message="¿Estás seguro de cancelar esta orden de compra? Esta acción no se puede deshacer."
+	message="¿Está seguro de cancelar esta orden de compra? Esta acción no se puede deshacer."
 	confirmLabel="Cancelar Orden"
 	confirmColor="red"
 	loading={actionLoading}
@@ -509,7 +736,6 @@
 	onCancel={() => (showCancelModal = false)}
 />
 
-<!-- Price Suggestion Modal -->
 <PriceSuggestionModal
 	bind:open={showPriceSuggestionModal}
 	suggestions={priceSuggestions}
@@ -518,14 +744,13 @@
 	onSkip={handleSkipPrices}
 />
 
-<!-- Revert Lot Modal -->
 <ConfirmModal
 	bind:open={showRevertModal}
-	title="Revertir Lote Completo"
+	title="Deshacer recepción del lote"
 	message={revertTarget
-		? `¿Estás seguro de revertir el lote de "${revertTarget.productName}" (${revertTarget.quantity} unidades)? Esto vaciará el lote y reducirá el stock del producto.`
+		? `¿Está seguro de deshacer la recepción del lote de "${revertTarget.productName}" (${revertTarget.quantity} unidades)? Esto vaciará el lote y reducirá el stock disponible del artículo.`
 		: ''}
-	confirmLabel="Revertir Lote"
+	confirmLabel="Deshacer recepción"
 	confirmColor="red"
 	loading={revertLoading}
 	onConfirm={handleRevertLot}

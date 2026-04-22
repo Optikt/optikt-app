@@ -38,7 +38,7 @@ export const ListQuotesSchema = ListPaginationSchema.extend({
 // ============================================================================
 
 export const QuoteItemSchema = z.object({
-	/** Optional client-generated UUID — used to link treatment items to their parent lens item */
+	/** Optional client-generated UUID - used to link treatment items to their parent lens item */
 	id: z.uuid().optional(),
 	itemType: z.enum(ALL_SALE_ITEM_TYPES),
 	productId: z.uuid().optional(),

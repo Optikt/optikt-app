@@ -39,6 +39,7 @@ export const ListInventoryMovementsSchema = ListPaginationSchema.extend({
 	lensCatalogItemId: z.uuid().optional(),
 	movementType: z.string().optional(),
 	referenceType: z.string().optional(),
+	search: z.string().trim().min(1).max(100).optional(),
 	dateFrom: z.iso.date().optional(),
 	dateTo: z.iso.date().optional()
 });

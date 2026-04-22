@@ -69,10 +69,7 @@ export const quotes = pgTable(
 			table.customerId.asc().nullsLast().op('uuid_ops')
 		),
 		index('ix_quotes_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
-		index('ix_quotes_quote_date').using(
-			'btree',
-			table.quoteDate.asc().nullsLast().op('timestamp_ops')
-		),
+		index('ix_quotes_quote_date').using('btree', table.quoteDate.asc().nullsLast()),
 		index('ix_quotes_seller_id').using('btree', table.sellerId.asc().nullsLast().op('uuid_ops')),
 		uniqueIndex('ix_quotes_quote_number').using(
 			'btree',

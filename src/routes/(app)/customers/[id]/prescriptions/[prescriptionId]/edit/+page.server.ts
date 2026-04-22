@@ -1,9 +1,11 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import { findCustomerById, findPrescriptionById } from '$lib/server/db/queries/customers';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	if (!locals.user) error(401, 'No autorizado');
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
 	const [customer, prescription] = await Promise.all([
 		findCustomerById(params.id),

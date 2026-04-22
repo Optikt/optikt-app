@@ -21,7 +21,7 @@
 	let loading = $state(false);
 	let statusFilter = $state<StatusFilter>('active');
 
-	// Date range state — default to current month
+	// Date range state - default to current month
 	let dateFrom = $state(toISODate(monthStart()));
 	let dateTo = $state(toISODate(nowUTC()));
 
@@ -52,7 +52,7 @@
 		const rows = filteredSales.map((s) => [
 			String(s.orderNumber),
 			formatDate(s.saleDate, { dateStyle: 'short' }),
-			s.customerName ?? '—',
+			s.customerName ?? '-',
 			SALE_STATUS_LABELS[s.status as keyof typeof SALE_STATUS_LABELS] ?? s.status,
 			s.total.toFixed(2),
 			s.paidAmountBcvUsd.toFixed(2)
@@ -139,7 +139,7 @@
 					>
 						<td class="px-4 py-3 font-mono text-xs text-slate-400">#{sale.orderNumber}</td>
 						<td class="px-4 py-3">{formatDate(sale.saleDate, { dateStyle: 'medium' })}</td>
-						<td class="px-4 py-3">{sale.customerName ?? '—'}</td>
+						<td class="px-4 py-3">{sale.customerName ?? '-'}</td>
 						<td class="px-4 py-3"><SaleStatusBadge status={sale.status} /></td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(sale.total)}</td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(sale.paidAmountBcvUsd)}</td>

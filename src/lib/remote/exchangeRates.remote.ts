@@ -5,6 +5,7 @@
  * TODO: Single server for all exchange rates operations
  */
 import { query, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import {
 	ListCurrenciesSchema,
 	UpsertExchangeRateSchema,
@@ -32,6 +33,8 @@ import type { ExchangeRateWithCurrency } from '$lib/server/db/queries/exchangeRa
  * List all currencies (optionally active only)
  */
 export const listCurrencies = query(ListCurrenciesSchema, async (data): Promise<Currency[]> => {
+	requireAuth();
+
 	if (data.activeOnly) {
 		return getActiveCurrencies();
 	}
@@ -46,6 +49,8 @@ export const listCurrencies = query(ListCurrenciesSchema, async (data): Promise<
  * Get the latest rates for all currencies
  */
 export const fetchLatestRates = query(async (): Promise<ExchangeRateWithCurrency[]> => {
+	requireAuth();
+
 	return getLatestRates();
 });
 
@@ -55,6 +60,8 @@ export const fetchLatestRates = query(async (): Promise<ExchangeRateWithCurrency
 export const fetchRatesForDate = query(
 	GetRatesForDateSchema,
 	async (data): Promise<ExchangeRateWithCurrency[]> => {
+		requireAuth();
+
 		return getRatesForDate(data.date);
 	}
 );
@@ -65,6 +72,8 @@ export const fetchRatesForDate = query(
 export const saveExchangeRate = command(
 	UpsertExchangeRateSchema,
 	async (data): Promise<ExchangeRate> => {
+		requireAdmin();
+
 		const currency = await getCurrencyByCode(data.currencyCode);
 		if (!currency) {
 			throw new Error(`Moneda no encontrada: ${data.currencyCode}`);
@@ -87,6 +96,8 @@ export const saveExchangeRate = command(
 export const saveBatchRates = command(
 	BatchUpsertRatesSchema,
 	async (data): Promise<ExchangeRate[]> => {
+		requireAdmin();
+
 		const results: ExchangeRate[] = [];
 
 		for (const rate of data.rates) {
@@ -112,6 +123,8 @@ export const saveBatchRates = command(
  * Delete an exchange rate entry
  */
 export const removeExchangeRate = command(ExchangeRateIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const deleted = await deleteExchangeRate(data.id);
 	if (!deleted) {
 		throw new Error('Tasa de cambio no encontrada');

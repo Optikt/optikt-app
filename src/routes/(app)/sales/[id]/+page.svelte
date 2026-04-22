@@ -13,6 +13,7 @@
 	} from '$lib/components/sales';
 	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
@@ -34,10 +35,12 @@
 	let paymentProgressPercent = $derived(
 		sale.total > 0 ? Math.min(100, (sale.paidAmountBcvUsd / sale.total) * 100) : 0
 	);
+	let canAct = $derived(canOperate(data.user.role));
+	let canManageSale = $derived(canManageSaleByOwner(data.user.role, data.user.id, sale.sellerId));
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
-	let showPaymentForm = $derived(isPending && remainingBcvUsd > 0.01);
+	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
@@ -151,7 +154,7 @@
 				Ver historial
 			</button>
 
-			{#if isPending}
+			{#if canManageSale && isPending}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -277,6 +280,7 @@
 	<SaleItemsTable
 		{items}
 		subtotal={sale.subtotal}
+		allowCostEdit={canAct}
 		onCostsUpdated={async () => {
 			await invalidateAll();
 			syncFromData();
@@ -318,20 +322,13 @@
 						</p>
 					</div>
 				</div>
-
-				<div class="text-right text-sm text-on-surface-variant">
-					<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Tasa BCV</p>
-					<p class="mt-1 font-mono text-base font-semibold text-brand-blue">
-						{bcvRate.toFixed(2)} Bs/$
-					</p>
-				</div>
 			</div>
 
 			<div class="px-6 pb-6">
 				<PaymentsTable
 					{payments}
 					saleId={sale.id}
-					allowVoid={isPending}
+					allowVoid={canManageSale && isPending}
 					onPaymentVoided={handlePaymentVoided}
 				/>
 			</div>

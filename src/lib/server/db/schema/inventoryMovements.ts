@@ -31,7 +31,7 @@ export const movementReferenceTypeEnum = pgEnum(
 );
 
 // ============================================================================
-// INVENTORY MOVEMENTS — Immutable log of all stock changes
+// INVENTORY MOVEMENTS - Immutable log of all stock changes
 // ============================================================================
 
 /**
@@ -71,7 +71,7 @@ export const inventoryMovements = pgTable(
 		/** Report category for profit reports. NULL for ADJUSTMENT_IN */
 		adjustmentReportCategory: varchar('adjustment_report_category'),
 		createdById: uuid('created_by_id').notNull(),
-		/** NEVER edited — immutable timestamp */
+		/** NEVER edited - immutable timestamp */
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow()

@@ -5,6 +5,7 @@ import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import type { SaleItemInput } from '$lib/schemas/sales';
 import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import type { z } from 'zod';
 
 import type { SaleItemRow } from './newSaleTypes';
@@ -38,7 +39,11 @@ function hasPrescriptionValues(values: WizardPrescriptionValues): boolean {
 	].some((value) => value != null && String(value).trim() !== '');
 }
 
-function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWithRelations[]) {
+function buildLensPairItemBase(
+	item: SaleItemRow,
+	lensItems: LensCatalogItemWithRelations[],
+	defaultTaxRate: number
+) {
 	if (item.kind !== 'lens' || !item.lensPair) return null;
 
 	const lens = lensItems.find((candidate) => candidate.id === item.lensPair?.catalogItemId);
@@ -58,14 +63,15 @@ function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWith
 		snapshotSalePrice: lens?.salePrice ?? undefined,
 		snapshotPriceType: lens?.priceType,
 		snapshotIsTaxable: lens?.isTaxable ?? false,
-		snapshotTaxRate: lens?.taxRate ?? 16
+		snapshotTaxRate: defaultTaxRate
 	};
 }
 
 export function buildSaleItemsFromWizard(
 	items: SaleItemRow[],
 	products: ProductWithRelations[],
-	lensItems: LensCatalogItemWithRelations[]
+	lensItems: LensCatalogItemWithRelations[],
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): SaleItemInput[] {
 	const saleItems: SaleItemInput[] = [];
 
@@ -84,7 +90,7 @@ export function buildSaleItemsFromWizard(
 				snapshotSku: product?.sku ?? undefined,
 				snapshotBrand: product?.brand?.name ?? undefined,
 				snapshotIsTaxable: product?.isTaxable ?? true,
-				snapshotTaxRate: product?.taxRate ?? 16
+				snapshotTaxRate: defaultTaxRate
 			});
 			continue;
 		}
@@ -92,7 +98,7 @@ export function buildSaleItemsFromWizard(
 		if (!item.lensPair) continue;
 
 		const parentSaleItemId = crypto.randomUUID();
-		const lensPairItem = buildLensPairItemBase(item, lensItems);
+		const lensPairItem = buildLensPairItemBase(item, lensItems, defaultTaxRate);
 		if (!lensPairItem) continue;
 
 		saleItems.push({
@@ -153,7 +159,7 @@ export function buildSaleItemsFromWizard(
 				snapshotBrand: lensPairItem.snapshotBrand,
 				snapshotTreatmentCategory: treatment.category,
 				snapshotIsTaxable: treatment.isTaxable,
-				snapshotTaxRate: treatment.taxRate
+				snapshotTaxRate: defaultTaxRate
 			});
 		}
 	}
@@ -164,7 +170,8 @@ export function buildSaleItemsFromWizard(
 export function buildQuoteItemsFromWizard(
 	items: SaleItemRow[],
 	products: ProductWithRelations[],
-	lensItems: LensCatalogItemWithRelations[]
+	lensItems: LensCatalogItemWithRelations[],
+	defaultTaxRate: number = DEFAULT_TAX_RATE
 ): QuoteItemInput[] {
 	const quoteItems: QuoteItemInput[] = [];
 
@@ -183,7 +190,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotSku: product?.sku ?? undefined,
 				snapshotBrand: product?.brand?.name ?? undefined,
 				snapshotIsTaxable: product?.isTaxable ?? true,
-				snapshotTaxRate: product?.taxRate ?? 16
+				snapshotTaxRate: defaultTaxRate
 			});
 			continue;
 		}
@@ -191,7 +198,7 @@ export function buildQuoteItemsFromWizard(
 		if (!item.lensPair) continue;
 
 		const parentQuoteItemId = crypto.randomUUID();
-		const lensPairItem = buildLensPairItemBase(item, lensItems);
+		const lensPairItem = buildLensPairItemBase(item, lensItems, defaultTaxRate);
 		if (!lensPairItem) continue;
 
 		quoteItems.push({
@@ -251,7 +258,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotBrand: lensPairItem.snapshotBrand,
 				snapshotTreatmentCategory: treatment.category,
 				snapshotIsTaxable: treatment.isTaxable,
-				snapshotTaxRate: treatment.taxRate
+				snapshotTaxRate: defaultTaxRate
 			});
 		}
 	}

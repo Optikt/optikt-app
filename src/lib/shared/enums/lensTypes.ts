@@ -13,7 +13,7 @@ export enum LensType {
 
 /** How the lens is produced */
 export enum LensCatalogSource {
-	/** Pre-fabricated with fixed prescription — may or may not be in stock */
+	/** Pre-fabricated with fixed prescription - may or may not be in stock */
 	FINISHED = 'FINISHED',
 	/** Custom-made by a laboratory for a specific Rx */
 	LAB = 'LAB'
@@ -27,19 +27,19 @@ export enum LensPriceType {
 
 /** How the lens inventory is managed */
 export enum LensInventoryMode {
-	/** Ordered on demand from supplier/lab — no stock tracking */
+	/** Ordered on demand from supplier/lab - no stock tracking */
 	ON_DEMAND = 'ON_DEMAND',
-	/** Tracked inventory — stock count is maintained */
+	/** Tracked inventory - stock count is maintained */
 	STOCK = 'STOCK'
 }
 
-/** Treatment category — what kind of treatment a lab offers */
+/** Treatment category - what kind of treatment a lab offers */
 export enum TreatmentCategory {
 	AR = 'AR',
 	BLUECUT = 'BLUECUT'
 }
 
-/** Sale item type — what kind of line item this is in an order */
+/** Sale item type - what kind of line item this is in an order */
 export enum SaleItemType {
 	PRODUCT = 'PRODUCT',
 	LENS_PAIR = 'LENS_PAIR',

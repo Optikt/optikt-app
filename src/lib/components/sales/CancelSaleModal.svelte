@@ -235,7 +235,7 @@
 								bind:group={refundStatus}
 								class="accent-red-600"
 							/>
-							Reembolsar — {formatPrice(paidAmountBcvUsd)} se devuelven al cliente
+							Reembolsar - {formatPrice(paidAmountBcvUsd)} se devuelven al cliente
 						</label>
 						<label
 							class="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors {refundStatus ===
@@ -250,7 +250,7 @@
 								bind:group={refundStatus}
 								class="accent-amber-600"
 							/>
-							Retener — {formatPrice(paidAmountBcvUsd)} se quedan en el negocio
+							Retener - {formatPrice(paidAmountBcvUsd)} se quedan en el negocio
 						</label>
 					</div>
 

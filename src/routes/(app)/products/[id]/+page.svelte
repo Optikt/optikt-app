@@ -8,7 +8,12 @@
 	import { AppBadge, ConfirmModal, StatusBadge } from '$lib/components/ui';
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { getProductTypeLabel, ProductType, requiresStockTracking } from '$lib/shared/enums';
+	import {
+		getProductTypeLabel,
+		isAdminRole,
+		ProductType,
+		requiresStockTracking
+	} from '$lib/shared/enums';
 	import ProductEconomyCard from '$lib/components/products/detail/ProductEconomyCard.svelte';
 	import ProductIdentityCard from '$lib/components/products/detail/ProductIdentityCard.svelte';
 	import ProductLotsCard from '$lib/components/products/detail/ProductLotsCard.svelte';
@@ -26,6 +31,7 @@
 	const inventoryValuation = $derived(getInventoryValuation(activeLots));
 	const stockHealth = $derived(getStockHealth(realStock, product.minStock));
 	const stockTracked = $derived(requiresStockTracking(product.type as ProductType));
+	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	let showDeleteModal = $state(false);
 	let deleteLoading = $state(false);
@@ -110,21 +116,23 @@
 					<ClipboardList class="h-4 w-4" />
 					Cambios
 				</button>
-				<a
-					href={resolve(`/products/${product.id}/update`)}
-					class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low px-5 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
-				>
-					<Pencil class="h-4 w-4" />
-					Editar
-				</a>
-				<button
-					type="button"
-					onclick={openDeleteModal}
-					class="inline-flex items-center gap-2 rounded-lg bg-error-container px-5 py-3 text-sm font-semibold text-on-error-container transition-opacity hover:opacity-90"
-				>
-					<Trash2 class="h-4 w-4" />
-					Eliminar
-				</button>
+				{#if isAdmin}
+					<a
+						href={resolve(`/products/${product.id}/update`)}
+						class="inline-flex items-center gap-2 rounded-lg bg-surface-container-low px-5 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+					>
+						<Pencil class="h-4 w-4" />
+						Editar
+					</a>
+					<button
+						type="button"
+						onclick={openDeleteModal}
+						class="inline-flex items-center gap-2 rounded-lg bg-error-container px-5 py-3 text-sm font-semibold text-on-error-container transition-opacity hover:opacity-90"
+					>
+						<Trash2 class="h-4 w-4" />
+						Eliminar
+					</button>
+				{/if}
 			</div>
 		</section>
 
@@ -143,6 +151,7 @@
 					salePrice={product.currentSalePrice}
 					{fifoCost}
 					{inventoryValuation}
+					editable={isAdmin}
 				/>
 			</div>
 		</div>
@@ -150,13 +159,19 @@
 		{#if stockTracked}
 			<div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
 				<div class="xl:col-span-7">
-					<ProductLotsCard {activeLots} productId={product.id} {realStock} />
+					<ProductLotsCard
+						{activeLots}
+						productId={product.id}
+						{realStock}
+						canManageInventory={isAdmin}
+					/>
 				</div>
 				<div class="xl:col-span-5">
 					<ProductMovementFeed
 						movements={productMovements}
 						total={productMovementsCount}
 						productId={product.id}
+						canManageInventory={isAdmin}
 					/>
 				</div>
 			</div>

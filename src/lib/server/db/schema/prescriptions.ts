@@ -73,7 +73,7 @@ export const prescriptions = pgTable(
 		index('ix_prescriptions_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
 		index('ix_prescriptions_prescription_date').using(
 			'btree',
-			table.prescriptionDate.asc().nullsLast().op('date_ops')
+			table.prescriptionDate.asc().nullsLast()
 		),
 		foreignKey({
 			columns: [table.customerId],

@@ -3,7 +3,13 @@
  * Zod schemas for business settings remote functions
  */
 import { z } from 'zod';
-import { OptionalRifSchema, OptionalEmailSchema, NameSchema, PasswordSchema } from './common';
+import {
+	OptionalRifSchema,
+	OptionalEmailSchema,
+	NameSchema,
+	PasswordSchema,
+	CoercedNumber
+} from './common';
 
 /**
  * Update business settings schema
@@ -15,7 +21,10 @@ export const UpdateSettingsSchema = z.object({
 	businessEmail: OptionalEmailSchema,
 	businessAddress: z.string().optional(),
 	businessWebsite: z.string().optional(),
-	businessLogo: z.string().optional()
+	businessLogo: z.string().optional(),
+	defaultTaxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser ≥ 0')
+		.max(100, 'Tasa de impuesto debe ser ≤ 100')
+		.optional()
 });
 
 /**

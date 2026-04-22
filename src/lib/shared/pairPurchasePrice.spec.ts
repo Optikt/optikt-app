@@ -48,8 +48,8 @@ describe('snapshot correctness expectations', () => {
 			pairPurchasePrice: computePairPurchasePrice(2.3, LensPriceType.UNIT)
 		};
 
-		// Before fix: snapshotBaseCost = lens.basePrice (2.3) — WRONG
-		// After fix:  snapshotBaseCost = lens.pairPurchasePrice (4.6) — CORRECT
+		// Before fix: snapshotBaseCost = lens.basePrice (2.3) - WRONG
+		// After fix:  snapshotBaseCost = lens.pairPurchasePrice (4.6) - CORRECT
 		const snapshotBaseCost = lens.pairPurchasePrice;
 		expect(snapshotBaseCost).toBeCloseTo(4.6);
 		expect(snapshotBaseCost).not.toBe(lens.basePrice);

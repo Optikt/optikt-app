@@ -3,6 +3,7 @@
  * Server-side functions for purchase order management
  */
 import { query, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { z } from 'zod';
 import {
 	ListPurchaseOrdersSchema,
@@ -15,6 +16,7 @@ import {
 import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
+	getPurchaseOrderListStats as getPurchaseOrderListStatsQuery,
 	findPurchaseOrderById,
 	findPurchaseOrderByIdWithRelations,
 	createPurchaseOrder,
@@ -27,6 +29,7 @@ import {
 } from '$lib/server/db/queries/purchaseOrders';
 import { updateProduct, findProductById } from '$lib/server/db/queries/products';
 import type {
+	PurchaseOrderListStats,
 	PurchaseOrderWithRelations,
 	PurchaseOrderItemWithProduct
 } from '$lib/server/db/queries/purchaseOrders';
@@ -61,8 +64,11 @@ export interface PurchaseOrderDetail {
 export const listPurchaseOrders = query(
 	ListPurchaseOrdersSchema,
 	async (data): Promise<PaginatedResult<PurchaseOrderWithRelations>> => {
+		requireAuth();
+
 		const { page, perPage } = data;
 		const filterOptions = {
+			search: data.search ?? undefined,
 			status: data.status ?? undefined,
 			supplierId: data.supplierId ?? undefined,
 			includeDeleted: data.includeDeleted
@@ -85,6 +91,8 @@ export const listPurchaseOrders = query(
 export const getPurchaseOrderDetail = query(
 	ConfirmPurchaseOrderSchema, // reuse { id: z.uuid() }
 	async (data): Promise<PurchaseOrderDetail | null> => {
+		requireAuth();
+
 		const po = await findPurchaseOrderByIdWithRelations(data.id);
 		if (!po) return null;
 		const items = await getPurchaseOrderItems(data.id);
@@ -93,14 +101,27 @@ export const getPurchaseOrderDetail = query(
 );
 
 export const getSuppliersList = query(z.object({}), async (): Promise<Supplier[]> => {
+	requireAuth();
+
 	return getAllSuppliers({ includeDeleted: false });
 });
+
+export const getPurchaseOrderListStats = query(
+	z.object({}),
+	async (): Promise<PurchaseOrderListStats> => {
+		requireAuth();
+
+		return getPurchaseOrderListStatsQuery();
+	}
+);
 
 // ============================================================================
 // COMMANDS
 // ============================================================================
 
 export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	if (!context.userId) {
 		return { success: false as const, error: 'No autorizado' };
@@ -114,11 +135,12 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				{
 					orderNumber,
 					supplierId: data.supplierId,
+					documentType: data.documentType,
 					invoiceNumber: data.invoiceNumber ?? null,
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					notes: data.notes ?? null,
+					notes: data.notes,
 					status: PurchaseOrderStatus.DRAFT,
 					createdById: context.userId!
 				},
@@ -155,6 +177,8 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 });
 
 export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	const existing = await findPurchaseOrderById(data.id);
 	if (!existing) {
@@ -189,6 +213,8 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 });
 
 export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	if (!context.userId) {
 		return { success: false as const, error: 'No autorizado', priceSuggestions: [] };
@@ -243,6 +269,8 @@ export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async
 });
 
 export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 
 	try {
@@ -267,6 +295,8 @@ export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (
 });
 
 export const applyPriceSuggestionsCmd = command(ApplyPriceSuggestionsSchema, async (data) => {
+	requireAdmin();
+
 	const context = getAuditContext();
 	if (!context.userId) {
 		return { success: false as const, error: 'No autorizado' };

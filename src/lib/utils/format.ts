@@ -8,7 +8,7 @@ import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
 import { fromISO, fromISODate } from '$lib/dates';
 
 // =============================================================================
-// DATE-ONLY UTILITIES — re-exported from $lib/dates (canonical source)
+// DATE-ONLY UTILITIES - re-exported from $lib/dates (canonical source)
 // =============================================================================
 
 export { toISODate as dateToISODateString, fromISODate as parseISODateToLocal } from '$lib/dates';
@@ -49,7 +49,7 @@ export function formatDate(
 	date: Date | string | null,
 	opt: Intl.DateTimeFormatOptions = {}
 ): string {
-	if (!date) return '—';
+	if (!date) return '-';
 
 	let d: Date;
 	if (typeof date === 'string') {
@@ -60,7 +60,7 @@ export function formatDate(
 	}
 
 	// When dateStyle/timeStyle is used, individual components (year/month/day)
-	// must NOT be present — Intl.DateTimeFormat throws otherwise.
+	// must NOT be present - Intl.DateTimeFormat throws otherwise.
 	const options: Intl.DateTimeFormatOptions =
 		'dateStyle' in opt || 'timeStyle' in opt
 			? opt
@@ -75,14 +75,14 @@ export function getFullName(c: Customer): string {
 
 // Format optical value for display
 export function formatOpticalValue(value: number | null | undefined): string {
-	if (value === null || value === undefined) return '—';
+	if (value === null || value === undefined) return '-';
 	const sign = value >= 0 ? '+' : '';
 	return `${sign}${value.toFixed(2)}`;
 }
 
 // Format lens type
 export function formatLensType(type: string | null | undefined): string {
-	if (!type) return '—';
+	if (!type) return '-';
 	return LENS_TYPE_LABELS[type as LensType] ?? type;
 }
 
@@ -90,7 +90,7 @@ export function formatLensType(type: string | null | undefined): string {
  * Format axis (integer)
  */
 export function formatAxis(value: number | null | undefined): string {
-	if (value === null || value === undefined) return '—';
+	if (value === null || value === undefined) return '-';
 	return `${value}°`;
 }
 
@@ -103,20 +103,20 @@ export function formatDpNp(prescription: Prescription): string {
 	if (prescription.npRight && prescription.npLeft) {
 		return `${prescription.npRight}/${prescription.npLeft}mm`;
 	}
-	return '—';
+	return '-';
 }
 
 /**
  * Format treatments for display
  */
 export function formatTreatments(treatments: Prescription['treatments']): string {
-	if (!treatments) return '—';
+	if (!treatments) return '-';
 	const parts: string[] = [];
 	if (treatments.antiReflective) parts.push('Antireflejo');
 	if (treatments.blueBlock) parts.push('Blueblock');
 	if (treatments.photochromic) parts.push('Fotocromático');
 	if (treatments.other) parts.push(`Otros: ${treatments.other}`);
-	return parts.length > 0 ? parts.join(', ') : '—';
+	return parts.length > 0 ? parts.join(', ') : '-';
 }
 
 /**

@@ -110,7 +110,6 @@ const BaseLensCatalogItemSchema = z.object({
 
 	// --- Tax ---
 	isTaxable: CoercedBoolean.default(false),
-	taxRate: CoercedNumber.min(0, 'Tasa de impuesto debe ser ≥ 0').default(16),
 
 	// --- Inventory ---
 	inventoryMode: z

@@ -139,7 +139,7 @@
 								</p>
 							</div>
 							<span class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-								{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
+								{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
 							</span>
 						</a>
 					{/each}

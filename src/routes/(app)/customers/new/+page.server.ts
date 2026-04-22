@@ -1,8 +1,7 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user) {
-		error(401, 'No autorizado');
-	}
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 };

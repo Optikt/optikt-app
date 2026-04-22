@@ -5,8 +5,9 @@
 import { error, invalid } from '@sveltejs/kit';
 import { command, form } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import { getCurrentUser, requireAdmin } from '$lib/server/guards';
+import { getCurrentUser, requireAdmin, requireUserAdmin } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
+import { isManagerDeletingProtectedRole, isLastAdmin } from '$lib/shared/user-deletion-rules';
 import { db } from '$lib/server/db';
 import { users } from '$lib/server/db/schema';
 import {
@@ -17,7 +18,8 @@ import {
 	findDeletedUserByUsername,
 	updateUser as dbUpdateUser,
 	deleteUser as dbDeleteUser,
-	restoreUser as dbRestoreUser
+	restoreUser as dbRestoreUser,
+	countActiveAdmins
 } from '$lib/server/db/queries/users';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
@@ -37,7 +39,7 @@ import { nowISO } from '$lib/dates';
  * List users with pagination, search, and filtering
  */
 export const listUsers = command(ListUsersSchema, async (input): Promise<PaginatedUsers> => {
-	requireAdmin();
+	requireUserAdmin();
 
 	const { page, perPage, search, role, includeInactive } = input;
 	const offset = (page - 1) * perPage;
@@ -109,7 +111,7 @@ export const listUsers = command(ListUsersSchema, async (input): Promise<Paginat
  * Returns either a success with user, or a reactivation candidate for confirmation
  */
 export const createUser = command(CreateUserSchema, async (input): Promise<CreateUserResult> => {
-	requireAdmin();
+	requireUserAdmin();
 
 	const { email, username, password, fullName, role, isActive } = input;
 
@@ -203,7 +205,7 @@ export const createUser = command(CreateUserSchema, async (input): Promise<Creat
 export const reactivateUser = command(
 	ReactivateUserSchema,
 	async (input): Promise<UserListItem> => {
-		requireAdmin();
+		requireUserAdmin();
 
 		const { deletedUserId, email, username, password, fullName, role, isActive } = input;
 
@@ -248,7 +250,7 @@ export const reactivateUser = command(
  * Update an existing user
  */
 export const updateUser = command(UpdateUserSchema, async (input): Promise<UserListItem> => {
-	requireAdmin();
+	requireUserAdmin();
 
 	const { id, email, username, password, ...rest } = input;
 
@@ -302,7 +304,7 @@ export const updateUser = command(UpdateUserSchema, async (input): Promise<UserL
  * Toggle user active status
  */
 export const toggleUserActive = command(UserIdSchema, async (input): Promise<UserListItem> => {
-	requireAdmin();
+	requireUserAdmin();
 
 	const user = await findUserById(input.id);
 	if (!user) {
@@ -339,7 +341,7 @@ export const toggleUserActive = command(UserIdSchema, async (input): Promise<Use
 export const deleteUserById = command(
 	UserIdSchema,
 	async (input): Promise<{ success: boolean }> => {
-		requireAdmin();
+		const currentUser = requireAdmin();
 
 		const user = await findUserById(input.id);
 		if (!user) {
@@ -348,13 +350,25 @@ export const deleteUserById = command(
 
 		// Prevent deleting superusers
 		if (user.isSuperuser) {
-			error(400, 'No se puede eliminar un superadministrador');
+			error(400, 'No se puede eliminar un administrador');
 		}
 
 		// Prevent deleting oneself
-		const currentUser = getCurrentUser();
-		if (currentUser && currentUser.id === user.id) {
+		if (currentUser.id === user.id) {
 			error(400, 'No puedes eliminar tu propia cuenta');
+		}
+
+		// MANAGER cannot delete ADMIN or other MANAGER
+		if (isManagerDeletingProtectedRole(currentUser.role, user.role)) {
+			error(403, 'Un Manager no puede eliminar Admins ni otros Managers');
+		}
+
+		// Cannot delete the last ADMIN
+		if (user.role === UserRole.ADMIN) {
+			const adminCount = await countActiveAdmins();
+			if (isLastAdmin(user.role, adminCount)) {
+				error(400, 'No se puede eliminar el último administrador del sistema');
+			}
 		}
 
 		const deleted = await dbDeleteUser(input.id);
@@ -375,7 +389,7 @@ export const deleteUserById = command(
 export const createUserForm = form(
 	CreateUserSchema,
 	async (data, issue): Promise<CreateUserResult> => {
-		requireAdmin();
+		requireUserAdmin();
 
 		const { email, username, password, fullName, role, isActive } = data;
 
@@ -469,7 +483,7 @@ export const createUserForm = form(
  * Uses form() for proper form handling with field-level validation
  */
 export const updateUserForm = form(UpdateUserSchema, async (data, issue): Promise<UserListItem> => {
-	requireAdmin();
+	requireUserAdmin();
 
 	const { id, email, username, password, ...rest } = data;
 

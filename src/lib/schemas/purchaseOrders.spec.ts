@@ -20,8 +20,10 @@ const validItem = {
 
 const baseCreatePayload = {
 	supplierId: '00000000-0000-4000-8000-000000000001',
+	documentType: 'INVOICE',
 	orderDate: '2025-01-15',
 	bcvRate: 65.5,
+	notes: 'Compra directa al proveedor',
 	items: [validItem]
 };
 
@@ -114,8 +116,51 @@ describe('CreatePurchaseOrderSchema', () => {
 		const result = CreatePurchaseOrderSchema.safeParse({
 			...baseCreatePayload,
 			invoiceNumber: 'INV-001',
-			deliveryNoteNumber: 'DN-001',
-			notes: 'Some notes'
+			deliveryNoteNumber: 'DN-001'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects notes shorter than 6 characters', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			notes: 'abc'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('requires documentType', () => {
+		const { documentType: _dt, ...rest } = baseCreatePayload;
+		const result = CreatePurchaseOrderSchema.safeParse(rest);
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts DELIVERY_NOTE as documentType', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			documentType: 'DELIVERY_NOTE'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects notes shorter than 6 characters', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			notes: 'abc'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('requires documentType', () => {
+		const { documentType: _dt, ...rest } = baseCreatePayload;
+		const result = CreatePurchaseOrderSchema.safeParse(rest);
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts DELIVERY_NOTE as documentType', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			documentType: 'DELIVERY_NOTE'
 		});
 		expect(result.success).toBe(true);
 	});
@@ -184,6 +229,11 @@ describe('ListPurchaseOrdersSchema', () => {
 		const result = ListPurchaseOrdersSchema.safeParse({
 			supplierId: '00000000-0000-4000-8000-000000000001'
 		});
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts search filter', () => {
+		const result = ListPurchaseOrdersSchema.safeParse({ search: 'PO-0042' });
 		expect(result.success).toBe(true);
 	});
 });

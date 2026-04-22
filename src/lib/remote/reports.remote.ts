@@ -3,6 +3,7 @@
  * Server-side functions for report data
  */
 import { query } from '$app/server';
+import { requireAuth } from '$lib/server/guards';
 import { DateRangeSchema } from '$lib/schemas/reports';
 import { getReportSales, getReportPayments, getInventoryReport } from '$lib/server/db/queries';
 import type {
@@ -38,6 +39,8 @@ export interface PaymentsReportResult {
  * Fetch sales report for a date range
  */
 export const fetchSalesReport = query(DateRangeSchema, async (data): Promise<SalesReportResult> => {
+	requireAuth();
+
 	return await getReportSales(data.dateFrom, data.dateTo);
 });
 
@@ -47,6 +50,8 @@ export const fetchSalesReport = query(DateRangeSchema, async (data): Promise<Sal
 export const fetchPaymentsReport = query(
 	DateRangeSchema,
 	async (data): Promise<PaymentsReportResult> => {
+		requireAuth();
+
 		return await getReportPayments(data.dateFrom, data.dateTo);
 	}
 );
@@ -55,5 +60,7 @@ export const fetchPaymentsReport = query(
  * Fetch lens inventory report (no date filter needed)
  */
 export const fetchInventoryReport = query(z.object({}), async (): Promise<InventoryLensItem[]> => {
+	requireAuth();
+
 	return await getInventoryReport();
 });

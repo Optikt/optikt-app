@@ -96,7 +96,7 @@
 	let pendingSuppliers = $state<PendingEntity[]>([]);
 	let pendingMaterials = $state<PendingEntity[]>([]);
 
-	// Form data — numeric fields are strings because they bind to <Input type="number">
+	// Form data - numeric fields are strings because they bind to <Input type="number">
 	let formData = $state({
 		source: (initialItem?.source as LensCatalogSource) ?? LensCatalogSource.LAB,
 		supplierId: initialItem?.supplierId ?? '',
@@ -116,14 +116,13 @@
 		shippingPrice: initialItem?.shippingPrice?.toString() ?? '0',
 		// Tax
 		isTaxable: initialItem?.isTaxable ?? false,
-		taxRate: initialItem?.taxRate?.toString() ?? '16',
 		// Inventory
 		inventoryMode: (initialItem?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
 		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
 		notes: initialItem?.notes ?? ''
 	});
 
-	// Live pair purchase price — always the cost of two lenses
+	// Live pair purchase price - always the cost of two lenses
 	let livePairPurchasePrice = $derived.by(() => {
 		const base = parseFloat(formData.basePrice) || 0;
 		return formData.priceType === LensPriceType.UNIT ? base * 2 : base;
@@ -150,9 +149,8 @@
 
 	let totalWithTax = $derived.by(() => {
 		const sale = parseFloat(formData.salePrice) || 0;
-		const taxRate = parseFloat(formData.taxRate) || 0;
 		if (sale <= 0) return 0;
-		return formData.isTaxable ? sale * (1 + taxRate / 100) : sale;
+		return sale;
 	});
 
 	// Dynamic optical ranges
@@ -1094,13 +1092,13 @@
 								<p
 									class="font-heading mt-2 text-3xl font-semibold tracking-[-0.02em] text-brand-navy tabular-nums"
 								>
-									{liveMarginPercent != null ? `${liveMarginPercent.toFixed(1)}%` : '—'}
+									{liveMarginPercent != null ? `${liveMarginPercent.toFixed(1)}%` : '-'}
 								</p>
 							</div>
 							<div class="text-right">
 								<p class={fieldLabelClass}>Utilidad bruta</p>
 								<p class="mt-2 font-mono text-2xl font-semibold text-brand-blue tabular-nums">
-									{liveGrossProfit != null ? formatPrice(liveGrossProfit) : '—'}
+									{liveGrossProfit != null ? formatPrice(liveGrossProfit) : '-'}
 								</p>
 							</div>
 						</div>
@@ -1108,11 +1106,7 @@
 
 					<div class="flex flex-col gap-3 pt-1">
 						<div class="flex items-center justify-between gap-4">
-							<TaxToggle
-								bind:checked={formData.isTaxable}
-								bind:taxRate={formData.taxRate}
-								label="Gravable (IVA)"
-							/>
+							<TaxToggle bind:checked={formData.isTaxable} label="Gravable (IVA)" />
 							<p class="text-xs text-on-surface-variant">
 								Total con impuesto: {formatPrice(totalWithTax)}
 							</p>

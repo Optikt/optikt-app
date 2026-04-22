@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import {
 	getMovementsWithDetails,
 	countInventoryMovements
@@ -7,9 +8,7 @@ import {
 import { daysAgo, nowUTC, toISODate } from '$lib/dates';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	if (!locals.user) {
-		error(401, 'No autorizado');
-	}
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 
 	const productId = url.searchParams.get('productId') || undefined;
 

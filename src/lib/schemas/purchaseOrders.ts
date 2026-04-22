@@ -4,16 +4,20 @@
  */
 import { z } from 'zod';
 import { CoercedNumber, CoercedInteger, ListPaginationWithDeletedSchema } from './common';
-import { PurchaseOrderItemType } from '$lib/shared/enums';
+import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_ITEM_TYPES = Object.values(PurchaseOrderItemType) as [string, ...string[]];
+const ALL_DOCUMENT_TYPES = Object.values(PurchaseDocumentType) as [string, ...string[]];
 
 // ============================================================================
 // LIST / FILTER
 // ============================================================================
 
 export const ListPurchaseOrdersSchema = ListPaginationWithDeletedSchema.extend({
+	search: z.string().trim().max(120).optional(),
 	status: z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']).optional(),
+	documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
 	supplierId: z.uuid().optional()
 });
 
@@ -29,7 +33,7 @@ export const PurchaseOrderItemSchema = z.object({
 	unitPurchasePrice: CoercedNumber.min(0, 'Precio de compra debe ser ≥ 0'),
 	unitSalePrice: CoercedNumber.min(0, 'Precio de venta debe ser ≥ 0'),
 	appliesIva: z.boolean().default(true),
-	ivaRate: CoercedNumber.min(0).max(100).default(16)
+	ivaRate: CoercedNumber.min(0).max(100).default(DEFAULT_TAX_RATE)
 });
 
 // ============================================================================
@@ -38,11 +42,12 @@ export const PurchaseOrderItemSchema = z.object({
 
 export const CreatePurchaseOrderSchema = z.object({
 	supplierId: z.uuid('Proveedor es obligatorio'),
+	documentType: z.enum(ALL_DOCUMENT_TYPES, { message: 'Tipo de documento es obligatorio' }),
 	invoiceNumber: z.string().optional(),
 	deliveryNoteNumber: z.string().optional(),
 	orderDate: z.iso.date('Fecha de orden inválida'),
 	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
-	notes: z.string().optional(),
+	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
 	items: z.array(PurchaseOrderItemSchema).min(1, 'Debe incluir al menos un ítem')
 });
 
@@ -53,11 +58,12 @@ export const CreatePurchaseOrderSchema = z.object({
 export const UpdatePurchaseOrderSchema = z.object({
 	id: z.uuid(),
 	supplierId: z.uuid().optional(),
+	documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
 	invoiceNumber: z.string().optional(),
 	deliveryNoteNumber: z.string().optional(),
 	orderDate: z.iso.date().optional(),
 	bcvRate: CoercedNumber.min(0).optional(),
-	notes: z.string().optional()
+	notes: z.string().min(6).optional()
 });
 
 // ============================================================================

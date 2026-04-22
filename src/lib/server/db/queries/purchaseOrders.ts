@@ -1,4 +1,17 @@
-import { eq, and, isNull, asc, desc, count, sql, type SQL, type AnyColumn } from 'drizzle-orm';
+import {
+	eq,
+	and,
+	isNull,
+	asc,
+	desc,
+	count,
+	gte,
+	lt,
+	sql,
+	type SQL,
+	type AnyColumn
+} from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import {
 	purchaseOrders,
@@ -32,14 +45,23 @@ export type PurchaseOrderWithRelations = PurchaseOrder & {
 
 export type PurchaseOrderItemWithProduct = PurchaseOrderItem & {
 	product: { id: string; name: string; sku: string } | null;
+	lensCatalogItem: { id: string; name: string; type: string } | null;
 };
 
 export type PurchaseOrderOrderBy = 'orderNumber' | 'orderDate' | 'createdAt' | 'status';
 
 export interface PurchaseOrderFilterOptions {
 	includeDeleted?: boolean;
+	search?: string;
 	status?: string;
 	supplierId?: string;
+}
+
+export interface PurchaseOrderListStats {
+	total: number;
+	confirmed: number;
+	draft: number;
+	monthlySpend: number;
 }
 
 export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
@@ -64,6 +86,22 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 	const conditions: SQL[] = [];
 
 	if (!opts.includeDeleted) conditions.push(isNull(purchaseOrders.deletedAt));
+	if (opts.search?.trim()) {
+		const searchTerm = opts.search.trim();
+		const pattern = `%${searchTerm}%`;
+		conditions.push(sql`(
+			cast(${purchaseOrders.orderNumber} as text) ilike ${pattern}
+			or concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0')) ilike ${pattern}
+			or coalesce(${purchaseOrders.invoiceNumber}, '') ilike ${pattern}
+			or coalesce(${purchaseOrders.deliveryNoteNumber}, '') ilike ${pattern}
+			or exists (
+				select 1
+				from ${suppliers}
+				where ${suppliers.id} = ${purchaseOrders.supplierId}
+					and ${suppliers.name} ilike ${pattern}
+			)
+		)`);
+	}
 	if (opts.status) conditions.push(eq(purchaseOrders.status, opts.status));
 	if (opts.supplierId) conditions.push(eq(purchaseOrders.supplierId, opts.supplierId));
 
@@ -82,7 +120,7 @@ export async function getNextPONumber(executor: DbOrTx = db): Promise<number> {
 }
 
 // ---------------------------------------------------------------------------
-// CRUD — Purchase Orders
+// CRUD - Purchase Orders
 // ---------------------------------------------------------------------------
 
 export async function createPurchaseOrder(
@@ -104,30 +142,33 @@ export async function findPurchaseOrderById(
 export async function findPurchaseOrderByIdWithRelations(
 	id: string
 ): Promise<PurchaseOrderWithRelations | null> {
-	const createdByUsers = users;
-	// Alias for confirmed_by user — use a subquery approach instead
-	const results = await db
+	const confirmedByUser = alias(users, 'confirmed_by_user');
+	const [result] = await db
 		.select({
 			po: purchaseOrders,
 			supplier: { id: suppliers.id, name: suppliers.name },
 			createdBy: {
-				id: createdByUsers.id,
-				fullName: createdByUsers.fullName
+				id: users.id,
+				fullName: users.fullName
+			},
+			confirmedBy: {
+				id: confirmedByUser.id,
+				fullName: confirmedByUser.fullName
 			}
 		})
 		.from(purchaseOrders)
 		.leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
-		.leftJoin(createdByUsers, eq(purchaseOrders.createdById, createdByUsers.id))
+		.leftJoin(users, eq(purchaseOrders.createdById, users.id))
+		.leftJoin(confirmedByUser, eq(purchaseOrders.confirmedById, confirmedByUser.id))
 		.where(eq(purchaseOrders.id, id));
 
-	if (results.length === 0) return null;
+	if (!result) return null;
 
-	const r = results[0];
 	return {
-		...r.po,
-		supplier: r.supplier?.id ? r.supplier : null,
-		createdBy: r.createdBy?.id ? r.createdBy : null,
-		confirmedBy: null // loaded separately if needed
+		...result.po,
+		supplier: result.supplier?.id ? result.supplier : null,
+		createdBy: result.createdBy?.id ? result.createdBy : null,
+		confirmedBy: result.confirmedBy?.id ? result.confirmedBy : null
 	};
 }
 
@@ -196,8 +237,43 @@ export async function countPurchaseOrders(options?: PurchaseOrderFilterOptions):
 	return result.value;
 }
 
+export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStats> {
+	const now = new Date();
+	const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+	const nextMonthStart = new Date(
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+	).toISOString();
+
+	const [total, confirmed, draft, spendResult] = await Promise.all([
+		countPurchaseOrders(),
+		countPurchaseOrders({ status: PurchaseOrderStatus.CONFIRMED }),
+		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT }),
+		db
+			.select({
+				value: sql<number>`coalesce(sum(${purchaseOrderItems.quantity} * ${purchaseOrderItems.unitPurchasePrice}), 0)`
+			})
+			.from(purchaseOrderItems)
+			.innerJoin(purchaseOrders, eq(purchaseOrderItems.purchaseOrderId, purchaseOrders.id))
+			.where(
+				and(
+					isNull(purchaseOrders.deletedAt),
+					eq(purchaseOrders.status, PurchaseOrderStatus.CONFIRMED),
+					gte(purchaseOrders.orderDate, monthStart),
+					lt(purchaseOrders.orderDate, nextMonthStart)
+				)
+			)
+	]);
+
+	return {
+		total,
+		confirmed,
+		draft,
+		monthlySpend: Number(spendResult[0]?.value ?? 0)
+	};
+}
+
 // ---------------------------------------------------------------------------
-// CRUD — Purchase Order Items
+// CRUD - Purchase Order Items
 // ---------------------------------------------------------------------------
 
 export async function createPurchaseOrderItem(
@@ -223,17 +299,37 @@ export async function getPurchaseOrderItems(
 	const results = await executor
 		.select({
 			item: purchaseOrderItems,
-			product: { id: products.id, name: products.name, sku: products.sku }
+			product: { id: products.id, name: products.name, sku: products.sku },
+			lensCatalogItem: {
+				id: lensCatalogItems.id,
+				name: lensCatalogItems.name,
+				type: lensCatalogItems.type
+			}
 		})
 		.from(purchaseOrderItems)
 		.leftJoin(products, eq(purchaseOrderItems.productId, products.id))
+		.leftJoin(lensCatalogItems, eq(purchaseOrderItems.lensCatalogItemId, lensCatalogItems.id))
 		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId))
 		.orderBy(asc(purchaseOrderItems.createdAt));
 
 	return results.map((r) => ({
 		...r.item,
-		product: r.product?.id ? r.product : null
+		product: r.product?.id ? r.product : null,
+		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null
 	}));
+}
+
+export async function findPurchaseOrderIdByLotId(
+	lotId: string,
+	executor: DbOrTx = db
+): Promise<string | null> {
+	const [result] = await executor
+		.select({ purchaseOrderId: purchaseOrderItems.purchaseOrderId })
+		.from(inventoryLots)
+		.innerJoin(purchaseOrderItems, eq(inventoryLots.purchaseOrderItemId, purchaseOrderItems.id))
+		.where(eq(inventoryLots.id, lotId));
+
+	return result?.purchaseOrderId ?? null;
 }
 
 export async function updatePurchaseOrderItem(
@@ -254,7 +350,7 @@ export async function deletePurchaseOrderItem(id: string, executor: DbOrTx = db)
 }
 
 // ---------------------------------------------------------------------------
-// PO Confirmation — The core transaction
+// PO Confirmation - The core transaction
 // ---------------------------------------------------------------------------
 
 /**
@@ -326,7 +422,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		});
 
 		// d. Update cached stock counter + FIFO-based current purchase price
-		// NOTE: currentSalePrice is NOT updated here — it requires explicit user approval
+		// NOTE: currentSalePrice is NOT updated here - it requires explicit user approval
 		if (item.itemType === PurchaseOrderItemType.PRODUCT && item.productId) {
 			const fifoCost = await getNextFifoCost(item.productId, tx);
 			await tx

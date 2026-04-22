@@ -33,6 +33,6 @@ export function getLensMarginPercent(
 	return ((salePrice - pairPurchasePrice) / pairPurchasePrice) * 100;
 }
 
-export function getLensTaxSummary(isTaxable: boolean, taxRate: number): string {
-	return isTaxable ? `IVA ${taxRate.toFixed(0)}%` : 'Exento';
+export function getLensTaxSummary(isTaxable: boolean): string {
+	return isTaxable ? 'IVA activo' : 'Exento';
 }

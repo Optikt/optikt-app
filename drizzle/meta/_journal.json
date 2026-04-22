@@ -5,57 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775242087744,
-      "tag": "0000_cloudy_swordsman",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775606400000,
-      "tag": "0001_payment_date_not_null",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775692800000,
-      "tag": "0002_cancel_sale_reason",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775779200000,
-      "tag": "0003_refund_tracking",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1775606279860,
-      "tag": "0004_chubby_union_jack",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1775865600000,
-      "tag": "0005_normalize_dates_to_timestamptz",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1776019200000,
-      "tag": "0006_pair_purchase_price",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1776093117077,
-      "tag": "0007_clumsy_human_robot",
+      "when": 1776811216654,
+      "tag": "0000_wonderful_rogue",
       "breakpoints": true
     }
   ]

@@ -1,12 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { error } from '@sveltejs/kit';
+import { requirePageRole } from '$lib/server/guards';
+import { UserRole } from '$lib/shared/enums';
 import { getAllLensMaterials } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user) {
-		error(401, 'No autorizado');
-	}
+	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 
 	const [materials, suppliers] = await Promise.all([getAllLensMaterials(), getAllSuppliers()]);
 

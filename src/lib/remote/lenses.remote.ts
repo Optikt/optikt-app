@@ -3,6 +3,7 @@
  * Server-side functions for managing lens materials, treatments, and catalog items
  */
 import { query, form, command } from '$app/server';
+import { requireAuth, requireAdmin } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db';
@@ -140,12 +141,16 @@ function summarizeRanges(ranges: RangeSemantic[]): string {
 // ============================================================================
 
 export const listLensMaterials = query('unchecked', async (): Promise<LensMaterial[]> => {
+	requireAuth();
+
 	return getAllLensMaterials();
 });
 
 export const createLensMaterialForm = form(
 	CreateLensMaterialSchema,
 	async (data, issue): Promise<LensMaterial> => {
+		requireAdmin();
+
 		// Check for duplicate name
 		const existingName = await findLensMaterialByName(data.name);
 		if (existingName) {
@@ -167,6 +172,8 @@ export const createLensMaterialForm = form(
 export const updateLensMaterialForm = form(
 	UpdateLensMaterialSchema,
 	async (data, issue): Promise<LensMaterial> => {
+		requireAdmin();
+
 		const { id, ...updates } = data;
 
 		const existing = await findLensMaterialById(id);
@@ -194,6 +201,8 @@ export const updateLensMaterialForm = form(
 );
 
 export const deleteLensMaterialById = command(LensIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const existing = await findLensMaterialById(data.id);
 	if (!existing) throw new Error('Material no encontrado');
 
@@ -210,6 +219,8 @@ export const deleteLensMaterialById = command(LensIdSchema, async (data): Promis
 export const listLensCatalog = query(
 	ListLensCatalogSchema,
 	async (data): Promise<LensCatalogItemWithRelations[]> => {
+		requireAuth();
+
 		return getLensCatalogItemsWithRelations({
 			search: data.search,
 			source: data.source,
@@ -223,6 +234,8 @@ export const listLensCatalog = query(
 export const createLensCatalogItemForm = form(
 	CreateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
+		requireAdmin();
+
 		const {
 			pendingSupplierName,
 			pendingMaterialName,
@@ -296,7 +309,7 @@ export const createLensCatalogItemForm = form(
 			return { ...item, ranges: insertedRanges };
 		});
 
-		// Log the creation after transaction succeeds (exclude ranges — they are separate entities)
+		// Log the creation after transaction succeeds (exclude ranges - they are separate entities)
 		await auditService.logCreate('lens_catalog_item', result, getAuditContext(), {
 			excludeFields: ['ranges']
 		});
@@ -308,6 +321,8 @@ export const createLensCatalogItemForm = form(
 export const updateLensCatalogItemForm = form(
 	UpdateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {
+		requireAdmin();
+
 		const {
 			id,
 			pendingSupplierName,
@@ -380,7 +395,7 @@ export const updateLensCatalogItemForm = form(
 
 				if (!updated) invalid('Error actualizando item');
 
-				// Handle optical ranges — only delete/reinsert if semantically changed
+				// Handle optical ranges - only delete/reinsert if semantically changed
 				let insertedRanges: LensOpticalRange[] = [];
 				let rangesChanged = false;
 				let oldRangesSummary = '';
@@ -404,10 +419,10 @@ export const updateLensCatalogItemForm = form(
 					});
 
 					if (rangesAreEqual(currentRanges, normalizedNew)) {
-						// Ranges haven't changed — keep existing rows
+						// Ranges haven't changed - keep existing rows
 						insertedRanges = currentRanges;
 					} else {
-						// Ranges changed — delete and reinsert
+						// Ranges changed - delete and reinsert
 						rangesChanged = true;
 						oldRangesSummary = summarizeRanges(currentRanges.map(toRangeSemantic));
 						newRangesSummary = summarizeRanges(normalizedNew.map(toRangeSemantic));
@@ -442,7 +457,7 @@ export const updateLensCatalogItemForm = form(
 		// Log the update after transaction succeeds
 		const auditCtx = getAuditContext();
 
-		// Calculate field-level diff (exclude ranges — handled separately as summary)
+		// Calculate field-level diff (exclude ranges - handled separately as summary)
 		const fieldChanges = calculateDiff(oldItem, result, ['ranges']);
 
 		// Add optical range changes as a human-readable summary
@@ -463,6 +478,8 @@ export const updateLensCatalogItemForm = form(
 );
 
 export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
 	const existing = await findLensCatalogItemById(data.id);
 	if (!existing) throw new Error('Item de catálogo no encontrado');
 

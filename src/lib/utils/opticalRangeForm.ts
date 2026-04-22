@@ -57,7 +57,7 @@ function parseOptionalBounds(minValue: string, maxValue: string): OptionalBounds
 
 	if (!hasMin || !hasMax) return {};
 
-	// Both zero means "not set" — won't be saved
+	// Both zero means "not set" - won't be saved
 	if (min === 0 && max === 0) return {};
 
 	return {

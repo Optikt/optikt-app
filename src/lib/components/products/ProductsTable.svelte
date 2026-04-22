@@ -17,6 +17,7 @@
 		loading?: boolean;
 		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
+		canManage?: boolean;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -30,6 +31,7 @@
 		loading = false,
 		onView,
 		onEdit,
+		canManage = true,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -149,7 +151,7 @@
 				<ProductTypeBadge type={product.type} />
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{product.brand?.name ?? '—'}
+				{product.brand?.name ?? '-'}
 			</td>
 			<td class="px-4 py-4">
 				<div class="flex items-center gap-2">
@@ -158,7 +160,7 @@
 				</div>
 			</td>
 			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
-				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '—'}
+				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">
@@ -179,7 +181,7 @@
 						</button>
 					{/if}
 
-					{#if onEdit && !product.deletedAt}
+					{#if canManage && onEdit && !product.deletedAt}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -193,7 +195,7 @@
 						</button>
 					{/if}
 
-					{#if product.deletedAt}
+					{#if canManage && product.deletedAt}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -205,7 +207,7 @@
 						>
 							<RotateCcw class="h-4 w-4" />
 						</button>
-					{:else}
+					{:else if canManage}
 						<button
 							type="button"
 							onclick={(event) => {

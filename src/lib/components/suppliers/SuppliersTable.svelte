@@ -21,11 +21,12 @@
 	interface Props {
 		suppliers: Supplier[];
 		loading?: boolean;
-		onEdit: (supplier: Supplier) => void;
+		onEdit?: (supplier: Supplier) => void;
+		canManage?: boolean;
 		onRefresh?: () => void;
 	}
 
-	let { suppliers, loading = false, onEdit, onRefresh }: Props = $props();
+	let { suppliers, loading = false, onEdit, canManage = true, onRefresh }: Props = $props();
 
 	// Modal state
 	let showDeleteModal = $state(false);
@@ -41,11 +42,15 @@
 	}
 
 	function openDelete(supplier: Supplier) {
+		if (!canManage) return;
+
 		selectedSupplier = supplier;
 		showDeleteModal = true;
 	}
 
 	function openReactivate(supplier: Supplier) {
+		if (!canManage) return;
+
 		selectedSupplier = supplier;
 		showReactivateModal = true;
 	}
@@ -95,7 +100,7 @@
 			<SupplierTypeBadge type={supplier.type} />
 		</TableBodyCell>
 		<TableBodyCell>
-			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '—'}</span>
+			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '-'}</span>
 		</TableBodyCell>
 		<TableBodyCell>{supplier.primaryPhone}</TableBodyCell>
 		<TableBodyCell>
@@ -105,7 +110,7 @@
 					<span class="text-xs text-slate-500"> ({supplier.contactRole})</span>
 				{/if}
 			{:else}
-				—
+				-
 			{/if}
 		</TableBodyCell>
 		<TableBodyCell>
@@ -121,21 +126,23 @@
 			color="blue"
 			onclick={() => openTreatments(supplier)}
 		/>
-		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(supplier)} />
-		{#if supplier.deletedAt}
-			<ActionButton
-				icon={RotateCcw}
-				title="Reactivar"
-				color="green"
-				onclick={() => openReactivate(supplier)}
-			/>
-		{:else}
-			<ActionButton
-				icon={Trash2}
-				title="Eliminar"
-				color="red"
-				onclick={() => openDelete(supplier)}
-			/>
+		{#if canManage && onEdit}
+			<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(supplier)} />
+			{#if supplier.deletedAt}
+				<ActionButton
+					icon={RotateCcw}
+					title="Reactivar"
+					color="green"
+					onclick={() => openReactivate(supplier)}
+				/>
+			{:else}
+				<ActionButton
+					icon={Trash2}
+					title="Eliminar"
+					color="red"
+					onclick={() => openDelete(supplier)}
+				/>
+			{/if}
 		{/if}
 	{/snippet}
 </DataTable>
@@ -156,9 +163,11 @@
 	bind:open={showViewModal}
 	supplier={selectedSupplier}
 	onClose={() => (selectedSupplier = null)}
-	onEdit={() => {
-		if (selectedSupplier) onEdit(selectedSupplier);
-	}}
+	onEdit={canManage && onEdit
+		? () => {
+				if (selectedSupplier) onEdit(selectedSupplier);
+			}
+		: undefined}
 />
 
 <!-- Reactivate Modal -->
@@ -175,5 +184,6 @@
 <SupplierTreatmentsModal
 	bind:open={showTreatmentsModal}
 	supplier={selectedSupplier}
+	{canManage}
 	onClose={() => (selectedSupplier = null)}
 />

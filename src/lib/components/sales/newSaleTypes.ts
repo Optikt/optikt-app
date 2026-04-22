@@ -10,7 +10,6 @@ export interface SelectedTreatment {
 	category: string;
 	price: number;
 	isTaxable: boolean;
-	taxRate: number;
 }
 
 /** Prescription data for a single eye in the wizard (string values for form inputs) */
@@ -19,14 +18,14 @@ export interface LensEyeEntry {
 	prescription: LensOrderedPrescription;
 }
 
-/** A lens pair entry — both eyes sharing the same catalog item */
+/** A lens pair entry - both eyes sharing the same catalog item */
 export interface LensPairEntry {
 	catalogItemId: string;
 	od: LensEyeEntry;
 	oi: LensEyeEntry;
 }
 
-/** Internal cost overrides — allows the user to edit cost values in the wizard */
+/** Internal cost overrides - allows the user to edit cost values in the wizard */
 export interface CostOverrides {
 	baseCost: number;
 	mountingPrice: number;

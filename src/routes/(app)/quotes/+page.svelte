@@ -15,6 +15,7 @@
 	import { getErrorMessage } from '$lib/utils';
 	import { listQuotes, getQuoteStats } from '$lib/remote/quotes.remote';
 	import { QuotesTable } from '$lib/components/quotes';
+	import { canOperate } from '$lib/shared/enums';
 	import {
 		ALL_QUOTE_STATUSES,
 		QUOTE_STATUS_LABELS,
@@ -38,6 +39,7 @@
 	});
 	let stats = $state<QuoteStats>(initialStats);
 	let loading = $state(false);
+	let canAct = $derived(canOperate(data.user.role));
 
 	// Filter state
 	let search = $state('');
@@ -101,13 +103,15 @@
 <div class="p-8">
 	<PageHeader title="Presupuestos">
 		{#snippet actions()}
-			<button
-				onclick={() => goto(resolve('/quotes/new'))}
-				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-			>
-				<Plus size={18} />
-				NUEVO PRESUPUESTO
-			</button>
+			{#if canAct}
+				<button
+					onclick={() => goto(resolve('/quotes/new'))}
+					class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+				>
+					<Plus size={18} />
+					NUEVO PRESUPUESTO
+				</button>
+			{/if}
 		{/snippet}
 	</PageHeader>
 
@@ -219,6 +223,7 @@
 		total={quotesData.total}
 		totalPages={quotesData.totalPages}
 		{loading}
+		canManage={canAct}
 		onView={handleView}
 		onRefresh={() => {
 			fetchQuotes(quotesData.page);

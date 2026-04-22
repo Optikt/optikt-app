@@ -50,7 +50,7 @@
 				</div>
 				<div>
 					<p class="text-xs font-medium text-slate-500">Email</p>
-					<p class="text-sm text-slate-900">{customer.email ?? '—'}</p>
+					<p class="text-sm text-slate-900">{customer.email ?? '-'}</p>
 				</div>
 			</div>
 
@@ -60,7 +60,7 @@
 				</div>
 				<div>
 					<p class="text-xs font-medium text-slate-500">Cédula</p>
-					<p class="font-mono text-sm text-slate-900">{customer.idNumber ?? '—'}</p>
+					<p class="font-mono text-sm text-slate-900">{customer.idNumber ?? '-'}</p>
 				</div>
 			</div>
 

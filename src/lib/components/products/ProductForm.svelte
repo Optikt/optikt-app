@@ -82,7 +82,6 @@
 		size: '',
 		description: '',
 		isTaxable: true,
-		taxRate: 16,
 		minStock: 0,
 		imageUrl: ''
 	});
@@ -236,7 +235,6 @@
 					size: product.size ?? '',
 					description: product.description ?? '',
 					isTaxable: product.isTaxable ?? true,
-					taxRate: product.taxRate ?? 16,
 					minStock: product.minStock ?? 0,
 					imageUrl: product.imageUrl ?? ''
 				};
@@ -291,7 +289,7 @@
 	});
 
 	const taxSummary = $derived.by(() =>
-		formData.isTaxable ? `IVA ${formData.taxRate}% activo` : 'Producto exento de IVA'
+		formData.isTaxable ? 'IVA activo' : 'Producto exento de IVA'
 	);
 
 	const inventoryCopy = $derived.by(() =>
@@ -689,7 +687,6 @@
 						<div class="mt-4">
 							<TaxToggle
 								bind:checked={formData.isTaxable}
-								bind:taxRate={formData.taxRate}
 								label="Aplica IVA"
 								ariaLabel="Alternar IVA del producto"
 							/>
