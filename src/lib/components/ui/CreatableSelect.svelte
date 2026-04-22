@@ -1,6 +1,7 @@
 <script lang="ts">
 	import BaseSelect from './BaseSelect.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
+	import { normalizeSingleSelectValue } from '$lib/utils';
 
 	export type SelectOption = {
 		id: string;
@@ -76,12 +77,16 @@
 
 	// Internal state for Svelecte (the selected ID as a string)
 	// We need $state here because we mutate it in handleChange
-	// eslint-disable-next-line svelte/prefer-writable-derived
 	let internalValue = $state(value);
 
 	// Sync external value changes to internal state
 	$effect(() => {
-		internalValue = value;
+		const normalizedValue = normalizeSingleSelectValue(value, allOptions, 'id');
+		internalValue = normalizedValue;
+
+		if (value !== normalizedValue) {
+			value = normalizedValue;
+		}
 	});
 
 	/**

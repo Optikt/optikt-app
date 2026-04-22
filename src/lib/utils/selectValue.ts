@@ -5,8 +5,8 @@ export type SelectChangeValue =
 	| SelectOptionRecord
 	| Array<SelectOptionPrimitive | SelectOptionRecord>;
 
-function getOptionFieldValue(option: SelectOptionRecord, valueField: string): string {
-	const fieldValue = option[valueField];
+function getOptionFieldValue(option: object, valueField: string): string {
+	const fieldValue = (option as SelectOptionRecord)[valueField];
 
 	if (typeof fieldValue === 'string' || typeof fieldValue === 'number') {
 		return String(fieldValue);
@@ -17,7 +17,7 @@ function getOptionFieldValue(option: SelectOptionRecord, valueField: string): st
 
 export function normalizeSingleSelectValue(
 	value: string | null | undefined,
-	options: SelectOptionRecord[],
+	options: object[],
 	valueField = 'id'
 ): string {
 	if (!value) return '';
