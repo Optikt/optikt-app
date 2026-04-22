@@ -1,5 +1,5 @@
 {
-  "id": "de1c9868-e6b8-400c-b34c-82e4540e41b5",
+  "id": "eec96c49-7b4f-498d-97ba-b7bdb84986af",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1582,6 +1582,13 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_auto_sku": {
+          "name": "is_auto_sku",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "is_taxable": {
           "name": "is_taxable",
