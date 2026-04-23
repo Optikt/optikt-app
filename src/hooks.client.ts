@@ -70,10 +70,12 @@ if (sentryDsn) {
 		// "form grew" breadcrumbs points at a re-mount / enhance leak.
 		let lastFormSize = 0;
 		let lastFormPath = '';
+		let formSizeInitialized = false;
 		setInterval(() => {
 			const form = document.querySelector('form');
 			if (!form) {
 				lastFormSize = 0;
+				formSizeInitialized = false;
 				return;
 			}
 			const path = window.location.pathname;
@@ -81,20 +83,25 @@ if (sentryDsn) {
 			if (path !== lastFormPath) {
 				lastFormPath = path;
 				lastFormSize = size;
+				formSizeInitialized = true;
+				return;
+			}
+			if (!formSizeInitialized) {
+				lastFormSize = size;
+				formSizeInitialized = true;
 				return;
 			}
 			const delta = size - lastFormSize;
-			if (delta > 500) {
+			// Only alert on *sustained* growth (>3KB in one poll). Svelecte
+			// dropdowns naturally add ~1KB temporarily; that is not a leak.
+			if (delta > 3000) {
 				Sentry.addBreadcrumb({
 					category: 'dom.growth',
 					level: 'warning',
 					message: `form grew +${delta}B`,
 					data: { path, prevSize: lastFormSize, newSize: size }
 				});
-				// If it grew by a lot at once, capture it as an event too.
-				if (delta > 3000) {
-					Sentry.captureMessage(`form DOM growth ${delta}B on ${path}`, 'warning');
-				}
+				Sentry.captureMessage(`form DOM growth ${delta}B on ${path}`, 'warning');
 			}
 			lastFormSize = size;
 		}, 3000);
