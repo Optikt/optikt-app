@@ -508,7 +508,6 @@
 							bind:value={formData.brandId}
 							options={allBrands}
 							creatable
-							variant="tonal"
 							onCreatePending={handleCreatePendingBrand}
 							error={brandError}
 						/>
@@ -523,7 +522,6 @@
 							bind:value={formData.supplierId}
 							options={allSuppliers}
 							creatable
-							variant="tonal"
 							onCreatePending={handleCreatePendingSupplier}
 							error={supplierError}
 						/>
@@ -538,7 +536,6 @@
 							bind:value={formData.materialId}
 							options={allMaterials}
 							creatable
-							variant="tonal"
 							onCreatePending={handleCreatePendingMaterial}
 							error={materialError}
 						/>

@@ -49,8 +49,6 @@
 		error?: string | null;
 		/** Label class override */
 		labelClass?: string;
-		/** Visual variant for the select control */
-		variant?: 'default' | 'tonal';
 	};
 
 	let {
