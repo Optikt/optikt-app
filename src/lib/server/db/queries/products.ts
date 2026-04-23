@@ -41,7 +41,7 @@ export interface ProductFilterOptions {
 	includeDeleted?: boolean;
 	/** Include inactive products in results (default: false - only active shown) */
 	includeInactive?: boolean;
-	/** Search by name or SKU (case-insensitive) */
+	/** Search by name, internal code, or SKU (case-insensitive) */
 	search?: string;
 	/** Filter by product type */
 	type?: string;
@@ -104,7 +104,11 @@ function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
 
 	if (opts.search) {
 		conditions.push(
-			or(ilike(products.name, `%${opts.search}%`), ilike(products.sku, `%${opts.search}%`))!
+			or(
+				ilike(products.name, `%${opts.search}%`),
+				ilike(products.personalCode, `%${opts.search}%`),
+				ilike(products.sku, `%${opts.search}%`)
+			)!
 		);
 	}
 

@@ -117,7 +117,13 @@
 		</div>
 	</div>
 
-	<div class="mt-6 grid gap-3 md:grid-cols-3">
+	<div class="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+		<div class="rounded-xl bg-surface-container-low p-4">
+			<p class="text-[0.65rem] font-bold tracking-[0.16em] text-outline uppercase">Codigo</p>
+			<p class="mt-2 font-mono text-sm font-semibold text-brand-navy">
+				{product.personalCode?.trim() || '-'}
+			</p>
+		</div>
 		<div class="rounded-xl bg-surface-container-low p-4">
 			<p class="text-[0.65rem] font-bold tracking-[0.16em] text-outline uppercase">SKU</p>
 			<p class="mt-2 font-mono text-sm font-semibold text-brand-navy">{product.sku}</p>

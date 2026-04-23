@@ -192,7 +192,7 @@
 					type="search"
 					bind:value={search}
 					oninput={handleSearch}
-					placeholder="Buscar por nombre, SKU o proveedor..."
+					placeholder="Buscar por nombre, codigo o SKU..."
 					class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				/>
 			</div>

@@ -44,6 +44,7 @@
 
 	const columns = [
 		{ key: 'product', label: 'Producto' },
+		{ key: 'code', label: 'Codigo' },
 		{ key: 'sku', label: 'SKU' },
 		{ key: 'type', label: 'Categoría' },
 		{ key: 'brand', label: 'Marca' },
@@ -143,6 +144,11 @@
 						{/if}
 					</div>
 				</div>
+			</td>
+			<td class="px-4 py-4">
+				<span class="font-mono text-sm text-on-surface-variant">
+					{product.personalCode?.trim() || '-'}
+				</span>
 			</td>
 			<td class="px-4 py-4">
 				<span class="font-mono text-sm text-on-surface-variant">{product.sku}</span>
