@@ -55,7 +55,7 @@
 {#snippet selection(selectedOptions: unknown, _: unknown)}
 	{#each selectedOptions as Options as option, i (`select-input-${i}`)}
 		<div
-			class={['bg-primary-blue rounded-lg px-1 py-0.5 text-white', { ' text-gray-600': disabled }]}
+			class={['bg-primary-blue rounded-lg px-1 py-0.5', { ' text-gray-600': disabled }]}
 		>
 			{#if 'id' in option}
 				{option.name}
