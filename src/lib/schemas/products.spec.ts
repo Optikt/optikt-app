@@ -45,6 +45,18 @@ describe('CreateProductSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('accepts FRAME as pending material category for sunglasses', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			type: ProductType.SUNGLASSES,
+			materialId: 'pending_material_xyz',
+			pendingMaterialName: 'TR90',
+			pendingMaterialCategory: ProductType.FRAME
+		});
+
+		expect(result.success).toBe(true);
+	});
+
 	it('rejects empty string for supplierId', () => {
 		const result = CreateProductSchema.safeParse({
 			...baseCreatePayload,

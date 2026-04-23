@@ -22,6 +22,7 @@
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
 		ProductType,
+		toMaterialCategory,
 		requiresStockTracking
 	} from '$lib/shared/enums';
 	import type { Product } from '$lib/server/db/schema';
@@ -183,7 +184,9 @@
 		const material = pendingMaterials.find(
 			(pendingMaterial) => pendingMaterial.pendingId === pendingId
 		);
-		return typeof material?.productType === 'string' ? material.productType : null;
+		return typeof material?.productType === 'string'
+			? toMaterialCategory(material.productType as ProductType)
+			: null;
 	}
 
 	function getIssueText(error: RemoteFormIssue[] | string | null | undefined): string | null {
@@ -383,7 +386,8 @@
 		<input
 			type="hidden"
 			name="pendingMaterialCategory"
-			value={getPendingMaterialCategory(formData.materialId) ?? formData.type}
+			value={getPendingMaterialCategory(formData.materialId) ??
+				toMaterialCategory(formData.type as ProductType)}
 		/>
 	{/if}
 
