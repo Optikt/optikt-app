@@ -50,7 +50,11 @@ export const materials = pgTable(
 			table.name.asc().nullsLast().op('text_ops'),
 			table.productType.asc().nullsLast().op('text_ops')
 		),
-		uniqueIndex('ix_materials_code').using('btree', table.code.asc().nullsLast().op('text_ops'))
+		uniqueIndex('ix_materials_code_product_type').using(
+			'btree',
+			table.code.asc().nullsLast().op('text_ops'),
+			table.productType.asc().nullsLast().op('text_ops')
+		)
 	]
 );
 

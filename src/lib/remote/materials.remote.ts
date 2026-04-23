@@ -18,10 +18,12 @@ import {
 	countMaterials,
 	findMaterialById,
 	findMaterialByName,
+	findMaterialByCode,
 	createMaterial,
 	updateMaterial,
 	restoreMaterial,
-	deleteMaterial
+	deleteMaterial,
+	generateUniqueMaterialCode
 } from '$lib/server/db/queries/materials';
 import type { Material } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
@@ -103,6 +105,11 @@ export const createMaterialForm = form(
 			};
 		}
 
+		const existingCode = await findMaterialByCode(code, productType);
+		if (existingCode) {
+			invalid(issue.code('Ya existe un material con este codigo y categoria'));
+		}
+
 		// All clear - create new material
 		const material = await createMaterial({
 			name,
@@ -135,11 +142,23 @@ export const updateMaterialForm = form(
 			invalid('Material no encontrado');
 		}
 
-		// Check for duplicate name + productType if being changed
-		if (name && name !== existing.name) {
-			const duplicate = await findMaterialByName(name, productType ?? existing.productType);
+		const nextName = name ?? existing.name;
+		const nextCode = code ?? existing.code;
+		const nextProductType = productType ?? existing.productType;
+
+		// Check for duplicate name + productType if either value changes
+		if (nextName !== existing.name || nextProductType !== existing.productType) {
+			const duplicate = await findMaterialByName(nextName, nextProductType);
 			if (duplicate) {
 				invalid(issue.name('Ya existe un material con este nombre y tipo'));
+			}
+		}
+
+		// Check for duplicate code + productType if either value changes
+		if (nextCode !== existing.code || nextProductType !== existing.productType) {
+			const duplicateCode = await findMaterialByCode(nextCode, nextProductType);
+			if (duplicateCode && duplicateCode.id !== id) {
+				invalid(issue.code('Ya existe un material con este codigo y categoria'));
 			}
 		}
 
@@ -203,13 +222,7 @@ export const quickCreateMaterial = command(
 		}
 
 		// Generate code from name
-		const prefix = productType.slice(0, 2).toUpperCase();
-		const nameCode = name
-			.toUpperCase()
-			.replace(/\s+/g, '_')
-			.replace(/[^A-Z0-9_]/g, '')
-			.slice(0, 10);
-		const code = `${prefix}_${nameCode}`;
+		const code = await generateUniqueMaterialCode(name, productType);
 
 		const material = await createMaterial({
 			name,

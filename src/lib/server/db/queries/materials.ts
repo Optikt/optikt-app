@@ -19,6 +19,37 @@ import { db } from '$lib/server/db';
 import { materials, type Material, type NewMaterial } from '$lib/server/db/schema';
 import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
 import { nowISO } from '$lib/dates';
+import { buildMaterialCode } from '$lib/utils/materialCodes';
+
+async function materialCodeExists(
+	code: string,
+	productType: string,
+	executor: DbOrTx = db
+): Promise<boolean> {
+	const [existing] = await executor
+		.select({ id: materials.id })
+		.from(materials)
+		.where(and(eq(materials.code, code), eq(materials.productType, productType)));
+
+	return !!existing;
+}
+
+export async function generateUniqueMaterialCode(
+	name: string,
+	productType: string,
+	executor: DbOrTx = db
+): Promise<string> {
+	const baseCode = buildMaterialCode(name, productType);
+	let nextCode = baseCode;
+	let suffix = 2;
+
+	while (await materialCodeExists(nextCode, productType, executor)) {
+		nextCode = buildMaterialCode(name, productType, suffix);
+		suffix += 1;
+	}
+
+	return nextCode;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -198,6 +229,26 @@ export async function findMaterialByName(
 }
 
 /**
+ * Find a material by code and optional product type.
+ * By default includes soft-deleted rows because DB uniqueness also includes them.
+ */
+export async function findMaterialByCode(
+	code: string,
+	productType?: string,
+	{ deleted = 'include' }: { deleted?: 'exclude' | 'include' | 'only' } = {}
+): Promise<Material | null> {
+	const conditions: SQL[] = [eq(materials.code, code)];
+	if (deleted === 'exclude') conditions.push(isNull(materials.deletedAt));
+	if (deleted === 'only') conditions.push(isNotNull(materials.deletedAt));
+	if (productType) conditions.push(eq(materials.productType, productType));
+	const [material] = await db
+		.select()
+		.from(materials)
+		.where(and(...conditions));
+	return material ?? null;
+}
+
+/**
  * Create a new material
  */
 export async function createMaterial(
@@ -282,7 +333,7 @@ export async function resolvePendingMaterial(
 
 	if (existing) return existing.id;
 
-	const code = pendingName.substring(0, 10).toUpperCase().replace(/\s+/g, '_');
+	const code = await generateUniqueMaterialCode(pendingName, productType, executor);
 	const [created] = await executor
 		.insert(materials)
 		.values({

@@ -8,6 +8,13 @@
       "when": 1776877114012,
       "tag": "0000_orange_aqueduct",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776975187074,
+      "tag": "0001_friendly_groot",
+      "breakpoints": true
     }
   ]
 }
