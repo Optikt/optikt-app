@@ -1,3 +1,4 @@
+import { sentrySvelteKit } from '@sentry/sveltekit';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
@@ -5,7 +6,14 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [
+		sentrySvelteKit({
+			org: 'optikt',
+			project: 'javascript-sveltekit'
+		}),
+		tailwindcss(),
+		sveltekit()
+	],
 	define: {
 		__APP_VERSION__: JSON.stringify(pkg.version)
 	},
