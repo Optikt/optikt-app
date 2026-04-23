@@ -4,6 +4,7 @@
 	import { fade } from 'svelte/transition';
 
 	type SvelecteProps = ComponentProps<typeof Svelecte>;
+	type OptionRecord = Record<string, unknown>;
 	type Options =
 		| Array<{ label: string; value: string | number }>
 		| Array<{ name: string; id: string | number }>;
@@ -19,21 +20,62 @@
 		createRow: createRowPassed,
 		placeholder = 'Seleccionar',
 		selection: selectionPassed,
+		options = [],
+		valueField = 'id',
 		creatable,
 		disabled,
 		error,
 		i18n,
+		onChange,
 		...rest
 	}: PropType = $props();
 
-	const i18nInternal: object = {
+	const i18nInternal = $derived({
 		fetchEmpty: 'No hay coincidencias',
 		fetchBefore: 'Escribe para buscar',
 		...i18n
-	};
+	});
 
 	const controlClass =
 		'focus-within:!ring-dark-blue !rounded-3xl !border !py-[2.5px] !px-2 focus-within:!outline-hidden focus-within:!ring-1 !ring-1 !ring-transparent !border-r-8 !border-transparent';
+
+	/**
+	 * Svelecte warns and corrupts the binding when `value` is `''`, `null`,
+	 * `undefined`, or anything that does not match an option's `valueField`.
+	 * We translate those cases to `null` before handing it to Svelecte, and
+	 * translate `null` back to `''` when propagating changes outward, so
+	 * consumers can keep using the idiomatic "empty string = no selection".
+	 */
+	function isEmpty(v: unknown): boolean {
+		return v === '' || v === null || v === undefined;
+	}
+
+	function getField(): string {
+		return valueField ?? 'id';
+	}
+
+	function matchesOption(v: unknown): boolean {
+		if (isEmpty(v)) return false;
+		const field = getField();
+		return (options as OptionRecord[]).some((opt) => opt?.[field] === v);
+	}
+
+	let svelecteValue = $state<string | number | null>(null);
+
+	$effect(() => {
+		const next = matchesOption(value) ? (value as string | number) : null;
+		if (svelecteValue !== next) svelecteValue = next;
+	});
+
+	function handleChange(selected: unknown) {
+		const field = getField();
+		const nextValue =
+			selected && typeof selected === 'object' && field in (selected as OptionRecord)
+				? ((selected as OptionRecord)[field] as string | number)
+				: '';
+		if (value !== nextValue) value = nextValue;
+		onChange?.(selected);
+	}
 </script>
 
 <!-- These are the default snippets -->
@@ -71,11 +113,14 @@
 		controlClass={`${controlClass} ${disabled ? '!cursor-not-allowed !bg-gray-200' : '!cursor-pointer !bg-secondary-blue/30'}`}
 		dropdownClass="!rounded-lg !border !p-[1px] !bg-[#d9f2f8]"
 		optionClass="!rounded !bg-[#d9f2f8] hover:!bg-[#BFD6DB] hover:cursor-pointer"
-		bind:value
+		bind:value={svelecteValue}
+		{options}
+		{valueField}
 		{disabled}
 		{placeholder}
 		{creatable}
 		clearable
+		onChange={handleChange}
 		selection={selectionPassed ?? selection}
 		listHeader={listHeaderPassed ?? listHeader}
 		createRow={createRowPassed ?? createRow}
