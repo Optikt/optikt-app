@@ -135,93 +135,93 @@
 			{@const opt = item as SelectOption}
 			{@const badge = getBadge(opt.productType)}
 			{@const Icon = getIcon(opt)}
-		<div class="flex items-center gap-2.5 py-0.5">
-			<div
-				class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
-				style:background={badge.bg}
-				style:color={badge.text}
-			>
-				<Icon class="h-3.5 w-3.5" />
-			</div>
-			<div class="flex min-w-0 flex-1 flex-col gap-px">
-				<div class="flex flex-wrap items-center gap-1.5">
-					<span class="font-semibold text-slate-800">{opt.name}</span>
-					{#if opt.brand}
-						<span class="text-xs text-slate-500">· {opt.brand}</span>
-					{/if}
-					{#if opt.stock !== null}
-						{#if opt.stock <= 0}
-							<span class="rounded-full bg-red-50 px-1.5 py-px text-xs font-medium text-red-600">
-								<strong>Sin stock</strong>
-							</span>
-						{:else if opt.stock <= 3}
-							<span class="text-xs font-medium text-amber-600">{opt.stock} disp.</span>
-						{:else}
-							<span class="text-xs font-medium text-green-600">{opt.stock} disp.</span>
+			<div class="flex items-center gap-2.5 py-0.5">
+				<div
+					class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
+					style:background={badge.bg}
+					style:color={badge.text}
+				>
+					<Icon class="h-3.5 w-3.5" />
+				</div>
+				<div class="flex min-w-0 flex-1 flex-col gap-px">
+					<div class="flex flex-wrap items-center gap-1.5">
+						<span class="font-semibold text-slate-800">{opt.name}</span>
+						{#if opt.brand}
+							<span class="text-xs text-slate-500">· {opt.brand}</span>
 						{/if}
-					{:else if opt.source}
-						<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600"
-							>Por pedido</span
-						>
-					{/if}
-				</div>
-				<div class="flex items-center gap-2 text-[0.8rem]">
-					{#if opt.sku}
-						<span class="font-mono text-slate-500">{opt.sku}</span>
-					{/if}
-					<span class="font-semibold text-blue-800">{formatPrice(opt.price)}</span>
+						{#if opt.stock !== null}
+							{#if opt.stock <= 0}
+								<span class="rounded-full bg-red-50 px-1.5 py-px text-xs font-medium text-red-600">
+									<strong>Sin stock</strong>
+								</span>
+							{:else if opt.stock <= 3}
+								<span class="text-xs font-medium text-amber-600">{opt.stock} disp.</span>
+							{:else}
+								<span class="text-xs font-medium text-green-600">{opt.stock} disp.</span>
+							{/if}
+						{:else if opt.source}
+							<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600"
+								>Por pedido</span
+							>
+						{/if}
+					</div>
+					<div class="flex items-center gap-2 text-[0.8rem]">
+						{#if opt.sku}
+							<span class="font-mono text-slate-500">{opt.sku}</span>
+						{/if}
+						<span class="font-semibold text-blue-800">{formatPrice(opt.price)}</span>
+					</div>
 				</div>
 			</div>
-		</div>
-	{/snippet}
+		{/snippet}
 
-	{#snippet selection(selectedOptions)}
-		{@const opt = selectedOptions[0] as SelectOption}
-		{@const badge = getBadge(opt.productType)}
-		{@const Icon = getIcon(opt)}
-		<div class="flex items-center gap-1.5">
+		{#snippet selection(selectedOptions)}
+			{@const opt = selectedOptions[0] as SelectOption}
+			{@const badge = getBadge(opt.productType)}
+			{@const Icon = getIcon(opt)}
+			<div class="flex items-center gap-1.5">
+				<div
+					class="flex h-5.5 w-5.5 min-w-5.5 items-center justify-center rounded"
+					style:background={badge.bg}
+					style:color={badge.text}
+				>
+					<Icon class="h-3 w-3" />
+				</div>
+				<span class="font-medium">{opt.name}</span>
+				{#if opt.inventoryMode === 'STOCK' && opt.stock !== null && opt.stock <= 0}
+					<span class="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+						<TriangleAlert class="h-3 w-3" />
+						Sin stock
+					</span>
+				{:else if opt.inventoryMode === 'ON_DEMAND'}
+					<span class="text-xs font-medium text-sky-600">Por pedido</span>
+				{/if}
+			</div>
+		{/snippet}
+	</SelectInput>
+
+	{#if isOnDemand}
+		<div
+			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
+		>
+			<Package class="h-4 w-4 shrink-0" />
+			<span>Se pedirá al proveedor</span>
+		</div>
+	{:else if hasStockWarning}
+		{#if kind === 'lens'}
 			<div
-				class="flex h-5.5 w-5.5 min-w-5.5 items-center justify-center rounded"
-				style:background={badge.bg}
-				style:color={badge.text}
+				class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
 			>
-				<Icon class="h-3 w-3" />
+				<TriangleAlert class="h-4 w-4 shrink-0" />
+				<span>Sin stock en inventario</span>
 			</div>
-			<span class="font-medium">{opt.name}</span>
-			{#if opt.inventoryMode === 'STOCK' && opt.stock !== null && opt.stock <= 0}
-				<span class="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-					<TriangleAlert class="h-3 w-3" />
-					Sin stock
-				</span>
-			{:else if opt.inventoryMode === 'ON_DEMAND'}
-				<span class="text-xs font-medium text-sky-600">Por pedido</span>
-			{/if}
-		</div>
-	{/snippet}
-</SelectInput>
-
-{#if isOnDemand}
-	<div
-		class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-	>
-		<Package class="h-4 w-4 shrink-0" />
-		<span>Se pedirá al proveedor</span>
-	</div>
-{:else if hasStockWarning}
-	{#if kind === 'lens'}
-		<div
-			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
-		>
-			<TriangleAlert class="h-4 w-4 shrink-0" />
-			<span>Sin stock en inventario</span>
-		</div>
-	{:else}
-		<div
-			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
-		>
-			<TriangleAlert class="h-4 w-4 shrink-0" />
-			<span>Este producto no tiene stock disponible</span>
-		</div>
+		{:else}
+			<div
+				class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
+			>
+				<TriangleAlert class="h-4 w-4 shrink-0" />
+				<span>Este producto no tiene stock disponible</span>
+			</div>
+		{/if}
 	{/if}
-{/if}
 </div>

@@ -38,7 +38,7 @@ async function waitForDatabase(url, { retries = 30, delayMs = 1000 } = {}) {
 			return;
 		} catch (err) {
 			await probe.end({ timeout: 5 }).catch((e) => {
-				console.log("waitForDatabase probe end");
+				console.log('waitForDatabase probe end');
 				console.log(e);
 			});
 			if (attempt === retries) throw err;
