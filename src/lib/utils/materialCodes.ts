@@ -1,12 +1,18 @@
+import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
+
 const MATERIAL_CODE_PREFIXES: Record<string, string> = {
-	FRAME: 'FR',
-	CONTACT_LENS: 'CL',
-	ACCESSORY: 'AC',
-	SUNGLASSES: 'SG'
+	[ProductType.FRAME]: 'MO',
+	[ProductType.CONTACT_LENS]: 'LC',
+	[ProductType.ACCESSORY]: 'AC'
 };
 
 export function getMaterialCodePrefix(productType: string): string {
-	return MATERIAL_CODE_PREFIXES[productType] ?? productType.slice(0, 2).toUpperCase();
+	const materialCategory =
+		productType === ProductType.SUNGLASSES
+			? toMaterialCategory(ProductType.SUNGLASSES)
+			: productType;
+
+	return MATERIAL_CODE_PREFIXES[materialCategory] ?? materialCategory.slice(0, 2).toUpperCase();
 }
 
 export function normalizeMaterialCodeSegment(name: string): string {

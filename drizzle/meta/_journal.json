@@ -15,6 +15,13 @@
       "when": 1776975187074,
       "tag": "0001_friendly_groot",
       "breakpoints": true
+	},
+	{
+	  "idx": 2,
+	  "version": "7",
+	  "when": 1776969000000,
+	  "tag": "0002_spanish_material_code_prefixes",
+	  "breakpoints": true
     }
   ]
 }
