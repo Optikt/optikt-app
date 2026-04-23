@@ -63,6 +63,41 @@ if (sentryDsn) {
 				});
 			}
 		});
+
+		// DOM growth watcher: if the active <form> HTML size increases between
+		// polls (it should stay stable while the user types — `value` changes
+		// do not add nodes), record a breadcrumb. A freeze preceded by many
+		// "form grew" breadcrumbs points at a re-mount / enhance leak.
+		let lastFormSize = 0;
+		let lastFormPath = '';
+		setInterval(() => {
+			const form = document.querySelector('form');
+			if (!form) {
+				lastFormSize = 0;
+				return;
+			}
+			const path = window.location.pathname;
+			const size = form.outerHTML.length;
+			if (path !== lastFormPath) {
+				lastFormPath = path;
+				lastFormSize = size;
+				return;
+			}
+			const delta = size - lastFormSize;
+			if (delta > 500) {
+				Sentry.addBreadcrumb({
+					category: 'dom.growth',
+					level: 'warning',
+					message: `form grew +${delta}B`,
+					data: { path, prevSize: lastFormSize, newSize: size }
+				});
+				// If it grew by a lot at once, capture it as an event too.
+				if (delta > 3000) {
+					Sentry.captureMessage(`form DOM growth ${delta}B on ${path}`, 'warning');
+				}
+			}
+			lastFormSize = size;
+		}, 3000);
 	}
 }
 
