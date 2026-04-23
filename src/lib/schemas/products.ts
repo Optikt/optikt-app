@@ -21,9 +21,13 @@ import {
 // SKU format: only uppercase letters, numbers, hyphens (no spaces, no special chars)
 const SkuSchema = z
 	.string()
+	.trim()
+	.toUpperCase()
 	.min(1, 'SKU requerido')
 	.max(50, 'SKU muy largo (máximo 50 caracteres)')
 	.regex(/^[A-Z0-9-]+$/, 'SKU inválido: solo mayúsculas, números y guiones');
+
+const OptionalUppercaseStringSchema = z.string().trim().toUpperCase().optional();
 
 // export const ListProductsSchema = z.object({
 export const ListProductsSchema = ListPaginationSchema.extend({
@@ -51,7 +55,7 @@ export const CreateProductSchema = z.object({
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialCategory: z.enum(MaterialCategories).optional(),
 	gender: z.string().optional(),
-	personalCode: z.string().optional(),
+	personalCode: OptionalUppercaseStringSchema,
 	isAutoSku: CoercedBoolean.default(false),
 	color: z.string().optional(),
 	size: z.string().optional(),

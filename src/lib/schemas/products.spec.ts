@@ -17,6 +17,20 @@ describe('CreateProductSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('uppercases sku and personal code during create parsing', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			sku: 'moda-abc-123',
+			personalCode: 'ab-12 c2'
+		});
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+
+		expect(result.data.sku).toBe('MODA-ABC-123');
+		expect(result.data.personalCode).toBe('AB-12 C2');
+	});
+
 	it('requires supplierId', () => {
 		const { supplierId: _, ...payloadWithoutSupplier } = baseCreatePayload;
 		const result = CreateProductSchema.safeParse(payloadWithoutSupplier);
@@ -104,6 +118,20 @@ describe('UpdateProductSchema', () => {
 			brandId: 'pending_brand_1'
 		});
 		expect(result.success).toBe(true);
+	});
+
+	it('uppercases sku and personal code during update parsing', () => {
+		const result = UpdateProductSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000000',
+			sku: 'ls-met-aug-plata-s25666-1-c2',
+			personalCode: 's25666-1 c2'
+		});
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+
+		expect(result.data.sku).toBe('LS-MET-AUG-PLATA-S25666-1-C2');
+		expect(result.data.personalCode).toBe('S25666-1 C2');
 	});
 
 	it('rejects empty string for supplierId (cannot set to null)', () => {

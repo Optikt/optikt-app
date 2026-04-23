@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Eye, Package, RotateCcw, SquarePen, Trash2 } from '@lucide/svelte';
+	import { Copy, Eye, Package, RotateCcw, SquarePen, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { deleteProductById } from '$lib/remote/products.remote';
@@ -108,6 +108,25 @@
 		if (isLowStock(product)) return 'Stock bajo';
 		return 'En stock';
 	}
+
+	async function copyValue(
+		event: MouseEvent,
+		value: string | null | undefined,
+		label: string
+	): Promise<void> {
+		event.stopPropagation();
+
+		const text = value?.trim();
+		if (!text) return;
+
+		try {
+			await navigator.clipboard.writeText(text);
+			toast.success(`${label} copiado`);
+		} catch (error) {
+			console.error(error);
+			toast.error(`No se pudo copiar ${label.toLowerCase()}`);
+		}
+	}
 </script>
 
 <DataGrid
@@ -146,12 +165,34 @@
 				</div>
 			</td>
 			<td class="px-4 py-4">
-				<span class="font-mono text-sm text-on-surface-variant">
-					{product.personalCode?.trim() || '-'}
-				</span>
+				<div class="flex items-center gap-2">
+					<span class="font-mono text-sm text-on-surface-variant">
+						{product.personalCode?.trim() || '-'}
+					</span>
+					{#if product.personalCode?.trim()}
+						<button
+							type="button"
+							onclick={(event) => void copyValue(event, product.personalCode, 'Código interno')}
+							class="rounded p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+							title="Copiar código interno"
+						>
+							<Copy class="h-3.5 w-3.5" />
+						</button>
+					{/if}
+				</div>
 			</td>
 			<td class="px-4 py-4">
-				<span class="font-mono text-sm text-on-surface-variant">{product.sku}</span>
+				<div class="flex items-center gap-2">
+					<span class="font-mono text-sm text-on-surface-variant">{product.sku}</span>
+					<button
+						type="button"
+						onclick={(event) => void copyValue(event, product.sku, 'SKU')}
+						class="rounded p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+						title="Copiar SKU"
+					>
+						<Copy class="h-3.5 w-3.5" />
+					</button>
+				</div>
 			</td>
 			<td class="px-4 py-4">
 				<ProductTypeBadge type={product.type} />
