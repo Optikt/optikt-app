@@ -387,7 +387,7 @@
 	const rootRangeIssues = $derived.by(() => getRootRangeIssues(rangeServerIssues));
 
 	async function runValidatedSubmit(
-		submit: () => Promise<void>,
+		submit: () => Promise<unknown>,
 		onSuccess: () => void,
 		fallbackMessage: string
 	) {

@@ -35,7 +35,7 @@
 	// Confirmation modal state
 	let showCloseConfirmModal = $state(false);
 	let showSubmitConfirmModal = $state(false);
-	let pendingSubmitCallback: (() => Promise<void>) | null = $state(null);
+	let pendingSubmitCallback: (() => Promise<unknown>) | null = $state(null);
 
 	// Check if form has unsaved changes
 	const hasUnsavedChanges = $derived.by(() => {
@@ -232,7 +232,7 @@
 	// Handle form submission with validation
 	async function handleSubmit(
 		formEl: HTMLFormElement,
-		submit: () => Promise<void>,
+		submit: () => Promise<unknown>,
 		handleResult: (formEl: HTMLFormElement) => void
 	) {
 		// Check for missing distance fields before submitting
@@ -250,7 +250,7 @@
 
 	async function executeSubmit(
 		formEl: HTMLFormElement,
-		submit: () => Promise<void>,
+		submit: () => Promise<unknown>,
 		handleResult: (formEl: HTMLFormElement) => void
 	) {
 		isSubmitting = true;

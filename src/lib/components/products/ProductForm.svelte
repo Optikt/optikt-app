@@ -330,7 +330,7 @@
 		goto(resolve(`/products/${product?.id}` as `/products/${string}`));
 	}
 
-	async function handleSubmit(formEl: HTMLFormElement, submit: () => Promise<void>) {
+	async function handleSubmit(formEl: HTMLFormElement, submit: () => Promise<unknown>) {
 		isSubmitting = true;
 		try {
 			await submit();
