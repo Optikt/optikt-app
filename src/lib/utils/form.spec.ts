@@ -34,13 +34,8 @@ describe('getFormErrorMessage', () => {
 	});
 
 	it('normalizes nested issue paths to field names', () => {
-		expect(issuePathToFieldNames(['prescription', 'odSphere'])).toEqual([
-			'prescription.odSphere'
-		]);
-		expect(issuePathToFieldNames(['ranges', 0, 'min'])).toEqual([
-			'ranges.0.min',
-			'ranges[0].min'
-		]);
+		expect(issuePathToFieldNames(['prescription', 'odSphere'])).toEqual(['prescription.odSphere']);
+		expect(issuePathToFieldNames(['ranges', 0, 'min'])).toEqual(['ranges.0.min', 'ranges[0].min']);
 	});
 
 	// Note: scrollToFirstError cannot be easily unit tested as it interacts with DOM

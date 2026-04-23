@@ -18,12 +18,7 @@ export function getErrorMessage(e: unknown, fallback = 'Ha ocurrido un error'): 
 		return e.body.message;
 	}
 
-	if (
-		typeof e === 'object' &&
-		e !== null &&
-		'message' in e &&
-		typeof e.message === 'string'
-	) {
+	if (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string') {
 		return e.message;
 	}
 

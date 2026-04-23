@@ -11,7 +11,10 @@ const config = {
 			trustedOrigins: ['https://nanezx-elitebook.taild8f0b9.ts.net']
 		},
 		experimental: {
-			remoteFunctions: true
+			remoteFunctions: true,
+			instrumentation: {
+				server: true
+			}
 		}
 	},
 
