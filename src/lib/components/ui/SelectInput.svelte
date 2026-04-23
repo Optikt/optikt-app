@@ -37,7 +37,7 @@
 	});
 
 	const controlClass =
-		'focus-within:!ring-dark-blue !rounded-3xl !border !py-[2.5px] !px-2 focus-within:!outline-hidden focus-within:!ring-1 !ring-1 !ring-transparent !border-r-8 !border-transparent';
+		'focus-within:!ring-dark-blue !rounded-lg !border !py-[2.5px] !px-2 focus-within:!outline-hidden focus-within:!ring-1 !ring-1 !ring-transparent !border-r-8 !border-transparent';
 
 	/**
 	 * Svelecte warns and corrupts the binding when `value` is `''`, `null`,
@@ -81,7 +81,7 @@
 <!-- These are the default snippets -->
 {#snippet listHeader()}
 	<p class="ml-2 cursor-default py-1 text-gray-400">
-		Seleccionar opción {creatable && 'o escribe una nueva'}
+		Seleccionar {creatable && 'o escribe nueva'}
 	</p>
 {/snippet}
 
@@ -110,6 +110,7 @@
 
 <div class="">
 	<Svelecte
+		class="base-select"
 		controlClass={`${controlClass} ${disabled ? '!cursor-not-allowed !bg-gray-200' : '!cursor-pointer !bg-secondary-blue/30'}`}
 		dropdownClass="!rounded-lg !border !p-[1px] !bg-[#d9f2f8]"
 		optionClass="!rounded !bg-[#d9f2f8] hover:!bg-[#BFD6DB] hover:cursor-pointer"
