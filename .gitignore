@@ -31,3 +31,6 @@ vite.config.ts.timestamp-*
 /plans
 .svelte-doctor
 /stitch-prompts
+
+# Sentry Config File
+.env.sentry-build-plugin
