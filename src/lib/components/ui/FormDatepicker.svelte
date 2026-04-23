@@ -39,7 +39,7 @@
 	const locale = 'es-VE';
 </script>
 
-<div>
+<div data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
 		<Label color={hasError ? 'red' : undefined} class="mb-2">
 			{label}

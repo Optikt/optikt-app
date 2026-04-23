@@ -72,7 +72,7 @@
 	const hasError = $derived(!!displayError);
 </script>
 
-<div>
+<div data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
 		<Label color={hasError ? 'red' : undefined} class="mb-2">
 			{label}
@@ -93,6 +93,7 @@
 			placeholder="12345678"
 			value={idNumber}
 			oninput={handleInput}
+			aria-invalid={hasError}
 			{disabled}
 			maxlength={10}
 			color={hasError ? 'red' : undefined}

@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { getFormErrorMessage } from './form';
+import { describe, expect, it } from 'vitest';
 import type { RemoteFormIssue } from '@sveltejs/kit';
+
+import { getFormErrorMessage, issuePathToFieldNames } from './form';
 
 describe('getFormErrorMessage', () => {
 	it('returns null for null input', () => {
@@ -30,6 +31,11 @@ describe('getFormErrorMessage', () => {
 	it('handles single issue in array', () => {
 		const issues: RemoteFormIssue[] = [{ message: 'Only error', path: ['field'] }];
 		expect(getFormErrorMessage(issues)).toBe('Only error');
+	});
+
+	it('normalizes nested issue paths to field names', () => {
+		expect(issuePathToFieldNames(['prescription', 'odSphere'])).toEqual(['prescription.odSphere']);
+		expect(issuePathToFieldNames(['ranges', 0, 'min'])).toEqual(['ranges.0.min', 'ranges[0].min']);
 	});
 
 	// Note: scrollToFirstError cannot be easily unit tested as it interacts with DOM

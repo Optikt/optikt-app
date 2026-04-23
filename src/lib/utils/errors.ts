@@ -18,6 +18,46 @@ export function getErrorMessage(e: unknown, fallback = 'Ha ocurrido un error'): 
 		return e.body.message;
 	}
 
+	if (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string') {
+		return e.message;
+	}
+
 	// Fallback for unknown error types
 	return fallback;
+}
+
+function serializeErrorDetails(error: unknown): Record<string, unknown> {
+	if (error instanceof Error) {
+		return {
+			name: error.name,
+			message: error.message,
+			stack: error.stack,
+			cause: error.cause
+		};
+	}
+
+	if (isHttpError(error)) {
+		return {
+			status: error.status,
+			body: error.body,
+			message: error.body.message
+		};
+	}
+
+	if (typeof error === 'object' && error !== null) {
+		return { ...error };
+	}
+
+	return { value: error };
+}
+
+export function reportClientError(
+	source: string,
+	error: unknown,
+	context: Record<string, unknown> = {}
+): void {
+	console.error(`[${source}]`, {
+		...context,
+		...serializeErrorDetails(error)
+	});
 }
