@@ -49,7 +49,33 @@ describe('generateSku', () => {
 			color: 'Azul cielo',
 			personalCode: '101'
 		};
-		expect(generateSku(options)).toBe('MODA-ACE-FLE-AZULCIELO-101');
+		expect(generateSku(options)).toBe('MODA-ACE-FLE-AZUL-CIELO-101');
+	});
+
+	it('should preserve separators in color and personal code segments', () => {
+		const options: SkuOptions = {
+			type: ProductType.SUNGLASSES,
+			gender: ProductGender.NO_APLICA,
+			materialName: 'Metal',
+			brandName: 'Augen',
+			color: 'Gris Dorado',
+			personalCode: 'S25666-1 C2'
+		};
+
+		expect(generateSku(options)).toBe('LS-MET-AUG-GRIS-DORADO-S25666-1-C2');
+	});
+
+	it('should collapse repeated spaces and hyphens into single delimiters', () => {
+		const options: SkuOptions = {
+			type: ProductType.FRAME,
+			gender: ProductGender.DAMA,
+			materialName: 'Acetato',
+			brandName: 'Lacoste',
+			color: 'Gris   -  Dorado',
+			personalCode: 'BAF6007  -  C2'
+		};
+
+		expect(generateSku(options)).toBe('MODA-ACE-LAC-GRIS-DORADO-BAF6007-C2');
 	});
 
 	it('should ignore gender if NO_APLICA', () => {

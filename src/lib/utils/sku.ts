@@ -38,9 +38,24 @@ function sanitizeForSku(str: string): string {
 }
 
 /**
+ * Sanitize a SKU segment while preserving readable separators as single hyphens.
+ */
+function sanitizeDelimitedForSku(str: string): string {
+	return str
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toUpperCase()
+		.replace(/[\s-]+/g, '-')
+		.replace(/[^A-Z0-9-]/g, '')
+		.replace(/-+/g, '-')
+		.replace(/^-|-$/g, '');
+}
+
+/**
  * Generates a SKU based on product attributes
  * Rule: <TIPO_PRODUCTO><GENERO>-<MATERIAL>-<MARCA>-<COLOR>-<CODIGO_PROPIO>
- * All parts are sanitized to only contain A-Z and 0-9
+ * Type/material/brand collapse to A-Z and 0-9 only.
+ * Color and personal code preserve readable separators as hyphens.
  */
 export function generateSku(options: SkuOptions): string {
 	const { type, gender, materialName, brandName, color, personalCode } = options;
@@ -80,11 +95,11 @@ export function generateSku(options: SkuOptions): string {
 		}
 	}
 
-	// 5. COLOR (all chars, sanitized)
-	const colorPart = sanitizeForSku(color || '');
+	// 5. COLOR (all chars, preserving readable separators)
+	const colorPart = sanitizeDelimitedForSku(color || '');
 
-	// 6. CODIGO_PROPIO (all chars, sanitized)
-	const codePart = sanitizeForSku(personalCode || '');
+	// 6. CODIGO_PROPIO (all chars, preserving readable separators)
+	const codePart = sanitizeDelimitedForSku(personalCode || '');
 
 	// Assemble with hyphens between non-empty parts
 	const parts = [`${typePart}${genderPart}`, materialPart, brandPart, colorPart, codePart].filter(
