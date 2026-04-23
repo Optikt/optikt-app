@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { FileText } from '@lucide/svelte';
-	import { BaseSelect } from '$lib/components/ui';
+	import SelectInput from '$lib/components/ui/SelectInput.svelte';
 	import { PurchaseDocumentType, getPurchaseDocumentTypeLabel } from '$lib/shared/enums';
 	import { autoAnimate } from '@formkit/auto-animate';
 
@@ -58,12 +58,13 @@
 		<div class="grid gap-4 lg:grid-cols-8">
 			<div class="col-span-2 space-y-1.5">
 				<p class={fieldLabelClass}>Proveedor</p>
-				<BaseSelect
+				<SelectInput
 					bind:value={supplierId}
 					options={suppliers}
 					placeholder="Buscar proveedor..."
-					variant="tonal"
 					disabled={supplierLocked}
+					valueField="id"
+					labelField="name"
 				/>
 				{#if supplierLocked}
 					<p class="text-xs leading-5 text-on-surface-variant">

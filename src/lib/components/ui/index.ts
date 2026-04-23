@@ -21,6 +21,7 @@ export { default as InstagramInput } from './InstagramInput.svelte';
 export { default as IdInput } from './IdInput.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
 export { default as BaseSelect } from './BaseSelect.svelte';
+export { default as SelectInput } from './SelectInput.svelte';
 export { default as TaxBreakdownDisplay } from './TaxBreakdownDisplay.svelte';
 export { default as EconomicBreakdownCard } from './EconomicBreakdownCard.svelte';
 export { default as TaxToggle } from './TaxToggle.svelte';
