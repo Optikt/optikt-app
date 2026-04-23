@@ -27,6 +27,10 @@
 		error,
 		i18n,
 		onChange,
+		controlClass: _controlClass,
+		dropdownClass: _dropdownClass,
+		optionClass: _optionClass,
+		class: _class,
 		...rest
 	}: PropType = $props();
 
@@ -35,9 +39,6 @@
 		fetchBefore: 'Escribe para buscar',
 		...i18n
 	});
-
-	const controlClass =
-		'focus-within:!ring-dark-blue !rounded-lg !border !py-[2.5px] !px-2 focus-within:!outline-hidden focus-within:!ring-1 !ring-1 !ring-transparent !border-r-8 !border-transparent';
 
 	/**
 	 * Svelecte warns and corrupts the binding when `value` is `''`, `null`,
@@ -110,10 +111,7 @@
 
 <div class="">
 	<Svelecte
-		class="base-select"
-		controlClass={`${controlClass} ${disabled ? '!cursor-not-allowed !bg-gray-200' : '!cursor-pointer !bg-secondary-blue/30'}`}
-		dropdownClass="!rounded-lg !border !p-[1px] !bg-[#d9f2f8]"
-		optionClass="!rounded !bg-[#d9f2f8] hover:!bg-[#BFD6DB] hover:cursor-pointer"
+		class={`sv-input${disabled ? ' sv-input-disabled' : ''}`}
 		bind:value={svelecteValue}
 		{options}
 		{valueField}
@@ -132,3 +130,43 @@
 		<span in:fade class="text-sm text-red-500">{typeof error === 'string' ? error : error[0]}</span>
 	{/if}
 </div>
+
+<style>
+	/* ── Svelecte CSS variables ───────────────────────────────────────── */
+	:global(.sv-input) {
+		--sv-bg: var(--color-surface-container-low);
+		--sv-border: 1px solid transparent;
+		--sv-border-radius: 0.5rem;
+		--sv-min-height: 42px;
+		--sv-placeholder-color: var(--color-outline);
+		--sv-item-selected-bg: rgba(65, 158, 189, 0.1);
+		--sv-highlight-bg: rgba(65, 158, 189, 0.15);
+		--sv-dropdown-border: 1px solid var(--color-outline-variant);
+		--sv-dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+		--sv-dropdown-height: 280px;
+		--sv-dropdown-active-bg: var(--color-surface-container-low);
+		--sv-dropdown-selected-bg: rgba(65, 158, 189, 0.1);
+	}
+
+	/* ── Fixed height prevents layout shift on focus and on selection ─── */
+	:global(.sv-input .sv-control) {
+		height: 42px !important;
+		cursor: pointer !important;
+		transition:
+			border-color 150ms,
+			box-shadow 150ms !important;
+	}
+
+	/* ── Focus ring (box-shadow = no layout shift) ────────────────────── */
+	:global(.sv-input .sv-control:focus-within) {
+		border-color: rgba(65, 158, 189, 0.35) !important;
+		box-shadow: 0 0 0 2px rgba(65, 158, 189, 0.15) !important;
+		outline: none !important;
+	}
+
+	/* ── Disabled ─────────────────────────────────────────────────────── */
+	:global(.sv-input-disabled .sv-control) {
+		cursor: not-allowed !important;
+		opacity: 0.6 !important;
+	}
+</style>
