@@ -65,7 +65,7 @@
 		onCreatePending,
 		onchange,
 		error = null,
-		labelClass,
+		labelClass
 	}: Props = $props();
 
 	// Track local options (newly created pending ones)
