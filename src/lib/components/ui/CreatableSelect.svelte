@@ -66,7 +66,6 @@
 		onchange,
 		error = null,
 		labelClass,
-		variant = 'default'
 	}: Props = $props();
 
 	// Track local options (newly created pending ones)
