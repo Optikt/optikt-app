@@ -1,5 +1,5 @@
 <script lang="ts">
-	import BaseSelect from './BaseSelect.svelte';
+	import SelectInput from './SelectInput.svelte';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { normalizeSingleSelectValue } from '$lib/utils';
 
@@ -141,24 +141,24 @@
 	<!-- Always emit the field so FormData never omits it -->
 	<input type="hidden" {name} value={value ?? ''} />
 
-	<BaseSelect
-		{label}
-		{labelClass}
-		{required}
+	{#if label}
+		<p class={['text-sm font-medium', labelClass]}>
+			{label}{#if required}<span class="ml-0.5 text-red-500">*</span>{/if}
+		</p>
+	{/if}
+
+	<SelectInput
+		bind:value={internalValue}
+		options={allOptions as { name: string; id: string | number }[]}
 		{placeholder}
 		{disabled}
-		options={allOptions}
-		bind:value={internalValue}
 		{creatable}
 		createHandler={handleCreate}
 		creatablePrefix="Crear: "
 		keepCreated={false}
 		onChange={handleChange}
-		{variant}
-		hasError={!!error}
+		valueField="id"
+		labelField="name"
+		error={error ?? undefined}
 	/>
-
-	{#if error}
-		<p class="mt-1 text-xs text-red-500">{error}</p>
-	{/if}
 </div>

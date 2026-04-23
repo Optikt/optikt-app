@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Plus } from '@lucide/svelte';
-	import { AppBadge, BaseSelect } from '$lib/components/ui';
+	import { AppBadge } from '$lib/components/ui';
+	import SelectInput from '$lib/components/ui/SelectInput.svelte';
 	import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -21,7 +22,7 @@
 
 	type SelectOption = {
 		id: string;
-		label: string;
+		name: string;
 	};
 
 	interface Props {
@@ -62,7 +63,7 @@
 			.filter((product) => !addedProductIds.has(product.id))
 			.map((product) => ({
 				id: product.id,
-				label: `${product.sku} - ${product.name}`
+				name: `${product.sku} - ${product.name}`
 			}))
 	);
 
@@ -71,7 +72,7 @@
 			.filter((lens) => !addedLensIds.has(lens.id))
 			.map((lens) => ({
 				id: lens.id,
-				label: `${lens.name} - ${getLensTypeLabel(lens.type)}`
+				name: `${lens.name} - ${getLensTypeLabel(lens.type)}`
 			}))
 	);
 
@@ -168,33 +169,31 @@
 
 			<div class="min-w-0">
 				{#if pendingItemType === PurchaseOrderItemType.PRODUCT}
-					<BaseSelect
+					<SelectInput
 						value={visibleProductValue}
 						options={productOptions as SelectOption[]}
 						valueField="id"
-						labelField="label"
+						labelField="name"
 						placeholder={supplierId === ''
 							? 'Selecciona un proveedor primero'
 							: 'Buscar producto del proveedor...'}
-						variant="tonal"
 						disabled={supplierId === '' || productOptions.length === 0}
-						onChange={(selected) => {
-							pendingProductId = normalizeSelectValue(selected as SelectChangeValue);
+						onChange={(selected: SelectChangeValue) => {
+							pendingProductId = normalizeSelectValue(selected);
 						}}
 					/>
 				{:else}
-					<BaseSelect
+					<SelectInput
 						value={visibleLensValue}
 						options={lensOptions as SelectOption[]}
 						valueField="id"
-						labelField="label"
+						labelField="name"
 						placeholder={supplierId === ''
 							? 'Selecciona un proveedor primero'
 							: 'Buscar lente del proveedor...'}
-						variant="tonal"
 						disabled={supplierId === '' || lensOptions.length === 0}
-						onChange={(selected) => {
-							pendingLensCatalogItemId = normalizeSelectValue(selected as SelectChangeValue);
+						onChange={(selected: SelectChangeValue) => {
+							pendingLensCatalogItemId = normalizeSelectValue(selected);
 						}}
 					/>
 				{/if}

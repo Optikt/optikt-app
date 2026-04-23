@@ -1,5 +1,5 @@
 <script lang="ts">
-	import BaseSelect from '$lib/components/ui/BaseSelect.svelte';
+	import SelectInput from '$lib/components/ui/SelectInput.svelte';
 	import { TriangleAlert, Eye, Package } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -118,19 +118,23 @@
 	}
 </script>
 
-<BaseSelect
-	{label}
-	{placeholder}
-	{options}
-	value={visibleValue}
-	valueField="id"
-	labelField="label"
-	onChange={handleChange}
->
-	{#snippet option(item)}
-		{@const opt = item as SelectOption}
-		{@const badge = getBadge(opt.productType)}
-		{@const Icon = getIcon(opt)}
+<div>
+	{#if label}
+		<p class="mb-1 text-sm font-medium text-on-surface-variant">{label}</p>
+	{/if}
+
+	<SelectInput
+		{placeholder}
+		options={options as { name: string; id: string | number }[]}
+		value={visibleValue}
+		valueField="id"
+		labelField="label"
+		onChange={handleChange}
+	>
+		{#snippet option(item)}
+			{@const opt = item as SelectOption}
+			{@const badge = getBadge(opt.productType)}
+			{@const Icon = getIcon(opt)}
 		<div class="flex items-center gap-2.5 py-0.5">
 			<div
 				class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
@@ -194,31 +198,30 @@
 			{/if}
 		</div>
 	{/snippet}
+</SelectInput>
 
-	{#snippet footer()}
-		{#if isOnDemand}
-			<div
-				class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
-			>
-				<Package class="h-4 w-4 shrink-0" />
-				<span>Se pedirá al proveedor</span>
-			</div>
-		{:else if hasStockWarning}
-			{#if kind === 'lens'}
-				<div
-					class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
-				>
-					<TriangleAlert class="h-4 w-4 shrink-0" />
-					<span>Sin stock en inventario</span>
-				</div>
-			{:else}
-				<div
-					class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
-				>
-					<TriangleAlert class="h-4 w-4 shrink-0" />
-					<span>Este producto no tiene stock disponible</span>
-				</div>
-			{/if}
-		{/if}
-	{/snippet}
-</BaseSelect>
+{#if isOnDemand}
+	<div
+		class="mt-1.5 flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1.5 text-sm font-medium text-sky-700"
+	>
+		<Package class="h-4 w-4 shrink-0" />
+		<span>Se pedirá al proveedor</span>
+	</div>
+{:else if hasStockWarning}
+	{#if kind === 'lens'}
+		<div
+			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
+		>
+			<TriangleAlert class="h-4 w-4 shrink-0" />
+			<span>Sin stock en inventario</span>
+		</div>
+	{:else}
+		<div
+			class="mt-1.5 flex items-center gap-1.5 rounded-md bg-red-50 px-2.5 py-1.5 text-sm font-medium text-red-600"
+		>
+			<TriangleAlert class="h-4 w-4 shrink-0" />
+			<span>Este producto no tiene stock disponible</span>
+		</div>
+	{/if}
+{/if}
+</div>
