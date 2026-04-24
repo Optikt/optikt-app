@@ -71,6 +71,10 @@
 
 Estos items no bloquean el plan activo de redesign, pero siguen pendientes a nivel de producto/alcance:
 
+### Pendiente de implementacion posterior
+
+- Migrar listados y search bars que hoy usan `+page.server.ts` + llamadas imperativas con `query(...).run()` al patron reactivo con remote functions ancladas en el componente usando `$derived(await query(...))`, manteniendo SSR, cache/dedup e invalidacion nativa. Hacerlo por modulo, empezando por un piloto pequeno antes de replicarlo al resto.
+
 - Modulo de Ingresos y Egresos.
 - Credit Notes / `RETURN_IN` para devoluciones parciales.
 - Reporte de perdidas operativas.
