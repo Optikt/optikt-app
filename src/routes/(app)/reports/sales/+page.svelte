@@ -36,7 +36,7 @@
 	async function applyFilter() {
 		loading = true;
 		try {
-			const result = await fetchSalesReport({ dateFrom, dateTo });
+			const result = await fetchSalesReport({ dateFrom, dateTo }).run();
 			sales = result.sales;
 			summary = result.summary;
 		} catch (e) {

@@ -60,7 +60,7 @@
 				brandId: brandFilter || undefined,
 				supplierId: supplierFilter || undefined,
 				includeDeleted
-			});
+			}).run();
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando productos'));
@@ -71,7 +71,7 @@
 
 	async function refreshStats() {
 		try {
-			stats = await getProductInventoryStats({});
+			stats = await getProductInventoryStats({}).run();
 		} catch (e) {
 			console.error(e);
 		}

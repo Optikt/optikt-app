@@ -54,7 +54,7 @@
 				search: search.trim() || undefined,
 				status: statusFilter || undefined,
 				supplierId: supplierFilter || undefined
-			});
+			}).run();
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando órdenes de compra'));

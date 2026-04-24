@@ -39,7 +39,7 @@
 		debounceTimer = setTimeout(async () => {
 			loading = true;
 			try {
-				results = await universalSearch({ query: q });
+				results = await universalSearch({ query: q }).run();
 			} catch (e) {
 				console.error(e);
 				results = null;

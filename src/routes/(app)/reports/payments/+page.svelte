@@ -33,7 +33,7 @@
 	async function applyFilter() {
 		loading = true;
 		try {
-			const result = await fetchPaymentsReport({ dateFrom, dateTo });
+			const result = await fetchPaymentsReport({ dateFrom, dateTo }).run();
 			payments = result.payments;
 			refunds = result.refunds;
 			summary = result.summary;

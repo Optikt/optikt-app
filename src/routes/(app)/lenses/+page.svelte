@@ -69,7 +69,7 @@
 				type: typeFilter || undefined,
 				supplierId: supplierFilter || undefined,
 				materialId: materialFilter || undefined
-			});
+			}).run();
 			page = 1;
 		} catch (error) {
 			console.error(error);
