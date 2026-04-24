@@ -65,7 +65,7 @@
 			<p class="text-lg font-semibold text-brand-navy">{genderLabel}</p>
 		</div>
 		<div class="space-y-1">
-			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Tamano</p>
+			<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Tamaño</p>
 			<p class="text-lg font-semibold text-brand-navy">{product.size || '-'}</p>
 		</div>
 		<div class="space-y-1">

@@ -575,7 +575,7 @@
 					</div>
 
 					<div class="xl:col-span-6">
-						<label for="size" class={fieldLabelClass}>Tamano (calibre-puente-varilla)</label>
+						<label for="size" class={fieldLabelClass}>Tamaño (calibre-puente-varilla)</label>
 						<input
 							id="size"
 							name="size"
