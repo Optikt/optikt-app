@@ -3,7 +3,7 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { AppBadge } from '$lib/components/ui';
 	import { formatDate } from '$lib/utils';
-	import { getProductTypeLabel } from '$lib/shared/enums';
+	import { getProductTypeLabel, ProductType } from '$lib/shared/enums';
 	import type { BadgeVariant } from '$lib/shared/badge-variants';
 	import { PRODUCT_GENDER_LABELS, ProductGender } from '$lib/utils/sku';
 
@@ -29,6 +29,15 @@
 	const lotsLabel = $derived(
 		`${activeLotsCount} lote${activeLotsCount === 1 ? '' : 's'} activo${activeLotsCount === 1 ? '' : 's'}`
 	);
+
+	const isFrame = $derived(
+		product.type === ProductType.FRAME || product.type === ProductType.SUNGLASSES
+	);
+	const isContactLens = $derived(product.type === ProductType.CONTACT_LENS);
+	const hasFrameDimensions = $derived(
+		product.lensWidth != null || product.bridgeWidth != null || product.templeLength != null
+	);
+	const hasContactLensAttributes = $derived(product.baseCurve != null || product.diameter != null);
 </script>
 
 <section class="glass-card bg-surface-container-lowest p-8">
@@ -73,6 +82,54 @@
 			<p class="text-lg font-semibold text-brand-navy">{getProductTypeLabel(product.type)}</p>
 		</div>
 	</div>
+
+	{#if isFrame && hasFrameDimensions}
+		<div class="mt-6 grid grid-cols-3 gap-3">
+			<div class="rounded-xl bg-surface-container-low p-4">
+				<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+					Calibre (mm)
+				</p>
+				<p class="mt-2 font-mono text-lg font-semibold text-brand-navy">
+					{product.lensWidth ?? '-'}
+				</p>
+			</div>
+			<div class="rounded-xl bg-surface-container-low p-4">
+				<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">Puente (mm)</p>
+				<p class="mt-2 font-mono text-lg font-semibold text-brand-navy">
+					{product.bridgeWidth ?? '-'}
+				</p>
+			</div>
+			<div class="rounded-xl bg-surface-container-low p-4">
+				<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+					Varilla (mm)
+				</p>
+				<p class="mt-2 font-mono text-lg font-semibold text-brand-navy">
+					{product.templeLength ?? '-'}
+				</p>
+			</div>
+		</div>
+	{/if}
+
+	{#if isContactLens && hasContactLensAttributes}
+		<div class="mt-6 grid grid-cols-2 gap-3">
+			<div class="rounded-xl bg-surface-container-low p-4">
+				<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+					Curva base (BC)
+				</p>
+				<p class="mt-2 font-mono text-lg font-semibold text-brand-navy">
+					{product.baseCurve ?? '-'}
+				</p>
+			</div>
+			<div class="rounded-xl bg-surface-container-low p-4">
+				<p class="text-[0.65rem] font-bold tracking-[0.18em] text-outline uppercase">
+					Diámetro (mm)
+				</p>
+				<p class="mt-2 font-mono text-lg font-semibold text-brand-navy">
+					{product.diameter ?? '-'}
+				</p>
+			</div>
+		</div>
+	{/if}
 
 	{#if product.description}
 		<div class="mt-8 rounded-xl bg-surface-container-low p-5">

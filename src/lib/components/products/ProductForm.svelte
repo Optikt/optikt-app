@@ -84,7 +84,14 @@
 		description: '',
 		isTaxable: true,
 		minStock: 0,
-		imageUrl: ''
+		imageUrl: '',
+		// Physical attributes — Frames & Sunglasses
+		lensWidth: '' as string | number,
+		bridgeWidth: '' as string | number,
+		templeLength: '' as string | number,
+		// Physical attributes — Contact Lenses
+		baseCurve: '' as string | number,
+		diameter: '' as string | number
 	});
 
 	let isAutoSku = $state(true);
@@ -218,6 +225,11 @@
 	});
 
 	const showStockFields = $derived(requiresStockTracking(formData.type as ProductType));
+	const showFrameAttributes = $derived(
+		formData.type === ProductType.FRAME || formData.type === ProductType.SUNGLASSES
+	);
+	const showContactLensAttributes = $derived(formData.type === ProductType.CONTACT_LENS);
+	const showGenericSize = $derived(!showFrameAttributes && !showContactLensAttributes);
 
 	let formInstanceId = $state(generateUUID());
 	$effect(() => {
@@ -239,7 +251,12 @@
 					description: product.description ?? '',
 					isTaxable: product.isTaxable ?? true,
 					minStock: product.minStock ?? 0,
-					imageUrl: product.imageUrl ?? ''
+					imageUrl: product.imageUrl ?? '',
+					lensWidth: product.lensWidth ?? '',
+					bridgeWidth: product.bridgeWidth ?? '',
+					templeLength: product.templeLength ?? '',
+					baseCurve: product.baseCurve ?? '',
+					diameter: product.diameter ?? ''
 				};
 			}
 		});
@@ -574,16 +591,97 @@
 						/>
 					</div>
 
-					<div class="xl:col-span-6">
-						<label for="size" class={fieldLabelClass}>Tamaño (calibre-puente-varilla)</label>
-						<input
-							id="size"
-							name="size"
-							bind:value={formData.size}
-							placeholder="50-22-145"
-							class={getFieldClass(null)}
-						/>
-					</div>
+					{#if showGenericSize}
+						<div class="xl:col-span-6">
+							<label for="size" class={fieldLabelClass}>Tamaño</label>
+							<input
+								id="size"
+								name="size"
+								bind:value={formData.size}
+								placeholder="M / L / XL"
+								class={getFieldClass(null)}
+							/>
+						</div>
+					{/if}
+
+					{#if showFrameAttributes}
+						<div class="xl:col-span-4">
+							<label for="lensWidth" class={fieldLabelClass}>Calibre (mm)</label>
+							<input
+								id="lensWidth"
+								name="lensWidth"
+								type="number"
+								min="1"
+								max="99"
+								bind:value={formData.lensWidth}
+								placeholder="50"
+								class={getFieldClass(null, 'font-mono tabular-nums')}
+							/>
+							<p class={helperTextClass}>Ancho del cristal</p>
+						</div>
+
+						<div class="xl:col-span-4">
+							<label for="bridgeWidth" class={fieldLabelClass}>Puente (mm)</label>
+							<input
+								id="bridgeWidth"
+								name="bridgeWidth"
+								type="number"
+								min="1"
+								max="99"
+								bind:value={formData.bridgeWidth}
+								placeholder="22"
+								class={getFieldClass(null, 'font-mono tabular-nums')}
+							/>
+							<p class={helperTextClass}>Ancho del puente nasal</p>
+						</div>
+
+						<div class="xl:col-span-4">
+							<label for="templeLength" class={fieldLabelClass}>Varilla (mm)</label>
+							<input
+								id="templeLength"
+								name="templeLength"
+								type="number"
+								min="1"
+								max="999"
+								bind:value={formData.templeLength}
+								placeholder="145"
+								class={getFieldClass(null, 'font-mono tabular-nums')}
+							/>
+							<p class={helperTextClass}>Longitud del brazo</p>
+						</div>
+					{/if}
+
+					{#if showContactLensAttributes}
+						<div class="xl:col-span-6">
+							<label for="baseCurve" class={fieldLabelClass}>Curva base (BC)</label>
+							<input
+								id="baseCurve"
+								name="baseCurve"
+								type="number"
+								min="5"
+								max="10"
+								step="0.1"
+								bind:value={formData.baseCurve}
+								placeholder="8.6"
+								class={getFieldClass(null, 'font-mono tabular-nums')}
+							/>
+						</div>
+
+						<div class="xl:col-span-6">
+							<label for="diameter" class={fieldLabelClass}>Diámetro (mm)</label>
+							<input
+								id="diameter"
+								name="diameter"
+								type="number"
+								min="8"
+								max="20"
+								step="0.1"
+								bind:value={formData.diameter}
+								placeholder="14.2"
+								class={getFieldClass(null, 'font-mono tabular-nums')}
+							/>
+						</div>
+					{/if}
 
 					<div class="md:col-span-2 xl:col-span-12">
 						<label for="description" class={fieldLabelClass}>Descripcion</label>
