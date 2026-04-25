@@ -7,7 +7,9 @@ import {
 } from '$lib/server/db/queries/sales';
 import { getLatestRates } from '$lib/server/db/queries/exchangeRates';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
+import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { MovementReferenceType } from '$lib/shared/enums';
+import { suppliers } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -19,7 +21,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const [items, payments, latestRates, movements] = await Promise.all([
+	const [items, payments, latestRates, movements, supplierList] = await Promise.all([
 		getSaleItemsWithDetails(params.id),
 		getSalePayments(params.id, { includeVoided: true }),
 		getLatestRates(),
@@ -27,7 +29,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			referenceType: MovementReferenceType.SALE,
 			referenceId: params.id,
 			orderSort: 'asc'
-		})
+		}),
+		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } })
 	]);
 
 	const bcvRateEntry = latestRates.find((r) => r.currency.code === 'USD');
@@ -38,6 +41,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		items,
 		payments,
 		bcvRate,
-		movements
+		movements,
+		suppliers: supplierList
 	};
 };

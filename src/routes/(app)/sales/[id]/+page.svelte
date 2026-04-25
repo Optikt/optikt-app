@@ -302,6 +302,7 @@
 		{items}
 		subtotal={sale.subtotal}
 		allowCostEdit={canAct}
+		suppliers={data.suppliers}
 		onCostsUpdated={async () => {
 			await invalidateAll();
 			syncFromData();

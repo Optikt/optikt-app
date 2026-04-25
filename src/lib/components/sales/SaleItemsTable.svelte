@@ -37,10 +37,11 @@
 		items: SaleItemWithDetails[];
 		subtotal: number;
 		allowCostEdit?: boolean;
+		suppliers?: { id: string; name: string }[];
 		onCostsUpdated?: () => void;
 	}
 
-	let { items, subtotal, allowCostEdit = true, onCostsUpdated }: Props = $props();
+	let { items, subtotal, allowCostEdit = true, suppliers = [], onCostsUpdated }: Props = $props();
 
 	// Edit state
 	let editingItemId = $state<string | null>(null);
@@ -55,7 +56,10 @@
 	let enrichingCategory = $state<string | null>(null);
 	let enrichUnitCost = $state<number | null>(null);
 	let enrichOpticalNotes = $state('');
+	let enrichSupplierId = $state<string>('');
 	let enrichSaving = $state(false);
+
+	let supplierMap = $derived(new Map(suppliers.map((s) => [s.id, s.name])));
 
 	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
@@ -103,11 +107,13 @@
 		enrichingCategory = item.freeDetails?.category ?? null;
 		enrichUnitCost = item.freeDetails?.unitCost ?? null;
 		enrichOpticalNotes = item.freeDetails?.opticalNotes ?? '';
+		enrichSupplierId = item.freeDetails?.supplierId ?? '';
 	}
 
 	function cancelEnrich() {
 		enrichingItemId = null;
 		enrichingCategory = null;
+		enrichSupplierId = '';
 	}
 
 	async function saveEnrich() {
@@ -123,12 +129,14 @@
 				saleItemId: enrichingItemId,
 				category: enrichingCategory,
 				unitCost: enrichUnitCost,
+				supplierId: enrichSupplierId || undefined,
 				opticalNotes: enrichOpticalNotes || undefined
 			});
 			if (result.success) {
 				toast.success('Ítem completado correctamente');
 				enrichingItemId = null;
 				enrichingCategory = null;
+				enrichSupplierId = '';
 				onCostsUpdated?.();
 			} else {
 				toast.error(result.error);
@@ -362,6 +370,12 @@
 															>
 														{/if}
 													</p>
+												{/if}
+												{#if fd.supplierId}
+													{@const supplierName = supplierMap.get(fd.supplierId)}
+													{#if supplierName}
+														<p>Proveedor: <span class="font-semibold">{supplierName}</span></p>
+													{/if}
 												{/if}
 												{#if fd.opticalNotes}
 													<p class="italic">{fd.opticalNotes}</p>
@@ -658,6 +672,25 @@
 					/>
 				</div>
 
+				{#if suppliers.length > 0}
+					<div>
+						<label
+							class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+						>
+							Proveedor
+						</label>
+						<select
+							bind:value={enrichSupplierId}
+							class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+						>
+							<option value="">Sin proveedor</option>
+							{#each suppliers as supplier (supplier.id)}
+								<option value={supplier.id}>{supplier.name}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+
 				<div>
 					<label
 						class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
@@ -685,7 +718,9 @@
 				<button
 					type="button"
 					onclick={saveEnrich}
-					disabled={enrichSaving || !enrichUnitCost || enrichUnitCost <= 0}
+					disabled={enrichSaving ||
+						enrichUnitCost == null ||
+						(enrichingCategory !== FreeItemCategory.SERVICE && enrichUnitCost <= 0)}
 					class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
 				>
 					{enrichSaving ? 'Guardando...' : 'Guardar'}
