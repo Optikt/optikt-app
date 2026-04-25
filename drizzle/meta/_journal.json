@@ -29,6 +29,13 @@
       "when": 1745527623000,
       "tag": "0003_product_physical_attributes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777075200000,
+      "tag": "0004_products_physical_attributes_repair",
+      "breakpoints": true
     }
   ]
 }
