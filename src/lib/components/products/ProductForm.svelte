@@ -580,30 +580,6 @@
 						</div>
 					</fieldset>
 
-					<div class="xl:col-span-6">
-						<label for="color" class={fieldLabelClass}>Color / tinte</label>
-						<input
-							id="color"
-							name="color"
-							bind:value={formData.color}
-							placeholder="Matte Black / G-15 Green"
-							class={getFieldClass(null)}
-						/>
-					</div>
-
-					{#if showGenericSize}
-						<div class="xl:col-span-6">
-							<label for="size" class={fieldLabelClass}>Tamaño</label>
-							<input
-								id="size"
-								name="size"
-								bind:value={formData.size}
-								placeholder="M / L / XL"
-								class={getFieldClass(null)}
-							/>
-						</div>
-					{/if}
-
 					{#if showFrameAttributes}
 						<div class="xl:col-span-4">
 							<label for="lensWidth" class={fieldLabelClass}>Calibre (mm)</label>
@@ -682,6 +658,30 @@
 							/>
 						</div>
 					{/if}
+
+					{#if showGenericSize}
+						<div class="xl:col-span-6">
+							<label for="size" class={fieldLabelClass}>Tamaño</label>
+							<input
+								id="size"
+								name="size"
+								bind:value={formData.size}
+								placeholder="M / L / XL"
+								class={getFieldClass(null)}
+							/>
+						</div>
+					{/if}
+
+					<div class={showGenericSize ? 'xl:col-span-6' : 'xl:col-span-12'}>
+						<label for="color" class={fieldLabelClass}>Color / tinte</label>
+						<input
+							id="color"
+							name="color"
+							bind:value={formData.color}
+							placeholder="Matte Black / G-15 Green"
+							class={getFieldClass(null)}
+						/>
+					</div>
 
 					<div class="md:col-span-2 xl:col-span-12">
 						<label for="description" class={fieldLabelClass}>Descripcion</label>
