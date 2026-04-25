@@ -241,7 +241,7 @@
 	}
 </script>
 
-<div class="w-full space-y-8">
+<div class="w-full">
 	<WizardHeader
 		title="Nuevo Presupuesto"
 		steps={STEPS}
