@@ -15,7 +15,8 @@
 		BalanceCard,
 		StatCard,
 		QuickActionCard,
-		RecentSalesTable
+		RecentSalesTable,
+		PendingFreeItemsCard
 	} from '$lib/components/dashboard';
 	import { canOperate, isAdminRole } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
@@ -23,7 +24,7 @@
 
 	let { data } = $props();
 
-	const { stats, recentSales } = $derived(data);
+	const { stats, recentSales, pendingFreeItemSales } = $derived(data);
 	const canAct = $derived(canOperate(data.user.role));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
@@ -99,6 +100,13 @@
 	{#if stats.pendingPayments.count > 0}
 		<section class="mb-4">
 			<BalanceCard amount={stats.pendingPayments.amount} count={stats.pendingPayments.count} />
+		</section>
+	{/if}
+
+	<!-- Pending Free Items Warning -->
+	{#if pendingFreeItemSales.length > 0}
+		<section class="mb-4">
+			<PendingFreeItemsCard sales={pendingFreeItemSales} />
 		</section>
 	{/if}
 

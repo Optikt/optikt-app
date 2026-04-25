@@ -2,6 +2,8 @@ import { eq, isNull, and, gte, lte, count, sum, sql, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	sales,
+	saleItems,
+	saleItemFreeDetails,
 	quotes,
 	products,
 	lensCatalogItems,
@@ -226,4 +228,53 @@ export async function getLowStockItems(limit = 10): Promise<LowStockItem[]> {
 	];
 
 	return items;
+}
+
+// ============================================================================
+// PENDING FREE ITEMS
+// ============================================================================
+
+export interface PendingFreeItemSale {
+	id: string;
+	orderNumber: number;
+	pendingCount: number;
+	customer: { firstName: string; lastName: string } | null;
+}
+
+/**
+ * Returns distinct sales that have at least one FREE_ITEM with
+ * enrichment_status = 'PENDING'. Used for the dashboard reminder widget.
+ */
+export async function getPendingFreeItemSales(limit = 20): Promise<PendingFreeItemSale[]> {
+	const rows = await db
+		.select({
+			id: sales.id,
+			orderNumber: sales.orderNumber,
+			pendingCount: count(saleItemFreeDetails.id),
+			customerFirstName: customers.firstName,
+			customerLastName: customers.lastName
+		})
+		.from(sales)
+		.innerJoin(saleItems, and(eq(saleItems.saleId, sales.id), isNull(saleItems.deletedAt)))
+		.innerJoin(
+			saleItemFreeDetails,
+			and(
+				eq(saleItemFreeDetails.saleItemId, saleItems.id),
+				eq(saleItemFreeDetails.enrichmentStatus, 'PENDING')
+			)
+		)
+		.leftJoin(customers, eq(sales.customerId, customers.id))
+		.where(and(isNull(sales.deletedAt), sql`${sales.status} != 'CANCELLED'`))
+		.groupBy(sales.id, sales.orderNumber, customers.firstName, customers.lastName)
+		.orderBy(desc(sales.createdAt))
+		.limit(limit);
+
+	return rows.map((r) => ({
+		id: r.id,
+		orderNumber: r.orderNumber,
+		pendingCount: r.pendingCount,
+		customer: r.customerFirstName
+			? { firstName: r.customerFirstName, lastName: r.customerLastName! }
+			: null
+	}));
 }
