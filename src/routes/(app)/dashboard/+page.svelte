@@ -103,13 +103,6 @@
 		</section>
 	{/if}
 
-	<!-- Pending Free Items Warning -->
-	{#if pendingFreeItemSales.length > 0}
-		<section class="mb-4">
-			<PendingFreeItemsCard sales={pendingFreeItemSales} />
-		</section>
-	{/if}
-
 	<!-- Stat Cards -->
 	<section class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 		{#each statCards as stat (stat.label)}
@@ -117,7 +110,7 @@
 		{/each}
 	</section>
 
-	<!-- Bottom Grid: Recent Sales + Quick Actions -->
+	<!-- Bottom Grid: Recent Sales + Quick Actions + Pending Free Items -->
 	<section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Ventas Recientes (2/3 width) -->
 		<div class="glass-card p-6 lg:col-span-2">
@@ -133,16 +126,26 @@
 			<RecentSalesTable sales={recentSales} />
 		</div>
 
-		<!-- Acciones Rápidas (1/3 width) - dark navy card -->
-		<div class="self-start rounded-xl bg-brand-navy p-6">
-			<h2 class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase">
-				Acciones Rápidas
-			</h2>
-			<div class="grid grid-cols-2 gap-3">
-				{#each actions as action (action.href)}
-					<QuickActionCard {...action} />
-				{/each}
+		<!-- Right column: Quick Actions + Pending Free Items -->
+		<div class="flex flex-col gap-6">
+			<!-- Acciones Rápidas - dark navy card -->
+			<div class="rounded-xl bg-brand-navy p-6">
+				<h2
+					class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase"
+				>
+					Acciones Rápidas
+				</h2>
+				<div class="grid grid-cols-2 gap-3">
+					{#each actions as action (action.href)}
+						<QuickActionCard {...action} />
+					{/each}
+				</div>
 			</div>
+
+			<!-- Pending Free Items (only shown when there are pending items) -->
+			{#if pendingFreeItemSales.length > 0}
+				<PendingFreeItemsCard sales={pendingFreeItemSales} />
+			{/if}
 		</div>
 	</section>
 </div>
