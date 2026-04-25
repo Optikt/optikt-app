@@ -29,6 +29,18 @@ export const products = pgTable(
 		gender: varchar({ length: 20 }),
 		materialId: uuid('material_id').notNull(),
 		description: varchar(),
+		// Physical attributes — Frames & Sunglasses
+		/** Lens width in mm (calibre) */
+		lensWidth: integer('lens_width'),
+		/** Bridge width in mm (puente) */
+		bridgeWidth: integer('bridge_width'),
+		/** Temple arm length in mm (varilla) */
+		templeLength: integer('temple_length'),
+		// Physical attributes — Contact Lenses
+		/** Base curve (BC) value */
+		baseCurve: doublePrecision('base_curve'),
+		/** Lens diameter in mm */
+		diameter: doublePrecision('diameter'),
 		/** Cached: purchase price from the most recent lot */
 		currentPurchasePrice: doublePrecision('current_purchase_price'),
 		/** Cached: sale price from the most recent lot */

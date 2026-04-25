@@ -192,3 +192,81 @@ describe('ListProductsSchema', () => {
 		expect(result.success).toBe(false);
 	});
 });
+
+describe('CreateProductSchema — physical attributes', () => {
+	it('accepts frame dimensions as integers', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			lensWidth: 50,
+			bridgeWidth: 22,
+			templeLength: 145
+		});
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.lensWidth).toBe(50);
+		expect(result.data.bridgeWidth).toBe(22);
+		expect(result.data.templeLength).toBe(145);
+	});
+
+	it('coerces string numbers for frame dimensions', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			lensWidth: '52',
+			bridgeWidth: '18',
+			templeLength: '140'
+		});
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.lensWidth).toBe(52);
+		expect(result.data.bridgeWidth).toBe(18);
+		expect(result.data.templeLength).toBe(140);
+	});
+
+	it('accepts contact lens attributes', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			type: ProductType.CONTACT_LENS,
+			baseCurve: 8.6,
+			diameter: 14.2
+		});
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.baseCurve).toBe(8.6);
+		expect(result.data.diameter).toBe(14.2);
+	});
+
+	it('rejects out-of-range lensWidth', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			lensWidth: 0
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects out-of-range templeLength', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			templeLength: 1000
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects out-of-range baseCurve', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			baseCurve: 4.0
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts product with no physical attributes (all optional)', () => {
+		const result = CreateProductSchema.safeParse(baseCreatePayload);
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.lensWidth).toBeUndefined();
+		expect(result.data.bridgeWidth).toBeUndefined();
+		expect(result.data.templeLength).toBeUndefined();
+		expect(result.data.baseCurve).toBeUndefined();
+		expect(result.data.diameter).toBeUndefined();
+	});
+});

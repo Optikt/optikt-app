@@ -63,7 +63,14 @@ export const CreateProductSchema = z.object({
 	isTaxable: CoercedBoolean.default(true),
 	stock: CoercedInteger.min(0).optional(),
 	minStock: CoercedInteger.min(0).optional(),
-	imageUrl: z.string().optional()
+	imageUrl: z.string().optional(),
+	// Physical attributes — Frames & Sunglasses
+	lensWidth: CoercedInteger.min(1).max(99).optional(),
+	bridgeWidth: CoercedInteger.min(1).max(99).optional(),
+	templeLength: CoercedInteger.min(1).max(999).optional(),
+	// Physical attributes — Contact Lenses
+	baseCurve: CoercedNumber.min(5).max(10).optional(),
+	diameter: CoercedNumber.min(8).max(20).optional()
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial().extend({
