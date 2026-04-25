@@ -107,7 +107,11 @@
 	}
 
 	async function saveEnrich() {
-		if (!enrichingItemId || enrichUnitCost == null || enrichUnitCost <= 0) return;
+		if (!enrichingItemId) return;
+		if (enrichUnitCost == null || enrichUnitCost <= 0) {
+			toast.error('El costo real debe ser mayor a 0');
+			return;
+		}
 		enrichSaving = true;
 		try {
 			const result = await enrichFreeItem({

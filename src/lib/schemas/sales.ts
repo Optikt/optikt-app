@@ -127,7 +127,20 @@ export const SaleItemSchema = z
 	.refine((item) => item.itemType !== SaleItemType.FREE_ITEM || item.unitPrice > 0, {
 		message: 'El precio de venta es requerido para ítems libres',
 		path: ['unitPrice']
-	});
+	})
+	.refine((item) => item.itemType !== SaleItemType.FREE_ITEM || !!item.freeItemCategory, {
+		message: 'La categoría es requerida para ítems libres',
+		path: ['freeItemCategory']
+	})
+	.refine(
+		(item) =>
+			item.itemType !== SaleItemType.FREE_ITEM ||
+			(!!item.freeItemDescription && item.freeItemDescription.length >= 3),
+		{
+			message: 'La descripción es requerida para ítems libres (mínimo 3 caracteres)',
+			path: ['freeItemDescription']
+		}
+	);
 
 // ============================================================================
 // CREATE SALE SCHEMA
