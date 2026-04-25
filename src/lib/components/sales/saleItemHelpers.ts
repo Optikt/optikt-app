@@ -6,7 +6,7 @@
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { SaleItemRow } from './newSaleTypes';
-import { LensType } from '$lib/shared/enums/lensTypes';
+import { LensType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
 import { decomposePrice, type TaxableItem } from '$lib/shared/tax';
@@ -366,11 +366,20 @@ export interface LensConfirmationItemResult {
 	rangeWarnings: string[];
 }
 
+export interface FreeItemConfirmationResult {
+	itemId: string;
+	categoryLabel: string;
+	description: string;
+	unitPrice: number;
+	hasCost: boolean;
+}
+
 export interface Step2PrescriptionConfirmation {
 	hasLensItems: boolean;
 	lensCount: number;
 	hasMultipleLenses: boolean;
 	items: LensConfirmationItemResult[];
+	freeItems: FreeItemConfirmationResult[];
 }
 
 export interface LensTypeSuggestionState {
@@ -551,11 +560,22 @@ export function buildStep2PrescriptionConfirmation(
 			};
 		});
 
+	const freeResults: FreeItemConfirmationResult[] = items
+		.filter((item) => item.kind === 'free' && item.freeItem !== null)
+		.map((item) => ({
+			itemId: item.id,
+			categoryLabel: getFreeItemCategoryLabel(item.freeItem!.category),
+			description: item.freeItem!.description,
+			unitPrice: item.unitPrice,
+			hasCost: item.freeItem!.unitCost !== null && item.freeItem!.unitCost > 0
+		}));
+
 	return {
 		hasLensItems: lensResults.length > 0,
 		lensCount: lensResults.length,
 		hasMultipleLenses: lensResults.length > 1,
-		items: lensResults
+		items: lensResults,
+		freeItems: freeResults
 	};
 }
 
