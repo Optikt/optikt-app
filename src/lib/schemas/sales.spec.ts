@@ -399,9 +399,18 @@ describe('SaleItemSchema — FREE_ITEM', () => {
 		expect(result.success).toBe(false);
 	});
 
-	it('rejects FREE_ITEM with zero unit cost (must be positive if provided)', () => {
-		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemUnitCost: 0 }));
+	it('rejects FREE_ITEM (non-SERVICE) with zero unit cost', () => {
+		const result = SaleItemSchema.safeParse(
+			makeFreeItem({ freeItemCategory: 'CONTACT_LENS_FORMULA', freeItemUnitCost: 0 })
+		);
 		expect(result.success).toBe(false);
+	});
+
+	it('accepts FREE_ITEM SERVICE with zero unit cost', () => {
+		const result = SaleItemSchema.safeParse(
+			makeFreeItem({ freeItemCategory: 'SERVICE', freeItemUnitCost: 0 })
+		);
+		expect(result.success).toBe(true);
 	});
 
 	it('accepts all valid FREE_ITEM category values', () => {
@@ -429,24 +438,37 @@ describe('EnrichFreeItemSchema', () => {
 		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
 			unitCost: 18.5
 		});
 		expect(result.success).toBe(true);
 	});
 
-	it('rejects enrichment with zero cost', async () => {
+	it('rejects enrichment with zero cost for non-SERVICE category', async () => {
 		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
 			unitCost: 0
 		});
 		expect(result.success).toBe(false);
+	});
+
+	it('accepts enrichment with zero cost for SERVICE category', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const result = EnrichFreeItemSchema.safeParse({
+			saleItemId: crypto.randomUUID(),
+			category: 'SERVICE',
+			unitCost: 0
+		});
+		expect(result.success).toBe(true);
 	});
 
 	it('rejects enrichment with negative cost', async () => {
 		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
 			unitCost: -5
 		});
 		expect(result.success).toBe(false);
@@ -456,6 +478,7 @@ describe('EnrichFreeItemSchema', () => {
 		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
 			unitCost: 20,
 			opticalNotes: 'OD -3.00 sph, color verde'
 		});

@@ -20,7 +20,7 @@ import {
 	DiscountType,
 	RefundStatus
 } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
@@ -48,18 +48,29 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 // FREE ITEM SCHEMA (standalone + embedded in SaleItemSchema)
 // ============================================================================
 
-export const FreeItemDetailsSchema = z.object({
-	/** Structured category */
-	freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
-	/** Free-text description */
-	freeItemDescription: z.string().min(3, 'Descripción mínimo 3 caracteres').max(500),
-	/** Optional cost at creation — enrichment required to set ENRICHED status */
-	freeItemUnitCost: CoercedNumber.positive().optional(),
-	/** Optional supplier ID at creation */
-	freeItemSupplierId: z.uuid().optional(),
-	/** Optional optical notes */
-	freeItemOpticalNotes: z.string().max(1000).optional()
-});
+export const FreeItemDetailsSchema = z
+	.object({
+		/** Structured category */
+		freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
+		/** Free-text description */
+		freeItemDescription: z.string().min(3, 'Descripción mínimo 3 caracteres').max(500),
+		/** Optional cost at creation — 0 allowed for SERVICE category only */
+		freeItemUnitCost: CoercedNumber.min(0).optional(),
+		/** Optional supplier ID at creation */
+		freeItemSupplierId: z.uuid().optional(),
+		/** Optional optical notes */
+		freeItemOpticalNotes: z.string().max(1000).optional()
+	})
+	.refine(
+		(data) =>
+			data.freeItemCategory === FreeItemCategory.SERVICE ||
+			data.freeItemUnitCost == null ||
+			data.freeItemUnitCost > 0,
+		{
+			message: 'El costo debe ser mayor a 0 para esta categoría',
+			path: ['freeItemUnitCost']
+		}
+	);
 
 export type FreeItemDetailsInput = z.infer<typeof FreeItemDetailsSchema>;
 
@@ -118,7 +129,7 @@ export const SaleItemSchema = z
 		// FREE_ITEM fields (only present when itemType === FREE_ITEM)
 		freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]).optional(),
 		freeItemDescription: z.string().min(3).max(500).optional(),
-		freeItemUnitCost: CoercedNumber.positive().optional(),
+		freeItemUnitCost: CoercedNumber.min(0).optional(),
 		freeItemSupplierId: z.uuid().optional(),
 		freeItemOpticalNotes: z.string().max(1000).optional(),
 
@@ -139,6 +150,17 @@ export const SaleItemSchema = z
 		{
 			message: 'La descripción es requerida para ítems libres (mínimo 3 caracteres)',
 			path: ['freeItemDescription']
+		}
+	)
+	.refine(
+		(item) =>
+			item.itemType !== SaleItemType.FREE_ITEM ||
+			item.freeItemCategory === FreeItemCategory.SERVICE ||
+			item.freeItemUnitCost == null ||
+			item.freeItemUnitCost > 0,
+		{
+			message: 'El costo debe ser mayor a 0 para esta categoría',
+			path: ['freeItemUnitCost']
 		}
 	);
 
@@ -264,19 +286,31 @@ export const UpdateSaleItemCostsSchema = z.object({
 // ENRICH FREE ITEM SCHEMA
 // ============================================================================
 
-export const EnrichFreeItemSchema = z.object({
-	saleItemId: z.uuid('ID de artículo requerido'),
-	unitCost: CoercedNumber.positive('El costo debe ser mayor a 0'),
-	supplierId: z.uuid().optional(),
-	opticalNotes: z.string().max(1000).optional()
-});
+export const EnrichFreeItemSchema = z
+	.object({
+		saleItemId: z.uuid('ID de artículo requerido'),
+		category: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
+		unitCost: CoercedNumber.min(0, 'El costo no puede ser negativo'),
+		supplierId: z.uuid().optional(),
+		opticalNotes: z.string().max(1000).optional()
+	})
+	.refine((data) => data.category === FreeItemCategory.SERVICE || data.unitCost > 0, {
+		message: 'El costo debe ser mayor a 0',
+		path: ['unitCost']
+	});
 
-export const EnrichFreeQuoteItemSchema = z.object({
-	quoteItemId: z.uuid('ID de artículo de presupuesto requerido'),
-	unitCost: CoercedNumber.positive('El costo debe ser mayor a 0'),
-	supplierId: z.uuid().optional(),
-	opticalNotes: z.string().max(1000).optional()
-});
+export const EnrichFreeQuoteItemSchema = z
+	.object({
+		quoteItemId: z.uuid('ID de artículo de presupuesto requerido'),
+		category: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
+		unitCost: CoercedNumber.min(0, 'El costo no puede ser negativo'),
+		supplierId: z.uuid().optional(),
+		opticalNotes: z.string().max(1000).optional()
+	})
+	.refine((data) => data.category === FreeItemCategory.SERVICE || data.unitCost > 0, {
+		message: 'El costo debe ser mayor a 0',
+		path: ['unitCost']
+	});
 
 // ============================================================================
 // ID SCHEMAS

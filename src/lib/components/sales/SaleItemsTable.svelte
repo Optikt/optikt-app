@@ -14,6 +14,7 @@
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import {
 		SaleItemType,
+		FreeItemCategory,
 		FreeItemEnrichmentStatus,
 		getFreeItemCategoryLabel
 	} from '$lib/shared/enums/lensTypes';
@@ -51,6 +52,7 @@
 
 	// Enrichment modal state
 	let enrichingItemId = $state<string | null>(null);
+	let enrichingCategory = $state<string | null>(null);
 	let enrichUnitCost = $state<number | null>(null);
 	let enrichOpticalNotes = $state('');
 	let enrichSaving = $state(false);
@@ -98,17 +100,20 @@
 
 	function startEnrich(item: SaleItemWithDetails) {
 		enrichingItemId = item.id;
+		enrichingCategory = item.freeDetails?.category ?? null;
 		enrichUnitCost = item.freeDetails?.unitCost ?? null;
 		enrichOpticalNotes = item.freeDetails?.opticalNotes ?? '';
 	}
 
 	function cancelEnrich() {
 		enrichingItemId = null;
+		enrichingCategory = null;
 	}
 
 	async function saveEnrich() {
-		if (!enrichingItemId) return;
-		if (enrichUnitCost == null || enrichUnitCost <= 0) {
+		if (!enrichingItemId || !enrichingCategory) return;
+		const isService = enrichingCategory === FreeItemCategory.SERVICE;
+		if (enrichUnitCost == null || (!isService && enrichUnitCost <= 0)) {
 			toast.error('El costo real debe ser mayor a 0');
 			return;
 		}
@@ -116,12 +121,14 @@
 		try {
 			const result = await enrichFreeItem({
 				saleItemId: enrichingItemId,
+				category: enrichingCategory,
 				unitCost: enrichUnitCost,
 				opticalNotes: enrichOpticalNotes || undefined
 			});
 			if (result.success) {
 				toast.success('Ítem completado correctamente');
 				enrichingItemId = null;
+				enrichingCategory = null;
 				onCostsUpdated?.();
 			} else {
 				toast.error(result.error);
