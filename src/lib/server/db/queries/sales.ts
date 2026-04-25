@@ -23,6 +23,7 @@ import {
 	sales,
 	saleItems,
 	salePayments,
+	saleItemFreeDetails,
 	customers,
 	users,
 	products,
@@ -33,7 +34,8 @@ import {
 	type SaleItem,
 	type NewSaleItem,
 	type SalePayment,
-	type NewSalePayment
+	type NewSalePayment,
+	type SaleItemFreeDetails
 } from '$lib/server/db/schema';
 
 // ============================================================================
@@ -51,6 +53,7 @@ export type SaleItemWithDetails = SaleItem & {
 	product: { id: string; name: string; sku: string } | null;
 	lensCatalogItem: { id: string; name: string; type: string } | null;
 	supplierTreatment: { id: string; name: string; category: string } | null;
+	freeDetails: SaleItemFreeDetails | null;
 };
 
 export interface SalesStats {
@@ -371,7 +374,7 @@ export async function updateSale(
 // ============================================================================
 
 /**
- * Get sale items with product AND lens catalog info
+ * Get sale items with product AND lens catalog info AND free item details
  */
 export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemWithDetails[]> {
 	const results = await db
@@ -387,19 +390,22 @@ export async function getSaleItemsWithDetails(saleId: string): Promise<SaleItemW
 				id: supplierTreatments.id,
 				name: supplierTreatments.name,
 				category: supplierTreatments.category
-			}
+			},
+			freeDetails: saleItemFreeDetails
 		})
 		.from(saleItems)
 		.leftJoin(products, eq(saleItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(saleItems.lensCatalogItemId, lensCatalogItems.id))
 		.leftJoin(supplierTreatments, eq(saleItems.supplierTreatmentId, supplierTreatments.id))
+		.leftJoin(saleItemFreeDetails, eq(saleItems.id, saleItemFreeDetails.saleItemId))
 		.where(and(eq(saleItems.saleId, saleId), isNull(saleItems.deletedAt)));
 
 	return results.map((r) => ({
 		...r.item,
 		product: r.product?.id ? r.product : null,
 		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null,
-		supplierTreatment: r.supplierTreatment?.id ? r.supplierTreatment : null
+		supplierTreatment: r.supplierTreatment?.id ? r.supplierTreatment : null,
+		freeDetails: r.freeDetails?.id ? r.freeDetails : null
 	}));
 }
 

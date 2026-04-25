@@ -6,14 +6,19 @@
 		Package,
 		Pencil,
 		ShoppingCart,
+		Sparkles,
 		Truck,
 		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
+	import {
+		SaleItemType,
+		FreeItemEnrichmentStatus,
+		getFreeItemCategoryLabel
+	} from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
-	import { updateItemCosts } from '$lib/remote/sales.remote';
+	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
 	import { buildPersistedDisplayGroups } from './saleItemHelpers';
@@ -44,6 +49,12 @@
 	let editShippingPending = $state(false);
 	let saving = $state(false);
 
+	// Enrichment modal state
+	let enrichingItemId = $state<string | null>(null);
+	let enrichUnitCost = $state<number | null>(null);
+	let enrichOpticalNotes = $state('');
+	let enrichSaving = $state(false);
+
 	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
 
 	let displayGroups: DisplayGroup[] = $derived.by(() =>
@@ -57,6 +68,9 @@
 	);
 
 	function itemLabel(group: DisplayGroup): string {
+		if (group.item.itemType === SaleItemType.FREE_ITEM) {
+			return group.item.freeDetails?.description ?? 'Ítem libre';
+		}
 		return (
 			group.item.snapshotName ??
 			group.item.product?.name ??
@@ -67,6 +81,7 @@
 
 	function itemTypeLabel(item: SaleItemWithDetails): string {
 		if (item.itemType === SaleItemType.LENS_PAIR) return 'Cristal';
+		if (item.itemType === SaleItemType.FREE_ITEM) return 'Ítem Libre';
 		return 'Producto';
 	}
 
@@ -74,8 +89,45 @@
 		if (item.itemType === SaleItemType.LENS_PAIR) {
 			return 'bg-info-container text-on-info-container';
 		}
+		if (item.itemType === SaleItemType.FREE_ITEM) {
+			return 'bg-amber-100 text-amber-700';
+		}
 
 		return 'bg-surface-container-high text-on-surface-variant';
+	}
+
+	function startEnrich(item: SaleItemWithDetails) {
+		enrichingItemId = item.id;
+		enrichUnitCost = item.freeDetails?.unitCost ?? null;
+		enrichOpticalNotes = item.freeDetails?.opticalNotes ?? '';
+	}
+
+	function cancelEnrich() {
+		enrichingItemId = null;
+	}
+
+	async function saveEnrich() {
+		if (!enrichingItemId || enrichUnitCost == null || enrichUnitCost <= 0) return;
+		enrichSaving = true;
+		try {
+			const result = await enrichFreeItem({
+				saleItemId: enrichingItemId,
+				unitCost: enrichUnitCost,
+				opticalNotes: enrichOpticalNotes || undefined
+			});
+			if (result.success) {
+				toast.success('Ítem completado correctamente');
+				enrichingItemId = null;
+				onCostsUpdated?.();
+			} else {
+				toast.error(result.error);
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error('Error al completar el ítem');
+		} finally {
+			enrichSaving = false;
+		}
 	}
 
 	// ── Total internal cost ──────────────────────────────────────────────
@@ -85,7 +137,12 @@
 	let totalInternalCost = $derived.by(() => {
 		let total = 0;
 		for (const group of displayGroups) {
-			if (group.item.snapshotCostTotal != null) {
+			if (group.item.itemType === SaleItemType.FREE_ITEM) {
+				// Only count enriched free items with known costs
+				if (group.item.freeDetails?.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED) {
+					total += (group.item.freeDetails.unitCost ?? 0) * group.quantity;
+				}
+			} else if (group.item.snapshotCostTotal != null) {
 				total += group.item.snapshotCostTotal;
 			} else if (group.item.itemType === SaleItemType.LENS_PAIR) {
 				const base = group.item.snapshotBaseCost ?? 0;
@@ -108,7 +165,9 @@
 				g.item.snapshotBaseCost != null ||
 				g.item.snapshotMountingPrice != null ||
 				g.item.snapshotShippingPrice != null ||
-				g.item.snapshotCostUnit != null
+				g.item.snapshotCostUnit != null ||
+				(g.item.itemType === SaleItemType.FREE_ITEM &&
+					g.item.freeDetails?.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED)
 		)
 	);
 
@@ -217,10 +276,14 @@
 									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {group.item
 										.itemType === SaleItemType.LENS_PAIR
 										? 'bg-info-container text-on-info-container'
-										: 'bg-surface-container-low text-on-surface-variant'}"
+										: group.item.itemType === SaleItemType.FREE_ITEM
+											? 'bg-amber-100 text-amber-600'
+											: 'bg-surface-container-low text-on-surface-variant'}"
 								>
 									{#if group.item.itemType === SaleItemType.LENS_PAIR}
 										<Eye class="h-5 w-5" />
+									{:else if group.item.itemType === SaleItemType.FREE_ITEM}
+										<Sparkles class="h-5 w-5" />
 									{:else}
 										<Package class="h-5 w-5" />
 									{/if}
@@ -230,20 +293,71 @@
 										{itemLabel(group)}
 									</p>
 									<div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-outline">
-										{#if group.item.snapshotSku ?? group.item.product?.sku}
-											<span class="font-mono"
-												>{group.item.snapshotSku ?? group.item.product?.sku}</span
+										{#if group.item.itemType === SaleItemType.FREE_ITEM && group.item.freeDetails}
+											<span
+												class="rounded-full bg-surface-container-high px-2 py-0.5 font-semibold text-on-surface-variant"
 											>
-										{/if}
-										{#if group.item.snapshotCostUnit != null}
-											<span class="font-mono">
-												Costo {formatPrice(group.item.snapshotCostUnit)}
-												{#if group.item.snapshotLotsCount != null && group.item.snapshotLotsCount > 1}
-													· {group.item.snapshotLotsCount} lotes
-												{/if}
+												{getFreeItemCategoryLabel(group.item.freeDetails.category)}
 											</span>
+										{:else}
+											{#if group.item.snapshotSku ?? group.item.product?.sku}
+												<span class="font-mono"
+													>{group.item.snapshotSku ?? group.item.product?.sku}</span
+												>
+											{/if}
+											{#if group.item.snapshotCostUnit != null}
+												<span class="font-mono">
+													Costo {formatPrice(group.item.snapshotCostUnit)}
+													{#if group.item.snapshotLotsCount != null && group.item.snapshotLotsCount > 1}
+														· {group.item.snapshotLotsCount} lotes
+													{/if}
+												</span>
+											{/if}
 										{/if}
 									</div>
+									{#if group.item.itemType === SaleItemType.FREE_ITEM && group.item.freeDetails}
+										{@const fd = group.item.freeDetails}
+										{#if fd.enrichmentStatus === FreeItemEnrichmentStatus.PENDING}
+											<div
+												class="mt-2 rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
+											>
+												<p class="font-semibold">⚠ Pendiente de completar</p>
+												<p class="mt-0.5 text-on-surface-variant">
+													Costo y proveedor no registrados aún
+												</p>
+												{#if allowCostEdit}
+													<button
+														type="button"
+														onclick={() => startEnrich(group.item)}
+														class="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
+													>
+														Completar ítem →
+													</button>
+												{/if}
+											</div>
+										{:else if fd.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED}
+											<div class="mt-2 space-y-0.5 text-xs text-on-surface-variant">
+												<p class="font-semibold text-green-700">✓ Completado</p>
+												{#if fd.unitCost != null}
+													<p>
+														Costo: <span class="font-mono font-semibold"
+															>{formatPrice(fd.unitCost)}</span
+														>
+														{#if fd.unitCost > 0}
+															· Margen: <span class="font-semibold"
+																>{Math.round(
+																	((group.item.unitPrice - fd.unitCost) / fd.unitCost) * 100
+																)}%</span
+															>
+														{/if}
+													</p>
+												{/if}
+												{#if fd.opticalNotes}
+													<p class="italic">{fd.opticalNotes}</p>
+												{/if}
+											</div>
+										{/if}
+									{/if}
 									{#if group.item.itemType === SaleItemType.LENS_PAIR && hasPrescriptionSnapshot(group.item) && (odSummary || osSummary)}
 										<div class="mt-2 space-y-1 text-xs text-on-surface-variant">
 											{#if odSummary}
@@ -505,3 +619,67 @@
 		</table>
 	</div>
 </section>
+
+{#if enrichingItemId}
+	<!-- Enrich Free Item modal -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+		role="dialog"
+		aria-modal="true"
+	>
+		<div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+			<h3 class="mb-4 text-lg font-semibold text-brand-navy">Completar ítem libre</h3>
+
+			<div class="space-y-4">
+				<div>
+					<label
+						class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>
+						Costo real (USD) *
+					</label>
+					<input
+						type="number"
+						bind:value={enrichUnitCost}
+						step="0.01"
+						min="0.01"
+						class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+						placeholder="0.00"
+					/>
+				</div>
+
+				<div>
+					<label
+						class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>
+						Notas ópticas
+					</label>
+					<input
+						type="text"
+						bind:value={enrichOpticalNotes}
+						maxlength={1000}
+						class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+						placeholder="OD -2.50 sph, color miel..."
+					/>
+				</div>
+			</div>
+
+			<div class="mt-6 flex justify-end gap-3">
+				<button
+					type="button"
+					onclick={cancelEnrich}
+					class="rounded-xl px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					onclick={saveEnrich}
+					disabled={enrichSaving || !enrichUnitCost || enrichUnitCost <= 0}
+					class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+				>
+					{enrichSaving ? 'Guardando...' : 'Guardar'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

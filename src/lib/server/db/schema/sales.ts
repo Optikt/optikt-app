@@ -16,16 +16,25 @@ import { customers } from './customers';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
 import { prescriptions } from './prescriptions';
-import { supplierTreatments } from './suppliers';
+import { supplierTreatments, suppliers } from './suppliers';
 import { inventoryLots } from './inventoryLots';
 import { enumValues } from './utils';
-import { SaleItemType } from '../../../shared/enums/lensTypes';
+import {
+	SaleItemType,
+	FreeItemCategory,
+	FreeItemEnrichmentStatus
+} from '../../../shared/enums/lensTypes';
 
 // ============================================================================
 // SALE ITEM TYPE ENUM
 // ============================================================================
 
 export const saleItemTypeEnum = pgEnum('sale_item_type', enumValues(SaleItemType));
+export const freeItemCategoryEnum = pgEnum('free_item_category', enumValues(FreeItemCategory));
+export const freeItemEnrichmentStatusEnum = pgEnum(
+	'free_item_enrichment_status',
+	enumValues(FreeItemEnrichmentStatus)
+);
 
 // ============================================================================
 // SALES (ORDERS)
@@ -306,3 +315,64 @@ export type SaleItem = typeof saleItems.$inferSelect;
 export type NewSaleItem = typeof saleItems.$inferInsert;
 export type SalePayment = typeof salePayments.$inferSelect;
 export type NewSalePayment = typeof salePayments.$inferInsert;
+
+// ============================================================================
+// SALE ITEM FREE DETAILS (1:1 extension for FREE_ITEM sale items)
+// ============================================================================
+
+export const saleItemFreeDetails = pgTable(
+	'sale_item_free_details',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		/** 1:1 FK → sale_items(id) — only exists for FREE_ITEM rows */
+		saleItemId: uuid('sale_item_id').notNull().unique(),
+		/** Structured category for the free item */
+		category: freeItemCategoryEnum().notNull(),
+		/** Free-text description (required) */
+		description: varchar({ length: 500 }).notNull(),
+		/** PENDING until enriched via enrichFreeItem */
+		enrichmentStatus: freeItemEnrichmentStatusEnum('enrichment_status')
+			.notNull()
+			.default('PENDING'),
+		/** Cost per unit in USD — NULL when not yet known */
+		unitCost: doublePrecision('unit_cost'),
+		/** FK: supplier used for this specific order — NULL when not yet known */
+		supplierId: uuid('supplier_id'),
+		/** Free text for prescription / optical specs */
+		opticalNotes: varchar('optical_notes', { length: 1000 }),
+		/** When enrichment was completed */
+		enrichedAt: timestamp('enriched_at', { withTimezone: true, mode: 'string' }),
+		/** Who enriched the item */
+		enrichedById: uuid('enriched_by_id'),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_sale_item_free_details_sale_item_id').using(
+			'btree',
+			table.saleItemId.asc().nullsLast().op('uuid_ops')
+		),
+		foreignKey({
+			columns: [table.saleItemId],
+			foreignColumns: [saleItems.id],
+			name: 'sale_item_free_details_sale_item_id_fkey'
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.supplierId],
+			foreignColumns: [suppliers.id],
+			name: 'sale_item_free_details_supplier_id_fkey'
+		}).onDelete('set null'),
+		foreignKey({
+			columns: [table.enrichedById],
+			foreignColumns: [users.id],
+			name: 'sale_item_free_details_enriched_by_id_fkey'
+		}).onDelete('set null')
+	]
+);
+
+export type SaleItemFreeDetails = typeof saleItemFreeDetails.$inferSelect;
+export type NewSaleItemFreeDetails = typeof saleItemFreeDetails.$inferInsert;

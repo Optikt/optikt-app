@@ -14,7 +14,7 @@ import {
 } from './common';
 import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
 import { ALL_QUOTE_STATUSES } from '$lib/shared/contracts/quotes';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 import { InlineCustomerSchema } from '$lib/schemas/sales';
 
@@ -75,6 +75,13 @@ export const QuoteItemSchema = z.object({
 	// Tax snapshot
 	snapshotIsTaxable: z.boolean().optional(),
 	snapshotTaxRate: CoercedNumber.optional(),
+
+	// FREE_ITEM fields (only present when itemType === FREE_ITEM)
+	freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]).optional(),
+	freeItemDescription: z.string().min(3).max(500).optional(),
+	freeItemUnitCost: CoercedNumber.positive().optional(),
+	freeItemSupplierId: z.uuid().optional(),
+	freeItemOpticalNotes: z.string().max(1000).optional(),
 
 	notes: z.string().optional()
 });

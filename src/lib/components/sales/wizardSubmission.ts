@@ -76,6 +76,24 @@ export function buildSaleItemsFromWizard(
 	const saleItems: SaleItemInput[] = [];
 
 	for (const item of items) {
+		if (item.kind === 'free') {
+			if (!item.freeItem) continue;
+			saleItems.push({
+				itemType: SaleItemType.FREE_ITEM,
+				quantity: item.quantity,
+				unitPrice: item.unitPrice,
+				discount: item.discount,
+				discountType: item.discountType,
+				freeItemCategory: item.freeItem.category,
+				freeItemDescription: item.freeItem.description,
+				freeItemUnitCost: item.freeItem.unitCost ?? undefined,
+				freeItemSupplierId: item.freeItem.supplierId ?? undefined,
+				freeItemOpticalNotes: item.freeItem.opticalNotes || undefined,
+				notes: item.notes || undefined
+			});
+			continue;
+		}
+
 		if (item.kind === 'product') {
 			const product = products.find((candidate) => candidate.id === item.productId);
 			saleItems.push({
@@ -176,6 +194,24 @@ export function buildQuoteItemsFromWizard(
 	const quoteItems: QuoteItemInput[] = [];
 
 	for (const item of items) {
+		if (item.kind === 'free') {
+			if (!item.freeItem) continue;
+			quoteItems.push({
+				itemType: SaleItemType.FREE_ITEM,
+				quantity: item.quantity,
+				unitPrice: item.unitPrice,
+				discount: item.discount,
+				discountType: item.discountType,
+				freeItemCategory: item.freeItem.category,
+				freeItemDescription: item.freeItem.description,
+				freeItemUnitCost: item.freeItem.unitCost ?? undefined,
+				freeItemSupplierId: item.freeItem.supplierId ?? undefined,
+				freeItemOpticalNotes: item.freeItem.opticalNotes || undefined,
+				notes: item.notes || undefined
+			});
+			continue;
+		}
+
 		if (item.kind === 'product') {
 			const product = products.find((candidate) => candidate.id === item.productId);
 			quoteItems.push({

@@ -21,6 +21,7 @@ import {
 	RefundStatus
 } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 
@@ -44,58 +45,89 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 // ============================================================================
 
 // ============================================================================
-// SALE ITEM SCHEMA (redesigned - PRODUCT | LENS_PAIR | TREATMENT)
+// FREE ITEM SCHEMA (standalone + embedded in SaleItemSchema)
 // ============================================================================
 
-export const SaleItemSchema = z.object({
-	/** Optional client-generated UUID - used to link treatment items to their parent lens item */
-	id: z.uuid().optional(),
-	itemType: z.enum(ALL_SALE_ITEM_TYPES),
-	/** FK: only for PRODUCT items */
-	productId: z.uuid().optional(),
-	/** FK: only for LENS_PAIR items */
-	lensCatalogItemId: z.uuid().optional(),
-	/** FK self-ref: only for TREATMENT items → parent LENS_PAIR */
-	parentSaleItemId: z.uuid().optional(),
-	/** FK: only for TREATMENT items → which lab treatment */
-	supplierTreatmentId: z.uuid().optional(),
-	/** Link to existing prescription (optional, used for LENS_PAIR items) */
-	prescriptionId: z.uuid().optional(),
-	/** Prescription snapshot: right eye */
-	odSphere: OptionalSphereSchema.optional(),
-	odCylinder: OptionalCylinderSchema.optional(),
-	odAxis: AxisSchema.optional(),
-	odAddition: OptionalAdditionSchema.optional(),
-	/** Prescription snapshot: left eye */
-	osSphere: OptionalSphereSchema.optional(),
-	osCylinder: OptionalCylinderSchema.optional(),
-	osAxis: AxisSchema.optional(),
-	osAddition: OptionalAdditionSchema.optional(),
-	quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
-	unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
-	discount: CoercedNumber.min(0).default(0),
-	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
-
-	// Snapshot fields (immutable at time of sale)
-	snapshotName: z.string().optional(),
-	snapshotSku: z.string().optional(),
-	snapshotBrand: z.string().optional(),
-	snapshotBaseCost: CoercedNumber.optional(),
-	snapshotMountingPrice: CoercedNumber.optional(),
-	snapshotShippingPrice: CoercedNumber.optional(),
-	snapshotSalePrice: CoercedNumber.optional(),
-	snapshotPriceType: z.string().optional(),
-	snapshotTreatmentCategory: z.string().optional(),
-
-	// Tax snapshot
-	snapshotIsTaxable: z.boolean().optional(),
-	snapshotTaxRate: CoercedNumber.optional(),
-
-	// Shipping cost pending flag
-	shippingCostPending: z.boolean().optional(),
-
-	notes: z.string().optional()
+export const FreeItemDetailsSchema = z.object({
+	/** Structured category */
+	freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
+	/** Free-text description */
+	freeItemDescription: z.string().min(3, 'Descripción mínimo 3 caracteres').max(500),
+	/** Optional cost at creation — enrichment required to set ENRICHED status */
+	freeItemUnitCost: CoercedNumber.positive().optional(),
+	/** Optional supplier ID at creation */
+	freeItemSupplierId: z.uuid().optional(),
+	/** Optional optical notes */
+	freeItemOpticalNotes: z.string().max(1000).optional()
 });
+
+export type FreeItemDetailsInput = z.infer<typeof FreeItemDetailsSchema>;
+
+// ============================================================================
+// SALE ITEM SCHEMA (redesigned - PRODUCT | LENS_PAIR | TREATMENT | FREE_ITEM)
+// ============================================================================
+
+export const SaleItemSchema = z
+	.object({
+		/** Optional client-generated UUID - used to link treatment items to their parent lens item */
+		id: z.uuid().optional(),
+		itemType: z.enum(ALL_SALE_ITEM_TYPES),
+		/** FK: only for PRODUCT items */
+		productId: z.uuid().optional(),
+		/** FK: only for LENS_PAIR items */
+		lensCatalogItemId: z.uuid().optional(),
+		/** FK self-ref: only for TREATMENT items → parent LENS_PAIR */
+		parentSaleItemId: z.uuid().optional(),
+		/** FK: only for TREATMENT items → which lab treatment */
+		supplierTreatmentId: z.uuid().optional(),
+		/** Link to existing prescription (optional, used for LENS_PAIR items) */
+		prescriptionId: z.uuid().optional(),
+		/** Prescription snapshot: right eye */
+		odSphere: OptionalSphereSchema.optional(),
+		odCylinder: OptionalCylinderSchema.optional(),
+		odAxis: AxisSchema.optional(),
+		odAddition: OptionalAdditionSchema.optional(),
+		/** Prescription snapshot: left eye */
+		osSphere: OptionalSphereSchema.optional(),
+		osCylinder: OptionalCylinderSchema.optional(),
+		osAxis: AxisSchema.optional(),
+		osAddition: OptionalAdditionSchema.optional(),
+		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
+		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
+		discount: CoercedNumber.min(0).default(0),
+		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
+
+		// Snapshot fields (immutable at time of sale)
+		snapshotName: z.string().optional(),
+		snapshotSku: z.string().optional(),
+		snapshotBrand: z.string().optional(),
+		snapshotBaseCost: CoercedNumber.optional(),
+		snapshotMountingPrice: CoercedNumber.optional(),
+		snapshotShippingPrice: CoercedNumber.optional(),
+		snapshotSalePrice: CoercedNumber.optional(),
+		snapshotPriceType: z.string().optional(),
+		snapshotTreatmentCategory: z.string().optional(),
+
+		// Tax snapshot
+		snapshotIsTaxable: z.boolean().optional(),
+		snapshotTaxRate: CoercedNumber.optional(),
+
+		// Shipping cost pending flag
+		shippingCostPending: z.boolean().optional(),
+
+		// FREE_ITEM fields (only present when itemType === FREE_ITEM)
+		freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]).optional(),
+		freeItemDescription: z.string().min(3).max(500).optional(),
+		freeItemUnitCost: CoercedNumber.positive().optional(),
+		freeItemSupplierId: z.uuid().optional(),
+		freeItemOpticalNotes: z.string().max(1000).optional(),
+
+		notes: z.string().optional()
+	})
+	.refine((item) => item.itemType !== SaleItemType.FREE_ITEM || item.unitPrice > 0, {
+		message: 'El precio de venta es requerido para ítems libres',
+		path: ['unitPrice']
+	});
 
 // ============================================================================
 // CREATE SALE SCHEMA
@@ -216,6 +248,24 @@ export const UpdateSaleItemCostsSchema = z.object({
 });
 
 // ============================================================================
+// ENRICH FREE ITEM SCHEMA
+// ============================================================================
+
+export const EnrichFreeItemSchema = z.object({
+	saleItemId: z.uuid('ID de artículo requerido'),
+	unitCost: CoercedNumber.positive('El costo debe ser mayor a 0'),
+	supplierId: z.uuid().optional(),
+	opticalNotes: z.string().max(1000).optional()
+});
+
+export const EnrichFreeQuoteItemSchema = z.object({
+	quoteItemId: z.uuid('ID de artículo de presupuesto requerido'),
+	unitCost: CoercedNumber.positive('El costo debe ser mayor a 0'),
+	supplierId: z.uuid().optional(),
+	opticalNotes: z.string().max(1000).optional()
+});
+
+// ============================================================================
 // ID SCHEMAS
 // ============================================================================
 
@@ -238,3 +288,5 @@ export type AddPaymentInput = z.infer<typeof AddPaymentSchema>;
 export type VoidPaymentInput = z.infer<typeof VoidPaymentSchema>;
 export type CancelSaleInput = z.infer<typeof CancelSaleSchema>;
 export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;
+export type EnrichFreeItemInput = z.infer<typeof EnrichFreeItemSchema>;
+export type EnrichFreeQuoteItemInput = z.infer<typeof EnrichFreeQuoteItemSchema>;

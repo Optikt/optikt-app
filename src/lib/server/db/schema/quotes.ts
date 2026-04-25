@@ -15,10 +15,11 @@ import { users } from './users';
 import { customers } from './customers';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
-import { supplierTreatments } from './suppliers';
+import { supplierTreatments, suppliers } from './suppliers';
 import { sales } from './sales';
 import { enumValues } from './utils';
 import { QuoteStatus } from '../../../shared/contracts/quotes';
+import { freeItemCategoryEnum, freeItemEnrichmentStatusEnum } from './sales';
 
 // ============================================================================
 // QUOTE STATUS ENUM
@@ -202,3 +203,64 @@ export type Quote = typeof quotes.$inferSelect;
 export type NewQuote = typeof quotes.$inferInsert;
 export type QuoteItem = typeof quoteItems.$inferSelect;
 export type NewQuoteItem = typeof quoteItems.$inferInsert;
+
+// ============================================================================
+// QUOTE ITEM FREE DETAILS (1:1 extension for FREE_ITEM quote items)
+// ============================================================================
+
+export const quoteItemFreeDetails = pgTable(
+	'quote_item_free_details',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		/** 1:1 FK → quote_items(id) — only exists for FREE_ITEM rows */
+		quoteItemId: uuid('quote_item_id').notNull().unique(),
+		/** Structured category for the free item */
+		category: freeItemCategoryEnum().notNull(),
+		/** Free-text description (required) */
+		description: varchar({ length: 500 }).notNull(),
+		/** PENDING until enriched */
+		enrichmentStatus: freeItemEnrichmentStatusEnum('enrichment_status')
+			.notNull()
+			.default('PENDING'),
+		/** Cost per unit in USD — NULL when not yet known */
+		unitCost: doublePrecision('unit_cost'),
+		/** FK: supplier used for this specific order — NULL when not yet known */
+		supplierId: uuid('supplier_id'),
+		/** Free text for prescription / optical specs */
+		opticalNotes: varchar('optical_notes', { length: 1000 }),
+		/** When enrichment was completed */
+		enrichedAt: timestamp('enriched_at', { withTimezone: true, mode: 'string' }),
+		/** Who enriched the item */
+		enrichedById: uuid('enriched_by_id'),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_quote_item_free_details_quote_item_id').using(
+			'btree',
+			table.quoteItemId.asc().nullsLast().op('uuid_ops')
+		),
+		foreignKey({
+			columns: [table.quoteItemId],
+			foreignColumns: [quoteItems.id],
+			name: 'quote_item_free_details_quote_item_id_fkey'
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.supplierId],
+			foreignColumns: [suppliers.id],
+			name: 'quote_item_free_details_supplier_id_fkey'
+		}).onDelete('set null'),
+		foreignKey({
+			columns: [table.enrichedById],
+			foreignColumns: [users.id],
+			name: 'quote_item_free_details_enriched_by_id_fkey'
+		}).onDelete('set null')
+	]
+);
+
+export type QuoteItemFreeDetails = typeof quoteItemFreeDetails.$inferSelect;
+export type NewQuoteItemFreeDetails = typeof quoteItemFreeDetails.$inferInsert;

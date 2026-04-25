@@ -39,10 +39,23 @@ import {
 } from '$lib/server/db/queries/customers';
 import { getNextOrderNumber } from '$lib/server/db/queries/sales';
 import { db } from '$lib/server/db';
-import { quotes, quoteItems, sales, saleItems, type Prescription } from '$lib/server/db/schema';
+import {
+	quotes,
+	quoteItems,
+	quoteItemFreeDetails,
+	saleItemFreeDetails,
+	sales,
+	saleItems,
+	type Prescription
+} from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { SaleStatus, UserRole } from '$lib/shared/enums';
-import { ALL_LENS_TYPES, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import {
+	ALL_LENS_TYPES,
+	LensType,
+	SaleItemType,
+	FreeItemEnrichmentStatus
+} from '$lib/shared/enums/lensTypes';
 import { computeDiscount, normalizeIdNumber } from '$lib/utils';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
@@ -392,7 +405,26 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 
 		// Create quote items (no stock changes!)
 		for (const item of data.items) {
-			await tx.insert(quoteItems).values(buildQuoteItemValues(item, newQuote.id, now));
+			const quoteItemId = item.id ?? crypto.randomUUID();
+			await tx
+				.insert(quoteItems)
+				.values(buildQuoteItemValues({ ...item, id: quoteItemId }, newQuote.id, now));
+
+			// For FREE_ITEM: insert the free details row
+			if (item.itemType === SaleItemType.FREE_ITEM) {
+				await tx.insert(quoteItemFreeDetails).values({
+					id: crypto.randomUUID(),
+					quoteItemId,
+					category: item.freeItemCategory!,
+					description: item.freeItemDescription!,
+					enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
+					unitCost: item.freeItemUnitCost ?? null,
+					supplierId: item.freeItemSupplierId ?? null,
+					opticalNotes: item.freeItemOpticalNotes ?? null,
+					createdAt: now,
+					updatedAt: now
+				});
+			}
 		}
 
 		return newQuote;
@@ -460,10 +492,29 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 			.where(eq(quotes.id, data.id))
 			.returning();
 
-		// Delete existing items and recreate
+		// Delete existing items and recreate (cascade deletes quoteItemFreeDetails)
 		await deleteQuoteItems(data.id, tx);
 		for (const item of data.items) {
-			await tx.insert(quoteItems).values(buildQuoteItemValues(item, data.id, now));
+			const quoteItemId = item.id ?? crypto.randomUUID();
+			await tx
+				.insert(quoteItems)
+				.values(buildQuoteItemValues({ ...item, id: quoteItemId }, data.id, now));
+
+			// For FREE_ITEM: insert the free details row
+			if (item.itemType === SaleItemType.FREE_ITEM) {
+				await tx.insert(quoteItemFreeDetails).values({
+					id: crypto.randomUUID(),
+					quoteItemId,
+					category: item.freeItemCategory!,
+					description: item.freeItemDescription!,
+					enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
+					unitCost: item.freeItemUnitCost ?? null,
+					supplierId: item.freeItemSupplierId ?? null,
+					opticalNotes: item.freeItemOpticalNotes ?? null,
+					createdAt: now,
+					updatedAt: now
+				});
+			}
 		}
 
 		return updated;
@@ -641,9 +692,13 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 			let snapshotCostUnit: number | null = null;
 			let snapshotLotsCount: number | null = null;
 
-			// FIFO lot consumption + stock decrement (shared logic)
-			({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
-				await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!));
+			// FREE_ITEM: no inventory impact — skip FIFO entirely
+			if (item.itemType !== SaleItemType.FREE_ITEM) {
+				// FIFO lot consumption + stock decrement (shared logic)
+				({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
+					await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!));
+			}
+
 			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
 			await tx.insert(saleItems).values({
@@ -687,6 +742,25 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				createdAt: now,
 				updatedAt: now
 			});
+
+			// FREE_ITEM: copy free details from quote to sale
+			if (item.itemType === SaleItemType.FREE_ITEM && item.freeDetails) {
+				await tx.insert(saleItemFreeDetails).values({
+					id: crypto.randomUUID(),
+					saleItemId: newId,
+					category: item.freeDetails.category,
+					description: item.freeDetails.description,
+					enrichmentStatus: item.freeDetails.enrichmentStatus,
+					unitCost: item.freeDetails.unitCost,
+					supplierId: item.freeDetails.supplierId,
+					opticalNotes: item.freeDetails.opticalNotes,
+					// Preserve enrichment metadata if already enriched
+					enrichedAt: item.freeDetails.enrichedAt,
+					enrichedById: item.freeDetails.enrichedById,
+					createdAt: now,
+					updatedAt: now
+				});
+			}
 		}
 
 		// Mark quote as converted

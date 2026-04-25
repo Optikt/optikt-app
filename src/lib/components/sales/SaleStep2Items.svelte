@@ -10,6 +10,7 @@
 		FlaskConical,
 		Search,
 		Package,
+		Sparkles,
 		X
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
@@ -18,7 +19,9 @@
 	import {
 		getLensTypeLabel,
 		getLensSourceLabel,
-		getTreatmentCategoryLabel
+		getTreatmentCategoryLabel,
+		getFreeItemCategoryLabel,
+		ALL_FREE_ITEM_CATEGORIES
 	} from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -41,7 +44,7 @@
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
-	import { createEmptyLensPair } from './newSaleTypes';
+	import { createEmptyLensPair, createEmptyFreeItemData } from './newSaleTypes';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
 
 	interface Props {
@@ -213,6 +216,7 @@
 			quantity: 1,
 			lensPair: null,
 			treatments: [],
+			freeItem: null,
 			unitPrice: 0,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -307,6 +311,25 @@
 
 	function removeItem(id: string) {
 		items = items.filter((i) => i.id !== id);
+	}
+
+	function addFreeItem() {
+		const item: SaleItemRow = {
+			id: crypto.randomUUID(),
+			kind: 'free',
+			productId: '',
+			quantity: 1,
+			lensPair: null,
+			treatments: [],
+			freeItem: createEmptyFreeItemData(),
+			unitPrice: 0,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: '',
+			costOverrides: null,
+			shippingCostPending: false
+		};
+		items = [...items, item];
 	}
 
 	// ============================================================================
@@ -568,6 +591,17 @@
 				const availableStock = getAvailableStockForProduct(item.productId, item.id);
 				if (availableStock !== null && (availableStock <= 0 || item.quantity > availableStock)) {
 					reasons.push(`Ítem #${num}: stock insuficiente (disponible: ${availableStock})`);
+				}
+			}
+			if (item.kind === 'free') {
+				if (!item.freeItem?.category) {
+					reasons.push(`Ítem #${num}: seleccione una categoría para el ítem libre`);
+				}
+				if (!item.freeItem?.description || item.freeItem.description.trim().length < 3) {
+					reasons.push(`Ítem #${num}: ingrese una descripción (mínimo 3 caracteres)`);
+				}
+				if (item.unitPrice <= 0) {
+					reasons.push(`Ítem #${num}: el precio de venta debe ser mayor a 0`);
 				}
 			}
 		}
@@ -860,19 +894,30 @@
 					{/if}
 				</div>
 
-				<div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-					{#each quickAddFilterOptions as option (option.value)}
-						<button
-							type="button"
-							onclick={() => setQuickAddFilter(option.value)}
-							class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
-							option.value
-								? 'bg-brand-navy text-white'
-								: 'text-slate-600 hover:bg-slate-50'}"
-						>
-							{option.label}
-						</button>
-					{/each}
+				<div class="inline-flex items-center gap-2">
+					<div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+						{#each quickAddFilterOptions as option (option.value)}
+							<button
+								type="button"
+								onclick={() => setQuickAddFilter(option.value)}
+								class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
+								option.value
+									? 'bg-brand-navy text-white'
+									: 'text-slate-600 hover:bg-slate-50'}"
+							>
+								{option.label}
+							</button>
+						{/each}
+					</div>
+
+					<button
+						type="button"
+						onclick={addFreeItem}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+					>
+						<Sparkles class="h-3.5 w-3.5" />
+						Ítem Libre
+					</button>
 				</div>
 			</div>
 		</div>
@@ -1028,6 +1073,14 @@
 															: undefined}
 														class="font-mono"
 													/>
+												{:else if item.kind === 'free'}
+													<Input
+														id="qty-{item.id}"
+														type="number"
+														bind:value={item.quantity}
+														min="1"
+														class="font-mono"
+													/>
 												{:else}
 													<Input
 														id="qty-{item.id}"
@@ -1080,6 +1133,68 @@
 											</div>
 										</div>
 									</div>
+
+									{#if item.kind === 'free' && item.freeItem}
+										<div class="space-y-4 rounded-[1rem] bg-amber-50/60 p-4">
+											<div class="grid gap-4 sm:grid-cols-2">
+												<div>
+													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
+														Categoría *
+													</Label>
+													<select
+														bind:value={item.freeItem.category}
+														class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+													>
+														{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
+															<option value={cat}>{getFreeItemCategoryLabel(cat)}</option>
+														{/each}
+													</select>
+												</div>
+
+												<div>
+													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
+														Descripción *
+													</Label>
+													<Input
+														bind:value={item.freeItem.description}
+														placeholder="LC Novak -2.50 miel, hidrogel..."
+														maxlength={500}
+													/>
+												</div>
+											</div>
+
+											<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
+												Opcional — completar después si no está disponible
+											</p>
+
+											<div class="grid gap-4 sm:grid-cols-2">
+												<div>
+													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
+														Costo estimado (USD)
+													</Label>
+													<Input
+														type="number"
+														bind:value={item.freeItem.unitCost}
+														placeholder="0.00"
+														step="0.01"
+														min="0"
+														class="font-mono"
+													/>
+												</div>
+
+												<div>
+													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
+														Notas ópticas
+													</Label>
+													<Input
+														bind:value={item.freeItem.opticalNotes}
+														placeholder="OD -2.50 sph, color miel..."
+														maxlength={1000}
+													/>
+												</div>
+											</div>
+										</div>
+									{/if}
 
 									{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 										<div class="space-y-3 rounded-[1rem] bg-surface-container-low p-4">

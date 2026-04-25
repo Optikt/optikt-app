@@ -88,12 +88,12 @@ export function itemLineTotal(item: SaleItemRow): number {
 }
 
 export function step2ItemLineTotal(item: SaleItemRow): number {
-	const qty = item.kind === 'product' ? item.quantity : 1;
+	const qty = item.kind === 'product' || item.kind === 'free' ? item.quantity : 1;
 	return item.unitPrice * qty;
 }
 
 export function getItemDiscountBase(item: SaleItemRow): number {
-	const qty = item.kind === 'product' ? item.quantity : 1;
+	const qty = item.kind === 'product' || item.kind === 'free' ? item.quantity : 1;
 	return item.unitPrice * qty;
 }
 

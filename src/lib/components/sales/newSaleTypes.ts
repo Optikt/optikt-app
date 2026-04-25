@@ -1,7 +1,7 @@
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
-export type ItemKind = 'product' | 'lens';
+export type ItemKind = 'product' | 'lens' | 'free';
 
 /** A treatment selected for a lens item in the wizard */
 export interface SelectedTreatment {
@@ -32,6 +32,15 @@ export interface CostOverrides {
 	shippingPrice: number;
 }
 
+/** Free item data for FREE_ITEM type items */
+export interface FreeItemData {
+	category: string;
+	description: string;
+	unitCost: number | null;
+	supplierId: string | null;
+	opticalNotes: string;
+}
+
 export interface SaleItemRow {
 	id: string;
 	kind: ItemKind;
@@ -42,6 +51,8 @@ export interface SaleItemRow {
 	lensPair: LensPairEntry | null;
 	// Treatments (only when kind === 'lens')
 	treatments: SelectedTreatment[];
+	// Free item data (only when kind === 'free')
+	freeItem: FreeItemData | null;
 	// Shared
 	unitPrice: number;
 	discount: number;
@@ -77,5 +88,16 @@ export function createEmptyLensPair(): LensPairEntry {
 		catalogItemId: '',
 		od: createEmptyEyeEntry(),
 		oi: createEmptyEyeEntry()
+	};
+}
+
+/** Create an empty free item data entry */
+export function createEmptyFreeItemData(): FreeItemData {
+	return {
+		category: 'CONTACT_LENS_FORMULA',
+		description: '',
+		unitCost: null,
+		supplierId: null,
+		opticalNotes: ''
 	};
 }
