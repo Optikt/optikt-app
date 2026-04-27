@@ -12,7 +12,8 @@ import {
 	AddPaymentSchema,
 	VoidPaymentSchema,
 	CustomerLookupSchema,
-	UpdateSaleItemCostsSchema
+	UpdateSaleItemCostsSchema,
+	EnrichFreeItemSchema
 } from '$lib/schemas/sales';
 import {
 	getAllSales,
@@ -46,6 +47,7 @@ import { db } from '$lib/server/db';
 import {
 	sales,
 	saleItems,
+	saleItemFreeDetails,
 	products,
 	lensCatalogItems,
 	type SalePayment,
@@ -61,12 +63,13 @@ import {
 	UserRole,
 	canManageSaleByOwner
 } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { normalizeIdNumber, computeDiscount } from '$lib/utils';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
+import { findSupplierById } from '$lib/server/db/queries/suppliers';
 import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
@@ -149,7 +152,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		dateFrom: data.dateFrom ?? undefined,
 		dateTo: data.dateTo ?? undefined,
 		search: data.search ?? undefined,
-		shippingCostPending: data.shippingCostPending ?? undefined
+		shippingCostPending: data.shippingCostPending ?? undefined,
+		hasFreeItem: data.hasFreeItem ?? undefined
 	};
 
 	const [salesPage, total] = await Promise.all([
@@ -358,9 +362,18 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		for (const item of data.items) {
 			const saleItemId = item.id ?? crypto.randomUUID();
 
-			// FIFO lot consumption + stock decrement (shared logic)
-			const { lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
-				await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!);
+			let lotId: string | null = null;
+			let snapshotCostTotal: number | null = null;
+			let snapshotCostUnit: number | null = null;
+			let snapshotLotsCount: number | null = null;
+
+			// FREE_ITEM: no inventory impact — skip FIFO entirely
+			if (item.itemType !== SaleItemType.FREE_ITEM) {
+				// FIFO lot consumption + stock decrement (shared logic)
+				({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
+					await consumeFifoForSaleItem(tx, newSale.id, item, context.userId!));
+			}
+
 			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
 			await tx.insert(saleItems).values({
@@ -407,6 +420,22 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				createdAt: now,
 				updatedAt: now
 			});
+
+			// For FREE_ITEM: insert the free details row
+			if (item.itemType === SaleItemType.FREE_ITEM) {
+				await tx.insert(saleItemFreeDetails).values({
+					id: crypto.randomUUID(),
+					saleItemId,
+					category: item.freeItemCategory!,
+					description: item.freeItemDescription!,
+					enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
+					unitCost: item.freeItemUnitCost ?? null,
+					supplierId: item.freeItemSupplierId ?? null,
+					opticalNotes: item.freeItemOpticalNotes ?? null,
+					createdAt: now,
+					updatedAt: now
+				});
+			}
 		}
 
 		return { sale: newSale, newCustomer: createdCustomer, prescription: createdPrescription };
@@ -734,4 +763,76 @@ export const updateItemCosts = command(UpdateSaleItemCostsSchema, async (data) =
 	});
 
 	return { success: true as const };
+});
+
+/**
+ * Enrich or re-enrich a FREE_ITEM sale item with confirmed cost, supplier, and optical notes.
+ * ADMIN and MANAGER can enrich (cost data is financial information).
+ * Moves enrichment_status from PENDING → ENRICHED, or overwrites an already-ENRICHED item.
+ */
+export const enrichFreeItem = command(EnrichFreeItemSchema, async (data) => {
+	requireAdmin();
+
+	const context = getAuditContext();
+
+	// Find the sale item (validates it exists and is FREE_ITEM)
+	const [saleItemRow] = await db
+		.select()
+		.from(saleItems)
+		.where(and(eq(saleItems.id, data.saleItemId), isNull(saleItems.deletedAt)));
+
+	if (!saleItemRow) {
+		return { success: false as const, error: 'Artículo de venta no encontrado' };
+	}
+
+	if (saleItemRow.itemType !== SaleItemType.FREE_ITEM) {
+		return { success: false as const, error: 'El artículo no es de tipo ítem libre' };
+	}
+
+	// Find the free details row
+	const [freeDetailsRow] = await db
+		.select()
+		.from(saleItemFreeDetails)
+		.where(eq(saleItemFreeDetails.saleItemId, data.saleItemId));
+
+	if (!freeDetailsRow) {
+		return { success: false as const, error: 'Detalles del ítem libre no encontrados' };
+	}
+
+	// Validate supplier if provided
+	if (data.supplierId) {
+		const supplier = await findSupplierById(data.supplierId);
+		if (!supplier) {
+			return { success: false as const, error: 'Proveedor no encontrado' };
+		}
+	}
+
+	const now = nowISO();
+
+	const [updated] = await db
+		.update(saleItemFreeDetails)
+		.set({
+			unitCost: data.unitCost,
+			supplierId: data.supplierId ?? null,
+			opticalNotes: data.opticalNotes ?? null,
+			enrichmentStatus: FreeItemEnrichmentStatus.ENRICHED,
+			enrichedAt: now,
+			enrichedById: context.userId!,
+			updatedAt: now
+		})
+		.where(eq(saleItemFreeDetails.saleItemId, data.saleItemId))
+		.returning();
+
+	await auditService.logUpdate(
+		'sale_item_free_details',
+		freeDetailsRow.id,
+		freeDetailsRow,
+		updated,
+		context,
+		{
+			excludeFields: ['createdAt', 'updatedAt']
+		}
+	);
+
+	return { success: true as const, freeDetails: updated };
 });

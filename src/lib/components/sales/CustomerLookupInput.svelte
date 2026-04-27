@@ -135,7 +135,7 @@
 
 		searching = true;
 		try {
-			const result = await lookupCustomer({ idNumber: fullId });
+			const result = await lookupCustomer({ idNumber: fullId }).run();
 
 			if (result.customer) {
 				foundCustomer = result.customer;

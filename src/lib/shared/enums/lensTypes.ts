@@ -43,7 +43,24 @@ export enum TreatmentCategory {
 export enum SaleItemType {
 	PRODUCT = 'PRODUCT',
 	LENS_PAIR = 'LENS_PAIR',
-	TREATMENT = 'TREATMENT'
+	TREATMENT = 'TREATMENT',
+	/** Ad-hoc free-form item ordered on demand (no catalog entry required) */
+	FREE_ITEM = 'FREE_ITEM'
+}
+
+/** Category for FREE_ITEM sale items */
+export enum FreeItemCategory {
+	CONTACT_LENS_FORMULA = 'CONTACT_LENS_FORMULA',
+	CONTACT_LENS_COSMETIC = 'CONTACT_LENS_COSMETIC',
+	INTRAOCULAR_LENS = 'INTRAOCULAR_LENS',
+	SERVICE = 'SERVICE',
+	OTHER = 'OTHER'
+}
+
+/** Enrichment status for FREE_ITEM sale items */
+export enum FreeItemEnrichmentStatus {
+	PENDING = 'PENDING',
+	ENRICHED = 'ENRICHED'
 }
 
 // ── Labels ──────────────────────────────────────────────────────────────
@@ -78,7 +95,16 @@ export const TREATMENT_CATEGORY_LABELS: Record<TreatmentCategory, string> = {
 export const SALE_ITEM_TYPE_LABELS: Record<SaleItemType, string> = {
 	[SaleItemType.PRODUCT]: 'Producto',
 	[SaleItemType.LENS_PAIR]: 'Cristales',
-	[SaleItemType.TREATMENT]: 'Tratamiento'
+	[SaleItemType.TREATMENT]: 'Tratamiento',
+	[SaleItemType.FREE_ITEM]: 'Ítem Libre'
+};
+
+export const FREE_ITEM_CATEGORY_LABELS: Record<FreeItemCategory, string> = {
+	[FreeItemCategory.CONTACT_LENS_FORMULA]: 'LC con fórmula',
+	[FreeItemCategory.CONTACT_LENS_COSMETIC]: 'LC cosmético',
+	[FreeItemCategory.INTRAOCULAR_LENS]: 'Lente intraocular (LIO)',
+	[FreeItemCategory.SERVICE]: 'Servicio',
+	[FreeItemCategory.OTHER]: 'Otro'
 };
 
 // ── Convenience arrays ──────────────────────────────────────────────────
@@ -89,6 +115,10 @@ export const ALL_LENS_PRICE_TYPES = Object.values(LensPriceType) as LensPriceTyp
 export const ALL_LENS_INVENTORY_MODES = Object.values(LensInventoryMode) as LensInventoryMode[];
 export const ALL_TREATMENT_CATEGORIES = Object.values(TreatmentCategory) as TreatmentCategory[];
 export const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as SaleItemType[];
+export const ALL_FREE_ITEM_CATEGORIES = Object.values(FreeItemCategory) as FreeItemCategory[];
+export const ALL_FREE_ITEM_ENRICHMENT_STATUSES = Object.values(
+	FreeItemEnrichmentStatus
+) as FreeItemEnrichmentStatus[];
 
 // ── Label helpers ───────────────────────────────────────────────────────
 
@@ -110,6 +140,10 @@ export function getInventoryModeLabel(mode: string): string {
 
 export function getTreatmentCategoryLabel(cat: string): string {
 	return TREATMENT_CATEGORY_LABELS[cat as TreatmentCategory] ?? cat;
+}
+
+export function getFreeItemCategoryLabel(cat: string): string {
+	return FREE_ITEM_CATEGORY_LABELS[cat as FreeItemCategory] ?? cat;
 }
 
 // ── Badge colors ────────────────────────────────────────────────────────

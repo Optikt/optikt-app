@@ -8,7 +8,8 @@
 		ArrowRightCircle,
 		UserPlus,
 		Save,
-		ClipboardList
+		ClipboardList,
+		Sparkles
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -23,7 +24,7 @@
 	import { canOperate } from '$lib/shared/enums';
 	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
+	import { SaleItemType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
 	import type { QuoteWithRelations, QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
 	import type { Customer } from '$lib/server/db/schema';
@@ -405,36 +406,60 @@
 										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {item.itemType ===
 										SaleItemType.LENS_PAIR
 											? 'bg-info-container text-on-info-container'
-											: 'bg-surface-container-low text-on-surface-variant'}"
+											: item.itemType === SaleItemType.FREE_ITEM
+												? 'bg-amber-100 text-amber-600'
+												: 'bg-surface-container-low text-on-surface-variant'}"
 									>
 										{#if item.itemType === SaleItemType.LENS_PAIR}
 											<Eye class="h-5 w-5" />
+										{:else if item.itemType === SaleItemType.FREE_ITEM}
+											<Sparkles class="h-5 w-5" />
 										{:else}
 											<Package class="h-5 w-5" />
 										{/if}
 									</div>
 									<div>
 										<p class="text-lg leading-tight font-semibold text-brand-navy">
-											{item.snapshotName ?? item.product?.name ?? item.lensCatalogItem?.name ?? '-'}
+											{item.itemType === SaleItemType.FREE_ITEM
+												? (item.freeDetails?.description ?? 'Ítem libre')
+												: (item.snapshotName ??
+													item.product?.name ??
+													item.lensCatalogItem?.name ??
+													'-')}
 										</p>
-										{#if item.snapshotSku}
-											<span class="font-mono text-xs text-slate-400">{item.snapshotSku}</span>
-										{/if}
-										{#if item.snapshotBrand}
+										{#if item.itemType === SaleItemType.FREE_ITEM && item.freeDetails}
 											<span
-												class="ml-2 rounded bg-surface-container-low px-1.5 py-0.5 text-xs font-medium text-slate-600"
-												>{item.snapshotBrand}</span
+												class="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700"
 											>
-										{/if}
-										{#if item.itemType === SaleItemType.LENS_PAIR && hasPrescriptionSnapshot(item) && (odSummary || osSummary)}
-											<div class="mt-2 space-y-1 text-xs text-on-surface-variant">
-												{#if odSummary}
-													<p class="font-mono">{odSummary}</p>
-												{/if}
-												{#if osSummary}
-													<p class="font-mono">{osSummary}</p>
-												{/if}
-											</div>
+												{getFreeItemCategoryLabel(item.freeDetails.category)}
+											</span>
+											{#if item.freeDetails.unitCost != null}
+												<p class="mt-1 text-xs text-amber-600">
+													Costo est.: {formatPrice(item.freeDetails.unitCost)}
+												</p>
+											{:else}
+												<p class="mt-1 text-xs text-amber-500">Sin costo estimado</p>
+											{/if}
+										{:else}
+											{#if item.snapshotSku}
+												<span class="font-mono text-xs text-slate-400">{item.snapshotSku}</span>
+											{/if}
+											{#if item.snapshotBrand}
+												<span
+													class="ml-2 rounded bg-surface-container-low px-1.5 py-0.5 text-xs font-medium text-slate-600"
+													>{item.snapshotBrand}</span
+												>
+											{/if}
+											{#if item.itemType === SaleItemType.LENS_PAIR && hasPrescriptionSnapshot(item) && (odSummary || osSummary)}
+												<div class="mt-2 space-y-1 text-xs text-on-surface-variant">
+													{#if odSummary}
+														<p class="font-mono">{odSummary}</p>
+													{/if}
+													{#if osSummary}
+														<p class="font-mono">{osSummary}</p>
+													{/if}
+												</div>
+											{/if}
 										{/if}
 									</div>
 								</div>
@@ -444,9 +469,15 @@
 									class="inline-flex rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.14em] uppercase {item.itemType ===
 									SaleItemType.LENS_PAIR
 										? 'bg-info-container text-on-info-container'
-										: 'bg-surface-container-high text-on-surface-variant'}"
+										: item.itemType === SaleItemType.FREE_ITEM
+											? 'bg-amber-100 text-amber-700'
+											: 'bg-surface-container-high text-on-surface-variant'}"
 								>
-									{item.itemType === SaleItemType.LENS_PAIR ? 'Cristal' : 'Producto'}
+									{item.itemType === SaleItemType.LENS_PAIR
+										? 'Cristal'
+										: item.itemType === SaleItemType.FREE_ITEM
+											? 'Ítem Libre'
+											: 'Producto'}
 								</span>
 							</td>
 							<td

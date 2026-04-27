@@ -20,6 +20,7 @@ import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
 	quotes,
 	quoteItems,
+	quoteItemFreeDetails,
 	customers,
 	users,
 	products,
@@ -28,7 +29,8 @@ import {
 	type Quote,
 	type NewQuote,
 	type QuoteItem,
-	type NewQuoteItem
+	type NewQuoteItem,
+	type QuoteItemFreeDetails
 } from '$lib/server/db/schema';
 
 // ============================================================================
@@ -44,6 +46,7 @@ export type QuoteItemWithDetails = QuoteItem & {
 	product: { id: string; name: string; sku: string } | null;
 	lensCatalogItem: { id: string; name: string; type: string } | null;
 	supplierTreatment: { id: string; name: string; category: string } | null;
+	freeDetails: QuoteItemFreeDetails | null;
 };
 
 export interface QuoteStats {
@@ -321,19 +324,22 @@ export async function getQuoteItemsWithDetails(quoteId: string): Promise<QuoteIt
 				id: supplierTreatments.id,
 				name: supplierTreatments.name,
 				category: supplierTreatments.category
-			}
+			},
+			freeDetails: quoteItemFreeDetails
 		})
 		.from(quoteItems)
 		.leftJoin(products, eq(quoteItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(quoteItems.lensCatalogItemId, lensCatalogItems.id))
 		.leftJoin(supplierTreatments, eq(quoteItems.supplierTreatmentId, supplierTreatments.id))
+		.leftJoin(quoteItemFreeDetails, eq(quoteItems.id, quoteItemFreeDetails.quoteItemId))
 		.where(and(eq(quoteItems.quoteId, quoteId), isNull(quoteItems.deletedAt)));
 
 	return results.map((r) => ({
 		...r.item,
 		product: r.product?.id ? r.product : null,
 		lensCatalogItem: r.lensCatalogItem?.id ? r.lensCatalogItem : null,
-		supplierTreatment: r.supplierTreatment?.id ? r.supplierTreatment : null
+		supplierTreatment: r.supplierTreatment?.id ? r.supplierTreatment : null,
+		freeDetails: r.freeDetails?.id ? r.freeDetails : null
 	}));
 }
 

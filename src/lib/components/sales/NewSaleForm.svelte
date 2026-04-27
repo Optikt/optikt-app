@@ -167,15 +167,25 @@
 
 	const itemsValid = $derived(
 		items.length > 0 &&
-			items.every(
-				(i) =>
-					(i.kind === 'product'
-						? i.productId !== ''
-						: (i.lensPair?.catalogItemId ?? '') !== '' &&
-							(i.lensPair!.od.enabled || i.lensPair!.oi.enabled)) &&
-					(i.kind === 'product' ? i.quantity > 0 : true) &&
+			items.every((i) => {
+				if (i.kind === 'product') {
+					return i.productId !== '' && i.quantity > 0 && i.unitPrice >= 0;
+				}
+				if (i.kind === 'free') {
+					return (
+						i.freeItem !== null &&
+						(i.freeItem.category?.length ?? 0) > 0 &&
+						(i.freeItem.description?.length ?? 0) >= 3 &&
+						i.unitPrice > 0
+					);
+				}
+				// lens
+				return (
+					(i.lensPair?.catalogItemId ?? '') !== '' &&
+					(i.lensPair!.od.enabled || i.lensPair!.oi.enabled) &&
 					i.unitPrice >= 0
-			)
+				);
+			})
 	);
 
 	const hasOutOfStockItem = $derived(

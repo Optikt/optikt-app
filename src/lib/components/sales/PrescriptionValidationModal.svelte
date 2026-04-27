@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Modal } from 'flowbite-svelte';
-	import { AlertTriangle, CheckCircle2, CircleAlert, FlaskConical } from '@lucide/svelte';
+	import { AlertTriangle, CheckCircle2, CircleAlert, FlaskConical, Sparkles } from '@lucide/svelte';
 	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { formatPrice } from '$lib/utils';
 	import type {
 		LensConfirmationEyeResult,
 		LensConfirmationItemResult,
@@ -71,9 +72,15 @@
 				Haz una revisión final antes de continuar
 			</h3>
 			<p class="mt-2 text-sm leading-6 text-on-surface-variant">
-				{#if confirmation.hasLensItems}
+				{#if confirmation.hasLensItems && confirmation.freeItems.length > 0}
+					Confirma que la fórmula y los ítems libres ingresados para esta {workflowLabel} son correctos
+					antes de continuar al resumen.
+				{:else if confirmation.hasLensItems}
 					Confirma que la fórmula ingresada para esta {workflowLabel} corresponde al cristal seleccionado
 					y que encaja con el catálogo cuando existan rangos ópticos cargados.
+				{:else if confirmation.freeItems.length > 0}
+					Esta {workflowLabel} incluye ítems libres. Revisa que la descripción y el precio estén correctos
+					antes de continuar.
 				{:else}
 					Esta {workflowLabel} no incluye cristales. No hay validación óptica pendiente, pero dejamos
 					esta confirmación antes de pasar al resumen.
@@ -186,6 +193,49 @@
 									</div>
 								</div>
 							{/each}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		{#if confirmation.freeItems.length > 0}
+			<div class="space-y-2">
+				<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
+					Ítems libres ({confirmation.freeItems.length})
+				</p>
+				{#each confirmation.freeItems as freeItem (freeItem.itemId)}
+					<div class="rounded-[1rem] border border-slate-200 bg-white p-4 shadow-sm">
+						<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+							<div class="flex items-start gap-3">
+								<Sparkles class="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+								<div>
+									<span
+										class="inline-block rounded-full bg-violet-100 px-2.5 py-0.5 text-[11px] font-semibold text-violet-800"
+									>
+										{freeItem.categoryLabel}
+									</span>
+									<p class="mt-1 text-sm font-semibold text-brand-navy">{freeItem.description}</p>
+								</div>
+							</div>
+							<div class="flex shrink-0 flex-col items-end gap-1">
+								<span class="text-sm font-semibold text-brand-navy">
+									{formatPrice(freeItem.unitPrice)}
+								</span>
+								{#if freeItem.hasCost}
+									<span
+										class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800"
+									>
+										Costo estimado cargado
+									</span>
+								{:else}
+									<span
+										class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
+									>
+										Sin costo estimado
+									</span>
+								{/if}
+							</div>
 						</div>
 					</div>
 				{/each}

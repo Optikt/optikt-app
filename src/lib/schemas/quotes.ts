@@ -14,7 +14,11 @@ import {
 } from './common';
 import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
 import { ALL_QUOTE_STATUSES } from '$lib/shared/contracts/quotes';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import {
+	SaleItemType,
+	ALL_FREE_ITEM_CATEGORIES,
+	FreeItemCategory
+} from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 import { InlineCustomerSchema } from '$lib/schemas/sales';
 
@@ -37,47 +41,66 @@ export const ListQuotesSchema = ListPaginationSchema.extend({
 // QUOTE ITEM SCHEMA (same polymorphic design as SaleItemSchema)
 // ============================================================================
 
-export const QuoteItemSchema = z.object({
-	/** Optional client-generated UUID - used to link treatment items to their parent lens item */
-	id: z.uuid().optional(),
-	itemType: z.enum(ALL_SALE_ITEM_TYPES),
-	productId: z.uuid().optional(),
-	lensCatalogItemId: z.uuid().optional(),
-	parentQuoteItemId: z.uuid().optional(),
-	supplierTreatmentId: z.uuid().optional(),
+export const QuoteItemSchema = z
+	.object({
+		/** Optional client-generated UUID - used to link treatment items to their parent lens item */
+		id: z.uuid().optional(),
+		itemType: z.enum(ALL_SALE_ITEM_TYPES),
+		productId: z.uuid().optional(),
+		lensCatalogItemId: z.uuid().optional(),
+		parentQuoteItemId: z.uuid().optional(),
+		supplierTreatmentId: z.uuid().optional(),
 
-	// Prescription snapshot
-	odSphere: OptionalSphereSchema.optional(),
-	odCylinder: OptionalCylinderSchema.optional(),
-	odAxis: AxisSchema.optional(),
-	odAddition: OptionalAdditionSchema.optional(),
-	osSphere: OptionalSphereSchema.optional(),
-	osCylinder: OptionalCylinderSchema.optional(),
-	osAxis: AxisSchema.optional(),
-	osAddition: OptionalAdditionSchema.optional(),
+		// Prescription snapshot
+		odSphere: OptionalSphereSchema.optional(),
+		odCylinder: OptionalCylinderSchema.optional(),
+		odAxis: AxisSchema.optional(),
+		odAddition: OptionalAdditionSchema.optional(),
+		osSphere: OptionalSphereSchema.optional(),
+		osCylinder: OptionalCylinderSchema.optional(),
+		osAxis: AxisSchema.optional(),
+		osAddition: OptionalAdditionSchema.optional(),
 
-	quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
-	unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
-	discount: CoercedNumber.min(0).default(0),
-	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
+		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
+		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
+		discount: CoercedNumber.min(0).default(0),
+		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 
-	// Snapshot fields
-	snapshotName: z.string().optional(),
-	snapshotSku: z.string().optional(),
-	snapshotBrand: z.string().optional(),
-	snapshotBaseCost: CoercedNumber.optional(),
-	snapshotMountingPrice: CoercedNumber.optional(),
-	snapshotShippingPrice: CoercedNumber.optional(),
-	snapshotSalePrice: CoercedNumber.optional(),
-	snapshotPriceType: z.string().optional(),
-	snapshotTreatmentCategory: z.string().optional(),
+		// Snapshot fields
+		snapshotName: z.string().optional(),
+		snapshotSku: z.string().optional(),
+		snapshotBrand: z.string().optional(),
+		snapshotBaseCost: CoercedNumber.optional(),
+		snapshotMountingPrice: CoercedNumber.optional(),
+		snapshotShippingPrice: CoercedNumber.optional(),
+		snapshotSalePrice: CoercedNumber.optional(),
+		snapshotPriceType: z.string().optional(),
+		snapshotTreatmentCategory: z.string().optional(),
 
-	// Tax snapshot
-	snapshotIsTaxable: z.boolean().optional(),
-	snapshotTaxRate: CoercedNumber.optional(),
+		// Tax snapshot
+		snapshotIsTaxable: z.boolean().optional(),
+		snapshotTaxRate: CoercedNumber.optional(),
 
-	notes: z.string().optional()
-});
+		// FREE_ITEM fields (only present when itemType === FREE_ITEM)
+		freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]).optional(),
+		freeItemDescription: z.string().min(3).max(500).optional(),
+		freeItemUnitCost: CoercedNumber.min(0).optional(),
+		freeItemSupplierId: z.uuid().optional(),
+		freeItemOpticalNotes: z.string().max(1000).optional(),
+
+		notes: z.string().optional()
+	})
+	.refine(
+		(item) =>
+			item.itemType !== SaleItemType.FREE_ITEM ||
+			item.freeItemCategory === FreeItemCategory.SERVICE ||
+			item.freeItemUnitCost == null ||
+			item.freeItemUnitCost > 0,
+		{
+			message: 'El costo debe ser mayor a 0 para esta categoría',
+			path: ['freeItemUnitCost']
+		}
+	);
 
 // ============================================================================
 // CREATE QUOTE SCHEMA

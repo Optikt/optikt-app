@@ -15,7 +15,8 @@
 		BalanceCard,
 		StatCard,
 		QuickActionCard,
-		RecentSalesTable
+		RecentSalesTable,
+		PendingFreeItemsCard
 	} from '$lib/components/dashboard';
 	import { canOperate, isAdminRole } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
@@ -23,7 +24,7 @@
 
 	let { data } = $props();
 
-	const { stats, recentSales } = $derived(data);
+	const { stats, recentSales, pendingFreeItemSales } = $derived(data);
 	const canAct = $derived(canOperate(data.user.role));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
@@ -109,7 +110,7 @@
 		{/each}
 	</section>
 
-	<!-- Bottom Grid: Recent Sales + Quick Actions -->
+	<!-- Bottom Grid: Recent Sales + Quick Actions + Pending Free Items -->
 	<section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Ventas Recientes (2/3 width) -->
 		<div class="glass-card p-6 lg:col-span-2">
@@ -125,16 +126,26 @@
 			<RecentSalesTable sales={recentSales} />
 		</div>
 
-		<!-- Acciones Rápidas (1/3 width) - dark navy card -->
-		<div class="self-start rounded-xl bg-brand-navy p-6">
-			<h2 class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase">
-				Acciones Rápidas
-			</h2>
-			<div class="grid grid-cols-2 gap-3">
-				{#each actions as action (action.href)}
-					<QuickActionCard {...action} />
-				{/each}
+		<!-- Right column: Quick Actions + Pending Free Items -->
+		<div class="flex flex-col gap-6">
+			<!-- Acciones Rápidas - dark navy card -->
+			<div class="rounded-xl bg-brand-navy p-6">
+				<h2
+					class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase"
+				>
+					Acciones Rápidas
+				</h2>
+				<div class="grid grid-cols-2 gap-3">
+					{#each actions as action (action.href)}
+						<QuickActionCard {...action} />
+					{/each}
+				</div>
 			</div>
+
+			<!-- Pending Free Items (only shown when there are pending items) -->
+			{#if pendingFreeItemSales.length > 0}
+				<PendingFreeItemsCard sales={pendingFreeItemSales} />
+			{/if}
 		</div>
 	</section>
 </div>

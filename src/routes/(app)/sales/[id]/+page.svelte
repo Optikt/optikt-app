@@ -16,6 +16,7 @@
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
+	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
@@ -38,6 +39,14 @@
 	let canAct = $derived(canOperate(data.user.role));
 	let canManageSale = $derived(canManageSaleByOwner(data.user.role, data.user.id, sale.sellerId));
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
+
+	let pendingFreeItemCount = $derived(
+		items.filter(
+			(i) =>
+				i.itemType === SaleItemType.FREE_ITEM &&
+				i.freeDetails?.enrichmentStatus === FreeItemEnrichmentStatus.PENDING
+		).length
+	);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
@@ -277,10 +286,23 @@
 		</div>
 	{/if}
 
+	{#if pendingFreeItemCount > 0}
+		<div class="rounded-[1.25rem] border border-amber-200 bg-amber-50 px-5 py-4">
+			<p class="text-sm font-semibold text-amber-800">
+				⚠ Esta venta tiene {pendingFreeItemCount}
+				{pendingFreeItemCount === 1 ? 'ítem libre pendiente' : 'ítems libres pendientes'} de completar.
+			</p>
+			<p class="mt-1 text-xs text-amber-700">
+				Los reportes de margen estarán incompletos hasta que se registren los costos.
+			</p>
+		</div>
+	{/if}
+
 	<SaleItemsTable
 		{items}
 		subtotal={sale.subtotal}
 		allowCostEdit={canAct}
+		suppliers={data.suppliers}
 		onCostsUpdated={async () => {
 			await invalidateAll();
 			syncFromData();

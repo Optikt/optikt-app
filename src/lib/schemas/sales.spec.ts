@@ -334,3 +334,154 @@ describe('CancelSaleSchema', () => {
 		expect(result.success).toBe(true);
 	});
 });
+
+// ── FREE_ITEM schema tests ───────────────────────────────────────────────
+
+function makeFreeItem(overrides: Record<string, unknown> = {}) {
+	return {
+		itemType: SaleItemType.FREE_ITEM,
+		quantity: 1,
+		unitPrice: 45,
+		discount: 0,
+		discountType: DiscountType.FIXED,
+		freeItemCategory: 'CONTACT_LENS_FORMULA',
+		freeItemDescription: 'LC Novak -2.50 miel',
+		...overrides
+	};
+}
+
+describe('SaleItemSchema — FREE_ITEM', () => {
+	it('accepts a valid FREE_ITEM with required fields', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem());
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts FREE_ITEM with optional cost', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemUnitCost: 18 }));
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts FREE_ITEM with optional optical notes', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemOpticalNotes: 'OD -2.50 sph' }));
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts FREE_ITEM without optional cost (cost can be filled later)', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem());
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.freeItemUnitCost).toBeUndefined();
+		}
+	});
+
+	it('rejects FREE_ITEM with description shorter than 3 chars', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemDescription: 'ab' }));
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects FREE_ITEM with description longer than 500 chars', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemDescription: 'a'.repeat(501) }));
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects FREE_ITEM with invalid category', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemCategory: 'INVALID_CAT' }));
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects FREE_ITEM with unitPrice of 0', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ unitPrice: 0 }));
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects FREE_ITEM with negative unit cost', () => {
+		const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemUnitCost: -5 }));
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects FREE_ITEM (non-SERVICE) with zero unit cost', () => {
+		const result = SaleItemSchema.safeParse(
+			makeFreeItem({ freeItemCategory: 'CONTACT_LENS_FORMULA', freeItemUnitCost: 0 })
+		);
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts FREE_ITEM SERVICE with zero unit cost', () => {
+		const result = SaleItemSchema.safeParse(
+			makeFreeItem({ freeItemCategory: 'SERVICE', freeItemUnitCost: 0 })
+		);
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts all valid FREE_ITEM category values', () => {
+		const categories = [
+			'CONTACT_LENS_FORMULA',
+			'CONTACT_LENS_COSMETIC',
+			'INTRAOCULAR_LENS',
+			'SERVICE',
+			'OTHER'
+		];
+		for (const category of categories) {
+			const result = SaleItemSchema.safeParse(makeFreeItem({ freeItemCategory: category }));
+			expect(result.success).toBe(true);
+		}
+	});
+});
+
+describe('EnrichFreeItemSchema', () => {
+	it('imports from schemas correctly', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		expect(EnrichFreeItemSchema).toBeDefined();
+	});
+
+	it('accepts valid enrichment data', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const result = EnrichFreeItemSchema.safeParse({
+			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
+			unitCost: 18.5
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects enrichment with zero cost for non-SERVICE category', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const result = EnrichFreeItemSchema.safeParse({
+			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
+			unitCost: 0
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts enrichment with zero cost for SERVICE category', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const result = EnrichFreeItemSchema.safeParse({
+			saleItemId: crypto.randomUUID(),
+			category: 'SERVICE',
+			unitCost: 0
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects enrichment with negative cost', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const result = EnrichFreeItemSchema.safeParse({
+			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
+			unitCost: -5
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts optional optical notes', async () => {
+		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const result = EnrichFreeItemSchema.safeParse({
+			saleItemId: crypto.randomUUID(),
+			category: 'CONTACT_LENS_FORMULA',
+			unitCost: 20,
+			opticalNotes: 'OD -3.00 sph, color verde'
+		});
+		expect(result.success).toBe(true);
+	});
+});
