@@ -152,7 +152,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		dateFrom: data.dateFrom ?? undefined,
 		dateTo: data.dateTo ?? undefined,
 		search: data.search ?? undefined,
-		shippingCostPending: data.shippingCostPending ?? undefined
+		shippingCostPending: data.shippingCostPending ?? undefined,
+		hasFreeItem: data.hasFreeItem ?? undefined
 	};
 
 	const [salesPage, total] = await Promise.all([
@@ -765,9 +766,9 @@ export const updateItemCosts = command(UpdateSaleItemCostsSchema, async (data) =
 });
 
 /**
- * Enrich a FREE_ITEM sale item with confirmed cost, supplier, and optical notes.
+ * Enrich or re-enrich a FREE_ITEM sale item with confirmed cost, supplier, and optical notes.
  * ADMIN and MANAGER can enrich (cost data is financial information).
- * Moves enrichment_status from PENDING → ENRICHED.
+ * Moves enrichment_status from PENDING → ENRICHED, or overwrites an already-ENRICHED item.
  */
 export const enrichFreeItem = command(EnrichFreeItemSchema, async (data) => {
 	requireAdmin();
@@ -796,10 +797,6 @@ export const enrichFreeItem = command(EnrichFreeItemSchema, async (data) => {
 
 	if (!freeDetailsRow) {
 		return { success: false as const, error: 'Detalles del ítem libre no encontrados' };
-	}
-
-	if (freeDetailsRow.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED) {
-		return { success: false as const, error: 'El ítem ya fue completado anteriormente' };
 	}
 
 	// Validate supplier if provided

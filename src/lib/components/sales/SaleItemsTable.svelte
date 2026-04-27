@@ -58,6 +58,8 @@
 	let enrichOpticalNotes = $state('');
 	let enrichSupplierId = $state<string>('');
 	let enrichSaving = $state(false);
+	let enrichIsReEnriching = $state(false);
+	let enrichConfirming = $state(false);
 
 	let supplierMap = $derived(new Map(suppliers.map((s) => [s.id, s.name])));
 
@@ -102,18 +104,22 @@
 		return 'bg-surface-container-high text-on-surface-variant';
 	}
 
-	function startEnrich(item: SaleItemWithDetails) {
+	function startEnrich(item: SaleItemWithDetails, isEdit = false) {
 		enrichingItemId = item.id;
 		enrichingCategory = item.freeDetails?.category ?? null;
 		enrichUnitCost = item.freeDetails?.unitCost ?? null;
 		enrichOpticalNotes = item.freeDetails?.opticalNotes ?? '';
 		enrichSupplierId = item.freeDetails?.supplierId ?? '';
+		enrichIsReEnriching = isEdit;
+		enrichConfirming = false;
 	}
 
 	function cancelEnrich() {
 		enrichingItemId = null;
 		enrichingCategory = null;
 		enrichSupplierId = '';
+		enrichIsReEnriching = false;
+		enrichConfirming = false;
 	}
 
 	async function saveEnrich() {
@@ -121,6 +127,11 @@
 		const isService = enrichingCategory === FreeItemCategory.SERVICE;
 		if (enrichUnitCost == null || (!isService && enrichUnitCost <= 0)) {
 			toast.error('El costo real debe ser mayor a 0');
+			return;
+		}
+		// Re-enriching requires an extra confirmation step
+		if (enrichIsReEnriching && !enrichConfirming) {
+			enrichConfirming = true;
 			return;
 		}
 		enrichSaving = true;
@@ -133,10 +144,14 @@
 				opticalNotes: enrichOpticalNotes || undefined
 			});
 			if (result.success) {
-				toast.success('Ítem completado correctamente');
+				toast.success(
+					enrichIsReEnriching ? 'Ítem actualizado correctamente' : 'Ítem completado correctamente'
+				);
 				enrichingItemId = null;
 				enrichingCategory = null;
 				enrichSupplierId = '';
+				enrichIsReEnriching = false;
+				enrichConfirming = false;
 				onCostsUpdated?.();
 			} else {
 				toast.error(result.error);
@@ -356,7 +371,19 @@
 											</div>
 										{:else if fd.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED}
 											<div class="mt-2 space-y-0.5 text-xs text-on-surface-variant">
-												<p class="font-semibold text-green-700">✓ Completado</p>
+												<div class="flex items-center justify-between gap-2">
+													<p class="font-semibold text-green-700">✓ Completado</p>
+													{#if allowCostEdit}
+														<button
+															type="button"
+															onclick={() => startEnrich(group.item, true)}
+															class="inline-flex items-center gap-1 rounded-lg bg-surface-container-high px-2 py-1 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-highest"
+														>
+															<Pencil size={11} />
+															Editar
+														</button>
+													{/if}
+												</div>
 												{#if fd.unitCost != null}
 													<p>
 														Costo: <span class="font-mono font-semibold"
@@ -653,77 +680,104 @@
 		aria-modal="true"
 	>
 		<div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-			<h3 class="mb-4 text-lg font-semibold text-brand-navy">Completar ítem libre</h3>
+			<h3 class="mb-4 text-lg font-semibold text-brand-navy">
+				{enrichIsReEnriching ? 'Editar ítem libre' : 'Completar ítem libre'}
+			</h3>
 
-			<div class="space-y-4">
-				<div>
-					<label
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>
-						Costo real (USD) *
-					</label>
-					<input
-						type="number"
-						bind:value={enrichUnitCost}
-						step="0.01"
-						min="0.01"
-						class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-						placeholder="0.00"
-					/>
+			{#if enrichConfirming}
+				<div class="rounded-xl bg-warning-container/60 px-4 py-3 text-sm text-on-warning-container">
+					<p class="font-semibold">⚠ Confirmar cambios</p>
+					<p class="mt-1 text-xs">
+						Este ítem ya fue completado. ¿Guardar los cambios y sobreescribir los datos anteriores?
+					</p>
 				</div>
-
-				{#if suppliers.length > 0}
+			{:else}
+				<div class="space-y-4">
+					{#if enrichIsReEnriching}
+						<p
+							class="rounded-lg bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant"
+						>
+							Editando un ítem ya completado. Los cambios sobreescribirán los valores anteriores.
+						</p>
+					{/if}
 					<div>
 						<label
 							class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
 						>
-							Proveedor
+							Costo real (USD) *
 						</label>
-						<select
-							bind:value={enrichSupplierId}
-							class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-						>
-							<option value="">Sin proveedor</option>
-							{#each suppliers as supplier (supplier.id)}
-								<option value={supplier.id}>{supplier.name}</option>
-							{/each}
-						</select>
+						<input
+							type="number"
+							bind:value={enrichUnitCost}
+							step="0.01"
+							min="0.01"
+							class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+							placeholder="0.00"
+						/>
 					</div>
-				{/if}
 
-				<div>
-					<label
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>
-						Notas ópticas
-					</label>
-					<input
-						type="text"
-						bind:value={enrichOpticalNotes}
-						maxlength={1000}
-						class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-						placeholder="OD -2.50 sph, color miel..."
-					/>
+					{#if suppliers.length > 0}
+						<div>
+							<label
+								class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+							>
+								Proveedor
+							</label>
+							<select
+								bind:value={enrichSupplierId}
+								class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+							>
+								<option value="">Sin proveedor</option>
+								{#each suppliers as supplier (supplier.id)}
+									<option value={supplier.id}>{supplier.name}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+
+					<div>
+						<label
+							class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
+						>
+							Notas ópticas
+						</label>
+						<input
+							type="text"
+							bind:value={enrichOpticalNotes}
+							maxlength={1000}
+							class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+							placeholder="OD -2.50 sph, color miel..."
+						/>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			<div class="mt-6 flex justify-end gap-3">
 				<button
 					type="button"
-					onclick={cancelEnrich}
+					onclick={enrichConfirming ? () => (enrichConfirming = false) : cancelEnrich}
 					class="rounded-xl px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low"
 				>
-					Cancelar
+					{enrichConfirming ? 'Volver' : 'Cancelar'}
 				</button>
 				<button
 					type="button"
 					onclick={saveEnrich}
 					disabled={enrichSaving ||
-						enrichUnitCost == null ||
-						(enrichingCategory !== FreeItemCategory.SERVICE && enrichUnitCost <= 0)}
-					class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
+						(!enrichConfirming &&
+							(enrichUnitCost == null ||
+								(enrichingCategory !== FreeItemCategory.SERVICE && enrichUnitCost <= 0)))}
+					class="rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50 {enrichConfirming
+						? 'bg-error hover:bg-error/90'
+						: 'bg-amber-600 hover:bg-amber-700'}"
 				>
-					{enrichSaving ? 'Guardando...' : 'Guardar'}
+					{enrichSaving
+						? 'Guardando...'
+						: enrichConfirming
+							? 'Confirmar cambios'
+							: enrichIsReEnriching
+								? 'Guardar cambios'
+								: 'Guardar'}
 				</button>
 			</div>
 		</div>

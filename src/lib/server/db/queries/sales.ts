@@ -88,6 +88,8 @@ export interface SaleFilterOptions {
 	search?: string;
 	/** Filter sales that have at least one item with shippingCostPending = true */
 	shippingCostPending?: boolean;
+	/** Filter sales that have at least one FREE_ITEM */
+	hasFreeItem?: boolean;
 }
 
 /** Options for querying sales with relations */
@@ -170,6 +172,12 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	if (opts.shippingCostPending) {
 		conditions.push(
 			sql`exists (select 1 from ${saleItems} where ${saleItems.saleId} = ${sales.id} and ${saleItems.shippingCostPending} = true and ${saleItems.deletedAt} is null)`
+		);
+	}
+
+	if (opts.hasFreeItem) {
+		conditions.push(
+			sql`exists (select 1 from ${saleItems} where ${saleItems.saleId} = ${sales.id} and ${saleItems.itemType} = 'FREE_ITEM' and ${saleItems.deletedAt} is null)`
 		);
 	}
 

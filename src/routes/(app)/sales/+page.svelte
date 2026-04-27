@@ -7,7 +7,8 @@
 		RotateCcw,
 		Search,
 		CircleCheck,
-		Truck
+		Truck,
+		Sparkles
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -42,6 +43,7 @@
 	let search = $state('');
 	let statusFilter = $state<SaleStatus | ''>('');
 	let shippingPendingFilter = $state(false);
+	let hasFreeItemFilter = $state(false);
 
 	// Fetch sales
 	async function fetchSales(page = 1) {
@@ -52,7 +54,8 @@
 				perPage: 10,
 				search: search || undefined,
 				status: statusFilter || undefined,
-				shippingCostPending: shippingPendingFilter || undefined
+				shippingCostPending: shippingPendingFilter || undefined,
+				hasFreeItem: hasFreeItemFilter || undefined
 			}).run();
 		} catch (e) {
 			console.error(e);
@@ -88,11 +91,12 @@
 		search = '';
 		statusFilter = '';
 		shippingPendingFilter = false;
+		hasFreeItemFilter = false;
 		fetchSales(1);
 	}
 
 	let hasActiveFilters = $derived(
-		search.trim().length > 0 || statusFilter !== '' || shippingPendingFilter
+		search.trim().length > 0 || statusFilter !== '' || shippingPendingFilter || hasFreeItemFilter
 	);
 
 	// Navigate to sale detail page
@@ -220,6 +224,20 @@
 			>
 				<Truck size={16} />
 				<span class="hidden sm:inline">Envío pendiente</span>
+			</button>
+
+			<button
+				onclick={() => {
+					hasFreeItemFilter = !hasFreeItemFilter;
+					handleFilterChange();
+				}}
+				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors {hasFreeItemFilter
+					? 'bg-amber-100 text-amber-700'
+					: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}"
+				title="Filtrar ventas con ítems libres"
+			>
+				<Sparkles size={16} />
+				<span class="hidden sm:inline">Ítem libre</span>
 			</button>
 
 			<button

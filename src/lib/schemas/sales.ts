@@ -37,7 +37,8 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 	sellerId: z.uuid().optional(),
 	dateFrom: z.iso.date().optional(),
 	dateTo: z.iso.date().optional(),
-	shippingCostPending: z.boolean().optional()
+	shippingCostPending: z.boolean().optional(),
+	hasFreeItem: z.boolean().optional()
 });
 
 // ============================================================================
