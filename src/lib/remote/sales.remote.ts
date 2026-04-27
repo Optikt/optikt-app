@@ -766,7 +766,7 @@ export const updateItemCosts = command(UpdateSaleItemCostsSchema, async (data) =
 
 /**
  * Enrich a FREE_ITEM sale item with confirmed cost, supplier, and optical notes.
- * Only ADMIN and SUPERADMIN can enrich (cost data is financial information).
+ * ADMIN and MANAGER can enrich (cost data is financial information).
  * Moves enrichment_status from PENDING → ENRICHED.
  */
 export const enrichFreeItem = command(EnrichFreeItemSchema, async (data) => {
