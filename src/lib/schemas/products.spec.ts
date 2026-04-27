@@ -269,4 +269,59 @@ describe('CreateProductSchema — physical attributes', () => {
 		expect(result.data.baseCurve).toBeUndefined();
 		expect(result.data.diameter).toBeUndefined();
 	});
+
+	it('treats empty string frame dimensions as undefined', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			lensWidth: '',
+			bridgeWidth: '',
+			templeLength: ''
+		});
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+
+		expect(result.data.lensWidth).toBeUndefined();
+		expect(result.data.bridgeWidth).toBeUndefined();
+		expect(result.data.templeLength).toBeUndefined();
+	});
+
+	it('treats empty string contact lens attributes as undefined', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			type: ProductType.CONTACT_LENS,
+			baseCurve: '',
+			diameter: ''
+		});
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+
+		expect(result.data.baseCurve).toBeUndefined();
+		expect(result.data.diameter).toBeUndefined();
+	});
+
+	it('returns Spanish messages for invalid physical attributes', () => {
+		const result = CreateProductSchema.safeParse({
+			...baseCreatePayload,
+			lensWidth: 0,
+			baseCurve: 4
+		});
+
+		expect(result.success).toBe(false);
+		if (result.success) return;
+
+		expect(result.error.issues).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					path: ['lensWidth'],
+					message: 'Calibre debe ser mayor o igual a 1'
+				}),
+				expect.objectContaining({
+					path: ['baseCurve'],
+					message: 'Curva base debe ser mayor o igual a 5'
+				})
+			])
+		);
+	});
 });
