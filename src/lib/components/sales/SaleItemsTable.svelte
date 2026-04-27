@@ -706,11 +706,13 @@
 					{/if}
 					<div>
 						<label
+							for="enrich-unit-cost"
 							class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
 						>
 							Costo real (USD) *
 						</label>
 						<input
+							id="enrich-unit-cost"
 							type="number"
 							bind:value={enrichUnitCost}
 							step="0.01"
@@ -723,11 +725,13 @@
 					{#if suppliers.length > 0}
 						<div>
 							<label
+								for="enrich-supplier-id"
 								class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
 							>
 								Proveedor
 							</label>
 							<select
+								id="enrich-supplier-id"
 								bind:value={enrichSupplierId}
 								class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 							>
@@ -741,11 +745,13 @@
 
 					<div>
 						<label
+							for="enrich-optical-notes"
 							class="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
 						>
 							Notas ópticas
 						</label>
 						<input
+							id="enrich-optical-notes"
 							type="text"
 							bind:value={enrichOpticalNotes}
 							maxlength={1000}

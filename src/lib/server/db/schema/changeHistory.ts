@@ -67,6 +67,7 @@ export const ALL_ENTITY_TYPES = [
 	'prescription',
 	'sale',
 	'sale_item',
+	'sale_item_free_details',
 	'sale_payment',
 	'lens_catalog_item',
 	'supplier',

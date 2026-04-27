@@ -405,6 +405,11 @@
 		return parseNullableNum(v) ?? 0;
 	}
 
+	function setFreeItemUnitCost(item: SaleItemRow, value: string) {
+		if (!item.freeItem) return;
+		item.freeItem.unitCost = parseNullableNum(value);
+	}
+
 	function parseAddition(v: string): number | null {
 		const n = parseNullableNum(v);
 		// Addition of 0 means no addition in practice.
@@ -1174,7 +1179,12 @@
 													</Label>
 													<Input
 														type="number"
-														bind:value={item.freeItem.unitCost}
+														value={item.freeItem.unitCost ?? undefined}
+														oninput={(event) => {
+															if (event.currentTarget instanceof HTMLInputElement) {
+																setFreeItemUnitCost(item, event.currentTarget.value);
+															}
+														}}
 														placeholder="0.00"
 														step="0.01"
 														min="0"

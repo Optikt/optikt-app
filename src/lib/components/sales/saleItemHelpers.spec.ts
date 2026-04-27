@@ -72,6 +72,7 @@ function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
 		quantity: 1,
 		lensPair,
 		treatments: [],
+		freeItem: null,
 		unitPrice: 30,
 		discount: 0,
 		discountType: DiscountType.FIXED,
@@ -200,6 +201,7 @@ describe('buildStep2PrescriptionConfirmation', () => {
 					quantity: 1,
 					lensPair: null,
 					treatments: [],
+					freeItem: null,
 					unitPrice: 10,
 					discount: 0,
 					discountType: DiscountType.FIXED,
@@ -296,6 +298,8 @@ describe('getLensTypeSuggestionState', () => {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
+	const { freeItem, ...rest } = overrides;
+
 	return {
 		id: 'item-1',
 		kind: 'product',
@@ -309,7 +313,8 @@ function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
 		notes: '',
 		costOverrides: null,
 		shippingCostPending: false,
-		...overrides
+		...rest,
+		freeItem: freeItem ?? null
 	};
 }
 
@@ -323,6 +328,7 @@ function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
 		quantity: 1,
 		lensPair: pair,
 		treatments,
+		freeItem: null,
 		unitPrice: 50,
 		discount: 0,
 		discountType: DiscountType.FIXED,

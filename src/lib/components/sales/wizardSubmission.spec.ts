@@ -49,6 +49,7 @@ const lensRow: SaleItemRow = {
 			isTaxable: true
 		}
 	],
+	freeItem: null,
 	unitPrice: 25,
 	discount: 0,
 	discountType: DiscountType.FIXED,

@@ -91,6 +91,17 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		discount: 'Descuento',
 		notes: 'Notas'
 	},
+	sale_item_free_details: {
+		saleItemId: 'Ítem de venta',
+		category: 'Categoría',
+		description: 'Descripción',
+		unitCost: 'Costo unitario',
+		supplierId: 'Proveedor',
+		opticalNotes: 'Notas ópticas',
+		enrichmentStatus: 'Estado de completado',
+		enrichedAt: 'Fecha de completado',
+		enrichedById: 'Completado por'
+	},
 	lens_catalog_item: {
 		supplierId: 'Proveedor',
 		name: 'Nombre',
