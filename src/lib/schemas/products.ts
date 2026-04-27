@@ -11,6 +11,8 @@ import {
 	CoercedBoolean,
 	NameSchema,
 	EntityIdSchema,
+	OptionalCoercedInteger,
+	OptionalCoercedNumber,
 	OptionalPendingEntitySchema,
 	PendingEntitySchema,
 	ListPaginationSchema,
@@ -65,12 +67,42 @@ export const CreateProductSchema = z.object({
 	minStock: CoercedInteger.min(0).optional(),
 	imageUrl: z.string().optional(),
 	// Physical attributes — Frames & Sunglasses
-	lensWidth: CoercedInteger.min(1).max(99).optional(),
-	bridgeWidth: CoercedInteger.min(1).max(99).optional(),
-	templeLength: CoercedInteger.min(1).max(999).optional(),
+	lensWidth: OptionalCoercedInteger({
+		min: 1,
+		max: 99,
+		integerMessage: 'Calibre debe ser un número entero válido',
+		minMessage: 'Calibre debe ser mayor o igual a 1',
+		maxMessage: 'Calibre debe ser menor o igual a 99'
+	}),
+	bridgeWidth: OptionalCoercedInteger({
+		min: 1,
+		max: 99,
+		integerMessage: 'Puente debe ser un número entero válido',
+		minMessage: 'Puente debe ser mayor o igual a 1',
+		maxMessage: 'Puente debe ser menor o igual a 99'
+	}),
+	templeLength: OptionalCoercedInteger({
+		min: 1,
+		max: 999,
+		integerMessage: 'Varilla debe ser un número entero válido',
+		minMessage: 'Varilla debe ser mayor o igual a 1',
+		maxMessage: 'Varilla debe ser menor o igual a 999'
+	}),
 	// Physical attributes — Contact Lenses
-	baseCurve: CoercedNumber.min(5).max(10).optional(),
-	diameter: CoercedNumber.min(8).max(20).optional()
+	baseCurve: OptionalCoercedNumber({
+		min: 5,
+		max: 10,
+		invalidMessage: 'Curva base debe ser un número válido',
+		minMessage: 'Curva base debe ser mayor o igual a 5',
+		maxMessage: 'Curva base debe ser menor o igual a 10'
+	}),
+	diameter: OptionalCoercedNumber({
+		min: 8,
+		max: 20,
+		invalidMessage: 'Diámetro debe ser un número válido',
+		minMessage: 'Diámetro debe ser mayor o igual a 8',
+		maxMessage: 'Diámetro debe ser menor o igual a 20'
+	})
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial().extend({

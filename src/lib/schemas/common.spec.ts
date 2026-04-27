@@ -8,7 +8,8 @@ import {
 	OptionalRifSchema,
 	IdNumberSchema,
 	OptionalIdNumberSchema,
-	OptionalCoercedInteger
+	OptionalCoercedInteger,
+	OptionalCoercedNumber
 } from './common';
 
 // =============================================================================
@@ -252,5 +253,32 @@ describe('OptionalCoercedInteger', () => {
 		expect(noConstraintsSchema.safeParse('').success).toBe(true);
 		expect(noConstraintsSchema.safeParse('1000').success).toBe(true);
 		expect(noConstraintsSchema.safeParse('-1000').success).toBe(true);
+	});
+});
+
+describe('OptionalCoercedNumber', () => {
+	const schema = OptionalCoercedNumber({ min: 5, max: 10 });
+
+	it('converts empty string to undefined', () => {
+		const result = schema.safeParse('');
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data).toBeUndefined();
+		}
+	});
+
+	it('accepts valid decimal values', () => {
+		expect(schema.safeParse('8.6').success).toBe(true);
+		expect(schema.safeParse(9.1).success).toBe(true);
+	});
+
+	it('rejects values outside min/max range', () => {
+		expect(schema.safeParse('4.9').success).toBe(false);
+		expect(schema.safeParse('10.1').success).toBe(false);
+	});
+
+	it('rejects non-numeric strings', () => {
+		const result = schema.safeParse('abc');
+		expect(result.success).toBe(false);
 	});
 });

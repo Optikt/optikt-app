@@ -133,6 +133,28 @@ export const CoercedNumber = z.coerce.number<number | string>();
  */
 export const CoercedInteger = CoercedNumber.int();
 
+interface OptionalCoercedNumberOptions {
+	min?: number;
+	max?: number;
+	invalidMessage?: string;
+	integerMessage?: string;
+	minMessage?: string;
+	maxMessage?: string;
+}
+
+function preprocessOptionalNumber(val: number | string | null | undefined) {
+	if (val === '' || val === null || val === undefined) {
+		return undefined;
+	}
+
+	if (typeof val === 'string' && val.trim() === '') {
+		return undefined;
+	}
+
+	const num = typeof val === 'string' ? Number(val.trim()) : Number(val);
+	return Number.isNaN(num) ? val : num;
+}
+
 /**
  * Factory for optional coerced integer schemas
  * Converts empty string, null, or undefined to undefined (no value provided)
@@ -146,33 +168,50 @@ export const CoercedInteger = CoercedNumber.int();
  * DpSchema.safeParse(''); // => undefined
  * DpSchema.safeParse('0'); // => 0
  */
-export const OptionalCoercedInteger = (options?: { min?: number; max?: number }) => {
-	return z.preprocess((val: number | string | undefined) => {
-		// Empty string, null, or undefined → no value provided
-		if (val === '' || val === null || val === undefined) {
-			return undefined;
-		}
-		if (typeof val === 'string' && val.trim() === '') {
-			return undefined;
-		}
-		const num = typeof val === 'string' ? Number(val.trim()) : Number(val);
-		return Number.isNaN(num) ? val : num;
-	}, createOptionalIntegerSchema(options));
+export const OptionalCoercedInteger = (options?: OptionalCoercedNumberOptions) => {
+	return z.preprocess(preprocessOptionalNumber, createOptionalIntegerSchema(options));
+};
+
+/**
+ * Factory for optional coerced number schemas
+ * Converts empty string, null, or undefined to undefined (no value provided)
+ */
+export const OptionalCoercedNumber = (options?: OptionalCoercedNumberOptions) => {
+	return z.preprocess(preprocessOptionalNumber, createOptionalNumberSchema(options));
 };
 
 /**
  * Helper to create the integer schema with optional constraints
  */
-function createOptionalIntegerSchema(options?: { min?: number; max?: number }) {
-	let schema = z
-		.number({ error: 'Debe ser un número entero válido' })
-		.int('Debe ser un número entero válido');
+
+function createOptionalNumberSchema(options?: OptionalCoercedNumberOptions) {
+	let schema = z.number({ error: options?.invalidMessage ?? 'Debe ser un número válido' });
 
 	if (options?.min !== undefined) {
-		schema = schema.min(options.min);
+		schema = schema.min(options.min, options.minMessage ?? `Debe ser mayor o igual a ${options.min}`);
 	}
 	if (options?.max !== undefined) {
-		schema = schema.max(options.max);
+		schema = schema.max(options.max, options.maxMessage ?? `Debe ser menor o igual a ${options.max}`);
+	}
+
+	return schema.optional();
+}
+
+/**
+ * Helper to create the integer schema with optional constraints
+ */
+function createOptionalIntegerSchema(options?: OptionalCoercedNumberOptions) {
+	let schema = z
+		.number({
+			error: options?.invalidMessage ?? options?.integerMessage ?? 'Debe ser un número entero válido'
+		})
+		.int(options?.integerMessage ?? options?.invalidMessage ?? 'Debe ser un número entero válido');
+
+	if (options?.min !== undefined) {
+		schema = schema.min(options.min, options.minMessage ?? `Debe ser mayor o igual a ${options.min}`);
+	}
+	if (options?.max !== undefined) {
+		schema = schema.max(options.max, options.maxMessage ?? `Debe ser menor o igual a ${options.max}`);
 	}
 
 	return schema.optional();
