@@ -104,13 +104,13 @@
 		return 'bg-surface-container-high text-on-surface-variant';
 	}
 
-	function startEnrich(item: SaleItemWithDetails, isEdit = false) {
+	function startEnrich(item: SaleItemWithDetails, isReEnriching = false) {
 		enrichingItemId = item.id;
 		enrichingCategory = item.freeDetails?.category ?? null;
 		enrichUnitCost = item.freeDetails?.unitCost ?? null;
 		enrichOpticalNotes = item.freeDetails?.opticalNotes ?? '';
 		enrichSupplierId = item.freeDetails?.supplierId ?? '';
-		enrichIsReEnriching = isEdit;
+		enrichIsReEnriching = isReEnriching;
 		enrichConfirming = false;
 	}
 
@@ -119,6 +119,10 @@
 		enrichingCategory = null;
 		enrichSupplierId = '';
 		enrichIsReEnriching = false;
+		enrichConfirming = false;
+	}
+
+	function backFromConfirmation() {
 		enrichConfirming = false;
 	}
 
@@ -755,7 +759,7 @@
 			<div class="mt-6 flex justify-end gap-3">
 				<button
 					type="button"
-					onclick={enrichConfirming ? () => (enrichConfirming = false) : cancelEnrich}
+					onclick={enrichConfirming ? backFromConfirmation : cancelEnrich}
 					class="rounded-xl px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low"
 				>
 					{enrichConfirming ? 'Volver' : 'Cancelar'}
