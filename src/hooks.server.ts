@@ -77,11 +77,7 @@ const serverHandleError: HandleServerError = ({ error, event, status, message })
 		});
 	}
 
-	// FIXME: App interna — devolvemos el mensaje real (incluyendo `cause`) al
-	// cliente para acelerar el debugging. Cuando la app deje de ser puramente
-	// interna, envolver esto en `if (process.env.NODE_ENV !== 'production')` y
-	// volver a un "Internal Error" genérico en prod para no filtrar detalles
-	// (nombres de constraints, queries, stacks…).
+	// La app es interna así que devolvemos el mensaje real al cliente.
 	const detail =
 		typeof cause === 'object' && cause && 'message' in cause
 			? String((cause as { message?: unknown }).message ?? '')
