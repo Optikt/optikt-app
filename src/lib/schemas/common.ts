@@ -188,10 +188,16 @@ function createOptionalNumberSchema(options?: OptionalCoercedNumberOptions) {
 	let schema = z.number({ error: options?.invalidMessage ?? 'Debe ser un número válido' });
 
 	if (options?.min !== undefined) {
-		schema = schema.min(options.min, options.minMessage ?? `Debe ser mayor o igual a ${options.min}`);
+		schema = schema.min(
+			options.min,
+			options.minMessage ?? `Debe ser mayor o igual a ${options.min}`
+		);
 	}
 	if (options?.max !== undefined) {
-		schema = schema.max(options.max, options.maxMessage ?? `Debe ser menor o igual a ${options.max}`);
+		schema = schema.max(
+			options.max,
+			options.maxMessage ?? `Debe ser menor o igual a ${options.max}`
+		);
 	}
 
 	return schema.optional();
@@ -203,15 +209,22 @@ function createOptionalNumberSchema(options?: OptionalCoercedNumberOptions) {
 function createOptionalIntegerSchema(options?: OptionalCoercedNumberOptions) {
 	let schema = z
 		.number({
-			error: options?.invalidMessage ?? options?.integerMessage ?? 'Debe ser un número entero válido'
+			error:
+				options?.invalidMessage ?? options?.integerMessage ?? 'Debe ser un número entero válido'
 		})
 		.int(options?.integerMessage ?? options?.invalidMessage ?? 'Debe ser un número entero válido');
 
 	if (options?.min !== undefined) {
-		schema = schema.min(options.min, options.minMessage ?? `Debe ser mayor o igual a ${options.min}`);
+		schema = schema.min(
+			options.min,
+			options.minMessage ?? `Debe ser mayor o igual a ${options.min}`
+		);
 	}
 	if (options?.max !== undefined) {
-		schema = schema.max(options.max, options.maxMessage ?? `Debe ser menor o igual a ${options.max}`);
+		schema = schema.max(
+			options.max,
+			options.maxMessage ?? `Debe ser menor o igual a ${options.max}`
+		);
 	}
 
 	return schema.optional();
