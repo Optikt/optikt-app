@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { CircleX, ChevronDown, ChevronUp, FileText, History, Wallet } from '@lucide/svelte';
+	import {
+		CircleX,
+		ChevronDown,
+		ChevronUp,
+		FileText,
+		History,
+		Printer,
+		Wallet
+	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -120,6 +128,14 @@
 		goto(resolve('/sales'));
 	}
 
+	function openPrintView() {
+		window.open(resolve(`/print/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
+	}
+
+	function openPdfReceipt() {
+		window.open(resolve(`/api/pdf/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
+	}
+
 	function scrollToHistory() {
 		document.getElementById('sale-history')?.scrollIntoView({
 			behavior: 'smooth',
@@ -152,6 +168,28 @@
 		backOnClick={goBack}
 	>
 		{#snippet actions()}
+			<button
+				type="button"
+				onclick={openPrintView}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<FileText class="h-4 w-4" />
+				Ver recibo
+			</button>
+
+			<button
+				type="button"
+				onclick={openPdfReceipt}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<Printer class="h-4 w-4" />
+				Imprimir PDF
+			</button>
+
 			<button
 				type="button"
 				onclick={scrollToHistory}
