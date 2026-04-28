@@ -15,6 +15,7 @@ import {
 	type SQL
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { ProductStockFilter } from '$lib/shared/enums';
 import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 import { nowISO } from '$lib/dates';
@@ -49,6 +50,8 @@ export interface ProductFilterOptions {
 	brandId?: string;
 	/** Filter by supplier ID */
 	supplierId?: string;
+	/** Filter by stock status */
+	stockStatus?: ProductStockFilter;
 	/** Only show products where stock <= minStock */
 	lowStockOnly?: boolean;
 }
@@ -124,7 +127,15 @@ function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
 		conditions.push(eq(products.supplierId, opts.supplierId));
 	}
 
-	if (opts.lowStockOnly) {
+	if (opts.stockStatus === ProductStockFilter.IN_STOCK) {
+		conditions.push(gt(products.stock, 0));
+	} else if (opts.stockStatus === ProductStockFilter.LOW_STOCK) {
+		conditions.push(gt(products.stock, 0));
+		conditions.push(isNotNull(products.minStock));
+		conditions.push(lte(products.stock, products.minStock));
+	} else if (opts.stockStatus === ProductStockFilter.OUT_OF_STOCK) {
+		conditions.push(eq(products.stock, 0));
+	} else if (opts.lowStockOnly) {
 		conditions.push(isNotNull(products.stock));
 		conditions.push(isNotNull(products.minStock));
 		conditions.push(lte(products.stock, products.minStock));
