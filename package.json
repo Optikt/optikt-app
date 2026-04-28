@@ -63,11 +63,13 @@
 		"@lucide/svelte": "^0.562.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@sentry/sveltekit": "^10",
+		"@sparticuz/chromium": "^148.0.0",
 		"date-fns": "^4.1.0",
 		"drizzle-orm": "^0.45.0",
 		"export-to-csv": "^1.4.0",
 		"libphonenumber-js": "^1.12.33",
 		"postgres": "^3.4.7",
+		"puppeteer-core": "^24.42.0",
 		"svelecte": "^5.3.0",
 		"svelte-sonner": "^1.0.7",
 		"zod": "^4.3.6"
