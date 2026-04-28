@@ -43,15 +43,13 @@ import {
 // ============================================================================
 
 export type SaleWithRelations = Sale & {
-	customer:
-		| {
-				id: string;
-				firstName: string;
-				lastName: string;
-				idNumber: string | null;
-				primaryPhone: string;
-		  }
-		| null;
+	customer: {
+		id: string;
+		firstName: string;
+		lastName: string;
+		idNumber: string | null;
+		primaryPhone: string;
+	} | null;
 	seller: { id: string; fullName: string } | null;
 	cancelledBy: { id: string; fullName: string } | null;
 	refundedBy: { id: string; fullName: string } | null;

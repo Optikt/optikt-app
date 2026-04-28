@@ -3,7 +3,9 @@
 </script>
 
 <div class="min-h-screen bg-white text-black">
-	<div class="mx-auto min-h-screen w-full max-w-[210mm] px-6 py-8 print:max-w-none print:px-0 print:py-0">
+	<div
+		class="mx-auto min-h-screen w-full max-w-[210mm] px-6 py-8 print:max-w-none print:px-0 print:py-0"
+	>
 		{@render children()}
 	</div>
 </div>

@@ -1,52 +1,90 @@
-import { env } from '$env/dynamic/private';
 import chromium from '@sparticuz/chromium';
+import type { Browser } from 'puppeteer-core';
 import puppeteer from 'puppeteer-core';
 
-const DEFAULT_PDF_BASE_URL = 'http://localhost:5173';
+let browserPromise: Promise<Browser> | null = null;
 
-function normalizeBaseUrl(value: string | null | undefined): string | null {
-	const trimmed = value?.trim();
-	if (!trimmed) return null;
-	return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
-}
+type PdfGlobalState = typeof globalThis & {
+	__optiktPdfShutdownRegistered?: boolean;
+};
 
-export function pickPdfBaseUrl(
-	requestOrigin?: string | null,
-	origin?: string | null,
-	publicBaseUrl?: string | null
-): string {
-	return (
-		normalizeBaseUrl(requestOrigin) ??
-		normalizeBaseUrl(origin) ??
-		normalizeBaseUrl(publicBaseUrl) ??
-		DEFAULT_PDF_BASE_URL
-	);
-}
+const pdfGlobal = globalThis as PdfGlobalState;
 
-export function getPdfBaseUrl(requestOrigin?: string | null): string {
-	return pickPdfBaseUrl(requestOrigin, env.ORIGIN, env.PUBLIC_BASE_URL);
-}
-
-export function resolvePdfUrl(url: string, baseUrl: string = getPdfBaseUrl()): string {
+export function normalizePdfUrl(url: string): string {
 	try {
 		return new URL(url).toString();
 	} catch {
-		const normalizedPath = url.startsWith('/') ? url : `/${url}`;
-		return new URL(normalizedPath, baseUrl).toString();
+		throw new TypeError('PDF URL must be absolute');
 	}
 }
 
-export async function generatePdf(url: string, cookieHeader?: string | null): Promise<Buffer> {
+async function launchBrowser(): Promise<Browser> {
 	const browser = await puppeteer.launch({
 		args: [...chromium.args, '--hide-scrollbars'],
 		executablePath: await chromium.executablePath(),
 		headless: true
 	});
 
-	try {
-		const page = await browser.newPage();
-		const targetUrl = resolvePdfUrl(url);
+	browser.once('disconnected', () => {
+		browserPromise = null;
+	});
 
+	return browser;
+}
+
+async function getBrowser(): Promise<Browser> {
+	if (!browserPromise) {
+		browserPromise = launchBrowser().catch((error: unknown) => {
+			browserPromise = null;
+			throw error;
+		});
+	}
+
+	const browser = await browserPromise;
+	if (browser.connected) {
+		return browser;
+	}
+
+	browserPromise = null;
+	return getBrowser();
+}
+
+export async function closePdfBrowser(): Promise<void> {
+	const currentBrowserPromise = browserPromise;
+	browserPromise = null;
+
+	if (!currentBrowserPromise) {
+		return;
+	}
+
+	const browser = await currentBrowserPromise.catch(() => null);
+	if (browser?.connected) {
+		await browser.close();
+	}
+}
+
+export function registerPdfBrowserShutdown(): void {
+	if (pdfGlobal.__optiktPdfShutdownRegistered) {
+		return;
+	}
+
+	const shutdown = () => {
+		void closePdfBrowser().catch((error: unknown) => {
+			console.error('[pdf] failed to close browser during shutdown', error);
+		});
+	};
+
+	process.on('SIGINT', shutdown);
+	process.on('SIGTERM', shutdown);
+	pdfGlobal.__optiktPdfShutdownRegistered = true;
+}
+
+export async function generatePdf(url: string, cookieHeader?: string | null): Promise<Buffer> {
+	const browser = await getBrowser();
+	const targetUrl = normalizePdfUrl(url);
+	const page = await browser.newPage();
+
+	try {
 		if (cookieHeader?.trim()) {
 			await page.setExtraHTTPHeaders({
 				cookie: cookieHeader
@@ -55,7 +93,7 @@ export async function generatePdf(url: string, cookieHeader?: string | null): Pr
 
 		await page.emulateMediaType('print');
 		await page.goto(targetUrl, {
-			waitUntil: 'networkidle0'
+			waitUntil: 'load'
 		});
 
 		const pdf = await page.pdf({
@@ -65,6 +103,6 @@ export async function generatePdf(url: string, cookieHeader?: string | null): Pr
 
 		return Buffer.from(pdf);
 	} finally {
-		await browser.close();
+		await page.close().catch(() => undefined);
 	}
 }

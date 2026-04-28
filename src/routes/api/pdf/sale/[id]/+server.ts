@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { generatePdf, getPdfBaseUrl } from '$lib/server/pdf';
+import { generatePdf } from '$lib/server/pdf';
 import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {
@@ -13,8 +13,7 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const baseUrl = getPdfBaseUrl(url.origin);
-	const printUrl = new URL(`/print/sale/${params.id}`, baseUrl).toString();
+	const printUrl = new URL(`/print/sale/${params.id}`, url).toString();
 	const cookieHeader = request.headers.get('cookie');
 	const pdf = await generatePdf(printUrl, cookieHeader);
 	const fileName = `recibo-venta-${String(sale.orderNumber).padStart(4, '0')}.pdf`;

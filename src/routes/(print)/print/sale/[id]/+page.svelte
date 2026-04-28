@@ -39,8 +39,7 @@
 		settings.defaultTaxRate > 0
 			? settings.defaultTaxRate
 			: (items.find(
-					(item: SaleItemWithDetails) =>
-						item.snapshotIsTaxable && (item.snapshotTaxRate ?? 0) > 0
+					(item: SaleItemWithDetails) => item.snapshotIsTaxable && (item.snapshotTaxRate ?? 0) > 0
 				)?.snapshotTaxRate ?? null);
 
 	const treatmentGroups = items.reduce<Record<string, SaleItemWithDetails[]>>((groups, item) => {
@@ -155,7 +154,11 @@
 	<header class="border-b border-slate-900 pb-5">
 		<div class="flex items-start justify-between gap-6">
 			<div class="flex items-start gap-4">
-				<img src={businessLogo} alt={`Logo de ${businessName}`} class="h-14 w-auto object-contain grayscale" />
+				<img
+					src={businessLogo}
+					alt={`Logo de ${businessName}`}
+					class="h-14 w-auto object-contain grayscale"
+				/>
 				<div class="space-y-1">
 					<h1 class="font-heading text-2xl font-semibold tracking-tight text-slate-950">
 						{businessName}
@@ -181,7 +184,9 @@
 		</div>
 	</header>
 
-	<section class="grid gap-4 border border-slate-300 px-4 py-4 sm:grid-cols-2 print:break-inside-avoid">
+	<section
+		class="grid gap-4 border border-slate-300 px-4 py-4 sm:grid-cols-2 print:break-inside-avoid"
+	>
 		<div>
 			<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">Cliente</p>
 			<p class="mt-2 text-base font-semibold text-slate-950">{customerName}</p>
@@ -201,7 +206,9 @@
 	<section class="border border-slate-300 print:break-inside-auto">
 		<table class="w-full border-collapse">
 			<thead>
-				<tr class="border-b border-slate-900 bg-slate-100 text-left text-[11px] font-semibold tracking-[0.14em] uppercase">
+				<tr
+					class="border-b border-slate-900 bg-slate-100 text-left text-[11px] font-semibold tracking-[0.14em] uppercase"
+				>
 					<th class="px-4 py-3">Descripción</th>
 					<th class="px-4 py-3 text-right">Cantidad</th>
 					<th class="px-4 py-3 text-right">Precio Unit.</th>
@@ -237,7 +244,9 @@
 						</td>
 						<td class="px-4 py-3 text-right font-mono font-semibold">
 							<div>{formatPrice(row.lineTotal)}</div>
-							<div class="text-[11px] font-normal text-slate-500">{formatBsAmount(row.lineTotal)}</div>
+							<div class="text-[11px] font-normal text-slate-500">
+								{formatBsAmount(row.lineTotal)}
+							</div>
 						</td>
 					</tr>
 
@@ -253,7 +262,9 @@
 							</td>
 							<td class="px-4 py-3 text-right font-mono">
 								<div>{formatPrice(computeLineTotal(treatment))}</div>
-								<div class="text-[11px] text-slate-500">{formatBsAmount(computeLineTotal(treatment))}</div>
+								<div class="text-[11px] text-slate-500">
+									{formatBsAmount(computeLineTotal(treatment))}
+								</div>
 							</td>
 						</tr>
 					{/each}
@@ -291,7 +302,9 @@
 								</div>
 								<div class="text-right font-mono">
 									<p>{formatOriginalPaymentAmount(payment)}</p>
-									<p class="text-[11px] text-slate-500">Equiv. {formatPrice(payment.amountBcvUsd)}</p>
+									<p class="text-[11px] text-slate-500">
+										Equiv. {formatPrice(payment.amountBcvUsd)}
+									</p>
 								</div>
 							</div>
 						</div>
@@ -320,7 +333,10 @@
 
 			{#if taxBreakdown.taxAmount > 0}
 				<div class="flex items-center justify-between gap-4">
-					<span>IVA{#if ivaRate} ({formatCurrency(ivaRate)}%){/if}</span>
+					<span
+						>IVA{#if ivaRate}
+							({formatCurrency(ivaRate)}%){/if}</span
+					>
 					<span class="font-mono font-semibold">{formatPrice(taxBreakdown.taxAmount)}</span>
 				</div>
 			{/if}
@@ -330,7 +346,9 @@
 					<span>Total USD</span>
 					<span class="font-mono">{formatPrice(sale.total)}</span>
 				</div>
-				<div class="mt-2 flex items-center justify-between gap-4 text-base font-bold text-slate-950">
+				<div
+					class="mt-2 flex items-center justify-between gap-4 text-base font-bold text-slate-950"
+				>
 					<span>Total Bs</span>
 					<span class="font-mono">{formatBsAmount(sale.total) ?? 'N/D'}</span>
 				</div>
@@ -341,7 +359,11 @@
 					<span>Total pagado</span>
 					<span class="font-mono font-semibold">{formatPrice(totalPaid)}</span>
 				</div>
-				<div class="mt-2 flex items-center justify-between gap-4 text-base font-bold {balanceDue > 0.01 ? 'text-slate-950' : 'text-slate-700'}">
+				<div
+					class="mt-2 flex items-center justify-between gap-4 text-base font-bold {balanceDue > 0.01
+						? 'text-slate-950'
+						: 'text-slate-700'}"
+				>
 					<span>Saldo pendiente</span>
 					<span class="font-mono">{formatPrice(balanceDue)}</span>
 				</div>
@@ -358,7 +380,9 @@
 		</div>
 
 		<div class="pt-8">
-			<div class="mx-auto w-full max-w-[18rem] border-t border-slate-900 pt-2 text-center text-[11px] uppercase tracking-[0.16em]">
+			<div
+				class="mx-auto w-full max-w-[18rem] border-t border-slate-900 pt-2 text-center text-[11px] tracking-[0.16em] uppercase"
+			>
 				Firma del cliente
 			</div>
 		</div>
