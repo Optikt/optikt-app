@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ProductType } from '$lib/shared/enums';
+import { ProductType, ProductStockFilter } from '$lib/shared/enums';
 import { MaterialCategories } from './materials';
 import { CreateProductSchema, UpdateProductSchema, ListProductsSchema } from './products';
 
@@ -185,6 +185,17 @@ describe('ListProductsSchema', () => {
 		expect(data.perPage).toBe(10);
 		expect(data.includeInactive).toBe(false);
 		expect(data.lowStockOnly).toBe(false);
+		expect(data.stockStatus).toBeUndefined();
+	});
+
+	it('accepts stock status filters', () => {
+		const result = ListProductsSchema.safeParse({
+			stockStatus: ProductStockFilter.OUT_OF_STOCK
+		});
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.stockStatus).toBe(ProductStockFilter.OUT_OF_STOCK);
 	});
 
 	it('validates pagination bounds', () => {

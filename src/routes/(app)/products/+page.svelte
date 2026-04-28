@@ -12,9 +12,12 @@
 	} from '$lib/remote/products.remote';
 	import { ProductsTable } from '$lib/components/products';
 	import {
+		ALL_PRODUCT_STOCK_FILTERS,
 		ALL_PRODUCT_TYPES,
+		PRODUCT_STOCK_FILTER_LABELS,
 		PRODUCT_TYPE_LABELS,
 		isAdminRole,
+		type ProductStockFilter,
 		type ProductType
 	} from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -37,6 +40,7 @@
 
 	let search = $state('');
 	let typeFilter = $state<ProductType | ''>('');
+	let stockFilter = $state<ProductStockFilter | ''>('');
 	let brandFilter = $state('');
 	let supplierFilter = $state('');
 	let includeDeleted = $state(false);
@@ -44,6 +48,7 @@
 	const hasActiveFilters = $derived(
 		search.trim().length > 0 ||
 			typeFilter !== '' ||
+			stockFilter !== '' ||
 			brandFilter !== '' ||
 			supplierFilter !== '' ||
 			includeDeleted
@@ -57,6 +62,7 @@
 				perPage: 10,
 				search: search || undefined,
 				type: typeFilter || undefined,
+				stockStatus: stockFilter || undefined,
 				brandId: brandFilter || undefined,
 				supplierId: supplierFilter || undefined,
 				includeDeleted
@@ -90,6 +96,7 @@
 	function clearFilters() {
 		search = '';
 		typeFilter = '';
+		stockFilter = '';
 		brandFilter = '';
 		supplierFilter = '';
 		includeDeleted = false;
@@ -182,7 +189,7 @@
 
 	<section class="glass-card bg-surface-container-low p-4">
 		<div
-			class="grid gap-3 xl:grid-cols-[minmax(240px,0.9fr)_180px_180px_180px_auto_auto] xl:items-center"
+			class="grid gap-3 xl:grid-cols-[minmax(240px,0.9fr)_180px_180px_180px_180px_auto_auto] xl:items-center"
 		>
 			<div class="relative">
 				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
@@ -207,6 +214,19 @@
 				<option value="">Tipo de producto</option>
 				{#each ALL_PRODUCT_TYPES as type (type)}
 					<option value={type}>{PRODUCT_TYPE_LABELS[type]}</option>
+				{/each}
+			</select>
+
+			<select
+				id="products-stock-filter"
+				name="products-stock-filter"
+				bind:value={stockFilter}
+				onchange={handleFilterChange}
+				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+			>
+				<option value="">Estado de stock</option>
+				{#each ALL_PRODUCT_STOCK_FILTERS as filter (filter)}
+					<option value={filter}>{PRODUCT_STOCK_FILTER_LABELS[filter]}</option>
 				{/each}
 			</select>
 

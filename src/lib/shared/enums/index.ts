@@ -1,5 +1,6 @@
 export * from './roles';
 export * from './supplierTypes';
+export * from './productStockFilters';
 export * from './productTypes';
 export * from './currencyTypes';
 export * from './lensTypes';
