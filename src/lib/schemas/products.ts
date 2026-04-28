@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { ProductType, ALL_PRODUCT_STOCK_FILTERS } from '$lib/shared/enums';
+import { ProductType, ProductStockFilter } from '$lib/shared/enums';
 import { MaterialCategories } from './materials';
 import {
 	CoercedInteger,
@@ -34,7 +34,7 @@ const OptionalUppercaseStringSchema = z.string().trim().toUpperCase().optional()
 // export const ListProductsSchema = z.object({
 export const ListProductsSchema = ListPaginationSchema.extend({
 	type: z.enum(Object.values(ProductType) as [string, ...string[]]).optional(),
-	stockStatus: z.enum(ALL_PRODUCT_STOCK_FILTERS as [string, ...string[]]).optional(),
+	stockStatus: z.enum(ProductStockFilter).optional(),
 	brandId: z.uuid().optional(),
 	supplierId: z.uuid().optional(),
 	includeInactive: z.boolean().default(false),

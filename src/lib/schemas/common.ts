@@ -142,17 +142,73 @@ interface OptionalCoercedNumberOptions {
 	maxMessage?: string;
 }
 
-function preprocessOptionalNumber(val: number | string | null | undefined) {
-	if (val === '' || val === null || val === undefined) {
+function getOptionalNumberErrorMessage(
+	options: OptionalCoercedNumberOptions | undefined,
+	enforceInteger: boolean
+) {
+	if (enforceInteger) {
+		return options?.integerMessage ?? options?.invalidMessage ?? 'Debe ser un número entero válido';
+	}
+
+	return options?.invalidMessage ?? 'Debe ser un número válido';
+}
+
+function parseOptionalNumber(
+	value: unknown,
+	ctx: z.RefinementCtx,
+	options: OptionalCoercedNumberOptions | undefined,
+	enforceInteger: boolean
+): number | undefined | typeof z.NEVER {
+	if (value === '' || value === null || value === undefined) {
 		return undefined;
 	}
 
-	if (typeof val === 'string' && val.trim() === '') {
+	if (typeof value === 'string' && value.trim() === '') {
 		return undefined;
 	}
 
-	const num = typeof val === 'string' ? Number(val.trim()) : Number(val);
-	return Number.isNaN(num) ? val : num;
+	if (typeof value !== 'string' && typeof value !== 'number') {
+		ctx.addIssue({
+			code: 'custom',
+			message: getOptionalNumberErrorMessage(options, enforceInteger)
+		});
+		return z.NEVER;
+	}
+
+	const parsed = typeof value === 'string' ? Number(value.trim()) : value;
+	if (!Number.isFinite(parsed)) {
+		ctx.addIssue({
+			code: 'custom',
+			message: getOptionalNumberErrorMessage(options, enforceInteger)
+		});
+		return z.NEVER;
+	}
+
+	if (enforceInteger && !Number.isInteger(parsed)) {
+		ctx.addIssue({
+			code: 'custom',
+			message: options?.integerMessage ?? 'Debe ser un número entero válido'
+		});
+		return z.NEVER;
+	}
+
+	if (options?.min !== undefined && parsed < options.min) {
+		ctx.addIssue({
+			code: 'custom',
+			message: options.minMessage ?? `Debe ser mayor o igual a ${options.min}`
+		});
+		return z.NEVER;
+	}
+
+	if (options?.max !== undefined && parsed > options.max) {
+		ctx.addIssue({
+			code: 'custom',
+			message: options.maxMessage ?? `Debe ser menor o igual a ${options.max}`
+		});
+		return z.NEVER;
+	}
+
+	return parsed;
 }
 
 /**
@@ -169,7 +225,13 @@ function preprocessOptionalNumber(val: number | string | null | undefined) {
  * DpSchema.safeParse('0'); // => 0
  */
 export const OptionalCoercedInteger = (options?: OptionalCoercedNumberOptions) => {
-	return z.preprocess(preprocessOptionalNumber, createOptionalIntegerSchema(options));
+	return z
+		.any()
+		.optional()
+		.transform((value, ctx): number | undefined => {
+			const parsed = parseOptionalNumber(value, ctx, options, true);
+			return parsed === z.NEVER ? undefined : parsed;
+		});
 };
 
 /**
@@ -177,58 +239,14 @@ export const OptionalCoercedInteger = (options?: OptionalCoercedNumberOptions) =
  * Converts empty string, null, or undefined to undefined (no value provided)
  */
 export const OptionalCoercedNumber = (options?: OptionalCoercedNumberOptions) => {
-	return z.preprocess(preprocessOptionalNumber, createOptionalNumberSchema(options));
+	return z
+		.any()
+		.optional()
+		.transform((value, ctx): number | undefined => {
+			const parsed = parseOptionalNumber(value, ctx, options, false);
+			return parsed === z.NEVER ? undefined : parsed;
+		});
 };
-
-/**
- * Helper to create the integer schema with optional constraints
- */
-
-function createOptionalNumberSchema(options?: OptionalCoercedNumberOptions) {
-	let schema = z.number({ error: options?.invalidMessage ?? 'Debe ser un número válido' });
-
-	if (options?.min !== undefined) {
-		schema = schema.min(
-			options.min,
-			options.minMessage ?? `Debe ser mayor o igual a ${options.min}`
-		);
-	}
-	if (options?.max !== undefined) {
-		schema = schema.max(
-			options.max,
-			options.maxMessage ?? `Debe ser menor o igual a ${options.max}`
-		);
-	}
-
-	return schema.optional();
-}
-
-/**
- * Helper to create the integer schema with optional constraints
- */
-function createOptionalIntegerSchema(options?: OptionalCoercedNumberOptions) {
-	let schema = z
-		.number({
-			error:
-				options?.invalidMessage ?? options?.integerMessage ?? 'Debe ser un número entero válido'
-		})
-		.int(options?.integerMessage ?? options?.invalidMessage ?? 'Debe ser un número entero válido');
-
-	if (options?.min !== undefined) {
-		schema = schema.min(
-			options.min,
-			options.minMessage ?? `Debe ser mayor o igual a ${options.min}`
-		);
-	}
-	if (options?.max !== undefined) {
-		schema = schema.max(
-			options.max,
-			options.maxMessage ?? `Debe ser menor o igual a ${options.max}`
-		);
-	}
-
-	return schema.optional();
-}
 
 /**
  * CoercedBoolean schema - accepts string or boolean, transforms to boolean
