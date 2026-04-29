@@ -412,7 +412,7 @@
 			</p>
 
 			{#if payments.length === 0}
-				<p class="mt-3 text-[10px] text-slate-400 italic">Sin pagos registrados</p>
+				<p class="mt-3 text-[10px] text-slate-400 italic">Sin pagos registrados al momento de generar este recibo</p>
 			{:else}
 				<div class="space-y-[3px]">
 					{#each payments as payment (payment.id)}
