@@ -333,9 +333,6 @@
 				<p class="font-mono text-[20px] leading-none font-medium text-slate-950">
 					{formattedOrderNumber}
 				</p>
-				<!-- <p class="mt-1 text-[10px] leading-none text-slate-500">
-					Vendedor: {sale.seller?.fullName ?? 'Sin asignar'}
-				</p> -->
 			</div>
 		</div>
 		<div class="mt-1 flex justify-between text-slate-950">
@@ -346,8 +343,8 @@
 					<p class="text-[10px] text-slate-500">Teléfono: {customerPhone}</p>
 				{/if}
 			</div>
-			<div >
-				<p class="text-[10px] mt-0.5 text-slate-500">
+			<div>
+				<p class="mt-0.5 text-[10px] text-slate-500">
 					<strong> Vendedor: </strong>
 					{sale.seller?.fullName ?? 'Sin asignar'}
 				</p>
@@ -494,7 +491,9 @@
 
 				{#if showRemainingAmount}
 					<div class="mt-[5px] border-t-[0.5px] border-[#eee] pt-[5px]">
-						<div class="flex items-center justify-between gap-3 text-[10px] font-medium text-slate-950">
+						<div
+							class="flex items-center justify-between gap-3 text-[10px] font-medium text-slate-950"
+						>
 							<span>Monto pendiente</span>
 							<span class="font-mono tabular-nums">{formatPrice(remainingAmount)}</span>
 						</div>
@@ -528,15 +527,9 @@
 					<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400">
 						Método / Referencia
 					</th>
-					<th class="px-2 py-[3px] text-right text-[8.5px] font-normal text-slate-400">
-						Monto Bs
-					</th>
-					<th class="px-2 py-[3px] text-right text-[8.5px] font-normal text-slate-400">
-						Monto $
-					</th>
-					<th class="px-2 py-[3px] text-right text-[8.5px] font-normal text-slate-400">
-						Pendiente $
-					</th>
+					<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400"> Monto Bs </th>
+					<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400"> Monto $ </th>
+					<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400"> Pendiente $ </th>
 				</tr>
 			</thead>
 			<tbody>
@@ -546,20 +539,14 @@
 						<td class="px-2 pt-[8px] pb-[4px] text-[9px] text-[#ccc]">
 							________________________________
 						</td>
-						<td
-							class="px-2 pt-[8px] pb-[4px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
-						>
-							___________
+						<td class="px-2 pt-[8px] pb-[4px] font-mono text-[9px] text-[#ccc] tabular-nums">
+							_____________
 						</td>
-						<td
-							class="px-2 pt-[8px] pb-[4px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
-						>
-							___________
+						<td class="px-2 pt-[8px] pb-[4px] font-mono text-[9px] text-[#ccc] tabular-nums">
+							_____________
 						</td>
-						<td
-							class="px-2 pt-[8px] pb-[4px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
-						>
-							___________
+						<td class="px-2 pt-[8px] pb-[4px] font-mono text-[9px] text-[#ccc] tabular-nums">
+							_____________
 						</td>
 					</tr>
 				{/each}
