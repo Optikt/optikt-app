@@ -326,19 +326,34 @@
 
 			<div class="shrink-0 text-right">
 				<p class="text-[9px] font-medium tracking-[1px] text-slate-400 uppercase">
-					RECIBO DE VENTA
+					{formatReceiptDate(sale.saleDate)} · RECIBO DE VENTA
 				</p>
 				<p class="font-mono text-[20px] leading-none font-medium text-slate-950">
 					{formattedOrderNumber}
 				</p>
-				<p class="mt-1 text-[10px] leading-none text-slate-500">
-					{formatReceiptDate(sale.saleDate)} · Vendedor: {sale.seller?.fullName ?? 'Sin asignar'}
+				<!-- <p class="mt-1 text-[10px] leading-none text-slate-500">
+					Vendedor: {sale.seller?.fullName ?? 'Sin asignar'}
+				</p> -->
+			</div>
+		</div>
+		<div class="mt-1 flex justify-between text-slate-950">
+			<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+				<p class="text-[12px] font-medium">{customerName}</p>
+				<p class="text-[10px] text-slate-500">Cédula/RIF: {customerDocument}</p>
+				{#if customerPhone}
+					<p class="text-[10px] text-slate-500">Teléfono: {customerPhone}</p>
+				{/if}
+			</div>
+			<div >
+				<p class="text-[10px] mt-0.5 text-slate-500">
+					<strong> Vendedor: </strong>
+					{sale.seller?.fullName ?? 'Sin asignar'}
 				</p>
 			</div>
 		</div>
 	</header>
 
-	<section class="border-b-[0.5px] border-[#eee] text-slate-950">
+	<!-- <section class="border-b-[0.5px] border-[#eee] text-slate-950 flex justify-between">
 		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
 			<p class="text-[12px] font-medium">{customerName}</p>
 			<p class="text-[10px] text-slate-500">Cédula/RIF: {customerDocument}</p>
@@ -346,7 +361,12 @@
 				<p class="text-[10px] text-slate-500">Teléfono: {customerPhone}</p>
 			{/if}
 		</div>
-	</section>
+		<div>
+				<p class="mt-1 text-[10px] leading-none text-slate-500">
+					Vendedor: {sale.seller?.fullName ?? 'Sin asignar'}
+				</p>
+		</div>
+	</section> -->
 
 	<section class="receipt-table">
 		<table class="w-full border-collapse">
@@ -413,7 +433,9 @@
 			</p>
 
 			{#if payments.length === 0}
-				<p class="mt-3 text-[10px] text-slate-400 italic">Sin pagos registrados al momento de generar este recibo</p>
+				<p class="mt-3 text-[10px] text-slate-400 italic">
+					Sin pagos registrados al momento de generar este recibo
+				</p>
 			{:else}
 				<div class="space-y-[3px]">
 					{#each payments as payment (payment.id)}
@@ -522,9 +544,7 @@
 		</table>
 	</section>
 
-	<footer
-		class="receipt-footer flex items-end justify-between gap-4 pt-2"
-	>
+	<footer class="receipt-footer flex items-end justify-between gap-4 pt-2">
 		<p class="text-[9.5px] text-slate-500">Gracias por su preferencia</p>
 
 		<div class="text-center">
