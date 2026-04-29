@@ -116,6 +116,18 @@
 		}
 	}
 
+	function formatPaymentReceiptDate(date: Date | string | null): string {
+		return formatDate(date, {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		});
+	}
+
+	function formatPaymentBcvAmount(payment: SalePayment): string {
+		return `${formatPrice(payment.amountBcvUsd)} (BCV)`;
+	}
+
 	function extractLensMaterial(rawName: string): string {
 		for (const candidate of MATERIAL_PATTERNS) {
 			if (candidate.pattern.test(rawName)) {
@@ -266,17 +278,6 @@
 		].join(' · ');
 	}
 
-	function paymentMeta(payment: SalePayment): string {
-		const parts = [];
-
-		if (payment.reference) {
-			parts.push(`Ref. ${payment.reference}`);
-		}
-
-		parts.push(formatReceiptDate(payment.paymentDate));
-		return parts.join(' · ');
-	}
-
 	function formatTaxRate(rate: number | null): string {
 		if (rate === null || rate <= 0) return '';
 		return new Intl.NumberFormat('es-VE', {
@@ -291,16 +292,16 @@
 </svelte:head>
 
 <article
-	class="sale-receipt box-border flex w-full max-w-[660px] flex-col gap-[9px] self-start border-[0.5px] border-[#ccc] bg-white px-[18px] py-[14px] font-sans text-[11px] leading-[1.4] text-[#1a1a1a] print:max-w-[175mm]"
+	class="sale-receipt box-border flex w-full max-w-[660px] flex-col gap-[4px] self-start border-[0.5px] border-[#ccc] bg-white px-[10px] py-[8px] font-sans text-[11px] leading-[1.4] text-[#1a1a1a] print:max-w-[175mm]"
 >
-	<header class="border-b-[0.5px] border-[#ddd] pb-[9px]">
+	<header class="border-b-[0.5px] border-[#ddd]">
 		<div class="flex items-start justify-between gap-4">
 			<div class="min-w-0 flex-1">
 				<div class="flex items-start gap-2">
 					<img
 						src={businessLogo}
 						alt={`Logo de ${businessName}`}
-						class="mt-0.5 h-8 w-auto shrink-0 object-contain grayscale"
+						class="h-8 w-auto shrink-0 object-contain grayscale"
 					/>
 					<div class="min-w-0 space-y-0.5">
 						<div class="flex items-end gap-x-1">
@@ -337,7 +338,7 @@
 		</div>
 	</header>
 
-	<section class="border-b-[0.5px] border-[#eee] py-[6px] text-slate-950">
+	<section class="border-b-[0.5px] border-[#eee] text-slate-950">
 		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
 			<p class="text-[12px] font-medium">{customerName}</p>
 			<p class="text-[10px] text-slate-500">Cédula/RIF: {customerDocument}</p>
@@ -416,23 +417,20 @@
 			{:else}
 				<div class="space-y-[3px]">
 					{#each payments as payment (payment.id)}
-						<div
-							class="flex items-start justify-between gap-3 border-b-[0.5px] border-[#f0f0f0] py-[3px] last:border-b-0"
-						>
-							<div class="min-w-0">
-								<p class="text-[10px] font-medium text-slate-950">
-									{getPaymentMethodLabel(payment.paymentMethod)}
+						<div class="border-b-[0.5px] border-[#f0f0f0] last:border-b-0">
+							<div class="flex items-start justify-between gap-3">
+								<p class="min-w-0 text-[10px] font-medium text-slate-950">
+									{getPaymentMethodLabel(payment.paymentMethod)}:
 								</p>
-								<p class="mt-0.5 text-[9.5px] text-slate-500">{paymentMeta(payment)}</p>
-								<p class="mt-0.5 text-[9.5px] text-slate-500">
+								<p
+									class="shrink-0 text-right font-mono text-[10px] font-medium text-slate-950 tabular-nums"
+								>
 									{formatOriginalPaymentAmount(payment)}
 								</p>
 							</div>
-							<div
-								class="shrink-0 text-right font-mono text-[10px] font-medium text-slate-950 tabular-nums"
-							>
-								{formatPrice(payment.amountBcvUsd)}
-							</div>
+							<p class="text-[9.5px] text-slate-500">
+								{formatPaymentReceiptDate(payment.paymentDate)} - {formatPaymentBcvAmount(payment)}
+							</p>
 						</div>
 					{/each}
 				</div>
@@ -440,7 +438,7 @@
 		</div>
 
 		<div class="receipt-box rounded-[4px] border-[0.5px] border-[#e0e0e0] px-[9px] py-[7px]">
-			<p class="mb-[5px] text-[9px] font-medium tracking-[0.08em] text-slate-400 uppercase">
+			<p class="mb-[4px] text-[9px] font-medium tracking-[0.08em] text-slate-400 uppercase">
 				Totales
 			</p>
 
