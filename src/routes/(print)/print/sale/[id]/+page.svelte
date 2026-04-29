@@ -40,9 +40,8 @@
 	const businessName = settings.businessName?.trim() || 'Optikt';
 	const businessLogo = settings.businessLogo?.trim() || '/logos/optikt-original.png';
 	const businessRif = settings.businessRif?.trim() || null;
-	const businessContactLine = [settings.businessAddress?.trim(), settings.businessPhone?.trim()]
-		.filter((value): value is string => Boolean(value))
-		.join(' · ');
+	const businessContactPhone = settings.businessPhone?.trim() || null;
+	const businessAddress = settings.businessAddress?.trim() || null;
 	const customerName = sale.customer
 		? `${sale.customer.firstName} ${sale.customer.lastName}`
 		: 'Cliente General';
@@ -309,13 +308,20 @@
 						class="mt-0.5 h-8 w-auto shrink-0 object-contain grayscale"
 					/>
 					<div class="min-w-0 space-y-0.5">
-						<p class="text-[15px] leading-none font-medium text-slate-950">{businessName}</p>
-						{#if businessRif}
-							<p class="text-[9px] leading-none text-slate-500">RIF: {businessRif}</p>
-						{/if}
-						{#if businessContactLine}
+						<div class="flex items-end gap-x-1">
+							<p class="text-[15px] leading-none font-medium text-slate-950">{businessName}</p>
+							{#if businessRif}
+								<p class="text-[9px] leading-none text-slate-500">RIF: {businessRif}</p>
+							{/if}
+						</div>
+						{#if businessAddress}
 							<p class="text-[9px] leading-none text-slate-500">
-								{businessContactLine}
+								{businessAddress}
+							</p>
+						{/if}
+						{#if businessContactPhone}
+							<p class="text-[9px] leading-none text-slate-500">
+								{businessContactPhone}
 							</p>
 						{/if}
 					</div>
