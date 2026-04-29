@@ -50,6 +50,8 @@
 	const taxBreakdown = computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate);
 	const subtotalForTotals = taxBreakdown.taxableBase + taxBreakdown.exemptTotal;
 	const ivaRate = sale.snapshotTaxRate > 0 ? sale.snapshotTaxRate : null;
+	const remainingAmount = Math.max(0, sale.total - sale.paidAmountBcvUsd);
+	const showRemainingAmount = payments.length > 0 && remainingAmount > 0.01;
 
 	const treatmentGroups = items.reduce<Record<string, SaleItemWithDetails[]>>((groups, item) => {
 		if (item.itemType !== SaleItemType.TREATMENT || !item.parentSaleItemId) {
@@ -489,6 +491,18 @@
 					<span>Total</span>
 					<span class="font-mono tabular-nums">{formatPrice(sale.total)}</span>
 				</div>
+
+				{#if showRemainingAmount}
+					<div class="mt-[5px] border-t-[0.5px] border-[#eee] pt-[5px]">
+						<div class="flex items-center justify-between gap-3 text-[10px] font-medium text-slate-950">
+							<span>Monto pendiente</span>
+							<span class="font-mono tabular-nums">{formatPrice(remainingAmount)}</span>
+						</div>
+						<p class="mt-1 text-[8.5px] leading-[1.3] text-slate-500">
+							Monto pendiente a la fecha de generación.
+						</p>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</section>
@@ -502,16 +516,20 @@
 
 		<table class="w-full border-collapse text-[10px]">
 			<colgroup>
-				<col class="w-[18%]" />
-				<col class="w-[42%]" />
-				<col class="w-[20%]" />
-				<col class="w-[20%]" />
+				<col class="w-[19%]" />
+				<col class="w-[33%]" />
+				<col class="w-[16%]" />
+				<col class="w-[16%]" />
+				<col class="w-[16%]" />
 			</colgroup>
 			<thead>
 				<tr class="border-b-[0.5px] border-[#eee] bg-[#fafafa] text-left">
 					<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400"> Fecha </th>
 					<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400">
 						Método / Referencia
+					</th>
+					<th class="px-2 py-[3px] text-right text-[8.5px] font-normal text-slate-400">
+						Monto Bs
 					</th>
 					<th class="px-2 py-[3px] text-right text-[8.5px] font-normal text-slate-400">
 						Monto $
@@ -524,17 +542,22 @@
 			<tbody>
 				{#each placeholderRows as placeholderRow (placeholderRow)}
 					<tr class="border-b-[0.5px] border-[#eee] last:border-b-0">
-						<td class="px-2 pt-[7px] pb-[3px] text-[9px] text-[#ccc]">__ / __ / __</td>
-						<td class="px-2 pt-[7px] pb-[3px] text-[9px] text-[#ccc]">
+						<td class="px-2 pt-[8px] pb-[4px] text-[9.5px] text-[#c6c6c6]">__ / __ / ____</td>
+						<td class="px-2 pt-[8px] pb-[4px] text-[9px] text-[#ccc]">
 							________________________________
 						</td>
 						<td
-							class="px-2 pt-[7px] pb-[3px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
+							class="px-2 pt-[8px] pb-[4px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
 						>
 							___________
 						</td>
 						<td
-							class="px-2 pt-[7px] pb-[3px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
+							class="px-2 pt-[8px] pb-[4px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
+						>
+							___________
+						</td>
+						<td
+							class="px-2 pt-[8px] pb-[4px] text-right font-mono text-[9px] text-[#ccc] tabular-nums"
 						>
 							___________
 						</td>
