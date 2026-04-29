@@ -48,13 +48,11 @@
 	const customerDocument = sale.customer?.idNumber ?? 'No registrado';
 	const customerPhone = sale.customer?.primaryPhone?.trim() || null;
 	const taxBreakdown = computeSnapshotTaxBreakdown(items);
-	const subtotalForTotals = Math.max(sale.total - taxBreakdown.taxAmount, 0);
+	const subtotalForTotals = taxBreakdown.taxableBase + taxBreakdown.exemptTotal;
 	const ivaRate =
-		settings.defaultTaxRate > 0
-			? settings.defaultTaxRate
-			: (items.find(
-					(item: SaleItemWithDetails) => item.snapshotIsTaxable && (item.snapshotTaxRate ?? 0) > 0
-				)?.snapshotTaxRate ?? null);
+		items.find(
+			(item: SaleItemWithDetails) => item.snapshotIsTaxable && (item.snapshotTaxRate ?? 0) > 0
+		)?.snapshotTaxRate ?? null;
 
 	const treatmentGroups = items.reduce<Record<string, SaleItemWithDetails[]>>((groups, item) => {
 		if (item.itemType !== SaleItemType.TREATMENT || !item.parentSaleItemId) {
@@ -458,7 +456,10 @@
 
 				{#if taxBreakdown.taxAmount > 0}
 					<div class="flex items-center justify-between gap-3">
-						<span>IVA ({formatTaxRate(ivaRate)}%)</span>
+						<span
+							>IVA{#if ivaRate !== null}
+								 ({formatTaxRate(ivaRate)}%){/if}</span
+						>
 						<span class="font-mono text-slate-950 tabular-nums">
 							{formatPrice(taxBreakdown.taxAmount)}
 						</span>
