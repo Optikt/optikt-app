@@ -1,6 +1,5 @@
 <script lang="ts">
 	import './layout.css';
-	import favicon from '$lib/assets/favicon.png';
 	import { Toaster } from 'svelte-sonner';
 	import { toast } from 'svelte-sonner';
 	import { getErrorMessage, reportClientError } from '$lib/utils';
@@ -52,7 +51,6 @@
 	}
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
 <svelte:window onerror={handleWindowError} onunhandledrejection={handleUnhandledRejection} />
 <Toaster position="top-right" expand richColors closeButton />
 {@render children()}
