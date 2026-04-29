@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPdfShutdownHandler, normalizePdfUrl, registerPdfBrowserShutdown } from './pdf';
 
@@ -48,6 +50,19 @@ describe('createPdfShutdownHandler', () => {
 		expect(logError).toHaveBeenCalledTimes(1);
 		expect(logError).toHaveBeenCalledWith('[pdf] failed to close browser during shutdown', failure);
 	});
+
+	it('runs the finalize callback after shutdown work', async () => {
+		const closeBrowser = vi.fn().mockResolvedValue(undefined);
+		const logError = vi.fn();
+		const finalize = vi.fn();
+		const shutdown = createPdfShutdownHandler(closeBrowser, logError, finalize);
+
+		await expect(shutdown()).resolves.toBeUndefined();
+
+		expect(closeBrowser).toHaveBeenCalledTimes(1);
+		expect(logError).not.toHaveBeenCalled();
+		expect(finalize).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe('registerPdfBrowserShutdown', () => {
@@ -69,4 +84,57 @@ describe('registerPdfBrowserShutdown', () => {
 
 		expect(processOnSpy).toHaveBeenCalledTimes(2);
 	});
+
+	it('closes before exiting on a real SIGTERM', async () => {
+		const fixturePath = fileURLToPath(new URL('./pdf.shutdown.fixture.ts', import.meta.url));
+		const child = spawn(process.execPath, ['--import', 'tsx', fixturePath], {
+			cwd: process.cwd(),
+			stdio: ['ignore', 'pipe', 'pipe']
+		});
+
+		child.stdout.setEncoding('utf8');
+		child.stderr.setEncoding('utf8');
+
+		let stdout = '';
+		let stderr = '';
+		let signalSent = false;
+
+		await new Promise<void>((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				child.kill('SIGKILL');
+				reject(new Error(`Timed out waiting for child shutdown. stdout: ${stdout} stderr: ${stderr}`));
+			}, 5000);
+
+			child.stdout.on('data', (chunk: string) => {
+				stdout += chunk;
+				if (!signalSent && stdout.includes('ready')) {
+					signalSent = true;
+					child.kill('SIGTERM');
+				}
+			});
+
+			child.stderr.on('data', (chunk: string) => {
+				stderr += chunk;
+			});
+
+			child.on('error', (error) => {
+				clearTimeout(timeout);
+				reject(error);
+			});
+
+			child.on('exit', (code, signal) => {
+				clearTimeout(timeout);
+				try {
+					expect(signalSent).toBe(true);
+					expect(stdout).toContain('close-called');
+					expect(stderr).toBe('');
+					expect(code).toBeNull();
+					expect(signal).toBe('SIGTERM');
+					resolve();
+				} catch (error) {
+					reject(error);
+				}
+			});
+		});
+	}, 10000);
 });
