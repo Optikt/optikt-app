@@ -50,8 +50,8 @@
 
 	let mainItems = $derived(items.filter((i) => i.itemType !== SaleItemType.TREATMENT));
 
-	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
-	let taxLabel = $derived(getSnapshotTaxLabel(items));
+	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, quote.snapshotTaxRate));
+	let taxLabel = $derived(getSnapshotTaxLabel(quote.snapshotTaxRate));
 
 	interface DisplayGroup {
 		key: string;

@@ -49,6 +49,8 @@ export const quotes = pgTable(
 		discount: doublePrecision().notNull().default(0),
 		/** 'FIXED' or 'PERCENTAGE' */
 		discountType: varchar('discount_type').notNull().default('FIXED'),
+		/** Tax rate snapshot at time of quote (e.g. 16) */
+		snapshotTaxRate: doublePrecision('snapshot_tax_rate').notNull(),
 		/** Final total in USD (after discount) */
 		total: doublePrecision().notNull(),
 		/** FK to created sale when converted */
@@ -143,8 +145,6 @@ export const quoteItems = pgTable(
 		// --- Tax snapshot ---
 		/** Whether the item was taxable at time of quote */
 		snapshotIsTaxable: boolean('snapshot_is_taxable'),
-		/** Tax rate at time of quote (e.g. 16) */
-		snapshotTaxRate: doublePrecision('snapshot_tax_rate'),
 
 		notes: varchar(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),

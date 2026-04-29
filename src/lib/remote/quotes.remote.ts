@@ -104,7 +104,6 @@ function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now: string
 		snapshotPriceType: item.snapshotPriceType ?? null,
 		snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
 		snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-		snapshotTaxRate: item.snapshotTaxRate ?? null,
 		notes: item.notes ?? null,
 		createdAt: now,
 		updatedAt: now
@@ -395,6 +394,7 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 				subtotal,
 				discount: data.discount,
 				discountType: data.discountType,
+				snapshotTaxRate: data.snapshotTaxRate,
 				total,
 				validUntil: data.validUntil ?? null,
 				notes: data.notes ?? null,
@@ -479,6 +479,7 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 				subtotal,
 				discount,
 				discountType,
+				snapshotTaxRate: data.snapshotTaxRate ?? existing.snapshotTaxRate,
 				total,
 				validUntil:
 					data.validUntil !== undefined
@@ -672,6 +673,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				subtotal: quote.subtotal,
 				discount: quote.discount,
 				discountType: quote.discountType,
+				snapshotTaxRate: quote.snapshotTaxRate,
 				total: quote.total,
 				paidAmountBcvUsd: 0,
 				notes: quote.notes ?? null,
@@ -737,7 +739,6 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				snapshotPriceType: item.snapshotPriceType ?? null,
 				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
 				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-				snapshotTaxRate: item.snapshotTaxRate ?? null,
 				notes: item.notes ?? null,
 				createdAt: now,
 				updatedAt: now

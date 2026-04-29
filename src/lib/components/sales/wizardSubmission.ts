@@ -5,7 +5,6 @@ import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import type { SaleItemInput } from '$lib/schemas/sales';
 import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import type { z } from 'zod';
 
 import type { SaleItemRow } from './newSaleTypes';
@@ -39,11 +38,7 @@ function hasPrescriptionValues(values: WizardPrescriptionValues): boolean {
 	].some((value) => value != null && String(value).trim() !== '');
 }
 
-function buildLensPairItemBase(
-	item: SaleItemRow,
-	lensItems: LensCatalogItemWithRelations[],
-	defaultTaxRate: number
-) {
+function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWithRelations[]) {
 	if (item.kind !== 'lens' || !item.lensPair) return null;
 
 	const lens = lensItems.find((candidate) => candidate.id === item.lensPair?.catalogItemId);
@@ -62,16 +57,14 @@ function buildLensPairItemBase(
 			: (item.costOverrides?.shippingPrice ?? lens?.shippingPrice),
 		snapshotSalePrice: lens?.salePrice ?? undefined,
 		snapshotPriceType: lens?.priceType,
-		snapshotIsTaxable: lens?.isTaxable ?? false,
-		snapshotTaxRate: defaultTaxRate
+		snapshotIsTaxable: lens?.isTaxable ?? false
 	};
 }
 
 export function buildSaleItemsFromWizard(
 	items: SaleItemRow[],
 	products: ProductWithRelations[],
-	lensItems: LensCatalogItemWithRelations[],
-	defaultTaxRate: number = DEFAULT_TAX_RATE
+	lensItems: LensCatalogItemWithRelations[]
 ): SaleItemInput[] {
 	const saleItems: SaleItemInput[] = [];
 
@@ -107,8 +100,7 @@ export function buildSaleItemsFromWizard(
 				snapshotName: product?.name,
 				snapshotSku: product?.sku ?? undefined,
 				snapshotBrand: product?.brand?.name ?? undefined,
-				snapshotIsTaxable: product?.isTaxable ?? true,
-				snapshotTaxRate: defaultTaxRate
+				snapshotIsTaxable: product?.isTaxable ?? true
 			});
 			continue;
 		}
@@ -116,7 +108,7 @@ export function buildSaleItemsFromWizard(
 		if (!item.lensPair) continue;
 
 		const parentSaleItemId = crypto.randomUUID();
-		const lensPairItem = buildLensPairItemBase(item, lensItems, defaultTaxRate);
+		const lensPairItem = buildLensPairItemBase(item, lensItems);
 		if (!lensPairItem) continue;
 
 		saleItems.push({
@@ -160,7 +152,6 @@ export function buildSaleItemsFromWizard(
 			snapshotSalePrice: lensPairItem.snapshotSalePrice,
 			snapshotPriceType: lensPairItem.snapshotPriceType,
 			snapshotIsTaxable: lensPairItem.snapshotIsTaxable,
-			snapshotTaxRate: lensPairItem.snapshotTaxRate,
 			shippingCostPending: item.shippingCostPending || undefined
 		});
 
@@ -176,8 +167,7 @@ export function buildSaleItemsFromWizard(
 				snapshotName: treatment.name,
 				snapshotBrand: lensPairItem.snapshotBrand,
 				snapshotTreatmentCategory: treatment.category,
-				snapshotIsTaxable: treatment.isTaxable,
-				snapshotTaxRate: defaultTaxRate
+				snapshotIsTaxable: treatment.isTaxable
 			});
 		}
 	}
@@ -188,8 +178,7 @@ export function buildSaleItemsFromWizard(
 export function buildQuoteItemsFromWizard(
 	items: SaleItemRow[],
 	products: ProductWithRelations[],
-	lensItems: LensCatalogItemWithRelations[],
-	defaultTaxRate: number = DEFAULT_TAX_RATE
+	lensItems: LensCatalogItemWithRelations[]
 ): QuoteItemInput[] {
 	const quoteItems: QuoteItemInput[] = [];
 
@@ -225,8 +214,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotName: product?.name,
 				snapshotSku: product?.sku ?? undefined,
 				snapshotBrand: product?.brand?.name ?? undefined,
-				snapshotIsTaxable: product?.isTaxable ?? true,
-				snapshotTaxRate: defaultTaxRate
+				snapshotIsTaxable: product?.isTaxable ?? true
 			});
 			continue;
 		}
@@ -234,7 +222,7 @@ export function buildQuoteItemsFromWizard(
 		if (!item.lensPair) continue;
 
 		const parentQuoteItemId = crypto.randomUUID();
-		const lensPairItem = buildLensPairItemBase(item, lensItems, defaultTaxRate);
+		const lensPairItem = buildLensPairItemBase(item, lensItems);
 		if (!lensPairItem) continue;
 
 		quoteItems.push({
@@ -277,8 +265,7 @@ export function buildQuoteItemsFromWizard(
 			snapshotShippingPrice: lensPairItem.snapshotShippingPrice,
 			snapshotSalePrice: lensPairItem.snapshotSalePrice,
 			snapshotPriceType: lensPairItem.snapshotPriceType,
-			snapshotIsTaxable: lensPairItem.snapshotIsTaxable,
-			snapshotTaxRate: lensPairItem.snapshotTaxRate
+			snapshotIsTaxable: lensPairItem.snapshotIsTaxable
 		});
 
 		for (const treatment of item.treatments) {
@@ -293,8 +280,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotName: treatment.name,
 				snapshotBrand: lensPairItem.snapshotBrand,
 				snapshotTreatmentCategory: treatment.category,
-				snapshotIsTaxable: treatment.isTaxable,
-				snapshotTaxRate: defaultTaxRate
+				snapshotIsTaxable: treatment.isTaxable
 			});
 		}
 	}

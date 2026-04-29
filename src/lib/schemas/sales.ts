@@ -24,6 +24,7 @@ import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 
@@ -122,7 +123,6 @@ export const SaleItemSchema = z
 
 		// Tax snapshot
 		snapshotIsTaxable: z.boolean().optional(),
-		snapshotTaxRate: CoercedNumber.optional(),
 
 		// Shipping cost pending flag
 		shippingCostPending: z.boolean().optional(),
@@ -191,6 +191,7 @@ export const CreateSaleSchema = z
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 		notes: z.string().optional(),
 		prescription: PrescriptionFieldsSchema.optional(),
+		snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
 		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto')
 	})
 	.refine((data) => data.customerId || data.newCustomer, {

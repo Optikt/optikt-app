@@ -47,12 +47,9 @@
 		: 'Cliente General';
 	const customerDocument = sale.customer?.idNumber ?? 'No registrado';
 	const customerPhone = sale.customer?.primaryPhone?.trim() || null;
-	const taxBreakdown = computeSnapshotTaxBreakdown(items);
+	const taxBreakdown = computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate);
 	const subtotalForTotals = taxBreakdown.taxableBase + taxBreakdown.exemptTotal;
-	const ivaRate =
-		items.find(
-			(item: SaleItemWithDetails) => item.snapshotIsTaxable && (item.snapshotTaxRate ?? 0) > 0
-		)?.snapshotTaxRate ?? null;
+	const ivaRate = sale.snapshotTaxRate > 0 ? sale.snapshotTaxRate : null;
 
 	const treatmentGroups = items.reduce<Record<string, SaleItemWithDetails[]>>((groups, item) => {
 		if (item.itemType !== SaleItemType.TREATMENT || !item.parentSaleItemId) {

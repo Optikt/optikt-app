@@ -61,8 +61,8 @@
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
-	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
-	let taxLabel = $derived(getSnapshotTaxLabel(items));
+	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate));
+	let taxLabel = $derived(getSnapshotTaxLabel(sale.snapshotTaxRate));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
 	);

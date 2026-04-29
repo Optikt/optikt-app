@@ -43,6 +43,13 @@
       "when": 1777161600000,
       "tag": "0005_free_item_support",
       "breakpoints": true
+	},
+	{
+	  "idx": 6,
+	  "version": "7",
+	  "when": 1777420800000,
+	  "tag": "0006_document_level_tax_rate",
+	  "breakpoints": true
     }
   ]
 }

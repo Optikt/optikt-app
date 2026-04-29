@@ -56,6 +56,8 @@ export const sales = pgTable(
 		discount: doublePrecision().notNull().default(0),
 		/** 'FIXED' or 'PERCENTAGE' */
 		discountType: varchar('discount_type').notNull().default('FIXED'),
+		/** Tax rate snapshot at time of sale (e.g. 16) */
+		snapshotTaxRate: doublePrecision('snapshot_tax_rate').notNull(),
 		/** Final total in USD (after discount) */
 		total: doublePrecision().notNull(),
 		/** Sum of all payments converted to BCV USD */
@@ -186,8 +188,6 @@ export const saleItems = pgTable(
 		// --- Tax snapshot ---
 		/** Whether the item was taxable at time of sale */
 		snapshotIsTaxable: boolean('snapshot_is_taxable'),
-		/** Tax rate at time of sale (e.g. 16) */
-		snapshotTaxRate: doublePrecision('snapshot_tax_rate'),
 
 		/** Whether the shipping cost is pending (unknown at time of sale) */
 		shippingCostPending: boolean('shipping_cost_pending').default(false),

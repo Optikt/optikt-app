@@ -25,6 +25,7 @@
 		hasPrescriptionErrors
 	} from './saleItemHelpers';
 	import { buildPrescriptionPayload, buildSaleItemsFromWizard } from './wizardSubmission';
+	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
 	import SaleStep3Summary from './SaleStep3Summary.svelte';
@@ -255,7 +256,8 @@
 		submitting = true;
 
 		try {
-			const saleItems = buildSaleItemsFromWizard(items, products, lensItems, defaultTaxRate);
+			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
+			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
 			const prescription = items.some((item) => item.kind === 'lens')
 				? (buildPrescriptionPayload(
 						prescriptionValues,
@@ -270,6 +272,7 @@
 				saleDate: dateToISODateString(saleDate),
 				discount,
 				discountType,
+				snapshotTaxRate,
 				notes: notes || undefined,
 				prescription,
 				items: saleItems

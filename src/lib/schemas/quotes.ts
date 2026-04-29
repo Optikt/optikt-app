@@ -21,6 +21,7 @@ import {
 } from '$lib/shared/enums/lensTypes';
 import { AxisSchema } from '$lib/schemas/prescriptions';
 import { InlineCustomerSchema } from '$lib/schemas/sales';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 
@@ -79,7 +80,6 @@ export const QuoteItemSchema = z
 
 		// Tax snapshot
 		snapshotIsTaxable: z.boolean().optional(),
-		snapshotTaxRate: CoercedNumber.optional(),
 
 		// FREE_ITEM fields (only present when itemType === FREE_ITEM)
 		freeItemCategory: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]).optional(),
@@ -114,6 +114,7 @@ export const CreateQuoteSchema = z.object({
 	quoteDate: z.iso.date('Fecha del presupuesto inválida'),
 	discount: CoercedNumber.min(0).default(0),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
+	snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
 	validUntil: z.iso.date().optional(),
 	notes: z.string().optional(),
 	items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem')
@@ -128,6 +129,7 @@ export const UpdateQuoteSchema = z.object({
 	customerId: z.uuid().optional().nullable(),
 	discount: CoercedNumber.min(0).optional(),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
+	snapshotTaxRate: CoercedNumber.min(0).optional(),
 	validUntil: z.iso.date().optional().nullable(),
 	notes: z.string().optional().nullable(),
 	items: z.array(QuoteItemSchema).min(1, 'El presupuesto debe tener al menos un ítem')
