@@ -9,6 +9,9 @@ type PdfGlobalState = typeof globalThis & {
 };
 
 const pdfGlobal = globalThis as PdfGlobalState;
+const PDF_SHUTDOWN_ERROR_MESSAGE = '[pdf] failed to close browser during shutdown';
+
+type PdfShutdownLogger = (message: string, error: unknown) => void;
 
 export function normalizePdfUrl(url: string): string {
 	try {
@@ -63,16 +66,25 @@ export async function closePdfBrowser(): Promise<void> {
 	}
 }
 
+export function createPdfShutdownHandler(
+	closeBrowser: () => Promise<void> = closePdfBrowser,
+	logError: PdfShutdownLogger = console.error
+): () => Promise<void> {
+	return async () => {
+		try {
+			await closeBrowser();
+		} catch (error: unknown) {
+			logError(PDF_SHUTDOWN_ERROR_MESSAGE, error);
+		}
+	};
+}
+
 export function registerPdfBrowserShutdown(): void {
 	if (pdfGlobal.__optiktPdfShutdownRegistered) {
 		return;
 	}
 
-	const shutdown = () => {
-		void closePdfBrowser().catch((error: unknown) => {
-			console.error('[pdf] failed to close browser during shutdown', error);
-		});
-	};
+	const shutdown = createPdfShutdownHandler();
 
 	process.on('SIGINT', shutdown);
 	process.on('SIGTERM', shutdown);
