@@ -1,4 +1,4 @@
 export { default as Isotipo } from './Isotipo.svelte';
 export { default as ImagotipoHorizontal } from './ImagotipoHorizontal.svelte';
 export { default as ImagotipoVertical } from './ImagotipoVertical.svelte';
-export type { BrandLogoTheme, SvgSize } from './palette';
+export type { LogoProps } from './palette';

@@ -1,17 +1,6 @@
 <script lang="ts">
-	import type { BrandLogoTheme, SvgSize } from './palette';
+	import type { LogoProps } from './palette';
 	import { resolveBrandPalette } from './palette';
-
-	interface Props {
-		theme?: BrandLogoTheme;
-		primaryColor?: string;
-		secondaryColor?: string;
-		class?: string;
-		width?: SvgSize;
-		height?: SvgSize;
-		title?: string;
-		ariaLabel?: string;
-	}
 
 	let {
 		theme = 'brand',
@@ -22,7 +11,7 @@
 		height,
 		title,
 		ariaLabel
-	}: Props = $props();
+	}: LogoProps = $props();
 
 	const palette = $derived(resolveBrandPalette(theme, primaryColor, secondaryColor));
 	const accessibleLabel = $derived(ariaLabel ?? title);

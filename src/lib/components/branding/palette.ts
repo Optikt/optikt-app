@@ -1,5 +1,16 @@
-export type BrandLogoTheme = 'brand' | 'light';
-export type SvgSize = number | string;
+type BrandLogoTheme = 'brand' | 'light';
+type SvgSize = number | string;
+
+export interface LogoProps {
+	theme?: BrandLogoTheme;
+	primaryColor?: string;
+	secondaryColor?: string;
+	class?: string;
+	width?: SvgSize;
+	height?: SvgSize;
+	title?: string;
+	ariaLabel?: string;
+}
 
 interface BrandPalette {
 	primary: string;
