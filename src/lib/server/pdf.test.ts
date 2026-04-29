@@ -9,6 +9,61 @@ type PdfGlobalState = typeof globalThis & {
 
 const pdfGlobal = globalThis as PdfGlobalState;
 
+async function expectChildShutdownOnSignal(signalToSend: NodeJS.Signals): Promise<void> {
+	const fixturePath = fileURLToPath(new URL('./pdf.shutdown.fixture.ts', import.meta.url));
+	const child = spawn(process.execPath, ['--import', 'tsx', fixturePath], {
+		cwd: process.cwd(),
+		stdio: ['ignore', 'pipe', 'pipe']
+	});
+
+	child.stdout.setEncoding('utf8');
+	child.stderr.setEncoding('utf8');
+
+	let stdout = '';
+	let stderr = '';
+	let signalSent = false;
+
+	await new Promise<void>((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			child.kill('SIGKILL');
+			reject(
+				new Error(`Timed out waiting for child shutdown. stdout: ${stdout} stderr: ${stderr}`)
+			);
+		}, 5000);
+
+		child.stdout.on('data', (chunk: string) => {
+			stdout += chunk;
+			if (!signalSent && stdout.includes('ready')) {
+				signalSent = true;
+				child.kill(signalToSend);
+			}
+		});
+
+		child.stderr.on('data', (chunk: string) => {
+			stderr += chunk;
+		});
+
+		child.on('error', (error) => {
+			clearTimeout(timeout);
+			reject(error);
+		});
+
+		child.on('exit', (code, signal) => {
+			clearTimeout(timeout);
+			try {
+				expect(signalSent).toBe(true);
+				expect(stdout).toContain('close-called');
+				expect(stderr).toBe('');
+				expect(code).toBeNull();
+				expect(signal).toBe(signalToSend);
+				resolve();
+			} catch (error) {
+				reject(error);
+			}
+		});
+	});
+}
+
 beforeEach(() => {
 	pdfGlobal.__optiktPdfShutdownRegistered = undefined;
 	vi.restoreAllMocks();
@@ -86,55 +141,10 @@ describe('registerPdfBrowserShutdown', () => {
 	});
 
 	it('closes before exiting on a real SIGTERM', async () => {
-		const fixturePath = fileURLToPath(new URL('./pdf.shutdown.fixture.ts', import.meta.url));
-		const child = spawn(process.execPath, ['--import', 'tsx', fixturePath], {
-			cwd: process.cwd(),
-			stdio: ['ignore', 'pipe', 'pipe']
-		});
+		await expectChildShutdownOnSignal('SIGTERM');
+	}, 10000);
 
-		child.stdout.setEncoding('utf8');
-		child.stderr.setEncoding('utf8');
-
-		let stdout = '';
-		let stderr = '';
-		let signalSent = false;
-
-		await new Promise<void>((resolve, reject) => {
-			const timeout = setTimeout(() => {
-				child.kill('SIGKILL');
-				reject(new Error(`Timed out waiting for child shutdown. stdout: ${stdout} stderr: ${stderr}`));
-			}, 5000);
-
-			child.stdout.on('data', (chunk: string) => {
-				stdout += chunk;
-				if (!signalSent && stdout.includes('ready')) {
-					signalSent = true;
-					child.kill('SIGTERM');
-				}
-			});
-
-			child.stderr.on('data', (chunk: string) => {
-				stderr += chunk;
-			});
-
-			child.on('error', (error) => {
-				clearTimeout(timeout);
-				reject(error);
-			});
-
-			child.on('exit', (code, signal) => {
-				clearTimeout(timeout);
-				try {
-					expect(signalSent).toBe(true);
-					expect(stdout).toContain('close-called');
-					expect(stderr).toBe('');
-					expect(code).toBeNull();
-					expect(signal).toBe('SIGTERM');
-					resolve();
-				} catch (error) {
-					reject(error);
-				}
-			});
-		});
+	it('closes before exiting on a real SIGINT', async () => {
+		await expectChildShutdownOnSignal('SIGINT');
 	}, 10000);
 });
