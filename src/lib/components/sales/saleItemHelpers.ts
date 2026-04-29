@@ -707,3 +707,30 @@ export function computeSnapshotTaxBreakdown(
 
 	return { taxableBase, exemptTotal, taxAmount };
 }
+
+export function getSnapshotTaxLabel(
+	items: {
+		snapshotIsTaxable: boolean | null;
+		snapshotTaxRate: number | null;
+	}[]
+): string | null {
+	const rates = Array.from(
+		new Set(
+			items
+				.filter((item) => (item.snapshotIsTaxable ?? false) && (item.snapshotTaxRate ?? 0) > 0)
+				.map((item) => item.snapshotTaxRate ?? 0)
+		)
+	).sort((left, right) => left - right);
+
+	if (rates.length === 0) {
+		return null;
+	}
+
+	const formatter = new Intl.NumberFormat('es-VE', {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2
+	});
+	const formattedRates = rates.map((rate) => formatter.format(rate));
+
+	return `IVA (${formattedRates.join('%, ')}%)`;
+}

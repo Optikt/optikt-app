@@ -20,7 +20,10 @@
 		SaleMovementsSection
 	} from '$lib/components/sales';
 	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
-	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import {
+		computeSnapshotTaxBreakdown,
+		getSnapshotTaxLabel
+	} from '$lib/components/sales/saleItemHelpers';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
@@ -59,6 +62,7 @@
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
+	let taxLabel = $derived(getSnapshotTaxLabel(items));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
 	);
@@ -357,6 +361,7 @@
 		{paymentProgressPercent}
 		paymentsCount={payments.length}
 		{taxBreakdown}
+		{taxLabel}
 		{isCancelled}
 		{isCompleted}
 		refundStatus={sale.refundStatus}

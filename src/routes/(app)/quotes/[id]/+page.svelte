@@ -32,7 +32,8 @@
 	import CustomerLookupInput from '$lib/components/sales/CustomerLookupInput.svelte';
 	import {
 		buildPersistedDisplayGroups,
-		computeSnapshotTaxBreakdown
+		computeSnapshotTaxBreakdown,
+		getSnapshotTaxLabel
 	} from '$lib/components/sales/saleItemHelpers';
 	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
 	import { untrack } from 'svelte';
@@ -50,6 +51,7 @@
 	let mainItems = $derived(items.filter((i) => i.itemType !== SaleItemType.TREATMENT));
 
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
+	let taxLabel = $derived(getSnapshotTaxLabel(items));
 
 	interface DisplayGroup {
 		key: string;
@@ -586,6 +588,7 @@
 			discountType={quote.discountType}
 			discount={quote.discount}
 			{taxBreakdown}
+			{taxLabel}
 			totalLabel="Total estimado"
 		/>
 

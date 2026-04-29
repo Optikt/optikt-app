@@ -14,6 +14,7 @@
 		discountType: string;
 		discount: number;
 		taxBreakdown: TaxBreakdown;
+		taxLabel?: string | null;
 		totalLabel?: string;
 	}
 
@@ -23,6 +24,7 @@
 		discountType,
 		discount,
 		taxBreakdown,
+		taxLabel = null,
 		totalLabel = 'Total a pagar'
 	}: Props = $props();
 
@@ -90,7 +92,7 @@
 		{#if taxBreakdown.taxAmount > 0}
 			<div class="flex items-center justify-between gap-4">
 				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-					>IVA (16%)</span
+					>{taxLabel ?? 'IVA'}</span
 				>
 				<span class="font-mono text-base font-semibold text-brand-navy">
 					{formatPrice(taxBreakdown.taxAmount)}
