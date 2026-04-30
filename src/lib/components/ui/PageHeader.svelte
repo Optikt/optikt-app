@@ -43,7 +43,9 @@
 					{subtitle}
 				</p>
 			{/if}
-			<h1 class="font-heading m-0 text-xl sm:text-2xl lg:text-3xl font-bold text-brand-navy">{title}</h1>
+			<h1 class="font-heading m-0 text-xl font-bold text-brand-navy sm:text-2xl lg:text-3xl">
+				{title}
+			</h1>
 		</div>
 
 		{#if actions}

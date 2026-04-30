@@ -119,12 +119,12 @@
 <div class="space-y-5 p-4 sm:space-y-6 sm:p-6">
 	<PageHeader title={pageTitle}>
 		{#snippet actions()}
-			<div class="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center">
+			<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
 				{#if isAdmin && activeTab === 'catalog'}
 					<button
 						type="button"
 						onclick={openCreateLens}
-						class="inline-flex h-9 px-3 sm:h-11 sm:px-5 items-center justify-center gap-2 rounded-lg bg-brand-gold text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark sm:w-auto"
+						class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-brand-gold px-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark sm:h-11 sm:w-auto sm:px-5"
 					>
 						<Plus class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 						<span class="hidden sm:inline">Nuevo lente</span>
@@ -187,7 +187,7 @@
 	{#if activeTab === 'catalog'}
 		<section class="glass-card bg-surface-container-low p-2 sm:p-3 md:p-4">
 			<div
-				class="grid gap-2 grid-cols-[1fr_1fr_auto] sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_auto] xl:items-center"
+				class="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_auto] xl:items-center"
 			>
 				<div class="relative col-span-full sm:col-span-1">
 					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
@@ -198,7 +198,7 @@
 						bind:value={search}
 						oninput={handleSearch}
 						placeholder="Buscar lente, proveedor o material..."
-						class="w-full rounded-lg border-none bg-surface-container-high p-2 pl-9 text-xs sm:p-3 sm:pl-11 sm:text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						class="w-full rounded-lg border-none bg-surface-container-high p-2 pl-9 text-xs text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:p-3 sm:pl-11 sm:text-sm"
 					/>
 				</div>
 
@@ -207,7 +207,7 @@
 					name="lens-source-filter"
 					bind:value={sourceFilter}
 					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:px-4 sm:py-3 sm:text-sm"
 				>
 					<option value="">Origen</option>
 					{#each ALL_LENS_SOURCES as source (source)}
@@ -220,7 +220,7 @@
 					name="lens-type-filter"
 					bind:value={typeFilter}
 					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:px-4 sm:py-3 sm:text-sm"
 				>
 					<option value="">Tipo</option>
 					{#each ALL_LENS_TYPES as type (type)}
@@ -233,7 +233,7 @@
 					name="lens-supplier-filter"
 					bind:value={supplierFilter}
 					onchange={handleFilterChange}
-					class="hidden sm:block rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
 				>
 					<option value="">Proveedor</option>
 					{#each suppliers as supplier (supplier.id)}
@@ -246,7 +246,7 @@
 					name="lens-material-filter"
 					bind:value={materialFilter}
 					onchange={handleFilterChange}
-					class="hidden sm:block rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
 				>
 					<option value="">Material</option>
 					{#each materials as material (material.id)}
@@ -258,7 +258,7 @@
 					type="button"
 					onclick={clearFilters}
 					disabled={!hasActiveFilters}
-					class="inline-flex h-9 w-9 sm:h-[3rem] sm:w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 xl:justify-self-end {hasActiveFilters
+					class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:h-[3rem] sm:w-[3rem] xl:justify-self-end {hasActiveFilters
 						? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
 						: 'bg-surface-container-high text-outline'}"
 					aria-label="Limpiar filtros"
