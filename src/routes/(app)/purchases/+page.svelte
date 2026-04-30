@@ -101,7 +101,7 @@
 </svelte:head>
 
 <div class="space-y-6 p-6">
-	<PageHeader title="Órdenes de Compra" subtitle="Compras e inventario">
+	<PageHeader title="Órdenes de Compra">
 		{#snippet actions()}
 			<button
 				type="button"
@@ -122,18 +122,6 @@
 		{/snippet}
 	</PageHeader>
 
-	<div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-		<p class="max-w-3xl text-sm leading-7 text-on-surface-variant sm:text-base">
-			Gestiona cargas a proveedores, revisa qué órdenes siguen en borrador y confirma el ingreso de
-			inventario con una vista clara de estados, tasas y trazabilidad operativa.
-		</p>
-		<div
-			class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-		>
-			{stats.total.toLocaleString('es-VE')} órdenes registradas
-		</div>
-	</div>
-
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 		<section class="glass-card p-5">
 			<div class="mb-3 flex items-center gap-3">
@@ -145,10 +133,10 @@
 				<p class="text-xs font-semibold tracking-wider text-on-success-container uppercase">
 					Confirmadas
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">
+					{stats.confirmed.toLocaleString('es-VE')}
+				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">
-				{stats.confirmed.toLocaleString('es-VE')}
-			</p>
 		</section>
 
 		<section class="rounded-xl bg-brand-navy p-5 shadow-sm">
@@ -159,8 +147,8 @@
 					<Coins class="h-5 w-5" />
 				</div>
 				<p class="text-xs font-semibold tracking-wider text-white/70 uppercase">Gasto del mes</p>
+				<p class="font-heading text-3xl font-bold text-white">{formatPrice(stats.monthlySpend)}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-white">{formatPrice(stats.monthlySpend)}</p>
 			<p class="mt-1 text-sm text-white/70">Órdenes confirmadas del mes en USD BCV</p>
 		</section>
 
@@ -174,10 +162,10 @@
 				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
 					Borradores
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">
+					{stats.draft.toLocaleString('es-VE')}
+				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">
-				{stats.draft.toLocaleString('es-VE')}
-			</p>
 		</section>
 	</div>
 
