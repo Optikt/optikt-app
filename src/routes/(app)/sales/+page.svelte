@@ -135,8 +135,8 @@
 				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
 					Ventas Mensuales
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -149,8 +149,8 @@
 				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
 					Ventas Pendientes
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.pending}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.pending}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -163,8 +163,8 @@
 				<p class="text-xs font-semibold tracking-wider text-on-success-container uppercase">
 					Ventas Completadas
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.completed}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.completed}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -177,8 +177,8 @@
 				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
 					Ventas Canceladas
 				</p>
+				<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
 		</div>
 	</div>
 
