@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Copy, Eye, Package, RotateCcw, SquarePen, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { copyOnLongPress } from '$lib/actions/copyOnLongPress';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { deleteProductById } from '$lib/remote/products.remote';
 	import { AppBadge, ConfirmModal, DataGrid, ProductTypeBadge } from '$lib/components/ui';
@@ -41,6 +42,7 @@
 	let selectedProduct = $state<ProductWithRelations | null>(null);
 	let deleteLoading = $state(false);
 	let confirmInput = $state('');
+	let mobileActionsOpenFor = $state<string | null>(null);
 
 	const columns = [
 		{ key: 'product', label: 'Producto' },
@@ -54,12 +56,14 @@
 	];
 
 	function openDelete(product: ProductWithRelations) {
+		mobileActionsOpenFor = null;
 		selectedProduct = product;
 		confirmInput = '';
 		showDeleteModal = true;
 	}
 
 	function openReactivate(product: ProductWithRelations) {
+		mobileActionsOpenFor = null;
 		selectedProduct = product;
 		showReactivateModal = true;
 	}
@@ -118,6 +122,31 @@
 		return 'bg-surface-container-high text-on-surface-variant';
 	}
 
+	function toggleMobileActions(event: MouseEvent, productId: string) {
+		event.stopPropagation();
+		mobileActionsOpenFor = mobileActionsOpenFor === productId ? null : productId;
+	}
+
+	function closeMobileActions() {
+		mobileActionsOpenFor = null;
+	}
+
+	function handleDocumentClick(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('[data-mobile-actions]')) {
+			closeMobileActions();
+		}
+	}
+
+	function handleLongPressCopied(label: string) {
+		toast.success(`${label} copiado`);
+	}
+
+	function handleLongPressError(error: unknown, label: string) {
+		console.error(error);
+		toast.error(`No se pudo copiar ${label.toLowerCase()}`);
+	}
+
 	async function copyValue(
 		event: MouseEvent,
 		value: string | null | undefined,
@@ -137,6 +166,8 @@
 		}
 	}
 </script>
+
+<svelte:document onclick={handleDocumentClick} />
 
 <DataGrid
 	{columns}
@@ -175,9 +206,47 @@
 
 					<p class="mt-2 text-[15px] text-on-surface-variant">
 						{product.brand?.name ?? product.supplier?.name ?? 'Sin referencia'}
-						<span class="mx-2 text-outline">•</span>
-						{product.personalCode?.trim() || product.sku}
 					</p>
+
+					<div class="mt-3 space-y-1.5">
+						<div class="flex items-baseline gap-2 text-[11px] text-on-surface-variant">
+							<span class="shrink-0 font-semibold tracking-[0.14em] text-outline uppercase">
+								Cod.
+							</span>
+							<button
+								type="button"
+								use:copyOnLongPress={{
+									text: product.personalCode?.trim() || undefined,
+									delay: 2000,
+									onCopied: () => handleLongPressCopied('Código interno'),
+									onError: (error) => handleLongPressError(error, 'Código interno')
+								}}
+								class="min-w-0 truncate bg-transparent text-left font-mono text-[12px] font-medium text-on-surface-variant select-none"
+								title="Mantén presionado para copiar el código interno"
+							>
+								{product.personalCode?.trim() || '-'}
+							</button>
+						</div>
+
+						<div class="flex items-baseline gap-2 text-[11px] text-on-surface-variant">
+							<span class="shrink-0 font-semibold tracking-[0.14em] text-outline uppercase">
+								SKU
+							</span>
+							<button
+								type="button"
+								use:copyOnLongPress={{
+									text: product.sku,
+									delay: 2000,
+									onCopied: () => handleLongPressCopied('SKU'),
+									onError: (error) => handleLongPressError(error, 'SKU')
+								}}
+								class="min-w-0 truncate bg-transparent text-left font-mono text-[12px] font-medium text-on-surface-variant select-none"
+								title="Mantén presionado para copiar el SKU"
+							>
+								{product.sku}
+							</button>
+						</div>
+					</div>
 				</div>
 
 				<div class="flex shrink-0 items-center gap-2">
@@ -193,36 +262,54 @@
 						</button>
 					{/if}
 
-					{#if canManage && onEdit && !product.deletedAt}
-						<button
-							type="button"
-							onclick={() => onEdit?.(product)}
-							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-brand-blue/30 hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar producto"
-							aria-label="Editar producto"
-						>
-							<SquarePen class="h-4.5 w-4.5" />
-						</button>
-					{:else if canManage && product.deletedAt}
-						<button
-							type="button"
-							onclick={() => openReactivate(product)}
-							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-success-container hover:bg-success-container hover:text-on-success-container"
-							title="Reactivar producto"
-							aria-label="Reactivar producto"
-						>
-							<RotateCcw class="h-4.5 w-4.5" />
-						</button>
-					{:else if canManage}
-						<button
-							type="button"
-							onclick={() => openDelete(product)}
-							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-error-container hover:bg-error-container hover:text-on-error-container"
-							title="Eliminar producto"
-							aria-label="Eliminar producto"
-						>
-							<Trash2 class="h-4.5 w-4.5" />
-						</button>
+					{#if canManage}
+						<div class="relative" data-mobile-actions>
+							<button
+								type="button"
+								onclick={(event) => toggleMobileActions(event, product.id)}
+								class="inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-outline-variant/30 px-3 text-outline transition-colors hover:border-brand-blue/30 hover:bg-surface-container-high hover:text-brand-blue"
+								title="Más acciones"
+								aria-label="Más acciones"
+								aria-expanded={mobileActionsOpenFor === product.id}
+							>
+								<span class="text-base leading-none font-bold tracking-[-0.18em]">...</span>
+							</button>
+
+							{#if mobileActionsOpenFor === product.id}
+								<div class="absolute top-full right-0 z-20 mt-2 min-w-36 overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest py-1 shadow-sm">
+									{#if onEdit && !product.deletedAt}
+										<button
+											type="button"
+											onclick={() => {
+												closeMobileActions();
+												onEdit?.(product);
+											}}
+											class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
+										>
+											Editar
+										</button>
+									{/if}
+
+									{#if product.deletedAt}
+										<button
+											type="button"
+											onclick={() => openReactivate(product)}
+											class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-success-container hover:text-on-success-container"
+										>
+											Reactivar
+										</button>
+									{:else}
+										<button
+											type="button"
+											onclick={() => openDelete(product)}
+											class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-error transition-colors hover:bg-error-container hover:text-on-error-container"
+										>
+											Eliminar
+										</button>
+									{/if}
+								</div>
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</div>
