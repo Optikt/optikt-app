@@ -109,6 +109,15 @@
 		return 'En stock';
 	}
 
+	function stockCountClasses(product: ProductWithRelations): string {
+		const variant = stockBadgeVariant(product);
+
+		if (variant === 'error') return 'bg-error text-white';
+		if (variant === 'warning') return 'bg-warning-container text-on-warning-container';
+		if (variant === 'success') return 'bg-success-container text-on-success-container';
+		return 'bg-surface-container-high text-on-surface-variant';
+	}
+
 	async function copyValue(
 		event: MouseEvent,
 		value: string | null | undefined,
@@ -148,126 +157,98 @@
 
 	{#snippet mobileCard(product)}
 		<div class="space-y-4">
-			<div class="flex items-start justify-between gap-3">
+			<div class="flex items-start gap-4">
 				<div class="min-w-0 flex-1">
-					<div class="flex flex-wrap items-center gap-2">
-						<h3 class="text-sm leading-6 font-semibold text-on-surface">{product.name}</h3>
-						{#if product.deletedAt}
-							<AppBadge variant="neutral">Inactivo</AppBadge>
-						{/if}
+					<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+						<h3 class="min-w-0 text-2xl font-semibold tracking-[-0.03em] text-brand-navy">
+							{product.name}
+						</h3>
+						<p
+							class="font-mono text-lg font-semibold tabular-nums {product.currentSalePrice !=
+							null
+								? 'text-brand-navy'
+								: 'text-outline'}"
+						>
+							{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
+						</p>
 					</div>
-					<p class="mt-1 text-xs text-on-surface-variant">
-						{product.brand?.name ?? 'Sin marca'}
-						<span class="mx-1 text-outline">•</span>
-						{product.supplier?.name ?? 'Sin proveedor'}
+
+					<p class="mt-2 text-[15px] text-on-surface-variant">
+						{product.brand?.name ?? product.supplier?.name ?? 'Sin referencia'}
+						<span class="mx-2 text-outline">•</span>
+						{product.personalCode?.trim() || product.sku}
 					</p>
 				</div>
 
-				<div class="shrink-0 text-right">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Precio</p>
-					<p class="font-mono text-base font-bold text-brand-navy">
-						{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
-					</p>
-				</div>
-			</div>
-
-			<div class="grid gap-3 sm:grid-cols-2">
-				<div class="rounded-xl bg-surface-container-low p-3">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						Código interno
-					</p>
-					<div class="mt-2 flex items-center justify-between gap-2">
-						<span class="min-w-0 truncate font-mono text-sm font-semibold text-brand-navy">
-							{product.personalCode?.trim() || '-'}
-						</span>
-						{#if product.personalCode?.trim()}
-							<button
-								type="button"
-								onclick={(event) => void copyValue(event, product.personalCode, 'Código interno')}
-								class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-outline transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-								title="Copiar código interno"
-							>
-								<Copy class="h-4 w-4" />
-							</button>
-						{/if}
-					</div>
-				</div>
-
-				<div class="rounded-xl bg-surface-container-low p-3">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">SKU</p>
-					<div class="mt-2 flex items-center justify-between gap-2">
-						<span class="min-w-0 truncate font-mono text-sm font-semibold text-brand-navy">
-							{product.sku}
-						</span>
+				<div class="flex shrink-0 items-center gap-2">
+					{#if onView}
 						<button
 							type="button"
-							onclick={(event) => void copyValue(event, product.sku, 'SKU')}
-							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-outline transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Copiar SKU"
+							onclick={() => onView?.(product)}
+							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-brand-blue/30 hover:bg-info-container hover:text-on-info-container"
+							title="Ver producto"
+							aria-label="Ver producto"
 						>
-							<Copy class="h-4 w-4" />
+							<Eye class="h-5 w-5" />
 						</button>
-					</div>
+					{/if}
+
+					{#if canManage && onEdit && !product.deletedAt}
+						<button
+							type="button"
+							onclick={() => onEdit?.(product)}
+							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-brand-blue/30 hover:bg-surface-container-high hover:text-brand-blue"
+							title="Editar producto"
+							aria-label="Editar producto"
+						>
+							<SquarePen class="h-4.5 w-4.5" />
+						</button>
+					{:else if canManage && product.deletedAt}
+						<button
+							type="button"
+							onclick={() => openReactivate(product)}
+							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-success-container hover:bg-success-container hover:text-on-success-container"
+							title="Reactivar producto"
+							aria-label="Reactivar producto"
+						>
+							<RotateCcw class="h-4.5 w-4.5" />
+						</button>
+					{:else if canManage}
+						<button
+							type="button"
+							onclick={() => openDelete(product)}
+							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-error-container hover:bg-error-container hover:text-on-error-container"
+							title="Eliminar producto"
+							aria-label="Eliminar producto"
+						>
+							<Trash2 class="h-4.5 w-4.5" />
+						</button>
+					{/if}
 				</div>
 			</div>
 
-			<div
-				class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-low p-3"
-			>
-				<div class="space-y-1">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						Categoría
-					</p>
-					<ProductTypeBadge type={product.type} />
-				</div>
+			<div class="flex flex-wrap items-center gap-2 pt-1">
+				<ProductTypeBadge type={product.type} class="rounded-full px-4 py-1.5 text-[11px]" />
 
-				<div class="flex items-center gap-2">
-					<AppBadge variant={stockBadgeVariant(product)}>{stockLabel(product)}</AppBadge>
-					<span class="font-mono text-sm font-semibold text-brand-navy">{product.stock}</span>
-				</div>
-			</div>
+				<AppBadge
+					variant={stockBadgeVariant(product)}
+					class="rounded-full px-4 py-1.5 text-[11px]"
+				>
+					{stockLabel(product)}
+				</AppBadge>
 
-			<div class="flex flex-wrap items-center gap-2">
-				{#if onView}
-					<button
-						type="button"
-						onclick={() => onView?.(product)}
-						class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-info-container px-4 text-sm font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
-					>
-						<Eye class="h-4 w-4" />
-						Ver producto
-					</button>
-				{/if}
+				<span
+					class="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-2 font-mono text-sm font-bold tabular-nums {stockCountClasses(
+						product
+					)}"
+				>
+					{product.stock}
+				</span>
 
-				{#if canManage && onEdit && !product.deletedAt}
-					<button
-						type="button"
-						onclick={() => onEdit?.(product)}
-						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-						title="Editar producto"
-					>
-						<SquarePen class="h-4 w-4" />
-					</button>
-				{/if}
-
-				{#if canManage && product.deletedAt}
-					<button
-						type="button"
-						onclick={() => openReactivate(product)}
-						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-success-container hover:text-on-success-container"
-						title="Reactivar producto"
-					>
-						<RotateCcw class="h-4 w-4" />
-					</button>
-				{:else if canManage}
-					<button
-						type="button"
-						onclick={() => openDelete(product)}
-						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-						title="Eliminar producto"
-					>
-						<Trash2 class="h-4 w-4" />
-					</button>
+				{#if product.deletedAt}
+					<AppBadge variant="neutral" class="rounded-full px-4 py-1.5 text-[11px]">
+						Inactivo
+					</AppBadge>
 				{/if}
 			</div>
 		</div>
