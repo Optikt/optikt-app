@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Isotipo } from '$lib/components';
 	import { untrack } from 'svelte';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { PaymentMethod, getPaymentMethodLabel } from '$lib/shared/enums';
@@ -38,7 +39,7 @@
 
 	const formattedOrderNumber = `#${String(sale.orderNumber).padStart(4, '0')}`;
 	const businessName = settings.businessName?.trim() || 'Optikt';
-	const businessLogo = settings.businessLogo?.trim() || '/logos/optikt-original.png';
+	const businessLogo = settings.businessLogo?.trim() || null;
 	const businessRif = settings.businessRif?.trim() || null;
 	const businessContactPhone = settings.businessPhone?.trim() || null;
 	const businessAddress = settings.businessAddress?.trim() || null;
@@ -300,11 +301,15 @@
 		<div class="flex items-start justify-between gap-4">
 			<div class="min-w-0 flex-1">
 				<div class="flex items-start gap-2">
-					<img
-						src={businessLogo}
-						alt={`Logo de ${businessName}`}
-						class="h-8 w-auto shrink-0 object-contain grayscale"
-					/>
+					{#if businessLogo}
+						<img
+							src={businessLogo}
+							alt={`Logo de ${businessName}`}
+							class="h-8 w-auto shrink-0 object-contain grayscale"
+						/>
+					{:else}
+						<Isotipo primaryColor="#0f172a" secondaryColor="#94a3b8" class="h-8 w-auto shrink-0" />
+					{/if}
 					<div class="min-w-0 space-y-0.5">
 						<div class="flex items-end gap-x-1">
 							<p class="text-[15px] leading-none font-medium text-slate-950">{businessName}</p>
