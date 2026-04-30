@@ -1,4 +1,9 @@
-import { getLensTypeLabel, LensType, SaleItemType, TreatmentCategory } from '$lib/shared/enums/lensTypes';
+import {
+	getLensTypeLabel,
+	LensType,
+	SaleItemType,
+	TreatmentCategory
+} from '$lib/shared/enums/lensTypes';
 
 export interface PrintDocumentItem {
 	itemType: string;
