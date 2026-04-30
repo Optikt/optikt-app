@@ -88,8 +88,10 @@ function registerPdfSignalShutdown(
 	closeBrowser: () => Promise<void>,
 	logError: PdfShutdownLogger
 ): void {
-	let shutdown: (() => Promise<void>) | undefined;
+	
+	let shutdown: (() => Promise<void>) | undefined; 
 
+	// eslint-disable-next-line prefer-const
 	shutdown = createPdfShutdownHandler(closeBrowser, logError, () => {
 		if (shutdown) {
 			process.removeListener(signal, shutdown);
