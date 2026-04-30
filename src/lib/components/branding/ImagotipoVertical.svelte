@@ -25,10 +25,10 @@
 	viewBox="0 0 828 442"
 	x="0px"
 	y="0px"
-    {width}
+	{width}
 	{height}
 	class={className}
-    fill="none"
+	fill="none"
 	role={isDecorative ? undefined : 'img'}
 	aria-label={accessibleLabel}
 	aria-hidden={isDecorative}
@@ -39,9 +39,9 @@
 	{#if title}
 		<title>{title}</title>
 	{/if}
-    
+
 	<path
-        fill={palette.primary}
+		fill={palette.primary}
 		opacity="1.000000"
 		stroke="none"
 		d="M410.835571,66.000412 
@@ -254,4 +254,3 @@ M697.854370,365.000000
 z"
 	/>
 </svg>
-
