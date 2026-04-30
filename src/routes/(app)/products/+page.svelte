@@ -121,23 +121,24 @@
 	<title>Inventario de Productos - Optikt</title>
 </svelte:head>
 
-<div class="space-y-6 p-6">
+<div class="space-y-5 p-4 sm:space-y-6 sm:p-6">
 	<PageHeader title="Productos" subtitle="Inventario">
 		{#snippet actions()}
 			{#if isAdmin}
 				<button
 					type="button"
 					onclick={() => goto(resolve('/products/create'))}
-					class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
+					class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-gold px-3 text-xs font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md sm:h-11 sm:w-auto sm:px-5 sm:text-sm"
 				>
-					<Plus class="h-4 w-4" />
-					NUEVO PRODUCTO
+					<Plus class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+					<span class="hidden sm:inline">NUEVO PRODUCTO</span>
+					<span class="sm:hidden">NUEVO</span>
 				</button>
 			{/if}
 		{/snippet}
 	</PageHeader>
 
-	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+	<div class="hidden grid-cols-2 gap-4 sm:grid lg:grid-cols-3">
 		<section class="glass-card p-5">
 			<div class="mb-3 flex items-center gap-3">
 				<div
@@ -187,12 +188,12 @@
 		</section>
 	</div>
 
-	<section class="glass-card bg-surface-container-low p-4">
+	<section class="glass-card bg-surface-container-low p-2 sm:p-3 md:p-4">
 		<div
-			class="grid gap-3 xl:grid-cols-[minmax(240px,0.9fr)_180px_180px_180px_180px_auto_auto] xl:items-center"
+			class="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(240px,0.9fr)_180px_180px_180px_180px_auto_auto] xl:items-center"
 		>
-			<div class="relative">
-				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
+			<div class="relative col-span-full sm:col-span-1">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
 				<input
 					id="products-search"
 					name="products-search"
@@ -200,7 +201,7 @@
 					bind:value={search}
 					oninput={handleSearch}
 					placeholder="Buscar por nombre, codigo o SKU..."
-					class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="w-full rounded-lg border-none bg-surface-container-high p-2 pl-9 text-xs text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:p-3 sm:pl-11 sm:text-sm"
 				/>
 			</div>
 
@@ -209,9 +210,9 @@
 				name="products-type-filter"
 				bind:value={typeFilter}
 				onchange={handleFilterChange}
-				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:px-4 sm:py-3 sm:text-sm"
 			>
-				<option value="">Tipo de producto</option>
+				<option value="">Tipo</option>
 				{#each ALL_PRODUCT_TYPES as type (type)}
 					<option value={type}>{PRODUCT_TYPE_LABELS[type]}</option>
 				{/each}
@@ -222,9 +223,9 @@
 				name="products-stock-filter"
 				bind:value={stockFilter}
 				onchange={handleFilterChange}
-				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:px-4 sm:py-3 sm:text-sm"
 			>
-				<option value="">Estado de stock</option>
+				<option value="">Stock</option>
 				{#each ALL_PRODUCT_STOCK_FILTERS as filter (filter)}
 					<option value={filter}>{PRODUCT_STOCK_FILTER_LABELS[filter]}</option>
 				{/each}
@@ -235,7 +236,7 @@
 				name="products-brand-filter"
 				bind:value={brandFilter}
 				onchange={handleFilterChange}
-				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
 			>
 				<option value="">Marca</option>
 				{#each brands as brand (brand.id)}
@@ -248,7 +249,7 @@
 				name="products-supplier-filter"
 				bind:value={supplierFilter}
 				onchange={handleFilterChange}
-				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
 			>
 				<option value="">Proveedor</option>
 				{#each suppliers as supplier (supplier.id)}
@@ -256,9 +257,9 @@
 				{/each}
 			</select>
 
-			<div class="flex items-center justify-end gap-3 xl:justify-self-end">
-				<span class="text-sm font-medium whitespace-nowrap text-on-surface-variant">
-					Mostrar eliminados
+			<div class="hidden items-center justify-end gap-3 sm:flex xl:justify-self-end">
+				<span class="text-xs font-medium whitespace-nowrap text-on-surface-variant sm:text-sm">
+					Eliminados
 				</span>
 				<button
 					type="button"
@@ -266,13 +267,13 @@
 					aria-checked={includeDeleted}
 					aria-label="Mostrar productos eliminados"
 					onclick={toggleDeleted}
-					class="relative inline-flex h-7 w-12 items-center rounded-full transition-colors {includeDeleted
+					class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors sm:h-7 sm:w-12 {includeDeleted
 						? 'bg-brand-navy'
 						: 'bg-surface-container-highest'}"
 				>
 					<span
-						class="inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform {includeDeleted
-							? 'translate-x-6'
+						class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform sm:h-5 sm:w-5 {includeDeleted
+							? 'translate-x-5 sm:translate-x-6'
 							: 'translate-x-1'}"
 					></span>
 				</button>
@@ -282,13 +283,13 @@
 				type="button"
 				onclick={clearFilters}
 				disabled={!hasActiveFilters}
-				class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 xl:justify-self-end {hasActiveFilters
+				class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:h-[3rem] sm:w-[3rem] xl:justify-self-end {hasActiveFilters
 					? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
 					: 'bg-surface-container-high text-outline'}"
 				aria-label="Limpiar filtros"
 				title="Limpiar filtros"
 			>
-				<RotateCcw class="h-4 w-4" />
+				<RotateCcw class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 			</button>
 		</div>
 	</section>

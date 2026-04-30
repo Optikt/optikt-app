@@ -20,6 +20,7 @@
 		emptyTitle?: string;
 		emptySubtitle?: string;
 		row: Snippet<[T]>;
+		mobileCard?: Snippet<[T]>;
 		onPageChange: (page: number) => void;
 	}
 
@@ -36,6 +37,7 @@
 		emptyTitle = 'Sin resultados',
 		emptySubtitle = 'No se encontraron registros',
 		row,
+		mobileCard,
 		onPageChange
 	}: Props = $props();
 
@@ -62,30 +64,44 @@
 		></div>
 	</div>
 {:else if items.length > 0}
-	<div
-		class="relative overflow-visible rounded-xl border border-outline-variant/30 bg-surface-container-lowest"
-	>
-		<table class="w-full">
-			<thead>
-				<tr class="bg-brand-navy">
-					{#each columns as col (col.key)}
-						<th
-							class="px-4 py-3 text-[10px] font-bold tracking-widest text-brand-gold uppercase {col.align ===
-							'right'
-								? 'text-right'
-								: 'text-left'}"
-						>
-							{col.label}
-						</th>
+	{#if mobileCard}
+		<div class="space-y-3 lg:hidden">
+			{#each items as item (item.id)}
+				<article
+					class="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4 shadow-sm"
+				>
+					{@render mobileCard(item)}
+				</article>
+			{/each}
+		</div>
+	{/if}
+
+	<div class={mobileCard ? 'hidden lg:block' : 'block'}>
+		<div
+			class="relative overflow-x-auto overflow-y-visible rounded-xl border border-outline-variant/30 bg-surface-container-lowest"
+		>
+			<table class="w-full">
+				<thead>
+					<tr class="bg-brand-navy">
+						{#each columns as col (col.key)}
+							<th
+								class="px-4 py-3 text-[10px] font-bold tracking-widest text-brand-gold uppercase {col.align ===
+								'right'
+									? 'text-right'
+									: 'text-left'}"
+							>
+								{col.label}
+							</th>
+						{/each}
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-outline-variant/20">
+					{#each items as item (item.id)}
+						{@render row(item)}
 					{/each}
-				</tr>
-			</thead>
-			<tbody class="divide-y divide-outline-variant/20">
-				{#each items as item (item.id)}
-					{@render row(item)}
-				{/each}
-			</tbody>
-		</table>
+				</tbody>
+			</table>
+		</div>
 	</div>
 
 	<!-- Count + Pagination -->

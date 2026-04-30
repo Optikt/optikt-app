@@ -36,7 +36,7 @@
 			<li>
 				<a
 					href={resolve(`/sales/${sale.id}`)}
-					class="flex items-center justify-between rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 no-underline transition-colors hover:bg-violet-100/70"
+					class="flex flex-col items-start gap-3 rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 no-underline transition-colors hover:bg-violet-100/70 sm:flex-row sm:items-center sm:justify-between"
 				>
 					<div>
 						<span class="text-sm font-semibold text-brand-navy">
@@ -49,7 +49,7 @@
 							</span>
 						{/if}
 					</div>
-					<div class="flex items-center gap-2">
+					<div class="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
 						<span
 							class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800"
 						>
