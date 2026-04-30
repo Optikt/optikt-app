@@ -1,0 +1,26 @@
+{
+	"mcpServers": {
+		"svelte-flowbite": {
+			"type": "stdio",
+			"command": "~/.nvm/versions/node/v22.22.2/bin/node",
+			"args": ["~/projects/mcp-servers/flowbite-svelte-mcp/build/server.js"]
+		},
+		"svelte": {
+			"url": "https://mcp.svelte.dev/mcp",
+			"type": "http"
+		},
+		"zod": {
+			"url": "https://mcp.inkeep.com/zod/mcp",
+			"type": "http"
+		},
+		"stitch-google": {
+			"url": "https://stitch.googleapis.com/mcp",
+			"type": "http",
+			"headers": {
+				"Accept": "application/json",
+				"X-Goog-Api-Key": "AQ.Ab8RN6IPpXkMd2Pn_1BCgel9bASGJrIq9v1AkdaY_CiQyrQaBw"
+			}
+		}
+	},
+	"inputs": []
+}
