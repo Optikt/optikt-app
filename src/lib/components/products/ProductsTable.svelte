@@ -191,7 +191,9 @@
 			<div class="flex items-start gap-4">
 				<div class="min-w-0 flex-1">
 					<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-						<h3 class="min-w-0 text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-brand-navy">
+						<h3
+							class="min-w-0 text-xl font-semibold tracking-[-0.03em] text-brand-navy sm:text-2xl"
+						>
 							{product.name}
 						</h3>
 						<p
