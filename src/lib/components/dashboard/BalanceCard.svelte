@@ -30,10 +30,10 @@
 		</div>
 	</div>
 	<a
-		href="{resolve('/sales')}?status=PENDING"
-		class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-navy px-6 text-sm font-semibold tracking-wide text-white uppercase no-underline shadow-sm transition-all hover:bg-brand-navy-light hover:shadow-md sm:w-auto"
+		href={resolve('/receivables')}
+		class="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase no-underline shadow-sm transition-all hover:bg-brand-navy-light hover:shadow-md"
 	>
-		REVISAR COBROS
+		VER COBROS
 		<ArrowRight size={16} />
 	</a>
 </div>

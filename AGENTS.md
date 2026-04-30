@@ -5,7 +5,6 @@ Optical store management system built with SvelteKit, Flowbite-Svelte, and Drizz
 ## Tech Stack
 
 - **Framework:** SvelteKit (Svelte 5 with runes)
-- **UI Library:** Flowbite-Svelte (use MCP tools for docs — `findComponent`, `getComponentDoc`, `searchDocs`)
 - **Styling:** Tailwind CSS
 - **Icons:** `@lucide/svelte`
 - **ORM:** Drizzle (PostgreSQL) — schema in `drizzle/schema.ts`
@@ -55,4 +54,3 @@ Toast reference is available as a prompt in `.github/prompts/toast-usage.prompt.
 ## MCP Servers Available
 
 - **Svelte MCP** — Svelte 5 / SvelteKit documentation, autofixer, playground links
-- **Flowbite-Svelte MCP** — Component documentation, search, examples
