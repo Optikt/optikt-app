@@ -18,3 +18,4 @@ export * from './reports';
 export * from './purchaseOrders';
 export * from './inventoryLots';
 export * from './inventoryMovements';
+export * from './receivables';

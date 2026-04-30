@@ -12,7 +12,8 @@
 		ChartColumn,
 		Shield,
 		FileText,
-		ClipboardList
+		ClipboardList,
+		HandCoins
 	} from '@lucide/svelte';
 	import { isAdminRole, UserRole } from '$lib/shared/enums';
 	import type { LucideIcon } from '$lib/types/index.js';
@@ -37,7 +38,8 @@
 		reports: ChartColumn,
 		shield: Shield,
 		quotes: FileText,
-		purchases: ClipboardList
+		purchases: ClipboardList,
+		receivables: HandCoins
 	};
 
 	const navItems = [
@@ -45,6 +47,7 @@
 		{ href: '/customers', label: 'Clientes', icon: 'users' },
 		{ href: '/products', label: 'Inventario', icon: 'package' },
 		{ href: '/sales', label: 'Ventas', icon: 'shopping' },
+		{ href: '/receivables', label: 'Cuentas por Cobrar', icon: 'receivables' },
 		{ href: '/quotes', label: 'Presupuestos', icon: 'quotes' },
 		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
 		{ href: '/brands', label: 'Marcas', icon: 'tag' },

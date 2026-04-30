@@ -44,7 +44,7 @@
 						</span>
 						{#if sale.customer}
 							<span class="ml-2 text-sm text-on-surface-variant">
-								— {sale.customer.firstName}
+								- {sale.customer.firstName}
 								{sale.customer.lastName}
 							</span>
 						{/if}

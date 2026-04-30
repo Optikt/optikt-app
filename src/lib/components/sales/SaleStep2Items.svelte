@@ -1169,7 +1169,7 @@
 											</div>
 
 											<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-												Opcional — completar después si no está disponible
+												Opcional - completar después si no está disponible
 											</p>
 
 											<div class="grid gap-4 sm:grid-cols-2">
