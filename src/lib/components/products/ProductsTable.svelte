@@ -195,8 +195,7 @@
 							{product.name}
 						</h3>
 						<p
-							class="font-mono text-lg font-semibold tabular-nums {product.currentSalePrice !=
-							null
+							class="font-mono text-lg font-semibold tabular-nums {product.currentSalePrice != null
 								? 'text-brand-navy'
 								: 'text-outline'}"
 						>
@@ -240,7 +239,9 @@
 							</button>
 
 							{#if mobileActionsOpenFor === product.id}
-								<div class="absolute top-full right-0 z-20 mt-2 min-w-36 overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest py-1 shadow-sm">
+								<div
+									class="absolute top-full right-0 z-20 mt-2 min-w-36 overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest py-1 shadow-sm"
+								>
 									{#if onEdit && !product.deletedAt}
 										<button
 											type="button"
@@ -315,10 +316,7 @@
 			<div class="flex flex-wrap items-center gap-2 pt-1">
 				<ProductTypeBadge type={product.type} class="rounded-full px-4 py-1.5 text-[11px]" />
 
-				<AppBadge
-					variant={stockBadgeVariant(product)}
-					class="rounded-full px-4 py-1.5 text-[11px]"
-				>
+				<AppBadge variant={stockBadgeVariant(product)} class="rounded-full px-4 py-1.5 text-[11px]">
 					{stockLabel(product)}
 				</AppBadge>
 
