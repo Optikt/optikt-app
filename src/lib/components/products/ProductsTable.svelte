@@ -187,7 +187,7 @@
 	{/snippet}
 
 	{#snippet mobileCard(product)}
-		<div class="space-y-4">
+		<div class="space-y-2">
 			<div class="flex items-start gap-4">
 				<div class="min-w-0 flex-1">
 					<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -207,46 +207,6 @@
 					<p class="mt-2 text-[15px] text-on-surface-variant">
 						{product.brand?.name ?? product.supplier?.name ?? 'Sin referencia'}
 					</p>
-
-					<div class="mt-3 space-y-1.5">
-						<div class="flex items-baseline gap-2 text-[11px] text-on-surface-variant">
-							<span class="shrink-0 font-semibold tracking-[0.14em] text-outline uppercase">
-								Cod.
-							</span>
-							<button
-								type="button"
-								use:copyOnLongPress={{
-									text: product.personalCode?.trim() || undefined,
-									delay: 2000,
-									onCopied: () => handleLongPressCopied('Código interno'),
-									onError: (error) => handleLongPressError(error, 'Código interno')
-								}}
-								class="min-w-0 truncate bg-transparent text-left font-mono text-[12px] font-medium text-on-surface-variant select-none"
-								title="Mantén presionado para copiar el código interno"
-							>
-								{product.personalCode?.trim() || '-'}
-							</button>
-						</div>
-
-						<div class="flex items-baseline gap-2 text-[11px] text-on-surface-variant">
-							<span class="shrink-0 font-semibold tracking-[0.14em] text-outline uppercase">
-								SKU
-							</span>
-							<button
-								type="button"
-								use:copyOnLongPress={{
-									text: product.sku,
-									delay: 2000,
-									onCopied: () => handleLongPressCopied('SKU'),
-									onError: (error) => handleLongPressError(error, 'SKU')
-								}}
-								class="min-w-0 truncate bg-transparent text-left font-mono text-[12px] font-medium text-on-surface-variant select-none"
-								title="Mantén presionado para copiar el SKU"
-							>
-								{product.sku}
-							</button>
-						</div>
-					</div>
 				</div>
 
 				<div class="flex shrink-0 items-center gap-2">
@@ -312,6 +272,40 @@
 						</div>
 					{/if}
 				</div>
+			</div>
+
+			<div
+				class="grid grid-cols-[auto_minmax(0,0.9fr)_auto_minmax(0,1.35fr)] items-baseline gap-x-2 gap-y-1 text-[11px] text-on-surface-variant"
+			>
+				<span class="shrink-0 font-semibold tracking-[0.14em] text-outline uppercase">Cod.</span>
+				<button
+					type="button"
+					use:copyOnLongPress={{
+						text: product.personalCode?.trim() || undefined,
+						delay: 2000,
+						onCopied: () => handleLongPressCopied('Código interno'),
+						onError: (error) => handleLongPressError(error, 'Código interno')
+					}}
+					class="min-w-0 truncate bg-transparent text-left font-mono text-[12px] font-medium text-on-surface-variant select-none"
+					title="Mantén presionado para copiar el código interno"
+				>
+					{product.personalCode?.trim() || '-'}
+				</button>
+
+				<span class="shrink-0 font-semibold tracking-[0.14em] text-outline uppercase">SKU</span>
+				<button
+					type="button"
+					use:copyOnLongPress={{
+						text: product.sku,
+						delay: 2000,
+						onCopied: () => handleLongPressCopied('SKU'),
+						onError: (error) => handleLongPressError(error, 'SKU')
+					}}
+					class="min-w-0 truncate bg-transparent text-left font-mono text-[12px] font-medium text-on-surface-variant select-none"
+					title="Mantén presionado para copiar el SKU"
+				>
+					{product.sku}
+				</button>
 			</div>
 
 			<div class="flex flex-wrap items-center gap-2 pt-1">
