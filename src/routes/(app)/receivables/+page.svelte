@@ -149,7 +149,9 @@
 				>
 					<Wallet size={18} />
 					<span class="font-mono">{formatPrice(summary.totalBalance)}</span>
-					<span class="text-white/60">pendientes en {summary.totalCount} venta{summary.totalCount !== 1 ? 's' : ''}</span>
+					<span class="text-white/60"
+						>pendientes en {summary.totalCount} venta{summary.totalCount !== 1 ? 's' : ''}</span
+					>
 				</div>
 			{/if}
 		{/snippet}
@@ -165,9 +167,7 @@
 				>
 					<DollarSign size={20} />
 				</div>
-				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-					Total Pendiente
-				</p>
+				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Total Pendiente</p>
 			</div>
 			<p class="font-heading text-3xl font-bold text-brand-navy">
 				{formatPrice(summary.totalBalance)}
@@ -197,9 +197,7 @@
 				>
 					<CalendarDays size={20} />
 				</div>
-				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-					Promedio Días
-				</p>
+				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Promedio Días</p>
 			</div>
 			<p class="font-heading text-3xl font-bold text-brand-navy">
 				{summary.avgDaysPending}
@@ -313,9 +311,7 @@
 						</tr>
 					{:else}
 						{#each filteredRows as row (row.saleId)}
-							<tr
-								class="transition-colors hover:bg-surface-container-low/50"
-							>
+							<tr class="transition-colors hover:bg-surface-container-low/50">
 								<td class="px-6 py-4">
 									<div>
 										<p class="font-semibold text-brand-navy">

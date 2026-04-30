@@ -125,9 +125,7 @@ export async function getReceivables(
 			saleNumber: `#${String(r.orderNumber).padStart(4, '0')}`,
 			createdAt: r.createdAt,
 			customerId: r.customerId,
-			customerName: r.customerFirstName
-				? `${r.customerFirstName} ${r.customerLastName}`
-				: null,
+			customerName: r.customerFirstName ? `${r.customerFirstName} ${r.customerLastName}` : null,
 			customerPhone: r.customerPhone,
 			customerIdNumber: r.customerIdNumber,
 			totalAmount: r.totalAmount,
