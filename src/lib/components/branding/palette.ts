@@ -19,12 +19,12 @@ interface BrandPalette {
 
 const BRAND_PALETTES: Record<BrandLogoTheme, BrandPalette> = {
 	brand: {
-        primary: '#F7CB16',
+		primary: '#F7CB16',
 		secondary: '#152346'
 	},
 	light: {
 		primary: '#F7CB16',
-		secondary: '#FFFFFF',
+		secondary: '#FFFFFF'
 	}
 };
 
