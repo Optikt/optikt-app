@@ -148,10 +148,10 @@
 				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
 					Total de productos
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">
+					{stats.total.toLocaleString('es-VE')}
+				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">
-				{stats.total.toLocaleString('es-VE')}
-			</p>
 		</section>
 
 		<section class="glass-card p-5">
@@ -164,10 +164,10 @@
 				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
 					Stock bajo
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">
+					{stats.lowStock.toLocaleString('es-VE')}
+				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">
-				{stats.lowStock.toLocaleString('es-VE')}
-			</p>
 		</section>
 
 		<section class="glass-card p-5">
@@ -180,10 +180,10 @@
 				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
 					Sin stock
 				</p>
+				<p class="font-heading text-3xl font-bold text-error">
+					{stats.outOfStock.toLocaleString('es-VE')}
+				</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-error">
-				{stats.outOfStock.toLocaleString('es-VE')}
-			</p>
 		</section>
 	</div>
 
