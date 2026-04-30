@@ -35,13 +35,13 @@
 	// Create form state
 	let showCreateForm = $state(false);
 	let createInstanceId = $state(generateUUID());
-	let createTaxable = $state(true);
+	let createTaxable = $state(false);
 	const currentCreateForm = $derived(createSupplierTreatmentForm.for(createInstanceId));
 
 	// Edit state
 	let editingId = $state<string | null>(null);
 	let editInstanceId = $state(generateUUID());
-	let editTaxable = $state(true);
+	let editTaxable = $state(false);
 	const currentEditForm = $derived(updateSupplierTreatmentForm.for(editInstanceId));
 
 	// Delete state
@@ -60,11 +60,12 @@
 		}
 	});
 
-	async function loadTreatments() {
+	async function loadTreatments({ imperative = false }: { imperative?: boolean } = {}) {
 		if (!supplier) return;
 		loading = true;
 		try {
-			treatments = await listSupplierTreatments({ supplierId: supplier.id });
+			const treatmentsQuery = listSupplierTreatments({ supplierId: supplier.id });
+			treatments = imperative ? await treatmentsQuery.run() : await treatmentsQuery;
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando tratamientos'));
@@ -78,7 +79,7 @@
 		if (!canManage) return;
 
 		createInstanceId = generateUUID();
-		createTaxable = true;
+		createTaxable = false;
 		showCreateForm = true;
 		editingId = null;
 	}
@@ -87,7 +88,7 @@
 		showCreateForm = false;
 	}
 
-	function handleCreateResult() {
+	async function handleCreateResult() {
 		const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			toastUnboundErrors(allIssues);
@@ -96,7 +97,7 @@
 
 		toast.success('Tratamiento creado');
 		showCreateForm = false;
-		loadTreatments();
+		await loadTreatments({ imperative: true });
 	}
 
 	// Edit handlers
@@ -113,7 +114,7 @@
 		editingId = null;
 	}
 
-	function handleEditResult() {
+	async function handleEditResult() {
 		const allIssues = currentEditForm.fields.allIssues?.() ?? [];
 		if (allIssues.length > 0) {
 			toastUnboundErrors(allIssues);
@@ -122,7 +123,7 @@
 
 		toast.success('Tratamiento actualizado');
 		editingId = null;
-		loadTreatments();
+		await loadTreatments({ imperative: true });
 	}
 
 	// Delete handlers
@@ -141,7 +142,7 @@
 			toast.success('Tratamiento eliminado');
 			showDeleteModal = false;
 			deletingTreatment = null;
-			loadTreatments();
+			await loadTreatments({ imperative: true });
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando tratamiento'));
@@ -188,7 +189,7 @@
 							<form
 								{...currentEditForm.enhance(async ({ submit }) => {
 									await submit();
-									handleEditResult();
+									await handleEditResult();
 								})}
 								class="space-y-3 bg-blue-50/50 p-3"
 							>
@@ -348,7 +349,7 @@
 				<form
 					{...currentCreateForm.enhance(async ({ submit }) => {
 						await submit();
-						handleCreateResult();
+						await handleCreateResult();
 					})}
 					class="space-y-3 rounded-lg border border-blue-200 bg-blue-50/30 p-3"
 				>

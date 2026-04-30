@@ -66,7 +66,7 @@ export const CreateSupplierTreatmentSchema = z.object({
 	category: z.enum(ALL_TREATMENT_CATS),
 	price: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
 	salePrice: CoercedNumber.min(0, 'Precio de venta debe ser mayor o igual a 0').optional(),
-	isTaxable: CoercedBoolean.default(true)
+	isTaxable: CoercedBoolean.default(false)
 });
 
 export const UpdateSupplierTreatmentSchema = z.object({
