@@ -227,12 +227,16 @@
 							<button
 								type="button"
 								onclick={(event) => toggleMobileActions(event, product.id)}
-								class="inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-outline-variant/30 px-3 text-outline transition-colors hover:border-brand-blue/30 hover:bg-surface-container-high hover:text-brand-blue"
+								class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-brand-blue/30 hover:bg-surface-container-high hover:text-brand-blue"
 								title="Más acciones"
 								aria-label="Más acciones"
 								aria-expanded={mobileActionsOpenFor === product.id}
 							>
-								<span class="text-base leading-none font-bold tracking-[-0.18em]">...</span>
+								<span class="flex items-center justify-center gap-0.5" aria-hidden="true">
+									<span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+									<span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+									<span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+								</span>
 							</button>
 
 							{#if mobileActionsOpenFor === product.id}
