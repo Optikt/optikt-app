@@ -36,18 +36,18 @@
 		</a>
 	{/if}
 
-	<header class="flex flex-col gap-3 sm:flex-row sm:justify-between">
+	<header class="flex flex-row items-start justify-between gap-3 sm:gap-4">
 		<div>
 			{#if subtitle}
 				<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
 					{subtitle}
 				</p>
 			{/if}
-			<h1 class="font-heading m-0 text-3xl font-bold text-brand-navy">{title}</h1>
+			<h1 class="font-heading m-0 text-xl sm:text-2xl lg:text-3xl font-bold text-brand-navy">{title}</h1>
 		</div>
 
 		{#if actions}
-			<div class="flex shrink-0 items-center gap-2">
+			<div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
 				{@render actions()}
 			</div>
 		{/if}

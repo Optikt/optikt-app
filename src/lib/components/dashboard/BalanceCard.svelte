@@ -6,8 +6,10 @@
 	let { amount, count }: { amount: number; count: number } = $props();
 </script>
 
-<div class="glass-card flex flex-wrap items-center justify-between gap-4 p-6">
-	<div class="flex items-center gap-5">
+<div
+	class="glass-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+>
+	<div class="flex items-center gap-4 sm:gap-5">
 		<div
 			class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-gold/15 text-brand-gold-dark"
 		>
@@ -29,7 +31,7 @@
 	</div>
 	<a
 		href="{resolve('/sales')}?status=PENDING"
-		class="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-6 py-3 text-sm font-semibold tracking-wide text-white uppercase no-underline shadow-sm transition-all hover:bg-brand-navy-light hover:shadow-md"
+		class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-navy px-6 text-sm font-semibold tracking-wide text-white uppercase no-underline shadow-sm transition-all hover:bg-brand-navy-light hover:shadow-md sm:w-auto"
 	>
 		REVISAR COBROS
 		<ArrowRight size={16} />

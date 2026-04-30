@@ -146,6 +146,133 @@
 		<Package class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
+	{#snippet mobileCard(product)}
+		<div class="space-y-4">
+			<div class="flex items-start justify-between gap-3">
+				<div class="min-w-0 flex-1">
+					<div class="flex flex-wrap items-center gap-2">
+						<h3 class="text-sm leading-6 font-semibold text-on-surface">{product.name}</h3>
+						{#if product.deletedAt}
+							<AppBadge variant="neutral">Inactivo</AppBadge>
+						{/if}
+					</div>
+					<p class="mt-1 text-xs text-on-surface-variant">
+						{product.brand?.name ?? 'Sin marca'}
+						<span class="mx-1 text-outline">•</span>
+						{product.supplier?.name ?? 'Sin proveedor'}
+					</p>
+				</div>
+
+				<div class="shrink-0 text-right">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Precio</p>
+					<p class="font-mono text-base font-bold text-brand-navy">
+						{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
+					</p>
+				</div>
+			</div>
+
+			<div class="grid gap-3 sm:grid-cols-2">
+				<div class="rounded-xl bg-surface-container-low p-3">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						Código interno
+					</p>
+					<div class="mt-2 flex items-center justify-between gap-2">
+						<span class="min-w-0 truncate font-mono text-sm font-semibold text-brand-navy">
+							{product.personalCode?.trim() || '-'}
+						</span>
+						{#if product.personalCode?.trim()}
+							<button
+								type="button"
+								onclick={(event) => void copyValue(event, product.personalCode, 'Código interno')}
+								class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-outline transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Copiar código interno"
+							>
+								<Copy class="h-4 w-4" />
+							</button>
+						{/if}
+					</div>
+				</div>
+
+				<div class="rounded-xl bg-surface-container-low p-3">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">SKU</p>
+					<div class="mt-2 flex items-center justify-between gap-2">
+						<span class="min-w-0 truncate font-mono text-sm font-semibold text-brand-navy">
+							{product.sku}
+						</span>
+						<button
+							type="button"
+							onclick={(event) => void copyValue(event, product.sku, 'SKU')}
+							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-outline transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+							title="Copiar SKU"
+						>
+							<Copy class="h-4 w-4" />
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div
+				class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-low p-3"
+			>
+				<div class="space-y-1">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						Categoría
+					</p>
+					<ProductTypeBadge type={product.type} />
+				</div>
+
+				<div class="flex items-center gap-2">
+					<AppBadge variant={stockBadgeVariant(product)}>{stockLabel(product)}</AppBadge>
+					<span class="font-mono text-sm font-semibold text-brand-navy">{product.stock}</span>
+				</div>
+			</div>
+
+			<div class="flex flex-wrap items-center gap-2">
+				{#if onView}
+					<button
+						type="button"
+						onclick={() => onView?.(product)}
+						class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-info-container px-4 text-sm font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+					>
+						<Eye class="h-4 w-4" />
+						Ver producto
+					</button>
+				{/if}
+
+				{#if canManage && onEdit && !product.deletedAt}
+					<button
+						type="button"
+						onclick={() => onEdit?.(product)}
+						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+						title="Editar producto"
+					>
+						<SquarePen class="h-4 w-4" />
+					</button>
+				{/if}
+
+				{#if canManage && product.deletedAt}
+					<button
+						type="button"
+						onclick={() => openReactivate(product)}
+						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-success-container hover:text-on-success-container"
+						title="Reactivar producto"
+					>
+						<RotateCcw class="h-4 w-4" />
+					</button>
+				{:else if canManage}
+					<button
+						type="button"
+						onclick={() => openDelete(product)}
+						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+						title="Eliminar producto"
+					>
+						<Trash2 class="h-4 w-4" />
+					</button>
+				{/if}
+			</div>
+		</div>
+	{/snippet}
+
 	{#snippet row(product)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView

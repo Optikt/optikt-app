@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { X } from '@lucide/svelte';
 	import {
 		House,
 		Users,
@@ -21,9 +22,11 @@
 
 	type SidebarProps = {
 		user: SessionWithUser['user'];
+		mobileOpen?: boolean;
+		onClose?: () => void;
 	};
 
-	let { user }: SidebarProps = $props();
+	let { user, mobileOpen = false, onClose }: SidebarProps = $props();
 
 	const iconMap: Record<string, LucideIcon> = {
 		home: House,
@@ -65,29 +68,71 @@
 	const isAdmin = $derived(user.role === UserRole.ADMIN);
 </script>
 
-<aside class="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white print:hidden">
-	<!-- Navigation -->
-	<nav class="flex-1 overflow-y-auto py-3">
-		{#each navItems as item (item.href)}
-			<NavLink
-				href={resolve(item.href)}
-				label={item.label}
-				icon={iconMap[item.icon]}
-				matchSubPaths
-			/>
+{#snippet navigation(onSelect = undefined as (() => void) | undefined)}
+	{#each navItems as item (item.href)}
+		<NavLink
+			href={resolve(item.href)}
+			label={item.label}
+			icon={iconMap[item.icon]}
+			matchSubPaths
+			{onSelect}
+		/>
+	{/each}
+
+	{#if isAdminOrManager}
+		<div class="mx-4 my-2 h-px bg-slate-200"></div>
+		{#each adminManagerItems as item (item.href)}
+			<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} {onSelect} />
 		{/each}
+	{/if}
 
-		{#if isAdminOrManager}
-			<div class="mx-4 my-2 h-px bg-slate-200"></div>
-			{#each adminManagerItems as item (item.href)}
-				<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} />
-			{/each}
-		{/if}
+	{#if isAdmin}
+		{#each adminOnlyItems as item (item.href)}
+			<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} {onSelect} />
+		{/each}
+	{/if}
+{/snippet}
 
-		{#if isAdmin}
-			{#each adminOnlyItems as item (item.href)}
-				<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} />
-			{/each}
-		{/if}
+<aside
+	class="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex print:hidden"
+>
+	<nav class="flex-1 overflow-y-auto py-3">
+		{@render navigation()}
+	</nav>
+</aside>
+
+{#if mobileOpen}
+	<button
+		type="button"
+		class="fixed inset-0 z-40 bg-brand-navy/30 backdrop-blur-[1px] lg:hidden"
+		onclick={onClose}
+		aria-label="Cerrar menú de navegación"
+	></button>
+{/if}
+
+<aside
+	id="app-mobile-sidebar"
+	class={[
+		'fixed inset-y-0 left-0 z-50 flex w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-200 ease-out lg:hidden print:hidden',
+		mobileOpen ? 'translate-x-0' : '-translate-x-full'
+	]}
+>
+	<div class="flex items-center justify-between border-b border-slate-200 px-4 py-4">
+		<div>
+			<p class="text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">Navegación</p>
+			<p class="text-sm font-semibold text-brand-navy">Accesos rápidos</p>
+		</div>
+		<button
+			type="button"
+			onclick={onClose}
+			class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-navy"
+			aria-label="Cerrar menú"
+		>
+			<X class="h-4 w-4" />
+		</button>
+	</div>
+
+	<nav class="flex-1 overflow-y-auto py-3">
+		{@render navigation(onClose)}
 	</nav>
 </aside>

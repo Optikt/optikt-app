@@ -54,12 +54,6 @@
 		activeTab === 'catalog' ? 'Catálogo de Lentes' : 'Materiales de Lentes'
 	);
 
-	const pageDescription = $derived(
-		activeTab === 'catalog'
-			? 'Gestiona cristales terminados y de laboratorio con un listado técnico, claro y fácil de escanear para ventas y atención clínica.'
-			: 'Administra los materiales ópticos que alimentan el catálogo de lentes, con sus códigos, descripciones e índices refractivos.'
-	);
-
 	async function fetchCatalog() {
 		catalogLoading = true;
 		try {
@@ -122,27 +116,30 @@
 	<title>Lentes - Optikt</title>
 </svelte:head>
 
-<div class="space-y-6 p-6">
+<div class="space-y-5 p-4 sm:space-y-6 sm:p-6">
 	<PageHeader title={pageTitle}>
 		{#snippet actions()}
-			<div class="flex gap-3">
+			<div class="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center">
 				{#if isAdmin && activeTab === 'catalog'}
 					<button
 						type="button"
 						onclick={openCreateLens}
-						class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
+						class="inline-flex h-9 px-3 sm:h-11 sm:px-5 items-center justify-center gap-2 rounded-lg bg-brand-gold text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark sm:w-auto"
 					>
-						<Plus class="h-4 w-4" />
-						Nuevo lente
+						<Plus class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+						<span class="hidden sm:inline">Nuevo lente</span>
+						<span class="sm:hidden">Lente</span>
 					</button>
 				{/if}
 
-				<div class="inline-flex rounded-2xl bg-surface-container-high p-1 shadow-sm">
+				<div
+					class="inline-flex w-full rounded-2xl bg-surface-container-high p-1 shadow-sm sm:w-auto"
+				>
 					<button
 						type="button"
 						onclick={() => (activeTab = 'catalog')}
 						aria-pressed={activeTab === 'catalog'}
-						class="rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:px-5 {activeTab ===
+						class="flex-1 rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:flex-none sm:px-5 {activeTab ===
 						'catalog'
 							? 'bg-brand-navy text-white'
 							: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
@@ -153,7 +150,7 @@
 						type="button"
 						onclick={() => (activeTab = 'materials')}
 						aria-pressed={activeTab === 'materials'}
-						class="rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:px-5 {activeTab ===
+						class="flex-1 rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:flex-none sm:px-5 {activeTab ===
 						'materials'
 							? 'bg-brand-navy text-white'
 							: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
@@ -164,10 +161,6 @@
 			</div>
 		{/snippet}
 	</PageHeader>
-
-	<p class="max-w-3xl text-sm leading-7 text-on-surface-variant sm:text-base">
-		{pageDescription}
-	</p>
 
 	{#if activeTab === 'catalog'}
 		<div class="flex flex-wrap gap-2">
@@ -192,20 +185,20 @@
 	{/if}
 
 	{#if activeTab === 'catalog'}
-		<section class="glass-card bg-surface-container-low p-4">
+		<section class="glass-card bg-surface-container-low p-2 sm:p-3 md:p-4">
 			<div
-				class="grid gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_auto] xl:items-center"
+				class="grid gap-2 grid-cols-[1fr_1fr_auto] sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_auto] xl:items-center"
 			>
-				<div class="relative">
-					<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
+				<div class="relative col-span-full sm:col-span-1">
+					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
 					<input
 						id="lens-catalog-search"
 						name="lens-catalog-search"
 						type="search"
 						bind:value={search}
 						oninput={handleSearch}
-						placeholder="Buscar por lente, proveedor o material..."
-						class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						placeholder="Buscar lente, proveedor o material..."
+						class="w-full rounded-lg border-none bg-surface-container-high p-2 pl-9 text-xs sm:p-3 sm:pl-11 sm:text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 					/>
 				</div>
 
@@ -214,7 +207,7 @@
 					name="lens-source-filter"
 					bind:value={sourceFilter}
 					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				>
 					<option value="">Origen</option>
 					{#each ALL_LENS_SOURCES as source (source)}
@@ -227,7 +220,7 @@
 					name="lens-type-filter"
 					bind:value={typeFilter}
 					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				>
 					<option value="">Tipo</option>
 					{#each ALL_LENS_TYPES as type (type)}
@@ -240,7 +233,7 @@
 					name="lens-supplier-filter"
 					bind:value={supplierFilter}
 					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="hidden sm:block rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				>
 					<option value="">Proveedor</option>
 					{#each suppliers as supplier (supplier.id)}
@@ -253,7 +246,7 @@
 					name="lens-material-filter"
 					bind:value={materialFilter}
 					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="hidden sm:block rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				>
 					<option value="">Material</option>
 					{#each materials as material (material.id)}
@@ -265,13 +258,13 @@
 					type="button"
 					onclick={clearFilters}
 					disabled={!hasActiveFilters}
-					class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 xl:justify-self-end {hasActiveFilters
+					class="inline-flex h-9 w-9 sm:h-[3rem] sm:w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 xl:justify-self-end {hasActiveFilters
 						? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
 						: 'bg-surface-container-high text-outline'}"
 					aria-label="Limpiar filtros"
 					title="Limpiar filtros"
 				>
-					<RotateCcw class="h-4 w-4" />
+					<RotateCcw class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
 				</button>
 			</div>
 		</section>
