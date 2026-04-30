@@ -90,7 +90,7 @@ function registerPdfSignalShutdown(
 ): void {
 	let shutdown: (() => Promise<void>) | undefined;
 
-	// eslint-disable-next-line prefer-const
+	// eslint-disable-next-line prefer-const -- self-referencing closure requires let
 	shutdown = createPdfShutdownHandler(closeBrowser, logError, () => {
 		if (shutdown) {
 			process.removeListener(signal, shutdown);
