@@ -6,8 +6,10 @@
 	let { amount, count }: { amount: number; count: number } = $props();
 </script>
 
-<div class="glass-card flex flex-wrap items-center justify-between gap-4 p-6">
-	<div class="flex items-center gap-5">
+<div
+	class="glass-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+>
+	<div class="flex items-center gap-4 sm:gap-5">
 		<div
 			class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-gold/15 text-brand-gold-dark"
 		>

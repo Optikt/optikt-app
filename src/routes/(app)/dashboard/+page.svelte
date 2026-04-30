@@ -93,18 +93,18 @@
 	<meta name="description" content="Optikt Dashboard - Centro de Operaciones" />
 </svelte:head>
 
-<div class="p-4">
+<div class="space-y-4 p-4 sm:space-y-6 sm:p-6">
 	<DashboardHeader showPrimaryAction={canAct} />
 
 	<!-- Balance Card -->
 	{#if stats.pendingPayments.count > 0}
-		<section class="mb-4">
+		<section>
 			<BalanceCard amount={stats.pendingPayments.amount} count={stats.pendingPayments.count} />
 		</section>
 	{/if}
 
 	<!-- Stat Cards -->
-	<section class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+	<section class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 		{#each statCards as stat (stat.label)}
 			<StatCard {...stat} />
 		{/each}
@@ -113,8 +113,8 @@
 	<!-- Bottom Grid: Recent Sales + Quick Actions + Pending Free Items -->
 	<section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 		<!-- Ventas Recientes (2/3 width) -->
-		<div class="glass-card p-6 lg:col-span-2">
-			<div class="mb-4 flex items-center justify-between">
+		<div class="glass-card p-4 sm:p-6 lg:col-span-2">
+			<div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 				<h2 class="font-heading text-lg font-semibold text-brand-navy">Ventas Recientes</h2>
 				<a
 					href={resolve('/sales')}
@@ -129,7 +129,7 @@
 		<!-- Right column: Quick Actions + Pending Free Items -->
 		<div class="flex flex-col gap-6">
 			<!-- Acciones Rápidas - dark navy card -->
-			<div class="rounded-xl bg-brand-navy p-6">
+			<div class="rounded-xl bg-brand-navy p-4 sm:p-6">
 				<h2
 					class="font-heading mb-4 text-xs font-semibold tracking-widest text-brand-gold uppercase"
 				>

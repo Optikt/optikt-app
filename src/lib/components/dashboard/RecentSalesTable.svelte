@@ -26,25 +26,27 @@
 		{#each sales as sale (sale.id)}
 			<a
 				href={resolve(`/sales/${sale.id}`)}
-				class="flex items-center gap-3 rounded-lg px-3 py-4 no-underline transition-colors hover:bg-slate-50"
+				class="flex flex-col items-start gap-3 rounded-lg px-3 py-4 no-underline transition-colors hover:bg-slate-50 sm:flex-row sm:items-center"
 			>
-				<div
-					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-navy text-xs font-semibold text-white"
-				>
-					{getInitials(sale)}
-				</div>
-				<div class="min-w-0 flex-1">
-					<p class="truncate text-sm font-medium text-slate-800">{getCustomerName(sale)}</p>
-					<div class="mt-0.5 flex items-center gap-2">
-						<span class="font-mono text-xs text-slate-400">Venta #{sale.orderNumber}</span>
-						<span class="text-xs text-slate-300">•</span>
-						<span class="text-xs text-slate-400"
-							>{formatDate(sale.saleDate, { month: 'short' })}</span
-						>
+				<div class="flex w-full items-start gap-3 sm:w-auto sm:items-center">
+					<div
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-navy text-xs font-semibold text-white"
+					>
+						{getInitials(sale)}
+					</div>
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-sm font-medium text-slate-800">{getCustomerName(sale)}</p>
+						<div class="mt-0.5 flex flex-wrap items-center gap-2">
+							<span class="font-mono text-xs text-slate-400">Venta #{sale.orderNumber}</span>
+							<span class="hidden text-xs text-slate-300 sm:inline">•</span>
+							<span class="text-xs text-slate-400"
+								>{formatDate(sale.saleDate, { month: 'short' })}</span
+							>
+						</div>
 					</div>
 				</div>
-				<div class="flex items-center gap-3">
-					<span class="font-mono text-sm font-semibold text-slate-800">
+				<div class="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+					<span class="font-mono text-sm font-semibold text-slate-800 sm:text-right">
 						{formatPrice(sale.total)}
 					</span>
 					<SaleStatusBadge status={sale.status} />
