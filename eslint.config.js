@@ -44,5 +44,11 @@ export default defineConfig(
 				svelteConfig
 			}
 		}
+	},
+	{
+		files: ['**/*.svelte'],
+		rules: {
+			'svelte/require-store-reactive-access': 'off'
+		}
 	}
 );
