@@ -5,13 +5,21 @@
 		taxableBase: number;
 		exemptTotal: number;
 		taxAmount: number;
+		taxLabel?: string | null;
 		/** When provided, renders a "Total (sin desc. global)" row at the bottom of the card variant. */
 		subtotal?: number;
 		/** "card" wraps in a titled card; "inline" renders bare rows for embedding. */
 		variant?: 'card' | 'inline';
 	}
 
-	let { taxableBase, exemptTotal, taxAmount, subtotal, variant = 'card' }: Props = $props();
+	let {
+		taxableBase,
+		exemptTotal,
+		taxAmount,
+		taxLabel = null,
+		subtotal,
+		variant = 'card'
+	}: Props = $props();
 
 	let visible = $derived(taxAmount > 0 || exemptTotal > 0);
 </script>
@@ -35,7 +43,7 @@
 				{/if}
 				{#if taxAmount > 0}
 					<div class="flex items-center justify-between text-base">
-						<span class="text-slate-600">IVA</span>
+						<span class="text-slate-600">{taxLabel ?? 'IVA'}</span>
 						<span class="font-mono font-semibold text-slate-800">{formatPrice(taxAmount)}</span>
 					</div>
 				{/if}
@@ -63,7 +71,7 @@
 		{/if}
 		{#if taxAmount > 0}
 			<div class="flex justify-between text-base">
-				<span class="text-slate-500">IVA</span>
+				<span class="text-slate-500">{taxLabel ?? 'IVA'}</span>
 				<span class="font-mono font-medium text-slate-700">{formatPrice(taxAmount)}</span>
 			</div>
 		{/if}

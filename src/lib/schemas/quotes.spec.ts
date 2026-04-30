@@ -128,6 +128,9 @@ describe('CreateQuoteSchema', () => {
 			items: [makeProductItem()]
 		});
 		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.snapshotTaxRate).toBe(16);
+		}
 	});
 
 	it('accepts a quote with a customer', () => {
@@ -197,6 +200,19 @@ describe('CreateQuoteSchema', () => {
 			expect(result.data.items).toHaveLength(3);
 		}
 	});
+
+	it('accepts an explicit snapshot tax rate at document level', () => {
+		const result = CreateQuoteSchema.safeParse({
+			...validBase,
+			snapshotTaxRate: 12,
+			items: [makeProductItem()]
+		});
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.snapshotTaxRate).toBe(12);
+		}
+	});
 });
 
 // ── UpdateQuoteSchema ───────────────────────────────────────────────────
@@ -216,11 +232,15 @@ describe('UpdateQuoteSchema', () => {
 			customerId: crypto.randomUUID(),
 			discount: 10,
 			discountType: DiscountType.PERCENTAGE,
+			snapshotTaxRate: 10,
 			validUntil: '2025-03-01',
 			notes: 'Updated notes',
 			items: [makeProductItem()]
 		});
 		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.snapshotTaxRate).toBe(10);
+		}
 	});
 
 	it('rejects update without items', () => {

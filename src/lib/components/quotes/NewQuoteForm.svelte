@@ -21,6 +21,7 @@
 		hasPrescriptionErrors
 	} from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
+	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import SaleStep1Info from '$lib/components/sales/SaleStep1Info.svelte';
 	import SaleStep2Items from '$lib/components/sales/SaleStep2Items.svelte';
 	import PrescriptionValidationModal from '$lib/components/sales/PrescriptionValidationModal.svelte';
@@ -221,7 +222,8 @@
 		submitting = true;
 
 		try {
-			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems, defaultTaxRate);
+			const quoteItems = buildQuoteItemsFromWizard(items, products, lensItems);
+			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
 
 			const result = await createNewQuote({
 				customerId: customerId || undefined,
@@ -230,6 +232,7 @@
 				quoteDate: dateToISODateString(quoteDate),
 				discount,
 				discountType,
+				snapshotTaxRate,
 				validUntil: validUntil || undefined,
 				notes: notes || undefined,
 				items: quoteItems

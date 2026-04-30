@@ -682,19 +682,19 @@ export function computeSnapshotTaxBreakdown(
 		discount: number;
 		discountType: string;
 		snapshotIsTaxable: boolean | null;
-		snapshotTaxRate: number | null;
-	}[]
+	}[],
+	documentTaxRate: number | null
 ): { taxableBase: number; exemptTotal: number; taxAmount: number } {
 	let taxableBase = 0;
 	let exemptTotal = 0;
 	let taxAmount = 0;
+	const taxRate = documentTaxRate ?? 0;
 
 	for (const item of items) {
 		const lineTotal =
 			item.unitPrice * item.quantity -
 			computeDiscount(item.discount, item.discountType, item.unitPrice * item.quantity);
 		const isTaxable = item.snapshotIsTaxable ?? false;
-		const taxRate = item.snapshotTaxRate ?? 0;
 
 		if (isTaxable && taxRate > 0) {
 			const { base, tax } = decomposePrice(lineTotal, taxRate);
@@ -706,4 +706,17 @@ export function computeSnapshotTaxBreakdown(
 	}
 
 	return { taxableBase, exemptTotal, taxAmount };
+}
+
+export function getSnapshotTaxLabel(documentTaxRate: number | null): string | null {
+	if (documentTaxRate == null || documentTaxRate <= 0) {
+		return null;
+	}
+
+	const formatter = new Intl.NumberFormat('es-VE', {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2
+	});
+
+	return `IVA (${formatter.format(documentTaxRate)}%)`;
 }

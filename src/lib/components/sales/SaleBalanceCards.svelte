@@ -19,6 +19,7 @@
 		paymentProgressPercent: number;
 		paymentsCount: number;
 		taxBreakdown: TaxBreakdown;
+		taxLabel?: string | null;
 		isCancelled: boolean;
 		isCompleted: boolean;
 		refundStatus?: string | null;
@@ -36,6 +37,7 @@
 		paymentProgressPercent,
 		paymentsCount,
 		taxBreakdown,
+		taxLabel = null,
 		isCancelled,
 		isCompleted,
 		refundStatus,
@@ -45,7 +47,7 @@
 </script>
 
 <section class="grid gap-4 xl:grid-cols-4">
-	<EconomicBreakdownCard {subtotal} {total} {discountType} {discount} {taxBreakdown} />
+	<EconomicBreakdownCard {subtotal} {total} {discountType} {discount} {taxBreakdown} {taxLabel} />
 
 	<div class="rounded-[1.5rem] bg-surface-container-lowest px-6 py-6 shadow-sm">
 		<p class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Total deuda</p>

@@ -119,6 +119,9 @@ describe('CreateSaleSchema', () => {
 			items: [makeProductItem()]
 		});
 		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.snapshotTaxRate).toBe(16);
+		}
 	});
 
 	it('accepts a sale with lens + treatment items', () => {
@@ -184,6 +187,19 @@ describe('CreateSaleSchema', () => {
 			items: [makeProductItem()]
 		});
 		expect(result.success).toBe(true);
+	});
+
+	it('accepts an explicit snapshot tax rate at document level', () => {
+		const result = CreateSaleSchema.safeParse({
+			...validBase,
+			snapshotTaxRate: 8,
+			items: [makeProductItem()]
+		});
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.snapshotTaxRate).toBe(8);
+		}
 	});
 });
 

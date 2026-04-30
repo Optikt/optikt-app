@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { Settings, LogOut } from '@lucide/svelte';
+	import { ImagotipoHorizontal } from '$lib/components';
 	import { logout } from '$lib/remote/auth.remote';
 	import { UserRole } from '$lib/shared/enums';
 	import { CommandSearch, ExchangeRatesMock, NotificationsMock } from '$lib/components/layout';
@@ -48,11 +49,7 @@
 >
 	<!-- Logo -->
 	<a href={resolve('/dashboard')} class="flex shrink-0 items-center no-underline">
-		<img
-			src="/imagotipos/horizontal/optikt-white-yellow.png"
-			alt="Optikt"
-			class="h-7 object-contain"
-		/>
+		<ImagotipoHorizontal theme="light" ariaLabel="Optikt" class="h-7 w-auto" />
 	</a>
 
 	<!-- Search -->

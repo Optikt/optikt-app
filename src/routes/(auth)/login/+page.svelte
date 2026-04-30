@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ImagotipoVertical, Isotipo } from '$lib/components';
 	import { LoginForm } from '$lib/components/forms';
 
 	const appVersion = __APP_VERSION__;
@@ -20,11 +21,7 @@
 
 		<!-- Logo + tagline (centered) -->
 		<div class="mx-auto flex max-w-lg flex-col items-center text-center">
-			<img
-				src="/imagotipos/vertical/optikt-white-yellow.png"
-				alt="Optikt"
-				class="mb-8 h-48 w-auto object-contain xl:h-56"
-			/>
+			<ImagotipoVertical theme="light" ariaLabel="Optikt" class="mb-8 h-48 w-auto xl:h-56" />
 			<p class="text-lg leading-relaxed text-white/60">
 				Transformando la visión, impulsando tu negocio.
 			</p>
@@ -52,11 +49,7 @@
 		<div class="w-full max-w-sm">
 			<!-- Logo -->
 			<div class="mb-10 text-center">
-				<img
-					src="/logos/optikt-original.png"
-					alt="Optikt Logo"
-					class="mx-auto mb-6 h-16 w-16 object-contain"
-				/>
+				<Isotipo ariaLabel="Optikt Logo" class="mx-auto mb-6 h-16 w-16" />
 				<h2 class="font-heading text-3xl font-bold text-on-surface">Bienvenido de nuevo</h2>
 				<p class="mt-2 text-base text-on-surface-variant">
 					Ingrese sus credenciales para acceder al panel de control.

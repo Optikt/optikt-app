@@ -43,7 +43,13 @@ import {
 // ============================================================================
 
 export type SaleWithRelations = Sale & {
-	customer: { id: string; firstName: string; lastName: string; idNumber: string | null } | null;
+	customer: {
+		id: string;
+		firstName: string;
+		lastName: string;
+		idNumber: string | null;
+		primaryPhone: string;
+	} | null;
 	seller: { id: string; fullName: string } | null;
 	cancelledBy: { id: string; fullName: string } | null;
 	refundedBy: { id: string; fullName: string } | null;
@@ -221,7 +227,8 @@ export async function getAllSales(options?: GetSalesOptions): Promise<SaleWithRe
 				id: customers.id,
 				firstName: customers.firstName,
 				lastName: customers.lastName,
-				idNumber: customers.idNumber
+				idNumber: customers.idNumber,
+				primaryPhone: customers.primaryPhone
 			},
 			seller: { id: users.id, fullName: users.fullName }
 		})
@@ -320,7 +327,8 @@ export async function findSaleByIdWithRelations(
 				id: customers.id,
 				firstName: customers.firstName,
 				lastName: customers.lastName,
-				idNumber: customers.idNumber
+				idNumber: customers.idNumber,
+				primaryPhone: customers.primaryPhone
 			},
 			seller: { id: users.id, fullName: users.fullName },
 			cancelledBy: { id: cancelledByUser.id, fullName: cancelledByUser.fullName },

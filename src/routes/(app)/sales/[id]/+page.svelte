@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { CircleX, ChevronDown, ChevronUp, FileText, History, Wallet } from '@lucide/svelte';
+	import {
+		CircleX,
+		ChevronDown,
+		ChevronUp,
+		FileText,
+		History,
+		Printer,
+		Wallet
+	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -12,7 +20,10 @@
 		SaleMovementsSection
 	} from '$lib/components/sales';
 	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
-	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import {
+		computeSnapshotTaxBreakdown,
+		getSnapshotTaxLabel
+	} from '$lib/components/sales/saleItemHelpers';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
@@ -50,7 +61,8 @@
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
-	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
+	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate));
+	let taxLabel = $derived(getSnapshotTaxLabel(sale.snapshotTaxRate));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
 	);
@@ -120,6 +132,14 @@
 		goto(resolve('/sales'));
 	}
 
+	function openPrintView() {
+		window.open(resolve(`/print/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
+	}
+
+	function openPdfReceipt() {
+		window.open(resolve(`/api/pdf/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
+	}
+
 	function scrollToHistory() {
 		document.getElementById('sale-history')?.scrollIntoView({
 			behavior: 'smooth',
@@ -152,6 +172,28 @@
 		backOnClick={goBack}
 	>
 		{#snippet actions()}
+			<button
+				type="button"
+				onclick={openPrintView}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<FileText class="h-4 w-4" />
+				Ver recibo
+			</button>
+
+			<button
+				type="button"
+				onclick={openPdfReceipt}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<Printer class="h-4 w-4" />
+				Imprimir PDF
+			</button>
+
 			<button
 				type="button"
 				onclick={scrollToHistory}
@@ -319,6 +361,7 @@
 		{paymentProgressPercent}
 		paymentsCount={payments.length}
 		{taxBreakdown}
+		{taxLabel}
 		{isCancelled}
 		{isCompleted}
 		refundStatus={sale.refundStatus}

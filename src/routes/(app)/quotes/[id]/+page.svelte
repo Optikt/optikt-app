@@ -2,6 +2,7 @@
 	import {
 		Package,
 		FileText,
+		Printer,
 		CircleX,
 		Eye,
 		FlaskConical,
@@ -32,7 +33,8 @@
 	import CustomerLookupInput from '$lib/components/sales/CustomerLookupInput.svelte';
 	import {
 		buildPersistedDisplayGroups,
-		computeSnapshotTaxBreakdown
+		computeSnapshotTaxBreakdown,
+		getSnapshotTaxLabel
 	} from '$lib/components/sales/saleItemHelpers';
 	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
 	import { untrack } from 'svelte';
@@ -49,7 +51,8 @@
 
 	let mainItems = $derived(items.filter((i) => i.itemType !== SaleItemType.TREATMENT));
 
-	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items));
+	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, quote.snapshotTaxRate));
+	let taxLabel = $derived(getSnapshotTaxLabel(quote.snapshotTaxRate));
 
 	interface DisplayGroup {
 		key: string;
@@ -167,6 +170,14 @@
 	function goBack() {
 		goto(resolve('/quotes'));
 	}
+
+	function openPrintView() {
+		window.open(resolve(`/print/quote/${quote.id}`), '_blank', 'noopener,noreferrer');
+	}
+
+	function openPdfQuote() {
+		window.open(resolve(`/api/pdf/quote/${quote.id}`), '_blank', 'noopener,noreferrer');
+	}
 </script>
 
 <svelte:head>
@@ -181,6 +192,28 @@
 		backOnClick={goBack}
 	>
 		{#snippet actions()}
+			<button
+				type="button"
+				onclick={openPrintView}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<FileText class="h-4 w-4" />
+				Ver presupuesto
+			</button>
+
+			<button
+				type="button"
+				onclick={openPdfQuote}
+				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+					'neutral'
+				)}"
+			>
+				<Printer class="h-4 w-4" />
+				Imprimir PDF
+			</button>
+
 			{#if canAct && isDraft && quote.customer}
 				<button
 					type="button"
@@ -586,6 +619,7 @@
 			discountType={quote.discountType}
 			discount={quote.discount}
 			{taxBreakdown}
+			{taxLabel}
 			totalLabel="Total estimado"
 		/>
 
