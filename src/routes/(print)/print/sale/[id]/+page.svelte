@@ -1,33 +1,24 @@
 <script lang="ts">
 	import { Isotipo } from '$lib/components';
-	import { untrack } from 'svelte';
+	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
 	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { PaymentMethod, getPaymentMethodLabel } from '$lib/shared/enums';
-	import {
-		getLensTypeLabel,
-		LensType,
-		SaleItemType,
-		TreatmentCategory
-	} from '$lib/shared/enums/lensTypes';
+	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
+	import { untrack } from 'svelte';
 	import { computeDiscount, formatCurrency, formatDate, formatPrice } from '$lib/utils';
-	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
+	import {
+		getPrintItemLabel,
+		getPrintItemLabelClass,
+		getPrintLensRxSummary
+	} from '$lib/utils/printDocumentItems';
 
 	interface RenderedRow {
 		key: string;
 		item: SaleItemWithDetails;
 		lineTotal: number;
 	}
-
-	const MATERIAL_PATTERNS = [
-		{ pattern: /\bcr[\s-]?39\b/i, label: 'CR-39' },
-		{ pattern: /\bpolicarbonato\b/i, label: 'Policarbonato' },
-		{ pattern: /\btrivex\b/i, label: 'Trivex' },
-		{ pattern: /\b(?:hi[\s-]?index|high[\s-]?index)\b/i, label: 'Hi-Index' },
-		{ pattern: /\b(?:resina|organic[oa])\b/i, label: 'Resina' },
-		{ pattern: /\bmineral\b/i, label: 'Mineral' }
-	] as const;
 
 	const placeholderRows = [1, 2, 3] as const;
 
@@ -91,13 +82,6 @@
 		return gross - computeDiscount(item.discount, item.discountType, gross);
 	}
 
-	function normalizeSearchText(value: string): string {
-		return value
-			.normalize('NFD')
-			.replace(/\p{Diacritic}/gu, '')
-			.toLowerCase();
-	}
-
 	function formatReceiptDate(date: Date | string | null): string {
 		const formatted = formatDate(date, {
 			day: 'numeric',
@@ -133,156 +117,6 @@
 
 	function formatPaymentBcvAmount(payment: SalePayment): string {
 		return `${formatPrice(payment.amountBcvUsd)} (BCV)`;
-	}
-
-	function extractLensMaterial(rawName: string): string {
-		for (const candidate of MATERIAL_PATTERNS) {
-			if (candidate.pattern.test(rawName)) {
-				return candidate.label;
-			}
-		}
-
-		const cleaned = rawName
-			.replace(/\bcristales?\b/gi, '')
-			.replace(/\bmonofocal\b/gi, '')
-			.replace(/\bbifocal\b/gi, '')
-			.replace(/\bprogresiv[oa]s?\b/gi, '')
-			.replace(/\bocupacional\b/gi, '')
-			.replace(/\bfotocrom[aá]tic[oa]s?\b/gi, '')
-			.replace(/\bblue\s?(?:cut|block)\b/gi, '')
-			.replace(/\bantir?reflej[oa]\b/gi, '')
-			.replace(/\bAR\b/g, '')
-			.replace(/\s+/g, ' ')
-			.trim();
-
-		if (!cleaned) {
-			return 'Personalizado';
-		}
-
-		const parts = cleaned.split(' ').filter(Boolean);
-		return parts.length > 1 ? parts.slice(1).join(' ') : cleaned;
-	}
-
-	function inferLensType(rawName: string, catalogType: string | null | undefined): string | null {
-		if (catalogType && catalogType !== LensType.MONOFOCAL) {
-			return getLensTypeLabel(catalogType);
-		}
-
-		const normalized = normalizeSearchText(rawName);
-		if (normalized.includes('progresiv')) return getLensTypeLabel(LensType.PROGRESSIVE);
-		if (normalized.includes('bifocal')) return getLensTypeLabel(LensType.BIFOCAL);
-		if (normalized.includes('ocupacional')) return getLensTypeLabel(LensType.OCCUPATIONAL);
-		return null;
-	}
-
-	function hasInherentDescriptor(rawName: string, type: 'photochromic' | 'ar' | 'blue'): boolean {
-		const normalized = normalizeSearchText(rawName);
-
-		if (type === 'photochromic') return normalized.includes('fotocromat');
-		if (type === 'blue') return /\bblue\s?(cut|block)\b/.test(normalized);
-		return /\bantir?reflej[oa]\b/.test(normalized) || /\bar\b/.test(normalized);
-	}
-
-	function lensLabel(item: SaleItemWithDetails): string {
-		const rawName = item.snapshotName ?? item.lensCatalogItem?.name ?? 'Personalizado';
-		const parts = ['Cristal', extractLensMaterial(rawName)];
-		const lensTypeLabel = inferLensType(rawName, item.lensCatalogItem?.type);
-
-		if (lensTypeLabel) {
-			parts.push(lensTypeLabel);
-		}
-
-		if (hasInherentDescriptor(rawName, 'photochromic')) {
-			parts.push('Fotocromático');
-		}
-
-		if (hasInherentDescriptor(rawName, 'ar')) {
-			parts.push('AR');
-		}
-
-		if (hasInherentDescriptor(rawName, 'blue')) {
-			parts.push('Blueblock');
-		}
-
-		return parts.filter(Boolean).join(' ');
-	}
-
-	function treatmentLabel(item: SaleItemWithDetails): string {
-		const treatmentName = item.supplierTreatment?.name ?? item.snapshotName ?? 'Tratamiento';
-
-		switch (item.supplierTreatment?.category) {
-			case TreatmentCategory.AR:
-				return `Antireflejo: ${treatmentName}`;
-			case TreatmentCategory.BLUECUT:
-				return `Blueblock: ${treatmentName}`;
-			default:
-				return treatmentName;
-		}
-	}
-
-	function itemLabel(item: SaleItemWithDetails): string {
-		switch (item.itemType) {
-			case SaleItemType.PRODUCT:
-				return item.product?.name ?? item.snapshotName ?? 'Producto';
-			case SaleItemType.LENS_PAIR:
-				return lensLabel(item);
-			case SaleItemType.TREATMENT:
-				return treatmentLabel(item);
-			case SaleItemType.FREE_ITEM:
-				return item.freeDetails?.description ?? item.snapshotName ?? 'Ítem libre';
-			default:
-				return item.snapshotName ?? 'Ítem';
-		}
-	}
-
-	function itemLabelClass(item: SaleItemWithDetails): string {
-		return item.itemType === SaleItemType.PRODUCT || item.itemType === SaleItemType.FREE_ITEM
-			? 'font-medium text-slate-950'
-			: 'font-normal text-slate-950';
-	}
-
-	function formatRxValue(value: number | null | undefined): string {
-		if (value === null || value === undefined) return '-';
-		return value >= 0 ? `+${value.toFixed(2)}` : value.toFixed(2);
-	}
-
-	function formatAxis(value: number | null | undefined): string {
-		if (value === null || value === undefined) return '-';
-		return `${Math.round(value)}°`;
-	}
-
-	function buildEyeSummary(
-		eye: 'OD' | 'OI',
-		sphere: number | null | undefined,
-		cylinder: number | null | undefined,
-		axis: number | null | undefined,
-		addition: number | null | undefined
-	): string {
-		const parts: string[] = [];
-
-		if (sphere !== null && sphere !== undefined) {
-			parts.push(formatRxValue(sphere));
-		}
-
-		if (cylinder !== null && cylinder !== undefined && cylinder !== 0) {
-			parts.push(formatRxValue(cylinder));
-			if (axis !== null && axis !== undefined) {
-				parts.push(formatAxis(axis));
-			}
-		}
-
-		if (addition !== null && addition !== undefined && addition !== 0) {
-			parts.push(`Add ${formatRxValue(addition)}`);
-		}
-
-		return `${eye}: ${parts.length > 0 ? parts.join(' ') : '-'}`;
-	}
-
-	function lensRxSummary(item: SaleItemWithDetails): string {
-		return [
-			buildEyeSummary('OD', item.odSphere, item.odCylinder, item.odAxis, item.odAddition),
-			buildEyeSummary('OI', item.osSphere, item.osCylinder, item.osAxis, item.osAddition)
-		].join(' · ');
 	}
 
 	function formatTaxRate(rate: number | null): string {
@@ -412,10 +246,10 @@
 					{#each renderedRows as row (row.key)}
 						<tr class="border-b-[0.5px] border-[#eee] align-top last:border-b-0">
 							<td class="py-[5px] pr-1">
-								<p class={itemLabelClass(row.item)}>{itemLabel(row.item)}</p>
+								<p class={getPrintItemLabelClass(row.item)}>{getPrintItemLabel(row.item)}</p>
 								{#if row.item.itemType === SaleItemType.LENS_PAIR}
 									<p class="mt-px text-[9.5px] leading-[1.25] text-slate-500">
-										{lensRxSummary(row.item)}
+										{getPrintLensRxSummary(row.item)}
 									</p>
 								{/if}
 							</td>
@@ -475,8 +309,26 @@
 				</p>
 
 				<div class="space-y-[2px] text-[10px] text-slate-700">
+					{#if taxBreakdown.taxableBase > 0}
+						<div class="flex items-center justify-between gap-3">
+							<span>Base imponible</span>
+							<span class="font-mono text-slate-950 tabular-nums">
+								{formatPrice(taxBreakdown.taxableBase)}
+							</span>
+						</div>
+					{/if}
+
+					{#if taxBreakdown.exemptTotal > 0}
+						<div class="flex items-center justify-between gap-3">
+							<span>Exento</span>
+							<span class="font-mono text-slate-950 tabular-nums">
+								{formatPrice(taxBreakdown.exemptTotal)}
+							</span>
+						</div>
+					{/if}
+
 					<div class="flex items-center justify-between gap-3">
-						<span>Subtotal</span>
+						<span>Subtotal neto</span>
 						<span class="font-mono text-slate-950 tabular-nums"
 							>{formatPrice(subtotalForTotals)}</span
 						>
@@ -509,7 +361,7 @@
 								<span>Monto pendiente</span>
 								<span class="font-mono tabular-nums">{formatPrice(remainingAmount)}</span>
 							</div>
-							<p class="mt-1 text-[8.5px] leading-[1.3] text-slate-500">
+							<p class="text-[8.5px] leading-[1.3] text-slate-500">
 								Monto pendiente a la fecha de generación.
 							</p>
 						</div>
