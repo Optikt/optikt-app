@@ -44,7 +44,6 @@
 	const printLogoPrimary = '#94a3b8';
 	const printLogoSecondary = '#dbe3ec';
 	const watermarkPrimary = '#cbd5e1';
-	const watermarkSecondary = '#f1f5f9';
 	const businessRif = settings.businessRif?.trim() || null;
 	const businessContactPhone = settings.businessPhone?.trim() || null;
 	const businessAddress = settings.businessAddress?.trim() || null;
@@ -377,21 +376,6 @@
 			</div>
 		</header>
 
-		<!-- <section class="border-b-[0.5px] border-[#eee] text-slate-950 flex justify-between">
-		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-			<p class="text-[12px] font-medium">{customerName}</p>
-			<p class="text-[10px] text-slate-500">Cédula/RIF: {customerDocument}</p>
-			{#if customerPhone}
-				<p class="text-[10px] text-slate-500">Teléfono: {customerPhone}</p>
-			{/if}
-		</div>
-		<div>
-				<p class="mt-1 text-[10px] leading-none text-slate-500">
-					Vendedor: {sale.seller?.fullName ?? 'Sin asignar'}
-				</p>
-		</div>
-	</section> -->
-
 		<section class="receipt-table">
 			<table class="w-full border-collapse">
 				<colgroup>
@@ -535,7 +519,7 @@
 		</section>
 
 		<section class="receipt-box overflow-hidden rounded-[4px] border-[0.5px] border-[#e0e0e0]">
-			<div class="border-b-[0.5px] border-[#eee] bg-[#fafafa] px-[9px] py-[5px]">
+			<div class="border-b-[0.5px] border-[#eee] px-[9px] py-[5px]">
 				<p class="text-[9px] font-medium tracking-[0.08em] text-slate-400 uppercase">
 					ABONOS ADICIONALES
 				</p>
@@ -550,7 +534,7 @@
 					<col class="w-[16%]" />
 				</colgroup>
 				<thead>
-					<tr class="border-b-[0.5px] border-[#eee] bg-[#fafafa] text-left">
+					<tr class="border-b-[0.5px] border-[#eee] text-left">
 						<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400"> Fecha </th>
 						<th class="px-2 py-[3px] text-[8.5px] font-normal text-slate-400">
 							Método / Referencia
