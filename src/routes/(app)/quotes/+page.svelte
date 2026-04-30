@@ -126,8 +126,8 @@
 				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
 					Presupuestos Mensuales
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -140,8 +140,8 @@
 				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
 					Borradores
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.draft}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.draft}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -154,8 +154,8 @@
 				<p class="text-xs font-semibold tracking-wider text-on-info-container uppercase">
 					Convertidos
 				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.converted}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-brand-navy">{stats.converted}</p>
 		</div>
 
 		<div class="glass-card p-5">
@@ -168,8 +168,8 @@
 				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
 					Cancelados
 				</p>
+				<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
 			</div>
-			<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
 		</div>
 	</div>
 
