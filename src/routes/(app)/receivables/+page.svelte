@@ -14,7 +14,7 @@
 	import { resolve } from '$app/paths';
 	import { PageHeader } from '$lib/components/ui';
 	import { PaymentForm } from '$lib/components/sales';
-	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDate } from '$lib/utils';
 	import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';
 	import { untrack } from 'svelte';
@@ -108,7 +108,6 @@
 		syncFromData();
 
 		if (row) {
-			const remainingAfterSave = Math.max(0, row.balance - newPaidAmount + row.totalPaid);
 			if (newPaidAmount >= row.totalAmount - 0.01) {
 				toast.success('Venta completada. Saldo saldado.');
 			} else {

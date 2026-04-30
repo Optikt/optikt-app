@@ -3,14 +3,12 @@
  * Server-side functions for accounts receivable management
  */
 import { z } from 'zod';
-import { query, command } from '$app/server';
+import { query } from '$app/server';
 import { requireRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { getReceivables } from '$lib/server/db/queries/receivables';
 import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
 import { addPayment } from '$lib/remote/sales.remote';
-import { AddPaymentSchema } from '$lib/schemas/sales';
-import { EmptySchema } from '$lib/schemas/common';
 
 // ============================================================================
 // SCHEMAS

@@ -1,4 +1,4 @@
-import { eq, isNull, and, desc, asc, sql, count, sum, gt } from 'drizzle-orm';
+import { eq, isNull, and, desc, sql, gt } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { sales, salePayments, customers } from '$lib/server/db/schema';
 import type { SalePayment } from '$lib/server/db/schema';
