@@ -1,10 +1,10 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { findCustomerById, getCustomerPrescriptions } from '$lib/server/db/queries/customers';
-import { getAllSales } from '$lib/server/db/queries/sales';
+import { getCustomerHistory } from '$lib/server/db/queries/customerHistory';
 
 /**
- * Load customer detail with prescriptions and recent sales
+ * Load customer detail with prescriptions, sales, quotes, and payments
  */
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -16,14 +16,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Cliente no encontrado');
 	}
 
-	const [prescriptions, recentSales] = await Promise.all([
+	const [prescriptions, history] = await Promise.all([
 		getCustomerPrescriptions(params.id),
-		getAllSales({ customerId: params.id, limit: 3 })
+		getCustomerHistory(params.id)
 	]);
 
 	return {
 		customer,
 		prescriptions,
-		recentSales
+		customerSales: history.sales,
+		customerQuotes: history.quotes
 	};
 };
