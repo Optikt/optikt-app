@@ -11,7 +11,6 @@
 		Check,
 		ArrowLeft,
 		User,
-		ShoppingBag
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -34,7 +33,6 @@
 		formatOpticalValue,
 		formatAxis,
 		formatDpNp,
-		formatCurrency,
 		getErrorMessage,
 		getFullName,
 		scrollToFirstError,
@@ -45,7 +43,6 @@
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { nowUTC } from '$lib/dates';
 	import type { Prescription, Customer } from '$lib/server/db/schema';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
 	import { untrack } from 'svelte';
 
 	// Server data

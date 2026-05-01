@@ -6,7 +6,6 @@ import {
 	salePayments,
 	quotes,
 	quoteItems,
-	customers,
 	users,
 	products,
 	lensCatalogItems,
