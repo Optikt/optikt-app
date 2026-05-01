@@ -73,9 +73,7 @@
 								</p>
 							{/if}
 						</div>
-						<div
-							class="transition-transform duration-200 {isExpanded ? 'rotate-180' : ''}"
-						>
+						<div class="transition-transform duration-200 {isExpanded ? 'rotate-180' : ''}">
 							<ChevronDown class="h-4 w-4 text-on-surface-variant" />
 						</div>
 					</div>
