@@ -22,7 +22,8 @@
 		TrendingDown,
 		AlertTriangle,
 		ListChecks,
-		Package
+		Package,
+		PlusCircle
 	} from '@lucide/svelte';
 
 	let { data } = $props();
@@ -59,6 +60,7 @@
 			'Fecha',
 			'Ventas',
 			'Ingresos',
+			'Otros ingresos',
 			'Cobrado',
 			'Costo',
 			'Utilidad Bruta',
@@ -69,6 +71,7 @@
 			d.date,
 			String(d.salesCount),
 			d.revenue.toFixed(2),
+			d.otherIncome.toFixed(2),
 			d.collected.toFixed(2),
 			d.cogs.toFixed(2),
 			d.grossProfit.toFixed(2),
@@ -108,7 +111,7 @@
 	</div>
 
 	<!-- Top KPIs -->
-	<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+	<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 		<div class="glass-card p-5">
 			<div class="mb-2 flex items-center gap-2 text-emerald-600">
 				<TrendingUp size={18} />
@@ -122,6 +125,26 @@
 				1
 					? ''
 					: 's'}
+			</p>
+		</div>
+
+		<div class="glass-card p-5">
+			<div class="mb-2 flex items-center gap-2 text-teal-600">
+				<PlusCircle size={18} />
+				<p class="text-xs font-semibold tracking-wider uppercase">Otros ingresos</p>
+			</div>
+			<p class="font-heading text-3xl font-bold text-brand-navy">
+				{formatPrice(report.otherIncome)}
+			</p>
+			<p class="mt-1 text-xs text-slate-400">
+				{#if report.retainedSalesCount === 0}
+					Sin retenciones
+				{:else}
+					{report.retainedSalesCount} anticipo{report.retainedSalesCount === 1 ? '' : 's'} retenido{report.retainedSalesCount ===
+					1
+						? ''
+						: 's'}
+				{/if}
 			</p>
 		</div>
 
@@ -181,7 +204,9 @@
 					{formatPrice(report.grossProfit)}
 				</p>
 				<p class="mt-1 text-xs text-slate-500">
-					Margen: {formatPct(report.grossMarginPct)}
+					= Ingresos{report.otherIncome > 0 ? ' + Otros' : ''} − Costo · Margen: {formatPct(
+						report.grossMarginPct
+					)}
 				</p>
 			</div>
 		</div>
@@ -306,6 +331,7 @@
 						<th class="px-4 py-3">Fecha</th>
 						<th class="px-4 py-3 text-right">Ventas</th>
 						<th class="px-4 py-3 text-right">Ingresos</th>
+						<th class="px-4 py-3 text-right">Otros</th>
 						<th class="px-4 py-3 text-right">Cobrado</th>
 						<th class="px-4 py-3 text-right">Costo</th>
 						<th class="px-4 py-3 text-right">Util. Bruta</th>
@@ -321,6 +347,13 @@
 							</td>
 							<td class="px-4 py-3 text-right font-mono">{row.salesCount}</td>
 							<td class="px-4 py-3 text-right font-mono">{formatPrice(row.revenue)}</td>
+							<td
+								class="px-4 py-3 text-right font-mono {row.otherIncome > 0
+									? 'text-teal-700'
+									: 'text-slate-300'}"
+							>
+								{formatPrice(row.otherIncome)}
+							</td>
 							<td class="px-4 py-3 text-right font-mono">{formatPrice(row.collected)}</td>
 							<td class="px-4 py-3 text-right font-mono text-violet-700">{formatPrice(row.cogs)}</td
 							>
@@ -338,7 +371,7 @@
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="8" class="px-4 py-8 text-center text-slate-400">
+							<td colspan="9" class="px-4 py-8 text-center text-slate-400">
 								Sin movimientos en el período seleccionado
 							</td>
 						</tr>

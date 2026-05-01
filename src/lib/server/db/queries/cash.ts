@@ -111,6 +111,10 @@ export interface CashReport {
 	// Realized revenue (sales delivered = status COMPLETED, by completedAt)
 	grossRevenue: number;
 	salesCount: number;
+	// Otros ingresos: anticipos retenidos al cancelar (refund_status = RETAINED).
+	// Bucketed by `cancelledAt`. No tienen COGS asociado (la mercancía no se entregó).
+	otherIncome: number;
+	retainedSalesCount: number;
 	// Caja (paymentDate) — independent cash flow
 	totalCollected: number;
 	paymentsCount: number;
@@ -146,6 +150,7 @@ export async function getCashReport(
 
 	const [
 		revenueRow,
+		retainedRow,
 		collectedRow,
 		cogsRow,
 		incompleteCogsRow,
@@ -170,8 +175,30 @@ export async function getCashReport(
 			)
 			.then(([r]) => ({ total: Number(r.total ?? 0), cnt: Number(r.cnt ?? 0) })),
 
-		// Collected (caja) — sale_payments.amountBcvUsd in range, non-voided,
-		// joined to sales to exclude cancelled / soft-deleted ones.
+		// Otros ingresos — anticipos retenidos al cancelar. Bucketed by cancelledAt.
+		executor
+			.select({
+				total: sum(sales.refundAmount),
+				cnt: count()
+			})
+			.from(sales)
+			.where(
+				and(
+					isNull(sales.deletedAt),
+					sql`${sales.status} = 'CANCELLED'`,
+					sql`${sales.refundStatus} = 'RETAINED'`,
+					isNotNull(sales.cancelledAt),
+					gte(sales.cancelledAt, from),
+					lte(sales.cancelledAt, to)
+				)
+			)
+			.then(([r]) => ({ total: Number(r.total ?? 0), cnt: Number(r.cnt ?? 0) })),
+
+		// Collected (caja) — sale_payments.amountBcvUsd in range, non-voided.
+		// We intentionally include payments from CANCELLED sales: the cash did
+		// physically arrive. If it was later refunded, that refund is logged as
+		// a cash_expenses row (category REFUND) which offsets it on the egress
+		// side, preserving an auditable trail.
 		executor
 			.select({
 				total: sum(salePayments.amountBcvUsd),
@@ -183,7 +210,6 @@ export async function getCashReport(
 				and(
 					isNull(salePayments.voidedAt),
 					isNull(sales.deletedAt),
-					sql`${sales.status} != 'CANCELLED'`,
 					gte(salePayments.paymentDate, from),
 					lte(salePayments.paymentDate, to)
 				)
@@ -261,14 +287,18 @@ export async function getCashReport(
 	]);
 
 	const grossRevenue = revenueRow.total;
+	const otherIncome = retainedRow.total;
+	const totalIncome = grossRevenue + otherIncome;
 	const totalCogs = cogsRow;
 	const totalExpenses = expensesRow.total;
-	const grossProfit = grossRevenue - totalCogs;
-	const grossMarginPct = grossRevenue > 0 ? (grossProfit / grossRevenue) * 100 : 0;
+	const grossProfit = totalIncome - totalCogs;
+	const grossMarginPct = totalIncome > 0 ? (grossProfit / totalIncome) * 100 : 0;
 
 	return {
 		grossRevenue,
 		salesCount: revenueRow.cnt,
+		otherIncome,
+		retainedSalesCount: retainedRow.cnt,
 		totalCollected: collectedRow.total,
 		paymentsCount: collectedRow.cnt,
 		totalCogs,
@@ -292,6 +322,7 @@ export async function getCashReport(
 export interface DailyBreakdownRow {
 	date: string; // YYYY-MM-DD
 	revenue: number;
+	otherIncome: number;
 	collected: number;
 	cogs: number;
 	expenses: number;
@@ -312,7 +343,7 @@ export async function getDailyBreakdown(
 	const { from, to } = args;
 	const dayKey = (d: unknown) => sql<string>`to_char(${d}, 'YYYY-MM-DD')`;
 
-	const [revenueRows, collectedRows, cogsRows, expensesRows] = await Promise.all([
+	const [revenueRows, retainedRows, collectedRows, cogsRows, expensesRows] = await Promise.all([
 		executor
 			.select({
 				day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
@@ -333,6 +364,24 @@ export async function getDailyBreakdown(
 
 		executor
 			.select({
+				day: dayKey(sql`date_trunc('day', ${sales.cancelledAt})`),
+				total: sum(sales.refundAmount)
+			})
+			.from(sales)
+			.where(
+				and(
+					isNull(sales.deletedAt),
+					sql`${sales.status} = 'CANCELLED'`,
+					sql`${sales.refundStatus} = 'RETAINED'`,
+					isNotNull(sales.cancelledAt),
+					gte(sales.cancelledAt, from),
+					lte(sales.cancelledAt, to)
+				)
+			)
+			.groupBy(sql`date_trunc('day', ${sales.cancelledAt})`),
+
+		executor
+			.select({
 				day: dayKey(sql`date_trunc('day', ${salePayments.paymentDate})`),
 				total: sum(salePayments.amountBcvUsd)
 			})
@@ -342,7 +391,6 @@ export async function getDailyBreakdown(
 				and(
 					isNull(salePayments.voidedAt),
 					isNull(sales.deletedAt),
-					sql`${sales.status} != 'CANCELLED'`,
 					gte(salePayments.paymentDate, from),
 					lte(salePayments.paymentDate, to)
 				)
@@ -388,6 +436,7 @@ export async function getDailyBreakdown(
 	type Bucket = {
 		date: string;
 		revenue: number;
+		otherIncome: number;
 		collected: number;
 		cogs: number;
 		expenses: number;
@@ -397,7 +446,7 @@ export async function getDailyBreakdown(
 	const ensure = (date: string): Bucket => {
 		let b = buckets.get(date);
 		if (!b) {
-			b = { date, revenue: 0, collected: 0, cogs: 0, expenses: 0, salesCount: 0 };
+			b = { date, revenue: 0, otherIncome: 0, collected: 0, cogs: 0, expenses: 0, salesCount: 0 };
 			buckets.set(date, b);
 		}
 		return b;
@@ -408,6 +457,7 @@ export async function getDailyBreakdown(
 		b.revenue = Number(r.total ?? 0);
 		b.salesCount = Number(r.cnt ?? 0);
 	}
+	for (const r of retainedRows) ensure(r.day).otherIncome = Number(r.total ?? 0);
 	for (const r of collectedRows) ensure(r.day).collected = Number(r.total ?? 0);
 	for (const r of cogsRows) ensure(r.day).cogs = Number(r.total ?? 0);
 	for (const r of expensesRows) ensure(r.day).expenses = Number(r.total ?? 0);
@@ -415,8 +465,8 @@ export async function getDailyBreakdown(
 	return Array.from(buckets.values())
 		.map((b) => ({
 			...b,
-			grossProfit: b.revenue - b.cogs,
-			netProfit: b.revenue - b.cogs - b.expenses
+			grossProfit: b.revenue + b.otherIncome - b.cogs,
+			netProfit: b.revenue + b.otherIncome - b.cogs - b.expenses
 		}))
 		.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }

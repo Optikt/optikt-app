@@ -18,6 +18,7 @@ export const ALL_EXPENSE_CATEGORIES = [
 	'MAINTENANCE',
 	'TRANSPORT',
 	'BANK_FEE',
+	'REFUND',
 	'OTHER'
 ] as const;
 
@@ -34,6 +35,7 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
 	MAINTENANCE: 'Mantenimiento',
 	TRANSPORT: 'Transporte',
 	BANK_FEE: 'Comisión bancaria',
+	REFUND: 'Reembolso a cliente',
 	OTHER: 'Otro'
 };
 
