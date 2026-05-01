@@ -154,9 +154,8 @@ export async function getCustomerHistory(customerId: string): Promise<CustomerHi
 			);
 
 		// Filter to only items belonging to our sales
-		saleItemRows = saleIds.length === 1
-			? rawItems
-			: rawItems.filter((r) => saleIds.includes(r.item.saleId));
+		saleItemRows =
+			saleIds.length === 1 ? rawItems : rawItems.filter((r) => saleIds.includes(r.item.saleId));
 	}
 
 	// ── Sale payments (batch) ─────────────────────────────────────────
@@ -270,9 +269,10 @@ export async function getCustomerHistory(customerId: string): Promise<CustomerHi
 				)
 			);
 
-		quoteItemRows = quoteIds.length === 1
-			? rawQItems
-			: rawQItems.filter((r) => quoteIds.includes(r.item.quoteId));
+		quoteItemRows =
+			quoteIds.length === 1
+				? rawQItems
+				: rawQItems.filter((r) => quoteIds.includes(r.item.quoteId));
 	}
 
 	// ── Group quote items ─────────────────────────────────────────────

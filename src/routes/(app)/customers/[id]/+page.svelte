@@ -24,11 +24,7 @@
 		IdInput,
 		ConfirmModal
 	} from '$lib/components/ui';
-	import {
-		AppBadge,
-		LensTypeBadge,
-		TreatmentBadge
-	} from '$lib/components/ui/badges';
+	import { AppBadge, LensTypeBadge, TreatmentBadge } from '$lib/components/ui/badges';
 	import CustomerSalesHistory from '$lib/components/customers/CustomerSalesHistory.svelte';
 	import CustomerQuotesHistory from '$lib/components/customers/CustomerQuotesHistory.svelte';
 	import { listPrescriptions, deletePrescriptionCommand } from '$lib/remote/prescriptions.remote';
@@ -588,7 +584,6 @@
 					{/if}
 				</div>
 			{/if}
-
 		</div>
 	</div>
 
@@ -601,24 +596,33 @@
 					Todo el historial de interacciones con el cliente
 				</p>
 			</div>
-			
+
 			<!-- Tab Navigation -->
 			<div class="flex items-center rounded-lg bg-surface-container-high p-1">
 				<button
-					class="flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none {activeTab === 'prescriptions' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}"
-					onclick={() => activeTab = 'prescriptions'}
+					class="flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none {activeTab ===
+					'prescriptions'
+						? 'bg-surface-container-lowest text-on-surface shadow-sm'
+						: 'text-on-surface-variant hover:text-on-surface'}"
+					onclick={() => (activeTab = 'prescriptions')}
 				>
 					Fórmulas ({prescriptions.length})
 				</button>
 				<button
-					class="flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none {activeTab === 'sales' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}"
-					onclick={() => activeTab = 'sales'}
+					class="flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none {activeTab ===
+					'sales'
+						? 'bg-surface-container-lowest text-on-surface shadow-sm'
+						: 'text-on-surface-variant hover:text-on-surface'}"
+					onclick={() => (activeTab = 'sales')}
 				>
 					Ventas ({customerSales.length})
 				</button>
 				<button
-					class="flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none {activeTab === 'quotes' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}"
-					onclick={() => activeTab = 'quotes'}
+					class="flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none {activeTab ===
+					'quotes'
+						? 'bg-surface-container-lowest text-on-surface shadow-sm'
+						: 'text-on-surface-variant hover:text-on-surface'}"
+					onclick={() => (activeTab = 'quotes')}
 				>
 					Presupuestos ({customerQuotes.length})
 				</button>
@@ -763,7 +767,8 @@
 															>
 																OD
 															</div>
-															<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
+															<span
+																class="text-sm font-bold tracking-wider text-on-surface uppercase"
 																>Ojo Derecho (OD)</span
 															>
 														</div>
@@ -815,7 +820,8 @@
 															>
 																OS
 															</div>
-															<span class="text-sm font-bold tracking-wider text-on-surface uppercase"
+															<span
+																class="text-sm font-bold tracking-wider text-on-surface uppercase"
 																>Ojo Izquierdo (OS)</span
 															>
 														</div>
