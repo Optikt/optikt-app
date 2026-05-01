@@ -506,9 +506,10 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 
 		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
 
-		// Auto-complete if fully paid (small tolerance for floating point)
+		// Auto-complete if fully paid (small tolerance for floating point).
+		// completedAt anchors delivery-based revenue recognition.
 		if (newPaidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
-			await updateSale(data.saleId, { status: SaleStatus.COMPLETED }, tx);
+			await updateSale(data.saleId, { status: SaleStatus.COMPLETED, completedAt: nowISO() }, tx);
 		}
 
 		return { payment: newPayment, paidAmount: newPaidAmount };
@@ -563,9 +564,9 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
 
 		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
 
-		// If sale was COMPLETED but now underpaid, revert to PENDING
+		// If sale was COMPLETED but now underpaid, revert to PENDING and clear completedAt.
 		if (sale.status === SaleStatus.COMPLETED && newPaidAmount < sale.total - 0.01) {
-			await updateSale(data.saleId, { status: SaleStatus.PENDING }, tx);
+			await updateSale(data.saleId, { status: SaleStatus.PENDING, completedAt: null }, tx);
 		}
 
 		return newPaidAmount;

@@ -23,5 +23,8 @@ export * from './purchaseOrders';
 export * from './inventoryLots';
 export * from './inventoryMovements';
 
+// Cash & Finances
+export * from './cashExpenses';
+
 // Audit / History
 export * from './changeHistory';

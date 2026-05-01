@@ -69,6 +69,8 @@ export const sales = pgTable(
 		cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'string' }),
 		/** Who cancelled the sale */
 		cancelledById: uuid('cancelled_by_id'),
+		/** When the sale transitioned to COMPLETED (i.e. fully paid + delivered). Null otherwise. */
+		completedAt: timestamp('completed_at', { withTimezone: true, mode: 'string' }),
 		/** Refund disposition: REFUNDED | RETAINED | NO_PAYMENT */
 		refundStatus: varchar('refund_status', { length: 20 }),
 		/** Amount refunded or retained (USD BCV) */
@@ -92,6 +94,7 @@ export const sales = pgTable(
 		index('ix_sales_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
 		index('ix_sales_sale_date').using('btree', table.saleDate.asc().nullsLast()),
 		index('ix_sales_seller_id').using('btree', table.sellerId.asc().nullsLast().op('uuid_ops')),
+		index('ix_sales_completed_at').using('btree', table.completedAt.asc().nullsLast()),
 		uniqueIndex('ix_sales_order_number').using(
 			'btree',
 			table.orderNumber.asc().nullsLast().op('int4_ops')
