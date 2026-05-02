@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
-	import { ReportHeader } from '$lib/components/reports';
+	import { Button } from 'flowbite-svelte';
 	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
 	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
 	import {
@@ -18,7 +18,9 @@
 	import {
 		ArrowRight,
 		AlertTriangle,
-		Package
+		Download,
+		Package,
+		Printer
 	} from '@lucide/svelte';
 
 	let { data } = $props();
@@ -89,8 +91,8 @@
 	const mobileInsetClass = 'rounded-xl bg-surface-container-low px-3 py-3';
 	const mobileInputClass =
 		'mt-1 w-full rounded-xl border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
-	const desktopInputClass =
-		'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10';
+	const desktopToolbarInputClass =
+		'h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10';
 	const desktopLabelClass = 'text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase';
 	const desktopValueClass =
 		'mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-brand-navy';
@@ -101,13 +103,42 @@
 </svelte:head>
 
 <div class="px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-	<div class="hidden lg:block">
-		<ReportHeader
-			title="Caja y P&amp;L"
-			subtitle="Caja, utilidad y pipeline operativo en una sola vista."
-			onExportCsv={handleExportCsv}
-			onPrint={handlePrint}
-		/>
+	<div class="mb-2 hidden flex-col gap-3 sm:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between">
+		<div class="min-w-0">
+			<h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-3xl">Caja y P&amp;L</h1>
+			<p class="mt-1 max-w-3xl text-sm text-slate-500 sm:text-base">
+				Caja, utilidad y pipeline operativo en una sola vista.
+			</p>
+		</div>
+		<div class="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-row print:hidden">
+			<Button
+				color="alternative"
+				size="sm"
+				class="w-full justify-center px-3 sm:w-auto"
+				onclick={handleExportCsv}
+			>
+				<Download class="mr-2 h-4 w-4" />
+				<span class="sm:hidden">CSV</span>
+				<span class="hidden sm:inline">Exportar CSV</span>
+			</Button>
+			<Button
+				color="alternative"
+				size="sm"
+				class="w-full justify-center px-3 sm:w-auto"
+				onclick={handlePrint}
+			>
+				<Printer class="mr-2 h-4 w-4" />
+				<span class="sm:hidden">Impr.</span>
+				<span class="hidden sm:inline">Imprimir</span>
+			</Button>
+			<a
+				href={resolve('/cash/expenses')}
+				class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark sm:w-auto"
+			>
+				Gestionar egresos
+				<ArrowRight size={16} />
+			</a>
+		</div>
 	</div>
 
 	<div class="mb-4 lg:hidden">
@@ -155,77 +186,41 @@
 		</div>
 	</div>
 
-	<div class="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-stretch lg:gap-4">
-		<section class="glass-card flex h-full flex-col overflow-hidden">
-			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-				<p class={desktopLabelClass}>Control de período</p>
-				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
-					Cruce de caja y utilidad
-				</h2>
-				<p class="mt-1 text-sm text-slate-500">
-					Define el corte para ingresos realizados, cobrado en caja, costos y egresos.
-				</p>
-			</div>
-
-			<div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
-				<label class="min-w-0">
-					<span class={desktopLabelClass}>Desde</span>
-					<input type="date" bind:value={dateFrom} class={desktopInputClass} />
-				</label>
-				<label class="min-w-0">
-					<span class={desktopLabelClass}>Hasta</span>
-					<input type="date" bind:value={dateTo} class={desktopInputClass} />
-				</label>
-				<button
-					type="button"
-					onclick={applyFilter}
-					disabled={loading}
-					class="inline-flex h-fit items-center justify-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60 xl:mb-[1px]"
-				>
-					{loading ? 'Cargando...' : 'Consultar'}
-				</button>
-			</div>
-		</section>
-
-		<aside class="glass-card flex h-full flex-col overflow-hidden">
-			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-				<p class={desktopLabelClass}>Acción principal</p>
-				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
-					Gestionar egresos
-				</h2>
-				<p class="mt-1 text-sm text-slate-500">
-					Mantén caja y salidas operativas dentro del mismo flujo de revisión.
-				</p>
-			</div>
-			<div class="flex flex-1 flex-col p-5">
-				<a
-					href={resolve('/cash/expenses')}
-					class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark"
-				>
-					Gestionar egresos
-					<ArrowRight size={16} />
-				</a>
-
-				<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-					<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-						<p class={desktopLabelClass}>Cobrado en caja</p>
-						<p class="mt-2 font-mono text-xl font-semibold tabular-nums text-brand-navy">
-							{formatPrice(report.totalCollected)}
-						</p>
-					</div>
-					<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-						<p class={desktopLabelClass}>Utilidad neta</p>
-						<p
-							class="mt-2 font-mono text-xl font-semibold tabular-nums {report.netProfit >= 0
-								? 'text-emerald-700'
-								: 'text-rose-700'}"
-						>
-							{formatPrice(report.netProfit)}
-						</p>
-					</div>
-				</div>
-			</div>
-		</aside>
+	<div class="mb-6 hidden items-center gap-3 text-sm text-slate-600 lg:flex lg:flex-wrap xl:flex-nowrap">
+		<span class={desktopLabelClass}>Período:</span>
+		<div class="flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm font-medium text-slate-500">Desde</span>
+			<input type="date" bind:value={dateFrom} class={desktopToolbarInputClass} />
+		</div>
+		<div class="flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm font-medium text-slate-500">Hasta</span>
+			<input type="date" bind:value={dateTo} class={desktopToolbarInputClass} />
+		</div>
+		<button
+			type="button"
+			onclick={applyFilter}
+			disabled={loading}
+			class="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue px-5 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60"
+		>
+			{loading ? 'Cargando...' : 'Consultar'}
+		</button>
+		<div class="h-7 w-px shrink-0 bg-slate-200"></div>
+		<div class="inline-flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm text-slate-500">Cobrado en caja:</span>
+			<span class="font-mono text-sm font-semibold tabular-nums text-brand-navy">
+				{formatPrice(report.totalCollected)}
+			</span>
+		</div>
+		<div class="inline-flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm text-slate-500">Utilidad neta:</span>
+			<span
+				class="font-mono text-sm font-semibold tabular-nums {report.netProfit >= 0
+					? 'text-emerald-700'
+					: 'text-rose-700'}"
+			>
+				{formatPrice(report.netProfit)}
+			</span>
+		</div>
 	</div>
 
 	<!-- Mobile compact summary -->
