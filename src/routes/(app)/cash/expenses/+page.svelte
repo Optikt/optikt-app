@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { Button } from 'flowbite-svelte';
 	import { Plus, Ban, Download, Printer, X } from '@lucide/svelte';
-	import { ReportHeader } from '$lib/components/reports';
 	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
 	import {
 		ALL_EXPENSE_CATEGORIES,
@@ -183,7 +183,7 @@
 	const activeCount = $derived(expenses.filter((e) => !e.voidedAt).length);
 	const total = $derived(expenses.filter((e) => !e.voidedAt).reduce((s, e) => s + e.amountUsd, 0));
 	const selectedCategoryLabel = $derived(
-		categoryFilter ? EXPENSE_CATEGORY_LABELS[categoryFilter] : 'Todas las categorías'
+		categoryFilter ? EXPENSE_CATEGORY_LABELS[categoryFilter] : 'Todas'
 	);
 	const mobileLabelClass = 'text-[10px] font-semibold tracking-[0.18em] text-outline uppercase';
 	const mobileMetaClass = 'mt-1 text-[11px] text-on-surface-variant';
@@ -191,8 +191,8 @@
 	const mobileInsetClass = 'rounded-xl bg-surface-container-low px-3 py-3';
 	const fieldInputClass =
 		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
-	const desktopFieldClass =
-		'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10';
+	const desktopToolbarInputClass =
+		'h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10';
 	const desktopLabelClass = 'text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase';
 	const desktopValueClass = 'mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums';
 </script>
@@ -202,13 +202,43 @@
 </svelte:head>
 
 <div class="px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-	<div class="hidden lg:block">
-		<ReportHeader
-			title="Egresos"
-			subtitle="Gastos operativos del negocio"
-			onExportCsv={handleExportCsv}
-			onPrint={handlePrint}
-		/>
+	<div class="mb-2 hidden flex-col gap-3 sm:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between">
+		<div class="min-w-0">
+			<h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-3xl">Egresos</h1>
+			<p class="mt-1 max-w-3xl text-sm text-slate-500 sm:text-base">
+				Gastos operativos del negocio.
+			</p>
+		</div>
+		<div class="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-row print:hidden">
+			<Button
+				color="alternative"
+				size="sm"
+				class="w-full justify-center px-3 sm:w-auto"
+				onclick={handleExportCsv}
+			>
+				<Download class="mr-2 h-4 w-4" />
+				<span class="sm:hidden">CSV</span>
+				<span class="hidden sm:inline">Exportar CSV</span>
+			</Button>
+			<Button
+				color="alternative"
+				size="sm"
+				class="w-full justify-center px-3 sm:w-auto"
+				onclick={handlePrint}
+			>
+				<Printer class="mr-2 h-4 w-4" />
+				<span class="sm:hidden">Impr.</span>
+				<span class="hidden sm:inline">Imprimir</span>
+			</Button>
+			<button
+				type="button"
+				onclick={openCreate}
+				class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark sm:w-auto"
+			>
+				<Plus size={16} />
+				Nuevo egreso
+			</button>
+		</div>
 	</div>
 
 	<div class="mb-4 lg:hidden">
@@ -287,91 +317,49 @@
 		</div>
 	</div>
 
-	<div class="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-4">
-		<section class="glass-card overflow-hidden">
-			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-				<p class={desktopLabelClass}>Control de consulta</p>
-				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
-					Filtros y auditoría
-				</h2>
-				<p class="mt-1 text-sm text-slate-500">
-					Refina por fecha, categoría y estado sin salir del ledger de egresos.
-				</p>
-			</div>
+	<div class="mb-2 hidden items-center gap-3 text-sm text-slate-600 lg:flex lg:flex-wrap xl:flex-nowrap">
+		<div class="flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm font-medium text-slate-500">Desde</span>
+			<input type="date" bind:value={dateFrom} class={desktopToolbarInputClass} />
+		</div>
+		<div class="flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm font-medium text-slate-500">Hasta</span>
+			<input type="date" bind:value={dateTo} class={desktopToolbarInputClass} />
+		</div>
+		<div class="flex items-center gap-2 whitespace-nowrap">
+			<span class="text-sm font-medium text-slate-500">Categoría</span>
+			<select bind:value={categoryFilter} class={desktopToolbarInputClass}>
+				<option value="">Todas</option>
+				{#each ALL_EXPENSE_CATEGORIES as c (c)}
+					<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
+				{/each}
+			</select>
+		</div>
+		<label class="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
+			<input
+				type="checkbox"
+				bind:checked={includeVoided}
+				class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+			/>
+			<span>Incluir anulados</span>
+		</label>
+		<button
+			type="button"
+			onclick={applyFilter}
+			disabled={loading}
+			class="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue px-5 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60"
+		>
+			{loading ? 'Cargando...' : 'Consultar'}
+		</button>
+	</div>
 
-			<div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto] xl:items-end">
-				<label class="min-w-0">
-					<span class={desktopLabelClass}>Desde</span>
-					<input type="date" bind:value={dateFrom} class={desktopFieldClass} />
-				</label>
-				<label class="min-w-0">
-					<span class={desktopLabelClass}>Hasta</span>
-					<input type="date" bind:value={dateTo} class={desktopFieldClass} />
-				</label>
-				<label class="min-w-0">
-					<span class={desktopLabelClass}>Categoría</span>
-					<select bind:value={categoryFilter} class={desktopFieldClass}>
-						<option value="">Todas</option>
-						{#each ALL_EXPENSE_CATEGORIES as c (c)}
-							<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
-						{/each}
-					</select>
-				</label>
-				<button
-					type="button"
-					onclick={applyFilter}
-					disabled={loading}
-					class="inline-flex h-fit items-center justify-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60 xl:mb-[1px]"
-				>
-					{loading ? 'Cargando...' : 'Consultar'}
-				</button>
-			</div>
-
-			<div class="border-t border-slate-200 px-5 py-4">
-				<label class="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-					<div>
-						<p class={desktopLabelClass}>Anulados</p>
-						<p class="mt-1 text-sm text-slate-500">Incluye egresos anulados en el listado y la auditoría visual.</p>
-					</div>
-					<input
-						type="checkbox"
-						bind:checked={includeVoided}
-						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-					/>
-				</label>
-			</div>
-		</section>
-
-		<aside class="glass-card overflow-hidden">
-			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-				<p class={desktopLabelClass}>Acción principal</p>
-				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
-					Registrar nuevo egreso
-				</h2>
-				<p class="mt-1 text-sm text-slate-500">
-					Carga monto, moneda, referencia y tasa con un solo formulario.
-				</p>
-			</div>
-
-			<div class="p-5">
-				<button
-					type="button"
-					onclick={openCreate}
-					class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark"
-				>
-					<Plus size={16} />
-					Nuevo egreso
-				</button>
-
-				<div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
-					<p class={desktopLabelClass}>Filtro activo</p>
-					<p class="mt-2 text-base font-semibold text-brand-navy">{selectedCategoryLabel}</p>
-					<p class="mt-1 text-xs text-slate-500">
-						{includeVoided ? 'Incluye anulados' : 'Solo activos'} · {dateFrom} a {dateTo}
-					</p>
-				</div>
-			</div>
-		</aside>
+	<div class="mb-6 hidden lg:block">
+		<p class="text-xs text-slate-500">
+			Filtro activo:
+			<span class="font-semibold text-slate-700">{selectedCategoryLabel}</span>
+			· {dateFrom} a {dateTo}
+			{includeVoided ? ' · Incluye anulados' : ''}
+		</p>
 	</div>
 
 	<!-- Summary -->
@@ -390,26 +378,23 @@
 
 	<div class="mb-6 hidden lg:block">
 		<div class="glass-card overflow-hidden">
-			<div class="grid gap-px bg-slate-200 lg:grid-cols-[15rem_13rem_minmax(0,1fr)]">
-				<div class="bg-white px-4 py-4">
+			<div class="grid items-stretch gap-px bg-slate-200 lg:grid-cols-[15rem_13rem_minmax(0,1fr)]">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Total activo USD</p>
 					<p class={`${desktopValueClass} text-rose-700`}>{formatPrice(total)}</p>
 					<p class="mt-2 text-xs text-slate-500">Solo egresos no anulados</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Cantidad activa</p>
 					<p class={`${desktopValueClass} text-brand-navy`}>{activeCount}</p>
 					<p class="mt-2 text-xs text-slate-500">
 						{includeVoided ? `${expenses.length} visibles` : 'Vista limpia de activos'}
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
-					<p class={desktopLabelClass}>Vista actual</p>
+				<div class="flex h-full flex-col bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Categoría activa</p>
 					<p class="mt-2 text-base font-semibold text-brand-navy">{selectedCategoryLabel}</p>
-					<p class="mt-1 text-sm text-slate-500">
-						{includeVoided ? 'Incluye anulados' : 'Solo activos'} y equivalentes convertidos a USD.
-					</p>
-					<p class="mt-2 font-mono text-xs tabular-nums text-slate-500">{dateFrom} → {dateTo}</p>
+					<p class="mt-2 text-xs text-slate-500">{dateFrom} a {dateTo}</p>
 				</div>
 			</div>
 		</div>
