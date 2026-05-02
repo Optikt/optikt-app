@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { Plus, Ban } from '@lucide/svelte';
+	import { Plus, Ban, Download, Printer, X } from '@lucide/svelte';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
 	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
 	import {
@@ -176,22 +176,111 @@
 		downloadCsv(`egresos-${dateFrom}-a-${dateTo}.csv`, headers, rows);
 	}
 
+	function handlePrint() {
+		window.print();
+	}
+
+	const activeCount = $derived(expenses.filter((e) => !e.voidedAt).length);
 	const total = $derived(expenses.filter((e) => !e.voidedAt).reduce((s, e) => s + e.amountUsd, 0));
+	const mobileLabelClass = 'text-[10px] font-semibold tracking-[0.18em] text-outline uppercase';
+	const mobileMetaClass = 'mt-1 text-[11px] text-on-surface-variant';
+	const mobileSurfaceClass = 'rounded-[1.25rem] bg-surface-container-lowest shadow-sm';
+	const mobileInsetClass = 'rounded-xl bg-surface-container-low px-3 py-3';
+	const fieldInputClass =
+		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 </script>
 
 <svelte:head>
 	<title>Egresos - Caja - Optikt</title>
 </svelte:head>
 
-<div class="p-8">
-	<ReportHeader
-		title="Egresos"
-		subtitle="Gastos operativos del negocio"
-		onExportCsv={handleExportCsv}
-		onPrint={() => window.print()}
-	/>
+<div class="px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+	<div class="hidden lg:block">
+		<ReportHeader
+			title="Egresos"
+			subtitle="Gastos operativos del negocio"
+			onExportCsv={handleExportCsv}
+			onPrint={handlePrint}
+		/>
+	</div>
 
-	<div class="mb-4 flex flex-wrap items-end gap-4">
+	<div class="mb-4 lg:hidden">
+		<div class="min-w-0">
+			<h1 class="font-heading text-2xl font-bold tracking-[-0.03em] text-brand-navy">Egresos</h1>
+			<p class="mt-0.5 text-[11px] text-on-surface-variant">
+				Gestión de gastos operativos del negocio.
+			</p>
+		</div>
+
+		<div class="mt-3 grid grid-cols-2 gap-2 print:hidden">
+			<button
+				type="button"
+				onclick={handleExportCsv}
+				class="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container-low px-3 py-2 text-[11px] font-semibold text-brand-navy transition hover:bg-surface-container-high"
+			>
+				<Download size={14} />
+				CSV
+			</button>
+			<button
+				type="button"
+				onclick={handlePrint}
+				class="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container-low px-3 py-2 text-[11px] font-semibold text-brand-navy transition hover:bg-surface-container-high"
+			>
+				<Printer size={14} />
+				Impr.
+			</button>
+			<button
+				type="button"
+				onclick={openCreate}
+				class="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark"
+			>
+				<Plus size={16} />
+				Nuevo egreso
+			</button>
+		</div>
+
+		<div class={`${mobileSurfaceClass} mt-4 p-4`}>
+			<div class="grid grid-cols-2 gap-2">
+				<label class="min-w-0">
+					<span class={mobileLabelClass}>Desde</span>
+					<input type="date" bind:value={dateFrom} class={`${fieldInputClass} mt-1`} />
+				</label>
+				<label class="min-w-0">
+					<span class={mobileLabelClass}>Hasta</span>
+					<input type="date" bind:value={dateTo} class={`${fieldInputClass} mt-1`} />
+				</label>
+			</div>
+
+			<label class="mt-3 block min-w-0">
+				<span class={mobileLabelClass}>Categoría</span>
+				<select bind:value={categoryFilter} class={`${fieldInputClass} mt-1`}>
+					<option value="">Todas</option>
+					{#each ALL_EXPENSE_CATEGORIES as c (c)}
+						<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
+					{/each}
+				</select>
+			</label>
+
+			<label class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low px-4 py-3">
+				<div>
+					<p class={mobileLabelClass}>Anulados</p>
+					<p class="mt-1 text-[11px] text-on-surface-variant">Mostrar egresos anulados en la lista</p>
+				</div>
+				<input type="checkbox" bind:checked={includeVoided} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+			</label>
+
+			<button
+				type="button"
+				onclick={applyFilter}
+				disabled={loading}
+				class="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-brand-blue px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60"
+			>
+				{loading ? 'Cargando...' : 'Aplicar filtros'}
+			</button>
+		</div>
+	</div>
+
+	<div class="mb-4 hidden flex-wrap items-end gap-4 lg:flex">
 		<DateRangeFilter bind:dateFrom bind:dateTo {loading} onApply={applyFilter} />
 
 		<div class="flex flex-col gap-1">
@@ -224,21 +313,117 @@
 	</div>
 
 	<!-- Summary -->
-	<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+	<div class="mb-5 grid grid-cols-2 gap-2 lg:hidden">
+		<div class={`${mobileInsetClass}`}>
+			<p class={mobileLabelClass}>Total activo USD</p>
+			<p class="mt-1 font-mono text-[17px] font-semibold tabular-nums text-rose-700">{formatPrice(total)}</p>
+			<p class={mobileMetaClass}>Solo egresos no anulados</p>
+		</div>
+		<div class={`${mobileInsetClass}`}>
+			<p class={mobileLabelClass}>Cantidad activa</p>
+			<p class="mt-1 font-mono text-[17px] font-semibold tabular-nums text-brand-navy">{activeCount}</p>
+			<p class={mobileMetaClass}>{includeVoided ? `${expenses.length} visibles` : 'Vista limpia de activos'}</p>
+		</div>
+	</div>
+
+	<div class="mb-6 hidden gap-4 lg:grid lg:grid-cols-3">
 		<div class="glass-card p-4">
 			<p class="text-sm text-slate-500">Total egresos (USD)</p>
 			<p class="text-2xl font-bold text-rose-600">{formatPrice(total)}</p>
 		</div>
 		<div class="glass-card p-4">
 			<p class="text-sm text-slate-500">Cantidad</p>
-			<p class="text-2xl font-bold text-slate-900">
-				{expenses.filter((e) => !e.voidedAt).length}
-			</p>
+			<p class="text-2xl font-bold text-slate-900">{activeCount}</p>
+		</div>
+	</div>
+
+	<div class="lg:hidden">
+		<div class={`${mobileSurfaceClass} p-4`}>
+			<div class="mb-3 flex items-start justify-between gap-3">
+				<div>
+					<h2 class="text-base font-semibold tracking-[-0.02em] text-brand-navy">Movimientos</h2>
+					<p class="mt-1 text-[11px] text-on-surface-variant">
+						Lista compacta de egresos registrados en el período.
+					</p>
+				</div>
+				<span class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-brand-navy uppercase">
+					{expenses.length} item{expenses.length === 1 ? '' : 's'}
+				</span>
+			</div>
+
+			{#if expenses.length === 0}
+				<div class="rounded-xl bg-surface-container-low px-4 py-8 text-center text-sm text-on-surface-variant">
+					Sin egresos en el período seleccionado
+				</div>
+			{:else}
+				<div class="space-y-3">
+					{#each expenses as row (row.id)}
+						<article class="rounded-[1.25rem] bg-surface-container-low px-3 py-3">
+							<div class="flex items-start justify-between gap-3">
+								<div class="min-w-0 flex-1">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-brand-navy uppercase">
+											{EXPENSE_CATEGORY_LABELS[row.category]}
+										</span>
+										{#if row.voidedAt}
+											<span class="inline-flex items-center rounded-full bg-error-container px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-on-error-container uppercase">
+												Anulado
+											</span>
+										{/if}
+									</div>
+
+									<p class="mt-2 text-[15px] font-semibold tracking-[-0.02em] text-brand-navy {row.voidedAt ? 'line-through decoration-rose-300' : ''}">
+										{row.description}
+									</p>
+									<p class="mt-1 text-[11px] text-on-surface-variant">
+										{formatDate(row.expenseDate, { dateStyle: 'medium' })}
+										· Registró {row.registeredByName ?? '-'}
+									</p>
+									{#if row.reference}
+										<p class="mt-1 text-[11px] text-on-surface-variant">Ref. {row.reference}</p>
+									{/if}
+									{#if row.voidedAt}
+										<p class="mt-2 text-[11px] font-medium text-rose-700">Motivo: {row.voidReason}</p>
+									{/if}
+								</div>
+
+								<div class="min-w-[7.75rem] rounded-xl bg-surface-container-lowest px-3 py-3 text-right">
+									<p class={mobileLabelClass}>Monto</p>
+									<p class="mt-1 font-mono text-[13px] font-semibold tabular-nums text-brand-navy">
+										{row.amount.toFixed(2)} {row.currency}
+									</p>
+									<p class="mt-2 text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">USD</p>
+									<p class="mt-1 font-mono text-[13px] font-semibold tabular-nums text-brand-navy">
+										{formatPrice(row.amountUsd)}
+									</p>
+									{#if !isUsdLike(row.currency) && row.exchangeRate}
+										<p class="mt-1 text-[10px] text-on-surface-variant">@ {row.exchangeRate.toFixed(2)}</p>
+									{/if}
+								</div>
+							</div>
+
+							{#if !row.voidedAt}
+								<div class="mt-3 flex justify-end border-t border-surface-container-high pt-3">
+									<button
+										type="button"
+										onclick={() => handleVoid(row)}
+										class="inline-flex items-center gap-1 rounded-xl bg-error-container px-3 py-2 text-[11px] font-semibold text-on-error-container transition hover:opacity-90"
+										aria-label="Anular egreso"
+									>
+										<Ban size={12} />
+										Anular
+									</button>
+								</div>
+							{/if}
+						</article>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 
 	<!-- Table -->
-	<div class="glass-card overflow-hidden">
+	<div class="glass-card hidden overflow-hidden lg:block">
 		<div class="overflow-x-auto">
 			<table class="w-full text-left text-sm">
 				<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-600 uppercase">
@@ -311,153 +496,184 @@
 <!-- Create modal -->
 {#if showCreate}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/40 p-4 backdrop-blur-sm"
+		class="fixed inset-0 z-50 bg-brand-navy/40 backdrop-blur-sm"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="new-expense-title"
 	>
-		<form onsubmit={submitCreate} class="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
-			<h2 id="new-expense-title" class="mb-4 text-xl font-bold text-brand-navy">Nuevo egreso</h2>
-
-			<div class="grid gap-4 sm:grid-cols-2">
-				<label class="flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Categoría *</span>
-					<select
-						bind:value={form.category}
-						required
-						class="rounded-lg border border-slate-300 px-3 py-2"
-					>
-						{#each ALL_EXPENSE_CATEGORIES as c (c)}
-							<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
-						{/each}
-					</select>
-				</label>
-
-				<label class="flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Fecha *</span>
-					<input
-						type="date"
-						bind:value={form.expenseDate}
-						required
-						class="rounded-lg border border-slate-300 px-3 py-2"
-					/>
-				</label>
-
-				<label class="col-span-full flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Descripción *</span>
-					<input
-						type="text"
-						bind:value={form.description}
-						required
-						minlength="3"
-						maxlength="500"
-						class="rounded-lg border border-slate-300 px-3 py-2"
-						placeholder="Pago de electricidad de noviembre"
-					/>
-				</label>
-
-				<label class="flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Moneda *</span>
-					<select
-						bind:value={form.currency}
-						required
-						class="rounded-lg border border-slate-300 px-3 py-2"
-					>
-						{#each ALL_EXPENSE_CURRENCIES as c (c)}
-							<option value={c}>{EXPENSE_CURRENCY_LABELS[c]}</option>
-						{/each}
-					</select>
-				</label>
-
-				<label class="flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Monto *</span>
-					<input
-						type="number"
-						min="0"
-						step="0.01"
-						bind:value={form.amount}
-						required
-						class="rounded-lg border border-slate-300 px-3 py-2 text-right font-mono"
-					/>
-				</label>
-
-				{#if needsRate}
-					<label class="flex flex-col gap-1 text-sm">
-						<span class="font-medium text-slate-700">
-							Tasa * {form.currency === 'EUR' ? '(EUR→USD)' : '(Bs/USD)'}
-						</span>
-						<input
-							type="number"
-							min="0"
-							step="0.0001"
-							bind:value={form.exchangeRate}
-							required
-							class="rounded-lg border border-slate-300 px-3 py-2 text-right font-mono"
-						/>
-						{#if form.currency === 'VES' && bcvRateHint}
-							<button
-								type="button"
-								class="self-start text-xs text-brand-blue underline"
-								onclick={() => (form.exchangeRate = String(bcvRateHint))}
-							>
-								Usar BCV: {bcvRateHint.toFixed(2)}
-							</button>
-						{/if}
-					</label>
-
-					<label class="flex flex-col gap-1 text-sm">
-						<span class="font-medium text-slate-700">Tipo de tasa *</span>
-						<select
-							bind:value={form.rateType}
-							required
-							class="rounded-lg border border-slate-300 px-3 py-2"
+		<div class="flex h-full items-end justify-center p-2 sm:items-center sm:p-4">
+			<form
+				onsubmit={submitCreate}
+				class="flex h-[calc(100dvh-0.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.5rem] bg-surface-container-lowest shadow-xl sm:h-auto sm:max-h-[90dvh]"
+			>
+				<div class="border-b border-surface-container-high px-4 py-4 sm:px-6">
+					<div class="flex items-start justify-between gap-3">
+						<div class="min-w-0">
+							<p class={mobileLabelClass}>Nuevo egreso</p>
+							<h2 id="new-expense-title" class="mt-1 text-xl font-semibold tracking-[-0.02em] text-brand-navy">
+								Registrar egreso
+							</h2>
+							<p class="mt-1 text-sm text-on-surface-variant">
+								Carga un gasto operativo con su moneda, referencia y notas.
+							</p>
+						</div>
+						<button
+							type="button"
+							onclick={closeCreate}
+							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-low text-brand-navy transition hover:bg-surface-container-high"
+							aria-label="Cerrar formulario de egreso"
 						>
-							{#each ALL_RATE_TYPES as t (t)}
-								<option value={t}>{RATE_TYPE_LABELS[t]}</option>
-							{/each}
-						</select>
-					</label>
-				{/if}
+							<X size={18} />
+						</button>
+					</div>
+				</div>
 
-				<label class="flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Referencia</span>
-					<input
-						type="text"
-						bind:value={form.reference}
-						maxlength="100"
-						class="rounded-lg border border-slate-300 px-3 py-2"
-						placeholder="Nº de factura, recibo..."
-					/>
-				</label>
+				<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+					<div class="grid gap-4 sm:grid-cols-2">
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Categoría *</span>
+							<select
+								bind:value={form.category}
+								required
+								class={fieldInputClass}
+							>
+								{#each ALL_EXPENSE_CATEGORIES as c (c)}
+									<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
+								{/each}
+							</select>
+						</label>
 
-				<label class="col-span-full flex flex-col gap-1 text-sm">
-					<span class="font-medium text-slate-700">Notas</span>
-					<textarea
-						bind:value={form.notes}
-						maxlength="1000"
-						rows="2"
-						class="rounded-lg border border-slate-300 px-3 py-2"
-					></textarea>
-				</label>
-			</div>
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Fecha *</span>
+							<input
+								type="date"
+								bind:value={form.expenseDate}
+								required
+								class={fieldInputClass}
+							/>
+						</label>
 
-			<div class="mt-6 flex justify-end gap-3">
-				<button
-					type="button"
-					onclick={closeCreate}
-					disabled={creating}
-					class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-				>
-					Cancelar
-				</button>
-				<button
-					type="submit"
-					disabled={creating}
-					class="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue/90 disabled:opacity-50"
-				>
-					{creating ? 'Guardando...' : 'Registrar egreso'}
-				</button>
-			</div>
+						<label class="col-span-full flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Descripción *</span>
+							<input
+								type="text"
+								bind:value={form.description}
+								required
+								minlength="3"
+								maxlength="500"
+								class={fieldInputClass}
+								placeholder="Pago de electricidad de noviembre"
+							/>
+						</label>
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Moneda *</span>
+							<select
+								bind:value={form.currency}
+								required
+								class={fieldInputClass}
+							>
+								{#each ALL_EXPENSE_CURRENCIES as c (c)}
+									<option value={c}>{EXPENSE_CURRENCY_LABELS[c]}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Monto *</span>
+							<input
+								type="number"
+								min="0"
+								step="0.01"
+								inputmode="decimal"
+								bind:value={form.amount}
+								required
+								class={`${fieldInputClass} text-right font-mono`}
+							/>
+						</label>
+
+						{#if needsRate}
+							<label class="flex flex-col gap-1.5 text-sm">
+								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+									Tasa * {form.currency === 'EUR' ? '(EUR→USD)' : '(Bs/USD)'}
+								</span>
+								<input
+									type="number"
+									min="0"
+									step="0.0001"
+									inputmode="decimal"
+									bind:value={form.exchangeRate}
+									required
+									class={`${fieldInputClass} text-right font-mono`}
+								/>
+								{#if form.currency === 'VES' && bcvRateHint}
+									<button
+										type="button"
+										class="self-start rounded-lg bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-brand-blue"
+										onclick={() => (form.exchangeRate = String(bcvRateHint))}
+									>
+										Usar BCV: {bcvRateHint.toFixed(2)}
+									</button>
+								{/if}
+							</label>
+
+							<label class="flex flex-col gap-1.5 text-sm">
+								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Tipo de tasa *</span>
+								<select
+									bind:value={form.rateType}
+									required
+									class={fieldInputClass}
+								>
+									{#each ALL_RATE_TYPES as t (t)}
+										<option value={t}>{RATE_TYPE_LABELS[t]}</option>
+									{/each}
+								</select>
+							</label>
+						{/if}
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Referencia</span>
+							<input
+								type="text"
+								bind:value={form.reference}
+								maxlength="100"
+								class={fieldInputClass}
+								placeholder="Nº de factura, recibo..."
+							/>
+						</label>
+
+						<label class="col-span-full flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Notas</span>
+							<textarea
+								bind:value={form.notes}
+								maxlength="1000"
+								rows="3"
+								class={fieldInputClass}
+							></textarea>
+						</label>
+					</div>
+				</div>
+
+				<div class="border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:px-6">
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onclick={closeCreate}
+							disabled={creating}
+							class="rounded-xl bg-surface-container-high px-4 py-3 text-sm font-semibold text-brand-navy transition hover:bg-surface-container-highest disabled:opacity-50"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							disabled={creating}
+							class="rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark disabled:opacity-50"
+						>
+							{creating ? 'Guardando...' : 'Registrar egreso'}
+						</button>
+					</div>
+				</div>
 		</form>
+		</div>
 	</div>
 {/if}
