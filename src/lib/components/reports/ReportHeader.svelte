@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { Download, Printer, ArrowLeft } from '@lucide/svelte';
+	import { Download, Printer } from '@lucide/svelte';
 	import { Button } from 'flowbite-svelte';
-	import { resolve } from '$app/paths';
 
 	let {
 		title,
