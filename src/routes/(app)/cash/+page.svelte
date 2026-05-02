@@ -110,9 +110,6 @@
 		<div class="mb-3 flex items-start justify-between gap-3">
 			<div class="min-w-0">
 				<h1 class="font-heading text-2xl font-bold tracking-[-0.03em] text-brand-navy">Caja &amp; P&amp;L</h1>
-				<p class="mt-0.5 text-[11px] text-on-surface-variant">
-					Control compacto de caja, utilidad y egresos.
-				</p>
 			</div>
 			<a
 				href={resolve('/cash/expenses')}
