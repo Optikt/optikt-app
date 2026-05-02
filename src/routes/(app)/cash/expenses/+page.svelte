@@ -202,7 +202,9 @@
 </svelte:head>
 
 <div class="px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-	<div class="mb-2 hidden flex-col gap-3 sm:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between">
+	<div
+		class="mb-2 hidden flex-col gap-3 sm:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between"
+	>
 		<div class="min-w-0">
 			<h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-3xl">Egresos</h1>
 			<p class="mt-1 max-w-3xl text-sm text-slate-500 sm:text-base">
@@ -298,12 +300,20 @@
 				</select>
 			</label>
 
-			<label class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low px-4 py-3">
+			<label
+				class="mt-3 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low px-4 py-3"
+			>
 				<div>
 					<p class={mobileLabelClass}>Anulados</p>
-					<p class="mt-1 text-[11px] text-on-surface-variant">Mostrar egresos anulados en la lista</p>
+					<p class="mt-1 text-[11px] text-on-surface-variant">
+						Mostrar egresos anulados en la lista
+					</p>
 				</div>
-				<input type="checkbox" bind:checked={includeVoided} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+				<input
+					type="checkbox"
+					bind:checked={includeVoided}
+					class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+				/>
 			</label>
 
 			<button
@@ -317,7 +327,9 @@
 		</div>
 	</div>
 
-	<div class="mb-2 hidden items-center gap-3 text-sm text-slate-600 lg:flex lg:flex-wrap xl:flex-nowrap">
+	<div
+		class="mb-2 hidden items-center gap-3 text-sm text-slate-600 lg:flex lg:flex-wrap xl:flex-nowrap"
+	>
 		<div class="flex items-center gap-2 whitespace-nowrap">
 			<span class="text-sm font-medium text-slate-500">Desde</span>
 			<input type="date" bind:value={dateFrom} class={desktopToolbarInputClass} />
@@ -335,7 +347,9 @@
 				{/each}
 			</select>
 		</div>
-		<label class="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
+		<label
+			class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm whitespace-nowrap text-slate-600"
+		>
 			<input
 				type="checkbox"
 				bind:checked={includeVoided}
@@ -366,13 +380,19 @@
 	<div class="mb-5 grid grid-cols-2 gap-2 lg:hidden">
 		<div class={`${mobileInsetClass}`}>
 			<p class={mobileLabelClass}>Total activo USD</p>
-			<p class="mt-1 font-mono text-[17px] font-semibold tabular-nums text-rose-700">{formatPrice(total)}</p>
+			<p class="mt-1 font-mono text-[17px] font-semibold text-rose-700 tabular-nums">
+				{formatPrice(total)}
+			</p>
 			<p class={mobileMetaClass}>Solo egresos no anulados</p>
 		</div>
 		<div class={`${mobileInsetClass}`}>
 			<p class={mobileLabelClass}>Cantidad activa</p>
-			<p class="mt-1 font-mono text-[17px] font-semibold tabular-nums text-brand-navy">{activeCount}</p>
-			<p class={mobileMetaClass}>{includeVoided ? `${expenses.length} visibles` : 'Vista limpia de activos'}</p>
+			<p class="mt-1 font-mono text-[17px] font-semibold text-brand-navy tabular-nums">
+				{activeCount}
+			</p>
+			<p class={mobileMetaClass}>
+				{includeVoided ? `${expenses.length} visibles` : 'Vista limpia de activos'}
+			</p>
 		</div>
 	</div>
 
@@ -409,13 +429,17 @@
 						Lista compacta de egresos registrados en el período.
 					</p>
 				</div>
-				<span class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-brand-navy uppercase">
+				<span
+					class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-brand-navy uppercase"
+				>
 					{expenses.length} item{expenses.length === 1 ? '' : 's'}
 				</span>
 			</div>
 
 			{#if expenses.length === 0}
-				<div class="rounded-xl bg-surface-container-low px-4 py-8 text-center text-sm text-on-surface-variant">
+				<div
+					class="rounded-xl bg-surface-container-low px-4 py-8 text-center text-sm text-on-surface-variant"
+				>
 					Sin egresos en el período seleccionado
 				</div>
 			{:else}
@@ -425,17 +449,25 @@
 							<div class="flex items-start justify-between gap-3">
 								<div class="min-w-0 flex-1">
 									<div class="flex flex-wrap items-center gap-2">
-										<span class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-brand-navy uppercase">
+										<span
+											class="inline-flex items-center rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-brand-navy uppercase"
+										>
 											{EXPENSE_CATEGORY_LABELS[row.category]}
 										</span>
 										{#if row.voidedAt}
-											<span class="inline-flex items-center rounded-full bg-error-container px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-on-error-container uppercase">
+											<span
+												class="inline-flex items-center rounded-full bg-error-container px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-on-error-container uppercase"
+											>
 												Anulado
 											</span>
 										{/if}
 									</div>
 
-									<p class="mt-2 text-[15px] font-semibold tracking-[-0.02em] text-brand-navy {row.voidedAt ? 'line-through decoration-rose-300' : ''}">
+									<p
+										class="mt-2 text-[15px] font-semibold tracking-[-0.02em] text-brand-navy {row.voidedAt
+											? 'line-through decoration-rose-300'
+											: ''}"
+									>
 										{row.description}
 									</p>
 									<p class="mt-1 text-[11px] text-on-surface-variant">
@@ -446,21 +478,32 @@
 										<p class="mt-1 text-[11px] text-on-surface-variant">Ref. {row.reference}</p>
 									{/if}
 									{#if row.voidedAt}
-										<p class="mt-2 text-[11px] font-medium text-rose-700">Motivo: {row.voidReason}</p>
+										<p class="mt-2 text-[11px] font-medium text-rose-700">
+											Motivo: {row.voidReason}
+										</p>
 									{/if}
 								</div>
 
-								<div class="min-w-[7.75rem] rounded-xl bg-surface-container-lowest px-3 py-3 text-right">
+								<div
+									class="min-w-[7.75rem] rounded-xl bg-surface-container-lowest px-3 py-3 text-right"
+								>
 									<p class={mobileLabelClass}>Monto</p>
-									<p class="mt-1 font-mono text-[13px] font-semibold tabular-nums text-brand-navy">
-										{row.amount.toFixed(2)} {row.currency}
+									<p class="mt-1 font-mono text-[13px] font-semibold text-brand-navy tabular-nums">
+										{row.amount.toFixed(2)}
+										{row.currency}
 									</p>
-									<p class="mt-2 text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">USD</p>
-									<p class="mt-1 font-mono text-[13px] font-semibold tabular-nums text-brand-navy">
+									<p
+										class="mt-2 text-[10px] font-semibold tracking-[0.18em] text-outline uppercase"
+									>
+										USD
+									</p>
+									<p class="mt-1 font-mono text-[13px] font-semibold text-brand-navy tabular-nums">
 										{formatPrice(row.amountUsd)}
 									</p>
 									{#if !isUsdLike(row.currency) && row.exchangeRate}
-										<p class="mt-1 text-[10px] text-on-surface-variant">@ {row.exchangeRate.toFixed(2)}</p>
+										<p class="mt-1 text-[10px] text-on-surface-variant">
+											@ {row.exchangeRate.toFixed(2)}
+										</p>
 									{/if}
 								</div>
 							</div>
@@ -494,13 +537,17 @@
 					Ledger operativo con montos originales, tasa aplicada, estado y trazabilidad por usuario.
 				</p>
 			</div>
-			<span class="inline-flex items-center rounded-full bg-surface-container-low px-3 py-1 text-xs font-semibold tracking-[0.12em] text-brand-navy uppercase">
+			<span
+				class="inline-flex items-center rounded-full bg-surface-container-low px-3 py-1 text-xs font-semibold tracking-[0.12em] text-brand-navy uppercase"
+			>
 				{expenses.length} registro{expenses.length === 1 ? '' : 's'}
 			</span>
 		</div>
 		<div class="overflow-x-auto">
 			<table class="w-full min-w-[82rem] text-left text-sm">
-				<thead class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase">
+				<thead
+					class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase"
+				>
 					<tr>
 						<th class="px-4 py-3">Fecha</th>
 						<th class="px-4 py-3">Categoría</th>
@@ -515,13 +562,19 @@
 				</thead>
 				<tbody class="divide-y divide-slate-200/80">
 					{#each expenses as row (row.id)}
-						<tr class="odd:bg-white even:bg-slate-50/40 hover:bg-slate-50 {row.voidedAt ? 'opacity-65' : ''}">
+						<tr
+							class="odd:bg-white even:bg-slate-50/40 hover:bg-slate-50 {row.voidedAt
+								? 'opacity-65'
+								: ''}"
+						>
 							<td class="px-4 py-3">
 								{formatDate(row.expenseDate, { dateStyle: 'medium' })}
 							</td>
 							<td class="px-4 py-3">{EXPENSE_CATEGORY_LABELS[row.category]}</td>
 							<td class="px-4 py-3">
-								<div class={row.voidedAt ? 'line-through decoration-rose-300' : ''}>{row.description}</div>
+								<div class={row.voidedAt ? 'line-through decoration-rose-300' : ''}>
+									{row.description}
+								</div>
 							</td>
 							<td class="px-4 py-3 text-right font-mono tabular-nums">
 								{row.amount.toFixed(2)}
@@ -530,21 +583,25 @@
 									<div class="text-xs text-slate-400">@ {row.exchangeRate.toFixed(2)}</div>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-right font-mono font-semibold tabular-nums text-rose-700">
+							<td class="px-4 py-3 text-right font-mono font-semibold text-rose-700 tabular-nums">
 								{formatPrice(row.amountUsd)}
 							</td>
 							<td class="px-4 py-3 text-xs text-slate-500">{row.registeredByName ?? '-'}</td>
 							<td class="px-4 py-3 text-xs text-slate-500">{row.reference ?? '—'}</td>
 							<td class="px-4 py-3 align-top">
 								{#if row.voidedAt}
-									<div class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-rose-700 uppercase">
+									<div
+										class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-rose-700 uppercase"
+									>
 										Anulado
 									</div>
 									{#if row.voidReason}
 										<div class="mt-1 max-w-[12rem] text-xs text-rose-600">{row.voidReason}</div>
 									{/if}
 								{:else}
-									<div class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-emerald-700 uppercase">
+									<div
+										class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-emerald-700 uppercase"
+									>
 										Activo
 									</div>
 								{/if}
@@ -593,7 +650,10 @@
 					<div class="flex items-start justify-between gap-3">
 						<div class="min-w-0">
 							<p class={mobileLabelClass}>Nuevo egreso</p>
-							<h2 id="new-expense-title" class="mt-1 text-xl font-semibold tracking-[-0.02em] text-brand-navy">
+							<h2
+								id="new-expense-title"
+								class="mt-1 text-xl font-semibold tracking-[-0.02em] text-brand-navy"
+							>
 								Registrar egreso
 							</h2>
 							<p class="mt-1 text-sm text-on-surface-variant">
@@ -614,12 +674,10 @@
 				<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
 					<div class="grid gap-4 sm:grid-cols-2">
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Categoría *</span>
-							<select
-								bind:value={form.category}
-								required
-								class={fieldInputClass}
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Categoría *</span
 							>
+							<select bind:value={form.category} required class={fieldInputClass}>
 								{#each ALL_EXPENSE_CATEGORIES as c (c)}
 									<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
 								{/each}
@@ -627,17 +685,16 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Fecha *</span>
-							<input
-								type="date"
-								bind:value={form.expenseDate}
-								required
-								class={fieldInputClass}
-							/>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Fecha *</span
+							>
+							<input type="date" bind:value={form.expenseDate} required class={fieldInputClass} />
 						</label>
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Descripción *</span>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Descripción *</span
+							>
 							<input
 								type="text"
 								bind:value={form.description}
@@ -650,12 +707,10 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Moneda *</span>
-							<select
-								bind:value={form.currency}
-								required
-								class={fieldInputClass}
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Moneda *</span
 							>
+							<select bind:value={form.currency} required class={fieldInputClass}>
 								{#each ALL_EXPENSE_CURRENCIES as c (c)}
 									<option value={c}>{EXPENSE_CURRENCY_LABELS[c]}</option>
 								{/each}
@@ -663,7 +718,9 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Monto *</span>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Monto *</span
+							>
 							<input
 								type="number"
 								min="0"
@@ -701,12 +758,10 @@
 							</label>
 
 							<label class="flex flex-col gap-1.5 text-sm">
-								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Tipo de tasa *</span>
-								<select
-									bind:value={form.rateType}
-									required
-									class={fieldInputClass}
+								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+									>Tipo de tasa *</span
 								>
+								<select bind:value={form.rateType} required class={fieldInputClass}>
 									{#each ALL_RATE_TYPES as t (t)}
 										<option value={t}>{RATE_TYPE_LABELS[t]}</option>
 									{/each}
@@ -715,7 +770,9 @@
 						{/if}
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Referencia</span>
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Referencia</span
+							>
 							<input
 								type="text"
 								bind:value={form.reference}
@@ -726,18 +783,18 @@
 						</label>
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Notas</span>
-							<textarea
-								bind:value={form.notes}
-								maxlength="1000"
-								rows="3"
-								class={fieldInputClass}
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Notas</span
+							>
+							<textarea bind:value={form.notes} maxlength="1000" rows="3" class={fieldInputClass}
 							></textarea>
 						</label>
 					</div>
 				</div>
 
-				<div class="border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:px-6">
+				<div
+					class="border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:px-6"
+				>
 					<div class="grid grid-cols-2 gap-2">
 						<button
 							type="button"
@@ -756,7 +813,7 @@
 						</button>
 					</div>
 				</div>
-		</form>
+			</form>
 		</div>
 	</div>
 {/if}

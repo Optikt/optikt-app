@@ -10,7 +10,7 @@
 		X,
 		Check,
 		ArrowLeft,
-		User,
+		User
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
