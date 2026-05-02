@@ -15,13 +15,13 @@
       "when": 1776975187074,
       "tag": "0001_friendly_groot",
       "breakpoints": true
-	},
-	{
-	  "idx": 2,
-	  "version": "7",
-	  "when": 1776969000000,
-	  "tag": "0002_spanish_material_code_prefixes",
-	  "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776969000000,
+      "tag": "0002_spanish_material_code_prefixes",
+      "breakpoints": true
     },
     {
       "idx": 3,
@@ -43,13 +43,27 @@
       "when": 1777161600000,
       "tag": "0005_free_item_support",
       "breakpoints": true
-	},
-	{
-	  "idx": 6,
-	  "version": "7",
-	  "when": 1777420800000,
-	  "tag": "0006_document_level_tax_rate",
-	  "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777420800000,
+      "tag": "0006_document_level_tax_rate",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777610396499,
+      "tag": "0007_cash_expenses",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777700000000,
+      "tag": "0008_sales_completed_at",
+      "breakpoints": true
     }
   ]
 }

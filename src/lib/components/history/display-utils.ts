@@ -196,6 +196,23 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		validUntil: 'Válido hasta',
 		notes: 'Notas',
 		conversionSaleId: 'Venta Convertida'
+	},
+	cash_expense: {
+		category: 'Categoría',
+		description: 'Descripción',
+		currency: 'Moneda',
+		amount: 'Monto',
+		amountUsd: 'Equivalente USD',
+		exchangeRate: 'Tasa',
+		bcvRate: 'Tasa BCV',
+		rateType: 'Tipo de tasa',
+		expenseDate: 'Fecha del gasto',
+		registeredById: 'Registrado por',
+		reference: 'Referencia',
+		notes: 'Notas',
+		voidedAt: 'Anulado',
+		voidedById: 'Anulado por',
+		voidReason: 'Motivo de anulación'
 	}
 };
 

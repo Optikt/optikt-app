@@ -73,6 +73,7 @@ import { findSupplierById } from '$lib/server/db/queries/suppliers';
 import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
+import { createExpense } from '$lib/server/db/queries/cash';
 import { inventoryMovements } from '$lib/server/db/schema';
 import { monthStart, nowISO, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
@@ -506,9 +507,10 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 
 		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
 
-		// Auto-complete if fully paid (small tolerance for floating point)
+		// Auto-complete if fully paid (small tolerance for floating point).
+		// completedAt anchors delivery-based revenue recognition.
 		if (newPaidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
-			await updateSale(data.saleId, { status: SaleStatus.COMPLETED }, tx);
+			await updateSale(data.saleId, { status: SaleStatus.COMPLETED, completedAt: nowISO() }, tx);
 		}
 
 		return { payment: newPayment, paidAmount: newPaidAmount };
@@ -563,9 +565,9 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
 
 		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
 
-		// If sale was COMPLETED but now underpaid, revert to PENDING
+		// If sale was COMPLETED but now underpaid, revert to PENDING and clear completedAt.
 		if (sale.status === SaleStatus.COMPLETED && newPaidAmount < sale.total - 0.01) {
-			await updateSale(data.saleId, { status: SaleStatus.PENDING }, tx);
+			await updateSale(data.saleId, { status: SaleStatus.PENDING, completedAt: null }, tx);
 		}
 
 		return newPaidAmount;
@@ -703,6 +705,34 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 			},
 			tx
 		);
+
+		// If the customer was actually reimbursed, log the refund as a USD
+		// cash expense so the P&L reflects the cash leaving the box. The
+		// payments themselves remain active (cash physically arrived) and the
+		// refund offsets them on the egress side, preserving the trail.
+		if (
+			hasPriorPayments &&
+			refundStatus === RefundStatus.REFUNDED &&
+			existing.paidAmountBcvUsd > 0
+		) {
+			await createExpense(
+				{
+					category: 'REFUND',
+					description: `Reembolso venta #${existing.orderNumber}: ${data.reason}`,
+					currency: 'USD',
+					amount: existing.paidAmountBcvUsd,
+					amountUsd: existing.paidAmountBcvUsd,
+					exchangeRate: null,
+					bcvRate: null,
+					rateType: null,
+					expenseDate: now,
+					registeredById: context.userId!,
+					reference: `SALE:${existing.id}`,
+					notes: data.refundNotes ?? null
+				},
+				tx
+			);
+		}
 	});
 
 	// Audit logs (best-effort, after transaction succeeds)

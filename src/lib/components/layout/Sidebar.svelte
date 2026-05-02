@@ -14,7 +14,8 @@
 		Shield,
 		FileText,
 		ClipboardList,
-		HandCoins
+		HandCoins,
+		Wallet
 	} from '@lucide/svelte';
 	import { isAdminRole, UserRole } from '$lib/shared/enums';
 	import type { LucideIcon } from '$lib/types/index.js';
@@ -42,7 +43,8 @@
 		shield: Shield,
 		quotes: FileText,
 		purchases: ClipboardList,
-		receivables: HandCoins
+		receivables: HandCoins,
+		wallet: Wallet
 	};
 
 	const navItems = [
@@ -61,6 +63,7 @@
 	// Items visible to ADMIN and MANAGER
 	const adminManagerItems = [
 		{ href: '/purchases', label: 'Compras', icon: 'purchases' },
+		{ href: '/cash', label: 'Caja', icon: 'wallet' },
 		{ href: '/reports', label: 'Reportes', icon: 'reports' }
 	] as const;
 

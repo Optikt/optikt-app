@@ -6,7 +6,7 @@
  * snapshot fields on sale_items.
  */
 import { eq, and, isNull } from 'drizzle-orm';
-import { products, lensCatalogItems } from '$lib/server/db/schema';
+import { products, lensCatalogItems, supplierTreatments } from '$lib/server/db/schema';
 import { getActiveLotsFifo, consumeFromLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { planFifoConsumption } from '$lib/utils/inventory';
@@ -22,6 +22,7 @@ import { nowISO } from '$lib/dates';
 export interface FifoSaleItem {
 	productId?: string | null;
 	lensCatalogItemId?: string | null;
+	supplierTreatmentId?: string | null;
 	itemType: string;
 	quantity: number;
 }
@@ -170,6 +171,22 @@ export async function consumeFifoForSaleItem(
 				.update(lensCatalogItems)
 				.set({ stock: newStock, updatedAt: nowISO() })
 				.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+		}
+	}
+
+	// Snapshot cost for TREATMENT items.
+	// Treatments don't have lots/stock, but they DO have a cost (`supplier_treatments.price`)
+	// which must be captured for COGS / P&L. Without this the line shows up as
+	// "item without cost" in the cash report.
+	if (item.itemType === SaleItemType.TREATMENT && item.supplierTreatmentId) {
+		const [treatment] = await tx
+			.select({ price: supplierTreatments.price })
+			.from(supplierTreatments)
+			.where(eq(supplierTreatments.id, item.supplierTreatmentId));
+
+		if (treatment) {
+			result.snapshotCostUnit = treatment.price;
+			result.snapshotCostTotal = treatment.price * item.quantity;
 		}
 	}
 
