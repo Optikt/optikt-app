@@ -18,12 +18,12 @@
 
 <div class="mb-4 flex flex-col gap-3 sm:mb-8 lg:flex-row lg:items-center lg:justify-between">
 	<div class="flex items-start gap-3">
-		<a
+		<!-- <a
 			href={resolve('/reports')}
 			class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 print:hidden"
 		>
 			<ArrowLeft class="h-5 w-5" />
-		</a>
+		</a> -->
 		<div class="min-w-0">
 			<h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
 			{#if subtitle}

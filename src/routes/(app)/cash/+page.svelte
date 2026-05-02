@@ -98,18 +98,18 @@
 </script>
 
 <svelte:head>
-	<title>Caja & P&L - Optikt</title>
+	<title>Caja y P&L - Optikt</title>
 </svelte:head>
 
 <div class="px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
 	<div class="hidden lg:block">
-		<ReportHeader title="Caja & P&amp;L" onExportCsv={handleExportCsv} onPrint={handlePrint} />
+		<ReportHeader title="Caja y P&amp;L" onExportCsv={handleExportCsv} onPrint={handlePrint} />
 	</div>
 
 	<div class="mb-4 lg:hidden">
 		<div class="mb-3 flex items-start justify-between gap-3">
 			<div class="min-w-0">
-				<h1 class="font-heading text-2xl font-bold tracking-[-0.03em] text-brand-navy">Caja &amp; P&amp;L</h1>
+				<h1 class="font-heading text-2xl font-bold tracking-[-0.03em] text-brand-navy">Caja y P&amp;L</h1>
 			</div>
 			<a
 				href={resolve('/cash/expenses')}
