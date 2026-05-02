@@ -22,6 +22,8 @@ Thumbs.db
 .github/skills/ui-ux-pro-max/scripts/__pycache__
 .github/prompts/**/*.pyc
 .github/skills/**/*.pyc
+.agents/skills/**/*.pyc
+
 
 # Vite
 vite.config.js.timestamp-*
