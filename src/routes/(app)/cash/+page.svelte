@@ -155,8 +155,8 @@
 		</div>
 	</div>
 
-	<div class="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-4">
-		<section class="glass-card h-fit self-start overflow-hidden">
+	<div class="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-stretch lg:gap-4">
+		<section class="glass-card flex h-full flex-col overflow-hidden">
 			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
 				<p class={desktopLabelClass}>Control de período</p>
 				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
@@ -187,7 +187,7 @@
 			</div>
 		</section>
 
-		<aside class="glass-card h-fit self-start overflow-hidden">
+		<aside class="glass-card flex h-full flex-col overflow-hidden">
 			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
 				<p class={desktopLabelClass}>Acción principal</p>
 				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
@@ -197,7 +197,7 @@
 					Mantén caja y salidas operativas dentro del mismo flujo de revisión.
 				</p>
 			</div>
-			<div class="p-5">
+			<div class="flex flex-1 flex-col p-5">
 				<a
 					href={resolve('/cash/expenses')}
 					class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark"
@@ -349,8 +349,8 @@
 	</div>
 	<div class="mb-6 hidden lg:block">
 		<div class="glass-card overflow-hidden">
-			<div class="grid gap-px bg-slate-200 lg:grid-cols-3 xl:grid-cols-7">
-				<div class="bg-white px-4 py-4">
+			<div class="grid items-stretch gap-px bg-slate-200 lg:grid-cols-3 xl:grid-cols-7">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Ingresos realiz.</p>
 					<p class={desktopValueClass}>{formatPrice(report.grossRevenue)}</p>
 					<p class="mt-2 text-xs text-slate-500">
@@ -359,7 +359,7 @@
 							: 's'}
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Otros ingresos</p>
 					<p class={desktopValueClass}>{formatPrice(report.otherIncome)}</p>
 					<p class="mt-2 text-xs text-slate-500">
@@ -368,14 +368,14 @@
 							: `${report.retainedSalesCount} retenido${report.retainedSalesCount === 1 ? '' : 's'}`}
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Cobrado</p>
 					<p class={desktopValueClass}>{formatPrice(report.totalCollected)}</p>
 					<p class="mt-2 text-xs text-slate-500">
 						{report.paymentsCount} pago{report.paymentsCount === 1 ? '' : 's'} registrados
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Costo (COGS)</p>
 					<p class={desktopValueClass}>{formatPrice(report.totalCogs)}</p>
 					{#if report.cogsIncomplete}
@@ -387,7 +387,7 @@
 						<p class="mt-2 text-xs text-slate-500">Costo entregado</p>
 					{/if}
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Egresos op.</p>
 					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-rose-700">
 						{formatPrice(report.totalExpenses)}
@@ -396,14 +396,14 @@
 						{report.expensesCount} registro{report.expensesCount === 1 ? '' : 's'}
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Utilidad bruta</p>
 					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-brand-navy">
 						{formatPrice(report.grossProfit)}
 					</p>
 					<p class="mt-2 text-xs text-slate-500">Margen {formatPct(report.grossMarginPct)}</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Utilidad neta</p>
 					<p
 						class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums {report.netProfit >= 0
@@ -489,8 +489,8 @@
 		</div>
 	</div>
 
-	<div class="mb-8 hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
-		<section class="glass-card h-fit self-start overflow-hidden">
+	<div class="mb-8 hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
+		<section class="glass-card flex h-full flex-col overflow-hidden">
 			<div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4">
 				<div>
 					<p class={desktopLabelClass}>Pipeline</p>
@@ -510,28 +510,28 @@
 				{/if}
 			</div>
 
-			<div class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-5">
-				<div class="bg-white px-4 py-4">
+			<div class="grid items-stretch gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-5">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Ventas abiertas</p>
 					<p class={desktopValueClass}>{pipeline.openSalesCount}</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Facturado</p>
 					<p class={desktopValueClass}>{formatPrice(pipeline.totalBilled)}</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Anticipos</p>
 					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-brand-blue">
 						{formatPrice(pipeline.totalCollected)}
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Por cobrar</p>
 					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-rose-700">
 						{formatPrice(pipeline.totalPending)}
 					</p>
 				</div>
-				<div class="bg-white px-4 py-4">
+				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Utilidad esperada</p>
 					<p
 						class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums {pipeline.expectedGrossProfit >= 0
@@ -545,7 +545,7 @@
 			</div>
 		</section>
 
-		<aside class="glass-card h-fit self-start overflow-hidden">
+		<aside class="glass-card flex h-full flex-col overflow-hidden">
 			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
 				<p class={desktopLabelClass}>Lectura rápida</p>
 				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
@@ -553,7 +553,7 @@
 				</h2>
 			</div>
 
-			<div class="space-y-4 px-5 py-4">
+			<div class="flex flex-1 flex-col gap-4 px-5 py-4">
 				<div class="space-y-3 text-sm">
 					<div class="flex items-center justify-between gap-3">
 						<span class="text-slate-600">Margen bruto</span>
