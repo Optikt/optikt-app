@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
-	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
+	import { ReportHeader } from '$lib/components/reports';
 	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
 	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
 	import {
@@ -17,14 +17,8 @@
 	} from '$lib/server/db/queries/cash';
 	import {
 		ArrowRight,
-		TrendingUp,
-		Wallet,
-		Receipt,
-		TrendingDown,
 		AlertTriangle,
-		ListChecks,
-		Package,
-		PlusCircle
+		Package
 	} from '@lucide/svelte';
 
 	let { data } = $props();
@@ -95,6 +89,11 @@
 	const mobileInsetClass = 'rounded-xl bg-surface-container-low px-3 py-3';
 	const mobileInputClass =
 		'mt-1 w-full rounded-xl border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+	const desktopInputClass =
+		'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10';
+	const desktopLabelClass = 'text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase';
+	const desktopValueClass =
+		'mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-brand-navy';
 </script>
 
 <svelte:head>
@@ -103,7 +102,12 @@
 
 <div class="px-3 py-3 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
 	<div class="hidden lg:block">
-		<ReportHeader title="Caja y P&amp;L" onExportCsv={handleExportCsv} onPrint={handlePrint} />
+		<ReportHeader
+			title="Caja y P&amp;L"
+			subtitle="Caja, utilidad y pipeline operativo en una sola vista."
+			onExportCsv={handleExportCsv}
+			onPrint={handlePrint}
+		/>
 	</div>
 
 	<div class="mb-4 lg:hidden">
@@ -151,14 +155,77 @@
 		</div>
 	</div>
 
-	<div class="mb-4 hidden lg:flex lg:flex-row lg:items-start lg:justify-between lg:gap-3">
-		<DateRangeFilter bind:dateFrom bind:dateTo {loading} onApply={applyFilter} />
-		<a
-			href={resolve('/cash/expenses')}
-			class="inline-flex w-full items-center justify-center rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue/90 sm:w-auto lg:shrink-0"
-		>
-			Gestionar egresos
-		</a>
+	<div class="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-4">
+		<section class="glass-card h-fit self-start overflow-hidden">
+			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+				<p class={desktopLabelClass}>Control de período</p>
+				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
+					Cruce de caja y utilidad
+				</h2>
+				<p class="mt-1 text-sm text-slate-500">
+					Define el corte para ingresos realizados, cobrado en caja, costos y egresos.
+				</p>
+			</div>
+
+			<div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
+				<label class="min-w-0">
+					<span class={desktopLabelClass}>Desde</span>
+					<input type="date" bind:value={dateFrom} class={desktopInputClass} />
+				</label>
+				<label class="min-w-0">
+					<span class={desktopLabelClass}>Hasta</span>
+					<input type="date" bind:value={dateTo} class={desktopInputClass} />
+				</label>
+				<button
+					type="button"
+					onclick={applyFilter}
+					disabled={loading}
+					class="inline-flex h-fit items-center justify-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60 xl:mb-[1px]"
+				>
+					{loading ? 'Cargando...' : 'Consultar'}
+				</button>
+			</div>
+		</section>
+
+		<aside class="glass-card h-fit self-start overflow-hidden">
+			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+				<p class={desktopLabelClass}>Acción principal</p>
+				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
+					Gestionar egresos
+				</h2>
+				<p class="mt-1 text-sm text-slate-500">
+					Mantén caja y salidas operativas dentro del mismo flujo de revisión.
+				</p>
+			</div>
+			<div class="p-5">
+				<a
+					href={resolve('/cash/expenses')}
+					class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark"
+				>
+					Gestionar egresos
+					<ArrowRight size={16} />
+				</a>
+
+				<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+					<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+						<p class={desktopLabelClass}>Cobrado en caja</p>
+						<p class="mt-2 font-mono text-xl font-semibold tabular-nums text-brand-navy">
+							{formatPrice(report.totalCollected)}
+						</p>
+					</div>
+					<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+						<p class={desktopLabelClass}>Utilidad neta</p>
+						<p
+							class="mt-2 font-mono text-xl font-semibold tabular-nums {report.netProfit >= 0
+								? 'text-emerald-700'
+								: 'text-rose-700'}"
+						>
+							{formatPrice(report.netProfit)}
+						</p>
+					</div>
+				</div>
+			</div>
+		</aside>
 	</div>
 
 	<!-- Mobile compact summary -->
@@ -280,144 +347,74 @@
 			</div>
 		</div>
 	</div>
-	<!-- Top KPIs -->
-	<div class="mb-6 hidden gap-4 lg:grid lg:grid-cols-2 xl:grid-cols-5">
-		<div class="glass-card p-4 sm:p-5">
-			<div class="mb-2 flex items-center gap-2 text-emerald-600">
-				<TrendingUp size={18} />
-				<p class="text-xs font-semibold tracking-wider uppercase">Ingresos realizados</p>
+	<div class="mb-6 hidden lg:block">
+		<div class="glass-card overflow-hidden">
+			<div class="grid gap-px bg-slate-200 lg:grid-cols-3 xl:grid-cols-7">
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Ingresos realiz.</p>
+					<p class={desktopValueClass}>{formatPrice(report.grossRevenue)}</p>
+					<p class="mt-2 text-xs text-slate-500">
+						{report.salesCount} venta{report.salesCount === 1 ? '' : 's'} entregada{report.salesCount === 1
+							? ''
+							: 's'}
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Otros ingresos</p>
+					<p class={desktopValueClass}>{formatPrice(report.otherIncome)}</p>
+					<p class="mt-2 text-xs text-slate-500">
+						{report.retainedSalesCount === 0
+							? 'Sin retenciones'
+							: `${report.retainedSalesCount} retenido${report.retainedSalesCount === 1 ? '' : 's'}`}
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Cobrado</p>
+					<p class={desktopValueClass}>{formatPrice(report.totalCollected)}</p>
+					<p class="mt-2 text-xs text-slate-500">
+						{report.paymentsCount} pago{report.paymentsCount === 1 ? '' : 's'} registrados
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Costo (COGS)</p>
+					<p class={desktopValueClass}>{formatPrice(report.totalCogs)}</p>
+					{#if report.cogsIncomplete}
+						<p class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-amber-700">
+							<AlertTriangle size={12} />
+							Costo pendiente
+						</p>
+					{:else}
+						<p class="mt-2 text-xs text-slate-500">Costo entregado</p>
+					{/if}
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Egresos op.</p>
+					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-rose-700">
+						{formatPrice(report.totalExpenses)}
+					</p>
+					<p class="mt-2 text-xs text-slate-500">
+						{report.expensesCount} registro{report.expensesCount === 1 ? '' : 's'}
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Utilidad bruta</p>
+					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-brand-navy">
+						{formatPrice(report.grossProfit)}
+					</p>
+					<p class="mt-2 text-xs text-slate-500">Margen {formatPct(report.grossMarginPct)}</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Utilidad neta</p>
+					<p
+						class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums {report.netProfit >= 0
+							? 'text-emerald-700'
+							: 'text-rose-700'}"
+					>
+						{formatPrice(report.netProfit)}
+					</p>
+					<p class="mt-2 text-xs text-slate-500">Bruta − Egresos</p>
+				</div>
 			</div>
-			<p class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">
-				{formatPrice(report.grossRevenue)}
-			</p>
-			<p class="mt-1 text-xs text-slate-400">
-				{report.salesCount} venta{report.salesCount === 1 ? '' : 's'} entregada{report.salesCount ===
-				1
-					? ''
-					: 's'}
-			</p>
-		</div>
-
-		<div class="glass-card p-4 sm:p-5">
-			<div class="mb-2 flex items-center gap-2 text-teal-600">
-				<PlusCircle size={18} />
-				<p class="text-xs font-semibold tracking-wider uppercase">Otros ingresos</p>
-			</div>
-			<p class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">
-				{formatPrice(report.otherIncome)}
-			</p>
-			<p class="mt-1 text-xs text-slate-400">
-				{#if report.retainedSalesCount === 0}
-					Sin retenciones
-				{:else}
-					{report.retainedSalesCount} anticipo{report.retainedSalesCount === 1 ? '' : 's'} retenido{report.retainedSalesCount ===
-					1
-						? ''
-						: 's'}
-				{/if}
-			</p>
-		</div>
-
-		<div class="glass-card p-4 sm:p-5">
-			<div class="mb-2 flex items-center gap-2 text-blue-600">
-				<Wallet size={18} />
-				<p class="text-xs font-semibold tracking-wider uppercase">Cobrado (caja)</p>
-			</div>
-			<p class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">
-				{formatPrice(report.totalCollected)}
-			</p>
-			<p class="mt-1 text-xs text-slate-400">
-				{report.paymentsCount} pago{report.paymentsCount === 1 ? '' : 's'}
-			</p>
-		</div>
-
-		<div class="glass-card p-4 sm:p-5 {report.cogsIncomplete ? 'border-amber-200' : ''}">
-			<div class="mb-2 flex items-center gap-2 text-violet-600">
-				<TrendingDown size={18} />
-				<p class="text-xs font-semibold tracking-wider uppercase">Costo (COGS)</p>
-			</div>
-			<p class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">
-				{formatPrice(report.totalCogs)}
-			</p>
-			{#if report.cogsIncomplete}
-				<p class="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-600">
-					<AlertTriangle size={12} />
-					Algunos ítems sin costo registrado
-				</p>
-			{/if}
-		</div>
-
-		<div class="glass-card p-4 sm:p-5">
-			<div class="mb-2 flex items-center gap-2 text-rose-600">
-				<Receipt size={18} />
-				<p class="text-xs font-semibold tracking-wider uppercase">Egresos</p>
-			</div>
-			<p class="font-heading text-2xl font-bold text-brand-navy sm:text-3xl">
-				{formatPrice(report.totalExpenses)}
-			</p>
-			<p class="mt-1 text-xs text-slate-400">
-				{report.expensesCount} egreso{report.expensesCount === 1 ? '' : 's'}
-			</p>
-		</div>
-	</div>
-
-	<!-- P&L summary -->
-	<div class="mb-8 hidden gap-4 lg:grid xl:grid-cols-3">
-		<div
-			class="glass-card flex items-center justify-between p-5 {report.grossProfit >= 0
-				? 'bg-emerald-50/40'
-				: 'bg-rose-50/40'}"
-		>
-			<div>
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Utilidad Bruta</p>
-				<p class="font-heading mt-1 text-2xl font-bold text-brand-navy">
-					{formatPrice(report.grossProfit)}
-				</p>
-				<p class="mt-1 text-xs text-slate-500">
-					= Ingresos{report.otherIncome > 0 ? ' + Otros' : ''} − Costo · Margen: {formatPct(
-						report.grossMarginPct
-					)}
-				</p>
-			</div>
-		</div>
-
-		<div
-			class="glass-card flex items-center justify-between p-5 {report.netProfit >= 0
-				? 'bg-emerald-50/40'
-				: 'bg-rose-50/40'}"
-		>
-			<div>
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Utilidad Neta</p>
-				<p
-					class="font-heading mt-1 text-2xl font-bold {report.netProfit >= 0
-						? 'text-emerald-700'
-						: 'text-rose-700'}"
-				>
-					{formatPrice(report.netProfit)}
-				</p>
-				<p class="mt-1 text-xs text-slate-500">= Bruta − Egresos</p>
-			</div>
-		</div>
-
-		<div class="glass-card p-5">
-			<p
-				class="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 uppercase"
-			>
-				<ListChecks size={14} />
-				Egresos por categoría
-			</p>
-			{#if report.expensesByCategory.length === 0}
-				<p class="text-sm text-slate-400">Sin egresos en el período</p>
-			{:else}
-				<ul class="space-y-1.5 text-sm">
-					{#each report.expensesByCategory as row (row.category)}
-						<li class="flex items-center justify-between">
-							<span class="text-slate-600">{EXPENSE_CATEGORY_LABELS[row.category]}</span>
-							<span class="font-mono font-semibold text-slate-800">{formatPrice(row.total)}</span>
-						</li>
-					{/each}
-				</ul>
-			{/if}
 		</div>
 	</div>
 
@@ -492,79 +489,123 @@
 		</div>
 	</div>
 
-	<div class="glass-card mb-8 hidden p-4 sm:p-5 lg:block">
-		<div class="mb-4 flex items-start justify-between gap-4">
-			<div>
-				<h2 class="flex items-center gap-2 text-base font-semibold text-slate-800">
-					<Package size={18} class="text-amber-600" />
-					Pipeline · ventas por entregar
-				</h2>
-				<p class="mt-0.5 text-xs text-slate-500">
-					Ventas facturadas pero aún en producción / sin pagar 100%. No cuentan como ingreso hasta
-					completarse.
-				</p>
+	<div class="mb-8 hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-4">
+		<section class="glass-card h-fit self-start overflow-hidden">
+			<div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+				<div>
+					<p class={desktopLabelClass}>Pipeline</p>
+					<h2 class="mt-1 flex items-center gap-2 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
+						<Package size={18} class="text-brand-gold-dark" />
+						Ventas por entregar
+					</h2>
+					<p class="mt-1 text-sm text-slate-500">
+						Facturadas sin completarse. No cuentan como ingreso hasta entregarse.
+					</p>
+				</div>
+				{#if pipeline.cogsIncomplete}
+					<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+						<AlertTriangle size={12} />
+						Costo pendiente
+					</span>
+				{/if}
 			</div>
-			{#if pipeline.cogsIncomplete}
-				<span
-					class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
-				>
-					<AlertTriangle size={12} />
-					Algunos ítems sin costo
-				</span>
-			{/if}
-		</div>
 
-		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-			<div class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3">
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Ventas abiertas</p>
-				<p class="font-heading mt-1 text-2xl font-bold text-brand-navy">
-					{pipeline.openSalesCount}
-				</p>
+			<div class="grid gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-5">
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Ventas abiertas</p>
+					<p class={desktopValueClass}>{pipeline.openSalesCount}</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Facturado</p>
+					<p class={desktopValueClass}>{formatPrice(pipeline.totalBilled)}</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Anticipos</p>
+					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-brand-blue">
+						{formatPrice(pipeline.totalCollected)}
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Por cobrar</p>
+					<p class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums text-rose-700">
+						{formatPrice(pipeline.totalPending)}
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Utilidad esperada</p>
+					<p
+						class="mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums {pipeline.expectedGrossProfit >= 0
+							? 'text-emerald-700'
+							: 'text-rose-700'}"
+					>
+						{formatPrice(pipeline.expectedGrossProfit)}
+					</p>
+					<p class="mt-2 text-xs text-slate-500">Costo proy. {formatPrice(pipeline.expectedCogs)}</p>
+				</div>
 			</div>
-			<div class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3">
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Facturado</p>
-				<p class="font-heading mt-1 text-2xl font-bold text-brand-navy">
-					{formatPrice(pipeline.totalBilled)}
-				</p>
+		</section>
+
+		<aside class="glass-card h-fit self-start overflow-hidden">
+			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+				<p class={desktopLabelClass}>Lectura rápida</p>
+				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
+					Contexto operativo
+				</h2>
 			</div>
-			<div class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3">
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-					Anticipos cobrados
-				</p>
-				<p class="font-heading mt-1 text-2xl font-bold text-blue-700">
-					{formatPrice(pipeline.totalCollected)}
-				</p>
+
+			<div class="space-y-4 px-5 py-4">
+				<div class="space-y-3 text-sm">
+					<div class="flex items-center justify-between gap-3">
+						<span class="text-slate-600">Margen bruto</span>
+						<span class="font-mono font-semibold tabular-nums text-brand-navy">{formatPct(report.grossMarginPct)}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3">
+						<span class="text-slate-600">Cobrado vs realizado</span>
+						<span class="font-mono font-semibold tabular-nums text-brand-navy">{formatPrice(report.totalCollected)}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3">
+						<span class="text-slate-600">Retenido</span>
+						<span class="font-mono font-semibold tabular-nums text-brand-navy">{formatPrice(report.otherIncome)}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3">
+						<span class="text-slate-600">Pagos registrados</span>
+						<span class="font-mono font-semibold tabular-nums text-brand-navy">{report.paymentsCount}</span>
+					</div>
+				</div>
+
+				<div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+					<p class={desktopLabelClass}>Egresos por categoría</p>
+					{#if report.expensesByCategory.length === 0}
+						<p class="mt-2 text-sm text-slate-500">Sin egresos en el período</p>
+					{:else}
+						<ul class="mt-3 space-y-2 text-sm">
+							{#each report.expensesByCategory as row (row.category)}
+								<li class="flex items-center justify-between gap-3">
+									<span class="truncate text-slate-600">{EXPENSE_CATEGORY_LABELS[row.category]}</span>
+									<span class="font-mono font-semibold tabular-nums text-brand-navy">{formatPrice(row.total)}</span>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 			</div>
-			<div class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3">
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">Por cobrar</p>
-				<p class="font-heading mt-1 text-2xl font-bold text-rose-700">
-					{formatPrice(pipeline.totalPending)}
-				</p>
-			</div>
-			<div
-				class="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3 sm:col-span-2 xl:col-span-1"
-			>
-				<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
-					Utilidad esperada
-				</p>
-				<p
-					class="font-heading mt-1 text-2xl font-bold {pipeline.expectedGrossProfit >= 0
-						? 'text-emerald-700'
-						: 'text-rose-700'}"
-				>
-					{formatPrice(pipeline.expectedGrossProfit)}
-				</p>
-				<p class="mt-0.5 text-xs text-slate-400">
-					Costo proy.: {formatPrice(pipeline.expectedCogs)}
-				</p>
-			</div>
-		</div>
+		</aside>
 	</div>
 
 	<!-- Daily breakdown -->
 	<div class="glass-card overflow-hidden">
-		<div class="border-b border-slate-200 px-3 py-2.5 lg:px-5 lg:py-3">
-			<h2 class="text-base font-semibold tracking-[-0.02em] text-brand-navy">Detalle diario</h2>
+		<div class="border-b border-slate-200 px-3 py-2.5 lg:px-5 lg:py-4">
+			<div class="flex items-start justify-between gap-4">
+				<div>
+					<h2 class="text-base font-semibold tracking-[-0.02em] text-brand-navy">Detalle diario</h2>
+					<p class="mt-0.5 hidden text-xs text-slate-500 lg:block">
+						Ledger diario con ingresos realizados, cobrado en caja, costos y utilidad.
+					</p>
+				</div>
+				<span class="hidden items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-[0.12em] text-brand-navy uppercase lg:inline-flex">
+					{daily.length} corte{daily.length === 1 ? '' : 's'}
+				</span>
+			</div>
 		</div>
 		<div class="divide-y divide-surface-container-high lg:hidden">
 			{#each daily as row (row.date)}
@@ -640,8 +681,8 @@
 			{/each}
 		</div>
 		<div class="hidden overflow-x-auto lg:block">
-			<table class="w-full text-left text-sm">
-				<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-600 uppercase">
+			<table class="w-full min-w-[72rem] text-left text-sm">
+				<thead class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase">
 					<tr>
 						<th class="px-4 py-3">Fecha</th>
 						<th class="px-4 py-3 text-right">Ventas</th>
@@ -654,30 +695,30 @@
 						<th class="px-4 py-3 text-right">Util. Neta</th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-slate-100">
+				<tbody class="divide-y divide-slate-200/80">
 					{#each daily as row (row.date)}
-						<tr class="hover:bg-slate-50">
+						<tr class="odd:bg-white even:bg-slate-50/40 hover:bg-slate-50">
 							<td class="px-4 py-3">
 								{formatDate(row.date, { dateStyle: 'medium' })}
 							</td>
-							<td class="px-4 py-3 text-right font-mono">{row.salesCount}</td>
-							<td class="px-4 py-3 text-right font-mono">{formatPrice(row.revenue)}</td>
+							<td class="px-4 py-3 text-right font-mono tabular-nums">{row.salesCount}</td>
+							<td class="px-4 py-3 text-right font-mono tabular-nums">{formatPrice(row.revenue)}</td>
 							<td
-								class="px-4 py-3 text-right font-mono {row.otherIncome > 0
+								class="px-4 py-3 text-right font-mono tabular-nums {row.otherIncome > 0
 									? 'text-teal-700'
 									: 'text-slate-300'}"
 							>
 								{formatPrice(row.otherIncome)}
 							</td>
-							<td class="px-4 py-3 text-right font-mono">{formatPrice(row.collected)}</td>
-							<td class="px-4 py-3 text-right font-mono text-violet-700">{formatPrice(row.cogs)}</td
+							<td class="px-4 py-3 text-right font-mono tabular-nums">{formatPrice(row.collected)}</td>
+							<td class="px-4 py-3 text-right font-mono tabular-nums text-violet-700">{formatPrice(row.cogs)}</td
 							>
-							<td class="px-4 py-3 text-right font-mono">{formatPrice(row.grossProfit)}</td>
-							<td class="px-4 py-3 text-right font-mono text-rose-700"
+							<td class="px-4 py-3 text-right font-mono tabular-nums">{formatPrice(row.grossProfit)}</td>
+							<td class="px-4 py-3 text-right font-mono tabular-nums text-rose-700"
 								>{formatPrice(row.expenses)}</td
 							>
 							<td
-								class="px-4 py-3 text-right font-mono font-semibold {row.netProfit >= 0
+								class="px-4 py-3 text-right font-mono font-semibold tabular-nums {row.netProfit >= 0
 									? 'text-emerald-700'
 									: 'text-rose-700'}"
 							>

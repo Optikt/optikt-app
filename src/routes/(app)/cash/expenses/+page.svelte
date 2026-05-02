@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Plus, Ban, Download, Printer, X } from '@lucide/svelte';
-	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
+	import { ReportHeader } from '$lib/components/reports';
 	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
 	import {
 		ALL_EXPENSE_CATEGORIES,
@@ -182,12 +182,19 @@
 
 	const activeCount = $derived(expenses.filter((e) => !e.voidedAt).length);
 	const total = $derived(expenses.filter((e) => !e.voidedAt).reduce((s, e) => s + e.amountUsd, 0));
+	const selectedCategoryLabel = $derived(
+		categoryFilter ? EXPENSE_CATEGORY_LABELS[categoryFilter] : 'Todas las categorías'
+	);
 	const mobileLabelClass = 'text-[10px] font-semibold tracking-[0.18em] text-outline uppercase';
 	const mobileMetaClass = 'mt-1 text-[11px] text-on-surface-variant';
 	const mobileSurfaceClass = 'rounded-[1.25rem] bg-surface-container-lowest shadow-sm';
 	const mobileInsetClass = 'rounded-xl bg-surface-container-low px-3 py-3';
 	const fieldInputClass =
 		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+	const desktopFieldClass =
+		'mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/10';
+	const desktopLabelClass = 'text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase';
+	const desktopValueClass = 'mt-2 font-mono text-[1.6rem] font-semibold leading-none tabular-nums';
 </script>
 
 <svelte:head>
@@ -280,36 +287,91 @@
 		</div>
 	</div>
 
-	<div class="mb-4 hidden flex-wrap items-end gap-4 lg:flex">
-		<DateRangeFilter bind:dateFrom bind:dateTo {loading} onApply={applyFilter} />
+	<div class="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-4">
+		<section class="glass-card overflow-hidden">
+			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+				<p class={desktopLabelClass}>Control de consulta</p>
+				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
+					Filtros y auditoría
+				</h2>
+				<p class="mt-1 text-sm text-slate-500">
+					Refina por fecha, categoría y estado sin salir del ledger de egresos.
+				</p>
+			</div>
 
-		<div class="flex flex-col gap-1">
-			<label for="cat" class="text-sm font-medium text-slate-700">Categoría</label>
-			<select
-				id="cat"
-				bind:value={categoryFilter}
-				class="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-			>
-				<option value="">Todas</option>
-				{#each ALL_EXPENSE_CATEGORIES as c (c)}
-					<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
-				{/each}
-			</select>
-		</div>
+			<div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto] xl:items-end">
+				<label class="min-w-0">
+					<span class={desktopLabelClass}>Desde</span>
+					<input type="date" bind:value={dateFrom} class={desktopFieldClass} />
+				</label>
+				<label class="min-w-0">
+					<span class={desktopLabelClass}>Hasta</span>
+					<input type="date" bind:value={dateTo} class={desktopFieldClass} />
+				</label>
+				<label class="min-w-0">
+					<span class={desktopLabelClass}>Categoría</span>
+					<select bind:value={categoryFilter} class={desktopFieldClass}>
+						<option value="">Todas</option>
+						{#each ALL_EXPENSE_CATEGORIES as c (c)}
+							<option value={c}>{EXPENSE_CATEGORY_LABELS[c]}</option>
+						{/each}
+					</select>
+				</label>
+				<button
+					type="button"
+					onclick={applyFilter}
+					disabled={loading}
+					class="inline-flex h-fit items-center justify-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-60 xl:mb-[1px]"
+				>
+					{loading ? 'Cargando...' : 'Consultar'}
+				</button>
+			</div>
 
-		<label class="flex items-center gap-2 text-sm text-slate-700">
-			<input type="checkbox" bind:checked={includeVoided} class="rounded" />
-			Incluir anulados
-		</label>
+			<div class="border-t border-slate-200 px-5 py-4">
+				<label class="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+					<div>
+						<p class={desktopLabelClass}>Anulados</p>
+						<p class="mt-1 text-sm text-slate-500">Incluye egresos anulados en el listado y la auditoría visual.</p>
+					</div>
+					<input
+						type="checkbox"
+						bind:checked={includeVoided}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+					/>
+				</label>
+			</div>
+		</section>
 
-		<button
-			type="button"
-			onclick={openCreate}
-			class="ml-auto inline-flex items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-blue/90"
-		>
-			<Plus size={16} />
-			Nuevo egreso
-		</button>
+		<aside class="glass-card overflow-hidden">
+			<div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+				<p class={desktopLabelClass}>Acción principal</p>
+				<h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-brand-navy">
+					Registrar nuevo egreso
+				</h2>
+				<p class="mt-1 text-sm text-slate-500">
+					Carga monto, moneda, referencia y tasa con un solo formulario.
+				</p>
+			</div>
+
+			<div class="p-5">
+				<button
+					type="button"
+					onclick={openCreate}
+					class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-semibold text-brand-navy transition hover:bg-brand-gold-dark"
+				>
+					<Plus size={16} />
+					Nuevo egreso
+				</button>
+
+				<div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-4">
+					<p class={desktopLabelClass}>Filtro activo</p>
+					<p class="mt-2 text-base font-semibold text-brand-navy">{selectedCategoryLabel}</p>
+					<p class="mt-1 text-xs text-slate-500">
+						{includeVoided ? 'Incluye anulados' : 'Solo activos'} · {dateFrom} a {dateTo}
+					</p>
+				</div>
+			</div>
+		</aside>
 	</div>
 
 	<!-- Summary -->
@@ -326,14 +388,30 @@
 		</div>
 	</div>
 
-	<div class="mb-6 hidden gap-4 lg:grid lg:grid-cols-3">
-		<div class="glass-card p-4">
-			<p class="text-sm text-slate-500">Total egresos (USD)</p>
-			<p class="text-2xl font-bold text-rose-600">{formatPrice(total)}</p>
-		</div>
-		<div class="glass-card p-4">
-			<p class="text-sm text-slate-500">Cantidad</p>
-			<p class="text-2xl font-bold text-slate-900">{activeCount}</p>
+	<div class="mb-6 hidden lg:block">
+		<div class="glass-card overflow-hidden">
+			<div class="grid gap-px bg-slate-200 lg:grid-cols-[15rem_13rem_minmax(0,1fr)]">
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Total activo USD</p>
+					<p class={`${desktopValueClass} text-rose-700`}>{formatPrice(total)}</p>
+					<p class="mt-2 text-xs text-slate-500">Solo egresos no anulados</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Cantidad activa</p>
+					<p class={`${desktopValueClass} text-brand-navy`}>{activeCount}</p>
+					<p class="mt-2 text-xs text-slate-500">
+						{includeVoided ? `${expenses.length} visibles` : 'Vista limpia de activos'}
+					</p>
+				</div>
+				<div class="bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Vista actual</p>
+					<p class="mt-2 text-base font-semibold text-brand-navy">{selectedCategoryLabel}</p>
+					<p class="mt-1 text-sm text-slate-500">
+						{includeVoided ? 'Incluye anulados' : 'Solo activos'} y equivalentes convertidos a USD.
+					</p>
+					<p class="mt-2 font-mono text-xs tabular-nums text-slate-500">{dateFrom} → {dateTo}</p>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -424,9 +502,20 @@
 
 	<!-- Table -->
 	<div class="glass-card hidden overflow-hidden lg:block">
+		<div class="flex items-start justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-5">
+			<div>
+				<h2 class="text-sm font-semibold tracking-[-0.01em] text-brand-navy">Listado detallado</h2>
+				<p class="mt-0.5 text-xs text-slate-500">
+					Ledger operativo con montos originales, tasa aplicada, estado y trazabilidad por usuario.
+				</p>
+			</div>
+			<span class="inline-flex items-center rounded-full bg-surface-container-low px-3 py-1 text-xs font-semibold tracking-[0.12em] text-brand-navy uppercase">
+				{expenses.length} registro{expenses.length === 1 ? '' : 's'}
+			</span>
+		</div>
 		<div class="overflow-x-auto">
-			<table class="w-full text-left text-sm">
-				<thead class="border-b border-slate-200 bg-slate-50 text-xs text-slate-600 uppercase">
+			<table class="w-full min-w-[82rem] text-left text-sm">
+				<thead class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase">
 					<tr>
 						<th class="px-4 py-3">Fecha</th>
 						<th class="px-4 py-3">Categoría</th>
@@ -434,38 +523,47 @@
 						<th class="px-4 py-3 text-right">Monto</th>
 						<th class="px-4 py-3 text-right">USD</th>
 						<th class="px-4 py-3">Registró</th>
+						<th class="px-4 py-3">Referencia</th>
+						<th class="px-4 py-3">Estado</th>
 						<th class="px-4 py-3"></th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-slate-100">
+				<tbody class="divide-y divide-slate-200/80">
 					{#each expenses as row (row.id)}
-						<tr class="hover:bg-slate-50 {row.voidedAt ? 'opacity-50' : ''}">
+						<tr class="odd:bg-white even:bg-slate-50/40 hover:bg-slate-50 {row.voidedAt ? 'opacity-65' : ''}">
 							<td class="px-4 py-3">
 								{formatDate(row.expenseDate, { dateStyle: 'medium' })}
 							</td>
 							<td class="px-4 py-3">{EXPENSE_CATEGORY_LABELS[row.category]}</td>
 							<td class="px-4 py-3">
-								<div>{row.description}</div>
-								{#if row.reference}
-									<div class="text-xs text-slate-400">Ref: {row.reference}</div>
-								{/if}
-								{#if row.voidedAt}
-									<div class="text-xs font-semibold text-rose-600">
-										ANULADO — {row.voidReason}
-									</div>
-								{/if}
+								<div class={row.voidedAt ? 'line-through decoration-rose-300' : ''}>{row.description}</div>
 							</td>
-							<td class="px-4 py-3 text-right font-mono">
+							<td class="px-4 py-3 text-right font-mono tabular-nums">
 								{row.amount.toFixed(2)}
-								{row.currency}
+								<span class="text-slate-500">{row.currency}</span>
 								{#if !isUsdLike(row.currency) && row.exchangeRate}
 									<div class="text-xs text-slate-400">@ {row.exchangeRate.toFixed(2)}</div>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-right font-mono font-semibold text-rose-700">
+							<td class="px-4 py-3 text-right font-mono font-semibold tabular-nums text-rose-700">
 								{formatPrice(row.amountUsd)}
 							</td>
 							<td class="px-4 py-3 text-xs text-slate-500">{row.registeredByName ?? '-'}</td>
+							<td class="px-4 py-3 text-xs text-slate-500">{row.reference ?? '—'}</td>
+							<td class="px-4 py-3 align-top">
+								{#if row.voidedAt}
+									<div class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-rose-700 uppercase">
+										Anulado
+									</div>
+									{#if row.voidReason}
+										<div class="mt-1 max-w-[12rem] text-xs text-rose-600">{row.voidReason}</div>
+									{/if}
+								{:else}
+									<div class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-emerald-700 uppercase">
+										Activo
+									</div>
+								{/if}
+							</td>
 							<td class="px-4 py-3 text-right">
 								{#if !row.voidedAt}
 									<button
@@ -482,7 +580,7 @@
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="7" class="px-4 py-8 text-center text-slate-400">
+							<td colspan="9" class="px-4 py-8 text-center text-slate-400">
 								Sin egresos en el período seleccionado
 							</td>
 						</tr>

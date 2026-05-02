@@ -16,7 +16,7 @@
 	} = $props();
 </script>
 
-<div class="mb-4 flex flex-col gap-3 sm:mb-8 lg:flex-row lg:items-center lg:justify-between">
+<div class="mb-2 flex flex-col gap-3 sm:mb-8 lg:flex-row lg:items-center lg:justify-between">
 	<div class="flex items-start gap-3">
 		<!-- <a
 			href={resolve('/reports')}
