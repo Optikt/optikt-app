@@ -35,7 +35,11 @@ export const getSessions = query(
 	GetSessionsSchema,
 	async (data): Promise<InventoryCountSessionSummary[]> => {
 		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
-		return getInventoryCountSessions(data.limit);
+		return getInventoryCountSessions({
+			limit: data.limit,
+			scopeType: data.scopeType,
+			openedOn: data.openedOn
+		});
 	}
 );
 

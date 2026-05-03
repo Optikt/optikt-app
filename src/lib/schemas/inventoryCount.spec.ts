@@ -70,6 +70,16 @@ describe('GetSessionsSchema', () => {
 			expect(result.data.limit).toBe(20);
 		}
 	});
+
+	it('accepts scope and exact-day filters', () => {
+		const result = GetSessionsSchema.safeParse({
+			limit: 50,
+			scopeType: 'LENS',
+			openedOn: '2026-05-03'
+		});
+
+		expect(result.success).toBe(true);
+	});
 });
 
 describe('GetSessionLinesSchema', () => {

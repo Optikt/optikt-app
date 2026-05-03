@@ -6,7 +6,10 @@ import { getActiveSession, getSessions } from '$lib/server/db/queries/inventoryC
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
-	const [activeSession, sessions] = await Promise.all([getActiveSession(), getSessions(50)]);
+	const [activeSession, sessions] = await Promise.all([
+		getActiveSession(),
+		getSessions({ limit: 50 })
+	]);
 
 	return {
 		activeSession,

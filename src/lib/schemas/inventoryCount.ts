@@ -64,7 +64,9 @@ export const SessionIdSchema = z.object({
 });
 
 export const GetSessionsSchema = z.object({
-	limit: CoercedInteger.min(1).max(100).optional().default(20)
+	limit: CoercedInteger.min(1).max(100).optional().default(20),
+	scopeType: z.enum(INVENTORY_COUNT_SCOPE_TYPES).optional(),
+	openedOn: z.iso.date('Fecha inválida').optional()
 });
 
 export const GetSessionLinesSchema = z.object({

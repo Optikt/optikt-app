@@ -1,4 +1,16 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	gte,
+	inArray,
+	isNotNull,
+	isNull,
+	lte,
+	sql,
+	type SQL
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -13,7 +25,7 @@ import {
 	type InventoryCountLine,
 	type InventoryCountSession
 } from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import { UserRole } from '$lib/shared/enums';
 
 export const INVENTORY_COUNT_SESSION_STATUSES = ['OPEN', 'APPLIED', 'CANCELLED'] as const;
@@ -56,6 +68,12 @@ export interface InventoryCountSnapshotInput {
 	scopeValue?: string | null;
 	notes?: string | null;
 	openedById: string;
+}
+
+export interface GetInventoryCountSessionsOptions {
+	limit?: number;
+	scopeType?: InventoryCountScopeType;
+	openedOn?: string;
 }
 
 export interface UpsertCountLineInput {
@@ -346,14 +364,36 @@ export async function getActiveSession(
 }
 
 export async function getSessions(
-	limit = 20,
+	options: GetInventoryCountSessionsOptions = {},
 	executor: DbOrTx = db
 ): Promise<InventoryCountSessionSummary[]> {
-	const sessions = await executor
-		.select()
-		.from(inventoryCountSessions)
-		.orderBy(desc(inventoryCountSessions.openedAt))
-		.limit(limit);
+	const { limit = 20, scopeType, openedOn } = options;
+	const conditions: SQL[] = [];
+
+	if (scopeType) {
+		conditions.push(eq(inventoryCountSessions.scopeType, scopeType));
+	}
+
+	if (openedOn) {
+		const openedOnDate = fromISODate(openedOn);
+		if (openedOnDate) {
+			conditions.push(gte(inventoryCountSessions.openedAt, toUTCString(openedOnDate)));
+			conditions.push(lte(inventoryCountSessions.openedAt, toUTCString(toEndOfDay(openedOnDate))));
+		}
+	}
+
+	const sessions = conditions.length
+		? await executor
+				.select()
+				.from(inventoryCountSessions)
+				.where(and(...conditions))
+				.orderBy(desc(inventoryCountSessions.openedAt))
+				.limit(limit)
+		: await executor
+				.select()
+				.from(inventoryCountSessions)
+				.orderBy(desc(inventoryCountSessions.openedAt))
+				.limit(limit);
 
 	return enrichSessions(sessions, executor);
 }
