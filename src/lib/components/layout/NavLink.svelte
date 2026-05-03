@@ -7,12 +7,14 @@
 		href,
 		label,
 		icon: Icon,
+		badge,
 		matchSubPaths = false,
 		onSelect
 	}: {
 		href: ResolvedPathname;
 		label: string;
 		icon: Component;
+		badge?: string;
 		matchSubPaths?: boolean;
 		onSelect?: () => void;
 	} = $props();
@@ -31,13 +33,25 @@
 	{href}
 	onclick={onSelect}
 	class={[
-		'mx-2 my-0.5 flex items-center gap-3 rounded-lg px-4 py-2.5 no-underline transition-all duration-150 hover:bg-slate-50',
+		'mx-2 my-0.5 flex items-center justify-between gap-3 rounded-lg px-4 py-2.5 no-underline transition-all duration-150 hover:bg-slate-50',
 		isActive
 			? 'bg-brand-blue/10 font-medium text-brand-blue'
 			: 'text-slate-600 hover:text-slate-800'
 	]}
 >
-	<Icon size={20} />
-	<span>{label}</span>
+	<span class="flex min-w-0 items-center gap-3">
+		<Icon size={20} />
+		<span class="truncate">{label}</span>
+	</span>
+
+	{#if badge}
+		<span
+			class={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.16em] uppercase ${
+				isActive ? 'bg-brand-blue/15 text-brand-blue' : 'bg-brand-gold/20 text-brand-navy'
+			}`}
+		>
+			{badge}
+		</span>
+	{/if}
 </a>
 <!-- eslint-enable svelte/no-navigation-without-resolve -->

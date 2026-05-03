@@ -24,11 +24,17 @@
 
 	type SidebarProps = {
 		user: SessionWithUser['user'];
+		activeInventoryCountSession?: { id: number } | null;
 		mobileOpen?: boolean;
 		onClose?: () => void;
 	};
 
-	let { user, mobileOpen = false, onClose }: SidebarProps = $props();
+	let {
+		user,
+		activeInventoryCountSession = null,
+		mobileOpen = false,
+		onClose
+	}: SidebarProps = $props();
 
 	const iconMap: Record<string, LucideIcon> = {
 		home: House,
@@ -84,6 +90,15 @@
 			{onSelect}
 		/>
 	{/each}
+
+	<NavLink
+		href={resolve('/inventory/count')}
+		label="Conteo Físico"
+		icon={ClipboardList}
+		badge={activeInventoryCountSession ? 'EN PROGRESO' : undefined}
+		matchSubPaths
+		{onSelect}
+	/>
 
 	{#if isAdminOrManager}
 		<div class="mx-4 my-2 h-px bg-slate-200"></div>
