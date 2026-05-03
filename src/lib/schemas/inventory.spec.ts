@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
 	ManualAdjustmentSchema,
+	ManualLensAdjustmentSchema,
 	ListInventoryMovementsSchema,
 	ListInventoryLotsSchema
 } from './inventory';
@@ -83,6 +84,44 @@ describe('ManualAdjustmentSchema', () => {
 			quantity: 1,
 			reason: 'INVALID_REASON',
 			notes: 'Some notes that are long enough'
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+describe('ManualLensAdjustmentSchema', () => {
+	it('accepts a valid positive lens adjustment', () => {
+		const result = ManualLensAdjustmentSchema.safeParse({
+			lensCatalogItemId: '00000000-0000-4000-8000-000000000001',
+			adjustmentType: InventoryMovementType.ADJUSTMENT_IN,
+			quantity: 2,
+			reason: AdjustmentReason.PHYSICAL_COUNT,
+			notes: 'Unidades encontradas para cristales STOCK'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('forces ADJUSTMENT_IN for CUSTOMER_RETURN', () => {
+		const result = ManualLensAdjustmentSchema.safeParse({
+			lensCatalogItemId: '00000000-0000-4000-8000-000000000001',
+			adjustmentType: InventoryMovementType.ADJUSTMENT_OUT,
+			quantity: 1,
+			reason: AdjustmentReason.CUSTOMER_RETURN,
+			notes: 'Cliente devolvió el par completo al inventario'
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.adjustmentType).toBe(InventoryMovementType.ADJUSTMENT_IN);
+		}
+	});
+
+	it('requires a valid lens UUID', () => {
+		const result = ManualLensAdjustmentSchema.safeParse({
+			lensCatalogItemId: 'not-a-uuid',
+			adjustmentType: InventoryMovementType.ADJUSTMENT_IN,
+			quantity: 1,
+			reason: AdjustmentReason.OTHER,
+			notes: 'Ajuste con nota suficientemente descriptiva'
 		});
 		expect(result.success).toBe(false);
 	});

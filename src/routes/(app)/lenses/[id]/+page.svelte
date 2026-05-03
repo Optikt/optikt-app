@@ -88,7 +88,7 @@
 	<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
 		<div class="space-y-6">
 			<LensDetailOpticalPanel {item} />
-			<LensDetailOperationPanel {item} />
+			<LensDetailOperationPanel {item} canManageInventory={isAdmin} />
 		</div>
 		<LensDetailSidebar {item} onOpenHistory={() => (showHistoryModal = true)} />
 	</div>

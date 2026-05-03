@@ -8,6 +8,13 @@
 	let { children, data } = $props();
 
 	const user = $derived(data.user);
+	const activeInventoryCountSession = $derived(
+		(
+			data as typeof data & {
+				activeInventoryCountSession?: { id: number } | null;
+			}
+		).activeInventoryCountSession ?? null
+	);
 	let mobileNavOpen = $state(false);
 
 	// Provide UI config via type-safe context
@@ -35,7 +42,12 @@
 
 	<!-- Sidebar + Content below navbar -->
 	<div class="flex min-h-0 flex-1">
-		<Sidebar {user} mobileOpen={mobileNavOpen} onClose={() => (mobileNavOpen = false)} />
+		<Sidebar
+			{user}
+			{activeInventoryCountSession}
+			mobileOpen={mobileNavOpen}
+			onClose={() => (mobileNavOpen = false)}
+		/>
 
 		<main bind:this={mainEl} class="flex-1 overflow-y-auto bg-surface">
 			{#key page.url.pathname}

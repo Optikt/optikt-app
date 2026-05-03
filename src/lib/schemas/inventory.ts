@@ -29,6 +29,24 @@ export const ManualAdjustmentSchema = z
 		return data;
 	});
 
+export const ManualLensAdjustmentSchema = z
+	.object({
+		lensCatalogItemId: z.uuid('Seleccione un lente'),
+		adjustmentType: z.enum(
+			[InventoryMovementType.ADJUSTMENT_IN, InventoryMovementType.ADJUSTMENT_OUT],
+			'Seleccione tipo de ajuste'
+		),
+		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
+		reason: z.enum(AdjustmentReason, 'Seleccione un motivo'),
+		notes: z.string().min(10, 'El motivo debe tener al menos 10 caracteres')
+	})
+	.transform((data) => {
+		if (data.reason === AdjustmentReason.CUSTOMER_RETURN) {
+			return { ...data, adjustmentType: InventoryMovementType.ADJUSTMENT_IN };
+		}
+		return data;
+	});
+
 // ============================================================================
 // LIST MOVEMENTS (for viewing movement history)
 // ============================================================================

@@ -22,6 +22,7 @@ export * from './quotes';
 export * from './purchaseOrders';
 export * from './inventoryLots';
 export * from './inventoryMovements';
+export * from './inventoryCount';
 
 // Cash & Finances
 export * from './cashExpenses';
