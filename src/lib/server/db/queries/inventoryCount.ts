@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'd
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import type { DbOrTx } from '$lib/server/db/types';
+import { canCloseInventoryCountSession } from '$lib/schemas/inventoryCount';
 import {
 	inventoryCountLines,
 	inventoryCountSessions,
@@ -647,13 +648,15 @@ export async function applySession(
 		.limit(1);
 	requireOpenSession(session);
 
-	const countedLines = await executor
+	const sessionLines = await executor
 		.select()
 		.from(inventoryCountLines)
-		.where(and(eq(inventoryCountLines.sessionId, id), isNotNull(inventoryCountLines.countedStock)));
+		.where(eq(inventoryCountLines.sessionId, id));
 
-	if (countedLines.length === 0) {
-		throw new Error('No se puede aplicar una sesión sin ítems contados');
+	const countedLines = sessionLines.filter((line) => line.countedStock !== null);
+
+	if (!canCloseInventoryCountSession(sessionLines.length, countedLines.length)) {
+		throw new Error('Debes contar o confirmar todos los ítems antes de cerrar la sesión');
 	}
 
 	const totalAdjustmentsIn = countedLines.filter((line) => (line.difference ?? 0) > 0).length;

@@ -12,6 +12,7 @@
 		upsertCountLine
 	} from '$lib/remote/inventoryCount.remote';
 	import {
+		canCloseInventoryCountSession,
 		formatInventoryCountScope,
 		getInventoryCountStatusLabel,
 		INVENTORY_COUNT_UI_FILTER_LABELS,
@@ -34,6 +35,7 @@
 	let cancelReason = $state('');
 	let isApplying = $state(false);
 	let isCancelling = $state(false);
+	let quickSaveLineIds = $state<number[]>([]);
 	let updatingAdjustmentLineIds = $state<number[]>([]);
 	let editing = $state({
 		lineId: null as number | null,
@@ -67,6 +69,7 @@
 	const progressPercent = $derived(
 		totalLines === 0 ? 0 : Math.round((countedTotal / totalLines) * 100)
 	);
+	const canCloseSession = $derived(canCloseInventoryCountSession(totalLines, countedTotal));
 	const normalizedSearch = $derived(search.trim().toLowerCase());
 	const filteredLines = $derived(
 		lines.filter((line) => {
@@ -162,6 +165,10 @@
 		return updatingAdjustmentLineIds.includes(lineId);
 	}
 
+	function isQuickSaving(lineId: number) {
+		return quickSaveLineIds.includes(lineId);
+	}
+
 	async function toggleAdjustmentCompleted(
 		line: InventoryCountLineRow,
 		adjustmentCompleted: boolean
@@ -232,6 +239,52 @@
 		session = { ...session, lines };
 	}
 
+	async function confirmSystemStock(line: InventoryCountLineRow) {
+		if (isQuickSaving(line.id)) {
+			return;
+		}
+
+		const optimisticLine: InventoryCountLineRow = {
+			...line,
+			countedStock: line.systemStock,
+			difference: 0,
+			countedById: currentUser.id,
+			countedByName: currentUser.fullName,
+			countedAt: new Date().toISOString(),
+			adjustmentCompleted: false,
+			adjustmentCompletedById: null,
+			adjustmentCompletedAt: null,
+			adjustmentCompletedByName: null
+		};
+
+		const previousLines = lines;
+		quickSaveLineIds = [...quickSaveLineIds, line.id];
+		updateLineLocally(optimisticLine);
+
+		try {
+			const result = await upsertCountLine({
+				sessionId: session.id,
+				itemId: line.itemId,
+				itemType: line.itemType as 'PRODUCT' | 'LENS',
+				countedStock: line.systemStock,
+				notes: line.notes ?? null
+			});
+
+			if (!result.success) {
+				throw new Error(result.error ?? 'No se pudo confirmar el stock');
+			}
+
+			updateLineLocally(result.line);
+		} catch (error) {
+			console.error(error);
+			lines = previousLines;
+			session = { ...session, lines: previousLines };
+			toast.error(getErrorMessage(error, 'No se pudo confirmar el stock'));
+		} finally {
+			quickSaveLineIds = quickSaveLineIds.filter((candidateId) => candidateId !== line.id);
+		}
+	}
+
 	async function handleSaveLine(line: InventoryCountLineRow) {
 		const nextCount = Number(editing.count);
 		if (!Number.isInteger(nextCount) || nextCount < 0) {
@@ -295,6 +348,11 @@
 
 	async function handleApplySession() {
 		if (isApplying) {
+			return;
+		}
+
+		if (!canCloseSession) {
+			toast.error('Debes contar o confirmar todos los ítems antes de cerrar la sesión');
 			return;
 		}
 
@@ -371,7 +429,7 @@
 				<button
 					type="button"
 					onclick={() => (showApplyModal = true)}
-					disabled={countedTotal === 0}
+					disabled={!canCloseSession}
 					class="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					<Check class="h-4 w-4" />
@@ -451,6 +509,14 @@
 				</div>
 			</div>
 		</div>
+
+		{#if pendingTotal > 0}
+			<div
+				class="mt-4 rounded-2xl border border-warning/15 bg-warning-container/40 px-4 py-3 text-sm text-on-surface-variant"
+			>
+				Debes contar o confirmar manualmente los {pendingTotal} ítems pendientes antes de cerrar la sesión.
+			</div>
+		{/if}
 
 		{#if diffLines.length > 0}
 			<div
@@ -652,14 +718,27 @@
 								{/if}
 							</div>
 						{:else if !isReadonly}
-							<button
-								type="button"
-								onclick={() => startEditing(line)}
-								class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
-							>
-								<SquarePen class="h-4 w-4" />
-								{line.countedStock !== null ? 'Editar' : 'Ingresar cantidad'}
-							</button>
+							<div class="flex flex-col items-end gap-2">
+								{#if line.countedStock === null}
+									<button
+										type="button"
+										onclick={() => void confirmSystemStock(line)}
+										disabled={isQuickSaving(line.id)}
+										class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy disabled:opacity-50"
+									>
+										<Check class="h-4 w-4" />
+										{isQuickSaving(line.id) ? 'Confirmando...' : 'Confirmar stock'}
+									</button>
+								{/if}
+								<button
+									type="button"
+									onclick={() => startEditing(line)}
+									class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+								>
+									<SquarePen class="h-4 w-4" />
+									{line.countedStock !== null ? 'Editar' : 'Ingresar cantidad'}
+								</button>
+							</div>
 						{:else}
 							<span class="text-on-surface-variant">—</span>
 						{/if}
@@ -744,13 +823,25 @@
 							{/if}
 						</div>
 					{:else if !isReadonly}
-						<button
-							type="button"
-							onclick={() => startEditing(line)}
-							class="w-full rounded-xl border border-outline-variant/35 bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
-						>
-							{line.countedStock !== null ? 'Editar conteo' : 'Ingresar cantidad'}
-						</button>
+						<div class="space-y-2">
+							{#if line.countedStock === null}
+								<button
+									type="button"
+									onclick={() => void confirmSystemStock(line)}
+									disabled={isQuickSaving(line.id)}
+									class="w-full rounded-xl bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high disabled:opacity-50"
+								>
+									{isQuickSaving(line.id) ? 'Confirmando...' : 'Confirmar stock sistema'}
+								</button>
+							{/if}
+							<button
+								type="button"
+								onclick={() => startEditing(line)}
+								class="w-full rounded-xl border border-outline-variant/35 bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
+							>
+								{line.countedStock !== null ? 'Editar conteo' : 'Ingresar cantidad'}
+							</button>
+						</div>
 					{/if}
 				</div>
 			{/snippet}
@@ -806,7 +897,7 @@
 					</div>
 					<div class="rounded-2xl bg-surface-container px-4 py-3">
 						<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-							No contados
+							Pendientes
 						</p>
 						<p class="mt-1 font-semibold text-brand-navy">{pendingTotal}</p>
 					</div>
@@ -838,7 +929,7 @@
 					<div
 						class="mt-4 rounded-2xl border border-warning/15 bg-warning-container/40 px-4 py-3 text-sm text-on-surface-variant"
 					>
-						{pendingTotal} ítems no fueron contados y serán ignorados. Sus stocks no cambiarán.
+						No puedes cerrar la sesión todavía. Faltan {pendingTotal} ítems por contar o confirmar.
 					</div>
 				{/if}
 
@@ -854,7 +945,7 @@
 					<button
 						type="button"
 						onclick={() => void handleApplySession()}
-						disabled={isApplying}
+						disabled={isApplying || !canCloseSession}
 						class="rounded-xl bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-50"
 					>
 						{isApplying ? 'Cerrando...' : 'Cerrar sesión de conteo'}

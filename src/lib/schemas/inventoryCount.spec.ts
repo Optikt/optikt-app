@@ -7,6 +7,7 @@ import {
 	SetInventoryCountLineAdjustmentStatusSchema,
 	SessionIdSchema,
 	UpsertInventoryCountLineSchema,
+	canCloseInventoryCountSession,
 	formatInventoryCountScope,
 	getInventoryCountStatusLabel
 } from './inventoryCount';
@@ -134,5 +135,11 @@ describe('inventory count helpers', () => {
 	it('formats status labels with fallback', () => {
 		expect(getInventoryCountStatusLabel('APPLIED')).toBe('Aplicada');
 		expect(getInventoryCountStatusLabel('CUSTOM')).toBe('CUSTOM');
+	});
+
+	it('only allows closing when every line was explicitly counted', () => {
+		expect(canCloseInventoryCountSession(4, 4)).toBe(true);
+		expect(canCloseInventoryCountSession(4, 3)).toBe(false);
+		expect(canCloseInventoryCountSession(0, 0)).toBe(false);
 	});
 });

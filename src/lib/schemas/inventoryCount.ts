@@ -55,6 +55,10 @@ export function formatInventoryCountScope(scopeType: string, scopeValue?: string
 	return INVENTORY_COUNT_SCOPE_LABELS[scopeType as InventoryCountScopeType] ?? scopeType;
 }
 
+export function canCloseInventoryCountSession(totalLines: number, countedLines: number) {
+	return totalLines > 0 && countedLines === totalLines;
+}
+
 export const SessionIdSchema = z.object({
 	id: CoercedInteger.min(1, 'Sesión inválida')
 });
