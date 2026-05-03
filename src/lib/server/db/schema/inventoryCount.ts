@@ -1,4 +1,5 @@
 import {
+	boolean,
 	pgTable,
 	varchar,
 	index,
@@ -79,6 +80,12 @@ export const inventoryCountLines = pgTable(
 		systemStock: integer('system_stock').notNull(),
 		countedStock: integer('counted_stock'),
 		difference: integer(),
+		adjustmentCompleted: boolean('adjustment_completed').notNull().default(false),
+		adjustmentCompletedById: uuid('adjustment_completed_by_id'),
+		adjustmentCompletedAt: timestamp('adjustment_completed_at', {
+			withTimezone: true,
+			mode: 'string'
+		}),
 		countedById: uuid('counted_by_id'),
 		countedAt: timestamp('counted_at', { withTimezone: true, mode: 'string' }),
 		notes: text(),
@@ -125,6 +132,11 @@ export const inventoryCountLines = pgTable(
 			columns: [table.countedById],
 			foreignColumns: [users.id],
 			name: 'inventory_count_lines_counted_by_id_fkey'
+		}).onDelete('restrict'),
+		foreignKey({
+			columns: [table.adjustmentCompletedById],
+			foreignColumns: [users.id],
+			name: 'inventory_count_lines_adjustment_completed_by_id_fkey'
 		}).onDelete('restrict')
 	]
 );

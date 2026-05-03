@@ -4,6 +4,7 @@ import {
 	CreateInventoryCountSessionSchema,
 	GetSessionLinesSchema,
 	GetSessionsSchema,
+	SetInventoryCountLineAdjustmentStatusSchema,
 	SessionIdSchema,
 	UpsertInventoryCountLineSchema,
 	formatInventoryCountScope,
@@ -20,13 +21,22 @@ describe('CreateInventoryCountSessionSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
-	it('requires a product category when scopeType is PRODUCT_CATEGORY', () => {
+	it('accepts product-only sessions without a category to include all products', () => {
 		const result = CreateInventoryCountSessionSchema.safeParse({
 			scopeType: 'PRODUCT_CATEGORY',
 			notes: 'Solo monturas'
 		});
 
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts product-only sessions for a specific category', () => {
+		const result = CreateInventoryCountSessionSchema.safeParse({
+			scopeType: 'PRODUCT_CATEGORY',
+			scopeValue: 'FRAME'
+		});
+
+		expect(result.success).toBe(true);
 	});
 
 	it('rejects scopeValue when scopeType is not PRODUCT_CATEGORY', () => {
@@ -102,6 +112,17 @@ describe('CancelInventoryCountSessionSchema', () => {
 		});
 
 		expect(result.success).toBe(false);
+	});
+});
+
+describe('SetInventoryCountLineAdjustmentStatusSchema', () => {
+	it('accepts a valid adjustment tracking payload', () => {
+		const result = SetInventoryCountLineAdjustmentStatusSchema.safeParse({
+			lineId: 7,
+			adjustmentCompleted: true
+		});
+
+		expect(result.success).toBe(true);
 	});
 });
 

@@ -5,7 +5,12 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { AppBadge, DataGrid, PageHeader } from '$lib/components/ui';
-	import { applySession, cancelSession, upsertCountLine } from '$lib/remote/inventoryCount.remote';
+	import {
+		applySession,
+		cancelSession,
+		setLineAdjustmentStatus,
+		upsertCountLine
+	} from '$lib/remote/inventoryCount.remote';
 	import {
 		formatInventoryCountScope,
 		getInventoryCountStatusLabel,
@@ -29,6 +34,7 @@
 	let cancelReason = $state('');
 	let isApplying = $state(false);
 	let isCancelling = $state(false);
+	let updatingAdjustmentLineIds = $state<number[]>([]);
 	let editing = $state({
 		lineId: null as number | null,
 		count: '',
@@ -48,7 +54,10 @@
 	const negativeDiffLines = $derived(countedLines.filter((line) => (line.difference ?? 0) < 0));
 	const diffLines = $derived(countedLines.filter((line) => (line.difference ?? 0) !== 0));
 	const matchedLines = $derived(countedLines.filter((line) => (line.difference ?? 0) === 0));
-	const pendingManualAdjustments = $derived(diffLines.length);
+	const completedManualAdjustments = $derived(
+		diffLines.filter((line) => line.adjustmentCompleted).length
+	);
+	const pendingManualAdjustments = $derived(diffLines.length - completedManualAdjustments);
 	const positiveUnits = $derived(
 		positiveDiffLines.reduce((sum, line) => sum + Math.max(line.difference ?? 0, 0), 0)
 	);
@@ -146,7 +155,48 @@
 			return;
 		}
 
-		void goto(resolve(adjustmentPath));
+		window.open(resolve(adjustmentPath), '_blank', 'noopener,noreferrer');
+	}
+
+	function isAdjustmentStatusUpdating(lineId: number) {
+		return updatingAdjustmentLineIds.includes(lineId);
+	}
+
+	async function toggleAdjustmentCompleted(
+		line: InventoryCountLineRow,
+		adjustmentCompleted: boolean
+	) {
+		if (isAdjustmentStatusUpdating(line.id)) {
+			return;
+		}
+
+		updatingAdjustmentLineIds = [...updatingAdjustmentLineIds, line.id];
+
+		try {
+			const result = await setLineAdjustmentStatus({ lineId: line.id, adjustmentCompleted });
+
+			if (!result.success) {
+				throw new Error(result.error ?? 'No se pudo actualizar el seguimiento del ajuste');
+			}
+
+			updateLineLocally(result.line);
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'No se pudo actualizar el tracking del ajuste'));
+		} finally {
+			updatingAdjustmentLineIds = updatingAdjustmentLineIds.filter(
+				(candidateId) => candidateId !== line.id
+			);
+		}
+	}
+
+	function handleAdjustmentCheckboxChange(line: InventoryCountLineRow, event: Event) {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+
+		void toggleAdjustmentCompleted(line, target.checked);
 	}
 
 	function startEditing(line: InventoryCountLineRow) {
@@ -193,6 +243,22 @@
 			...line,
 			countedStock: nextCount,
 			difference: nextCount - line.systemStock,
+			adjustmentCompleted:
+				line.adjustmentCompleted && line.countedStock === nextCount
+					? line.adjustmentCompleted
+					: false,
+			adjustmentCompletedById:
+				line.adjustmentCompleted && line.countedStock === nextCount
+					? line.adjustmentCompletedById
+					: null,
+			adjustmentCompletedAt:
+				line.adjustmentCompleted && line.countedStock === nextCount
+					? line.adjustmentCompletedAt
+					: null,
+			adjustmentCompletedByName:
+				line.adjustmentCompleted && line.countedStock === nextCount
+					? line.adjustmentCompletedByName
+					: null,
 			countedById: currentUser.id,
 			countedByName: currentUser.fullName,
 			countedAt: new Date().toISOString(),
@@ -385,6 +451,31 @@
 				</div>
 			</div>
 		</div>
+
+		{#if diffLines.length > 0}
+			<div
+				class="mt-4 grid grid-cols-1 gap-3 border-t border-outline-variant/15 pt-4 sm:grid-cols-2"
+			>
+				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
+					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+						Ajustes por hacer
+					</p>
+					<p class="mt-1 text-lg font-semibold text-brand-navy">{pendingManualAdjustments}</p>
+					<p class="mt-1 text-xs text-on-surface-variant">
+						Líneas con diferencia aún no marcadas como realizadas.
+					</p>
+				</div>
+				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
+					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+						Ajustes marcados
+					</p>
+					<p class="mt-1 text-lg font-semibold text-success">{completedManualAdjustments}</p>
+					<p class="mt-1 text-xs text-on-surface-variant">
+						Se abren aparte y luego puedes volver para marcar el seguimiento.
+					</p>
+				</div>
+			</div>
+		{/if}
 	</section>
 
 	<section class="glass-card bg-surface-container-low p-4">
@@ -526,8 +617,29 @@
 									onclick={() => openAdjustment(line)}
 									class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
 								>
-									Ir a ajustar →
+									Ir a ajustar ↗
 								</button>
+								<label class="flex items-center gap-2 text-xs font-medium text-on-surface-variant">
+									<input
+										type="checkbox"
+										checked={line.adjustmentCompleted}
+										disabled={isAdjustmentStatusUpdating(line.id) || session.status === 'CANCELLED'}
+										onchange={(event) => handleAdjustmentCheckboxChange(line, event)}
+										class="h-4 w-4 rounded border border-outline-variant/35 text-brand-blue focus:ring-2 focus:ring-brand-blue/25"
+									/>
+									<span>
+										{line.adjustmentCompleted ? 'Ajuste realizado' : 'Marcar como realizado'}
+									</span>
+								</label>
+								{#if line.adjustmentCompletedAt}
+									<p class="max-w-[13rem] text-right text-xs text-on-surface-variant">
+										{line.adjustmentCompletedByName ?? 'Usuario'} ·
+										{formatDate(line.adjustmentCompletedAt, {
+											dateStyle: 'short',
+											timeStyle: 'short'
+										})}
+									</p>
+								{/if}
 								{#if !isReadonly}
 									<button
 										type="button"
@@ -596,8 +708,31 @@
 								onclick={() => openAdjustment(line)}
 								class="inline-flex w-full items-center justify-center rounded-xl bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
 							>
-								Ir a ajustar →
+								Ir a ajustar ↗
 							</button>
+							<label
+								class="flex items-center gap-2 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface-variant"
+							>
+								<input
+									type="checkbox"
+									checked={line.adjustmentCompleted}
+									disabled={isAdjustmentStatusUpdating(line.id) || session.status === 'CANCELLED'}
+									onchange={(event) => handleAdjustmentCheckboxChange(line, event)}
+									class="h-4 w-4 rounded border border-outline-variant/35 text-brand-blue focus:ring-2 focus:ring-brand-blue/25"
+								/>
+								<span>
+									{line.adjustmentCompleted ? 'Ajuste realizado' : 'Marcar como realizado'}
+								</span>
+							</label>
+							{#if line.adjustmentCompletedAt}
+								<p class="text-xs text-on-surface-variant">
+									{line.adjustmentCompletedByName ?? 'Usuario'} ·
+									{formatDate(line.adjustmentCompletedAt, {
+										dateStyle: 'short',
+										timeStyle: 'short'
+									})}
+								</p>
+							{/if}
 							{#if !isReadonly}
 								<button
 									type="button"

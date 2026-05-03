@@ -4,6 +4,7 @@ import {
 	CreateInventoryCountSessionSchema,
 	GetSessionLinesSchema,
 	GetSessionsSchema,
+	SetInventoryCountLineAdjustmentStatusSchema,
 	SessionIdSchema,
 	UpsertInventoryCountLineSchema
 } from '$lib/schemas/inventoryCount';
@@ -15,6 +16,7 @@ import {
 	getSessionById as getInventoryCountSessionById,
 	getSessionLines as getInventoryCountSessionLines,
 	getSessions as getInventoryCountSessions,
+	setLineAdjustmentStatus as updateInventoryCountLineAdjustmentStatus,
 	upsertCountLine as saveInventoryCountLine,
 	type InventoryCountSessionDetail,
 	type InventoryCountSessionSummary,
@@ -87,6 +89,25 @@ export const upsertCountLine = command(UpsertInventoryCountLineSchema, async (da
 		return { success: false as const, error: getErrorMessage(error) };
 	}
 });
+
+export const setLineAdjustmentStatus = command(
+	SetInventoryCountLineAdjustmentStatusSchema,
+	async (data) => {
+		const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+
+		try {
+			const line = await updateInventoryCountLineAdjustmentStatus({
+				...data,
+				userId: user.id
+			});
+
+			return { success: true as const, line };
+		} catch (error) {
+			console.error('Error updating inventory count adjustment status:', error);
+			return { success: false as const, error: getErrorMessage(error) };
+		}
+	}
+);
 
 export const applySession = command(SessionIdSchema, async (data) => {
 	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER);

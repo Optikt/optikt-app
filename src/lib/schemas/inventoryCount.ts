@@ -80,14 +80,6 @@ export const CreateInventoryCountSessionSchema = z
 			.nullable()
 	})
 	.superRefine((data, ctx) => {
-		if (data.scopeType === 'PRODUCT_CATEGORY' && !data.scopeValue) {
-			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
-				message: 'Selecciona una categoría de producto',
-				path: ['scopeValue']
-			});
-		}
-
 		if (data.scopeType !== 'PRODUCT_CATEGORY' && data.scopeValue) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
@@ -103,6 +95,11 @@ export const UpsertInventoryCountLineSchema = z.object({
 	itemType: z.enum(INVENTORY_COUNT_ITEM_TYPES, 'Tipo de ítem inválido'),
 	countedStock: CoercedInteger.min(0, 'La cantidad contada no puede ser negativa'),
 	notes: z.string().trim().max(240, 'La nota no puede exceder 240 caracteres').optional().nullable()
+});
+
+export const SetInventoryCountLineAdjustmentStatusSchema = z.object({
+	lineId: CoercedInteger.min(1, 'Línea inválida'),
+	adjustmentCompleted: z.boolean()
 });
 
 export const CancelInventoryCountSessionSchema = z.object({

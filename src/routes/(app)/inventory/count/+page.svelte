@@ -25,7 +25,6 @@
 	let isSubmitting = $state(false);
 
 	const activeSession = $derived(sessions.find((session) => session.status === 'OPEN') ?? null);
-	const canSubmit = $derived(scopeType !== 'PRODUCT_CATEGORY' || scopeValue !== '');
 	const historySessions = $derived(sessions);
 
 	const columns = [
@@ -59,7 +58,7 @@
 	}
 
 	async function handleCreateSession() {
-		if (!canSubmit || isSubmitting) {
+		if (isSubmitting) {
 			return;
 		}
 
@@ -336,7 +335,7 @@
 								bind:value={scopeValue}
 								class="w-full rounded-xl border border-outline-variant/30 bg-surface-container px-4 py-3 text-sm text-on-surface"
 							>
-								<option value="">Selecciona una categoría</option>
+								<option value="">Todos los productos</option>
 								{#each ALL_PRODUCT_TYPES as type (type)}
 									<option value={type}>{PRODUCT_TYPE_LABELS[type]}</option>
 								{/each}
@@ -384,7 +383,7 @@
 					<button
 						type="button"
 						onclick={handleCreateSession}
-						disabled={!canSubmit || isSubmitting}
+						disabled={isSubmitting}
 						class="rounded-xl bg-brand-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{isSubmitting ? 'Iniciando...' : 'Iniciar sesión'}
