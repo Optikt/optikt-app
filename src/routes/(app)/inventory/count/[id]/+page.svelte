@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, ClipboardList, Search, SquarePen, X, TriangleAlert } from '@lucide/svelte';
+	import { Check, Search, X, TriangleAlert } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
@@ -13,7 +13,6 @@
 	} from '$lib/remote/inventoryCount.remote';
 	import {
 		canCloseInventoryCountSession,
-		formatInventoryCountScope,
 		getInventoryCountStatusLabel,
 		INVENTORY_COUNT_UI_FILTER_LABELS,
 		type InventoryCountUiFilter
@@ -35,7 +34,6 @@
 	let cancelReason = $state('');
 	let isApplying = $state(false);
 	let isCancelling = $state(false);
-	let quickSaveLineIds = $state<number[]>([]);
 	let updatingAdjustmentLineIds = $state<number[]>([]);
 	let editing = $state({
 		lineId: null as number | null,
@@ -69,6 +67,41 @@
 	const progressPercent = $derived(
 		totalLines === 0 ? 0 : Math.round((countedTotal / totalLines) * 100)
 	);
+	const scopeLabel = $derived(
+		session.scopeType === 'PRODUCT_CATEGORY'
+			? `Solo productos${session.scopeValue ? ` - ${session.scopeValue}` : ''}`
+			: session.scopeType === 'LENS'
+				? 'Solo lentes STOCK'
+				: 'Todo el inventario'
+	);
+	const statusLabel = $derived(getInventoryCountStatusLabel(session.status));
+	const varianceUnits = $derived(positiveUnits - negativeUnits);
+	const varianceUnitsLabel = $derived(
+		varianceUnits === 0
+			? 'Sin variación neta'
+			: varianceUnits > 0
+				? `+${varianceUnits}`
+				: `${varianceUnits}`
+	);
+	const openedSummary = $derived(
+		`Apertura: ${formatDate(session.openedAt, { dateStyle: 'medium', timeStyle: 'short' })} · Responsable: ${session.openedByName ?? 'Usuario'}`
+	);
+	const lifecycleSummary = $derived.by(() => {
+		if (session.status === 'APPLIED' && session.appliedAt) {
+			return `Cerró: ${session.appliedByName ?? 'Usuario'} · ${formatDate(session.appliedAt, {
+				dateStyle: 'medium',
+				timeStyle: 'short'
+			})}`;
+		}
+
+		if (session.status === 'CANCELLED') {
+			const reason = session.cancelReason?.trim();
+			return `Canceló: ${session.cancelledByName ?? 'Usuario'}${reason ? ` · ${reason}` : ''}`;
+		}
+
+		return null;
+	});
+	const hasSessionNotes = $derived(Boolean(session.notes?.trim()));
 	const canCloseSession = $derived(canCloseInventoryCountSession(totalLines, countedTotal));
 	const normalizedSearch = $derived(search.trim().toLowerCase());
 	const filteredLines = $derived(
@@ -99,10 +132,63 @@
 		})
 	);
 
+	type CompactStatTone = 'neutral' | 'success' | 'warning' | 'error';
+	type CompactStat = {
+		id: string;
+		label: string;
+		value: string;
+		tone: CompactStatTone;
+	};
+
+	const compactStats = $derived.by<CompactStat[]>(() => {
+		const stats: CompactStat[] = [
+			{
+				id: 'pending',
+				label: 'Pendientes',
+				value: String(pendingTotal),
+				tone: pendingTotal > 0 ? 'warning' : 'neutral'
+			},
+			{
+				id: 'matched',
+				label: 'OK',
+				value: String(matchedLines.length),
+				tone: matchedLines.length > 0 ? 'success' : 'neutral'
+			},
+			{
+				id: 'positive',
+				label: '+Dif',
+				value: `${positiveDiffLines.length}/+${positiveUnits}`,
+				tone: positiveDiffLines.length > 0 ? 'success' : 'neutral'
+			},
+			{
+				id: 'negative',
+				label: '-Dif',
+				value: `${negativeDiffLines.length}/-${negativeUnits}`,
+				tone: negativeDiffLines.length > 0 ? 'error' : 'neutral'
+			},
+			{
+				id: 'variance',
+				label: 'Var',
+				value: varianceUnitsLabel,
+				tone: varianceUnits > 0 ? 'success' : varianceUnits < 0 ? 'error' : 'neutral'
+			}
+		];
+
+		if (diffLines.length > 0 || completedManualAdjustments > 0) {
+			stats.push({
+				id: 'adjustments',
+				label: 'Ajustes',
+				value: `${completedManualAdjustments}/${diffLines.length}`,
+				tone: pendingManualAdjustments > 0 ? 'warning' : 'success'
+			});
+		}
+
+		return stats;
+	});
+
 	const columns = [
 		{ key: 'item', label: 'Ítem' },
 		{ key: 'ref', label: 'SKU / Ref' },
-		{ key: 'type', label: 'Tipo' },
 		{ key: 'system', label: 'Stock sistema', align: 'right' as const },
 		{ key: 'counted', label: 'Stock contado', align: 'right' as const },
 		{ key: 'difference', label: 'Diferencia', align: 'right' as const },
@@ -118,9 +204,19 @@
 		return 'neutral';
 	}
 
-	function differenceClass(difference: number | null) {
-		if (difference === null || difference === 0) return 'text-on-surface-variant';
-		return difference > 0 ? 'text-success' : 'text-error';
+	function compactStatClass(tone: CompactStatTone) {
+		if (tone === 'success') return 'text-success';
+		if (tone === 'warning') return 'text-brand-gold';
+		if (tone === 'error') return 'text-error';
+		return 'text-brand-navy';
+	}
+
+	function differenceBadgeClass(difference: number | null) {
+		if (difference === null) return 'bg-surface-container text-on-surface-variant';
+		if (difference === 0) return 'bg-surface-container text-on-surface-variant';
+		return difference > 0
+			? 'bg-success-container/70 text-success'
+			: 'bg-error-container/80 text-error';
 	}
 
 	function formatDifference(difference: number | null) {
@@ -130,6 +226,10 @@
 
 	function hasDifference(line: InventoryCountLineRow) {
 		return line.countedStock !== null && (line.difference ?? 0) !== 0;
+	}
+
+	function isMatchedLine(line: InventoryCountLineRow) {
+		return line.countedStock !== null && (line.difference ?? 0) === 0;
 	}
 
 	function getAdjustmentPath(line: InventoryCountLineRow): AdjustmentPath | null {
@@ -163,10 +263,6 @@
 
 	function isAdjustmentStatusUpdating(lineId: number) {
 		return updatingAdjustmentLineIds.includes(lineId);
-	}
-
-	function isQuickSaving(lineId: number) {
-		return quickSaveLineIds.includes(lineId);
 	}
 
 	async function toggleAdjustmentCompleted(
@@ -237,52 +333,6 @@
 	function updateLineLocally(nextLine: InventoryCountLineRow) {
 		lines = lines.map((line) => (line.id === nextLine.id ? nextLine : line));
 		session = { ...session, lines };
-	}
-
-	async function confirmSystemStock(line: InventoryCountLineRow) {
-		if (isQuickSaving(line.id)) {
-			return;
-		}
-
-		const optimisticLine: InventoryCountLineRow = {
-			...line,
-			countedStock: line.systemStock,
-			difference: 0,
-			countedById: currentUser.id,
-			countedByName: currentUser.fullName,
-			countedAt: new Date().toISOString(),
-			adjustmentCompleted: false,
-			adjustmentCompletedById: null,
-			adjustmentCompletedAt: null,
-			adjustmentCompletedByName: null
-		};
-
-		const previousLines = lines;
-		quickSaveLineIds = [...quickSaveLineIds, line.id];
-		updateLineLocally(optimisticLine);
-
-		try {
-			const result = await upsertCountLine({
-				sessionId: session.id,
-				itemId: line.itemId,
-				itemType: line.itemType as 'PRODUCT' | 'LENS',
-				countedStock: line.systemStock,
-				notes: line.notes ?? null
-			});
-
-			if (!result.success) {
-				throw new Error(result.error ?? 'No se pudo confirmar el stock');
-			}
-
-			updateLineLocally(result.line);
-		} catch (error) {
-			console.error(error);
-			lines = previousLines;
-			session = { ...session, lines: previousLines };
-			toast.error(getErrorMessage(error, 'No se pudo confirmar el stock'));
-		} finally {
-			quickSaveLineIds = quickSaveLineIds.filter((candidateId) => candidateId !== line.id);
-		}
 	}
 
 	async function handleSaveLine(line: InventoryCountLineRow) {
@@ -419,8 +469,12 @@
 
 <div class="space-y-6 p-4 sm:p-6">
 	<PageHeader
-		title={`Sesión #${session.id} - ${formatInventoryCountScope(session.scopeType, session.scopeValue)}`}
-		subtitle="Conteo físico"
+		title={`Sesión #${session.id}`}
+		subtitle={session.status === 'OPEN'
+			? 'Conteo físico en ejecución'
+			: session.status === 'APPLIED'
+				? 'Informe de conteo físico'
+				: 'Conteo físico cancelado'}
 		backLabel="Volver al historial"
 		backOnClick={goBack}
 	>
@@ -447,132 +501,86 @@
 		{/snippet}
 	</PageHeader>
 
-	<section class="glass-card bg-surface-container-low p-5">
-		<div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-			<div class="space-y-3">
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-container-high text-brand-navy"
-					>
-						<ClipboardList class="h-5 w-5" />
-					</div>
-					<div>
-						<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-							{formatDate(session.openedAt, { dateStyle: 'medium', timeStyle: 'short' })}
-						</p>
-						<p class="text-sm text-on-surface-variant">
-							{formatInventoryCountScope(session.scopeType, session.scopeValue)}
-						</p>
-					</div>
-				</div>
-
-				<div class="space-y-2">
-					<div class="flex items-center gap-3">
-						<p class="text-sm font-semibold text-brand-navy">
-							{countedTotal} / {totalLines} ítems contados ({progressPercent}%)
-						</p>
-						<AppBadge variant={statusVariant(session.status)}>
-							{getInventoryCountStatusLabel(session.status)}
-						</AppBadge>
-					</div>
-					<div class="h-2.5 overflow-hidden rounded-full bg-surface-container-high">
-						<div
-							class="h-full rounded-full bg-brand-blue transition-all duration-200"
-							style={`width: ${progressPercent}%`}
-						></div>
-					</div>
-				</div>
-			</div>
-
-			<div class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Pendientes
-					</p>
-					<p class="mt-1 text-lg font-semibold text-brand-navy">{pendingTotal}</p>
-				</div>
-				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Diferencias +
-					</p>
-					<p class="mt-1 text-lg font-semibold text-success">{positiveDiffLines.length}</p>
-				</div>
-				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Diferencias -
-					</p>
-					<p class="mt-1 text-lg font-semibold text-error">{negativeDiffLines.length}</p>
-				</div>
-				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">OK</p>
-					<p class="mt-1 text-lg font-semibold text-brand-navy">{matchedLines.length}</p>
-				</div>
-			</div>
+	<section class="space-y-3 border-b border-outline-variant/15 pb-3">
+		<div class="flex flex-wrap items-center gap-2 text-sm">
+			<AppBadge variant={statusVariant(session.status)}>{statusLabel}</AppBadge>
+			<span class="font-medium text-brand-navy">Alcance: {scopeLabel}</span>
+			{#if hasSessionNotes}
+				<span
+					class="inline-flex rounded-full bg-brand-gold/15 px-2.5 py-1 text-[11px] font-semibold text-brand-navy"
+				>
+					Con notas
+				</span>
+			{/if}
 		</div>
 
-		{#if pendingTotal > 0}
-			<div
-				class="mt-4 rounded-2xl border border-warning/15 bg-warning-container/40 px-4 py-3 text-sm text-on-surface-variant"
-			>
-				Debes contar o confirmar manualmente los {pendingTotal} ítems pendientes antes de cerrar la sesión.
-			</div>
-		{/if}
+		<div
+			class="flex flex-col gap-1 text-sm text-on-surface-variant lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3"
+		>
+			<p>{openedSummary}</p>
+			{#if lifecycleSummary}
+				<span class="hidden text-outline lg:inline">·</span>
+				<p class="max-w-full truncate" title={lifecycleSummary}>{lifecycleSummary}</p>
+			{/if}
+		</div>
 
-		{#if diffLines.length > 0}
-			<div
-				class="mt-4 grid grid-cols-1 gap-3 border-t border-outline-variant/15 pt-4 sm:grid-cols-2"
-			>
-				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Ajustes por hacer
-					</p>
-					<p class="mt-1 text-lg font-semibold text-brand-navy">{pendingManualAdjustments}</p>
-					<p class="mt-1 text-xs text-on-surface-variant">
-						Líneas con diferencia aún no marcadas como realizadas.
-					</p>
-				</div>
-				<div class="rounded-2xl bg-surface-container-lowest px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Ajustes marcados
-					</p>
-					<p class="mt-1 text-lg font-semibold text-success">{completedManualAdjustments}</p>
-					<p class="mt-1 text-xs text-on-surface-variant">
-						Se abren aparte y luego puedes volver para marcar el seguimiento.
-					</p>
-				</div>
+		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+			{#each compactStats as stat, index (stat.id)}
+				{#if index > 0}
+					<span class="text-outline">·</span>
+				{/if}
+				<span class="text-on-surface-variant">
+					{stat.label}:
+					<span class={`font-semibold ${compactStatClass(stat.tone)}`}>{stat.value}</span>
+				</span>
+			{/each}
+		</div>
+
+		<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+			<div class="h-2 flex-1 overflow-hidden rounded-full bg-surface-container-high">
+				<div
+					class="h-full rounded-full bg-brand-blue transition-all duration-200"
+					style={`width: ${progressPercent}%`}
+				></div>
 			</div>
-		{/if}
+			<p class="text-sm font-medium text-brand-navy">
+				{countedTotal} / {totalLines} líneas · {progressPercent}%
+			</p>
+		</div>
 	</section>
 
-	<section class="glass-card bg-surface-container-low p-4">
-		<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+	<section class="glass-card border border-outline-variant/20 bg-surface-container-low shadow-sm">
+		<div
+			class="flex flex-col gap-3 border-b border-outline-variant/15 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between"
+		>
 			<div class="flex flex-wrap gap-2">
 				{#each Object.entries(INVENTORY_COUNT_UI_FILTER_LABELS) as [filter, label] (filter)}
 					<button
 						type="button"
 						onclick={() => (activeFilter = filter as InventoryCountUiFilter)}
-						class={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${activeFilter === filter ? 'bg-brand-navy text-white' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container'}`}
+						class={`rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${activeFilter === filter ? 'bg-brand-navy text-white' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container'}`}
 					>
 						{label}
 					</button>
 				{/each}
 			</div>
 
-			<div class="relative w-full max-w-md">
-				<Search
-					class="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-outline"
-				/>
-				<input
-					type="search"
-					bind:value={search}
-					placeholder="Buscar por nombre, SKU o referencia"
-					class="w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-4 py-3 pl-11 text-sm text-on-surface"
-				/>
+			<div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+				<div class="relative min-w-0 flex-1 lg:w-[22rem] lg:flex-none">
+					<Search
+						class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
+					/>
+					<input
+						type="search"
+						bind:value={search}
+						placeholder="Buscar por nombre, SKU o referencia"
+						class="w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-4 py-2.5 pl-10 text-sm text-on-surface"
+					/>
+				</div>
+				<span class="text-xs text-on-surface-variant">{filteredLines.length} / {totalLines}</span>
 			</div>
 		</div>
-	</section>
 
-	<section class="glass-card bg-surface-container-low p-4">
 		<DataGrid
 			{columns}
 			items={filteredLines}
@@ -587,6 +595,7 @@
 		>
 			{#snippet row(line)}
 				{@const adjustmentPath = getAdjustmentPath(line)}
+				{@const matched = isMatchedLine(line)}
 				<tr
 					class="bg-surface-container-lowest text-sm text-on-surface transition-colors hover:bg-surface-container-low"
 				>
@@ -599,19 +608,16 @@
 					<td class="px-4 py-3 align-top font-mono text-xs text-on-surface-variant">
 						{line.itemCode ?? '—'}
 					</td>
-					<td class="px-4 py-3 align-top text-on-surface-variant"
-						>{line.itemDetail ?? line.itemType}</td
-					>
 					<td class="px-4 py-3 text-right font-semibold text-brand-navy">{line.systemStock}</td>
 					<td class="px-4 py-3 text-right">
 						{#if isEditing(line.id)}
-							<div class="ml-auto flex max-w-[14rem] flex-col items-end gap-2">
+							<div class="ml-auto flex max-w-[12rem] flex-col items-end gap-1.5">
 								<div class="flex items-center gap-2">
 									<input
 										type="number"
 										bind:value={editing.count}
 										min="0"
-										class="w-24 rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-right text-sm text-on-surface"
+										class="w-20 rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-right text-sm text-on-surface"
 										onkeydown={(event) => {
 											if (event.key === 'Enter') {
 												event.preventDefault();
@@ -631,21 +637,13 @@
 									>
 										<Check class="h-4 w-4" />
 									</button>
-									<button
-										type="button"
-										onclick={stopEditing}
-										disabled={editing.isSaving}
-										class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-variant/30 text-on-surface-variant transition-colors hover:bg-surface-container"
-									>
-										<X class="h-4 w-4" />
-									</button>
 								</div>
 
 								<div class="flex items-center gap-2">
 									<button
 										type="button"
 										onclick={() => (editing.showNotes = !editing.showNotes)}
-										class="text-xs font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+										class="text-[11px] font-semibold text-brand-blue transition-colors hover:text-brand-navy"
 									>
 										{editing.showNotes ? 'Ocultar nota' : 'Agregar nota'}
 									</button>
@@ -661,84 +659,96 @@
 								{/if}
 							</div>
 						{:else if line.countedStock !== null}
-							<div class="space-y-1 text-right">
-								<p class="font-semibold text-brand-navy">{line.countedStock}</p>
-								<p class="text-xs text-on-surface-variant">✓ {line.countedByName ?? 'Usuario'}</p>
-							</div>
+							{#if !isReadonly}
+								<button
+									type="button"
+									onclick={() => startEditing(line)}
+									class="ml-auto inline-flex flex-col items-end rounded-lg text-right transition-colors hover:text-brand-navy"
+								>
+									<span class="font-semibold text-brand-navy">{line.countedStock}</span>
+									<span class="text-xs text-on-surface-variant"
+										>✓ {line.countedByName ?? 'Usuario'}</span
+									>
+								</button>
+							{:else}
+								<div class="space-y-1 text-right">
+									<p class="font-semibold text-brand-navy">{line.countedStock}</p>
+									<p class="text-xs text-on-surface-variant">✓ {line.countedByName ?? 'Usuario'}</p>
+								</div>
+							{/if}
 						{:else}
 							<span class="text-on-surface-variant">—</span>
 						{/if}
 					</td>
-					<td class={`px-4 py-3 text-right font-semibold ${differenceClass(line.difference)}`}>
-						{formatDifference(line.difference)}
+					<td class="px-4 py-3 text-right">
+						{#if line.countedStock === null}
+							<span class="text-on-surface-variant">—</span>
+						{:else}
+							<span
+								class={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${differenceBadgeClass(line.difference)}`}
+							>
+								{formatDifference(line.difference)}
+							</span>
+						{/if}
 					</td>
 					<td class="px-4 py-3 text-on-surface-variant">
 						{line.countedByName ?? '—'}
 					</td>
 					<td class="px-4 py-3 text-right">
-						{#if adjustmentPath}
-							<div class="flex flex-col items-end gap-2">
-								<button
-									type="button"
-									onclick={() => openAdjustment(line)}
-									class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
-								>
-									Ir a ajustar ↗
-								</button>
-								<label class="flex items-center gap-2 text-xs font-medium text-on-surface-variant">
-									<input
-										type="checkbox"
-										checked={line.adjustmentCompleted}
-										disabled={isAdjustmentStatusUpdating(line.id) || session.status === 'CANCELLED'}
-										onchange={(event) => handleAdjustmentCheckboxChange(line, event)}
-										class="h-4 w-4 rounded border border-outline-variant/35 text-brand-blue focus:ring-2 focus:ring-brand-blue/25"
-									/>
-									<span>
-										{line.adjustmentCompleted ? 'Ajuste realizado' : 'Marcar como realizado'}
-									</span>
-								</label>
-								{#if line.adjustmentCompletedAt}
-									<p class="max-w-[13rem] text-right text-xs text-on-surface-variant">
-										{line.adjustmentCompletedByName ?? 'Usuario'} ·
-										{formatDate(line.adjustmentCompletedAt, {
-											dateStyle: 'short',
-											timeStyle: 'short'
-										})}
-									</p>
-								{/if}
-								{#if !isReadonly}
-									<button
-										type="button"
-										onclick={() => startEditing(line)}
-										class="inline-flex items-center gap-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-brand-navy"
-									>
-										<SquarePen class="h-4 w-4" />
-										Editar conteo
-									</button>
-								{/if}
-							</div>
-						{:else if !isReadonly}
-							<div class="flex flex-col items-end gap-2">
-								{#if line.countedStock === null}
-									<button
-										type="button"
-										onclick={() => void confirmSystemStock(line)}
-										disabled={isQuickSaving(line.id)}
-										class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy disabled:opacity-50"
-									>
-										<Check class="h-4 w-4" />
-										{isQuickSaving(line.id) ? 'Confirmando...' : 'Confirmar stock'}
-									</button>
-								{/if}
+						{#if isEditing(line.id)}
+							<span class="text-on-surface-variant">—</span>
+						{:else if line.countedStock === null}
+							{#if !isReadonly}
 								<button
 									type="button"
 									onclick={() => startEditing(line)}
-									class="inline-flex items-center gap-2 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+									class="inline-flex items-center gap-2 rounded-lg bg-surface-container px-3 py-1.5 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
 								>
-									<SquarePen class="h-4 w-4" />
-									{line.countedStock !== null ? 'Editar' : 'Ingresar cantidad'}
+									Contar
 								</button>
+							{:else}
+								<span class="text-on-surface-variant">—</span>
+							{/if}
+						{:else if matched}
+							<span class="inline-flex items-center gap-1 text-xs font-semibold text-success">
+								<Check class="h-3.5 w-3.5" />
+								OK
+							</span>
+						{:else if adjustmentPath}
+							<div class="flex flex-col items-end gap-1.5">
+								<button
+									type="button"
+									onclick={() => openAdjustment(line)}
+									class="inline-flex items-center gap-1 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+								>
+									{isReadonly ? 'Revisar ajuste ↗' : 'Ir a ajustar ↗'}
+								</button>
+								{#if session.status !== 'CANCELLED'}
+									<label
+										class="flex items-center gap-1.5 text-[11px] font-medium text-on-surface-variant"
+									>
+										<input
+											type="checkbox"
+											checked={line.adjustmentCompleted}
+											disabled={isAdjustmentStatusUpdating(line.id)}
+											onchange={(event) => handleAdjustmentCheckboxChange(line, event)}
+											class="h-3.5 w-3.5 rounded border border-outline-variant/35 text-brand-blue focus:ring-2 focus:ring-brand-blue/25"
+										/>
+										<span>Hecho</span>
+									</label>
+								{/if}
+								{#if line.adjustmentCompleted}
+									<span class="text-[11px] font-medium text-success">Ajustado</span>
+								{/if}
 							</div>
+						{:else if !isReadonly}
+							<button
+								type="button"
+								onclick={() => startEditing(line)}
+								class="inline-flex items-center gap-1 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+							>
+								Contar
+							</button>
 						{:else}
 							<span class="text-on-surface-variant">—</span>
 						{/if}
@@ -748,6 +758,7 @@
 
 			{#snippet mobileCard(line)}
 				{@const adjustmentPath = getAdjustmentPath(line)}
+				{@const matched = isMatchedLine(line)}
 				<div class="space-y-3">
 					<div class="flex items-start justify-between gap-3">
 						<div>
@@ -776,33 +787,78 @@
 							<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
 								Contado
 							</p>
-							<p class="mt-1 font-semibold text-brand-navy">{line.countedStock ?? '—'}</p>
+							{#if isEditing(line.id)}
+								<div class="mt-1 flex items-center gap-2">
+									<input
+										type="number"
+										bind:value={editing.count}
+										min="0"
+										class="w-20 rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-right text-sm text-on-surface"
+									/>
+									<button
+										type="button"
+										onclick={() => void handleSaveLine(line)}
+										disabled={editing.isSaving}
+										class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-navy text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-50"
+									>
+										<Check class="h-4 w-4" />
+									</button>
+								</div>
+							{:else if line.countedStock !== null && !isReadonly}
+								<button
+									type="button"
+									onclick={() => startEditing(line)}
+									class="mt-1 font-semibold text-brand-navy"
+								>
+									{line.countedStock}
+								</button>
+							{:else}
+								<p class="mt-1 font-semibold text-brand-navy">{line.countedStock ?? '—'}</p>
+							{/if}
 						</div>
 					</div>
 
-					{#if adjustmentPath}
+					{#if isEditing(line.id)}
+						<div class="space-y-2">
+							<button
+								type="button"
+								onclick={() => (editing.showNotes = !editing.showNotes)}
+								class="text-xs font-semibold text-brand-blue transition-colors hover:text-brand-navy"
+							>
+								{editing.showNotes ? 'Ocultar nota' : 'Agregar nota'}
+							</button>
+							{#if editing.showNotes}
+								<textarea
+									bind:value={editing.notes}
+									rows="2"
+									class="w-full rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-sm text-on-surface"
+									placeholder="Nota opcional"
+								></textarea>
+							{/if}
+						</div>
+					{:else if adjustmentPath}
 						<div class="space-y-2">
 							<button
 								type="button"
 								onclick={() => openAdjustment(line)}
 								class="inline-flex w-full items-center justify-center rounded-xl bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
 							>
-								Ir a ajustar ↗
+								{isReadonly ? 'Revisar ajuste ↗' : 'Ajustar →'}
 							</button>
-							<label
-								class="flex items-center gap-2 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface-variant"
-							>
-								<input
-									type="checkbox"
-									checked={line.adjustmentCompleted}
-									disabled={isAdjustmentStatusUpdating(line.id) || session.status === 'CANCELLED'}
-									onchange={(event) => handleAdjustmentCheckboxChange(line, event)}
-									class="h-4 w-4 rounded border border-outline-variant/35 text-brand-blue focus:ring-2 focus:ring-brand-blue/25"
-								/>
-								<span>
-									{line.adjustmentCompleted ? 'Ajuste realizado' : 'Marcar como realizado'}
-								</span>
-							</label>
+							{#if session.status !== 'CANCELLED'}
+								<label
+									class="flex items-center gap-2 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface-variant"
+								>
+									<input
+										type="checkbox"
+										checked={line.adjustmentCompleted}
+										disabled={isAdjustmentStatusUpdating(line.id)}
+										onchange={(event) => handleAdjustmentCheckboxChange(line, event)}
+										class="h-4 w-4 rounded border border-outline-variant/35 text-brand-blue focus:ring-2 focus:ring-brand-blue/25"
+									/>
+									<span>Hecho</span>
+								</label>
+							{/if}
 							{#if line.adjustmentCompletedAt}
 								<p class="text-xs text-on-surface-variant">
 									{line.adjustmentCompletedByName ?? 'Usuario'} ·
@@ -812,34 +868,21 @@
 									})}
 								</p>
 							{/if}
-							{#if !isReadonly}
-								<button
-									type="button"
-									onclick={() => startEditing(line)}
-									class="w-full rounded-xl border border-outline-variant/35 bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
-								>
-									Editar conteo
-								</button>
-							{/if}
+						</div>
+					{:else if matched}
+						<div
+							class="rounded-xl bg-success-container/60 px-3 py-3 text-sm font-semibold text-success"
+						>
+							Conteo OK
 						</div>
 					{:else if !isReadonly}
 						<div class="space-y-2">
-							{#if line.countedStock === null}
-								<button
-									type="button"
-									onclick={() => void confirmSystemStock(line)}
-									disabled={isQuickSaving(line.id)}
-									class="w-full rounded-xl bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high disabled:opacity-50"
-								>
-									{isQuickSaving(line.id) ? 'Confirmando...' : 'Confirmar stock sistema'}
-								</button>
-							{/if}
 							<button
 								type="button"
 								onclick={() => startEditing(line)}
 								class="w-full rounded-xl border border-outline-variant/35 bg-surface-container px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container-high"
 							>
-								{line.countedStock !== null ? 'Editar conteo' : 'Ingresar cantidad'}
+								{line.countedStock === null ? 'Contar' : 'Editar conteo'}
 							</button>
 						</div>
 					{/if}
