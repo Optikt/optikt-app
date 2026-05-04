@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { CoercedNumber, EntityIdSchema } from './common';
 import { ALL_EXPENSE_CATEGORIES, ALL_EXPENSE_CURRENCIES, ALL_RATE_TYPES } from '$lib/shared/enums';
+import { requiresExpenseExchangeRate, requiresExpenseRateType } from '$lib/shared/expenseCalculations';
 
 export const ExpenseCategoryEnum = z.enum(ALL_EXPENSE_CATEGORIES);
 export const ExpenseCurrencyEnum = z.enum(ALL_EXPENSE_CURRENCIES);
@@ -28,15 +29,16 @@ export const CreateExpenseSchema = z
 		currency: ExpenseCurrencyEnum,
 		amount: CoercedNumber.positive('Monto debe ser mayor a 0'),
 		exchangeRate: CoercedNumber.positive('Tasa debe ser mayor a 0').optional(),
-		bcvRate: CoercedNumber.positive('Tasa BCV debe ser mayor a 0').optional(),
+		bcvRate: CoercedNumber.positive('Tasa BCV debe ser mayor a 0'),
 		rateType: RateTypeEnum.optional(),
 		expenseDate: z.iso.datetime('Fecha del gasto requerida'),
 		reference: z.string().trim().max(100).optional(),
 		notes: z.string().trim().max(1000).optional()
 	})
 	.superRefine((data, ctx) => {
-		// Non-USD currencies must include conversion data.
-		const needsRate = data.currency === 'VES' || data.currency === 'EUR';
+		const needsRate = requiresExpenseExchangeRate(data.currency);
+		const needsRateType = requiresExpenseRateType(data.currency);
+
 		if (needsRate) {
 			if (data.exchangeRate == null) {
 				ctx.addIssue({
@@ -45,6 +47,9 @@ export const CreateExpenseSchema = z
 					message: 'Tasa requerida para esta moneda'
 				});
 			}
+		}
+
+		if (needsRateType) {
 			if (data.rateType == null) {
 				ctx.addIssue({
 					code: 'custom',

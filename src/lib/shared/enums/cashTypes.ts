@@ -17,6 +17,7 @@ export const ALL_EXPENSE_CATEGORIES = [
 	'SUPPLIES',
 	'MAINTENANCE',
 	'TRANSPORT',
+	'PUBLICITY',
 	'BANK_FEE',
 	'REFUND',
 	'OTHER'
@@ -34,6 +35,7 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
 	SUPPLIES: 'Insumos',
 	MAINTENANCE: 'Mantenimiento',
 	TRANSPORT: 'Transporte',
+	PUBLICITY: 'Publicidad',
 	BANK_FEE: 'Comisión bancaria',
 	REFUND: 'Reembolso a cliente',
 	OTHER: 'Otro'
@@ -65,9 +67,9 @@ export const EXPENSE_CURRENCY_SYMBOLS: Record<ExpenseCurrency, string> = {
 	EUR: '€'
 };
 
-/** Whether the currency is already USD (no conversion required). */
+/** Whether the currency is already normalized to USD BCV without extra conversion. */
 export function isUsdLike(currency: ExpenseCurrency): boolean {
-	return currency === 'USD' || currency === 'USDT';
+	return currency === 'USD';
 }
 
 // ============================================================================

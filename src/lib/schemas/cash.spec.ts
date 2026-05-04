@@ -6,6 +6,7 @@ const baseUsd = {
 	description: 'Alquiler local',
 	currency: 'USD',
 	amount: 500,
+	bcvRate: 36.5,
 	expenseDate: '2025-05-15T12:00:00.000Z'
 };
 
@@ -45,6 +46,38 @@ describe('CreateExpenseSchema', () => {
 			amount: 100
 		});
 		expect(r.success).toBe(false);
+	});
+
+	it('rejects any expense missing BCV reference rate', () => {
+		const { bcvRate: _bcvRate, ...withoutBcv } = baseUsd;
+		const r = CreateExpenseSchema.safeParse(withoutBcv);
+		expect(r.success).toBe(false);
+		const issues = r.success ? [] : r.error.issues.map((i) => i.path.join('.'));
+		expect(issues).toContain('bcvRate');
+	});
+
+	it('rejects USDT expense without its own operative rate', () => {
+		const r = CreateExpenseSchema.safeParse({
+			...baseUsd,
+			currency: 'USDT',
+			category: 'PUBLICITY',
+			amount: 75
+		});
+		expect(r.success).toBe(false);
+		const issues = r.success ? [] : r.error.issues.map((i) => i.path.join('.'));
+		expect(issues).toContain('exchangeRate');
+		expect(issues).not.toContain('rateType');
+	});
+
+	it('accepts USDT expense with BCV reference and USDT rate', () => {
+		const r = CreateExpenseSchema.safeParse({
+			...baseUsd,
+			currency: 'USDT',
+			category: 'PUBLICITY',
+			amount: 75,
+			exchangeRate: 40.25
+		});
+		expect(r.success).toBe(true);
 	});
 
 	it('rejects amount <= 0', () => {

@@ -19,8 +19,8 @@ import type { ExpenseCategory, ExpenseCurrency, RateType } from '../../../shared
  * Operational cash expenses (rent, salaries, utilities, taxes, etc.)
  * Independent from purchase orders / inventory acquisitions.
  *
- * - All amounts are stored in their native currency (`amount`) AND converted
- *   to USD (`amountUsd`) as a snapshot at registration time. The snapshot is
+	 * - All amounts are stored in their native currency (`amount`) AND converted
+	 *   to USD BCV (`amountUsd`) as a snapshot at registration time. The snapshot is
  *   immutable: changing exchange rates later does NOT recompute past expenses.
  * - Records are never hard-deleted; use `voidedAt` for cancellation. Voided
  *   rows are excluded from totals but kept for audit.
@@ -36,13 +36,14 @@ export const cashExpenses = pgTable(
 		currency: varchar({ length: 10 }).notNull().$type<ExpenseCurrency>(),
 		/** Amount in the native currency. */
 		amount: doublePrecision().notNull(),
-		/** Snapshot equivalent in USD at the moment of registration (server-computed). */
+		/** Snapshot equivalent in USD BCV at the moment of registration (server-computed). */
 		amountUsd: doublePrecision('amount_usd').notNull(),
 		/**
-		 * Method-specific exchange rate used to compute `amountUsd`.
-		 * - USD/USDT: null (already in USD).
-		 * - VES: rate Bs per 1 USD (could be BCV or parallel depending on rateType).
-		 * - EUR: rate Bs per 1 EUR (multiplied/divided through bcvRate to USD).
+		 * Method-specific exchange rate captured for audit.
+		 * - USD: null (native amount already equals USD BCV).
+		 * - VES: operative rate Bs per 1 USD (BCV, parallel, etc.).
+		 * - USDT: rate Bs per 1 USDT.
+		 * - EUR: direct EUR→USD conversion used at registration time.
 		 */
 		exchangeRate: doublePrecision('exchange_rate'),
 		/**

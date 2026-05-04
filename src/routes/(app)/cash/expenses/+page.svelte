@@ -11,11 +11,16 @@
 		EXPENSE_CATEGORY_LABELS,
 		EXPENSE_CURRENCY_LABELS,
 		RATE_TYPE_LABELS,
-		isUsdLike,
 		type ExpenseCategory,
 		type ExpenseCurrency,
 		type RateType
 	} from '$lib/shared/enums';
+	import {
+		calculateExpenseAmountBcvUsd,
+		getExpenseExchangeRateLabel,
+		requiresExpenseExchangeRate,
+		requiresExpenseRateType
+	} from '$lib/shared/expenseCalculations';
 	import {
 		listExpensesQuery,
 		createExpenseCommand,
@@ -39,6 +44,7 @@
 	let creating = $state(false);
 	let form = $state(emptyForm());
 	let bcvRateHint = $state<number | null>(null);
+	let usdtRateHint = $state<number | null>(null);
 
 	function emptyForm() {
 		const today = new Date().toISOString().slice(0, 10);
@@ -47,6 +53,7 @@
 			description: '',
 			currency: 'USD' as ExpenseCurrency,
 			amount: '' as string,
+			bcvRate: '' as string,
 			exchangeRate: '' as string,
 			rateType: 'BCV' as RateType,
 			expenseDate: today,
@@ -75,15 +82,23 @@
 	async function openCreate() {
 		form = emptyForm();
 		showCreate = true;
+		bcvRateHint = null;
+		usdtRateHint = null;
 		// Pre-fill BCV rate
 		try {
 			const rates = await fetchLatestRates();
 			const usd = rates.find((r) => r.currency.code === 'USD');
+			const usdt = rates.find((r) => r.currency.code === 'USDT');
 			if (usd) {
 				bcvRateHint = usd.rateToVes;
+				form.bcvRate = String(usd.rateToVes);
+			}
+			if (usdt) {
+				usdtRateHint = usdt.rateToVes;
 			}
 		} catch {
 			bcvRateHint = null;
+			usdtRateHint = null;
 		}
 	}
 
@@ -91,19 +106,41 @@
 		showCreate = false;
 	}
 
-	const needsRate = $derived(form.currency === 'VES' || form.currency === 'EUR');
+	const needsExchangeRate = $derived(requiresExpenseExchangeRate(form.currency));
+	const needsRateType = $derived(requiresExpenseRateType(form.currency));
+	const exchangeRateLabel = $derived(getExpenseExchangeRateLabel(form.currency));
+	const normalizedAmountPreview = $derived.by(() => {
+		const amount = Number(form.amount);
+		const bcvRate = Number(form.bcvRate);
+		const exchangeRate = Number(form.exchangeRate);
+
+		return calculateExpenseAmountBcvUsd({
+			currency: form.currency,
+			amount: Number.isFinite(amount) ? amount : 0,
+			bcvRate: Number.isFinite(bcvRate) ? bcvRate : 0,
+			exchangeRate: Number.isFinite(exchangeRate) ? exchangeRate : undefined
+		});
+	});
 
 	async function submitCreate(ev: SubmitEvent) {
 		ev.preventDefault();
 		creating = true;
 		try {
 			const amount = Number(form.amount);
-			const exchangeRate = needsRate ? Number(form.exchangeRate) : undefined;
+			const bcvRate = Number(form.bcvRate);
+			const exchangeRate = needsExchangeRate ? Number(form.exchangeRate) : undefined;
 			if (Number.isNaN(amount) || amount <= 0) {
 				toast.error('Monto inválido');
 				return;
 			}
-			if (needsRate && (Number.isNaN(exchangeRate ?? NaN) || (exchangeRate ?? 0) <= 0)) {
+			if (Number.isNaN(bcvRate) || bcvRate <= 0) {
+				toast.error('Tasa BCV inválida');
+				return;
+			}
+			if (
+				needsExchangeRate &&
+				(Number.isNaN(exchangeRate ?? Number.NaN) || (exchangeRate ?? 0) <= 0)
+			) {
 				toast.error('Tasa inválida');
 				return;
 			}
@@ -114,8 +151,8 @@
 				currency: form.currency,
 				amount,
 				exchangeRate,
-				bcvRate: bcvRateHint && form.currency === 'VES' ? bcvRateHint : undefined,
-				rateType: needsRate ? form.rateType : undefined,
+				bcvRate,
+				rateType: needsRateType ? form.rateType : undefined,
 				expenseDate: isoDate,
 				reference: form.reference.trim() || undefined,
 				notes: form.notes.trim() || undefined
@@ -155,8 +192,9 @@
 			'Descripción',
 			'Moneda',
 			'Monto',
-			'Equivalente USD',
-			'Tasa',
+			'Equivalente USD BCV',
+			'Tasa operativa',
+			'Tasa BCV',
 			'Registrado por',
 			'Referencia',
 			'Estado'
@@ -168,7 +206,8 @@
 			e.currency,
 			e.amount.toFixed(2),
 			e.amountUsd.toFixed(2),
-			e.exchangeRate?.toFixed(2) ?? '',
+			e.exchangeRate?.toFixed(4) ?? '',
+			e.bcvRate?.toFixed(4) ?? '',
 			e.registeredByName ?? '',
 			e.reference ?? '',
 			e.voidedAt ? 'ANULADO' : 'Activo'
@@ -495,14 +534,19 @@
 									<p
 										class="mt-2 text-[10px] font-semibold tracking-[0.18em] text-outline uppercase"
 									>
-										USD
+										USD BCV
 									</p>
 									<p class="mt-1 font-mono text-[13px] font-semibold text-brand-navy tabular-nums">
 										{formatPrice(row.amountUsd)}
 									</p>
-									{#if !isUsdLike(row.currency) && row.exchangeRate}
+									{#if row.exchangeRate}
 										<p class="mt-1 text-[10px] text-on-surface-variant">
-											@ {row.exchangeRate.toFixed(2)}
+											{row.currency === 'USDT' ? 'USDT' : 'Op.'} {row.exchangeRate.toFixed(2)}
+										</p>
+									{/if}
+									{#if row.bcvRate}
+										<p class="mt-1 text-[10px] text-on-surface-variant">
+											BCV {row.bcvRate.toFixed(2)}
 										</p>
 									{/if}
 								</div>
@@ -553,7 +597,7 @@
 						<th class="px-4 py-3">Categoría</th>
 						<th class="px-4 py-3">Descripción</th>
 						<th class="px-4 py-3 text-right">Monto</th>
-						<th class="px-4 py-3 text-right">USD</th>
+						<th class="px-4 py-3 text-right">USD BCV</th>
 						<th class="px-4 py-3">Registró</th>
 						<th class="px-4 py-3">Referencia</th>
 						<th class="px-4 py-3">Estado</th>
@@ -579,8 +623,13 @@
 							<td class="px-4 py-3 text-right font-mono tabular-nums">
 								{row.amount.toFixed(2)}
 								<span class="text-slate-500">{row.currency}</span>
-								{#if !isUsdLike(row.currency) && row.exchangeRate}
-									<div class="text-xs text-slate-400">@ {row.exchangeRate.toFixed(2)}</div>
+								{#if row.exchangeRate}
+									<div class="text-xs text-slate-400">
+										{row.currency === 'USDT' ? 'USDT' : 'Op.'} {row.exchangeRate.toFixed(2)}
+									</div>
+								{/if}
+								{#if row.bcvRate}
+									<div class="text-xs text-slate-400">BCV {row.bcvRate.toFixed(2)}</div>
 								{/if}
 							</td>
 							<td class="px-4 py-3 text-right font-mono font-semibold text-rose-700 tabular-nums">
@@ -732,10 +781,34 @@
 							/>
 						</label>
 
-						{#if needsRate}
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+								>Tasa BCV referencia *</span
+							>
+							<input
+								type="number"
+								min="0"
+								step="0.0001"
+								inputmode="decimal"
+								bind:value={form.bcvRate}
+								required
+								class={`${fieldInputClass} text-right font-mono`}
+							/>
+							{#if bcvRateHint}
+								<button
+									type="button"
+									class="self-start rounded-lg bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-brand-blue"
+									onclick={() => (form.bcvRate = String(bcvRateHint))}
+								>
+									Usar BCV: {bcvRateHint.toFixed(2)}
+								</button>
+							{/if}
+						</label>
+
+						{#if needsExchangeRate}
 							<label class="flex flex-col gap-1.5 text-sm">
 								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-									Tasa * {form.currency === 'EUR' ? '(EUR→USD)' : '(Bs/USD)'}
+									{exchangeRateLabel} *
 								</span>
 								<input
 									type="number"
@@ -754,9 +827,18 @@
 									>
 										Usar BCV: {bcvRateHint.toFixed(2)}
 									</button>
+								{:else if form.currency === 'USDT' && usdtRateHint}
+									<button
+										type="button"
+										class="self-start rounded-lg bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-brand-blue"
+										onclick={() => (form.exchangeRate = String(usdtRateHint))}
+									>
+										Usar USDT: {usdtRateHint.toFixed(2)}
+									</button>
 								{/if}
 							</label>
 
+							{#if needsRateType}
 							<label class="flex flex-col gap-1.5 text-sm">
 								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
 									>Tipo de tasa *</span
@@ -767,6 +849,14 @@
 									{/each}
 								</select>
 							</label>
+							{/if}
+						{/if}
+
+						{#if normalizedAmountPreview > 0}
+							<div class="col-span-full rounded-xl bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant">
+								Se registrarán <span class="font-mono font-semibold text-brand-navy">{formatPrice(normalizedAmountPreview)}</span>
+								como USD BCV.
+							</div>
 						{/if}
 
 						<label class="flex flex-col gap-1.5 text-sm">

@@ -27,7 +27,7 @@ import {
 	VoidExpenseSchema
 } from '$lib/schemas/cash';
 import type { CashExpense } from '$lib/server/db/schema';
-import { isUsdLike } from '$lib/shared/enums';
+import { calculateExpenseAmountBcvUsd, requiresExpenseRateType } from '$lib/shared/expenseCalculations';
 import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 
 // ============================================================================
@@ -50,25 +50,31 @@ function toRange(from: string, to: string): { fromTs: string; toTs: string } {
 function computeAmountUsd(args: {
 	currency: 'USD' | 'VES' | 'USDT' | 'EUR';
 	amount: number;
+	bcvRate: number;
 	exchangeRate?: number;
 }): number {
-	const { currency, amount, exchangeRate } = args;
-	if (isUsdLike(currency)) return amount;
+	const { currency, amount, bcvRate, exchangeRate } = args;
+	const amountUsd = calculateExpenseAmountBcvUsd({ currency, amount, bcvRate, exchangeRate });
+	if (currency === 'USD') return amountUsd;
 	if (currency === 'VES') {
 		if (!exchangeRate || exchangeRate <= 0) {
 			error(400, 'Tasa requerida para egresos en Bs');
 		}
-		// Bs / (Bs per USD) = USD
-		return amount / exchangeRate;
+		return amountUsd;
+	}
+	if (currency === 'USDT') {
+		if (!exchangeRate || exchangeRate <= 0) {
+			error(400, 'Tasa USDT requerida para egresos en USDT');
+		}
+		return amountUsd;
 	}
 	if (currency === 'EUR') {
 		if (!exchangeRate || exchangeRate <= 0) {
 			error(400, 'Tasa requerida para egresos en EUR');
 		}
-		// Treat exchangeRate as EUR→USD multiplier
-		return amount * exchangeRate;
+		return amountUsd;
 	}
-	return amount;
+	return amountUsd;
 }
 
 // ============================================================================
@@ -125,6 +131,7 @@ export const createExpenseCommand = command(
 		const amountUsd = computeAmountUsd({
 			currency: data.currency,
 			amount: data.amount,
+			bcvRate: data.bcvRate,
 			exchangeRate: data.exchangeRate
 		});
 
@@ -137,8 +144,12 @@ export const createExpenseCommand = command(
 					amount: data.amount,
 					amountUsd,
 					exchangeRate: data.exchangeRate ?? null,
-					bcvRate: data.bcvRate ?? null,
-					rateType: data.rateType ?? null,
+					bcvRate: data.bcvRate,
+					rateType: requiresExpenseRateType(data.currency)
+						? (data.rateType ?? null)
+						: data.currency === 'USDT'
+							? 'DIRECT'
+							: null,
 					expenseDate: data.expenseDate,
 					registeredById: user.id,
 					reference: data.reference ?? null,
