@@ -17,6 +17,7 @@
 		HandCoins,
 		Wallet
 	} from '@lucide/svelte';
+	import { getInventoryCountContext } from '$lib/context';
 	import { isAdminRole, UserRole } from '$lib/shared/enums';
 	import type { LucideIcon } from '$lib/types/index.js';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
@@ -29,6 +30,7 @@
 	};
 
 	let { user, mobileOpen = false, onClose }: SidebarProps = $props();
+	const inventoryCountContext = getInventoryCountContext();
 
 	const iconMap: Record<string, LucideIcon> = {
 		home: House,
@@ -84,6 +86,16 @@
 			{onSelect}
 		/>
 	{/each}
+
+	<NavLink
+		href={resolve('/inventory/count')}
+		label="Conteo Físico"
+		icon={ClipboardList}
+		badge={inventoryCountContext.activeSession ? 'EN PROGRESO' : undefined}
+		badgeDisplay="dot"
+		matchSubPaths
+		{onSelect}
+	/>
 
 	{#if isAdminOrManager}
 		<div class="mx-4 my-2 h-px bg-slate-200"></div>

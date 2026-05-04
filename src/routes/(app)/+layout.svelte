@@ -1,19 +1,33 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
+	import { untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { setUiConfig } from '$lib/context';
+	import { setInventoryCountContext, setUiConfig, type InventoryCountContext } from '$lib/context';
 	import { AppNavbar, Sidebar } from '$lib/components/layout';
 
 	let { children, data } = $props();
 
 	const user = $derived(data.user);
+	const initialActiveInventoryCountSession = untrack(() => {
+		const layoutData = data as typeof data & {
+			activeInventoryCountSession?: { id: number } | null;
+		};
+
+		return layoutData.activeInventoryCountSession
+			? { id: layoutData.activeInventoryCountSession.id }
+			: null;
+	});
+	let inventoryCountContext = $state<InventoryCountContext>({
+		activeSession: initialActiveInventoryCountSession
+	});
 	let mobileNavOpen = $state(false);
 
 	// Provide UI config via type-safe context
 	setUiConfig({
 		sidebarCollapsed: () => data.sidebarCollapsed
 	});
+	setInventoryCountContext(inventoryCountContext);
 
 	let mainEl = $state<HTMLElement>();
 
