@@ -19,6 +19,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { AppBadge, DataGrid } from '$lib/components/ui';
+	import { getInventoryCountContext } from '$lib/context';
 	import {
 		createSession,
 		getSessions as getSessionsQuery
@@ -33,6 +34,7 @@
 	import { formatDate, getErrorMessage } from '$lib/utils';
 
 	let { data } = $props();
+	const inventoryCountContext = getInventoryCountContext();
 	const initialData = untrack(() => ({
 		activeSession: data.activeSession ?? null,
 		sessions: data.sessions
@@ -191,6 +193,7 @@
 				historySessions = nextSummarySessions;
 			}
 			activeSession = result.session;
+			inventoryCountContext.activeSession = { id: result.session.id };
 			showCreateModal = false;
 			await goto(resolve(`/inventory/count/${result.session.id}`));
 		} catch (error) {

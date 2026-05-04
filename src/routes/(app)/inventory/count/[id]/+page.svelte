@@ -5,6 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { AppBadge, DataGrid } from '$lib/components/ui';
+	import { getInventoryCountContext } from '$lib/context';
 	import {
 		applySession,
 		cancelSession,
@@ -25,6 +26,7 @@
 	import { formatDate, getErrorMessage } from '$lib/utils';
 
 	let { data } = $props();
+	const inventoryCountContext = getInventoryCountContext();
 	let session = $state<InventoryCountSessionDetail>(untrack(() => data.session));
 	let lines = $state<InventoryCountLineRow[]>(untrack(() => data.session.lines));
 	let search = $state('');
@@ -440,6 +442,7 @@
 
 			session = result.session;
 			lines = result.session.lines;
+			inventoryCountContext.activeSession = null;
 			showApplyModal = false;
 			stopEditing();
 			toast.success('Sesión de conteo cerrada');
@@ -473,6 +476,7 @@
 
 			session = result.session;
 			lines = result.session.lines;
+			inventoryCountContext.activeSession = null;
 			showCancelModal = false;
 			cancelReason = '';
 			stopEditing();

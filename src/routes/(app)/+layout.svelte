@@ -1,26 +1,33 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
+	import { untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { setUiConfig } from '$lib/context';
+	import { setInventoryCountContext, setUiConfig, type InventoryCountContext } from '$lib/context';
 	import { AppNavbar, Sidebar } from '$lib/components/layout';
 
 	let { children, data } = $props();
 
 	const user = $derived(data.user);
-	const activeInventoryCountSession = $derived(
-		(
-			data as typeof data & {
-				activeInventoryCountSession?: { id: number } | null;
-			}
-		).activeInventoryCountSession ?? null
-	);
+	const initialActiveInventoryCountSession = untrack(() => {
+		const layoutData = data as typeof data & {
+			activeInventoryCountSession?: { id: number } | null;
+		};
+
+		return layoutData.activeInventoryCountSession
+			? { id: layoutData.activeInventoryCountSession.id }
+			: null;
+	});
+	let inventoryCountContext = $state<InventoryCountContext>({
+		activeSession: initialActiveInventoryCountSession
+	});
 	let mobileNavOpen = $state(false);
 
 	// Provide UI config via type-safe context
 	setUiConfig({
 		sidebarCollapsed: () => data.sidebarCollapsed
 	});
+	setInventoryCountContext(inventoryCountContext);
 
 	let mainEl = $state<HTMLElement>();
 
@@ -42,12 +49,7 @@
 
 	<!-- Sidebar + Content below navbar -->
 	<div class="flex min-h-0 flex-1">
-		<Sidebar
-			{user}
-			{activeInventoryCountSession}
-			mobileOpen={mobileNavOpen}
-			onClose={() => (mobileNavOpen = false)}
-		/>
+		<Sidebar {user} mobileOpen={mobileNavOpen} onClose={() => (mobileNavOpen = false)} />
 
 		<main bind:this={mainEl} class="flex-1 overflow-y-auto bg-surface">
 			{#key page.url.pathname}
