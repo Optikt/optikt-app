@@ -96,6 +96,7 @@
 		label="Conteo Físico"
 		icon={ClipboardList}
 		badge={activeInventoryCountSession ? 'EN PROGRESO' : undefined}
+		badgeDisplay="dot"
 		matchSubPaths
 		{onSelect}
 	/>

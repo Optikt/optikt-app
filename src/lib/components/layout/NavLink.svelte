@@ -8,6 +8,7 @@
 		label,
 		icon: Icon,
 		badge,
+		badgeDisplay = 'text',
 		matchSubPaths = false,
 		onSelect
 	}: {
@@ -15,6 +16,7 @@
 		label: string;
 		icon: Component;
 		badge?: string;
+		badgeDisplay?: 'text' | 'dot';
 		matchSubPaths?: boolean;
 		onSelect?: () => void;
 	} = $props();
@@ -45,13 +47,20 @@
 	</span>
 
 	{#if badge}
-		<span
-			class={`rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.16em] uppercase ${
-				isActive ? 'bg-brand-blue/15 text-brand-blue' : 'bg-brand-gold/20 text-brand-navy'
-			}`}
-		>
-			{badge}
-		</span>
+		{#if badgeDisplay === 'dot'}
+			<span class="flex shrink-0 items-center">
+				<span class="sr-only">{badge}</span>
+				<span aria-hidden="true" class="h-2 w-2 rounded-full bg-brand-gold"></span>
+			</span>
+		{:else}
+			<span
+				class={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.16em] uppercase ${
+					isActive ? 'bg-brand-blue/15 text-brand-blue' : 'bg-brand-gold/20 text-brand-navy'
+				}`}
+			>
+				{badge}
+			</span>
+		{/if}
 	{/if}
 </a>
 <!-- eslint-enable svelte/no-navigation-without-resolve -->
