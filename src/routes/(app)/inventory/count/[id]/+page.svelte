@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Check, Search, X, TriangleAlert } from '@lucide/svelte';
+	import { ArrowLeft, Check, Search, X, TriangleAlert } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { AppBadge, DataGrid, PageHeader } from '$lib/components/ui';
+	import { AppBadge, DataGrid } from '$lib/components/ui';
 	import {
 		applySession,
 		cancelSession,
@@ -132,58 +132,81 @@
 		})
 	);
 
-	type CompactStatTone = 'neutral' | 'success' | 'warning' | 'error';
-	type CompactStat = {
+	type SummaryMetricTone = 'neutral' | 'success' | 'warning' | 'error';
+	type SummaryMetric = {
 		id: string;
 		label: string;
 		value: string;
-		tone: CompactStatTone;
+		tone: SummaryMetricTone;
 	};
 
-	const compactStats = $derived.by<CompactStat[]>(() => {
-		const stats: CompactStat[] = [
+	const summaryMetrics = $derived.by<SummaryMetric[]>(() => {
+		const metrics: SummaryMetric[] = [
 			{
-				id: 'pending',
-				label: 'Pendientes',
-				value: String(pendingTotal),
+				id: 'coverage',
+				label: 'Cobertura',
+				value: `${countedTotal}/${totalLines}`,
 				tone: pendingTotal > 0 ? 'warning' : 'neutral'
 			},
 			{
-				id: 'matched',
-				label: 'OK',
-				value: String(matchedLines.length),
-				tone: matchedLines.length > 0 ? 'success' : 'neutral'
-			},
-			{
-				id: 'positive',
-				label: '+Dif',
-				value: `${positiveDiffLines.length}/+${positiveUnits}`,
-				tone: positiveDiffLines.length > 0 ? 'success' : 'neutral'
-			},
-			{
-				id: 'negative',
-				label: '-Dif',
-				value: `${negativeDiffLines.length}/-${negativeUnits}`,
-				tone: negativeDiffLines.length > 0 ? 'error' : 'neutral'
+				id: 'differences',
+				label: 'Diferencias',
+				value: String(diffLines.length),
+				tone: diffLines.length > 0 ? 'warning' : 'neutral'
 			},
 			{
 				id: 'variance',
-				label: 'Var',
+				label: 'Variación',
 				value: varianceUnitsLabel,
 				tone: varianceUnits > 0 ? 'success' : varianceUnits < 0 ? 'error' : 'neutral'
+			},
+			{
+				id: 'adjustments',
+				label: 'Ajustes',
+				value: diffLines.length === 0 ? '—' : `${completedManualAdjustments}/${diffLines.length}`,
+				tone:
+					diffLines.length === 0 ? 'neutral' : pendingManualAdjustments > 0 ? 'warning' : 'success'
 			}
 		];
 
-		if (diffLines.length > 0 || completedManualAdjustments > 0) {
-			stats.push({
-				id: 'adjustments',
-				label: 'Ajustes',
-				value: `${completedManualAdjustments}/${diffLines.length}`,
-				tone: pendingManualAdjustments > 0 ? 'warning' : 'success'
-			});
+		return metrics;
+	});
+
+	const summaryMessageLabel = $derived.by(() => {
+		if (session.status === 'CANCELLED') {
+			return 'Motivo';
 		}
 
-		return stats;
+		if (hasSessionNotes) {
+			return 'Notas';
+		}
+
+		return session.status === 'OPEN' ? 'Siguiente paso' : 'Seguimiento';
+	});
+
+	const summaryMessage = $derived.by(() => {
+		if (session.status === 'CANCELLED') {
+			return session.cancelReason?.trim() || 'Sesión cancelada sin motivo registrado.';
+		}
+
+		const note = session.notes?.trim();
+		if (note) {
+			return note;
+		}
+
+		if (session.status === 'OPEN') {
+			return canCloseSession
+				? 'Conteo completo. La sesión está lista para cerrarse.'
+				: `Faltan ${pendingTotal} ${pendingTotal === 1 ? 'línea' : 'líneas'} por contar para poder cerrar la sesión.`;
+		}
+
+		if (diffLines.length === 0) {
+			return 'La sesión quedó registrada sin diferencias pendientes.';
+		}
+
+		return pendingManualAdjustments > 0
+			? `${pendingManualAdjustments} ${pendingManualAdjustments === 1 ? 'línea requiere' : 'líneas requieren'} ajuste manual.`
+			: 'Todos los ajustes manuales asociados ya fueron marcados como realizados.';
 	});
 
 	const columns = [
@@ -204,7 +227,7 @@
 		return 'neutral';
 	}
 
-	function compactStatClass(tone: CompactStatTone) {
+	function compactStatClass(tone: SummaryMetricTone) {
 		if (tone === 'success') return 'text-success';
 		if (tone === 'warning') return 'text-brand-gold';
 		if (tone === 'error') return 'text-error';
@@ -467,19 +490,33 @@
 	<title>Sesión #{session.id} - Conteo Físico - Optikt</title>
 </svelte:head>
 
-<div class="space-y-6 p-4 sm:p-6">
-	<PageHeader
-		title={`Sesión #${session.id}`}
-		subtitle={session.status === 'OPEN'
-			? 'Conteo físico en ejecución'
-			: session.status === 'APPLIED'
-				? 'Informe de conteo físico'
-				: 'Conteo físico cancelado'}
-		backLabel="Volver al historial"
-		backOnClick={goBack}
-	>
-		{#snippet actions()}
-			{#if session.status === 'OPEN' && canManage}
+<div class="space-y-4 p-3 sm:p-4 lg:px-4 lg:py-4">
+	<header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+		<div class="flex min-w-0 items-center gap-3 overflow-hidden">
+			<button
+				type="button"
+				onclick={goBack}
+				class="inline-flex shrink-0 items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-brand-blue"
+			>
+				<ArrowLeft size={16} />
+				Volver al historial
+			</button>
+			<p class="shrink-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+				{session.status === 'OPEN'
+					? 'Conteo físico en ejecución'
+					: session.status === 'APPLIED'
+						? 'Informe de conteo físico'
+						: 'Conteo físico cancelado'}
+			</p>
+			<h1
+				class="font-heading min-w-0 truncate text-xl font-bold text-brand-navy sm:text-2xl lg:text-3xl"
+			>
+				Sesión #{session.id}
+			</h1>
+		</div>
+
+		{#if session.status === 'OPEN' && canManage}
+			<div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
 				<button
 					type="button"
 					onclick={() => (showApplyModal = true)}
@@ -497,61 +534,105 @@
 					<X class="h-4 w-4" />
 					Cancelar sesión
 				</button>
-			{/if}
-		{/snippet}
-	</PageHeader>
+			</div>
+		{/if}
+	</header>
 
-	<section class="space-y-3 border-b border-outline-variant/15 pb-3">
-		<div class="flex flex-wrap items-center gap-2 text-sm">
-			<AppBadge variant={statusVariant(session.status)}>{statusLabel}</AppBadge>
-			<span class="font-medium text-brand-navy">Alcance: {scopeLabel}</span>
-			{#if hasSessionNotes}
-				<span
-					class="inline-flex rounded-full bg-brand-gold/15 px-2.5 py-1 text-[11px] font-semibold text-brand-navy"
-				>
-					Con notas
+	<section
+		class="grid gap-2 border-b border-outline-variant/15 pb-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.9fr)]"
+	>
+		<div class="min-w-0 space-y-2">
+			<div class="flex flex-wrap items-center gap-2 text-sm">
+				<AppBadge variant={statusVariant(session.status)}>{statusLabel}</AppBadge>
+				<span class="font-medium text-brand-navy">Alcance: {scopeLabel}</span>
+				{#if hasSessionNotes}
+					<span
+						class="inline-flex rounded-full bg-brand-gold/15 px-2.5 py-1 text-[11px] font-semibold text-brand-navy"
+					>
+						Con notas
+					</span>
+				{/if}
+			</div>
+
+			<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
+				<p class="min-w-0">{openedSummary}</p>
+				{#if lifecycleSummary}
+					<span class="text-outline">·</span>
+					<p class="min-w-0 truncate" title={lifecycleSummary}>{lifecycleSummary}</p>
+				{/if}
+			</div>
+
+			<div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-sm text-on-surface-variant">
+				<span>
+					Pendientes:
+					<span class="font-semibold text-brand-gold tabular-nums">{pendingTotal}</span>
 				</span>
-			{/if}
+				<span>
+					OK:
+					<span class="font-semibold text-success tabular-nums">{matchedLines.length}</span>
+				</span>
+				<span>
+					+Dif:
+					<span class="font-semibold text-success tabular-nums"
+						>{positiveDiffLines.length}/+{positiveUnits}</span
+					>
+				</span>
+				<span>
+					-Dif:
+					<span class="font-semibold text-error tabular-nums"
+						>{negativeDiffLines.length}/-{negativeUnits}</span
+					>
+				</span>
+			</div>
+
+			<div class="flex flex-col gap-1 pt-0.5 sm:flex-row sm:items-center">
+				<div class="h-2 flex-1 overflow-hidden rounded-full bg-surface-container-high">
+					<div
+						class="h-full rounded-full bg-brand-blue transition-all duration-200"
+						style={`width: ${progressPercent}%`}
+					></div>
+				</div>
+				<p class="text-sm font-medium text-brand-navy tabular-nums">
+					{countedTotal} / {totalLines} líneas · {progressPercent}%
+				</p>
+			</div>
 		</div>
 
 		<div
-			class="flex flex-col gap-1 text-sm text-on-surface-variant lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-3"
+			class="rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-2.5 shadow-sm"
 		>
-			<p>{openedSummary}</p>
-			{#if lifecycleSummary}
-				<span class="hidden text-outline lg:inline">·</span>
-				<p class="max-w-full truncate" title={lifecycleSummary}>{lifecycleSummary}</p>
-			{/if}
-		</div>
-
-		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-			{#each compactStats as stat, index (stat.id)}
-				{#if index > 0}
-					<span class="text-outline">·</span>
-				{/if}
-				<span class="text-on-surface-variant">
-					{stat.label}:
-					<span class={`font-semibold ${compactStatClass(stat.tone)}`}>{stat.value}</span>
-				</span>
-			{/each}
-		</div>
-
-		<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-			<div class="h-2 flex-1 overflow-hidden rounded-full bg-surface-container-high">
-				<div
-					class="h-full rounded-full bg-brand-blue transition-all duration-200"
-					style={`width: ${progressPercent}%`}
-				></div>
+			<div class="grid gap-1.5 sm:grid-cols-2">
+				{#each summaryMetrics as metric (metric.id)}
+					<div class="rounded-xl bg-surface-container-low px-2.5 py-2">
+						<p class="text-[11px] font-semibold tracking-[0.14em] text-outline uppercase">
+							{metric.label}
+						</p>
+						<p
+							class={`mt-0.5 font-mono text-[15px] font-semibold tabular-nums ${compactStatClass(metric.tone)}`}
+						>
+							{metric.value}
+						</p>
+					</div>
+				{/each}
 			</div>
-			<p class="text-sm font-medium text-brand-navy">
-				{countedTotal} / {totalLines} líneas · {progressPercent}%
-			</p>
+
+			<div class="mt-1.5 border-t border-outline-variant/15 pt-2">
+				<p class="text-[11px] font-semibold tracking-[0.14em] text-outline uppercase">
+					{summaryMessageLabel}
+				</p>
+				<p
+					class="mt-0.5 text-sm leading-5 text-on-surface-variant lg:truncate"
+					title={summaryMessage}
+				>
+					{summaryMessage}
+				</p>
+			</div>
 		</div>
 	</section>
 
 	<section class="glass-card border border-outline-variant/20 bg-surface-container-low shadow-sm">
 		<div
-			class="flex flex-col gap-3 border-b border-outline-variant/15 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between"
+			class="flex flex-col gap-2 border-b border-outline-variant/15 p-3 sm:p-3.5 lg:flex-row lg:items-center lg:justify-between"
 		>
 			<div class="flex flex-wrap gap-2">
 				{#each Object.entries(INVENTORY_COUNT_UI_FILTER_LABELS) as [filter, label] (filter)}
