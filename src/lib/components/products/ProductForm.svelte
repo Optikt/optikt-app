@@ -474,9 +474,6 @@
 					</div>
 					<div>
 						<h2 class="font-heading text-xl font-semibold text-brand-navy">Informacion general</h2>
-						<p class="text-sm text-on-surface-variant">
-							Datos base del catalogo y rasgos visuales del producto.
-						</p>
 					</div>
 				</div>
 
