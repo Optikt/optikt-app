@@ -31,6 +31,8 @@
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
+	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
+	import { toast } from 'svelte-sonner';
 	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
@@ -61,6 +63,9 @@
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
 	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
+	let receiptHalfLetterOverflowRisk = $derived(
+		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
+	);
 	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate));
 	let taxLabel = $derived(getSnapshotTaxLabel(sale.snapshotTaxRate));
 	let lastUpdatedLabel = $derived(
@@ -133,11 +138,18 @@
 	}
 
 	function openPrintView() {
+		warnIfReceiptMayExceedHalfLetter();
 		window.open(resolve(`/print/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
 	}
 
 	function openPdfReceipt() {
+		warnIfReceiptMayExceedHalfLetter();
 		window.open(resolve(`/api/pdf/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
+	}
+
+	function warnIfReceiptMayExceedHalfLetter() {
+		if (!receiptHalfLetterOverflowRisk) return;
+		toast.warning('Este recibo tiene muchos ítems o pagos y puede superar media carta.');
 	}
 
 	function scrollToHistory() {

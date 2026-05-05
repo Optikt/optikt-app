@@ -4,6 +4,7 @@ import {
 	getPrintItemLabel,
 	getPrintItemLabelClass,
 	getPrintLensRxSummary,
+	hasHalfLetterReceiptOverflowRisk,
 	type PrintDocumentItem
 } from './printDocumentItems';
 
@@ -71,5 +72,12 @@ describe('printDocumentItems', () => {
 		});
 
 		expect(getPrintLensRxSummary(item)).toBe('OD: +0.50 -0.25 90° Add +1.50 · OI: -0.25');
+	});
+
+	it('flags receipts that are likely to exceed half letter', () => {
+		expect(hasHalfLetterReceiptOverflowRisk({ itemLineCount: 3, paymentCount: 4 })).toBe(false);
+		expect(hasHalfLetterReceiptOverflowRisk({ itemLineCount: 6, paymentCount: 1 })).toBe(true);
+		expect(hasHalfLetterReceiptOverflowRisk({ itemLineCount: 2, paymentCount: 6 })).toBe(true);
+		expect(hasHalfLetterReceiptOverflowRisk({ itemLineCount: 5, paymentCount: 5 })).toBe(true);
 	});
 });

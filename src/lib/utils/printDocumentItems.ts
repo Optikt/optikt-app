@@ -187,3 +187,23 @@ export function getPrintLensRxSummary(item: PrintDocumentItem): string {
 		buildEyeSummary('OI', item.osSphere, item.osCylinder, item.osAxis, item.osAddition)
 	].join(' · ');
 }
+
+export const HALF_LETTER_RECEIPT_LIMITS = {
+	itemLineCount: 5,
+	paymentCount: 5,
+	combinedLineCount: 9
+} as const;
+
+export function hasHalfLetterReceiptOverflowRisk({
+	itemLineCount,
+	paymentCount
+}: {
+	itemLineCount: number;
+	paymentCount: number;
+}): boolean {
+	return (
+		itemLineCount > HALF_LETTER_RECEIPT_LIMITS.itemLineCount ||
+		paymentCount > HALF_LETTER_RECEIPT_LIMITS.paymentCount ||
+		itemLineCount + paymentCount > HALF_LETTER_RECEIPT_LIMITS.combinedLineCount
+	);
+}

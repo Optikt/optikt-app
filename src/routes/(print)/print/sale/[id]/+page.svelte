@@ -11,7 +11,8 @@
 	import {
 		getPrintItemLabel,
 		getPrintItemLabelClass,
-		getPrintLensRxSummary
+		getPrintLensRxSummary,
+		hasHalfLetterReceiptOverflowRisk
 	} from '$lib/utils/printDocumentItems';
 
 	interface RenderedRow {
@@ -20,7 +21,8 @@
 		lineTotal: number;
 	}
 
-	const placeholderRows = [1, 2, 3] as const;
+	const defaultPlaceholderRows = [1, 2, 3] as const;
+	const compactPlaceholderRows = [1, 2] as const;
 
 	let { data } = $props();
 
@@ -74,6 +76,11 @@
 				lineTotal: computeLineTotal(treatment)
 			}))
 		]);
+	const halfLetterOverflowRisk = hasHalfLetterReceiptOverflowRisk({
+		itemLineCount: renderedRows.length,
+		paymentCount: payments.length
+	});
+	const placeholderRows = halfLetterOverflowRisk ? compactPlaceholderRows : defaultPlaceholderRows;
 
 	function computeLineTotal(
 		item: Pick<SaleItemWithDetails, 'unitPrice' | 'quantity' | 'discount' | 'discountType'>
@@ -131,6 +138,14 @@
 <svelte:head>
 	<title>Recibo de Venta {formattedOrderNumber} - {businessName}</title>
 </svelte:head>
+
+{#if halfLetterOverflowRisk}
+	<div
+		class="mx-auto mb-3 max-w-[660px] rounded-lg border border-warning/30 bg-warning-container px-3 py-2 text-xs font-medium text-on-warning-container print:hidden"
+	>
+		Este recibo tiene muchos ítems o pagos y puede superar media carta.
+	</div>
+{/if}
 
 <article
 	class="sale-receipt relative isolate mx-auto box-border w-full max-w-[660px] self-start overflow-hidden border-[0.5px] border-[#ccc] bg-white px-[10px] py-[8px] font-sans text-[11px] leading-[1.4] text-[#1a1a1a] print:w-[175mm] print:max-w-[175mm]"
@@ -246,12 +261,14 @@
 					{#each renderedRows as row (row.key)}
 						<tr class="border-b-[0.5px] border-[#eee] align-top last:border-b-0">
 							<td class="py-[5px] pr-1">
-								<p class={getPrintItemLabelClass(row.item)}>{getPrintItemLabel(row.item)}</p>
-								{#if row.item.itemType === SaleItemType.LENS_PAIR}
-									<p class="mt-px text-[9.5px] leading-[1.25] text-slate-500">
-										{getPrintLensRxSummary(row.item)}
-									</p>
-								{/if}
+								<p class={getPrintItemLabelClass(row.item)}>
+									{getPrintItemLabel(row.item)}
+									{#if row.item.itemType === SaleItemType.LENS_PAIR}
+										<span class="ml-1 text-[9.5px] font-normal text-slate-500">
+											{getPrintLensRxSummary(row.item)}
+										</span>
+									{/if}
+								</p>
 							</td>
 							<td class="py-[5px] pl-1 text-center font-mono text-[10.5px] tabular-nums">
 								{row.item.quantity}
