@@ -359,7 +359,8 @@
 		if (hasCommercialReferences) {
 			return 'Estas referencias ya existen para el producto, pero no se editan desde este formulario.';
 		}
-		return 'Este formulario no define costos ni precio de venta. Esas referencias se actualizan desde compras confirmadas y la lista de precios.';
+		return null
+		// return 'Este formulario no define costos ni precio de venta. Esas referencias se actualizan desde compras confirmadas y la lista de precios.';
 	});
 
 	const taxSummary = $derived.by(() =>
@@ -782,17 +783,18 @@
 					</div>
 					<div>
 						<h2 class="font-heading text-xl font-semibold text-brand-navy">Precios e impuestos</h2>
-						<p class="text-sm text-on-surface-variant">Contexto comercial actual</p>
 					</div>
 				</div>
 
 				<div class="space-y-4">
-					<div class={noteCardClass}>
-						<p class="text-[10px] font-bold tracking-[0.18em] text-brand-blue uppercase">
-							Estado de precios
-						</p>
-						<p class="mt-2 text-sm text-on-surface-variant">{pricingCopy}</p>
-					</div>
+					{#if pricingCopy != null}
+						<div class={noteCardClass}>
+							<p class="text-[10px] font-bold tracking-[0.18em] text-brand-blue uppercase">
+								Estado de precios
+							</p>
+							<p class="mt-2 text-sm text-on-surface-variant">{pricingCopy}</p>
+						</div>
+					{/if}
 
 					{#if hasCommercialReferences}
 						<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -829,10 +831,7 @@
 					<div class={noteCardClass}>
 						<p class="text-[10px] font-bold tracking-[0.18em] text-outline uppercase">Impuestos</p>
 						<p class="mt-2 text-sm font-semibold text-brand-navy">{taxSummary}</p>
-						<p class="mt-1 text-xs text-on-surface-variant">
-							Controla si el producto se suma al desglose fiscal en ventas y presupuestos.
-						</p>
-						<div class="mt-4">
+						<div class="mt-2">
 							<TaxToggle
 								bind:checked={formData.isTaxable}
 								label="Aplica IVA"
@@ -866,9 +865,6 @@
 						bind:value={formData.minStock}
 						class={getFieldClass(null, 'max-w-[10rem] font-mono tabular-nums')}
 					/>
-					<p class={helperTextClass}>
-						Se notificara cuando la disponibilidad sea igual o menor a este valor.
-					</p>
 
 					<div class={`${noteCardClass} mt-4`}>
 						<p class="text-[10px] font-bold tracking-[0.18em] text-brand-gold uppercase">
@@ -892,7 +888,6 @@
 					</div>
 					<div>
 						<h2 class="font-heading text-xl font-semibold text-brand-navy">Imagen de referencia</h2>
-						<p class="text-sm text-on-surface-variant">Preview visual del catalogo</p>
 					</div>
 				</div>
 
@@ -932,10 +927,6 @@
 					/>
 					{#if imageError}
 						<p class={errorTextClass}>{imageError}</p>
-					{:else}
-						<p class={helperTextClass}>
-							La imagen se muestra en esta ficha y en futuras vistas de detalle o catalogo.
-						</p>
 					{/if}
 				</div>
 			</section>
