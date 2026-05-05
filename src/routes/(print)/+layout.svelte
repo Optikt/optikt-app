@@ -21,7 +21,7 @@
 
 	@page {
 		size: A4;
-		margin: 2mm 12mm 12mm;
+		margin: 6mm 12mm 12mm;
 	}
 
 	:global(table) {
