@@ -138,8 +138,6 @@
 
 	const orderedBrands = $derived(sortOptionsBySuggested(allBrands, suggestedBrandIds));
 	const orderedSuppliers = $derived(sortOptionsBySuggested(allSuppliers, suggestedSupplierIds));
-	const hasSuggestedSuppliers = $derived(suggestedSupplierIds.length > 0);
-	const hasSuggestedBrands = $derived(suggestedBrandIds.length > 0);
 
 	const allMaterials = $derived.by<MaterialOption[]>(() => {
 		const type = formData.type;
@@ -517,10 +515,6 @@
 						</div>
 						{#if skuError}
 							<p class={errorTextClass}>{skuError}</p>
-						{:else if isAutoSku}
-							<p class={helperTextClass}>
-								Se arma automaticamente con tipo, genero, material, marca, color y codigo propio.
-							</p>
 						{/if}
 					</div>
 
@@ -569,11 +563,6 @@
 						/>
 						{#if nameError}
 							<p class={errorTextClass}>{nameError}</p>
-						{:else if !isEditMode}
-							<p class={helperTextClass}>
-								Si no lo cambias manualmente, se sugiere con marca y codigo propio o, si no hay
-								marca, con proveedor y codigo propio.
-							</p>
 						{/if}
 					</div>
 
@@ -589,11 +578,6 @@
 							onCreatePending={handleCreatePendingBrand}
 							error={brandError}
 						/>
-						{#if hasSuggestedBrands}
-							<p class={helperTextClass}>
-								Las marcas ya vinculadas a este proveedor aparecen primero.
-							</p>
-						{/if}
 					</div>
 
 					<div class="xl:col-span-4">
@@ -608,11 +592,6 @@
 							onCreatePending={handleCreatePendingSupplier}
 							error={supplierError}
 						/>
-						{#if hasSuggestedSuppliers}
-							<p class={helperTextClass}>
-								Los proveedores ya vinculados a esta marca aparecen primero.
-							</p>
-						{/if}
 					</div>
 
 					<div class="xl:col-span-4">
