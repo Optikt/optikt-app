@@ -359,7 +359,7 @@
 		if (hasCommercialReferences) {
 			return 'Estas referencias ya existen para el producto, pero no se editan desde este formulario.';
 		}
-		return null
+		return null;
 		// return 'Este formulario no define costos ni precio de venta. Esas referencias se actualizan desde compras confirmadas y la lista de precios.';
 	});
 
