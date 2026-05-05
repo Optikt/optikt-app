@@ -22,14 +22,20 @@
 		activeSession: initialActiveInventoryCountSession
 	});
 	let mobileNavOpen = $state(false);
+	let sidebarCollapsed = $state(untrack(() => data.sidebarCollapsed));
 
 	// Provide UI config via type-safe context
 	setUiConfig({
-		sidebarCollapsed: () => data.sidebarCollapsed
+		sidebarCollapsed: () => sidebarCollapsed
 	});
 	setInventoryCountContext(inventoryCountContext);
 
 	let mainEl = $state<HTMLElement>();
+
+	function toggleSidebarCollapsed() {
+		sidebarCollapsed = !sidebarCollapsed;
+		document.cookie = `sidebar.collapsed=${sidebarCollapsed}; path=/; max-age=31536000; SameSite=Lax`;
+	}
 
 	afterNavigate(() => {
 		mobileNavOpen = false;
@@ -42,14 +48,21 @@
 	<AppNavbar
 		{user}
 		{mobileNavOpen}
+		{sidebarCollapsed}
 		onToggleNav={() => {
 			mobileNavOpen = !mobileNavOpen;
 		}}
+		onToggleSidebar={toggleSidebarCollapsed}
 	/>
 
 	<!-- Sidebar + Content below navbar -->
 	<div class="flex min-h-0 flex-1">
-		<Sidebar {user} mobileOpen={mobileNavOpen} onClose={() => (mobileNavOpen = false)} />
+		<Sidebar
+			{user}
+			mobileOpen={mobileNavOpen}
+			collapsed={sidebarCollapsed}
+			onClose={() => (mobileNavOpen = false)}
+		/>
 
 		<main bind:this={mainEl} class="flex-1 overflow-y-auto bg-surface">
 			{#key page.url.pathname}

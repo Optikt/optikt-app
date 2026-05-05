@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { LogOut, Menu, Settings, X } from '@lucide/svelte';
+	import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings, X } from '@lucide/svelte';
 	import { ImagotipoHorizontal } from '$lib/components';
 	import { logout } from '$lib/remote/auth.remote';
 	import { UserRole } from '$lib/shared/enums';
@@ -10,10 +10,18 @@
 	type NavbarProps = {
 		user: SessionWithUser['user'];
 		mobileNavOpen?: boolean;
+		sidebarCollapsed?: boolean;
 		onToggleNav?: () => void;
+		onToggleSidebar?: () => void;
 	};
 
-	let { user, mobileNavOpen = false, onToggleNav }: NavbarProps = $props();
+	let {
+		user,
+		mobileNavOpen = false,
+		sidebarCollapsed = false,
+		onToggleNav,
+		onToggleSidebar
+	}: NavbarProps = $props();
 
 	let profileOpen = $state(false);
 
@@ -47,11 +55,11 @@
 <svelte:document onclick={handleClickOutside} />
 
 <header class="sticky top-0 z-50 border-b border-slate-200 bg-brand-navy print:hidden">
-	<div class="flex min-h-16 items-center gap-3 px-4 py-3 sm:px-6">
+	<div class="flex min-h-14 items-center gap-3 px-4 py-2 sm:px-6">
 		<button
 			type="button"
 			onclick={onToggleNav}
-			class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 text-white transition-colors hover:bg-white/10 lg:hidden"
+			class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white transition-colors hover:bg-white/10 lg:hidden"
 			aria-controls="app-mobile-sidebar"
 			aria-expanded={mobileNavOpen}
 			aria-label={mobileNavOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
@@ -60,6 +68,20 @@
 				<X class="h-5 w-5" />
 			{:else}
 				<Menu class="h-5 w-5" />
+			{/if}
+		</button>
+
+		<button
+			type="button"
+			onclick={onToggleSidebar}
+			class="hidden h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-white transition-colors hover:bg-white/10 lg:inline-flex"
+			aria-pressed={sidebarCollapsed}
+			aria-label={sidebarCollapsed ? 'Mostrar barra lateral' : 'Ocultar barra lateral'}
+		>
+			{#if sidebarCollapsed}
+				<PanelLeftOpen class="h-4 w-4" />
+			{:else}
+				<PanelLeftClose class="h-4 w-4" />
 			{/if}
 		</button>
 
@@ -130,7 +152,7 @@
 		</div>
 	</div>
 
-	<div class="border-t border-white/10 px-4 pb-3 sm:px-6 md:hidden">
+	<div class="border-t border-white/10 px-4 pb-2 sm:px-6 md:hidden">
 		<CommandSearch />
 	</div>
 </header>

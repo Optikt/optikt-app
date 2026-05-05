@@ -10,6 +10,7 @@
 		badge,
 		badgeDisplay = 'text',
 		matchSubPaths = false,
+		collapsed = false,
 		onSelect
 	}: {
 		href: ResolvedPathname;
@@ -18,6 +19,7 @@
 		badge?: string;
 		badgeDisplay?: 'text' | 'dot';
 		matchSubPaths?: boolean;
+		collapsed?: boolean;
 		onSelect?: () => void;
 	} = $props();
 
@@ -35,22 +37,31 @@
 	{href}
 	onclick={onSelect}
 	class={[
-		'mx-2 my-0.5 flex items-center justify-between gap-3 rounded-lg px-4 py-2.5 no-underline transition-all duration-150 hover:bg-slate-50',
+		'mx-2 my-0.5 flex items-center rounded-lg py-2.5 no-underline transition-colors duration-150 hover:bg-slate-50',
+		collapsed ? 'relative justify-center px-2' : 'justify-between gap-3 px-4',
 		isActive
 			? 'bg-brand-blue/10 font-medium text-brand-blue'
 			: 'text-slate-600 hover:text-slate-800'
 	]}
 >
-	<span class="flex min-w-0 items-center gap-3">
-		<Icon size={20} />
-		<span class="truncate">{label}</span>
+	<span class={['flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3']}>
+		<Icon size={20} class="shrink-0" />
+		{#if !collapsed}
+			<span class="truncate">{label}</span>
+		{/if}
 	</span>
 
 	{#if badge}
-		{#if badgeDisplay === 'dot'}
+		{#if badgeDisplay === 'dot' || collapsed}
 			<span class="flex shrink-0 items-center">
 				<span class="sr-only">{badge}</span>
-				<span aria-hidden="true" class="h-2 w-2 rounded-full bg-brand-gold"></span>
+				<span
+					aria-hidden="true"
+					class={[
+						'h-2 w-2 rounded-full bg-brand-gold',
+						collapsed ? 'absolute top-1.5 right-1.5' : ''
+					]}
+				></span>
 			</span>
 		{:else}
 			<span

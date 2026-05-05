@@ -26,10 +26,11 @@
 	type SidebarProps = {
 		user: SessionWithUser['user'];
 		mobileOpen?: boolean;
+		collapsed?: boolean;
 		onClose?: () => void;
 	};
 
-	let { user, mobileOpen = false, onClose }: SidebarProps = $props();
+	let { user, mobileOpen = false, collapsed = false, onClose }: SidebarProps = $props();
 	const inventoryCountContext = getInventoryCountContext();
 
 	const iconMap: Record<string, LucideIcon> = {
@@ -76,13 +77,14 @@
 	const isAdmin = $derived(user.role === UserRole.ADMIN);
 </script>
 
-{#snippet navigation(onSelect = undefined as (() => void) | undefined)}
+{#snippet navigation(onSelect = undefined as (() => void) | undefined, compact = false)}
 	{#each navItems as item (item.href)}
 		<NavLink
 			href={resolve(item.href)}
 			label={item.label}
 			icon={iconMap[item.icon]}
 			matchSubPaths
+			collapsed={compact}
 			{onSelect}
 		/>
 	{/each}
@@ -94,28 +96,44 @@
 		badge={inventoryCountContext.activeSession ? 'EN PROGRESO' : undefined}
 		badgeDisplay="dot"
 		matchSubPaths
+		collapsed={compact}
 		{onSelect}
 	/>
 
 	{#if isAdminOrManager}
-		<div class="mx-4 my-2 h-px bg-slate-200"></div>
+		<div class={['my-2 h-px bg-slate-200', compact ? 'mx-5' : 'mx-4']}></div>
 		{#each adminManagerItems as item (item.href)}
-			<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} {onSelect} />
+			<NavLink
+				href={resolve(item.href)}
+				label={item.label}
+				icon={iconMap[item.icon]}
+				collapsed={compact}
+				{onSelect}
+			/>
 		{/each}
 	{/if}
 
 	{#if isAdmin}
 		{#each adminOnlyItems as item (item.href)}
-			<NavLink href={resolve(item.href)} label={item.label} icon={iconMap[item.icon]} {onSelect} />
+			<NavLink
+				href={resolve(item.href)}
+				label={item.label}
+				icon={iconMap[item.icon]}
+				collapsed={compact}
+				{onSelect}
+			/>
 		{/each}
 	{/if}
 {/snippet}
 
 <aside
-	class="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex print:hidden"
+	class={[
+		'hidden shrink-0 flex-col border-r border-slate-200 bg-white transition-[width] duration-200 ease-out lg:flex print:hidden',
+		collapsed ? 'w-16' : 'w-60'
+	]}
 >
 	<nav class="flex-1 overflow-y-auto py-3">
-		{@render navigation()}
+		{@render navigation(undefined, collapsed)}
 	</nav>
 </aside>
 
@@ -151,6 +169,6 @@
 	</div>
 
 	<nav class="flex-1 overflow-y-auto py-3">
-		{@render navigation(onClose)}
+		{@render navigation(onClose, false)}
 	</nav>
 </aside>
