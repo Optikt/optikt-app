@@ -606,7 +606,7 @@
 						/>
 					</div>
 
-					<fieldset class="md:col-span-2 xl:col-span-12">
+					<fieldset class="md:col-span-1 xl:col-span-8">
 						<legend class={fieldLabelClass}>Genero</legend>
 						<input type="hidden" name="gender" value={formData.gender} />
 						<div class="mt-2 flex flex-wrap gap-2">
@@ -627,6 +627,17 @@
 							{/each}
 						</div>
 					</fieldset>
+
+					<div class="md:col-span-1 xl:col-span-4">
+						<label for="color" class={fieldLabelClass}>Color / tinte</label>
+						<input
+							id="color"
+							name="color"
+							bind:value={formData.color}
+							placeholder="Matte Black / G-15 Green"
+							class={getFieldClass(null)}
+						/>
+					</div>
 
 					{#if showFrameAttributes}
 						<div class="xl:col-span-4">
@@ -719,17 +730,6 @@
 							/>
 						</div>
 					{/if}
-
-					<div class={showGenericSize ? 'xl:col-span-6' : 'xl:col-span-12'}>
-						<label for="color" class={fieldLabelClass}>Color / tinte</label>
-						<input
-							id="color"
-							name="color"
-							bind:value={formData.color}
-							placeholder="Matte Black / G-15 Green"
-							class={getFieldClass(null)}
-						/>
-					</div>
 
 					<div class="md:col-span-2 xl:col-span-12">
 						<label for="description" class={fieldLabelClass}>Descripcion</label>
