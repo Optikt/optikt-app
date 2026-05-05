@@ -62,6 +62,7 @@
 	);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
+	let canPrintReceipt = $derived(isPending || isCompleted);
 	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
@@ -184,27 +185,29 @@
 		backOnClick={goBack}
 	>
 		{#snippet actions()}
-			<button
-				type="button"
-				onclick={openPrintView}
-				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-					'neutral'
-				)}"
-			>
-				<FileText class="h-4 w-4" />
-				Ver recibo
-			</button>
+			{#if canPrintReceipt}
+				<button
+					type="button"
+					onclick={openPrintView}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<FileText class="h-4 w-4" />
+					Ver recibo
+				</button>
 
-			<button
-				type="button"
-				onclick={openPdfReceipt}
-				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-					'neutral'
-				)}"
-			>
-				<Printer class="h-4 w-4" />
-				Imprimir PDF
-			</button>
+				<button
+					type="button"
+					onclick={openPdfReceipt}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<Printer class="h-4 w-4" />
+					Imprimir PDF
+				</button>
+			{/if}
 
 			<button
 				type="button"

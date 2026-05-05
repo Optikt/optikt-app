@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { generatePdf } from '$lib/server/pdf';
 import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales';
+import { SaleStatus } from '$lib/shared/enums';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 	if (!locals.user) {
@@ -11,6 +12,10 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 	const sale = await findSaleByIdWithRelations(params.id);
 	if (!sale) {
 		error(404, 'Venta no encontrada');
+	}
+
+	if (sale.status !== SaleStatus.PENDING && sale.status !== SaleStatus.COMPLETED) {
+		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
 	const printUrl = new URL(`/print/sale/${params.id}`, url).toString();

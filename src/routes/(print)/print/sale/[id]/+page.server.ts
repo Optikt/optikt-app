@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types';
 import { fromISO, toISODate } from '$lib/dates';
 import { getRatesForDate } from '$lib/server/db/queries/exchangeRates';
 import { getSettings } from '$lib/server/db/queries/settings';
+import { SaleStatus } from '$lib/shared/enums';
 import {
 	findSaleByIdWithRelations,
 	getSaleItemsWithDetails,
@@ -17,6 +18,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const sale = await findSaleByIdWithRelations(params.id);
 	if (!sale) {
 		error(404, 'Venta no encontrada');
+	}
+
+	if (sale.status !== SaleStatus.PENDING && sale.status !== SaleStatus.COMPLETED) {
+		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
 	const saleDateKey = toISODate(fromISO(sale.saleDate));
