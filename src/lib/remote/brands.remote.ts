@@ -23,6 +23,10 @@ import {
 	deleteBrand,
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
+import {
+	getSuppliersByBrand,
+	type NamedRelationOption
+} from '$lib/server/db/queries/brandSuppliers';
 import type { Brand } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
@@ -178,6 +182,15 @@ export const checkBrandCanDelete = query(BrandIdSchema, async (data): Promise<Br
 		brandName: brand.name
 	};
 });
+
+export const listSuppliersForBrand = query(
+	BrandIdSchema,
+	async (data): Promise<NamedRelationOption[]> => {
+		requireAuth();
+
+		return getSuppliersByBrand(data.id);
+	}
+);
 
 /**
  * Quick create a brand with minimal info (for inline creation in forms)

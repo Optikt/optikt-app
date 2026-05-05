@@ -25,6 +25,7 @@ import {
 	deleteProduct,
 	restoreProduct
 } from '$lib/server/db/queries/products';
+import { upsertBrandSupplierLink } from '$lib/server/db/queries/brandSuppliers';
 import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
 import { products, type Product } from '$lib/server/db/schema';
@@ -157,6 +158,10 @@ export const createProductForm = form(
 				materialId = await resolvePendingMaterial(pendingMaterialName, productType, now, tx);
 			}
 
+			if (brandId && supplierId) {
+				await upsertBrandSupplierLink(brandId, supplierId, tx);
+			}
+
 			// Check for duplicate SKU (including soft-deleted)
 			const [existingSku] = await tx.select().from(products).where(eq(products.sku, sku));
 
@@ -245,6 +250,13 @@ export const updateProductForm = form(
 				materialId = await resolvePendingMaterial(pendingMaterialName, productType, now, tx);
 			}
 
+			const resolvedBrandId =
+				brandId !== undefined ? (brandId && brandId.trim() !== '' ? brandId : null) : undefined;
+
+			if (resolvedBrandId && supplierId) {
+				await upsertBrandSupplierLink(resolvedBrandId, supplierId, tx);
+			}
+
 			// Check if product exists - also captures the old state for audit
 			const [oldProduct] = await tx
 				.select()
@@ -271,8 +283,7 @@ export const updateProductForm = form(
 				.set({
 					...rest,
 					...(sku && { sku }),
-					brandId:
-						brandId !== undefined ? (brandId && brandId.trim() !== '' ? brandId : null) : undefined,
+					brandId: resolvedBrandId,
 					// supplierId and materialId are required - only update if provided, never set to null
 					...(supplierId !== undefined && { supplierId }),
 					...(materialId !== undefined && { materialId }),

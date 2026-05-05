@@ -19,6 +19,7 @@
 		toastUnboundErrors
 	} from '$lib/utils';
 	import { buildProductNameSuggestion } from '$lib/utils/productName';
+	import { sortOptionsBySuggested } from '$lib/utils/sortOptionsBySuggested';
 	import {
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
@@ -39,6 +40,8 @@
 		brands: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
 		materials: { id: string; name: string; productType?: string }[];
+		brandSupplierMap?: Record<string, string[]>;
+		supplierBrandMap?: Record<string, string[]>;
 		cancelHref?: string;
 		formId?: string;
 		showActions?: boolean;
@@ -50,6 +53,8 @@
 		brands = [],
 		suppliers = [],
 		materials = [],
+		brandSupplierMap = {},
+		supplierBrandMap = {},
 		cancelHref = '/products',
 		formId = 'product-form',
 		showActions = true,
@@ -120,6 +125,19 @@
 			isPending: true
 		}))
 	]);
+
+	const suggestedSupplierIds = $derived.by(() => {
+		if (!formData.brandId || formData.brandId.startsWith('pending_')) return [];
+		return brandSupplierMap[formData.brandId] ?? [];
+	});
+
+	const suggestedBrandIds = $derived.by(() => {
+		if (!formData.supplierId || formData.supplierId.startsWith('pending_')) return [];
+		return supplierBrandMap[formData.supplierId] ?? [];
+	});
+
+	const orderedBrands = $derived(sortOptionsBySuggested(allBrands, suggestedBrandIds));
+	const orderedSuppliers = $derived(sortOptionsBySuggested(allSuppliers, suggestedSupplierIds));
 
 	const allMaterials = $derived.by<MaterialOption[]>(() => {
 		const type = formData.type;
@@ -341,7 +359,8 @@
 		if (hasCommercialReferences) {
 			return 'Estas referencias ya existen para el producto, pero no se editan desde este formulario.';
 		}
-		return 'Este formulario no define costos ni precio de venta. Esas referencias se actualizan desde compras confirmadas y la lista de precios.';
+		return null;
+		// return 'Este formulario no define costos ni precio de venta. Esas referencias se actualizan desde compras confirmadas y la lista de precios.';
 	});
 
 	const taxSummary = $derived.by(() =>
@@ -455,9 +474,6 @@
 					</div>
 					<div>
 						<h2 class="font-heading text-xl font-semibold text-brand-navy">Informacion general</h2>
-						<p class="text-sm text-on-surface-variant">
-							Datos base del catalogo y rasgos visuales del producto.
-						</p>
 					</div>
 				</div>
 
@@ -497,10 +513,6 @@
 						</div>
 						{#if skuError}
 							<p class={errorTextClass}>{skuError}</p>
-						{:else if isAutoSku}
-							<p class={helperTextClass}>
-								Se arma automaticamente con tipo, genero, material, marca, color y codigo propio.
-							</p>
 						{/if}
 					</div>
 
@@ -549,11 +561,6 @@
 						/>
 						{#if nameError}
 							<p class={errorTextClass}>{nameError}</p>
-						{:else if !isEditMode}
-							<p class={helperTextClass}>
-								Si no lo cambias manualmente, se sugiere con marca y codigo propio o,
-								si no hay marca, con proveedor y codigo propio.
-							</p>
 						{/if}
 					</div>
 
@@ -564,7 +571,7 @@
 							name="brandId"
 							placeholder="Buscar marca..."
 							bind:value={formData.brandId}
-							options={allBrands}
+							options={orderedBrands}
 							creatable
 							onCreatePending={handleCreatePendingBrand}
 							error={brandError}
@@ -578,7 +585,7 @@
 							name="supplierId"
 							placeholder="Buscar proveedor..."
 							bind:value={formData.supplierId}
-							options={allSuppliers}
+							options={orderedSuppliers}
 							creatable
 							onCreatePending={handleCreatePendingSupplier}
 							error={supplierError}
@@ -599,7 +606,7 @@
 						/>
 					</div>
 
-					<fieldset class="md:col-span-2 xl:col-span-12">
+					<fieldset class="md:col-span-1 xl:col-span-8">
 						<legend class={fieldLabelClass}>Genero</legend>
 						<input type="hidden" name="gender" value={formData.gender} />
 						<div class="mt-2 flex flex-wrap gap-2">
@@ -620,6 +627,17 @@
 							{/each}
 						</div>
 					</fieldset>
+
+					<div class="md:col-span-1 xl:col-span-4">
+						<label for="color" class={fieldLabelClass}>Color / tinte</label>
+						<input
+							id="color"
+							name="color"
+							bind:value={formData.color}
+							placeholder="Matte Black / G-15 Green"
+							class={getFieldClass(null)}
+						/>
+					</div>
 
 					{#if showFrameAttributes}
 						<div class="xl:col-span-4">
@@ -713,17 +731,6 @@
 						</div>
 					{/if}
 
-					<div class={showGenericSize ? 'xl:col-span-6' : 'xl:col-span-12'}>
-						<label for="color" class={fieldLabelClass}>Color / tinte</label>
-						<input
-							id="color"
-							name="color"
-							bind:value={formData.color}
-							placeholder="Matte Black / G-15 Green"
-							class={getFieldClass(null)}
-						/>
-					</div>
-
 					<div class="md:col-span-2 xl:col-span-12">
 						<label for="description" class={fieldLabelClass}>Descripcion</label>
 						<textarea
@@ -773,17 +780,18 @@
 					</div>
 					<div>
 						<h2 class="font-heading text-xl font-semibold text-brand-navy">Precios e impuestos</h2>
-						<p class="text-sm text-on-surface-variant">Contexto comercial actual</p>
 					</div>
 				</div>
 
 				<div class="space-y-4">
-					<div class={noteCardClass}>
-						<p class="text-[10px] font-bold tracking-[0.18em] text-brand-blue uppercase">
-							Estado de precios
-						</p>
-						<p class="mt-2 text-sm text-on-surface-variant">{pricingCopy}</p>
-					</div>
+					{#if pricingCopy != null}
+						<div class={noteCardClass}>
+							<p class="text-[10px] font-bold tracking-[0.18em] text-brand-blue uppercase">
+								Estado de precios
+							</p>
+							<p class="mt-2 text-sm text-on-surface-variant">{pricingCopy}</p>
+						</div>
+					{/if}
 
 					{#if hasCommercialReferences}
 						<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
@@ -820,10 +828,7 @@
 					<div class={noteCardClass}>
 						<p class="text-[10px] font-bold tracking-[0.18em] text-outline uppercase">Impuestos</p>
 						<p class="mt-2 text-sm font-semibold text-brand-navy">{taxSummary}</p>
-						<p class="mt-1 text-xs text-on-surface-variant">
-							Controla si el producto se suma al desglose fiscal en ventas y presupuestos.
-						</p>
-						<div class="mt-4">
+						<div class="mt-2">
 							<TaxToggle
 								bind:checked={formData.isTaxable}
 								label="Aplica IVA"
@@ -857,9 +862,6 @@
 						bind:value={formData.minStock}
 						class={getFieldClass(null, 'max-w-[10rem] font-mono tabular-nums')}
 					/>
-					<p class={helperTextClass}>
-						Se notificara cuando la disponibilidad sea igual o menor a este valor.
-					</p>
 
 					<div class={`${noteCardClass} mt-4`}>
 						<p class="text-[10px] font-bold tracking-[0.18em] text-brand-gold uppercase">
@@ -883,7 +885,6 @@
 					</div>
 					<div>
 						<h2 class="font-heading text-xl font-semibold text-brand-navy">Imagen de referencia</h2>
-						<p class="text-sm text-on-surface-variant">Preview visual del catalogo</p>
 					</div>
 				</div>
 
@@ -923,10 +924,6 @@
 					/>
 					{#if imageError}
 						<p class={errorTextClass}>{imageError}</p>
-					{:else}
-						<p class={helperTextClass}>
-							La imagen se muestra en esta ficha y en futuras vistas de detalle o catalogo.
-						</p>
 					{/if}
 				</div>
 			</section>
