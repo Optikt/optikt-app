@@ -18,6 +18,7 @@
 		scrollToFirstError,
 		toastUnboundErrors
 	} from '$lib/utils';
+	import { buildProductNameSuggestion } from '$lib/utils/productName';
 	import {
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
@@ -95,6 +96,7 @@
 	});
 
 	let isAutoSku = $state(true);
+	let lastSuggestedName = $state('');
 
 	let pendingBrands = $state<PendingEntity[]>([]);
 	let pendingSuppliers = $state<PendingEntity[]>([]);
@@ -282,6 +284,40 @@
 				formData.sku = sku;
 			});
 		}
+	});
+
+	const suggestedProductName = $derived.by(() => {
+		if (isEditMode) return '';
+
+		const brandName = allBrands.find((brand) => brand.id === formData.brandId)?.name;
+		const supplierName = allSuppliers.find((supplier) => supplier.id === formData.supplierId)?.name;
+
+		return buildProductNameSuggestion({
+			brandName,
+			supplierName,
+			personalCode: formData.personalCode
+		});
+	});
+
+	$effect(() => {
+		const suggestedName = suggestedProductName;
+
+		if (isEditMode) {
+			untrack(() => {
+				lastSuggestedName = '';
+			});
+			return;
+		}
+
+		untrack(() => {
+			const currentName = formData.name.trim();
+
+			if (!currentName || currentName === lastSuggestedName) {
+				formData.name = suggestedName;
+			}
+
+			lastSuggestedName = suggestedName;
+		});
 	});
 
 	const currentCreateForm = $derived(createProductForm.for(formInstanceId));
@@ -513,6 +549,11 @@
 						/>
 						{#if nameError}
 							<p class={errorTextClass}>{nameError}</p>
+						{:else if !isEditMode}
+							<p class={helperTextClass}>
+								Si no lo cambias manualmente, se sugiere con marca y codigo propio o,
+								si no hay marca, con proveedor y codigo propio.
+							</p>
 						{/if}
 					</div>
 
