@@ -133,7 +133,7 @@
 </svelte:head>
 
 <article
-	class="sale-receipt relative isolate box-border mx-auto w-full max-w-[660px] self-start overflow-hidden border-[0.5px] border-[#ccc] bg-white px-[10px] py-[8px] font-sans text-[11px] leading-[1.4] text-[#1a1a1a] print:w-[175mm] print:max-w-[175mm]"
+	class="sale-receipt relative isolate mx-auto box-border w-full max-w-[660px] self-start overflow-hidden border-[0.5px] border-[#ccc] bg-white px-[10px] py-[8px] font-sans text-[11px] leading-[1.4] text-[#1a1a1a] print:w-[175mm] print:max-w-[175mm]"
 >
 	<div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
 		<div class="absolute inset-x-0 top-[50%] flex -translate-y-1/2 justify-center">

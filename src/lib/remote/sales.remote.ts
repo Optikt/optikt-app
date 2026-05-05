@@ -610,7 +610,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 
 	const refundBcvRate =
 		existing.paidAmountBcvUsd > 0 && data.refundStatus === RefundStatus.REFUNDED
-			? (await getLatestRates()).find((rate) => rate.currency.code === 'USD')?.rateToVes ?? null
+			? ((await getLatestRates()).find((rate) => rate.currency.code === 'USD')?.rateToVes ?? null)
 			: null;
 
 	await db.transaction(async (tx) => {

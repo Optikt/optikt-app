@@ -19,8 +19,8 @@ import type { ExpenseCategory, ExpenseCurrency, RateType } from '../../../shared
  * Operational cash expenses (rent, salaries, utilities, taxes, etc.)
  * Independent from purchase orders / inventory acquisitions.
  *
-	 * - All amounts are stored in their native currency (`amount`) AND converted
-	 *   to USD BCV (`amountUsd`) as a snapshot at registration time. The snapshot is
+ * - All amounts are stored in their native currency (`amount`) AND converted
+ *   to USD BCV (`amountUsd`) as a snapshot at registration time. The snapshot is
  *   immutable: changing exchange rates later does NOT recompute past expenses.
  * - Records are never hard-deleted; use `voidedAt` for cancellation. Voided
  *   rows are excluded from totals but kept for audit.

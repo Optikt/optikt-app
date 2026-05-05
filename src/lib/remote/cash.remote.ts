@@ -27,7 +27,10 @@ import {
 	VoidExpenseSchema
 } from '$lib/schemas/cash';
 import type { CashExpense } from '$lib/server/db/schema';
-import { calculateExpenseAmountBcvUsd, requiresExpenseRateType } from '$lib/shared/expenseCalculations';
+import {
+	calculateExpenseAmountBcvUsd,
+	requiresExpenseRateType
+} from '$lib/shared/expenseCalculations';
 import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 
 // ============================================================================

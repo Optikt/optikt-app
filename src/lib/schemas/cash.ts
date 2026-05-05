@@ -4,7 +4,10 @@
 import { z } from 'zod';
 import { CoercedNumber, EntityIdSchema } from './common';
 import { ALL_EXPENSE_CATEGORIES, ALL_EXPENSE_CURRENCIES, ALL_RATE_TYPES } from '$lib/shared/enums';
-import { requiresExpenseExchangeRate, requiresExpenseRateType } from '$lib/shared/expenseCalculations';
+import {
+	requiresExpenseExchangeRate,
+	requiresExpenseRateType
+} from '$lib/shared/expenseCalculations';
 
 export const ExpenseCategoryEnum = z.enum(ALL_EXPENSE_CATEGORIES);
 export const ExpenseCurrencyEnum = z.enum(ALL_EXPENSE_CURRENCIES);

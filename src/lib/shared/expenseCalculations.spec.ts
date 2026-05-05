@@ -32,9 +32,7 @@ describe('getExpenseExchangeRateLabel', () => {
 
 describe('calculateExpenseAmountBcvUsd', () => {
 	it('keeps USD expenses unchanged', () => {
-		expect(calculateExpenseAmountBcvUsd({ currency: 'USD', amount: 25, bcvRate: 36.5 })).toBe(
-			25
-		);
+		expect(calculateExpenseAmountBcvUsd({ currency: 'USD', amount: 25, bcvRate: 36.5 })).toBe(25);
 	});
 
 	it('normalizes VES expenses to USD BCV using the BCV reference', () => {

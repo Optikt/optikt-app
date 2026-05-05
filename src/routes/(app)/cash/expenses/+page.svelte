@@ -541,7 +541,8 @@
 									</p>
 									{#if row.exchangeRate}
 										<p class="mt-1 text-[10px] text-on-surface-variant">
-											{row.currency === 'USDT' ? 'USDT' : 'Op.'} {row.exchangeRate.toFixed(2)}
+											{row.currency === 'USDT' ? 'USDT' : 'Op.'}
+											{row.exchangeRate.toFixed(2)}
 										</p>
 									{/if}
 									{#if row.bcvRate}
@@ -625,7 +626,8 @@
 								<span class="text-slate-500">{row.currency}</span>
 								{#if row.exchangeRate}
 									<div class="text-xs text-slate-400">
-										{row.currency === 'USDT' ? 'USDT' : 'Op.'} {row.exchangeRate.toFixed(2)}
+										{row.currency === 'USDT' ? 'USDT' : 'Op.'}
+										{row.exchangeRate.toFixed(2)}
 									</div>
 								{/if}
 								{#if row.bcvRate}
@@ -839,22 +841,26 @@
 							</label>
 
 							{#if needsRateType}
-							<label class="flex flex-col gap-1.5 text-sm">
-								<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-									>Tipo de tasa *</span
-								>
-								<select bind:value={form.rateType} required class={fieldInputClass}>
-									{#each ALL_RATE_TYPES as t (t)}
-										<option value={t}>{RATE_TYPE_LABELS[t]}</option>
-									{/each}
-								</select>
-							</label>
+								<label class="flex flex-col gap-1.5 text-sm">
+									<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+										>Tipo de tasa *</span
+									>
+									<select bind:value={form.rateType} required class={fieldInputClass}>
+										{#each ALL_RATE_TYPES as t (t)}
+											<option value={t}>{RATE_TYPE_LABELS[t]}</option>
+										{/each}
+									</select>
+								</label>
 							{/if}
 						{/if}
 
 						{#if normalizedAmountPreview > 0}
-							<div class="col-span-full rounded-xl bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant">
-								Se registrarán <span class="font-mono font-semibold text-brand-navy">{formatPrice(normalizedAmountPreview)}</span>
+							<div
+								class="col-span-full rounded-xl bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant"
+							>
+								Se registrarán <span class="font-mono font-semibold text-brand-navy"
+									>{formatPrice(normalizedAmountPreview)}</span
+								>
 								como USD BCV.
 							</div>
 						{/if}
