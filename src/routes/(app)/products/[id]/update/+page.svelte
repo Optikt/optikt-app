@@ -6,7 +6,9 @@
 	import { PageHeader } from '$lib/components/ui';
 
 	let { data } = $props();
-	const { product, brands, suppliers, materials } = untrack(() => data);
+	const { product, brands, suppliers, materials, brandSupplierMap, supplierBrandMap } = untrack(
+		() => data
+	);
 	let isSubmitting = $state(false);
 </script>
 
@@ -50,6 +52,8 @@
 			{brands}
 			{suppliers}
 			{materials}
+			{brandSupplierMap}
+			{supplierBrandMap}
 			cancelHref={`/products/${product.id}`}
 			formId="product-update-form"
 			showActions={false}

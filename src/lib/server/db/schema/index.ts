@@ -11,6 +11,7 @@ export * from './materials';
 export * from './exchangeRates';
 
 // Dependent tables
+export * from './brandSuppliers';
 export * from './sessions';
 export * from './products';
 export * from './lenses';

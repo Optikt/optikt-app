@@ -19,6 +19,7 @@
 		toastUnboundErrors
 	} from '$lib/utils';
 	import { buildProductNameSuggestion } from '$lib/utils/productName';
+	import { sortOptionsBySuggested } from '$lib/utils/sortOptionsBySuggested';
 	import {
 		ALL_PRODUCT_TYPES,
 		PRODUCT_TYPE_LABELS,
@@ -39,6 +40,8 @@
 		brands: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
 		materials: { id: string; name: string; productType?: string }[];
+		brandSupplierMap?: Record<string, string[]>;
+		supplierBrandMap?: Record<string, string[]>;
 		cancelHref?: string;
 		formId?: string;
 		showActions?: boolean;
@@ -50,6 +53,8 @@
 		brands = [],
 		suppliers = [],
 		materials = [],
+		brandSupplierMap = {},
+		supplierBrandMap = {},
 		cancelHref = '/products',
 		formId = 'product-form',
 		showActions = true,
@@ -120,6 +125,21 @@
 			isPending: true
 		}))
 	]);
+
+	const suggestedSupplierIds = $derived.by(() => {
+		if (!formData.brandId || formData.brandId.startsWith('pending_')) return [];
+		return brandSupplierMap[formData.brandId] ?? [];
+	});
+
+	const suggestedBrandIds = $derived.by(() => {
+		if (!formData.supplierId || formData.supplierId.startsWith('pending_')) return [];
+		return supplierBrandMap[formData.supplierId] ?? [];
+	});
+
+	const orderedBrands = $derived(sortOptionsBySuggested(allBrands, suggestedBrandIds));
+	const orderedSuppliers = $derived(sortOptionsBySuggested(allSuppliers, suggestedSupplierIds));
+	const hasSuggestedSuppliers = $derived(suggestedSupplierIds.length > 0);
+	const hasSuggestedBrands = $derived(suggestedBrandIds.length > 0);
 
 	const allMaterials = $derived.by<MaterialOption[]>(() => {
 		const type = formData.type;
@@ -551,8 +571,8 @@
 							<p class={errorTextClass}>{nameError}</p>
 						{:else if !isEditMode}
 							<p class={helperTextClass}>
-								Si no lo cambias manualmente, se sugiere con marca y codigo propio o,
-								si no hay marca, con proveedor y codigo propio.
+								Si no lo cambias manualmente, se sugiere con marca y codigo propio o, si no hay
+								marca, con proveedor y codigo propio.
 							</p>
 						{/if}
 					</div>
@@ -564,11 +584,16 @@
 							name="brandId"
 							placeholder="Buscar marca..."
 							bind:value={formData.brandId}
-							options={allBrands}
+							options={orderedBrands}
 							creatable
 							onCreatePending={handleCreatePendingBrand}
 							error={brandError}
 						/>
+						{#if hasSuggestedBrands}
+							<p class={helperTextClass}>
+								Las marcas ya vinculadas a este proveedor aparecen primero.
+							</p>
+						{/if}
 					</div>
 
 					<div class="xl:col-span-4">
@@ -578,11 +603,16 @@
 							name="supplierId"
 							placeholder="Buscar proveedor..."
 							bind:value={formData.supplierId}
-							options={allSuppliers}
+							options={orderedSuppliers}
 							creatable
 							onCreatePending={handleCreatePendingSupplier}
 							error={supplierError}
 						/>
+						{#if hasSuggestedSuppliers}
+							<p class={helperTextClass}>
+								Los proveedores ya vinculados a esta marca aparecen primero.
+							</p>
+						{/if}
 					</div>
 
 					<div class="xl:col-span-4">

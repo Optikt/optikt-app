@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { Modal, Button } from 'flowbite-svelte';
-	import { Globe, FileText, MapPin } from '@lucide/svelte';
+	import { Globe, FileText, MapPin, Truck } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
+	import { listSuppliersForBrand } from '$lib/remote/brands.remote';
 	import type { Brand } from '$lib/server/db/schema';
+	import { getErrorMessage } from '$lib/utils';
+
+	type RelatedSupplier = {
+		id: string;
+		name: string;
+	};
 
 	interface Props {
 		open: boolean;
@@ -11,6 +19,10 @@
 	}
 
 	let { open = $bindable(), brand, onClose, onEdit }: Props = $props();
+	let relatedSuppliers = $state<RelatedSupplier[]>([]);
+	let loadingRelations = $state(false);
+	let relationsError = $state<string | null>(null);
+	let relationRequestId = 0;
 
 	function handleClose() {
 		open = false;
@@ -21,6 +33,41 @@
 		open = false;
 		onEdit?.();
 	}
+
+	async function loadRelatedSuppliers(brandId: string) {
+		const requestId = ++relationRequestId;
+		loadingRelations = true;
+		relationsError = null;
+
+		try {
+			const suppliers = await listSuppliersForBrand({ id: brandId }).run();
+			if (requestId !== relationRequestId) return;
+			relatedSuppliers = suppliers;
+		} catch (error) {
+			console.error(error);
+			if (requestId !== relationRequestId) return;
+			relatedSuppliers = [];
+			relationsError = 'No se pudieron cargar los proveedores relacionados.';
+			toast.error(getErrorMessage(error, 'Error cargando proveedores relacionados'));
+		} finally {
+			if (requestId === relationRequestId) {
+				loadingRelations = false;
+			}
+		}
+	}
+
+	$effect(() => {
+		const brandId = brand?.id;
+
+		if (!open || !brandId) {
+			relatedSuppliers = [];
+			relationsError = null;
+			loadingRelations = false;
+			return;
+		}
+
+		void loadRelatedSuppliers(brandId);
+	});
 </script>
 
 <Modal bind:open size="md" title="Detalles de la Marca" outsideclose onclose={handleClose}>
@@ -63,8 +110,33 @@
 				</div>
 			{/if}
 
+			<div class="border-t border-slate-200 pt-4">
+				<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-slate-600">
+					<Truck class="h-4 w-4" />
+					Proveedores que la venden
+				</h4>
+
+				{#if loadingRelations}
+					<p class="text-sm text-slate-500">Cargando proveedores relacionados...</p>
+				{:else if relationsError}
+					<p class="text-sm text-red-600">{relationsError}</p>
+				{:else if relatedSuppliers.length > 0}
+					<div class="flex flex-wrap gap-2">
+						{#each relatedSuppliers as supplier (supplier.id)}
+							<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+								{supplier.name}
+							</span>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-sm text-slate-500 italic">
+						Aún no hay proveedores registrados para esta marca.
+					</p>
+				{/if}
+			</div>
+
 			<!-- No info message -->
-			{#if !brand.website && !brand.description && !brand.country}
+			{#if !brand.website && !brand.description && !brand.country && relatedSuppliers.length === 0}
 				<p class="text-center text-sm text-slate-400 italic">
 					No hay información adicional registrada
 				</p>

@@ -8,11 +8,19 @@
 		Instagram,
 		MessageCircle,
 		User,
-		FileText
+		FileText,
+		Tag
 	} from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
 	import { SupplierTypeBadge } from '$lib/components/ui';
+	import { listBrandsForSupplier } from '$lib/remote/suppliers.remote';
 	import type { Supplier } from '$lib/server/db/schema';
-	import { formatPhone } from '$lib/utils';
+	import { formatPhone, getErrorMessage } from '$lib/utils';
+
+	type RelatedBrand = {
+		id: string;
+		name: string;
+	};
 
 	interface Props {
 		open: boolean;
@@ -22,6 +30,10 @@
 	}
 
 	let { open = $bindable(), supplier, onClose, onEdit }: Props = $props();
+	let relatedBrands = $state<RelatedBrand[]>([]);
+	let loadingRelations = $state(false);
+	let relationsError = $state<string | null>(null);
+	let relationRequestId = 0;
 
 	function handleClose() {
 		open = false;
@@ -32,6 +44,41 @@
 		open = false;
 		onEdit?.();
 	}
+
+	async function loadRelatedBrands(supplierId: string) {
+		const requestId = ++relationRequestId;
+		loadingRelations = true;
+		relationsError = null;
+
+		try {
+			const brands = await listBrandsForSupplier({ id: supplierId }).run();
+			if (requestId !== relationRequestId) return;
+			relatedBrands = brands;
+		} catch (error) {
+			console.error(error);
+			if (requestId !== relationRequestId) return;
+			relatedBrands = [];
+			relationsError = 'No se pudieron cargar las marcas relacionadas.';
+			toast.error(getErrorMessage(error, 'Error cargando marcas relacionadas'));
+		} finally {
+			if (requestId === relationRequestId) {
+				loadingRelations = false;
+			}
+		}
+	}
+
+	$effect(() => {
+		const supplierId = supplier?.id;
+
+		if (!open || !supplierId) {
+			relatedBrands = [];
+			relationsError = null;
+			loadingRelations = false;
+			return;
+		}
+
+		void loadRelatedBrands(supplierId);
+	});
 </script>
 
 <Modal bind:open size="lg" title="Detalles del Proveedor" outsideclose onclose={handleClose}>
@@ -158,6 +205,31 @@
 					<p class="text-sm whitespace-pre-wrap text-slate-700">{supplier.notes}</p>
 				</div>
 			{/if}
+
+			<div class="border-t border-slate-200 pt-4">
+				<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-slate-600">
+					<Tag class="h-4 w-4" />
+					Marcas que provee
+				</h4>
+
+				{#if loadingRelations}
+					<p class="text-sm text-slate-500">Cargando marcas relacionadas...</p>
+				{:else if relationsError}
+					<p class="text-sm text-red-600">{relationsError}</p>
+				{:else if relatedBrands.length > 0}
+					<div class="flex flex-wrap gap-2">
+						{#each relatedBrands as brand (brand.id)}
+							<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+								{brand.name}
+							</span>
+						{/each}
+					</div>
+				{:else}
+					<p class="text-sm text-slate-500 italic">
+						Aún no hay marcas registradas para este proveedor.
+					</p>
+				{/if}
+			</div>
 		</div>
 	{/if}
 

@@ -1,5 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import { getBrandSupplierMaps } from '$lib/server/db/queries/brandSuppliers';
 import { findProductByIdWithRelations } from '$lib/server/db/queries/products';
 import { isValidUuid } from '$lib/utils/uuid';
 import { getAllBrands } from '$lib/server/db/queries/brands';
@@ -29,6 +30,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		brandsList,
 		suppliersList,
 		materialsList,
+		relationMaps,
 		activeLots,
 		fifoCost,
 		productMovements,
@@ -43,6 +45,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 				productType: materials.productType
 			}
 		}),
+		getBrandSupplierMaps(),
 		getActiveLotsFifo(product.id),
 		getNextFifoCost(product.id),
 		getMovementsWithDetails({ productId: product.id, limit: 10 }),
@@ -54,6 +57,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		brands: brandsList,
 		suppliers: suppliersList,
 		materials: materialsList,
+		...relationMaps,
 		activeLots,
 		fifoCost,
 		productMovements,

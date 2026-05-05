@@ -33,6 +33,10 @@ import {
 	updateSupplierTreatment,
 	deleteSupplierTreatment
 } from '$lib/server/db/queries/suppliers';
+import {
+	getBrandsBySupplier,
+	type NamedRelationOption
+} from '$lib/server/db/queries/brandSuppliers';
 import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
@@ -192,6 +196,15 @@ export const deleteSupplierById = command(SupplierIdSchema, async (data): Promis
 	// Log audit
 	await auditService.logDelete('supplier', existing, getAuditContext());
 });
+
+export const listBrandsForSupplier = query(
+	SupplierIdSchema,
+	async (data): Promise<NamedRelationOption[]> => {
+		requireAuth();
+
+		return getBrandsBySupplier(data.id);
+	}
+);
 
 /**
  * Quick create a supplier with minimal info (for inline creation in forms)
