@@ -11,7 +11,8 @@ import {
 	calculateDraftItemTotal,
 	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
-	createEmptyPurchaseOrderDraftItem
+	createEmptyPurchaseOrderDraftItem,
+	getDraftItemZeroValueFields
 } from './purchaseOrderDraft';
 
 function makeProduct(overrides: Partial<ProductWithRelations> = {}): ProductWithRelations {
@@ -153,5 +154,17 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(calculateDraftItemTotal(item)).toBeCloseTo(25, 12);
 		expect(summary.total).toBeCloseTo(25, 12);
 		expect(summary.subtotal + summary.taxAmount).toBeCloseTo(summary.total, 12);
+	});
+
+	it('flags draft items with zero cost or zero sale price', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+
+		expect(getDraftItemZeroValueFields(item)).toEqual(['unitPurchasePrice', 'unitSalePrice']);
+
+		item.unitPurchasePrice = 12;
+		expect(getDraftItemZeroValueFields(item)).toEqual(['unitSalePrice']);
+
+		item.unitSalePrice = 20;
+		expect(getDraftItemZeroValueFields(item)).toEqual([]);
 	});
 });

@@ -26,6 +26,8 @@ export interface PurchaseOrderSummary {
 	estimatedProfit: number;
 }
 
+export type PurchaseOrderDraftZeroValueField = 'unitPurchasePrice' | 'unitSalePrice';
+
 export function createEmptyPurchaseOrderDraftItem(
 	itemType: PurchaseOrderItemType = PurchaseOrderItemType.PRODUCT,
 	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE,
@@ -132,6 +134,22 @@ export function calculateUnitPurchasePriceFromLineTotal(
 	if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) return 0;
 
 	return normalizedTotal / normalizedQuantity;
+}
+
+export function getDraftItemZeroValueFields(
+	item: PurchaseOrderDraftItem
+): PurchaseOrderDraftZeroValueField[] {
+	const fields: PurchaseOrderDraftZeroValueField[] = [];
+
+	if (Number(item.unitPurchasePrice || 0) === 0) {
+		fields.push('unitPurchasePrice');
+	}
+
+	if (Number(item.unitSalePrice || 0) === 0) {
+		fields.push('unitSalePrice');
+	}
+
+	return fields;
 }
 
 export function isDraftItemConfigured(item: PurchaseOrderDraftItem): boolean {

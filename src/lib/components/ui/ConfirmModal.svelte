@@ -5,6 +5,7 @@
 	interface Props {
 		open: boolean;
 		title: string;
+		size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 		message?: string;
 		body?: Snippet; // Rich content (e.g. bullet list of missing fields)
 		confirmLabel?: string;
@@ -21,6 +22,7 @@
 	let {
 		open = $bindable(),
 		title,
+		size = 'sm',
 		message,
 		body,
 		confirmLabel = 'Confirmar',
@@ -61,7 +63,7 @@
 	}
 </script>
 
-<Modal bind:open size="sm" {title} {permanent}>
+<Modal bind:open {size} {title} {permanent}>
 	<div class="flex items-start gap-3">
 		{#if icon}
 			{@render icon()}
