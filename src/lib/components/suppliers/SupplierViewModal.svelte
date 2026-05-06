@@ -51,7 +51,8 @@
 		relationsError = null;
 
 		try {
-			const brands = await listBrandsForSupplier({ id: supplierId }).run();
+			const brandsQuery = listBrandsForSupplier({ id: supplierId });
+			const brands = await brandsQuery;
 			if (requestId !== relationRequestId) return;
 			relatedBrands = brands;
 		} catch (error) {
