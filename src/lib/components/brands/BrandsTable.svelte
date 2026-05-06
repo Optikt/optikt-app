@@ -196,6 +196,7 @@
 <BrandViewModal
 	bind:open={showViewModal}
 	brand={selectedBrand}
+	canManageRelations={canManage}
 	onClose={() => (selectedBrand = null)}
 	onEdit={canManage && onEdit
 		? () => {

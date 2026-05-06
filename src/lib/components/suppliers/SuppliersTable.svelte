@@ -162,6 +162,7 @@
 <SupplierViewModal
 	bind:open={showViewModal}
 	supplier={selectedSupplier}
+	canManageRelations={canManage}
 	onClose={() => (selectedSupplier = null)}
 	onEdit={canManage && onEdit
 		? () => {

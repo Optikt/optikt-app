@@ -13,6 +13,8 @@ import {
 	QuickCreateBrandSchema,
 	ReactivateBrandSchema
 } from '$lib/schemas/brands';
+import { BrandSupplierRelationSchema } from '$lib/schemas/brandSuppliers';
+import { EmptySchema } from '$lib/schemas/common';
 import {
 	getAllBrands,
 	findBrandById,
@@ -24,12 +26,18 @@ import {
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
 import {
+	countProductsByBrandSupplier,
+	getActiveSupplierOptions,
 	getSuppliersByBrand,
+	removeBrandSupplierLink,
+	upsertBrandSupplierLink,
 	type NamedRelationOption
 } from '$lib/server/db/queries/brandSuppliers';
+import { db } from '$lib/server/db';
 import type { Brand } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
+import { formatRelationUnlinkBlockedMessage } from '$lib/utils/brandSupplierRelations';
 
 // Types for delete check
 export interface BrandDeleteCheck {
@@ -189,6 +197,43 @@ export const listSuppliersForBrand = query(
 		requireAuth();
 
 		return getSuppliersByBrand(data.id);
+	}
+);
+
+export const listSupplierRelationOptions = query(
+	EmptySchema,
+	async (): Promise<NamedRelationOption[]> => {
+		requireAdmin();
+
+		return getActiveSupplierOptions();
+	}
+);
+
+export const addSupplierToBrand = command(
+	BrandSupplierRelationSchema,
+	async (data): Promise<void> => {
+		requireAdmin();
+
+		await db.transaction(async (tx) => {
+			await upsertBrandSupplierLink(data.brandId, data.supplierId, tx);
+		});
+	}
+);
+
+export const removeSupplierFromBrand = command(
+	BrandSupplierRelationSchema,
+	async (data): Promise<void> => {
+		requireAdmin();
+
+		await db.transaction(async (tx) => {
+			const productCount = await countProductsByBrandSupplier(data.brandId, data.supplierId, tx);
+
+			if (productCount > 0) {
+				throw new Error(formatRelationUnlinkBlockedMessage(productCount));
+			}
+
+			await removeBrandSupplierLink(data.brandId, data.supplierId, tx);
+		});
 	}
 );
 

@@ -17,6 +17,8 @@ import {
 	UpdateSupplierTreatmentSchema,
 	SupplierTreatmentIdSchema
 } from '$lib/schemas/suppliers';
+import { BrandSupplierRelationSchema } from '$lib/schemas/brandSuppliers';
+import { EmptySchema } from '$lib/schemas/common';
 import {
 	getAllSuppliers,
 	findSupplierById,
@@ -34,12 +36,18 @@ import {
 	deleteSupplierTreatment
 } from '$lib/server/db/queries/suppliers';
 import {
+	countProductsByBrandSupplier,
+	getActiveBrandOptions,
 	getBrandsBySupplier,
+	removeBrandSupplierLink,
+	upsertBrandSupplierLink,
 	type NamedRelationOption
 } from '$lib/server/db/queries/brandSuppliers';
+import { db } from '$lib/server/db';
 import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
+import { formatRelationUnlinkBlockedMessage } from '$lib/utils/brandSupplierRelations';
 
 /**
  * List suppliers with pagination, search, and type filter
@@ -203,6 +211,43 @@ export const listBrandsForSupplier = query(
 		requireAuth();
 
 		return getBrandsBySupplier(data.id);
+	}
+);
+
+export const listBrandRelationOptions = query(
+	EmptySchema,
+	async (): Promise<NamedRelationOption[]> => {
+		requireAdmin();
+
+		return getActiveBrandOptions();
+	}
+);
+
+export const addBrandToSupplier = command(
+	BrandSupplierRelationSchema,
+	async (data): Promise<void> => {
+		requireAdmin();
+
+		await db.transaction(async (tx) => {
+			await upsertBrandSupplierLink(data.brandId, data.supplierId, tx);
+		});
+	}
+);
+
+export const removeBrandFromSupplier = command(
+	BrandSupplierRelationSchema,
+	async (data): Promise<void> => {
+		requireAdmin();
+
+		await db.transaction(async (tx) => {
+			const productCount = await countProductsByBrandSupplier(data.brandId, data.supplierId, tx);
+
+			if (productCount > 0) {
+				throw new Error(formatRelationUnlinkBlockedMessage(productCount));
+			}
+
+			await removeBrandSupplierLink(data.brandId, data.supplierId, tx);
+		});
 	}
 );
 

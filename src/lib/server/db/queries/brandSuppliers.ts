@@ -1,8 +1,8 @@
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, isNull } from 'drizzle-orm';
 
 import { nowISO } from '$lib/dates';
 import { db } from '$lib/server/db';
-import { brandSuppliers, brands, suppliers } from '$lib/server/db/schema';
+import { brandSuppliers, brands, products, suppliers } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 
 export interface NamedRelationOption {
@@ -36,6 +36,59 @@ export async function upsertBrandSupplierLink(
 				updatedAt: now
 			}
 		});
+}
+
+export async function removeBrandSupplierLink(
+	brandId: string,
+	supplierId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.delete(brandSuppliers)
+		.where(and(eq(brandSuppliers.brandId, brandId), eq(brandSuppliers.supplierId, supplierId)));
+}
+
+export async function countProductsByBrandSupplier(
+	brandId: string,
+	supplierId: string,
+	executor: DbOrTx = db
+): Promise<number> {
+	const [result] = await executor
+		.select({ count: count() })
+		.from(products)
+		.where(
+			and(
+				eq(products.brandId, brandId),
+				eq(products.supplierId, supplierId),
+				isNull(products.deletedAt)
+			)
+		);
+
+	return result?.count ?? 0;
+}
+
+export async function getActiveBrandOptions(executor: DbOrTx = db): Promise<NamedRelationOption[]> {
+	return executor
+		.select({
+			id: brands.id,
+			name: brands.name
+		})
+		.from(brands)
+		.where(isNull(brands.deletedAt))
+		.orderBy(asc(brands.name));
+}
+
+export async function getActiveSupplierOptions(
+	executor: DbOrTx = db
+): Promise<NamedRelationOption[]> {
+	return executor
+		.select({
+			id: suppliers.id,
+			name: suppliers.name
+		})
+		.from(suppliers)
+		.where(isNull(suppliers.deletedAt))
+		.orderBy(asc(suppliers.name));
 }
 
 export async function getBrandSupplierMaps(executor: DbOrTx = db): Promise<BrandSupplierMaps> {

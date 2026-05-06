@@ -9,13 +9,21 @@
 		MessageCircle,
 		User,
 		FileText,
-		Tag
+		Plus,
+		Tag,
+		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SupplierTypeBadge } from '$lib/components/ui';
-	import { listBrandsForSupplier } from '$lib/remote/suppliers.remote';
+	import {
+		addBrandToSupplier,
+		listBrandRelationOptions,
+		listBrandsForSupplier,
+		removeBrandFromSupplier
+	} from '$lib/remote/suppliers.remote';
 	import type { Supplier } from '$lib/server/db/schema';
 	import { formatPhone, getErrorMessage } from '$lib/utils';
+	import { getAvailableRelationOptions } from '$lib/utils/brandSupplierRelations';
 
 	type RelatedBrand = {
 		id: string;
@@ -25,17 +33,33 @@
 	interface Props {
 		open: boolean;
 		supplier: Supplier | null;
+		canManageRelations?: boolean;
 		onClose: () => void;
 		onEdit?: () => void;
 	}
 
-	let { open = $bindable(), supplier, onClose, onEdit }: Props = $props();
+	let {
+		open = $bindable(),
+		supplier,
+		canManageRelations = false,
+		onClose,
+		onEdit
+	}: Props = $props();
 	let relatedBrands = $state<RelatedBrand[]>([]);
+	let brandOptions = $state<RelatedBrand[]>([]);
 	let loadingRelations = $state(false);
+	let loadingBrandOptions = $state(false);
+	let savingRelation = $state(false);
 	let relationsError = $state<string | null>(null);
+	let editingRelations = $state(false);
+	let selectedBrandId = $state('');
 	let relationRequestId = 0;
 
+	const availableBrands = $derived(getAvailableRelationOptions(brandOptions, relatedBrands));
+
 	function handleClose() {
+		editingRelations = false;
+		selectedBrandId = '';
 		open = false;
 		onClose();
 	}
@@ -45,14 +69,17 @@
 		onEdit?.();
 	}
 
-	async function loadRelatedBrands(supplierId: string) {
+	async function loadRelatedBrands(
+		supplierId: string,
+		{ imperative = false }: { imperative?: boolean } = {}
+	) {
 		const requestId = ++relationRequestId;
 		loadingRelations = true;
 		relationsError = null;
 
 		try {
 			const brandsQuery = listBrandsForSupplier({ id: supplierId });
-			const brands = await brandsQuery;
+			const brands = imperative ? await brandsQuery.run() : await brandsQuery;
 			if (requestId !== relationRequestId) return;
 			relatedBrands = brands;
 		} catch (error) {
@@ -68,13 +95,74 @@
 		}
 	}
 
+	async function loadBrandOptions() {
+		loadingBrandOptions = true;
+		try {
+			brandOptions = await listBrandRelationOptions({}).run();
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error cargando marcas disponibles'));
+		} finally {
+			loadingBrandOptions = false;
+		}
+	}
+
+	async function startRelationEditing() {
+		if (!canManageRelations) return;
+		editingRelations = true;
+		await loadBrandOptions();
+	}
+
+	function stopRelationEditing() {
+		editingRelations = false;
+		selectedBrandId = '';
+	}
+
+	async function handleAddBrand() {
+		if (!supplier || !selectedBrandId) return;
+
+		savingRelation = true;
+		try {
+			await addBrandToSupplier({ brandId: selectedBrandId, supplierId: supplier.id });
+			selectedBrandId = '';
+			await loadRelatedBrands(supplier.id, { imperative: true });
+			toast.success('Marca agregada al proveedor');
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error agregando marca al proveedor'));
+		} finally {
+			savingRelation = false;
+		}
+	}
+
+	async function handleRemoveBrand(brand: RelatedBrand) {
+		if (!supplier) return;
+
+		savingRelation = true;
+		try {
+			await removeBrandFromSupplier({ brandId: brand.id, supplierId: supplier.id });
+			await loadRelatedBrands(supplier.id, { imperative: true });
+			toast.success('Marca removida del proveedor');
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error removiendo marca del proveedor'));
+		} finally {
+			savingRelation = false;
+		}
+	}
+
 	$effect(() => {
 		const supplierId = supplier?.id;
 
 		if (!open || !supplierId) {
 			relatedBrands = [];
+			brandOptions = [];
 			relationsError = null;
 			loadingRelations = false;
+			loadingBrandOptions = false;
+			savingRelation = false;
+			editingRelations = false;
+			selectedBrandId = '';
 			return;
 		}
 
@@ -208,10 +296,51 @@
 			{/if}
 
 			<div class="border-t border-slate-200 pt-4">
-				<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-slate-600">
-					<Tag class="h-4 w-4" />
-					Marcas que provee
-				</h4>
+				<div class="mb-3 flex items-center justify-between gap-3">
+					<h4 class="flex items-center gap-2 text-sm font-medium text-slate-600">
+						<Tag class="h-4 w-4" />
+						Marcas que provee
+					</h4>
+					{#if canManageRelations}
+						<button
+							type="button"
+							onclick={editingRelations ? stopRelationEditing : startRelationEditing}
+							class="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+						>
+							{editingRelations ? 'Listo' : 'Editar'}
+						</button>
+					{/if}
+				</div>
+
+				{#if editingRelations}
+					<div class="mb-4 flex flex-col gap-2 sm:flex-row">
+						<select
+							bind:value={selectedBrandId}
+							disabled={loadingBrandOptions || savingRelation || availableBrands.length === 0}
+							class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-blue/40 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+						>
+							<option value="">
+								{loadingBrandOptions
+									? 'Cargando marcas...'
+									: availableBrands.length === 0
+										? 'No hay marcas disponibles'
+										: 'Agregar marca...'}
+							</option>
+							{#each availableBrands as brandOption (brandOption.id)}
+								<option value={brandOption.id}>{brandOption.name}</option>
+							{/each}
+						</select>
+						<button
+							type="button"
+							onclick={handleAddBrand}
+							disabled={!selectedBrandId || savingRelation}
+							class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+						>
+							<Plus class="h-4 w-4" />
+							Agregar
+						</button>
+					</div>
+				{/if}
 
 				{#if loadingRelations}
 					<p class="text-sm text-slate-500">Cargando marcas relacionadas...</p>
@@ -220,8 +349,21 @@
 				{:else if relatedBrands.length > 0}
 					<div class="flex flex-wrap gap-2">
 						{#each relatedBrands as brand (brand.id)}
-							<span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+							<span
+								class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+							>
 								{brand.name}
+								{#if editingRelations}
+									<button
+										type="button"
+										onclick={() => handleRemoveBrand(brand)}
+										disabled={savingRelation}
+										aria-label={`Quitar marca ${brand.name}`}
+										class="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+									>
+										<X class="h-3 w-3" />
+									</button>
+								{/if}
 							</span>
 						{/each}
 					</div>
