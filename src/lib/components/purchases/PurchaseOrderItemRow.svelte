@@ -14,6 +14,7 @@
 		calculateDraftItemSubtotal,
 		calculateDraftItemTax,
 		calculateDraftItemTotal,
+		calculateUnitPurchasePriceFromLineTotal,
 		getPreTaxUnitPrice,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
@@ -42,9 +43,24 @@
 	const lineTax = $derived(calculateDraftItemTax(item));
 	const lineTotal = $derived(calculateDraftItemTotal(item));
 	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
+	const visiblePreTaxUnitCost = $derived(round2(preTaxUnitCost));
+	let editingLineTotal = $state(false);
+	let lineTotalDraftValue = $state('');
+	const lineTotalInputValue = $derived(
+		editingLineTotal ? lineTotalDraftValue : formatDecimalInput(lineTotal)
+	);
 
 	function round2(n: number): number {
 		return Math.round(n * 100) / 100;
+	}
+
+	function formatDecimalInput(value: number): string {
+		return Number.isFinite(value) ? value.toFixed(2) : '0.00';
+	}
+
+	function getNumberInputValue(e: Event): number | null {
+		const value = (e.currentTarget as HTMLInputElement).valueAsNumber;
+		return Number.isFinite(value) ? value : null;
 	}
 
 	function toggleTaxable() {
@@ -58,10 +74,31 @@
 	}
 
 	function handlePreTaxInput(e: Event) {
-		const val = parseFloat((e.currentTarget as HTMLInputElement).value);
-		if (!isNaN(val) && val >= 0) {
+		const val = getNumberInputValue(e);
+		if (val !== null && val >= 0) {
 			item.unitPurchasePrice = round2(val * (1 + item.ivaRate / 100));
 		}
+	}
+
+	function handleLineTotalFocus() {
+		editingLineTotal = true;
+		lineTotalDraftValue = formatDecimalInput(lineTotal);
+	}
+
+	function handleLineTotalInput(e: Event) {
+		const input = e.currentTarget as HTMLInputElement;
+		const value = getNumberInputValue(e);
+
+		lineTotalDraftValue = input.value;
+
+		if (value !== null && value >= 0) {
+			item.unitPurchasePrice = calculateUnitPurchasePriceFromLineTotal(value, item.quantity);
+		}
+	}
+
+	function handleLineTotalBlur() {
+		editingLineTotal = false;
+		lineTotalDraftValue = '';
 	}
 
 	function itemTitle(): string {
@@ -141,7 +178,7 @@
 
 <div class="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4 shadow-sm">
 	<div
-		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_128px_32px] xl:items-center xl:gap-4"
+		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_148px_32px] xl:items-center xl:gap-4"
 	>
 		<div class="space-y-2">
 			<p
@@ -205,7 +242,7 @@
 			<p
 				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
-				Costo unit.
+				Costo und.
 			</p>
 			{#if item.appliesIva}
 				<div class="grid grid-cols-2 gap-2 xl:items-center">
@@ -218,8 +255,8 @@
 						<input
 							type="number"
 							min="0"
-							step="0.01"
-							value={preTaxUnitCost}
+							step="any"
+							value={visiblePreTaxUnitCost}
 							onchange={handlePreTaxInput}
 							class={`${compactInputClass} xl:px-3.5 xl:pl-[3.6rem]`}
 							aria-label="Costo unitario sin IVA"
@@ -234,7 +271,7 @@
 						<input
 							type="number"
 							min="0"
-							step="0.01"
+							step="any"
 							bind:value={item.unitPurchasePrice}
 							class={`${compactInputClass} xl:px-3.5 xl:pl-[3.8rem]`}
 							aria-label="Costo unitario con IVA"
@@ -245,7 +282,7 @@
 				<input
 					type="number"
 					min="0"
-					step="0.01"
+					step="any"
 					bind:value={item.unitPurchasePrice}
 					class={compactInputClass}
 					aria-label="Costo unitario"
@@ -257,7 +294,7 @@
 			<p
 				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
-				Venta sugerida
+				Venta und.
 			</p>
 			<input
 				type="number"
@@ -265,7 +302,7 @@
 				step="0.01"
 				bind:value={item.unitSalePrice}
 				class={compactInputClass}
-				aria-label="Venta sugerida"
+				aria-label="Venta unitaria sugerida"
 			/>
 		</div>
 
@@ -308,14 +345,27 @@
 			<p
 				class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:hidden"
 			>
-				Total fila
+				Total costo
 			</p>
-			<p
-				class="flex h-10 items-center font-mono text-base font-semibold text-brand-navy tabular-nums xl:justify-end"
-				title={totalTooltip()}
-			>
-				{formatPrice(lineTotal)}
-			</p>
+			<div class="relative">
+				<span
+					class="pointer-events-none absolute top-1/2 left-2.5 z-10 -translate-y-1/2 font-mono text-[10px] font-bold tracking-[0.12em] text-outline uppercase"
+				>
+					USD
+				</span>
+				<input
+					type="number"
+					min="0"
+					step="0.01"
+					value={lineTotalInputValue}
+					onfocus={handleLineTotalFocus}
+					oninput={handleLineTotalInput}
+					onblur={handleLineTotalBlur}
+					class={`${compactInputClass} !pl-11 font-semibold text-brand-navy`}
+					aria-label="Total costo"
+					title={totalTooltip()}
+				/>
+			</div>
 		</div>
 
 		<div class="flex h-10 items-center justify-end">

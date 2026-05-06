@@ -118,7 +118,20 @@ function round2(n: number): number {
 
 export function getPreTaxUnitPrice(item: PurchaseOrderDraftItem): number {
 	if (!item.appliesIva || !item.ivaRate) return item.unitPurchasePrice;
-	return round2(item.unitPurchasePrice / (1 + item.ivaRate / 100));
+	return item.unitPurchasePrice / (1 + item.ivaRate / 100);
+}
+
+export function calculateUnitPurchasePriceFromLineTotal(
+	lineTotal: number,
+	quantity: number
+): number {
+	const normalizedTotal = Number(lineTotal || 0);
+	const normalizedQuantity = Number(quantity || 0);
+
+	if (!Number.isFinite(normalizedTotal) || normalizedTotal < 0) return 0;
+	if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) return 0;
+
+	return normalizedTotal / normalizedQuantity;
 }
 
 export function isDraftItemConfigured(item: PurchaseOrderDraftItem): boolean {
@@ -147,7 +160,7 @@ export function calculatePurchaseOrderSummary(
 ): PurchaseOrderSummary {
 	const subtotal = items.reduce((sum, item) => sum + calculateDraftItemSubtotal(item), 0);
 	const taxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item), 0);
-	const total = subtotal + taxAmount;
+	const total = items.reduce((sum, item) => sum + calculateDraftItemTotal(item), 0);
 	const estimatedSale = items.reduce(
 		(sum, item) => sum + Number(item.unitSalePrice || 0) * Number(item.quantity || 0),
 		0

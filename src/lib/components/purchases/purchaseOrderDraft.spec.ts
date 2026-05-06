@@ -8,6 +8,8 @@ import { LensPriceType, LensType } from '$lib/shared/enums/lensTypes';
 import {
 	applyLensDefaults,
 	applyProductDefaults,
+	calculateDraftItemTotal,
+	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
 	createEmptyPurchaseOrderDraftItem
 } from './purchaseOrderDraft';
@@ -128,5 +130,28 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(summary.total).toBeCloseTo(53.2);
 		expect(summary.estimatedSale).toBe(110);
 		expect(summary.estimatedProfit).toBeCloseTo(56.8);
+	});
+
+	it('derives precise unit purchase price from total cost and quantity', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.quantity = 36;
+		item.unitPurchasePrice = calculateUnitPurchasePriceFromLineTotal(25, item.quantity);
+
+		expect(item.unitPurchasePrice).toBeCloseTo(25 / 36, 12);
+		expect(calculateDraftItemTotal(item)).toBeCloseTo(25, 12);
+	});
+
+	it('keeps taxable summary total aligned with an entered line total', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.quantity = 36;
+		item.appliesIva = true;
+		item.ivaRate = 16;
+		item.unitPurchasePrice = calculateUnitPurchasePriceFromLineTotal(25, item.quantity);
+
+		const summary = calculatePurchaseOrderSummary([item]);
+
+		expect(calculateDraftItemTotal(item)).toBeCloseTo(25, 12);
+		expect(summary.total).toBeCloseTo(25, 12);
+		expect(summary.subtotal + summary.taxAmount).toBeCloseTo(summary.total, 12);
 	});
 });
