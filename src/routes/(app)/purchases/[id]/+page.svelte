@@ -657,12 +657,19 @@
 									class={[
 										'align-top transition-colors',
 										showReviewColumn && item.isReviewed
-											? 'bg-success-container/30 hover:bg-success-container/40'
+											? 'bg-success-container/45 ring-1 ring-success/25 ring-inset hover:bg-success-container/55'
 											: 'hover:bg-surface-container-low/60'
 									]}
 								>
 									{#if showReviewColumn}
-										<td class="px-2 py-3.5 text-center align-middle">
+										<td
+											class={[
+												'border-l-4 px-2 py-3.5 text-center align-middle',
+												item.isReviewed
+													? 'border-success bg-success-container/45'
+													: 'border-transparent'
+											]}
+										>
 											<button
 												type="button"
 												onclick={() => handleToggleItemReviewed(item)}
@@ -670,7 +677,7 @@
 												class={[
 													'inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
 													item.isReviewed
-														? 'bg-success-container text-on-success-container hover:bg-success/30'
+														? 'bg-success text-white shadow-sm shadow-success/20 hover:bg-success/85'
 														: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
 												]}
 												aria-label={item.isReviewed
