@@ -334,7 +334,7 @@ export async function getPurchaseOrderItems(
 		.leftJoin(products, eq(purchaseOrderItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(purchaseOrderItems.lensCatalogItemId, lensCatalogItems.id))
 		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId))
-		.orderBy(asc(purchaseOrderItems.createdAt));
+		.orderBy(asc(purchaseOrderItems.createdAt), asc(purchaseOrderItems.id));
 
 	return results.map((r) => ({
 		...r.item,

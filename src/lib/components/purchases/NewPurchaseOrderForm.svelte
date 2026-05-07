@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AlertTriangle, CheckCircle2, Save, X } from '@lucide/svelte';
+	import { AlertTriangle, Save, X } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
@@ -8,7 +8,6 @@
 	import { ConfirmModal, PageHeader } from '$lib/components/ui';
 	import {
 		createPurchaseOrderCmd,
-		markPurchaseOrderReadyCmd,
 		savePurchaseOrderDraftCmd
 	} from '$lib/remote/purchaseOrders.remote';
 	import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
@@ -22,6 +21,7 @@
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
+		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDraftInitialValues,
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
@@ -40,6 +40,12 @@
 		unitPurchasePrice: number;
 		unitSalePrice: number;
 		fields: PurchaseOrderDraftZeroValueField[];
+	};
+
+	type UnreviewedWarningLine = {
+		id: string;
+		title: string;
+		quantity: number;
 	};
 
 	const ZERO_VALUE_FIELD_LABELS: Record<PurchaseOrderDraftZeroValueField, string> = {
@@ -75,19 +81,33 @@
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
-	let savingAction = $state<'draft' | 'ready' | null>(null);
-	let showZeroValueWarningModal = $state(false);
-	let pendingMarkReady = $state(false);
+	let savingAction = $state<'draft' | null>(null);
+	let showDraftWarningModal = $state(false);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
 
 	const summary = $derived(calculatePurchaseOrderSummary(items));
 	const supplierLocked = $derived(items.length > 0);
 	const isEdit = $derived(mode === 'edit');
 	const saving = $derived(savingAction !== null);
+	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
+	const unreviewedWarningLines = $derived(
+		items
+			.filter((item) => !item.isReviewed)
+			.map(
+				(item): UnreviewedWarningLine => ({
+					id: item.id,
+					title: getDraftItemTitle(item),
+					quantity: Number(item.quantity || 0)
+				})
+			)
+	);
 	const zeroValueWarningLines = $derived(
 		items
 			.map((item) => buildZeroValueWarningLine(item))
 			.filter((line): line is ZeroValueWarningLine => line !== null)
+	);
+	const hasDraftWarnings = $derived(
+		unreviewedWarningLines.length > 0 || zeroValueWarningLines.length > 0
 	);
 
 	const canSave = $derived(
@@ -128,21 +148,20 @@
 		};
 	}
 
-	function handleSaveClick(markReady = false) {
+	function handleSaveClick() {
 		if (!canSave || saving) return;
-		pendingMarkReady = markReady;
 
-		if (zeroValueWarningLines.length > 0) {
-			showZeroValueWarningModal = true;
+		if (hasDraftWarnings) {
+			showDraftWarningModal = true;
 			return;
 		}
 
-		void savePurchaseOrder(markReady);
+		void savePurchaseOrder();
 	}
 
-	function handleZeroValueWarningConfirm() {
-		showZeroValueWarningModal = false;
-		void savePurchaseOrder(pendingMarkReady);
+	function handleDraftWarningConfirm() {
+		showDraftWarningModal = false;
+		void savePurchaseOrder();
 	}
 
 	function buildItemsPayload() {
@@ -164,9 +183,9 @@
 		}));
 	}
 
-	async function savePurchaseOrder(markReady = false) {
+	async function savePurchaseOrder() {
 		if (!canSave || saving) return;
-		savingAction = markReady ? 'ready' : 'draft';
+		savingAction = 'draft';
 
 		try {
 			if (isEdit) {
@@ -192,16 +211,7 @@
 					return;
 				}
 
-				if (markReady) {
-					const readyResult = await markPurchaseOrderReadyCmd({ id: purchaseOrderId });
-					if (!readyResult.success) {
-						toast.error(readyResult.error ?? 'Error marcando la orden como lista');
-						return;
-					}
-					toast.success('Borrador guardado y marcado como listo');
-				} else {
-					toast.success('Borrador guardado');
-				}
+				toast.success('Borrador guardado');
 
 				void goto(resolve(`/purchases/${purchaseOrderId}`));
 				return;
@@ -235,7 +245,6 @@
 			);
 		} finally {
 			savingAction = null;
-			pendingMarkReady = false;
 		}
 	}
 </script>
@@ -257,7 +266,7 @@
 			</button>
 			<button
 				type="button"
-				onclick={() => handleSaveClick(false)}
+				onclick={handleSaveClick}
 				disabled={!canSave || saving}
 				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
 			>
@@ -268,17 +277,6 @@
 						? 'Guardar cambios'
 						: 'Guardar orden (borrador)'}
 			</button>
-			{#if isEdit}
-				<button
-					type="button"
-					onclick={() => handleSaveClick(true)}
-					disabled={!canSave || saving}
-					class="inline-flex items-center gap-2 rounded-xl bg-success-container px-5 py-2.5 text-sm font-bold text-on-success-container transition-colors hover:bg-success-container/80 disabled:cursor-not-allowed disabled:opacity-60"
-				>
-					<CheckCircle2 class="h-4 w-4" />
-					{savingAction === 'ready' ? 'Guardando...' : 'Guardar y marcar listo'}
-				</button>
-			{/if}
 		{/snippet}
 	</PageHeader>
 
@@ -286,8 +284,15 @@
 		<div
 			class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 		>
-			{isEdit ? 'Editar devuelve el borrador a preparación' : 'Se guarda primero como borrador'}
+			{isEdit ? 'Los cambios se guardan como borrador' : 'Se guarda primero como borrador'}
 		</div>
+		{#if items.length > 0}
+			<div
+				class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+			>
+				{reviewStatus.reviewedCount} / {reviewStatus.totalCount} líneas marcadas
+			</div>
+		{/if}
 	</div>
 
 	<div class="space-y-5">
@@ -317,15 +322,15 @@
 </div>
 
 <ConfirmModal
-	bind:open={showZeroValueWarningModal}
-	title="Valores en cero"
+	bind:open={showDraftWarningModal}
+	title="Advertencias del borrador"
 	size="lg"
-	confirmLabel="Guardar de todos modos"
-	cancelLabel="Revisar orden"
+	confirmLabel="Guardar borrador"
+	cancelLabel="Revisar líneas"
 	confirmColor="yellow"
 	loading={saving}
-	onConfirm={handleZeroValueWarningConfirm}
-	onCancel={() => (showZeroValueWarningModal = false)}
+	onConfirm={handleDraftWarningConfirm}
+	onCancel={() => (showDraftWarningModal = false)}
 	permanent
 >
 	{#snippet icon()}
@@ -338,49 +343,71 @@
 
 	{#snippet body()}
 		<div class="space-y-4 text-sm text-on-surface">
-			<p>
-				Estas líneas tienen costo o venta en cero. Revisa si son correctas antes de crear el
-				borrador.
-			</p>
+			<p>Puedes guardar el borrador, pero hay líneas que conviene revisar antes de continuar.</p>
 
-			<div class="max-h-72 space-y-2 overflow-y-auto pr-1">
-				{#each zeroValueWarningLines as line (line.id)}
-					<div class="rounded-lg border border-warning/25 bg-warning-container/30 p-3">
-						<div class="flex items-start justify-between gap-3">
-							<div class="min-w-0">
-								<p class="truncate font-mono text-xs font-semibold text-brand-navy">
-									{line.title}
-								</p>
-								<p class="mt-1 text-xs text-on-surface-variant">Cantidad: {line.quantity}</p>
-							</div>
-							<div class="flex shrink-0 flex-wrap justify-end gap-1">
-								{#each line.fields as field (field)}
-									<span
-										class="text-on-warning rounded-full bg-warning px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] uppercase"
-									>
-										{ZERO_VALUE_FIELD_LABELS[field]}
-									</span>
-								{/each}
-							</div>
-						</div>
-
-						<div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-							<div class="rounded-md bg-surface-container-lowest px-2 py-1.5">
-								<span class="text-on-surface-variant">Costo und.</span>
-								<p class="font-mono font-semibold tabular-nums">
-									{formatPrice(line.unitPurchasePrice)}
-								</p>
-							</div>
-							<div class="rounded-md bg-surface-container-lowest px-2 py-1.5">
-								<span class="text-on-surface-variant">Venta und.</span>
-								<p class="font-mono font-semibold tabular-nums">
-									{formatPrice(line.unitSalePrice)}
-								</p>
-							</div>
-						</div>
+			{#if unreviewedWarningLines.length > 0}
+				<div class="rounded-lg border border-warning/25 bg-warning-container/25 p-3">
+					<div class="flex items-center justify-between gap-3">
+						<p class="text-xs font-bold tracking-[0.14em] text-on-warning-container uppercase">
+							Líneas sin check
+						</p>
+						<span class="font-mono text-xs font-semibold tabular-nums">
+							{reviewStatus.pendingCount} pendiente(s)
+						</span>
 					</div>
-				{/each}
-			</div>
+					<div class="mt-3 max-h-36 space-y-2 overflow-y-auto pr-1">
+						{#each unreviewedWarningLines as line (line.id)}
+							<div
+								class="flex items-center justify-between gap-3 rounded-md bg-surface-container-lowest px-2 py-1.5 text-xs"
+							>
+								<span class="truncate font-mono font-semibold text-brand-navy">{line.title}</span>
+								<span class="shrink-0 text-on-surface-variant">Cant. {line.quantity}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if zeroValueWarningLines.length > 0}
+				<div class="max-h-72 space-y-2 overflow-y-auto pr-1">
+					{#each zeroValueWarningLines as line (line.id)}
+						<div class="rounded-lg border border-warning/25 bg-warning-container/30 p-3">
+							<div class="flex items-start justify-between gap-3">
+								<div class="min-w-0">
+									<p class="truncate font-mono text-xs font-semibold text-brand-navy">
+										{line.title}
+									</p>
+									<p class="mt-1 text-xs text-on-surface-variant">Cantidad: {line.quantity}</p>
+								</div>
+								<div class="flex shrink-0 flex-wrap justify-end gap-1">
+									{#each line.fields as field (field)}
+										<span
+											class="text-on-warning rounded-full bg-warning px-2 py-0.5 text-[10px] font-bold tracking-[0.12em] uppercase"
+										>
+											{ZERO_VALUE_FIELD_LABELS[field]}
+										</span>
+									{/each}
+								</div>
+							</div>
+
+							<div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+								<div class="rounded-md bg-surface-container-lowest px-2 py-1.5">
+									<span class="text-on-surface-variant">Costo und.</span>
+									<p class="font-mono font-semibold tabular-nums">
+										{formatPrice(line.unitPurchasePrice)}
+									</p>
+								</div>
+								<div class="rounded-md bg-surface-container-lowest px-2 py-1.5">
+									<span class="text-on-surface-variant">Venta und.</span>
+									<p class="font-mono font-semibold tabular-nums">
+										{formatPrice(line.unitSalePrice)}
+									</p>
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/snippet}
 </ConfirmModal>

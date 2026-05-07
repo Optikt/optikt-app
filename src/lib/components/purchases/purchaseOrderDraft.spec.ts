@@ -15,7 +15,8 @@ import {
 	canPersistPurchaseOrderDraft,
 	createEmptyPurchaseOrderDraftItem,
 	createPurchaseOrderDraftItemFromExisting,
-	getDraftItemZeroValueFields
+	getDraftItemZeroValueFields,
+	getPurchaseOrderReviewStatus
 } from './purchaseOrderDraft';
 
 function makeProduct(overrides: Partial<ProductWithRelations> = {}): ProductWithRelations {
@@ -221,6 +222,23 @@ describe('purchaseOrderDraft helpers', () => {
 			ivaRate: 16
 		} as PurchaseOrderItemWithProduct);
 		expect(unreviewed.isReviewed).toBe(false);
+	});
+
+	it('counts reviewed and pending draft items', () => {
+		const first = createEmptyPurchaseOrderDraftItem();
+		const second = createEmptyPurchaseOrderDraftItem();
+		first.isReviewed = true;
+
+		expect(getPurchaseOrderReviewStatus([first, second])).toEqual({
+			totalCount: 2,
+			reviewedCount: 1,
+			pendingCount: 1,
+			allReviewed: false
+		});
+
+		second.isReviewed = true;
+
+		expect(getPurchaseOrderReviewStatus([first, second]).allReviewed).toBe(true);
 	});
 
 	it('validates whether a draft can be persisted', () => {

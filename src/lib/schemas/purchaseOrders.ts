@@ -37,9 +37,12 @@ export const PurchaseOrderItemSchema = z.object({
 	ivaRate: CoercedNumber.min(0).max(100).default(DEFAULT_TAX_RATE)
 });
 
-export const PurchaseOrderDraftItemSchema = PurchaseOrderItemSchema.extend({
-	id: z.uuid().optional(),
+export const PurchaseOrderReviewableItemSchema = PurchaseOrderItemSchema.extend({
 	isReviewed: z.boolean().optional()
+});
+
+export const PurchaseOrderDraftItemSchema = PurchaseOrderReviewableItemSchema.extend({
+	id: z.uuid().optional()
 });
 
 // ============================================================================
@@ -54,7 +57,7 @@ export const CreatePurchaseOrderSchema = z.object({
 	orderDate: z.iso.date('Fecha de orden inválida'),
 	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
 	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
-	items: z.array(PurchaseOrderItemSchema).min(1, 'Debe incluir al menos un ítem')
+	items: z.array(PurchaseOrderReviewableItemSchema).min(1, 'Debe incluir al menos un ítem')
 });
 
 // ============================================================================

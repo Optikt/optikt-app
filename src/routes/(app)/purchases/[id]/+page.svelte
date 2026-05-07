@@ -38,6 +38,7 @@
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
 	} from '$lib/server/db/queries/purchaseOrders';
+	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
 	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
 	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
 	import { tick, untrack } from 'svelte';
@@ -50,6 +51,8 @@
 
 	let actionLoading = $state(false);
 	let showConfirmModal = $state(false);
+	let showMarkReadyModal = $state(false);
+	let showUnmarkReadyModal = $state(false);
 	let showCancelModal = $state(false);
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
@@ -83,8 +86,9 @@
 		return 'Revisión de detalles y movimientos de inventario';
 	});
 	const totalUnits = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
-	const reviewedCount = $derived(items.filter((item) => item.isReviewed).length);
-	const allItemsReviewed = $derived(items.length > 0 && reviewedCount === items.length);
+	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
+	const reviewedCount = $derived(reviewStatus.reviewedCount);
+	const allItemsReviewed = $derived(reviewStatus.allReviewed);
 	const showReviewColumn = $derived(isDraft && isReadyForReview);
 	const totalPurchase = $derived(
 		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
@@ -214,7 +218,6 @@
 	async function handleToggleItemReviewed(item: PurchaseOrderItemWithProduct) {
 		const previous = item.isReviewed;
 		const next = !previous;
-		// Optimistic update for snappier UX.
 		items = items.map((entry) => (entry.id === item.id ? { ...entry, isReviewed: next } : entry));
 		try {
 			const result = await togglePurchaseOrderItemReviewedCmd({ id: item.id, value: next });
@@ -225,8 +228,6 @@
 				toast.error(result.error ?? 'Error actualizando la línea');
 				return;
 			}
-			await invalidateAll();
-			syncFromData();
 		} catch (error) {
 			items = items.map((entry) =>
 				entry.id === item.id ? { ...entry, isReviewed: previous } : entry
@@ -276,6 +277,7 @@
 		try {
 			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id });
 			if (result.success) {
+				showMarkReadyModal = false;
 				purchaseOrder = {
 					...purchaseOrder,
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
@@ -301,6 +303,7 @@
 		try {
 			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id });
 			if (result.success) {
+				showUnmarkReadyModal = false;
 				purchaseOrder = {
 					...purchaseOrder,
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
@@ -402,21 +405,23 @@
 			{/if}
 
 			{#if isDraft}
-				<button
-					type="button"
-					onclick={openEdit}
-					disabled={actionLoading}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Pencil class="h-4 w-4" />
-					Editar
-				</button>
+				{#if !isReadyForReview}
+					<button
+						type="button"
+						onclick={openEdit}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'neutral'
+						)}"
+					>
+						<Pencil class="h-4 w-4" />
+						Editar
+					</button>
+				{/if}
 				{#if isReadyForReview}
 					<button
 						type="button"
-						onclick={handleUnmarkReady}
+						onclick={() => (showUnmarkReadyModal = true)}
 						disabled={actionLoading}
 						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
 							'neutral'
@@ -428,7 +433,7 @@
 				{:else}
 					<button
 						type="button"
-						onclick={handleMarkReady}
+						onclick={() => (showMarkReadyModal = true)}
 						disabled={actionLoading}
 						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
 							'neutral'
@@ -652,7 +657,7 @@
 									class={[
 										'align-top transition-colors',
 										showReviewColumn && item.isReviewed
-											? 'bg-success-container/15 hover:bg-success-container/25'
+											? 'bg-success-container/30 hover:bg-success-container/40'
 											: 'hover:bg-surface-container-low/60'
 									]}
 								>
@@ -912,6 +917,28 @@
 	loading={actionLoading}
 	onConfirm={handleConfirm}
 	onCancel={() => (showConfirmModal = false)}
+/>
+
+<ConfirmModal
+	bind:open={showMarkReadyModal}
+	title="Marcar lista para revisar"
+	message="La orden pasará al flujo de revisión, se bloqueará la edición directa y las marcas de línea comenzarán desde cero."
+	confirmLabel="Marcar lista"
+	confirmColor="yellow"
+	loading={actionLoading}
+	onConfirm={handleMarkReady}
+	onCancel={() => (showMarkReadyModal = false)}
+/>
+
+<ConfirmModal
+	bind:open={showUnmarkReadyModal}
+	title="Volver a borrador"
+	message="La orden volverá a preparación para poder editarla. Las marcas de revisión actuales se limpiarán."
+	confirmLabel="Volver a borrador"
+	confirmColor="blue"
+	loading={actionLoading}
+	onConfirm={handleUnmarkReady}
+	onCancel={() => (showUnmarkReadyModal = false)}
 />
 
 <ConfirmModal

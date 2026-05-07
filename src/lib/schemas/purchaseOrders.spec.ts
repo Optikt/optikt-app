@@ -156,6 +156,15 @@ describe('CreatePurchaseOrderSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('accepts item review checks for draft creation', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			items: [{ ...validItem, isReviewed: true }]
+		});
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.items[0].isReviewed).toBe(true);
+	});
+
 	it('rejects notes shorter than 6 characters', () => {
 		const result = CreatePurchaseOrderSchema.safeParse({
 			...baseCreatePayload,

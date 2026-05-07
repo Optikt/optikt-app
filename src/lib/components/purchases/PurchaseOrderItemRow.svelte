@@ -38,7 +38,7 @@
 	// Auto-clear the reviewed flag when any material field changes after the
 	// first render. Mirrors the server-side reset in replacePurchaseOrderItems
 	// so the UI reflects the new state immediately.
-	let materialBaseline = $state({
+	let materialBaseline = {
 		productId: item.productId,
 		lensCatalogItemId: item.lensCatalogItemId,
 		quantity: item.quantity,
@@ -47,7 +47,7 @@
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
 		itemType: item.itemType
-	});
+	};
 	$effect(() => {
 		const changed =
 			materialBaseline.productId !== item.productId ||
@@ -221,7 +221,7 @@
 	class={[
 		'rounded-2xl border bg-surface-container-lowest p-4 shadow-sm transition-colors',
 		item.isReviewed
-			? 'border-success/40 bg-success-container/15 ring-1 ring-success/20'
+			? 'border-success/40 bg-success-container/25 ring-1 ring-success/20'
 			: 'border-outline-variant/25'
 	]}
 >

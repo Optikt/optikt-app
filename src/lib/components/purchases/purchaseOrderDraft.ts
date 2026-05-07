@@ -36,6 +36,13 @@ export interface PurchaseOrderSummary {
 	estimatedProfit: number;
 }
 
+export interface PurchaseOrderReviewStatus {
+	totalCount: number;
+	reviewedCount: number;
+	pendingCount: number;
+	allReviewed: boolean;
+}
+
 export type PurchaseOrderDraftZeroValueField = 'unitPurchasePrice' | 'unitSalePrice';
 
 export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesInput {
@@ -214,6 +221,20 @@ export function canPersistPurchaseOrderDraft(
 	items: PurchaseOrderDraftItem[]
 ): boolean {
 	return isPurchaseOrderDraftReady(header, items);
+}
+
+export function getPurchaseOrderReviewStatus(
+	items: { isReviewed: boolean }[]
+): PurchaseOrderReviewStatus {
+	const reviewedCount = items.filter((item) => item.isReviewed).length;
+	const totalCount = items.length;
+
+	return {
+		totalCount,
+		reviewedCount,
+		pendingCount: totalCount - reviewedCount,
+		allReviewed: totalCount > 0 && reviewedCount === totalCount
+	};
 }
 
 export function calculateDraftItemSubtotal(item: PurchaseOrderDraftItem): number {

@@ -22,6 +22,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		redirect(303, `/purchases/${params.id}`);
 	}
 
+	if (purchaseOrder.isReadyForReview) {
+		redirect(303, `/purchases/${params.id}`);
+	}
+
 	const [items, suppliers, products, lensItems] = await Promise.all([
 		getPurchaseOrderItems(params.id),
 		getAllSuppliers({ includeDeleted: false }),

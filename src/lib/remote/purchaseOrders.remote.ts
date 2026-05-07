@@ -30,7 +30,6 @@ import {
 	getNextPONumber,
 	setPurchaseOrderReadyForReview,
 	setPurchaseOrderItemReviewed,
-	clearPurchaseOrderItemsReviewed,
 	findPurchaseOrderItemById,
 	confirmPurchaseOrder as confirmPO,
 	cancelPurchaseOrder as cancelPO
@@ -170,7 +169,8 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				unitPurchasePrice: item.unitPurchasePrice,
 				unitSalePrice: item.unitSalePrice,
 				appliesIva: item.appliesIva,
-				ivaRate: item.ivaRate
+				ivaRate: item.ivaRate,
+				isReviewed: item.isReviewed ?? false
 			}));
 
 			await createPurchaseOrderItems(itemsData, tx);
@@ -200,6 +200,12 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 	}
 	if (existing.status !== PurchaseOrderStatus.DRAFT) {
 		return { success: false as const, error: 'Solo se pueden editar órdenes en borrador' };
+	}
+	if (existing.isReadyForReview) {
+		return {
+			success: false as const,
+			error: 'La orden está lista para revisar. Vuelve a borrador antes de editarla.'
+		};
 	}
 
 	try {
@@ -283,6 +289,12 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 	if (existing.status !== PurchaseOrderStatus.DRAFT) {
 		return { success: false as const, error: 'Solo se pueden editar órdenes en borrador' };
 	}
+	if (existing.isReadyForReview) {
+		return {
+			success: false as const,
+			error: 'La orden está lista para revisar. Vuelve a borrador antes de editarla.'
+		};
+	}
 
 	try {
 		const result = await db.transaction(async (tx) => {
@@ -300,13 +312,6 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 				},
 				tx
 			);
-
-			// If the draft was previously "ready for review", any reviewer marks
-			// must be discarded — saving from the editor reopens the draft and
-			// the next review pass should start clean.
-			if (existing.isReadyForReview) {
-				await clearPurchaseOrderItemsReviewed(data.id, tx);
-			}
 
 			const items = await replacePurchaseOrderItems(
 				data.id,
