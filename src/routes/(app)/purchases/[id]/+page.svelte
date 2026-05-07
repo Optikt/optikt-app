@@ -3,6 +3,9 @@
 		ArrowRightLeft,
 		Calendar,
 		CheckCircle,
+		CircleCheck,
+		ClipboardCheck,
+		Pencil,
 		FileText,
 		Hash,
 		Package,
@@ -21,6 +24,9 @@
 		applyPriceSuggestionsCmd,
 		cancelPurchaseOrderCmd,
 		confirmPurchaseOrderCmd,
+		markPurchaseOrderReadyCmd,
+		togglePurchaseOrderItemReviewedCmd,
+		unmarkPurchaseOrderReadyCmd,
 		type PriceSuggestion
 	} from '$lib/remote/purchaseOrders.remote';
 	import {
@@ -32,6 +38,7 @@
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
 	} from '$lib/server/db/queries/purchaseOrders';
+	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
 	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
 	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
 	import { tick, untrack } from 'svelte';
@@ -44,6 +51,8 @@
 
 	let actionLoading = $state(false);
 	let showConfirmModal = $state(false);
+	let showMarkReadyModal = $state(false);
+	let showUnmarkReadyModal = $state(false);
 	let showCancelModal = $state(false);
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
@@ -61,10 +70,13 @@
 
 	const formattedOrderNumber = $derived(`PO-${String(purchaseOrder.orderNumber).padStart(4, '0')}`);
 	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
+	const isReadyForReview = $derived(Boolean(purchaseOrder.isReadyForReview));
 	const isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
 	const detailSubtitle = $derived.by(() => {
 		if (purchaseOrder.status === PurchaseOrderStatus.DRAFT) {
-			return 'Pendiente por confirmar y generar inventario';
+			return purchaseOrder.isReadyForReview
+				? 'Listo para revisar y confirmar inventario'
+				: 'Borrador en preparación, sin impacto en inventario';
 		}
 
 		if (purchaseOrder.status === PurchaseOrderStatus.CANCELLED) {
@@ -74,6 +86,10 @@
 		return 'Revisión de detalles y movimientos de inventario';
 	});
 	const totalUnits = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
+	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
+	const reviewedCount = $derived(reviewStatus.reviewedCount);
+	const allItemsReviewed = $derived(reviewStatus.allReviewed);
+	const showReviewColumn = $derived(isDraft && isReadyForReview);
 	const totalPurchase = $derived(
 		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
 	);
@@ -90,6 +106,10 @@
 			behavior: 'smooth',
 			block: 'start'
 		});
+	}
+
+	function openEdit() {
+		void goto(resolve(`/purchases/${purchaseOrder.id}/edit`));
 	}
 
 	function formatBcvRate(rate: number): string {
@@ -195,6 +215,28 @@
 		}
 	}
 
+	async function handleToggleItemReviewed(item: PurchaseOrderItemWithProduct) {
+		const previous = item.isReviewed;
+		const next = !previous;
+		items = items.map((entry) => (entry.id === item.id ? { ...entry, isReviewed: next } : entry));
+		try {
+			const result = await togglePurchaseOrderItemReviewedCmd({ id: item.id, value: next });
+			if (!result.success) {
+				items = items.map((entry) =>
+					entry.id === item.id ? { ...entry, isReviewed: previous } : entry
+				);
+				toast.error(result.error ?? 'Error actualizando la línea');
+				return;
+			}
+		} catch (error) {
+			items = items.map((entry) =>
+				entry.id === item.id ? { ...entry, isReviewed: previous } : entry
+			);
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error actualizando la línea'));
+		}
+	}
+
 	async function handleConfirm() {
 		actionLoading = true;
 
@@ -202,7 +244,11 @@
 			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
 			if (result.success) {
 				showConfirmModal = false;
-				purchaseOrder = { ...purchaseOrder, status: PurchaseOrderStatus.CONFIRMED };
+				purchaseOrder = {
+					...purchaseOrder,
+					status: PurchaseOrderStatus.CONFIRMED,
+					isReadyForReview: false
+				};
 
 				if (result.priceSuggestions && result.priceSuggestions.length > 0) {
 					priceSuggestions = result.priceSuggestions;
@@ -220,6 +266,58 @@
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
+		} finally {
+			actionLoading = false;
+		}
+	}
+
+	async function handleMarkReady() {
+		actionLoading = true;
+
+		try {
+			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			if (result.success) {
+				showMarkReadyModal = false;
+				purchaseOrder = {
+					...purchaseOrder,
+					isReadyForReview: result.purchaseOrder.isReadyForReview,
+					updatedAt: result.purchaseOrder.updatedAt
+				};
+				toast.success('Orden marcada como lista para revisar');
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error marcando la orden como lista');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error marcando orden como lista'));
+		} finally {
+			actionLoading = false;
+		}
+	}
+
+	async function handleUnmarkReady() {
+		actionLoading = true;
+
+		try {
+			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			if (result.success) {
+				showUnmarkReadyModal = false;
+				purchaseOrder = {
+					...purchaseOrder,
+					isReadyForReview: result.purchaseOrder.isReadyForReview,
+					updatedAt: result.purchaseOrder.updatedAt
+				};
+				toast.success('Orden devuelta a preparación');
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error devolviendo la orden a preparación');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error devolviendo orden a preparación'));
 		} finally {
 			actionLoading = false;
 		}
@@ -262,7 +360,11 @@
 			if (result.success) {
 				toast.success('Orden de compra cancelada');
 				showCancelModal = false;
-				purchaseOrder = { ...purchaseOrder, status: PurchaseOrderStatus.CANCELLED };
+				purchaseOrder = {
+					...purchaseOrder,
+					status: PurchaseOrderStatus.CANCELLED,
+					isReadyForReview: false
+				};
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -303,17 +405,60 @@
 			{/if}
 
 			{#if isDraft}
-				<button
-					type="button"
-					onclick={() => (showConfirmModal = true)}
-					disabled={actionLoading}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-						'success'
-					)}"
-				>
-					<CheckCircle class="h-4 w-4" />
-					Confirmar orden
-				</button>
+				{#if !isReadyForReview}
+					<button
+						type="button"
+						onclick={openEdit}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'neutral'
+						)}"
+					>
+						<Pencil class="h-4 w-4" />
+						Editar
+					</button>
+				{/if}
+				{#if isReadyForReview}
+					<button
+						type="button"
+						onclick={() => (showUnmarkReadyModal = true)}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'neutral'
+						)}"
+					>
+						<RotateCcw class="h-4 w-4" />
+						Volver a edición
+					</button>
+				{:else}
+					<button
+						type="button"
+						onclick={() => (showMarkReadyModal = true)}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'neutral'
+						)}"
+					>
+						<ClipboardCheck class="h-4 w-4" />
+						Marcar listo
+					</button>
+				{/if}
+				{#if isReadyForReview}
+					<button
+						type="button"
+						onclick={() => (showConfirmModal = true)}
+						disabled={actionLoading || !allItemsReviewed}
+						title={allItemsReviewed
+							? 'Confirmar orden y generar inventario'
+							: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'success'
+						)}"
+					>
+						<CheckCircle class="h-4 w-4" />
+						Confirmar orden
+					</button>
+				{/if}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -354,7 +499,10 @@
 			</span>
 		</div>
 		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
-			<PurchaseOrderStatusBadge status={purchaseOrder.status} />
+			<PurchaseOrderStatusBadge
+				status={purchaseOrder.status}
+				isReadyForReview={purchaseOrder.isReadyForReview}
+			/>
 		</div>
 	</div>
 
@@ -458,12 +606,22 @@
 							<h2 class="text-xl font-semibold text-brand-navy">Artículos recibidos</h2>
 						</div>
 					</div>
-					<AppBadge variant="neutral">{items.length} ítems</AppBadge>
+					<div class="flex items-center gap-3">
+						{#if showReviewColumn}
+							<AppBadge variant={allItemsReviewed ? 'success' : 'warning'}>
+								{reviewedCount} / {items.length} revisadas
+							</AppBadge>
+						{/if}
+						<AppBadge variant="neutral">{items.length} ítems</AppBadge>
+					</div>
 				</div>
 
 				<div class="overflow-x-auto xl:overflow-visible">
 					<table class="min-w-full table-fixed text-left text-sm xl:w-full">
 						<colgroup>
+							{#if showReviewColumn}
+								<col class="w-[5%]" />
+							{/if}
 							<col class="w-[11%]" />
 							<col class="w-[23%]" />
 							<col class="w-[8%]" />
@@ -478,6 +636,9 @@
 							class="bg-surface-container-high/70 text-[11px] tracking-[0.18em] text-slate-500 uppercase"
 						>
 							<tr>
+								{#if showReviewColumn}
+									<th class="px-2 py-3.5 text-center" aria-label="Revisada"></th>
+								{/if}
 								<th class="px-4 py-3.5">Tipo</th>
 								<th class="px-4 py-3.5">Artículo</th>
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
@@ -492,7 +653,44 @@
 						<tbody class="divide-y divide-outline-variant/15">
 							{#each items as item (item.id)}
 								{@const lot = lotForItem(item)}
-								<tr class="align-top transition-colors hover:bg-surface-container-low/60">
+								<tr
+									class={[
+										'align-top transition-colors',
+										showReviewColumn && item.isReviewed
+											? 'bg-success-container/45 ring-1 ring-success/25 ring-inset hover:bg-success-container/55'
+											: 'hover:bg-surface-container-low/60'
+									]}
+								>
+									{#if showReviewColumn}
+										<td
+											class={[
+												'border-l-4 px-2 py-3.5 text-center align-middle',
+												item.isReviewed
+													? 'border-success bg-success-container/45'
+													: 'border-transparent'
+											]}
+										>
+											<button
+												type="button"
+												onclick={() => handleToggleItemReviewed(item)}
+												aria-pressed={item.isReviewed}
+												class={[
+													'inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+													item.isReviewed
+														? 'bg-success text-white shadow-sm shadow-success/20 hover:bg-success/85'
+														: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
+												]}
+												aria-label={item.isReviewed
+													? 'Marcar como no revisada'
+													: 'Marcar como revisada'}
+												title={item.isReviewed
+													? 'Línea revisada — click para desmarcar'
+													: 'Marcar línea como revisada'}
+											>
+												<CircleCheck class="h-4 w-4" />
+											</button>
+										</td>
+									{/if}
 									<td class="px-4 py-3.5">
 										<AppBadge variant={itemBadgeVariant(item)}>
 											{getPurchaseOrderItemTypeLabel(item.itemType)}
@@ -561,7 +759,10 @@
 								</tr>
 							{:else}
 								<tr>
-									<td colspan={isConfirmed ? 7 : 6} class="px-4 py-12 text-center">
+									<td
+										colspan={(isConfirmed ? 7 : 6) + (showReviewColumn ? 1 : 0)}
+										class="px-4 py-12 text-center"
+									>
 										<p class="text-sm font-semibold text-on-surface-variant">
 											No hay ítems en esta orden.
 										</p>
@@ -723,6 +924,28 @@
 	loading={actionLoading}
 	onConfirm={handleConfirm}
 	onCancel={() => (showConfirmModal = false)}
+/>
+
+<ConfirmModal
+	bind:open={showMarkReadyModal}
+	title="Marcar lista para revisar"
+	message="La orden pasará al flujo de revisión, se bloqueará la edición directa y las marcas de línea comenzarán desde cero."
+	confirmLabel="Marcar lista"
+	confirmColor="yellow"
+	loading={actionLoading}
+	onConfirm={handleMarkReady}
+	onCancel={() => (showMarkReadyModal = false)}
+/>
+
+<ConfirmModal
+	bind:open={showUnmarkReadyModal}
+	title="Volver a borrador"
+	message="La orden volverá a preparación para poder editarla. Las marcas de revisión actuales se limpiarán."
+	confirmLabel="Volver a borrador"
+	confirmColor="blue"
+	loading={actionLoading}
+	onConfirm={handleUnmarkReady}
+	onCancel={() => (showUnmarkReadyModal = false)}
 />
 
 <ConfirmModal

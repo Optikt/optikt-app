@@ -1,14 +1,20 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import { getPurchaseOrderStatusLabel, getPurchaseOrderStatusBadgeColor } from '$lib/shared/enums';
+	import {
+		getPurchaseOrderUiStateLabel,
+		getPurchaseOrderUiStateBadgeColor
+	} from '$lib/shared/enums';
 
 	interface Props {
 		status: string;
+		isReadyForReview?: boolean | null;
 	}
 
-	let { status }: Props = $props();
+	let { status, isReadyForReview = false }: Props = $props();
+
+	const stateSource = $derived({ status, isReadyForReview });
 </script>
 
-<AppBadge variant={getPurchaseOrderStatusBadgeColor(status)}>
-	{getPurchaseOrderStatusLabel(status)}
+<AppBadge variant={getPurchaseOrderUiStateBadgeColor(stateSource)}>
+	{getPurchaseOrderUiStateLabel(stateSource)}
 </AppBadge>

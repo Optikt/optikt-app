@@ -1,11 +1,19 @@
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 import { LensPriceType } from '$lib/shared/enums/lensTypes';
+import {
+	isPurchaseOrderDraftReady,
+	validatePurchaseOrderDraftReadiness,
+	type PurchaseOrderDraftHeaderRulesInput,
+	type PurchaseOrderDraftReadinessResult
+} from '$lib/shared/purchaseOrderRules';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 export interface PurchaseOrderDraftItem {
 	id: string;
+	persistedId?: string;
 	itemType: PurchaseOrderItemType;
 	productId: string;
 	lensCatalogItemId: string;
@@ -14,6 +22,8 @@ export interface PurchaseOrderDraftItem {
 	unitSalePrice: number;
 	appliesIva: boolean;
 	ivaRate: number;
+	/** Per-line "data filled" / review check. New rows start as false. */
+	isReviewed: boolean;
 }
 
 export interface PurchaseOrderSummary {
@@ -26,7 +36,24 @@ export interface PurchaseOrderSummary {
 	estimatedProfit: number;
 }
 
+export interface PurchaseOrderReviewStatus {
+	totalCount: number;
+	reviewedCount: number;
+	pendingCount: number;
+	allReviewed: boolean;
+}
+
 export type PurchaseOrderDraftZeroValueField = 'unitPurchasePrice' | 'unitSalePrice';
+
+export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesInput {
+	documentType: PurchaseDocumentType;
+	invoiceNumber: string;
+	deliveryNoteNumber: string;
+}
+
+export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeader {
+	items: PurchaseOrderDraftItem[];
+}
 
 export function createEmptyPurchaseOrderDraftItem(
 	itemType: PurchaseOrderItemType = PurchaseOrderItemType.PRODUCT,
@@ -44,7 +71,26 @@ export function createEmptyPurchaseOrderDraftItem(
 		unitPurchasePrice: 0,
 		unitSalePrice: 0,
 		appliesIva: isInvoice,
-		ivaRate: defaultTaxRate
+		ivaRate: defaultTaxRate,
+		isReviewed: false
+	};
+}
+
+export function createPurchaseOrderDraftItemFromExisting(
+	item: PurchaseOrderItemWithProduct
+): PurchaseOrderDraftItem {
+	return {
+		id: item.id,
+		persistedId: item.id,
+		itemType: item.itemType as PurchaseOrderItemType,
+		productId: item.productId ?? '',
+		lensCatalogItemId: item.lensCatalogItemId ?? '',
+		quantity: item.quantity,
+		unitPurchasePrice: item.unitPurchasePrice,
+		unitSalePrice: item.unitSalePrice,
+		appliesIva: item.appliesIva,
+		ivaRate: item.ivaRate,
+		isReviewed: item.isReviewed ?? false
 	};
 }
 
@@ -64,6 +110,7 @@ export function resetDraftItemType(
 	item.unitSalePrice = 0;
 	item.appliesIva = isInvoice;
 	item.ivaRate = defaultTaxRate;
+	item.isReviewed = false;
 
 	return item;
 }
@@ -86,6 +133,7 @@ export function applyProductDefaults(
 	item.unitSalePrice = Number(product.currentSalePrice ?? 0);
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
+	item.isReviewed = false;
 
 	return item;
 }
@@ -110,6 +158,7 @@ export function applyLensDefaults(
 	item.unitSalePrice = Number(lens.salePrice ?? 0);
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
+	item.isReviewed = false;
 
 	return item;
 }
@@ -158,6 +207,34 @@ export function isDraftItemConfigured(item: PurchaseOrderDraftItem): boolean {
 	}
 
 	return item.lensCatalogItemId !== '';
+}
+
+export function validatePurchaseOrderDraft(
+	header: PurchaseOrderDraftHeaderRulesInput,
+	items: PurchaseOrderDraftItem[]
+): PurchaseOrderDraftReadinessResult {
+	return validatePurchaseOrderDraftReadiness(header, items);
+}
+
+export function canPersistPurchaseOrderDraft(
+	header: PurchaseOrderDraftHeaderRulesInput,
+	items: PurchaseOrderDraftItem[]
+): boolean {
+	return isPurchaseOrderDraftReady(header, items);
+}
+
+export function getPurchaseOrderReviewStatus(
+	items: { isReviewed: boolean }[]
+): PurchaseOrderReviewStatus {
+	const reviewedCount = items.filter((item) => item.isReviewed).length;
+	const totalCount = items.length;
+
+	return {
+		totalCount,
+		reviewedCount,
+		pendingCount: totalCount - reviewedCount,
+		allReviewed: totalCount > 0 && reviewedCount === totalCount
+	};
 }
 
 export function calculateDraftItemSubtotal(item: PurchaseOrderDraftItem): number {

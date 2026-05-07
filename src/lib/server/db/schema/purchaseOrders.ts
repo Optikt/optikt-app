@@ -57,6 +57,8 @@ export const purchaseOrders = pgTable(
 		/** Delivery note number */
 		deliveryNoteNumber: varchar('delivery_note_number'),
 		status: purchaseOrderStatusEnum().notNull().default('DRAFT'),
+		/** Manual review marker for draft orders */
+		isReadyForReview: boolean('is_ready_for_review').notNull().default(false),
 		/** INVOICE = Factura, DELIVERY_NOTE = Nota de entrega */
 		documentType: purchaseDocumentTypeEnum('document_type').notNull().default('INVOICE'),
 		/** Date of the purchase */
@@ -132,6 +134,12 @@ export const purchaseOrderItems = pgTable(
 		appliesIva: boolean('applies_iva').notNull().default(true),
 		/** IVA rate percentage (e.g. 16) */
 		ivaRate: doublePrecision('iva_rate').notNull().default(16),
+		/**
+		 * Per-line review check. Used both during draft creation ("data filled")
+		 * and during ready-for-review verification. Reset to false when the
+		 * order is marked/unmarked ready or when material fields change.
+		 */
+		isReviewed: boolean('is_reviewed').notNull().default(false),
 		/** Filled when PO is confirmed - FK to the generated lot */
 		lotId: uuid('lot_id'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

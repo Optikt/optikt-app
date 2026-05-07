@@ -54,6 +54,7 @@ export interface PurchaseOrderFilterOptions {
 	includeDeleted?: boolean;
 	search?: string;
 	status?: string;
+	readyForReview?: boolean;
 	supplierId?: string;
 }
 
@@ -61,7 +62,23 @@ export interface PurchaseOrderListStats {
 	total: number;
 	confirmed: number;
 	draft: number;
+	draftInProgress: number;
+	draftReady: number;
 	monthlySpend: number;
+}
+
+export interface PurchaseOrderItemDraftInput {
+	id?: string;
+	itemType: PurchaseOrderItemType;
+	productId: string | null;
+	lensCatalogItemId: string | null;
+	quantity: number;
+	unitPurchasePrice: number;
+	unitSalePrice: number;
+	appliesIva: boolean;
+	ivaRate: number;
+	/** Optional: client-side reviewed flag. Server resets to false when material fields change. */
+	isReviewed?: boolean;
 }
 
 export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
@@ -103,6 +120,9 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 		)`);
 	}
 	if (opts.status) conditions.push(eq(purchaseOrders.status, opts.status));
+	if (opts.readyForReview !== undefined) {
+		conditions.push(eq(purchaseOrders.isReadyForReview, opts.readyForReview));
+	}
 	if (opts.supplierId) conditions.push(eq(purchaseOrders.supplierId, opts.supplierId));
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
@@ -244,10 +264,12 @@ export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStat
 		Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
 	).toISOString();
 
-	const [total, confirmed, draft, spendResult] = await Promise.all([
+	const [total, confirmed, draft, draftInProgress, draftReady, spendResult] = await Promise.all([
 		countPurchaseOrders(),
 		countPurchaseOrders({ status: PurchaseOrderStatus.CONFIRMED }),
 		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT }),
+		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT, readyForReview: false }),
+		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT, readyForReview: true }),
 		db
 			.select({
 				value: sql<number>`coalesce(sum(${purchaseOrderItems.quantity} * ${purchaseOrderItems.unitPurchasePrice}), 0)`
@@ -268,6 +290,8 @@ export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStat
 		total,
 		confirmed,
 		draft,
+		draftInProgress,
+		draftReady,
 		monthlySpend: Number(spendResult[0]?.value ?? 0)
 	};
 }
@@ -310,7 +334,7 @@ export async function getPurchaseOrderItems(
 		.leftJoin(products, eq(purchaseOrderItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(purchaseOrderItems.lensCatalogItemId, lensCatalogItems.id))
 		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId))
-		.orderBy(asc(purchaseOrderItems.createdAt));
+		.orderBy(asc(purchaseOrderItems.createdAt), asc(purchaseOrderItems.id));
 
 	return results.map((r) => ({
 		...r.item,
@@ -349,6 +373,128 @@ export async function deletePurchaseOrderItem(id: string, executor: DbOrTx = db)
 	await executor.delete(purchaseOrderItems).where(eq(purchaseOrderItems.id, id));
 }
 
+export async function findPurchaseOrderItemById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<PurchaseOrderItem | null> {
+	const [row] = await executor
+		.select()
+		.from(purchaseOrderItems)
+		.where(eq(purchaseOrderItems.id, id))
+		.limit(1);
+	return row ?? null;
+}
+
+export async function replacePurchaseOrderItems(
+	purchaseOrderId: string,
+	items: PurchaseOrderItemDraftInput[],
+	executor: DbOrTx = db
+): Promise<PurchaseOrderItemWithProduct[]> {
+	const existingItems = await executor
+		.select()
+		.from(purchaseOrderItems)
+		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
+
+	const existingIds = new Set(existingItems.map((item) => item.id));
+	const incomingIds = new Set(
+		items.map((item) => item.id).filter((id): id is string => Boolean(id))
+	);
+
+	for (const id of incomingIds) {
+		if (!existingIds.has(id)) {
+			throw new Error(`El ítem ${id} no pertenece a esta orden de compra`);
+		}
+	}
+
+	for (const existing of existingItems) {
+		if (!incomingIds.has(existing.id)) {
+			await deletePurchaseOrderItem(existing.id, executor);
+		}
+	}
+
+	const existingById = new Map(existingItems.map((existing) => [existing.id, existing]));
+
+	for (const item of items) {
+		const itemData = {
+			itemType: item.itemType,
+			productId: item.productId,
+			lensCatalogItemId: item.lensCatalogItemId,
+			quantity: item.quantity,
+			unitPurchasePrice: item.unitPurchasePrice,
+			unitSalePrice: item.unitSalePrice,
+			appliesIva: item.appliesIva,
+			ivaRate: item.ivaRate
+		};
+
+		if (item.id) {
+			const previous = existingById.get(item.id);
+			const materialChanged =
+				!previous ||
+				previous.itemType !== itemData.itemType ||
+				previous.productId !== itemData.productId ||
+				previous.lensCatalogItemId !== itemData.lensCatalogItemId ||
+				previous.quantity !== itemData.quantity ||
+				previous.unitPurchasePrice !== itemData.unitPurchasePrice ||
+				previous.unitSalePrice !== itemData.unitSalePrice ||
+				previous.appliesIva !== itemData.appliesIva ||
+				previous.ivaRate !== itemData.ivaRate;
+			// If material fields changed, force isReviewed=false (defense-in-depth).
+			// Otherwise honor the client-provided value (if any) so reviewed lines
+			// stay reviewed across save cycles.
+			const nextReviewed = materialChanged
+				? false
+				: (item.isReviewed ?? previous?.isReviewed ?? false);
+			await updatePurchaseOrderItem(item.id, { ...itemData, isReviewed: nextReviewed }, executor);
+		} else {
+			// New rows always start unreviewed (default column value).
+			await createPurchaseOrderItem({ purchaseOrderId, ...itemData }, executor);
+		}
+	}
+
+	return getPurchaseOrderItems(purchaseOrderId, executor);
+}
+
+export async function setPurchaseOrderItemReviewed(
+	itemId: string,
+	isReviewed: boolean,
+	executor: DbOrTx = db
+): Promise<PurchaseOrderItem> {
+	const [updated] = await executor
+		.update(purchaseOrderItems)
+		.set({ isReviewed, updatedAt: nowISO() })
+		.where(eq(purchaseOrderItems.id, itemId))
+		.returning();
+	return updated;
+}
+
+export async function clearPurchaseOrderItemsReviewed(
+	purchaseOrderId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(purchaseOrderItems)
+		.set({ isReviewed: false, updatedAt: nowISO() })
+		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
+}
+
+export async function setPurchaseOrderReadyForReview(
+	id: string,
+	isReadyForReview: boolean,
+	executor: DbOrTx = db
+): Promise<PurchaseOrder> {
+	// Both transitions wipe per-line review checks: marking ready resets the
+	// creator's "data filled" marks so the reviewer starts from zero, and
+	// unmarking ready discards the reviewer's progress so the next review
+	// pass is intentional.
+	await clearPurchaseOrderItemsReviewed(id, executor);
+	const [po] = await executor
+		.update(purchaseOrders)
+		.set({ isReadyForReview, updatedAt: nowISO() })
+		.where(eq(purchaseOrders.id, id))
+		.returning();
+	return po;
+}
+
 // ---------------------------------------------------------------------------
 // PO Confirmation - The core transaction
 // ---------------------------------------------------------------------------
@@ -368,6 +514,9 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 	if (po.status !== PurchaseOrderStatus.DRAFT) {
 		throw new Error(`No se puede confirmar: estado actual es ${po.status}`);
 	}
+	if (!po.isReadyForReview) {
+		throw new Error('El borrador debe marcarse como listo para revisar antes de confirmarlo');
+	}
 
 	// 2. Get all items for this PO
 	const items = await tx
@@ -377,6 +526,13 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 
 	if (items.length === 0) {
 		throw new Error('No se puede confirmar una orden sin ítems');
+	}
+
+	const pendingReview = items.filter((item) => !item.isReviewed).length;
+	if (pendingReview > 0) {
+		throw new Error(
+			`Faltan ${pendingReview} línea(s) por marcar como revisadas antes de confirmar`
+		);
 	}
 
 	// 3. Process each item
@@ -449,6 +605,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		.update(purchaseOrders)
 		.set({
 			status: PurchaseOrderStatus.CONFIRMED,
+			isReadyForReview: false,
 			confirmedById,
 			confirmedAt: nowISO(),
 			updatedAt: nowISO()
@@ -477,6 +634,7 @@ export async function cancelPurchaseOrder(
 		.update(purchaseOrders)
 		.set({
 			status: PurchaseOrderStatus.CANCELLED,
+			isReadyForReview: false,
 			updatedAt: nowISO()
 		})
 		.where(eq(purchaseOrders.id, poId))
