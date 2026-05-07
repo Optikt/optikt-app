@@ -77,6 +77,8 @@ export interface PurchaseOrderItemDraftInput {
 	unitSalePrice: number;
 	appliesIva: boolean;
 	ivaRate: number;
+	/** Optional: client-side reviewed flag. Server resets to false when material fields change. */
+	isReviewed?: boolean;
 }
 
 export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
@@ -371,6 +373,18 @@ export async function deletePurchaseOrderItem(id: string, executor: DbOrTx = db)
 	await executor.delete(purchaseOrderItems).where(eq(purchaseOrderItems.id, id));
 }
 
+export async function findPurchaseOrderItemById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<PurchaseOrderItem | null> {
+	const [row] = await executor
+		.select()
+		.from(purchaseOrderItems)
+		.where(eq(purchaseOrderItems.id, id))
+		.limit(1);
+	return row ?? null;
+}
+
 export async function replacePurchaseOrderItems(
 	purchaseOrderId: string,
 	items: PurchaseOrderItemDraftInput[],
@@ -398,6 +412,8 @@ export async function replacePurchaseOrderItems(
 		}
 	}
 
+	const existingById = new Map(existingItems.map((existing) => [existing.id, existing]));
+
 	for (const item of items) {
 		const itemData = {
 			itemType: item.itemType,
@@ -411,8 +427,26 @@ export async function replacePurchaseOrderItems(
 		};
 
 		if (item.id) {
-			await updatePurchaseOrderItem(item.id, itemData, executor);
+			const previous = existingById.get(item.id);
+			const materialChanged =
+				!previous ||
+				previous.itemType !== itemData.itemType ||
+				previous.productId !== itemData.productId ||
+				previous.lensCatalogItemId !== itemData.lensCatalogItemId ||
+				previous.quantity !== itemData.quantity ||
+				previous.unitPurchasePrice !== itemData.unitPurchasePrice ||
+				previous.unitSalePrice !== itemData.unitSalePrice ||
+				previous.appliesIva !== itemData.appliesIva ||
+				previous.ivaRate !== itemData.ivaRate;
+			// If material fields changed, force isReviewed=false (defense-in-depth).
+			// Otherwise honor the client-provided value (if any) so reviewed lines
+			// stay reviewed across save cycles.
+			const nextReviewed = materialChanged
+				? false
+				: (item.isReviewed ?? previous?.isReviewed ?? false);
+			await updatePurchaseOrderItem(item.id, { ...itemData, isReviewed: nextReviewed }, executor);
 		} else {
+			// New rows always start unreviewed (default column value).
 			await createPurchaseOrderItem({ purchaseOrderId, ...itemData }, executor);
 		}
 	}
@@ -420,11 +454,39 @@ export async function replacePurchaseOrderItems(
 	return getPurchaseOrderItems(purchaseOrderId, executor);
 }
 
+export async function setPurchaseOrderItemReviewed(
+	itemId: string,
+	isReviewed: boolean,
+	executor: DbOrTx = db
+): Promise<PurchaseOrderItem> {
+	const [updated] = await executor
+		.update(purchaseOrderItems)
+		.set({ isReviewed, updatedAt: nowISO() })
+		.where(eq(purchaseOrderItems.id, itemId))
+		.returning();
+	return updated;
+}
+
+export async function clearPurchaseOrderItemsReviewed(
+	purchaseOrderId: string,
+	executor: DbOrTx = db
+): Promise<void> {
+	await executor
+		.update(purchaseOrderItems)
+		.set({ isReviewed: false, updatedAt: nowISO() })
+		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
+}
+
 export async function setPurchaseOrderReadyForReview(
 	id: string,
 	isReadyForReview: boolean,
 	executor: DbOrTx = db
 ): Promise<PurchaseOrder> {
+	// Both transitions wipe per-line review checks: marking ready resets the
+	// creator's "data filled" marks so the reviewer starts from zero, and
+	// unmarking ready discards the reviewer's progress so the next review
+	// pass is intentional.
+	await clearPurchaseOrderItemsReviewed(id, executor);
 	const [po] = await executor
 		.update(purchaseOrders)
 		.set({ isReadyForReview, updatedAt: nowISO() })
@@ -464,6 +526,13 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 
 	if (items.length === 0) {
 		throw new Error('No se puede confirmar una orden sin ítems');
+	}
+
+	const pendingReview = items.filter((item) => !item.isReviewed).length;
+	if (pendingReview > 0) {
+		throw new Error(
+			`Faltan ${pendingReview} línea(s) por marcar como revisadas antes de confirmar`
+		);
 	}
 
 	// 3. Process each item

@@ -3,6 +3,7 @@
 		ArrowRightLeft,
 		Calendar,
 		CheckCircle,
+		CircleCheck,
 		ClipboardCheck,
 		Pencil,
 		FileText,
@@ -24,6 +25,7 @@
 		cancelPurchaseOrderCmd,
 		confirmPurchaseOrderCmd,
 		markPurchaseOrderReadyCmd,
+		togglePurchaseOrderItemReviewedCmd,
 		unmarkPurchaseOrderReadyCmd,
 		type PriceSuggestion
 	} from '$lib/remote/purchaseOrders.remote';
@@ -81,6 +83,9 @@
 		return 'Revisión de detalles y movimientos de inventario';
 	});
 	const totalUnits = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
+	const reviewedCount = $derived(items.filter((item) => item.isReviewed).length);
+	const allItemsReviewed = $derived(items.length > 0 && reviewedCount === items.length);
+	const showReviewColumn = $derived(isDraft && isReadyForReview);
 	const totalPurchase = $derived(
 		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
 	);
@@ -203,6 +208,31 @@
 			toast.error(getErrorMessage(error, 'Error deshaciendo la recepción del lote'));
 		} finally {
 			revertLoading = false;
+		}
+	}
+
+	async function handleToggleItemReviewed(item: PurchaseOrderItemWithProduct) {
+		const previous = item.isReviewed;
+		const next = !previous;
+		// Optimistic update for snappier UX.
+		items = items.map((entry) => (entry.id === item.id ? { ...entry, isReviewed: next } : entry));
+		try {
+			const result = await togglePurchaseOrderItemReviewedCmd({ id: item.id, value: next });
+			if (!result.success) {
+				items = items.map((entry) =>
+					entry.id === item.id ? { ...entry, isReviewed: previous } : entry
+				);
+				toast.error(result.error ?? 'Error actualizando la línea');
+				return;
+			}
+			await invalidateAll();
+			syncFromData();
+		} catch (error) {
+			items = items.map((entry) =>
+				entry.id === item.id ? { ...entry, isReviewed: previous } : entry
+			);
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error actualizando la línea'));
 		}
 	}
 
@@ -412,7 +442,10 @@
 					<button
 						type="button"
 						onclick={() => (showConfirmModal = true)}
-						disabled={actionLoading}
+						disabled={actionLoading || !allItemsReviewed}
+						title={allItemsReviewed
+							? 'Confirmar orden y generar inventario'
+							: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
 						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
 							'success'
 						)}"
@@ -568,12 +601,22 @@
 							<h2 class="text-xl font-semibold text-brand-navy">Artículos recibidos</h2>
 						</div>
 					</div>
-					<AppBadge variant="neutral">{items.length} ítems</AppBadge>
+					<div class="flex items-center gap-3">
+						{#if showReviewColumn}
+							<AppBadge variant={allItemsReviewed ? 'success' : 'warning'}>
+								{reviewedCount} / {items.length} revisadas
+							</AppBadge>
+						{/if}
+						<AppBadge variant="neutral">{items.length} ítems</AppBadge>
+					</div>
 				</div>
 
 				<div class="overflow-x-auto xl:overflow-visible">
 					<table class="min-w-full table-fixed text-left text-sm xl:w-full">
 						<colgroup>
+							{#if showReviewColumn}
+								<col class="w-[5%]" />
+							{/if}
 							<col class="w-[11%]" />
 							<col class="w-[23%]" />
 							<col class="w-[8%]" />
@@ -588,6 +631,9 @@
 							class="bg-surface-container-high/70 text-[11px] tracking-[0.18em] text-slate-500 uppercase"
 						>
 							<tr>
+								{#if showReviewColumn}
+									<th class="px-2 py-3.5 text-center" aria-label="Revisada"></th>
+								{/if}
 								<th class="px-4 py-3.5">Tipo</th>
 								<th class="px-4 py-3.5">Artículo</th>
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
@@ -602,7 +648,37 @@
 						<tbody class="divide-y divide-outline-variant/15">
 							{#each items as item (item.id)}
 								{@const lot = lotForItem(item)}
-								<tr class="align-top transition-colors hover:bg-surface-container-low/60">
+								<tr
+									class={[
+										'align-top transition-colors',
+										showReviewColumn && item.isReviewed
+											? 'bg-success-container/15 hover:bg-success-container/25'
+											: 'hover:bg-surface-container-low/60'
+									]}
+								>
+									{#if showReviewColumn}
+										<td class="px-2 py-3.5 text-center align-middle">
+											<button
+												type="button"
+												onclick={() => handleToggleItemReviewed(item)}
+												aria-pressed={item.isReviewed}
+												class={[
+													'inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+													item.isReviewed
+														? 'bg-success-container text-on-success-container hover:bg-success/30'
+														: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
+												]}
+												aria-label={item.isReviewed
+													? 'Marcar como no revisada'
+													: 'Marcar como revisada'}
+												title={item.isReviewed
+													? 'Línea revisada — click para desmarcar'
+													: 'Marcar línea como revisada'}
+											>
+												<CircleCheck class="h-4 w-4" />
+											</button>
+										</td>
+									{/if}
 									<td class="px-4 py-3.5">
 										<AppBadge variant={itemBadgeVariant(item)}>
 											{getPurchaseOrderItemTypeLabel(item.itemType)}
@@ -671,7 +747,10 @@
 								</tr>
 							{:else}
 								<tr>
-									<td colspan={isConfirmed ? 7 : 6} class="px-4 py-12 text-center">
+									<td
+										colspan={(isConfirmed ? 7 : 6) + (showReviewColumn ? 1 : 0)}
+										class="px-4 py-12 text-center"
+									>
 										<p class="text-sm font-semibold text-on-surface-variant">
 											No hay ítems en esta orden.
 										</p>

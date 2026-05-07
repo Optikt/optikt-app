@@ -13,6 +13,7 @@ import {
 	ConfirmPurchaseOrderSchema,
 	CancelPurchaseOrderSchema,
 	MarkPurchaseOrderReadySchema,
+	TogglePurchaseOrderItemReviewedSchema,
 	ApplyPriceSuggestionsSchema
 } from '$lib/schemas/purchaseOrders';
 import {
@@ -28,6 +29,9 @@ import {
 	getPurchaseOrderItems,
 	getNextPONumber,
 	setPurchaseOrderReadyForReview,
+	setPurchaseOrderItemReviewed,
+	clearPurchaseOrderItemsReviewed,
+	findPurchaseOrderItemById,
 	confirmPurchaseOrder as confirmPO,
 	cancelPurchaseOrder as cancelPO
 } from '$lib/server/db/queries/purchaseOrders';
@@ -236,7 +240,8 @@ function toPurchaseOrderItemDraftInput(
 		unitPurchasePrice: item.unitPurchasePrice,
 		unitSalePrice: item.unitSalePrice,
 		appliesIva: item.appliesIva,
-		ivaRate: item.ivaRate
+		ivaRate: item.ivaRate,
+		isReviewed: item.isReviewed
 	};
 }
 
@@ -296,6 +301,13 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 				tx
 			);
 
+			// If the draft was previously "ready for review", any reviewer marks
+			// must be discarded — saving from the editor reopens the draft and
+			// the next review pass should start clean.
+			if (existing.isReadyForReview) {
+				await clearPurchaseOrderItemsReviewed(data.id, tx);
+			}
+
 			const items = await replacePurchaseOrderItems(
 				data.id,
 				data.items.map(toPurchaseOrderItemDraftInput),
@@ -344,7 +356,9 @@ export const markPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema, a
 	}
 
 	try {
-		const updated = await setPurchaseOrderReadyForReview(data.id, true);
+		const updated = await db.transaction(async (tx) =>
+			setPurchaseOrderReadyForReview(data.id, true, tx)
+		);
 		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
@@ -369,7 +383,9 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 	}
 
 	try {
-		const updated = await setPurchaseOrderReadyForReview(data.id, false);
+		const updated = await db.transaction(async (tx) =>
+			setPurchaseOrderReadyForReview(data.id, false, tx)
+		);
 		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
@@ -380,6 +396,41 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 		};
 	}
 });
+
+export const togglePurchaseOrderItemReviewedCmd = command(
+	TogglePurchaseOrderItemReviewedSchema,
+	async (data) => {
+		requireAdmin();
+
+		const context = getAuditContext();
+		try {
+			const item = await findPurchaseOrderItemById(data.id);
+			if (!item) {
+				return { success: false as const, error: 'Ítem no encontrado' };
+			}
+			const parent = await findPurchaseOrderById(item.purchaseOrderId);
+			if (!parent) {
+				return { success: false as const, error: 'Orden de compra no encontrada' };
+			}
+			if (parent.status !== PurchaseOrderStatus.DRAFT) {
+				return {
+					success: false as const,
+					error: 'Solo se pueden marcar líneas en órdenes en borrador'
+				};
+			}
+
+			const updated = await setPurchaseOrderItemReviewed(data.id, data.value);
+			await auditService.logUpdate('purchase_order_item' as never, data.id, item, updated, context);
+			return { success: true as const, item: updated };
+		} catch (e) {
+			console.error('Error toggling purchase order item reviewed:', e);
+			return {
+				success: false as const,
+				error: e instanceof Error ? e.message : 'Error actualizando línea'
+			};
+		}
+	}
+);
 
 export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async (data) => {
 	requireAdmin();

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Eye, Glasses, Package, Sun, Trash2 } from '@lucide/svelte';
+	import { CircleCheck, Eye, Glasses, Package, Sun, Trash2 } from '@lucide/svelte';
 	import {
 		ProductType,
 		PurchaseOrderItemType,
@@ -34,6 +34,44 @@
 		showRemove = false,
 		onremove
 	}: Props = $props();
+
+	// Auto-clear the reviewed flag when any material field changes after the
+	// first render. Mirrors the server-side reset in replacePurchaseOrderItems
+	// so the UI reflects the new state immediately.
+	let materialBaseline = $state({
+		productId: item.productId,
+		lensCatalogItemId: item.lensCatalogItemId,
+		quantity: item.quantity,
+		unitPurchasePrice: item.unitPurchasePrice,
+		unitSalePrice: item.unitSalePrice,
+		appliesIva: item.appliesIva,
+		ivaRate: item.ivaRate,
+		itemType: item.itemType
+	});
+	$effect(() => {
+		const changed =
+			materialBaseline.productId !== item.productId ||
+			materialBaseline.lensCatalogItemId !== item.lensCatalogItemId ||
+			materialBaseline.quantity !== item.quantity ||
+			materialBaseline.unitPurchasePrice !== item.unitPurchasePrice ||
+			materialBaseline.unitSalePrice !== item.unitSalePrice ||
+			materialBaseline.appliesIva !== item.appliesIva ||
+			materialBaseline.ivaRate !== item.ivaRate ||
+			materialBaseline.itemType !== item.itemType;
+		if (changed) {
+			if (item.isReviewed) item.isReviewed = false;
+			materialBaseline = {
+				productId: item.productId,
+				lensCatalogItemId: item.lensCatalogItemId,
+				quantity: item.quantity,
+				unitPurchasePrice: item.unitPurchasePrice,
+				unitSalePrice: item.unitSalePrice,
+				appliesIva: item.appliesIva,
+				ivaRate: item.ivaRate,
+				itemType: item.itemType
+			};
+		}
+	});
 
 	const inputClass =
 		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
@@ -174,11 +212,21 @@
 
 		return parts.join(' · ');
 	}
+	function toggleReviewed() {
+		item.isReviewed = !item.isReviewed;
+	}
 </script>
 
-<div class="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4 shadow-sm">
+<div
+	class={[
+		'rounded-2xl border bg-surface-container-lowest p-4 shadow-sm transition-colors',
+		item.isReviewed
+			? 'border-success/40 bg-success-container/15 ring-1 ring-success/20'
+			: 'border-outline-variant/25'
+	]}
+>
 	<div
-		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_148px_32px] xl:items-center xl:gap-4"
+		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_148px_72px] xl:items-center xl:gap-4"
 	>
 		<div class="space-y-2">
 			<p
@@ -368,7 +416,24 @@
 			</div>
 		</div>
 
-		<div class="flex h-10 items-center justify-end">
+		<div class="flex h-10 items-center justify-end gap-1">
+			<button
+				type="button"
+				onclick={toggleReviewed}
+				aria-pressed={item.isReviewed}
+				class={[
+					'inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+					item.isReviewed
+						? 'bg-success-container text-on-success-container hover:bg-success/30'
+						: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
+				]}
+				aria-label={item.isReviewed ? 'Marcar como no revisada' : 'Marcar como revisada'}
+				title={item.isReviewed
+					? 'Línea revisada — click para desmarcar'
+					: 'Marcar línea como revisada'}
+			>
+				<CircleCheck class="h-4 w-4" />
+			</button>
 			{#if showRemove}
 				<button
 					type="button"

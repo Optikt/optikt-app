@@ -38,7 +38,8 @@ export const PurchaseOrderItemSchema = z.object({
 });
 
 export const PurchaseOrderDraftItemSchema = PurchaseOrderItemSchema.extend({
-	id: z.uuid().optional()
+	id: z.uuid().optional(),
+	isReviewed: z.boolean().optional()
 });
 
 // ============================================================================
@@ -109,6 +110,15 @@ export const CancelPurchaseOrderSchema = z.object({
 
 export const MarkPurchaseOrderReadySchema = z.object({
 	id: z.uuid()
+});
+
+// ============================================================================
+// TOGGLE PO ITEM REVIEWED
+// ============================================================================
+
+export const TogglePurchaseOrderItemReviewedSchema = z.object({
+	id: z.uuid(),
+	value: z.boolean()
 });
 
 // ============================================================================

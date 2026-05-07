@@ -159,7 +159,8 @@
 			unitPurchasePrice: item.unitPurchasePrice,
 			unitSalePrice: item.unitSalePrice,
 			appliesIva: item.appliesIva,
-			ivaRate: item.ivaRate
+			ivaRate: item.ivaRate,
+			isReviewed: item.isReviewed
 		}));
 	}
 

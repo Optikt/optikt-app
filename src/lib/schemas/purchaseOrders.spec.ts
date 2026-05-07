@@ -8,6 +8,7 @@ import {
 	ConfirmPurchaseOrderSchema,
 	CancelPurchaseOrderSchema,
 	MarkPurchaseOrderReadySchema,
+	TogglePurchaseOrderItemReviewedSchema,
 	ListPurchaseOrdersSchema
 } from './purchaseOrders';
 
@@ -94,6 +95,22 @@ describe('PurchaseOrderDraftItemSchema', () => {
 	it('accepts a new item without id for draft edits', () => {
 		const result = PurchaseOrderDraftItemSchema.safeParse(validItem);
 		expect(result.success).toBe(true);
+	});
+
+	it('accepts an optional isReviewed flag', () => {
+		const result = PurchaseOrderDraftItemSchema.safeParse({
+			...validItem,
+			isReviewed: true
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects a non-boolean isReviewed value', () => {
+		const result = PurchaseOrderDraftItemSchema.safeParse({
+			...validItem,
+			isReviewed: 'yes'
+		});
+		expect(result.success).toBe(false);
 	});
 });
 
@@ -264,6 +281,32 @@ describe('MarkPurchaseOrderReadySchema', () => {
 			id: '00000000-0000-4000-8000-000000000001'
 		});
 		expect(result.success).toBe(true);
+	});
+});
+
+describe('TogglePurchaseOrderItemReviewedSchema', () => {
+	it('accepts a valid toggle payload', () => {
+		const result = TogglePurchaseOrderItemReviewedSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000001',
+			value: true
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('requires a boolean value', () => {
+		const result = TogglePurchaseOrderItemReviewedSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000001',
+			value: 'yes'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('requires a valid UUID', () => {
+		const result = TogglePurchaseOrderItemReviewedSchema.safeParse({
+			id: 'not-a-uuid',
+			value: true
+		});
+		expect(result.success).toBe(false);
 	});
 });
 

@@ -189,6 +189,40 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(item.productId).toBe('product-1');
 	});
 
+	it('starts new draft items as not reviewed', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		expect(item.isReviewed).toBe(false);
+	});
+
+	it('hydrates the reviewed flag from an existing item', () => {
+		const reviewed = createPurchaseOrderDraftItemFromExisting({
+			id: 'po-item-1',
+			itemType: PurchaseOrderItemType.PRODUCT,
+			productId: 'product-1',
+			lensCatalogItemId: null,
+			quantity: 1,
+			unitPurchasePrice: 10,
+			unitSalePrice: 20,
+			appliesIva: true,
+			ivaRate: 16,
+			isReviewed: true
+		} as PurchaseOrderItemWithProduct);
+		expect(reviewed.isReviewed).toBe(true);
+
+		const unreviewed = createPurchaseOrderDraftItemFromExisting({
+			id: 'po-item-2',
+			itemType: PurchaseOrderItemType.PRODUCT,
+			productId: 'product-2',
+			lensCatalogItemId: null,
+			quantity: 1,
+			unitPurchasePrice: 10,
+			unitSalePrice: 20,
+			appliesIva: true,
+			ivaRate: 16
+		} as PurchaseOrderItemWithProduct);
+		expect(unreviewed.isReviewed).toBe(false);
+	});
+
 	it('validates whether a draft can be persisted', () => {
 		const item = createEmptyPurchaseOrderDraftItem();
 		item.productId = 'product-1';

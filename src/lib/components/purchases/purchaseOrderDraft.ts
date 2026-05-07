@@ -22,6 +22,8 @@ export interface PurchaseOrderDraftItem {
 	unitSalePrice: number;
 	appliesIva: boolean;
 	ivaRate: number;
+	/** Per-line "data filled" / review check. New rows start as false. */
+	isReviewed: boolean;
 }
 
 export interface PurchaseOrderSummary {
@@ -62,7 +64,8 @@ export function createEmptyPurchaseOrderDraftItem(
 		unitPurchasePrice: 0,
 		unitSalePrice: 0,
 		appliesIva: isInvoice,
-		ivaRate: defaultTaxRate
+		ivaRate: defaultTaxRate,
+		isReviewed: false
 	};
 }
 
@@ -79,7 +82,8 @@ export function createPurchaseOrderDraftItemFromExisting(
 		unitPurchasePrice: item.unitPurchasePrice,
 		unitSalePrice: item.unitSalePrice,
 		appliesIva: item.appliesIva,
-		ivaRate: item.ivaRate
+		ivaRate: item.ivaRate,
+		isReviewed: item.isReviewed ?? false
 	};
 }
 
@@ -99,6 +103,7 @@ export function resetDraftItemType(
 	item.unitSalePrice = 0;
 	item.appliesIva = isInvoice;
 	item.ivaRate = defaultTaxRate;
+	item.isReviewed = false;
 
 	return item;
 }
@@ -121,6 +126,7 @@ export function applyProductDefaults(
 	item.unitSalePrice = Number(product.currentSalePrice ?? 0);
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
+	item.isReviewed = false;
 
 	return item;
 }
@@ -145,6 +151,7 @@ export function applyLensDefaults(
 	item.unitSalePrice = Number(lens.salePrice ?? 0);
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
+	item.isReviewed = false;
 
 	return item;
 }
