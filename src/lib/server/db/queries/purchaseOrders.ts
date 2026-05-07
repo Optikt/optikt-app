@@ -54,6 +54,7 @@ export interface PurchaseOrderFilterOptions {
 	includeDeleted?: boolean;
 	search?: string;
 	status?: string;
+	readyForReview?: boolean;
 	supplierId?: string;
 }
 
@@ -61,7 +62,21 @@ export interface PurchaseOrderListStats {
 	total: number;
 	confirmed: number;
 	draft: number;
+	draftInProgress: number;
+	draftReady: number;
 	monthlySpend: number;
+}
+
+export interface PurchaseOrderItemDraftInput {
+	id?: string;
+	itemType: PurchaseOrderItemType;
+	productId: string | null;
+	lensCatalogItemId: string | null;
+	quantity: number;
+	unitPurchasePrice: number;
+	unitSalePrice: number;
+	appliesIva: boolean;
+	ivaRate: number;
 }
 
 export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
@@ -103,6 +118,9 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 		)`);
 	}
 	if (opts.status) conditions.push(eq(purchaseOrders.status, opts.status));
+	if (opts.readyForReview !== undefined) {
+		conditions.push(eq(purchaseOrders.isReadyForReview, opts.readyForReview));
+	}
 	if (opts.supplierId) conditions.push(eq(purchaseOrders.supplierId, opts.supplierId));
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
@@ -244,10 +262,12 @@ export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStat
 		Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
 	).toISOString();
 
-	const [total, confirmed, draft, spendResult] = await Promise.all([
+	const [total, confirmed, draft, draftInProgress, draftReady, spendResult] = await Promise.all([
 		countPurchaseOrders(),
 		countPurchaseOrders({ status: PurchaseOrderStatus.CONFIRMED }),
 		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT }),
+		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT, readyForReview: false }),
+		countPurchaseOrders({ status: PurchaseOrderStatus.DRAFT, readyForReview: true }),
 		db
 			.select({
 				value: sql<number>`coalesce(sum(${purchaseOrderItems.quantity} * ${purchaseOrderItems.unitPurchasePrice}), 0)`
@@ -268,6 +288,8 @@ export async function getPurchaseOrderListStats(): Promise<PurchaseOrderListStat
 		total,
 		confirmed,
 		draft,
+		draftInProgress,
+		draftReady,
 		monthlySpend: Number(spendResult[0]?.value ?? 0)
 	};
 }
@@ -349,6 +371,68 @@ export async function deletePurchaseOrderItem(id: string, executor: DbOrTx = db)
 	await executor.delete(purchaseOrderItems).where(eq(purchaseOrderItems.id, id));
 }
 
+export async function replacePurchaseOrderItems(
+	purchaseOrderId: string,
+	items: PurchaseOrderItemDraftInput[],
+	executor: DbOrTx = db
+): Promise<PurchaseOrderItemWithProduct[]> {
+	const existingItems = await executor
+		.select()
+		.from(purchaseOrderItems)
+		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
+
+	const existingIds = new Set(existingItems.map((item) => item.id));
+	const incomingIds = new Set(
+		items.map((item) => item.id).filter((id): id is string => Boolean(id))
+	);
+
+	for (const id of incomingIds) {
+		if (!existingIds.has(id)) {
+			throw new Error(`El ítem ${id} no pertenece a esta orden de compra`);
+		}
+	}
+
+	for (const existing of existingItems) {
+		if (!incomingIds.has(existing.id)) {
+			await deletePurchaseOrderItem(existing.id, executor);
+		}
+	}
+
+	for (const item of items) {
+		const itemData = {
+			itemType: item.itemType,
+			productId: item.productId,
+			lensCatalogItemId: item.lensCatalogItemId,
+			quantity: item.quantity,
+			unitPurchasePrice: item.unitPurchasePrice,
+			unitSalePrice: item.unitSalePrice,
+			appliesIva: item.appliesIva,
+			ivaRate: item.ivaRate
+		};
+
+		if (item.id) {
+			await updatePurchaseOrderItem(item.id, itemData, executor);
+		} else {
+			await createPurchaseOrderItem({ purchaseOrderId, ...itemData }, executor);
+		}
+	}
+
+	return getPurchaseOrderItems(purchaseOrderId, executor);
+}
+
+export async function setPurchaseOrderReadyForReview(
+	id: string,
+	isReadyForReview: boolean,
+	executor: DbOrTx = db
+): Promise<PurchaseOrder> {
+	const [po] = await executor
+		.update(purchaseOrders)
+		.set({ isReadyForReview, updatedAt: nowISO() })
+		.where(eq(purchaseOrders.id, id))
+		.returning();
+	return po;
+}
+
 // ---------------------------------------------------------------------------
 // PO Confirmation - The core transaction
 // ---------------------------------------------------------------------------
@@ -367,6 +451,9 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 	if (!po) throw new Error(`Orden de compra ${poId} no encontrada`);
 	if (po.status !== PurchaseOrderStatus.DRAFT) {
 		throw new Error(`No se puede confirmar: estado actual es ${po.status}`);
+	}
+	if (!po.isReadyForReview) {
+		throw new Error('El borrador debe marcarse como listo para revisar antes de confirmarlo');
 	}
 
 	// 2. Get all items for this PO
@@ -449,6 +536,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		.update(purchaseOrders)
 		.set({
 			status: PurchaseOrderStatus.CONFIRMED,
+			isReadyForReview: false,
 			confirmedById,
 			confirmedAt: nowISO(),
 			updatedAt: nowISO()
@@ -477,6 +565,7 @@ export async function cancelPurchaseOrder(
 		.update(purchaseOrders)
 		.set({
 			status: PurchaseOrderStatus.CANCELLED,
+			isReadyForReview: false,
 			updatedAt: nowISO()
 		})
 		.where(eq(purchaseOrders.id, poId))

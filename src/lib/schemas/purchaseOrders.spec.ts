@@ -3,8 +3,11 @@ import {
 	CreatePurchaseOrderSchema,
 	UpdatePurchaseOrderSchema,
 	PurchaseOrderItemSchema,
+	PurchaseOrderDraftItemSchema,
+	SavePurchaseOrderDraftSchema,
 	ConfirmPurchaseOrderSchema,
 	CancelPurchaseOrderSchema,
+	MarkPurchaseOrderReadySchema,
 	ListPurchaseOrdersSchema
 } from './purchaseOrders';
 
@@ -76,6 +79,21 @@ describe('PurchaseOrderItemSchema', () => {
 		const result = PurchaseOrderItemSchema.safeParse(withoutRate);
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data.ivaRate).toBe(16);
+	});
+});
+
+describe('PurchaseOrderDraftItemSchema', () => {
+	it('accepts an existing item id for draft edits', () => {
+		const result = PurchaseOrderDraftItemSchema.safeParse({
+			...validItem,
+			id: '00000000-0000-4000-8000-000000000003'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts a new item without id for draft edits', () => {
+		const result = PurchaseOrderDraftItemSchema.safeParse(validItem);
+		expect(result.success).toBe(true);
 	});
 });
 
@@ -183,6 +201,37 @@ describe('UpdatePurchaseOrderSchema', () => {
 	});
 });
 
+describe('SavePurchaseOrderDraftSchema', () => {
+	it('accepts a complete editable draft payload', () => {
+		const result = SavePurchaseOrderDraftSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000010',
+			...baseCreatePayload,
+			items: [
+				{
+					...validItem,
+					id: '00000000-0000-4000-8000-000000000011'
+				},
+				{
+					...validItem,
+					productId: '00000000-0000-4000-8000-000000000012'
+				}
+			]
+		});
+
+		expect(result.success).toBe(true);
+	});
+
+	it('requires at least one editable draft item', () => {
+		const result = SavePurchaseOrderDraftSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000010',
+			...baseCreatePayload,
+			items: []
+		});
+
+		expect(result.success).toBe(false);
+	});
+});
+
 describe('ConfirmPurchaseOrderSchema', () => {
 	it('requires a valid UUID', () => {
 		const result = ConfirmPurchaseOrderSchema.safeParse({ id: 'not-a-uuid' });
@@ -204,6 +253,20 @@ describe('CancelPurchaseOrderSchema', () => {
 	});
 });
 
+describe('MarkPurchaseOrderReadySchema', () => {
+	it('requires a valid UUID', () => {
+		const result = MarkPurchaseOrderReadySchema.safeParse({ id: 'invalid' });
+		expect(result.success).toBe(false);
+	});
+
+	it('accepts a valid UUID', () => {
+		const result = MarkPurchaseOrderReadySchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000001'
+		});
+		expect(result.success).toBe(true);
+	});
+});
+
 describe('ListPurchaseOrdersSchema', () => {
 	it('accepts empty object (defaults)', () => {
 		const result = ListPurchaseOrdersSchema.safeParse({});
@@ -217,6 +280,14 @@ describe('ListPurchaseOrdersSchema', () => {
 
 	it('accepts status filter', () => {
 		const result = ListPurchaseOrdersSchema.safeParse({ status: 'DRAFT' });
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts readyForReview filter', () => {
+		const result = ListPurchaseOrdersSchema.safeParse({
+			status: 'DRAFT',
+			readyForReview: true
+		});
 		expect(result.success).toBe(true);
 	});
 

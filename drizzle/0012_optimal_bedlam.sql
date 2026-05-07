@@ -1,0 +1,1 @@
+ALTER TABLE "purchase_orders" ADD COLUMN IF NOT EXISTS "is_ready_for_review" boolean DEFAULT false NOT NULL;

@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import {
 		ArrowRightLeft,
+		ClipboardCheck,
 		CheckCircle2,
 		Coins,
 		FileClock,
@@ -15,9 +16,10 @@
 	import { PageHeader } from '$lib/components/ui';
 	import { listPurchaseOrders } from '$lib/remote/purchaseOrders.remote';
 	import {
-		ALL_PURCHASE_ORDER_STATUSES,
 		PURCHASE_ORDER_STATUS_LABELS,
-		type PurchaseOrderStatus
+		PURCHASE_ORDER_UI_STATE_LABELS,
+		PurchaseOrderStatus,
+		PurchaseOrderUiState
 	} from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 	import type { PaginatedResult } from '$lib/types';
@@ -38,8 +40,24 @@
 	let loading = $state(false);
 
 	let search = $state('');
-	let statusFilter = $state<PurchaseOrderStatus | ''>('');
+	type PurchaseOrderStatusFilter =
+		| PurchaseOrderStatus
+		| PurchaseOrderUiState.DRAFT_IN_PROGRESS
+		| PurchaseOrderUiState.DRAFT_READY
+		| '';
+
+	let statusFilter = $state<PurchaseOrderStatusFilter>('');
 	let supplierFilter = $state('');
+
+	const statusFilterOptions = [
+		{
+			value: PurchaseOrderUiState.DRAFT_IN_PROGRESS,
+			label: PURCHASE_ORDER_UI_STATE_LABELS.DRAFT_IN_PROGRESS
+		},
+		{ value: PurchaseOrderUiState.DRAFT_READY, label: PURCHASE_ORDER_UI_STATE_LABELS.DRAFT_READY },
+		{ value: PurchaseOrderStatus.CONFIRMED, label: PURCHASE_ORDER_STATUS_LABELS.CONFIRMED },
+		{ value: PurchaseOrderStatus.CANCELLED, label: PURCHASE_ORDER_STATUS_LABELS.CANCELLED }
+	];
 
 	const hasActiveFilters = $derived(
 		search.trim().length > 0 || statusFilter !== '' || supplierFilter !== ''
@@ -47,12 +65,34 @@
 
 	async function fetchPurchaseOrders(page = 1) {
 		loading = true;
+		const draftInProgress = statusFilter === PurchaseOrderUiState.DRAFT_IN_PROGRESS;
+		const draftReady = statusFilter === PurchaseOrderUiState.DRAFT_READY;
+		let status: PurchaseOrderStatus | undefined;
+		let readyForReview: boolean | undefined;
+
+		if (draftInProgress) {
+			status = PurchaseOrderStatus.DRAFT;
+			readyForReview = false;
+		} else if (draftReady) {
+			status = PurchaseOrderStatus.DRAFT;
+			readyForReview = true;
+		} else if (
+			statusFilter === PurchaseOrderStatus.DRAFT ||
+			statusFilter === PurchaseOrderStatus.CONFIRMED ||
+			statusFilter === PurchaseOrderStatus.CANCELLED
+		) {
+			status = statusFilter;
+		} else {
+			status = undefined;
+		}
+
 		try {
 			purchaseOrdersData = await listPurchaseOrders({
 				page,
 				perPage: 10,
 				search: search.trim() || undefined,
-				status: statusFilter || undefined,
+				status,
+				readyForReview,
 				supplierId: supplierFilter || undefined
 			}).run();
 		} catch (error) {
@@ -122,7 +162,7 @@
 		{/snippet}
 	</PageHeader>
 
-	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 		<section class="glass-card p-5">
 			<div class="mb-3 flex items-center gap-3">
 				<div
@@ -139,6 +179,38 @@
 			</div>
 		</section>
 
+		<section class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-high text-brand-navy"
+				>
+					<FileClock class="h-5 w-5" />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+					En preparación
+				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">
+					{stats.draftInProgress.toLocaleString('es-VE')}
+				</p>
+			</div>
+		</section>
+
+		<section class="glass-card p-5">
+			<div class="mb-3 flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
+				>
+					<ClipboardCheck class="h-5 w-5" />
+				</div>
+				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
+					Listas
+				</p>
+				<p class="font-heading text-3xl font-bold text-brand-navy">
+					{stats.draftReady.toLocaleString('es-VE')}
+				</p>
+			</div>
+		</section>
+
 		<section class="rounded-xl bg-brand-navy p-5 shadow-sm">
 			<div class="mb-3 flex items-center gap-3">
 				<div
@@ -150,22 +222,6 @@
 				<p class="font-heading text-3xl font-bold text-white">{formatPrice(stats.monthlySpend)}</p>
 			</div>
 			<p class="mt-1 text-sm text-white/70">Órdenes confirmadas del mes en USD BCV</p>
-		</section>
-
-		<section class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
-				>
-					<FileClock class="h-5 w-5" />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
-					Borradores
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">
-					{stats.draft.toLocaleString('es-VE')}
-				</p>
-			</div>
 		</section>
 	</div>
 
@@ -192,8 +248,8 @@
 				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 			>
 				<option value="">Estado</option>
-				{#each ALL_PURCHASE_ORDER_STATUSES as status (status)}
-					<option value={status}>{PURCHASE_ORDER_STATUS_LABELS[status]}</option>
+				{#each statusFilterOptions as option (option.value)}
+					<option value={option.value}>{option.label}</option>
 				{/each}
 			</select>
 

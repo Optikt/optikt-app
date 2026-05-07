@@ -1,11 +1,16 @@
 <script lang="ts">
-	import { AlertTriangle, Save, X } from '@lucide/svelte';
+	import { AlertTriangle, CheckCircle2, Save, X } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
+	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
 	import { ConfirmModal, PageHeader } from '$lib/components/ui';
-	import { createPurchaseOrderCmd } from '$lib/remote/purchaseOrders.remote';
+	import {
+		createPurchaseOrderCmd,
+		markPurchaseOrderReadyCmd,
+		savePurchaseOrderDraftCmd
+	} from '$lib/remote/purchaseOrders.remote';
 	import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -15,8 +20,9 @@
 	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
+		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
-		isDraftItemConfigured,
+		type PurchaseOrderDraftInitialValues,
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
@@ -46,23 +52,38 @@
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
 		defaultTaxRate?: number;
+		mode?: 'create' | 'edit';
+		purchaseOrderId?: string;
+		initialDraft?: PurchaseOrderDraftInitialValues;
 	}
 
-	let { suppliers, products, lensItems, defaultTaxRate = DEFAULT_TAX_RATE }: Props = $props();
+	let {
+		suppliers,
+		products,
+		lensItems,
+		defaultTaxRate = DEFAULT_TAX_RATE,
+		mode = 'create',
+		purchaseOrderId,
+		initialDraft
+	}: Props = $props();
+	const initialValues = untrack(() => initialDraft);
 
-	let supplierId = $state('');
-	let documentType = $state(PurchaseDocumentType.INVOICE);
-	let invoiceNumber = $state('');
-	let deliveryNoteNumber = $state('');
-	let orderDate = $state(toISODate(nowUTC()));
-	let bcvRate = $state<number>(0);
-	let notes = $state('');
-	let saving = $state(false);
+	let supplierId = $state(initialValues?.supplierId ?? '');
+	let documentType = $state(initialValues?.documentType ?? PurchaseDocumentType.INVOICE);
+	let invoiceNumber = $state(initialValues?.invoiceNumber ?? '');
+	let deliveryNoteNumber = $state(initialValues?.deliveryNoteNumber ?? '');
+	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
+	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
+	let notes = $state(initialValues?.notes ?? '');
+	let savingAction = $state<'draft' | 'ready' | null>(null);
 	let showZeroValueWarningModal = $state(false);
-	let items = $state<PurchaseOrderDraftItem[]>([]);
+	let pendingMarkReady = $state(false);
+	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
 
 	const summary = $derived(calculatePurchaseOrderSummary(items));
 	const supplierLocked = $derived(items.length > 0);
+	const isEdit = $derived(mode === 'edit');
+	const saving = $derived(savingAction !== null);
 	const zeroValueWarningLines = $derived(
 		items
 			.map((item) => buildZeroValueWarningLine(item))
@@ -70,22 +91,15 @@
 	);
 
 	const canSave = $derived(
-		supplierId !== '' &&
-			orderDate !== '' &&
-			bcvRate > 0 &&
-			notes.length >= 6 &&
-			items.length > 0 &&
-			items.every(
-				(item) =>
-					isDraftItemConfigured(item) &&
-					Number(item.quantity) >= 1 &&
-					Number(item.unitPurchasePrice) >= 0 &&
-					Number(item.unitSalePrice) >= 0 &&
-					(!item.appliesIva || Number(item.ivaRate) >= 0)
-			)
+		canPersistPurchaseOrderDraft({ supplierId, orderDate, bcvRate, notes }, items)
 	);
 
 	function goBack() {
+		if (isEdit && purchaseOrderId) {
+			void goto(resolve(`/purchases/${purchaseOrderId}`));
+			return;
+		}
+
 		void goto(resolve('/purchases'));
 	}
 
@@ -114,27 +128,84 @@
 		};
 	}
 
-	function handleSaveClick() {
+	function handleSaveClick(markReady = false) {
 		if (!canSave || saving) return;
+		pendingMarkReady = markReady;
 
 		if (zeroValueWarningLines.length > 0) {
 			showZeroValueWarningModal = true;
 			return;
 		}
 
-		void savePurchaseOrder();
+		void savePurchaseOrder(markReady);
 	}
 
 	function handleZeroValueWarningConfirm() {
 		showZeroValueWarningModal = false;
-		void savePurchaseOrder();
+		void savePurchaseOrder(pendingMarkReady);
 	}
 
-	async function savePurchaseOrder() {
+	function buildItemsPayload() {
+		return items.map((item) => ({
+			id: item.persistedId,
+			itemType: item.itemType,
+			productId:
+				item.itemType === PurchaseOrderItemType.PRODUCT ? item.productId || undefined : undefined,
+			lensCatalogItemId:
+				item.itemType === PurchaseOrderItemType.LENS
+					? item.lensCatalogItemId || undefined
+					: undefined,
+			quantity: item.quantity,
+			unitPurchasePrice: item.unitPurchasePrice,
+			unitSalePrice: item.unitSalePrice,
+			appliesIva: item.appliesIva,
+			ivaRate: item.ivaRate
+		}));
+	}
+
+	async function savePurchaseOrder(markReady = false) {
 		if (!canSave || saving) return;
-		saving = true;
+		savingAction = markReady ? 'ready' : 'draft';
 
 		try {
+			if (isEdit) {
+				if (!purchaseOrderId) {
+					toast.error('Orden de compra no encontrada');
+					return;
+				}
+
+				const result = await savePurchaseOrderDraftCmd({
+					id: purchaseOrderId,
+					supplierId,
+					documentType,
+					invoiceNumber: invoiceNumber || undefined,
+					deliveryNoteNumber: deliveryNoteNumber || undefined,
+					orderDate,
+					bcvRate,
+					notes,
+					items: buildItemsPayload()
+				});
+
+				if (!result.success) {
+					toast.error(result.error ?? 'Error guardando el borrador');
+					return;
+				}
+
+				if (markReady) {
+					const readyResult = await markPurchaseOrderReadyCmd({ id: purchaseOrderId });
+					if (!readyResult.success) {
+						toast.error(readyResult.error ?? 'Error marcando la orden como lista');
+						return;
+					}
+					toast.success('Borrador guardado y marcado como listo');
+				} else {
+					toast.success('Borrador guardado');
+				}
+
+				void goto(resolve(`/purchases/${purchaseOrderId}`));
+				return;
+			}
+
 			const result = await createPurchaseOrderCmd({
 				supplierId,
 				documentType,
@@ -143,22 +214,7 @@
 				orderDate,
 				bcvRate,
 				notes,
-				items: items.map((item) => ({
-					itemType: item.itemType,
-					productId:
-						item.itemType === PurchaseOrderItemType.PRODUCT
-							? item.productId || undefined
-							: undefined,
-					lensCatalogItemId:
-						item.itemType === PurchaseOrderItemType.LENS
-							? item.lensCatalogItemId || undefined
-							: undefined,
-					quantity: item.quantity,
-					unitPurchasePrice: item.unitPurchasePrice,
-					unitSalePrice: item.unitSalePrice,
-					appliesIva: item.appliesIva,
-					ivaRate: item.ivaRate
-				}))
+				items: buildItemsPayload()
 			});
 
 			if (result.success) {
@@ -170,15 +226,25 @@
 			toast.error(result.error ?? 'Error creando la orden de compra');
 		} catch (error) {
 			console.error(error);
-			toast.error(getErrorMessage(error, 'Error creando orden de compra'));
+			toast.error(
+				getErrorMessage(
+					error,
+					isEdit ? 'Error guardando borrador' : 'Error creando orden de compra'
+				)
+			);
 		} finally {
-			saving = false;
+			savingAction = null;
+			pendingMarkReady = false;
 		}
 	}
 </script>
 
 <div class="space-y-6 p-6">
-	<PageHeader title="Crear Orden de Compra" backLabel="Volver a órdenes" backOnClick={goBack}>
+	<PageHeader
+		title={isEdit ? 'Editar Orden de Compra' : 'Crear Orden de Compra'}
+		backLabel={isEdit ? 'Volver al detalle' : 'Volver a órdenes'}
+		backOnClick={goBack}
+	>
 		{#snippet actions()}
 			<button
 				type="button"
@@ -190,13 +256,28 @@
 			</button>
 			<button
 				type="button"
-				onclick={handleSaveClick}
+				onclick={() => handleSaveClick(false)}
 				disabled={!canSave || saving}
 				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<Save class="h-4 w-4" />
-				{saving ? 'Guardando...' : 'Guardar orden (borrador)'}
+				{savingAction === 'draft'
+					? 'Guardando...'
+					: isEdit
+						? 'Guardar cambios'
+						: 'Guardar orden (borrador)'}
 			</button>
+			{#if isEdit}
+				<button
+					type="button"
+					onclick={() => handleSaveClick(true)}
+					disabled={!canSave || saving}
+					class="inline-flex items-center gap-2 rounded-xl bg-success-container px-5 py-2.5 text-sm font-bold text-on-success-container transition-colors hover:bg-success-container/80 disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					<CheckCircle2 class="h-4 w-4" />
+					{savingAction === 'ready' ? 'Guardando...' : 'Guardar y marcar listo'}
+				</button>
+			{/if}
 		{/snippet}
 	</PageHeader>
 
@@ -204,7 +285,7 @@
 		<div
 			class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 		>
-			Se guarda primero como borrador
+			{isEdit ? 'Editar devuelve el borrador a preparación' : 'Se guarda primero como borrador'}
 		</div>
 	</div>
 

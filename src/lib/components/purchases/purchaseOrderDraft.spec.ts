@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 import { LensPriceType, LensType } from '$lib/shared/enums/lensTypes';
@@ -11,7 +12,9 @@ import {
 	calculateDraftItemTotal,
 	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
+	canPersistPurchaseOrderDraft,
 	createEmptyPurchaseOrderDraftItem,
+	createPurchaseOrderDraftItemFromExisting,
 	getDraftItemZeroValueFields
 } from './purchaseOrderDraft';
 
@@ -166,5 +169,42 @@ describe('purchaseOrderDraft helpers', () => {
 
 		item.unitSalePrice = 20;
 		expect(getDraftItemZeroValueFields(item)).toEqual([]);
+	});
+
+	it('hydrates existing purchase order item ids for edit saves', () => {
+		const item = createPurchaseOrderDraftItemFromExisting({
+			id: 'po-item-1',
+			itemType: PurchaseOrderItemType.PRODUCT,
+			productId: 'product-1',
+			lensCatalogItemId: null,
+			quantity: 3,
+			unitPurchasePrice: 11,
+			unitSalePrice: 25,
+			appliesIva: true,
+			ivaRate: 16
+		} as PurchaseOrderItemWithProduct);
+
+		expect(item.id).toBe('po-item-1');
+		expect(item.persistedId).toBe('po-item-1');
+		expect(item.productId).toBe('product-1');
+	});
+
+	it('validates whether a draft can be persisted', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.productId = 'product-1';
+		item.unitPurchasePrice = 0;
+		item.unitSalePrice = 0;
+
+		expect(
+			canPersistPurchaseOrderDraft(
+				{
+					supplierId: 'supplier-1',
+					orderDate: '2025-01-15',
+					bcvRate: 65,
+					notes: 'Compra de prueba'
+				},
+				[item]
+			)
+		).toBe(true);
 	});
 });

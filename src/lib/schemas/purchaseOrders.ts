@@ -17,6 +17,7 @@ const ALL_DOCUMENT_TYPES = Object.values(PurchaseDocumentType) as [string, ...st
 export const ListPurchaseOrdersSchema = ListPaginationWithDeletedSchema.extend({
 	search: z.string().trim().max(120).optional(),
 	status: z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']).optional(),
+	readyForReview: z.boolean().optional(),
 	documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
 	supplierId: z.uuid().optional()
 });
@@ -34,6 +35,10 @@ export const PurchaseOrderItemSchema = z.object({
 	unitSalePrice: CoercedNumber.min(0, 'Precio de venta debe ser ≥ 0'),
 	appliesIva: z.boolean().default(true),
 	ivaRate: CoercedNumber.min(0).max(100).default(DEFAULT_TAX_RATE)
+});
+
+export const PurchaseOrderDraftItemSchema = PurchaseOrderItemSchema.extend({
+	id: z.uuid().optional()
 });
 
 // ============================================================================
@@ -66,6 +71,18 @@ export const UpdatePurchaseOrderSchema = z.object({
 	notes: z.string().min(6).optional()
 });
 
+export const SavePurchaseOrderDraftSchema = z.object({
+	id: z.uuid(),
+	supplierId: z.uuid('Proveedor es obligatorio'),
+	documentType: z.enum(ALL_DOCUMENT_TYPES, { message: 'Tipo de documento es obligatorio' }),
+	invoiceNumber: z.string().optional(),
+	deliveryNoteNumber: z.string().optional(),
+	orderDate: z.iso.date('Fecha de orden inválida'),
+	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
+	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
+	items: z.array(PurchaseOrderDraftItemSchema).min(1, 'Debe incluir al menos un ítem')
+});
+
 // ============================================================================
 // ADD ITEM TO EXISTING PO
 // ============================================================================
@@ -87,6 +104,10 @@ export const ConfirmPurchaseOrderSchema = z.object({
 // ============================================================================
 
 export const CancelPurchaseOrderSchema = z.object({
+	id: z.uuid()
+});
+
+export const MarkPurchaseOrderReadySchema = z.object({
 	id: z.uuid()
 });
 

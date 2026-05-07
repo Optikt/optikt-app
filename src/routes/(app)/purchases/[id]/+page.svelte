@@ -3,6 +3,8 @@
 		ArrowRightLeft,
 		Calendar,
 		CheckCircle,
+		ClipboardCheck,
+		Pencil,
 		FileText,
 		Hash,
 		Package,
@@ -21,6 +23,8 @@
 		applyPriceSuggestionsCmd,
 		cancelPurchaseOrderCmd,
 		confirmPurchaseOrderCmd,
+		markPurchaseOrderReadyCmd,
+		unmarkPurchaseOrderReadyCmd,
 		type PriceSuggestion
 	} from '$lib/remote/purchaseOrders.remote';
 	import {
@@ -61,10 +65,13 @@
 
 	const formattedOrderNumber = $derived(`PO-${String(purchaseOrder.orderNumber).padStart(4, '0')}`);
 	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
+	const isReadyForReview = $derived(Boolean(purchaseOrder.isReadyForReview));
 	const isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
 	const detailSubtitle = $derived.by(() => {
 		if (purchaseOrder.status === PurchaseOrderStatus.DRAFT) {
-			return 'Pendiente por confirmar y generar inventario';
+			return purchaseOrder.isReadyForReview
+				? 'Listo para revisar y confirmar inventario'
+				: 'Borrador en preparación, sin impacto en inventario';
 		}
 
 		if (purchaseOrder.status === PurchaseOrderStatus.CANCELLED) {
@@ -90,6 +97,10 @@
 			behavior: 'smooth',
 			block: 'start'
 		});
+	}
+
+	function openEdit() {
+		void goto(resolve(`/purchases/${purchaseOrder.id}/edit`));
 	}
 
 	function formatBcvRate(rate: number): string {
@@ -202,7 +213,11 @@
 			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
 			if (result.success) {
 				showConfirmModal = false;
-				purchaseOrder = { ...purchaseOrder, status: PurchaseOrderStatus.CONFIRMED };
+				purchaseOrder = {
+					...purchaseOrder,
+					status: PurchaseOrderStatus.CONFIRMED,
+					isReadyForReview: false
+				};
 
 				if (result.priceSuggestions && result.priceSuggestions.length > 0) {
 					priceSuggestions = result.priceSuggestions;
@@ -220,6 +235,56 @@
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
+		} finally {
+			actionLoading = false;
+		}
+	}
+
+	async function handleMarkReady() {
+		actionLoading = true;
+
+		try {
+			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			if (result.success) {
+				purchaseOrder = {
+					...purchaseOrder,
+					isReadyForReview: result.purchaseOrder.isReadyForReview,
+					updatedAt: result.purchaseOrder.updatedAt
+				};
+				toast.success('Orden marcada como lista para revisar');
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error marcando la orden como lista');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error marcando orden como lista'));
+		} finally {
+			actionLoading = false;
+		}
+	}
+
+	async function handleUnmarkReady() {
+		actionLoading = true;
+
+		try {
+			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			if (result.success) {
+				purchaseOrder = {
+					...purchaseOrder,
+					isReadyForReview: result.purchaseOrder.isReadyForReview,
+					updatedAt: result.purchaseOrder.updatedAt
+				};
+				toast.success('Orden devuelta a preparación');
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error devolviendo la orden a preparación');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error devolviendo orden a preparación'));
 		} finally {
 			actionLoading = false;
 		}
@@ -262,7 +327,11 @@
 			if (result.success) {
 				toast.success('Orden de compra cancelada');
 				showCancelModal = false;
-				purchaseOrder = { ...purchaseOrder, status: PurchaseOrderStatus.CANCELLED };
+				purchaseOrder = {
+					...purchaseOrder,
+					status: PurchaseOrderStatus.CANCELLED,
+					isReadyForReview: false
+				};
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -305,15 +374,53 @@
 			{#if isDraft}
 				<button
 					type="button"
-					onclick={() => (showConfirmModal = true)}
+					onclick={openEdit}
 					disabled={actionLoading}
 					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-						'success'
+						'neutral'
 					)}"
 				>
-					<CheckCircle class="h-4 w-4" />
-					Confirmar orden
+					<Pencil class="h-4 w-4" />
+					Editar
 				</button>
+				{#if isReadyForReview}
+					<button
+						type="button"
+						onclick={handleUnmarkReady}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'neutral'
+						)}"
+					>
+						<RotateCcw class="h-4 w-4" />
+						Volver a edición
+					</button>
+				{:else}
+					<button
+						type="button"
+						onclick={handleMarkReady}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'neutral'
+						)}"
+					>
+						<ClipboardCheck class="h-4 w-4" />
+						Marcar listo
+					</button>
+				{/if}
+				{#if isReadyForReview}
+					<button
+						type="button"
+						onclick={() => (showConfirmModal = true)}
+						disabled={actionLoading}
+						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+							'success'
+						)}"
+					>
+						<CheckCircle class="h-4 w-4" />
+						Confirmar orden
+					</button>
+				{/if}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -354,7 +461,10 @@
 			</span>
 		</div>
 		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
-			<PurchaseOrderStatusBadge status={purchaseOrder.status} />
+			<PurchaseOrderStatusBadge
+				status={purchaseOrder.status}
+				isReadyForReview={purchaseOrder.isReadyForReview}
+			/>
 		</div>
 	</div>
 

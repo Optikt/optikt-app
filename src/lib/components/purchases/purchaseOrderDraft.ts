@@ -1,11 +1,19 @@
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 import { LensPriceType } from '$lib/shared/enums/lensTypes';
+import {
+	isPurchaseOrderDraftReady,
+	validatePurchaseOrderDraftReadiness,
+	type PurchaseOrderDraftHeaderRulesInput,
+	type PurchaseOrderDraftReadinessResult
+} from '$lib/shared/purchaseOrderRules';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 export interface PurchaseOrderDraftItem {
 	id: string;
+	persistedId?: string;
 	itemType: PurchaseOrderItemType;
 	productId: string;
 	lensCatalogItemId: string;
@@ -28,6 +36,16 @@ export interface PurchaseOrderSummary {
 
 export type PurchaseOrderDraftZeroValueField = 'unitPurchasePrice' | 'unitSalePrice';
 
+export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesInput {
+	documentType: PurchaseDocumentType;
+	invoiceNumber: string;
+	deliveryNoteNumber: string;
+}
+
+export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeader {
+	items: PurchaseOrderDraftItem[];
+}
+
 export function createEmptyPurchaseOrderDraftItem(
 	itemType: PurchaseOrderItemType = PurchaseOrderItemType.PRODUCT,
 	documentType: PurchaseDocumentType = PurchaseDocumentType.INVOICE,
@@ -45,6 +63,23 @@ export function createEmptyPurchaseOrderDraftItem(
 		unitSalePrice: 0,
 		appliesIva: isInvoice,
 		ivaRate: defaultTaxRate
+	};
+}
+
+export function createPurchaseOrderDraftItemFromExisting(
+	item: PurchaseOrderItemWithProduct
+): PurchaseOrderDraftItem {
+	return {
+		id: item.id,
+		persistedId: item.id,
+		itemType: item.itemType as PurchaseOrderItemType,
+		productId: item.productId ?? '',
+		lensCatalogItemId: item.lensCatalogItemId ?? '',
+		quantity: item.quantity,
+		unitPurchasePrice: item.unitPurchasePrice,
+		unitSalePrice: item.unitSalePrice,
+		appliesIva: item.appliesIva,
+		ivaRate: item.ivaRate
 	};
 }
 
@@ -158,6 +193,20 @@ export function isDraftItemConfigured(item: PurchaseOrderDraftItem): boolean {
 	}
 
 	return item.lensCatalogItemId !== '';
+}
+
+export function validatePurchaseOrderDraft(
+	header: PurchaseOrderDraftHeaderRulesInput,
+	items: PurchaseOrderDraftItem[]
+): PurchaseOrderDraftReadinessResult {
+	return validatePurchaseOrderDraftReadiness(header, items);
+}
+
+export function canPersistPurchaseOrderDraft(
+	header: PurchaseOrderDraftHeaderRulesInput,
+	items: PurchaseOrderDraftItem[]
+): boolean {
+	return isPurchaseOrderDraftReady(header, items);
 }
 
 export function calculateDraftItemSubtotal(item: PurchaseOrderDraftItem): number {

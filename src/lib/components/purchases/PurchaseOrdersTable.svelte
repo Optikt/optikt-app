@@ -113,7 +113,10 @@
 				</span>
 			</td>
 			<td class="px-4 py-4">
-				<PurchaseOrderStatusBadge status={purchaseOrder.status} />
+				<PurchaseOrderStatusBadge
+					status={purchaseOrder.status}
+					isReadyForReview={purchaseOrder.isReadyForReview}
+				/>
 			</td>
 			<td class="px-4 py-4">
 				<div class="flex items-center gap-2">

@@ -57,6 +57,8 @@ export const purchaseOrders = pgTable(
 		/** Delivery note number */
 		deliveryNoteNumber: varchar('delivery_note_number'),
 		status: purchaseOrderStatusEnum().notNull().default('DRAFT'),
+		/** Manual review marker for draft orders */
+		isReadyForReview: boolean('is_ready_for_review').notNull().default(false),
 		/** INVOICE = Factura, DELIVERY_NOTE = Nota de entrega */
 		documentType: purchaseDocumentTypeEnum('document_type').notNull().default('INVOICE'),
 		/** Date of the purchase */
