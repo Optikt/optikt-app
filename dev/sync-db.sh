@@ -114,7 +114,7 @@ if [[ "$PASSWORD_PROVIDED" == false ]]; then
 	[[ -t 0 ]] || die "Database password is required in non-interactive mode; pass --db-password"
 	if ! read -r -s -p "Database password: " DB_PASSWORD; then
 		echo
-		die "Failed to read password interactively; use --db-password to provide password as an argument"
+		die "Failed to read password from stdin"
 	fi
 	echo
 fi
@@ -128,7 +128,7 @@ WHERE datname = :'db_name'
 DROP DATABASE IF EXISTS :"db_name";
 SQL
 then
-	die "psql failed while dropping database ${DB_NAME}"
+	die "psql failed while dropping database ${DB_NAME}; check DROP DATABASE privileges and active connections"
 fi
 
 echo "→ Creating database '$DB_NAME'..."
@@ -136,12 +136,12 @@ if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=d
 CREATE DATABASE :"db_name" OWNER :"db_user";
 SQL
 then
-	die "psql failed while creating database ${DB_NAME}"
+	die "psql failed while creating database ${DB_NAME}; check CREATEDB privileges"
 fi
 
 echo "→ Restoring backup from '$BACKUP_FILE'..."
 if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname "$DB_NAME" --file "$BACKUP_FILE"; then
-	die "psql failed while restoring backup ${BACKUP_FILE}"
+	die "psql failed while restoring backup ${BACKUP_FILE}; check file format and SQL syntax"
 fi
 
 echo "✓ Done"
