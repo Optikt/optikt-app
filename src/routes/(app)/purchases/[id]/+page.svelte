@@ -11,6 +11,7 @@
 		Package,
 		RotateCcw,
 		ScrollText,
+		Search,
 		Truck,
 		XCircle
 	} from '@lucide/svelte';
@@ -63,6 +64,16 @@
 	let showRevertModal = $state(false);
 	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
 
+	type ItemReviewFilter = 'all' | 'reviewed' | 'pending';
+	let itemSearch = $state('');
+	let itemReviewFilter = $state<ItemReviewFilter>('all');
+
+	const itemReviewFilterOptions: { value: ItemReviewFilter; label: string }[] = [
+		{ value: 'all', label: 'Todas' },
+		{ value: 'pending', label: 'Sin revisar' },
+		{ value: 'reviewed', label: 'Revisadas' }
+	];
+
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
 		items = data.items;
@@ -92,6 +103,25 @@
 	const reviewedCount = $derived(reviewStatus.reviewedCount);
 	const allItemsReviewed = $derived(reviewStatus.allReviewed);
 	const showReviewColumn = $derived(isDraft && isReadyForReview);
+	const filteredItems = $derived.by(() => {
+		const term = itemSearch.trim().toLowerCase();
+		return items.filter((item) => {
+			if (itemReviewFilter === 'reviewed' && !item.isReviewed) return false;
+			if (itemReviewFilter === 'pending' && item.isReviewed) return false;
+			if (!term) return true;
+			const haystack = [
+				item.product?.name,
+				item.product?.sku,
+				item.lensCatalogItem?.name,
+				item.lensCatalogItem?.type
+			]
+				.filter(Boolean)
+				.join(' ')
+				.toLowerCase();
+			return haystack.includes(term);
+		});
+	});
+	const hasItemFilters = $derived(itemSearch.trim().length > 0 || itemReviewFilter !== 'all');
 	const totalPurchase = $derived(
 		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
 	);
@@ -637,6 +667,45 @@
 					</div>
 				</div>
 
+				{#if items.length > 0}
+					<div
+						class="flex flex-col gap-3 border-t border-outline-variant/20 bg-surface-container-low/40 px-6 py-3 md:flex-row md:items-center md:justify-between"
+					>
+						<div class="relative md:max-w-sm md:flex-1">
+							<Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-outline" />
+							<input
+								type="search"
+								bind:value={itemSearch}
+								placeholder="Buscar por nombre o SKU..."
+								class="w-full rounded-lg border-none bg-surface-container-high py-2.5 pr-3 pl-10 text-sm text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
+								aria-label="Buscar ítems en la orden"
+							/>
+						</div>
+
+						{#if showReviewColumn}
+							<div
+								class="inline-flex rounded-lg bg-surface-container-high p-1 text-xs font-semibold"
+							>
+								{#each itemReviewFilterOptions as option (option.value)}
+									<button
+										type="button"
+										onclick={() => (itemReviewFilter = option.value)}
+										class={[
+											'rounded-md px-3 py-1.5 transition-colors',
+											itemReviewFilter === option.value
+												? 'bg-surface-container-lowest text-brand-navy shadow-sm'
+												: 'text-on-surface-variant hover:text-brand-navy'
+										]}
+										aria-pressed={itemReviewFilter === option.value}
+									>
+										{option.label}
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
+
 				<div class="overflow-x-auto xl:overflow-visible">
 					<table class="min-w-full table-fixed text-left text-sm xl:w-full">
 						<colgroup>
@@ -672,7 +741,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-outline-variant/15">
-							{#each items as item (item.id)}
+							{#each filteredItems as item (item.id)}
 								{@const lot = lotForItem(item)}
 								<tr
 									class={[
@@ -784,12 +853,28 @@
 										colspan={(isConfirmed ? 7 : 6) + (showReviewColumn ? 1 : 0)}
 										class="px-4 py-12 text-center"
 									>
-										<p class="text-sm font-semibold text-on-surface-variant">
-											No hay ítems en esta orden.
-										</p>
-										<p class="mt-1 text-sm text-outline">
-											La cabecera está creada, pero aún no tiene líneas registradas.
-										</p>
+										{#if hasItemFilters}
+											<p class="text-sm font-semibold text-on-surface-variant">
+												Ningún ítem coincide con el filtro.
+											</p>
+											<button
+												type="button"
+												onclick={() => {
+													itemSearch = '';
+													itemReviewFilter = 'all';
+												}}
+												class="mt-2 text-sm font-semibold text-brand-blue hover:underline"
+											>
+												Limpiar filtros
+											</button>
+										{:else}
+											<p class="text-sm font-semibold text-on-surface-variant">
+												No hay ítems en esta orden.
+											</p>
+											<p class="mt-1 text-sm text-outline">
+												La cabecera está creada, pero aún no tiene líneas registradas.
+											</p>
+										{/if}
 									</td>
 								</tr>
 							{/each}
