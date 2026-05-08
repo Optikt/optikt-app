@@ -109,23 +109,31 @@ if [[ "$PASSWORD_PROVIDED" == false ]]; then
 fi
 
 echo "→ Dropping database '$DB_NAME'..."
-run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" \
-	>/dev/null <<'SQL' || die "psql failed while dropping database $DB_NAME"
+if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" \
+	>/dev/null <<'SQL'
 SELECT pg_terminate_backend(pid)
 FROM pg_stat_activity
 WHERE datname = :'db_name'
 	AND pid <> pg_backend_pid();
 DROP DATABASE IF EXISTS :"db_name";
 SQL
+then
+	die "psql failed while dropping database ${DB_NAME}"
+fi
 
 echo "→ Creating database '$DB_NAME'..."
-run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" "--set=db_user=$DB_USER" \
-	>/dev/null <<'SQL' || die "psql failed while creating database $DB_NAME"
+if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" "--set=db_user=$DB_USER" \
+	>/dev/null <<'SQL'
 CREATE DATABASE :"db_name" OWNER :"db_user";
 SQL
+then
+	die "psql failed while creating database ${DB_NAME}"
+fi
 
 echo "→ Restoring backup from '$BACKUP_FILE'..."
-run_psql --host "$DB_HOST" --username "$DB_USER" --dbname "$DB_NAME" --file "$BACKUP_FILE" \
-	>/dev/null || die "psql failed while restoring backup $BACKUP_FILE"
+if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname "$DB_NAME" --file "$BACKUP_FILE" \
+	>/dev/null; then
+	die "psql failed while restoring backup ${BACKUP_FILE}"
+fi
 
 echo "✓ Done"
