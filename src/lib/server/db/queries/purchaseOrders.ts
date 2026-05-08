@@ -44,7 +44,7 @@ export type PurchaseOrderWithRelations = PurchaseOrder & {
 };
 
 export type PurchaseOrderItemWithProduct = PurchaseOrderItem & {
-	product: { id: string; name: string; sku: string } | null;
+	product: { id: string; name: string; sku: string; personalCode: string | null } | null;
 	lensCatalogItem: { id: string; name: string; type: string } | null;
 };
 
@@ -324,7 +324,12 @@ export async function getPurchaseOrderItems(
 	const results = await executor
 		.select({
 			item: purchaseOrderItems,
-			product: { id: products.id, name: products.name, sku: products.sku },
+			product: {
+				id: products.id,
+				name: products.name,
+				sku: products.sku,
+				personalCode: products.personalCode
+			},
 			lensCatalogItem: {
 				id: lensCatalogItems.id,
 				name: lensCatalogItems.name,

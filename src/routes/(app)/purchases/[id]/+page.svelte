@@ -105,13 +105,14 @@
 	const showReviewColumn = $derived(isDraft && isReadyForReview);
 	const filteredItems = $derived.by(() => {
 		const term = itemSearch.trim().toLowerCase();
-		return items.filter((item) => {
+		const matches = items.filter((item) => {
 			if (itemReviewFilter === 'reviewed' && !item.isReviewed) return false;
 			if (itemReviewFilter === 'pending' && item.isReviewed) return false;
 			if (!term) return true;
 			const haystack = [
 				item.product?.name,
 				item.product?.sku,
+				item.product?.personalCode,
 				item.lensCatalogItem?.name,
 				item.lensCatalogItem?.type
 			]
@@ -119,6 +120,17 @@
 				.join(' ')
 				.toLowerCase();
 			return haystack.includes(term);
+		});
+		return matches.slice().sort((a, b) => {
+			const codeA = a.product?.personalCode?.trim() ?? '';
+			const codeB = b.product?.personalCode?.trim() ?? '';
+			if (codeA && !codeB) return -1;
+			if (!codeA && codeB) return 1;
+			if (codeA && codeB) {
+				const diff = codeA.localeCompare(codeB, 'es', { numeric: true, sensitivity: 'base' });
+				if (diff !== 0) return diff;
+			}
+			return itemDisplayName(a).localeCompare(itemDisplayName(b), 'es', { sensitivity: 'base' });
 		});
 	});
 	const hasItemFilters = $derived(itemSearch.trim().length > 0 || itemReviewFilter !== 'all');
@@ -712,14 +724,15 @@
 							{#if showReviewColumn}
 								<col class="w-[5%]" />
 							{/if}
-							<col class="w-[11%]" />
-							<col class="w-[23%]" />
+							<col class="w-[10%]" />
+							<col class="w-[10%]" />
+							<col class="w-[19%]" />
 							<col class="w-[8%]" />
 							<col class="w-[12%]" />
-							<col class="w-[14%]" />
-							<col class="w-[14%]" />
+							<col class="w-[13%]" />
+							<col class="w-[13%]" />
 							{#if isConfirmed}
-								<col class="w-[18%]" />
+								<col class="w-[15%]" />
 							{/if}
 						</colgroup>
 						<thead
@@ -730,6 +743,7 @@
 									<th class="px-2 py-3.5 text-center" aria-label="Revisada"></th>
 								{/if}
 								<th class="px-4 py-3.5">Tipo</th>
+								<th class="px-4 py-3.5">Código</th>
 								<th class="px-4 py-3.5">Artículo</th>
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
 								<th class="px-4 py-3.5 text-right">Costo unitario</th>
@@ -785,6 +799,15 @@
 										<AppBadge variant={itemBadgeVariant(item)}>
 											{getPurchaseOrderItemTypeLabel(item.itemType)}
 										</AppBadge>
+									</td>
+									<td class="px-4 py-3.5">
+										{#if item.product?.personalCode}
+											<span class="font-mono text-sm font-semibold text-brand-navy">
+												{item.product.personalCode}
+											</span>
+										{:else}
+											<span class="text-sm text-outline">--</span>
+										{/if}
 									</td>
 									<td class="px-4 py-3.5">
 										<p class="max-w-[13rem] text-[15px] leading-5 font-semibold text-brand-navy">
@@ -850,7 +873,7 @@
 							{:else}
 								<tr>
 									<td
-										colspan={(isConfirmed ? 7 : 6) + (showReviewColumn ? 1 : 0)}
+										colspan={(isConfirmed ? 8 : 7) + (showReviewColumn ? 1 : 0)}
 										class="px-4 py-12 text-center"
 									>
 										{#if hasItemFilters}
