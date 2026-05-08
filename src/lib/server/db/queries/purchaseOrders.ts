@@ -218,10 +218,11 @@ export async function getAllPurchaseOrders(
 	const opts = options ?? {};
 	const where = buildPOConditions(opts);
 
-	const orderFn = opts.orderSort === 'desc' ? desc : asc;
+	const orderSort = opts.orderSort ?? 'desc';
+	const orderFn = orderSort === 'desc' ? desc : asc;
 	const orderClause = opts.orderBy
 		? orderFn(ORDER_COLUMNS[opts.orderBy])
-		: desc(purchaseOrders.orderDate);
+		: desc(purchaseOrders.orderNumber);
 
 	const base = db
 		.select({

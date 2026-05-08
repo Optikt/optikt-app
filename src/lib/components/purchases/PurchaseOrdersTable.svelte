@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ClipboardList, Eye } from '@lucide/svelte';
 	import { DataGrid, PurchaseOrderStatusBadge } from '$lib/components/ui';
+	import { getPurchaseDocumentTypeLabel, PurchaseDocumentType } from '$lib/shared/enums';
 	import { formatCurrency, formatDate } from '$lib/utils';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 
@@ -30,7 +31,7 @@
 		{ key: 'order', label: 'N° orden' },
 		{ key: 'supplier', label: 'Proveedor' },
 		{ key: 'date', label: 'Fecha' },
-		{ key: 'invoice', label: 'Factura' },
+		{ key: 'document', label: 'Documento' },
 		{ key: 'rate', label: 'Tasa BCV' },
 		{ key: 'status', label: 'Estado' },
 		{ key: 'createdBy', label: 'Creado por' },
@@ -49,6 +50,18 @@
 			.slice(0, 2)
 			.map((chunk) => chunk[0]?.toUpperCase() ?? '')
 			.join('');
+	}
+
+	function documentLabel(purchaseOrder: PurchaseOrderWithRelations): string {
+		return getPurchaseDocumentTypeLabel(purchaseOrder.documentType);
+	}
+
+	function documentNumber(purchaseOrder: PurchaseOrderWithRelations): string {
+		if (purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE) {
+			return purchaseOrder.deliveryNoteNumber || '--';
+		}
+
+		return purchaseOrder.invoiceNumber || '--';
 	}
 </script>
 
@@ -99,13 +112,18 @@
 				{formatDate(purchaseOrder.orderDate, { day: '2-digit', month: 'short', year: 'numeric' })}
 			</td>
 			<td class="px-4 py-4">
-				<span
-					class="font-mono text-sm {purchaseOrder.invoiceNumber
-						? 'text-on-surface-variant'
-						: 'text-outline italic'}"
-				>
-					{purchaseOrder.invoiceNumber ?? 'Pendiente'}
-				</span>
+				<div class="min-w-[9rem] space-y-1">
+					<p class="text-[11px] font-semibold text-slate-500 uppercase">
+						{documentLabel(purchaseOrder)}
+					</p>
+					<span
+						class="font-mono text-sm {documentNumber(purchaseOrder) === '--'
+							? 'text-outline'
+							: 'text-on-surface-variant'}"
+					>
+						{documentNumber(purchaseOrder)}
+					</span>
+				</div>
 			</td>
 			<td class="px-4 py-4">
 				<span class="font-mono text-sm text-on-surface-variant tabular-nums">

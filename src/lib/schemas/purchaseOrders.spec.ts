@@ -359,4 +359,20 @@ describe('ListPurchaseOrdersSchema', () => {
 		const result = ListPurchaseOrdersSchema.safeParse({ search: 'PO-0042' });
 		expect(result.success).toBe(true);
 	});
+
+	it('accepts list sorting options', () => {
+		const result = ListPurchaseOrdersSchema.safeParse({
+			orderBy: 'orderNumber',
+			orderSort: 'desc'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects invalid list sorting options', () => {
+		const result = ListPurchaseOrdersSchema.safeParse({
+			orderBy: 'supplier',
+			orderSort: 'newest'
+		});
+		expect(result.success).toBe(false);
+	});
 });

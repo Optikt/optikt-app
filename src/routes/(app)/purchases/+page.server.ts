@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 
 	const [initialPurchaseOrders, suppliers, stats] = await Promise.all([
-		getAllPurchaseOrders({ limit: 10, orderBy: 'orderDate', orderSort: 'desc' }),
+		getAllPurchaseOrders({ limit: 10, orderBy: 'orderNumber', orderSort: 'desc' }),
 		getAllSuppliers({ includeDeleted: false }),
 		getPurchaseOrderListStats()
 	]);

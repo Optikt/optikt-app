@@ -3,6 +3,8 @@
 	import { resolve } from '$app/paths';
 	import {
 		ArrowRightLeft,
+		ArrowDownWideNarrow,
+		ArrowUpWideNarrow,
 		ClipboardCheck,
 		CheckCircle2,
 		Coins,
@@ -48,6 +50,10 @@
 
 	let statusFilter = $state<PurchaseOrderStatusFilter>('');
 	let supplierFilter = $state('');
+	type PurchaseOrderSortField = 'orderNumber' | 'orderDate' | 'createdAt' | 'status';
+	type SortDirection = 'asc' | 'desc';
+	let orderBy = $state<PurchaseOrderSortField>('orderNumber');
+	let orderSort = $state<SortDirection>('desc');
 
 	const statusFilterOptions = [
 		{
@@ -58,9 +64,19 @@
 		{ value: PurchaseOrderStatus.CONFIRMED, label: PURCHASE_ORDER_STATUS_LABELS.CONFIRMED },
 		{ value: PurchaseOrderStatus.CANCELLED, label: PURCHASE_ORDER_STATUS_LABELS.CANCELLED }
 	];
+	const sortFieldOptions: { value: PurchaseOrderSortField; label: string }[] = [
+		{ value: 'orderNumber', label: 'N.º orden' },
+		{ value: 'orderDate', label: 'Fecha orden' },
+		{ value: 'createdAt', label: 'Fecha creación' },
+		{ value: 'status', label: 'Estado' }
+	];
 
 	const hasActiveFilters = $derived(
-		search.trim().length > 0 || statusFilter !== '' || supplierFilter !== ''
+		search.trim().length > 0 ||
+			statusFilter !== '' ||
+			supplierFilter !== '' ||
+			orderBy !== 'orderNumber' ||
+			orderSort !== 'desc'
 	);
 
 	async function fetchPurchaseOrders(page = 1) {
@@ -93,7 +109,9 @@
 				search: search.trim() || undefined,
 				status,
 				readyForReview,
-				supplierId: supplierFilter || undefined
+				supplierId: supplierFilter || undefined,
+				orderBy,
+				orderSort
 			}).run();
 		} catch (error) {
 			console.error(error);
@@ -116,10 +134,17 @@
 		void fetchPurchaseOrders(1);
 	}
 
+	function toggleSortDirection() {
+		orderSort = orderSort === 'desc' ? 'asc' : 'desc';
+		void fetchPurchaseOrders(1);
+	}
+
 	function clearFilters() {
 		search = '';
 		statusFilter = '';
 		supplierFilter = '';
+		orderBy = 'orderNumber';
+		orderSort = 'desc';
 		void fetchPurchaseOrders(1);
 	}
 
@@ -226,7 +251,9 @@
 	</div>
 
 	<section class="glass-card bg-surface-container-low p-4">
-		<div class="grid gap-3 xl:grid-cols-[minmax(260px,1.1fr)_180px_220px_auto] xl:items-center">
+		<div
+			class="grid gap-3 xl:grid-cols-[minmax(260px,1.1fr)_180px_220px_180px_auto_auto] xl:items-center"
+		>
 			<div class="relative">
 				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
 				<input
@@ -235,7 +262,7 @@
 					type="search"
 					bind:value={search}
 					oninput={handleSearch}
-					placeholder="Buscar por PO-0001, factura o proveedor..."
+					placeholder="Buscar por PO-0001, documento o proveedor..."
 					class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				/>
 			</div>
@@ -265,6 +292,33 @@
 					<option value={supplier.id}>{supplier.name}</option>
 				{/each}
 			</select>
+
+			<select
+				id="purchase-order-sort-field"
+				name="purchase-order-sort-field"
+				bind:value={orderBy}
+				onchange={handleFilterChange}
+				class="rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				aria-label="Ordenar órdenes de compra por"
+			>
+				{#each sortFieldOptions as option (option.value)}
+					<option value={option.value}>Orden: {option.label}</option>
+				{/each}
+			</select>
+
+			<button
+				type="button"
+				onclick={toggleSortDirection}
+				class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest"
+				aria-label={orderSort === 'desc' ? 'Orden descendente' : 'Orden ascendente'}
+				title={orderSort === 'desc' ? 'Descendente' : 'Ascendente'}
+			>
+				{#if orderSort === 'desc'}
+					<ArrowDownWideNarrow class="h-4 w-4" />
+				{:else}
+					<ArrowUpWideNarrow class="h-4 w-4" />
+				{/if}
+			</button>
 
 			<button
 				type="button"

@@ -90,8 +90,8 @@ export const listPurchaseOrders = query(
 				...filterOptions,
 				limit: perPage,
 				offset: (page - 1) * perPage,
-				orderBy: 'orderDate',
-				orderSort: 'desc'
+				orderBy: data.orderBy ?? 'orderNumber',
+				orderSort: data.orderSort ?? 'desc'
 			}),
 			countPurchaseOrders(filterOptions)
 		]);
