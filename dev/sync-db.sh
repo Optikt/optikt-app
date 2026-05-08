@@ -111,15 +111,10 @@ fi
 
 echo "→ Dropping database '$DB_NAME'..."
 if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" <<'SQL'
-SET app.sync_db_name = :'db_name';
-DO $$
-BEGIN
-	PERFORM pg_terminate_backend(pid)
-	FROM pg_stat_activity
-	WHERE datname = current_setting('app.sync_db_name')
-		AND pid <> pg_backend_pid();
-END
-$$;
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = :'db_name'
+	AND pid <> pg_backend_pid();
 DROP DATABASE IF EXISTS :"db_name";
 SQL
 then
