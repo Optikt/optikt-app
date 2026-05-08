@@ -30,7 +30,7 @@ require_value() {
 }
 
 run_psql() {
-	PGPASSWORD="$DB_PASSWORD" psql --set=ON_ERROR_STOP=on --no-password "$@"
+	PGPASSWORD="$DB_PASSWORD" psql --quiet --set=ON_ERROR_STOP=on --no-password "$@"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -101,6 +101,7 @@ done
 command -v psql >/dev/null 2>&1 || die "psql is not installed or not available on PATH"
 
 if [[ "$PASSWORD_PROVIDED" == false ]]; then
+	[[ -t 0 ]] || die "Database password is required in non-interactive mode; pass --db-password"
 	if ! read -r -s -p "Database password: " DB_PASSWORD; then
 		echo
 		die "Database password prompt failed; pass --db-password to run non-interactively"
@@ -109,12 +110,16 @@ if [[ "$PASSWORD_PROVIDED" == false ]]; then
 fi
 
 echo "→ Dropping database '$DB_NAME'..."
-if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" \
-	>/dev/null <<'SQL'
-SELECT pg_terminate_backend(pid)
-FROM pg_stat_activity
-WHERE datname = :'db_name'
-	AND pid <> pg_backend_pid();
+if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" <<'SQL'
+SET app.sync_db_name = :'db_name';
+DO $$
+BEGIN
+	PERFORM pg_terminate_backend(pid)
+	FROM pg_stat_activity
+	WHERE datname = current_setting('app.sync_db_name')
+		AND pid <> pg_backend_pid();
+END
+$$;
 DROP DATABASE IF EXISTS :"db_name";
 SQL
 then
@@ -122,8 +127,7 @@ then
 fi
 
 echo "→ Creating database '$DB_NAME'..."
-if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" "--set=db_user=$DB_USER" \
-	>/dev/null <<'SQL'
+if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" "--set=db_user=$DB_USER" <<'SQL'
 CREATE DATABASE :"db_name" OWNER :"db_user";
 SQL
 then
@@ -131,8 +135,7 @@ then
 fi
 
 echo "→ Restoring backup from '$BACKUP_FILE'..."
-if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname "$DB_NAME" --file "$BACKUP_FILE" \
-	>/dev/null; then
+if ! run_psql --host "$DB_HOST" --username "$DB_USER" --dbname "$DB_NAME" --file "$BACKUP_FILE"; then
 	die "psql failed while restoring backup ${BACKUP_FILE}"
 fi
 
