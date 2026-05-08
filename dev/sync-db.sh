@@ -29,6 +29,13 @@ require_value() {
 	[[ -n "$value" ]] || die "Missing value for $flag"
 }
 
+validate_name() {
+	local label="$1"
+	local value="$2"
+
+	[[ "$value" =~ ^[A-Za-z0-9_-]+$ ]] || die "$label may only contain letters, numbers, underscores, and hyphens"
+}
+
 run_psql() {
 	PGPASSWORD="$DB_PASSWORD" psql --quiet --set=ON_ERROR_STOP=on --no-password "$@"
 }
@@ -97,6 +104,9 @@ done
 	die "Backup file path is required"
 }
 
+validate_name "--db-name" "$DB_NAME"
+validate_name "--db-user" "$DB_USER"
+[[ "$BACKUP_FILE" == *.sql ]] || die "Backup file must have a .sql extension: $BACKUP_FILE"
 [[ -f "$BACKUP_FILE" ]] || die "Backup file does not exist: $BACKUP_FILE"
 command -v psql >/dev/null 2>&1 || die "psql is not installed or not available on PATH"
 
