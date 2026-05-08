@@ -29,20 +29,8 @@ require_value() {
 	[[ -n "$value" ]] || die "Missing value for $flag"
 }
 
-quote_ident() {
-	local value="$1"
-	value="${value//\"/\"\"}"
-	printf '"%s"' "$value"
-}
-
-quote_literal() {
-	local value="$1"
-	value="${value//\'/\'\'}"
-	printf "'%s'" "$value"
-}
-
 run_psql() {
-	PGPASSWORD="$DB_PASSWORD" psql --set ON_ERROR_STOP=on --no-password "$@"
+	PGPASSWORD="$DB_PASSWORD" psql --set=ON_ERROR_STOP=on --no-password "$@"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -120,22 +108,21 @@ if [[ "$PASSWORD_PROVIDED" == false ]]; then
 	echo
 fi
 
-DB_IDENT="$(quote_ident "$DB_NAME")"
-USER_IDENT="$(quote_ident "$DB_USER")"
-DB_LITERAL="$(quote_literal "$DB_NAME")"
-
 echo "→ Dropping database '$DB_NAME'..."
-run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres \
-	--command "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $DB_LITERAL AND pid <> pg_backend_pid();" \
-	>/dev/null || die "psql failed while terminating connections to database '$DB_NAME'"
-run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres \
-	--command "DROP DATABASE IF EXISTS $DB_IDENT;" \
-	>/dev/null || die "psql failed while dropping database '$DB_NAME'"
+run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" \
+	>/dev/null <<'SQL' || die "psql failed while dropping database '$DB_NAME'"
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = :'db_name'
+	AND pid <> pg_backend_pid();
+DROP DATABASE IF EXISTS :"db_name";
+SQL
 
 echo "→ Creating database '$DB_NAME'..."
-run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres \
-	--command "CREATE DATABASE $DB_IDENT OWNER $USER_IDENT;" \
-	>/dev/null || die "psql failed while creating database '$DB_NAME'"
+run_psql --host "$DB_HOST" --username "$DB_USER" --dbname postgres "--set=db_name=$DB_NAME" "--set=db_user=$DB_USER" \
+	>/dev/null <<'SQL' || die "psql failed while creating database '$DB_NAME'"
+CREATE DATABASE :"db_name" OWNER :"db_user";
+SQL
 
 echo "→ Restoring backup from '$BACKUP_FILE'..."
 run_psql --host "$DB_HOST" --username "$DB_USER" --dbname "$DB_NAME" --file "$BACKUP_FILE" \
