@@ -104,7 +104,7 @@ if [[ "$PASSWORD_PROVIDED" == false ]]; then
 	[[ -t 0 ]] || die "Database password is required in non-interactive mode; pass --db-password"
 	if ! read -r -s -p "Database password: " DB_PASSWORD; then
 		echo
-		die "Database password prompt failed; pass --db-password to run non-interactively"
+		die "Failed to read password interactively; use --db-password to provide password as an argument"
 	fi
 	echo
 fi
