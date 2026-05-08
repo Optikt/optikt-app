@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DEV ONLY - never runs in production
-set -u
+set -euo pipefail
 
 DB_NAME="optikt_db"
 DB_USER="optikt"
@@ -8,6 +8,8 @@ DB_HOST="localhost"
 DB_PASSWORD=""
 PASSWORD_PROVIDED=false
 BACKUP_FILE=""
+
+trap 'unset DB_PASSWORD PGPASSWORD' EXIT
 
 usage() {
 	cat <<'EOF'
