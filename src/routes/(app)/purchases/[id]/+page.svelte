@@ -31,7 +31,9 @@
 	} from '$lib/remote/purchaseOrders.remote';
 	import {
 		getInventoryMovementTypeLabel,
+		getPurchaseDocumentTypeLabel,
 		getPurchaseOrderItemTypeLabel,
+		PurchaseDocumentType,
 		PurchaseOrderStatus
 	} from '$lib/shared/enums';
 	import type {
@@ -95,6 +97,20 @@
 	);
 	const totalSale = $derived(
 		items.reduce((sum, item) => sum + item.unitSalePrice * item.quantity, 0)
+	);
+	const totalProfit = $derived(totalSale - totalPurchase);
+	const documentLabel = $derived(getPurchaseDocumentTypeLabel(purchaseOrder.documentType));
+	const documentNumber = $derived.by(() => {
+		if (purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE) {
+			return purchaseOrder.deliveryNoteNumber || '--';
+		}
+
+		return purchaseOrder.invoiceNumber || '--';
+	});
+	const supplementalDeliveryNoteNumber = $derived(
+		purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE
+			? null
+			: purchaseOrder.deliveryNoteNumber || null
 	);
 
 	function goBack() {
@@ -493,9 +509,11 @@
 		<div
 			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
 		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Factura</span>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Documento</span
+			>
+			<span class="font-semibold text-brand-navy">{documentLabel}</span>
 			<span class="font-mono text-sm font-semibold text-brand-navy">
-				{purchaseOrder.invoiceNumber ?? 'Sin registrar'}
+				{documentNumber}
 			</span>
 		</div>
 		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
@@ -549,10 +567,13 @@
 					<div class="rounded-2xl bg-surface-container-low p-4">
 						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 							<Hash class="h-4 w-4" />
-							N.º de factura
+							Documento
 						</div>
-						<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
-							{purchaseOrder.invoiceNumber ?? 'Sin registrar'}
+						<p class="mt-3 text-sm font-semibold text-on-surface-variant">
+							{documentLabel}
+						</p>
+						<p class="mt-1 font-mono text-base font-semibold text-brand-navy">
+							{documentNumber}
 						</p>
 					</div>
 					<div class="rounded-2xl bg-surface-container-low p-4">
@@ -566,15 +587,15 @@
 					</div>
 				</div>
 
-				{#if purchaseOrder.deliveryNoteNumber || purchaseOrder.notes}
+				{#if supplementalDeliveryNoteNumber || purchaseOrder.notes}
 					<div class="grid gap-4 border-t border-outline-variant/15 px-6 py-6 md:grid-cols-2">
-						{#if purchaseOrder.deliveryNoteNumber}
+						{#if supplementalDeliveryNoteNumber}
 							<div class="rounded-2xl bg-surface-container-low p-4">
 								<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 									Nota de entrega
 								</p>
 								<p class="mt-2 font-mono text-sm font-semibold text-brand-navy">
-									{purchaseOrder.deliveryNoteNumber}
+									{supplementalDeliveryNoteNumber}
 								</p>
 							</div>
 						{/if}
@@ -859,6 +880,16 @@
 						<p class="text-sm text-white/70">Valor estimado de venta</p>
 						<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
 							{formatPrice(totalSale)}
+						</p>
+					</div>
+					<div class="rounded-2xl bg-white/8 p-4">
+						<p class="text-sm text-white/70">Diferencial estimado</p>
+						<p
+							class="mt-2 font-mono text-2xl font-semibold tabular-nums {totalProfit >= 0
+								? 'text-success'
+								: 'text-error'}"
+						>
+							{formatPrice(totalProfit)}
 						</p>
 					</div>
 				</div>
