@@ -226,7 +226,7 @@
 	]}
 >
 	<div
-		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_148px_72px] xl:items-center xl:gap-4"
+		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_72px] xl:items-center xl:gap-4"
 	>
 		<div class="space-y-2">
 			<p

@@ -234,9 +234,9 @@
 			</div>
 		{:else}
 			<div class="overflow-x-auto pb-1">
-				<div class="min-w-[960px] space-y-4">
+				<div class="min-w-[1180px] space-y-4">
 					<div
-						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_104px_148px_32px] xl:gap-4"
+						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_72px] xl:gap-4"
 					>
 						{#each ['Tipo', 'Artículo', 'Cant.', 'Costo und.', 'Venta und.', 'IVA', 'Total costo', ''] as label, index (label + index)}
 							<div
