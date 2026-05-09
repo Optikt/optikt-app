@@ -102,6 +102,7 @@
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
 	const reviewedCount = $derived(reviewStatus.reviewedCount);
 	const allItemsReviewed = $derived(reviewStatus.allReviewed);
+	const hasReviewedChecks = $derived(reviewedCount > 0);
 	const showReviewColumn = $derived(isDraft && isReadyForReview);
 	const filteredItems = $derived.by(() => {
 		const term = itemSearch.trim().toLowerCase();
@@ -153,6 +154,28 @@
 		purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE
 			? null
 			: purchaseOrder.deliveryNoteNumber || null
+	);
+	const markReadyMessage = $derived(
+		hasReviewedChecks
+			? `Hay ${reviewedCount} línea(s) marcadas como revisadas. Puedes conservar esos checks o limpiarlos para empezar la revisión desde cero.`
+			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
+	);
+	const unmarkReadyMessage = $derived(
+		hasReviewedChecks
+			? `La orden volverá a preparación para poder editarla. Hay ${reviewedCount} línea(s) con checks de revisión; puedes conservarlos porque ya fueron confirmados o limpiarlos ahora.`
+			: 'La orden volverá a preparación para poder editarla.'
+	);
+	const markReadyConfirmLabel = $derived(
+		hasReviewedChecks ? 'Conservar checks y marcar lista' : 'Marcar lista'
+	);
+	const unmarkReadyConfirmLabel = $derived(
+		hasReviewedChecks ? 'Conservar checks y volver' : 'Volver a borrador'
+	);
+	const markReadySecondaryLabel = $derived(
+		hasReviewedChecks ? 'Quitar checks y marcar lista' : undefined
+	);
+	const unmarkReadySecondaryLabel = $derived(
+		hasReviewedChecks ? 'Quitar checks y volver' : undefined
 	);
 
 	function goBack() {
@@ -1076,11 +1099,9 @@
 <ConfirmModal
 	bind:open={showMarkReadyModal}
 	title="Marcar lista para revisar"
-	message={reviewedCount > 0
-		? `Hay ${reviewedCount} línea(s) marcadas como revisadas. Puedes conservar esos checks o limpiarlos para empezar la revisión desde cero.`
-		: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'}
-	confirmLabel={reviewedCount > 0 ? 'Conservar checks y marcar lista' : 'Marcar lista'}
-	secondaryLabel={reviewedCount > 0 ? 'Quitar checks y marcar lista' : undefined}
+	message={markReadyMessage}
+	confirmLabel={markReadyConfirmLabel}
+	secondaryLabel={markReadySecondaryLabel}
 	confirmColor="yellow"
 	secondaryColor="red"
 	loading={actionLoading}
@@ -1092,11 +1113,9 @@
 <ConfirmModal
 	bind:open={showUnmarkReadyModal}
 	title="Volver a borrador"
-	message={reviewedCount > 0
-		? `La orden volverá a preparación para poder editarla. Hay ${reviewedCount} check(s) de revisión; puedes conservarlos porque ya fueron confirmados o limpiarlos manualmente ahora.`
-		: 'La orden volverá a preparación para poder editarla.'}
-	confirmLabel={reviewedCount > 0 ? 'Conservar checks y volver' : 'Volver a borrador'}
-	secondaryLabel={reviewedCount > 0 ? 'Quitar checks y volver' : undefined}
+	message={unmarkReadyMessage}
+	confirmLabel={unmarkReadyConfirmLabel}
+	secondaryLabel={unmarkReadySecondaryLabel}
 	confirmColor="blue"
 	secondaryColor="red"
 	loading={actionLoading}

@@ -84,18 +84,22 @@
 		</div>
 	</div>
 
-	<div class="mt-6 flex justify-end gap-2">
-		<Button color="light" onclick={handleCancel} disabled={loading || isChecking}
-			>{cancelLabel}</Button
-		>
+	<div
+		class={['mt-6 flex gap-2', onSecondary && secondaryLabel ? 'justify-between' : 'justify-end']}
+	>
 		{#if onSecondary && secondaryLabel}
 			<Button color={secondaryColor} onclick={onSecondary} disabled={loading || isChecking}>
 				{secondaryLabel}
 			</Button>
 		{/if}
-		<Button color={confirmColor} onclick={handleConfirm} disabled={loading || isChecking}>
-			{#if loading || isChecking}<Spinner size="4" class="mr-2" />{/if}
-			{confirmLabel}
-		</Button>
+		<div class="flex justify-end gap-2">
+			<Button color="light" onclick={handleCancel} disabled={loading || isChecking}
+				>{cancelLabel}</Button
+			>
+			<Button color={confirmColor} onclick={handleConfirm} disabled={loading || isChecking}>
+				{#if loading || isChecking}<Spinner size="4" class="mr-2" />{/if}
+				{confirmLabel}
+			</Button>
+		</div>
 	</div>
 </Modal>
