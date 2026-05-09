@@ -60,6 +60,7 @@
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
 	let priceLoading = $state(false);
+	let readyStateAction = $state<'preserve' | 'clear' | null>(null);
 	let revertLoading = $state(false);
 	let showRevertModal = $state(false);
 	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
@@ -155,14 +156,16 @@
 			? null
 			: purchaseOrder.deliveryNoteNumber || null
 	);
+	const checkPreservationHint =
+		'Puedes conservar esos checks para mantener el avance revisado o limpiarlos para comenzar desde cero.';
 	const markReadyMessage = $derived(
 		hasReviewedChecks
-			? `Hay ${reviewedCount} línea(s) marcada(s) como revisada(s). Puedes conservar esos checks o limpiarlos para comenzar la revisión desde cero.`
+			? `Existen ${reviewedCount} línea(s) marcada(s) como revisada(s). ${checkPreservationHint}`
 			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
 	);
 	const unmarkReadyMessage = $derived(
 		hasReviewedChecks
-			? `La orden volverá a preparación para poder editarla. Hay ${reviewedCount} línea(s) con checks de revisión; puedes conservarlos para mantener el avance revisado o limpiarlos ahora.`
+			? `La orden volverá a preparación para poder editarla. Existen ${reviewedCount} línea(s) con checks de revisión. ${checkPreservationHint}`
 			: 'La orden volverá a preparación para poder editarla.'
 	);
 	const markReadyConfirmLabel = $derived(
@@ -353,6 +356,7 @@
 	}
 
 	async function handleMarkReady(clearReviewed: boolean = false) {
+		readyStateAction = clearReviewed ? 'clear' : 'preserve';
 		actionLoading = true;
 
 		try {
@@ -379,10 +383,12 @@
 			toast.error(getErrorMessage(error, 'Error marcando orden como lista'));
 		} finally {
 			actionLoading = false;
+			readyStateAction = null;
 		}
 	}
 
 	async function handleUnmarkReady(clearReviewed: boolean = false) {
+		readyStateAction = clearReviewed ? 'clear' : 'preserve';
 		actionLoading = true;
 
 		try {
@@ -409,6 +415,7 @@
 			toast.error(getErrorMessage(error, 'Error devolviendo orden a preparación'));
 		} finally {
 			actionLoading = false;
+			readyStateAction = null;
 		}
 	}
 
@@ -1104,7 +1111,8 @@
 	secondaryLabel={markReadySecondaryLabel}
 	confirmColor="yellow"
 	secondaryColor="red"
-	loading={actionLoading}
+	loading={actionLoading && readyStateAction === 'preserve'}
+	secondaryLoading={actionLoading && readyStateAction === 'clear'}
 	onConfirm={() => handleMarkReady(false)}
 	onSecondary={() => handleMarkReady(true)}
 	onCancel={() => (showMarkReadyModal = false)}
@@ -1118,7 +1126,8 @@
 	secondaryLabel={unmarkReadySecondaryLabel}
 	confirmColor="blue"
 	secondaryColor="red"
-	loading={actionLoading}
+	loading={actionLoading && readyStateAction === 'preserve'}
+	secondaryLoading={actionLoading && readyStateAction === 'clear'}
 	onConfirm={() => handleUnmarkReady(false)}
 	onSecondary={() => handleUnmarkReady(true)}
 	onCancel={() => (showUnmarkReadyModal = false)}
