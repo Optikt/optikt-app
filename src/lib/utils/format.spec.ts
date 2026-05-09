@@ -122,13 +122,16 @@ describe('formatDate', () => {
 
 describe('formatDateOnly', () => {
 	it('preserves the calendar day from a UTC timestamp string', () => {
-		const result = formatDateOnly('2026-04-29T00:00:00.000Z', {
+		const options = {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric',
 			timeZone: 'America/Caracas'
-		});
+		} satisfies Intl.DateTimeFormatOptions;
+		const timezoneShiftedResult = formatDate('2026-04-29T00:00:00.000Z', options);
+		const result = formatDateOnly('2026-04-29T00:00:00.000Z', options);
 
+		expect(timezoneShiftedResult).toContain('28');
 		expect(result).toContain('29');
 		expect(result).toContain('2026');
 	});
