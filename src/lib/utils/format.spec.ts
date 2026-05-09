@@ -121,7 +121,23 @@ describe('formatDate', () => {
 });
 
 describe('formatDateOnly', () => {
-	it('preserves the calendar day from a UTC timestamp string', () => {
+	it.each(['America/Caracas', 'America/New_York', 'Asia/Tokyo'])(
+		'preserves the calendar day from a UTC timestamp string in %s',
+		(timeZone) => {
+			const options = {
+				day: '2-digit',
+				month: 'short',
+				year: 'numeric',
+				timeZone
+			} satisfies Intl.DateTimeFormatOptions;
+			const result = formatDateOnly('2026-04-29T00:00:00.000Z', options);
+
+			expect(result).toContain('29');
+			expect(result).toContain('2026');
+		}
+	);
+
+	it('documents the timezone shift avoided for negative UTC offsets', () => {
 		const options = {
 			day: '2-digit',
 			month: 'short',
@@ -129,11 +145,8 @@ describe('formatDateOnly', () => {
 			timeZone: 'America/Caracas'
 		} satisfies Intl.DateTimeFormatOptions;
 		const timezoneShiftedResult = formatDate('2026-04-29T00:00:00.000Z', options);
-		const result = formatDateOnly('2026-04-29T00:00:00.000Z', options);
 
 		expect(timezoneShiftedResult).toContain('28');
-		expect(result).toContain('29');
-		expect(result).toContain('2026');
 	});
 
 	it('formats date-only strings with custom options', () => {
