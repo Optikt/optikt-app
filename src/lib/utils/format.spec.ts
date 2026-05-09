@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dateToISODateString, parseISODateToLocal, formatDate } from './format';
+import { dateToISODateString, parseISODateToLocal, formatDate, formatDateOnly } from './format';
 
 describe('dateToISODateString', () => {
 	it('returns empty string for null input', () => {
@@ -117,6 +117,27 @@ describe('formatDate', () => {
 		expect(result).toContain('15');
 		expect(result).toContain('enero');
 		expect(result).toContain('2024');
+	});
+});
+
+describe('formatDateOnly', () => {
+	it('preserves the calendar day from a UTC timestamp string', () => {
+		const result = formatDateOnly('2026-04-29T00:00:00.000Z', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric',
+			timeZone: 'America/Caracas'
+		});
+
+		expect(result).toContain('29');
+		expect(result).toContain('2026');
+	});
+
+	it('formats date-only strings with custom options', () => {
+		const result = formatDateOnly('2026-04-16', { dateStyle: 'medium' });
+
+		expect(result).toContain('16');
+		expect(result).toContain('2026');
 	});
 });
 

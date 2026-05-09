@@ -43,7 +43,7 @@
 	} from '$lib/server/db/queries/purchaseOrders';
 	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
 	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
-	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
 	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
@@ -651,7 +651,7 @@
 							Fecha de orden
 						</div>
 						<p class="mt-3 text-base font-semibold text-brand-navy">
-							{formatDate(purchaseOrder.orderDate, { dateStyle: 'medium' })}
+							{formatDateOnly(purchaseOrder.orderDate, { dateStyle: 'medium' })}
 						</p>
 					</div>
 					<div class="rounded-2xl bg-surface-container-low p-4">

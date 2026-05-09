@@ -2,7 +2,7 @@
 	import { ClipboardList, Eye } from '@lucide/svelte';
 	import { DataGrid, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import { getPurchaseDocumentTypeLabel, PurchaseDocumentType } from '$lib/shared/enums';
-	import { formatCurrency, formatDate } from '$lib/utils';
+	import { formatCurrency, formatDateOnly } from '$lib/utils';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 
 	interface Props {
@@ -109,7 +109,11 @@
 				</div>
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{formatDate(purchaseOrder.orderDate, { day: '2-digit', month: 'short', year: 'numeric' })}
+				{formatDateOnly(purchaseOrder.orderDate, {
+					day: '2-digit',
+					month: 'short',
+					year: 'numeric'
+				})}
 			</td>
 			<td class="px-4 py-4">
 				<div class="min-w-[9rem] space-y-1">
