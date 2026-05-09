@@ -43,6 +43,10 @@
 	}: Props = $props();
 
 	let isChecking = $state(false);
+	const hasSecondaryAction = $derived(Boolean(onSecondary && secondaryLabel));
+	const footerClass = $derived(
+		`mt-6 flex gap-2 ${hasSecondaryAction ? 'justify-between' : 'justify-end'}`
+	);
 
 	function handleCancel() {
 		if (onCancel) {
@@ -84,10 +88,8 @@
 		</div>
 	</div>
 
-	<div
-		class={['mt-6 flex gap-2', onSecondary && secondaryLabel ? 'justify-between' : 'justify-end']}
-	>
-		{#if onSecondary && secondaryLabel}
+	<div class={footerClass}>
+		{#if hasSecondaryAction}
 			<Button color={secondaryColor} onclick={onSecondary} disabled={loading || isChecking}>
 				{secondaryLabel}
 			</Button>

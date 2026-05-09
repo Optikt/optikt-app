@@ -157,12 +157,12 @@
 	);
 	const markReadyMessage = $derived(
 		hasReviewedChecks
-			? `Hay ${reviewedCount} línea(s) marcadas como revisadas. Puedes conservar esos checks o limpiarlos para empezar la revisión desde cero.`
+			? `Hay ${reviewedCount} línea(s) marcadas como revisadas. Puedes conservar esos checks o limpiarlos para comenzar la revisión desde cero.`
 			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
 	);
 	const unmarkReadyMessage = $derived(
 		hasReviewedChecks
-			? `La orden volverá a preparación para poder editarla. Hay ${reviewedCount} línea(s) con checks de revisión; puedes conservarlos porque ya fueron confirmados o limpiarlos ahora.`
+			? `La orden volverá a preparación para poder editarla. Hay ${reviewedCount} línea(s) con checks de revisión; puedes conservarlos para mantener el avance revisado o limpiarlos ahora.`
 			: 'La orden volverá a preparación para poder editarla.'
 	);
 	const markReadyConfirmLabel = $derived(
