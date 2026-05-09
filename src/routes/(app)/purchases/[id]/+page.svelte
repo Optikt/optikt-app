@@ -329,11 +329,11 @@
 		}
 	}
 
-	async function handleMarkReady() {
+	async function handleMarkReady(clearReviewed: boolean = false) {
 		actionLoading = true;
 
 		try {
-			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed });
 			if (result.success) {
 				showMarkReadyModal = false;
 				purchaseOrder = {
@@ -341,7 +341,11 @@
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
 					updatedAt: result.purchaseOrder.updatedAt
 				};
-				toast.success('Orden marcada como lista para revisar');
+				toast.success(
+					clearReviewed
+						? 'Orden marcada como lista para revisar. Checks limpiados.'
+						: 'Orden marcada como lista para revisar'
+				);
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -355,11 +359,11 @@
 		}
 	}
 
-	async function handleUnmarkReady() {
+	async function handleUnmarkReady(clearReviewed: boolean = false) {
 		actionLoading = true;
 
 		try {
-			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed });
 			if (result.success) {
 				showUnmarkReadyModal = false;
 				purchaseOrder = {
@@ -367,7 +371,11 @@
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
 					updatedAt: result.purchaseOrder.updatedAt
 				};
-				toast.success('Orden devuelta a preparación');
+				toast.success(
+					clearReviewed
+						? 'Orden devuelta a preparación. Checks limpiados.'
+						: 'Orden devuelta a preparación'
+				);
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -1068,22 +1076,32 @@
 <ConfirmModal
 	bind:open={showMarkReadyModal}
 	title="Marcar lista para revisar"
-	message="La orden pasará al flujo de revisión, se bloqueará la edición directa y las marcas de línea comenzarán desde cero."
-	confirmLabel="Marcar lista"
+	message={reviewedCount > 0
+		? `Hay ${reviewedCount} línea(s) marcadas como revisadas. Puedes conservar esos checks o limpiarlos para empezar la revisión desde cero.`
+		: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'}
+	confirmLabel={reviewedCount > 0 ? 'Conservar checks y marcar lista' : 'Marcar lista'}
+	secondaryLabel={reviewedCount > 0 ? 'Quitar checks y marcar lista' : undefined}
 	confirmColor="yellow"
+	secondaryColor="red"
 	loading={actionLoading}
-	onConfirm={handleMarkReady}
+	onConfirm={() => handleMarkReady(false)}
+	onSecondary={() => handleMarkReady(true)}
 	onCancel={() => (showMarkReadyModal = false)}
 />
 
 <ConfirmModal
 	bind:open={showUnmarkReadyModal}
 	title="Volver a borrador"
-	message="La orden volverá a preparación para poder editarla. Las marcas de revisión actuales se limpiarán."
-	confirmLabel="Volver a borrador"
+	message={reviewedCount > 0
+		? `La orden volverá a preparación para poder editarla. Hay ${reviewedCount} check(s) de revisión; puedes conservarlos porque ya fueron confirmados o limpiarlos manualmente ahora.`
+		: 'La orden volverá a preparación para poder editarla.'}
+	confirmLabel={reviewedCount > 0 ? 'Conservar checks y volver' : 'Volver a borrador'}
+	secondaryLabel={reviewedCount > 0 ? 'Quitar checks y volver' : undefined}
 	confirmColor="blue"
+	secondaryColor="red"
 	loading={actionLoading}
-	onConfirm={handleUnmarkReady}
+	onConfirm={() => handleUnmarkReady(false)}
+	onSecondary={() => handleUnmarkReady(true)}
 	onCancel={() => (showUnmarkReadyModal = false)}
 />
 

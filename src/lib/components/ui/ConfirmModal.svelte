@@ -9,11 +9,14 @@
 		message?: string;
 		body?: Snippet; // Rich content (e.g. bullet list of missing fields)
 		confirmLabel?: string;
+		secondaryLabel?: string;
 		cancelLabel?: string;
 		confirmColor?: ButtonProps['color'];
+		secondaryColor?: ButtonProps['color'];
 		loading?: boolean;
 		icon?: Snippet;
 		onConfirm: () => void;
+		onSecondary?: () => void;
 		onCancel?: () => void; // When provided, caller controls closing. Otherwise auto-closes.
 		shouldConfirm?: () => boolean | Promise<boolean>; // Determine if confirmation should be shown
 		permanent?: boolean;
@@ -26,11 +29,14 @@
 		message,
 		body,
 		confirmLabel = 'Confirmar',
+		secondaryLabel,
 		cancelLabel = 'Cancelar',
 		confirmColor = 'blue',
+		secondaryColor = 'alternative',
 		loading = false,
 		icon,
 		onConfirm,
+		onSecondary,
 		onCancel,
 		shouldConfirm,
 		permanent = false
@@ -82,6 +88,11 @@
 		<Button color="light" onclick={handleCancel} disabled={loading || isChecking}
 			>{cancelLabel}</Button
 		>
+		{#if onSecondary && secondaryLabel}
+			<Button color={secondaryColor} onclick={onSecondary} disabled={loading || isChecking}>
+				{secondaryLabel}
+			</Button>
+		{/if}
 		<Button color={confirmColor} onclick={handleConfirm} disabled={loading || isChecking}>
 			{#if loading || isChecking}<Spinner size="4" class="mr-2" />{/if}
 			{confirmLabel}

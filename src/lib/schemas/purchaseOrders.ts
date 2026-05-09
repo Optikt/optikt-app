@@ -114,7 +114,8 @@ export const CancelPurchaseOrderSchema = z.object({
 });
 
 export const MarkPurchaseOrderReadySchema = z.object({
-	id: z.uuid()
+	id: z.uuid(),
+	clearReviewed: z.boolean().default(false)
 });
 
 // ============================================================================
