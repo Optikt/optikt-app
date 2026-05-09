@@ -45,9 +45,9 @@
 	}: Props = $props();
 
 	let isChecking = $state(false);
-	const hasSecondaryAction = $derived(Boolean(onSecondary && secondaryLabel));
+	const hasSecondaryAction = $derived(!!(onSecondary && secondaryLabel));
 	const footerClass = $derived(
-		`mt-6 flex gap-2 ${hasSecondaryAction ? 'justify-between' : 'justify-end'}`
+		['mt-6', 'flex', 'gap-2', hasSecondaryAction ? 'justify-between' : 'justify-end'].join(' ')
 	);
 	const isBusy = $derived(loading || secondaryLoading || isChecking);
 

@@ -158,14 +158,24 @@
 	);
 	const checkPreservationHint =
 		'Puedes conservar esos checks para mantener el avance revisado o limpiarlos para comenzar desde cero.';
+	const reviewedLinesText = $derived(
+		reviewedCount === 1
+			? '1 línea marcada como revisada'
+			: `${reviewedCount} líneas marcadas como revisadas`
+	);
+	const reviewedChecksText = $derived(
+		reviewedCount === 1
+			? '1 línea con check de revisión'
+			: `${reviewedCount} líneas con checks de revisión`
+	);
 	const markReadyMessage = $derived(
 		hasReviewedChecks
-			? `Existen ${reviewedCount} línea(s) marcada(s) como revisada(s). ${checkPreservationHint}`
+			? `${reviewedCount === 1 ? 'Existe' : 'Existen'} ${reviewedLinesText}. ${checkPreservationHint}`
 			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
 	);
 	const unmarkReadyMessage = $derived(
 		hasReviewedChecks
-			? `La orden volverá a preparación para poder editarla. Existen ${reviewedCount} línea(s) con checks de revisión. ${checkPreservationHint}`
+			? `La orden volverá a preparación para poder editarla. ${reviewedCount === 1 ? 'Existe' : 'Existen'} ${reviewedChecksText}. ${checkPreservationHint}`
 			: 'La orden volverá a preparación para poder editarla.'
 	);
 	const markReadyConfirmLabel = $derived(
