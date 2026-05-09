@@ -157,7 +157,7 @@
 	);
 	const markReadyMessage = $derived(
 		hasReviewedChecks
-			? `Hay ${reviewedCount} línea(s) marcadas como revisadas. Puedes conservar esos checks o limpiarlos para comenzar la revisión desde cero.`
+			? `Hay ${reviewedCount} línea(s) marcada(s) como revisada(s). Puedes conservar esos checks o limpiarlos para comenzar la revisión desde cero.`
 			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
 	);
 	const unmarkReadyMessage = $derived(

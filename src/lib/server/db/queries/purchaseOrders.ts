@@ -486,8 +486,8 @@ export async function clearPurchaseOrderItemsReviewed(
 export async function setPurchaseOrderReadyForReview(
 	id: string,
 	isReadyForReview: boolean,
-	clearReviewed: boolean = false,
-	executor: DbOrTx = db
+	executor: DbOrTx = db,
+	clearReviewed: boolean = false
 ): Promise<PurchaseOrder> {
 	if (clearReviewed) {
 		await clearPurchaseOrderItemsReviewed(id, executor);
