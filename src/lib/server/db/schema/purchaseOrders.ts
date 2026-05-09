@@ -17,7 +17,8 @@ import { enumValues } from './utils';
 import {
 	PurchaseOrderStatus,
 	PurchaseOrderItemType,
-	PurchaseDocumentType
+	PurchaseDocumentType,
+	PurchaseDiscountType
 } from '../../../shared/enums/purchaseTypes';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
@@ -39,6 +40,11 @@ export const purchaseDocumentTypeEnum = pgEnum(
 export const purchaseOrderItemTypeEnum = pgEnum(
 	'purchase_order_item_type',
 	enumValues(PurchaseOrderItemType)
+);
+
+export const purchaseDiscountTypeEnum = pgEnum(
+	'purchase_discount_type',
+	enumValues(PurchaseDiscountType)
 );
 
 // ============================================================================
@@ -65,6 +71,16 @@ export const purchaseOrders = pgTable(
 		orderDate: timestamp('order_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** BCV rate at time of purchase */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
+		/**
+		 * Settlement discount granted by supplier at payment time (e.g. cash discount).
+		 * Lines stay at the delivery-note price; the discount only affects the
+		 * invoice total and the per-lot net cost computed at confirmation.
+		 */
+		settlementDiscountType: purchaseDiscountTypeEnum('settlement_discount_type')
+			.notNull()
+			.default('NONE'),
+		settlementDiscountValue: doublePrecision('settlement_discount_value').notNull().default(0),
+		settlementDiscountNotes: varchar('settlement_discount_notes'),
 		notes: varchar(),
 		createdById: uuid('created_by_id').notNull(),
 		/** User who confirmed the PO (null until confirmed) */

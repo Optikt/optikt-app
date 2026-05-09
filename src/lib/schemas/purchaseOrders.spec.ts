@@ -5,6 +5,7 @@ import {
 	PurchaseOrderItemSchema,
 	PurchaseOrderDraftItemSchema,
 	SavePurchaseOrderDraftSchema,
+	SettlementDiscountSchema,
 	ConfirmPurchaseOrderSchema,
 	CancelPurchaseOrderSchema,
 	MarkPurchaseOrderReadySchema,
@@ -382,6 +383,53 @@ describe('ListPurchaseOrdersSchema', () => {
 		const result = ListPurchaseOrdersSchema.safeParse({
 			orderBy: 'supplier',
 			orderSort: 'newest'
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+describe('SettlementDiscountSchema', () => {
+	it('accepts NONE with value 0', () => {
+		expect(SettlementDiscountSchema.safeParse({ type: 'NONE', value: 0 }).success).toBe(true);
+	});
+
+	it('rejects NONE with non-zero value', () => {
+		expect(SettlementDiscountSchema.safeParse({ type: 'NONE', value: 5 }).success).toBe(false);
+	});
+
+	it('accepts a valid PERCENT discount', () => {
+		expect(SettlementDiscountSchema.safeParse({ type: 'PERCENT', value: 5 }).success).toBe(true);
+	});
+
+	it('rejects PERCENT above 100', () => {
+		expect(SettlementDiscountSchema.safeParse({ type: 'PERCENT', value: 150 }).success).toBe(false);
+	});
+
+	it('accepts an AMOUNT discount with notes', () => {
+		const result = SettlementDiscountSchema.safeParse({
+			type: 'AMOUNT',
+			value: 11.15,
+			notes: '5% pronto pago aplicado en factura'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects negative values', () => {
+		expect(SettlementDiscountSchema.safeParse({ type: 'PERCENT', value: -1 }).success).toBe(false);
+	});
+
+	it('CreatePurchaseOrderSchema accepts a discount payload', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			discount: { type: 'PERCENT', value: 5 }
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('CreatePurchaseOrderSchema rejects an invalid discount', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			discount: { type: 'PERCENT', value: 200 }
 		});
 		expect(result.success).toBe(false);
 	});

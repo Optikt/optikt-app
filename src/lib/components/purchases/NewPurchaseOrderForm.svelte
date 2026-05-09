@@ -10,18 +10,24 @@
 		createPurchaseOrderCmd,
 		savePurchaseOrderDraftCmd
 	} from '$lib/remote/purchaseOrders.remote';
-	import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
+	import {
+		PurchaseDiscountType,
+		PurchaseOrderItemType,
+		PurchaseDocumentType
+	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import PurchaseOrderDocumentPanel from './PurchaseOrderDocumentPanel.svelte';
 	import PurchaseOrderItemsPanel from './PurchaseOrderItemsPanel.svelte';
 	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
+	import PurchaseOrderDiscountPanel from './PurchaseOrderDiscountPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
+		type PurchaseOrderDiscountInput,
 		type PurchaseOrderDraftInitialValues,
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
@@ -81,11 +87,21 @@
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
+	let discountType = $state<PurchaseDiscountType>(
+		initialValues?.discount?.type ?? PurchaseDiscountType.NONE
+	);
+	let discountValue = $state<number>(initialValues?.discount?.value ?? 0);
+	let discountNotes = $state(initialValues?.discountNotes ?? '');
 	let savingAction = $state<'draft' | null>(null);
 	let showDraftWarningModal = $state(false);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
 
-	const summary = $derived(calculatePurchaseOrderSummary(items));
+	const discount = $derived<PurchaseOrderDiscountInput>({
+		type: discountType,
+		value: discountType === PurchaseDiscountType.NONE ? 0 : Number(discountValue || 0)
+	});
+
+	const summary = $derived(calculatePurchaseOrderSummary(items, discount));
 	const supplierLocked = $derived(items.length > 0);
 	const isEdit = $derived(mode === 'edit');
 	const saving = $derived(savingAction !== null);
@@ -203,6 +219,11 @@
 					orderDate,
 					bcvRate,
 					notes,
+					discount: {
+						type: discount.type,
+						value: discount.value,
+						notes: discountNotes ? discountNotes : undefined
+					},
 					items: buildItemsPayload()
 				});
 
@@ -225,6 +246,11 @@
 				orderDate,
 				bcvRate,
 				notes,
+				discount: {
+					type: discount.type,
+					value: discount.value,
+					notes: discountNotes ? discountNotes : undefined
+				},
 				items: buildItemsPayload()
 			});
 
@@ -317,7 +343,9 @@
 			{defaultTaxRate}
 		/>
 
-		<PurchaseOrderSummaryPanel {summary} {bcvRate} />
+		<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
+
+		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} />
 	</div>
 </div>
 

@@ -1,16 +1,24 @@
 <script lang="ts">
 	import { Calculator } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import type { PurchaseOrderSummary } from './purchaseOrderDraft';
+	import { PurchaseDiscountType, getPurchaseDiscountTypeLabel } from '$lib/shared/enums';
+	import {
+		NO_PURCHASE_ORDER_DISCOUNT,
+		type PurchaseOrderDiscountInput,
+		type PurchaseOrderSummary
+	} from './purchaseOrderDraft';
 
 	interface Props {
 		summary: PurchaseOrderSummary;
 		bcvRate: number;
+		discount?: PurchaseOrderDiscountInput;
 	}
 
-	let { summary, bcvRate }: Props = $props();
+	let { summary, bcvRate, discount = NO_PURCHASE_ORDER_DISCOUNT }: Props = $props();
 
+	const hasDiscount = $derived(discount.type !== PurchaseDiscountType.NONE && discount.value > 0);
 	const totalInBs = $derived(summary.total * Number(bcvRate || 0));
+	const netTotalInBs = $derived(summary.netTotal * Number(bcvRate || 0));
 
 	function formatVes(amount: number): string {
 		return `Bs. ${new Intl.NumberFormat('es-VE', {
@@ -18,6 +26,14 @@
 			maximumFractionDigits: 2
 		}).format(amount)}`;
 	}
+
+	const discountLabel = $derived(
+		discount.type === PurchaseDiscountType.PERCENT
+			? `${discount.value}%`
+			: discount.type === PurchaseDiscountType.AMOUNT
+				? formatPrice(discount.value)
+				: getPurchaseDiscountTypeLabel(discount.type)
+	);
 </script>
 
 <section class="rounded-[1.75rem] bg-brand-navy p-5 text-white shadow-sm sm:p-6">
@@ -38,10 +54,20 @@
 	>
 		<div class="grid gap-3 sm:grid-cols-2 lg:col-span-2">
 			<div class="rounded-2xl bg-white/8 p-4">
-				<p class="text-sm text-white/70">Costo estimado</p>
+				<p class="text-sm text-white/70">
+					{hasDiscount ? 'Costo bruto (nota de entrega)' : 'Costo estimado'}
+				</p>
 				<p class="mt-2 font-mono text-2xl font-semibold text-white tabular-nums">
 					{formatPrice(summary.total)}
 				</p>
+				{#if hasDiscount}
+					<p class="mt-2 text-xs text-white/60">
+						Costo neto (factura):
+						<span class="font-mono font-semibold text-brand-gold tabular-nums">
+							{formatPrice(summary.netTotal)}
+						</span>
+					</p>
+				{/if}
 			</div>
 			<div class="rounded-2xl bg-white/8 p-4">
 				<p class="text-sm text-white/70">Venta estimada</p>
@@ -58,10 +84,24 @@
 					{formatPrice(summary.subtotal)}
 				</span>
 			</div>
+			{#if hasDiscount}
+				<div class="flex items-center justify-between gap-4 text-brand-gold">
+					<span>Descuento ({discountLabel})</span>
+					<span class="font-mono text-base font-semibold tabular-nums">
+						− {formatPrice(summary.discountAmount)}
+					</span>
+				</div>
+				<div class="flex items-center justify-between gap-4">
+					<span>Subtotal neto</span>
+					<span class="font-mono text-base font-semibold text-white tabular-nums">
+						{formatPrice(summary.netSubtotal)}
+					</span>
+				</div>
+			{/if}
 			<div class="flex items-center justify-between gap-4">
-				<span>IVA estimado</span>
+				<span>{hasDiscount ? 'IVA neto' : 'IVA estimado'}</span>
 				<span class="font-mono text-base font-semibold text-white tabular-nums">
-					{formatPrice(summary.taxAmount)}
+					{formatPrice(hasDiscount ? summary.netTaxAmount : summary.taxAmount)}
 				</span>
 			</div>
 			<div class="flex items-center justify-between gap-4">
@@ -73,13 +113,13 @@
 			<div class="flex items-center justify-between gap-4">
 				<span>Margen proyectado</span>
 				<span class="font-mono text-base font-semibold text-brand-gold tabular-nums">
-					{formatPrice(summary.estimatedProfit)}
+					{formatPrice(hasDiscount ? summary.netEstimatedProfit : summary.estimatedProfit)}
 				</span>
 			</div>
 			<div class="flex items-center justify-between gap-4">
 				<span>Equivalente BCV</span>
 				<span class="font-mono text-base font-semibold text-white tabular-nums">
-					{bcvRate > 0 ? formatVes(totalInBs) : 'Define una tasa'}
+					{bcvRate > 0 ? formatVes(hasDiscount ? netTotalInBs : totalInBs) : 'Define una tasa'}
 				</span>
 			</div>
 		</div>

@@ -28,7 +28,11 @@ import {
 	type NewPurchaseOrderItem
 } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
-import { PurchaseOrderStatus, PurchaseOrderItemType } from '$lib/shared/enums';
+import {
+	PurchaseOrderStatus,
+	PurchaseOrderItemType,
+	PurchaseDiscountType
+} from '$lib/shared/enums';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { getNextLotNumber, getNextFifoCost } from './inventoryLots';
 import { nowISO } from '$lib/dates';
@@ -504,6 +508,41 @@ export async function setPurchaseOrderReadyForReview(
 // PO Confirmation - The core transaction
 // ---------------------------------------------------------------------------
 
+function roundCurrency(value: number): number {
+	return Math.round(value * 100) / 100;
+}
+
+/**
+ * Computes the multiplicative factor that converts each item's gross
+ * `unitPurchasePrice` into the net price actually paid (after the header's
+ * settlement discount). Returns 1 when there is no discount or the subtotal
+ * is zero. The factor is computed against the gross pre-tax subtotal so it
+ * applies linearly to both pre-tax and tax-included unit prices.
+ */
+function computeSettlementDiscountFactor(
+	items: { unitPurchasePrice: number; quantity: number; appliesIva: boolean; ivaRate: number }[],
+	po: { settlementDiscountType: string; settlementDiscountValue: number }
+): number {
+	const type = po.settlementDiscountType as PurchaseDiscountType;
+	const value = Number(po.settlementDiscountValue || 0);
+	if (type === PurchaseDiscountType.NONE || value <= 0) return 1;
+
+	const subtotalPreTax = items.reduce((sum, item) => {
+		const unit = Number(item.unitPurchasePrice || 0);
+		const preTax = item.appliesIva && item.ivaRate ? unit / (1 + item.ivaRate / 100) : unit;
+		return sum + preTax * Number(item.quantity || 0);
+	}, 0);
+	if (subtotalPreTax <= 0) return 1;
+
+	const discountAmount =
+		type === PurchaseDiscountType.PERCENT
+			? (subtotalPreTax * Math.min(value, 100)) / 100
+			: Math.min(value, subtotalPreTax);
+	const factor = (subtotalPreTax - discountAmount) / subtotalPreTax;
+	if (!Number.isFinite(factor)) return 1;
+	return Math.max(0, Math.min(1, factor));
+}
+
 /**
  * Confirm a purchase order: creates lots + movements, updates stock.
  * Must be called inside db.transaction() by the caller.
@@ -540,8 +579,16 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 		);
 	}
 
+	// 3a. Compute settlement-discount factor (applied to each lot's cost on
+	//     confirmation so COGS, FIFO, and inventory valuation reflect what we
+	//     actually paid). Lines themselves stay at gross prices for traceability
+	//     with the supplier's delivery note.
+	const discountFactor = computeSettlementDiscountFactor(items, po);
+
 	// 3. Process each item
 	for (const item of items) {
+		const netUnitPurchasePrice = roundCurrency(item.unitPurchasePrice * discountFactor);
+
 		// a. Create inventory lot
 		const lotNumber = await getNextLotNumber(tx);
 		const [lot] = await tx
@@ -554,7 +601,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 				lensCatalogItemId: item.lensCatalogItemId,
 				quantityInitial: item.quantity,
 				quantityAvailable: item.quantity,
-				unitPurchasePrice: item.unitPurchasePrice,
+				unitPurchasePrice: netUnitPurchasePrice,
 				unitSalePrice: item.unitSalePrice,
 				bcvRateAtPurchase: po.bcvRate,
 				isActive: true
@@ -590,7 +637,7 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 				.update(products)
 				.set({
 					stock: sql`${products.stock} + ${item.quantity}`,
-					currentPurchasePrice: fifoCost ?? item.unitPurchasePrice,
+					currentPurchasePrice: fifoCost ?? netUnitPurchasePrice,
 					updatedAt: nowISO()
 				})
 				.where(eq(products.id, item.productId));

@@ -4,11 +4,49 @@
  */
 import { z } from 'zod';
 import { CoercedNumber, CoercedInteger, ListPaginationWithDeletedSchema } from './common';
-import { PurchaseOrderItemType, PurchaseDocumentType } from '$lib/shared/enums';
+import {
+	PurchaseOrderItemType,
+	PurchaseDocumentType,
+	PurchaseDiscountType
+} from '$lib/shared/enums';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 const ALL_ITEM_TYPES = Object.values(PurchaseOrderItemType) as [string, ...string[]];
 const ALL_DOCUMENT_TYPES = Object.values(PurchaseDocumentType) as [string, ...string[]];
+const ALL_DISCOUNT_TYPES = Object.values(PurchaseDiscountType) as [string, ...string[]];
+
+// ============================================================================
+// SETTLEMENT DISCOUNT
+// ============================================================================
+
+export const SettlementDiscountSchema = z
+	.object({
+		type: z.enum(ALL_DISCOUNT_TYPES).default(PurchaseDiscountType.NONE),
+		value: CoercedNumber.min(0, 'Descuento no puede ser negativo').default(0),
+		notes: z.string().trim().max(240).optional().nullable()
+	})
+	.superRefine((data, ctx) => {
+		if (data.type === PurchaseDiscountType.NONE && data.value !== 0) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['value'],
+				message: 'Sin descuento debe tener valor 0'
+			});
+		}
+		if (data.type === PurchaseDiscountType.PERCENT && data.value > 100) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['value'],
+				message: 'Porcentaje no puede superar 100'
+			});
+		}
+	});
+
+export const DEFAULT_SETTLEMENT_DISCOUNT = {
+	type: PurchaseDiscountType.NONE,
+	value: 0,
+	notes: null as string | null
+} as const;
 
 // ============================================================================
 // LIST / FILTER
@@ -59,6 +97,7 @@ export const CreatePurchaseOrderSchema = z.object({
 	orderDate: z.iso.date('Fecha de orden inválida'),
 	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
 	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
+	discount: SettlementDiscountSchema.optional(),
 	items: z.array(PurchaseOrderReviewableItemSchema).min(1, 'Debe incluir al menos un ítem')
 });
 
@@ -74,7 +113,8 @@ export const UpdatePurchaseOrderSchema = z.object({
 	deliveryNoteNumber: z.string().optional(),
 	orderDate: z.iso.date().optional(),
 	bcvRate: CoercedNumber.min(0).optional(),
-	notes: z.string().min(6).optional()
+	notes: z.string().min(6).optional(),
+	discount: SettlementDiscountSchema.optional()
 });
 
 export const SavePurchaseOrderDraftSchema = z.object({
@@ -86,6 +126,7 @@ export const SavePurchaseOrderDraftSchema = z.object({
 	orderDate: z.iso.date('Fecha de orden inválida'),
 	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
 	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
+	discount: SettlementDiscountSchema.optional(),
 	items: z.array(PurchaseOrderDraftItemSchema).min(1, 'Debe incluir al menos un ítem')
 });
 

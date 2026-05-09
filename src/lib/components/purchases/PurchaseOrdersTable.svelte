@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { ClipboardList, Eye } from '@lucide/svelte';
 	import { DataGrid, PurchaseOrderStatusBadge } from '$lib/components/ui';
-	import { getPurchaseDocumentTypeLabel, PurchaseDocumentType } from '$lib/shared/enums';
-	import { formatCurrency, formatDateOnly } from '$lib/utils';
+	import {
+		getPurchaseDocumentTypeLabel,
+		PurchaseDiscountType,
+		PurchaseDocumentType
+	} from '$lib/shared/enums';
+	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 
 	interface Props {
@@ -62,6 +66,14 @@
 		}
 
 		return purchaseOrder.invoiceNumber || '--';
+	}
+
+	function settlementDiscountLabel(purchaseOrder: PurchaseOrderWithRelations): string | null {
+		const type = purchaseOrder.settlementDiscountType ?? PurchaseDiscountType.NONE;
+		const value = Number(purchaseOrder.settlementDiscountValue ?? 0);
+		if (type === PurchaseDiscountType.NONE || value <= 0) return null;
+		if (type === PurchaseDiscountType.PERCENT) return `Desc. ${value}%`;
+		return `Desc. ${formatPrice(value)}`;
 	}
 </script>
 
@@ -127,6 +139,13 @@
 					>
 						{documentNumber(purchaseOrder)}
 					</span>
+					{#if settlementDiscountLabel(purchaseOrder)}
+						<span
+							class="mt-1 inline-flex items-center self-start rounded-full bg-brand-gold/15 px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-brand-gold-dark uppercase"
+						>
+							{settlementDiscountLabel(purchaseOrder)}
+						</span>
+					{/if}
 				</div>
 			</td>
 			<td class="px-4 py-4">

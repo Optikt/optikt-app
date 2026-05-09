@@ -125,3 +125,37 @@ export const PURCHASE_DOCUMENT_TYPE_LABELS: Record<PurchaseDocumentType, string>
 export function getPurchaseDocumentTypeLabel(type: string): string {
 	return PURCHASE_DOCUMENT_TYPE_LABELS[type as PurchaseDocumentType] ?? type;
 }
+
+// ============================================================================
+// PURCHASE SETTLEMENT DISCOUNT TYPE
+// ============================================================================
+
+/**
+ * Settlement discount applied to the purchase order header at payment time.
+ * - NONE: no discount.
+ * - PERCENT: percentage off the gross subtotal (value in 0..100).
+ * - AMOUNT: fixed USD amount off the gross subtotal (value >= 0).
+ *
+ * Lines remain at gross prices (matching the supplier's delivery note).
+ * On confirmation, the discount is prorated into each lot's `unitPurchasePrice`
+ * so downstream COGS, margin, and inventory valuation reflect the real cost.
+ */
+export enum PurchaseDiscountType {
+	NONE = 'NONE',
+	PERCENT = 'PERCENT',
+	AMOUNT = 'AMOUNT'
+}
+
+export const ALL_PURCHASE_DISCOUNT_TYPES = Object.values(
+	PurchaseDiscountType
+) as PurchaseDiscountType[];
+
+export const PURCHASE_DISCOUNT_TYPE_LABELS: Record<PurchaseDiscountType, string> = {
+	[PurchaseDiscountType.NONE]: 'Sin descuento',
+	[PurchaseDiscountType.PERCENT]: 'Porcentaje',
+	[PurchaseDiscountType.AMOUNT]: 'Monto fijo'
+};
+
+export function getPurchaseDiscountTypeLabel(type: string): string {
+	return PURCHASE_DISCOUNT_TYPE_LABELS[type as PurchaseDiscountType] ?? type;
+}

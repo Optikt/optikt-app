@@ -153,6 +153,9 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
 					notes: data.notes,
+					settlementDiscountType: data.discount?.type ?? 'NONE',
+					settlementDiscountValue: data.discount?.value ?? 0,
+					settlementDiscountNotes: data.discount?.notes ?? null,
 					status: PurchaseOrderStatus.DRAFT,
 					isReadyForReview: false,
 					createdById: context.userId!
@@ -218,6 +221,11 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
 		if (data.notes !== undefined) updateData.notes = data.notes ?? null;
+		if (data.discount !== undefined) {
+			updateData.settlementDiscountType = data.discount.type;
+			updateData.settlementDiscountValue = data.discount.value;
+			updateData.settlementDiscountNotes = data.discount.notes ?? null;
+		}
 		updateData.isReadyForReview = false;
 
 		const updated = await updatePurchaseOrder(data.id, updateData);
@@ -308,6 +316,9 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
 					notes: data.notes,
+					settlementDiscountType: data.discount?.type ?? 'NONE',
+					settlementDiscountValue: data.discount?.value ?? 0,
+					settlementDiscountNotes: data.discount?.notes ?? null,
 					isReadyForReview: false
 				},
 				tx

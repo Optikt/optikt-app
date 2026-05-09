@@ -34,6 +34,7 @@
 		getInventoryMovementTypeLabel,
 		getPurchaseDocumentTypeLabel,
 		getPurchaseOrderItemTypeLabel,
+		PurchaseDiscountType,
 		PurchaseDocumentType,
 		PurchaseOrderStatus
 	} from '$lib/shared/enums';
@@ -42,6 +43,10 @@
 		PurchaseOrderWithRelations
 	} from '$lib/server/db/queries/purchaseOrders';
 	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
+	import {
+		applySettlementDiscount,
+		type PurchaseOrderDiscountInput
+	} from '$lib/components/purchases/purchaseOrderDraft';
 	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
 	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
 	import { tick, untrack } from 'svelte';
@@ -143,6 +148,28 @@
 		items.reduce((sum, item) => sum + item.unitSalePrice * item.quantity, 0)
 	);
 	const totalProfit = $derived(totalSale - totalPurchase);
+	const settlementDiscount = $derived<PurchaseOrderDiscountInput>({
+		type: (purchaseOrder.settlementDiscountType ??
+			PurchaseDiscountType.NONE) as PurchaseDiscountType,
+		value: Number(purchaseOrder.settlementDiscountValue ?? 0)
+	});
+	const hasSettlementDiscount = $derived(
+		settlementDiscount.type !== PurchaseDiscountType.NONE && settlementDiscount.value > 0
+	);
+	const settlementDiscountAmount = $derived(
+		applySettlementDiscount(totalPurchase, settlementDiscount)
+	);
+	const netTotalPurchase = $derived(Math.max(0, totalPurchase - settlementDiscountAmount));
+	const netTotalProfit = $derived(totalSale - netTotalPurchase);
+	const settlementDiscountLabel = $derived(
+		settlementDiscount.type === PurchaseDiscountType.PERCENT
+			? `${settlementDiscount.value}%`
+			: settlementDiscount.type === PurchaseDiscountType.AMOUNT
+				? formatPrice(settlementDiscount.value)
+				: 'Sin descuento'
+	);
+	const totalPurchaseInBs = $derived(totalPurchase * Number(purchaseOrder.bcvRate || 0));
+	const netTotalPurchaseInBs = $derived(netTotalPurchase * Number(purchaseOrder.bcvRate || 0));
 	const documentLabel = $derived(getPurchaseDocumentTypeLabel(purchaseOrder.documentType));
 	const documentNumber = $derived.by(() => {
 		if (purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE) {
@@ -1027,11 +1054,51 @@
 						<p class="mt-2 font-mono text-3xl font-semibold tabular-nums">{totalUnits}</p>
 					</div>
 					<div class="rounded-2xl bg-white/8 p-4">
-						<p class="text-sm text-white/70">Costo de compra</p>
+						<p class="text-sm text-white/70">
+							{hasSettlementDiscount ? 'Costo bruto (nota de entrega)' : 'Costo de compra'}
+						</p>
 						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
 							{formatPrice(totalPurchase)}
 						</p>
+						{#if Number(purchaseOrder.bcvRate || 0) > 0}
+							<p class="mt-1 font-mono text-xs text-white/60 tabular-nums">
+								Bs. {new Intl.NumberFormat('es-VE', {
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2
+								}).format(totalPurchaseInBs)}
+							</p>
+						{/if}
 					</div>
+					{#if hasSettlementDiscount}
+						<div class="rounded-2xl bg-white/8 p-4 ring-1 ring-brand-gold/40">
+							<p class="text-sm text-white/70">Costo neto (factura)</p>
+							<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
+								{formatPrice(netTotalPurchase)}
+							</p>
+							<div class="mt-3 space-y-1 text-xs text-white/70">
+								<div class="flex items-center justify-between gap-3">
+									<span>Descuento ({settlementDiscountLabel})</span>
+									<span class="font-mono font-semibold text-brand-gold tabular-nums">
+										− {formatPrice(settlementDiscountAmount)}
+									</span>
+								</div>
+								{#if Number(purchaseOrder.bcvRate || 0) > 0}
+									<div class="flex items-center justify-between gap-3">
+										<span>Equivalente BCV</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											Bs. {new Intl.NumberFormat('es-VE', {
+												minimumFractionDigits: 2,
+												maximumFractionDigits: 2
+											}).format(netTotalPurchaseInBs)}
+										</span>
+									</div>
+								{/if}
+								{#if purchaseOrder.settlementDiscountNotes}
+									<p class="pt-1 text-white/60">{purchaseOrder.settlementDiscountNotes}</p>
+								{/if}
+							</div>
+						</div>
+					{/if}
 					<div class="rounded-2xl bg-white/8 p-4">
 						<p class="text-sm text-white/70">Valor estimado de venta</p>
 						<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
@@ -1039,13 +1106,17 @@
 						</p>
 					</div>
 					<div class="rounded-2xl bg-white/8 p-4">
-						<p class="text-sm text-white/70">Diferencial estimado</p>
+						<p class="text-sm text-white/70">
+							{hasSettlementDiscount ? 'Diferencial neto (factura)' : 'Diferencial estimado'}
+						</p>
 						<p
-							class="mt-2 font-mono text-2xl font-semibold tabular-nums {totalProfit >= 0
+							class="mt-2 font-mono text-2xl font-semibold tabular-nums {(hasSettlementDiscount
+								? netTotalProfit
+								: totalProfit) >= 0
 								? 'text-success'
 								: 'text-error'}"
 						>
-							{formatPrice(totalProfit)}
+							{formatPrice(hasSettlementDiscount ? netTotalProfit : totalProfit)}
 						</p>
 					</div>
 				</div>

@@ -1,7 +1,11 @@
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
+import {
+	PurchaseDiscountType,
+	PurchaseDocumentType,
+	PurchaseOrderItemType
+} from '$lib/shared/enums';
 import { LensPriceType } from '$lib/shared/enums/lensTypes';
 import {
 	isPurchaseOrderDraftReady,
@@ -29,12 +33,35 @@ export interface PurchaseOrderDraftItem {
 export interface PurchaseOrderSummary {
 	lineCount: number;
 	totalUnits: number;
+	/** Gross pre-tax subtotal — matches the delivery note. */
 	subtotal: number;
+	/** Gross IVA (no discount applied). */
 	taxAmount: number;
+	/** Gross total = subtotal + taxAmount. Matches the delivery note. */
 	total: number;
 	estimatedSale: number;
 	estimatedProfit: number;
+	/** Settlement discount applied to the gross subtotal (0 when type=NONE). */
+	discountAmount: number;
+	/** Net pre-tax base after discount = subtotal - discountAmount. */
+	netSubtotal: number;
+	/** IVA recomputed on the net base (per-line, respects appliesIva). */
+	netTaxAmount: number;
+	/** Net total (what the fiscal invoice charges). */
+	netTotal: number;
+	/** Estimated profit using net cost. */
+	netEstimatedProfit: number;
 }
+
+export interface PurchaseOrderDiscountInput {
+	type: PurchaseDiscountType;
+	value: number;
+}
+
+export const NO_PURCHASE_ORDER_DISCOUNT: PurchaseOrderDiscountInput = {
+	type: PurchaseDiscountType.NONE,
+	value: 0
+};
 
 export interface PurchaseOrderReviewStatus {
 	totalCount: number;
@@ -49,6 +76,8 @@ export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesI
 	documentType: PurchaseDocumentType;
 	invoiceNumber: string;
 	deliveryNoteNumber: string;
+	discount?: PurchaseOrderDiscountInput;
+	discountNotes?: string | null;
 }
 
 export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeader {
@@ -250,8 +279,60 @@ export function calculateDraftItemTotal(item: PurchaseOrderDraftItem): number {
 	return Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0);
 }
 
+/**
+ * Returns the USD discount amount applied to a gross subtotal.
+ * - PERCENT: subtotal × value / 100 (capped 0..100 by validation upstream).
+ * - AMOUNT: min(value, subtotal) so we never go negative.
+ * - NONE / unknown: 0.
+ */
+export function applySettlementDiscount(
+	subtotalGross: number,
+	discount: PurchaseOrderDiscountInput | null | undefined
+): number {
+	if (!discount) return 0;
+	const gross = Number(subtotalGross || 0);
+	if (gross <= 0) return 0;
+	const value = Number(discount.value || 0);
+	if (value <= 0) return 0;
+	if (discount.type === PurchaseDiscountType.PERCENT) {
+		return round2((gross * Math.min(value, 100)) / 100);
+	}
+	if (discount.type === PurchaseDiscountType.AMOUNT) {
+		return round2(Math.min(value, gross));
+	}
+	return 0;
+}
+
+/**
+ * Returns the multiplicative factor that converts gross prices to net prices.
+ * factor = (subtotalGross - discountAmount) / subtotalGross, clamped to [0, 1].
+ * Returns 1 when there is no discount (or subtotal is zero).
+ */
+export function getSettlementDiscountFactor(
+	subtotalGross: number,
+	discount: PurchaseOrderDiscountInput | null | undefined
+): number {
+	const gross = Number(subtotalGross || 0);
+	if (gross <= 0) return 1;
+	const discountAmount = applySettlementDiscount(gross, discount);
+	if (discountAmount <= 0) return 1;
+	const factor = (gross - discountAmount) / gross;
+	if (!Number.isFinite(factor)) return 1;
+	return Math.max(0, Math.min(1, factor));
+}
+
+/**
+ * Prorates the per-unit gross purchase price into the per-unit net price.
+ * Same factor applies whether `unitPurchasePrice` is pre-tax or tax-included,
+ * because the discount scales the pre-tax cost and IVA scales linearly with it.
+ */
+export function prorateNetUnitPurchasePrice(grossUnitPrice: number, factor: number): number {
+	return round2(Number(grossUnitPrice || 0) * factor);
+}
+
 export function calculatePurchaseOrderSummary(
-	items: PurchaseOrderDraftItem[]
+	items: PurchaseOrderDraftItem[],
+	discount: PurchaseOrderDiscountInput | null | undefined = NO_PURCHASE_ORDER_DISCOUNT
 ): PurchaseOrderSummary {
 	const subtotal = items.reduce((sum, item) => sum + calculateDraftItemSubtotal(item), 0);
 	const taxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item), 0);
@@ -261,6 +342,12 @@ export function calculatePurchaseOrderSummary(
 		0
 	);
 
+	const discountAmount = applySettlementDiscount(subtotal, discount);
+	const factor = getSettlementDiscountFactor(subtotal, discount);
+	const netSubtotal = round2(subtotal - discountAmount);
+	const netTaxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item) * factor, 0);
+	const netTotal = round2(netSubtotal + netTaxAmount);
+
 	return {
 		lineCount: items.length,
 		totalUnits: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
@@ -268,6 +355,11 @@ export function calculatePurchaseOrderSummary(
 		taxAmount,
 		total,
 		estimatedSale,
-		estimatedProfit: estimatedSale - total
+		estimatedProfit: estimatedSale - total,
+		discountAmount,
+		netSubtotal,
+		netTaxAmount: round2(netTaxAmount),
+		netTotal,
+		netEstimatedProfit: estimatedSale - netTotal
 	};
 }

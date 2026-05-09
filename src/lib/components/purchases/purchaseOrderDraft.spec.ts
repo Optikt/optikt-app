@@ -3,12 +3,17 @@ import { describe, expect, it } from 'vitest';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
+import {
+	PurchaseDiscountType,
+	PurchaseDocumentType,
+	PurchaseOrderItemType
+} from '$lib/shared/enums';
 import { LensPriceType, LensType } from '$lib/shared/enums/lensTypes';
 
 import {
 	applyLensDefaults,
 	applyProductDefaults,
+	applySettlementDiscount,
 	calculateDraftItemTotal,
 	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
@@ -16,7 +21,9 @@ import {
 	createEmptyPurchaseOrderDraftItem,
 	createPurchaseOrderDraftItemFromExisting,
 	getDraftItemZeroValueFields,
-	getPurchaseOrderReviewStatus
+	getPurchaseOrderReviewStatus,
+	getSettlementDiscountFactor,
+	prorateNetUnitPurchasePrice
 } from './purchaseOrderDraft';
 
 function makeProduct(overrides: Partial<ProductWithRelations> = {}): ProductWithRelations {
@@ -258,5 +265,124 @@ describe('purchaseOrderDraft helpers', () => {
 				[item]
 			)
 		).toBe(true);
+	});
+});
+
+describe('settlement discount helpers', () => {
+	it('returns 0 for NONE discount', () => {
+		expect(applySettlementDiscount(223, { type: PurchaseDiscountType.NONE, value: 0 })).toBe(0);
+		expect(getSettlementDiscountFactor(223, { type: PurchaseDiscountType.NONE, value: 0 })).toBe(1);
+	});
+
+	it('applies a percentage discount on the gross subtotal', () => {
+		const amount = applySettlementDiscount(223, {
+			type: PurchaseDiscountType.PERCENT,
+			value: 5
+		});
+		expect(amount).toBeCloseTo(11.15, 2);
+
+		const factor = getSettlementDiscountFactor(223, {
+			type: PurchaseDiscountType.PERCENT,
+			value: 5
+		});
+		expect(factor).toBeCloseTo(0.95, 4);
+	});
+
+	it('applies a fixed amount discount capped at the subtotal', () => {
+		expect(
+			applySettlementDiscount(223, { type: PurchaseDiscountType.AMOUNT, value: 11.15 })
+		).toBeCloseTo(11.15, 2);
+		expect(applySettlementDiscount(50, { type: PurchaseDiscountType.AMOUNT, value: 100 })).toBe(50);
+	});
+
+	it('prorates the per-unit price using the discount factor', () => {
+		const factor = getSettlementDiscountFactor(223, {
+			type: PurchaseDiscountType.PERCENT,
+			value: 5
+		});
+		expect(prorateNetUnitPurchasePrice(20, factor)).toBeCloseTo(19, 2);
+	});
+
+	it('returns net totals matching the user invoice example (5% on $223 with 16% IVA)', () => {
+		// Single line, exempt of IVA on inventory side just to isolate gross math.
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.appliesIva = false;
+		item.ivaRate = 0;
+		item.quantity = 1;
+		item.unitPurchasePrice = 223;
+
+		const summary = calculatePurchaseOrderSummary([item], {
+			type: PurchaseDiscountType.PERCENT,
+			value: 5
+		});
+
+		expect(summary.subtotal).toBeCloseTo(223, 2);
+		expect(summary.discountAmount).toBeCloseTo(11.15, 2);
+		expect(summary.netSubtotal).toBeCloseTo(211.85, 2);
+		expect(summary.netTaxAmount).toBeCloseTo(0, 2);
+		expect(summary.netTotal).toBeCloseTo(211.85, 2);
+	});
+
+	it('reduces IVA proportionally to the discount on taxable lines', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		// Pre-tax unit = 100, IVA 16% => unitPurchasePrice = 116
+		item.appliesIva = true;
+		item.ivaRate = 16;
+		item.quantity = 1;
+		item.unitPurchasePrice = 116;
+
+		const summary = calculatePurchaseOrderSummary([item], {
+			type: PurchaseDiscountType.PERCENT,
+			value: 5
+		});
+
+		// Gross subtotal pre-tax = 100, IVA = 16
+		expect(summary.subtotal).toBeCloseTo(100, 2);
+		expect(summary.taxAmount).toBeCloseTo(16, 2);
+		// Discount applies to pre-tax base only
+		expect(summary.discountAmount).toBeCloseTo(5, 2);
+		expect(summary.netSubtotal).toBeCloseTo(95, 2);
+		// IVA on net base = 95 * 16% = 15.2
+		expect(summary.netTaxAmount).toBeCloseTo(15.2, 2);
+		expect(summary.netTotal).toBeCloseTo(110.2, 2);
+	});
+
+	it('handles mixed taxable and exempt lines with a percentage discount', () => {
+		const taxable = createEmptyPurchaseOrderDraftItem();
+		taxable.appliesIva = true;
+		taxable.ivaRate = 16;
+		taxable.quantity = 1;
+		taxable.unitPurchasePrice = 116; // pre-tax 100
+
+		const exempt = createEmptyPurchaseOrderDraftItem();
+		exempt.appliesIva = false;
+		exempt.ivaRate = 0;
+		exempt.quantity = 1;
+		exempt.unitPurchasePrice = 50;
+
+		const summary = calculatePurchaseOrderSummary([taxable, exempt], {
+			type: PurchaseDiscountType.PERCENT,
+			value: 10
+		});
+
+		// Pre-tax subtotal = 150
+		expect(summary.subtotal).toBeCloseTo(150, 2);
+		expect(summary.discountAmount).toBeCloseTo(15, 2);
+		expect(summary.netSubtotal).toBeCloseTo(135, 2);
+		// IVA only from the taxable line at net rate: 100 * 0.9 * 0.16 = 14.4
+		expect(summary.netTaxAmount).toBeCloseTo(14.4, 2);
+		expect(summary.netTotal).toBeCloseTo(149.4, 2);
+	});
+
+	it('falls back to gross totals when no discount is provided', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.appliesIva = false;
+		item.ivaRate = 0;
+		item.quantity = 1;
+		item.unitPurchasePrice = 100;
+
+		const summary = calculatePurchaseOrderSummary([item]);
+		expect(summary.discountAmount).toBe(0);
+		expect(summary.netTotal).toBeCloseTo(summary.total, 2);
 	});
 });

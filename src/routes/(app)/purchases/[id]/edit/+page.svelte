@@ -5,7 +5,7 @@
 		createPurchaseOrderDraftItemFromExisting,
 		type PurchaseOrderDraftInitialValues
 	} from '$lib/components/purchases/purchaseOrderDraft';
-	import { PurchaseDocumentType } from '$lib/shared/enums';
+	import { PurchaseDiscountType, PurchaseDocumentType } from '$lib/shared/enums';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -19,6 +19,12 @@
 		orderDate: purchaseOrder.orderDate.slice(0, 10),
 		bcvRate: purchaseOrder.bcvRate,
 		notes: purchaseOrder.notes ?? '',
+		discount: {
+			type: (purchaseOrder.settlementDiscountType ??
+				PurchaseDiscountType.NONE) as PurchaseDiscountType,
+			value: Number(purchaseOrder.settlementDiscountValue ?? 0)
+		},
+		discountNotes: purchaseOrder.settlementDiscountNotes ?? null,
 		items: items.map(createPurchaseOrderDraftItemFromExisting)
 	};
 </script>
