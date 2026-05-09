@@ -5,7 +5,7 @@
 
 import type { Customer, Prescription } from '$lib/server/db/schema';
 import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
-import { fromISO, fromISODate } from '$lib/dates';
+import { fromISO, fromISODate, toISODate } from '$lib/dates';
 
 // =============================================================================
 // DATE-ONLY UTILITIES - re-exported from $lib/dates (canonical source)
@@ -65,6 +65,27 @@ export function formatDate(
 		'dateStyle' in opt || 'timeStyle' in opt
 			? opt
 			: { year: 'numeric', month: 'long', day: 'numeric', ...opt };
+
+	return new Intl.DateTimeFormat('es-VE', options).format(d);
+}
+
+/**
+ * Format a calendar date stored in a timestamp/string without applying local timezone shifts.
+ * Use for domain dates that come from date inputs but are persisted in timestamp columns.
+ * Empty strings are treated the same as null and return "-".
+ */
+export function formatDateOnly(
+	date: Date | string | null,
+	opt: Intl.DateTimeFormatOptions = {}
+): string {
+	if (!date) return '-';
+
+	const datePart = typeof date === 'string' ? date.slice(0, 10) : toISODate(date);
+	const d = new Date(`${datePart}T00:00:00.000Z`);
+	const options: Intl.DateTimeFormatOptions =
+		'dateStyle' in opt || 'timeStyle' in opt
+			? { ...opt, timeZone: 'UTC' }
+			: { year: 'numeric', month: 'long', day: 'numeric', ...opt, timeZone: 'UTC' };
 
 	return new Intl.DateTimeFormat('es-VE', options).format(d);
 }
