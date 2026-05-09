@@ -137,7 +137,7 @@ describe('formatDateOnly', () => {
 		}
 	);
 
-	it('documents the timezone shift avoided for negative UTC offsets', () => {
+	it('shows formatDate shifts UTC-midnight timestamps in negative UTC offsets', () => {
 		const options = {
 			day: '2-digit',
 			month: 'short',

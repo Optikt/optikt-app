@@ -72,6 +72,7 @@ export function formatDate(
 /**
  * Format a calendar date stored in a timestamp/string without applying local timezone shifts.
  * Use for domain dates that come from date inputs but are persisted in timestamp columns.
+ * Empty strings are treated the same as null and return "-".
  */
 export function formatDateOnly(
 	date: Date | string | null,
