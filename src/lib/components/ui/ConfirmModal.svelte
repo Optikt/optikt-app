@@ -90,8 +90,12 @@
 
 	<div class={footerClass}>
 		{#if hasSecondaryAction}
-			<Button color={secondaryColor} onclick={onSecondary} disabled={loading || isChecking}>
-				{#if loading}<Spinner size="4" class="mr-2" />{/if}
+			<Button
+				color={secondaryColor}
+				onclick={() => onSecondary?.()}
+				disabled={loading || isChecking}
+			>
+				{#if loading || isChecking}<Spinner size="4" class="mr-2" />{/if}
 				{secondaryLabel}
 			</Button>
 		{/if}
