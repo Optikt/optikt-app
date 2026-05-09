@@ -362,7 +362,7 @@ export const markPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema, a
 
 	try {
 		const updated = await db.transaction(async (tx) =>
-			setPurchaseOrderReadyForReview(data.id, true, tx)
+			setPurchaseOrderReadyForReview(data.id, true, tx, data.clearReviewed)
 		);
 		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
@@ -389,7 +389,7 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 
 	try {
 		const updated = await db.transaction(async (tx) =>
-			setPurchaseOrderReadyForReview(data.id, false, tx)
+			setPurchaseOrderReadyForReview(data.id, false, tx, data.clearReviewed)
 		);
 		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };

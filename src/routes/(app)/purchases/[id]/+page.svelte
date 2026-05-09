@@ -60,6 +60,7 @@
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
 	let priceLoading = $state(false);
+	let readyStateAction = $state<'preserve' | 'clear' | null>(null);
 	let revertLoading = $state(false);
 	let showRevertModal = $state(false);
 	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
@@ -102,6 +103,7 @@
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
 	const reviewedCount = $derived(reviewStatus.reviewedCount);
 	const allItemsReviewed = $derived(reviewStatus.allReviewed);
+	const hasReviewedChecks = $derived(reviewedCount > 0);
 	const showReviewColumn = $derived(isDraft && isReadyForReview);
 	const filteredItems = $derived.by(() => {
 		const term = itemSearch.trim().toLowerCase();
@@ -153,6 +155,40 @@
 		purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE
 			? null
 			: purchaseOrder.deliveryNoteNumber || null
+	);
+	const checkPreservationHint =
+		'Puedes conservar esos checks para mantener el avance revisado o limpiarlos para comenzar desde cero.';
+	const reviewedLinesText = $derived(
+		reviewedCount === 1
+			? '1 línea marcada como revisada'
+			: `${reviewedCount} líneas marcadas como revisadas`
+	);
+	const reviewedChecksText = $derived(
+		reviewedCount === 1
+			? '1 línea con check de revisión'
+			: `${reviewedCount} líneas con checks de revisión`
+	);
+	const markReadyMessage = $derived(
+		hasReviewedChecks
+			? `${reviewedCount === 1 ? 'Existe' : 'Existen'} ${reviewedLinesText}. ${checkPreservationHint}`
+			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
+	);
+	const unmarkReadyMessage = $derived(
+		hasReviewedChecks
+			? `La orden volverá a preparación para poder editarla. ${reviewedCount === 1 ? 'Existe' : 'Existen'} ${reviewedChecksText}. ${checkPreservationHint}`
+			: 'La orden volverá a preparación para poder editarla.'
+	);
+	const markReadyConfirmLabel = $derived(
+		hasReviewedChecks ? 'Conservar checks y marcar lista' : 'Marcar lista'
+	);
+	const unmarkReadyConfirmLabel = $derived(
+		hasReviewedChecks ? 'Conservar checks y volver' : 'Volver a borrador'
+	);
+	const markReadySecondaryLabel = $derived(
+		hasReviewedChecks ? 'Quitar checks y marcar lista' : undefined
+	);
+	const unmarkReadySecondaryLabel = $derived(
+		hasReviewedChecks ? 'Quitar checks y volver' : undefined
 	);
 
 	function goBack() {
@@ -329,11 +365,12 @@
 		}
 	}
 
-	async function handleMarkReady() {
+	async function handleMarkReady(clearReviewed: boolean = false) {
+		readyStateAction = clearReviewed ? 'clear' : 'preserve';
 		actionLoading = true;
 
 		try {
-			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed });
 			if (result.success) {
 				showMarkReadyModal = false;
 				purchaseOrder = {
@@ -341,7 +378,11 @@
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
 					updatedAt: result.purchaseOrder.updatedAt
 				};
-				toast.success('Orden marcada como lista para revisar');
+				toast.success(
+					clearReviewed
+						? 'Orden marcada como lista para revisar. Checks limpiados.'
+						: 'Orden marcada como lista para revisar'
+				);
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -352,14 +393,16 @@
 			toast.error(getErrorMessage(error, 'Error marcando orden como lista'));
 		} finally {
 			actionLoading = false;
+			readyStateAction = null;
 		}
 	}
 
-	async function handleUnmarkReady() {
+	async function handleUnmarkReady(clearReviewed: boolean = false) {
+		readyStateAction = clearReviewed ? 'clear' : 'preserve';
 		actionLoading = true;
 
 		try {
-			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id });
+			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed });
 			if (result.success) {
 				showUnmarkReadyModal = false;
 				purchaseOrder = {
@@ -367,7 +410,11 @@
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
 					updatedAt: result.purchaseOrder.updatedAt
 				};
-				toast.success('Orden devuelta a preparación');
+				toast.success(
+					clearReviewed
+						? 'Orden devuelta a preparación. Checks limpiados.'
+						: 'Orden devuelta a preparación'
+				);
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -378,6 +425,7 @@
 			toast.error(getErrorMessage(error, 'Error devolviendo orden a preparación'));
 		} finally {
 			actionLoading = false;
+			readyStateAction = null;
 		}
 	}
 
@@ -1068,22 +1116,30 @@
 <ConfirmModal
 	bind:open={showMarkReadyModal}
 	title="Marcar lista para revisar"
-	message="La orden pasará al flujo de revisión, se bloqueará la edición directa y las marcas de línea comenzarán desde cero."
-	confirmLabel="Marcar lista"
+	message={markReadyMessage}
+	confirmLabel={markReadyConfirmLabel}
+	secondaryLabel={markReadySecondaryLabel}
 	confirmColor="yellow"
-	loading={actionLoading}
-	onConfirm={handleMarkReady}
+	secondaryColor="red"
+	loading={actionLoading && readyStateAction === 'preserve'}
+	secondaryLoading={actionLoading && readyStateAction === 'clear'}
+	onConfirm={() => handleMarkReady(false)}
+	onSecondary={() => handleMarkReady(true)}
 	onCancel={() => (showMarkReadyModal = false)}
 />
 
 <ConfirmModal
 	bind:open={showUnmarkReadyModal}
 	title="Volver a borrador"
-	message="La orden volverá a preparación para poder editarla. Las marcas de revisión actuales se limpiarán."
-	confirmLabel="Volver a borrador"
+	message={unmarkReadyMessage}
+	confirmLabel={unmarkReadyConfirmLabel}
+	secondaryLabel={unmarkReadySecondaryLabel}
 	confirmColor="blue"
-	loading={actionLoading}
-	onConfirm={handleUnmarkReady}
+	secondaryColor="red"
+	loading={actionLoading && readyStateAction === 'preserve'}
+	secondaryLoading={actionLoading && readyStateAction === 'clear'}
+	onConfirm={() => handleUnmarkReady(false)}
+	onSecondary={() => handleUnmarkReady(true)}
 	onCancel={() => (showUnmarkReadyModal = false)}
 />
 

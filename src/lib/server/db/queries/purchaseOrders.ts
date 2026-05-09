@@ -486,13 +486,12 @@ export async function clearPurchaseOrderItemsReviewed(
 export async function setPurchaseOrderReadyForReview(
 	id: string,
 	isReadyForReview: boolean,
-	executor: DbOrTx = db
+	executor: DbOrTx = db,
+	clearReviewed: boolean = false
 ): Promise<PurchaseOrder> {
-	// Both transitions wipe per-line review checks: marking ready resets the
-	// creator's "data filled" marks so the reviewer starts from zero, and
-	// unmarking ready discards the reviewer's progress so the next review
-	// pass is intentional.
-	await clearPurchaseOrderItemsReviewed(id, executor);
+	if (clearReviewed) {
+		await clearPurchaseOrderItemsReviewed(id, executor);
+	}
 	const [po] = await executor
 		.update(purchaseOrders)
 		.set({ isReadyForReview, updatedAt: nowISO() })

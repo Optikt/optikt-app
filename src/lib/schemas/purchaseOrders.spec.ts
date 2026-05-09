@@ -290,6 +290,16 @@ describe('MarkPurchaseOrderReadySchema', () => {
 			id: '00000000-0000-4000-8000-000000000001'
 		});
 		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.clearReviewed).toBe(false);
+	});
+
+	it('accepts an explicit request to clear reviewed checks', () => {
+		const result = MarkPurchaseOrderReadySchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000001',
+			clearReviewed: true
+		});
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.clearReviewed).toBe(true);
 	});
 });
 
