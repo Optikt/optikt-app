@@ -4,6 +4,7 @@
 export * from './users';
 export * from './sessions';
 export * from './brands';
+export * from './brandAccessories';
 export * from './suppliers';
 export * from './products';
 export * from './customers';

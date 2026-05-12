@@ -13,6 +13,7 @@
 	import type { PrescriptionValues } from '$lib/components/sales/PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
+	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
 	import { WizardHeader } from '$lib/components/ui';
 	import {
 		buildStep2PrescriptionConfirmation,
@@ -163,6 +164,7 @@
 	// ============================================================================
 
 	let items = $state<SaleItemRow[]>([]);
+	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
 	const step2PrescriptionConfirmation = $derived(
 		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
@@ -304,6 +306,7 @@
 	<div class:hidden={currentStep !== 2}>
 		<SaleStep2Items
 			bind:items
+			bind:includedAccessoryMap
 			bind:prescriptionValues
 			{customerPrescription}
 			{selectedCustomer}

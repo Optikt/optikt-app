@@ -3,12 +3,17 @@
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { ProductForm } from '$lib/components/products';
+	import ProductIncludedAccessoriesCard from '$lib/components/products/detail/ProductIncludedAccessoriesCard.svelte';
 	import { PageHeader } from '$lib/components/ui';
+	import { isAdminRole, ProductType } from '$lib/shared/enums';
 
 	let { data } = $props();
 	const { product, brands, suppliers, materials, brandSupplierMap, supplierBrandMap } = untrack(
 		() => data
 	);
+	const supportsIncludedAccessories =
+		product.type === ProductType.FRAME || product.type === ProductType.SUNGLASSES;
+	const canManageIncludedAccessories = $derived.by(() => isAdminRole(data.user.role));
 	let isSubmitting = $state(false);
 </script>
 
@@ -60,4 +65,15 @@
 			bind:isSubmitting
 		/>
 	</div>
+
+	{#if supportsIncludedAccessories}
+		<div class="mt-6">
+			<ProductIncludedAccessoriesCard
+				{product}
+				canManage={canManageIncludedAccessories}
+				initialBrandAccessories={data.brandAccessories}
+				initialProductOverride={data.productAccessoryOverride}
+			/>
+		</div>
+	{/if}
 </div>

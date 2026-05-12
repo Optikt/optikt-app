@@ -42,7 +42,9 @@ function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
 		discountType: DiscountType.FIXED,
 		notes: '',
 		costOverrides: null,
-		shippingCostPending: false
+		shippingCostPending: false,
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null
 	};
 }
 

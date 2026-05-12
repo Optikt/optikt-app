@@ -80,7 +80,9 @@ function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
 		discountType: DiscountType.FIXED,
 		notes: '',
 		costOverrides: null,
-		shippingCostPending: false
+		shippingCostPending: false,
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null
 	};
 }
 
@@ -209,7 +211,9 @@ describe('buildStep2PrescriptionConfirmation', () => {
 					discountType: DiscountType.FIXED,
 					notes: '',
 					costOverrides: null,
-					shippingCostPending: false
+					shippingCostPending: false,
+					isIncludedAccessory: false,
+					includedAccessoryParentItemId: null
 				}
 			],
 			[makeLensItem()],
@@ -359,7 +363,12 @@ describe('getSnapshotTaxLabel', () => {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
-	const { freeItem, ...rest } = overrides;
+	const {
+		freeItem,
+		isIncludedAccessory = false,
+		includedAccessoryParentItemId = null,
+		...rest
+	} = overrides;
 
 	return {
 		id: 'item-1',
@@ -374,6 +383,8 @@ function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
 		notes: '',
 		costOverrides: null,
 		shippingCostPending: false,
+		isIncludedAccessory,
+		includedAccessoryParentItemId,
 		...rest,
 		freeItem: freeItem ?? null
 	};
@@ -395,7 +406,9 @@ function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
 		discountType: DiscountType.FIXED,
 		notes: '',
 		costOverrides: null,
-		shippingCostPending: false
+		shippingCostPending: false,
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null
 	};
 }
 

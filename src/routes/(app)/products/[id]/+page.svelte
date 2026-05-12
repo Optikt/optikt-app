@@ -16,6 +16,7 @@
 	} from '$lib/shared/enums';
 	import ProductEconomyCard from '$lib/components/products/detail/ProductEconomyCard.svelte';
 	import ProductIdentityCard from '$lib/components/products/detail/ProductIdentityCard.svelte';
+	import ProductIncludedAccessoriesCard from '$lib/components/products/detail/ProductIncludedAccessoriesCard.svelte';
 	import ProductLotsCard from '$lib/components/products/detail/ProductLotsCard.svelte';
 	import ProductMovementFeed from '$lib/components/products/detail/ProductMovementFeed.svelte';
 	import { getInventoryValuation, getStockHealth } from '$lib/components/products/detail/helpers';
@@ -31,6 +32,9 @@
 	const inventoryValuation = $derived(getInventoryValuation(activeLots));
 	const stockHealth = $derived(getStockHealth(realStock, product.minStock));
 	const stockTracked = $derived(requiresStockTracking(product.type as ProductType));
+	const supportsIncludedAccessories = $derived(
+		product.type === ProductType.FRAME || product.type === ProductType.SUNGLASSES
+	);
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	let showDeleteModal = $state(false);
@@ -155,6 +159,15 @@
 				/>
 			</div>
 		</div>
+
+		{#if supportsIncludedAccessories}
+			<ProductIncludedAccessoriesCard
+				{product}
+				canManage={isAdmin}
+				initialBrandAccessories={data.brandAccessories}
+				initialProductOverride={data.productAccessoryOverride}
+			/>
+		{/if}
 
 		{#if stockTracked}
 			<div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
