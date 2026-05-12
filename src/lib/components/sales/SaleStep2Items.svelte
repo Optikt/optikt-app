@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Input, Label } from 'flowbite-svelte';
+	import { toast } from 'svelte-sonner';
 	import {
 		Trash2,
 		ChevronRight,
@@ -10,11 +11,13 @@
 		FlaskConical,
 		Search,
 		Package,
+		Paperclip,
 		Sparkles,
 		X
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import { formatPrice } from '$lib/utils';
+	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
+	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import { DiscountType, TreatmentCategory, LensCatalogSource } from '$lib/shared/enums';
 	import {
 		getLensTypeLabel,
@@ -45,10 +48,18 @@
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { createEmptyLensPair, createEmptyFreeItemData } from './newSaleTypes';
+	import {
+		allowsDuplicateProductLines,
+		canAutoIncludeAccessories,
+		linkIncludedAccessories,
+		removeItemWithIncludedAccessories,
+		type IncludedAccessoryMap
+	} from './includedAccessories';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
+		includedAccessoryMap: IncludedAccessoryMap;
 		prescriptionValues: PrescriptionValues;
 		customerPrescription: Prescription | null;
 		selectedCustomer: Customer | null;
@@ -72,6 +83,7 @@
 
 	let {
 		items = $bindable(),
+		includedAccessoryMap = $bindable(),
 		prescriptionValues = $bindable(),
 		customerPrescription,
 		selectedCustomer,
@@ -101,8 +113,23 @@
 		label: string;
 		secondaryText: string;
 		stock: number | null;
+		brandId?: string | null;
+		productType?: string;
 		inventoryMode?: string;
 		price: number;
+	}
+
+	interface IncludedAccessoryRule {
+		ruleId: number;
+		accessoryProductId: string;
+		defaultPrice: number;
+		accessory: {
+			id: string;
+			name: string;
+			sku: string;
+			stock: number;
+			type: string;
+		};
 	}
 
 	type QuickAddFilter = 'all' | 'product' | 'lens';
@@ -128,6 +155,10 @@
 		const selectedProductIds = new Set(
 			items
 				.filter((item) => item.kind === 'product' && item.productId !== '')
+				.filter((item) => {
+					const selectedProduct = products.find((candidate) => candidate.id === item.productId);
+					return !allowsDuplicateProductLines(selectedProduct?.type);
+				})
 				.map((item) => item.productId)
 		);
 
@@ -151,6 +182,8 @@
 								label: product.sku ? `${product.name} (${product.sku})` : product.name,
 								secondaryText: secondaryBits.join(' · '),
 								stock: product.stock,
+								brandId: product.brandId ?? null,
+								productType: product.type,
 								price: product.currentSalePrice ?? 0
 							}
 						];
@@ -212,6 +245,8 @@
 		return {
 			id: crypto.randomUUID(),
 			kind: 'product',
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null,
 			productId: '',
 			quantity: 1,
 			lensPair: null,
@@ -223,6 +258,19 @@
 			notes: '',
 			costOverrides: null,
 			shippingCostPending: false
+		};
+	}
+
+	function createIncludedAccessoryItem(
+		parentItemId: string,
+		accessoryRule: IncludedAccessoryRule
+	): SaleItemRow {
+		return {
+			...createEmptyItem(),
+			productId: accessoryRule.accessoryProductId,
+			unitPrice: accessoryRule.defaultPrice,
+			isIncludedAccessory: true,
+			includedAccessoryParentItemId: parentItemId
 		};
 	}
 
@@ -282,8 +330,65 @@
 		quickAddOpen = quickAddQuery.trim().length >= 2;
 	}
 
-	function selectQuickAddOption(option: QuickAddOption) {
-		if (option.kind === 'product') {
+	async function addIncludedAccessoriesForItem(option: QuickAddOption, parentItem: SaleItemRow) {
+		if (
+			option.kind !== 'product' ||
+			!option.brandId ||
+			!canAutoIncludeAccessories(option.productType)
+		) {
+			return;
+		}
+
+		try {
+			const accessories = await getAccessoriesForProduct({
+				productId: option.id,
+				brandId: option.brandId
+			}).run();
+
+			if (!items.some((item) => item.id === parentItem.id)) {
+				return;
+			}
+
+			const addedNames: string[] = [];
+			const linkedIds: string[] = [];
+			const accessoryItems: SaleItemRow[] = [];
+
+			for (const accessoryRule of accessories as IncludedAccessoryRule[]) {
+				if (accessoryRule.accessory.stock <= 0) {
+					toast.warning(
+						`⚠ ${accessoryRule.accessory.name} no tiene stock disponible y no fue agregado automáticamente.`
+					);
+					continue;
+				}
+
+				const accessoryItem = createIncludedAccessoryItem(parentItem.id, accessoryRule);
+				accessoryItems.push(accessoryItem);
+				linkedIds.push(accessoryItem.id);
+				addedNames.push(accessoryRule.accessory.name);
+			}
+
+			if (accessoryItems.length === 0) {
+				return;
+			}
+
+			items = [...items, ...accessoryItems];
+			includedAccessoryMap = linkIncludedAccessories(
+				includedAccessoryMap,
+				parentItem.id,
+				linkedIds
+			);
+
+			if (addedNames.length > 1) {
+				toast.info(`✓ Se agregaron automáticamente: ${addedNames.join(', ')}`);
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error cargando accesorios incluidos'));
+		}
+	}
+
+	async function selectQuickAddOption(option: QuickAddOption) {
+		if (option.kind === 'product' && !allowsDuplicateProductLines(option.productType)) {
 			const alreadySelected = items.some(
 				(item) => item.kind === 'product' && item.productId === option.id
 			);
@@ -293,8 +398,11 @@
 			}
 		}
 
-		items = [...items, createItemFromQuickAdd(option)];
+		const nextItem = createItemFromQuickAdd(option);
+		items = [...items, nextItem];
 		resetQuickAdd();
+
+		await addIncludedAccessoriesForItem(option, nextItem);
 	}
 
 	function handleQuickAddKeydown(event: KeyboardEvent) {
@@ -305,18 +413,22 @@
 
 		if (event.key === 'Enter' && visibleQuickAddOptions.length > 0) {
 			event.preventDefault();
-			selectQuickAddOption(visibleQuickAddOptions[0]);
+			void selectQuickAddOption(visibleQuickAddOptions[0]);
 		}
 	}
 
 	function removeItem(id: string) {
-		items = items.filter((i) => i.id !== id);
+		const nextState = removeItemWithIncludedAccessories(items, includedAccessoryMap, id);
+		items = nextState.items;
+		includedAccessoryMap = nextState.includedAccessoryMap;
 	}
 
 	function addFreeItem() {
 		const item: SaleItemRow = {
 			id: crypto.randomUUID(),
 			kind: 'free',
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null,
 			productId: '',
 			quantity: 1,
 			lensPair: null,
@@ -825,7 +937,7 @@
 									{#each visibleProductQuickAddOptions as option (option.key)}
 										<button
 											type="button"
-											onclick={() => selectQuickAddOption(option)}
+											onclick={() => void selectQuickAddOption(option)}
 											class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
 										>
 											<div
@@ -863,7 +975,7 @@
 									{#each visibleLensQuickAddOptions as option (option.key)}
 										<button
 											type="button"
-											onclick={() => selectQuickAddOption(option)}
+											onclick={() => void selectQuickAddOption(option)}
 											class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
 										>
 											<div
@@ -976,7 +1088,11 @@
 							{@const eyeCount = item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
 							{@const treatmentTotal = item.kind === 'lens' ? getTreatmentTotal(item) : 0}
 
-							<div class="rounded-[1.2rem] bg-surface-container-lowest p-4 shadow-sm">
+							<div
+								class="rounded-[1.2rem] p-4 shadow-sm {item.isIncludedAccessory
+									? 'border border-amber-200/80 bg-amber-50/70'
+									: 'bg-surface-container-lowest'}"
+							>
 								<div class="space-y-4">
 									<div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
 										<div class="flex min-w-0 flex-1 items-start gap-3">
@@ -1007,6 +1123,14 @@
 													>
 														{item.kind === 'lens' ? 'Lente' : 'Producto'}
 													</span>
+													{#if item.isIncludedAccessory}
+														<span
+															class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase"
+														>
+															<Paperclip class="h-3 w-3" />
+															Accesorio incluido
+														</span>
+													{/if}
 													{#if item.kind === 'product' && maxStock !== null}
 														<span
 															class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==

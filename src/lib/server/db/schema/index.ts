@@ -9,6 +9,7 @@ export * from './customers';
 export * from './settings';
 export * from './materials';
 export * from './exchangeRates';
+export * from './brandAccessories';
 
 // Dependent tables
 export * from './brandSuppliers';

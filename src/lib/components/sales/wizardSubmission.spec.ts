@@ -55,7 +55,9 @@ const lensRow: SaleItemRow = {
 	discountType: DiscountType.FIXED,
 	notes: '',
 	costOverrides: null,
-	shippingCostPending: true
+	shippingCostPending: true,
+	isIncludedAccessory: false,
+	includedAccessoryParentItemId: null
 };
 
 describe('buildSaleItemsFromWizard', () => {

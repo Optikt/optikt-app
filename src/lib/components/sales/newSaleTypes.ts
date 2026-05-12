@@ -44,6 +44,8 @@ export interface FreeItemData {
 export interface SaleItemRow {
 	id: string;
 	kind: ItemKind;
+	isIncludedAccessory: boolean;
+	includedAccessoryParentItemId: string | null;
 	// Product fields
 	productId: string;
 	quantity: number;

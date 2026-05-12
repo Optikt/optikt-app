@@ -1,5 +1,9 @@
 import type { LayoutServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import {
+	getBrandAccessories,
+	getProductAccessoryOverride
+} from '$lib/server/db/queries/brandAccessories';
 import { getBrandSupplierMaps } from '$lib/server/db/queries/brandSuppliers';
 import { findProductByIdWithRelations } from '$lib/server/db/queries/products';
 import { isValidUuid } from '$lib/utils/uuid';
@@ -11,6 +15,7 @@ import {
 	getMovementsWithDetails,
 	countInventoryMovements
 } from '$lib/server/db/queries/inventoryMovements';
+import { ProductType } from '$lib/shared/enums/productTypes';
 import { brands, suppliers, materials } from '$lib/server/db/schema';
 
 export const load: LayoutServerLoad = async ({ params }) => {
@@ -25,6 +30,10 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		error(404, 'Producto no encontrado');
 	}
 
+	const supportsIncludedAccessories =
+		!!product.brandId &&
+		(product.type === ProductType.FRAME || product.type === ProductType.SUNGLASSES);
+
 	// Load brands, suppliers, and materials for edit form (only needed columns)
 	const [
 		brandsList,
@@ -34,7 +43,9 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		activeLots,
 		fifoCost,
 		productMovements,
-		productMovementsCount
+		productMovementsCount,
+		brandAccessories,
+		productAccessoryOverride
 	] = await Promise.all([
 		getAllBrands({ columns: { id: brands.id, name: brands.name } }),
 		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } }),
@@ -49,7 +60,11 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		getActiveLotsFifo(product.id),
 		getNextFifoCost(product.id),
 		getMovementsWithDetails({ productId: product.id, limit: 10 }),
-		countInventoryMovements({ productId: product.id })
+		countInventoryMovements({ productId: product.id }),
+		supportsIncludedAccessories && product.brandId
+			? getBrandAccessories(product.brandId)
+			: Promise.resolve([]),
+		supportsIncludedAccessories ? getProductAccessoryOverride(product.id) : Promise.resolve(null)
 	]);
 
 	return {
@@ -61,6 +76,8 @@ export const load: LayoutServerLoad = async ({ params }) => {
 		activeLots,
 		fifoCost,
 		productMovements,
-		productMovementsCount
+		productMovementsCount,
+		brandAccessories,
+		productAccessoryOverride
 	};
 };

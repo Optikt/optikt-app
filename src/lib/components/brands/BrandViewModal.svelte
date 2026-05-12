@@ -8,6 +8,7 @@
 		listSuppliersForBrand,
 		removeSupplierFromBrand
 	} from '$lib/remote/brands.remote';
+	import BrandIncludedAccessoriesSection from '$lib/components/brands/BrandIncludedAccessoriesSection.svelte';
 	import type { Brand } from '$lib/server/db/schema';
 	import { getErrorMessage } from '$lib/utils';
 	import { getAvailableRelationOptions } from '$lib/utils/brandSupplierRelations';
@@ -272,12 +273,7 @@
 				{/if}
 			</div>
 
-			<!-- No info message -->
-			{#if !brand.website && !brand.description && !brand.country && relatedSuppliers.length === 0}
-				<p class="text-center text-sm text-slate-400 italic">
-					No hay información adicional registrada
-				</p>
-			{/if}
+			<BrandIncludedAccessoriesSection {brand} canManage={canManageRelations} />
 		</div>
 	{/if}
 
