@@ -16,6 +16,7 @@
 		calculateDraftItemTotal,
 		calculateUnitPurchasePriceFromLineTotal,
 		getPreTaxUnitPrice,
+		isDraftItemUserEditingLocked,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
 
@@ -74,7 +75,7 @@
 	});
 
 	const inputClass =
-		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
+		'w-full rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 disabled:cursor-not-allowed disabled:opacity-65 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
 	const compactInputClass = `${inputClass} h-10 text-right font-mono text-sm tabular-nums`;
 
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
@@ -82,10 +83,11 @@
 	const lineTotal = $derived(calculateDraftItemTotal(item));
 	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
 	const visiblePreTaxUnitCost = $derived(round2(preTaxUnitCost));
+	const userEditingLocked = $derived(isDraftItemUserEditingLocked(item));
 	let editingLineTotal = $state(false);
 	let lineTotalDraftValue = $state('');
 	const lineTotalInputValue = $derived(
-		editingLineTotal ? lineTotalDraftValue : formatDecimalInput(lineTotal)
+		!userEditingLocked && editingLineTotal ? lineTotalDraftValue : formatDecimalInput(lineTotal)
 	);
 
 	function round2(n: number): number {
@@ -102,6 +104,8 @@
 	}
 
 	function toggleTaxable() {
+		if (userEditingLocked) return;
+
 		if (item.appliesIva) {
 			item.unitPurchasePrice = round2(item.unitPurchasePrice / (1 + item.ivaRate / 100));
 			item.appliesIva = false;
@@ -112,6 +116,8 @@
 	}
 
 	function handlePreTaxInput(e: Event) {
+		if (userEditingLocked) return;
+
 		const val = getNumberInputValue(e);
 		if (val !== null && val >= 0) {
 			item.unitPurchasePrice = round2(val * (1 + item.ivaRate / 100));
@@ -119,11 +125,15 @@
 	}
 
 	function handleLineTotalFocus() {
+		if (userEditingLocked) return;
+
 		editingLineTotal = true;
 		lineTotalDraftValue = formatDecimalInput(lineTotal);
 	}
 
 	function handleLineTotalInput(e: Event) {
+		if (userEditingLocked) return;
+
 		const input = e.currentTarget as HTMLInputElement;
 		const value = getNumberInputValue(e);
 
@@ -213,7 +223,14 @@
 		return parts.join(' · ');
 	}
 	function toggleReviewed() {
-		item.isReviewed = !item.isReviewed;
+		const nextReviewed = !item.isReviewed;
+
+		if (nextReviewed) {
+			editingLineTotal = false;
+			lineTotalDraftValue = '';
+		}
+
+		item.isReviewed = nextReviewed;
 	}
 </script>
 
@@ -281,6 +298,7 @@
 				type="number"
 				min="1"
 				bind:value={item.quantity}
+				disabled={userEditingLocked}
 				class={compactInputClass}
 				aria-label="Cantidad"
 			/>
@@ -306,6 +324,7 @@
 							step="any"
 							value={visiblePreTaxUnitCost}
 							onchange={handlePreTaxInput}
+							disabled={userEditingLocked}
 							class={`${compactInputClass} xl:px-3.5 xl:pl-[3.6rem]`}
 							aria-label="Costo unitario sin IVA"
 						/>
@@ -321,6 +340,7 @@
 							min="0"
 							step="any"
 							bind:value={item.unitPurchasePrice}
+							disabled={userEditingLocked}
 							class={`${compactInputClass} xl:px-3.5 xl:pl-[3.8rem]`}
 							aria-label="Costo unitario con IVA"
 						/>
@@ -332,6 +352,7 @@
 					min="0"
 					step="any"
 					bind:value={item.unitPurchasePrice}
+					disabled={userEditingLocked}
 					class={compactInputClass}
 					aria-label="Costo unitario"
 				/>
@@ -349,6 +370,7 @@
 				min="0"
 				step="0.01"
 				bind:value={item.unitSalePrice}
+				disabled={userEditingLocked}
 				class={compactInputClass}
 				aria-label="Venta unitaria sugerida"
 			/>
@@ -364,7 +386,8 @@
 				<button
 					type="button"
 					onclick={toggleTaxable}
-					class={`inline-flex h-10 min-w-[3.5rem] shrink-0 items-center justify-center rounded-lg px-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors ${
+					disabled={userEditingLocked}
+					class={`inline-flex h-10 min-w-[3.5rem] shrink-0 items-center justify-center rounded-lg px-2.5 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-65 ${
 						item.appliesIva
 							? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
 							: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
@@ -381,7 +404,8 @@
 						max="100"
 						step="0.01"
 						bind:value={item.ivaRate}
-						class="h-10 w-16 [appearance:textfield] rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+						disabled={userEditingLocked}
+						class="h-10 w-16 [appearance:textfield] rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-right font-mono text-xs text-on-surface tabular-nums transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 disabled:cursor-not-allowed disabled:opacity-65 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
 						aria-label="Tasa de IVA"
 						title="Tasa de IVA (%)"
 					/>
@@ -409,6 +433,7 @@
 					onfocus={handleLineTotalFocus}
 					oninput={handleLineTotalInput}
 					onblur={handleLineTotalBlur}
+					disabled={userEditingLocked}
 					class={`${compactInputClass} !pl-11 font-semibold text-brand-navy`}
 					aria-label="Total costo"
 					title={totalTooltip()}

@@ -266,6 +266,10 @@ export function getPurchaseOrderReviewStatus(
 	};
 }
 
+export function isDraftItemUserEditingLocked(item: { isReviewed: boolean }): boolean {
+	return item.isReviewed;
+}
+
 export function calculateDraftItemSubtotal(item: PurchaseOrderDraftItem): number {
 	return getPreTaxUnitPrice(item) * Number(item.quantity || 0);
 }

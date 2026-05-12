@@ -21,6 +21,7 @@ import {
 	createEmptyPurchaseOrderDraftItem,
 	createPurchaseOrderDraftItemFromExisting,
 	getDraftItemZeroValueFields,
+	isDraftItemUserEditingLocked,
 	getPurchaseOrderReviewStatus,
 	getSettlementDiscountFactor,
 	prorateNetUnitPurchasePrice
@@ -246,6 +247,18 @@ describe('purchaseOrderDraft helpers', () => {
 		second.isReviewed = true;
 
 		expect(getPurchaseOrderReviewStatus([first, second]).allReviewed).toBe(true);
+	});
+
+	it('locks manual row editing only when the line is reviewed', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+
+		expect(isDraftItemUserEditingLocked(item)).toBe(false);
+
+		item.isReviewed = true;
+		expect(isDraftItemUserEditingLocked(item)).toBe(true);
+
+		item.unitPurchasePrice = 19.5;
+		expect(isDraftItemUserEditingLocked(item)).toBe(true);
 	});
 
 	it('validates whether a draft can be persisted', () => {
