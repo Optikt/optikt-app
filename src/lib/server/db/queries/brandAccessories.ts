@@ -9,6 +9,7 @@ import {
 	type NewBrandAccessory
 } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
+import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 import { ProductType } from '$lib/shared/enums/productTypes';
 
 export interface AccessoryProductSummary {
@@ -17,6 +18,7 @@ export interface AccessoryProductSummary {
 	sku: string;
 	stock: number;
 	type: string;
+	currentSalePrice: number | null;
 }
 
 export interface BrandAccessoryRuleRow {
@@ -24,7 +26,9 @@ export interface BrandAccessoryRuleRow {
 	brandId: string;
 	productId: string | null;
 	accessoryProductId: string;
-	defaultPrice: number;
+	priceMode: BrandAccessoryPriceMode;
+	customPrice: number | null;
+	currentProductPrice: number | null;
 	isActive: boolean;
 	accessory: AccessoryProductSummary;
 }
@@ -39,7 +43,9 @@ export interface ProductAccessoryOverride {
 export interface ResolvedAccessoryRule {
 	ruleId: number;
 	accessoryProductId: string;
-	defaultPrice: number;
+	priceMode: BrandAccessoryPriceMode;
+	customPrice: number | null;
+	currentProductPrice: number | null;
 	accessory: AccessoryProductSummary;
 }
 
@@ -48,7 +54,8 @@ export interface UpsertBrandAccessoryData {
 	brandId: string;
 	productId?: string | null;
 	accessoryProductId: string;
-	defaultPrice: number;
+	priceMode: BrandAccessoryPriceMode;
+	customPrice?: number | null;
 	isActive?: boolean;
 	createdById: string;
 }
@@ -79,7 +86,9 @@ function mapAccessorySummary(row: BrandAccessoryJoinRow): BrandAccessoryRuleRow 
 		brandId: row.rule.brandId,
 		productId: row.rule.productId,
 		accessoryProductId: row.rule.accessoryProductId,
-		defaultPrice: row.rule.defaultPrice,
+		priceMode: row.rule.priceMode as BrandAccessoryPriceMode,
+		customPrice: row.rule.customPrice,
+		currentProductPrice: row.accessory.currentSalePrice,
 		isActive: row.rule.isActive,
 		accessory: row.accessory
 	};
@@ -92,8 +101,30 @@ function mapResolvedAccessory(row: BrandAccessoryJoinRow): ResolvedAccessoryRule
 	return {
 		ruleId: summary.id,
 		accessoryProductId: summary.accessoryProductId,
-		defaultPrice: summary.defaultPrice,
+		priceMode: summary.priceMode,
+		customPrice: summary.customPrice,
+		currentProductPrice: summary.currentProductPrice,
 		accessory: summary.accessory
+	};
+}
+
+function normalizePriceConfig(
+	data: Pick<UpsertBrandAccessoryData, 'priceMode' | 'customPrice'>
+): Pick<NewBrandAccessory, 'priceMode' | 'customPrice'> {
+	if (data.priceMode === BrandAccessoryPriceMode.CUSTOM) {
+		if (data.customPrice == null || data.customPrice <= 0) {
+			throw new Error('Precio personalizado es requerido');
+		}
+
+		return {
+			priceMode: data.priceMode,
+			customPrice: data.customPrice
+		};
+	}
+
+	return {
+		priceMode: data.priceMode,
+		customPrice: null
 	};
 }
 
@@ -124,7 +155,8 @@ async function getAccessoryProduct(
 			name: products.name,
 			sku: products.sku,
 			stock: products.stock,
-			type: products.type
+			type: products.type,
+			currentSalePrice: products.currentSalePrice
 		})
 		.from(products)
 		.where(and(eq(products.id, accessoryProductId), isNull(products.deletedAt)));
@@ -144,7 +176,8 @@ async function getBrandAccessoryRows(
 				name: products.name,
 				sku: products.sku,
 				stock: products.stock,
-				type: products.type
+				type: products.type,
+				currentSalePrice: products.currentSalePrice
 			}
 		})
 		.from(brandAccessories)
@@ -173,7 +206,8 @@ async function getProductOverrideRows(
 				name: products.name,
 				sku: products.sku,
 				stock: products.stock,
-				type: products.type
+				type: products.type,
+				currentSalePrice: products.currentSalePrice
 			}
 		})
 		.from(brandAccessories)
@@ -329,11 +363,13 @@ export async function upsertBrandAccessory(
 	}
 
 	const now = nowISO();
+	const priceConfig = normalizePriceConfig(data);
 	const nextValues: Partial<NewBrandAccessory> = {
 		brandId: data.brandId,
 		productId: data.productId ?? null,
 		accessoryProductId: data.accessoryProductId,
-		defaultPrice: data.defaultPrice,
+		priceMode: priceConfig.priceMode,
+		customPrice: priceConfig.customPrice,
 		isActive: data.isActive ?? true,
 		updatedAt: now
 	};
@@ -360,7 +396,8 @@ export async function upsertBrandAccessory(
 			brandId: data.brandId,
 			productId: data.productId ?? null,
 			accessoryProductId: data.accessoryProductId,
-			defaultPrice: data.defaultPrice,
+			priceMode: priceConfig.priceMode,
+			customPrice: priceConfig.customPrice,
 			isActive: data.isActive ?? true,
 			createdById: data.createdById,
 			createdAt: now,
@@ -467,7 +504,8 @@ export async function toggleProductOverride(
 		brandId,
 		productId,
 		accessoryProductId: null,
-		defaultPrice: 0,
+		priceMode: BrandAccessoryPriceMode.COURTESY,
+		customPrice: null,
 		isActive: false,
 		createdById,
 		createdAt: now,

@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Plus, X } from '@lucide/svelte';
 	import { SelectInput } from '$lib/components/ui';
+	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 
 	interface AccessoryOption {
 		id: string;
@@ -19,7 +20,8 @@
 		onCancel: () => void;
 		onConfirm: (payload: {
 			accessoryProductId: string;
-			defaultPrice: number;
+			priceMode: BrandAccessoryPriceMode;
+			customPrice: number | null;
 		}) => void | Promise<void>;
 	}
 
@@ -36,16 +38,41 @@
 	}: Props = $props();
 
 	let selectedAccessoryId = $state('');
-	let defaultPrice = $state<number | string>(0);
+	let selectedPriceMode = $state<BrandAccessoryPriceMode>(BrandAccessoryPriceMode.COURTESY);
+	let customPrice = $state<number | string>('');
+
+	const priceModeOptions: {
+		value: BrandAccessoryPriceMode;
+		label: string;
+		description: string;
+	}[] = [
+		{
+			value: BrandAccessoryPriceMode.COURTESY,
+			label: 'Cortesía',
+			description: 'El accesorio se agrega con precio 0.'
+		},
+		{
+			value: BrandAccessoryPriceMode.PRODUCT,
+			label: 'Precio producto',
+			description: 'Usa el precio de venta actual del accesorio.'
+		},
+		{
+			value: BrandAccessoryPriceMode.CUSTOM,
+			label: 'Precio personalizado',
+			description: 'Define un precio fijo para este accesorio incluido.'
+		}
+	];
 
 	const availableOptions = $derived(options.filter((option) => !excludedIds.includes(option.id)));
+	const requiresCustomPrice = $derived(selectedPriceMode === BrandAccessoryPriceMode.CUSTOM);
 
 	$effect(() => {
 		if (!open) return;
 
 		untrack(() => {
 			selectedAccessoryId = '';
-			defaultPrice = 0;
+			selectedPriceMode = BrandAccessoryPriceMode.COURTESY;
+			customPrice = '';
 		});
 	});
 
@@ -55,12 +82,20 @@
 	}
 
 	function handleConfirm() {
-		const parsedPrice = Number(defaultPrice);
-		if (!selectedAccessoryId || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+		const parsedCustomPrice = Number(customPrice);
+		if (!selectedAccessoryId) {
 			return;
 		}
 
-		void onConfirm({ accessoryProductId: selectedAccessoryId, defaultPrice: parsedPrice });
+		if (requiresCustomPrice && (!Number.isFinite(parsedCustomPrice) || parsedCustomPrice <= 0)) {
+			return;
+		}
+
+		void onConfirm({
+			accessoryProductId: selectedAccessoryId,
+			priceMode: selectedPriceMode,
+			customPrice: requiresCustomPrice ? parsedCustomPrice : null
+		});
 	}
 </script>
 
@@ -117,24 +152,63 @@
 				</div>
 
 				<div>
-					<label
-						for="included-accessory-default-price"
-						class="mb-2 block text-[10px] font-bold tracking-[0.18em] text-outline uppercase"
-					>
-						Precio por defecto
-					</label>
-					<input
-						id="included-accessory-default-price"
-						type="number"
-						bind:value={defaultPrice}
-						min="0"
-						step="0.01"
-						disabled={saving}
-						class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low px-4 py-3 font-mono text-sm text-brand-navy focus:border-brand-blue/35 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-					/>
-					<p class="mt-2 text-sm text-on-surface-variant">
-						Precio 0 = el accesorio se entrega de cortesía incluido en la montura.
+					<p class="mb-2 text-[10px] font-bold tracking-[0.18em] text-outline uppercase">
+						Modo de precio
 					</p>
+					<div class="grid gap-3 sm:grid-cols-3">
+						{#each priceModeOptions as option (option.value)}
+							<label
+								class="flex cursor-pointer flex-col gap-2 rounded-xl border px-4 py-3 transition-colors {selectedPriceMode ===
+								option.value
+									? 'border-brand-blue/40 bg-brand-blue/5'
+									: 'border-outline-variant/20 bg-surface-container-low'}"
+							>
+								<div class="flex items-center gap-2">
+									<input
+										type="radio"
+										name="included-accessory-price-mode"
+										value={option.value}
+										bind:group={selectedPriceMode}
+										disabled={saving}
+										class="h-4 w-4 border-slate-300 text-brand-blue focus:ring-brand-blue"
+									/>
+									<span class="text-sm font-semibold text-brand-navy">{option.label}</span>
+								</div>
+								<p class="text-xs leading-5 text-on-surface-variant">{option.description}</p>
+							</label>
+						{/each}
+					</div>
+
+					{#if requiresCustomPrice}
+						<div class="mt-4">
+							<label
+								for="included-accessory-custom-price"
+								class="mb-2 block text-[10px] font-bold tracking-[0.18em] text-outline uppercase"
+							>
+								Precio personalizado
+							</label>
+							<input
+								id="included-accessory-custom-price"
+								type="number"
+								bind:value={customPrice}
+								min="0.01"
+								step="0.01"
+								disabled={saving}
+								class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low px-4 py-3 font-mono text-sm text-brand-navy focus:border-brand-blue/35 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+							/>
+							<p class="mt-2 text-sm text-on-surface-variant">
+								Ingresa un precio mayor a 0 para este accesorio incluido.
+							</p>
+						</div>
+					{:else if selectedPriceMode === BrandAccessoryPriceMode.PRODUCT}
+						<p class="mt-4 text-sm text-on-surface-variant">
+							Al agregarse en venta se tomará el precio de venta vigente del accesorio.
+						</p>
+					{:else}
+						<p class="mt-4 text-sm text-on-surface-variant">
+							Se agregará de cortesía junto con la montura o lente de sol.
+						</p>
+					{/if}
 				</div>
 			</div>
 
@@ -149,7 +223,9 @@
 				<button
 					type="button"
 					onclick={handleConfirm}
-					disabled={saving || !selectedAccessoryId || Number(defaultPrice) < 0}
+					disabled={saving ||
+						!selectedAccessoryId ||
+						(requiresCustomPrice && Number(customPrice) <= 0)}
 					class="inline-flex items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
 				>
 					<Plus class="h-4 w-4" />
