@@ -5,18 +5,21 @@
 	import AddIncludedAccessoryDialog from '$lib/components/accessories/AddIncludedAccessoryDialog.svelte';
 	import IncludedAccessoryRuleList from '$lib/components/accessories/IncludedAccessoryRuleList.svelte';
 	import {
+		deleteBrandAccessory,
 		getBrandAccessories,
-		upsertBrandAccessory,
-		deleteBrandAccessory
+		upsertBrandAccessory
 	} from '$lib/remote/brandAccessories.remote';
 	import { listProducts } from '$lib/remote/products.remote';
 	import type { Brand } from '$lib/server/db/schema';
+	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 	import { ProductType } from '$lib/shared/enums/productTypes';
 	import { getErrorMessage } from '$lib/utils';
 
 	interface AccessoryRule {
 		id: number;
-		defaultPrice: number;
+		priceMode: BrandAccessoryPriceMode;
+		customPrice: number | null;
+		currentProductPrice: number | null;
 		accessory: {
 			id: string;
 			name: string;
@@ -34,6 +37,11 @@
 	interface Props {
 		brand: Brand | null;
 		canManage: boolean;
+	}
+
+	interface AccessoryPricePayload {
+		priceMode: BrandAccessoryPriceMode;
+		customPrice: number | null;
 	}
 
 	let { brand, canManage }: Props = $props();
@@ -114,7 +122,9 @@
 		showAddDialog = true;
 	}
 
-	async function handleAddAccessory(payload: { accessoryProductId: string; defaultPrice: number }) {
+	async function handleAddAccessory(
+		payload: { accessoryProductId: string } & AccessoryPricePayload
+	) {
 		if (!brand) return;
 
 		saving = true;
@@ -122,7 +132,8 @@
 			await upsertBrandAccessory({
 				brandId: brand.id,
 				accessoryProductId: payload.accessoryProductId,
-				defaultPrice: payload.defaultPrice
+				priceMode: payload.priceMode,
+				customPrice: payload.customPrice
 			});
 			await loadRules({ imperative: true });
 			showAddDialog = false;
@@ -149,7 +160,7 @@
 		}
 	}
 
-	async function handleSavePrice(ruleId: number, defaultPrice: number) {
+	async function handleSaveRule(ruleId: number, payload: AccessoryPricePayload) {
 		const rule = rules.find((candidate) => candidate.id === ruleId);
 		if (!brand || !rule) return;
 
@@ -159,13 +170,14 @@
 				id: rule.id,
 				brandId: brand.id,
 				accessoryProductId: rule.accessory.id,
-				defaultPrice
+				priceMode: payload.priceMode,
+				customPrice: payload.customPrice
 			});
 			await loadRules({ imperative: true });
-			toast.success('Precio por defecto actualizado');
+			toast.success('Configuración de precio actualizada');
 		} catch (error) {
 			console.error(error);
-			toast.error(getErrorMessage(error, 'Error actualizando precio por defecto'));
+			toast.error(getErrorMessage(error, 'Error actualizando configuración de precio'));
 		} finally {
 			saving = false;
 		}
@@ -220,7 +232,7 @@
 			editable={canManage}
 			{saving}
 			onDelete={handleDeleteAccessory}
-			onSavePrice={handleSavePrice}
+			onSaveRule={handleSaveRule}
 		/>
 	{/if}
 </div>
@@ -228,7 +240,7 @@
 <AddIncludedAccessoryDialog
 	bind:open={showAddDialog}
 	title="Agregar accesorio"
-	description="Selecciona un producto del catálogo de accesorios y define el precio inicial con el que se incluirá automáticamente."
+	description="Selecciona un producto del catálogo de accesorios y define si se incluirá de cortesía, con su precio de venta actual o con un precio personalizado."
 	options={accessoryOptions}
 	excludedIds={rules.map((rule) => rule.accessory.id)}
 	saving={saving || loadingOptions}

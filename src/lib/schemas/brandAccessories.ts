@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 import { CoercedBoolean, CoercedNumber, EntityIdSchema } from './common';
 
 const OptionalUuidOverrideSchema = z.preprocess(
@@ -22,14 +23,38 @@ export const BrandAccessoriesByBrandSchema = z.object({
 
 export const ProductAccessoryOverrideSchema = EntityIdSchema('Producto');
 
-export const UpsertBrandAccessorySchema = z.object({
-	id: z.coerce.number().int('Regla inválida').positive('Regla inválida').optional(),
-	brandId: z.uuid('Marca inválida'),
-	productId: OptionalUuidOverrideSchema.optional(),
-	accessoryProductId: z.uuid('Accesorio inválido'),
-	defaultPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
-	isActive: CoercedBoolean.default(true)
-});
+export const UpsertBrandAccessorySchema = z
+	.object({
+		id: z.coerce.number().int('Regla inválida').positive('Regla inválida').optional(),
+		brandId: z.uuid('Marca inválida'),
+		productId: OptionalUuidOverrideSchema.optional(),
+		accessoryProductId: z.uuid('Accesorio inválido'),
+		priceMode: z.enum(BrandAccessoryPriceMode),
+		customPrice: CoercedNumber.positive('Precio personalizado debe ser mayor a 0')
+			.optional()
+			.nullable(),
+		isActive: CoercedBoolean.default(true)
+	})
+	.superRefine((data, ctx) => {
+		if (data.priceMode === BrandAccessoryPriceMode.CUSTOM) {
+			if (data.customPrice == null || data.customPrice <= 0) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					message: 'Precio personalizado es requerido',
+					path: ['customPrice']
+				});
+			}
+			return;
+		}
+
+		if (data.customPrice != null) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: 'customPrice solo se permite cuando el modo es CUSTOM',
+				path: ['customPrice']
+			});
+		}
+	});
 
 export const ToggleProductOverrideSchema = z.object({
 	productId: z.uuid('Producto inválido'),

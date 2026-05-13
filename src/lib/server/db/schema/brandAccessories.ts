@@ -5,6 +5,7 @@ import {
 	doublePrecision,
 	boolean,
 	timestamp,
+	varchar,
 	index,
 	uniqueIndex,
 	foreignKey
@@ -23,7 +24,8 @@ export const brandAccessories = pgTable(
 		productId: uuid('product_id'),
 		// Null is reserved for a product-level disabled override marker.
 		accessoryProductId: uuid('accessory_product_id'),
-		defaultPrice: doublePrecision('default_price').notNull().default(0),
+		priceMode: varchar('price_mode', { length: 20 }).notNull().default('COURTESY'),
+		customPrice: doublePrecision('custom_price'),
 		isActive: boolean('is_active').notNull().default(true),
 		createdById: uuid('created_by_id').notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

@@ -17,6 +17,7 @@
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
+	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import { DiscountType, TreatmentCategory, LensCatalogSource } from '$lib/shared/enums';
 	import {
@@ -122,7 +123,9 @@
 	interface IncludedAccessoryRule {
 		ruleId: number;
 		accessoryProductId: string;
-		defaultPrice: number;
+		priceMode: BrandAccessoryPriceMode;
+		customPrice: number | null;
+		currentProductPrice: number | null;
 		accessory: {
 			id: string;
 			name: string;
@@ -130,6 +133,18 @@
 			stock: number;
 			type: string;
 		};
+	}
+
+	function resolveIncludedAccessoryPrice(accessoryRule: IncludedAccessoryRule): number {
+		switch (accessoryRule.priceMode) {
+			case BrandAccessoryPriceMode.PRODUCT:
+				return accessoryRule.currentProductPrice ?? 0;
+			case BrandAccessoryPriceMode.CUSTOM:
+				return accessoryRule.customPrice ?? 0;
+			case BrandAccessoryPriceMode.COURTESY:
+			default:
+				return 0;
+		}
 	}
 
 	type QuickAddFilter = 'all' | 'product' | 'lens';
@@ -268,7 +283,7 @@
 		return {
 			...createEmptyItem(),
 			productId: accessoryRule.accessoryProductId,
-			unitPrice: accessoryRule.defaultPrice,
+			unitPrice: resolveIncludedAccessoryPrice(accessoryRule),
 			isIncludedAccessory: true,
 			includedAccessoryParentItemId: parentItemId
 		};

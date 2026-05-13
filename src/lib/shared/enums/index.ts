@@ -8,3 +8,4 @@ export * from './salesTypes';
 export * from './purchaseTypes';
 export * from './inventoryTypes';
 export * from './cashTypes';
+export * from './brandAccessoryPriceModes';
