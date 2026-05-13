@@ -34,17 +34,27 @@ Las órdenes de compra actuales funcionan bien para registrar recepciones de inv
 
 ## Modelo de datos
 
+### Reutilización de `CurrencyCode`
+
+El enum [CurrencyCode](src/lib/shared/enums/currencyTypes.ts) ya existe en el proyecto (`USD_BCV`, `EUR_BCV`, `USDT`, `USD_PAYPAL`) y está pensado precisamente para normalización de precios de compra. Lo **reutilizamos** para el tipo de moneda del pago, extendiéndolo con dos valores nuevos:
+
+```ts
+// Cambio en src/lib/shared/enums/currencyTypes.ts
+export enum CurrencyCode {
+  USD_BCV = 'USD_BCV',
+  EUR_BCV = 'EUR_BCV',
+  USDT = 'USDT',                // ← ya existía. Mantener nombre (NO renombrar a USDT_BINANCE)
+  USD_PAYPAL = 'USD_PAYPAL',
+  USD_EFECTIVO = 'USD_EFECTIVO',// ← NUEVO: efectivo $ a tasa paralela
+  OTHER = 'OTHER'               // ← NUEVO: tasa libre/otra
+}
+```
+
+Y se agregan sus labels/símbolos en `CURRENCY_LABELS` / `CURRENCY_SYMBOLS`. **Verificar antes** todos los consumidores existentes de `ALL_CURRENCY_CODES` para asegurar que no se rompa ningún selector (ej. el form de productos): si alguno NO debe mostrar los nuevos valores, exponer un subset filtrado en lugar de modificar el enum.
+
 ### Nuevos enums (`src/lib/shared/enums/purchaseTypes.ts`)
 
 ```ts
-export enum PurchasePaymentCurrencyType {
-  USD_BCV = 'USD_BCV',           // USD a tasa BCV oficial
-  EUR_BCV = 'EUR_BCV',           // EUR a tasa BCV
-  USDT_BINANCE = 'USDT_BINANCE', // USDT Binance P2P
-  USD_EFECTIVO = 'USD_EFECTIVO', // Efectivo $ (tasa paralela)
-  OTHER = 'OTHER'                // Libre/otra (tasa custom o monto en Bs directo)
-}
-
 export enum PurchasePaymentTerms {
   CONTADO = 'CONTADO',
   CREDIT = 'CREDIT'
@@ -58,7 +68,7 @@ export enum PurchasePaymentTerms {
 | `id` | uuid PK | |
 | `purchaseOrderId` | uuid FK → `purchase_orders.id` ON DELETE CASCADE | |
 | `paymentNumber` | integer | Secuencial dentro del PO (1, 2, 3...). |
-| `currencyType` | enum | `PurchasePaymentCurrencyType`. |
+| `currencyCode` | enum | Reusa `CurrencyCode`. |
 | `paymentDate` | timestamptz | Fecha real del pago. |
 | `amount` | double | Monto en la moneda nativa del pago. |
 | `bcvUsdRate` | double | Tasa BCV USD del día del pago. **Siempre obligatoria.** |
@@ -77,15 +87,16 @@ export enum PurchasePaymentTerms {
 
 **Lógica de normalización (server-side, en query):**
 
-| `currencyType` | `amountBs` | `amountUsdBcv` |
+| `currencyCode` | `amountBs` | `amountUsdBcv` |
 |---|---|---|
 | `USD_BCV` | `amount * bcvUsdRate` | `amount` |
 | `EUR_BCV` | `amount * specificRate` | `amountBs / bcvUsdRate` |
-| `USDT_BINANCE` | `amount * specificRate` | `amountBs / bcvUsdRate` |
+| `USDT` | `amount * specificRate` | `amountBs / bcvUsdRate` |
+| `USD_PAYPAL` | `amount * specificRate` | `amountBs / bcvUsdRate` |
 | `USD_EFECTIVO` | `amount * specificRate` | `amountBs / bcvUsdRate` |
-| `OTHER` | `amount * specificRate` (o `amount` si el usuario ingresó Bs directo) | `amountBs / bcvUsdRate` |
+| `OTHER` | `amount * specificRate` | `amountBs / bcvUsdRate` |
 
-> Nota: para `OTHER`, el formulario tendrá un toggle "Ingresar monto directo en Bs" para casos donde no aplica una tasa.
+> **Regla invariante:** `bcvUsdRate` (la tasa BCV USD del día del pago) **siempre** se exige, incluso para `OTHER`. Es la referencia base que mantiene todo el sistema consistente en USD BCV. Para `OTHER`, el usuario también ingresa la `specificRate` que aplicó al pago (puede coincidir con la BCV si así fue acordado, pero el campo es obligatorio para que el cálculo sea explícito y auditable).
 
 ### Tabla nueva: `purchase_order_credit_schedule`
 
@@ -246,6 +257,8 @@ Todas con audit logs **después** del commit (patrón ya establecido).
 - `PurchaseOrderBalanceCard.svelte` — total deuda / total pagado / saldo / descuento obtenido.
 
 **Integración:** mostrar en la página de detalle del PO (cuando esté `CONFIRMED`).
+
+> **Regla UI (aplica a Fases 5–8):** los componentes **nuevos** que se creen para esta feature NO deben importar de `flowbite-svelte`. Se permite reutilizar componentes propios ya existentes en `src/lib/components/ui/` que internamente sí usen Flowbite (DataGrid, ConfirmModal, badges, FormInput, FormTextarea, etc.). Para todo lo nuevo, usar HTML + Tailwind directamente, siguiendo el patrón de componentes recientes del proyecto.
 
 ### Fase 6 — UI: términos de pago y cuotas
 
