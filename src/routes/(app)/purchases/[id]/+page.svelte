@@ -42,9 +42,10 @@
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
 	} from '$lib/server/db/queries/purchaseOrders';
-	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
 	import {
-		applySettlementDiscount,
+		calculatePurchaseOrderSummary,
+		createPurchaseOrderDraftItemFromExisting,
+		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
 	} from '$lib/components/purchases/purchaseOrderDraft';
 	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
@@ -141,13 +142,6 @@
 		});
 	});
 	const hasItemFilters = $derived(itemSearch.trim().length > 0 || itemReviewFilter !== 'all');
-	const totalPurchase = $derived(
-		items.reduce((sum, item) => sum + item.unitPurchasePrice * item.quantity, 0)
-	);
-	const totalSale = $derived(
-		items.reduce((sum, item) => sum + item.unitSalePrice * item.quantity, 0)
-	);
-	const totalProfit = $derived(totalSale - totalPurchase);
 	const settlementDiscount = $derived<PurchaseOrderDiscountInput>({
 		type: (purchaseOrder.settlementDiscountType ??
 			PurchaseDiscountType.NONE) as PurchaseDiscountType,
@@ -156,11 +150,20 @@
 	const hasSettlementDiscount = $derived(
 		settlementDiscount.type !== PurchaseDiscountType.NONE && settlementDiscount.value > 0
 	);
-	const settlementDiscountAmount = $derived(
-		applySettlementDiscount(totalPurchase, settlementDiscount)
+	const purchaseSummary = $derived.by(() =>
+		calculatePurchaseOrderSummary(
+			items.map(createPurchaseOrderDraftItemFromExisting),
+			settlementDiscount
+		)
 	);
-	const netTotalPurchase = $derived(Math.max(0, totalPurchase - settlementDiscountAmount));
-	const netTotalProfit = $derived(totalSale - netTotalPurchase);
+	const totalPurchase = $derived(purchaseSummary.total);
+	const totalSale = $derived(purchaseSummary.estimatedSale);
+	const totalProfit = $derived(purchaseSummary.estimatedProfit);
+	const settlementDiscountAmount = $derived(purchaseSummary.discountAmount);
+	const netSubtotalPurchase = $derived(purchaseSummary.netSubtotal);
+	const netTaxPurchase = $derived(purchaseSummary.netTaxAmount);
+	const netTotalPurchase = $derived(purchaseSummary.netTotal);
+	const netTotalProfit = $derived(purchaseSummary.netEstimatedProfit);
 	const settlementDiscountLabel = $derived(
 		settlementDiscount.type === PurchaseDiscountType.PERCENT
 			? `${settlementDiscount.value}%`
@@ -1077,9 +1080,27 @@
 							</p>
 							<div class="mt-3 space-y-1 text-xs text-white/70">
 								<div class="flex items-center justify-between gap-3">
-									<span>Descuento ({settlementDiscountLabel})</span>
+									<span>Subtotal</span>
+									<span class="font-mono font-semibold text-white tabular-nums">
+										{formatPrice(purchaseSummary.subtotal)}
+									</span>
+								</div>
+								<div class="flex items-center justify-between gap-3">
+									<span class="text-brand-gold">Descuento ({settlementDiscountLabel})</span>
 									<span class="font-mono font-semibold text-brand-gold tabular-nums">
 										− {formatPrice(settlementDiscountAmount)}
+									</span>
+								</div>
+								<div class="flex items-center justify-between gap-3">
+									<span>Subtotal neto</span>
+									<span class="font-mono font-semibold text-white tabular-nums">
+										{formatPrice(netSubtotalPurchase)}
+									</span>
+								</div>
+								<div class="flex items-center justify-between gap-3">
+									<span>IVA neto</span>
+									<span class="font-mono font-semibold text-white tabular-nums">
+										{formatPrice(netTaxPurchase)}
 									</span>
 								</div>
 								{#if Number(purchaseOrder.bcvRate || 0) > 0}
