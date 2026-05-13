@@ -16,14 +16,14 @@ Las órdenes de compra actuales funcionan bien para registrar recepciones de inv
 
 ### Decisiones clave tomadas
 
-| Tema | Decisión |
-|---|---|
-| Monto primario del pago | Se ingresa en la moneda del pago (USDT, EUR, USD, etc.); el sistema calcula Bs y USD-BCV. |
-| Anulación de pagos | Sí, vía campo `voidedAt` (no borrado físico). |
-| Tasa "libre/otra" | Campo libre — cubre cualquier pago que no encaje en BCV / Binance / efectivo. |
-| Cuotas de crédito | Soporta tanto vencimiento único como múltiples cuotas. |
+| Tema                      | Decisión                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Monto primario del pago   | Se ingresa en la moneda del pago (USDT, EUR, USD, etc.); el sistema calcula Bs y USD-BCV.                                             |
+| Anulación de pagos        | Sí, vía campo `voidedAt` (no borrado físico).                                                                                         |
+| Tasa "libre/otra"         | Campo libre — cubre cualquier pago que no encaje en BCV / Binance / efectivo.                                                         |
+| Cuotas de crédito         | Soporta tanto vencimiento único como múltiples cuotas.                                                                                |
 | Descuento por pronto pago | Método contable bruto: NO modifica inventario ni `fifoUnitCost`. Se registra como ingreso financiero separado ("Descuento obtenido"). |
-| Recordatorios UI | Badge en lista de POs + widget en dashboard. |
+| Recordatorios UI          | Badge en lista de POs + widget en dashboard.                                                                                          |
 
 ### Decisiones descartadas
 
@@ -41,12 +41,12 @@ El enum [CurrencyCode](src/lib/shared/enums/currencyTypes.ts) ya existe en el pr
 ```ts
 // Cambio en src/lib/shared/enums/currencyTypes.ts
 export enum CurrencyCode {
-  USD_BCV = 'USD_BCV',
-  EUR_BCV = 'EUR_BCV',
-  USDT = 'USDT',                // ← ya existía. Mantener nombre (NO renombrar a USDT_BINANCE)
-  USD_PAYPAL = 'USD_PAYPAL',
-  USD_EFECTIVO = 'USD_EFECTIVO',// ← NUEVO: efectivo $ a tasa paralela
-  OTHER = 'OTHER'               // ← NUEVO: tasa libre/otra
+	USD_BCV = 'USD_BCV',
+	EUR_BCV = 'EUR_BCV',
+	USDT = 'USDT', // ← ya existía. Mantener nombre (NO renombrar a USDT_BINANCE)
+	USD_PAYPAL = 'USD_PAYPAL',
+	USD_EFECTIVO = 'USD_EFECTIVO', // ← NUEVO: efectivo $ a tasa paralela
+	OTHER = 'OTHER' // ← NUEVO: tasa libre/otra
 }
 ```
 
@@ -56,63 +56,65 @@ Y se agregan sus labels/símbolos en `CURRENCY_LABELS` / `CURRENCY_SYMBOLS`. **V
 
 ```ts
 export enum PurchasePaymentTerms {
-  CONTADO = 'CONTADO',
-  CREDIT = 'CREDIT'
+	CONTADO = 'CONTADO',
+	CREDIT = 'CREDIT'
 }
 ```
 
 ### Tabla nueva: `purchase_order_payments`
 
-| Columna | Tipo | Notas |
-|---|---|---|
-| `id` | uuid PK | |
-| `purchaseOrderId` | uuid FK → `purchase_orders.id` ON DELETE CASCADE | |
-| `paymentNumber` | integer | Secuencial dentro del PO (1, 2, 3...). |
-| `currencyCode` | enum | Reusa `CurrencyCode`. |
-| `paymentDate` | timestamptz | Fecha real del pago. |
-| `amount` | double | Monto en la moneda nativa del pago. |
-| `bcvUsdRate` | double | Tasa BCV USD del día del pago. **Siempre obligatoria.** |
-| `specificRate` | double NULL | Tasa específica para no-BCV (USDT/Bs, EUR/Bs, paralela, libre). NULL para `USD_BCV`. |
-| `amountBs` | double | Computado y almacenado. |
-| `amountUsdBcv` | double | Computado y almacenado. **Normalización para saldo.** |
-| `reference` | varchar NULL | Nro. de transferencia, recibo, etc. |
-| `notes` | varchar NULL | Banco origen, observaciones. |
-| `voidedAt` | timestamptz NULL | Marca de anulado (no rompe el secuencial). |
-| `createdById` | uuid FK → `users.id` ON DELETE RESTRICT | |
-| `createdAt`, `updatedAt` | timestamptz | |
+| Columna                  | Tipo                                             | Notas                                                                                |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `id`                     | uuid PK                                          |                                                                                      |
+| `purchaseOrderId`        | uuid FK → `purchase_orders.id` ON DELETE CASCADE |                                                                                      |
+| `paymentNumber`          | integer                                          | Secuencial dentro del PO (1, 2, 3...).                                               |
+| `currencyCode`           | enum                                             | Reusa `CurrencyCode`.                                                                |
+| `paymentDate`            | timestamptz                                      | Fecha real del pago.                                                                 |
+| `amount`                 | double                                           | Monto en la moneda nativa del pago.                                                  |
+| `bcvUsdRate`             | double                                           | Tasa BCV USD del día del pago. **Siempre obligatoria.**                              |
+| `specificRate`           | double NULL                                      | Tasa específica para no-BCV (USDT/Bs, EUR/Bs, paralela, libre). NULL para `USD_BCV`. |
+| `amountBs`               | double                                           | Computado y almacenado.                                                              |
+| `amountUsdBcv`           | double                                           | Computado y almacenado. **Normalización para saldo.**                                |
+| `reference`              | varchar NULL                                     | Nro. de transferencia, recibo, etc.                                                  |
+| `notes`                  | varchar NULL                                     | Banco origen, observaciones.                                                         |
+| `voidedAt`               | timestamptz NULL                                 | Marca de anulado (no rompe el secuencial).                                           |
+| `createdById`            | uuid FK → `users.id` ON DELETE RESTRICT          |                                                                                      |
+| `createdAt`, `updatedAt` | timestamptz                                      |                                                                                      |
 
 **Índices:**
+
 - `ix_po_payments_po_id` btree (purchaseOrderId)
 - `ix_po_payments_payment_date` btree (paymentDate)
 
 **Lógica de normalización (server-side, en query):**
 
-| `currencyCode` | `amountBs` | `amountUsdBcv` |
-|---|---|---|
-| `USD_BCV` | `amount * bcvUsdRate` | `amount` |
-| `EUR_BCV` | `amount * specificRate` | `amountBs / bcvUsdRate` |
-| `USDT` | `amount * specificRate` | `amountBs / bcvUsdRate` |
-| `USD_PAYPAL` | `amount * specificRate` | `amountBs / bcvUsdRate` |
+| `currencyCode` | `amountBs`              | `amountUsdBcv`          |
+| -------------- | ----------------------- | ----------------------- |
+| `USD_BCV`      | `amount * bcvUsdRate`   | `amount`                |
+| `EUR_BCV`      | `amount * specificRate` | `amountBs / bcvUsdRate` |
+| `USDT`         | `amount * specificRate` | `amountBs / bcvUsdRate` |
+| `USD_PAYPAL`   | `amount * specificRate` | `amountBs / bcvUsdRate` |
 | `USD_EFECTIVO` | `amount * specificRate` | `amountBs / bcvUsdRate` |
-| `OTHER` | `amount * specificRate` | `amountBs / bcvUsdRate` |
+| `OTHER`        | `amount * specificRate` | `amountBs / bcvUsdRate` |
 
 > **Regla invariante:** `bcvUsdRate` (la tasa BCV USD del día del pago) **siempre** se exige, incluso para `OTHER`. Es la referencia base que mantiene todo el sistema consistente en USD BCV. Para `OTHER`, el usuario también ingresa la `specificRate` que aplicó al pago (puede coincidir con la BCV si así fue acordado, pero el campo es obligatorio para que el cálculo sea explícito y auditable).
 
 ### Tabla nueva: `purchase_order_credit_schedule`
 
-| Columna | Tipo | Notas |
-|---|---|---|
-| `id` | uuid PK | |
-| `purchaseOrderId` | uuid FK → `purchase_orders.id` ON DELETE CASCADE | |
-| `installmentNumber` | integer | 1, 2, 3... |
-| `dueDate` | date | Fecha de vencimiento. |
-| `expectedAmountUsd` | double NULL | Monto esperado (USD BCV). NULL si no se planifica monto por cuota. |
-| `earlyPaymentDiscountPercent` | double NULL | % descuento si se paga antes del deadline. |
-| `earlyPaymentDiscountDeadline` | date NULL | Fecha límite para que aplique el descuento. |
-| `notes` | varchar NULL | |
-| `createdAt`, `updatedAt` | timestamptz | |
+| Columna                        | Tipo                                             | Notas                                                              |
+| ------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------ |
+| `id`                           | uuid PK                                          |                                                                    |
+| `purchaseOrderId`              | uuid FK → `purchase_orders.id` ON DELETE CASCADE |                                                                    |
+| `installmentNumber`            | integer                                          | 1, 2, 3...                                                         |
+| `dueDate`                      | date                                             | Fecha de vencimiento.                                              |
+| `expectedAmountUsd`            | double NULL                                      | Monto esperado (USD BCV). NULL si no se planifica monto por cuota. |
+| `earlyPaymentDiscountPercent`  | double NULL                                      | % descuento si se paga antes del deadline.                         |
+| `earlyPaymentDiscountDeadline` | date NULL                                        | Fecha límite para que aplique el descuento.                        |
+| `notes`                        | varchar NULL                                     |                                                                    |
+| `createdAt`, `updatedAt`       | timestamptz                                      |                                                                    |
 
 **Índices:**
+
 - `ix_po_credit_schedule_po_id` btree (purchaseOrderId)
 - `ix_po_credit_schedule_due_date` btree (dueDate)
 
@@ -123,7 +125,7 @@ export enum PurchasePaymentTerms {
 Añadir columna:
 
 ```ts
-paymentTerms: varchar('payment_terms').notNull().default('CONTADO')
+paymentTerms: varchar('payment_terms').notNull().default('CONTADO');
 // valores: 'CONTADO' | 'CREDIT'
 ```
 
@@ -139,11 +141,11 @@ Estos cálculos viven en queries o en `src/lib/shared/purchaseOrderRules.ts` (pu
 
 ```ts
 {
-  totalDebt: number;          // total bruto del PO (en USD BCV) — ya existe lógica
-  totalPaid: number;          // suma de payments.amountUsdBcv (excluye voidedAt)
-  balance: number;            // totalDebt - totalPaid
-  isFullyPaid: boolean;       // balance <= 0.01
-  earlyPaymentDiscountEarned: number; // ver abajo
+	totalDebt: number; // total bruto del PO (en USD BCV) — ya existe lógica
+	totalPaid: number; // suma de payments.amountUsdBcv (excluye voidedAt)
+	balance: number; // totalDebt - totalPaid
+	isFullyPaid: boolean; // balance <= 0.01
+	earlyPaymentDiscountEarned: number; // ver abajo
 }
 ```
 
@@ -157,14 +159,14 @@ Esto NO toca lotes ni `fifoUnitCost`. Es solo un valor calculado en read-time pa
 
 ### Estados de vencimiento (para badges)
 
-| Estado | Condición |
-|---|---|
-| Sin vencimiento | `paymentTerms = CONTADO` o sin saldo pendiente |
-| Vence hoy | Hay cuota con `dueDate = hoy` y saldo > 0 |
-| Vence en X días | `dueDate` futura más próxima |
+| Estado                 | Condición                                        |
+| ---------------------- | ------------------------------------------------ |
+| Sin vencimiento        | `paymentTerms = CONTADO` o sin saldo pendiente   |
+| Vence hoy              | Hay cuota con `dueDate = hoy` y saldo > 0        |
+| Vence en X días        | `dueDate` futura más próxima                     |
 | Pronto pago disponible | `earlyPaymentDiscountDeadline ≥ hoy` y saldo > 0 |
-| **VENCIDA** | `dueDate < hoy` y saldo > 0 |
-| Pagada | `balance ≤ 0.01` |
+| **VENCIDA**            | `dueDate < hoy` y saldo > 0                      |
+| Pagada                 | `balance ≤ 0.01`                                 |
 
 ---
 
@@ -175,8 +177,8 @@ Esto NO toca lotes ni `fifoUnitCost`. Es solo un valor calculado en read-time pa
 Añadir una nueva métrica al `CashReport` que retorna [cash queries](src/lib/server/db/queries/cash.ts):
 
 ```ts
-purchaseDiscountsEarned: number  // suma de earlyPaymentDiscountEarned
-                                  // de todos los POs pagados en el período
+purchaseDiscountsEarned: number; // suma de earlyPaymentDiscountEarned
+// de todos los POs pagados en el período
 ```
 
 Se muestra como item separado en el panel de resumen — **no** se suma al margen bruto. Categoría sugerida en UI: "Descuentos obtenidos en compras".
@@ -199,6 +201,7 @@ Cada fase debe quedar mergeable y verificable de forma independiente.
 ### Fase 1 — Schema y migración DB
 
 **Archivos:**
+
 - `src/lib/shared/enums/purchaseTypes.ts` — nuevos enums.
 - `src/lib/server/db/schema/purchaseOrders.ts` — `paymentTerms` en `purchase_orders`, tablas nuevas `purchaseOrderPayments` y `purchaseOrderCreditSchedule`.
 - `drizzle/0017_*.sql` — migración generada.
@@ -208,6 +211,7 @@ Cada fase debe quedar mergeable y verificable de forma independiente.
 ### Fase 2 — Queries (server-side)
 
 **Archivos nuevos:**
+
 - `src/lib/server/db/queries/purchaseOrderPayments.ts`
   - `createPurchaseOrderPayment(data, tx)`
   - `voidPurchaseOrderPayment(id, tx)`
@@ -219,6 +223,7 @@ Cada fase debe quedar mergeable y verificable de forma independiente.
   - `getUpcomingDueInstallments(daysAhead, tx)` — para dashboard/badges.
 
 **Modificaciones:**
+
 - `src/lib/server/db/queries/purchaseOrders.ts`
   - Extender `PurchaseOrderWithRelations` para incluir `payments` y `creditSchedule` (opcional, según endpoint).
   - Función helper `computePurchaseOrderBalance(po, items, payments)`.
@@ -228,6 +233,7 @@ Cada fase debe quedar mergeable y verificable de forma independiente.
 ### Fase 3 — Shared logic + Zod schemas
 
 **Archivos nuevos:**
+
 - `src/lib/shared/purchaseOrderPayments.ts` — funciones puras de normalización (Bs/USD-BCV desde currency+amount+rates). **Compartido client/server.**
 - `src/lib/shared/purchaseOrderCredit.ts` — estado de vencimiento, cálculo de descuento ganado.
 - `src/lib/schemas/purchaseOrderPayments.ts` — `CreatePurchasePaymentSchema`, `VoidPurchasePaymentSchema`.
@@ -267,6 +273,7 @@ Todas con audit logs **después** del commit (patrón ya establecido).
 - `PurchaseOrderCreditScheduleForm.svelte` — toggle CONTADO/CREDIT y, si CREDIT, lista editable de cuotas con fecha, monto esperado opcional, descuento por pronto pago opcional.
 
 **Integración:**
+
 - En `NewPurchaseOrderForm.svelte` y en la edición de drafts.
 - En la vista de detalle de PO confirmado: vista de solo lectura del schedule.
 
@@ -321,12 +328,12 @@ Todas con audit logs **después** del commit (patrón ya establecido).
 
 ## Riesgos y mitigaciones
 
-| Riesgo | Mitigación |
-|---|---|
-| Datos de tasas erróneos al cargar histórico | Permitir editar pagos (solo campos no calculados) o anular y recrear. |
-| Confusión entre tasa BCV USD y tasa específica | Form debe mostrar ambos labels claros y un ejemplo de cálculo en vivo. |
-| Performance del widget de vencimientos con muchos POs | Índice en `dueDate` + query con `LIMIT` razonable. |
-| Inconsistencia entre suma de pagos y total del PO por redondeo | Toleranciada de `0.01` USD en `isFullyPaid`. |
+| Riesgo                                                         | Mitigación                                                             |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Datos de tasas erróneos al cargar histórico                    | Permitir editar pagos (solo campos no calculados) o anular y recrear.  |
+| Confusión entre tasa BCV USD y tasa específica                 | Form debe mostrar ambos labels claros y un ejemplo de cálculo en vivo. |
+| Performance del widget de vencimientos con muchos POs          | Índice en `dueDate` + query con `LIMIT` razonable.                     |
+| Inconsistencia entre suma de pagos y total del PO por redondeo | Toleranciada de `0.01` USD en `isFullyPaid`.                           |
 
 ---
 
