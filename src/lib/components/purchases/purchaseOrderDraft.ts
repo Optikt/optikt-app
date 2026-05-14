@@ -4,7 +4,8 @@ import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import {
 	PurchaseDiscountType,
 	PurchaseDocumentType,
-	PurchaseOrderItemType
+	PurchaseOrderItemType,
+	PurchasePaymentTerms
 } from '$lib/shared/enums';
 import { LensPriceType } from '$lib/shared/enums/lensTypes';
 import {
@@ -70,12 +71,37 @@ export interface PurchaseOrderReviewStatus {
 	allReviewed: boolean;
 }
 
+export interface PurchaseOrderDraftInstallment {
+	id: string;
+	installmentNumber: number;
+	dueDate: string;
+	expectedAmountUsd: number | null;
+	earlyPaymentDiscountPercent: number | null;
+	earlyPaymentDiscountDeadline: string | null;
+	notes: string;
+}
+
+export interface PurchaseOrderCreditScheduleValidationResult {
+	isValid: boolean;
+	issues: string[];
+	scheduledAmount: number;
+	difference: number;
+}
+
+export interface PurchaseOrderDraftFinanceInput {
+	paymentTerms: PurchasePaymentTerms;
+	installments: PurchaseOrderDraftInstallment[];
+	totalNetAmount: number;
+}
+
 export type PurchaseOrderDraftZeroValueField = 'unitPurchasePrice' | 'unitSalePrice';
 
 export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesInput {
 	documentType: PurchaseDocumentType;
 	invoiceNumber: string;
 	deliveryNoteNumber: string;
+	paymentTerms: PurchasePaymentTerms;
+	installments: PurchaseOrderDraftInstallment[];
 	discount?: PurchaseOrderDiscountInput;
 	discountNotes?: string | null;
 }
@@ -102,6 +128,21 @@ export function createEmptyPurchaseOrderDraftItem(
 		appliesIva: isInvoice,
 		ivaRate: defaultTaxRate,
 		isReviewed: false
+	};
+}
+
+export function createEmptyPurchaseOrderDraftInstallment(
+	installmentNumber: number = 1,
+	dueDate: string = ''
+): PurchaseOrderDraftInstallment {
+	return {
+		id: crypto.randomUUID(),
+		installmentNumber: Math.max(installmentNumber, 1),
+		dueDate,
+		expectedAmountUsd: null,
+		earlyPaymentDiscountPercent: null,
+		earlyPaymentDiscountDeadline: null,
+		notes: ''
 	};
 }
 
@@ -196,6 +237,12 @@ function round2(n: number): number {
 	return Math.round(n * 100) / 100;
 }
 
+function isIsoDateOnly(value: string | null | undefined): value is string {
+	if (!value) return false;
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+	return !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`));
+}
+
 export function getPreTaxUnitPrice(item: PurchaseOrderDraftItem): number {
 	if (!item.appliesIva || !item.ivaRate) return item.unitPurchasePrice;
 	return item.unitPurchasePrice / (1 + item.ivaRate / 100);
@@ -240,16 +287,131 @@ export function isDraftItemConfigured(item: PurchaseOrderDraftItem): boolean {
 
 export function validatePurchaseOrderDraft(
 	header: PurchaseOrderDraftHeaderRulesInput,
-	items: PurchaseOrderDraftItem[]
+	items: PurchaseOrderDraftItem[],
+	finance?: PurchaseOrderDraftFinanceInput
 ): PurchaseOrderDraftReadinessResult {
-	return validatePurchaseOrderDraftReadiness(header, items);
+	const readiness = validatePurchaseOrderDraftReadiness(header, items);
+	if (!finance) return readiness;
+
+	const creditSchedule = validateCreditSchedule(
+		finance.paymentTerms,
+		finance.installments,
+		finance.totalNetAmount
+	);
+
+	return {
+		isReady: readiness.isReady && creditSchedule.isValid,
+		issues: [...readiness.issues, ...creditSchedule.issues]
+	};
 }
 
 export function canPersistPurchaseOrderDraft(
 	header: PurchaseOrderDraftHeaderRulesInput,
-	items: PurchaseOrderDraftItem[]
+	items: PurchaseOrderDraftItem[],
+	finance?: PurchaseOrderDraftFinanceInput
 ): boolean {
-	return isPurchaseOrderDraftReady(header, items);
+	if (!finance) {
+		return isPurchaseOrderDraftReady(header, items);
+	}
+
+	return validatePurchaseOrderDraft(header, items, finance).isReady;
+}
+
+export function validateCreditSchedule(
+	paymentTerms: PurchasePaymentTerms,
+	installments: PurchaseOrderDraftInstallment[],
+	totalNetAmount: number
+): PurchaseOrderCreditScheduleValidationResult {
+	const issues: string[] = [];
+	const normalizedTotal = round2(Number(totalNetAmount || 0));
+
+	if (paymentTerms === PurchasePaymentTerms.CONTADO) {
+		if (installments.length > 0) {
+			issues.push('Las órdenes de contado no deben tener cuotas');
+		}
+
+		return {
+			isValid: issues.length === 0,
+			issues,
+			scheduledAmount: 0,
+			difference: 0
+		};
+	}
+
+	if (installments.length === 0) {
+		issues.push('Debes registrar al menos una cuota para órdenes a crédito');
+	}
+
+	let scheduledAmount = 0;
+	let previousDueDate = '';
+
+	for (const [index, installment] of installments.entries()) {
+		const lineLabel = `Cuota ${index + 1}`;
+
+		if (
+			!Number.isInteger(Number(installment.installmentNumber)) ||
+			Number(installment.installmentNumber) < 1
+		) {
+			issues.push(`${lineLabel}: número de cuota inválido`);
+		}
+
+		if (!isIsoDateOnly(installment.dueDate)) {
+			issues.push(`${lineLabel}: fecha de vencimiento inválida`);
+		} else if (previousDueDate && installment.dueDate < previousDueDate) {
+			issues.push(`${lineLabel}: la fecha debe ser igual o posterior a la cuota anterior`);
+		}
+
+		const expectedAmount = Number(installment.expectedAmountUsd);
+		if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+			issues.push(`${lineLabel}: el monto esperado debe ser mayor a 0`);
+		} else {
+			scheduledAmount += expectedAmount;
+		}
+
+		const discountPercent = Number(installment.earlyPaymentDiscountPercent ?? 0);
+		const hasDiscountPercent = discountPercent > 0;
+		const hasDiscountDeadline = Boolean(installment.earlyPaymentDiscountDeadline);
+
+		if (hasDiscountPercent && !isIsoDateOnly(installment.earlyPaymentDiscountDeadline)) {
+			issues.push(`${lineLabel}: la fecha límite de pronto pago es obligatoria`);
+		}
+
+		if (hasDiscountDeadline && !hasDiscountPercent) {
+			issues.push(`${lineLabel}: el porcentaje de pronto pago es obligatorio`);
+		}
+
+		if (hasDiscountPercent && discountPercent > 100) {
+			issues.push(`${lineLabel}: el porcentaje de pronto pago no puede superar 100`);
+		}
+
+		if (
+			isIsoDateOnly(installment.earlyPaymentDiscountDeadline) &&
+			isIsoDateOnly(installment.dueDate) &&
+			installment.earlyPaymentDiscountDeadline > installment.dueDate
+		) {
+			issues.push(`${lineLabel}: la fecha de pronto pago no puede ser posterior al vencimiento`);
+		}
+
+		if (isIsoDateOnly(installment.dueDate)) {
+			previousDueDate = installment.dueDate;
+		}
+	}
+
+	const roundedScheduledAmount = round2(scheduledAmount);
+	const difference = round2(normalizedTotal - roundedScheduledAmount);
+
+	if (Math.abs(difference) > 0.01) {
+		issues.push(
+			`La suma de cuotas (${roundedScheduledAmount.toFixed(2)}) debe coincidir con el total neto (${normalizedTotal.toFixed(2)})`
+		);
+	}
+
+	return {
+		isValid: issues.length === 0,
+		issues,
+		scheduledAmount: roundedScheduledAmount,
+		difference
+	};
 }
 
 export function getPurchaseOrderReviewStatus(

@@ -3,9 +3,15 @@ import { error } from '@sveltejs/kit';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import {
+	computePurchaseOrderBalance,
+	getPurchaseOrderDueStatus
+} from '$lib/shared/purchaseOrderCredit';
+import {
 	findPurchaseOrderByIdWithRelations,
 	getPurchaseOrderItems
 } from '$lib/server/db/queries/purchaseOrders';
+import { getPurchaseOrderPayments } from '$lib/server/db/queries/purchaseOrderPayments';
+import { getPurchaseOrderCreditSchedule } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 import { getPurchaseOrderRelatedMovements } from '$lib/server/db/queries/inventoryMovements';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
 
@@ -21,15 +27,27 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// Load lots for items that have been confirmed (have lotId)
 	const lotIds = items.map((item) => item.lotId).filter(Boolean) as string[];
-	const [movements, lots] = await Promise.all([
+	const [movements, lots, payments, creditSchedule] = await Promise.all([
 		getPurchaseOrderRelatedMovements(params.id, lotIds),
-		Promise.all(lotIds.map((id) => findLotById(id)))
+		Promise.all(lotIds.map((id) => findLotById(id))),
+		getPurchaseOrderPayments(params.id, { includeVoided: true }),
+		getPurchaseOrderCreditSchedule(params.id)
 	]);
 	const lotsMap = Object.fromEntries(lots.filter(Boolean).map((l) => [l!.id, l!]));
+	const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, creditSchedule);
+	const dueStatus = getPurchaseOrderDueStatus({
+		paymentTerms: purchaseOrder.paymentTerms,
+		installments: creditSchedule,
+		balance: balance.balance
+	});
 
 	return {
 		purchaseOrder,
 		items,
+		payments,
+		creditSchedule,
+		balance,
+		dueStatus,
 		movements,
 		lotsMap
 	};

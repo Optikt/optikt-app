@@ -5,11 +5,17 @@
 		createPurchaseOrderDraftItemFromExisting,
 		type PurchaseOrderDraftInitialValues
 	} from '$lib/components/purchases/purchaseOrderDraft';
-	import { PurchaseDiscountType, PurchaseDocumentType } from '$lib/shared/enums';
+	import {
+		PurchaseDiscountType,
+		PurchaseDocumentType,
+		PurchasePaymentTerms
+	} from '$lib/shared/enums';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let { purchaseOrder, items, suppliers, products, lensItems } = untrack(() => data);
+	let { purchaseOrder, items, creditSchedule, suppliers, products, lensItems } = untrack(
+		() => data
+	);
 
 	const initialDraft: PurchaseOrderDraftInitialValues = {
 		supplierId: purchaseOrder.supplierId,
@@ -19,6 +25,17 @@
 		orderDate: purchaseOrder.orderDate.slice(0, 10),
 		bcvRate: purchaseOrder.bcvRate,
 		notes: purchaseOrder.notes ?? '',
+		paymentTerms: (purchaseOrder.paymentTerms ??
+			PurchasePaymentTerms.CONTADO) as PurchasePaymentTerms,
+		installments: creditSchedule.map((installment) => ({
+			id: installment.id,
+			installmentNumber: installment.installmentNumber,
+			dueDate: installment.dueDate,
+			expectedAmountUsd: installment.expectedAmountUsd,
+			earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent,
+			earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline,
+			notes: installment.notes ?? ''
+		})),
 		discount: {
 			type: (purchaseOrder.settlementDiscountType ??
 				PurchaseDiscountType.NONE) as PurchaseDiscountType,

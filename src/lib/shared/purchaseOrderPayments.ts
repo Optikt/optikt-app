@@ -1,0 +1,66 @@
+import { CurrencyCode } from '$lib/shared/enums';
+
+export interface NormalizePurchasePaymentInput {
+	currencyCode: CurrencyCode;
+	amount: number;
+	bcvUsdRate: number;
+	specificRate?: number | null;
+}
+
+export interface NormalizedPurchasePaymentAmounts {
+	amountBs: number;
+	amountUsdBcv: number;
+}
+
+function roundCurrency(value: number): number {
+	return Number(value.toFixed(2));
+}
+
+export function requiresPurchasePaymentSpecificRate(currencyCode: CurrencyCode): boolean {
+	return currencyCode !== CurrencyCode.USD_BCV;
+}
+
+export function getPurchasePaymentSpecificRateLabel(currencyCode: CurrencyCode): string {
+	switch (currencyCode) {
+		case CurrencyCode.EUR_BCV:
+			return 'Tasa EUR (Bs/€)';
+		case CurrencyCode.USDT:
+			return 'Tasa USDT (Bs/USDT)';
+		case CurrencyCode.USD_PAYPAL:
+			return 'Tasa USD PayPal (Bs/$)';
+		case CurrencyCode.USD_EFECTIVO:
+			return 'Tasa USD efectivo (Bs/$)';
+		case CurrencyCode.OTHER:
+			return 'Tasa usada (Bs/unidad)';
+		default:
+			return 'Tasa usada';
+	}
+}
+
+export function normalizePurchasePaymentAmounts({
+	currencyCode,
+	amount,
+	bcvUsdRate,
+	specificRate
+}: NormalizePurchasePaymentInput): NormalizedPurchasePaymentAmounts {
+	if (amount <= 0 || bcvUsdRate <= 0) {
+		return { amountBs: 0, amountUsdBcv: 0 };
+	}
+
+	if (!requiresPurchasePaymentSpecificRate(currencyCode)) {
+		return {
+			amountBs: roundCurrency(amount * bcvUsdRate),
+			amountUsdBcv: roundCurrency(amount)
+		};
+	}
+
+	if (!specificRate || specificRate <= 0) {
+		return { amountBs: 0, amountUsdBcv: 0 };
+	}
+
+	const amountBs = roundCurrency(amount * specificRate);
+	return {
+		amountBs,
+		amountUsdBcv: roundCurrency(amountBs / bcvUsdRate)
+	};
+}
