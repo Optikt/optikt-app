@@ -634,21 +634,51 @@
 
 		if (entityType === 'purchase_order') {
 			if (action === 'create') {
-				return { id: entry.id, label: 'Orden creada', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+				return {
+					id: entry.id,
+					label: 'Orden creada',
+					changedByName: entry.changedByName,
+					changedAt: entry.changedAt,
+					entityType,
+					action
+				};
 			}
 			if (action === 'update') {
 				if (changes.status) {
 					const newStatus = changes.status.new as string | null;
 					const label = newStatus ? (PO_STATUS_LABELS[newStatus] ?? `Estado: ${newStatus}`) : null;
 					if (!label) return null;
-					return { id: entry.id, label, changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+					return {
+						id: entry.id,
+						label,
+						changedByName: entry.changedByName,
+						changedAt: entry.changedAt,
+						entityType,
+						action
+					};
 				}
 				if ('readyForReviewAt' in changes) {
-					const label = changes.readyForReviewAt?.new ? 'Enviada a revisión' : 'Devuelta a borrador';
-					return { id: entry.id, label, changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+					const label = changes.readyForReviewAt?.new
+						? 'Enviada a revisión'
+						: 'Devuelta a borrador';
+					return {
+						id: entry.id,
+						label,
+						changedByName: entry.changedByName,
+						changedAt: entry.changedAt,
+						entityType,
+						action
+					};
 				}
 				if (changes.paymentTerms) {
-					return { id: entry.id, label: 'Términos de pago actualizados', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+					return {
+						id: entry.id,
+						label: 'Términos de pago actualizados',
+						changedByName: entry.changedByName,
+						changedAt: entry.changedAt,
+						entityType,
+						action
+					};
 				}
 				// Generic PO updates (draft edits) — skip to avoid noise
 				return null;
@@ -657,10 +687,24 @@
 
 		if (entityType === 'purchase_order_payment') {
 			if (action === 'create') {
-				return { id: entry.id, label: 'Pago registrado', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+				return {
+					id: entry.id,
+					label: 'Pago registrado',
+					changedByName: entry.changedByName,
+					changedAt: entry.changedAt,
+					entityType,
+					action
+				};
 			}
 			if (action === 'update' && changes.voidedAt) {
-				return { id: entry.id, label: 'Pago anulado', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+				return {
+					id: entry.id,
+					label: 'Pago anulado',
+					changedByName: entry.changedByName,
+					changedAt: entry.changedAt,
+					entityType,
+					action
+				};
 			}
 		}
 
@@ -1377,7 +1421,10 @@
 										{purchaseOrder.confirmedBy?.fullName ?? 'Usuario no disponible'}
 									</p>
 									<p class="mt-1 text-sm text-on-surface-variant">
-										{formatDate(purchaseOrder.confirmedAt, { dateStyle: 'medium', timeStyle: 'short' })}
+										{formatDate(purchaseOrder.confirmedAt, {
+											dateStyle: 'medium',
+											timeStyle: 'short'
+										})}
 									</p>
 								</div>
 							{/if}
@@ -1388,7 +1435,7 @@
 								{@const isPayment = event.entityType === 'purchase_order_payment'}
 								{@const isVoid = isPayment && event.action === 'update'}
 								{@const isCreate = event.action === 'create'}
-								<li class="mb-6 ms-5 last:mb-0">
+								<li class="ms-5 mb-6 last:mb-0">
 									<span
 										class="absolute -start-[9px] flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-surface-container-lowest
 										{isVoid
@@ -1400,23 +1447,45 @@
 													: 'bg-surface-container-high text-on-surface-variant'}"
 									>
 										{#if isVoid}
-											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-2.5 w-2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+											<svg
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2.5"
+												class="h-2.5 w-2.5"><path d="M18 6 6 18M6 6l12 12" /></svg
+											>
 										{:else if isPayment}
-											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14"/></svg>
+											<svg
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2.5"
+												class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
+											>
 										{:else if isCreate}
-											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14"/></svg>
+											<svg
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2.5"
+												class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
+											>
 										{:else}
-											<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5"><circle cx="12" cy="12" r="6"/></svg>
+											<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5"
+												><circle cx="12" cy="12" r="6" /></svg
+											>
 										{/if}
 									</span>
-									<p class="text-sm font-semibold text-on-surface
-										{isVoid ? 'text-error' : ''}">
+									<p
+										class="text-sm font-semibold text-on-surface
+										{isVoid ? 'text-error' : ''}"
+									>
 										{event.label}
 									</p>
 									<p class="mt-0.5 text-xs text-on-surface-variant">
 										{event.changedByName ?? 'Usuario desconocido'}
 									</p>
-									<time class="mt-0.5 block font-mono text-[11px] tabular-nums text-outline">
+									<time class="mt-0.5 block font-mono text-[11px] text-outline tabular-nums">
 										{formatDate(event.changedAt, { dateStyle: 'short', timeStyle: 'short' })}
 									</time>
 								</li>

@@ -192,10 +192,7 @@
 		};
 
 		// Warn if payment exceeds pending balance
-		if (
-			pendingBalanceUsd != null &&
-			normalized.amountUsdBcv > pendingBalanceUsd + 0.01
-		) {
+		if (pendingBalanceUsd != null && normalized.amountUsdBcv > pendingBalanceUsd + 0.01) {
 			pendingAddPayload = payload;
 			showOverpaymentModal = true;
 			return;
@@ -245,10 +242,10 @@
 			}
 
 			onFinanceChanged?.({
-					payments: result.payments,
-					balance: result.balance,
-					dueStatus: result.dueStatus
-				});
+				payments: result.payments,
+				balance: result.balance,
+				dueStatus: result.dueStatus
+			});
 			toast.success('Pago anulado');
 			showVoidModal = false;
 			voidingPayment = null;
@@ -553,7 +550,7 @@
 		: ''}
 	confirmLabel="Registrar igual"
 	confirmColor="yellow"
-	loading={loading}
+	{loading}
 	onConfirm={async () => {
 		showOverpaymentModal = false;
 		if (pendingAddPayload) await submitAddPayment(pendingAddPayload);

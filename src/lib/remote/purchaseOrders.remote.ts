@@ -895,7 +895,12 @@ export const addPurchaseOrderPaymentCmd = command(
 				includeVoided: true
 			});
 
-			return { success: true as const, payments, balance: result.balance, dueStatus: result.dueStatus };
+			return {
+				success: true as const,
+				payments,
+				balance: result.balance,
+				dueStatus: result.dueStatus
+			};
 		} catch (e) {
 			console.error('Error adding purchase order payment:', e);
 			return {
@@ -960,7 +965,13 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 			includeVoided: true
 		});
 
-		return { success: true as const, voided: result.voided, payments, balance: result.balance, dueStatus: result.dueStatus };
+		return {
+			success: true as const,
+			voided: result.voided,
+			payments,
+			balance: result.balance,
+			dueStatus: result.dueStatus
+		};
 	} catch (e) {
 		console.error('Error voiding purchase order payment:', e);
 		return {
