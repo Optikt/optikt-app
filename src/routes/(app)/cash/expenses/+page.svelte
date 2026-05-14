@@ -3,7 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Button } from 'flowbite-svelte';
 	import { Plus, Ban, Download, Printer, X } from '@lucide/svelte';
-	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
 	import {
 		ALL_EXPENSE_CATEGORIES,
 		ALL_EXPENSE_CURRENCIES,
@@ -200,7 +200,7 @@
 			'Estado'
 		];
 		const rows = expenses.map((e) => [
-			formatDate(e.expenseDate, { dateStyle: 'short' }),
+			formatDateOnly(e.expenseDate, { dateStyle: 'short' }),
 			EXPENSE_CATEGORY_LABELS[e.category],
 			e.description,
 			e.currency,
@@ -510,7 +510,7 @@
 										{row.description}
 									</p>
 									<p class="mt-1 text-[11px] text-on-surface-variant">
-										{formatDate(row.expenseDate, { dateStyle: 'medium' })}
+										{formatDateOnly(row.expenseDate, { dateStyle: 'medium' })}
 										· Registró {row.registeredByName ?? '-'}
 									</p>
 									{#if row.reference}
@@ -613,7 +613,7 @@
 								: ''}"
 						>
 							<td class="px-4 py-3">
-								{formatDate(row.expenseDate, { dateStyle: 'medium' })}
+								{formatDateOnly(row.expenseDate, { dateStyle: 'medium' })}
 							</td>
 							<td class="px-4 py-3">{EXPENSE_CATEGORY_LABELS[row.category]}</td>
 							<td class="px-4 py-3">

@@ -2,7 +2,7 @@
 	import { Eye, CircleX, ClipboardList } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { DataGrid, QuoteStatusBadge, ConfirmModal } from '$lib/components/ui';
-	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDateOnly, getErrorMessage } from '$lib/utils';
 	import { cancelQuote } from '$lib/remote/quotes.remote';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
 	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
@@ -115,7 +115,7 @@
 				{/if}
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{formatDate(quote.quoteDate, { day: '2-digit', month: 'short', year: 'numeric' })}
+				{formatDateOnly(quote.quoteDate, { day: '2-digit', month: 'short', year: 'numeric' })}
 			</td>
 			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
 				{formatPrice(quote.total)}

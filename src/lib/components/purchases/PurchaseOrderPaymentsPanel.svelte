@@ -25,7 +25,7 @@
 	} from '$lib/shared/purchaseOrderPayments';
 	import type { PurchaseOrderPayment } from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
 
 	interface PaymentComposerRequest {
 		token: string;
@@ -462,7 +462,7 @@
 							</td>
 							<td class="px-5 py-4 align-top text-on-surface-variant">
 								<div class:line-through={payment.voidedAt}>
-									{formatDate(payment.paymentDate, { dateStyle: 'short' })}
+									{formatDateOnly(payment.paymentDate, { dateStyle: 'short' })}
 								</div>
 								<div class="mt-1 text-xs text-outline">
 									{formatDate(payment.createdAt, { hour: '2-digit', minute: '2-digit' })}

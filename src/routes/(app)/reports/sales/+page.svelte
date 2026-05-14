@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
 	import { SaleStatusBadge } from '$lib/components/ui';
-	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
 	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchSalesReport } from '$lib/remote/reports.remote';
 	import { SALE_STATUS_LABELS } from '$lib/shared/enums';
@@ -51,7 +51,7 @@
 		const headers = ['Nº Orden', 'Fecha', 'Cliente', 'Estado', 'Total', 'Pagado'];
 		const rows = filteredSales.map((s) => [
 			String(s.orderNumber),
-			formatDate(s.saleDate, { dateStyle: 'short' }),
+			formatDateOnly(s.saleDate, { dateStyle: 'short' }),
 			s.customerName ?? '-',
 			SALE_STATUS_LABELS[s.status as keyof typeof SALE_STATUS_LABELS] ?? s.status,
 			s.total.toFixed(2),
@@ -138,7 +138,7 @@
 						onclick={() => goto(resolve(`/sales/${sale.id}`))}
 					>
 						<td class="px-4 py-3 font-mono text-xs text-slate-400">#{sale.orderNumber}</td>
-						<td class="px-4 py-3">{formatDate(sale.saleDate, { dateStyle: 'medium' })}</td>
+						<td class="px-4 py-3">{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}</td>
 						<td class="px-4 py-3">{sale.customerName ?? '-'}</td>
 						<td class="px-4 py-3"><SaleStatusBadge status={sale.status} /></td>
 						<td class="px-4 py-3 text-right font-mono">{formatPrice(sale.total)}</td>

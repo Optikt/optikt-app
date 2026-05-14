@@ -2,7 +2,7 @@
 	import { CircleX, Eye, ReceiptText } from '@lucide/svelte';
 	import { DataGrid, SaleStatusBadge } from '$lib/components/ui';
 	import { CancelSaleModal } from '$lib/components/sales';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { formatPrice, formatDateOnly } from '$lib/utils';
 	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
 
@@ -119,7 +119,7 @@
 				{/if}
 			</td>
 			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{formatDate(sale.saleDate, { day: '2-digit', month: 'short', year: 'numeric' })}
+				{formatDateOnly(sale.saleDate, { day: '2-digit', month: 'short', year: 'numeric' })}
 			</td>
 			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
 				{formatPrice(sale.total)}

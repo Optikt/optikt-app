@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
-	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDate, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
 	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchPaymentsReport } from '$lib/remote/reports.remote';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';
@@ -58,7 +58,7 @@
 			'Cliente'
 		];
 		const rows = payments.map((p) => [
-			formatDate(p.paymentDate, { dateStyle: 'short' }),
+			formatDateOnly(p.paymentDate, { dateStyle: 'short' }),
 			formatDate(p.createdAt, { dateStyle: 'short', timeStyle: 'short' }),
 			getPaymentMethodLabel(p.paymentMethod),
 			p.amount.toFixed(2),
@@ -146,7 +146,7 @@
 						onclick={() => goto(resolve(`/sales/${payment.saleId}`))}
 					>
 						<td class="px-4 py-3">
-							<div>{formatDate(payment.paymentDate, { dateStyle: 'medium' })}</div>
+							<div>{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })}</div>
 							<div class="text-xs text-slate-400">
 								Reg. {formatDate(payment.createdAt, { hour: '2-digit', minute: '2-digit' })}
 							</div>

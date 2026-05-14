@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
 	import { QuoteStatusBadge } from '$lib/components/ui/badges';
-	import { formatDate, formatCurrency } from '$lib/utils';
+	import { formatDateOnly, formatCurrency } from '$lib/utils';
 	import { SALE_ITEM_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
 	import type { HistoryQuote } from '$lib/server/db/queries/customerHistory';
 
@@ -52,7 +52,7 @@
 								<QuoteStatusBadge status={quote.status} />
 							</div>
 							<p class="mt-0.5 text-xs text-on-surface-variant">
-								{formatDate(quote.quoteDate, { month: 'short' })}
+								{formatDateOnly(quote.quoteDate, { month: 'short' })}
 								{#if quote.seller}
 									<span class="text-outline">·</span>
 									{quote.seller.fullName}
@@ -67,7 +67,7 @@
 							</p>
 							{#if quote.validUntil}
 								<p class="text-xs text-on-surface-variant">
-									Válido: {formatDate(quote.validUntil, { month: 'short' })}
+									Válido: {formatDateOnly(quote.validUntil, { month: 'short' })}
 								</p>
 							{/if}
 						</div>

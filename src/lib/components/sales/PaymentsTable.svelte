@@ -11,7 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { voidPayment } from '$lib/remote/sales.remote';
-	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDate, formatDateOnly, getErrorMessage } from '$lib/utils';
 	import { getPaymentMethodLabel, PaymentMethod } from '$lib/shared/enums';
 	import type { SalePayment } from '$lib/server/db/schema';
 
@@ -144,7 +144,7 @@
 						>
 							<td class="px-6 py-5 align-top">
 								<div class:line-through={payment.voidedAt} class="font-medium text-brand-navy">
-									{formatDate(payment.paymentDate, { dateStyle: 'short' })}
+									{formatDateOnly(payment.paymentDate, { dateStyle: 'short' })}
 								</div>
 								<div class="mt-1 text-xs text-outline">
 									Reg. {formatDate(payment.createdAt, { hour: '2-digit', minute: '2-digit' })}

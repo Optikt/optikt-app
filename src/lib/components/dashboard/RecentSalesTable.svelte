@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { formatPrice, formatDateOnly } from '$lib/utils';
 	import { SaleStatusBadge } from '$lib/components/ui';
 	import type { RecentSale } from '$lib/server/db/queries/dashboard';
 
@@ -40,7 +40,7 @@
 							<span class="font-mono text-xs text-slate-400">Venta #{sale.orderNumber}</span>
 							<span class="hidden text-xs text-slate-300 sm:inline">•</span>
 							<span class="text-xs text-slate-400"
-								>{formatDate(sale.saleDate, { month: 'short' })}</span
+								>{formatDateOnly(sale.saleDate, { month: 'short' })}</span
 							>
 						</div>
 					</div>

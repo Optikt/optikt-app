@@ -25,7 +25,7 @@
 		getSnapshotTaxLabel
 	} from '$lib/components/sales/saleItemHelpers';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
-	import { formatDate, formatPrice } from '$lib/utils';
+	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
@@ -254,7 +254,7 @@
 		>
 			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Fecha</span>
 			<span class="font-semibold text-brand-navy"
-				>{formatDate(sale.saleDate, { dateStyle: 'medium' })}</span
+				>{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}</span
 			>
 		</div>
 		<div

@@ -23,7 +23,7 @@
 	} from '$lib/components/ui';
 	import { cancelQuote, convertQuoteToSale, assignQuoteCustomer } from '$lib/remote/quotes.remote';
 	import { canOperate } from '$lib/shared/enums';
-	import { formatPrice, formatDate, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDateOnly, getErrorMessage } from '$lib/utils';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
@@ -261,7 +261,7 @@
 		>
 			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Fecha</span>
 			<span class="font-semibold text-brand-navy"
-				>{formatDate(quote.quoteDate, { dateStyle: 'medium' })}</span
+				>{formatDateOnly(quote.quoteDate, { dateStyle: 'medium' })}</span
 			>
 		</div>
 		<div
@@ -278,7 +278,7 @@
 					>Válido hasta</span
 				>
 				<span class="font-semibold text-brand-navy"
-					>{formatDate(quote.validUntil, { dateStyle: 'medium' })}</span
+					>{formatDateOnly(quote.validUntil, { dateStyle: 'medium' })}</span
 				>
 			</div>
 		{/if}

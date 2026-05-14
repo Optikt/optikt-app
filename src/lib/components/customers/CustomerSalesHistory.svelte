@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
 	import { SaleStatusBadge } from '$lib/components/ui/badges';
-	import { formatDate, formatCurrency } from '$lib/utils';
+	import { formatDateOnly, formatCurrency } from '$lib/utils';
 	import { getPaymentMethodLabel } from '$lib/shared/enums/salesTypes';
 	import { SALE_ITEM_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
 	import type { HistorySale } from '$lib/server/db/queries/customerHistory';
@@ -54,7 +54,7 @@
 								<SaleStatusBadge status={sale.status} />
 							</div>
 							<p class="mt-0.5 text-xs text-on-surface-variant">
-								{formatDate(sale.saleDate, { month: 'short' })}
+								{formatDateOnly(sale.saleDate, { month: 'short' })}
 								{#if sale.seller}
 									<span class="text-outline">·</span>
 									{sale.seller.fullName}
@@ -141,7 +141,7 @@
 													{getPaymentMethodLabel(payment.paymentMethod)}
 												</p>
 												<p class="text-xs text-on-surface-variant">
-													{formatDate(payment.paymentDate, { month: 'short' })}
+													{formatDateOnly(payment.paymentDate, { month: 'short' })}
 													{#if payment.reference}
 														<span class="text-outline">·</span>
 														Ref: {payment.reference}
