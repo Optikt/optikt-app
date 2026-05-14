@@ -66,7 +66,7 @@
 	let lastComposerToken = '';
 	let showForm = $state(false);
 	let loading = $state(false);
-	let currencyCode = $state<CurrencyCode>(CurrencyCode.USD_BCV);
+	let currencyCode = $state<CurrencyCode>(CurrencyCode.VES);
 	let paymentDate = $state(toISODate(nowUTC()));
 	let amountInput = $state('');
 	let bcvUsdRateInput = $state('');
