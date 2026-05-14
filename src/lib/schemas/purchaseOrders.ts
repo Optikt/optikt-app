@@ -94,6 +94,7 @@ export const ListPurchaseOrdersSchema = ListPaginationWithDeletedSchema.extend({
 	readyForReview: z.boolean().optional(),
 	documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
 	supplierId: z.uuid().optional(),
+	hasPendingBalance: z.boolean().optional(),
 	orderBy: z.enum(['orderNumber', 'orderDate', 'createdAt', 'status']).optional(),
 	orderSort: z.enum(['asc', 'desc']).optional()
 });
