@@ -17,7 +17,7 @@ function roundCurrency(value: number): number {
 }
 
 export function requiresPurchasePaymentSpecificRate(currencyCode: CurrencyCode): boolean {
-	return currencyCode !== CurrencyCode.USD_BCV;
+	return currencyCode !== CurrencyCode.USD_BCV && currencyCode !== CurrencyCode.VES;
 }
 
 export function getPurchasePaymentSpecificRateLabel(currencyCode: CurrencyCode): string {
@@ -45,6 +45,14 @@ export function normalizePurchasePaymentAmounts({
 }: NormalizePurchasePaymentInput): NormalizedPurchasePaymentAmounts {
 	if (amount <= 0 || bcvUsdRate <= 0) {
 		return { amountBs: 0, amountUsdBcv: 0 };
+	}
+
+	// VES: amount is already in Bs — divide by BCV rate to get USD
+	if (currencyCode === CurrencyCode.VES) {
+		return {
+			amountBs: roundCurrency(amount),
+			amountUsdBcv: roundCurrency(amount / bcvUsdRate)
+		};
 	}
 
 	if (!requiresPurchasePaymentSpecificRate(currencyCode)) {

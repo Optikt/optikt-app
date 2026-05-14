@@ -11,6 +11,10 @@ describe('requiresPurchasePaymentSpecificRate', () => {
 		expect(requiresPurchasePaymentSpecificRate(CurrencyCode.USD_BCV)).toBe(false);
 	});
 
+	it('does not require a specific rate for VES', () => {
+		expect(requiresPurchasePaymentSpecificRate(CurrencyCode.VES)).toBe(false);
+	});
+
 	it('requires a specific rate for non-BCV currencies', () => {
 		expect(requiresPurchasePaymentSpecificRate(CurrencyCode.USDT)).toBe(true);
 		expect(requiresPurchasePaymentSpecificRate(CurrencyCode.OTHER)).toBe(true);
@@ -52,6 +56,36 @@ describe('normalizePurchasePaymentAmounts', () => {
 				currencyCode: CurrencyCode.OTHER,
 				amount: 20,
 				bcvUsdRate: 90
+			})
+		).toEqual({ amountBs: 0, amountUsdBcv: 0 });
+	});
+
+	it('normalizes VES payments: amount is Bs, divides by BCV rate to get USD', () => {
+		expect(
+			normalizePurchasePaymentAmounts({
+				currencyCode: CurrencyCode.VES,
+				amount: 11928.5,
+				bcvUsdRate: 477.14
+			})
+		).toEqual({ amountBs: 11928.5, amountUsdBcv: 25.0 });
+	});
+
+	it('normalizes VES payments with rounding: 6950 Bs at 477.14', () => {
+		expect(
+			normalizePurchasePaymentAmounts({
+				currencyCode: CurrencyCode.VES,
+				amount: 6950,
+				bcvUsdRate: 477.14
+			})
+		).toEqual({ amountBs: 6950, amountUsdBcv: 14.57 });
+	});
+
+	it('returns zeroed amounts for VES when BCV rate is zero', () => {
+		expect(
+			normalizePurchasePaymentAmounts({
+				currencyCode: CurrencyCode.VES,
+				amount: 5000,
+				bcvUsdRate: 0
 			})
 		).toEqual({ amountBs: 0, amountUsdBcv: 0 });
 	});

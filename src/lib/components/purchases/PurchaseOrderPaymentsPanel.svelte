@@ -136,6 +136,8 @@
 				return `€${formatted}`;
 			case CurrencyCode.USDT:
 				return `${formatted} USDT`;
+			case CurrencyCode.VES:
+				return `Bs. ${formatted}`;
 			case CurrencyCode.OTHER:
 				return formatted;
 			default:

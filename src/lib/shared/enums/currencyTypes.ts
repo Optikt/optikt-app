@@ -8,6 +8,7 @@ export enum CurrencyCode {
 	USDT = 'USDT',
 	USD_PAYPAL = 'USD_PAYPAL',
 	USD_EFECTIVO = 'USD_EFECTIVO',
+	VES = 'VES',
 	OTHER = 'OTHER'
 }
 
@@ -20,6 +21,7 @@ export const CURRENCY_LABELS: Record<CurrencyCode, string> = {
 	[CurrencyCode.USDT]: 'USDT',
 	[CurrencyCode.USD_PAYPAL]: 'USD PayPal',
 	[CurrencyCode.USD_EFECTIVO]: 'USD efectivo',
+	[CurrencyCode.VES]: 'Bs. (Bolívares)',
 	[CurrencyCode.OTHER]: 'Otra / libre'
 };
 
@@ -37,6 +39,7 @@ export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
 	[CurrencyCode.USDT]: '$',
 	[CurrencyCode.USD_PAYPAL]: '$',
 	[CurrencyCode.USD_EFECTIVO]: '$',
+	[CurrencyCode.VES]: 'Bs.',
 	[CurrencyCode.OTHER]: '¤'
 };
 
