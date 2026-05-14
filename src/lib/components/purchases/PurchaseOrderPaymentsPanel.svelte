@@ -306,7 +306,7 @@
 
 				<label class="space-y-2 text-sm">
 					<span class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Monto recibido</span
+						>Monto pagado</span
 					>
 					<input
 						bind:value={amountInput}
