@@ -305,9 +305,14 @@
 
 								<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 									<label class="space-y-2 text-sm">
-										<span class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+										<span
+											class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+										>
 											Vencimiento
-											<Info class="h-3 w-3 shrink-0 text-outline" title="Fecha límite máxima para pagar esta cuota. Pasada esta fecha el pago queda en mora." />
+											<Info
+												class="h-3 w-3 shrink-0 text-outline"
+												title="Fecha límite máxima para pagar esta cuota. Pasada esta fecha el pago queda en mora."
+											/>
 										</span>
 										<input
 											bind:value={row.dueDate}
@@ -317,10 +322,15 @@
 									</label>
 
 									<label class="space-y-2 text-sm">
-									<span class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-										Monto esperado USD
-										<Info class="h-3 w-3 shrink-0 text-outline" title="Cuánto se espera pagar en esta cuota (en USD BCV). Obligatorio si hay más de una cuota." />
-									</span>
+										<span
+											class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+										>
+											Monto esperado USD
+											<Info
+												class="h-3 w-3 shrink-0 text-outline"
+												title="Cuánto se espera pagar en esta cuota (en USD BCV). Obligatorio si hay más de una cuota."
+											/>
+										</span>
 										<input
 											bind:value={row.expectedAmountUsd}
 											type="number"
@@ -332,9 +342,14 @@
 									</label>
 
 									<label class="space-y-2 text-sm">
-										<span class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+										<span
+											class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+										>
 											% pronto pago
-											<Info class="h-3 w-3 shrink-0 text-outline" title="Descuento que ofrece el proveedor si pagás antes del límite. Ej: 5 = 5% de descuento sobre esta cuota." />
+											<Info
+												class="h-3 w-3 shrink-0 text-outline"
+												title="Descuento que ofrece el proveedor si pagás antes del límite. Ej: 5 = 5% de descuento sobre esta cuota."
+											/>
 										</span>
 										<input
 											bind:value={row.earlyPaymentDiscountPercent}
@@ -347,10 +362,15 @@
 									</label>
 
 									<label class="space-y-2 text-sm">
-									<span class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-										Límite pronto pago
-										<Info class="h-3 w-3 shrink-0 text-outline" title="Fecha tope para pagar y obtener el descuento. Debe ser anterior al vencimiento." />
-									</span>
+										<span
+											class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
+										>
+											Límite pronto pago
+											<Info
+												class="h-3 w-3 shrink-0 text-outline"
+												title="Fecha tope para pagar y obtener el descuento. Debe ser anterior al vencimiento."
+											/>
+										</span>
 										<input
 											bind:value={row.earlyPaymentDiscountDeadline}
 											type="date"
