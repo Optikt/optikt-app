@@ -46,8 +46,7 @@ import {
 	getNextPurchaseOrderPaymentNumber,
 	getPurchaseOrderPayments,
 	getPurchaseOrderPaymentsWithUsers,
-	voidPurchaseOrderPayment,
-	type PurchaseOrderPaymentWithUsers
+	voidPurchaseOrderPayment
 } from '$lib/server/db/queries/purchaseOrderPayments';
 import {
 	getPurchaseOrderCreditSchedule,

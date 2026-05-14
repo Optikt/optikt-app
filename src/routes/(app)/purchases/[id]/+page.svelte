@@ -56,8 +56,7 @@
 		InventoryLot,
 		InventoryMovement,
 		PurchaseOrder,
-		PurchaseOrderCreditInstallment,
-		PurchaseOrderPayment
+		PurchaseOrderCreditInstallment
 	} from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
