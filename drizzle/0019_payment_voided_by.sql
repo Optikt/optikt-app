@@ -1,0 +1,2 @@
+ALTER TABLE "purchase_order_payments" ADD COLUMN "voided_by_id" uuid;--> statement-breakpoint
+ALTER TABLE "purchase_order_payments" ADD CONSTRAINT "purchase_order_payments_voided_by_id_fkey" FOREIGN KEY ("voided_by_id") REFERENCES "public"."users"("id") ON DELETE restrict ON UPDATE no action;

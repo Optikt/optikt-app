@@ -134,6 +134,13 @@
       "when": 1778773445754,
       "tag": "0018_add_ves_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778775327891,
+      "tag": "0019_payment_voided_by",
+      "breakpoints": true
     }
   ]
 }
