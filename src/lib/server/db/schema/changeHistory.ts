@@ -78,7 +78,10 @@ export const ALL_ENTITY_TYPES = [
 	'lens_treatment',
 	'surplus_unit',
 	'quote',
-	'cash_expense'
+	'cash_expense',
+	'purchase_order',
+	'purchase_order_item',
+	'purchase_order_payment'
 ] as const;
 
 export type EntityType = (typeof ALL_ENTITY_TYPES)[number];

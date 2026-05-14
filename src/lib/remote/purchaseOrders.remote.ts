@@ -396,7 +396,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 			return po;
 		});
 
-		await auditService.logCreate('purchase_order' as never, result, context);
+		await auditService.logCreate('purchase_order', result, context);
 
 		return { success: true as const, purchaseOrder: result };
 	} catch (e) {
@@ -480,7 +480,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 			return purchaseOrder;
 		});
 
-		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
+		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
@@ -619,7 +619,7 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 		});
 
 		await auditService.logUpdate(
-			'purchase_order' as never,
+			'purchase_order',
 			data.id,
 			existing,
 			result.purchaseOrder,
@@ -660,7 +660,7 @@ export const markPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema, a
 		const updated = await db.transaction(async (tx) =>
 			setPurchaseOrderReadyForReview(data.id, true, tx, data.clearReviewed)
 		);
-		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
+		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
 		console.error('Error marking purchase order ready:', e);
@@ -687,7 +687,7 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 		const updated = await db.transaction(async (tx) =>
 			setPurchaseOrderReadyForReview(data.id, false, tx, data.clearReviewed)
 		);
-		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
+		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
 		console.error('Error unmarking purchase order ready:', e);
@@ -721,7 +721,7 @@ export const togglePurchaseOrderItemReviewedCmd = command(
 			}
 
 			const updated = await setPurchaseOrderItemReviewed(data.id, data.value);
-			await auditService.logUpdate('purchase_order_item' as never, data.id, item, updated, context);
+			await auditService.logUpdate('purchase_order_item', data.id, item, updated, context);
 			return { success: true as const, item: updated };
 		} catch (e) {
 			console.error('Error toggling purchase order item reviewed:', e);
@@ -747,7 +747,7 @@ export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async
 		});
 
 		await auditService.logUpdate(
-			'purchase_order' as never,
+			'purchase_order',
 			data.id,
 			{ status: PurchaseOrderStatus.DRAFT },
 			{ status: PurchaseOrderStatus.CONFIRMED },
@@ -798,7 +798,7 @@ export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (
 		const result = await cancelPO(data.id);
 
 		await auditService.logUpdate(
-			'purchase_order' as never,
+			'purchase_order',
 			data.id,
 			{ status: PurchaseOrderStatus.DRAFT },
 			{ status: PurchaseOrderStatus.CANCELLED },
@@ -887,7 +887,7 @@ export const addPurchaseOrderPaymentCmd = command(
 				return { payment, balance, dueStatus };
 			});
 
-			await auditService.logCreate('purchase_order_payment' as never, result.payment, context, {
+			await auditService.logCreate('purchase_order_payment', result.payment, context, {
 				excludeFields: ['createdAt', 'updatedAt']
 			});
 
@@ -948,7 +948,7 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 		});
 
 		await auditService.logUpdate(
-			'purchase_order_payment' as never,
+			'purchase_order_payment',
 			data.id,
 			payment,
 			result.voided,
@@ -1030,7 +1030,7 @@ export const setPurchaseOrderCreditScheduleCmd = command(
 			});
 
 			await auditService.logCustom(
-				'purchase_order' as never,
+				'purchase_order',
 				data.purchaseOrderId,
 				'update',
 				{

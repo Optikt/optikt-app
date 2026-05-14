@@ -60,6 +60,7 @@
 		PurchaseOrderPayment
 	} from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
+	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
@@ -76,6 +77,7 @@
 	let dueStatus = $state<PurchaseOrderDueStatus>(untrack(() => data.dueStatus));
 	let movements = $state<InventoryMovement[]>(untrack(() => data.movements));
 	let lotsMap = $state<Record<string, InventoryLot>>(untrack(() => data.lotsMap));
+	let auditHistory = $state<ChangeHistoryWithUser[]>(untrack(() => data.auditHistory));
 
 	let actionLoading = $state(false);
 	let showConfirmModal = $state(false);
@@ -611,6 +613,63 @@
 		balance = payload.balance;
 		dueStatus = payload.dueStatus;
 	}
+
+	interface AuditEvent {
+		id: string;
+		label: string;
+		changedByName: string | null;
+		changedAt: string;
+		entityType: string;
+		action: string;
+	}
+
+	const PO_STATUS_LABELS: Record<string, string> = {
+		CONFIRMED: 'Orden confirmada',
+		CANCELLED: 'Orden cancelada',
+		DRAFT: 'Orden devuelta a borrador'
+	};
+
+	function classifyAuditEntry(entry: ChangeHistoryWithUser): AuditEvent | null {
+		const { entityType, action, changes } = entry;
+
+		if (entityType === 'purchase_order') {
+			if (action === 'create') {
+				return { id: entry.id, label: 'Orden creada', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+			}
+			if (action === 'update') {
+				if (changes.status) {
+					const newStatus = changes.status.new as string | null;
+					const label = newStatus ? (PO_STATUS_LABELS[newStatus] ?? `Estado: ${newStatus}`) : null;
+					if (!label) return null;
+					return { id: entry.id, label, changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+				}
+				if ('readyForReviewAt' in changes) {
+					const label = changes.readyForReviewAt?.new ? 'Enviada a revisión' : 'Devuelta a borrador';
+					return { id: entry.id, label, changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+				}
+				if (changes.paymentTerms) {
+					return { id: entry.id, label: 'Términos de pago actualizados', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+				}
+				// Generic PO updates (draft edits) — skip to avoid noise
+				return null;
+			}
+		}
+
+		if (entityType === 'purchase_order_payment') {
+			if (action === 'create') {
+				return { id: entry.id, label: 'Pago registrado', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+			}
+			if (action === 'update' && changes.voidedAt) {
+				return { id: entry.id, label: 'Pago anulado', changedByName: entry.changedByName, changedAt: entry.changedAt, entityType, action };
+			}
+		}
+
+		return null;
+	}
+
+	const auditTimeline = $derived(
+		auditHistory.map(classifyAuditEntry).filter((e): e is AuditEvent => e !== null)
+	);
 </script>
 
 <svelte:head>
@@ -1295,37 +1354,75 @@
 					</div>
 				</div>
 
-				<div class="space-y-4 px-6 py-6">
-					<div class="rounded-2xl bg-surface-container-low p-4">
-						<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-							Creado por
-						</p>
-						<p class="mt-2 font-semibold text-brand-navy">
-							{purchaseOrder.createdBy?.fullName ?? 'Usuario no disponible'}
-						</p>
-						<p class="mt-1 text-sm text-on-surface-variant">
-							{formatDate(purchaseOrder.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
-						</p>
-					</div>
-
-					<div class="rounded-2xl bg-surface-container-low p-4">
-						<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-							Confirmado por
-						</p>
-						{#if purchaseOrder.confirmedAt}
-							<p class="mt-2 font-semibold text-brand-navy">
-								{purchaseOrder.confirmedBy?.fullName ?? 'Usuario no disponible'}
-							</p>
-							<p class="mt-1 text-sm text-on-surface-variant">
-								{formatDate(purchaseOrder.confirmedAt, {
-									dateStyle: 'medium',
-									timeStyle: 'short'
-								})}
-							</p>
-						{:else}
-							<p class="mt-2 text-sm text-on-surface-variant">Pendiente de confirmación.</p>
-						{/if}
-					</div>
+				<div class="px-6 py-5">
+					{#if auditTimeline.length === 0}
+						<div class="space-y-4">
+							<div class="rounded-2xl bg-surface-container-low p-4">
+								<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+									Creado por
+								</p>
+								<p class="mt-2 font-semibold text-brand-navy">
+									{purchaseOrder.createdBy?.fullName ?? 'Usuario no disponible'}
+								</p>
+								<p class="mt-1 text-sm text-on-surface-variant">
+									{formatDate(purchaseOrder.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
+								</p>
+							</div>
+							{#if purchaseOrder.confirmedAt}
+								<div class="rounded-2xl bg-surface-container-low p-4">
+									<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+										Confirmado por
+									</p>
+									<p class="mt-2 font-semibold text-brand-navy">
+										{purchaseOrder.confirmedBy?.fullName ?? 'Usuario no disponible'}
+									</p>
+									<p class="mt-1 text-sm text-on-surface-variant">
+										{formatDate(purchaseOrder.confirmedAt, { dateStyle: 'medium', timeStyle: 'short' })}
+									</p>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<ol class="relative border-l border-outline-variant/25">
+							{#each auditTimeline as event (event.id)}
+								{@const isPayment = event.entityType === 'purchase_order_payment'}
+								{@const isVoid = isPayment && event.action === 'update'}
+								{@const isCreate = event.action === 'create'}
+								<li class="mb-6 ms-5 last:mb-0">
+									<span
+										class="absolute -start-[9px] flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-surface-container-lowest
+										{isVoid
+											? 'bg-error-container text-on-error-container'
+											: isPayment
+												? 'bg-success/15 text-success'
+												: isCreate
+													? 'bg-brand-navy/10 text-brand-navy'
+													: 'bg-surface-container-high text-on-surface-variant'}"
+									>
+										{#if isVoid}
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-2.5 w-2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+										{:else if isPayment}
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14"/></svg>
+										{:else if isCreate}
+											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14"/></svg>
+										{:else}
+											<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5"><circle cx="12" cy="12" r="6"/></svg>
+										{/if}
+									</span>
+									<p class="text-sm font-semibold text-on-surface
+										{isVoid ? 'text-error' : ''}">
+										{event.label}
+									</p>
+									<p class="mt-0.5 text-xs text-on-surface-variant">
+										{event.changedByName ?? 'Usuario desconocido'}
+									</p>
+									<time class="mt-0.5 block font-mono text-[11px] tabular-nums text-outline">
+										{formatDate(event.changedAt, { dateStyle: 'short', timeStyle: 'short' })}
+									</time>
+								</li>
+							{/each}
+						</ol>
+					{/if}
 				</div>
 			</section>
 		</aside>

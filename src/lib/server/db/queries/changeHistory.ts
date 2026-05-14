@@ -1,7 +1,8 @@
-import { eq, and, desc, inArray, sql } from 'drizzle-orm';
+import { eq, and, desc, asc, inArray, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	changeHistory,
+	purchaseOrderPayments,
 	users,
 	type EntityType,
 	type ActionType,
@@ -187,4 +188,44 @@ export async function deleteOldHistory(olderThan: Date): Promise<number> {
 		.where(sql`${changeHistory.changedAt} < ${olderThan}`);
 
 	return result.count;
+}
+
+/**
+ * Get the full audit timeline for a purchase order, including events from its
+ * payments. Ordered chronologically (oldest first) for display as a timeline.
+ */
+export async function getPurchaseOrderAuditHistory(
+	purchaseOrderId: string
+): Promise<ChangeHistoryWithUser[]> {
+	// Sub-select: IDs of all payments belonging to this PO
+	const paymentIdsSq = db
+		.select({ id: purchaseOrderPayments.id })
+		.from(purchaseOrderPayments)
+		.where(eq(purchaseOrderPayments.purchaseOrderId, purchaseOrderId));
+
+	const results = await db
+		.select({
+			history: changeHistory,
+			changedByName: users.fullName
+		})
+		.from(changeHistory)
+		.leftJoin(users, eq(changeHistory.changedById, users.id))
+		.where(
+			or(
+				and(
+					eq(changeHistory.entityType, 'purchase_order'),
+					eq(changeHistory.entityId, purchaseOrderId)
+				),
+				and(
+					eq(changeHistory.entityType, 'purchase_order_payment'),
+					inArray(changeHistory.entityId, paymentIdsSq)
+				)
+			)
+		)
+		.orderBy(asc(changeHistory.changedAt));
+
+	return results.map((r) => ({
+		...r.history,
+		changedByName: r.changedByName
+	}));
 }

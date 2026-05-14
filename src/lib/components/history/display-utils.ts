@@ -213,6 +213,46 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		voidedAt: 'Anulado',
 		voidedById: 'Anulado por',
 		voidReason: 'Motivo de anulación'
+	},
+	purchase_order: {
+		poNumber: 'Nro. Orden',
+		supplierId: 'Proveedor',
+		status: 'Estado',
+		paymentTerms: 'Términos de pago',
+		documentType: 'Tipo de documento',
+		invoiceNumber: 'Nro. Factura',
+		invoiceDate: 'Fecha de factura',
+		discountType: 'Tipo de descuento',
+		discountValue: 'Descuento',
+		subtotal: 'Subtotal',
+		total: 'Total',
+		readyForReviewAt: 'Lista para revisión',
+		confirmedAt: 'Confirmada',
+		cancelledAt: 'Cancelada',
+		notes: 'Notas',
+		bcvRate: 'Tasa BCV',
+		creditSchedule: 'Cronograma de crédito'
+	},
+	purchase_order_item: {
+		productId: 'Producto',
+		type: 'Tipo',
+		quantity: 'Cantidad',
+		unitPrice: 'Precio unitario',
+		notes: 'Notas',
+		isReviewed: 'Revisado'
+	},
+	purchase_order_payment: {
+		currencyCode: 'Moneda',
+		paymentDate: 'Fecha de pago',
+		amount: 'Monto',
+		bcvUsdRate: 'Tasa BCV',
+		specificRate: 'Tasa usada',
+		amountBs: 'Monto Bs.',
+		amountUsdBcv: 'Monto USD BCV',
+		reference: 'Referencia',
+		notes: 'Notas',
+		voidedAt: 'Anulado',
+		voidedById: 'Anulado por'
 	}
 };
 
