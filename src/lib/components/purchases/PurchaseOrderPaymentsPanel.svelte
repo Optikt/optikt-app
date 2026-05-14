@@ -505,7 +505,7 @@
 									{payment.reference || payment.notes || 'Sin detalle adicional'}
 								</p>
 								{#if payment.reference && payment.notes}
-									<p class="mt-1 whitespace-pre-wrap text-xs text-outline">
+									<p class="mt-1 text-xs whitespace-pre-wrap text-outline">
 										{payment.notes}
 									</p>
 								{/if}

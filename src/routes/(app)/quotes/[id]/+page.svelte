@@ -301,7 +301,7 @@
 							<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 								Observaciones
 							</p>
-							<p class="mt-2 whitespace-pre-wrap text-base leading-relaxed text-on-surface">
+							<p class="mt-2 text-base leading-relaxed whitespace-pre-wrap text-on-surface">
 								{quote.notes}
 							</p>
 						</div>

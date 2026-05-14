@@ -282,7 +282,7 @@
 							<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 								Observaciones
 							</p>
-							<p class="mt-2 whitespace-pre-wrap text-base leading-relaxed text-on-surface">
+							<p class="mt-2 text-base leading-relaxed whitespace-pre-wrap text-on-surface">
 								{sale.notes}
 							</p>
 						</div>
@@ -330,7 +330,7 @@
 										{formatPrice(sale.refundAmount ?? 0)}
 									</p>
 									{#if sale.refundNotes}
-										<p class="mt-1 whitespace-pre-wrap text-sm text-current/80">
+										<p class="mt-1 text-sm whitespace-pre-wrap text-current/80">
 											{sale.refundNotes}
 										</p>
 									{/if}

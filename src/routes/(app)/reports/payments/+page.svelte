@@ -4,7 +4,13 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
-	import { formatPrice, formatDate, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
+	import {
+		formatPrice,
+		formatDate,
+		formatDateOnly,
+		downloadCsv,
+		getErrorMessage
+	} from '$lib/utils';
 	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchPaymentsReport } from '$lib/remote/reports.remote';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';

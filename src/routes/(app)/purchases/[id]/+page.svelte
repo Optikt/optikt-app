@@ -940,7 +940,7 @@
 								<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 									Notas internas
 								</p>
-								<p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-on-surface">
+								<p class="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-on-surface">
 									{purchaseOrder.notes}
 								</p>
 							</div>
