@@ -168,6 +168,8 @@ export const purchaseOrderPayments = pgTable(
 		reference: varchar(),
 		notes: varchar(),
 		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'string' }),
+		/** User who voided this payment (null if not voided) */
+		voidedById: uuid('voided_by_id'),
 		createdById: uuid('created_by_id').notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
@@ -203,6 +205,11 @@ export const purchaseOrderPayments = pgTable(
 			columns: [table.createdById],
 			foreignColumns: [users.id],
 			name: 'purchase_order_payments_created_by_id_fkey'
+		}).onDelete('restrict'),
+		foreignKey({
+			columns: [table.voidedById],
+			foreignColumns: [users.id],
+			name: 'purchase_order_payments_voided_by_id_fkey'
 		}).onDelete('restrict')
 	]
 );

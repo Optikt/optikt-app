@@ -59,6 +59,7 @@
 		PurchaseOrderCreditInstallment,
 		PurchaseOrderPayment
 	} from '$lib/server/db/schema';
+	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
@@ -69,7 +70,7 @@
 	let { data } = $props();
 	let purchaseOrder = $state<PurchaseOrderWithRelations>(untrack(() => data.purchaseOrder));
 	let items = $state<PurchaseOrderItemWithProduct[]>(untrack(() => data.items));
-	let payments = $state<PurchaseOrderPayment[]>(untrack(() => data.payments));
+	let payments = $state<PurchaseOrderPaymentWithUsers[]>(untrack(() => data.payments));
 	let creditSchedule = $state<PurchaseOrderCreditInstallment[]>(untrack(() => data.creditSchedule));
 	let balance = $state<PurchaseOrderBalanceSummary>(untrack(() => data.balance));
 	let dueStatus = $state<PurchaseOrderDueStatus>(untrack(() => data.dueStatus));
@@ -602,7 +603,7 @@
 	}
 
 	function handleFinanceChanged(payload: {
-		payments: PurchaseOrderPayment[];
+		payments: PurchaseOrderPaymentWithUsers[];
 		balance: PurchaseOrderBalanceSummary;
 		dueStatus: PurchaseOrderDueStatus;
 	}) {
@@ -1108,6 +1109,7 @@
 				status={purchaseOrder.status}
 				defaultBcvRate={purchaseOrder.bcvRate}
 				{payments}
+				pendingBalanceUsd={balance.balance}
 				isFullyPaid={balance.isFullyPaid}
 				composerRequest={paymentComposerRequest}
 				onFinanceChanged={handleFinanceChanged}

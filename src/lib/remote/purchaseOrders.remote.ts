@@ -45,7 +45,9 @@ import {
 	findPurchaseOrderPaymentById,
 	getNextPurchaseOrderPaymentNumber,
 	getPurchaseOrderPayments,
-	voidPurchaseOrderPayment
+	getPurchaseOrderPaymentsWithUsers,
+	voidPurchaseOrderPayment,
+	type PurchaseOrderPaymentWithUsers
 } from '$lib/server/db/queries/purchaseOrderPayments';
 import {
 	getPurchaseOrderCreditSchedule,
@@ -889,7 +891,11 @@ export const addPurchaseOrderPaymentCmd = command(
 				excludeFields: ['createdAt', 'updatedAt']
 			});
 
-			return { success: true as const, ...result };
+			const payments = await getPurchaseOrderPaymentsWithUsers(data.purchaseOrderId, {
+				includeVoided: true
+			});
+
+			return { success: true as const, payments, balance: result.balance, dueStatus: result.dueStatus };
 		} catch (e) {
 			console.error('Error adding purchase order payment:', e);
 			return {
@@ -904,6 +910,9 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 	requireAdmin();
 
 	const context = getAuditContext();
+	if (!context.userId) {
+		return { success: false as const, error: 'No autorizado' };
+	}
 	const purchaseOrder = await findPurchaseOrderById(data.purchaseOrderId);
 	if (!purchaseOrder) {
 		return { success: false as const, error: 'Orden de compra no encontrada' };
@@ -915,8 +924,9 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 	}
 
 	try {
+		const userId = context.userId;
 		const result = await db.transaction(async (tx) => {
-			const voided = await voidPurchaseOrderPayment(data.id, tx);
+			const voided = await voidPurchaseOrderPayment(data.id, userId, tx);
 			if (!voided) {
 				throw new Error('No se pudo anular el pago');
 			}
@@ -946,7 +956,11 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 			{ excludeFields: ['createdAt', 'updatedAt'] }
 		);
 
-		return { success: true as const, ...result };
+		const payments = await getPurchaseOrderPaymentsWithUsers(data.purchaseOrderId, {
+			includeVoided: true
+		});
+
+		return { success: true as const, voided: result.voided, payments, balance: result.balance, dueStatus: result.dueStatus };
 	} catch (e) {
 		console.error('Error voiding purchase order payment:', e);
 		return {

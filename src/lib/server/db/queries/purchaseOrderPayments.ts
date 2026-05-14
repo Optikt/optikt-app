@@ -1,12 +1,19 @@
+import { alias } from 'drizzle-orm/pg-core';
 import { and, desc, eq, isNull, max, sum } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { nowISO } from '$lib/dates';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	purchaseOrderPayments,
+	users,
 	type NewPurchaseOrderPayment,
 	type PurchaseOrderPayment
 } from '$lib/server/db/schema';
+
+export type PurchaseOrderPaymentWithUsers = PurchaseOrderPayment & {
+	createdByName: string;
+	voidedByName: string | null;
+};
 
 export async function getPurchaseOrderPayments(
 	purchaseOrderId: string,
@@ -25,6 +32,40 @@ export async function getPurchaseOrderPayments(
 		.from(purchaseOrderPayments)
 		.where(where!)
 		.orderBy(desc(purchaseOrderPayments.paymentDate), desc(purchaseOrderPayments.createdAt));
+}
+
+const createdByUser = alias(users, 'created_by_user');
+const voidedByUser = alias(users, 'voided_by_user');
+
+export async function getPurchaseOrderPaymentsWithUsers(
+	purchaseOrderId: string,
+	{ includeVoided = false }: { includeVoided?: boolean } = {},
+	executor: DbOrTx = db
+): Promise<PurchaseOrderPaymentWithUsers[]> {
+	const where = includeVoided
+		? eq(purchaseOrderPayments.purchaseOrderId, purchaseOrderId)
+		: and(
+				eq(purchaseOrderPayments.purchaseOrderId, purchaseOrderId),
+				isNull(purchaseOrderPayments.voidedAt)
+			);
+
+	const rows = await executor
+		.select({
+			payment: purchaseOrderPayments,
+			createdByName: createdByUser.fullName,
+			voidedByName: voidedByUser.fullName
+		})
+		.from(purchaseOrderPayments)
+		.innerJoin(createdByUser, eq(purchaseOrderPayments.createdById, createdByUser.id))
+		.leftJoin(voidedByUser, eq(purchaseOrderPayments.voidedById, voidedByUser.id))
+		.where(where!)
+		.orderBy(desc(purchaseOrderPayments.paymentDate), desc(purchaseOrderPayments.createdAt));
+
+	return rows.map((r) => ({
+		...r.payment,
+		createdByName: r.createdByName,
+		voidedByName: r.voidedByName ?? null
+	}));
 }
 
 export async function findPurchaseOrderPaymentById(
@@ -69,11 +110,12 @@ export async function createPurchaseOrderPayment(
 
 export async function voidPurchaseOrderPayment(
 	id: string,
+	voidedById: string,
 	executor: DbOrTx = db
 ): Promise<PurchaseOrderPayment | null> {
 	const [payment] = await executor
 		.update(purchaseOrderPayments)
-		.set({ voidedAt: nowISO(), updatedAt: nowISO() })
+		.set({ voidedAt: nowISO(), voidedById, updatedAt: nowISO() })
 		.where(and(eq(purchaseOrderPayments.id, id), isNull(purchaseOrderPayments.voidedAt)))
 		.returning();
 

@@ -24,6 +24,7 @@
 		requiresPurchasePaymentSpecificRate
 	} from '$lib/shared/purchaseOrderPayments';
 	import type { PurchaseOrderPayment } from '$lib/server/db/schema';
+	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
 
 	interface PaymentComposerRequest {
@@ -39,11 +40,13 @@
 		purchaseOrderId: string;
 		status: string;
 		defaultBcvRate: number;
-		payments: PurchaseOrderPayment[];
+		payments: PurchaseOrderPaymentWithUsers[];
+		/** Pending balance in USD (positive = owes money, negative = overpaid) */
+		pendingBalanceUsd?: number;
 		isFullyPaid?: boolean;
 		composerRequest?: PaymentComposerRequest | null;
 		onFinanceChanged?: (payload: {
-			payments: PurchaseOrderPayment[];
+			payments: PurchaseOrderPaymentWithUsers[];
 			balance: PurchaseOrderBalanceSummary;
 			dueStatus: PurchaseOrderDueStatus;
 		}) => void;
@@ -54,6 +57,7 @@
 		status,
 		defaultBcvRate,
 		payments,
+		pendingBalanceUsd,
 		isFullyPaid = false,
 		composerRequest = null,
 		onFinanceChanged
@@ -70,10 +74,13 @@
 	let referenceInput = $state('');
 	let notesInput = $state('');
 	let showVoidModal = $state(false);
-	let voidingPayment = $state<PurchaseOrderPayment | null>(null);
+	let voidingPayment = $state<PurchaseOrderPaymentWithUsers | null>(null);
 	let voidLoading = $state(false);
+	let showOverpaymentModal = $state(false);
+	let pendingAddPayload = $state<Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null>(null);
 
 	const canManagePayments = $derived(status === PurchaseOrderStatus.CONFIRMED && !isFullyPaid);
+	const canVoidPayment = $derived(status === PurchaseOrderStatus.CONFIRMED);
 	const amountValue = $derived(Number(amountInput || 0));
 	const bcvUsdRateValue = $derived(Number(bcvUsdRateInput || 0));
 	const specificRateValue = $derived(Number(specificRateInput || 0));
@@ -145,7 +152,7 @@
 		}
 	}
 
-	function openVoid(payment: PurchaseOrderPayment) {
+	function openVoid(payment: PurchaseOrderPaymentWithUsers) {
 		voidingPayment = payment;
 		showVoidModal = true;
 	}
@@ -173,27 +180,42 @@
 			return;
 		}
 
+		const payload = {
+			purchaseOrderId,
+			currencyCode,
+			paymentDate,
+			amount: amountValue,
+			bcvUsdRate: bcvUsdRateValue,
+			specificRate: needsSpecificRate ? specificRateValue : undefined,
+			reference: referenceInput || undefined,
+			notes: notesInput || undefined
+		};
+
+		// Warn if payment exceeds pending balance
+		if (
+			pendingBalanceUsd != null &&
+			normalized.amountUsdBcv > pendingBalanceUsd + 0.01
+		) {
+			pendingAddPayload = payload;
+			showOverpaymentModal = true;
+			return;
+		}
+
+		await submitAddPayment(payload);
+	}
+
+	async function submitAddPayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
 		loading = true;
 		try {
-			const result = await addPurchaseOrderPaymentCmd({
-				purchaseOrderId,
-				currencyCode,
-				paymentDate,
-				amount: amountValue,
-				bcvUsdRate: bcvUsdRateValue,
-				specificRate: needsSpecificRate ? specificRateValue : undefined,
-				reference: referenceInput || undefined,
-				notes: notesInput || undefined
-			});
+			const result = await addPurchaseOrderPaymentCmd(payload);
 
 			if (!result.success) {
 				toast.error(result.error ?? 'Error registrando pago');
 				return;
 			}
 
-			const nextPayments = [result.payment, ...payments];
 			onFinanceChanged?.({
-				payments: nextPayments,
+				payments: result.payments,
 				balance: result.balance,
 				dueStatus: result.dueStatus
 			});
@@ -222,14 +244,11 @@
 				return;
 			}
 
-			const nextPayments = payments.map((payment) =>
-				payment.id === result.voided.id ? result.voided : payment
-			);
 			onFinanceChanged?.({
-				payments: nextPayments,
-				balance: result.balance,
-				dueStatus: result.dueStatus
-			});
+					payments: result.payments,
+					balance: result.balance,
+					dueStatus: result.dueStatus
+				});
 			toast.success('Pago anulado');
 			showVoidModal = false;
 			voidingPayment = null;
@@ -424,6 +443,7 @@
 					<tr>
 						<th class="px-5 py-3.5">Pago</th>
 						<th class="px-5 py-3.5">Fecha</th>
+						<th class="px-5 py-3.5">Por</th>
 						<th class="px-5 py-3.5">Moneda</th>
 						<th class="px-5 py-3.5 text-right">Monto original</th>
 						<th class="px-5 py-3.5 text-right">Tasas</th>
@@ -450,6 +470,12 @@
 								<div class="mt-1 text-xs text-outline">
 									{formatDate(payment.createdAt, { hour: '2-digit', minute: '2-digit' })}
 								</div>
+							</td>
+							<td class="px-5 py-4 align-top text-xs text-on-surface-variant">
+								<div>{payment.createdByName}</div>
+								{#if payment.voidedAt && payment.voidedByName}
+									<div class="mt-1 text-[11px] text-error">↳ {payment.voidedByName}</div>
+								{/if}
 							</td>
 							<td class="px-5 py-4 align-top">
 								<AppBadge variant="neutral"
@@ -484,7 +510,7 @@
 								{/if}
 							</td>
 							<td class="px-5 py-4 text-right align-top">
-								{#if canManagePayments && !payment.voidedAt}
+								{#if canVoidPayment && !payment.voidedAt}
 									<button
 										type="button"
 										onclick={() => openVoid(payment)}
@@ -516,5 +542,25 @@
 	onCancel={() => {
 		showVoidModal = false;
 		voidingPayment = null;
+	}}
+/>
+
+<ConfirmModal
+	bind:open={showOverpaymentModal}
+	title="Pago supera el saldo"
+	message={pendingAddPayload != null && pendingBalanceUsd != null
+		? `Este pago de ${formatPrice(normalized.amountUsdBcv)} supera el saldo pendiente de ${formatPrice(pendingBalanceUsd)} en ${formatPrice(normalized.amountUsdBcv - pendingBalanceUsd)}. ¿Registrar de todas formas?`
+		: ''}
+	confirmLabel="Registrar igual"
+	confirmColor="yellow"
+	loading={loading}
+	onConfirm={async () => {
+		showOverpaymentModal = false;
+		if (pendingAddPayload) await submitAddPayment(pendingAddPayload);
+		pendingAddPayload = null;
+	}}
+	onCancel={() => {
+		showOverpaymentModal = false;
+		pendingAddPayload = null;
 	}}
 />

@@ -10,7 +10,7 @@ import {
 	findPurchaseOrderByIdWithRelations,
 	getPurchaseOrderItems
 } from '$lib/server/db/queries/purchaseOrders';
-import { getPurchaseOrderPayments } from '$lib/server/db/queries/purchaseOrderPayments';
+import { getPurchaseOrderPaymentsWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 import { getPurchaseOrderCreditSchedule } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 import { getPurchaseOrderRelatedMovements } from '$lib/server/db/queries/inventoryMovements';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
@@ -30,7 +30,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const [movements, lots, payments, creditSchedule] = await Promise.all([
 		getPurchaseOrderRelatedMovements(params.id, lotIds),
 		Promise.all(lotIds.map((id) => findLotById(id))),
-		getPurchaseOrderPayments(params.id, { includeVoided: true }),
+		getPurchaseOrderPaymentsWithUsers(params.id, { includeVoided: true }),
 		getPurchaseOrderCreditSchedule(params.id)
 	]);
 	const lotsMap = Object.fromEntries(lots.filter(Boolean).map((l) => [l!.id, l!]));
