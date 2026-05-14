@@ -1108,6 +1108,7 @@
 				status={purchaseOrder.status}
 				defaultBcvRate={purchaseOrder.bcvRate}
 				{payments}
+				isFullyPaid={balance.isFullyPaid}
 				composerRequest={paymentComposerRequest}
 				onFinanceChanged={handleFinanceChanged}
 			/>

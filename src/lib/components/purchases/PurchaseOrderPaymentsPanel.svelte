@@ -40,6 +40,7 @@
 		status: string;
 		defaultBcvRate: number;
 		payments: PurchaseOrderPayment[];
+		isFullyPaid?: boolean;
 		composerRequest?: PaymentComposerRequest | null;
 		onFinanceChanged?: (payload: {
 			payments: PurchaseOrderPayment[];
@@ -53,6 +54,7 @@
 		status,
 		defaultBcvRate,
 		payments,
+		isFullyPaid = false,
 		composerRequest = null,
 		onFinanceChanged
 	}: Props = $props();
@@ -71,7 +73,7 @@
 	let voidingPayment = $state<PurchaseOrderPayment | null>(null);
 	let voidLoading = $state(false);
 
-	const canManagePayments = $derived(status === PurchaseOrderStatus.CONFIRMED);
+	const canManagePayments = $derived(status === PurchaseOrderStatus.CONFIRMED && !isFullyPaid);
 	const amountValue = $derived(Number(amountInput || 0));
 	const bcvUsdRateValue = $derived(Number(bcvUsdRateInput || 0));
 	const specificRateValue = $derived(Number(specificRateInput || 0));
@@ -264,6 +266,8 @@
 					<CirclePlus class="h-4 w-4" />
 					{showForm ? 'Cerrar formulario' : 'Registrar pago'}
 				</button>
+			{:else if status === PurchaseOrderStatus.CONFIRMED && isFullyPaid}
+				<AppBadge variant="success">Completamente pagada</AppBadge>
 			{/if}
 		</div>
 	</div>

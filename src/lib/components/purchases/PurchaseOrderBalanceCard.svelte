@@ -63,7 +63,7 @@
 			<div class="rounded-2xl bg-surface-container-low p-4">
 				<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 					<Wallet class="h-4 w-4" />
-					Deuda actual
+					Total compra
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
 					{formatPrice(balance.debtTotal)}
