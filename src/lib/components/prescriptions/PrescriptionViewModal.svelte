@@ -233,7 +233,7 @@
 					{#if prescription.notes}
 						<div>
 							<p class="text-sm text-slate-500">Notas</p>
-							<p class="text-slate-900">{prescription.notes}</p>
+							<p class="whitespace-pre-wrap text-slate-900">{prescription.notes}</p>
 						</div>
 					{/if}
 				</div>

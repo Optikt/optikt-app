@@ -419,7 +419,9 @@
 									class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
 									>Notas</span
 								>
-								<p class="mt-0.5 text-sm text-on-surface-variant">{customer.notes}</p>
+								<p class="mt-0.5 whitespace-pre-wrap text-sm text-on-surface-variant">
+									{customer.notes}
+								</p>
 							</div>
 						{/if}
 					</div>
@@ -901,7 +903,7 @@
 													<div class="mt-3 rounded-lg bg-surface-container p-3">
 														<div class="flex items-start gap-2">
 															<FileText class="mt-0.5 h-3.5 w-3.5 text-outline" />
-															<p class="text-xs text-on-surface-variant">
+															<p class="whitespace-pre-wrap text-xs text-on-surface-variant">
 																{prescription.notes}
 															</p>
 														</div>

@@ -501,9 +501,13 @@
 								>
 							</td>
 							<td class="px-5 py-4 align-top text-sm text-on-surface-variant">
-								<p>{payment.reference || payment.notes || 'Sin detalle adicional'}</p>
+								<p class="whitespace-pre-wrap">
+									{payment.reference || payment.notes || 'Sin detalle adicional'}
+								</p>
 								{#if payment.reference && payment.notes}
-									<p class="mt-1 text-xs text-outline">{payment.notes}</p>
+									<p class="mt-1 whitespace-pre-wrap text-xs text-outline">
+										{payment.notes}
+									</p>
 								{/if}
 							</td>
 							<td class="px-5 py-4 text-right align-top">

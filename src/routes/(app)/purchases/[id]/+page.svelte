@@ -940,7 +940,7 @@
 								<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 									Notas internas
 								</p>
-								<p class="mt-2 text-sm leading-relaxed text-on-surface">
+								<p class="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-on-surface">
 									{purchaseOrder.notes}
 								</p>
 							</div>
@@ -1355,7 +1355,9 @@
 									</div>
 								{/if}
 								{#if purchaseOrder.settlementDiscountNotes}
-									<p class="pt-1 text-white/60">{purchaseOrder.settlementDiscountNotes}</p>
+									<p class="pt-1 whitespace-pre-wrap text-white/60">
+										{purchaseOrder.settlementDiscountNotes}
+									</p>
 								{/if}
 							</div>
 						</div>

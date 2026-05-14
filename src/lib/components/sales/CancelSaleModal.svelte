@@ -180,7 +180,7 @@
 				<div class="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
 					<p><strong>Motivo:</strong> {cancelReason}</p>
 					{#if refundNotes}
-						<p class="mt-1"><strong>Nota:</strong> {refundNotes}</p>
+						<p class="mt-1 whitespace-pre-wrap"><strong>Nota:</strong> {refundNotes}</p>
 					{/if}
 				</div>
 			</div>

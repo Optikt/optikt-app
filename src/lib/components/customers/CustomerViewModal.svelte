@@ -101,7 +101,7 @@
 				</div>
 				<div>
 					<p class="text-xs font-medium text-slate-500">Notas</p>
-					<p class="text-sm text-slate-900">{customer.notes}</p>
+					<p class="whitespace-pre-wrap text-sm text-slate-900">{customer.notes}</p>
 				</div>
 			</div>
 		{/if}
