@@ -307,7 +307,9 @@
 				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors {pendingBalanceFilter
 					? 'bg-brand-navy text-white'
 					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-				title={pendingBalanceFilter ? 'Mostrando solo con saldo pendiente' : 'Mostrar solo con saldo pendiente'}
+				title={pendingBalanceFilter
+					? 'Mostrando solo con saldo pendiente'
+					: 'Mostrar solo con saldo pendiente'}
 			>
 				<Wallet class="h-4 w-4" />
 				Saldo pendiente
