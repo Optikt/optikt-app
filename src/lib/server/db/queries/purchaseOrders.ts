@@ -5,6 +5,7 @@ import {
 	asc,
 	desc,
 	count,
+	inArray,
 	gte,
 	lt,
 	sql,
@@ -17,6 +18,7 @@ import {
 	purchaseOrders,
 	purchaseOrderItems,
 	purchaseOrderPayments,
+	purchaseOrderCreditSchedule,
 	inventoryLots,
 	inventoryMovements,
 	products,
@@ -32,9 +34,16 @@ import type { DbOrTx } from '$lib/server/db/types';
 import {
 	PurchaseOrderStatus,
 	PurchaseOrderItemType,
-	PurchaseDiscountType
+	PurchaseDiscountType,
+	PurchasePaymentTerms
 } from '$lib/shared/enums';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
+import {
+	computePurchaseOrderBalance,
+	getPurchaseOrderDueStatus,
+	type PurchaseOrderBalanceSummary,
+	type PurchaseOrderDueStatus
+} from '$lib/shared/purchaseOrderCredit';
 import { getNextLotNumber, getNextFifoCost } from './inventoryLots';
 import { nowISO } from '$lib/dates';
 
@@ -46,6 +55,8 @@ export type PurchaseOrderWithRelations = PurchaseOrder & {
 	supplier: { id: string; name: string } | null;
 	createdBy: { id: string; fullName: string } | null;
 	confirmedBy: { id: string; fullName: string } | null;
+	balance?: PurchaseOrderBalanceSummary;
+	dueStatus?: PurchaseOrderDueStatus;
 };
 
 export type PurchaseOrderItemWithProduct = PurchaseOrderItem & {
@@ -63,6 +74,8 @@ export interface PurchaseOrderFilterOptions {
 	supplierId?: string;
 	/** When true, only return orders with a pending balance (not fully paid). */
 	hasPendingBalance?: boolean;
+	/** When true, only return confirmed credit orders with an overdue installment and balance. */
+	hasOverdueBalance?: boolean;
 }
 
 export interface PurchaseOrderListStats {
@@ -102,6 +115,55 @@ const ORDER_COLUMNS: Record<PurchaseOrderOrderBy, AnyColumn> = {
 	status: purchaseOrders.status
 };
 
+function buildPendingBalanceCondition(): SQL {
+	return sql`
+		COALESCE((
+			SELECT SUM(pop.amount_usd_bcv)
+			FROM ${purchaseOrderPayments} pop
+			WHERE pop.purchase_order_id = ${purchaseOrders.id}
+			  AND pop.voided_at IS NULL
+		), 0)
+		<
+		ROUND(CAST(
+			COALESCE((
+				SELECT SUM(poi.quantity * poi.unit_purchase_price)
+				FROM ${purchaseOrderItems} poi
+				WHERE poi.purchase_order_id = ${purchaseOrders.id}
+			), 0)
+			*
+			CASE
+				WHEN ${purchaseOrders.settlementDiscountType} = 'NONE'
+				  OR ${purchaseOrders.settlementDiscountValue} <= 0
+				  THEN 1.0
+				WHEN ${purchaseOrders.settlementDiscountType} = 'PERCENT'
+				  THEN 1.0 - LEAST(${purchaseOrders.settlementDiscountValue}, 100.0) / 100.0
+				ELSE
+				  GREATEST(0.0, 1.0 - ${purchaseOrders.settlementDiscountValue} / NULLIF(
+					COALESCE((
+						SELECT SUM(poi2.quantity * poi2.unit_purchase_price)
+						FROM ${purchaseOrderItems} poi2
+						WHERE poi2.purchase_order_id = ${purchaseOrders.id}
+					), 0), 0
+				  ))
+			END
+		AS NUMERIC), 2) - 0.01
+	`;
+}
+
+function buildOverdueBalanceCondition(): SQL {
+	return sql`
+		${purchaseOrders.status} = ${PurchaseOrderStatus.CONFIRMED}
+		AND ${purchaseOrders.paymentTerms} = ${PurchasePaymentTerms.CREDIT}
+		AND ${buildPendingBalanceCondition()}
+		AND EXISTS (
+			SELECT 1
+			FROM ${purchaseOrderCreditSchedule} pocs
+			WHERE pocs.purchase_order_id = ${purchaseOrders.id}
+			  AND pocs.due_date < CURRENT_DATE
+		)
+	`;
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -132,45 +194,75 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 	}
 	if (opts.supplierId) conditions.push(eq(purchaseOrders.supplierId, opts.supplierId));
 	if (opts.hasPendingBalance !== undefined) {
-		// Correlated subquery: compare total active payments vs debt total (gross * discount factor).
-		// PERCENT discount factor = 1 - pct/100.
-		// AMOUNT discount: approximated using gross total as the discount base (close enough for filtering).
-		const pendingCondition = sql`
-			COALESCE((
-				SELECT SUM(pop.amount_usd_bcv)
-				FROM ${purchaseOrderPayments} pop
-				WHERE pop.purchase_order_id = ${purchaseOrders.id}
-				  AND pop.voided_at IS NULL
-			), 0)
-			<
-			ROUND(CAST(
-				COALESCE((
-					SELECT SUM(poi.quantity * poi.unit_purchase_price)
-					FROM ${purchaseOrderItems} poi
-					WHERE poi.purchase_order_id = ${purchaseOrders.id}
-				), 0)
-				*
-				CASE
-					WHEN ${purchaseOrders.settlementDiscountType} = 'NONE'
-					  OR ${purchaseOrders.settlementDiscountValue} <= 0
-					  THEN 1.0
-					WHEN ${purchaseOrders.settlementDiscountType} = 'PERCENT'
-					  THEN 1.0 - LEAST(${purchaseOrders.settlementDiscountValue}, 100.0) / 100.0
-					ELSE
-					  GREATEST(0.0, 1.0 - ${purchaseOrders.settlementDiscountValue} / NULLIF(
-						COALESCE((
-							SELECT SUM(poi2.quantity * poi2.unit_purchase_price)
-							FROM ${purchaseOrderItems} poi2
-							WHERE poi2.purchase_order_id = ${purchaseOrders.id}
-						), 0), 0
-					  ))
-				END
-			AS NUMERIC), 2) - 0.01
-		`;
+		const pendingCondition = buildPendingBalanceCondition();
 		conditions.push(opts.hasPendingBalance ? pendingCondition : sql`NOT (${pendingCondition})`);
+	}
+	if (opts.hasOverdueBalance !== undefined) {
+		const overdueCondition = buildOverdueBalanceCondition();
+		conditions.push(opts.hasOverdueBalance ? overdueCondition : sql`NOT (${overdueCondition})`);
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+async function addFinancialMetadata(
+	rows: PurchaseOrderWithRelations[]
+): Promise<PurchaseOrderWithRelations[]> {
+	if (rows.length === 0) return rows;
+
+	const purchaseOrderIds = rows.map((row) => row.id);
+	const [items, payments, creditSchedule] = await Promise.all([
+		db
+			.select()
+			.from(purchaseOrderItems)
+			.where(inArray(purchaseOrderItems.purchaseOrderId, purchaseOrderIds)),
+		db
+			.select()
+			.from(purchaseOrderPayments)
+			.where(inArray(purchaseOrderPayments.purchaseOrderId, purchaseOrderIds)),
+		db
+			.select()
+			.from(purchaseOrderCreditSchedule)
+			.where(inArray(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderIds))
+	]);
+
+	const itemsByOrderId = new Map<string, typeof items>();
+	for (const item of items) {
+		itemsByOrderId.set(item.purchaseOrderId, [
+			...(itemsByOrderId.get(item.purchaseOrderId) ?? []),
+			item
+		]);
+	}
+
+	const paymentsByOrderId = new Map<string, typeof payments>();
+	for (const payment of payments) {
+		paymentsByOrderId.set(payment.purchaseOrderId, [
+			...(paymentsByOrderId.get(payment.purchaseOrderId) ?? []),
+			payment
+		]);
+	}
+
+	const scheduleByOrderId = new Map<string, typeof creditSchedule>();
+	for (const installment of creditSchedule) {
+		scheduleByOrderId.set(installment.purchaseOrderId, [
+			...(scheduleByOrderId.get(installment.purchaseOrderId) ?? []),
+			installment
+		]);
+	}
+
+	return rows.map((row) => {
+		const orderItems = itemsByOrderId.get(row.id) ?? [];
+		const orderPayments = paymentsByOrderId.get(row.id) ?? [];
+		const orderSchedule = scheduleByOrderId.get(row.id) ?? [];
+		const balance = computePurchaseOrderBalance(row, orderItems, orderPayments, orderSchedule);
+		const dueStatus = getPurchaseOrderDueStatus({
+			paymentTerms: row.paymentTerms,
+			installments: orderSchedule,
+			balance: balance.balance
+		});
+
+		return { ...row, balance, dueStatus };
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -287,12 +379,14 @@ export async function getAllPurchaseOrders(
 
 	const results = await base;
 
-	return results.map((r) => ({
+	const rows = results.map((r) => ({
 		...r.po,
 		supplier: r.supplier?.id ? r.supplier : null,
 		createdBy: r.createdBy?.id ? r.createdBy : null,
 		confirmedBy: null
 	}));
+
+	return addFinancialMetadata(rows);
 }
 
 export async function countPurchaseOrders(options?: PurchaseOrderFilterOptions): Promise<number> {

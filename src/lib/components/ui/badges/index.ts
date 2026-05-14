@@ -8,3 +8,4 @@ export { default as TreatmentBadge } from './TreatmentBadge.svelte';
 export { default as SaleStatusBadge } from './SaleStatusBadge.svelte';
 export { default as QuoteStatusBadge } from './QuoteStatusBadge.svelte';
 export { default as PurchaseOrderStatusBadge } from './PurchaseOrderStatusBadge.svelte';
+export { default as PurchaseOrderDueBadge } from './PurchaseOrderDueBadge.svelte';

@@ -243,6 +243,7 @@ export const listPurchaseOrders = query(
 			readyForReview: data.readyForReview ?? undefined,
 			supplierId: data.supplierId ?? undefined,
 			hasPendingBalance: data.hasPendingBalance ?? undefined,
+			hasOverdueBalance: data.hasOverdueBalance ?? undefined,
 			includeDeleted: data.includeDeleted
 		};
 		const [items, total] = await Promise.all([

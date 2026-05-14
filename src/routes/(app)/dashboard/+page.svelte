@@ -16,7 +16,8 @@
 		StatCard,
 		QuickActionCard,
 		RecentSalesTable,
-		PendingFreeItemsCard
+		PendingFreeItemsCard,
+		UpcomingPurchasePaymentsWidget
 	} from '$lib/components/dashboard';
 	import { canOperate, isAdminRole } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
@@ -24,7 +25,7 @@
 
 	let { data } = $props();
 
-	const { stats, recentSales, pendingFreeItemSales } = $derived(data);
+	const { stats, recentSales, pendingFreeItemSales, upcomingPurchaseInstallments } = $derived(data);
 	const canAct = $derived(canOperate(data.user.role));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
@@ -128,6 +129,10 @@
 
 		<!-- Right column: Quick Actions + Pending Free Items -->
 		<div class="flex flex-col gap-6">
+			{#if upcomingPurchaseInstallments.length > 0}
+				<UpcomingPurchasePaymentsWidget installments={upcomingPurchaseInstallments} />
+			{/if}
+
 			<!-- Acciones Rápidas - dark navy card -->
 			<div class="rounded-xl bg-brand-navy p-4 sm:p-6">
 				<h2

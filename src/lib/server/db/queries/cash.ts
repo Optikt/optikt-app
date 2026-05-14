@@ -13,10 +13,27 @@
  * All queries accept `executor: DbOrTx = db` so they can run standalone or
  * inside a transaction (see AGENTS.md transaction pattern).
  */
-import { and, asc, desc, eq, gte, isNull, isNotNull, lte, sql, sum, count } from 'drizzle-orm';
+import {
+	and,
+	asc,
+	desc,
+	eq,
+	gte,
+	inArray,
+	isNull,
+	isNotNull,
+	lte,
+	sql,
+	sum,
+	count
+} from 'drizzle-orm';
 import { db } from '../index';
 import {
 	cashExpenses,
+	purchaseOrderCreditSchedule,
+	purchaseOrderItems,
+	purchaseOrderPayments,
+	purchaseOrders,
 	sales,
 	saleItems,
 	salePayments,
@@ -26,7 +43,13 @@ import {
 } from '../schema';
 import type { DbOrTx } from '../types';
 import { nowISO } from '$lib/dates';
-import type { ExpenseCategory } from '$lib/shared/enums';
+import { PurchaseOrderStatus, type ExpenseCategory } from '$lib/shared/enums';
+import { computePurchaseOrderBalance } from '$lib/shared/purchaseOrderCredit';
+
+interface PurchaseDiscountEarnedRow {
+	date: string;
+	total: number;
+}
 
 // ============================================================================
 // CASH EXPENSE: CRUD
@@ -125,10 +148,102 @@ export interface CashReport {
 	totalExpenses: number;
 	expensesCount: number;
 	expensesByCategory: Array<{ category: ExpenseCategory; total: number }>;
+	// Ingreso financiero independiente del inventario / margen bruto
+	purchaseDiscountsEarned: number;
 	// Resultados
 	grossProfit: number;
 	grossMarginPct: number;
 	netProfit: number;
+}
+
+async function getPurchaseDiscountEarnedRows(
+	args: { from: string; to: string },
+	executor: DbOrTx = db
+): Promise<PurchaseDiscountEarnedRow[]> {
+	const { from, to } = args;
+	const candidateRows = await executor
+		.select({ purchaseOrderId: purchaseOrderPayments.purchaseOrderId })
+		.from(purchaseOrderPayments)
+		.innerJoin(purchaseOrders, eq(purchaseOrderPayments.purchaseOrderId, purchaseOrders.id))
+		.where(
+			and(
+				isNull(purchaseOrderPayments.voidedAt),
+				isNull(purchaseOrders.deletedAt),
+				eq(purchaseOrders.status, PurchaseOrderStatus.CONFIRMED),
+				gte(purchaseOrderPayments.paymentDate, from),
+				lte(purchaseOrderPayments.paymentDate, to)
+			)
+		)
+		.groupBy(purchaseOrderPayments.purchaseOrderId);
+
+	const purchaseOrderIds = candidateRows.map((row) => row.purchaseOrderId);
+	if (purchaseOrderIds.length === 0) return [];
+
+	const [orders, items, payments, schedules] = await Promise.all([
+		executor.select().from(purchaseOrders).where(inArray(purchaseOrders.id, purchaseOrderIds)),
+		executor
+			.select()
+			.from(purchaseOrderItems)
+			.where(inArray(purchaseOrderItems.purchaseOrderId, purchaseOrderIds)),
+		executor
+			.select()
+			.from(purchaseOrderPayments)
+			.where(inArray(purchaseOrderPayments.purchaseOrderId, purchaseOrderIds)),
+		executor
+			.select()
+			.from(purchaseOrderCreditSchedule)
+			.where(inArray(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderIds))
+	]);
+
+	const itemsByOrderId = new Map<string, typeof items>();
+	for (const item of items) {
+		itemsByOrderId.set(item.purchaseOrderId, [
+			...(itemsByOrderId.get(item.purchaseOrderId) ?? []),
+			item
+		]);
+	}
+
+	const paymentsByOrderId = new Map<string, typeof payments>();
+	for (const payment of payments) {
+		paymentsByOrderId.set(payment.purchaseOrderId, [
+			...(paymentsByOrderId.get(payment.purchaseOrderId) ?? []),
+			payment
+		]);
+	}
+
+	const schedulesByOrderId = new Map<string, typeof schedules>();
+	for (const schedule of schedules) {
+		schedulesByOrderId.set(schedule.purchaseOrderId, [
+			...(schedulesByOrderId.get(schedule.purchaseOrderId) ?? []),
+			schedule
+		]);
+	}
+
+	const rowsByDate = new Map<string, number>();
+	for (const order of orders) {
+		const balance = computePurchaseOrderBalance(
+			order,
+			itemsByOrderId.get(order.id) ?? [],
+			paymentsByOrderId.get(order.id) ?? [],
+			schedulesByOrderId.get(order.id) ?? []
+		);
+
+		if (
+			!balance.isFullyPaid ||
+			balance.earlyPaymentDiscountEarned <= 0 ||
+			!balance.lastPaymentDate
+		) {
+			continue;
+		}
+
+		if (balance.lastPaymentDate < from || balance.lastPaymentDate > to) continue;
+
+		const date = balance.lastPaymentDate.slice(0, 10);
+		const total = (rowsByDate.get(date) ?? 0) + balance.earlyPaymentDiscountEarned;
+		rowsByDate.set(date, Number(total.toFixed(2)));
+	}
+
+	return Array.from(rowsByDate.entries()).map(([date, total]) => ({ date, total }));
 }
 
 /**
@@ -155,7 +270,8 @@ export async function getCashReport(
 		cogsRow,
 		incompleteCogsRow,
 		expensesRow,
-		expensesByCategoryRows
+		expensesByCategoryRows,
+		purchaseDiscountRows
 	] = await Promise.all([
 		// Revenue (delivery-based) — COMPLETED sales whose completedAt falls in range
 		executor
@@ -283,7 +399,9 @@ export async function getCashReport(
 				)
 			)
 			.groupBy(cashExpenses.category)
-			.orderBy(desc(sum(cashExpenses.amountUsd)))
+			.orderBy(desc(sum(cashExpenses.amountUsd))),
+
+		getPurchaseDiscountEarnedRows(args, executor)
 	]);
 
 	const grossRevenue = revenueRow.total;
@@ -291,6 +409,7 @@ export async function getCashReport(
 	const totalIncome = grossRevenue + otherIncome;
 	const totalCogs = cogsRow;
 	const totalExpenses = expensesRow.total;
+	const purchaseDiscountsEarned = purchaseDiscountRows.reduce((sum, row) => sum + row.total, 0);
 	const grossProfit = totalIncome - totalCogs;
 	const grossMarginPct = totalIncome > 0 ? (grossProfit / totalIncome) * 100 : 0;
 
@@ -309,9 +428,10 @@ export async function getCashReport(
 			category: r.category as ExpenseCategory,
 			total: Number(r.total ?? 0)
 		})),
+		purchaseDiscountsEarned,
 		grossProfit,
 		grossMarginPct,
-		netProfit: grossProfit - totalExpenses
+		netProfit: grossProfit - totalExpenses + purchaseDiscountsEarned
 	};
 }
 
@@ -326,6 +446,7 @@ export interface DailyBreakdownRow {
 	collected: number;
 	cogs: number;
 	expenses: number;
+	purchaseDiscountsEarned: number;
 	grossProfit: number;
 	netProfit: number;
 	salesCount: number;
@@ -343,95 +464,98 @@ export async function getDailyBreakdown(
 	const { from, to } = args;
 	const dayKey = (d: unknown) => sql<string>`to_char(${d}, 'YYYY-MM-DD')`;
 
-	const [revenueRows, retainedRows, collectedRows, cogsRows, expensesRows] = await Promise.all([
-		executor
-			.select({
-				day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
-				total: sum(sales.total),
-				cnt: count()
-			})
-			.from(sales)
-			.where(
-				and(
-					isNull(sales.deletedAt),
-					sql`${sales.status} = 'COMPLETED'`,
-					isNotNull(sales.completedAt),
-					gte(sales.completedAt, from),
-					lte(sales.completedAt, to)
+	const [revenueRows, retainedRows, collectedRows, cogsRows, expensesRows, purchaseDiscountRows] =
+		await Promise.all([
+			executor
+				.select({
+					day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
+					total: sum(sales.total),
+					cnt: count()
+				})
+				.from(sales)
+				.where(
+					and(
+						isNull(sales.deletedAt),
+						sql`${sales.status} = 'COMPLETED'`,
+						isNotNull(sales.completedAt),
+						gte(sales.completedAt, from),
+						lte(sales.completedAt, to)
+					)
 				)
-			)
-			.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
+				.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
 
-		executor
-			.select({
-				day: dayKey(sql`date_trunc('day', ${sales.cancelledAt})`),
-				total: sum(sales.refundAmount)
-			})
-			.from(sales)
-			.where(
-				and(
-					isNull(sales.deletedAt),
-					sql`${sales.status} = 'CANCELLED'`,
-					sql`${sales.refundStatus} = 'RETAINED'`,
-					isNotNull(sales.cancelledAt),
-					gte(sales.cancelledAt, from),
-					lte(sales.cancelledAt, to)
+			executor
+				.select({
+					day: dayKey(sql`date_trunc('day', ${sales.cancelledAt})`),
+					total: sum(sales.refundAmount)
+				})
+				.from(sales)
+				.where(
+					and(
+						isNull(sales.deletedAt),
+						sql`${sales.status} = 'CANCELLED'`,
+						sql`${sales.refundStatus} = 'RETAINED'`,
+						isNotNull(sales.cancelledAt),
+						gte(sales.cancelledAt, from),
+						lte(sales.cancelledAt, to)
+					)
 				)
-			)
-			.groupBy(sql`date_trunc('day', ${sales.cancelledAt})`),
+				.groupBy(sql`date_trunc('day', ${sales.cancelledAt})`),
 
-		executor
-			.select({
-				day: dayKey(sql`date_trunc('day', ${salePayments.paymentDate})`),
-				total: sum(salePayments.amountBcvUsd)
-			})
-			.from(salePayments)
-			.innerJoin(sales, eq(salePayments.saleId, sales.id))
-			.where(
-				and(
-					isNull(salePayments.voidedAt),
-					isNull(sales.deletedAt),
-					gte(salePayments.paymentDate, from),
-					lte(salePayments.paymentDate, to)
+			executor
+				.select({
+					day: dayKey(sql`date_trunc('day', ${salePayments.paymentDate})`),
+					total: sum(salePayments.amountBcvUsd)
+				})
+				.from(salePayments)
+				.innerJoin(sales, eq(salePayments.saleId, sales.id))
+				.where(
+					and(
+						isNull(salePayments.voidedAt),
+						isNull(sales.deletedAt),
+						gte(salePayments.paymentDate, from),
+						lte(salePayments.paymentDate, to)
+					)
 				)
-			)
-			.groupBy(sql`date_trunc('day', ${salePayments.paymentDate})`),
+				.groupBy(sql`date_trunc('day', ${salePayments.paymentDate})`),
 
-		executor
-			.select({
-				day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
-				total: sum(saleItems.snapshotCostTotal)
-			})
-			.from(saleItems)
-			.innerJoin(sales, eq(saleItems.saleId, sales.id))
-			.where(
-				and(
-					isNull(sales.deletedAt),
-					isNull(saleItems.deletedAt),
-					sql`${sales.status} = 'COMPLETED'`,
-					isNotNull(sales.completedAt),
-					gte(sales.completedAt, from),
-					lte(sales.completedAt, to),
-					isNotNull(saleItems.snapshotCostTotal)
+			executor
+				.select({
+					day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
+					total: sum(saleItems.snapshotCostTotal)
+				})
+				.from(saleItems)
+				.innerJoin(sales, eq(saleItems.saleId, sales.id))
+				.where(
+					and(
+						isNull(sales.deletedAt),
+						isNull(saleItems.deletedAt),
+						sql`${sales.status} = 'COMPLETED'`,
+						isNotNull(sales.completedAt),
+						gte(sales.completedAt, from),
+						lte(sales.completedAt, to),
+						isNotNull(saleItems.snapshotCostTotal)
+					)
 				)
-			)
-			.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
+				.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
 
-		executor
-			.select({
-				day: dayKey(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
-				total: sum(cashExpenses.amountUsd)
-			})
-			.from(cashExpenses)
-			.where(
-				and(
-					isNull(cashExpenses.voidedAt),
-					gte(cashExpenses.expenseDate, from),
-					lte(cashExpenses.expenseDate, to)
+			executor
+				.select({
+					day: dayKey(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
+					total: sum(cashExpenses.amountUsd)
+				})
+				.from(cashExpenses)
+				.where(
+					and(
+						isNull(cashExpenses.voidedAt),
+						gte(cashExpenses.expenseDate, from),
+						lte(cashExpenses.expenseDate, to)
+					)
 				)
-			)
-			.groupBy(sql`date_trunc('day', ${cashExpenses.expenseDate})`)
-	]);
+				.groupBy(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
+
+			getPurchaseDiscountEarnedRows(args, executor)
+		]);
 
 	type Bucket = {
 		date: string;
@@ -440,13 +564,23 @@ export async function getDailyBreakdown(
 		collected: number;
 		cogs: number;
 		expenses: number;
+		purchaseDiscountsEarned: number;
 		salesCount: number;
 	};
 	const buckets = new Map<string, Bucket>();
 	const ensure = (date: string): Bucket => {
 		let b = buckets.get(date);
 		if (!b) {
-			b = { date, revenue: 0, otherIncome: 0, collected: 0, cogs: 0, expenses: 0, salesCount: 0 };
+			b = {
+				date,
+				revenue: 0,
+				otherIncome: 0,
+				collected: 0,
+				cogs: 0,
+				expenses: 0,
+				purchaseDiscountsEarned: 0,
+				salesCount: 0
+			};
 			buckets.set(date, b);
 		}
 		return b;
@@ -461,12 +595,13 @@ export async function getDailyBreakdown(
 	for (const r of collectedRows) ensure(r.day).collected = Number(r.total ?? 0);
 	for (const r of cogsRows) ensure(r.day).cogs = Number(r.total ?? 0);
 	for (const r of expensesRows) ensure(r.day).expenses = Number(r.total ?? 0);
+	for (const r of purchaseDiscountRows) ensure(r.date).purchaseDiscountsEarned = r.total;
 
 	return Array.from(buckets.values())
 		.map((b) => ({
 			...b,
 			grossProfit: b.revenue + b.otherIncome - b.cogs,
-			netProfit: b.revenue + b.otherIncome - b.cogs - b.expenses
+			netProfit: b.revenue + b.otherIncome + b.purchaseDiscountsEarned - b.cogs - b.expenses
 		}))
 		.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }

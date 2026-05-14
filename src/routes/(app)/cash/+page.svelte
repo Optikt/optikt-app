@@ -52,6 +52,7 @@
 			'Ventas',
 			'Ingresos',
 			'Otros ingresos',
+			'Desc. compras',
 			'Cobrado',
 			'Costo',
 			'Utilidad Bruta',
@@ -63,6 +64,7 @@
 			String(d.salesCount),
 			d.revenue.toFixed(2),
 			d.otherIncome.toFixed(2),
+			d.purchaseDiscountsEarned.toFixed(2),
 			d.collected.toFixed(2),
 			d.cogs.toFixed(2),
 			d.grossProfit.toFixed(2),
@@ -268,6 +270,13 @@
 					</p>
 				</div>
 				<div class={mobileInsetClass}>
+					<p class={mobileLabelClass}>Desc. compras</p>
+					<p class="mt-1 font-mono text-[15px] font-semibold text-emerald-700 tabular-nums">
+						{formatPrice(report.purchaseDiscountsEarned)}
+					</p>
+					<p class={mobileMetaClass}>Ingreso financiero</p>
+				</div>
+				<div class={mobileInsetClass}>
 					<p class={mobileLabelClass}>Cobrado (caja)</p>
 					<p class={mobileValueClass}>
 						{formatPrice(report.totalCollected)}
@@ -297,7 +306,9 @@
 						</div>
 						<div class="text-right">
 							<p class={mobileLabelClass}>Lectura</p>
-							<p class="mt-1 text-[11px] font-medium text-on-surface-variant">Bruta − Egresos</p>
+							<p class="mt-1 text-[11px] font-medium text-on-surface-variant">
+								Bruta - egresos + desc.
+							</p>
 						</div>
 					</div>
 				</div>
@@ -331,7 +342,7 @@
 	</div>
 	<div class="mb-6 hidden lg:block">
 		<div class="glass-card overflow-hidden">
-			<div class="grid items-stretch gap-px bg-slate-200 lg:grid-cols-3 xl:grid-cols-7">
+			<div class="grid items-stretch gap-px bg-slate-200 lg:grid-cols-4 xl:grid-cols-8">
 				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Ingresos realiz.</p>
 					<p class={desktopValueClass}>{formatPrice(report.grossRevenue)}</p>
@@ -357,6 +368,15 @@
 					<p class="mt-2 text-xs text-slate-500">
 						{report.paymentsCount} pago{report.paymentsCount === 1 ? '' : 's'} registrados
 					</p>
+				</div>
+				<div class="flex h-full flex-col bg-white px-4 py-4">
+					<p class={desktopLabelClass}>Desc. compras</p>
+					<p
+						class="mt-2 font-mono text-[1.6rem] leading-none font-semibold text-emerald-700 tabular-nums"
+					>
+						{formatPrice(report.purchaseDiscountsEarned)}
+					</p>
+					<p class="mt-2 text-xs text-slate-500">Ingreso financiero</p>
 				</div>
 				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Costo (COGS)</p>
@@ -400,7 +420,7 @@
 					>
 						{formatPrice(report.netProfit)}
 					</p>
-					<p class="mt-2 text-xs text-slate-500">Bruta − Egresos</p>
+					<p class="mt-2 text-xs text-slate-500">Bruta - egresos + desc.</p>
 				</div>
 			</div>
 		</div>
@@ -574,6 +594,12 @@
 						>
 					</div>
 					<div class="flex items-center justify-between gap-3">
+						<span class="text-slate-600">Descuentos en compras</span>
+						<span class="font-mono font-semibold text-emerald-700 tabular-nums"
+							>{formatPrice(report.purchaseDiscountsEarned)}</span
+						>
+					</div>
+					<div class="flex items-center justify-between gap-3">
 						<span class="text-slate-600">Pagos registrados</span>
 						<span class="font-mono font-semibold text-brand-navy tabular-nums"
 							>{report.paymentsCount}</span
@@ -673,6 +699,12 @@
 							</p>
 						</div>
 						<div class="rounded-xl bg-surface-container-low px-3 py-2.5">
+							<p class={mobileLabelClass}>Desc. compras</p>
+							<p class="mt-1 font-mono text-[13px] font-semibold text-emerald-700 tabular-nums">
+								{formatPrice(row.purchaseDiscountsEarned)}
+							</p>
+						</div>
+						<div class="rounded-xl bg-surface-container-low px-3 py-2.5">
 							<p class={mobileLabelClass}>Costo</p>
 							<p class="mt-1 font-mono text-[13px] font-semibold text-brand-navy tabular-nums">
 								{formatPrice(row.cogs)}
@@ -695,7 +727,7 @@
 			{/each}
 		</div>
 		<div class="hidden overflow-x-auto lg:block">
-			<table class="w-full min-w-[72rem] text-left text-sm">
+			<table class="w-full min-w-[78rem] text-left text-sm">
 				<thead
 					class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase"
 				>
@@ -704,6 +736,7 @@
 						<th class="px-4 py-3 text-right">Ventas</th>
 						<th class="px-4 py-3 text-right">Ingresos</th>
 						<th class="px-4 py-3 text-right">Otros</th>
+						<th class="px-4 py-3 text-right">Desc. compras</th>
 						<th class="px-4 py-3 text-right">Cobrado</th>
 						<th class="px-4 py-3 text-right">Costo</th>
 						<th class="px-4 py-3 text-right">Util. Bruta</th>
@@ -727,6 +760,13 @@
 							>
 								{formatPrice(row.otherIncome)}
 							</td>
+							<td
+								class="px-4 py-3 text-right font-mono tabular-nums {row.purchaseDiscountsEarned > 0
+									? 'text-emerald-700'
+									: 'text-slate-300'}"
+							>
+								{formatPrice(row.purchaseDiscountsEarned)}
+							</td>
 							<td class="px-4 py-3 text-right font-mono tabular-nums"
 								>{formatPrice(row.collected)}</td
 							>
@@ -749,7 +789,7 @@
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="9" class="px-4 py-8 text-center text-slate-400">
+							<td colspan="10" class="px-4 py-8 text-center text-slate-400">
 								Sin movimientos en el período seleccionado
 							</td>
 						</tr>

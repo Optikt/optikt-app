@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ClipboardList, Eye } from '@lucide/svelte';
-	import { DataGrid, PurchaseOrderStatusBadge } from '$lib/components/ui';
+	import { DataGrid, PurchaseOrderDueBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import {
 		getPurchaseDocumentTypeLabel,
 		PurchaseDiscountType,
@@ -38,6 +38,7 @@
 		{ key: 'document', label: 'Documento' },
 		{ key: 'rate', label: 'Tasa BCV' },
 		{ key: 'status', label: 'Estado' },
+		{ key: 'balance', label: 'Saldo', align: 'right' as const },
 		{ key: 'createdBy', label: 'Creado por' },
 		{ key: 'actions', label: 'Acciones', align: 'right' as const }
 	];
@@ -74,6 +75,10 @@
 		if (type === PurchaseDiscountType.NONE || value <= 0) return null;
 		if (type === PurchaseDiscountType.PERCENT) return `Desc. ${value}%`;
 		return `Desc. ${formatPrice(value)}`;
+	}
+
+	function pendingBalanceLabel(purchaseOrder: PurchaseOrderWithRelations): string {
+		return formatPrice(purchaseOrder.balance?.balance ?? 0);
 	}
 </script>
 
@@ -154,10 +159,18 @@
 				</span>
 			</td>
 			<td class="px-4 py-4">
-				<PurchaseOrderStatusBadge
-					status={purchaseOrder.status}
-					isReadyForReview={purchaseOrder.isReadyForReview}
-				/>
+				<div class="flex min-w-[8rem] flex-col items-start gap-1.5">
+					<PurchaseOrderStatusBadge
+						status={purchaseOrder.status}
+						isReadyForReview={purchaseOrder.isReadyForReview}
+					/>
+					<PurchaseOrderDueBadge dueStatus={purchaseOrder.dueStatus} />
+				</div>
+			</td>
+			<td class="px-4 py-4 text-right">
+				<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
+					{pendingBalanceLabel(purchaseOrder)}
+				</span>
 			</td>
 			<td class="px-4 py-4">
 				<div class="flex items-center gap-2">
@@ -188,5 +201,54 @@
 				</button>
 			</td>
 		</tr>
+	{/snippet}
+
+	{#snippet mobileCard(purchaseOrder)}
+		<button
+			type="button"
+			class="w-full space-y-4 text-left"
+			onclick={() => onView?.(purchaseOrder)}
+		>
+			<div class="flex items-start justify-between gap-3">
+				<div class="min-w-0">
+					<p class="font-mono text-sm font-semibold text-brand-navy">
+						{formatOrderNumber(purchaseOrder.orderNumber)}
+					</p>
+					<p class="mt-1 truncate text-sm font-medium text-on-surface">
+						{purchaseOrder.supplier?.name ?? 'Sin proveedor'}
+					</p>
+				</div>
+				<div class="flex shrink-0 flex-col items-end gap-1.5">
+					<PurchaseOrderStatusBadge
+						status={purchaseOrder.status}
+						isReadyForReview={purchaseOrder.isReadyForReview}
+					/>
+					<PurchaseOrderDueBadge dueStatus={purchaseOrder.dueStatus} />
+				</div>
+			</div>
+
+			<div class="grid grid-cols-2 gap-2 text-sm">
+				<div class="rounded-xl bg-surface-container-low px-3 py-3">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						Documento
+					</p>
+					<p class="mt-1 text-[11px] font-semibold text-on-surface-variant uppercase">
+						{documentLabel(purchaseOrder)}
+					</p>
+					<p class="font-mono text-sm font-semibold text-brand-navy">
+						{documentNumber(purchaseOrder)}
+					</p>
+				</div>
+				<div class="rounded-xl bg-surface-container-low px-3 py-3 text-right">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Saldo</p>
+					<p class="mt-1 font-mono text-sm font-semibold text-brand-navy tabular-nums">
+						{pendingBalanceLabel(purchaseOrder)}
+					</p>
+					<p class="mt-1 text-[11px] text-on-surface-variant">
+						{formatDateOnly(purchaseOrder.orderDate, { day: '2-digit', month: 'short' })}
+					</p>
+				</div>
+			</div>
+		</button>
 	{/snippet}
 </DataGrid>

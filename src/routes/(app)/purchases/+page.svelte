@@ -12,6 +12,7 @@
 		Plus,
 		RotateCcw,
 		Search,
+		TriangleAlert,
 		Wallet
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
@@ -44,6 +45,7 @@
 
 	let search = $state('');
 	let pendingBalanceFilter = $state(false);
+	let overdueBalanceFilter = $state(false);
 	type PurchaseOrderStatusFilter =
 		| PurchaseOrderStatus
 		| PurchaseOrderUiState.DRAFT_IN_PROGRESS
@@ -78,6 +80,7 @@
 			statusFilter !== '' ||
 			supplierFilter !== '' ||
 			pendingBalanceFilter ||
+			overdueBalanceFilter ||
 			orderBy !== 'orderNumber' ||
 			orderSort !== 'desc'
 	);
@@ -114,6 +117,7 @@
 				readyForReview,
 				supplierId: supplierFilter || undefined,
 				hasPendingBalance: pendingBalanceFilter ? true : undefined,
+				hasOverdueBalance: overdueBalanceFilter ? true : undefined,
 				orderBy,
 				orderSort
 			}).run();
@@ -148,6 +152,7 @@
 		statusFilter = '';
 		supplierFilter = '';
 		pendingBalanceFilter = false;
+		overdueBalanceFilter = false;
 		orderBy = 'orderNumber';
 		orderSort = 'desc';
 		void fetchPurchaseOrders(1);
@@ -257,7 +262,7 @@
 
 	<section class="glass-card bg-surface-container-low p-4">
 		<div
-			class="grid gap-3 xl:grid-cols-[minmax(260px,1.1fr)_180px_220px_auto_180px_auto_auto] xl:items-center"
+			class="grid gap-3 xl:grid-cols-[minmax(260px,1.1fr)_180px_220px_auto_auto_180px_auto_auto] xl:items-center"
 		>
 			<div class="relative">
 				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
@@ -313,6 +318,22 @@
 			>
 				<Wallet class="h-4 w-4" />
 				Saldo pendiente
+			</button>
+
+			<button
+				type="button"
+				onclick={() => {
+					overdueBalanceFilter = !overdueBalanceFilter;
+					if (overdueBalanceFilter) pendingBalanceFilter = true;
+					void fetchPurchaseOrders(1);
+				}}
+				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors {overdueBalanceFilter
+					? 'bg-error-container text-on-error-container'
+					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
+				title={overdueBalanceFilter ? 'Mostrando solo vencidas' : 'Mostrar solo vencidas'}
+			>
+				<TriangleAlert class="h-4 w-4" />
+				Vencidas
 			</button>
 
 			<select

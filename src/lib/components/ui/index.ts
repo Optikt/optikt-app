@@ -38,5 +38,6 @@ export {
 	TreatmentBadge,
 	SaleStatusBadge,
 	QuoteStatusBadge,
-	PurchaseOrderStatusBadge
+	PurchaseOrderStatusBadge,
+	PurchaseOrderDueBadge
 } from './badges';

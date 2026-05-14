@@ -1,15 +1,23 @@
-import { and, asc, eq, gte, isNull, lte } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { nowISO } from '$lib/dates';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	purchaseOrderCreditSchedule,
+	purchaseOrderItems,
+	purchaseOrderPayments,
 	purchaseOrders,
 	suppliers,
 	type NewPurchaseOrderCreditInstallment,
 	type PurchaseOrderCreditInstallment
 } from '$lib/server/db/schema';
 import { PurchaseOrderStatus } from '$lib/shared/enums';
+import {
+	computePurchaseOrderBalance,
+	getPurchaseOrderDueStatus,
+	type PurchaseOrderBalanceSummary,
+	type PurchaseOrderDueStatus
+} from '$lib/shared/purchaseOrderCredit';
 
 export interface UpcomingPurchaseOrderInstallment extends PurchaseOrderCreditInstallment {
 	purchaseOrder: {
@@ -18,8 +26,12 @@ export interface UpcomingPurchaseOrderInstallment extends PurchaseOrderCreditIns
 		orderDate: string;
 		paymentTerms: string;
 		status: string;
+		settlementDiscountType: string;
+		settlementDiscountValue: number;
 	};
 	supplier: { id: string; name: string } | null;
+	balance: PurchaseOrderBalanceSummary;
+	dueStatus: PurchaseOrderDueStatus;
 }
 
 export async function getPurchaseOrderCreditSchedule(
@@ -79,7 +91,9 @@ export async function getUpcomingPurchaseOrderDueInstallments(
 				orderNumber: purchaseOrders.orderNumber,
 				orderDate: purchaseOrders.orderDate,
 				paymentTerms: purchaseOrders.paymentTerms,
-				status: purchaseOrders.status
+				status: purchaseOrders.status,
+				settlementDiscountType: purchaseOrders.settlementDiscountType,
+				settlementDiscountValue: purchaseOrders.settlementDiscountValue
 			},
 			supplier: { id: suppliers.id, name: suppliers.name }
 		})
@@ -99,9 +113,72 @@ export async function getUpcomingPurchaseOrderDueInstallments(
 			asc(purchaseOrderCreditSchedule.installmentNumber)
 		);
 
-	return rows.map((row) => ({
-		...row.installment,
-		purchaseOrder: row.purchaseOrder,
-		supplier: row.supplier?.id ? row.supplier : null
-	}));
+	if (rows.length === 0) return [];
+
+	const purchaseOrderIds = [...new Set(rows.map((row) => row.purchaseOrder.id))];
+	const [items, payments, schedules] = await Promise.all([
+		executor
+			.select()
+			.from(purchaseOrderItems)
+			.where(inArray(purchaseOrderItems.purchaseOrderId, purchaseOrderIds)),
+		executor
+			.select()
+			.from(purchaseOrderPayments)
+			.where(inArray(purchaseOrderPayments.purchaseOrderId, purchaseOrderIds)),
+		executor
+			.select()
+			.from(purchaseOrderCreditSchedule)
+			.where(inArray(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderIds))
+	]);
+
+	const itemsByOrderId = new Map<string, typeof items>();
+	for (const item of items) {
+		itemsByOrderId.set(item.purchaseOrderId, [
+			...(itemsByOrderId.get(item.purchaseOrderId) ?? []),
+			item
+		]);
+	}
+
+	const paymentsByOrderId = new Map<string, typeof payments>();
+	for (const payment of payments) {
+		paymentsByOrderId.set(payment.purchaseOrderId, [
+			...(paymentsByOrderId.get(payment.purchaseOrderId) ?? []),
+			payment
+		]);
+	}
+
+	const schedulesByOrderId = new Map<string, typeof schedules>();
+	for (const schedule of schedules) {
+		schedulesByOrderId.set(schedule.purchaseOrderId, [
+			...(schedulesByOrderId.get(schedule.purchaseOrderId) ?? []),
+			schedule
+		]);
+	}
+
+	return rows
+		.map((row) => {
+			const orderItems = itemsByOrderId.get(row.purchaseOrder.id) ?? [];
+			const orderPayments = paymentsByOrderId.get(row.purchaseOrder.id) ?? [];
+			const orderSchedule = schedulesByOrderId.get(row.purchaseOrder.id) ?? [];
+			const balance = computePurchaseOrderBalance(
+				row.purchaseOrder,
+				orderItems,
+				orderPayments,
+				orderSchedule
+			);
+			const dueStatus = getPurchaseOrderDueStatus({
+				paymentTerms: row.purchaseOrder.paymentTerms,
+				installments: orderSchedule,
+				balance: balance.balance
+			});
+
+			return {
+				...row.installment,
+				purchaseOrder: row.purchaseOrder,
+				supplier: row.supplier?.id ? row.supplier : null,
+				balance,
+				dueStatus
+			};
+		})
+		.filter((installment) => installment.balance.balance > 0.01);
 }
