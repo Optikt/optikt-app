@@ -94,11 +94,7 @@
 		})
 	);
 	const sortedPayments = $derived.by(() =>
-		[...payments].sort((left, right) => {
-			const dateDiff = right.paymentDate.localeCompare(left.paymentDate);
-			if (dateDiff !== 0) return dateDiff;
-			return right.createdAt.localeCompare(left.createdAt);
-		})
+		[...payments].sort((left, right) => left.paymentNumber - right.paymentNumber)
 	);
 
 	function resetForm(request: PaymentComposerRequest | null = null) {
