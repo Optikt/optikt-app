@@ -19,6 +19,9 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { PriceSuggestionModal } from '$lib/components/purchases';
+	import PurchaseOrderBalanceCard from '$lib/components/purchases/PurchaseOrderBalanceCard.svelte';
+	import PurchaseOrderCreditSchedulePanel from '$lib/components/purchases/PurchaseOrderCreditSchedulePanel.svelte';
+	import PurchaseOrderPaymentsPanel from '$lib/components/purchases/PurchaseOrderPaymentsPanel.svelte';
 	import { AppBadge, ConfirmModal, PageHeader, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
 	import {
@@ -36,6 +39,7 @@
 		getPurchaseOrderItemTypeLabel,
 		PurchaseDiscountType,
 		PurchaseDocumentType,
+		PurchasePaymentTerms,
 		PurchaseOrderStatus
 	} from '$lib/shared/enums';
 	import type {
@@ -48,13 +52,27 @@
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
 	} from '$lib/components/purchases/purchaseOrderDraft';
-	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
+	import type {
+		InventoryLot,
+		InventoryMovement,
+		PurchaseOrder,
+		PurchaseOrderCreditInstallment,
+		PurchaseOrderPayment
+	} from '$lib/server/db/schema';
+	import type {
+		PurchaseOrderBalanceSummary,
+		PurchaseOrderDueStatus
+	} from '$lib/shared/purchaseOrderCredit';
 	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
 	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
 	let purchaseOrder = $state<PurchaseOrderWithRelations>(untrack(() => data.purchaseOrder));
 	let items = $state<PurchaseOrderItemWithProduct[]>(untrack(() => data.items));
+	let payments = $state<PurchaseOrderPayment[]>(untrack(() => data.payments));
+	let creditSchedule = $state<PurchaseOrderCreditInstallment[]>(untrack(() => data.creditSchedule));
+	let balance = $state<PurchaseOrderBalanceSummary>(untrack(() => data.balance));
+	let dueStatus = $state<PurchaseOrderDueStatus>(untrack(() => data.dueStatus));
 	let movements = $state<InventoryMovement[]>(untrack(() => data.movements));
 	let lotsMap = $state<Record<string, InventoryLot>>(untrack(() => data.lotsMap));
 
@@ -63,10 +81,13 @@
 	let showMarkReadyModal = $state(false);
 	let showUnmarkReadyModal = $state(false);
 	let showCancelModal = $state(false);
+	let showConfirmAndPayModal = $state(false);
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
 	let priceLoading = $state(false);
 	let readyStateAction = $state<'preserve' | 'clear' | null>(null);
+	let pendingPaymentComposerAmount = $state<number | null>(null);
+	let paymentComposerRequest = $state<{ token: string; amount: number } | null>(null);
 	let revertLoading = $state(false);
 	let showRevertModal = $state(false);
 	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
@@ -84,6 +105,10 @@
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
 		items = data.items;
+		payments = data.payments;
+		creditSchedule = data.creditSchedule;
+		balance = data.balance;
+		dueStatus = data.dueStatus;
 		movements = data.movements;
 		lotsMap = data.lotsMap;
 	}
@@ -92,6 +117,9 @@
 	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
 	const isReadyForReview = $derived(Boolean(purchaseOrder.isReadyForReview));
 	const isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
+	const isCashPurchase = $derived(
+		(purchaseOrder.paymentTerms as PurchasePaymentTerms) === PurchasePaymentTerms.CONTADO
+	);
 	const detailSubtitle = $derived.by(() => {
 		if (purchaseOrder.status === PurchaseOrderStatus.DRAFT) {
 			return purchaseOrder.isReadyForReview
@@ -395,6 +423,63 @@
 		}
 	}
 
+	async function openPaymentComposer(amount: number) {
+		paymentComposerRequest = {
+			token: crypto.randomUUID(),
+			amount
+		};
+		await tick();
+		document.getElementById('purchase-payments')?.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start'
+		});
+	}
+
+	async function maybeOpenPendingPaymentComposer() {
+		if (pendingPaymentComposerAmount == null) return;
+
+		const amount = pendingPaymentComposerAmount;
+		pendingPaymentComposerAmount = null;
+		await openPaymentComposer(amount);
+	}
+
+	async function handleConfirmAndPay() {
+		actionLoading = true;
+		const paymentAmount = netTotalPurchase;
+
+		try {
+			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
+			if (result.success) {
+				showConfirmAndPayModal = false;
+				purchaseOrder = {
+					...purchaseOrder,
+					status: PurchaseOrderStatus.CONFIRMED,
+					isReadyForReview: false
+				};
+
+				if (result.priceSuggestions && result.priceSuggestions.length > 0) {
+					pendingPaymentComposerAmount = paymentAmount;
+					priceSuggestions = result.priceSuggestions;
+					await tick();
+					showPriceSuggestionModal = true;
+					toast.success('Orden confirmada. Revisa las sugerencias y luego registra el pago.');
+				} else {
+					toast.success('Orden confirmada. Completa el pago de contado.');
+					await invalidateAll();
+					syncFromData();
+					await openPaymentComposer(paymentAmount);
+				}
+			} else {
+				toast.error(result.error ?? 'Error confirmando la orden');
+			}
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
+		} finally {
+			actionLoading = false;
+		}
+	}
+
 	async function handleMarkReady(clearReviewed: boolean = false) {
 		readyStateAction = clearReviewed ? 'clear' : 'preserve';
 		actionLoading = true;
@@ -470,6 +555,7 @@
 				priceSuggestions = [];
 				await invalidateAll();
 				syncFromData();
+				await maybeOpenPendingPaymentComposer();
 			} else {
 				toast.error(result.error ?? 'Error actualizando precios');
 			}
@@ -486,6 +572,7 @@
 		priceSuggestions = [];
 		await invalidateAll();
 		syncFromData();
+		await maybeOpenPendingPaymentComposer();
 	}
 
 	async function handleCancel() {
@@ -512,6 +599,16 @@
 		} finally {
 			actionLoading = false;
 		}
+	}
+
+	function handleFinanceChanged(payload: {
+		payments: PurchaseOrderPayment[];
+		balance: PurchaseOrderBalanceSummary;
+		dueStatus: PurchaseOrderDueStatus;
+	}) {
+		payments = payload.payments;
+		balance = payload.balance;
+		dueStatus = payload.dueStatus;
 	}
 </script>
 
@@ -594,6 +691,22 @@
 						<CheckCircle class="h-4 w-4" />
 						Confirmar orden
 					</button>
+					{#if isCashPurchase}
+						<button
+							type="button"
+							onclick={() => (showConfirmAndPayModal = true)}
+							disabled={actionLoading || !allItemsReviewed}
+							title={allItemsReviewed
+								? 'Confirmar orden y abrir el registro de pago'
+								: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
+							class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
+								'success'
+							)}"
+						>
+							<CheckCircle class="h-4 w-4" />
+							Confirmar y registrar pago
+						</button>
+					{/if}
 				{/if}
 				<button
 					type="button"
@@ -732,6 +845,12 @@
 					</div>
 				{/if}
 			</section>
+
+			<PurchaseOrderCreditSchedulePanel
+				purchaseOrder={purchaseOrder as PurchaseOrder}
+				{creditSchedule}
+				readonly={true}
+			/>
 
 			<section class="glass-card overflow-hidden">
 				<div
@@ -984,6 +1103,16 @@
 				</div>
 			</section>
 
+			<PurchaseOrderPaymentsPanel
+				purchaseOrderId={purchaseOrder.id}
+				status={purchaseOrder.status}
+				defaultBcvRate={purchaseOrder.bcvRate}
+				{payments}
+				isFullyPaid={balance.isFullyPaid}
+				composerRequest={paymentComposerRequest}
+				onFinanceChanged={handleFinanceChanged}
+			/>
+
 			<section id="purchase-movements" class="glass-card overflow-hidden">
 				<div
 					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
@@ -1045,6 +1174,13 @@
 		</div>
 
 		<aside class="space-y-6">
+			<PurchaseOrderBalanceCard
+				{balance}
+				{dueStatus}
+				paymentTerms={purchaseOrder.paymentTerms}
+				bcvRate={purchaseOrder.bcvRate}
+			/>
+
 			<section
 				class="rounded-[1.75rem] bg-brand-navy p-6 text-white shadow-[0_28px_60px_-32px_rgba(15,23,42,0.8)]"
 			>
@@ -1203,6 +1339,17 @@
 	loading={actionLoading}
 	onConfirm={handleConfirm}
 	onCancel={() => (showConfirmModal = false)}
+/>
+
+<ConfirmModal
+	bind:open={showConfirmAndPayModal}
+	title="Confirmar y registrar pago"
+	message={`Se confirmará la orden y luego se abrirá el formulario de pago con el total neto precargado (${formatPrice(netTotalPurchase)}).`}
+	confirmLabel="Confirmar y continuar"
+	confirmColor="green"
+	loading={actionLoading}
+	onConfirm={handleConfirmAndPay}
+	onCancel={() => (showConfirmAndPayModal = false)}
 />
 
 <ConfirmModal

@@ -120,6 +120,13 @@
       "when": 1778617926915,
       "tag": "0016_sticky_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778691924979,
+      "tag": "0017_red_jigsaw",
+      "breakpoints": true
     }
   ]
 }

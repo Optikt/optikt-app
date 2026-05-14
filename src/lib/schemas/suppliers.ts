@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { SupplierType, CurrencyCode, ALL_TREATMENT_CATEGORIES } from '$lib/shared/enums';
+import { SupplierType, ALL_CURRENCY_CODES, ALL_TREATMENT_CATEGORIES } from '$lib/shared/enums';
 import {
 	PhoneSchema,
 	OptionalPhoneSchema,
@@ -39,7 +39,7 @@ export const CreateSupplierSchema = z.object({
 	contactPhone: OptionalPhoneSchema,
 	contactRole: z.string().optional(),
 	notes: z.string().optional(),
-	defaultCurrency: z.enum(CurrencyCode).optional()
+	defaultCurrency: z.enum(ALL_CURRENCY_CODES).optional()
 });
 
 export const UpdateSupplierSchema = CreateSupplierSchema.partial().extend({

@@ -13,7 +13,8 @@
 	import {
 		PurchaseDiscountType,
 		PurchaseOrderItemType,
-		PurchaseDocumentType
+		PurchaseDocumentType,
+		PurchasePaymentTerms
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -22,12 +23,15 @@
 	import PurchaseOrderItemsPanel from './PurchaseOrderItemsPanel.svelte';
 	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
 	import PurchaseOrderDiscountPanel from './PurchaseOrderDiscountPanel.svelte';
+	import PurchaseOrderPaymentTermsPanel from './PurchaseOrderPaymentTermsPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
+		createEmptyPurchaseOrderDraftInstallment,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput,
+		type PurchaseOrderDraftInstallment,
 		type PurchaseOrderDraftInitialValues,
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
@@ -87,6 +91,9 @@
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
+	let paymentTerms = $state<PurchasePaymentTerms>(
+		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
+	);
 	let discountType = $state<PurchaseDiscountType>(
 		initialValues?.discount?.type ?? PurchaseDiscountType.NONE
 	);
@@ -95,6 +102,7 @@
 	let savingAction = $state<'draft' | null>(null);
 	let showDraftWarningModal = $state(false);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
+	let installments = $state<PurchaseOrderDraftInstallment[]>(initialValues?.installments ?? []);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
 		type: discountType,
@@ -127,8 +135,20 @@
 	);
 
 	const canSave = $derived(
-		canPersistPurchaseOrderDraft({ supplierId, orderDate, bcvRate, notes }, items)
+		canPersistPurchaseOrderDraft({ supplierId, orderDate, bcvRate, notes }, items, {
+			paymentTerms,
+			installments,
+			totalNetAmount: summary.netTotal
+		})
 	);
+
+	function handlePaymentTermsChange(nextTerms: PurchasePaymentTerms) {
+		paymentTerms = nextTerms;
+	}
+
+	function handleInstallmentsChange(nextInstallments: PurchaseOrderDraftInstallment[]) {
+		installments = nextInstallments;
+	}
 
 	function goBack() {
 		if (isEdit && purchaseOrderId) {
@@ -199,6 +219,24 @@
 		}));
 	}
 
+	function buildInstallmentsPayload() {
+		if (paymentTerms === PurchasePaymentTerms.CONTADO) {
+			return [];
+		}
+
+		const normalizedInstallments =
+			installments.length > 0 ? installments : [createEmptyPurchaseOrderDraftInstallment(1)];
+
+		return normalizedInstallments.map((installment, index) => ({
+			installmentNumber: index + 1,
+			dueDate: installment.dueDate,
+			expectedAmountUsd: installment.expectedAmountUsd ?? undefined,
+			earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent ?? undefined,
+			earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline ?? undefined,
+			notes: installment.notes.trim() ? installment.notes.trim() : undefined
+		}));
+	}
+
 	async function savePurchaseOrder() {
 		if (!canSave || saving) return;
 		savingAction = 'draft';
@@ -218,12 +256,14 @@
 					deliveryNoteNumber: deliveryNoteNumber || undefined,
 					orderDate,
 					bcvRate,
+					paymentTerms,
 					notes,
 					discount: {
 						type: discount.type,
 						value: discount.value,
 						notes: discountNotes ? discountNotes : undefined
 					},
+					installments: buildInstallmentsPayload(),
 					items: buildItemsPayload()
 				});
 
@@ -245,12 +285,14 @@
 				deliveryNoteNumber: deliveryNoteNumber || undefined,
 				orderDate,
 				bcvRate,
+				paymentTerms,
 				notes,
 				discount: {
 					type: discount.type,
 					value: discount.value,
 					notes: discountNotes ? discountNotes : undefined
 				},
+				installments: buildInstallmentsPayload(),
 				items: buildItemsPayload()
 			});
 
@@ -344,6 +386,14 @@
 		/>
 
 		<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
+
+		<PurchaseOrderPaymentTermsPanel
+			{paymentTerms}
+			{installments}
+			totalNetAmount={summary.netTotal}
+			onPaymentTermsChange={handlePaymentTermsChange}
+			onInstallmentsChange={handleInstallmentsChange}
+		/>
 
 		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} />
 	</div>

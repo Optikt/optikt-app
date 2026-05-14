@@ -127,6 +127,28 @@ export function getPurchaseDocumentTypeLabel(type: string): string {
 }
 
 // ============================================================================
+// PURCHASE PAYMENT TERMS
+// ============================================================================
+
+export enum PurchasePaymentTerms {
+	CONTADO = 'CONTADO',
+	CREDIT = 'CREDIT'
+}
+
+export const ALL_PURCHASE_PAYMENT_TERMS = Object.values(
+	PurchasePaymentTerms
+) as PurchasePaymentTerms[];
+
+export const PURCHASE_PAYMENT_TERMS_LABELS: Record<PurchasePaymentTerms, string> = {
+	[PurchasePaymentTerms.CONTADO]: 'Contado',
+	[PurchasePaymentTerms.CREDIT]: 'Crédito'
+};
+
+export function getPurchasePaymentTermsLabel(type: string): string {
+	return PURCHASE_PAYMENT_TERMS_LABELS[type as PurchasePaymentTerms] ?? type;
+}
+
+// ============================================================================
 // PURCHASE SETTLEMENT DISCOUNT TYPE
 // ============================================================================
 

@@ -17,6 +17,12 @@ import {
 	ApplyPriceSuggestionsSchema
 } from '$lib/schemas/purchaseOrders';
 import {
+	CreatePurchaseOrderPaymentSchema,
+	ListPurchaseOrderPaymentsSchema,
+	VoidPurchaseOrderPaymentSchema
+} from '$lib/schemas/purchaseOrderPayments';
+import { SetPurchaseOrderCreditScheduleSchema } from '$lib/schemas/purchaseOrderCreditSchedule';
+import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
 	getPurchaseOrderListStats as getPurchaseOrderListStatsQuery,
@@ -34,6 +40,18 @@ import {
 	confirmPurchaseOrder as confirmPO,
 	cancelPurchaseOrder as cancelPO
 } from '$lib/server/db/queries/purchaseOrders';
+import {
+	createPurchaseOrderPayment,
+	findPurchaseOrderPaymentById,
+	getNextPurchaseOrderPaymentNumber,
+	getPurchaseOrderPayments,
+	voidPurchaseOrderPayment
+} from '$lib/server/db/queries/purchaseOrderPayments';
+import {
+	getPurchaseOrderCreditSchedule,
+	getUpcomingPurchaseOrderDueInstallments,
+	replacePurchaseOrderCreditSchedule
+} from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 import { updateProduct, findProductById } from '$lib/server/db/queries/products';
 import type {
 	PurchaseOrderListStats,
@@ -43,11 +61,28 @@ import type {
 } from '$lib/server/db/queries/purchaseOrders';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { db } from '$lib/server/db';
-import { PurchaseOrderItemType, PurchaseOrderStatus } from '$lib/shared/enums';
+import {
+	PurchaseOrderItemType,
+	PurchaseOrderStatus,
+	PurchasePaymentTerms
+} from '$lib/shared/enums';
 import { validatePurchaseOrderDraftReadiness } from '$lib/shared/purchaseOrderRules';
+import {
+	calculatePurchaseOrderDebtTotal,
+	computePurchaseOrderBalance,
+	getPurchaseOrderDueStatus,
+	type PurchaseOrderBalanceSummary,
+	type PurchaseOrderDueStatus
+} from '$lib/shared/purchaseOrderCredit';
+import { normalizePurchasePaymentAmounts } from '$lib/shared/purchaseOrderPayments';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import type { PaginatedResult } from '$lib/types';
-import type { Supplier, PurchaseOrder } from '$lib/server/db/schema';
+import type {
+	PurchaseOrder,
+	PurchaseOrderCreditInstallment,
+	PurchaseOrderPayment,
+	Supplier
+} from '$lib/server/db/schema';
 
 // ============================================================================
 // TYPES
@@ -64,9 +99,132 @@ export interface PriceSuggestion {
 export interface PurchaseOrderDetail {
 	purchaseOrder: PurchaseOrderWithRelations;
 	items: PurchaseOrderItemWithProduct[];
+	payments: PurchaseOrderPayment[];
+	creditSchedule: PurchaseOrderCreditInstallment[];
+	balance: PurchaseOrderBalanceSummary;
+	dueStatus: PurchaseOrderDueStatus;
 }
 
 type SavePurchaseOrderDraftInput = z.infer<typeof SavePurchaseOrderDraftSchema>;
+type PurchaseOrderFinancialDraftItem = Pick<
+	SavePurchaseOrderDraftInput['items'][number],
+	'quantity' | 'unitPurchasePrice' | 'appliesIva' | 'ivaRate'
+>;
+type PurchaseOrderFinanceInstallmentLike = {
+	installmentNumber: number;
+	dueDate: string;
+	expectedAmountUsd?: number | null;
+	earlyPaymentDiscountPercent?: number | null;
+	earlyPaymentDiscountDeadline?: string | null;
+	notes?: string | null;
+};
+
+const FINANCE_VALIDATION_UUID = '00000000-0000-0000-0000-000000000000';
+
+function roundCurrency(value: number): number {
+	return Number(value.toFixed(2));
+}
+
+function uniqueIssues(issues: string[]): string[] {
+	return [...new Set(issues.filter(Boolean))];
+}
+
+function toPurchaseOrderCreditScheduleDraftInput(
+	installment: PurchaseOrderFinanceInstallmentLike,
+	index: number
+) {
+	return {
+		installmentNumber: installment.installmentNumber ?? index + 1,
+		dueDate: installment.dueDate,
+		expectedAmountUsd: installment.expectedAmountUsd ?? null,
+		earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent ?? null,
+		earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline ?? null,
+		notes: installment.notes?.trim() ? installment.notes.trim() : null
+	};
+}
+
+function getPurchaseOrderFinanceIssues({
+	purchaseOrderId,
+	paymentTerms,
+	installments,
+	items,
+	discount
+}: {
+	purchaseOrderId: string;
+	paymentTerms: PurchasePaymentTerms;
+	installments: PurchaseOrderFinanceInstallmentLike[];
+	items: PurchaseOrderFinancialDraftItem[];
+	discount:
+		| {
+				type?: string | null;
+				value?: number | null;
+		  }
+		| undefined;
+}): string[] {
+	const normalizedInstallments = installments.map((installment) => ({
+		installmentNumber: installment.installmentNumber,
+		dueDate: installment.dueDate,
+		expectedAmountUsd: installment.expectedAmountUsd ?? undefined,
+		earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent ?? undefined,
+		earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline ?? undefined,
+		notes: installment.notes ?? undefined
+	}));
+
+	const parsed = SetPurchaseOrderCreditScheduleSchema.safeParse({
+		purchaseOrderId,
+		paymentTerms,
+		installments: normalizedInstallments
+	});
+
+	const issues = parsed.success
+		? []
+		: parsed.error.issues.map((issue) => issue.message).filter(Boolean);
+
+	if (paymentTerms !== PurchasePaymentTerms.CREDIT) {
+		return uniqueIssues(issues);
+	}
+
+	let previousDueDate = '';
+	for (const [index, installment] of normalizedInstallments.entries()) {
+		const label = `Cuota ${index + 1}`;
+
+		if (previousDueDate && installment.dueDate < previousDueDate) {
+			issues.push(`${label}: la fecha debe ser igual o posterior a la cuota anterior`);
+		}
+
+		if (
+			installment.earlyPaymentDiscountDeadline &&
+			installment.earlyPaymentDiscountDeadline > installment.dueDate
+		) {
+			issues.push(`${label}: la fecha de pronto pago no puede ser posterior al vencimiento`);
+		}
+
+		previousDueDate = installment.dueDate;
+	}
+
+	const totalDebt = roundCurrency(
+		calculatePurchaseOrderDebtTotal(items, {
+			settlementDiscountType: discount?.type ?? 'NONE',
+			settlementDiscountValue: discount?.value ?? 0
+		})
+	);
+	const scheduledAmount = roundCurrency(
+		normalizedInstallments.length === 1 && normalizedInstallments[0]?.expectedAmountUsd == null
+			? totalDebt
+			: normalizedInstallments.reduce(
+					(sum, installment) => sum + Number(installment.expectedAmountUsd ?? 0),
+					0
+				)
+	);
+
+	if (Math.abs(totalDebt - scheduledAmount) > 0.01) {
+		issues.push(
+			`La suma de cuotas (${scheduledAmount.toFixed(2)}) debe coincidir con el total neto (${totalDebt.toFixed(2)})`
+		);
+	}
+
+	return uniqueIssues(issues);
+}
 
 // ============================================================================
 // QUERIES
@@ -83,6 +241,7 @@ export const listPurchaseOrders = query(
 			status: data.status ?? undefined,
 			readyForReview: data.readyForReview ?? undefined,
 			supplierId: data.supplierId ?? undefined,
+			hasPendingBalance: data.hasPendingBalance ?? undefined,
 			includeDeleted: data.includeDeleted
 		};
 		const [items, total] = await Promise.all([
@@ -107,8 +266,40 @@ export const getPurchaseOrderDetail = query(
 
 		const po = await findPurchaseOrderByIdWithRelations(data.id);
 		if (!po) return null;
-		const items = await getPurchaseOrderItems(data.id);
-		return { purchaseOrder: po, items };
+		const [items, payments, creditSchedule] = await Promise.all([
+			getPurchaseOrderItems(data.id),
+			getPurchaseOrderPayments(data.id, { includeVoided: true }),
+			getPurchaseOrderCreditSchedule(data.id)
+		]);
+		const balance = computePurchaseOrderBalance(po, items, payments, creditSchedule);
+		const dueStatus = getPurchaseOrderDueStatus({
+			paymentTerms: po.paymentTerms,
+			installments: creditSchedule,
+			balance: balance.balance
+		});
+
+		return { purchaseOrder: po, items, payments, creditSchedule, balance, dueStatus };
+	}
+);
+
+export const getPurchaseOrderPaymentsQuery = query(
+	ListPurchaseOrderPaymentsSchema,
+	async (data): Promise<PurchaseOrderPayment[]> => {
+		requireAuth();
+		return getPurchaseOrderPayments(data.purchaseOrderId, {
+			includeVoided: data.includeVoided
+		});
+	}
+);
+
+export const getUpcomingPurchaseOrderDueInstallmentsQuery = query(
+	z.object({
+		dateFrom: z.iso.date('Fecha inicial requerida'),
+		dateTo: z.iso.date('Fecha final requerida')
+	}),
+	async (data) => {
+		requireAuth();
+		return getUpcomingPurchaseOrderDueInstallments(data.dateFrom, data.dateTo);
 	}
 );
 
@@ -139,6 +330,20 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 		return { success: false as const, error: 'No autorizado' };
 	}
 
+	const financeIssues = getPurchaseOrderFinanceIssues({
+		purchaseOrderId: FINANCE_VALIDATION_UUID,
+		paymentTerms: data.paymentTerms,
+		installments: data.installments,
+		items: data.items,
+		discount: data.discount
+	});
+	if (financeIssues.length > 0) {
+		return {
+			success: false as const,
+			error: `Completa la condición de pago antes de guardar: ${financeIssues.join(', ')}`
+		};
+	}
+
 	try {
 		const result = await db.transaction(async (tx) => {
 			const orderNumber = await getNextPONumber(tx);
@@ -152,6 +357,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
+					paymentTerms: data.paymentTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
 					settlementDiscountValue: data.discount?.value ?? 0,
@@ -177,6 +383,13 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 			}));
 
 			await createPurchaseOrderItems(itemsData, tx);
+			await replacePurchaseOrderCreditSchedule(
+				po.id,
+				data.paymentTerms === PurchasePaymentTerms.CONTADO
+					? []
+					: data.installments.map(toPurchaseOrderCreditScheduleDraftInput),
+				tx
+			);
 
 			return po;
 		});
@@ -212,6 +425,26 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 	}
 
 	try {
+		const nextPaymentTerms = data.paymentTerms ?? (existing.paymentTerms as PurchasePaymentTerms);
+		const nextInstallments = data.installments ?? (await getPurchaseOrderCreditSchedule(data.id));
+		const nextItems = await getPurchaseOrderItems(data.id);
+		const financeIssues = getPurchaseOrderFinanceIssues({
+			purchaseOrderId: data.id,
+			paymentTerms: nextPaymentTerms,
+			installments: nextInstallments,
+			items: nextItems,
+			discount: {
+				type: data.discount?.type ?? existing.settlementDiscountType,
+				value: data.discount?.value ?? existing.settlementDiscountValue
+			}
+		});
+		if (financeIssues.length > 0) {
+			return {
+				success: false as const,
+				error: `Completa la condición de pago antes de guardar: ${financeIssues.join(', ')}`
+			};
+		}
+
 		const updateData: Partial<PurchaseOrder> = {};
 		if (data.supplierId) updateData.supplierId = data.supplierId;
 		if (data.documentType) updateData.documentType = data.documentType;
@@ -220,6 +453,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
 		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
+		if (data.paymentTerms !== undefined) updateData.paymentTerms = data.paymentTerms;
 		if (data.notes !== undefined) updateData.notes = data.notes ?? null;
 		if (data.discount !== undefined) {
 			updateData.settlementDiscountType = data.discount.type;
@@ -228,7 +462,21 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 		}
 		updateData.isReadyForReview = false;
 
-		const updated = await updatePurchaseOrder(data.id, updateData);
+		const updated = await db.transaction(async (tx) => {
+			const purchaseOrder = await updatePurchaseOrder(data.id, updateData, tx);
+
+			if (data.paymentTerms !== undefined || data.installments !== undefined) {
+				await replacePurchaseOrderCreditSchedule(
+					data.id,
+					nextPaymentTerms === PurchasePaymentTerms.CONTADO
+						? []
+						: nextInstallments.map(toPurchaseOrderCreditScheduleDraftInput),
+					tx
+				);
+			}
+
+			return purchaseOrder;
+		});
 
 		await auditService.logUpdate('purchase_order' as never, data.id, existing, updated, context);
 
@@ -263,7 +511,10 @@ async function getPurchaseOrderReadinessIssues(id: string): Promise<string[]> {
 	const po = await findPurchaseOrderById(id);
 	if (!po) return ['Orden de compra no encontrada'];
 
-	const items = await getPurchaseOrderItems(id);
+	const [items, creditSchedule] = await Promise.all([
+		getPurchaseOrderItems(id),
+		getPurchaseOrderCreditSchedule(id)
+	]);
 	const result = validatePurchaseOrderDraftReadiness(
 		{
 			supplierId: po.supplierId,
@@ -282,8 +533,18 @@ async function getPurchaseOrderReadinessIssues(id: string): Promise<string[]> {
 			ivaRate: item.ivaRate
 		}))
 	);
+	const financeIssues = getPurchaseOrderFinanceIssues({
+		purchaseOrderId: id,
+		paymentTerms: po.paymentTerms as PurchasePaymentTerms,
+		installments: creditSchedule,
+		items,
+		discount: {
+			type: po.settlementDiscountType,
+			value: po.settlementDiscountValue
+		}
+	});
 
-	return result.issues;
+	return [...result.issues, ...financeIssues];
 }
 
 export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, async (data) => {
@@ -304,6 +565,20 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 		};
 	}
 
+	const financeIssues = getPurchaseOrderFinanceIssues({
+		purchaseOrderId: data.id,
+		paymentTerms: data.paymentTerms,
+		installments: data.installments,
+		items: data.items,
+		discount: data.discount
+	});
+	if (financeIssues.length > 0) {
+		return {
+			success: false as const,
+			error: `Completa la condición de pago antes de guardar: ${financeIssues.join(', ')}`
+		};
+	}
+
 	try {
 		const result = await db.transaction(async (tx) => {
 			const updated = await updatePurchaseOrder(
@@ -315,6 +590,7 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
+					paymentTerms: data.paymentTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
 					settlementDiscountValue: data.discount?.value ?? 0,
@@ -329,8 +605,15 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 				data.items.map(toPurchaseOrderItemDraftInput),
 				tx
 			);
+			const creditSchedule = await replacePurchaseOrderCreditSchedule(
+				data.id,
+				data.paymentTerms === PurchasePaymentTerms.CONTADO
+					? []
+					: data.installments.map(toPurchaseOrderCreditScheduleDraftInput),
+				tx
+			);
 
-			return { purchaseOrder: updated, items };
+			return { purchaseOrder: updated, items, creditSchedule };
 		});
 
 		await auditService.logUpdate(
@@ -529,6 +812,242 @@ export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (
 		};
 	}
 });
+
+export const addPurchaseOrderPaymentCmd = command(
+	CreatePurchaseOrderPaymentSchema,
+	async (data) => {
+		requireAdmin();
+
+		const context = getAuditContext();
+		if (!context.userId) {
+			return { success: false as const, error: 'No autorizado' };
+		}
+
+		const purchaseOrder = await findPurchaseOrderById(data.purchaseOrderId);
+		if (!purchaseOrder) {
+			return { success: false as const, error: 'Orden de compra no encontrada' };
+		}
+		if (purchaseOrder.status !== PurchaseOrderStatus.CONFIRMED) {
+			return {
+				success: false as const,
+				error: 'Solo se pueden registrar pagos en órdenes confirmadas'
+			};
+		}
+
+		const normalized = normalizePurchasePaymentAmounts({
+			currencyCode: data.currencyCode,
+			amount: data.amount,
+			bcvUsdRate: data.bcvUsdRate,
+			specificRate: data.specificRate
+		});
+
+		if (normalized.amountBs <= 0 || normalized.amountUsdBcv <= 0) {
+			return {
+				success: false as const,
+				error: 'No se pudo calcular el equivalente en USD BCV del pago'
+			};
+		}
+
+		try {
+			const result = await db.transaction(async (tx) => {
+				const paymentNumber = await getNextPurchaseOrderPaymentNumber(data.purchaseOrderId, tx);
+				const payment = await createPurchaseOrderPayment(
+					{
+						purchaseOrderId: data.purchaseOrderId,
+						paymentNumber,
+						currencyCode: data.currencyCode,
+						paymentDate: data.paymentDate,
+						amount: data.amount,
+						bcvUsdRate: data.bcvUsdRate,
+						specificRate: data.specificRate ?? null,
+						amountBs: normalized.amountBs,
+						amountUsdBcv: normalized.amountUsdBcv,
+						reference: data.reference ?? null,
+						notes: data.notes ?? null,
+						createdById: context.userId!
+					},
+					tx
+				);
+
+				const [items, payments, creditSchedule] = await Promise.all([
+					getPurchaseOrderItems(data.purchaseOrderId, tx),
+					getPurchaseOrderPayments(data.purchaseOrderId, { includeVoided: true }, tx),
+					getPurchaseOrderCreditSchedule(data.purchaseOrderId, tx)
+				]);
+
+				const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, creditSchedule);
+				const dueStatus = getPurchaseOrderDueStatus({
+					paymentTerms: purchaseOrder.paymentTerms,
+					installments: creditSchedule,
+					balance: balance.balance
+				});
+
+				return { payment, balance, dueStatus };
+			});
+
+			await auditService.logCreate('purchase_order_payment' as never, result.payment, context, {
+				excludeFields: ['createdAt', 'updatedAt']
+			});
+
+			return { success: true as const, ...result };
+		} catch (e) {
+			console.error('Error adding purchase order payment:', e);
+			return {
+				success: false as const,
+				error: e instanceof Error ? e.message : 'Error registrando pago'
+			};
+		}
+	}
+);
+
+export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchema, async (data) => {
+	requireAdmin();
+
+	const context = getAuditContext();
+	const purchaseOrder = await findPurchaseOrderById(data.purchaseOrderId);
+	if (!purchaseOrder) {
+		return { success: false as const, error: 'Orden de compra no encontrada' };
+	}
+
+	const payment = await findPurchaseOrderPaymentById(data.id);
+	if (!payment || payment.purchaseOrderId !== data.purchaseOrderId) {
+		return { success: false as const, error: 'Pago no encontrado' };
+	}
+
+	try {
+		const result = await db.transaction(async (tx) => {
+			const voided = await voidPurchaseOrderPayment(data.id, tx);
+			if (!voided) {
+				throw new Error('No se pudo anular el pago');
+			}
+
+			const [items, payments, creditSchedule] = await Promise.all([
+				getPurchaseOrderItems(data.purchaseOrderId, tx),
+				getPurchaseOrderPayments(data.purchaseOrderId, { includeVoided: true }, tx),
+				getPurchaseOrderCreditSchedule(data.purchaseOrderId, tx)
+			]);
+
+			const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, creditSchedule);
+			const dueStatus = getPurchaseOrderDueStatus({
+				paymentTerms: purchaseOrder.paymentTerms,
+				installments: creditSchedule,
+				balance: balance.balance
+			});
+
+			return { voided, balance, dueStatus };
+		});
+
+		await auditService.logUpdate(
+			'purchase_order_payment' as never,
+			data.id,
+			payment,
+			result.voided,
+			context,
+			{ excludeFields: ['createdAt', 'updatedAt'] }
+		);
+
+		return { success: true as const, ...result };
+	} catch (e) {
+		console.error('Error voiding purchase order payment:', e);
+		return {
+			success: false as const,
+			error: e instanceof Error ? e.message : 'Error anulando pago'
+		};
+	}
+});
+
+export const setPurchaseOrderCreditScheduleCmd = command(
+	SetPurchaseOrderCreditScheduleSchema,
+	async (data) => {
+		requireAdmin();
+
+		const context = getAuditContext();
+		const purchaseOrder = await findPurchaseOrderById(data.purchaseOrderId);
+		if (!purchaseOrder) {
+			return { success: false as const, error: 'Orden de compra no encontrada' };
+		}
+		if (purchaseOrder.status === PurchaseOrderStatus.CANCELLED) {
+			return {
+				success: false as const,
+				error: 'No se puede configurar crédito en una orden cancelada'
+			};
+		}
+
+		const existingSchedule = await getPurchaseOrderCreditSchedule(data.purchaseOrderId);
+
+		try {
+			const result = await db.transaction(async (tx) => {
+				const updatedPurchaseOrder = await updatePurchaseOrder(
+					data.purchaseOrderId,
+					{ paymentTerms: data.paymentTerms },
+					tx
+				);
+				const creditSchedule = await replacePurchaseOrderCreditSchedule(
+					data.purchaseOrderId,
+					data.installments.map((installment) => ({
+						installmentNumber: installment.installmentNumber,
+						dueDate: installment.dueDate,
+						expectedAmountUsd: installment.expectedAmountUsd ?? null,
+						earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent ?? null,
+						earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline ?? null,
+						notes: installment.notes ?? null
+					})),
+					tx
+				);
+
+				const [items, payments] = await Promise.all([
+					getPurchaseOrderItems(data.purchaseOrderId, tx),
+					getPurchaseOrderPayments(data.purchaseOrderId, { includeVoided: true }, tx)
+				]);
+
+				const balance = computePurchaseOrderBalance(
+					updatedPurchaseOrder,
+					items,
+					payments,
+					creditSchedule
+				);
+				const dueStatus = getPurchaseOrderDueStatus({
+					paymentTerms: updatedPurchaseOrder.paymentTerms,
+					installments: creditSchedule,
+					balance: balance.balance
+				});
+
+				return { updatedPurchaseOrder, creditSchedule, balance, dueStatus };
+			});
+
+			await auditService.logCustom(
+				'purchase_order' as never,
+				data.purchaseOrderId,
+				'update',
+				{
+					paymentTerms: {
+						old: purchaseOrder.paymentTerms,
+						new: result.updatedPurchaseOrder.paymentTerms
+					},
+					creditSchedule: {
+						old: existingSchedule,
+						new: result.creditSchedule
+					}
+				},
+				context
+			);
+
+			return {
+				success: true as const,
+				purchaseOrder: result.updatedPurchaseOrder,
+				creditSchedule: result.creditSchedule,
+				balance: result.balance,
+				dueStatus: result.dueStatus
+			};
+		} catch (e) {
+			console.error('Error setting purchase order credit schedule:', e);
+			return {
+				success: false as const,
+				error: e instanceof Error ? e.message : 'Error configurando crédito'
+			};
+		}
+	}
+);
 
 export const applyPriceSuggestionsCmd = command(ApplyPriceSuggestionsSchema, async (data) => {
 	requireAdmin();

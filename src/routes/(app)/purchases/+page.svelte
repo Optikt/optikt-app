@@ -11,7 +11,8 @@
 		FileClock,
 		Plus,
 		RotateCcw,
-		Search
+		Search,
+		Wallet
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { PurchaseOrdersTable } from '$lib/components/purchases';
@@ -42,6 +43,7 @@
 	let loading = $state(false);
 
 	let search = $state('');
+	let pendingBalanceFilter = $state(false);
 	type PurchaseOrderStatusFilter =
 		| PurchaseOrderStatus
 		| PurchaseOrderUiState.DRAFT_IN_PROGRESS
@@ -75,6 +77,7 @@
 		search.trim().length > 0 ||
 			statusFilter !== '' ||
 			supplierFilter !== '' ||
+			pendingBalanceFilter ||
 			orderBy !== 'orderNumber' ||
 			orderSort !== 'desc'
 	);
@@ -110,6 +113,7 @@
 				status,
 				readyForReview,
 				supplierId: supplierFilter || undefined,
+				hasPendingBalance: pendingBalanceFilter ? true : undefined,
 				orderBy,
 				orderSort
 			}).run();
@@ -143,6 +147,7 @@
 		search = '';
 		statusFilter = '';
 		supplierFilter = '';
+		pendingBalanceFilter = false;
 		orderBy = 'orderNumber';
 		orderSort = 'desc';
 		void fetchPurchaseOrders(1);
@@ -252,7 +257,7 @@
 
 	<section class="glass-card bg-surface-container-low p-4">
 		<div
-			class="grid gap-3 xl:grid-cols-[minmax(260px,1.1fr)_180px_220px_180px_auto_auto] xl:items-center"
+			class="grid gap-3 xl:grid-cols-[minmax(260px,1.1fr)_180px_220px_auto_180px_auto_auto] xl:items-center"
 		>
 			<div class="relative">
 				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
@@ -292,6 +297,23 @@
 					<option value={supplier.id}>{supplier.name}</option>
 				{/each}
 			</select>
+
+			<button
+				type="button"
+				onclick={() => {
+					pendingBalanceFilter = !pendingBalanceFilter;
+					void fetchPurchaseOrders(1);
+				}}
+				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors {pendingBalanceFilter
+					? 'bg-brand-navy text-white'
+					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
+				title={pendingBalanceFilter
+					? 'Mostrando solo con saldo pendiente'
+					: 'Mostrar solo con saldo pendiente'}
+			>
+				<Wallet class="h-4 w-4" />
+				Saldo pendiente
+			</button>
 
 			<select
 				id="purchase-order-sort-field"

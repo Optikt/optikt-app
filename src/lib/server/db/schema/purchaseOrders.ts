@@ -9,6 +9,7 @@ import {
 	boolean,
 	integer,
 	doublePrecision,
+	date,
 	foreignKey
 } from 'drizzle-orm/pg-core';
 import { suppliers } from './suppliers';
@@ -18,8 +19,10 @@ import {
 	PurchaseOrderStatus,
 	PurchaseOrderItemType,
 	PurchaseDocumentType,
-	PurchaseDiscountType
+	PurchaseDiscountType,
+	PurchasePaymentTerms
 } from '../../../shared/enums/purchaseTypes';
+import { CurrencyCode } from '../../../shared/enums/currencyTypes';
 import { products } from './products';
 import { lensCatalogItems } from './lenses';
 
@@ -47,6 +50,16 @@ export const purchaseDiscountTypeEnum = pgEnum(
 	enumValues(PurchaseDiscountType)
 );
 
+export const purchasePaymentTermsEnum = pgEnum(
+	'purchase_payment_terms',
+	enumValues(PurchasePaymentTerms)
+);
+
+export const purchasePaymentCurrencyEnum = pgEnum(
+	'purchase_payment_currency',
+	enumValues(CurrencyCode)
+);
+
 // ============================================================================
 // PURCHASE ORDERS (Cabecera de Compra / Carga)
 // ============================================================================
@@ -71,6 +84,8 @@ export const purchaseOrders = pgTable(
 		orderDate: timestamp('order_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** BCV rate at time of purchase */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
+		/** Payment terms for supplier settlement */
+		paymentTerms: purchasePaymentTermsEnum('payment_terms').notNull().default('CONTADO'),
 		/**
 		 * Settlement discount granted by supplier at payment time (e.g. cash discount).
 		 * Lines stay at the delivery-note price; the discount only affects the
@@ -108,6 +123,7 @@ export const purchaseOrders = pgTable(
 			'btree',
 			table.orderDate.asc().nullsLast().op('timestamptz_ops')
 		),
+		index('ix_purchase_orders_payment_terms').using('btree', table.paymentTerms.asc().nullsLast()),
 		index('ix_purchase_orders_status').using('btree', table.status.asc().nullsLast()),
 		foreignKey({
 			columns: [table.supplierId],
@@ -124,6 +140,119 @@ export const purchaseOrders = pgTable(
 			foreignColumns: [users.id],
 			name: 'purchase_orders_confirmed_by_id_fkey'
 		}).onDelete('set null')
+	]
+);
+
+// ============================================================================
+// PURCHASE ORDER PAYMENTS
+// ============================================================================
+
+export const purchaseOrderPayments = pgTable(
+	'purchase_order_payments',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		purchaseOrderId: uuid('purchase_order_id').notNull(),
+		paymentNumber: integer('payment_number').notNull(),
+		currencyCode: purchasePaymentCurrencyEnum('currency_code').notNull(),
+		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'string' }).notNull(),
+		/** Amount entered in the payment's native currency */
+		amount: doublePrecision().notNull(),
+		/** BCV USD rate on payment day - always required as normalization base */
+		bcvUsdRate: doublePrecision('bcv_usd_rate').notNull(),
+		/** Method-specific rate to VES when the payment is not USD_BCV */
+		specificRate: doublePrecision('specific_rate'),
+		/** Computed amount in VES */
+		amountBs: doublePrecision('amount_bs').notNull(),
+		/** Computed amount normalized to USD BCV */
+		amountUsdBcv: doublePrecision('amount_usd_bcv').notNull(),
+		reference: varchar(),
+		notes: varchar(),
+		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'string' }),
+		createdById: uuid('created_by_id').notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_purchase_order_payments_id').using(
+			'btree',
+			table.id.asc().nullsLast().op('uuid_ops')
+		),
+		index('ix_purchase_order_payments_po_id').using(
+			'btree',
+			table.purchaseOrderId.asc().nullsLast().op('uuid_ops')
+		),
+		index('ix_purchase_order_payments_payment_date').using(
+			'btree',
+			table.paymentDate.desc().nullsLast().op('timestamptz_ops')
+		),
+		uniqueIndex('uq_purchase_order_payments_po_number').using(
+			'btree',
+			table.purchaseOrderId.asc().nullsLast().op('uuid_ops'),
+			table.paymentNumber.asc().nullsLast().op('int4_ops')
+		),
+		foreignKey({
+			columns: [table.purchaseOrderId],
+			foreignColumns: [purchaseOrders.id],
+			name: 'purchase_order_payments_po_id_fkey'
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.createdById],
+			foreignColumns: [users.id],
+			name: 'purchase_order_payments_created_by_id_fkey'
+		}).onDelete('restrict')
+	]
+);
+
+// ============================================================================
+// PURCHASE ORDER CREDIT SCHEDULE
+// ============================================================================
+
+export const purchaseOrderCreditSchedule = pgTable(
+	'purchase_order_credit_schedule',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		purchaseOrderId: uuid('purchase_order_id').notNull(),
+		installmentNumber: integer('installment_number').notNull(),
+		dueDate: date('due_date').notNull(),
+		/** Optional expected amount for this installment in normalized USD BCV */
+		expectedAmountUsd: doublePrecision('expected_amount_usd'),
+		earlyPaymentDiscountPercent: doublePrecision('early_payment_discount_percent'),
+		earlyPaymentDiscountDeadline: date('early_payment_discount_deadline'),
+		notes: varchar(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_purchase_order_credit_schedule_id').using(
+			'btree',
+			table.id.asc().nullsLast().op('uuid_ops')
+		),
+		index('ix_purchase_order_credit_schedule_po_id').using(
+			'btree',
+			table.purchaseOrderId.asc().nullsLast().op('uuid_ops')
+		),
+		index('ix_purchase_order_credit_schedule_due_date').using(
+			'btree',
+			table.dueDate.asc().nullsLast().op('date_ops')
+		),
+		uniqueIndex('uq_purchase_order_credit_schedule_po_number').using(
+			'btree',
+			table.purchaseOrderId.asc().nullsLast().op('uuid_ops'),
+			table.installmentNumber.asc().nullsLast().op('int4_ops')
+		),
+		foreignKey({
+			columns: [table.purchaseOrderId],
+			foreignColumns: [purchaseOrders.id],
+			name: 'purchase_order_credit_schedule_po_id_fkey'
+		}).onDelete('cascade')
 	]
 );
 
@@ -200,5 +329,9 @@ export const purchaseOrderItems = pgTable(
 // Type exports
 export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type NewPurchaseOrder = typeof purchaseOrders.$inferInsert;
+export type PurchaseOrderPayment = typeof purchaseOrderPayments.$inferSelect;
+export type NewPurchaseOrderPayment = typeof purchaseOrderPayments.$inferInsert;
+export type PurchaseOrderCreditInstallment = typeof purchaseOrderCreditSchedule.$inferSelect;
+export type NewPurchaseOrderCreditInstallment = typeof purchaseOrderCreditSchedule.$inferInsert;
 export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type NewPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;

@@ -6,6 +6,7 @@ import {
 	findPurchaseOrderByIdWithRelations,
 	getPurchaseOrderItems
 } from '$lib/server/db/queries/purchaseOrders';
+import { getPurchaseOrderCreditSchedule } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
@@ -26,8 +27,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		redirect(303, `/purchases/${params.id}`);
 	}
 
-	const [items, suppliers, products, lensItems] = await Promise.all([
+	const [items, creditSchedule, suppliers, products, lensItems] = await Promise.all([
 		getPurchaseOrderItems(params.id),
+		getPurchaseOrderCreditSchedule(params.id),
 		getAllSuppliers({ includeDeleted: false }),
 		getAllProductsWithRelations({ includeInactive: true, limit: 500 }),
 		getLensCatalogItemsWithRelations()
@@ -36,6 +38,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	return {
 		purchaseOrder,
 		items,
+		creditSchedule,
 		suppliers,
 		products,
 		lensItems

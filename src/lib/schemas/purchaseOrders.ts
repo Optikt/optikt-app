@@ -7,13 +7,49 @@ import { CoercedNumber, CoercedInteger, ListPaginationWithDeletedSchema } from '
 import {
 	PurchaseOrderItemType,
 	PurchaseDocumentType,
-	PurchaseDiscountType
+	PurchaseDiscountType,
+	PurchasePaymentTerms
 } from '$lib/shared/enums';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+import { PurchaseOrderCreditInstallmentSchema } from './purchaseOrderCreditSchedule';
 
 const ALL_ITEM_TYPES = Object.values(PurchaseOrderItemType) as [string, ...string[]];
 const ALL_DOCUMENT_TYPES = Object.values(PurchaseDocumentType) as [string, ...string[]];
 const ALL_DISCOUNT_TYPES = Object.values(PurchaseDiscountType) as [string, ...string[]];
+
+const PurchaseOrderFinanceSchema = z.object({
+	paymentTerms: z
+		.enum(PurchasePaymentTerms, 'Condición de pago requerida')
+		.default(PurchasePaymentTerms.CONTADO),
+	installments: z.array(PurchaseOrderCreditInstallmentSchema).default([])
+});
+
+function addFinanceValidationIssues(
+	data: {
+		paymentTerms: PurchasePaymentTerms;
+		installments: z.infer<typeof PurchaseOrderCreditInstallmentSchema>[];
+	},
+	ctx: z.RefinementCtx
+) {
+	if (data.paymentTerms === PurchasePaymentTerms.CONTADO) {
+		if (data.installments.length > 0) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['installments'],
+				message: 'Las órdenes de contado no deben tener cuotas'
+			});
+		}
+		return;
+	}
+
+	if (data.installments.length === 0) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['installments'],
+			message: 'Debes registrar al menos una cuota para órdenes a crédito'
+		});
+	}
+}
 
 // ============================================================================
 // SETTLEMENT DISCOUNT
@@ -58,6 +94,7 @@ export const ListPurchaseOrdersSchema = ListPaginationWithDeletedSchema.extend({
 	readyForReview: z.boolean().optional(),
 	documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
 	supplierId: z.uuid().optional(),
+	hasPendingBalance: z.boolean().optional(),
 	orderBy: z.enum(['orderNumber', 'orderDate', 'createdAt', 'status']).optional(),
 	orderSort: z.enum(['asc', 'desc']).optional()
 });
@@ -89,46 +126,74 @@ export const PurchaseOrderDraftItemSchema = PurchaseOrderReviewableItemSchema.ex
 // CREATE PO
 // ============================================================================
 
-export const CreatePurchaseOrderSchema = z.object({
-	supplierId: z.uuid('Proveedor es obligatorio'),
-	documentType: z.enum(ALL_DOCUMENT_TYPES, { message: 'Tipo de documento es obligatorio' }),
-	invoiceNumber: z.string().optional(),
-	deliveryNoteNumber: z.string().optional(),
-	orderDate: z.iso.date('Fecha de orden inválida'),
-	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
-	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
-	discount: SettlementDiscountSchema.optional(),
-	items: z.array(PurchaseOrderReviewableItemSchema).min(1, 'Debe incluir al menos un ítem')
-});
+export const CreatePurchaseOrderSchema = z
+	.object({
+		supplierId: z.uuid('Proveedor es obligatorio'),
+		documentType: z.enum(ALL_DOCUMENT_TYPES, { message: 'Tipo de documento es obligatorio' }),
+		invoiceNumber: z.string().optional(),
+		deliveryNoteNumber: z.string().optional(),
+		orderDate: z.iso.date('Fecha de orden inválida'),
+		bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
+		notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
+		discount: SettlementDiscountSchema.optional(),
+		items: z.array(PurchaseOrderReviewableItemSchema).min(1, 'Debe incluir al menos un ítem')
+	})
+	.merge(PurchaseOrderFinanceSchema)
+	.superRefine(addFinanceValidationIssues);
 
 // ============================================================================
 // UPDATE PO (only DRAFT orders)
 // ============================================================================
 
-export const UpdatePurchaseOrderSchema = z.object({
-	id: z.uuid(),
-	supplierId: z.uuid().optional(),
-	documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
-	invoiceNumber: z.string().optional(),
-	deliveryNoteNumber: z.string().optional(),
-	orderDate: z.iso.date().optional(),
-	bcvRate: CoercedNumber.min(0).optional(),
-	notes: z.string().min(6).optional(),
-	discount: SettlementDiscountSchema.optional()
-});
+export const UpdatePurchaseOrderSchema = z
+	.object({
+		id: z.uuid(),
+		supplierId: z.uuid().optional(),
+		documentType: z.enum(ALL_DOCUMENT_TYPES).optional(),
+		invoiceNumber: z.string().optional(),
+		deliveryNoteNumber: z.string().optional(),
+		orderDate: z.iso.date().optional(),
+		bcvRate: CoercedNumber.min(0).optional(),
+		notes: z.string().min(6).optional(),
+		discount: SettlementDiscountSchema.optional(),
+		paymentTerms: z.enum(PurchasePaymentTerms).optional(),
+		installments: z.array(PurchaseOrderCreditInstallmentSchema).optional()
+	})
+	.superRefine((data, ctx) => {
+		if (data.installments && !data.paymentTerms) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ['paymentTerms'],
+				message: 'Debes indicar la condición de pago al actualizar cuotas'
+			});
+			return;
+		}
 
-export const SavePurchaseOrderDraftSchema = z.object({
-	id: z.uuid(),
-	supplierId: z.uuid('Proveedor es obligatorio'),
-	documentType: z.enum(ALL_DOCUMENT_TYPES, { message: 'Tipo de documento es obligatorio' }),
-	invoiceNumber: z.string().optional(),
-	deliveryNoteNumber: z.string().optional(),
-	orderDate: z.iso.date('Fecha de orden inválida'),
-	bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
-	notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
-	discount: SettlementDiscountSchema.optional(),
-	items: z.array(PurchaseOrderDraftItemSchema).min(1, 'Debe incluir al menos un ítem')
-});
+		if (!data.paymentTerms || !data.installments) return;
+		addFinanceValidationIssues(
+			{
+				paymentTerms: data.paymentTerms,
+				installments: data.installments
+			},
+			ctx
+		);
+	});
+
+export const SavePurchaseOrderDraftSchema = z
+	.object({
+		id: z.uuid(),
+		supplierId: z.uuid('Proveedor es obligatorio'),
+		documentType: z.enum(ALL_DOCUMENT_TYPES, { message: 'Tipo de documento es obligatorio' }),
+		invoiceNumber: z.string().optional(),
+		deliveryNoteNumber: z.string().optional(),
+		orderDate: z.iso.date('Fecha de orden inválida'),
+		bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
+		notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
+		discount: SettlementDiscountSchema.optional(),
+		items: z.array(PurchaseOrderDraftItemSchema).min(1, 'Debe incluir al menos un ítem')
+	})
+	.merge(PurchaseOrderFinanceSchema)
+	.superRefine(addFinanceValidationIssues);
 
 // ============================================================================
 // ADD ITEM TO EXISTING PO

@@ -16,6 +16,7 @@ import { db } from '$lib/server/db';
 import {
 	purchaseOrders,
 	purchaseOrderItems,
+	purchaseOrderPayments,
 	inventoryLots,
 	inventoryMovements,
 	products,
@@ -60,6 +61,8 @@ export interface PurchaseOrderFilterOptions {
 	status?: string;
 	readyForReview?: boolean;
 	supplierId?: string;
+	/** When true, only return orders with a pending balance (not fully paid). */
+	hasPendingBalance?: boolean;
 }
 
 export interface PurchaseOrderListStats {
@@ -128,6 +131,44 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 		conditions.push(eq(purchaseOrders.isReadyForReview, opts.readyForReview));
 	}
 	if (opts.supplierId) conditions.push(eq(purchaseOrders.supplierId, opts.supplierId));
+	if (opts.hasPendingBalance !== undefined) {
+		// Correlated subquery: compare total active payments vs debt total (gross * discount factor).
+		// PERCENT discount factor = 1 - pct/100.
+		// AMOUNT discount: approximated using gross total as the discount base (close enough for filtering).
+		const pendingCondition = sql`
+			COALESCE((
+				SELECT SUM(pop.amount_usd_bcv)
+				FROM ${purchaseOrderPayments} pop
+				WHERE pop.purchase_order_id = ${purchaseOrders.id}
+				  AND pop.voided_at IS NULL
+			), 0)
+			<
+			ROUND(CAST(
+				COALESCE((
+					SELECT SUM(poi.quantity * poi.unit_purchase_price)
+					FROM ${purchaseOrderItems} poi
+					WHERE poi.purchase_order_id = ${purchaseOrders.id}
+				), 0)
+				*
+				CASE
+					WHEN ${purchaseOrders.settlementDiscountType} = 'NONE'
+					  OR ${purchaseOrders.settlementDiscountValue} <= 0
+					  THEN 1.0
+					WHEN ${purchaseOrders.settlementDiscountType} = 'PERCENT'
+					  THEN 1.0 - LEAST(${purchaseOrders.settlementDiscountValue}, 100.0) / 100.0
+					ELSE
+					  GREATEST(0.0, 1.0 - ${purchaseOrders.settlementDiscountValue} / NULLIF(
+						COALESCE((
+							SELECT SUM(poi2.quantity * poi2.unit_purchase_price)
+							FROM ${purchaseOrderItems} poi2
+							WHERE poi2.purchase_order_id = ${purchaseOrders.id}
+						), 0), 0
+					  ))
+				END
+			AS NUMERIC), 2) - 0.01
+		`;
+		conditions.push(opts.hasPendingBalance ? pendingCondition : sql`NOT (${pendingCondition})`);
+	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
 }
