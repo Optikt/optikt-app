@@ -282,10 +282,12 @@
 										class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
 									>
 										Vencimiento
-										<Info
-											class="h-3 w-3 shrink-0 text-outline"
+										<span
+											class="inline-flex cursor-help"
 											title="Fecha límite máxima para pagar esta cuota. Pasada esta fecha el pago queda en mora."
-										/>
+										>
+											<Info class="h-3 w-3 shrink-0 text-outline" />
+										</span>
 									</span>
 									<input
 										type="date"
@@ -304,10 +306,12 @@
 										class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
 									>
 										Monto esperado USD
-										<Info
-											class="h-3 w-3 shrink-0 text-outline"
+										<span
+											class="inline-flex cursor-help"
 											title="Cuánto se espera pagar en esta cuota (en USD BCV). Obligatorio si hay más de una cuota."
-										/>
+										>
+											<Info class="h-3 w-3 shrink-0 text-outline" />
+										</span>
 									</span>
 									<input
 										type="number"
@@ -331,10 +335,12 @@
 										class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
 									>
 										Pronto pago %
-										<Info
-											class="h-3 w-3 shrink-0 text-outline"
+										<span
+											class="inline-flex cursor-help"
 											title="Descuento que ofrece el proveedor si pagás antes del límite. Ej: 5 = 5% de descuento sobre esta cuota."
-										/>
+										>
+											<Info class="h-3 w-3 shrink-0 text-outline" />
+										</span>
 									</span>
 									<input
 										type="number"
@@ -359,10 +365,12 @@
 										class="flex items-center gap-1 text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
 									>
 										Límite pronto pago
-										<Info
-											class="h-3 w-3 shrink-0 text-outline"
+										<span
+											class="inline-flex cursor-help"
 											title="Fecha tope para pagar y obtener el descuento. Debe ser anterior al vencimiento."
-										/>
+										>
+											<Info class="h-3 w-3 shrink-0 text-outline" />
+										</span>
 									</span>
 									<input
 										type="date"
