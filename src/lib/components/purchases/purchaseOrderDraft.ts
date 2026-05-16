@@ -71,27 +71,16 @@ export interface PurchaseOrderReviewStatus {
 	allReviewed: boolean;
 }
 
-export interface PurchaseOrderDraftInstallment {
-	id: string;
-	installmentNumber: number;
-	dueDate: string;
-	expectedAmountUsd: number | null;
-	earlyPaymentDiscountPercent: number | null;
-	earlyPaymentDiscountDeadline: string | null;
-	notes: string;
-}
-
-export interface PurchaseOrderCreditScheduleValidationResult {
+export interface PurchaseOrderCreditTermsValidationResult {
 	isValid: boolean;
 	issues: string[];
-	scheduledAmount: number;
-	difference: number;
 }
 
 export interface PurchaseOrderDraftFinanceInput {
 	paymentTerms: PurchasePaymentTerms;
-	installments: PurchaseOrderDraftInstallment[];
-	totalNetAmount: number;
+	creditDueDate: string | null;
+	earlyPaymentDiscountPercent: number | null;
+	earlyPaymentDiscountDeadline: string | null;
 }
 
 export type PurchaseOrderDraftZeroValueField = 'unitPurchasePrice' | 'unitSalePrice';
@@ -101,7 +90,9 @@ export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesI
 	invoiceNumber: string;
 	deliveryNoteNumber: string;
 	paymentTerms: PurchasePaymentTerms;
-	installments: PurchaseOrderDraftInstallment[];
+	creditDueDate: string | null;
+	earlyPaymentDiscountPercent: number | null;
+	earlyPaymentDiscountDeadline: string | null;
 	discount?: PurchaseOrderDiscountInput;
 	discountNotes?: string | null;
 }
@@ -128,21 +119,6 @@ export function createEmptyPurchaseOrderDraftItem(
 		appliesIva: isInvoice,
 		ivaRate: defaultTaxRate,
 		isReviewed: false
-	};
-}
-
-export function createEmptyPurchaseOrderDraftInstallment(
-	installmentNumber: number = 1,
-	dueDate: string = ''
-): PurchaseOrderDraftInstallment {
-	return {
-		id: crypto.randomUUID(),
-		installmentNumber: Math.max(installmentNumber, 1),
-		dueDate,
-		expectedAmountUsd: null,
-		earlyPaymentDiscountPercent: null,
-		earlyPaymentDiscountDeadline: null,
-		notes: ''
 	};
 }
 
@@ -293,15 +269,16 @@ export function validatePurchaseOrderDraft(
 	const readiness = validatePurchaseOrderDraftReadiness(header, items);
 	if (!finance) return readiness;
 
-	const creditSchedule = validateCreditSchedule(
+	const creditTerms = validateCreditTerms(
 		finance.paymentTerms,
-		finance.installments,
-		finance.totalNetAmount
+		finance.creditDueDate,
+		finance.earlyPaymentDiscountPercent,
+		finance.earlyPaymentDiscountDeadline
 	);
 
 	return {
-		isReady: readiness.isReady && creditSchedule.isValid,
-		issues: [...readiness.issues, ...creditSchedule.issues]
+		isReady: readiness.isReady && creditTerms.isValid,
+		issues: [...readiness.issues, ...creditTerms.issues]
 	};
 }
 
@@ -317,100 +294,56 @@ export function canPersistPurchaseOrderDraft(
 	return validatePurchaseOrderDraft(header, items, finance).isReady;
 }
 
-export function validateCreditSchedule(
+export function validateCreditTerms(
 	paymentTerms: PurchasePaymentTerms,
-	installments: PurchaseOrderDraftInstallment[],
-	totalNetAmount: number
-): PurchaseOrderCreditScheduleValidationResult {
+	creditDueDate: string | null,
+	earlyPaymentDiscountPercent: number | null,
+	earlyPaymentDiscountDeadline: string | null
+): PurchaseOrderCreditTermsValidationResult {
 	const issues: string[] = [];
-	const normalizedTotal = round2(Number(totalNetAmount || 0));
 
 	if (paymentTerms === PurchasePaymentTerms.CONTADO) {
-		if (installments.length > 0) {
-			issues.push('Las órdenes de contado no deben tener cuotas');
+		if (creditDueDate || Number(earlyPaymentDiscountPercent ?? 0) > 0 || earlyPaymentDiscountDeadline) {
+			issues.push('Las órdenes de contado no deben tener términos de crédito');
 		}
 
 		return {
 			isValid: issues.length === 0,
-			issues,
-			scheduledAmount: 0,
-			difference: 0
+			issues
 		};
 	}
 
-	if (installments.length === 0) {
-		issues.push('Debes registrar al menos una cuota para órdenes a crédito');
+	if (!isIsoDateOnly(creditDueDate)) {
+		issues.push('Debes indicar una fecha de vencimiento válida para el crédito');
 	}
 
-	let scheduledAmount = 0;
-	let previousDueDate = '';
+	const discountPercent = Number(earlyPaymentDiscountPercent ?? 0);
+	const hasDiscountPercent = discountPercent > 0;
+	const hasDiscountDeadline = Boolean(earlyPaymentDiscountDeadline);
 
-	for (const [index, installment] of installments.entries()) {
-		const lineLabel = `Cuota ${index + 1}`;
-
-		if (
-			!Number.isInteger(Number(installment.installmentNumber)) ||
-			Number(installment.installmentNumber) < 1
-		) {
-			issues.push(`${lineLabel}: número de cuota inválido`);
-		}
-
-		if (!isIsoDateOnly(installment.dueDate)) {
-			issues.push(`${lineLabel}: fecha de vencimiento inválida`);
-		} else if (previousDueDate && installment.dueDate < previousDueDate) {
-			issues.push(`${lineLabel}: la fecha debe ser igual o posterior a la cuota anterior`);
-		}
-
-		const expectedAmount = Number(installment.expectedAmountUsd);
-		if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
-			issues.push(`${lineLabel}: el monto esperado debe ser mayor a 0`);
-		} else {
-			scheduledAmount += expectedAmount;
-		}
-
-		const discountPercent = Number(installment.earlyPaymentDiscountPercent ?? 0);
-		const hasDiscountPercent = discountPercent > 0;
-		const hasDiscountDeadline = Boolean(installment.earlyPaymentDiscountDeadline);
-
-		if (hasDiscountPercent && !isIsoDateOnly(installment.earlyPaymentDiscountDeadline)) {
-			issues.push(`${lineLabel}: la fecha límite de pronto pago es obligatoria`);
-		}
-
-		if (hasDiscountDeadline && !hasDiscountPercent) {
-			issues.push(`${lineLabel}: el porcentaje de pronto pago es obligatorio`);
-		}
-
-		if (hasDiscountPercent && discountPercent > 100) {
-			issues.push(`${lineLabel}: el porcentaje de pronto pago no puede superar 100`);
-		}
-
-		if (
-			isIsoDateOnly(installment.earlyPaymentDiscountDeadline) &&
-			isIsoDateOnly(installment.dueDate) &&
-			installment.earlyPaymentDiscountDeadline > installment.dueDate
-		) {
-			issues.push(`${lineLabel}: la fecha de pronto pago no puede ser posterior al vencimiento`);
-		}
-
-		if (isIsoDateOnly(installment.dueDate)) {
-			previousDueDate = installment.dueDate;
-		}
+	if (hasDiscountPercent && !isIsoDateOnly(earlyPaymentDiscountDeadline)) {
+		issues.push('La fecha límite de pronto pago es obligatoria');
 	}
 
-	const roundedScheduledAmount = round2(scheduledAmount);
-	const difference = round2(normalizedTotal - roundedScheduledAmount);
+	if (hasDiscountDeadline && !hasDiscountPercent) {
+		issues.push('El porcentaje de pronto pago es obligatorio');
+	}
 
-	if (Math.abs(difference) > 0.01) {
-		issues.push(
-			`La suma de cuotas (${roundedScheduledAmount.toFixed(2)}) debe coincidir con el total neto (${normalizedTotal.toFixed(2)})`
-		);
+	if (hasDiscountPercent && discountPercent > 100) {
+		issues.push('El porcentaje de pronto pago no puede superar 100');
+	}
+
+	if (
+		isIsoDateOnly(earlyPaymentDiscountDeadline) &&
+		isIsoDateOnly(creditDueDate) &&
+		earlyPaymentDiscountDeadline > creditDueDate
+	) {
+		issues.push('La fecha de pronto pago no puede ser posterior al vencimiento');
 	}
 
 	return {
 		isValid: issues.length === 0,
-		issues,
-		scheduledAmount: roundedScheduledAmount,
-		difference
+		issues
 	};
 }
 

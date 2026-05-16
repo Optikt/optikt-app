@@ -13,9 +13,7 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let { purchaseOrder, items, creditSchedule, suppliers, products, lensItems } = untrack(
-		() => data
-	);
+	let { purchaseOrder, items, suppliers, products, lensItems } = untrack(() => data);
 
 	const initialDraft: PurchaseOrderDraftInitialValues = {
 		supplierId: purchaseOrder.supplierId,
@@ -27,15 +25,9 @@
 		notes: purchaseOrder.notes ?? '',
 		paymentTerms: (purchaseOrder.paymentTerms ??
 			PurchasePaymentTerms.CONTADO) as PurchasePaymentTerms,
-		installments: creditSchedule.map((installment) => ({
-			id: installment.id,
-			installmentNumber: installment.installmentNumber,
-			dueDate: installment.dueDate,
-			expectedAmountUsd: installment.expectedAmountUsd,
-			earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent,
-			earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline,
-			notes: installment.notes ?? ''
-		})),
+		creditDueDate: purchaseOrder.creditDueDate,
+		earlyPaymentDiscountPercent: purchaseOrder.earlyPaymentDiscountPercent,
+		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
 		discount: {
 			type: (purchaseOrder.settlementDiscountType ??
 				PurchaseDiscountType.NONE) as PurchaseDiscountType,

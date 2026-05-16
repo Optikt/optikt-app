@@ -56,7 +56,7 @@
 		InventoryLot,
 		InventoryMovement,
 		PurchaseOrder,
-		PurchaseOrderCreditInstallment
+		PurchaseOrderEarlyPaymentBenefit
 	} from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
@@ -71,7 +71,9 @@
 	let purchaseOrder = $state<PurchaseOrderWithRelations>(untrack(() => data.purchaseOrder));
 	let items = $state<PurchaseOrderItemWithProduct[]>(untrack(() => data.items));
 	let payments = $state<PurchaseOrderPaymentWithUsers[]>(untrack(() => data.payments));
-	let creditSchedule = $state<PurchaseOrderCreditInstallment[]>(untrack(() => data.creditSchedule));
+	let earlyPaymentBenefits = $state<PurchaseOrderEarlyPaymentBenefit[]>(
+		untrack(() => data.earlyPaymentBenefits)
+	);
 	let balance = $state<PurchaseOrderBalanceSummary>(untrack(() => data.balance));
 	let dueStatus = $state<PurchaseOrderDueStatus>(untrack(() => data.dueStatus));
 	let movements = $state<InventoryMovement[]>(untrack(() => data.movements));
@@ -108,7 +110,7 @@
 		purchaseOrder = data.purchaseOrder;
 		items = data.items;
 		payments = data.payments;
-		creditSchedule = data.creditSchedule;
+		earlyPaymentBenefits = data.earlyPaymentBenefits;
 		balance = data.balance;
 		dueStatus = data.dueStatus;
 		movements = data.movements;
@@ -605,10 +607,24 @@
 
 	function handleFinanceChanged(payload: {
 		payments: PurchaseOrderPaymentWithUsers[];
+		earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
 		balance: PurchaseOrderBalanceSummary;
 		dueStatus: PurchaseOrderDueStatus;
 	}) {
 		payments = payload.payments;
+		if (payload.earlyPaymentBenefits) earlyPaymentBenefits = payload.earlyPaymentBenefits;
+		balance = payload.balance;
+		dueStatus = payload.dueStatus;
+	}
+
+	function handleCreditUpdated(payload: {
+		purchaseOrder: PurchaseOrder;
+		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
+		balance: PurchaseOrderBalanceSummary;
+		dueStatus: PurchaseOrderDueStatus;
+	}) {
+		purchaseOrder = { ...purchaseOrder, ...payload.purchaseOrder };
+		earlyPaymentBenefits = payload.earlyPaymentBenefits;
 		balance = payload.balance;
 		dueStatus = payload.dueStatus;
 	}
@@ -951,8 +967,8 @@
 
 			<PurchaseOrderCreditSchedulePanel
 				purchaseOrder={purchaseOrder as PurchaseOrder}
-				{creditSchedule}
 				readonly={true}
+				onCreditUpdated={handleCreditUpdated}
 			/>
 
 			<section class="glass-card overflow-hidden">
@@ -1211,7 +1227,10 @@
 				status={purchaseOrder.status}
 				defaultBcvRate={purchaseOrder.bcvRate}
 				{payments}
+				purchaseOrder={purchaseOrder as PurchaseOrder}
+				{earlyPaymentBenefits}
 				pendingBalanceUsd={balance.balance}
+				debtTotalUsd={balance.debtTotal}
 				isFullyPaid={balance.isFullyPaid}
 				composerRequest={paymentComposerRequest}
 				onFinanceChanged={handleFinanceChanged}

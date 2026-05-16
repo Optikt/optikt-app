@@ -19,7 +19,6 @@ import {
 	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
 	canPersistPurchaseOrderDraft,
-	createEmptyPurchaseOrderDraftInstallment,
 	createEmptyPurchaseOrderDraftItem,
 	createPurchaseOrderDraftItemFromExisting,
 	getDraftItemZeroValueFields,
@@ -27,7 +26,7 @@ import {
 	getPurchaseOrderReviewStatus,
 	getSettlementDiscountFactor,
 	prorateNetUnitPurchasePrice,
-	validateCreditSchedule
+	validateCreditTerms
 } from './purchaseOrderDraft';
 
 function makeProduct(overrides: Partial<ProductWithRelations> = {}): ProductWithRelations {
@@ -283,44 +282,36 @@ describe('purchaseOrderDraft helpers', () => {
 		).toBe(true);
 	});
 
-	it('validates a credit schedule that matches the net total', () => {
-		const first = createEmptyPurchaseOrderDraftInstallment(1, '2026-06-10');
-		first.expectedAmountUsd = 60;
-
-		const second = createEmptyPurchaseOrderDraftInstallment(2, '2026-07-10');
-		second.expectedAmountUsd = 40;
-
-		const result = validateCreditSchedule(PurchasePaymentTerms.CREDIT, [first, second], 100);
+	it('validates simple credit terms with due date and pronto pago window', () => {
+		const result = validateCreditTerms(
+			PurchasePaymentTerms.CREDIT,
+			'2026-07-10',
+			5,
+			'2026-06-30'
+		);
 
 		expect(result.isValid).toBe(true);
-		expect(result.scheduledAmount).toBe(100);
-		expect(result.difference).toBe(0);
+		expect(result.issues).toEqual([]);
 	});
 
-	it('rejects credit schedules whose total does not match the net amount', () => {
-		const installment = createEmptyPurchaseOrderDraftInstallment(1, '2026-06-10');
-		installment.expectedAmountUsd = 80;
-
-		const result = validateCreditSchedule(PurchasePaymentTerms.CREDIT, [installment], 100);
+	it('rejects credit terms without a due date', () => {
+		const result = validateCreditTerms(PurchasePaymentTerms.CREDIT, null, null, null);
 
 		expect(result.isValid).toBe(false);
-		expect(result.issues).toContain(
-			'La suma de cuotas (80.00) debe coincidir con el total neto (100.00)'
+		expect(result.issues).toContain('Debes indicar una fecha de vencimiento válida para el crédito');
+	});
+
+	it('rejects pronto pago deadline after the credit due date', () => {
+		const result = validateCreditTerms(
+			PurchasePaymentTerms.CREDIT,
+			'2026-07-10',
+			5,
+			'2026-07-15'
 		);
-	});
-
-	it('rejects installments out of chronological order', () => {
-		const first = createEmptyPurchaseOrderDraftInstallment(1, '2026-07-10');
-		first.expectedAmountUsd = 50;
-
-		const second = createEmptyPurchaseOrderDraftInstallment(2, '2026-06-10');
-		second.expectedAmountUsd = 50;
-
-		const result = validateCreditSchedule(PurchasePaymentTerms.CREDIT, [first, second], 100);
 
 		expect(result.isValid).toBe(false);
 		expect(result.issues).toContain(
-			'Cuota 2: la fecha debe ser igual o posterior a la cuota anterior'
+			'La fecha de pronto pago no puede ser posterior al vencimiento'
 		);
 	});
 });

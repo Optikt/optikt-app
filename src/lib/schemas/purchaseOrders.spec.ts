@@ -121,43 +121,32 @@ describe('CreatePurchaseOrderSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
-	it('accepts a credit PO with installments', () => {
+	it('accepts a credit PO with simple credit terms', () => {
 		const result = CreatePurchaseOrderSchema.safeParse({
 			...baseCreatePayload,
 			paymentTerms: 'CREDIT',
-			installments: [
-				{
-					installmentNumber: 1,
-					dueDate: '2025-02-15',
-					expectedAmountUsd: 50
-				}
-			]
+			creditDueDate: '2025-02-15',
+			earlyPaymentDiscountPercent: 5,
+			earlyPaymentDiscountDeadline: '2025-02-01'
 		});
 
 		expect(result.success).toBe(true);
 	});
 
-	it('rejects cash POs with installments', () => {
+	it('rejects cash POs with credit terms', () => {
 		const result = CreatePurchaseOrderSchema.safeParse({
 			...baseCreatePayload,
 			paymentTerms: 'CONTADO',
-			installments: [
-				{
-					installmentNumber: 1,
-					dueDate: '2025-02-15',
-					expectedAmountUsd: 50
-				}
-			]
+			creditDueDate: '2025-02-15'
 		});
 
 		expect(result.success).toBe(false);
 	});
 
-	it('requires installments for credit purchase orders', () => {
+	it('requires a due date for credit purchase orders', () => {
 		const result = CreatePurchaseOrderSchema.safeParse({
 			...baseCreatePayload,
-			paymentTerms: 'CREDIT',
-			installments: []
+			paymentTerms: 'CREDIT'
 		});
 
 		expect(result.success).toBe(false);
@@ -269,19 +258,16 @@ describe('UpdatePurchaseOrderSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
-	it('requires paymentTerms when updating installments', () => {
+	it('accepts direct credit term updates', () => {
 		const result = UpdatePurchaseOrderSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000001',
-			installments: [
-				{
-					installmentNumber: 1,
-					dueDate: '2025-02-15',
-					expectedAmountUsd: 50
-				}
-			]
+			paymentTerms: 'CREDIT',
+			creditDueDate: '2025-02-15',
+			earlyPaymentDiscountPercent: 5,
+			earlyPaymentDiscountDeadline: '2025-02-01'
 		});
 
-		expect(result.success).toBe(false);
+		expect(result.success).toBe(true);
 	});
 });
 
@@ -291,13 +277,9 @@ describe('SavePurchaseOrderDraftSchema', () => {
 			id: '00000000-0000-4000-8000-000000000010',
 			...baseCreatePayload,
 			paymentTerms: 'CREDIT',
-			installments: [
-				{
-					installmentNumber: 1,
-					dueDate: '2025-02-15',
-					expectedAmountUsd: 50
-				}
-			],
+			creditDueDate: '2025-02-15',
+			earlyPaymentDiscountPercent: 5,
+			earlyPaymentDiscountDeadline: '2025-02-01',
 			items: [
 				{
 					...validItem,
@@ -313,18 +295,12 @@ describe('SavePurchaseOrderDraftSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
-	it('rejects draft payloads with installments when paymentTerms is contado', () => {
+	it('rejects draft payloads with credit terms when paymentTerms is contado', () => {
 		const result = SavePurchaseOrderDraftSchema.safeParse({
 			id: '00000000-0000-4000-8000-000000000010',
 			...baseCreatePayload,
 			paymentTerms: 'CONTADO',
-			installments: [
-				{
-					installmentNumber: 1,
-					dueDate: '2025-02-15',
-					expectedAmountUsd: 50
-				}
-			],
+			creditDueDate: '2025-02-15',
 			items: [{ ...validItem, id: '00000000-0000-4000-8000-000000000011' }]
 		});
 

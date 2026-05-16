@@ -50,7 +50,7 @@ test.describe('purchase order credit payment flow', () => {
 		await addPayment(page, '300');
 		await expect(page.getByText(/USD\s+400,00/)).toBeVisible();
 
-		await addPayment(page, '350');
+		await addPayment(page, '350', { applyEarlyPaymentBenefit: true });
 		await expect(page.getByText('Completamente pagada')).toBeVisible();
 		await expect(page.getByText(/USD\s+50,00/)).toBeVisible();
 		await expect(page.getByText('Pago registrado').first()).toBeVisible();
@@ -61,12 +61,20 @@ test.describe('purchase order credit payment flow', () => {
 	});
 });
 
-async function addPayment(page: Page, amount: string) {
+async function addPayment(
+	page: Page,
+	amount: string,
+	options: { applyEarlyPaymentBenefit?: boolean } = {}
+) {
 	await page.getByRole('button', { name: /Registrar pago/ }).click();
 	await page.getByLabel('Monto pagado').fill(amount);
 	await page.getByLabel('Tasa BCV USD').fill('40');
 	await page.getByLabel('Referencia').fill(`E2E-${amount}-${Date.now()}`);
 	await page.getByRole('button', { name: /Guardar pago/ }).click();
+	if (options.applyEarlyPaymentBenefit) {
+		await expect(page.getByText('Pronto pago disponible')).toBeVisible();
+		await page.getByRole('button', { name: /Aplicar a esta PO/ }).click();
+	}
 	await expect(page.getByText('Pago registrado')).toBeVisible();
 }
 
@@ -116,11 +124,13 @@ async function seedCreditPurchaseOrder(sql: Sql): Promise<string> {
 		insert into purchase_orders (
 			order_number, supplier_id, invoice_number, status, is_ready_for_review,
 			document_type, order_date, bcv_rate, payment_terms,
+			credit_due_date, early_payment_discount_percent, early_payment_discount_deadline,
 			settlement_discount_type, settlement_discount_value, notes, created_by_id
 		)
 		values (
 			${orderNumberRow.orderNumber}, ${supplier.id}, ${`E2E-${runId}`}, 'DRAFT', true,
 			'INVOICE', ${now.toISOString()}, 40, 'CREDIT',
+			${dueDate}, 5, ${today},
 			'NONE', 0, 'Orden E2E para pronto pago', ${user.id}
 		)
 		returning id
@@ -132,14 +142,6 @@ async function seedCreditPurchaseOrder(sql: Sql): Promise<string> {
 			unit_purchase_price, unit_sale_price, applies_iva, iva_rate, is_reviewed
 		)
 		values (${purchaseOrder.id}, 'PRODUCT', ${product.id}, 1, 1000, 1500, false, 0, true)
-	`;
-
-	await sql`
-		insert into purchase_order_credit_schedule (
-			purchase_order_id, installment_number, due_date,
-			expected_amount_usd, early_payment_discount_percent, early_payment_discount_deadline
-		)
-		values (${purchaseOrder.id}, 1, ${dueDate}, 1000, 5, ${today})
 	`;
 
 	return purchaseOrder.id;

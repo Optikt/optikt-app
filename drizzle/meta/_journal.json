@@ -141,6 +141,13 @@
       "when": 1778775327891,
       "tag": "0019_payment_voided_by",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778897388643,
+      "tag": "0020_right_george_stacy",
+      "breakpoints": true
     }
   ]
 }

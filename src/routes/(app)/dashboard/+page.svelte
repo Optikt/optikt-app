@@ -25,7 +25,7 @@
 
 	let { data } = $props();
 
-	const { stats, recentSales, pendingFreeItemSales, upcomingPurchaseInstallments } = $derived(data);
+	const { stats, recentSales, pendingFreeItemSales, upcomingPurchaseDues } = $derived(data);
 	const canAct = $derived(canOperate(data.user.role));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
@@ -129,8 +129,8 @@
 
 		<!-- Right column: Quick Actions + Pending Free Items -->
 		<div class="flex flex-col gap-6">
-			{#if upcomingPurchaseInstallments.length > 0}
-				<UpcomingPurchasePaymentsWidget installments={upcomingPurchaseInstallments} />
+			{#if upcomingPurchaseDues.length > 0}
+				<UpcomingPurchasePaymentsWidget dues={upcomingPurchaseDues} />
 			{/if}
 
 			<!-- Acciones Rápidas - dark navy card -->

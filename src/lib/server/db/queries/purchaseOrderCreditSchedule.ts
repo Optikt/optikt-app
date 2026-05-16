@@ -1,17 +1,14 @@
-import { and, asc, eq, gte, inArray, isNull, lte } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNotNull, isNull, lte } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { nowISO } from '$lib/dates';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
-	purchaseOrderCreditSchedule,
+	purchaseOrderEarlyPaymentBenefits,
 	purchaseOrderItems,
 	purchaseOrderPayments,
 	purchaseOrders,
 	suppliers,
-	type NewPurchaseOrderCreditInstallment,
-	type PurchaseOrderCreditInstallment
 } from '$lib/server/db/schema';
-import { PurchaseOrderStatus } from '$lib/shared/enums';
+import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus,
@@ -19,7 +16,10 @@ import {
 	type PurchaseOrderDueStatus
 } from '$lib/shared/purchaseOrderCredit';
 
-export interface UpcomingPurchaseOrderInstallment extends PurchaseOrderCreditInstallment {
+export interface UpcomingPurchaseOrderDue {
+	id: string;
+	dueDate: string;
+	expectedAmountUsd: number | null;
 	purchaseOrder: {
 		id: string;
 		orderNumber: number;
@@ -28,64 +28,22 @@ export interface UpcomingPurchaseOrderInstallment extends PurchaseOrderCreditIns
 		status: string;
 		settlementDiscountType: string;
 		settlementDiscountValue: number;
+		creditDueDate: string | null;
+		earlyPaymentDiscountPercent: number | null;
+		earlyPaymentDiscountDeadline: string | null;
 	};
 	supplier: { id: string; name: string } | null;
 	balance: PurchaseOrderBalanceSummary;
 	dueStatus: PurchaseOrderDueStatus;
 }
 
-export async function getPurchaseOrderCreditSchedule(
-	purchaseOrderId: string,
-	executor: DbOrTx = db
-): Promise<PurchaseOrderCreditInstallment[]> {
-	return executor
-		.select()
-		.from(purchaseOrderCreditSchedule)
-		.where(eq(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderId))
-		.orderBy(
-			asc(purchaseOrderCreditSchedule.installmentNumber),
-			asc(purchaseOrderCreditSchedule.dueDate)
-		);
-}
-
-export async function replacePurchaseOrderCreditSchedule(
-	purchaseOrderId: string,
-	installments: Array<
-		Omit<NewPurchaseOrderCreditInstallment, 'purchaseOrderId' | 'id' | 'createdAt' | 'updatedAt'>
-	>,
-	executor: DbOrTx = db
-): Promise<PurchaseOrderCreditInstallment[]> {
-	await executor
-		.delete(purchaseOrderCreditSchedule)
-		.where(eq(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderId));
-
-	if (installments.length === 0) {
-		return [];
-	}
-
-	const now = nowISO();
-	return executor
-		.insert(purchaseOrderCreditSchedule)
-		.values(
-			installments.map((installment) => ({
-				...installment,
-				id: crypto.randomUUID(),
-				purchaseOrderId,
-				createdAt: now,
-				updatedAt: now
-			}))
-		)
-		.returning();
-}
-
-export async function getUpcomingPurchaseOrderDueInstallments(
+export async function getUpcomingPurchaseOrderDues(
 	dateFrom: string,
 	dateTo: string,
 	executor: DbOrTx = db
-): Promise<UpcomingPurchaseOrderInstallment[]> {
+): Promise<UpcomingPurchaseOrderDue[]> {
 	const rows = await executor
 		.select({
-			installment: purchaseOrderCreditSchedule,
 			purchaseOrder: {
 				id: purchaseOrders.id,
 				orderNumber: purchaseOrders.orderNumber,
@@ -93,30 +51,31 @@ export async function getUpcomingPurchaseOrderDueInstallments(
 				paymentTerms: purchaseOrders.paymentTerms,
 				status: purchaseOrders.status,
 				settlementDiscountType: purchaseOrders.settlementDiscountType,
-				settlementDiscountValue: purchaseOrders.settlementDiscountValue
+				settlementDiscountValue: purchaseOrders.settlementDiscountValue,
+				creditDueDate: purchaseOrders.creditDueDate,
+				earlyPaymentDiscountPercent: purchaseOrders.earlyPaymentDiscountPercent,
+				earlyPaymentDiscountDeadline: purchaseOrders.earlyPaymentDiscountDeadline
 			},
 			supplier: { id: suppliers.id, name: suppliers.name }
 		})
-		.from(purchaseOrderCreditSchedule)
-		.innerJoin(purchaseOrders, eq(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrders.id))
+		.from(purchaseOrders)
 		.leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
 		.where(
 			and(
-				gte(purchaseOrderCreditSchedule.dueDate, dateFrom),
-				lte(purchaseOrderCreditSchedule.dueDate, dateTo),
+				eq(purchaseOrders.paymentTerms, PurchasePaymentTerms.CREDIT),
+				isNotNull(purchaseOrders.creditDueDate),
+				gte(purchaseOrders.creditDueDate, dateFrom),
+				lte(purchaseOrders.creditDueDate, dateTo),
 				eq(purchaseOrders.status, PurchaseOrderStatus.CONFIRMED),
 				isNull(purchaseOrders.deletedAt)
 			)
 		)
-		.orderBy(
-			asc(purchaseOrderCreditSchedule.dueDate),
-			asc(purchaseOrderCreditSchedule.installmentNumber)
-		);
+		.orderBy(asc(purchaseOrders.creditDueDate), asc(purchaseOrders.orderNumber));
 
 	if (rows.length === 0) return [];
 
 	const purchaseOrderIds = [...new Set(rows.map((row) => row.purchaseOrder.id))];
-	const [items, payments, schedules] = await Promise.all([
+	const [items, payments, benefits] = await Promise.all([
 		executor
 			.select()
 			.from(purchaseOrderItems)
@@ -127,8 +86,8 @@ export async function getUpcomingPurchaseOrderDueInstallments(
 			.where(inArray(purchaseOrderPayments.purchaseOrderId, purchaseOrderIds)),
 		executor
 			.select()
-			.from(purchaseOrderCreditSchedule)
-			.where(inArray(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderIds))
+			.from(purchaseOrderEarlyPaymentBenefits)
+			.where(inArray(purchaseOrderEarlyPaymentBenefits.purchaseOrderId, purchaseOrderIds))
 	]);
 
 	const itemsByOrderId = new Map<string, typeof items>();
@@ -147,11 +106,11 @@ export async function getUpcomingPurchaseOrderDueInstallments(
 		]);
 	}
 
-	const schedulesByOrderId = new Map<string, typeof schedules>();
-	for (const schedule of schedules) {
-		schedulesByOrderId.set(schedule.purchaseOrderId, [
-			...(schedulesByOrderId.get(schedule.purchaseOrderId) ?? []),
-			schedule
+	const benefitsByOrderId = new Map<string, typeof benefits>();
+	for (const benefit of benefits) {
+		benefitsByOrderId.set(benefit.purchaseOrderId, [
+			...(benefitsByOrderId.get(benefit.purchaseOrderId) ?? []),
+			benefit
 		]);
 	}
 
@@ -159,26 +118,29 @@ export async function getUpcomingPurchaseOrderDueInstallments(
 		.map((row) => {
 			const orderItems = itemsByOrderId.get(row.purchaseOrder.id) ?? [];
 			const orderPayments = paymentsByOrderId.get(row.purchaseOrder.id) ?? [];
-			const orderSchedule = schedulesByOrderId.get(row.purchaseOrder.id) ?? [];
+			const orderBenefits = benefitsByOrderId.get(row.purchaseOrder.id) ?? [];
 			const balance = computePurchaseOrderBalance(
 				row.purchaseOrder,
 				orderItems,
 				orderPayments,
-				orderSchedule
+				orderBenefits
 			);
 			const dueStatus = getPurchaseOrderDueStatus({
 				paymentTerms: row.purchaseOrder.paymentTerms,
-				installments: orderSchedule,
+				creditDueDate: row.purchaseOrder.creditDueDate,
+				earlyPaymentDiscountDeadline: row.purchaseOrder.earlyPaymentDiscountDeadline,
 				balance: balance.balance
 			});
 
 			return {
-				...row.installment,
+				id: row.purchaseOrder.id,
+				dueDate: row.purchaseOrder.creditDueDate ?? '',
+				expectedAmountUsd: balance.balance,
 				purchaseOrder: row.purchaseOrder,
 				supplier: row.supplier?.id ? row.supplier : null,
 				balance,
 				dueStatus
 			};
 		})
-		.filter((installment) => installment.balance.balance > 0.01);
+		.filter((due) => due.balance.balance > 0.01);
 }

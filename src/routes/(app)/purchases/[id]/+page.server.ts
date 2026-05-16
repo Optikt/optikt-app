@@ -11,7 +11,7 @@ import {
 	getPurchaseOrderItems
 } from '$lib/server/db/queries/purchaseOrders';
 import { getPurchaseOrderPaymentsWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-import { getPurchaseOrderCreditSchedule } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
+import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
 import { getPurchaseOrderAuditHistory } from '$lib/server/db/queries/changeHistory';
 import { getPurchaseOrderRelatedMovements } from '$lib/server/db/queries/inventoryMovements';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
@@ -28,18 +28,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// Load lots for items that have been confirmed (have lotId)
 	const lotIds = items.map((item) => item.lotId).filter(Boolean) as string[];
-	const [movements, lots, payments, creditSchedule, auditHistory] = await Promise.all([
+	const [movements, lots, payments, earlyPaymentBenefits, auditHistory] = await Promise.all([
 		getPurchaseOrderRelatedMovements(params.id, lotIds),
 		Promise.all(lotIds.map((id) => findLotById(id))),
 		getPurchaseOrderPaymentsWithUsers(params.id, { includeVoided: true }),
-		getPurchaseOrderCreditSchedule(params.id),
+		getPurchaseOrderEarlyPaymentBenefits(params.id, { includeVoided: true }),
 		getPurchaseOrderAuditHistory(params.id)
 	]);
 	const lotsMap = Object.fromEntries(lots.filter(Boolean).map((l) => [l!.id, l!]));
-	const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, creditSchedule);
+	const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, earlyPaymentBenefits);
 	const dueStatus = getPurchaseOrderDueStatus({
 		paymentTerms: purchaseOrder.paymentTerms,
-		installments: creditSchedule,
+		creditDueDate: purchaseOrder.creditDueDate,
+		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
 		balance: balance.balance
 	});
 
@@ -47,7 +48,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		purchaseOrder,
 		items,
 		payments,
-		creditSchedule,
+		earlyPaymentBenefits,
 		balance,
 		dueStatus,
 		movements,

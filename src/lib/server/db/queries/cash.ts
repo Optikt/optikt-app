@@ -30,9 +30,7 @@ import {
 import { db } from '../index';
 import {
 	cashExpenses,
-	purchaseOrderCreditSchedule,
-	purchaseOrderItems,
-	purchaseOrderPayments,
+	purchaseOrderEarlyPaymentBenefits,
 	purchaseOrders,
 	sales,
 	saleItems,
@@ -44,7 +42,6 @@ import {
 import type { DbOrTx } from '../types';
 import { nowISO } from '$lib/dates';
 import { PurchaseOrderStatus, type ExpenseCategory } from '$lib/shared/enums';
-import { computePurchaseOrderBalance } from '$lib/shared/purchaseOrderCredit';
 
 interface PurchaseDiscountEarnedRow {
 	date: string;
@@ -161,89 +158,29 @@ async function getPurchaseDiscountEarnedRows(
 	executor: DbOrTx = db
 ): Promise<PurchaseDiscountEarnedRow[]> {
 	const { from, to } = args;
-	const candidateRows = await executor
-		.select({ purchaseOrderId: purchaseOrderPayments.purchaseOrderId })
-		.from(purchaseOrderPayments)
-		.innerJoin(purchaseOrders, eq(purchaseOrderPayments.purchaseOrderId, purchaseOrders.id))
+	const rows = await executor
+		.select({
+			date: purchaseOrderEarlyPaymentBenefits.benefitDate,
+			total: sum(purchaseOrderEarlyPaymentBenefits.amountUsdBcv)
+		})
+		.from(purchaseOrderEarlyPaymentBenefits)
+		.innerJoin(
+			purchaseOrders,
+			eq(purchaseOrderEarlyPaymentBenefits.purchaseOrderId, purchaseOrders.id)
+		)
 		.where(
 			and(
-				isNull(purchaseOrderPayments.voidedAt),
+				isNull(purchaseOrderEarlyPaymentBenefits.voidedAt),
+				eq(purchaseOrderEarlyPaymentBenefits.appliedToBalance, true),
 				isNull(purchaseOrders.deletedAt),
 				eq(purchaseOrders.status, PurchaseOrderStatus.CONFIRMED),
-				gte(purchaseOrderPayments.paymentDate, from),
-				lte(purchaseOrderPayments.paymentDate, to)
+				gte(purchaseOrderEarlyPaymentBenefits.benefitDate, from),
+				lte(purchaseOrderEarlyPaymentBenefits.benefitDate, to)
 			)
 		)
-		.groupBy(purchaseOrderPayments.purchaseOrderId);
+		.groupBy(purchaseOrderEarlyPaymentBenefits.benefitDate);
 
-	const purchaseOrderIds = candidateRows.map((row) => row.purchaseOrderId);
-	if (purchaseOrderIds.length === 0) return [];
-
-	const [orders, items, payments, schedules] = await Promise.all([
-		executor.select().from(purchaseOrders).where(inArray(purchaseOrders.id, purchaseOrderIds)),
-		executor
-			.select()
-			.from(purchaseOrderItems)
-			.where(inArray(purchaseOrderItems.purchaseOrderId, purchaseOrderIds)),
-		executor
-			.select()
-			.from(purchaseOrderPayments)
-			.where(inArray(purchaseOrderPayments.purchaseOrderId, purchaseOrderIds)),
-		executor
-			.select()
-			.from(purchaseOrderCreditSchedule)
-			.where(inArray(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderIds))
-	]);
-
-	const itemsByOrderId = new Map<string, typeof items>();
-	for (const item of items) {
-		itemsByOrderId.set(item.purchaseOrderId, [
-			...(itemsByOrderId.get(item.purchaseOrderId) ?? []),
-			item
-		]);
-	}
-
-	const paymentsByOrderId = new Map<string, typeof payments>();
-	for (const payment of payments) {
-		paymentsByOrderId.set(payment.purchaseOrderId, [
-			...(paymentsByOrderId.get(payment.purchaseOrderId) ?? []),
-			payment
-		]);
-	}
-
-	const schedulesByOrderId = new Map<string, typeof schedules>();
-	for (const schedule of schedules) {
-		schedulesByOrderId.set(schedule.purchaseOrderId, [
-			...(schedulesByOrderId.get(schedule.purchaseOrderId) ?? []),
-			schedule
-		]);
-	}
-
-	const rowsByDate = new Map<string, number>();
-	for (const order of orders) {
-		const balance = computePurchaseOrderBalance(
-			order,
-			itemsByOrderId.get(order.id) ?? [],
-			paymentsByOrderId.get(order.id) ?? [],
-			schedulesByOrderId.get(order.id) ?? []
-		);
-
-		if (
-			!balance.isFullyPaid ||
-			balance.earlyPaymentDiscountEarned <= 0 ||
-			!balance.lastPaymentDate
-		) {
-			continue;
-		}
-
-		if (balance.lastPaymentDate < from || balance.lastPaymentDate > to) continue;
-
-		const date = balance.lastPaymentDate.slice(0, 10);
-		const total = (rowsByDate.get(date) ?? 0) + balance.earlyPaymentDiscountEarned;
-		rowsByDate.set(date, Number(total.toFixed(2)));
-	}
-
-	return Array.from(rowsByDate.entries()).map(([date, total]) => ({ date, total }));
+	return rows.map((row) => ({ date: row.date, total: Number(row.total ?? 0) }));
 }
 
 /**

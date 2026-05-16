@@ -86,6 +86,11 @@ export const purchaseOrders = pgTable(
 		bcvRate: doublePrecision('bcv_rate').notNull(),
 		/** Payment terms for supplier settlement */
 		paymentTerms: purchasePaymentTermsEnum('payment_terms').notNull().default('CONTADO'),
+		/** Final due date for supplier credit settlement (null for cash purchases). */
+		creditDueDate: date('credit_due_date'),
+		/** Optional early-payment incentive percentage, independent from inventory cost. */
+		earlyPaymentDiscountPercent: doublePrecision('early_payment_discount_percent'),
+		earlyPaymentDiscountDeadline: date('early_payment_discount_deadline'),
 		/**
 		 * Settlement discount granted by supplier at payment time (e.g. cash discount).
 		 * Lines stay at the delivery-note price; the discount only affects the
@@ -215,21 +220,22 @@ export const purchaseOrderPayments = pgTable(
 );
 
 // ============================================================================
-// PURCHASE ORDER CREDIT SCHEDULE
+// PURCHASE ORDER EARLY PAYMENT BENEFITS
 // ============================================================================
 
-export const purchaseOrderCreditSchedule = pgTable(
-	'purchase_order_credit_schedule',
+export const purchaseOrderEarlyPaymentBenefits = pgTable(
+	'purchase_order_early_payment_benefits',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		purchaseOrderId: uuid('purchase_order_id').notNull(),
-		installmentNumber: integer('installment_number').notNull(),
-		dueDate: date('due_date').notNull(),
-		/** Optional expected amount for this installment in normalized USD BCV */
-		expectedAmountUsd: doublePrecision('expected_amount_usd'),
-		earlyPaymentDiscountPercent: doublePrecision('early_payment_discount_percent'),
-		earlyPaymentDiscountDeadline: date('early_payment_discount_deadline'),
-		notes: varchar(),
+		paymentId: uuid('payment_id'),
+		benefitDate: date('benefit_date').notNull(),
+		amountUsdBcv: doublePrecision('amount_usd_bcv').notNull(),
+		appliedToBalance: boolean('applied_to_balance').notNull().default(true),
+		note: varchar('note'),
+		createdById: uuid('created_by_id').notNull(),
+		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'string' }),
+		voidedById: uuid('voided_by_id'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow(),
@@ -238,28 +244,42 @@ export const purchaseOrderCreditSchedule = pgTable(
 			.defaultNow()
 	},
 	(table) => [
-		index('ix_purchase_order_credit_schedule_id').using(
+		index('ix_purchase_order_early_payment_benefits_id').using(
 			'btree',
 			table.id.asc().nullsLast().op('uuid_ops')
 		),
-		index('ix_purchase_order_credit_schedule_po_id').using(
+		index('ix_purchase_order_early_payment_benefits_po_id').using(
 			'btree',
 			table.purchaseOrderId.asc().nullsLast().op('uuid_ops')
 		),
-		index('ix_purchase_order_credit_schedule_due_date').using(
+		index('ix_purchase_order_early_payment_benefits_payment_id').using(
 			'btree',
-			table.dueDate.asc().nullsLast().op('date_ops')
+			table.paymentId.asc().nullsLast().op('uuid_ops')
 		),
-		uniqueIndex('uq_purchase_order_credit_schedule_po_number').using(
+		index('ix_purchase_order_early_payment_benefits_date').using(
 			'btree',
-			table.purchaseOrderId.asc().nullsLast().op('uuid_ops'),
-			table.installmentNumber.asc().nullsLast().op('int4_ops')
+			table.benefitDate.asc().nullsLast().op('date_ops')
 		),
 		foreignKey({
 			columns: [table.purchaseOrderId],
 			foreignColumns: [purchaseOrders.id],
-			name: 'purchase_order_credit_schedule_po_id_fkey'
-		}).onDelete('cascade')
+			name: 'purchase_order_early_payment_benefits_po_id_fkey'
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.paymentId],
+			foreignColumns: [purchaseOrderPayments.id],
+			name: 'purchase_order_early_payment_benefits_payment_id_fkey'
+		}).onDelete('set null'),
+		foreignKey({
+			columns: [table.createdById],
+			foreignColumns: [users.id],
+			name: 'purchase_order_early_payment_benefits_created_by_id_fkey'
+		}).onDelete('restrict'),
+		foreignKey({
+			columns: [table.voidedById],
+			foreignColumns: [users.id],
+			name: 'purchase_order_early_payment_benefits_voided_by_id_fkey'
+		}).onDelete('restrict')
 	]
 );
 
@@ -338,7 +358,7 @@ export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type NewPurchaseOrder = typeof purchaseOrders.$inferInsert;
 export type PurchaseOrderPayment = typeof purchaseOrderPayments.$inferSelect;
 export type NewPurchaseOrderPayment = typeof purchaseOrderPayments.$inferInsert;
-export type PurchaseOrderCreditInstallment = typeof purchaseOrderCreditSchedule.$inferSelect;
-export type NewPurchaseOrderCreditInstallment = typeof purchaseOrderCreditSchedule.$inferInsert;
+export type PurchaseOrderEarlyPaymentBenefit = typeof purchaseOrderEarlyPaymentBenefits.$inferSelect;
+export type NewPurchaseOrderEarlyPaymentBenefit = typeof purchaseOrderEarlyPaymentBenefits.$inferInsert;
 export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type NewPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;

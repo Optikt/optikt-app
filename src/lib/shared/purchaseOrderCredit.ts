@@ -12,6 +12,13 @@ export interface PurchaseOrderSettlementDiscountLike {
 	settlementDiscountValue: number | null;
 }
 
+export interface PurchaseOrderCreditTermsLike {
+	paymentTerms?: string | null;
+	creditDueDate?: string | null;
+	earlyPaymentDiscountPercent?: number | null;
+	earlyPaymentDiscountDeadline?: string | null;
+}
+
 export interface PurchaseOrderPaymentLike {
 	amountUsdBcv: number;
 	paymentDate: string;
@@ -19,12 +26,10 @@ export interface PurchaseOrderPaymentLike {
 	currencyCode?: CurrencyCode | string;
 }
 
-export interface PurchaseOrderCreditInstallmentLike {
-	installmentNumber: number;
-	dueDate: string;
-	expectedAmountUsd: number | null;
-	earlyPaymentDiscountPercent: number | null;
-	earlyPaymentDiscountDeadline: string | null;
+export interface PurchaseOrderEarlyPaymentBenefitLike {
+	amountUsdBcv: number;
+	appliedToBalance: boolean;
+	voidedAt?: string | null;
 }
 
 export interface PurchaseOrderBalanceSummary {
@@ -51,8 +56,11 @@ export interface PurchaseOrderDueStatus {
 	daysUntil: number | null;
 }
 
-interface ResolvedInstallment extends PurchaseOrderCreditInstallmentLike {
-	resolvedExpectedAmountUsd: number;
+export interface EarlyPaymentDiscountSuggestion {
+	amountUsdBcv: number;
+	percent: number;
+	deadline: string;
+	residualAfterPayment: number;
 }
 
 function roundCurrency(value: number): number {
@@ -74,6 +82,12 @@ function daysBetween(fromDate: string, toDate: string): number {
 
 function getActivePayments(payments: PurchaseOrderPaymentLike[]): PurchaseOrderPaymentLike[] {
 	return payments.filter((payment) => !payment.voidedAt);
+}
+
+function getActiveAppliedBenefits(
+	benefits: PurchaseOrderEarlyPaymentBenefitLike[]
+): PurchaseOrderEarlyPaymentBenefitLike[] {
+	return benefits.filter((benefit) => benefit.appliedToBalance && !benefit.voidedAt);
 }
 
 function getDiscountFactor(
@@ -100,51 +114,6 @@ function getDiscountFactor(
 	return Math.max(0, Math.min(1, (subtotalPreTax - discountAmount) / subtotalPreTax));
 }
 
-function resolveInstallments(
-	totalDebt: number,
-	installments: PurchaseOrderCreditInstallmentLike[]
-): ResolvedInstallment[] | null {
-	if (installments.length === 0) return [];
-
-	const sorted = [...installments].sort((left, right) => {
-		if (left.installmentNumber !== right.installmentNumber) {
-			return left.installmentNumber - right.installmentNumber;
-		}
-		return left.dueDate.localeCompare(right.dueDate);
-	});
-
-	const missing = sorted.filter((installment) => installment.expectedAmountUsd == null);
-	if (missing.length === 0) {
-		return sorted.map((installment) => ({
-			...installment,
-			resolvedExpectedAmountUsd: Number(installment.expectedAmountUsd ?? 0)
-		}));
-	}
-
-	if (sorted.length === 1) {
-		return [
-			{
-				...sorted[0],
-				resolvedExpectedAmountUsd: roundCurrency(totalDebt)
-			}
-		];
-	}
-
-	if (missing.length === 1) {
-		const knownTotal = sorted.reduce(
-			(sum, installment) => sum + Number(installment.expectedAmountUsd ?? 0),
-			0
-		);
-		const remainder = roundCurrency(Math.max(totalDebt - knownTotal, 0));
-		return sorted.map((installment) => ({
-			...installment,
-			resolvedExpectedAmountUsd: Number(installment.expectedAmountUsd ?? remainder)
-		}));
-	}
-
-	return null;
-}
-
 export function calculatePurchaseOrderGrossTotal(items: PurchaseOrderFinancialItem[]): number {
 	return roundCurrency(
 		items.reduce(
@@ -164,56 +133,21 @@ export function calculatePurchaseOrderDebtTotal(
 }
 
 export function getEarlyPaymentDiscountEarned(
-	totalDebt: number,
-	installments: PurchaseOrderCreditInstallmentLike[],
-	payments: PurchaseOrderPaymentLike[]
+	benefits: PurchaseOrderEarlyPaymentBenefitLike[]
 ): number {
-	const activePayments = getActivePayments(payments).sort((left, right) =>
-		left.paymentDate.localeCompare(right.paymentDate)
+	return roundCurrency(
+		getActiveAppliedBenefits(benefits).reduce(
+			(sum, benefit) => sum + Number(benefit.amountUsdBcv || 0),
+			0
+		)
 	);
-	if (activePayments.length === 0 || installments.length === 0) return 0;
-
-	const resolved = resolveInstallments(totalDebt, installments);
-	if (!resolved) return 0;
-
-	let cumulativeThreshold = 0;
-	let earned = 0;
-
-	for (const installment of resolved) {
-		const baseAmount = installment.resolvedExpectedAmountUsd;
-		const percent = Number(installment.earlyPaymentDiscountPercent ?? 0);
-		const deadline = installment.earlyPaymentDiscountDeadline;
-		const discountAmount =
-			deadline && percent > 0 ? roundCurrency((baseAmount * percent) / 100) : 0;
-		const requiredByDeadline = roundCurrency(baseAmount - discountAmount);
-		cumulativeThreshold = roundCurrency(cumulativeThreshold + requiredByDeadline);
-
-		if (!deadline || discountAmount <= 0) continue;
-
-		const paidByDeadline = roundCurrency(
-			activePayments
-				.filter((payment) => (toDateKey(payment.paymentDate) ?? '') <= deadline)
-				.reduce((sum, payment) => sum + Number(payment.amountUsdBcv || 0), 0)
-		);
-
-		if (paidByDeadline + 0.01 >= cumulativeThreshold) {
-			earned = roundCurrency(earned + discountAmount);
-		}
-	}
-
-	const totalPaid = roundCurrency(
-		activePayments.reduce((sum, payment) => sum + Number(payment.amountUsdBcv || 0), 0)
-	);
-	const unpaidGap = roundCurrency(Math.max(totalDebt - totalPaid, 0));
-
-	return Math.min(earned, unpaidGap);
 }
 
 export function computePurchaseOrderBalance(
 	po: PurchaseOrderSettlementDiscountLike,
 	items: PurchaseOrderFinancialItem[],
 	payments: PurchaseOrderPaymentLike[],
-	installments: PurchaseOrderCreditInstallmentLike[] = []
+	earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefitLike[] = []
 ): PurchaseOrderBalanceSummary {
 	const activePayments = getActivePayments(payments);
 	const grossTotal = calculatePurchaseOrderGrossTotal(items);
@@ -221,11 +155,7 @@ export function computePurchaseOrderBalance(
 	const totalPaid = roundCurrency(
 		activePayments.reduce((sum, payment) => sum + Number(payment.amountUsdBcv || 0), 0)
 	);
-	const earlyPaymentDiscountEarned = getEarlyPaymentDiscountEarned(
-		debtTotal,
-		installments,
-		activePayments
-	);
+	const earlyPaymentDiscountEarned = getEarlyPaymentDiscountEarned(earlyPaymentBenefits);
 	const balance = roundCurrency(Math.max(debtTotal - totalPaid - earlyPaymentDiscountEarned, 0));
 	const lastPaymentDate =
 		activePayments.length === 0
@@ -245,14 +175,52 @@ export function computePurchaseOrderBalance(
 	};
 }
 
+export function getEarlyPaymentDiscountSuggestion({
+	terms,
+	totalDebt,
+	currentBalance,
+	paymentAmountUsdBcv,
+	paymentDate
+}: {
+	terms: PurchaseOrderCreditTermsLike;
+	totalDebt: number;
+	currentBalance: number;
+	paymentAmountUsdBcv: number;
+	paymentDate: string;
+}): EarlyPaymentDiscountSuggestion | null {
+	if (terms.paymentTerms !== PurchasePaymentTerms.CREDIT) return null;
+	const percent = Number(terms.earlyPaymentDiscountPercent ?? 0);
+	const deadline = terms.earlyPaymentDiscountDeadline;
+	const paymentDateKey = toDateKey(paymentDate);
+	if (!deadline || !paymentDateKey || percent <= 0 || paymentDateKey > deadline) return null;
+
+	const amountUsdBcv = roundCurrency((Number(totalDebt || 0) * Math.min(percent, 100)) / 100);
+	if (amountUsdBcv <= 0) return null;
+
+	const residualAfterPayment = roundCurrency(
+		Math.max(Number(currentBalance || 0) - Number(paymentAmountUsdBcv || 0), 0)
+	);
+	if (residualAfterPayment <= 0) return null;
+	if (residualAfterPayment > amountUsdBcv + 0.01) return null;
+
+	return {
+		amountUsdBcv,
+		percent: Math.min(percent, 100),
+		deadline,
+		residualAfterPayment
+	};
+}
+
 export function getPurchaseOrderDueStatus({
 	paymentTerms,
-	installments,
+	creditDueDate,
+	earlyPaymentDiscountDeadline,
 	balance,
 	referenceDate = new Date().toISOString().slice(0, 10)
 }: {
 	paymentTerms: string;
-	installments: PurchaseOrderCreditInstallmentLike[];
+	creditDueDate?: string | null;
+	earlyPaymentDiscountDeadline?: string | null;
 	balance: number;
 	referenceDate?: string;
 }): PurchaseOrderDueStatus {
@@ -260,44 +228,33 @@ export function getPurchaseOrderDueStatus({
 		return { kind: 'PAID', date: null, daysUntil: 0 };
 	}
 
-	if (paymentTerms !== PurchasePaymentTerms.CREDIT || installments.length === 0) {
+	if (paymentTerms !== PurchasePaymentTerms.CREDIT || !creditDueDate) {
 		return { kind: 'NONE', date: null, daysUntil: null };
 	}
 
-	const sorted = [...installments].sort((left, right) => left.dueDate.localeCompare(right.dueDate));
-	const overdue = sorted.find((installment) => installment.dueDate < referenceDate);
-	if (overdue) {
+	if (creditDueDate < referenceDate) {
 		return {
 			kind: 'OVERDUE',
-			date: overdue.dueDate,
-			daysUntil: daysBetween(referenceDate, overdue.dueDate)
+			date: creditDueDate,
+			daysUntil: daysBetween(referenceDate, creditDueDate)
 		};
 	}
 
-	const dueToday = sorted.find((installment) => installment.dueDate === referenceDate);
-	if (dueToday) {
-		return { kind: 'DUE_TODAY', date: dueToday.dueDate, daysUntil: 0 };
+	if (creditDueDate === referenceDate) {
+		return { kind: 'DUE_TODAY', date: creditDueDate, daysUntil: 0 };
 	}
 
-	const earlyDiscount = sorted
-		.filter((installment) => installment.earlyPaymentDiscountDeadline)
-		.find((installment) => (installment.earlyPaymentDiscountDeadline ?? '') >= referenceDate);
-	if (earlyDiscount?.earlyPaymentDiscountDeadline) {
+	if (earlyPaymentDiscountDeadline && earlyPaymentDiscountDeadline >= referenceDate) {
 		return {
 			kind: 'EARLY_DISCOUNT_AVAILABLE',
-			date: earlyDiscount.earlyPaymentDiscountDeadline,
-			daysUntil: daysBetween(referenceDate, earlyDiscount.earlyPaymentDiscountDeadline)
+			date: earlyPaymentDiscountDeadline,
+			daysUntil: daysBetween(referenceDate, earlyPaymentDiscountDeadline)
 		};
 	}
 
-	const upcoming = sorted.find((installment) => installment.dueDate > referenceDate);
-	if (upcoming) {
-		return {
-			kind: 'UPCOMING',
-			date: upcoming.dueDate,
-			daysUntil: daysBetween(referenceDate, upcoming.dueDate)
-		};
-	}
-
-	return { kind: 'NONE', date: null, daysUntil: null };
+	return {
+		kind: 'UPCOMING',
+		date: creditDueDate,
+		daysUntil: daysBetween(referenceDate, creditDueDate)
+	};
 }

@@ -4,6 +4,7 @@ import {
 	calculatePurchaseOrderDebtTotal,
 	computePurchaseOrderBalance,
 	getEarlyPaymentDiscountEarned,
+	getEarlyPaymentDiscountSuggestion,
 	getPurchaseOrderDueStatus
 } from './purchaseOrderCredit';
 
@@ -28,28 +29,32 @@ describe('calculatePurchaseOrderDebtTotal', () => {
 });
 
 describe('getEarlyPaymentDiscountEarned', () => {
-	it('recognizes a single-installment pronto pago discount when the net amount is paid before deadline', () => {
+	it('sums applied, non-voided pronto pago benefits', () => {
 		expect(
-			getEarlyPaymentDiscountEarned(
-				1000,
-				[
-					{
-						installmentNumber: 1,
-						dueDate: '2026-05-31',
-						expectedAmountUsd: null,
-						earlyPaymentDiscountPercent: 5,
-						earlyPaymentDiscountDeadline: '2026-05-20'
-					}
-				],
-				[
-					{
-						amountUsdBcv: 950,
-						paymentDate: '2026-05-18',
-						voidedAt: null
-					}
-				]
-			)
+			getEarlyPaymentDiscountEarned([
+				{ amountUsdBcv: 50, appliedToBalance: true, voidedAt: null },
+				{ amountUsdBcv: 20, appliedToBalance: false, voidedAt: null },
+				{ amountUsdBcv: 10, appliedToBalance: true, voidedAt: '2026-05-19' }
+			])
 		).toBe(50);
+	});
+});
+
+describe('getEarlyPaymentDiscountSuggestion', () => {
+	it('suggests the residual balance as a pronto pago benefit for an eligible payment', () => {
+		expect(
+			getEarlyPaymentDiscountSuggestion({
+				terms: {
+					paymentTerms: PurchasePaymentTerms.CREDIT,
+					earlyPaymentDiscountPercent: 5,
+					earlyPaymentDiscountDeadline: '2026-05-20'
+				},
+				totalDebt: 1000,
+				currentBalance: 1000,
+				paymentAmountUsdBcv: 950,
+				paymentDate: '2026-05-18'
+			})
+		).toMatchObject({ amountUsdBcv: 50, residualAfterPayment: 50, percent: 5 });
 	});
 });
 
@@ -77,11 +82,9 @@ describe('computePurchaseOrderBalance', () => {
 			],
 			[
 				{
-					installmentNumber: 1,
-					dueDate: '2026-05-31',
-					expectedAmountUsd: null,
-					earlyPaymentDiscountPercent: 5,
-					earlyPaymentDiscountDeadline: '2026-05-20'
+					amountUsdBcv: 50,
+					appliedToBalance: true,
+					voidedAt: null
 				}
 			]
 		);
@@ -97,15 +100,8 @@ describe('getPurchaseOrderDueStatus', () => {
 		expect(
 			getPurchaseOrderDueStatus({
 				paymentTerms: PurchasePaymentTerms.CREDIT,
-				installments: [
-					{
-						installmentNumber: 1,
-						dueDate: '2026-05-10',
-						expectedAmountUsd: 100,
-						earlyPaymentDiscountPercent: null,
-						earlyPaymentDiscountDeadline: null
-					}
-				],
+				creditDueDate: '2026-05-10',
+				earlyPaymentDiscountDeadline: null,
 				balance: 40,
 				referenceDate: '2026-05-13'
 			})
