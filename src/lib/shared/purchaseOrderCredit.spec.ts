@@ -54,7 +54,35 @@ describe('getEarlyPaymentDiscountSuggestion', () => {
 				paymentAmountUsdBcv: 950,
 				paymentDate: '2026-05-18'
 			})
-		).toMatchObject({ amountUsdBcv: 50, residualAfterPayment: 50, percent: 5 });
+		).toMatchObject({
+			amountUsdBcv: 50,
+			residualAfterPayment: 50,
+			recommendedPaymentUsdBcv: 950,
+			overpaymentUsdBcv: 0,
+			percent: 5
+		});
+	});
+
+	it('still suggests pronto pago when the entered payment covers the full balance', () => {
+		expect(
+			getEarlyPaymentDiscountSuggestion({
+				terms: {
+					paymentTerms: PurchasePaymentTerms.CREDIT,
+					earlyPaymentDiscountPercent: 5,
+					earlyPaymentDiscountDeadline: '2026-05-20'
+				},
+				totalDebt: 1000,
+				currentBalance: 400,
+				paymentAmountUsdBcv: 400,
+				paymentDate: '2026-05-18'
+			})
+		).toMatchObject({
+			amountUsdBcv: 50,
+			residualAfterPayment: 0,
+			recommendedPaymentUsdBcv: 350,
+			overpaymentUsdBcv: 50,
+			percent: 5
+		});
 	});
 });
 

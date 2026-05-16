@@ -60,6 +60,10 @@ export interface EarlyPaymentDiscountSuggestion {
 	amountUsdBcv: number;
 	percent: number;
 	deadline: string;
+	currentBalance: number;
+	enteredPaymentUsdBcv: number;
+	recommendedPaymentUsdBcv: number;
+	overpaymentUsdBcv: number;
 	residualAfterPayment: number;
 }
 
@@ -194,19 +198,33 @@ export function getEarlyPaymentDiscountSuggestion({
 	const paymentDateKey = toDateKey(paymentDate);
 	if (!deadline || !paymentDateKey || percent <= 0 || paymentDateKey > deadline) return null;
 
-	const amountUsdBcv = roundCurrency((Number(totalDebt || 0) * Math.min(percent, 100)) / 100);
+	const normalizedCurrentBalance = roundCurrency(Math.max(Number(currentBalance || 0), 0));
+	const normalizedPaymentAmount = roundCurrency(Math.max(Number(paymentAmountUsdBcv || 0), 0));
+	const amountUsdBcv = roundCurrency(
+		Math.min((Number(totalDebt || 0) * Math.min(percent, 100)) / 100, normalizedCurrentBalance)
+	);
 	if (amountUsdBcv <= 0) return null;
 
-	const residualAfterPayment = roundCurrency(
-		Math.max(Number(currentBalance || 0) - Number(paymentAmountUsdBcv || 0), 0)
+	const recommendedPaymentUsdBcv = roundCurrency(
+		Math.max(normalizedCurrentBalance - amountUsdBcv, 0)
 	);
-	if (residualAfterPayment <= 0) return null;
-	if (residualAfterPayment > amountUsdBcv + 0.01) return null;
+	if (normalizedPaymentAmount + 0.01 < recommendedPaymentUsdBcv) return null;
+
+	const residualAfterPayment = roundCurrency(
+		Math.max(normalizedCurrentBalance - normalizedPaymentAmount, 0)
+	);
+	const overpaymentUsdBcv = roundCurrency(
+		Math.max(normalizedPaymentAmount - recommendedPaymentUsdBcv, 0)
+	);
 
 	return {
 		amountUsdBcv,
 		percent: Math.min(percent, 100),
 		deadline,
+		currentBalance: normalizedCurrentBalance,
+		enteredPaymentUsdBcv: normalizedPaymentAmount,
+		recommendedPaymentUsdBcv,
+		overpaymentUsdBcv,
 		residualAfterPayment
 	};
 }
