@@ -13,7 +13,7 @@
 		PurchaseOrderDueStatus
 	} from '$lib/shared/purchaseOrderCredit';
 	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-	import { formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatDateOnly, getErrorMessage } from '$lib/utils';
 
 	interface Props {
 		purchaseOrder: PurchaseOrder;
