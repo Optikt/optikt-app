@@ -358,7 +358,9 @@ export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
 export type NewPurchaseOrder = typeof purchaseOrders.$inferInsert;
 export type PurchaseOrderPayment = typeof purchaseOrderPayments.$inferSelect;
 export type NewPurchaseOrderPayment = typeof purchaseOrderPayments.$inferInsert;
-export type PurchaseOrderEarlyPaymentBenefit = typeof purchaseOrderEarlyPaymentBenefits.$inferSelect;
-export type NewPurchaseOrderEarlyPaymentBenefit = typeof purchaseOrderEarlyPaymentBenefits.$inferInsert;
+export type PurchaseOrderEarlyPaymentBenefit =
+	typeof purchaseOrderEarlyPaymentBenefits.$inferSelect;
+export type NewPurchaseOrderEarlyPaymentBenefit =
+	typeof purchaseOrderEarlyPaymentBenefits.$inferInsert;
 export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
 export type NewPurchaseOrderItem = typeof purchaseOrderItems.$inferInsert;

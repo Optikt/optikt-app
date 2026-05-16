@@ -18,10 +18,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			getLowStockItems(10),
 			getPendingFreeItemSales(20),
 			canSeePurchaseDue
-				? getUpcomingPurchaseOrderDues(
-						toISODate(daysAgo(60)),
-						toISODate(daysFromNow(30))
-					)
+				? getUpcomingPurchaseOrderDues(toISODate(daysAgo(60)), toISODate(daysFromNow(30)))
 				: Promise.resolve([])
 		]);
 

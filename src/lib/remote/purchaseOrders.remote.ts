@@ -139,7 +139,8 @@ function normalizeCreditTermsForWrite(
 	return {
 		paymentTerms: terms.paymentTerms,
 		creditDueDate: terms.creditDueDate ?? null,
-		earlyPaymentDiscountPercent: earlyPaymentDiscountPercent > 0 ? earlyPaymentDiscountPercent : null,
+		earlyPaymentDiscountPercent:
+			earlyPaymentDiscountPercent > 0 ? earlyPaymentDiscountPercent : null,
 		earlyPaymentDiscountDeadline:
 			earlyPaymentDiscountPercent > 0 ? (terms.earlyPaymentDiscountDeadline ?? null) : null
 	};
@@ -353,7 +354,8 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 
 	try {
 		const nextPaymentTerms = data.paymentTerms ?? (existing.paymentTerms as PurchasePaymentTerms);
-		const nextCreditDueDate = data.creditDueDate !== undefined ? data.creditDueDate : existing.creditDueDate;
+		const nextCreditDueDate =
+			data.creditDueDate !== undefined ? data.creditDueDate : existing.creditDueDate;
 		const nextEarlyPaymentDiscountPercent =
 			data.earlyPaymentDiscountPercent !== undefined
 				? data.earlyPaymentDiscountPercent
@@ -408,7 +410,9 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 		}
 		updateData.isReadyForReview = false;
 
-		const updated = await db.transaction(async (tx) => updatePurchaseOrder(data.id, updateData, tx));
+		const updated = await db.transaction(async (tx) =>
+			updatePurchaseOrder(data.id, updateData, tx)
+		);
 
 		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 
@@ -811,14 +815,15 @@ export const addPurchaseOrderPaymentCmd = command(
 				const [items, payments, earlyPaymentBenefits] = await Promise.all([
 					getPurchaseOrderItems(data.purchaseOrderId, tx),
 					getPurchaseOrderPayments(data.purchaseOrderId, { includeVoided: true }, tx),
-					getPurchaseOrderEarlyPaymentBenefits(
-						data.purchaseOrderId,
-						{ includeVoided: true },
-						tx
-					)
+					getPurchaseOrderEarlyPaymentBenefits(data.purchaseOrderId, { includeVoided: true }, tx)
 				]);
 
-				const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, earlyPaymentBenefits);
+				const balance = computePurchaseOrderBalance(
+					purchaseOrder,
+					items,
+					payments,
+					earlyPaymentBenefits
+				);
 				const dueStatus = getPurchaseOrderDueStatus({
 					paymentTerms: purchaseOrder.paymentTerms,
 					creditDueDate: purchaseOrder.creditDueDate,
@@ -833,9 +838,14 @@ export const addPurchaseOrderPaymentCmd = command(
 				excludeFields: ['createdAt', 'updatedAt']
 			});
 			if (result.benefit) {
-				await auditService.logCreate('purchase_order_early_payment_benefit', result.benefit, context, {
-					excludeFields: ['createdAt', 'updatedAt']
-				});
+				await auditService.logCreate(
+					'purchase_order_early_payment_benefit',
+					result.benefit,
+					context,
+					{
+						excludeFields: ['createdAt', 'updatedAt']
+					}
+				);
 			}
 
 			const payments = await getPurchaseOrderPaymentsWithUsers(data.purchaseOrderId, {
@@ -891,7 +901,12 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 				getPurchaseOrderEarlyPaymentBenefits(data.purchaseOrderId, { includeVoided: true }, tx)
 			]);
 
-			const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, earlyPaymentBenefits);
+			const balance = computePurchaseOrderBalance(
+				purchaseOrder,
+				items,
+				payments,
+				earlyPaymentBenefits
+			);
 			const dueStatus = getPurchaseOrderDueStatus({
 				paymentTerms: purchaseOrder.paymentTerms,
 				creditDueDate: purchaseOrder.creditDueDate,
@@ -966,11 +981,7 @@ export const setPurchaseOrderCreditTermsCmd = command(
 				const [items, payments, earlyPaymentBenefits] = await Promise.all([
 					getPurchaseOrderItems(data.purchaseOrderId, tx),
 					getPurchaseOrderPayments(data.purchaseOrderId, { includeVoided: true }, tx),
-					getPurchaseOrderEarlyPaymentBenefits(
-						data.purchaseOrderId,
-						{ includeVoided: true },
-						tx
-					)
+					getPurchaseOrderEarlyPaymentBenefits(data.purchaseOrderId, { includeVoided: true }, tx)
 				]);
 
 				const balance = computePurchaseOrderBalance(

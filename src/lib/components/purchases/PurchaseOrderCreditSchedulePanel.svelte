@@ -35,7 +35,8 @@
 	let saving = $state(false);
 
 	$effect(() => {
-		paymentTerms = (purchaseOrder.paymentTerms as PurchasePaymentTerms) ?? PurchasePaymentTerms.CONTADO;
+		paymentTerms =
+			(purchaseOrder.paymentTerms as PurchasePaymentTerms) ?? PurchasePaymentTerms.CONTADO;
 		creditDueDate = purchaseOrder.creditDueDate;
 		earlyPaymentDiscountPercent = purchaseOrder.earlyPaymentDiscountPercent;
 		earlyPaymentDiscountDeadline = purchaseOrder.earlyPaymentDiscountDeadline;
@@ -230,7 +231,9 @@
 						/>
 					{:else}
 						<p class="mt-3 font-mono text-lg font-semibold text-brand-navy tabular-nums">
-							{earlyPaymentDiscountDeadline ? formatDateOnly(earlyPaymentDiscountDeadline) : 'No aplica'}
+							{earlyPaymentDiscountDeadline
+								? formatDateOnly(earlyPaymentDiscountDeadline)
+								: 'No aplica'}
 						</p>
 					{/if}
 				</label>

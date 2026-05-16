@@ -303,7 +303,11 @@ export function validateCreditTerms(
 	const issues: string[] = [];
 
 	if (paymentTerms === PurchasePaymentTerms.CONTADO) {
-		if (creditDueDate || Number(earlyPaymentDiscountPercent ?? 0) > 0 || earlyPaymentDiscountDeadline) {
+		if (
+			creditDueDate ||
+			Number(earlyPaymentDiscountPercent ?? 0) > 0 ||
+			earlyPaymentDiscountDeadline
+		) {
 			issues.push('Las órdenes de contado no deben tener términos de crédito');
 		}
 

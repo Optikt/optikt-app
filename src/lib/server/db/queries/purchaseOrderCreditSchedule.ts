@@ -6,7 +6,7 @@ import {
 	purchaseOrderItems,
 	purchaseOrderPayments,
 	purchaseOrders,
-	suppliers,
+	suppliers
 } from '$lib/server/db/schema';
 import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
 import {

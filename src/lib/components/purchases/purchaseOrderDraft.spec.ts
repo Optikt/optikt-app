@@ -283,12 +283,7 @@ describe('purchaseOrderDraft helpers', () => {
 	});
 
 	it('validates simple credit terms with due date and pronto pago window', () => {
-		const result = validateCreditTerms(
-			PurchasePaymentTerms.CREDIT,
-			'2026-07-10',
-			5,
-			'2026-06-30'
-		);
+		const result = validateCreditTerms(PurchasePaymentTerms.CREDIT, '2026-07-10', 5, '2026-06-30');
 
 		expect(result.isValid).toBe(true);
 		expect(result.issues).toEqual([]);
@@ -298,16 +293,13 @@ describe('purchaseOrderDraft helpers', () => {
 		const result = validateCreditTerms(PurchasePaymentTerms.CREDIT, null, null, null);
 
 		expect(result.isValid).toBe(false);
-		expect(result.issues).toContain('Debes indicar una fecha de vencimiento válida para el crédito');
+		expect(result.issues).toContain(
+			'Debes indicar una fecha de vencimiento válida para el crédito'
+		);
 	});
 
 	it('rejects pronto pago deadline after the credit due date', () => {
-		const result = validateCreditTerms(
-			PurchasePaymentTerms.CREDIT,
-			'2026-07-10',
-			5,
-			'2026-07-15'
-		);
+		const result = validateCreditTerms(PurchasePaymentTerms.CREDIT, '2026-07-10', 5, '2026-07-15');
 
 		expect(result.isValid).toBe(false);
 		expect(result.issues).toContain(

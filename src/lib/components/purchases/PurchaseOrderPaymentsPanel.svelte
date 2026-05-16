@@ -144,8 +144,9 @@
 
 	function benefitForPayment(paymentId: string): PurchaseOrderEarlyPaymentBenefit | null {
 		return (
-			earlyPaymentBenefits.find((benefit) => benefit.paymentId === paymentId && !benefit.voidedAt) ??
-			null
+			earlyPaymentBenefits.find(
+				(benefit) => benefit.paymentId === paymentId && !benefit.voidedAt
+			) ?? null
 		);
 	}
 
@@ -368,7 +369,10 @@
 		};
 
 		if (appliedToBalance) {
-			const adjustedPaymentUsdBcv = Math.max(pendingBenefitSuggestion.currentBalance - amountUsdBcv, 0);
+			const adjustedPaymentUsdBcv = Math.max(
+				pendingBenefitSuggestion.currentBalance - amountUsdBcv,
+				0
+			);
 			const adjustedAmount = denormalizePurchasePaymentAmount({
 				currencyCode: payload.currencyCode,
 				amountUsdBcv: adjustedPaymentUsdBcv,
@@ -547,11 +551,17 @@
 					</p>
 				</div>
 				{#if liveEarlyPaymentSuggestion}
-					<div class="rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-sm text-white">
+					<div
+						class="rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-sm text-white"
+					>
 						<p class="font-semibold text-brand-gold">Pronto pago disponible</p>
 						<p class="mt-1 text-white/85">
-							Puedes registrar un beneficio de {formatPrice(liveEarlyPaymentSuggestion.amountUsdBcv)}
-							antes del {formatDateOnly(liveEarlyPaymentSuggestion.deadline, { dateStyle: 'medium' })}.
+							Puedes registrar un beneficio de {formatPrice(
+								liveEarlyPaymentSuggestion.amountUsdBcv
+							)}
+							antes del {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
+								dateStyle: 'medium'
+							})}.
 						</p>
 						<p class="mt-1 text-white/75">
 							Si lo aplicas al saldo, el pago efectivo quedaría en
@@ -604,7 +614,7 @@
 				</thead>
 				<tbody class="divide-y divide-outline-variant/15">
 					{#each sortedPayments as payment (payment.id)}
-							{@const earlyBenefit = benefitForPayment(payment.id)}
+						{@const earlyBenefit = benefitForPayment(payment.id)}
 						<tr class:opacity-60={payment.voidedAt} class="bg-surface-container-lowest">
 							<td class="px-5 py-4 align-top">
 								<div class="font-semibold text-brand-navy">Pago #{payment.paymentNumber}</div>
@@ -664,14 +674,18 @@
 									</p>
 								{/if}
 								{#if earlyBenefit}
-									<div class="mt-2 rounded-lg bg-info-container/40 px-3 py-2 text-xs text-on-surface">
+									<div
+										class="mt-2 rounded-lg bg-info-container/40 px-3 py-2 text-xs text-on-surface"
+									>
 										<p class="font-semibold text-brand-navy">
 											Pronto pago {earlyBenefit.appliedToBalance ? 'aplicado' : 'anotado'} · {formatPrice(
 												earlyBenefit.amountUsdBcv
 											)}
 										</p>
 										{#if earlyBenefit.note}
-											<p class="mt-1 whitespace-pre-wrap text-on-surface-variant">{earlyBenefit.note}</p>
+											<p class="mt-1 whitespace-pre-wrap text-on-surface-variant">
+												{earlyBenefit.note}
+											</p>
 										{/if}
 									</div>
 								{/if}

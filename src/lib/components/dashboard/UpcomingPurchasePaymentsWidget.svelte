@@ -11,9 +11,7 @@
 
 	let { dues }: Props = $props();
 
-	const overdueCount = $derived(
-		dues.filter((due) => due.dueStatus.kind === 'OVERDUE').length
-	);
+	const overdueCount = $derived(dues.filter((due) => due.dueStatus.kind === 'OVERDUE').length);
 	const totalPending = $derived(dues.reduce((sum, due) => sum + due.balance.balance, 0));
 
 	function formatOrderNumber(orderNumber: number): string {

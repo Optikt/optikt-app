@@ -82,10 +82,14 @@
 		<div
 			class="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-[0.14em] text-on-surface-variant uppercase"
 		>
-			<span class="rounded-full border border-outline-variant/25 bg-surface-container-low px-3 py-1.5">
+			<span
+				class="rounded-full border border-outline-variant/25 bg-surface-container-low px-3 py-1.5"
+			>
 				{getPurchasePaymentTermsLabel(paymentTerms)}
 			</span>
-			<span class="rounded-full border border-outline-variant/25 bg-surface-container-low px-3 py-1.5">
+			<span
+				class="rounded-full border border-outline-variant/25 bg-surface-container-low px-3 py-1.5"
+			>
 				{formatPrice(totalNetAmount)} neto
 			</span>
 		</div>

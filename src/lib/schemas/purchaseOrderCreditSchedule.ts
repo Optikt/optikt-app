@@ -8,8 +8,8 @@ const PurchaseOrderCreditTermsBaseSchema = z.object({
 		.default(PurchasePaymentTerms.CONTADO),
 	creditDueDate: z.iso.date('Fecha de vencimiento inválida').optional().nullable(),
 	earlyPaymentDiscountPercent: CoercedNumber.min(0).max(100).optional().nullable(),
-	earlyPaymentDiscountDeadline: z
-		.iso.date('Fecha límite de pronto pago inválida')
+	earlyPaymentDiscountDeadline: z.iso
+		.date('Fecha límite de pronto pago inválida')
 		.optional()
 		.nullable()
 });
