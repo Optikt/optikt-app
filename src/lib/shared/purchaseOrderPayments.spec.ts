@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CurrencyCode } from '$lib/shared/enums';
 import {
+	denormalizePurchasePaymentAmount,
 	getPurchasePaymentSpecificRateLabel,
 	normalizePurchasePaymentAmounts,
 	requiresPurchasePaymentSpecificRate
@@ -88,5 +89,38 @@ describe('normalizePurchasePaymentAmounts', () => {
 				bcvUsdRate: 0
 			})
 		).toEqual({ amountBs: 0, amountUsdBcv: 0 });
+	});
+});
+
+describe('denormalizePurchasePaymentAmount', () => {
+	it('reconstructs a USD BCV payment amount directly', () => {
+		expect(
+			denormalizePurchasePaymentAmount({
+				currencyCode: CurrencyCode.USD_BCV,
+				amountUsdBcv: 350,
+				bcvUsdRate: 40
+			})
+		).toBe(350);
+	});
+
+	it('reconstructs a VES payment amount from USD BCV', () => {
+		expect(
+			denormalizePurchasePaymentAmount({
+				currencyCode: CurrencyCode.VES,
+				amountUsdBcv: 350,
+				bcvUsdRate: 40
+			})
+		).toBe(14000);
+	});
+
+	it('reconstructs a non-base currency payment amount from USD BCV and operative rate', () => {
+		expect(
+			denormalizePurchasePaymentAmount({
+				currencyCode: CurrencyCode.USDT,
+				amountUsdBcv: 350,
+				bcvUsdRate: 40,
+				specificRate: 44
+			})
+		).toBe(318.18);
 	});
 });

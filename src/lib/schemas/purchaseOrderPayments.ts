@@ -17,7 +17,14 @@ export const CreatePurchaseOrderPaymentSchema = z
 		bcvUsdRate: CoercedNumber.positive('La tasa BCV es requerida'),
 		specificRate: CoercedNumber.positive('La tasa usada debe ser positiva').optional(),
 		reference: z.string().trim().max(120).optional(),
-		notes: z.string().trim().max(500).optional()
+		notes: z.string().trim().max(500).optional(),
+		earlyPaymentBenefit: z
+			.object({
+				amountUsdBcv: CoercedNumber.positive('El beneficio debe ser positivo'),
+				appliedToBalance: z.boolean().default(true),
+				note: z.string().trim().max(500).optional()
+			})
+			.optional()
 	})
 	.superRefine((data, ctx) => {
 		if (

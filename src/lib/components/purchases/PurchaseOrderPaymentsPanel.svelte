@@ -15,15 +15,22 @@
 		PurchaseOrderStatus
 	} from '$lib/shared/enums';
 	import type {
+		EarlyPaymentDiscountSuggestion,
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
 	} from '$lib/shared/purchaseOrderCredit';
+	import { getEarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
 	import {
+		denormalizePurchasePaymentAmount,
 		getPurchasePaymentSpecificRateLabel,
 		normalizePurchasePaymentAmounts,
 		requiresPurchasePaymentSpecificRate
 	} from '$lib/shared/purchaseOrderPayments';
-	import type { PurchaseOrderPayment } from '$lib/server/db/schema';
+	import type {
+		PurchaseOrder,
+		PurchaseOrderEarlyPaymentBenefit,
+		PurchaseOrderPayment
+	} from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
 
@@ -41,12 +48,16 @@
 		status: string;
 		defaultBcvRate: number;
 		payments: PurchaseOrderPaymentWithUsers[];
+		purchaseOrder: PurchaseOrder;
+		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
 		/** Pending balance in USD (positive = owes money, negative = overpaid) */
 		pendingBalanceUsd?: number;
+		debtTotalUsd?: number;
 		isFullyPaid?: boolean;
 		composerRequest?: PaymentComposerRequest | null;
 		onFinanceChanged?: (payload: {
 			payments: PurchaseOrderPaymentWithUsers[];
+			earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
 			balance: PurchaseOrderBalanceSummary;
 			dueStatus: PurchaseOrderDueStatus;
 		}) => void;
@@ -57,7 +68,10 @@
 		status,
 		defaultBcvRate,
 		payments,
+		purchaseOrder,
+		earlyPaymentBenefits,
 		pendingBalanceUsd,
+		debtTotalUsd,
 		isFullyPaid = false,
 		composerRequest = null,
 		onFinanceChanged
@@ -78,6 +92,10 @@
 	let voidLoading = $state(false);
 	let showOverpaymentModal = $state(false);
 	let pendingAddPayload = $state<Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null>(null);
+	let showEarlyPaymentBenefitModal = $state(false);
+	let pendingBenefitSuggestion = $state<EarlyPaymentDiscountSuggestion | null>(null);
+	let benefitAmountInput = $state('');
+	let benefitNoteInput = $state('');
 
 	const canManagePayments = $derived(status === PurchaseOrderStatus.CONFIRMED && !isFullyPaid);
 	const canVoidPayment = $derived(status === PurchaseOrderStatus.CONFIRMED);
@@ -96,6 +114,70 @@
 	const sortedPayments = $derived.by(() =>
 		[...payments].sort((left, right) => left.paymentNumber - right.paymentNumber)
 	);
+	const hasActiveEarlyPaymentBenefit = $derived(
+		earlyPaymentBenefits.some((benefit) => !benefit.voidedAt)
+	);
+	const liveEarlyPaymentSuggestion = $derived(
+		!hasActiveEarlyPaymentBenefit && pendingBalanceUsd != null && debtTotalUsd != null
+			? getEarlyPaymentDiscountSuggestion({
+					terms: purchaseOrder,
+					totalDebt: debtTotalUsd,
+					currentBalance: pendingBalanceUsd,
+					paymentAmountUsdBcv: normalized.amountUsdBcv,
+					paymentDate
+				})
+			: null
+	);
+	const pendingAddPayloadNormalized = $derived(
+		pendingAddPayload
+			? normalizePurchasePaymentAmounts({
+					currencyCode: pendingAddPayload.currencyCode,
+					amount: Number(pendingAddPayload.amount),
+					bcvUsdRate: Number(pendingAddPayload.bcvUsdRate),
+					specificRate:
+						pendingAddPayload.specificRate == null
+							? undefined
+							: Number(pendingAddPayload.specificRate)
+				})
+			: null
+	);
+
+	function benefitForPayment(paymentId: string): PurchaseOrderEarlyPaymentBenefit | null {
+		return (
+			earlyPaymentBenefits.find(
+				(benefit) => benefit.paymentId === paymentId && !benefit.voidedAt
+			) ?? null
+		);
+	}
+
+	function resetEarlyPaymentState() {
+		showEarlyPaymentBenefitModal = false;
+		pendingBenefitSuggestion = null;
+		benefitAmountInput = '';
+		benefitNoteInput = '';
+	}
+
+	function getNormalizedUsdBcvForPayload(
+		payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]
+	): number {
+		return normalizePurchasePaymentAmounts({
+			currencyCode: payload.currencyCode,
+			amount: Number(payload.amount),
+			bcvUsdRate: Number(payload.bcvUsdRate),
+			specificRate: payload.specificRate == null ? undefined : Number(payload.specificRate)
+		}).amountUsdBcv;
+	}
+
+	async function maybeSubmitPayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
+		const payloadUsdBcv = getNormalizedUsdBcvForPayload(payload);
+		if (pendingBalanceUsd != null && payloadUsdBcv > pendingBalanceUsd + 0.01) {
+			pendingAddPayload = payload;
+			showOverpaymentModal = true;
+			return;
+		}
+
+		await submitAddPayment(payload);
+	}
 
 	function resetForm(request: PaymentComposerRequest | null = null) {
 		currencyCode = request?.currencyCode ?? CurrencyCode.USD_BCV;
@@ -187,14 +269,18 @@
 			notes: notesInput || undefined
 		};
 
-		// Warn if payment exceeds pending balance
-		if (pendingBalanceUsd != null && normalized.amountUsdBcv > pendingBalanceUsd + 0.01) {
+		const earlyPaymentSuggestion = liveEarlyPaymentSuggestion;
+
+		if (earlyPaymentSuggestion) {
 			pendingAddPayload = payload;
-			showOverpaymentModal = true;
+			pendingBenefitSuggestion = earlyPaymentSuggestion;
+			benefitAmountInput = earlyPaymentSuggestion.amountUsdBcv.toFixed(2);
+			benefitNoteInput = '';
+			showEarlyPaymentBenefitModal = true;
 			return;
 		}
 
-		await submitAddPayment(payload);
+		await maybeSubmitPayment(payload);
 	}
 
 	async function submitAddPayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
@@ -209,6 +295,7 @@
 
 			onFinanceChanged?.({
 				payments: result.payments,
+				earlyPaymentBenefits: result.earlyPaymentBenefits,
 				balance: result.balance,
 				dueStatus: result.dueStatus
 			});
@@ -239,6 +326,7 @@
 
 			onFinanceChanged?.({
 				payments: result.payments,
+				earlyPaymentBenefits: result.earlyPaymentBenefits,
 				balance: result.balance,
 				dueStatus: result.dueStatus
 			});
@@ -251,6 +339,61 @@
 		} finally {
 			voidLoading = false;
 		}
+	}
+
+	async function submitPaymentWithBenefit(appliedToBalance: boolean) {
+		if (!pendingAddPayload || !pendingBenefitSuggestion) return;
+		const amountUsdBcv = Number(benefitAmountInput || 0);
+		if (!Number.isFinite(amountUsdBcv) || amountUsdBcv <= 0) {
+			toast.error('Monto de beneficio inválido');
+			return;
+		}
+		if (amountUsdBcv > pendingBenefitSuggestion.amountUsdBcv + 0.01) {
+			toast.error(
+				`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amountUsdBcv)}`
+			);
+			return;
+		}
+		if (appliedToBalance && amountUsdBcv >= pendingBenefitSuggestion.currentBalance - 0.01) {
+			toast.error('El beneficio aplicado no puede igualar o superar el saldo pendiente');
+			return;
+		}
+
+		let payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0] = {
+			...pendingAddPayload,
+			earlyPaymentBenefit: {
+				amountUsdBcv,
+				appliedToBalance,
+				note: benefitNoteInput || undefined
+			}
+		};
+
+		if (appliedToBalance) {
+			const adjustedPaymentUsdBcv = Math.max(
+				pendingBenefitSuggestion.currentBalance - amountUsdBcv,
+				0
+			);
+			const adjustedAmount = denormalizePurchasePaymentAmount({
+				currencyCode: payload.currencyCode,
+				amountUsdBcv: adjustedPaymentUsdBcv,
+				bcvUsdRate: Number(payload.bcvUsdRate),
+				specificRate: payload.specificRate == null ? undefined : Number(payload.specificRate)
+			});
+
+			if (!Number.isFinite(adjustedAmount) || adjustedAmount <= 0) {
+				toast.error('No se pudo ajustar el monto del pago con el pronto pago');
+				return;
+			}
+
+			payload = {
+				...payload,
+				amount: adjustedAmount
+			};
+		}
+
+		pendingAddPayload = null;
+		resetEarlyPaymentState();
+		await maybeSubmitPayment(payload);
 	}
 </script>
 
@@ -407,6 +550,30 @@
 						{formatPrice(normalized.amountUsdBcv)}
 					</p>
 				</div>
+				{#if liveEarlyPaymentSuggestion}
+					<div
+						class="rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-sm text-white"
+					>
+						<p class="font-semibold text-brand-gold">Pronto pago disponible</p>
+						<p class="mt-1 text-white/85">
+							Puedes registrar un beneficio de {formatPrice(
+								liveEarlyPaymentSuggestion.amountUsdBcv
+							)}
+							antes del {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
+								dateStyle: 'medium'
+							})}.
+						</p>
+						<p class="mt-1 text-white/75">
+							Si lo aplicas al saldo, el pago efectivo quedaría en
+							{formatPrice(liveEarlyPaymentSuggestion.recommendedPaymentUsdBcv)}.
+							{#if liveEarlyPaymentSuggestion.overpaymentUsdBcv > 0.01}
+								Con el monto actual se ajustarán {formatPrice(
+									liveEarlyPaymentSuggestion.overpaymentUsdBcv
+								)}.
+							{/if}
+						</p>
+					</div>
+				{/if}
 				<button
 					type="button"
 					onclick={handleAddPayment}
@@ -447,6 +614,7 @@
 				</thead>
 				<tbody class="divide-y divide-outline-variant/15">
 					{#each sortedPayments as payment (payment.id)}
+						{@const earlyBenefit = benefitForPayment(payment.id)}
 						<tr class:opacity-60={payment.voidedAt} class="bg-surface-container-lowest">
 							<td class="px-5 py-4 align-top">
 								<div class="font-semibold text-brand-navy">Pago #{payment.paymentNumber}</div>
@@ -505,6 +673,22 @@
 										{payment.notes}
 									</p>
 								{/if}
+								{#if earlyBenefit}
+									<div
+										class="mt-2 rounded-lg bg-info-container/40 px-3 py-2 text-xs text-on-surface"
+									>
+										<p class="font-semibold text-brand-navy">
+											Pronto pago {earlyBenefit.appliedToBalance ? 'aplicado' : 'anotado'} · {formatPrice(
+												earlyBenefit.amountUsdBcv
+											)}
+										</p>
+										{#if earlyBenefit.note}
+											<p class="mt-1 whitespace-pre-wrap text-on-surface-variant">
+												{earlyBenefit.note}
+											</p>
+										{/if}
+									</div>
+								{/if}
 							</td>
 							<td class="px-5 py-4 text-right align-top">
 								{#if canVoidPayment && !payment.voidedAt}
@@ -545,8 +729,8 @@
 <ConfirmModal
 	bind:open={showOverpaymentModal}
 	title="Pago supera el saldo"
-	message={pendingAddPayload != null && pendingBalanceUsd != null
-		? `Este pago de ${formatPrice(normalized.amountUsdBcv)} supera el saldo pendiente de ${formatPrice(pendingBalanceUsd)} en ${formatPrice(normalized.amountUsdBcv - pendingBalanceUsd)}. ¿Registrar de todas formas?`
+	message={pendingAddPayloadNormalized != null && pendingBalanceUsd != null
+		? `Este pago de ${formatPrice(pendingAddPayloadNormalized.amountUsdBcv)} supera el saldo pendiente de ${formatPrice(pendingBalanceUsd)} en ${formatPrice(pendingAddPayloadNormalized.amountUsdBcv - pendingBalanceUsd)}. ¿Registrar de todas formas?`
 		: ''}
 	confirmLabel="Registrar igual"
 	confirmColor="yellow"
@@ -561,3 +745,70 @@
 		pendingAddPayload = null;
 	}}
 />
+
+<ConfirmModal
+	bind:open={showEarlyPaymentBenefitModal}
+	title="Pronto pago disponible"
+	size="lg"
+	confirmLabel="Aplicar a esta PO"
+	secondaryLabel="Solo anotarlo"
+	cancelLabel="No registrar todavía"
+	confirmColor="green"
+	secondaryColor="alternative"
+	{loading}
+	onConfirm={() => void submitPaymentWithBenefit(true)}
+	onSecondary={() => void submitPaymentWithBenefit(false)}
+	onCancel={() => {
+		showEarlyPaymentBenefitModal = false;
+		pendingAddPayload = null;
+		resetEarlyPaymentState();
+	}}
+	permanent
+>
+	{#snippet body()}
+		<div class="space-y-4 text-sm text-on-surface">
+			<p>
+				El pago califica para pronto pago de {pendingBenefitSuggestion?.percent ?? 0}% antes de
+				{pendingBenefitSuggestion?.deadline ?? 'la fecha límite'}.
+			</p>
+			{#if pendingBenefitSuggestion}
+				<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
+					Si lo aplicas al saldo, el pago se registrará por
+					{formatPrice(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0))}
+					para completar esta orden sin sobrepagarla.
+					{#if pendingBenefitSuggestion.overpaymentUsdBcv > 0.01}
+						El monto actual excede ese pago neto por
+						{formatPrice(pendingBenefitSuggestion.overpaymentUsdBcv)}.
+					{/if}
+				</p>
+			{/if}
+			<label class="block space-y-2">
+				<span class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
+					Monto del beneficio USD
+				</span>
+				<input
+					bind:value={benefitAmountInput}
+					type="number"
+					min="0"
+					step="0.01"
+					class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 font-mono text-sm text-on-surface focus:border-brand-blue focus:outline-none"
+				/>
+			</label>
+			<label class="block space-y-2">
+				<span class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
+					Nota opcional
+				</span>
+				<textarea
+					bind:value={benefitNoteInput}
+					rows="3"
+					class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface focus:border-brand-blue focus:outline-none"
+					placeholder="Ej. Proveedor aplicó redondeo o dejó crédito para próxima compra"
+				></textarea>
+			</label>
+			<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
+				Aplicar a esta PO reduce el saldo y entra en reportes. Solo anotarlo guarda la decisión sin
+				impacto financiero.
+			</p>
+		</div>
+	{/snippet}
+</ConfirmModal>

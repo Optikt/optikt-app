@@ -12,6 +12,13 @@ export interface NormalizedPurchasePaymentAmounts {
 	amountUsdBcv: number;
 }
 
+export interface DenormalizePurchasePaymentInput {
+	currencyCode: CurrencyCode;
+	amountUsdBcv: number;
+	bcvUsdRate: number;
+	specificRate?: number | null;
+}
+
 function roundCurrency(value: number): number {
 	return Number(value.toFixed(2));
 }
@@ -71,4 +78,29 @@ export function normalizePurchasePaymentAmounts({
 		amountBs,
 		amountUsdBcv: roundCurrency(amountBs / bcvUsdRate)
 	};
+}
+
+export function denormalizePurchasePaymentAmount({
+	currencyCode,
+	amountUsdBcv,
+	bcvUsdRate,
+	specificRate
+}: DenormalizePurchasePaymentInput): number {
+	if (amountUsdBcv <= 0 || bcvUsdRate <= 0) {
+		return 0;
+	}
+
+	if (currencyCode === CurrencyCode.VES) {
+		return roundCurrency(amountUsdBcv * bcvUsdRate);
+	}
+
+	if (!requiresPurchasePaymentSpecificRate(currencyCode)) {
+		return roundCurrency(amountUsdBcv);
+	}
+
+	if (!specificRate || specificRate <= 0) {
+		return 0;
+	}
+
+	return roundCurrency((amountUsdBcv * bcvUsdRate) / specificRate);
 }

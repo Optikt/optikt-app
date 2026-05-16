@@ -231,7 +231,7 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		cancelledAt: 'Cancelada',
 		notes: 'Notas',
 		bcvRate: 'Tasa BCV',
-		creditSchedule: 'Cronograma de crédito'
+		creditSchedule: 'Términos de crédito'
 	},
 	purchase_order_item: {
 		productId: 'Producto',
@@ -251,6 +251,17 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		amountUsdBcv: 'Monto USD BCV',
 		reference: 'Referencia',
 		notes: 'Notas',
+		voidedAt: 'Anulado',
+		voidedById: 'Anulado por'
+	},
+	purchase_order_early_payment_benefit: {
+		purchaseOrderId: 'Orden de compra',
+		paymentId: 'Pago asociado',
+		benefitDate: 'Fecha del beneficio',
+		amountUsdBcv: 'Monto USD BCV',
+		appliedToBalance: 'Aplicado al saldo',
+		note: 'Nota',
+		createdById: 'Registrado por',
 		voidedAt: 'Anulado',
 		voidedById: 'Anulado por'
 	}

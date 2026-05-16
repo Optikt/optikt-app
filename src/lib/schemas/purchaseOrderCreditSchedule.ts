@@ -2,68 +2,79 @@ import { z } from 'zod';
 import { PurchasePaymentTerms } from '$lib/shared/enums';
 import { CoercedNumber } from './common';
 
-export const PurchaseOrderCreditInstallmentSchema = z.object({
-	installmentNumber: z.coerce.number().int().min(1, 'Número de cuota inválido'),
-	dueDate: z.iso.date('Fecha de vencimiento inválida'),
-	expectedAmountUsd: CoercedNumber.positive('El monto esperado debe ser positivo').optional(),
-	earlyPaymentDiscountPercent: CoercedNumber.min(0).max(100).optional(),
-	earlyPaymentDiscountDeadline: z.iso.date('Fecha límite de pronto pago inválida').optional(),
-	notes: z.string().trim().max(500).optional()
+const PurchaseOrderCreditTermsBaseSchema = z.object({
+	paymentTerms: z
+		.enum(PurchasePaymentTerms, 'Condición de pago requerida')
+		.default(PurchasePaymentTerms.CONTADO),
+	creditDueDate: z.iso.date('Fecha de vencimiento inválida').optional().nullable(),
+	earlyPaymentDiscountPercent: CoercedNumber.min(0).max(100).optional().nullable(),
+	earlyPaymentDiscountDeadline: z.iso
+		.date('Fecha límite de pronto pago inválida')
+		.optional()
+		.nullable()
 });
 
-export const SetPurchaseOrderCreditScheduleSchema = z
-	.object({
-		purchaseOrderId: z.uuid('ID de orden de compra requerido'),
-		paymentTerms: z.enum(PurchasePaymentTerms, 'Condición de pago requerida'),
-		installments: z.array(PurchaseOrderCreditInstallmentSchema).default([])
-	})
-	.superRefine((data, ctx) => {
-		if (data.paymentTerms === PurchasePaymentTerms.CONTADO) {
-			if (data.installments.length > 0) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: ['installments'],
-					message: 'Las órdenes de contado no deben tener cuotas'
-				});
-			}
-			return;
-		}
+export function validatePurchaseOrderCreditTerms(
+	data: z.infer<typeof PurchaseOrderCreditTermsBaseSchema>,
+	ctx: z.RefinementCtx
+) {
+	const hasCreditDueDate = Boolean(data.creditDueDate);
+	const discountPercent = Number(data.earlyPaymentDiscountPercent ?? 0);
+	const hasDiscountPercent = discountPercent > 0;
+	const hasDiscountDeadline = Boolean(data.earlyPaymentDiscountDeadline);
 
-		if (data.installments.length === 0) {
+	if (data.paymentTerms === PurchasePaymentTerms.CONTADO) {
+		if (hasCreditDueDate || hasDiscountPercent || hasDiscountDeadline) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
-				path: ['installments'],
-				message: 'Debes registrar al menos una cuota para órdenes a crédito'
+				path: ['paymentTerms'],
+				message: 'Las órdenes de contado no deben tener términos de crédito'
 			});
 		}
+		return;
+	}
 
-		const requiresExplicitAmounts = data.installments.length > 1;
-		for (const [index, installment] of data.installments.entries()) {
-			const hasDiscountPercent = (installment.earlyPaymentDiscountPercent ?? 0) > 0;
-			const hasDiscountDeadline = Boolean(installment.earlyPaymentDiscountDeadline);
+	if (!hasCreditDueDate) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['creditDueDate'],
+			message: 'Debes indicar la fecha de vencimiento del crédito'
+		});
+	}
 
-			if (hasDiscountPercent && !hasDiscountDeadline) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: ['installments', index, 'earlyPaymentDiscountDeadline'],
-					message: 'La fecha límite es obligatoria cuando hay pronto pago'
-				});
-			}
+	if (hasDiscountPercent && !hasDiscountDeadline) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['earlyPaymentDiscountDeadline'],
+			message: 'La fecha límite es obligatoria cuando hay pronto pago'
+		});
+	}
 
-			if (hasDiscountDeadline && !hasDiscountPercent) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: ['installments', index, 'earlyPaymentDiscountPercent'],
-					message: 'El porcentaje es obligatorio cuando hay fecha límite de pronto pago'
-				});
-			}
+	if (hasDiscountDeadline && !hasDiscountPercent) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['earlyPaymentDiscountPercent'],
+			message: 'El porcentaje es obligatorio cuando hay fecha límite de pronto pago'
+		});
+	}
 
-			if (requiresExplicitAmounts && installment.expectedAmountUsd == null) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					path: ['installments', index, 'expectedAmountUsd'],
-					message: 'Las cuotas múltiples deben indicar un monto esperado'
-				});
-			}
-		}
-	});
+	if (
+		data.creditDueDate &&
+		data.earlyPaymentDiscountDeadline &&
+		data.earlyPaymentDiscountDeadline > data.creditDueDate
+	) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			path: ['earlyPaymentDiscountDeadline'],
+			message: 'La fecha de pronto pago no puede ser posterior al vencimiento'
+		});
+	}
+}
+
+export const PurchaseOrderCreditTermsSchema = PurchaseOrderCreditTermsBaseSchema.superRefine(
+	validatePurchaseOrderCreditTerms
+);
+
+export const SetPurchaseOrderCreditTermsSchema = PurchaseOrderCreditTermsSchema.extend({
+	purchaseOrderId: z.uuid('ID de orden de compra requerido')
+});

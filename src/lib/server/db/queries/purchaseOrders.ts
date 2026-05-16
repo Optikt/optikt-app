@@ -18,7 +18,7 @@ import {
 	purchaseOrders,
 	purchaseOrderItems,
 	purchaseOrderPayments,
-	purchaseOrderCreditSchedule,
+	purchaseOrderEarlyPaymentBenefits,
 	inventoryLots,
 	inventoryMovements,
 	products,
@@ -123,6 +123,14 @@ function buildPendingBalanceCondition(): SQL {
 			WHERE pop.purchase_order_id = ${purchaseOrders.id}
 			  AND pop.voided_at IS NULL
 		), 0)
+		+
+		COALESCE((
+			SELECT SUM(poepb.amount_usd_bcv)
+			FROM ${purchaseOrderEarlyPaymentBenefits} poepb
+			WHERE poepb.purchase_order_id = ${purchaseOrders.id}
+			  AND poepb.applied_to_balance = true
+			  AND poepb.voided_at IS NULL
+		), 0)
 		<
 		ROUND(CAST(
 			COALESCE((
@@ -155,12 +163,7 @@ function buildOverdueBalanceCondition(): SQL {
 		${purchaseOrders.status} = ${PurchaseOrderStatus.CONFIRMED}
 		AND ${purchaseOrders.paymentTerms} = ${PurchasePaymentTerms.CREDIT}
 		AND ${buildPendingBalanceCondition()}
-		AND EXISTS (
-			SELECT 1
-			FROM ${purchaseOrderCreditSchedule} pocs
-			WHERE pocs.purchase_order_id = ${purchaseOrders.id}
-			  AND pocs.due_date < CURRENT_DATE
-		)
+		AND ${purchaseOrders.creditDueDate} < CURRENT_DATE
 	`;
 }
 
@@ -211,7 +214,7 @@ async function addFinancialMetadata(
 	if (rows.length === 0) return rows;
 
 	const purchaseOrderIds = rows.map((row) => row.id);
-	const [items, payments, creditSchedule] = await Promise.all([
+	const [items, payments, benefits] = await Promise.all([
 		db
 			.select()
 			.from(purchaseOrderItems)
@@ -222,8 +225,8 @@ async function addFinancialMetadata(
 			.where(inArray(purchaseOrderPayments.purchaseOrderId, purchaseOrderIds)),
 		db
 			.select()
-			.from(purchaseOrderCreditSchedule)
-			.where(inArray(purchaseOrderCreditSchedule.purchaseOrderId, purchaseOrderIds))
+			.from(purchaseOrderEarlyPaymentBenefits)
+			.where(inArray(purchaseOrderEarlyPaymentBenefits.purchaseOrderId, purchaseOrderIds))
 	]);
 
 	const itemsByOrderId = new Map<string, typeof items>();
@@ -242,22 +245,23 @@ async function addFinancialMetadata(
 		]);
 	}
 
-	const scheduleByOrderId = new Map<string, typeof creditSchedule>();
-	for (const installment of creditSchedule) {
-		scheduleByOrderId.set(installment.purchaseOrderId, [
-			...(scheduleByOrderId.get(installment.purchaseOrderId) ?? []),
-			installment
+	const benefitsByOrderId = new Map<string, typeof benefits>();
+	for (const benefit of benefits) {
+		benefitsByOrderId.set(benefit.purchaseOrderId, [
+			...(benefitsByOrderId.get(benefit.purchaseOrderId) ?? []),
+			benefit
 		]);
 	}
 
 	return rows.map((row) => {
 		const orderItems = itemsByOrderId.get(row.id) ?? [];
 		const orderPayments = paymentsByOrderId.get(row.id) ?? [];
-		const orderSchedule = scheduleByOrderId.get(row.id) ?? [];
-		const balance = computePurchaseOrderBalance(row, orderItems, orderPayments, orderSchedule);
+		const orderBenefits = benefitsByOrderId.get(row.id) ?? [];
+		const balance = computePurchaseOrderBalance(row, orderItems, orderPayments, orderBenefits);
 		const dueStatus = getPurchaseOrderDueStatus({
 			paymentTerms: row.paymentTerms,
-			installments: orderSchedule,
+			creditDueDate: row.creditDueDate,
+			earlyPaymentDiscountDeadline: row.earlyPaymentDiscountDeadline,
 			balance: balance.balance
 		});
 

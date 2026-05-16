@@ -2,28 +2,24 @@
 	import { ArrowRight, CalendarClock, CircleDollarSign } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { PurchaseOrderDueBadge } from '$lib/components/ui';
-	import type { UpcomingPurchaseOrderInstallment } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
+	import type { UpcomingPurchaseOrderDue } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
 
 	interface Props {
-		installments: UpcomingPurchaseOrderInstallment[];
+		dues: UpcomingPurchaseOrderDue[];
 	}
 
-	let { installments }: Props = $props();
+	let { dues }: Props = $props();
 
-	const overdueCount = $derived(
-		installments.filter((installment) => installment.dueStatus.kind === 'OVERDUE').length
-	);
-	const totalPending = $derived(
-		installments.reduce((sum, installment) => sum + installment.balance.balance, 0)
-	);
+	const overdueCount = $derived(dues.filter((due) => due.dueStatus.kind === 'OVERDUE').length);
+	const totalPending = $derived(dues.reduce((sum, due) => sum + due.balance.balance, 0));
 
 	function formatOrderNumber(orderNumber: number): string {
 		return `PO-${String(orderNumber).padStart(4, '0')}`;
 	}
 
-	function installmentAmount(installment: UpcomingPurchaseOrderInstallment): number {
-		return Number(installment.expectedAmountUsd ?? installment.balance.balance ?? 0);
+	function dueAmount(due: UpcomingPurchaseOrderDue): number {
+		return Number(due.expectedAmountUsd ?? due.balance.balance ?? 0);
 	}
 </script>
 
@@ -40,10 +36,7 @@
 					Vencimientos proveedores
 				</p>
 				<p class="font-heading text-xl font-bold text-brand-navy">
-					{installments.length} cuota{installments.length === 1 ? '' : 's'} pendiente{installments.length ===
-					1
-						? ''
-						: 's'}
+					{dues.length} orden{dues.length === 1 ? '' : 'es'} con saldo próximo
 				</p>
 			</div>
 		</div>
@@ -57,7 +50,7 @@
 		{/if}
 	</div>
 
-	{#if installments.length === 0}
+	{#if dues.length === 0}
 		<div class="rounded-xl border border-dashed border-outline-variant/40 px-4 py-6 text-center">
 			<p class="text-sm font-medium text-on-surface-variant">Sin vencimientos próximos</p>
 			<p class="mt-1 text-xs text-outline">Las compras a crédito con saldo aparecerán aquí.</p>
@@ -78,30 +71,30 @@
 		</div>
 
 		<ul class="space-y-2">
-			{#each installments.slice(0, 6) as installment (installment.id)}
+			{#each dues.slice(0, 6) as due (due.id)}
 				<li>
 					<a
-						href={resolve(`/purchases/${installment.purchaseOrder.id}`)}
+						href={resolve(`/purchases/${due.purchaseOrder.id}`)}
 						class="flex flex-col gap-3 rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-4 py-3 no-underline transition-colors hover:bg-surface-container-low sm:flex-row sm:items-center sm:justify-between"
 					>
 						<div class="min-w-0">
 							<div class="flex flex-wrap items-center gap-2">
 								<span class="font-mono text-sm font-semibold text-brand-navy">
-									{formatOrderNumber(installment.purchaseOrder.orderNumber)}
+									{formatOrderNumber(due.purchaseOrder.orderNumber)}
 								</span>
-								<PurchaseOrderDueBadge dueStatus={installment.dueStatus} showNone />
+								<PurchaseOrderDueBadge dueStatus={due.dueStatus} showNone />
 							</div>
 							<p class="mt-1 truncate text-sm text-on-surface-variant">
-								{installment.supplier?.name ?? 'Sin proveedor'}
+								{due.supplier?.name ?? 'Sin proveedor'}
 							</p>
 						</div>
 						<div class="flex items-center justify-between gap-3 sm:justify-end">
 							<div class="text-right">
 								<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-									{formatPrice(installmentAmount(installment))}
+									{formatPrice(dueAmount(due))}
 								</p>
 								<p class="text-xs text-on-surface-variant">
-									{formatDateOnly(installment.dueDate, { day: '2-digit', month: 'short' })}
+									{formatDateOnly(due.dueDate, { day: '2-digit', month: 'short' })}
 								</p>
 							</div>
 							<ArrowRight class="h-4 w-4 text-brand-blue" />

@@ -27,11 +27,9 @@
 	import {
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
-		createEmptyPurchaseOrderDraftInstallment,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput,
-		type PurchaseOrderDraftInstallment,
 		type PurchaseOrderDraftInitialValues,
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
@@ -94,6 +92,13 @@
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
 	);
+	let creditDueDate = $state<string | null>(initialValues?.creditDueDate ?? null);
+	let earlyPaymentDiscountPercent = $state<number | null>(
+		initialValues?.earlyPaymentDiscountPercent ?? null
+	);
+	let earlyPaymentDiscountDeadline = $state<string | null>(
+		initialValues?.earlyPaymentDiscountDeadline ?? null
+	);
 	let discountType = $state<PurchaseDiscountType>(
 		initialValues?.discount?.type ?? PurchaseDiscountType.NONE
 	);
@@ -102,7 +107,6 @@
 	let savingAction = $state<'draft' | null>(null);
 	let showDraftWarningModal = $state(false);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
-	let installments = $state<PurchaseOrderDraftInstallment[]>(initialValues?.installments ?? []);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
 		type: discountType,
@@ -137,17 +141,14 @@
 	const canSave = $derived(
 		canPersistPurchaseOrderDraft({ supplierId, orderDate, bcvRate, notes }, items, {
 			paymentTerms,
-			installments,
-			totalNetAmount: summary.netTotal
+			creditDueDate,
+			earlyPaymentDiscountPercent,
+			earlyPaymentDiscountDeadline
 		})
 	);
 
 	function handlePaymentTermsChange(nextTerms: PurchasePaymentTerms) {
 		paymentTerms = nextTerms;
-	}
-
-	function handleInstallmentsChange(nextInstallments: PurchaseOrderDraftInstallment[]) {
-		installments = nextInstallments;
 	}
 
 	function goBack() {
@@ -219,24 +220,6 @@
 		}));
 	}
 
-	function buildInstallmentsPayload() {
-		if (paymentTerms === PurchasePaymentTerms.CONTADO) {
-			return [];
-		}
-
-		const normalizedInstallments =
-			installments.length > 0 ? installments : [createEmptyPurchaseOrderDraftInstallment(1)];
-
-		return normalizedInstallments.map((installment, index) => ({
-			installmentNumber: index + 1,
-			dueDate: installment.dueDate,
-			expectedAmountUsd: installment.expectedAmountUsd ?? undefined,
-			earlyPaymentDiscountPercent: installment.earlyPaymentDiscountPercent ?? undefined,
-			earlyPaymentDiscountDeadline: installment.earlyPaymentDiscountDeadline ?? undefined,
-			notes: installment.notes.trim() ? installment.notes.trim() : undefined
-		}));
-	}
-
 	async function savePurchaseOrder() {
 		if (!canSave || saving) return;
 		savingAction = 'draft';
@@ -257,13 +240,15 @@
 					orderDate,
 					bcvRate,
 					paymentTerms,
+					creditDueDate,
+					earlyPaymentDiscountPercent,
+					earlyPaymentDiscountDeadline,
 					notes,
 					discount: {
 						type: discount.type,
 						value: discount.value,
 						notes: discountNotes ? discountNotes : undefined
 					},
-					installments: buildInstallmentsPayload(),
 					items: buildItemsPayload()
 				});
 
@@ -286,13 +271,15 @@
 				orderDate,
 				bcvRate,
 				paymentTerms,
+				creditDueDate,
+				earlyPaymentDiscountPercent,
+				earlyPaymentDiscountDeadline,
 				notes,
 				discount: {
 					type: discount.type,
 					value: discount.value,
 					notes: discountNotes ? discountNotes : undefined
 				},
-				installments: buildInstallmentsPayload(),
 				items: buildItemsPayload()
 			});
 
@@ -389,10 +376,14 @@
 
 		<PurchaseOrderPaymentTermsPanel
 			{paymentTerms}
-			{installments}
+			{creditDueDate}
+			{earlyPaymentDiscountPercent}
+			{earlyPaymentDiscountDeadline}
 			totalNetAmount={summary.netTotal}
 			onPaymentTermsChange={handlePaymentTermsChange}
-			onInstallmentsChange={handleInstallmentsChange}
+			onCreditDueDateChange={(value) => (creditDueDate = value)}
+			onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
+			onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
 		/>
 
 		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} />
