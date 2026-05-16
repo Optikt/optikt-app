@@ -13,19 +13,7 @@
  * All queries accept `executor: DbOrTx = db` so they can run standalone or
  * inside a transaction (see AGENTS.md transaction pattern).
  */
-import {
-	and,
-	asc,
-	desc,
-	eq,
-	gte,
-	isNull,
-	isNotNull,
-	lte,
-	sql,
-	sum,
-	count
-} from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, isNotNull, lte, sql, sum, count } from 'drizzle-orm';
 import { db } from '../index';
 import {
 	cashExpenses,
