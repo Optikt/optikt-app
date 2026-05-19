@@ -22,6 +22,7 @@
 		deliveryNoteNumber: purchaseOrder.deliveryNoteNumber ?? '',
 		orderDate: purchaseOrder.orderDate.slice(0, 10),
 		bcvRate: purchaseOrder.bcvRate,
+		pricesInVes: purchaseOrder.pricesInVes,
 		notes: purchaseOrder.notes ?? '',
 		paymentTerms: (purchaseOrder.paymentTerms ??
 			PurchasePaymentTerms.CONTADO) as PurchasePaymentTerms,

@@ -15,7 +15,10 @@ import {
 	applyLensDefaults,
 	applyProductDefaults,
 	applySettlementDiscount,
+	calculateDraftItemSubtotalVes,
+	calculateDraftItemTaxVes,
 	calculateDraftItemTotal,
+	calculateDraftItemTotalVes,
 	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
 	canPersistPurchaseOrderDraft,
@@ -190,6 +193,7 @@ describe('purchaseOrderDraft helpers', () => {
 			lensCatalogItemId: null,
 			quantity: 3,
 			unitPurchasePrice: 11,
+			unitPurchasePriceVes: 702.15,
 			unitSalePrice: 25,
 			appliesIva: true,
 			ivaRate: 16
@@ -198,6 +202,52 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(item.id).toBe('po-item-1');
 		expect(item.persistedId).toBe('po-item-1');
 		expect(item.productId).toBe('product-1');
+		expect(item.unitPurchasePriceVes).toBe(702.15);
+	});
+
+	it('calculates direct Bs totals with per-line IVA rounding', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.appliesIva = true;
+		item.ivaRate = 16;
+		item.quantity = 2;
+		item.unitPurchasePriceVes = 3.14;
+		item.unitPurchasePrice = (item.unitPurchasePriceVes * 1.16) / 100;
+
+		expect(calculateDraftItemSubtotalVes(item)).toBe(6.28);
+		expect(calculateDraftItemTaxVes(item)).toBe(1);
+		expect(calculateDraftItemTotalVes(item)).toBe(7.28);
+	});
+
+	it('returns direct Bs summary totals when rows store per-line Bs prices', () => {
+		const first = createEmptyPurchaseOrderDraftItem();
+		first.appliesIva = true;
+		first.ivaRate = 16;
+		first.quantity = 2;
+		first.unitPurchasePriceVes = 3.14;
+		first.unitPurchasePrice = (first.unitPurchasePriceVes * 1.16) / 100;
+
+		const second = createEmptyPurchaseOrderDraftItem();
+		second.appliesIva = true;
+		second.ivaRate = 16;
+		second.quantity = 1;
+		second.unitPurchasePriceVes = 6.27;
+		second.unitPurchasePrice = (second.unitPurchasePriceVes * 1.16) / 100;
+
+		const third = createEmptyPurchaseOrderDraftItem();
+		third.appliesIva = true;
+		third.ivaRate = 16;
+		third.quantity = 1;
+		third.unitPurchasePriceVes = 9.43;
+		third.unitPurchasePrice = (third.unitPurchasePriceVes * 1.16) / 100;
+
+		const summary = calculatePurchaseOrderSummary([first, second, third], undefined, 100);
+
+		expect(summary.subtotalVes).toBe(21.98);
+		expect(summary.taxAmountVes).toBe(3.51);
+		expect(summary.totalVes).toBe(25.49);
+		expect(summary.netTotalVes).toBe(25.49);
+		expect(Number((summary.total * 100).toFixed(2))).toBe(25.5);
+		expect(summary.totalVes).not.toBe(Number((summary.total * 100).toFixed(2)));
 	});
 
 	it('starts new draft items as not reviewed', () => {

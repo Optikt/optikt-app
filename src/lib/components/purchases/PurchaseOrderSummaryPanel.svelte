@@ -17,8 +17,11 @@
 	let { summary, bcvRate, discount = NO_PURCHASE_ORDER_DISCOUNT }: Props = $props();
 
 	const hasDiscount = $derived(discount.type !== PurchaseDiscountType.NONE && discount.value > 0);
-	const totalInBs = $derived(summary.total * Number(bcvRate || 0));
-	const netTotalInBs = $derived(summary.netTotal * Number(bcvRate || 0));
+	const totalInBs = $derived(summary.totalVes ?? summary.total * Number(bcvRate || 0));
+	const netTotalInBs = $derived(summary.netTotalVes ?? summary.netTotal * Number(bcvRate || 0));
+	const canShowBsEquivalent = $derived(
+		summary.totalVes !== undefined || summary.netTotalVes !== undefined || bcvRate > 0
+	);
 
 	function formatVes(amount: number): string {
 		return `Bs. ${new Intl.NumberFormat('es-VE', {
@@ -119,7 +122,9 @@
 			<div class="flex items-center justify-between gap-4">
 				<span>Equivalente BCV</span>
 				<span class="font-mono text-base font-semibold text-white tabular-nums">
-					{bcvRate > 0 ? formatVes(hasDiscount ? netTotalInBs : totalInBs) : 'Define una tasa'}
+					{canShowBsEquivalent
+						? formatVes(hasDiscount ? netTotalInBs : totalInBs)
+						: 'Define una tasa'}
 				</span>
 			</div>
 		</div>

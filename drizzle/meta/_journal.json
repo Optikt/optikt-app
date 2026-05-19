@@ -148,6 +148,13 @@
       "when": 1778897388643,
       "tag": "0020_right_george_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779112077840,
+      "tag": "0021_mean_ben_grimm",
+      "breakpoints": true
     }
   ]
 }

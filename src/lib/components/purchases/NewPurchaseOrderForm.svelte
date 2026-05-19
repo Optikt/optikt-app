@@ -26,6 +26,7 @@
 	import PurchaseOrderPaymentTermsPanel from './PurchaseOrderPaymentTermsPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
+		calculateUnitPurchasePriceFromVesPreTax,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
@@ -88,6 +89,7 @@
 	let deliveryNoteNumber = $state(initialValues?.deliveryNoteNumber ?? '');
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
+	let pricesInVes = $state(initialValues?.pricesInVes ?? false);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -106,6 +108,8 @@
 	let discountNotes = $state(initialValues?.discountNotes ?? '');
 	let savingAction = $state<'draft' | null>(null);
 	let showDraftWarningModal = $state(false);
+	let showPricingModeConfirmModal = $state(false);
+	let pendingPricesInVes = $state<boolean | null>(null);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
@@ -113,7 +117,7 @@
 		value: discountType === PurchaseDiscountType.NONE ? 0 : Number(discountValue || 0)
 	});
 
-	const summary = $derived(calculatePurchaseOrderSummary(items, discount));
+	const summary = $derived(calculatePurchaseOrderSummary(items, discount, bcvRate));
 	const supplierLocked = $derived(items.length > 0);
 	const isEdit = $derived(mode === 'edit');
 	const saving = $derived(savingAction !== null);
@@ -146,6 +150,26 @@
 			earlyPaymentDiscountDeadline
 		})
 	);
+
+	$effect(() => {
+		const currentBcvRate = Number(bcvRate || 0);
+		if (!pricesInVes || currentBcvRate <= 0) return;
+
+		untrack(() => {
+			for (const item of items) {
+				if (item.unitPurchasePriceVes === undefined || item.unitPurchasePriceVes === null) {
+					continue;
+				}
+
+				item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
+					item.unitPurchasePriceVes,
+					item.appliesIva,
+					item.ivaRate,
+					currentBcvRate
+				);
+			}
+		});
+	});
 
 	function handlePaymentTermsChange(nextTerms: PurchasePaymentTerms) {
 		paymentTerms = nextTerms;
@@ -201,6 +225,44 @@
 		void savePurchaseOrder();
 	}
 
+	function clearItemPricing(item: PurchaseOrderDraftItem) {
+		item.unitPurchasePrice = 0;
+		item.unitPurchasePriceVes = 0;
+		item.isReviewed = false;
+	}
+
+	function requestPricingModeChange(nextValue: boolean) {
+		if (nextValue === pricesInVes) return;
+
+		if (items.length === 0) {
+			pricesInVes = nextValue;
+			return;
+		}
+
+		pendingPricesInVes = nextValue;
+		showPricingModeConfirmModal = true;
+	}
+
+	function confirmPricingModeChange() {
+		if (pendingPricesInVes === null) return;
+
+		const nextValue = pendingPricesInVes;
+		showPricingModeConfirmModal = false;
+		pendingPricesInVes = null;
+
+		untrack(() => {
+			pricesInVes = nextValue;
+			for (const item of items) {
+				clearItemPricing(item);
+			}
+		});
+	}
+
+	function cancelPricingModeChange() {
+		showPricingModeConfirmModal = false;
+		pendingPricesInVes = null;
+	}
+
 	function buildItemsPayload() {
 		return items.map((item) => ({
 			id: item.persistedId,
@@ -213,6 +275,7 @@
 					: undefined,
 			quantity: item.quantity,
 			unitPurchasePrice: item.unitPurchasePrice,
+			unitPurchasePriceVes: pricesInVes ? (item.unitPurchasePriceVes ?? 0) : undefined,
 			unitSalePrice: item.unitSalePrice,
 			appliesIva: item.appliesIva,
 			ivaRate: item.ivaRate,
@@ -239,6 +302,7 @@
 					deliveryNoteNumber: deliveryNoteNumber || undefined,
 					orderDate,
 					bcvRate,
+					pricesInVes,
 					paymentTerms,
 					creditDueDate,
 					earlyPaymentDiscountPercent,
@@ -270,6 +334,7 @@
 				deliveryNoteNumber: deliveryNoteNumber || undefined,
 				orderDate,
 				bcvRate,
+				pricesInVes,
 				paymentTerms,
 				creditDueDate,
 				earlyPaymentDiscountPercent,
@@ -363,12 +428,57 @@
 			{supplierLocked}
 		/>
 
+		<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
+			<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+				<div class="space-y-1">
+					<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+						Modo de captura
+					</p>
+					<h2 class="text-lg font-semibold text-brand-navy">Base de precios de la factura</h2>
+					<p class="max-w-2xl text-sm text-on-surface-variant">
+						{pricesInVes
+							? 'Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para inventario usando la tasa BCV.'
+							: 'Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula desde la tasa BCV.'}
+					</p>
+				</div>
+
+				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
+					<button
+						type="button"
+						onclick={() => requestPricingModeChange(false)}
+						class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
+							!pricesInVes
+								? 'bg-brand-navy text-white'
+								: 'text-on-surface-variant hover:text-brand-navy'
+						}`}
+						aria-pressed={!pricesInVes}
+					>
+						USD BCV
+					</button>
+					<button
+						type="button"
+						onclick={() => requestPricingModeChange(true)}
+						class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
+							pricesInVes
+								? 'bg-brand-navy text-white'
+								: 'text-on-surface-variant hover:text-brand-navy'
+						}`}
+						aria-pressed={pricesInVes}
+					>
+						Bs
+					</button>
+				</div>
+			</div>
+		</section>
+
 		<PurchaseOrderItemsPanel
 			bind:items
 			{products}
 			{lensItems}
 			{supplierId}
 			{documentType}
+			{pricesInVes}
+			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
 		/>
 
@@ -480,3 +590,14 @@
 		</div>
 	{/snippet}
 </ConfirmModal>
+
+<ConfirmModal
+	bind:open={showPricingModeConfirmModal}
+	title="Cambiar modo de precios"
+	message="Cambiar entre USD BCV y Bs limpiará los costos actuales de todas las líneas para evitar mezclar bases distintas."
+	confirmLabel="Cambiar y limpiar precios"
+	cancelLabel="Mantener modo actual"
+	confirmColor="yellow"
+	onConfirm={confirmPricingModeChange}
+	onCancel={cancelPricingModeChange}
+/>

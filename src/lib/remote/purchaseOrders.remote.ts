@@ -292,6 +292,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
+					pricesInVes: data.pricesInVes,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
@@ -311,6 +312,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				lensCatalogItemId: item.lensCatalogItemId ?? null,
 				quantity: item.quantity,
 				unitPurchasePrice: item.unitPurchasePrice,
+				unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
 				unitSalePrice: item.unitSalePrice,
 				appliesIva: item.appliesIva,
 				ivaRate: item.ivaRate,
@@ -386,6 +388,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
 		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
+		if (data.pricesInVes !== undefined) updateData.pricesInVes = data.pricesInVes;
 		if (
 			data.paymentTerms !== undefined ||
 			data.creditDueDate !== undefined ||
@@ -436,6 +439,7 @@ function toPurchaseOrderItemDraftInput(
 		lensCatalogItemId: item.lensCatalogItemId ?? null,
 		quantity: item.quantity,
 		unitPurchasePrice: item.unitPurchasePrice,
+		unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
 		unitSalePrice: item.unitSalePrice,
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
@@ -526,6 +530,7 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
+					pricesInVes: data.pricesInVes,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',

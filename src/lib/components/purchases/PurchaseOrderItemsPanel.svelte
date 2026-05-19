@@ -31,6 +31,8 @@
 		lensItems: LensCatalogItemWithRelations[];
 		supplierId: string;
 		documentType: PurchaseDocumentType;
+		pricesInVes: boolean;
+		bcvUsdRate: number;
 		defaultTaxRate?: number;
 	}
 
@@ -40,6 +42,8 @@
 		lensItems,
 		supplierId,
 		documentType,
+		pricesInVes,
+		bcvUsdRate,
 		defaultTaxRate = DEFAULT_TAX_RATE
 	}: Props = $props();
 
@@ -129,6 +133,11 @@
 		} else if (pendingItemType === PurchaseOrderItemType.LENS && selectedLens) {
 			applyLensDefaults(nextItem, selectedLens, documentType, defaultTaxRate);
 			pendingLensCatalogItemId = '';
+		}
+
+		if (pricesInVes) {
+			nextItem.unitPurchasePrice = 0;
+			nextItem.unitPurchasePriceVes = 0;
 		}
 
 		items = [...items, nextItem];
@@ -238,7 +247,7 @@
 					<div
 						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_72px] xl:gap-4"
 					>
-						{#each ['Tipo', 'Artículo', 'Cant.', 'Costo und.', 'Venta und.', 'IVA', 'Total costo', ''] as label, index (label + index)}
+						{#each ['Tipo', 'Artículo', 'Cant.', pricesInVes ? 'Costo Bs base' : 'Costo und.', 'Venta und.', 'IVA', pricesInVes ? 'Total Bs' : 'Total costo', ''] as label, index (label + index)}
 							<div
 								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 							>
@@ -252,6 +261,8 @@
 							bind:item={items[index]}
 							product={products.find((product) => product.id === item.productId) ?? null}
 							lensItem={lensItems.find((lens) => lens.id === item.lensCatalogItemId) ?? null}
+							{pricesInVes}
+							{bcvUsdRate}
 							showRemove={true}
 							onremove={() => removeLine(item.id)}
 						/>

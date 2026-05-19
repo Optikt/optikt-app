@@ -81,6 +81,7 @@ export const PurchaseOrderItemSchema = z.object({
 	lensCatalogItemId: z.uuid().optional(),
 	quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
 	unitPurchasePrice: CoercedNumber.min(0, 'Precio de compra debe ser ≥ 0'),
+	unitPurchasePriceVes: CoercedNumber.min(0, 'Precio de compra en Bs debe ser ≥ 0').optional(),
 	unitSalePrice: CoercedNumber.min(0, 'Precio de venta debe ser ≥ 0'),
 	appliesIva: z.boolean().default(true),
 	ivaRate: CoercedNumber.min(0).max(100).default(DEFAULT_TAX_RATE)
@@ -106,6 +107,7 @@ export const CreatePurchaseOrderSchema = z
 		deliveryNoteNumber: z.string().optional(),
 		orderDate: z.iso.date('Fecha de orden inválida'),
 		bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
+		pricesInVes: z.boolean().default(false),
 		notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
 		discount: SettlementDiscountSchema.optional(),
 		items: z.array(PurchaseOrderReviewableItemSchema).min(1, 'Debe incluir al menos un ítem')
@@ -125,6 +127,7 @@ export const UpdatePurchaseOrderSchema = z.object({
 	deliveryNoteNumber: z.string().optional(),
 	orderDate: z.iso.date().optional(),
 	bcvRate: CoercedNumber.min(0).optional(),
+	pricesInVes: z.boolean().optional(),
 	notes: z.string().min(6).optional(),
 	discount: SettlementDiscountSchema.optional(),
 	paymentTerms: z.enum(PurchasePaymentTerms).optional(),
@@ -142,6 +145,7 @@ export const SavePurchaseOrderDraftSchema = z
 		deliveryNoteNumber: z.string().optional(),
 		orderDate: z.iso.date('Fecha de orden inválida'),
 		bcvRate: CoercedNumber.min(0, 'Tasa BCV debe ser ≥ 0'),
+		pricesInVes: z.boolean().default(false),
 		notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
 		discount: SettlementDiscountSchema.optional(),
 		items: z.array(PurchaseOrderDraftItemSchema).min(1, 'Debe incluir al menos un ítem')

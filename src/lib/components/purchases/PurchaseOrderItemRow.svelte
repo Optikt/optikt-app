@@ -15,6 +15,11 @@
 		calculateDraftItemTax,
 		calculateDraftItemTotal,
 		calculateUnitPurchasePriceFromLineTotal,
+		calculateUnitPurchasePriceFromVesPreTax,
+		calculateUnitPurchasePriceVesFromLineTotal,
+		calculateDraftItemSubtotalVes,
+		calculateDraftItemTaxVes,
+		calculateDraftItemTotalVes,
 		getPreTaxUnitPrice,
 		isDraftItemUserEditingLocked,
 		type PurchaseOrderDraftItem
@@ -24,6 +29,8 @@
 		item: PurchaseOrderDraftItem;
 		product?: ProductWithRelations | null;
 		lensItem?: LensCatalogItemWithRelations | null;
+		pricesInVes: boolean;
+		bcvUsdRate: number;
 		showRemove?: boolean;
 		onremove?: () => void;
 	}
@@ -32,6 +39,8 @@
 		item = $bindable(),
 		product = null,
 		lensItem = null,
+		pricesInVes,
+		bcvUsdRate,
 		showRemove = false,
 		onremove
 	}: Props = $props();
@@ -44,6 +53,7 @@
 		lensCatalogItemId: item.lensCatalogItemId,
 		quantity: item.quantity,
 		unitPurchasePrice: item.unitPurchasePrice,
+		unitPurchasePriceVes: item.unitPurchasePriceVes,
 		unitSalePrice: item.unitSalePrice,
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
@@ -55,6 +65,7 @@
 			materialBaseline.lensCatalogItemId !== item.lensCatalogItemId ||
 			materialBaseline.quantity !== item.quantity ||
 			materialBaseline.unitPurchasePrice !== item.unitPurchasePrice ||
+			materialBaseline.unitPurchasePriceVes !== item.unitPurchasePriceVes ||
 			materialBaseline.unitSalePrice !== item.unitSalePrice ||
 			materialBaseline.appliesIva !== item.appliesIva ||
 			materialBaseline.ivaRate !== item.ivaRate ||
@@ -66,6 +77,7 @@
 				lensCatalogItemId: item.lensCatalogItemId,
 				quantity: item.quantity,
 				unitPurchasePrice: item.unitPurchasePrice,
+				unitPurchasePriceVes: item.unitPurchasePriceVes,
 				unitSalePrice: item.unitSalePrice,
 				appliesIva: item.appliesIva,
 				ivaRate: item.ivaRate,
@@ -81,13 +93,20 @@
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
 	const lineTax = $derived(calculateDraftItemTax(item));
 	const lineTotal = $derived(calculateDraftItemTotal(item));
+	const lineSubtotalVes = $derived(calculateDraftItemSubtotalVes(item));
+	const lineTaxVes = $derived(calculateDraftItemTaxVes(item));
+	const lineTotalVes = $derived(calculateDraftItemTotalVes(item));
 	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
 	const visiblePreTaxUnitCost = $derived(round2(preTaxUnitCost));
+	const visiblePreTaxUnitCostVes = $derived(round2(Number(item.unitPurchasePriceVes ?? 0)));
 	const userEditingLocked = $derived(isDraftItemUserEditingLocked(item));
 	let editingLineTotal = $state(false);
 	let lineTotalDraftValue = $state('');
+	const displayedLineTotal = $derived(pricesInVes ? lineTotalVes : lineTotal);
 	const lineTotalInputValue = $derived(
-		!userEditingLocked && editingLineTotal ? lineTotalDraftValue : formatDecimalInput(lineTotal)
+		!userEditingLocked && editingLineTotal
+			? lineTotalDraftValue
+			: formatDecimalInput(displayedLineTotal)
 	);
 
 	function round2(n: number): number {
@@ -98,6 +117,22 @@
 		return Number.isFinite(value) ? value.toFixed(2) : '0.00';
 	}
 
+	function formatVes(amount: number): string {
+		return `Bs. ${new Intl.NumberFormat('es-VE', {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(amount)}`;
+	}
+
+	function syncUsdPriceFromVes() {
+		item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
+			Number(item.unitPurchasePriceVes ?? 0),
+			item.appliesIva,
+			item.ivaRate,
+			bcvUsdRate
+		);
+	}
+
 	function getNumberInputValue(e: Event): number | null {
 		const value = (e.currentTarget as HTMLInputElement).valueAsNumber;
 		return Number.isFinite(value) ? value : null;
@@ -105,6 +140,12 @@
 
 	function toggleTaxable() {
 		if (userEditingLocked) return;
+
+		if (pricesInVes) {
+			item.appliesIva = !item.appliesIva;
+			syncUsdPriceFromVes();
+			return;
+		}
 
 		if (item.appliesIva) {
 			item.unitPurchasePrice = round2(item.unitPurchasePrice / (1 + item.ivaRate / 100));
@@ -124,11 +165,21 @@
 		}
 	}
 
+	function handlePreTaxVesInput(e: Event) {
+		if (userEditingLocked) return;
+
+		const val = getNumberInputValue(e);
+		if (val !== null && val >= 0) {
+			item.unitPurchasePriceVes = round2(val);
+			syncUsdPriceFromVes();
+		}
+	}
+
 	function handleLineTotalFocus() {
 		if (userEditingLocked) return;
 
 		editingLineTotal = true;
-		lineTotalDraftValue = formatDecimalInput(lineTotal);
+		lineTotalDraftValue = formatDecimalInput(displayedLineTotal);
 	}
 
 	function handleLineTotalInput(e: Event) {
@@ -140,7 +191,17 @@
 		lineTotalDraftValue = input.value;
 
 		if (value !== null && value >= 0) {
-			item.unitPurchasePrice = calculateUnitPurchasePriceFromLineTotal(value, item.quantity);
+			if (pricesInVes) {
+				item.unitPurchasePriceVes = calculateUnitPurchasePriceVesFromLineTotal(
+					value,
+					item.quantity,
+					item.appliesIva,
+					item.ivaRate
+				);
+				syncUsdPriceFromVes();
+			} else {
+				item.unitPurchasePrice = calculateUnitPurchasePriceFromLineTotal(value, item.quantity);
+			}
 		}
 	}
 
@@ -212,6 +273,21 @@
 	}
 
 	function totalTooltip(): string {
+		if (pricesInVes) {
+			const parts = [`Subtotal Bs (s/IVA): ${formatVes(lineSubtotalVes)}`];
+
+			if (lineTaxVes > 0) {
+				parts.push(`IVA ${item.ivaRate}%: ${formatVes(lineTaxVes)}`);
+			}
+
+			parts.push(`Total Bs: ${formatVes(lineTotalVes)}`);
+			if (bcvUsdRate > 0) {
+				parts.push(`USD c/IVA und.: ${formatPrice(item.unitPurchasePrice)}`);
+			}
+
+			return parts.join(' · ');
+		}
+
 		const parts = [`Subtotal (s/IVA): ${formatPrice(lineSubtotal)}`];
 
 		if (lineTax > 0) {
@@ -310,7 +386,36 @@
 			>
 				Costo und.
 			</p>
-			{#if item.appliesIva}
+			{#if pricesInVes}
+				<div class="space-y-2">
+					<div class="relative space-y-1 xl:space-y-0">
+						<p
+							class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase xl:pointer-events-none xl:absolute xl:top-1/2 xl:left-3 xl:z-10 xl:-translate-y-1/2"
+						>
+							Bs s/IVA
+						</p>
+						<input
+							type="number"
+							min="0"
+							step="any"
+							value={visiblePreTaxUnitCostVes}
+							onchange={handlePreTaxVesInput}
+							disabled={userEditingLocked}
+							class={`${compactInputClass} xl:px-3.5 xl:pl-[4.8rem]`}
+							aria-label="Costo unitario sin IVA en bolívares"
+						/>
+					</div>
+					<p class="text-[11px] font-medium text-on-surface-variant">
+						{#if Number(bcvUsdRate || 0) > 0}
+							USD c/IVA: <span class="font-mono text-brand-navy tabular-nums"
+								>{formatPrice(item.unitPurchasePrice)}</span
+							>
+						{:else}
+							Define la tasa BCV para derivar el costo USD.
+						{/if}
+					</p>
+				</div>
+			{:else if item.appliesIva}
 				<div class="grid grid-cols-2 gap-2 xl:items-center">
 					<div class="relative space-y-1 xl:space-y-0">
 						<p
@@ -423,7 +528,7 @@
 				<span
 					class="pointer-events-none absolute top-1/2 left-2.5 z-10 -translate-y-1/2 font-mono text-[10px] font-bold tracking-[0.12em] text-outline uppercase"
 				>
-					USD
+					{pricesInVes ? 'BS' : 'USD'}
 				</span>
 				<input
 					type="number"
@@ -435,7 +540,7 @@
 					onblur={handleLineTotalBlur}
 					disabled={userEditingLocked}
 					class={`${compactInputClass} !pl-11 font-semibold text-brand-navy`}
-					aria-label="Total costo"
+					aria-label={pricesInVes ? 'Total costo en bolívares' : 'Total costo'}
 					title={totalTooltip()}
 				/>
 			</div>
