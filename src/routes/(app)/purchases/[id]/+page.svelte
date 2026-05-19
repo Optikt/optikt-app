@@ -48,6 +48,7 @@
 	} from '$lib/server/db/queries/purchaseOrders';
 	import {
 		calculatePurchaseOrderSummary,
+		calculateDraftItemTotalVes,
 		createPurchaseOrderDraftItemFromExisting,
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
@@ -185,7 +186,8 @@
 	const purchaseSummary = $derived.by(() =>
 		calculatePurchaseOrderSummary(
 			items.map(createPurchaseOrderDraftItemFromExisting),
-			settlementDiscount
+			settlementDiscount,
+			purchaseOrder.bcvRate
 		)
 	);
 	const totalPurchase = $derived(purchaseSummary.total);
@@ -203,8 +205,12 @@
 				? formatPrice(settlementDiscount.value)
 				: 'Sin descuento'
 	);
-	const totalPurchaseInBs = $derived(totalPurchase * Number(purchaseOrder.bcvRate || 0));
-	const netTotalPurchaseInBs = $derived(netTotalPurchase * Number(purchaseOrder.bcvRate || 0));
+	const totalPurchaseInBs = $derived(
+		purchaseSummary.totalVes ?? totalPurchase * Number(purchaseOrder.bcvRate || 0)
+	);
+	const netTotalPurchaseInBs = $derived(
+		purchaseSummary.netTotalVes ?? netTotalPurchase * Number(purchaseOrder.bcvRate || 0)
+	);
 	const documentLabel = $derived(getPurchaseDocumentTypeLabel(purchaseOrder.documentType));
 	const documentNumber = $derived.by(() => {
 		if (purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE) {
@@ -314,6 +320,17 @@
 
 	function purchaseLineTotal(item: PurchaseOrderItemWithProduct): number {
 		return item.unitPurchasePrice * item.quantity;
+	}
+
+	function purchaseLineTotalVes(item: PurchaseOrderItemWithProduct): number {
+		return calculateDraftItemTotalVes(createPurchaseOrderDraftItemFromExisting(item));
+	}
+
+	function formatVesAmount(amount: number): string {
+		return `Bs. ${new Intl.NumberFormat('es-VE', {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(amount)}`;
 	}
 
 	function movementItemName(movement: InventoryMovement): string {
@@ -1062,8 +1079,12 @@
 								<th class="px-4 py-3.5">Código</th>
 								<th class="px-4 py-3.5">Artículo</th>
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
-								<th class="px-4 py-3.5 text-right">Costo unitario</th>
-								<th class="px-4 py-3.5 text-right">Total compra</th>
+								<th class="px-4 py-3.5 text-right">
+									{purchaseOrder.pricesInVes ? 'Costo unitario Bs' : 'Costo unitario'}
+								</th>
+								<th class="px-4 py-3.5 text-right">
+									{purchaseOrder.pricesInVes ? 'Total compra Bs' : 'Total compra'}
+								</th>
 								<th class="px-4 py-3.5 text-right">Venta sugerida</th>
 								{#if isConfirmed}
 									<th class="px-4 py-3.5 text-right">Lote</th>
@@ -1139,12 +1160,30 @@
 										{item.quantity}
 									</td>
 									<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
-										{formatPrice(item.unitPurchasePrice)}
+										{#if purchaseOrder.pricesInVes && item.unitPurchasePriceVes !== null}
+											<div>{formatVesAmount(item.unitPurchasePriceVes)}</div>
+											<p
+												class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
+											>
+												USD {formatPrice(item.unitPurchasePrice)}
+											</p>
+										{:else}
+											{formatPrice(item.unitPurchasePrice)}
+										{/if}
 									</td>
 									<td
 										class="px-4 py-3.5 text-right font-mono font-semibold text-brand-navy tabular-nums"
 									>
-										{formatPrice(purchaseLineTotal(item))}
+										{#if purchaseOrder.pricesInVes && item.unitPurchasePriceVes !== null}
+											<div>{formatVesAmount(purchaseLineTotalVes(item))}</div>
+											<p
+												class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
+											>
+												USD {formatPrice(purchaseLineTotal(item))}
+											</p>
+										{:else}
+											{formatPrice(purchaseLineTotal(item))}
+										{/if}
 									</td>
 									<td class="px-4 py-3.5 text-right">
 										<div class="font-mono text-brand-blue tabular-nums">
@@ -1322,12 +1361,9 @@
 						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
 							{formatPrice(totalPurchase)}
 						</p>
-						{#if Number(purchaseOrder.bcvRate || 0) > 0}
+						{#if purchaseSummary.totalVes !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
 							<p class="mt-1 font-mono text-xs text-white/60 tabular-nums">
-								Bs. {new Intl.NumberFormat('es-VE', {
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2
-								}).format(totalPurchaseInBs)}
+								{formatVesAmount(totalPurchaseInBs)}
 							</p>
 						{/if}
 					</div>
@@ -1362,14 +1398,11 @@
 										{formatPrice(netTaxPurchase)}
 									</span>
 								</div>
-								{#if Number(purchaseOrder.bcvRate || 0) > 0}
+								{#if purchaseSummary.netTotalVes !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
 									<div class="flex items-center justify-between gap-3">
 										<span>Equivalente BCV</span>
 										<span class="font-mono font-semibold text-white tabular-nums">
-											Bs. {new Intl.NumberFormat('es-VE', {
-												minimumFractionDigits: 2,
-												maximumFractionDigits: 2
-											}).format(netTotalPurchaseInBs)}
+											{formatVesAmount(netTotalPurchaseInBs)}
 										</span>
 									</div>
 								{/if}

@@ -94,6 +94,7 @@ export interface PurchaseOrderItemDraftInput {
 	lensCatalogItemId: string | null;
 	quantity: number;
 	unitPurchasePrice: number;
+	unitPurchasePriceVes?: number | null;
 	unitSalePrice: number;
 	appliesIva: boolean;
 	ivaRate: number;
@@ -570,6 +571,7 @@ export async function replacePurchaseOrderItems(
 			lensCatalogItemId: item.lensCatalogItemId,
 			quantity: item.quantity,
 			unitPurchasePrice: item.unitPurchasePrice,
+			unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
 			unitSalePrice: item.unitSalePrice,
 			appliesIva: item.appliesIva,
 			ivaRate: item.ivaRate
@@ -584,6 +586,7 @@ export async function replacePurchaseOrderItems(
 				previous.lensCatalogItemId !== itemData.lensCatalogItemId ||
 				previous.quantity !== itemData.quantity ||
 				previous.unitPurchasePrice !== itemData.unitPurchasePrice ||
+				previous.unitPurchasePriceVes !== itemData.unitPurchasePriceVes ||
 				previous.unitSalePrice !== itemData.unitSalePrice ||
 				previous.appliesIva !== itemData.appliesIva ||
 				previous.ivaRate !== itemData.ivaRate;

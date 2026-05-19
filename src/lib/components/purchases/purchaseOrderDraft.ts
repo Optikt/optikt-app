@@ -24,6 +24,7 @@ export interface PurchaseOrderDraftItem {
 	lensCatalogItemId: string;
 	quantity: number;
 	unitPurchasePrice: number;
+	unitPurchasePriceVes?: number;
 	unitSalePrice: number;
 	appliesIva: boolean;
 	ivaRate: number;
@@ -40,6 +41,12 @@ export interface PurchaseOrderSummary {
 	taxAmount: number;
 	/** Gross total = subtotal + taxAmount. Matches the delivery note. */
 	total: number;
+	/** Gross pre-tax subtotal in VES when direct Bs prices are available. */
+	subtotalVes?: number;
+	/** Gross IVA in VES when direct Bs prices are available. */
+	taxAmountVes?: number;
+	/** Gross total in VES when direct Bs prices are available. */
+	totalVes?: number;
 	estimatedSale: number;
 	estimatedProfit: number;
 	/** Settlement discount applied to the gross subtotal (0 when type=NONE). */
@@ -50,6 +57,12 @@ export interface PurchaseOrderSummary {
 	netTaxAmount: number;
 	/** Net total (what the fiscal invoice charges). */
 	netTotal: number;
+	/** Net pre-tax subtotal in VES when direct Bs prices are available. */
+	netSubtotalVes?: number;
+	/** Net IVA in VES when direct Bs prices are available. */
+	netTaxAmountVes?: number;
+	/** Net total in VES when direct Bs prices are available. */
+	netTotalVes?: number;
 	/** Estimated profit using net cost. */
 	netEstimatedProfit: number;
 }
@@ -99,6 +112,7 @@ export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesI
 
 export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeader {
 	items: PurchaseOrderDraftItem[];
+	pricesInVes?: boolean;
 }
 
 export function createEmptyPurchaseOrderDraftItem(
@@ -115,6 +129,7 @@ export function createEmptyPurchaseOrderDraftItem(
 		lensCatalogItemId: '',
 		quantity: 1,
 		unitPurchasePrice: 0,
+		unitPurchasePriceVes: undefined,
 		unitSalePrice: 0,
 		appliesIva: isInvoice,
 		ivaRate: defaultTaxRate,
@@ -133,6 +148,7 @@ export function createPurchaseOrderDraftItemFromExisting(
 		lensCatalogItemId: item.lensCatalogItemId ?? '',
 		quantity: item.quantity,
 		unitPurchasePrice: item.unitPurchasePrice,
+		unitPurchasePriceVes: item.unitPurchasePriceVes ?? undefined,
 		unitSalePrice: item.unitSalePrice,
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
@@ -153,6 +169,7 @@ export function resetDraftItemType(
 	item.lensCatalogItemId = '';
 	item.quantity = Math.max(item.quantity || 1, 1);
 	item.unitPurchasePrice = 0;
+	item.unitPurchasePriceVes = undefined;
 	item.unitSalePrice = 0;
 	item.appliesIva = isInvoice;
 	item.ivaRate = defaultTaxRate;
@@ -176,6 +193,7 @@ export function applyProductDefaults(
 	item.productId = product.id;
 	item.lensCatalogItemId = '';
 	item.unitPurchasePrice = taxable ? round2(preTax * (1 + rate / 100)) : preTax;
+	item.unitPurchasePriceVes = undefined;
 	item.unitSalePrice = Number(product.currentSalePrice ?? 0);
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
@@ -201,6 +219,7 @@ export function applyLensDefaults(
 	item.lensCatalogItemId = lens.id;
 	item.productId = '';
 	item.unitPurchasePrice = taxable ? round2(preTax * (1 + rate / 100)) : preTax;
+	item.unitPurchasePriceVes = undefined;
 	item.unitSalePrice = Number(lens.salePrice ?? 0);
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
@@ -235,6 +254,41 @@ export function calculateUnitPurchasePriceFromLineTotal(
 	if (!Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0) return 0;
 
 	return normalizedTotal / normalizedQuantity;
+}
+
+export function calculateUnitPurchasePriceFromVesPreTax(
+	unitPurchasePriceVes: number,
+	appliesIva: boolean,
+	ivaRate: number,
+	bcvRate: number
+): number {
+	const normalizedUnitPriceVes = Number(unitPurchasePriceVes ?? 0);
+	const normalizedBcvRate = Number(bcvRate || 0);
+
+	if (!Number.isFinite(normalizedUnitPriceVes) || normalizedUnitPriceVes < 0) return 0;
+	if (!Number.isFinite(normalizedBcvRate) || normalizedBcvRate <= 0) return 0;
+
+	const unitPurchasePriceWithTaxVes = appliesIva
+		? normalizedUnitPriceVes * (1 + Number(ivaRate || 0) / 100)
+		: normalizedUnitPriceVes;
+
+	return unitPurchasePriceWithTaxVes / normalizedBcvRate;
+}
+
+export function calculateUnitPurchasePriceVesFromLineTotal(
+	lineTotalVes: number,
+	quantity: number,
+	appliesIva: boolean,
+	ivaRate: number
+): number {
+	const unitPurchasePriceWithTaxVes = calculateUnitPurchasePriceFromLineTotal(
+		lineTotalVes,
+		quantity
+	);
+
+	if (!appliesIva || !ivaRate) return round2(unitPurchasePriceWithTaxVes);
+
+	return round2(unitPurchasePriceWithTaxVes / (1 + Number(ivaRate || 0) / 100));
 }
 
 export function getDraftItemZeroValueFields(
@@ -382,6 +436,38 @@ export function calculateDraftItemTotal(item: PurchaseOrderDraftItem): number {
 	return Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0);
 }
 
+export function calculateDraftItemSubtotalVes(item: PurchaseOrderDraftItem): number {
+	const unitPriceVes = Number(item.unitPurchasePriceVes ?? 0);
+	const quantity = Number(item.quantity || 0);
+
+	if (!Number.isFinite(unitPriceVes) || unitPriceVes < 0) return 0;
+	if (!Number.isFinite(quantity) || quantity <= 0) return 0;
+
+	return round2(unitPriceVes * quantity);
+}
+
+export function calculateDraftItemTaxVes(item: PurchaseOrderDraftItem): number {
+	if (!item.appliesIva) return 0;
+	return round2(calculateDraftItemSubtotalVes(item) * (Number(item.ivaRate || 0) / 100));
+}
+
+export function calculateDraftItemTotalVes(item: PurchaseOrderDraftItem): number {
+	return round2(calculateDraftItemSubtotalVes(item) + calculateDraftItemTaxVes(item));
+}
+
+function hasDirectVesPrice(item: PurchaseOrderDraftItem): boolean {
+	return item.unitPurchasePriceVes !== undefined && item.unitPurchasePriceVes !== null;
+}
+
+function calculateNetDraftItemSubtotalVes(item: PurchaseOrderDraftItem, factor: number): number {
+	return round2(calculateDraftItemSubtotalVes(item) * factor);
+}
+
+function calculateNetDraftItemTaxVes(item: PurchaseOrderDraftItem, factor: number): number {
+	if (!item.appliesIva) return 0;
+	return round2(calculateNetDraftItemSubtotalVes(item, factor) * (Number(item.ivaRate || 0) / 100));
+}
+
 /**
  * Returns the USD discount amount applied to a gross subtotal.
  * - PERCENT: subtotal × value / 100 (capped 0..100 by validation upstream).
@@ -435,11 +521,23 @@ export function prorateNetUnitPurchasePrice(grossUnitPrice: number, factor: numb
 
 export function calculatePurchaseOrderSummary(
 	items: PurchaseOrderDraftItem[],
-	discount: PurchaseOrderDiscountInput | null | undefined = NO_PURCHASE_ORDER_DISCOUNT
+	discount: PurchaseOrderDiscountInput | null | undefined = NO_PURCHASE_ORDER_DISCOUNT,
+	bcvRate?: number
 ): PurchaseOrderSummary {
 	const subtotal = items.reduce((sum, item) => sum + calculateDraftItemSubtotal(item), 0);
 	const taxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item), 0);
 	const total = items.reduce((sum, item) => sum + calculateDraftItemTotal(item), 0);
+	void bcvRate;
+	const shouldCalculateVesTotals = items.some(hasDirectVesPrice);
+	const subtotalVes = shouldCalculateVesTotals
+		? round2(items.reduce((sum, item) => sum + calculateDraftItemSubtotalVes(item), 0))
+		: undefined;
+	const taxAmountVes = shouldCalculateVesTotals
+		? round2(items.reduce((sum, item) => sum + calculateDraftItemTaxVes(item), 0))
+		: undefined;
+	const totalVes = shouldCalculateVesTotals
+		? round2(items.reduce((sum, item) => sum + calculateDraftItemTotalVes(item), 0))
+		: undefined;
 	const estimatedSale = items.reduce(
 		(sum, item) => sum + Number(item.unitSalePrice || 0) * Number(item.quantity || 0),
 		0
@@ -450,6 +548,16 @@ export function calculatePurchaseOrderSummary(
 	const netSubtotal = round2(subtotal - discountAmount);
 	const netTaxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item) * factor, 0);
 	const netTotal = round2(netSubtotal + netTaxAmount);
+	const netSubtotalVes = shouldCalculateVesTotals
+		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemSubtotalVes(item, factor), 0))
+		: undefined;
+	const netTaxAmountVes = shouldCalculateVesTotals
+		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemTaxVes(item, factor), 0))
+		: undefined;
+	const netTotalVes =
+		netSubtotalVes !== undefined && netTaxAmountVes !== undefined
+			? round2(netSubtotalVes + netTaxAmountVes)
+			: undefined;
 
 	return {
 		lineCount: items.length,
@@ -457,12 +565,18 @@ export function calculatePurchaseOrderSummary(
 		subtotal,
 		taxAmount,
 		total,
+		subtotalVes,
+		taxAmountVes,
+		totalVes,
 		estimatedSale,
 		estimatedProfit: estimatedSale - total,
 		discountAmount,
 		netSubtotal,
 		netTaxAmount: round2(netTaxAmount),
 		netTotal,
+		netSubtotalVes,
+		netTaxAmountVes,
+		netTotalVes,
 		netEstimatedProfit: estimatedSale - netTotal
 	};
 }
