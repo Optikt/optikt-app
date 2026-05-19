@@ -1,0 +1,2 @@
+ALTER TABLE "purchase_order_items" ADD COLUMN "unit_purchase_price_ves" double precision;--> statement-breakpoint
+ALTER TABLE "purchase_orders" ADD COLUMN "prices_in_ves" boolean DEFAULT false NOT NULL;
