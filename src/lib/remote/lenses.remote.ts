@@ -581,6 +581,7 @@ export const adjustLensStock = command(ManualLensAdjustmentSchema, async (data) 
 						{
 							id: crypto.randomUUID(),
 							purchaseOrderId: purchaseOrder.id,
+							lineNumber: 1,
 							itemType: PurchaseOrderItemType.LENS,
 							productId: null,
 							lensCatalogItemId,

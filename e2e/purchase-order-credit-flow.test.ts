@@ -138,10 +138,10 @@ async function seedCreditPurchaseOrder(sql: Sql): Promise<string> {
 
 	await sql`
 		insert into purchase_order_items (
-			purchase_order_id, item_type, product_id, quantity,
+			purchase_order_id, line_number, item_type, product_id, quantity,
 			unit_purchase_price, unit_sale_price, applies_iva, iva_rate, is_reviewed
 		)
-		values (${purchaseOrder.id}, 'PRODUCT', ${product.id}, 1, 1000, 1500, false, 0, true)
+		values (${purchaseOrder.id}, 1, 'PRODUCT', ${product.id}, 1, 1000, 1500, false, 0, true)
 	`;
 
 	return purchaseOrder.id;

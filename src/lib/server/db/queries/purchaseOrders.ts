@@ -44,6 +44,7 @@ import {
 	type PurchaseOrderBalanceSummary,
 	type PurchaseOrderDueStatus
 } from '$lib/shared/purchaseOrderCredit';
+import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
 import { getNextLotNumber, getNextFifoCost } from './inventoryLots';
 import { nowISO } from '$lib/dates';
 
@@ -484,7 +485,7 @@ export async function getPurchaseOrderItems(
 		.leftJoin(products, eq(purchaseOrderItems.productId, products.id))
 		.leftJoin(lensCatalogItems, eq(purchaseOrderItems.lensCatalogItemId, lensCatalogItems.id))
 		.where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId))
-		.orderBy(asc(purchaseOrderItems.createdAt), asc(purchaseOrderItems.id));
+		.orderBy(asc(purchaseOrderItems.lineNumber), asc(purchaseOrderItems.id));
 
 	return results.map((r) => ({
 		...r.item,
@@ -540,6 +541,7 @@ export async function replacePurchaseOrderItems(
 	items: PurchaseOrderItemDraftInput[],
 	executor: DbOrTx = db
 ): Promise<PurchaseOrderItemWithProduct[]> {
+	const numberedItems = assignPurchaseOrderLineNumbers(items);
 	const existingItems = await executor
 		.select()
 		.from(purchaseOrderItems)
@@ -547,7 +549,7 @@ export async function replacePurchaseOrderItems(
 
 	const existingIds = new Set(existingItems.map((item) => item.id));
 	const incomingIds = new Set(
-		items.map((item) => item.id).filter((id): id is string => Boolean(id))
+		numberedItems.map((item) => item.id).filter((id): id is string => Boolean(id))
 	);
 
 	for (const id of incomingIds) {
@@ -564,8 +566,9 @@ export async function replacePurchaseOrderItems(
 
 	const existingById = new Map(existingItems.map((existing) => [existing.id, existing]));
 
-	for (const item of items) {
+	for (const item of numberedItems) {
 		const itemData = {
+			lineNumber: item.lineNumber,
 			itemType: item.itemType,
 			productId: item.productId,
 			lensCatalogItemId: item.lensCatalogItemId,

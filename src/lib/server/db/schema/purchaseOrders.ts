@@ -294,6 +294,8 @@ export const purchaseOrderItems = pgTable(
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		purchaseOrderId: uuid('purchase_order_id').notNull(),
+		/** Persisted visual order within the purchase order. */
+		lineNumber: integer('line_number').notNull(),
 		itemType: purchaseOrderItemTypeEnum('item_type').notNull(),
 		/** FK: only for PRODUCT items */
 		productId: uuid('product_id'),
@@ -330,6 +332,11 @@ export const purchaseOrderItems = pgTable(
 		index('ix_purchase_order_items_po_id').using(
 			'btree',
 			table.purchaseOrderId.asc().nullsLast().op('uuid_ops')
+		),
+		index('ix_purchase_order_items_po_line_number').using(
+			'btree',
+			table.purchaseOrderId.asc().nullsLast().op('uuid_ops'),
+			table.lineNumber.asc().nullsLast().op('int4_ops')
 		),
 		index('ix_purchase_order_items_product_id').using(
 			'btree',
