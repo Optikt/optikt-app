@@ -68,6 +68,7 @@ import {
 	PurchaseOrderStatus,
 	PurchasePaymentTerms
 } from '$lib/shared/enums';
+import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
 import { validatePurchaseOrderDraftReadiness } from '$lib/shared/purchaseOrderRules';
 import {
 	computePurchaseOrderBalance,
@@ -305,19 +306,21 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				tx
 			);
 
-			const itemsData = data.items.map((item) => ({
-				purchaseOrderId: po.id,
-				itemType: item.itemType,
-				productId: item.productId ?? null,
-				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				quantity: item.quantity,
-				unitPurchasePrice: item.unitPurchasePrice,
-				unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
-				unitSalePrice: item.unitSalePrice,
-				appliesIva: item.appliesIva,
-				ivaRate: item.ivaRate,
-				isReviewed: item.isReviewed ?? false
-			}));
+			const itemsData = assignPurchaseOrderLineNumbers(
+				data.items.map((item) => ({
+					purchaseOrderId: po.id,
+					itemType: item.itemType,
+					productId: item.productId ?? null,
+					lensCatalogItemId: item.lensCatalogItemId ?? null,
+					quantity: item.quantity,
+					unitPurchasePrice: item.unitPurchasePrice,
+					unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
+					unitSalePrice: item.unitSalePrice,
+					appliesIva: item.appliesIva,
+					ivaRate: item.ivaRate,
+					isReviewed: item.isReviewed ?? false
+				}))
+			);
 
 			await createPurchaseOrderItems(itemsData, tx);
 
