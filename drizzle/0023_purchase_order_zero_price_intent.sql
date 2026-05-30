@@ -1,0 +1,1 @@
+ALTER TABLE "purchase_order_items" ADD COLUMN "is_zero_price_intentional" boolean DEFAULT false NOT NULL;

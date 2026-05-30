@@ -185,6 +185,13 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(getDraftItemZeroValueFields(item)).toEqual([]);
 	});
 
+	it('suppresses zero-price warnings when the line is explicitly marked as intentional', () => {
+		const item = createEmptyPurchaseOrderDraftItem();
+		item.isZeroPriceIntentional = true;
+
+		expect(getDraftItemZeroValueFields(item)).toEqual([]);
+	});
+
 	it('hydrates existing purchase order item ids for edit saves', () => {
 		const item = createPurchaseOrderDraftItemFromExisting({
 			id: 'po-item-1',
@@ -195,6 +202,7 @@ describe('purchaseOrderDraft helpers', () => {
 			unitPurchasePrice: 11,
 			unitPurchasePriceVes: 702.15,
 			unitSalePrice: 25,
+			isZeroPriceIntentional: true,
 			appliesIva: true,
 			ivaRate: 16
 		} as PurchaseOrderItemWithProduct);
@@ -202,6 +210,7 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(item.id).toBe('po-item-1');
 		expect(item.persistedId).toBe('po-item-1');
 		expect(item.productId).toBe('product-1');
+		expect(item.isZeroPriceIntentional).toBe(true);
 		expect(item.unitPurchasePriceVes).toBe(702.15);
 	});
 

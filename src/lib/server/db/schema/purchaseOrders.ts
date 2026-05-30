@@ -308,6 +308,8 @@ export const purchaseOrderItems = pgTable(
 		unitPurchasePriceVes: doublePrecision('unit_purchase_price_ves'),
 		/** Proposed sale price in USD BCV */
 		unitSalePrice: doublePrecision('unit_sale_price').notNull(),
+		/** Explicit acknowledgment that one or more zero prices on this line are intentional. */
+		isZeroPriceIntentional: boolean('is_zero_price_intentional').notNull().default(false),
 		/** Whether IVA applies */
 		appliesIva: boolean('applies_iva').notNull().default(true),
 		/** IVA rate percentage (e.g. 16) */

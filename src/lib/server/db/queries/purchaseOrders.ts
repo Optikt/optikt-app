@@ -101,6 +101,8 @@ export interface PurchaseOrderItemDraftInput {
 	ivaRate: number;
 	/** Optional: client-side reviewed flag. Server resets to false when material fields change. */
 	isReviewed?: boolean;
+	/** Optional: explicit acknowledgment that zero pricing on this line is intentional. */
+	isZeroPriceIntentional?: boolean;
 }
 
 export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
@@ -536,6 +538,79 @@ export async function findPurchaseOrderItemById(
 	return row ?? null;
 }
 
+type PurchaseOrderItemMaterialSnapshot = Pick<
+	PurchaseOrderItem,
+	| 'itemType'
+	| 'productId'
+	| 'lensCatalogItemId'
+	| 'quantity'
+	| 'unitPurchasePrice'
+	| 'unitPurchasePriceVes'
+	| 'unitSalePrice'
+	| 'appliesIva'
+	| 'ivaRate'
+>;
+
+export function resolvePurchaseOrderItemReviewedState(
+	previous: (PurchaseOrderItemMaterialSnapshot & Pick<PurchaseOrderItem, 'isReviewed'>) | undefined,
+	requested: Pick<PurchaseOrderItemDraftInput, 'isReviewed'>,
+	next: PurchaseOrderItemMaterialSnapshot
+): boolean {
+	if (!previous) {
+		return requested.isReviewed ?? false;
+	}
+
+	const materialChanged =
+		previous.itemType !== next.itemType ||
+		previous.productId !== next.productId ||
+		previous.lensCatalogItemId !== next.lensCatalogItemId ||
+		previous.quantity !== next.quantity ||
+		previous.unitPurchasePrice !== next.unitPurchasePrice ||
+		previous.unitPurchasePriceVes !== next.unitPurchasePriceVes ||
+		previous.unitSalePrice !== next.unitSalePrice ||
+		previous.appliesIva !== next.appliesIva ||
+		previous.ivaRate !== next.ivaRate;
+
+	if (materialChanged) {
+		return false;
+	}
+
+	return requested.isReviewed ?? previous.isReviewed ?? false;
+}
+
+export function resolvePurchaseOrderItemZeroPriceIntentionalState(
+	previous:
+		| (PurchaseOrderItemMaterialSnapshot & Pick<PurchaseOrderItem, 'isZeroPriceIntentional'>)
+		| undefined,
+	requested: Pick<PurchaseOrderItemDraftInput, 'isZeroPriceIntentional'>,
+	next: PurchaseOrderItemMaterialSnapshot
+): boolean {
+	const hasZeroPrice =
+		Number(next.unitPurchasePrice || 0) === 0 || Number(next.unitSalePrice || 0) === 0;
+
+	if (!hasZeroPrice) {
+		return false;
+	}
+
+	if (!previous) {
+		return requested.isZeroPriceIntentional ?? false;
+	}
+
+	const zeroPriceContextChanged =
+		previous.itemType !== next.itemType ||
+		previous.productId !== next.productId ||
+		previous.lensCatalogItemId !== next.lensCatalogItemId ||
+		previous.unitPurchasePrice !== next.unitPurchasePrice ||
+		previous.unitPurchasePriceVes !== next.unitPurchasePriceVes ||
+		previous.unitSalePrice !== next.unitSalePrice;
+
+	if (zeroPriceContextChanged) {
+		return false;
+	}
+
+	return requested.isZeroPriceIntentional ?? previous.isZeroPriceIntentional ?? false;
+}
+
 export async function replacePurchaseOrderItems(
 	purchaseOrderId: string,
 	items: PurchaseOrderItemDraftInput[],
@@ -579,30 +654,34 @@ export async function replacePurchaseOrderItems(
 			appliesIva: item.appliesIva,
 			ivaRate: item.ivaRate
 		};
+		const previous = item.id ? existingById.get(item.id) : undefined;
+		const nextReviewed = resolvePurchaseOrderItemReviewedState(previous, item, itemData);
+		const nextZeroPriceIntentional = resolvePurchaseOrderItemZeroPriceIntentionalState(
+			previous,
+			item,
+			itemData
+		);
 
 		if (item.id) {
-			const previous = existingById.get(item.id);
-			const materialChanged =
-				!previous ||
-				previous.itemType !== itemData.itemType ||
-				previous.productId !== itemData.productId ||
-				previous.lensCatalogItemId !== itemData.lensCatalogItemId ||
-				previous.quantity !== itemData.quantity ||
-				previous.unitPurchasePrice !== itemData.unitPurchasePrice ||
-				previous.unitPurchasePriceVes !== itemData.unitPurchasePriceVes ||
-				previous.unitSalePrice !== itemData.unitSalePrice ||
-				previous.appliesIva !== itemData.appliesIva ||
-				previous.ivaRate !== itemData.ivaRate;
-			// If material fields changed, force isReviewed=false (defense-in-depth).
-			// Otherwise honor the client-provided value (if any) so reviewed lines
-			// stay reviewed across save cycles.
-			const nextReviewed = materialChanged
-				? false
-				: (item.isReviewed ?? previous?.isReviewed ?? false);
-			await updatePurchaseOrderItem(item.id, { ...itemData, isReviewed: nextReviewed }, executor);
+			await updatePurchaseOrderItem(
+				item.id,
+				{
+					...itemData,
+					isReviewed: nextReviewed,
+					isZeroPriceIntentional: nextZeroPriceIntentional
+				},
+				executor
+			);
 		} else {
-			// New rows always start unreviewed (default column value).
-			await createPurchaseOrderItem({ purchaseOrderId, ...itemData }, executor);
+			await createPurchaseOrderItem(
+				{
+					purchaseOrderId,
+					...itemData,
+					isReviewed: nextReviewed,
+					isZeroPriceIntentional: nextZeroPriceIntentional
+				},
+				executor
+			);
 		}
 	}
 
@@ -716,7 +795,6 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 	if (items.length === 0) {
 		throw new Error('No se puede confirmar una orden sin ítems');
 	}
-
 	const pendingReview = items.filter((item) => !item.isReviewed).length;
 	if (pendingReview > 0) {
 		throw new Error(
@@ -726,7 +804,6 @@ export async function confirmPurchaseOrder(poId: string, confirmedById: string, 
 
 	// 3a. Compute settlement-discount factor (applied to each lot's cost on
 	//     confirmation so COGS, FIFO, and inventory valuation reflect what we
-	//     actually paid). Lines themselves stay at gross prices for traceability
 	//     with the supplier's delivery note.
 	const discountFactor = computeSettlementDiscountFactor(items, po);
 

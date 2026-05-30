@@ -243,11 +243,11 @@
 			</div>
 		{:else}
 			<div class="overflow-x-auto pb-1">
-				<div class="min-w-[1180px] space-y-4">
+				<div class="min-w-[1280px] space-y-4">
 					<div
-						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_72px] xl:gap-4"
+						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_148px] xl:gap-4"
 					>
-						{#each ['Tipo', 'Artículo', 'Cant.', pricesInVes ? 'Costo Bs base' : 'Costo und.', 'Venta und.', 'IVA', pricesInVes ? 'Total Bs' : 'Total costo', ''] as label, index (label + index)}
+						{#each ['Tipo', 'Artículo', 'Cant.', pricesInVes ? 'Costo Bs base' : 'Costo und.', 'Venta und.', 'IVA', pricesInVes ? 'Total Bs' : 'Total costo', 'Checks'] as label, index (label + index)}
 							<div
 								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 							>
