@@ -88,7 +88,8 @@ export const PurchaseOrderItemSchema = z.object({
 });
 
 export const PurchaseOrderReviewableItemSchema = PurchaseOrderItemSchema.extend({
-	isReviewed: z.boolean().optional()
+	isReviewed: z.boolean().optional(),
+	isZeroPriceIntentional: z.boolean().optional()
 });
 
 export const PurchaseOrderDraftItemSchema = PurchaseOrderReviewableItemSchema.extend({

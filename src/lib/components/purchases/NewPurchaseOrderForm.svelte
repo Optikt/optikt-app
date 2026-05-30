@@ -228,6 +228,7 @@
 	function clearItemPricing(item: PurchaseOrderDraftItem) {
 		item.unitPurchasePrice = 0;
 		item.unitPurchasePriceVes = 0;
+		item.isZeroPriceIntentional = false;
 		item.isReviewed = false;
 	}
 
@@ -277,6 +278,7 @@
 			unitPurchasePrice: item.unitPurchasePrice,
 			unitPurchasePriceVes: pricesInVes ? (item.unitPurchasePriceVes ?? 0) : undefined,
 			unitSalePrice: item.unitSalePrice,
+			isZeroPriceIntentional: item.isZeroPriceIntentional,
 			appliesIva: item.appliesIva,
 			ivaRate: item.ivaRate,
 			isReviewed: item.isReviewed
@@ -522,7 +524,10 @@
 
 	{#snippet body()}
 		<div class="space-y-4 text-sm text-on-surface">
-			<p>Puedes guardar el borrador, pero hay líneas que conviene revisar antes de continuar.</p>
+			<p>
+				Puedes guardar el borrador, pero hay líneas que conviene revisar antes de continuar.
+				Si un precio en 0 es deliberado, márcalo en la línea como 0 intencional.
+			</p>
 
 			{#if unreviewedWarningLines.length > 0}
 				<div class="rounded-lg border border-warning/25 bg-warning-container/25 p-3">

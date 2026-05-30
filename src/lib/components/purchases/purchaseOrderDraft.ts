@@ -26,6 +26,7 @@ export interface PurchaseOrderDraftItem {
 	unitPurchasePrice: number;
 	unitPurchasePriceVes?: number;
 	unitSalePrice: number;
+	isZeroPriceIntentional: boolean;
 	appliesIva: boolean;
 	ivaRate: number;
 	/** Per-line "data filled" / review check. New rows start as false. */
@@ -131,6 +132,7 @@ export function createEmptyPurchaseOrderDraftItem(
 		unitPurchasePrice: 0,
 		unitPurchasePriceVes: undefined,
 		unitSalePrice: 0,
+		isZeroPriceIntentional: false,
 		appliesIva: isInvoice,
 		ivaRate: defaultTaxRate,
 		isReviewed: false
@@ -150,6 +152,7 @@ export function createPurchaseOrderDraftItemFromExisting(
 		unitPurchasePrice: item.unitPurchasePrice,
 		unitPurchasePriceVes: item.unitPurchasePriceVes ?? undefined,
 		unitSalePrice: item.unitSalePrice,
+		isZeroPriceIntentional: item.isZeroPriceIntentional ?? false,
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
 		isReviewed: item.isReviewed ?? false
@@ -171,6 +174,7 @@ export function resetDraftItemType(
 	item.unitPurchasePrice = 0;
 	item.unitPurchasePriceVes = undefined;
 	item.unitSalePrice = 0;
+	item.isZeroPriceIntentional = false;
 	item.appliesIva = isInvoice;
 	item.ivaRate = defaultTaxRate;
 	item.isReviewed = false;
@@ -195,6 +199,7 @@ export function applyProductDefaults(
 	item.unitPurchasePrice = taxable ? round2(preTax * (1 + rate / 100)) : preTax;
 	item.unitPurchasePriceVes = undefined;
 	item.unitSalePrice = Number(product.currentSalePrice ?? 0);
+	item.isZeroPriceIntentional = false;
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
 	item.isReviewed = false;
@@ -221,6 +226,7 @@ export function applyLensDefaults(
 	item.unitPurchasePrice = taxable ? round2(preTax * (1 + rate / 100)) : preTax;
 	item.unitPurchasePriceVes = undefined;
 	item.unitSalePrice = Number(lens.salePrice ?? 0);
+	item.isZeroPriceIntentional = false;
 	item.appliesIva = taxable;
 	item.ivaRate = rate;
 	item.isReviewed = false;
@@ -294,6 +300,10 @@ export function calculateUnitPurchasePriceVesFromLineTotal(
 export function getDraftItemZeroValueFields(
 	item: PurchaseOrderDraftItem
 ): PurchaseOrderDraftZeroValueField[] {
+	if (item.isZeroPriceIntentional) {
+		return [];
+	}
+
 	const fields: PurchaseOrderDraftZeroValueField[] = [];
 
 	if (Number(item.unitPurchasePrice || 0) === 0) {

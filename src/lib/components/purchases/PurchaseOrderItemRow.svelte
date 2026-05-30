@@ -45,6 +45,15 @@
 		onremove
 	}: Props = $props();
 
+	function hasZeroValueFieldsForItem(
+		currentItem: Pick<PurchaseOrderDraftItem, 'unitPurchasePrice' | 'unitSalePrice'>
+	): boolean {
+		return (
+			Number(currentItem.unitPurchasePrice || 0) === 0 ||
+			Number(currentItem.unitSalePrice || 0) === 0
+		);
+	}
+
 	// Auto-clear the reviewed flag when any material field changes after the
 	// first render. Mirrors the server-side reset in replacePurchaseOrderItems
 	// so the UI reflects the new state immediately.
@@ -70,8 +79,18 @@
 			materialBaseline.appliesIva !== item.appliesIva ||
 			materialBaseline.ivaRate !== item.ivaRate ||
 			materialBaseline.itemType !== item.itemType;
+		const zeroPriceContextChanged =
+			materialBaseline.productId !== item.productId ||
+			materialBaseline.lensCatalogItemId !== item.lensCatalogItemId ||
+			materialBaseline.unitPurchasePrice !== item.unitPurchasePrice ||
+			materialBaseline.unitPurchasePriceVes !== item.unitPurchasePriceVes ||
+			materialBaseline.unitSalePrice !== item.unitSalePrice ||
+			materialBaseline.itemType !== item.itemType;
 		if (changed) {
 			if (item.isReviewed) item.isReviewed = false;
+			if (zeroPriceContextChanged && item.isZeroPriceIntentional) {
+				item.isZeroPriceIntentional = false;
+			}
 			materialBaseline = {
 				productId: item.productId,
 				lensCatalogItemId: item.lensCatalogItemId,
@@ -83,6 +102,11 @@
 				ivaRate: item.ivaRate,
 				itemType: item.itemType
 			};
+			return;
+		}
+
+		if (!hasZeroValueFieldsForItem(item) && item.isZeroPriceIntentional) {
+			item.isZeroPriceIntentional = false;
 		}
 	});
 
@@ -99,6 +123,7 @@
 	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
 	const visiblePreTaxUnitCost = $derived(round2(preTaxUnitCost));
 	const visiblePreTaxUnitCostVes = $derived(round2(Number(item.unitPurchasePriceVes ?? 0)));
+	const hasZeroValueFields = $derived(hasZeroValueFieldsForItem(item));
 	const userEditingLocked = $derived(isDraftItemUserEditingLocked(item));
 	let editingLineTotal = $state(false);
 	let lineTotalDraftValue = $state('');
@@ -308,6 +333,12 @@
 
 		item.isReviewed = nextReviewed;
 	}
+
+	function toggleZeroPriceIntentional() {
+		if (!hasZeroValueFields) return;
+
+		item.isZeroPriceIntentional = !item.isZeroPriceIntentional;
+	}
 </script>
 
 <div
@@ -319,7 +350,7 @@
 	]}
 >
 	<div
-		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_72px] xl:items-center xl:gap-4"
+		class="grid gap-3 xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_148px] xl:items-center xl:gap-4"
 	>
 		<div class="space-y-2">
 			<p
@@ -546,7 +577,28 @@
 			</div>
 		</div>
 
-		<div class="flex h-10 items-center justify-end gap-1">
+		<div class="flex min-h-10 items-center justify-end gap-2">
+			{#if hasZeroValueFields}
+				<button
+					type="button"
+					onclick={toggleZeroPriceIntentional}
+					aria-pressed={item.isZeroPriceIntentional}
+					class={[
+						'inline-flex h-8 items-center justify-center rounded-lg px-2.5 text-[10px] font-bold tracking-[0.12em] uppercase transition-colors',
+						item.isZeroPriceIntentional
+							? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
+							: 'bg-warning-container/50 text-on-warning-container hover:bg-warning-container'
+					]}
+					aria-label={item.isZeroPriceIntentional
+						? 'Precio en cero marcado como intencional'
+						: 'Marcar precio en cero como intencional'}
+					title={item.isZeroPriceIntentional
+						? 'Precio en 0 intencional — click para quitar la marca'
+						: 'Marcar este 0 como intencional para quitar la advertencia'}
+				>
+					0 int.
+				</button>
+			{/if}
 			<button
 				type="button"
 				onclick={toggleReviewed}

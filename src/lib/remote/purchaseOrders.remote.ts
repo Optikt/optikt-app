@@ -316,6 +316,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					unitPurchasePrice: item.unitPurchasePrice,
 					unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
 					unitSalePrice: item.unitSalePrice,
+					isZeroPriceIntentional: item.isZeroPriceIntentional ?? false,
 					appliesIva: item.appliesIva,
 					ivaRate: item.ivaRate,
 					isReviewed: item.isReviewed ?? false
@@ -444,6 +445,7 @@ function toPurchaseOrderItemDraftInput(
 		unitPurchasePrice: item.unitPurchasePrice,
 		unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
 		unitSalePrice: item.unitSalePrice,
+		isZeroPriceIntentional: item.isZeroPriceIntentional,
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
 		isReviewed: item.isReviewed

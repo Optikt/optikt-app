@@ -106,10 +106,28 @@ describe('PurchaseOrderDraftItemSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('accepts an optional isZeroPriceIntentional flag', () => {
+		const result = PurchaseOrderDraftItemSchema.safeParse({
+			...validItem,
+			unitPurchasePrice: 0,
+			unitSalePrice: 0,
+			isZeroPriceIntentional: true
+		});
+		expect(result.success).toBe(true);
+	});
+
 	it('rejects a non-boolean isReviewed value', () => {
 		const result = PurchaseOrderDraftItemSchema.safeParse({
 			...validItem,
 			isReviewed: 'yes'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects a non-boolean isZeroPriceIntentional value', () => {
+		const result = PurchaseOrderDraftItemSchema.safeParse({
+			...validItem,
+			isZeroPriceIntentional: 'yes'
 		});
 		expect(result.success).toBe(false);
 	});
@@ -195,6 +213,17 @@ describe('CreatePurchaseOrderSchema', () => {
 		});
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data.items[0].isReviewed).toBe(true);
+	});
+
+	it('accepts intentional zero-price checks for draft creation', () => {
+		const result = CreatePurchaseOrderSchema.safeParse({
+			...baseCreatePayload,
+			items: [
+				{ ...validItem, unitPurchasePrice: 0, unitSalePrice: 0, isZeroPriceIntentional: true }
+			]
+		});
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.items[0].isZeroPriceIntentional).toBe(true);
 	});
 
 	it('rejects notes shorter than 6 characters', () => {
