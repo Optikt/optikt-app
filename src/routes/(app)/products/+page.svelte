@@ -3,7 +3,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { PageHeader } from '$lib/components/ui';
+	import { PageHeader, SelectInput } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import {
 		getProductInventoryStats,
@@ -26,6 +26,11 @@
 
 	let { data } = $props();
 	let { initialProducts, totalCount, stats: initialStats, brands, suppliers } = untrack(() => data);
+
+	const sortedBrands = $derived([...brands].sort((a, b) => a.name.localeCompare(b.name, 'es')));
+	const sortedSuppliers = $derived(
+		[...suppliers].sort((a, b) => a.name.localeCompare(b.name, 'es'))
+	);
 
 	let productsData = $state<PaginatedResult<ProductWithRelations>>({
 		items: initialProducts as ProductWithRelations[],
@@ -231,31 +236,23 @@
 				{/each}
 			</select>
 
-			<select
-				id="products-brand-filter"
-				name="products-brand-filter"
-				bind:value={brandFilter}
-				onchange={handleFilterChange}
-				class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
-			>
-				<option value="">Marca</option>
-				{#each brands as brand (brand.id)}
-					<option value={brand.id}>{brand.name}</option>
-				{/each}
-			</select>
+			<div class="hidden sm:block">
+				<SelectInput
+					bind:value={brandFilter}
+					options={sortedBrands}
+					placeholder="Marca"
+					onChange={() => handleFilterChange()}
+				/>
+			</div>
 
-			<select
-				id="products-supplier-filter"
-				name="products-supplier-filter"
-				bind:value={supplierFilter}
-				onchange={handleFilterChange}
-				class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
-			>
-				<option value="">Proveedor</option>
-				{#each suppliers as supplier (supplier.id)}
-					<option value={supplier.id}>{supplier.name}</option>
-				{/each}
-			</select>
+			<div class="hidden sm:block">
+				<SelectInput
+					bind:value={supplierFilter}
+					options={sortedSuppliers}
+					placeholder="Proveedor"
+					onChange={() => handleFilterChange()}
+				/>
+			</div>
 
 			<div class="hidden items-center justify-end gap-3 sm:flex xl:justify-self-end">
 				<span class="text-xs font-medium whitespace-nowrap text-on-surface-variant sm:text-sm">
