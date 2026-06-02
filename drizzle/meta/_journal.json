@@ -176,6 +176,13 @@
       "when": 1780327597140,
       "tag": "0024_slippery_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1780434888016,
+      "tag": "0025_drop_currencies",
+      "breakpoints": true
     }
   ]
 }
