@@ -1,16 +1,27 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { CircleDollarSign, Copy, RefreshCw, TriangleAlert } from '@lucide/svelte';
+	import {
+		Calculator,
+		CircleDollarSign,
+		Copy,
+		DollarSign,
+		Euro,
+		RefreshCw,
+		TriangleAlert
+	} from '@lucide/svelte';
+	import type { Component } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		fetchExchangeRates,
 		refreshExchangeRatesCommand
 	} from '$lib/remote/exchangeRates.remote';
-	import { fromISO, toRelative } from '$lib/dates';
+	import { fromISO, toRelative, toRelativeShort } from '$lib/dates';
 	import { getErrorMessage } from '$lib/utils';
 	import type { ExchangeRateEntry, ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
+	import CurrencyCalculatorModal from './CurrencyCalculatorModal.svelte';
 
 	let open = $state(false);
+	let calcOpen = $state(false);
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let tick = $state(0);
@@ -106,6 +117,16 @@
 		return value.toFixed(2);
 	}
 
+	type RateStyle = { bg: string; text: string; icon?: Component; svgSrc?: string };
+
+	function getRateStyle(sourceKey: string): RateStyle {
+		if (sourceKey.startsWith('eur'))
+			return { bg: 'bg-indigo-100', text: 'text-indigo-500', icon: Euro };
+		if (sourceKey.includes('usdt') || sourceKey.includes('binance'))
+			return { bg: 'bg-[#53ae94]/15', text: 'text-[#53ae94]', svgSrc: '/tether.svg' };
+		return { bg: 'bg-brand-blue/15', text: 'text-brand-blue', icon: DollarSign };
+	}
+
 	$effect(() => {
 		untrack(() => void loadRates());
 
@@ -151,7 +172,7 @@
 				</div>
 				<button
 					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+					class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
 					onclick={handleRefresh}
 					disabled={refreshing}
 					title="Refrescar tasas"
@@ -161,38 +182,58 @@
 			</div>
 
 			{#if loading && !snapshot}
-				<div class="space-y-2 p-3">
+				<div class="space-y-1 p-3">
 					{#each [1, 2, 3] as row (row)}
-						<div class="flex items-center justify-between rounded-lg px-3 py-2.5">
-							<div class="h-4 w-24 animate-pulse rounded bg-slate-100"></div>
-							<div class="h-4 w-20 animate-pulse rounded bg-slate-100"></div>
+						<div class="flex items-center gap-3 rounded-xl px-3 py-2.5">
+							<div class="h-10 w-10 animate-pulse rounded-full bg-slate-100"></div>
+							<div class="flex-1 space-y-1.5">
+								<div class="h-3.5 w-24 animate-pulse rounded bg-slate-100"></div>
+								<div class="h-3 w-32 animate-pulse rounded bg-slate-100"></div>
+							</div>
+							<div class="h-7 w-20 animate-pulse rounded bg-slate-100"></div>
 						</div>
 					{/each}
 				</div>
 			{:else if rates.length > 0}
 				<div class="divide-y divide-slate-100 p-2">
 					{#each rates as rate (rate.sourceKey)}
+						{@const style = getRateStyle(rate.sourceKey)}
 						<div
-							class="flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors hover:bg-slate-50"
+							class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-50"
 						>
-							<div class="min-w-0">
-								<p class="text-sm font-medium text-slate-700">{rate.label}</p>
-								<p class="mt-0.5 text-[11px] text-slate-400">
-									Proveedor actualizó {toRelative(fromISO(rate.lastUpdated))}
+							<div
+								class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {style.bg}"
+							>
+								{#if style.svgSrc}
+									<img src={style.svgSrc} alt="Tether" class="h-5 w-5" />
+								{:else if style.icon}
+									{@const Icon = style.icon}
+									<Icon size={18} class={style.text} />
+								{/if}
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="text-sm font-semibold text-brand-navy">{rate.label}</p>
+								<p
+									class="mt-0.5 text-[11px] text-slate-400"
+									title="Proveedor actualizó {toRelative(fromISO(rate.lastUpdated))}"
+								>
+									{toRelativeShort(fromISO(rate.lastUpdated))}
 								</p>
 							</div>
-							<div class="flex items-center gap-2 pl-3">
-								<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-									{formatRate(rate.value)}
-									<span class="ml-1 text-[11px] font-normal text-slate-400">Bs</span>
-								</span>
+							<div class="flex w-28 shrink-0 items-center justify-end gap-0.5">
+								<div class="text-right">
+									<span
+										class="font-mono text-xl font-bold tabular-nums text-brand-navy"
+									>{formatRate(rate.value)}</span>
+									<span class="ml-1 text-[11px] text-slate-400">Bs</span>
+								</div>
 								<button
 									type="button"
-									class="rounded p-1 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500"
-									title={`Copiar ${rate.label}`}
+									class="ml-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-brand-blue/10 hover:text-brand-blue"
+									title="Copiar {rate.label}"
 									onclick={(event) => handleCopy(rate, event)}
 								>
-									<Copy size={12} />
+									<Copy size={13} />
 								</button>
 							</div>
 						</div>
@@ -220,12 +261,34 @@
 				</div>
 			{/if}
 
-			<div class="border-t border-slate-100 px-4 py-2.5">
-				<p class="text-xs text-slate-400">{footerLabel}</p>
-				{#if snapshot?.isStale}
-					<p class="mt-1 text-[11px] font-medium text-amber-600">Podrían estar desactualizadas.</p>
+			<div class="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
+				<div>
+					<p class="text-xs text-slate-400">{footerLabel}</p>
+					{#if snapshot?.isStale}
+						<p class="mt-1 text-[11px] font-medium text-amber-600">
+							Podrían estar desactualizadas.
+						</p>
+					{/if}
+				</div>
+				{#if rates.length > 0}
+					<button
+						type="button"
+						class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+						onclick={() => { open = false; calcOpen = true; }}
+					>
+						<Calculator size={13} />
+						Calcular
+					</button>
 				{/if}
 			</div>
 		</div>
 	{/if}
 </div>
+
+<CurrencyCalculatorModal
+	bind:open={calcOpen}
+	{snapshot}
+	{refreshing}
+	onClose={() => (calcOpen = false)}
+	onRefresh={handleRefresh}
+/>
