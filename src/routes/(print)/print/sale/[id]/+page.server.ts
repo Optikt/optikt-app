@@ -1,7 +1,5 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { fromISO, toISODate } from '$lib/dates';
-import { getRatesForDate } from '$lib/server/db/queries/exchangeRates';
 import { getSettings } from '$lib/server/db/queries/settings';
 import { SaleStatus } from '$lib/shared/enums';
 import {
@@ -9,7 +7,10 @@ import {
 	getSaleItemsWithDetails,
 	getSalePayments
 } from '$lib/server/db/queries/sales';
+import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 
+// TODO: Verify if we should load the BCV rate value of Sale date, or by
+// payment or we do not need it at all
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
 		error(401, 'No autorizado');
@@ -24,18 +25,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
-	const saleDateKey = toISODate(fromISO(sale.saleDate));
-	const [items, payments, settings, ratesForSaleDate] = await Promise.all([
+	const [items, payments, settings, bcvRate] = await Promise.all([
 		getSaleItemsWithDetails(params.id),
 		getSalePayments(params.id),
 		getSettings(),
-		getRatesForDate(saleDateKey)
+		getExchangeRateValue('USD')
 	]);
 
-	const bcvRate = ratesForSaleDate.find((rate) => rate.currency.code === 'USD')?.rateToVes ?? null;
-
 	return {
-		bcvRate,
+		bcvRate: bcvRate ?? null,
 		items,
 		payments,
 		sale,
