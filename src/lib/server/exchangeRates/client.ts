@@ -28,7 +28,7 @@ export async function fetchExchangeRatesFromApi(): Promise<ExchangeRateApiRespon
 	}
 
 	const apiKey = getExchangeRatesApiKey();
-	const response = await fetch(apiUrl, {
+	const response = await fetch(`${apiUrl}/rates`, {
 		headers: apiKey
 			? {
 					Authorization: `Bearer ${apiKey}`
