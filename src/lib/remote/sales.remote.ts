@@ -74,7 +74,7 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { createExpense } from '$lib/server/db/queries/cash';
-import { getLatestRates } from '$lib/server/db/queries/exchangeRates';
+import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { inventoryMovements } from '$lib/server/db/schema';
 import { monthStart, nowISO, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
@@ -610,7 +610,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 
 	const refundBcvRate =
 		existing.paidAmountBcvUsd > 0 && data.refundStatus === RefundStatus.REFUNDED
-			? ((await getLatestRates()).find((rate) => rate.currency.code === 'USD')?.rateToVes ?? null)
+			? await getExchangeRateValue('USD')
 			: null;
 
 	await db.transaction(async (tx) => {

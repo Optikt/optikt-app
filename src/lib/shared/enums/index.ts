@@ -9,3 +9,4 @@ export * from './purchaseTypes';
 export * from './inventoryTypes';
 export * from './cashTypes';
 export * from './brandAccessoryPriceModes';
+export * from './notificationTypes';

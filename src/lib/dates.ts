@@ -28,6 +28,14 @@ export function toRelative(date: Date): string {
 	return formatDistanceToNow(date, { addSuffix: true, locale: es });
 }
 
+/** Like toRelative but returns only the time part — strips the "hace " prefix.
+ *  E.g. "hace menos de un minuto" → "menos de un minuto"
+ *       "hace alrededor de 1 hora" → "alrededor de 1 hora"
+ */
+export function toRelativeShort(date: Date): string {
+	return toRelative(date).replace(/^hace\s+/i, '');
+}
+
 // ---------------------------------------------------------------------------
 // Serialization (Date → ISO string for DB / API)
 // ---------------------------------------------------------------------------

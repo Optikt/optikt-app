@@ -1,0 +1,13 @@
+export enum NotificationType {
+	STOCK_LOW = 'STOCK_LOW',
+	BACKUP_CREATED = 'BACKUP_CREATED',
+	RATE_UPDATED = 'RATE_UPDATED',
+	RATE_OUTDATED = 'RATE_OUTDATED'
+}
+
+export enum NotificationSeverity {
+	INFO = 'INFO',
+	SUCCESS = 'SUCCESS',
+	WARNING = 'WARNING',
+	ERROR = 'ERROR'
+}
