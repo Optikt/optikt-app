@@ -4,7 +4,7 @@
 	import { ImagotipoHorizontal } from '$lib/components';
 	import { logout } from '$lib/remote/auth.remote';
 	import { UserRole } from '$lib/shared/enums';
-	import { CommandSearch, ExchangeRatesMock, NotificationsMock } from '$lib/components/layout';
+	import { CommandSearch, ExchangeRates, Notifications } from '$lib/components/layout';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
 
 	type NavbarProps = {
@@ -95,8 +95,8 @@
 
 		<div class="ml-auto flex items-center gap-2">
 			<div class="hidden items-center gap-2 md:flex">
-				<ExchangeRatesMock />
-				<NotificationsMock />
+				<ExchangeRates />
+				<Notifications />
 				<div class="mx-1 h-8 w-px bg-white/10"></div>
 			</div>
 
