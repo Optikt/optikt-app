@@ -8,12 +8,12 @@ Las notificaciones se publican desde el servidor y aparecen en tiempo real (poll
 
 **`NotificationType`** (en `src/lib/shared/enums.ts`):
 
-| Valor | Cuándo usarlo |
-|---|---|
-| `STOCK_LOW` | Stock de un producto bajo mínimo |
-| `BACKUP_CREATED` | Backup de BD exitoso |
-| `RATE_UPDATED` | Tasas de cambio actualizadas externamente |
-| `RATE_OUTDATED` | Tasas desactualizadas (sin respuesta del proveedor) |
+| Valor            | Cuándo usarlo                                       |
+| ---------------- | --------------------------------------------------- |
+| `STOCK_LOW`      | Stock de un producto bajo mínimo                    |
+| `BACKUP_CREATED` | Backup de BD exitoso                                |
+| `RATE_UPDATED`   | Tasas de cambio actualizadas externamente           |
+| `RATE_OUTDATED`  | Tasas desactualizadas (sin respuesta del proveedor) |
 
 **`NotificationSeverity`**: `INFO` · `SUCCESS` · `WARNING` · `ERROR`
 
@@ -25,8 +25,8 @@ Las notificaciones se publican desde el servidor y aparecen en tiempo real (poll
 
 ```ts
 export enum NotificationType {
-  // ... existentes
-  SALE_CREATED = 'SALE_CREATED',
+	// ... existentes
+	SALE_CREATED = 'SALE_CREATED'
 }
 ```
 
@@ -34,47 +34,47 @@ export enum NotificationType {
 
 ```ts
 export async function notifySaleCreated(input: {
-  saleId: string;
-  clientName: string;
-  total: number;
-  executor?: DbOrTx;
+	saleId: string;
+	clientName: string;
+	total: number;
+	executor?: DbOrTx;
 }) {
-  return publishNotification(
-    {
-      type: NotificationType.SALE_CREATED,
-      severity: NotificationSeverity.SUCCESS,
-      title: `Nueva venta: ${input.clientName}`,
-      body: `Total: ${input.total.toFixed(2)} Bs`,
-      metadata: { saleId: input.saleId, total: input.total },
-      targetRoles: [UserRole.ADMIN, UserRole.MANAGER],
-      // link es opcional: solo rutas con forma `/products/${id}`
-      // link: `/products/${input.saleId}`,
-    },
-    input.executor
-  );
+	return publishNotification(
+		{
+			type: NotificationType.SALE_CREATED,
+			severity: NotificationSeverity.SUCCESS,
+			title: `Nueva venta: ${input.clientName}`,
+			body: `Total: ${input.total.toFixed(2)} Bs`,
+			metadata: { saleId: input.saleId, total: input.total },
+			targetRoles: [UserRole.ADMIN, UserRole.MANAGER]
+			// link es opcional: solo rutas con forma `/products/${id}`
+			// link: `/products/${input.saleId}`,
+		},
+		input.executor
+	);
 }
 ```
 
 > El campo `link` acepta solo `NotificationLink` (`/products/${string}`). Para navegar a otras rutas hay que extender ese tipo en `src/lib/shared/notifications.ts`.
 
-**3. Llamar el builder desde el remote command** (siempre *fuera* de la transacción):
+**3. Llamar el builder desde el remote command** (siempre _fuera_ de la transacción):
 
 ```ts
 // src/lib/remote/sales.remote.ts
 export const createSaleCommand = command(async ({ data }) => {
-  let sale: Sale;
+	let sale: Sale;
 
-  await db.transaction(async (tx) => {
-    sale = await createSale(data, tx);
-    await updateInventory(data.items, tx);
-  });
+	await db.transaction(async (tx) => {
+		sale = await createSale(data, tx);
+		await updateInventory(data.items, tx);
+	});
 
-  // Best-effort: si falla no interrumpe el flujo principal
-  await notifySaleCreated({
-    saleId: sale.id,
-    clientName: sale.clientName,
-    total: sale.total,
-  });
+	// Best-effort: si falla no interrumpe el flujo principal
+	await notifySaleCreated({
+		saleId: sale.id,
+		clientName: sale.clientName,
+		total: sale.total
+	});
 });
 ```
 
@@ -82,12 +82,12 @@ export const createSaleCommand = command(async ({ data }) => {
 
 ### Builders ya disponibles
 
-| Función | Cuándo llamarla |
-|---|---|
-| `notifyStockLow({ productId, productName, currentStock })` | Al procesar una venta que deja stock bajo mínimo |
-| `notifyBackupCreated({ fileName, sizeBytes?, durationMs? })` | Al finalizar un proceso de backup |
-| `notifyRatesUpdated({ refreshedAt, updatedKeys })` | Automático desde el poller de tasas |
-| `notifyRateOutdated({ lastFetchedAt, lastError })` | Automático desde el poller de tasas |
+| Función                                                      | Cuándo llamarla                                  |
+| ------------------------------------------------------------ | ------------------------------------------------ |
+| `notifyStockLow({ productId, productName, currentStock })`   | Al procesar una venta que deja stock bajo mínimo |
+| `notifyBackupCreated({ fileName, sizeBytes?, durationMs? })` | Al finalizar un proceso de backup                |
+| `notifyRatesUpdated({ refreshedAt, updatedKeys })`           | Automático desde el poller de tasas              |
+| `notifyRateOutdated({ lastFetchedAt, lastError })`           | Automático desde el poller de tasas              |
 
 ---
 
@@ -117,9 +117,24 @@ La API debe retornar JSON con este schema:
 
 ```json
 {
-  "usd_bcv":      { "value": 36.50, "is_stale": false, "last_updated": "2026-06-02T12:00:00Z", "data_age_seconds": 120 },
-  "eur_bcv":      { "value": 39.10, "is_stale": false, "last_updated": "2026-06-02T12:00:00Z", "data_age_seconds": 120 },
-  "usdt_binance": { "value": 36.45, "is_stale": false, "last_updated": "2026-06-02T12:00:00Z", "data_age_seconds": 300 }
+	"usd_bcv": {
+		"value": 36.5,
+		"is_stale": false,
+		"last_updated": "2026-06-02T12:00:00Z",
+		"data_age_seconds": 120
+	},
+	"eur_bcv": {
+		"value": 39.1,
+		"is_stale": false,
+		"last_updated": "2026-06-02T12:00:00Z",
+		"data_age_seconds": 120
+	},
+	"usdt_binance": {
+		"value": 36.45,
+		"is_stale": false,
+		"last_updated": "2026-06-02T12:00:00Z",
+		"data_age_seconds": 300
+	}
 }
 ```
 
@@ -127,11 +142,11 @@ Las claves reconocidas están en `src/lib/server/exchangeRates/service.ts` (`KNO
 
 ```ts
 const KNOWN_RATE_KEYS: Record<string, { code: string; label: string }> = {
-  usd_bcv:      { code: 'USD',  label: 'USD (BCV)'     },
-  eur_bcv:      { code: 'EUR',  label: 'EUR (BCV)'     },
-  usdt_binance: { code: 'USDT', label: 'USDT (Binance)' },
-  // nueva:
-  cop_bcv:      { code: 'COP',  label: 'COP (BCV)'     },
+	usd_bcv: { code: 'USD', label: 'USD (BCV)' },
+	eur_bcv: { code: 'EUR', label: 'EUR (BCV)' },
+	usdt_binance: { code: 'USDT', label: 'USDT (Binance)' },
+	// nueva:
+	cop_bcv: { code: 'COP', label: 'COP (BCV)' }
 };
 ```
 
