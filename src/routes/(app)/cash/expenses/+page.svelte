@@ -86,12 +86,12 @@
 		usdtRateHint = null;
 		// Pre-fill BCV rate
 		try {
-			const rates = await fetchLatestRates();
+			const rates = await fetchLatestRates().run();
 			const usd = rates.find((r) => r.currency.code === 'USD');
 			const usdt = rates.find((r) => r.currency.code === 'USDT');
 			if (usd) {
 				bcvRateHint = usd.rateToVes;
-				form.bcvRate = String(usd.rateToVes);
+				form.bcvRate = usd.rateToVes.toFixed(2);
 			}
 			if (usdt) {
 				usdtRateHint = usdt.rateToVes;
@@ -800,7 +800,7 @@
 								<button
 									type="button"
 									class="self-start rounded-lg bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-brand-blue"
-									onclick={() => (form.bcvRate = String(bcvRateHint))}
+									onclick={() => (form.bcvRate = (bcvRateHint ?? 0).toFixed(2))}
 								>
 									Usar BCV: {bcvRateHint.toFixed(2)}
 								</button>
@@ -825,7 +825,7 @@
 									<button
 										type="button"
 										class="self-start rounded-lg bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-brand-blue"
-										onclick={() => (form.exchangeRate = String(bcvRateHint))}
+										onclick={() => (form.exchangeRate = (bcvRateHint ?? 0).toFixed(2))}
 									>
 										Usar BCV: {bcvRateHint.toFixed(2)}
 									</button>
@@ -833,7 +833,7 @@
 									<button
 										type="button"
 										class="self-start rounded-lg bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-brand-blue"
-										onclick={() => (form.exchangeRate = String(usdtRateHint))}
+										onclick={() => (form.exchangeRate = (usdtRateHint ?? 0).toFixed(2))}
 									>
 										Usar USDT: {usdtRateHint.toFixed(2)}
 									</button>
