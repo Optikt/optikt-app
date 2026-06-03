@@ -12,13 +12,7 @@
 		onRefresh: (event: MouseEvent) => void;
 	}
 
-	let {
-		open = $bindable(),
-		snapshot,
-		refreshing = false,
-		onClose,
-		onRefresh
-	}: Props = $props();
+	let { open = $bindable(), snapshot, refreshing = false, onClose, onRefresh }: Props = $props();
 
 	const rates = $derived(snapshot?.rates ?? []);
 
@@ -96,7 +90,8 @@
 
 	function formatValue(value: number): string {
 		if (value === 0) return '—';
-		if (value >= 1000) return value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+		if (value >= 1000)
+			return value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 		return value.toFixed(4).replace(/\.?0+$/, '') || '0';
 	}
 
@@ -157,7 +152,8 @@
 				<div class="mb-3 flex gap-1.5">
 					<button
 						type="button"
-						class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors {baseCurrency === 'bs'
+						class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors {baseCurrency ===
+						'bs'
 							? 'bg-brand-navy text-white'
 							: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
 						onclick={() => (baseCurrency = 'bs')}
@@ -167,7 +163,8 @@
 					{#each rates as rate (rate.sourceKey)}
 						<button
 							type="button"
-							class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors {baseCurrency === rate.sourceKey
+							class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors {baseCurrency ===
+							rate.sourceKey
 								? 'bg-brand-navy text-white'
 								: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
 							onclick={() => (baseCurrency = rate.sourceKey)}
@@ -188,7 +185,7 @@
 						class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-14 pl-4 font-mono text-xl font-bold text-brand-navy placeholder:font-normal placeholder:text-slate-300 focus:border-brand-blue/40 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 					/>
 					<span
-						class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400"
+						class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm font-medium text-slate-400"
 					>
 						{getBsCurrencyLabel()}
 					</span>
@@ -263,17 +260,23 @@
 					<div class="grid grid-cols-3 gap-2">
 						{#each rates as rate (rate.sourceKey)}
 							{@const style = getRateStyle(rate.sourceKey)}
-							<div class="flex flex-col items-center gap-1 rounded-xl bg-slate-50 py-2.5 px-2">
+							<div class="flex flex-col items-center gap-1 rounded-xl bg-slate-50 px-2 py-2.5">
 								<div class="flex h-7 w-7 items-center justify-center rounded-full {style.bg}">
 									{#if style.svgSrc}
-										<img src={style.svgSrc} alt={currencyCode(rate.sourceKey)} class="h-3.5 w-3.5" />
+										<img
+											src={style.svgSrc}
+											alt={currencyCode(rate.sourceKey)}
+											class="h-3.5 w-3.5"
+										/>
 									{:else if style.icon}
 										{@const Icon = style.icon}
 										<Icon size={13} class={style.iconClass} />
 									{/if}
 								</div>
-								<span class="text-[11px] font-medium text-slate-500">{currencyCode(rate.sourceKey)}</span>
-								<span class="font-mono text-sm font-bold tabular-nums text-brand-navy">
+								<span class="text-[11px] font-medium text-slate-500"
+									>{currencyCode(rate.sourceKey)}</span
+								>
+								<span class="font-mono text-sm font-bold text-brand-navy tabular-nums">
 									{rate.value.toFixed(2)}
 								</span>
 								<span class="text-[10px] text-slate-400">Bs</span>

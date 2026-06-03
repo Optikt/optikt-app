@@ -222,9 +222,9 @@
 							</div>
 							<div class="flex w-28 shrink-0 items-center justify-end gap-0.5">
 								<div class="text-right">
-									<span
-										class="font-mono text-xl font-bold tabular-nums text-brand-navy"
-									>{formatRate(rate.value)}</span>
+									<span class="font-mono text-xl font-bold text-brand-navy tabular-nums"
+										>{formatRate(rate.value)}</span
+									>
 									<span class="ml-1 text-[11px] text-slate-400">Bs</span>
 								</div>
 								<button
@@ -274,7 +274,10 @@
 					<button
 						type="button"
 						class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
-						onclick={() => { open = false; calcOpen = true; }}
+						onclick={() => {
+							open = false;
+							calcOpen = true;
+						}}
 					>
 						<Calculator size={13} />
 						Calcular
