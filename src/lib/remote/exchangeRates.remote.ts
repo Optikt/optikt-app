@@ -1,132 +1,74 @@
-/**
- * Exchange Rates Remote Functions
- * Server-side functions for managing currencies and exchange rates
- *
- * TODO: Single server for all exchange rates operations
- */
-import { query, command } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
-import {
-	ListCurrenciesSchema,
-	UpsertExchangeRateSchema,
-	BatchUpsertRatesSchema,
-	GetRatesForDateSchema,
-	ExchangeRateIdSchema
-} from '$lib/schemas/exchangeRates';
-import {
-	getActiveCurrencies,
-	getAllCurrencies,
-	getCurrencyByCode,
-	getLatestRates,
-	getRatesForDate,
-	upsertExchangeRate,
-	deleteExchangeRate
-} from '$lib/server/db/queries/exchangeRates';
-import type { Currency, ExchangeRate } from '$lib/server/db/schema';
-import type { ExchangeRateWithCurrency } from '$lib/server/db/queries/exchangeRates';
+import { command, query } from '$app/server';
+import { EmptySchema } from '$lib/schemas/common';
+import { getExchangeRatesSnapshot, refreshExchangeRates } from '$lib/server/exchangeRates/service';
+import { requireAuth } from '$lib/server/guards';
+import type { ExchangeRateEntry, ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
 
-// ============================================================================
-// CURRENCIES
-// ============================================================================
+export type LatestExchangeRate = {
+	id: string;
+	rateToVes: number;
+	effectiveDate: string;
+	source: string;
+	notes: string | null;
+	createdAt: string;
+	currency: {
+		code: string;
+		name: string;
+		symbol: string;
+	};
+};
 
-/**
- * List all currencies (optionally active only)
- */
-export const listCurrencies = query(ListCurrenciesSchema, async (data): Promise<Currency[]> => {
-	requireAuth();
-
-	if (data.activeOnly) {
-		return getActiveCurrencies();
+function resolveRateSymbol(code: string): string {
+	if (code === 'EUR') {
+		return 'EUR';
 	}
-	return getAllCurrencies();
-});
 
-// ============================================================================
-// EXCHANGE RATES
-// ============================================================================
+	if (code === 'VES') {
+		return 'Bs.';
+	}
 
-/**
- * Get the latest rates for all currencies
- */
-export const fetchLatestRates = query(async (): Promise<ExchangeRateWithCurrency[]> => {
+	return 'USD';
+}
+
+function toLatestRates(snapshot: ExchangeRatesSnapshot): LatestExchangeRate[] {
+	return snapshot.rates.map((rate: ExchangeRateEntry) => ({
+		id: rate.sourceKey,
+		rateToVes: rate.value,
+		effectiveDate: rate.lastUpdated,
+		source: 'api',
+		notes: null,
+		createdAt: snapshot.lastFetchedAt ?? rate.lastUpdated,
+		currency: {
+			code: rate.code,
+			name: rate.label,
+			symbol: resolveRateSymbol(rate.code)
+		}
+	}));
+}
+
+async function ensureExchangeRatesSnapshot(): Promise<ExchangeRatesSnapshot> {
+	const snapshot = getExchangeRatesSnapshot();
+	if (snapshot.configured && snapshot.rates.length === 0 && !snapshot.lastFetchedAt) {
+		return refreshExchangeRates({ source: 'lazy' });
+	}
+
+	return snapshot;
+}
+
+export const fetchExchangeRates = query(async (): Promise<ExchangeRatesSnapshot> => {
 	requireAuth();
-
-	return getLatestRates();
+	return ensureExchangeRatesSnapshot();
 });
 
-/**
- * Get rates for a specific date
- */
-export const fetchRatesForDate = query(
-	GetRatesForDateSchema,
-	async (data): Promise<ExchangeRateWithCurrency[]> => {
+export const fetchLatestRates = query(async (): Promise<LatestExchangeRate[]> => {
+	requireAuth();
+	return toLatestRates(await ensureExchangeRatesSnapshot());
+});
+
+export const refreshExchangeRatesCommand = command(
+	EmptySchema,
+	async (): Promise<ExchangeRatesSnapshot> => {
 		requireAuth();
-
-		return getRatesForDate(data.date);
+		return refreshExchangeRates({ force: true, source: 'manual' });
 	}
 );
-
-/**
- * Upsert a single exchange rate for a currency on a date
- */
-export const saveExchangeRate = command(
-	UpsertExchangeRateSchema,
-	async (data): Promise<ExchangeRate> => {
-		requireAdmin();
-
-		const currency = await getCurrencyByCode(data.currencyCode);
-		if (!currency) {
-			throw new Error(`Moneda no encontrada: ${data.currencyCode}`);
-		}
-
-		return upsertExchangeRate({
-			currencyId: currency.id,
-			rateToVes: data.rateToVes,
-			effectiveDate: data.effectiveDate,
-			source: data.source ?? 'manual',
-			notes: data.notes
-		});
-	}
-);
-
-/**
- * Batch upsert rates for multiple currencies on the same date
- * Useful for updating all rates for a given day at once
- */
-export const saveBatchRates = command(
-	BatchUpsertRatesSchema,
-	async (data): Promise<ExchangeRate[]> => {
-		requireAdmin();
-
-		const results: ExchangeRate[] = [];
-
-		for (const rate of data.rates) {
-			const currency = await getCurrencyByCode(rate.currencyCode);
-			if (!currency) {
-				throw new Error(`Moneda no encontrada: ${rate.currencyCode}`);
-			}
-
-			const result = await upsertExchangeRate({
-				currencyId: currency.id,
-				rateToVes: rate.rateToVes,
-				effectiveDate: data.effectiveDate,
-				source: data.source ?? 'manual'
-			});
-			results.push(result);
-		}
-
-		return results;
-	}
-);
-
-/**
- * Delete an exchange rate entry
- */
-export const removeExchangeRate = command(ExchangeRateIdSchema, async (data): Promise<void> => {
-	requireAdmin();
-
-	const deleted = await deleteExchangeRate(data.id);
-	if (!deleted) {
-		throw new Error('Tasa de cambio no encontrada');
-	}
-});
