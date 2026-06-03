@@ -5,7 +5,7 @@ import type { ExchangeRateApiResponse } from '$lib/shared/exchangeRates';
 const ExchangeRateApiFieldSchema = z.object({
 	data_age_seconds: z.number().nonnegative(),
 	is_stale: z.boolean(),
-	last_updated: z.iso.datetime(),
+	last_updated: z.iso.datetime({ offset: true }),
 	value: z.number()
 });
 
