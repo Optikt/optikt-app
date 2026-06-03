@@ -89,11 +89,11 @@ function humanizeRateKey(apiKey: string): { code: string; label: string } {
 
 function mapApiRates(response: ExchangeRateApiResponse): ExchangeRateEntry[] {
 	return Object.entries(response)
-		.map(([apiKey, value]) => {
-			const normalized = humanizeRateKey(apiKey);
+		.map(([sourceKey, value]) => {
+			const normalized = humanizeRateKey(sourceKey);
 
 			return {
-				apiKey,
+				sourceKey,
 				code: normalized.code,
 				label: normalized.label,
 				value: roundExchangeRate(value.value),
