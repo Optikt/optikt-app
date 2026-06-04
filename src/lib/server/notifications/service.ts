@@ -1,6 +1,6 @@
 import { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
 import type { NotificationLink } from '$lib/shared/notifications';
-import { getExchangeRatesStaleThresholdMs } from '$lib/server/exchangeRates/service';
+import { getExchangeRatesStaleThresholdMs, getExchangeRatesPollIntervalMs } from '$lib/server/exchangeRates/service';
 import {
 	hasRecentNotificationOfType,
 	insertNotification
@@ -93,6 +93,18 @@ export async function notifyRatesUpdated(input: {
 	updatedKeys: string[];
 	executor?: DbOrTx;
 }) {
+	const windowMs = Math.max(
+		getExchangeRatesStaleThresholdMs(),
+		getExchangeRatesPollIntervalMs() * 2
+	);
+	const sinceIso = new Date(Date.now() - windowMs).toISOString();
+	const alreadyPublished = await hasRecentNotificationOfType(
+		NotificationType.RATE_UPDATED,
+		sinceIso,
+		input.executor
+	);
+	if (alreadyPublished) return null;
+
 	return publishNotification(
 		{
 			type: NotificationType.RATE_UPDATED,
@@ -114,8 +126,11 @@ export async function notifyRateOutdated(input: {
 	lastError: string | null;
 	executor?: DbOrTx;
 }) {
-	const staleWindowMs = getExchangeRatesStaleThresholdMs();
-	const sinceIso = new Date(Date.now() - staleWindowMs).toISOString();
+	const windowMs = Math.max(
+		getExchangeRatesStaleThresholdMs(),
+		getExchangeRatesPollIntervalMs() * 2
+	);
+	const sinceIso = new Date(Date.now() - windowMs).toISOString();
 	const alreadyPublished = await hasRecentNotificationOfType(
 		NotificationType.RATE_OUTDATED,
 		sinceIso,
