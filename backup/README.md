@@ -32,6 +32,7 @@ docker run --rm -it rclone/rclone config
 ```
 
 Seguí el wizard:
+
 1. `n` → New remote
 2. Name: `gdrive`
 3. Storage type: `drive` (Google Drive)
@@ -110,7 +111,7 @@ backup:
   environment:
     BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
     PG_HOST: postgres
-    PG_PORT: "5432"
+    PG_PORT: '5432'
     PG_USER: optikt
     PG_PASSWORD: ${DB_PASSWORD}
     PG_DB: optikt_db
@@ -192,4 +193,3 @@ Repetí el paso 1 (wizard de rclone) para generar un token fresco y actualizá l
   ```bash
   docker compose exec backup cat /var/log/backup.log
   ```
-

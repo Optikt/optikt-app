@@ -46,7 +46,7 @@ services:
     environment:
       BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
       PG_HOST: postgres
-      PG_PORT: "5432"
+      PG_PORT: '5432'
       PG_USER: optikt
       PG_PASSWORD: ${DB_PASSWORD}
       PG_DB: optikt_db
