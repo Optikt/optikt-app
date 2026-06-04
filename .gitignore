@@ -31,8 +31,5 @@ vite.config.ts.timestamp-*
 .svelte-doctor
 /stitch-prompts
 
-# Backup — service account key must never be committed
-backup/service-account.json
-
 # Sentry Config File
 .env.sentry-build-plugin

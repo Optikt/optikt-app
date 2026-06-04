@@ -54,10 +54,9 @@ services:
       DRIVE_REMOTE: gdrive
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       TZ: ${TZ:-UTC}
+      RCLONE_CONFIG_GDRIVE_TOKEN: ${RCLONE_CONFIG_GDRIVE_TOKEN}
       NOTIFY_URL: ${BACKUP_NOTIFY_URL:-}
       NOTIFY_TOKEN: ${BACKUP_NOTIFY_TOKEN:-}
-    volumes:
-      - ./backup/service-account.json:/etc/rclone/service-account.json:ro
 
 volumes:
   postgres_data:
