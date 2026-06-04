@@ -172,7 +172,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="exchange-rates-title"
-			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:w-80 md:max-h-[32rem] md:rounded-xl md:shadow-lg"
+			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:max-h-[32rem] md:w-80 md:rounded-xl md:shadow-lg"
 		>
 			<div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
 				<div>

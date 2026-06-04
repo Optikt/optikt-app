@@ -1,6 +1,9 @@
 import { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
 import type { NotificationLink } from '$lib/shared/notifications';
-import { getExchangeRatesStaleThresholdMs, getExchangeRatesPollIntervalMs } from '$lib/server/exchangeRates/service';
+import {
+	getExchangeRatesStaleThresholdMs,
+	getExchangeRatesPollIntervalMs
+} from '$lib/server/exchangeRates/service';
 import {
 	hasRecentNotificationOfType,
 	insertNotification

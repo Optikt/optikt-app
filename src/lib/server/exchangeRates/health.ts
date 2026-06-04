@@ -20,9 +20,7 @@ export function resolveExchangeRatesTransition(
 	return null;
 }
 
-export function syncExchangeRatesHealthState(
-	snapshot: Pick<ExchangeRatesSnapshot, 'isStale'>
-) {
+export function syncExchangeRatesHealthState(snapshot: Pick<ExchangeRatesSnapshot, 'isStale'>) {
 	lastKnownRatesWereStale = snapshot.isStale;
 }
 
