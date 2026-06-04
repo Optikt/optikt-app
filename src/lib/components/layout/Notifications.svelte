@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { Bell, CircleAlert, CircleCheck, Info, XCircle } from '@lucide/svelte';
+	import { Bell, CircleAlert, CircleCheck, Info, X, XCircle } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		fetchMyNotifications,
@@ -170,10 +170,11 @@
 <div class="relative" data-notifications>
 	<button
 		type="button"
-		class="relative rounded p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+		class="relative inline-flex h-9 w-9 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:h-10 sm:w-10"
 		onclick={toggle}
 		title="Notificaciones"
 		aria-expanded={open}
+		aria-haspopup="dialog"
 		aria-label="Abrir notificaciones"
 	>
 		<Bell size={20} />
@@ -187,26 +188,50 @@
 	</button>
 
 	{#if open}
+		<button
+			type="button"
+			class="fixed inset-0 z-[55] bg-brand-navy/30 backdrop-blur-[1px] md:hidden"
+			onclick={() => (open = false)}
+			aria-label="Cerrar panel de notificaciones"
+		></button>
 		<div
-			class="absolute top-full right-0 z-50 mt-2 w-[26rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="notifications-title"
+			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:w-[26rem] md:max-h-[32rem] md:rounded-xl md:shadow-lg"
 		>
-			<div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-				<div>
-					<h3 class="text-sm font-semibold text-brand-navy">Notificaciones</h3>
-					<p class="mt-0.5 text-[11px] text-slate-400">Eventos visibles según tu rol</p>
+			<div class="shrink-0 border-b border-slate-100 px-4 py-3">
+				<div class="flex items-start justify-between gap-3">
+					<div>
+						<h3 id="notifications-title" class="text-sm font-semibold text-brand-navy">
+							Notificaciones
+						</h3>
+						<p class="mt-0.5 text-[11px] text-slate-400">Eventos visibles según tu rol</p>
+					</div>
+					<button
+						type="button"
+						class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 md:hidden"
+						onclick={() => (open = false)}
+						aria-label="Cerrar notificaciones"
+					>
+						<X size={16} />
+					</button>
 				</div>
-				<button
-					type="button"
-					class="text-xs font-medium text-brand-blue transition-colors hover:text-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
-					onclick={handleMarkAll}
-					disabled={markingAll || unreadCount === 0}
-				>
-					Marcar todas como leídas
-				</button>
+				<div class="mt-3 flex items-center justify-between gap-3 md:mt-2 md:justify-end">
+					<p class="text-[11px] font-medium text-slate-400 md:hidden">Acciones</p>
+					<button
+						type="button"
+						class="text-xs font-medium text-brand-blue transition-colors hover:text-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={handleMarkAll}
+						disabled={markingAll || unreadCount === 0}
+					>
+						Marcar todas como leídas
+					</button>
+				</div>
 			</div>
 
 			{#if loading && notifications.length === 0}
-				<div class="space-y-3 p-4">
+				<div class="flex-1 space-y-3 overflow-y-auto p-4">
 					{#each [1, 2, 3] as row (row)}
 						<div class="flex gap-3 rounded-lg px-1 py-1">
 							<div class="h-10 w-10 animate-pulse rounded-full bg-slate-100"></div>
@@ -219,7 +244,7 @@
 					{/each}
 				</div>
 			{:else if notifications.length > 0}
-				<div class="max-h-[26rem] divide-y divide-slate-100 overflow-y-auto">
+				<div class="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
 					{#each notifications as notification (notification.id)}
 						{@const ui = severityUi[notification.severity]}
 						{@const Icon = ui.icon}
@@ -251,7 +276,7 @@
 					{/each}
 				</div>
 			{:else}
-				<div class="px-4 py-6 text-center">
+				<div class="flex-1 px-4 py-6 text-center">
 					<p class="text-sm font-medium text-slate-700">Sin notificaciones</p>
 					<p class="mt-1 text-xs text-slate-400">
 						{loadError ?? 'Cuando se generen eventos del sistema aparecerán aquí.'}

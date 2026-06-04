@@ -93,11 +93,11 @@
 			<CommandSearch />
 		</div>
 
-		<div class="ml-auto flex items-center gap-2">
-			<div class="hidden items-center gap-2 md:flex">
+		<div class="ml-auto flex items-center gap-1.5 sm:gap-2">
+			<div class="flex items-center gap-0.5 sm:gap-1">
 				<ExchangeRates />
 				<Notifications />
-				<div class="mx-1 h-8 w-px bg-white/10"></div>
+				<div class="mx-1 hidden h-8 w-px bg-white/10 md:block"></div>
 			</div>
 
 			<div class="relative" data-profile-menu>

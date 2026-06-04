@@ -86,8 +86,8 @@ export const createSaleCommand = command(async ({ data }) => {
 | ------------------------------------------------------------ | ------------------------------------------------ |
 | `notifyStockLow({ productId, productName, currentStock })`   | Al procesar una venta que deja stock bajo mínimo |
 | `notifyBackupCreated({ fileName, sizeBytes?, durationMs? })` | Al finalizar un proceso de backup                |
-| `notifyRatesUpdated({ refreshedAt, updatedKeys })`           | Automático desde el poller de tasas              |
-| `notifyRateOutdated({ lastFetchedAt, lastError })`           | Automático desde el poller de tasas              |
+| `notifyRatesUpdated({ refreshedAt, updatedKeys })`           | Automático al detectar recuperación de tasas     |
+| `notifyRateOutdated({ lastFetchedAt, lastError })`           | Automático al detectar degradación de tasas      |
 
 ---
 
