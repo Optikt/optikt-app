@@ -36,5 +36,28 @@ services:
     ports:
       - '3000:3000'
 
+  backup:
+    image: optikt/optikt-backup:latest
+    container_name: optikt-backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_USER: optikt
+      PG_PASSWORD: ${DB_PASSWORD}
+      PG_DB: optikt_db
+      GOOGLE_DRIVE_BACKUP_FOLDER_ID: ${GOOGLE_DRIVE_BACKUP_FOLDER_ID}
+      DRIVE_REMOTE: gdrive
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      TZ: ${TZ:-UTC}
+      NOTIFY_URL: ${BACKUP_NOTIFY_URL:-}
+      NOTIFY_TOKEN: ${BACKUP_NOTIFY_TOKEN:-}
+    volumes:
+      - ./backup/service-account.json:/etc/rclone/service-account.json:ro
+
 volumes:
   postgres_data:
