@@ -26,7 +26,8 @@ echo "      Saved: ${BACKUP_FILE} (${BACKUP_SIZE})"
 # 2. Upload to Google Drive
 echo "[2/4] Uploading to Google Drive..."
 rclone copyto "${BACKUP_FILE}" \
-  "${DRIVE_REMOTE:-gdrive}:${GOOGLE_DRIVE_BACKUP_FOLDER_ID}/${FILENAME}" \
+  "${DRIVE_REMOTE:-gdrive}:${FILENAME}" \
+  --drive-root-folder-id "${GOOGLE_DRIVE_BACKUP_FOLDER_ID}" \
   --config /etc/rclone/rclone.conf
 echo "      Uploaded: ${FILENAME}"
 
@@ -34,7 +35,8 @@ echo "      Uploaded: ${FILENAME}"
 RETENTION="${BACKUP_RETENTION_DAYS:-30}"
 echo "[3/4] Enforcing retention (${RETENTION} days)..."
 rclone delete \
-  "${DRIVE_REMOTE:-gdrive}:${GOOGLE_DRIVE_BACKUP_FOLDER_ID}" \
+  "${DRIVE_REMOTE:-gdrive}:" \
+  --drive-root-folder-id "${GOOGLE_DRIVE_BACKUP_FOLDER_ID}" \
   --min-age "${RETENTION}d" \
   --config /etc/rclone/rclone.conf
 echo "      Old backups removed."
