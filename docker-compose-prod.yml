@@ -56,7 +56,7 @@ services:
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
       TZ: ${TZ:-UTC}
       RCLONE_CONFIG_GDRIVE_TOKEN: ${RCLONE_CONFIG_GDRIVE_TOKEN}
-      NOTIFY_URL: ${BACKUP_NOTIFY_URL:-}
+      NOTIFY_URL: http://optikt-app:3000/api/internal/backup-webhook
       NOTIFY_TOKEN: ${BACKUP_NOTIFY_TOKEN:-}
 
 volumes:
