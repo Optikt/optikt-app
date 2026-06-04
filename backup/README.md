@@ -155,7 +155,7 @@ docker compose exec backup crontab -l
 ### Listar backups almacenados en Drive
 
 ```bash
-docker compose exec backup sh -c 'rclone lsl gdrive: --drive-root-folder-id "$GOOGLE_DRIVE_BACKUP_FOLDER_ID" --config /etc/rclone/rclone.conf'
+docker compose exec backup rclone lsl gdrive: --config /etc/rclone/rclone.conf
 ```
 
 ---
