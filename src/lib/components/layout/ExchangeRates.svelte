@@ -7,7 +7,8 @@
 		DollarSign,
 		Euro,
 		RefreshCw,
-		TriangleAlert
+		TriangleAlert,
+		X
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -150,39 +151,61 @@
 <div class="relative" data-exchange-rates>
 	<button
 		type="button"
-		class="rounded p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+		class="inline-flex h-9 w-9 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white sm:h-10 sm:w-10"
 		onclick={toggle}
 		title="Tasas de cambio"
 		aria-expanded={open}
+		aria-haspopup="dialog"
 		aria-label="Abrir tasas de cambio"
 	>
 		<CircleDollarSign size={20} />
 	</button>
 
 	{#if open}
+		<button
+			type="button"
+			class="fixed inset-0 z-[55] bg-brand-navy/30 backdrop-blur-[1px] md:hidden"
+			onclick={() => (open = false)}
+			aria-label="Cerrar panel de tasas de cambio"
+		></button>
 		<div
-			class="absolute top-full right-0 z-50 mt-2 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="exchange-rates-title"
+			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:max-h-[32rem] md:w-80 md:rounded-xl md:shadow-lg"
 		>
-			<div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+			<div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
 				<div>
-					<h3 class="text-sm font-semibold text-brand-navy">Tasas de cambio</h3>
+					<h3 id="exchange-rates-title" class="text-sm font-semibold text-brand-navy">
+						Tasas de cambio
+					</h3>
 					<p class="mt-0.5 text-[11px] text-slate-400">
 						Fuente externa sincronizada en segundo plano
 					</p>
 				</div>
-				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
-					onclick={handleRefresh}
-					disabled={refreshing}
-					title="Refrescar tasas"
-				>
-					<RefreshCw class={refreshing ? 'animate-spin' : ''} size={14} />
-				</button>
+				<div class="flex items-center gap-1.5">
+					<button
+						type="button"
+						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/20 disabled:cursor-not-allowed disabled:opacity-50"
+						onclick={handleRefresh}
+						disabled={refreshing}
+						title="Refrescar tasas"
+					>
+						<RefreshCw class={refreshing ? 'animate-spin' : ''} size={14} />
+					</button>
+					<button
+						type="button"
+						class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 md:hidden"
+						onclick={() => (open = false)}
+						aria-label="Cerrar tasas de cambio"
+					>
+						<X size={16} />
+					</button>
+				</div>
 			</div>
 
 			{#if loading && !snapshot}
-				<div class="space-y-1 p-3">
+				<div class="flex-1 space-y-1 overflow-y-auto p-3">
 					{#each [1, 2, 3] as row (row)}
 						<div class="flex items-center gap-3 rounded-xl px-3 py-2.5">
 							<div class="h-10 w-10 animate-pulse rounded-full bg-slate-100"></div>
@@ -195,7 +218,7 @@
 					{/each}
 				</div>
 			{:else if rates.length > 0}
-				<div class="divide-y divide-slate-100 p-2">
+				<div class="flex-1 divide-y divide-slate-100 overflow-y-auto p-2">
 					{#each rates as rate (rate.sourceKey)}
 						{@const style = getRateStyle(rate.sourceKey)}
 						<div
@@ -240,7 +263,7 @@
 					{/each}
 				</div>
 			{:else}
-				<div class="px-4 py-5">
+				<div class="flex-1 overflow-y-auto px-4 py-5">
 					<div
 						class="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-3"
 					>
@@ -261,7 +284,7 @@
 				</div>
 			{/if}
 
-			<div class="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
+			<div class="flex shrink-0 items-center justify-between border-t border-slate-100 px-4 py-2.5">
 				<div>
 					<p class="text-xs text-slate-400">{footerLabel}</p>
 					{#if snapshot?.isStale}

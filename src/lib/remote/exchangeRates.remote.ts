@@ -1,5 +1,6 @@
 import { command, query } from '$app/server';
 import { EmptySchema } from '$lib/schemas/common';
+import { publishExchangeRatesTransition } from '$lib/server/exchangeRates/health';
 import { getExchangeRatesSnapshot, refreshExchangeRates } from '$lib/server/exchangeRates/service';
 import { requireAuth } from '$lib/server/guards';
 import type { ExchangeRateEntry, ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
@@ -49,7 +50,9 @@ function toLatestRates(snapshot: ExchangeRatesSnapshot): LatestExchangeRate[] {
 async function ensureExchangeRatesSnapshot(): Promise<ExchangeRatesSnapshot> {
 	const snapshot = getExchangeRatesSnapshot();
 	if (snapshot.configured && snapshot.rates.length === 0 && !snapshot.lastFetchedAt) {
-		return refreshExchangeRates({ source: 'lazy' });
+		const nextSnapshot = await refreshExchangeRates({ source: 'lazy' });
+		await publishExchangeRatesTransition(nextSnapshot);
+		return nextSnapshot;
 	}
 
 	return snapshot;
@@ -69,6 +72,8 @@ export const refreshExchangeRatesCommand = command(
 	EmptySchema,
 	async (): Promise<ExchangeRatesSnapshot> => {
 		requireAuth();
-		return refreshExchangeRates({ force: true, source: 'manual' });
+		const snapshot = await refreshExchangeRates({ force: true, source: 'manual' });
+		await publishExchangeRatesTransition(snapshot);
+		return snapshot;
 	}
 );
