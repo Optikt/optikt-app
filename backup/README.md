@@ -1,10 +1,10 @@
 # Optikt DB Backup
 
-Sidecar container que ejecuta `pg_dump` periódicamente y sube el resultado comprimido a Google Drive mediante una Service Account.
+Sidecar container que ejecuta `pg_dump` periódicamente y sube el resultado comprimido a Google Drive mediante OAuth2.
 
 Imagen pública en Docker Hub: **`optikt/optikt-backup:latest`**
 
-> La imagen no contiene ningún secret. Las credenciales llegan al container en tiempo de ejecución: el `service-account.json` se monta como volumen y el resto de configuración viene de variables de entorno.
+> La imagen no contiene ningún secret. El token de Google Drive llega como variable de entorno en el servidor.
 
 ---
 
@@ -14,37 +14,57 @@ Imagen pública en Docker Hub: **`optikt/optikt-backup:latest`**
 Imagen pública (Docker Hub)
         ↓  docker pull
    Servidor de producción
-        ↓  volumen montado
-  service-account.json  (solo en el servidor, nunca en la imagen)
         ↓  env vars (.env del servidor)
+  RCLONE_CONFIG_GDRIVE_TOKEN  ← token OAuth2 de tu cuenta Google personal
   PG_*, GOOGLE_DRIVE_*, BACKUP_CRON, TZ, ...
 ```
 
-El `rclone.conf` que está dentro de la imagen únicamente declara el tipo de remote y el path donde espera el archivo de credenciales (`/etc/rclone/service-account.json`). Sin ese archivo montado, el container no puede autenticarse con Drive.
+rclone lee `RCLONE_CONFIG_GDRIVE_TOKEN` nativamente — los archivos subidos a Drive quedan bajo la cuota de tu cuenta personal, no de una service account.
 
 ---
 
-## 1. Prerequisitos: Service Account de Google
+## 1. Prerequisitos: obtener el token OAuth2
 
-Esto se hace una sola vez.
+Esto se hace **una sola vez** desde una máquina con navegador.
 
-1. Abrí [console.cloud.google.com](https://console.cloud.google.com) y seleccioná tu proyecto.
-2. **APIs & Services → Enable APIs** → habilitá la **Google Drive API**.
-3. **IAM & Admin → Service Accounts → Create Service Account**:
-   - Nombre: `optikt-backup` (o el que prefieras)
-   - No hace falta asignarle roles a nivel proyecto.
-4. En la service account creada → **Keys → Add Key → JSON** → descargá el archivo.
-5. **Compartir la carpeta de Drive** con el email de la service account (termina en `@...iam.gserviceaccount.com`) — permiso **Editor**.
-6. El **Folder ID** es el segmento al final de la URL de la carpeta:
+```bash
+docker run --rm -it rclone/rclone config
+```
+
+Seguí el wizard:
+1. `n` → New remote
+2. Name: `gdrive`
+3. Storage type: `drive` (Google Drive)
+4. Client ID y Client Secret: dejá vacío (Enter) para usar los de rclone
+5. Scope: `drive.file` (acceso solo a archivos creados por la app)
+6. Root folder ID: vacío (Enter)
+7. Service Account: vacío (Enter)
+8. Advanced config: `n`
+9. Auto config: `y` → se abre el navegador, autorizás con tu cuenta Google
+10. Shared drive: `n`
+11. Confirmás con `y`
+
+Al terminar, el token queda guardado. Para extraerlo:
+
+```bash
+docker run --rm -it rclone/rclone config show gdrive
+```
+
+Buscá la línea `token = {...}`. Ese JSON completo es el valor de `RCLONE_CONFIG_GDRIVE_TOKEN`.
+
+---
+
+## 2. Prerequisitos: carpeta de Google Drive
+
+1. Creá una carpeta en tu Google Drive (ej. `optikt-backups`).
+2. El **Folder ID** es el segmento al final de la URL:
    ```
    https://drive.google.com/drive/folders/1A2B3C4D5E6F7G8H  →  1A2B3C4D5E6F7G8H
    ```
 
 ---
 
-## 2. Build y push de la imagen (desde el repo)
-
-La imagen se construye desde `backup/` y se publica manualmente. No contiene ningún secret.
+## 3. Build y push de la imagen (desde el repo)
 
 ```bash
 # Desde la raíz del repo
@@ -57,23 +77,14 @@ Hacé esto cada vez que modifiques algo en `backup/`. En el futuro puede automat
 
 ---
 
-## 3. Setup en el servidor de producción
+## 4. Setup en el servidor de producción
 
-### 3.1. Copiar el service-account.json al servidor
-
-El archivo de credenciales nunca va al repo ni a la imagen. Se copia directamente al servidor:
-
-```bash
-scp ~/Downloads/mi-service-account-key.json user@servidor:/ruta/al/proyecto/backup/service-account.json
-```
-
-> El `.gitignore` del repo ya excluye `backup/service-account.json`.
-
-### 3.2. Configurar las variables de entorno en el `.env` del servidor
+### 4.1. Configurar las variables de entorno en el `.env` del servidor
 
 ```env
 # Backup
 GOOGLE_DRIVE_BACKUP_FOLDER_ID=1A2B3C4D5E6F7G8H
+RCLONE_CONFIG_GDRIVE_TOKEN={"access_token":"...","token_type":"Bearer","refresh_token":"1//...","expiry":"..."}
 BACKUP_CRON=0 2 * * *
 BACKUP_RETENTION_DAYS=30
 TZ=America/Caracas
@@ -82,9 +93,11 @@ BACKUP_NOTIFY_URL=
 BACKUP_NOTIFY_TOKEN=
 ```
 
-### 3.3. Agregar el servicio al docker-compose del servidor
+> El `refresh_token` no expira mientras se use periódicamente. El backup diario lo mantiene activo indefinidamente.
 
-El `docker-compose-prod.yml` de este repo ya incluye el servicio `backup`. Si el servidor tiene su propio compose customizado, agregá este bloque:
+### 4.2. Agregar el servicio al docker-compose del servidor
+
+Si el servidor tiene su propio compose customizado, agregá este bloque:
 
 ```yaml
 backup:
@@ -105,25 +118,21 @@ backup:
     DRIVE_REMOTE: gdrive
     BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
     TZ: ${TZ:-UTC}
+    RCLONE_CONFIG_GDRIVE_TOKEN: ${RCLONE_CONFIG_GDRIVE_TOKEN}
     NOTIFY_URL: ${BACKUP_NOTIFY_URL:-}
     NOTIFY_TOKEN: ${BACKUP_NOTIFY_TOKEN:-}
-  volumes:
-    - ./backup/service-account.json:/etc/rclone/service-account.json:ro
 ```
 
-### 3.4. Levantar el servicio
+### 4.3. Levantar el servicio
 
 ```bash
-# Bajar la imagen más reciente
 docker compose pull backup
-
-# Levantar en background
 docker compose up -d backup
 ```
 
 ---
 
-## 4. Operaciones del día a día
+## 5. Operaciones del día a día
 
 ### Ejecutar un backup manual inmediato
 
@@ -151,19 +160,15 @@ docker compose exec backup rclone lsl gdrive: --config /etc/rclone/rclone.conf
 
 ---
 
-## 5. Troubleshooting
+## 6. Troubleshooting
 
-### Drive: `googleapi: Error 403` o error de autenticación
+### Drive: `storageQuotaExceeded` / `Error 403`
 
-1. Verificá que el archivo esté montado:
-   ```bash
-   docker compose exec backup cat /etc/rclone/service-account.json | head -3
-   ```
-   Debe mostrar `{ "type": "service_account", ...`. Si no, el volumen no está mapeando al path correcto.
+Esto ocurre cuando se usan Service Accounts con Google Drive personal — las service accounts no tienen cuota de almacenamiento propia. La solución es usar OAuth2 (este approach). Verificá que `RCLONE_CONFIG_GDRIVE_TOKEN` está seteado correctamente en el `.env`.
 
-2. Verificá que la carpeta de Drive está compartida con el email de la service account.
+### Drive: token expirado o inválido
 
-3. Confirmá que la **Drive API** está habilitada en el proyecto de Google Cloud.
+Repetí el paso 1 (wizard de rclone) para generar un token fresco y actualizá la env var en el servidor.
 
 ### pg_dump: `could not connect to server`
 
@@ -183,8 +188,8 @@ docker compose exec backup rclone lsl gdrive: --config /etc/rclone/rclone.conf
   ```bash
   docker compose exec backup crontab -l
   ```
-- Verificá el timezone: si `TZ=America/Caracas`, las 2am locales son las 6:30am UTC.
 - Revisá los logs del cron:
   ```bash
   docker compose exec backup cat /var/log/backup.log
   ```
+
