@@ -330,11 +330,17 @@
 		return purchaseLineTotalVes(item);
 	}
 
-	function formatVesAmount(amount: number): string {
-		return `Bs. ${new Intl.NumberFormat('es-VE', {
+	function formatAltAmount(amount: number): string {
+		const formatted = new Intl.NumberFormat('es-VE', {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2
-		}).format(amount)}`;
+		}).format(amount);
+		return purchaseOrder.sourceCurrency === 'EUR' ? `€ ${formatted}` : `Bs. ${formatted}`;
+	}
+
+	/** @deprecated use formatAltAmount */
+	function formatVesAmount(amount: number): string {
+		return formatAltAmount(amount);
 	}
 
 	function movementItemName(movement: InventoryMovement): string {
@@ -918,7 +924,11 @@
 					</div>
 				</div>
 
-				<div class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4">
+				<div
+					class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4"
+					class:xl:grid-cols-5={purchaseOrder.sourceCurrency === 'EUR' &&
+						purchaseOrder.altRate != null}
+				>
 					<div class="rounded-2xl bg-surface-container-low p-4">
 						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 							<Truck class="h-4 w-4" />
@@ -958,6 +968,18 @@
 							{formatBcvRate(purchaseOrder.bcvRate)}
 						</p>
 					</div>
+					{#if purchaseOrder.sourceCurrency === 'EUR' && purchaseOrder.altRate != null}
+						<div class="rounded-2xl bg-surface-container-low p-4">
+							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+								<ScrollText class="h-4 w-4" />
+								Tasa EUR (Bs/€)
+							</div>
+							<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
+								{formatBcvRate(purchaseOrder.altRate)}
+							</p>
+							<p class="mt-1 text-xs text-on-surface-variant">Normalizado a USD vía tasa BCV</p>
+						</div>
+					{/if}
 				</div>
 
 				{#if supplementalDeliveryNoteNumber || purchaseOrder.notes}
@@ -1173,11 +1195,11 @@
 									</td>
 									<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
 										{#if purchaseOrder.sourceCurrency !== 'USD' && item.unitPurchasePriceAlt !== null}
-											<div>{formatVesAmount(item.unitPurchasePriceAlt)}</div>
+											<div>{formatAltAmount(item.unitPurchasePriceAlt)}</div>
 											<p
 												class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
 											>
-												USD {formatPrice(item.unitPurchasePrice)}
+												{formatPrice(item.unitPurchasePrice)}
 											</p>
 										{:else}
 											{formatPrice(item.unitPurchasePrice)}
@@ -1187,11 +1209,11 @@
 										class="px-4 py-3.5 text-right font-mono font-semibold text-brand-navy tabular-nums"
 									>
 										{#if purchaseOrder.sourceCurrency !== 'USD' && item.unitPurchasePriceAlt !== null}
-											<div>{formatVesAmount(purchaseLineTotalAlt(item))}</div>
+											<div>{formatAltAmount(purchaseLineTotalAlt(item))}</div>
 											<p
 												class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
 											>
-												USD {formatPrice(purchaseLineTotal(item))}
+												{formatPrice(purchaseLineTotal(item))}
 											</p>
 										{:else}
 											{formatPrice(purchaseLineTotal(item))}
