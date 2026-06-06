@@ -95,7 +95,7 @@ export interface PurchaseOrderItemDraftInput {
 	lensCatalogItemId: string | null;
 	quantity: number;
 	unitPurchasePrice: number;
-	unitPurchasePriceVes?: number | null;
+	unitPurchasePriceAlt?: number | null;
 	unitSalePrice: number;
 	appliesIva: boolean;
 	ivaRate: number;
@@ -545,7 +545,7 @@ type PurchaseOrderItemMaterialSnapshot = Pick<
 	| 'lensCatalogItemId'
 	| 'quantity'
 	| 'unitPurchasePrice'
-	| 'unitPurchasePriceVes'
+	| 'unitPurchasePriceAlt'
 	| 'unitSalePrice'
 	| 'appliesIva'
 	| 'ivaRate'
@@ -566,7 +566,7 @@ export function resolvePurchaseOrderItemReviewedState(
 		previous.lensCatalogItemId !== next.lensCatalogItemId ||
 		previous.quantity !== next.quantity ||
 		previous.unitPurchasePrice !== next.unitPurchasePrice ||
-		previous.unitPurchasePriceVes !== next.unitPurchasePriceVes ||
+		previous.unitPurchasePriceAlt !== next.unitPurchasePriceAlt ||
 		previous.unitSalePrice !== next.unitSalePrice ||
 		previous.appliesIva !== next.appliesIva ||
 		previous.ivaRate !== next.ivaRate;
@@ -601,7 +601,7 @@ export function resolvePurchaseOrderItemZeroPriceIntentionalState(
 		previous.productId !== next.productId ||
 		previous.lensCatalogItemId !== next.lensCatalogItemId ||
 		previous.unitPurchasePrice !== next.unitPurchasePrice ||
-		previous.unitPurchasePriceVes !== next.unitPurchasePriceVes ||
+		previous.unitPurchasePriceAlt !== next.unitPurchasePriceAlt ||
 		previous.unitSalePrice !== next.unitSalePrice;
 
 	if (zeroPriceContextChanged) {
@@ -649,7 +649,7 @@ export async function replacePurchaseOrderItems(
 			lensCatalogItemId: item.lensCatalogItemId,
 			quantity: item.quantity,
 			unitPurchasePrice: item.unitPurchasePrice,
-			unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
+			unitPurchasePriceAlt: item.unitPurchasePriceAlt ?? null,
 			unitSalePrice: item.unitSalePrice,
 			appliesIva: item.appliesIva,
 			ivaRate: item.ivaRate

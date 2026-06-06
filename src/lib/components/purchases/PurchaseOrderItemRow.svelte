@@ -3,6 +3,7 @@
 	import {
 		ProductType,
 		PurchaseOrderItemType,
+		PurchaseSourceCurrency,
 		getLensTypeLabel,
 		getPriceTypeLabel,
 		getProductTypeLabel
@@ -16,7 +17,8 @@
 		calculateDraftItemTotal,
 		calculateUnitPurchasePriceFromLineTotal,
 		calculateUnitPurchasePriceFromVesPreTax,
-		calculateUnitPurchasePriceVesFromLineTotal,
+		calculateUnitPurchasePriceFromEurPreTax,
+		calculateUnitPurchasePriceAltFromLineTotal,
 		calculateDraftItemSubtotalVes,
 		calculateDraftItemTaxVes,
 		calculateDraftItemTotalVes,
@@ -29,8 +31,11 @@
 		item: PurchaseOrderDraftItem;
 		product?: ProductWithRelations | null;
 		lensItem?: LensCatalogItemWithRelations | null;
-		pricesInVes: boolean;
+		/** Source currency for item prices ('USD' | 'VES' | 'EUR') */
+		sourceCurrency: string;
 		bcvUsdRate: number;
+		/** Alt rate (Bs/EUR) — only used when sourceCurrency = EUR */
+		altRate?: number;
 		showRemove?: boolean;
 		onremove?: () => void;
 	}
@@ -39,11 +44,22 @@
 		item = $bindable(),
 		product = null,
 		lensItem = null,
-		pricesInVes,
+		sourceCurrency,
 		bcvUsdRate,
+		altRate = 0,
 		showRemove = false,
 		onremove
 	}: Props = $props();
+
+	const isAltMode = $derived(
+		sourceCurrency === PurchaseSourceCurrency.VES || sourceCurrency === PurchaseSourceCurrency.EUR
+	);
+	const isEurMode = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);
+	const altSymbol = $derived(isEurMode ? '€' : 'Bs');
+	const altInputLabel = $derived(isEurMode ? '€ s/IVA' : 'Bs s/IVA');
+	const altAriaLabel = $derived(
+		isEurMode ? 'Costo unitario sin IVA en euros' : 'Costo unitario sin IVA en bolívares'
+	);
 
 	function hasZeroValueFieldsForItem(
 		currentItem: Pick<PurchaseOrderDraftItem, 'unitPurchasePrice' | 'unitSalePrice'>
@@ -62,7 +78,7 @@
 		lensCatalogItemId: item.lensCatalogItemId,
 		quantity: item.quantity,
 		unitPurchasePrice: item.unitPurchasePrice,
-		unitPurchasePriceVes: item.unitPurchasePriceVes,
+		unitPurchasePriceAlt: item.unitPurchasePriceAlt,
 		unitSalePrice: item.unitSalePrice,
 		appliesIva: item.appliesIva,
 		ivaRate: item.ivaRate,
@@ -74,7 +90,7 @@
 			materialBaseline.lensCatalogItemId !== item.lensCatalogItemId ||
 			materialBaseline.quantity !== item.quantity ||
 			materialBaseline.unitPurchasePrice !== item.unitPurchasePrice ||
-			materialBaseline.unitPurchasePriceVes !== item.unitPurchasePriceVes ||
+			materialBaseline.unitPurchasePriceAlt !== item.unitPurchasePriceAlt ||
 			materialBaseline.unitSalePrice !== item.unitSalePrice ||
 			materialBaseline.appliesIva !== item.appliesIva ||
 			materialBaseline.ivaRate !== item.ivaRate ||
@@ -83,7 +99,7 @@
 			materialBaseline.productId !== item.productId ||
 			materialBaseline.lensCatalogItemId !== item.lensCatalogItemId ||
 			materialBaseline.unitPurchasePrice !== item.unitPurchasePrice ||
-			materialBaseline.unitPurchasePriceVes !== item.unitPurchasePriceVes ||
+			materialBaseline.unitPurchasePriceAlt !== item.unitPurchasePriceAlt ||
 			materialBaseline.unitSalePrice !== item.unitSalePrice ||
 			materialBaseline.itemType !== item.itemType;
 		if (changed) {
@@ -96,7 +112,7 @@
 				lensCatalogItemId: item.lensCatalogItemId,
 				quantity: item.quantity,
 				unitPurchasePrice: item.unitPurchasePrice,
-				unitPurchasePriceVes: item.unitPurchasePriceVes,
+				unitPurchasePriceAlt: item.unitPurchasePriceAlt,
 				unitSalePrice: item.unitSalePrice,
 				appliesIva: item.appliesIva,
 				ivaRate: item.ivaRate,
@@ -122,12 +138,12 @@
 	const lineTotalVes = $derived(calculateDraftItemTotalVes(item));
 	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
 	const visiblePreTaxUnitCost = $derived(round2(preTaxUnitCost));
-	const visiblePreTaxUnitCostVes = $derived(round2(Number(item.unitPurchasePriceVes ?? 0)));
+	const visiblePreTaxUnitCostVes = $derived(round2(Number(item.unitPurchasePriceAlt ?? 0)));
 	const hasZeroValueFields = $derived(hasZeroValueFieldsForItem(item));
 	const userEditingLocked = $derived(isDraftItemUserEditingLocked(item));
 	let editingLineTotal = $state(false);
 	let lineTotalDraftValue = $state('');
-	const displayedLineTotal = $derived(pricesInVes ? lineTotalVes : lineTotal);
+	const displayedLineTotal = $derived(isAltMode ? lineTotalVes : lineTotal);
 	const lineTotalInputValue = $derived(
 		!userEditingLocked && editingLineTotal
 			? lineTotalDraftValue
@@ -149,13 +165,23 @@
 		}).format(amount)}`;
 	}
 
-	function syncUsdPriceFromVes() {
-		item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
-			Number(item.unitPurchasePriceVes ?? 0),
-			item.appliesIva,
-			item.ivaRate,
-			bcvUsdRate
-		);
+	function syncUsdPriceFromAlt() {
+		if (isEurMode) {
+			item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
+				Number(item.unitPurchasePriceAlt ?? 0),
+				item.appliesIva,
+				item.ivaRate,
+				altRate,
+				bcvUsdRate
+			);
+		} else {
+			item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
+				Number(item.unitPurchasePriceAlt ?? 0),
+				item.appliesIva,
+				item.ivaRate,
+				bcvUsdRate
+			);
+		}
 	}
 
 	function getNumberInputValue(e: Event): number | null {
@@ -166,9 +192,9 @@
 	function toggleTaxable() {
 		if (userEditingLocked) return;
 
-		if (pricesInVes) {
+		if (isAltMode) {
 			item.appliesIva = !item.appliesIva;
-			syncUsdPriceFromVes();
+			syncUsdPriceFromAlt();
 			return;
 		}
 
@@ -190,13 +216,13 @@
 		}
 	}
 
-	function handlePreTaxVesInput(e: Event) {
+	function handlePreTaxAltInput(e: Event) {
 		if (userEditingLocked) return;
 
 		const val = getNumberInputValue(e);
 		if (val !== null && val >= 0) {
-			item.unitPurchasePriceVes = round2(val);
-			syncUsdPriceFromVes();
+			item.unitPurchasePriceAlt = round2(val);
+			syncUsdPriceFromAlt();
 		}
 	}
 
@@ -216,14 +242,14 @@
 		lineTotalDraftValue = input.value;
 
 		if (value !== null && value >= 0) {
-			if (pricesInVes) {
-				item.unitPurchasePriceVes = calculateUnitPurchasePriceVesFromLineTotal(
+			if (isAltMode) {
+				item.unitPurchasePriceAlt = calculateUnitPurchasePriceAltFromLineTotal(
 					value,
 					item.quantity,
 					item.appliesIva,
 					item.ivaRate
 				);
-				syncUsdPriceFromVes();
+				syncUsdPriceFromAlt();
 			} else {
 				item.unitPurchasePrice = calculateUnitPurchasePriceFromLineTotal(value, item.quantity);
 			}
@@ -298,14 +324,15 @@
 	}
 
 	function totalTooltip(): string {
-		if (pricesInVes) {
-			const parts = [`Subtotal Bs (s/IVA): ${formatVes(lineSubtotalVes)}`];
+		if (isAltMode) {
+			const sym = altSymbol;
+			const parts = [`Subtotal ${sym} (s/IVA): ${formatVes(lineSubtotalVes)}`];
 
 			if (lineTaxVes > 0) {
 				parts.push(`IVA ${item.ivaRate}%: ${formatVes(lineTaxVes)}`);
 			}
 
-			parts.push(`Total Bs: ${formatVes(lineTotalVes)}`);
+			parts.push(`Total ${sym}: ${formatVes(lineTotalVes)}`);
 			if (bcvUsdRate > 0) {
 				parts.push(`USD c/IVA und.: ${formatPrice(item.unitPurchasePrice)}`);
 			}
@@ -417,28 +444,28 @@
 			>
 				Costo und.
 			</p>
-			{#if pricesInVes}
+			{#if isAltMode}
 				<div class="space-y-2">
 					<div class="relative space-y-1 xl:space-y-0">
 						<p
 							class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase xl:pointer-events-none xl:absolute xl:top-1/2 xl:left-3 xl:z-10 xl:-translate-y-1/2"
 						>
-							Bs s/IVA
+							{altInputLabel}
 						</p>
 						<input
 							type="number"
 							min="0"
 							step="any"
 							value={visiblePreTaxUnitCostVes}
-							onchange={handlePreTaxVesInput}
+							onchange={handlePreTaxAltInput}
 							disabled={userEditingLocked}
 							class={`${compactInputClass} xl:px-3.5 xl:pl-[4.8rem]`}
-							aria-label="Costo unitario sin IVA en bolívares"
+							aria-label={altAriaLabel}
 						/>
 					</div>
 					<p class="text-[11px] font-medium text-on-surface-variant">
 						{#if Number(bcvUsdRate || 0) > 0}
-							USD c/IVA: <span class="font-mono text-brand-navy tabular-nums"
+							<span class="font-mono text-brand-navy tabular-nums"
 								>{formatPrice(item.unitPurchasePrice)}</span
 							>
 						{:else}
@@ -559,7 +586,7 @@
 				<span
 					class="pointer-events-none absolute top-1/2 left-2.5 z-10 -translate-y-1/2 font-mono text-[10px] font-bold tracking-[0.12em] text-outline uppercase"
 				>
-					{pricesInVes ? 'BS' : 'USD'}
+					{isAltMode ? altSymbol.toUpperCase() : 'USD'}
 				</span>
 				<input
 					type="number"
@@ -571,7 +598,9 @@
 					onblur={handleLineTotalBlur}
 					disabled={userEditingLocked}
 					class={`${compactInputClass} !pl-11 font-semibold text-brand-navy`}
-					aria-label={pricesInVes ? 'Total costo en bolívares' : 'Total costo'}
+					aria-label={isAltMode
+						? `Total costo en ${isEurMode ? 'euros' : 'bolívares'}`
+						: 'Total costo'}
 					title={totalTooltip()}
 				/>
 			</div>

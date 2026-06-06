@@ -84,8 +84,16 @@ export const purchaseOrders = pgTable(
 		orderDate: timestamp('order_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** BCV rate at time of purchase */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
-		/** Whether purchase prices were entered in VES on the source document */
-		pricesInVes: boolean('prices_in_ves').notNull().default(false),
+		/**
+		 * Currency in which the supplier's prices are expressed on the source document.
+		 * USD = USD BCV (default), VES = Bolívares, EUR = Euro.
+		 */
+		sourceCurrency: varchar('source_currency', { length: 10 }).notNull().default('USD'),
+		/**
+		 * Alternative rate in Bs per currency unit (only set when sourceCurrency = EUR).
+		 * EUR formula: price_eur * altRate / bcvRate = price_usd
+		 */
+		altRate: doublePrecision('alt_rate'),
 		/** Payment terms for supplier settlement */
 		paymentTerms: purchasePaymentTermsEnum('payment_terms').notNull().default('CONTADO'),
 		/** Final due date for supplier credit settlement (null for cash purchases). */
@@ -304,8 +312,8 @@ export const purchaseOrderItems = pgTable(
 		quantity: integer().notNull(),
 		/** Unit purchase price in USD BCV */
 		unitPurchasePrice: doublePrecision('unit_purchase_price').notNull(),
-		/** Unit purchase price before IVA in VES when the order uses Bs mode */
-		unitPurchasePriceVes: doublePrecision('unit_purchase_price_ves'),
+		/** Unit purchase price before IVA in the source currency (VES or EUR) when not USD mode */
+		unitPurchasePriceAlt: doublePrecision('unit_purchase_price_alt'),
 		/** Proposed sale price in USD BCV */
 		unitSalePrice: doublePrecision('unit_sale_price').notNull(),
 		/** Explicit acknowledgment that one or more zero prices on this line are intentional. */

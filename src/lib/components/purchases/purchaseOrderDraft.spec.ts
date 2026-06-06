@@ -200,7 +200,7 @@ describe('purchaseOrderDraft helpers', () => {
 			lensCatalogItemId: null,
 			quantity: 3,
 			unitPurchasePrice: 11,
-			unitPurchasePriceVes: 702.15,
+			unitPurchasePriceAlt: 702.15,
 			unitSalePrice: 25,
 			isZeroPriceIntentional: true,
 			appliesIva: true,
@@ -211,7 +211,7 @@ describe('purchaseOrderDraft helpers', () => {
 		expect(item.persistedId).toBe('po-item-1');
 		expect(item.productId).toBe('product-1');
 		expect(item.isZeroPriceIntentional).toBe(true);
-		expect(item.unitPurchasePriceVes).toBe(702.15);
+		expect(item.unitPurchasePriceAlt).toBe(702.15);
 	});
 
 	it('calculates direct Bs totals with per-line IVA rounding', () => {
@@ -219,8 +219,8 @@ describe('purchaseOrderDraft helpers', () => {
 		item.appliesIva = true;
 		item.ivaRate = 16;
 		item.quantity = 2;
-		item.unitPurchasePriceVes = 3.14;
-		item.unitPurchasePrice = (item.unitPurchasePriceVes * 1.16) / 100;
+		item.unitPurchasePriceAlt = 3.14;
+		item.unitPurchasePrice = (item.unitPurchasePriceAlt * 1.16) / 100;
 
 		expect(calculateDraftItemSubtotalVes(item)).toBe(6.28);
 		expect(calculateDraftItemTaxVes(item)).toBe(1);
@@ -232,22 +232,22 @@ describe('purchaseOrderDraft helpers', () => {
 		first.appliesIva = true;
 		first.ivaRate = 16;
 		first.quantity = 2;
-		first.unitPurchasePriceVes = 3.14;
-		first.unitPurchasePrice = (first.unitPurchasePriceVes * 1.16) / 100;
+		first.unitPurchasePriceAlt = 3.14;
+		first.unitPurchasePrice = (first.unitPurchasePriceAlt * 1.16) / 100;
 
 		const second = createEmptyPurchaseOrderDraftItem();
 		second.appliesIva = true;
 		second.ivaRate = 16;
 		second.quantity = 1;
-		second.unitPurchasePriceVes = 6.27;
-		second.unitPurchasePrice = (second.unitPurchasePriceVes * 1.16) / 100;
+		second.unitPurchasePriceAlt = 6.27;
+		second.unitPurchasePrice = (second.unitPurchasePriceAlt * 1.16) / 100;
 
 		const third = createEmptyPurchaseOrderDraftItem();
 		third.appliesIva = true;
 		third.ivaRate = 16;
 		third.quantity = 1;
-		third.unitPurchasePriceVes = 9.43;
-		third.unitPurchasePrice = (third.unitPurchasePriceVes * 1.16) / 100;
+		third.unitPurchasePriceAlt = 9.43;
+		third.unitPurchasePrice = (third.unitPurchasePriceAlt * 1.16) / 100;
 
 		const summary = calculatePurchaseOrderSummary([first, second, third], undefined, 100);
 

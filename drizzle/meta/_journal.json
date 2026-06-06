@@ -183,6 +183,13 @@
       "when": 1780434888016,
       "tag": "0025_drop_currencies",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1749168000000,
+      "tag": "0026_purchase_order_source_currency",
+      "breakpoints": true
     }
   ]
 }

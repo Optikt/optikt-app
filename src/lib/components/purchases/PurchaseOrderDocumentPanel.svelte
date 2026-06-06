@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { FileText } from '@lucide/svelte';
 	import SelectInput from '$lib/components/ui/SelectInput.svelte';
-	import { PurchaseDocumentType, getPurchaseDocumentTypeLabel } from '$lib/shared/enums';
+	import {
+		PurchaseDocumentType,
+		PurchaseSourceCurrency,
+		getPurchaseDocumentTypeLabel
+	} from '$lib/shared/enums';
 	import { autoAnimate } from '@formkit/auto-animate';
 
 	type SupplierOption = {
@@ -16,6 +20,10 @@
 		documentType: PurchaseDocumentType;
 		orderDate: string;
 		bcvRate: number;
+		/** Alt rate (Bs/EUR) — only shown and used when sourceCurrency = EUR */
+		altRate: number;
+		/** Source currency for item prices — determines whether altRate field is visible */
+		sourceCurrency: string;
 		invoiceNumber: string;
 		deliveryNoteNumber: string;
 		notes: string;
@@ -28,6 +36,8 @@
 		documentType = $bindable(),
 		orderDate = $bindable(),
 		bcvRate = $bindable(),
+		altRate = $bindable(),
+		sourceCurrency,
 		invoiceNumber = $bindable(),
 		deliveryNoteNumber = $bindable(),
 		notes = $bindable()
@@ -40,6 +50,7 @@
 
 	const isInvoice = $derived(documentType === PurchaseDocumentType.INVOICE);
 	const notesTooShort = $derived(notes.length > 0 && notes.length < 6);
+	const showAltRate = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);
 </script>
 
 <section class="glass-card bg-surface-container-lowest p-5 sm:p-6">
@@ -141,7 +152,30 @@
 				/>
 			</div>
 
-			<div class="space-y-1.5 sm:col-span-1 lg:col-span-3" use:autoAnimate>
+			{#if showAltRate}
+				<div class="space-y-1.5">
+					<p class={fieldLabelClass}>Tasa EUR (Bs/€)</p>
+					<input
+						type="number"
+						step="0.01"
+						min="0"
+						bind:value={altRate}
+						class={inputClass}
+						placeholder="Ej: 41.30"
+						aria-label="Tasa EUR en bolívares"
+					/>
+					<p class="text-xs leading-5 text-on-surface-variant">
+						Bs por 1 EUR. Se usa para derivar el costo USD.
+					</p>
+				</div>
+			{/if}
+
+			<div
+				class="space-y-1.5 {showAltRate
+					? 'sm:col-span-2 lg:col-span-2'
+					: 'sm:col-span-1 lg:col-span-3'}"
+				use:autoAnimate
+			>
 				<p class={fieldLabelClass}>
 					Observaciones <span class="text-error">*</span>
 				</p>

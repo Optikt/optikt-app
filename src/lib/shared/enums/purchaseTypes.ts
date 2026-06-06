@@ -181,3 +181,48 @@ export const PURCHASE_DISCOUNT_TYPE_LABELS: Record<PurchaseDiscountType, string>
 export function getPurchaseDiscountTypeLabel(type: string): string {
 	return PURCHASE_DISCOUNT_TYPE_LABELS[type as PurchaseDiscountType] ?? type;
 }
+
+// ============================================================================
+// PURCHASE SOURCE CURRENCY
+// ============================================================================
+
+/**
+ * The currency in which the supplier's prices are expressed on the source document.
+ * - USD: prices entered in USD BCV (default, no conversion needed)
+ * - VES: prices entered in Bs — divided by bcvRate to normalize to USD
+ * - EUR: prices entered in EUR — multiplied by altRate (Bs/EUR) then divided by bcvRate to normalize to USD
+ */
+export enum PurchaseSourceCurrency {
+	USD = 'USD',
+	VES = 'VES',
+	EUR = 'EUR'
+}
+
+export const ALL_PURCHASE_SOURCE_CURRENCIES = Object.values(
+	PurchaseSourceCurrency
+) as PurchaseSourceCurrency[];
+
+export const PURCHASE_SOURCE_CURRENCY_LABELS: Record<PurchaseSourceCurrency, string> = {
+	[PurchaseSourceCurrency.USD]: 'USD BCV',
+	[PurchaseSourceCurrency.VES]: 'Bolívares (Bs)',
+	[PurchaseSourceCurrency.EUR]: 'Euro (€)'
+};
+
+export const PURCHASE_SOURCE_CURRENCY_SYMBOLS: Record<PurchaseSourceCurrency, string> = {
+	[PurchaseSourceCurrency.USD]: '$',
+	[PurchaseSourceCurrency.VES]: 'Bs',
+	[PurchaseSourceCurrency.EUR]: '€'
+};
+
+export function getPurchaseSourceCurrencyLabel(currency: string): string {
+	return PURCHASE_SOURCE_CURRENCY_LABELS[currency as PurchaseSourceCurrency] ?? currency;
+}
+
+export function getPurchaseSourceCurrencySymbol(currency: string): string {
+	return PURCHASE_SOURCE_CURRENCY_SYMBOLS[currency as PurchaseSourceCurrency] ?? currency;
+}
+
+/** Whether this source currency requires entering an alt price (not USD). */
+export function isAltSourceCurrency(currency: string): boolean {
+	return currency === PurchaseSourceCurrency.VES || currency === PurchaseSourceCurrency.EUR;
+}
