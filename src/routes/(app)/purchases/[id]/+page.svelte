@@ -326,6 +326,10 @@
 		return calculateDraftItemTotalVes(createPurchaseOrderDraftItemFromExisting(item));
 	}
 
+	function purchaseLineTotalAlt(item: PurchaseOrderItemWithProduct): number {
+		return purchaseLineTotalVes(item);
+	}
+
 	function formatVesAmount(amount: number): string {
 		return `Bs. ${new Intl.NumberFormat('es-VE', {
 			minimumFractionDigits: 2,
@@ -1080,10 +1084,18 @@
 								<th class="px-4 py-3.5">Artículo</th>
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
 								<th class="px-4 py-3.5 text-right">
-									{purchaseOrder.pricesInVes ? 'Costo unitario Bs' : 'Costo unitario'}
+									{purchaseOrder.sourceCurrency !== 'USD'
+										? purchaseOrder.sourceCurrency === 'EUR'
+											? 'Costo unitario €'
+											: 'Costo unitario Bs'
+										: 'Costo unitario'}
 								</th>
 								<th class="px-4 py-3.5 text-right">
-									{purchaseOrder.pricesInVes ? 'Total compra Bs' : 'Total compra'}
+									{purchaseOrder.sourceCurrency !== 'USD'
+										? purchaseOrder.sourceCurrency === 'EUR'
+											? 'Total compra €'
+											: 'Total compra Bs'
+										: 'Total compra'}
 								</th>
 								<th class="px-4 py-3.5 text-right">Venta sugerida</th>
 								{#if isConfirmed}
@@ -1160,8 +1172,8 @@
 										{item.quantity}
 									</td>
 									<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
-										{#if purchaseOrder.pricesInVes && item.unitPurchasePriceVes !== null}
-											<div>{formatVesAmount(item.unitPurchasePriceVes)}</div>
+										{#if purchaseOrder.sourceCurrency !== 'USD' && item.unitPurchasePriceAlt !== null}
+											<div>{formatVesAmount(item.unitPurchasePriceAlt)}</div>
 											<p
 												class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
 											>
@@ -1174,8 +1186,8 @@
 									<td
 										class="px-4 py-3.5 text-right font-mono font-semibold text-brand-navy tabular-nums"
 									>
-										{#if purchaseOrder.pricesInVes && item.unitPurchasePriceVes !== null}
-											<div>{formatVesAmount(purchaseLineTotalVes(item))}</div>
+										{#if purchaseOrder.sourceCurrency !== 'USD' && item.unitPurchasePriceAlt !== null}
+											<div>{formatVesAmount(purchaseLineTotalAlt(item))}</div>
 											<p
 												class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
 											>

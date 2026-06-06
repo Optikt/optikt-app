@@ -11,7 +11,7 @@ const baseItem = {
 	lensCatalogItemId: null,
 	quantity: 1,
 	unitPurchasePrice: 10,
-	unitPurchasePriceVes: null,
+	unitPurchasePriceAlt: null,
 	unitSalePrice: 20,
 	appliesIva: true,
 	ivaRate: 16

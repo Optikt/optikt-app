@@ -24,7 +24,8 @@ export interface PurchaseOrderDraftItem {
 	lensCatalogItemId: string;
 	quantity: number;
 	unitPurchasePrice: number;
-	unitPurchasePriceVes?: number;
+	/** Price in the source currency (Bs or EUR) before IVA — set when not USD mode */
+	unitPurchasePriceAlt?: number;
 	unitSalePrice: number;
 	isZeroPriceIntentional: boolean;
 	appliesIva: boolean;
@@ -42,11 +43,11 @@ export interface PurchaseOrderSummary {
 	taxAmount: number;
 	/** Gross total = subtotal + taxAmount. Matches the delivery note. */
 	total: number;
-	/** Gross pre-tax subtotal in VES when direct Bs prices are available. */
+	/** Gross pre-tax subtotal in alt currency (VES or EUR) when direct alt prices are available. */
 	subtotalVes?: number;
-	/** Gross IVA in VES when direct Bs prices are available. */
+	/** Gross IVA in alt currency when direct alt prices are available. */
 	taxAmountVes?: number;
-	/** Gross total in VES when direct Bs prices are available. */
+	/** Gross total in alt currency when direct alt prices are available. */
 	totalVes?: number;
 	estimatedSale: number;
 	estimatedProfit: number;
@@ -113,7 +114,8 @@ export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesI
 
 export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeader {
 	items: PurchaseOrderDraftItem[];
-	pricesInVes?: boolean;
+	sourceCurrency?: string;
+	altRate?: number | null;
 }
 
 export function createEmptyPurchaseOrderDraftItem(
@@ -130,7 +132,7 @@ export function createEmptyPurchaseOrderDraftItem(
 		lensCatalogItemId: '',
 		quantity: 1,
 		unitPurchasePrice: 0,
-		unitPurchasePriceVes: undefined,
+		unitPurchasePriceAlt: undefined,
 		unitSalePrice: 0,
 		isZeroPriceIntentional: false,
 		appliesIva: isInvoice,
@@ -150,7 +152,7 @@ export function createPurchaseOrderDraftItemFromExisting(
 		lensCatalogItemId: item.lensCatalogItemId ?? '',
 		quantity: item.quantity,
 		unitPurchasePrice: item.unitPurchasePrice,
-		unitPurchasePriceVes: item.unitPurchasePriceVes ?? undefined,
+		unitPurchasePriceAlt: item.unitPurchasePriceAlt ?? undefined,
 		unitSalePrice: item.unitSalePrice,
 		isZeroPriceIntentional: item.isZeroPriceIntentional ?? false,
 		appliesIva: item.appliesIva,
@@ -172,7 +174,7 @@ export function resetDraftItemType(
 	item.lensCatalogItemId = '';
 	item.quantity = Math.max(item.quantity || 1, 1);
 	item.unitPurchasePrice = 0;
-	item.unitPurchasePriceVes = undefined;
+	item.unitPurchasePriceAlt = undefined;
 	item.unitSalePrice = 0;
 	item.isZeroPriceIntentional = false;
 	item.appliesIva = isInvoice;
@@ -197,7 +199,7 @@ export function applyProductDefaults(
 	item.productId = product.id;
 	item.lensCatalogItemId = '';
 	item.unitPurchasePrice = taxable ? round2(preTax * (1 + rate / 100)) : preTax;
-	item.unitPurchasePriceVes = undefined;
+	item.unitPurchasePriceAlt = undefined;
 	item.unitSalePrice = Number(product.currentSalePrice ?? 0);
 	item.isZeroPriceIntentional = false;
 	item.appliesIva = taxable;
@@ -224,7 +226,7 @@ export function applyLensDefaults(
 	item.lensCatalogItemId = lens.id;
 	item.productId = '';
 	item.unitPurchasePrice = taxable ? round2(preTax * (1 + rate / 100)) : preTax;
-	item.unitPurchasePriceVes = undefined;
+	item.unitPurchasePriceAlt = undefined;
 	item.unitSalePrice = Number(lens.salePrice ?? 0);
 	item.isZeroPriceIntentional = false;
 	item.appliesIva = taxable;
@@ -263,38 +265,64 @@ export function calculateUnitPurchasePriceFromLineTotal(
 }
 
 export function calculateUnitPurchasePriceFromVesPreTax(
-	unitPurchasePriceVes: number,
+	unitPriceAlt: number,
 	appliesIva: boolean,
 	ivaRate: number,
 	bcvRate: number
 ): number {
-	const normalizedUnitPriceVes = Number(unitPurchasePriceVes ?? 0);
+	const normalizedUnitPrice = Number(unitPriceAlt ?? 0);
 	const normalizedBcvRate = Number(bcvRate || 0);
 
-	if (!Number.isFinite(normalizedUnitPriceVes) || normalizedUnitPriceVes < 0) return 0;
+	if (!Number.isFinite(normalizedUnitPrice) || normalizedUnitPrice < 0) return 0;
 	if (!Number.isFinite(normalizedBcvRate) || normalizedBcvRate <= 0) return 0;
 
-	const unitPurchasePriceWithTaxVes = appliesIva
-		? normalizedUnitPriceVes * (1 + Number(ivaRate || 0) / 100)
-		: normalizedUnitPriceVes;
+	const priceWithTax = appliesIva
+		? normalizedUnitPrice * (1 + Number(ivaRate || 0) / 100)
+		: normalizedUnitPrice;
 
-	return unitPurchasePriceWithTaxVes / normalizedBcvRate;
+	return priceWithTax / normalizedBcvRate;
 }
 
-export function calculateUnitPurchasePriceVesFromLineTotal(
-	lineTotalVes: number,
+/**
+ * Derive USD unit price (with IVA) from a EUR pre-tax price.
+ * Formula: price_eur_pretax × (1 + ivaRate/100) × altRate (Bs/EUR) ÷ bcvRate (Bs/USD)
+ */
+export function calculateUnitPurchasePriceFromEurPreTax(
+	unitPriceEur: number,
+	appliesIva: boolean,
+	ivaRate: number,
+	altRate: number,
+	bcvRate: number
+): number {
+	const normalizedEurPrice = Number(unitPriceEur ?? 0);
+	const normalizedAltRate = Number(altRate || 0);
+	const normalizedBcvRate = Number(bcvRate || 0);
+
+	if (!Number.isFinite(normalizedEurPrice) || normalizedEurPrice < 0) return 0;
+	if (!Number.isFinite(normalizedAltRate) || normalizedAltRate <= 0) return 0;
+	if (!Number.isFinite(normalizedBcvRate) || normalizedBcvRate <= 0) return 0;
+
+	const priceWithTax = appliesIva
+		? normalizedEurPrice * (1 + Number(ivaRate || 0) / 100)
+		: normalizedEurPrice;
+
+	return (priceWithTax * normalizedAltRate) / normalizedBcvRate;
+}
+
+export function calculateUnitPurchasePriceAltFromLineTotal(
+	lineTotalAlt: number,
 	quantity: number,
 	appliesIva: boolean,
 	ivaRate: number
 ): number {
-	const unitPurchasePriceWithTaxVes = calculateUnitPurchasePriceFromLineTotal(
-		lineTotalVes,
+	const unitPurchasePriceWithTaxAlt = calculateUnitPurchasePriceFromLineTotal(
+		lineTotalAlt,
 		quantity
 	);
 
-	if (!appliesIva || !ivaRate) return round2(unitPurchasePriceWithTaxVes);
+	if (!appliesIva || !ivaRate) return round2(unitPurchasePriceWithTaxAlt);
 
-	return round2(unitPurchasePriceWithTaxVes / (1 + Number(ivaRate || 0) / 100));
+	return round2(unitPurchasePriceWithTaxAlt / (1 + Number(ivaRate || 0) / 100));
 }
 
 export function getDraftItemZeroValueFields(
@@ -447,7 +475,7 @@ export function calculateDraftItemTotal(item: PurchaseOrderDraftItem): number {
 }
 
 export function calculateDraftItemSubtotalVes(item: PurchaseOrderDraftItem): number {
-	const unitPriceVes = Number(item.unitPurchasePriceVes ?? 0);
+	const unitPriceVes = Number(item.unitPurchasePriceAlt ?? 0);
 	const quantity = Number(item.quantity || 0);
 
 	if (!Number.isFinite(unitPriceVes) || unitPriceVes < 0) return 0;
@@ -466,7 +494,7 @@ export function calculateDraftItemTotalVes(item: PurchaseOrderDraftItem): number
 }
 
 function hasDirectVesPrice(item: PurchaseOrderDraftItem): boolean {
-	return item.unitPurchasePriceVes !== undefined && item.unitPurchasePriceVes !== null;
+	return item.unitPurchasePriceAlt !== undefined && item.unitPurchasePriceAlt !== null;
 }
 
 function calculateNetDraftItemSubtotalVes(item: PurchaseOrderDraftItem, factor: number): number {

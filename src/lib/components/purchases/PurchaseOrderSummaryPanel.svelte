@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { Calculator } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import { PurchaseDiscountType, getPurchaseDiscountTypeLabel } from '$lib/shared/enums';
+	import {
+		PurchaseDiscountType,
+		getPurchaseDiscountTypeLabel,
+		PurchaseSourceCurrency
+	} from '$lib/shared/enums';
 	import {
 		NO_PURCHASE_ORDER_DISCOUNT,
 		type PurchaseOrderDiscountInput,
@@ -12,13 +16,33 @@
 		summary: PurchaseOrderSummary;
 		bcvRate: number;
 		discount?: PurchaseOrderDiscountInput;
+		sourceCurrency?: string;
+		altRate?: number;
 	}
 
-	let { summary, bcvRate, discount = NO_PURCHASE_ORDER_DISCOUNT }: Props = $props();
+	let {
+		summary,
+		bcvRate,
+		discount = NO_PURCHASE_ORDER_DISCOUNT,
+		sourceCurrency = PurchaseSourceCurrency.USD,
+		altRate: _altRate = 0
+	}: Props = $props();
 
+	const isEurMode = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);
 	const hasDiscount = $derived(discount.type !== PurchaseDiscountType.NONE && discount.value > 0);
-	const totalInBs = $derived(summary.totalVes ?? summary.total * Number(bcvRate || 0));
-	const netTotalInBs = $derived(summary.netTotalVes ?? summary.netTotal * Number(bcvRate || 0));
+
+	// In EUR mode: totalVes holds the EUR total; BCV equivalent comes from USD total × bcvRate
+	// In VES mode: totalVes holds the Bs total directly
+	const totalInBs = $derived(
+		isEurMode
+			? (hasDiscount ? summary.netTotal : summary.total) * Number(bcvRate || 0)
+			: (summary.totalVes ?? summary.total * Number(bcvRate || 0))
+	);
+	const netTotalInBs = $derived(
+		isEurMode
+			? summary.netTotal * Number(bcvRate || 0)
+			: (summary.netTotalVes ?? summary.netTotal * Number(bcvRate || 0))
+	);
 	const canShowBsEquivalent = $derived(
 		summary.totalVes !== undefined || summary.netTotalVes !== undefined || bcvRate > 0
 	);
@@ -119,14 +143,37 @@
 					{formatPrice(hasDiscount ? summary.netEstimatedProfit : summary.estimatedProfit)}
 				</span>
 			</div>
+			{#if isEurMode && (summary.totalVes !== undefined || summary.netTotalVes !== undefined)}
+				<div class="flex items-center justify-between gap-4">
+					<span>Total €</span>
+					<span class="font-mono text-base font-semibold text-white tabular-nums">
+						€ {new Intl.NumberFormat('es-VE', {
+							minimumFractionDigits: 2,
+							maximumFractionDigits: 2
+						}).format(hasDiscount ? (summary.netTotalVes ?? 0) : (summary.totalVes ?? 0))}
+					</span>
+				</div>
+			{/if}
 			<div class="flex items-center justify-between gap-4">
-				<span>Equivalente BCV</span>
+				<span>{isEurMode ? 'Equiv. USD' : 'Equivalente BCV'}</span>
 				<span class="font-mono text-base font-semibold text-white tabular-nums">
-					{canShowBsEquivalent
-						? formatVes(hasDiscount ? netTotalInBs : totalInBs)
-						: 'Define una tasa'}
+					{#if isEurMode}
+						{formatPrice(hasDiscount ? summary.netTotal : summary.total)}
+					{:else}
+						{canShowBsEquivalent
+							? formatVes(hasDiscount ? netTotalInBs : totalInBs)
+							: 'Define una tasa'}
+					{/if}
 				</span>
 			</div>
+			{#if isEurMode}
+				<div class="flex items-center justify-between gap-4">
+					<span>Equivalente BCV</span>
+					<span class="font-mono text-base font-semibold text-white tabular-nums">
+						{bcvRate > 0 ? formatVes(hasDiscount ? netTotalInBs : totalInBs) : 'Define una tasa'}
+					</span>
+				</div>
+			{/if}
 		</div>
 	</div>
 </section>

@@ -14,7 +14,9 @@
 		PurchaseDiscountType,
 		PurchaseOrderItemType,
 		PurchaseDocumentType,
-		PurchasePaymentTerms
+		PurchasePaymentTerms,
+		PurchaseSourceCurrency,
+		PURCHASE_SOURCE_CURRENCY_LABELS
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -27,6 +29,7 @@
 	import {
 		calculatePurchaseOrderSummary,
 		calculateUnitPurchasePriceFromVesPreTax,
+		calculateUnitPurchasePriceFromEurPreTax,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
@@ -89,7 +92,8 @@
 	let deliveryNoteNumber = $state(initialValues?.deliveryNoteNumber ?? '');
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
-	let pricesInVes = $state(initialValues?.pricesInVes ?? false);
+	let sourceCurrency = $state<string>(initialValues?.sourceCurrency ?? PurchaseSourceCurrency.USD);
+	let altRate = $state<number>(initialValues?.altRate ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -109,7 +113,7 @@
 	let savingAction = $state<'draft' | null>(null);
 	let showDraftWarningModal = $state(false);
 	let showPricingModeConfirmModal = $state(false);
-	let pendingPricesInVes = $state<boolean | null>(null);
+	let pendingSourceCurrency = $state<string | null>(null);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
@@ -143,30 +147,47 @@
 	);
 
 	const canSave = $derived(
-		canPersistPurchaseOrderDraft({ supplierId, orderDate, bcvRate, notes }, items, {
-			paymentTerms,
-			creditDueDate,
-			earlyPaymentDiscountPercent,
-			earlyPaymentDiscountDeadline
-		})
+		canPersistPurchaseOrderDraft(
+			{ supplierId, orderDate, bcvRate, notes, sourceCurrency, altRate },
+			items,
+			{
+				paymentTerms,
+				creditDueDate,
+				earlyPaymentDiscountPercent,
+				earlyPaymentDiscountDeadline
+			}
+		)
 	);
 
 	$effect(() => {
 		const currentBcvRate = Number(bcvRate || 0);
-		if (!pricesInVes || currentBcvRate <= 0) return;
+		const currentAltRate = Number(altRate || 0);
+		const isAlt = sourceCurrency !== PurchaseSourceCurrency.USD;
+		if (!isAlt || currentBcvRate <= 0) return;
+		if (sourceCurrency === PurchaseSourceCurrency.EUR && currentAltRate <= 0) return;
 
 		untrack(() => {
 			for (const item of items) {
-				if (item.unitPurchasePriceVes === undefined || item.unitPurchasePriceVes === null) {
+				if (item.unitPurchasePriceAlt === undefined || item.unitPurchasePriceAlt === null) {
 					continue;
 				}
 
-				item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
-					item.unitPurchasePriceVes,
-					item.appliesIva,
-					item.ivaRate,
-					currentBcvRate
-				);
+				if (sourceCurrency === PurchaseSourceCurrency.EUR) {
+					item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
+						item.unitPurchasePriceAlt,
+						item.appliesIva,
+						item.ivaRate,
+						currentAltRate,
+						currentBcvRate
+					);
+				} else {
+					item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
+						item.unitPurchasePriceAlt,
+						item.appliesIva,
+						item.ivaRate,
+						currentBcvRate
+					);
+				}
 			}
 		});
 	});
@@ -227,32 +248,32 @@
 
 	function clearItemPricing(item: PurchaseOrderDraftItem) {
 		item.unitPurchasePrice = 0;
-		item.unitPurchasePriceVes = 0;
+		item.unitPurchasePriceAlt = 0;
 		item.isZeroPriceIntentional = false;
 		item.isReviewed = false;
 	}
 
-	function requestPricingModeChange(nextValue: boolean) {
-		if (nextValue === pricesInVes) return;
+	function requestPricingModeChange(nextValue: string) {
+		if (nextValue === sourceCurrency) return;
 
 		if (items.length === 0) {
-			pricesInVes = nextValue;
+			sourceCurrency = nextValue;
 			return;
 		}
 
-		pendingPricesInVes = nextValue;
+		pendingSourceCurrency = nextValue;
 		showPricingModeConfirmModal = true;
 	}
 
 	function confirmPricingModeChange() {
-		if (pendingPricesInVes === null) return;
+		if (pendingSourceCurrency === null) return;
 
-		const nextValue = pendingPricesInVes;
+		const nextValue = pendingSourceCurrency;
 		showPricingModeConfirmModal = false;
-		pendingPricesInVes = null;
+		pendingSourceCurrency = null;
 
 		untrack(() => {
-			pricesInVes = nextValue;
+			sourceCurrency = nextValue;
 			for (const item of items) {
 				clearItemPricing(item);
 			}
@@ -261,7 +282,7 @@
 
 	function cancelPricingModeChange() {
 		showPricingModeConfirmModal = false;
-		pendingPricesInVes = null;
+		pendingSourceCurrency = null;
 	}
 
 	function buildItemsPayload() {
@@ -276,7 +297,10 @@
 					: undefined,
 			quantity: item.quantity,
 			unitPurchasePrice: item.unitPurchasePrice,
-			unitPurchasePriceVes: pricesInVes ? (item.unitPurchasePriceVes ?? 0) : undefined,
+			unitPurchasePriceAlt:
+				sourceCurrency !== PurchaseSourceCurrency.USD
+					? (item.unitPurchasePriceAlt ?? 0)
+					: undefined,
 			unitSalePrice: item.unitSalePrice,
 			isZeroPriceIntentional: item.isZeroPriceIntentional,
 			appliesIva: item.appliesIva,
@@ -304,7 +328,8 @@
 					deliveryNoteNumber: deliveryNoteNumber || undefined,
 					orderDate,
 					bcvRate,
-					pricesInVes,
+					altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? altRate : undefined,
+					sourceCurrency,
 					paymentTerms,
 					creditDueDate,
 					earlyPaymentDiscountPercent,
@@ -336,7 +361,8 @@
 				deliveryNoteNumber: deliveryNoteNumber || undefined,
 				orderDate,
 				bcvRate,
-				pricesInVes,
+				altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? altRate : undefined,
+				sourceCurrency,
 				paymentTerms,
 				creditDueDate,
 				earlyPaymentDiscountPercent,
@@ -424,6 +450,8 @@
 			bind:documentType
 			bind:orderDate
 			bind:bcvRate
+			bind:altRate
+			{sourceCurrency}
 			bind:invoiceNumber
 			bind:deliveryNoteNumber
 			bind:notes
@@ -438,37 +466,34 @@
 					</p>
 					<h2 class="text-lg font-semibold text-brand-navy">Base de precios de la factura</h2>
 					<p class="max-w-2xl text-sm text-on-surface-variant">
-						{pricesInVes
-							? 'Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para inventario usando la tasa BCV.'
-							: 'Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula desde la tasa BCV.'}
+						{#if sourceCurrency === PurchaseSourceCurrency.VES}
+							Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para
+							inventario usando la tasa BCV.
+						{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
+							Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
+							EUR y la tasa BCV.
+						{:else}
+							Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
+							desde la tasa BCV.
+						{/if}
 					</p>
 				</div>
 
 				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
-					<button
-						type="button"
-						onclick={() => requestPricingModeChange(false)}
-						class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-							!pricesInVes
-								? 'bg-brand-navy text-white'
-								: 'text-on-surface-variant hover:text-brand-navy'
-						}`}
-						aria-pressed={!pricesInVes}
-					>
-						USD BCV
-					</button>
-					<button
-						type="button"
-						onclick={() => requestPricingModeChange(true)}
-						class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-							pricesInVes
-								? 'bg-brand-navy text-white'
-								: 'text-on-surface-variant hover:text-brand-navy'
-						}`}
-						aria-pressed={pricesInVes}
-					>
-						Bs
-					</button>
+					{#each Object.values(PurchaseSourceCurrency) as currency (currency)}
+						<button
+							type="button"
+							onclick={() => requestPricingModeChange(currency)}
+							class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
+								sourceCurrency === currency
+									? 'bg-brand-navy text-white'
+									: 'text-on-surface-variant hover:text-brand-navy'
+							}`}
+							aria-pressed={sourceCurrency === currency}
+						>
+							{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
+						</button>
+					{/each}
 				</div>
 			</div>
 		</section>
@@ -479,7 +504,8 @@
 			{lensItems}
 			{supplierId}
 			{documentType}
-			{pricesInVes}
+			{sourceCurrency}
+			{altRate}
 			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
 		/>
@@ -498,7 +524,7 @@
 			onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
 		/>
 
-		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} />
+		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {altRate} />
 	</div>
 </div>
 
@@ -599,7 +625,7 @@
 <ConfirmModal
 	bind:open={showPricingModeConfirmModal}
 	title="Cambiar modo de precios"
-	message="Cambiar entre USD BCV y Bs limpiará los costos actuales de todas las líneas para evitar mezclar bases distintas."
+	message="Cambiar la base de precios limpiará los costos actuales de todas las líneas para evitar mezclar bases distintas."
 	confirmLabel="Cambiar y limpiar precios"
 	cancelLabel="Mantener modo actual"
 	confirmColor="yellow"

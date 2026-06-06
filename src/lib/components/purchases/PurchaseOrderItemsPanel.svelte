@@ -2,7 +2,11 @@
 	import { Plus } from '@lucide/svelte';
 	import { AppBadge } from '$lib/components/ui';
 	import SelectInput from '$lib/components/ui/SelectInput.svelte';
-	import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
+	import {
+		PurchaseDocumentType,
+		PurchaseOrderItemType,
+		PurchaseSourceCurrency
+	} from '$lib/shared/enums';
 	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -31,8 +35,11 @@
 		lensItems: LensCatalogItemWithRelations[];
 		supplierId: string;
 		documentType: PurchaseDocumentType;
-		pricesInVes: boolean;
+		/** Source currency for item prices ('USD' | 'VES' | 'EUR') */
+		sourceCurrency: string;
 		bcvUsdRate: number;
+		/** Alt rate (Bs/EUR) — passed through to each row when sourceCurrency = EUR */
+		altRate?: number;
 		defaultTaxRate?: number;
 	}
 
@@ -42,10 +49,15 @@
 		lensItems,
 		supplierId,
 		documentType,
-		pricesInVes,
+		sourceCurrency,
 		bcvUsdRate,
+		altRate = 0,
 		defaultTaxRate = DEFAULT_TAX_RATE
 	}: Props = $props();
+
+	const isAltMode = $derived(
+		sourceCurrency === PurchaseSourceCurrency.VES || sourceCurrency === PurchaseSourceCurrency.EUR
+	);
 
 	let pendingItemType = $state(PurchaseOrderItemType.PRODUCT);
 	let pendingProductId = $state('');
@@ -135,9 +147,9 @@
 			pendingLensCatalogItemId = '';
 		}
 
-		if (pricesInVes) {
+		if (isAltMode) {
 			nextItem.unitPurchasePrice = 0;
-			nextItem.unitPurchasePriceVes = 0;
+			nextItem.unitPurchasePriceAlt = 0;
 		}
 
 		items = [...items, nextItem];
@@ -247,7 +259,7 @@
 					<div
 						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_148px] xl:gap-4"
 					>
-						{#each ['Tipo', 'Artículo', 'Cant.', pricesInVes ? 'Costo Bs base' : 'Costo und.', 'Venta und.', 'IVA', pricesInVes ? 'Total Bs' : 'Total costo', 'Checks'] as label, index (label + index)}
+						{#each ['Tipo', 'Artículo', 'Cant.', isAltMode ? `Costo ${sourceCurrency === 'EUR' ? '€' : 'Bs'} base` : 'Costo und.', 'Venta und.', 'IVA', isAltMode ? `Total ${sourceCurrency === 'EUR' ? '€' : 'Bs'}` : 'Total costo', 'Checks'] as label, index (label + index)}
 							<div
 								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 							>
@@ -261,8 +273,9 @@
 							bind:item={items[index]}
 							product={products.find((product) => product.id === item.productId) ?? null}
 							lensItem={lensItems.find((lens) => lens.id === item.lensCatalogItemId) ?? null}
-							{pricesInVes}
+							{sourceCurrency}
 							{bcvUsdRate}
+							{altRate}
 							showRemove={true}
 							onremove={() => removeLine(item.id)}
 						/>

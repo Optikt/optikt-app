@@ -1,10 +1,14 @@
-import { PurchaseOrderItemType } from './enums';
+import { PurchaseOrderItemType, PurchaseSourceCurrency } from './enums';
 
 export interface PurchaseOrderDraftHeaderRulesInput {
 	supplierId: string | null;
 	orderDate: string | null;
 	bcvRate: number | null;
 	notes: string | null;
+	/** Source currency for item prices. Defaults to USD when not set. */
+	sourceCurrency?: string | null;
+	/** Alt rate (Bs/EUR) — required when sourceCurrency = EUR. */
+	altRate?: number | null;
 }
 
 export interface PurchaseOrderDraftLineRulesInput {
@@ -33,6 +37,12 @@ export function getPurchaseOrderDraftReadinessIssues(
 	if (!header.orderDate) issues.push('Selecciona una fecha de orden');
 	if (!Number.isFinite(Number(header.bcvRate)) || Number(header.bcvRate) <= 0) {
 		issues.push('Define una tasa BCV mayor a 0');
+	}
+	if (
+		header.sourceCurrency === PurchaseSourceCurrency.EUR &&
+		(!Number.isFinite(Number(header.altRate)) || Number(header.altRate) <= 0)
+	) {
+		issues.push('Define la tasa EUR mayor a 0');
 	}
 	if ((header.notes ?? '').trim().length < 6) {
 		issues.push('Agrega observaciones de al menos 6 caracteres');

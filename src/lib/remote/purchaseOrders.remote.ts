@@ -293,7 +293,8 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					pricesInVes: data.pricesInVes,
+					altRate: data.altRate ?? null,
+					sourceCurrency: data.sourceCurrency,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
@@ -314,7 +315,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					lensCatalogItemId: item.lensCatalogItemId ?? null,
 					quantity: item.quantity,
 					unitPurchasePrice: item.unitPurchasePrice,
-					unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
+					unitPurchasePriceAlt: item.unitPurchasePriceAlt ?? null,
 					unitSalePrice: item.unitSalePrice,
 					isZeroPriceIntentional: item.isZeroPriceIntentional ?? false,
 					appliesIva: item.appliesIva,
@@ -392,7 +393,8 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
 		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
-		if (data.pricesInVes !== undefined) updateData.pricesInVes = data.pricesInVes;
+		if (data.altRate !== undefined) updateData.altRate = data.altRate ?? null;
+		if (data.sourceCurrency !== undefined) updateData.sourceCurrency = data.sourceCurrency;
 		if (
 			data.paymentTerms !== undefined ||
 			data.creditDueDate !== undefined ||
@@ -443,7 +445,7 @@ function toPurchaseOrderItemDraftInput(
 		lensCatalogItemId: item.lensCatalogItemId ?? null,
 		quantity: item.quantity,
 		unitPurchasePrice: item.unitPurchasePrice,
-		unitPurchasePriceVes: item.unitPurchasePriceVes ?? null,
+		unitPurchasePriceAlt: item.unitPurchasePriceAlt ?? null,
 		unitSalePrice: item.unitSalePrice,
 		isZeroPriceIntentional: item.isZeroPriceIntentional,
 		appliesIva: item.appliesIva,
@@ -535,7 +537,8 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					pricesInVes: data.pricesInVes,
+					altRate: data.altRate ?? null,
+					sourceCurrency: data.sourceCurrency,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
