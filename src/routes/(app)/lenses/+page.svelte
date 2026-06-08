@@ -5,7 +5,7 @@
 	import { FlaskConical, LibraryBig, Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { LensCatalogTable, LensMaterialsTab } from '$lib/components/lenses';
-	import { PageHeader } from '$lib/components/ui';
+	import { PageHeader, SelectInput } from '$lib/components/ui';
 	import { parsePageParam, replaceUrlSearch, setQueryParam, getErrorMessage } from '$lib/utils';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
 	import {
@@ -76,6 +76,11 @@
 		lab: items.filter((item) => item.source === LensCatalogSource.LAB).length
 	}));
 	const totalCatalogPages = $derived(Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)));
+	const supplierOptions = $derived.by(() =>
+		[...suppliers]
+			.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+			.map((supplier) => ({ id: supplier.id, name: supplier.name }))
+	);
 	const pagedCatalogItems = $derived.by(() => {
 		const start = (catalogPage - 1) * CATALOG_PER_PAGE;
 		return items.slice(start, start + CATALOG_PER_PAGE);
@@ -126,6 +131,10 @@
 	}
 
 	function handleFilterChange() {
+		void fetchCatalog();
+	}
+
+	function handleSupplierFilterChange(_selected: { id: string; name: string } | null) {
 		void fetchCatalog();
 	}
 
@@ -280,18 +289,16 @@
 					{/each}
 				</select>
 
-				<select
-					id="lens-supplier-filter"
-					name="lens-supplier-filter"
-					bind:value={supplierFilter}
-					onchange={handleFilterChange}
-					class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
-				>
-					<option value="">Proveedor</option>
-					{#each suppliers as supplier (supplier.id)}
-						<option value={supplier.id}>{supplier.name}</option>
-					{/each}
-				</select>
+				<div class="hidden sm:block">
+					<SelectInput
+						bind:value={supplierFilter}
+						options={supplierOptions}
+						placeholder="Proveedor"
+						onChange={handleSupplierFilterChange}
+						valueField="id"
+						labelField="name"
+					/>
+				</div>
 
 				<select
 					id="lens-material-filter"

@@ -33,7 +33,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const [materials, catalogItems, suppliers] = await Promise.all([
 		getAllLensMaterials(),
 		getLensCatalogItemsWithRelations({ search, source, type, supplierId, materialId }),
-		getAllSuppliers()
+		getAllSuppliers({ orderBy: 'name' })
 	]);
 
 	return {
