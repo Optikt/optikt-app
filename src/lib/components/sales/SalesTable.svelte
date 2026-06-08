@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { CircleX, Eye, ReceiptText } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 	import { DataGrid, SaleStatusBadge } from '$lib/components/ui';
 	import { CancelSaleModal } from '$lib/components/sales';
 	import { formatPrice, formatDateOnly } from '$lib/utils';
@@ -17,6 +18,7 @@
 		currentUserId?: string;
 		currentUserRole?: UserRole;
 		onView?: (sale: SaleWithRelations) => void;
+		getViewHref?: (sale: SaleWithRelations) => string;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -32,6 +34,7 @@
 		currentUserId,
 		currentUserRole,
 		onView,
+		getViewHref,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -103,6 +106,7 @@
 	{#snippet row(sale)}
 		{@const pct = paidPercent(sale)}
 		{@const canCancel = canCancelSale(sale)}
+		{@const viewHref = getViewHref?.(sale)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -154,7 +158,19 @@
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">
-					{#if onView}
+					{#if viewHref}
+						<a
+							href={resolve(viewHref as App.Pathname)}
+							onclick={(event) => event.stopPropagation()}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver detalle"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</a>
+					{:else if onView}
 						<button
 							onclick={(event) => {
 								event.stopPropagation();

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Eye, SquarePen, Trash2, Layers } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { resolve } from '$app/paths';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { getLensSourceLabel, LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
@@ -23,6 +24,8 @@
 		loading?: boolean;
 		onView?: (item: LensCatalogItemWithRelations) => void;
 		onEdit?: (item: LensCatalogItemWithRelations) => void;
+		getViewHref?: (item: LensCatalogItemWithRelations) => string;
+		getEditHref?: (item: LensCatalogItemWithRelations) => string;
 		canManage?: boolean;
 		onRefresh?: () => void | Promise<void>;
 		onPageChange: (page: number) => void;
@@ -37,6 +40,8 @@
 		loading = false,
 		onView,
 		onEdit,
+		getViewHref,
+		getEditHref,
 		canManage = true,
 		onRefresh,
 		onPageChange
@@ -123,6 +128,8 @@
 		{@const displayRanges = collapseRangesForDisplay(item.ranges ?? [])}
 		{@const primaryRange = displayRanges[0]}
 		{@const extraRanges = displayRanges.slice(1)}
+		{@const viewHref = getViewHref?.(item)}
+		{@const editHref = getEditHref?.(item)}
 		<div class="space-y-4">
 			<div class="flex items-start justify-between gap-3">
 				<div class="min-w-0 flex-1">
@@ -230,7 +237,15 @@
 			</div>
 
 			<div class="flex flex-wrap items-center gap-2">
-				{#if onView}
+				{#if viewHref}
+					<a
+						href={resolve(viewHref as App.Pathname)}
+						class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-info-container px-4 text-sm font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+					>
+						<Eye class="h-4 w-4" />
+						Ver lente
+					</a>
+				{:else if onView}
 					<button
 						type="button"
 						onclick={() => onView?.(item)}
@@ -241,15 +256,26 @@
 					</button>
 				{/if}
 
-				{#if canManage && onEdit}
-					<button
-						type="button"
-						onclick={() => onEdit?.(item)}
-						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-						title="Editar lente"
-					>
-						<SquarePen class="h-4 w-4" />
-					</button>
+				{#if canManage}
+					{#if editHref}
+						<a
+							href={resolve(editHref as App.Pathname)}
+							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+							title="Editar lente"
+							aria-label="Editar lente"
+						>
+							<SquarePen class="h-4 w-4" />
+						</a>
+					{:else if onEdit}
+						<button
+							type="button"
+							onclick={() => onEdit?.(item)}
+							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+							title="Editar lente"
+						>
+							<SquarePen class="h-4 w-4" />
+						</button>
+					{/if}
 				{/if}
 
 				{#if canManage}
@@ -270,6 +296,8 @@
 		{@const displayRanges = collapseRangesForDisplay(item.ranges ?? [])}
 		{@const primaryRange = displayRanges[0]}
 		{@const extraRanges = displayRanges.slice(1)}
+		{@const viewHref = getViewHref?.(item)}
+		{@const editHref = getEditHref?.(item)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -437,7 +465,19 @@
 			</td>
 			<td class="px-4 py-5 text-right align-top">
 				<div class="flex items-center justify-end gap-1">
-					{#if onView}
+					{#if viewHref}
+						<a
+							href={resolve(viewHref as App.Pathname)}
+							onclick={(event) => event.stopPropagation()}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver lente"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</a>
+					{:else if onView}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -454,18 +494,30 @@
 						</button>
 					{/if}
 
-					{#if canManage && onEdit}
-						<button
-							type="button"
-							onclick={(event) => {
-								event.stopPropagation();
-								onEdit?.(item);
-							}}
-							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar lente"
-						>
-							<SquarePen class="h-4 w-4" />
-						</button>
+					{#if canManage}
+						{#if editHref}
+							<a
+								href={resolve(editHref as App.Pathname)}
+								onclick={(event) => event.stopPropagation()}
+								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar lente"
+								aria-label="Editar lente"
+							>
+								<SquarePen class="h-4 w-4" />
+							</a>
+						{:else if onEdit}
+							<button
+								type="button"
+								onclick={(event) => {
+									event.stopPropagation();
+									onEdit?.(item);
+								}}
+								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar lente"
+							>
+								<SquarePen class="h-4 w-4" />
+							</button>
+						{/if}
 					{/if}
 
 					{#if canManage}

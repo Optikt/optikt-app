@@ -13,7 +13,14 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getErrorMessage } from '$lib/utils';
+	import { page } from '$app/state';
+	import {
+		getErrorMessage,
+		parseBooleanParam,
+		parsePageParam,
+		replaceUrlSearch,
+		setQueryParam
+	} from '$lib/utils';
 	import { listSales, getSalesStats } from '$lib/remote/sales.remote';
 	import { SalesTable } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
@@ -26,12 +33,23 @@
 	// Server data
 	let { data } = $props();
 	let { initialSales, totalCount, stats: initialStats } = untrack(() => data);
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialPage = parsePageParam(initialQuery.get('page'));
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialStatus = initialQuery.get('status');
+	const initialShippingPending = parseBooleanParam(initialQuery.get('shippingPending'));
+	const initialFreeItem = parseBooleanParam(initialQuery.get('freeItem'));
+
+	function parseSaleStatus(value: string | null): SaleStatus | '' {
+		if (!value) return '';
+		return ALL_SALE_STATUSES.includes(value as SaleStatus) ? (value as SaleStatus) : '';
+	}
 
 	// Data state
 	let salesData = $state<PaginatedSales>({
 		sales: initialSales,
 		total: totalCount,
-		page: 1,
+		page: initialPage,
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
@@ -40,13 +58,24 @@
 	const canAct = $derived(canOperate(data.user.role));
 
 	// Filter state
-	let search = $state('');
-	let statusFilter = $state<SaleStatus | ''>('');
-	let shippingPendingFilter = $state(false);
-	let hasFreeItemFilter = $state(false);
+	let search = $state(initialSearch);
+	let statusFilter = $state<SaleStatus | ''>(parseSaleStatus(initialStatus));
+	let shippingPendingFilter = $state(initialShippingPending);
+	let hasFreeItemFilter = $state(initialFreeItem);
+
+	function syncUrl(nextPage: number): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', search.trim());
+			setQueryParam(params, 'status', statusFilter || null);
+			setQueryParam(params, 'shippingPending', shippingPendingFilter ? '1' : null);
+			setQueryParam(params, 'freeItem', hasFreeItemFilter ? '1' : null);
+			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
+		});
+	}
 
 	// Fetch sales
 	async function fetchSales(page = 1) {
+		syncUrl(page);
 		loading = true;
 		try {
 			salesData = await listSales({
@@ -102,6 +131,10 @@
 	// Navigate to sale detail page
 	function handleView(sale: SaleWithRelations) {
 		goto(resolve(`/sales/${sale.id}`));
+	}
+
+	function getViewHref(sale: SaleWithRelations): string {
+		return resolve(`/sales/${sale.id}`);
 	}
 </script>
 
@@ -264,6 +297,7 @@
 		currentUserId={data.user.id}
 		currentUserRole={data.user.role}
 		onView={handleView}
+		{getViewHref}
 		onRefresh={() => {
 			fetchSales(salesData.page);
 			refreshStats();

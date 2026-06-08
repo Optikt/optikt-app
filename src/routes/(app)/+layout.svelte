@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { fade } from 'svelte/transition';
 	import { setInventoryCountContext, setUiConfig, type InventoryCountContext } from '$lib/context';
 	import { AppNavbar, Sidebar } from '$lib/components/layout';
@@ -31,14 +32,33 @@
 	setInventoryCountContext(inventoryCountContext);
 
 	let mainEl = $state<HTMLElement>();
+	const scrollPositions = new SvelteMap<string, number>();
+
+	function getUrlKey(url: URL): string {
+		return `${url.pathname}${url.search}`;
+	}
 
 	function toggleSidebarCollapsed() {
 		sidebarCollapsed = !sidebarCollapsed;
 		document.cookie = `sidebar.collapsed=${sidebarCollapsed}; path=/; max-age=31536000; SameSite=Lax`;
 	}
 
-	afterNavigate(() => {
+	beforeNavigate(() => {
+		if (!mainEl) return;
+		scrollPositions.set(getUrlKey(page.url), mainEl.scrollTop);
+	});
+
+	afterNavigate((navigation) => {
 		mobileNavOpen = false;
+
+		if (!mainEl || !navigation.to) return;
+
+		if (navigation.type === 'popstate') {
+			const savedTop = scrollPositions.get(getUrlKey(navigation.to.url));
+			mainEl.scrollTo(0, savedTop ?? 0);
+			return;
+		}
+
 		mainEl?.scrollTo(0, 0);
 	});
 </script>

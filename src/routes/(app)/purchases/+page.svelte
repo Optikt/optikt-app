@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import {
 		ArrowRightLeft,
 		ArrowDownWideNarrow,
@@ -27,37 +28,81 @@
 	} from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 	import type { PaginatedResult } from '$lib/types';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import {
+		formatPrice,
+		getErrorMessage,
+		parseBooleanParam,
+		parsePageParam,
+		replaceUrlSearch,
+		setQueryParam
+	} from '$lib/utils';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
 	let { initialPurchaseOrders, totalCount, suppliers, stats } = untrack(() => data);
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialPage = parsePageParam(initialQuery.get('page'));
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialStatus = initialQuery.get('status') ?? '';
+	const initialSupplier = initialQuery.get('supplier') ?? '';
+	const initialPending = parseBooleanParam(initialQuery.get('pending'));
+	const initialOverdue = parseBooleanParam(initialQuery.get('overdue'));
+	const initialOrderBy = initialQuery.get('orderBy');
+	const initialOrderSort = initialQuery.get('orderSort');
 
 	let purchaseOrdersData = $state<PaginatedResult<PurchaseOrderWithRelations>>({
 		items: initialPurchaseOrders,
 		total: totalCount,
-		page: 1,
+		page: initialPage,
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
 	let loading = $state(false);
 
-	let search = $state('');
-	let pendingBalanceFilter = $state(false);
-	let overdueBalanceFilter = $state(false);
+	let search = $state(initialSearch);
+	let pendingBalanceFilter = $state(initialPending);
+	let overdueBalanceFilter = $state(initialOverdue);
 	type PurchaseOrderStatusFilter =
 		| PurchaseOrderStatus
 		| PurchaseOrderUiState.DRAFT_IN_PROGRESS
 		| PurchaseOrderUiState.DRAFT_READY
 		| '';
 
-	let statusFilter = $state<PurchaseOrderStatusFilter>('');
-	let supplierFilter = $state('');
+	let statusFilter = $state<PurchaseOrderStatusFilter>(
+		initialStatus === PurchaseOrderUiState.DRAFT_IN_PROGRESS ||
+			initialStatus === PurchaseOrderUiState.DRAFT_READY ||
+			initialStatus === PurchaseOrderStatus.DRAFT ||
+			initialStatus === PurchaseOrderStatus.CONFIRMED ||
+			initialStatus === PurchaseOrderStatus.CANCELLED
+			? (initialStatus as PurchaseOrderStatusFilter)
+			: ''
+	);
+	let supplierFilter = $state(initialSupplier);
 	type PurchaseOrderSortField = 'orderNumber' | 'orderDate' | 'createdAt' | 'status';
 	type SortDirection = 'asc' | 'desc';
-	let orderBy = $state<PurchaseOrderSortField>('orderNumber');
-	let orderSort = $state<SortDirection>('desc');
+	let orderBy = $state<PurchaseOrderSortField>(
+		initialOrderBy === 'orderDate' ||
+			initialOrderBy === 'createdAt' ||
+			initialOrderBy === 'status' ||
+			initialOrderBy === 'orderNumber'
+			? initialOrderBy
+			: 'orderNumber'
+	);
+	let orderSort = $state<SortDirection>(initialOrderSort === 'asc' ? 'asc' : 'desc');
+
+	function syncUrl(nextPage: number): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', search.trim());
+			setQueryParam(params, 'status', statusFilter || null);
+			setQueryParam(params, 'supplier', supplierFilter || null);
+			setQueryParam(params, 'pending', pendingBalanceFilter ? '1' : null);
+			setQueryParam(params, 'overdue', overdueBalanceFilter ? '1' : null);
+			setQueryParam(params, 'orderBy', orderBy === 'orderNumber' ? null : orderBy);
+			setQueryParam(params, 'orderSort', orderSort === 'desc' ? null : orderSort);
+			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
+		});
+	}
 
 	const statusFilterOptions = [
 		{
@@ -86,6 +131,7 @@
 	);
 
 	async function fetchPurchaseOrders(page = 1) {
+		syncUrl(page);
 		loading = true;
 		const draftInProgress = statusFilter === PurchaseOrderUiState.DRAFT_IN_PROGRESS;
 		const draftReady = statusFilter === PurchaseOrderUiState.DRAFT_READY;
@@ -168,6 +214,10 @@
 
 	function handleView(purchaseOrder: PurchaseOrderWithRelations) {
 		void goto(resolve(`/purchases/${purchaseOrder.id}`));
+	}
+
+	function getViewHref(purchaseOrder: PurchaseOrderWithRelations): string {
+		return resolve(`/purchases/${purchaseOrder.id}`);
 	}
 </script>
 
@@ -386,6 +436,7 @@
 		totalPages={purchaseOrdersData.totalPages}
 		{loading}
 		onView={handleView}
+		{getViewHref}
 		onPageChange={(page) => void fetchPurchaseOrders(page)}
 	/>
 </div>

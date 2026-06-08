@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Eye, CircleX, ClipboardList } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { resolve } from '$app/paths';
 	import { DataGrid, QuoteStatusBadge, ConfirmModal } from '$lib/components/ui';
 	import { formatPrice, formatDateOnly, getErrorMessage } from '$lib/utils';
 	import { cancelQuote } from '$lib/remote/quotes.remote';
@@ -16,6 +17,7 @@
 		loading?: boolean;
 		canManage?: boolean;
 		onView?: (quote: QuoteWithRelations) => void;
+		getViewHref?: (quote: QuoteWithRelations) => string;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -29,6 +31,7 @@
 		loading = false,
 		canManage = true,
 		onView,
+		getViewHref,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -99,6 +102,7 @@
 	{/snippet}
 
 	{#snippet row(quote)}
+		{@const viewHref = getViewHref?.(quote)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -128,7 +132,19 @@
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">
-					{#if onView}
+					{#if viewHref}
+						<a
+							href={resolve(viewHref as App.Pathname)}
+							onclick={(event) => event.stopPropagation()}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver detalle"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</a>
+					{:else if onView}
 						<button
 							onclick={(event) => {
 								event.stopPropagation();

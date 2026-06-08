@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ClipboardList, Eye } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 	import { DataGrid, PurchaseOrderDueBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import {
 		getPurchaseDocumentTypeLabel,
@@ -17,6 +18,7 @@
 		totalPages: number;
 		loading?: boolean;
 		onView?: (purchaseOrder: PurchaseOrderWithRelations) => void;
+		getViewHref?: (purchaseOrder: PurchaseOrderWithRelations) => string;
 		onPageChange: (page: number) => void;
 	}
 
@@ -28,6 +30,7 @@
 		totalPages,
 		loading = false,
 		onView,
+		getViewHref,
 		onPageChange
 	}: Props = $props();
 
@@ -100,6 +103,7 @@
 	{/snippet}
 
 	{#snippet row(purchaseOrder)}
+		{@const viewHref = getViewHref?.(purchaseOrder)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -185,70 +189,130 @@
 				</div>
 			</td>
 			<td class="px-4 py-4 text-right">
-				<button
-					type="button"
-					onclick={(event) => {
-						event.stopPropagation();
-						onView?.(purchaseOrder);
-					}}
-					class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
-					title="Ver detalle"
-				>
-					<span class="inline-flex items-center gap-1.5">
-						<Eye class="h-3.5 w-3.5" />
-						Ver
-					</span>
-				</button>
+				{#if viewHref}
+					<a
+						href={resolve(viewHref as App.Pathname)}
+						onclick={(event) => event.stopPropagation()}
+						class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+						title="Ver detalle"
+					>
+						<span class="inline-flex items-center gap-1.5">
+							<Eye class="h-3.5 w-3.5" />
+							Ver
+						</span>
+					</a>
+				{:else}
+					<button
+						type="button"
+						onclick={(event) => {
+							event.stopPropagation();
+							onView?.(purchaseOrder);
+						}}
+						class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+						title="Ver detalle"
+					>
+						<span class="inline-flex items-center gap-1.5">
+							<Eye class="h-3.5 w-3.5" />
+							Ver
+						</span>
+					</button>
+				{/if}
 			</td>
 		</tr>
 	{/snippet}
 
 	{#snippet mobileCard(purchaseOrder)}
-		<button
-			type="button"
-			class="w-full space-y-4 text-left"
-			onclick={() => onView?.(purchaseOrder)}
-		>
-			<div class="flex items-start justify-between gap-3">
-				<div class="min-w-0">
-					<p class="font-mono text-sm font-semibold text-brand-navy">
-						{formatOrderNumber(purchaseOrder.orderNumber)}
-					</p>
-					<p class="mt-1 truncate text-sm font-medium text-on-surface">
-						{purchaseOrder.supplier?.name ?? 'Sin proveedor'}
-					</p>
+		{@const mobileViewHref = getViewHref?.(purchaseOrder)}
+		{#if mobileViewHref}
+			<a href={resolve(mobileViewHref as App.Pathname)} class="block w-full space-y-4 text-left">
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<p class="font-mono text-sm font-semibold text-brand-navy">
+							{formatOrderNumber(purchaseOrder.orderNumber)}
+						</p>
+						<p class="mt-1 truncate text-sm font-medium text-on-surface">
+							{purchaseOrder.supplier?.name ?? 'Sin proveedor'}
+						</p>
+					</div>
+					<div class="flex shrink-0 flex-col items-end gap-1.5">
+						<PurchaseOrderStatusBadge
+							status={purchaseOrder.status}
+							isReadyForReview={purchaseOrder.isReadyForReview}
+						/>
+						<PurchaseOrderDueBadge dueStatus={purchaseOrder.dueStatus} />
+					</div>
 				</div>
-				<div class="flex shrink-0 flex-col items-end gap-1.5">
-					<PurchaseOrderStatusBadge
-						status={purchaseOrder.status}
-						isReadyForReview={purchaseOrder.isReadyForReview}
-					/>
-					<PurchaseOrderDueBadge dueStatus={purchaseOrder.dueStatus} />
-				</div>
-			</div>
 
-			<div class="grid grid-cols-2 gap-2 text-sm">
-				<div class="rounded-xl bg-surface-container-low px-3 py-3">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						Documento
-					</p>
-					<p class="mt-1 text-[11px] font-semibold text-on-surface-variant uppercase">
-						{documentLabel(purchaseOrder)}
-					</p>
-					<p class="font-mono text-sm font-semibold text-brand-navy">
-						{documentNumber(purchaseOrder)}
-					</p>
+				<div class="grid grid-cols-2 gap-2 text-sm">
+					<div class="rounded-xl bg-surface-container-low px-3 py-3">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+							Documento
+						</p>
+						<p class="mt-1 text-[11px] font-semibold text-on-surface-variant uppercase">
+							{documentLabel(purchaseOrder)}
+						</p>
+						<p class="font-mono text-sm font-semibold text-brand-navy">
+							{documentNumber(purchaseOrder)}
+						</p>
+					</div>
+					<div class="rounded-xl bg-surface-container-low px-3 py-3 text-right">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Saldo</p>
+						<p class="mt-1 font-mono text-sm font-semibold text-brand-navy tabular-nums">
+							{pendingBalanceLabel(purchaseOrder)}
+						</p>
+						<p class="mt-1 text-[11px] text-on-surface-variant">
+							{formatDateOnly(purchaseOrder.orderDate, { day: '2-digit', month: 'short' })}
+						</p>
+					</div>
 				</div>
-				<div class="rounded-xl bg-surface-container-low px-3 py-3 text-right">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Saldo</p>
-					<p class="mt-1 font-mono text-sm font-semibold text-brand-navy tabular-nums">
-						{pendingBalanceLabel(purchaseOrder)}
-					</p>
-					<p class="mt-1 text-[11px] text-on-surface-variant">
-						{formatDateOnly(purchaseOrder.orderDate, { day: '2-digit', month: 'short' })}
-					</p>
+			</a>
+		{:else}
+			<button
+				type="button"
+				class="w-full space-y-4 text-left"
+				onclick={() => onView?.(purchaseOrder)}
+			>
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<p class="font-mono text-sm font-semibold text-brand-navy">
+							{formatOrderNumber(purchaseOrder.orderNumber)}
+						</p>
+						<p class="mt-1 truncate text-sm font-medium text-on-surface">
+							{purchaseOrder.supplier?.name ?? 'Sin proveedor'}
+						</p>
+					</div>
+					<div class="flex shrink-0 flex-col items-end gap-1.5">
+						<PurchaseOrderStatusBadge
+							status={purchaseOrder.status}
+							isReadyForReview={purchaseOrder.isReadyForReview}
+						/>
+						<PurchaseOrderDueBadge dueStatus={purchaseOrder.dueStatus} />
+					</div>
 				</div>
-			</div>
-		</button>
+
+				<div class="grid grid-cols-2 gap-2 text-sm">
+					<div class="rounded-xl bg-surface-container-low px-3 py-3">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+							Documento
+						</p>
+						<p class="mt-1 text-[11px] font-semibold text-on-surface-variant uppercase">
+							{documentLabel(purchaseOrder)}
+						</p>
+						<p class="font-mono text-sm font-semibold text-brand-navy">
+							{documentNumber(purchaseOrder)}
+						</p>
+					</div>
+					<div class="rounded-xl bg-surface-container-low px-3 py-3 text-right">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Saldo</p>
+						<p class="mt-1 font-mono text-sm font-semibold text-brand-navy tabular-nums">
+							{pendingBalanceLabel(purchaseOrder)}
+						</p>
+						<p class="mt-1 text-[11px] text-on-surface-variant">
+							{formatDateOnly(purchaseOrder.orderDate, { day: '2-digit', month: 'short' })}
+						</p>
+					</div>
+				</div>
+			</button>
+		{/if}
 	{/snippet}
 </DataGrid>

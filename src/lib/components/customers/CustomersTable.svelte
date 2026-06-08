@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Eye, Trash2, RotateCcw, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { deleteCustomerById } from '$lib/remote/customers.remote';
 	import { getErrorMessage, getFullName } from '$lib/utils';
@@ -17,6 +16,8 @@
 		totalPages: number;
 		loading?: boolean;
 		canManage?: boolean;
+		onView?: (customer: Customer) => void;
+		getViewHref?: (customer: Customer) => string;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -29,6 +30,8 @@
 		totalPages,
 		loading = false,
 		canManage = true,
+		onView,
+		getViewHref,
 		onRefresh,
 		onPageChange
 	}: Props = $props();
@@ -122,9 +125,12 @@
 	{/snippet}
 
 	{#snippet row(customer)}
+		{@const viewHref = getViewHref?.(customer)}
 		<tr
-			class="cursor-pointer bg-surface-container-lowest transition-colors hover:bg-surface-container-low"
-			onclick={() => goto(resolve(`/customers/${customer.id}`))}
+			class="bg-surface-container-lowest transition-colors {onView
+				? 'cursor-pointer hover:bg-surface-container-low'
+				: ''}"
+			onclick={() => onView?.(customer)}
 		>
 			<td class="px-4 py-3">
 				<div class="flex items-center gap-3">
@@ -152,16 +158,28 @@
 			</td>
 			<td class="px-4 py-3 text-right">
 				<div class="flex items-center justify-end gap-1">
-					<button
-						onclick={(e) => {
-							e.stopPropagation();
-							goto(resolve(`/customers/${customer.id}`));
-						}}
-						class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
-						title="Ver detalles"
-					>
-						<Eye class="h-4 w-4" />
-					</button>
+					{#if viewHref}
+						<a
+							href={resolve(viewHref as App.Pathname)}
+							onclick={(event) => event.stopPropagation()}
+							class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
+							title="Ver detalles"
+							aria-label="Ver detalles"
+						>
+							<Eye class="h-4 w-4" />
+						</a>
+					{:else}
+						<button
+							onclick={(e) => {
+								e.stopPropagation();
+								onView?.(customer);
+							}}
+							class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
+							title="Ver detalles"
+						>
+							<Eye class="h-4 w-4" />
+						</button>
+					{/if}
 					{#if canManage}
 						{#if customer.deletedAt}
 							<button

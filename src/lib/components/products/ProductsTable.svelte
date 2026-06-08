@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Copy, Eye, Package, RotateCcw, SquarePen, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { resolve } from '$app/paths';
 	import { copyOnLongPress } from '$lib/actions/copyOnLongPress';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { deleteProductById } from '$lib/remote/products.remote';
@@ -18,6 +19,8 @@
 		loading?: boolean;
 		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
+		getViewHref?: (product: ProductWithRelations) => string;
+		getEditHref?: (product: ProductWithRelations) => string;
 		canManage?: boolean;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
@@ -32,6 +35,8 @@
 		loading = false,
 		onView,
 		onEdit,
+		getViewHref,
+		getEditHref,
 		canManage = true,
 		onRefresh,
 		onPageChange
@@ -187,6 +192,8 @@
 	{/snippet}
 
 	{#snippet mobileCard(product)}
+		{@const viewHref = getViewHref?.(product)}
+		{@const editHref = getEditHref?.(product)}
 		<div class="space-y-2">
 			<div class="flex items-start gap-4">
 				<div class="min-w-0 flex-1">
@@ -211,7 +218,16 @@
 				</div>
 
 				<div class="flex shrink-0 items-center gap-2">
-					{#if onView}
+					{#if viewHref}
+						<a
+							href={resolve(viewHref as App.Pathname)}
+							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-brand-blue/30 hover:bg-info-container hover:text-on-info-container"
+							title="Ver producto"
+							aria-label="Ver producto"
+						>
+							<Eye class="h-5 w-5" />
+						</a>
+					{:else if onView}
 						<button
 							type="button"
 							onclick={() => onView?.(product)}
@@ -244,17 +260,27 @@
 								<div
 									class="absolute top-full right-0 z-20 mt-2 min-w-36 overflow-hidden rounded-xl border border-outline-variant/25 bg-surface-container-lowest py-1 shadow-sm"
 								>
-									{#if onEdit && !product.deletedAt}
-										<button
-											type="button"
-											onclick={() => {
-												closeMobileActions();
-												onEdit?.(product);
-											}}
-											class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
-										>
-											Editar
-										</button>
+									{#if !product.deletedAt}
+										{#if editHref}
+											<a
+												href={resolve(editHref as App.Pathname)}
+												onclick={() => closeMobileActions()}
+												class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
+											>
+												Editar
+											</a>
+										{:else if onEdit}
+											<button
+												type="button"
+												onclick={() => {
+													closeMobileActions();
+													onEdit?.(product);
+												}}
+												class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
+											>
+												Editar
+											</button>
+										{/if}
 									{/if}
 
 									{#if product.deletedAt}
@@ -340,6 +366,8 @@
 	{/snippet}
 
 	{#snippet row(product)}
+		{@const viewHref = getViewHref?.(product)}
+		{@const editHref = getEditHref?.(product)}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
@@ -404,7 +432,19 @@
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">
-					{#if onView}
+					{#if viewHref}
+						<a
+							href={resolve(viewHref as App.Pathname)}
+							onclick={(event) => event.stopPropagation()}
+							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver producto"
+						>
+							<span class="inline-flex items-center gap-1.5">
+								<Eye class="h-3.5 w-3.5" />
+								Ver
+							</span>
+						</a>
+					{:else if onView}
 						<button
 							type="button"
 							onclick={(event) => {
@@ -421,18 +461,30 @@
 						</button>
 					{/if}
 
-					{#if canManage && onEdit && !product.deletedAt}
-						<button
-							type="button"
-							onclick={(event) => {
-								event.stopPropagation();
-								onEdit?.(product);
-							}}
-							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar producto"
-						>
-							<SquarePen class="h-4 w-4" />
-						</button>
+					{#if canManage && !product.deletedAt}
+						{#if editHref}
+							<a
+								href={resolve(editHref as App.Pathname)}
+								onclick={(event) => event.stopPropagation()}
+								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar producto"
+								aria-label="Editar producto"
+							>
+								<SquarePen class="h-4 w-4" />
+							</a>
+						{:else if onEdit}
+							<button
+								type="button"
+								onclick={(event) => {
+									event.stopPropagation();
+									onEdit?.(product);
+								}}
+								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar producto"
+							>
+								<SquarePen class="h-4 w-4" />
+							</button>
+						{/if}
 					{/if}
 
 					{#if canManage && product.deletedAt}
