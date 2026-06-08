@@ -74,6 +74,7 @@ export const lensCatalogItems = pgTable(
 		name: varchar().notNull(),
 		type: varchar().notNull(),
 		technology: varchar(),
+		differentiator: varchar(),
 		materialId: uuid('material_id').notNull(),
 
 		// --- Inherent traits (booleans) ---
@@ -117,6 +118,14 @@ export const lensCatalogItems = pgTable(
 		index('ix_lens_catalog_items_supplier_id').using(
 			'btree',
 			table.supplierId.asc().nullsLast().op('uuid_ops')
+		),
+		index('ix_lens_catalog_items_technology').using(
+			'btree',
+			table.technology.asc().nullsLast().op('text_ops')
+		),
+		index('ix_lens_catalog_items_differentiator').using(
+			'btree',
+			table.differentiator.asc().nullsLast().op('text_ops')
 		),
 		foreignKey({
 			columns: [table.materialId],

@@ -160,7 +160,14 @@
 				{#if item.material?.name}
 					<AppBadge variant="neutral">{item.material.name}</AppBadge>
 				{/if}
+				{#if item.differentiator}
+					<AppBadge variant="neutral">{item.differentiator}</AppBadge>
+				{/if}
 			</div>
+
+			{#if item.technology}
+				<p class="text-xs text-on-surface-variant">Tecnología: {item.technology}</p>
+			{/if}
 
 			{#if item.hasAr || item.hasBluecut || item.isPhotochromic}
 				<div class="flex flex-wrap gap-1.5">
@@ -324,6 +331,11 @@
 					<p class="text-xs text-on-surface-variant">
 						{item.material?.name ?? 'Material por definir'}
 					</p>
+					{#if item.technology || item.differentiator}
+						<p class="text-xs text-on-surface-variant">
+							{#if item.technology}Tecnología: {item.technology}{/if}{#if item.technology && item.differentiator} · {/if}{#if item.differentiator}Etiqueta: {item.differentiator}{/if}
+						</p>
+					{/if}
 					<div class="flex flex-wrap gap-1.5">
 						{#if item.hasAr}
 							<TreatmentBadge type="antiReflective" />

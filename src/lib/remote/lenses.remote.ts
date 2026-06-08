@@ -251,7 +251,9 @@ export const listLensCatalog = query(
 			source: data.source,
 			supplierId: data.supplierId,
 			materialId: data.materialId,
-			type: data.type
+			type: data.type,
+			technology: data.technology,
+			differentiator: data.differentiator
 		});
 	}
 );

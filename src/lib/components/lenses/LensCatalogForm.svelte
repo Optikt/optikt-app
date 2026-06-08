@@ -48,6 +48,8 @@
 		existingRanges?: LensOpticalRange[];
 		materials: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
+		technologies?: string[];
+		differentiators?: string[];
 		cancelHref?: string;
 		formId?: string;
 		showActions?: boolean;
@@ -59,6 +61,8 @@
 		existingRanges = [],
 		materials = [],
 		suppliers = [],
+		technologies = [],
+		differentiators = [],
 		cancelHref = '/lenses',
 		formId = 'lens-catalog-form',
 		showActions = true,
@@ -103,6 +107,7 @@
 		name: initialItem?.name ?? '',
 		type: (initialItem?.type as LensType) ?? LensType.MONOFOCAL,
 		technology: initialItem?.technology ?? '',
+		differentiator: initialItem?.differentiator ?? '',
 		materialId: initialItem?.materialId ?? '',
 		// Inherent traits
 		hasAr: initialItem?.hasAr ?? false,
@@ -196,6 +201,32 @@
 		suppliers.map((s) => ({ id: s.id, name: s.name }))
 	);
 
+	const technologyOptions = $derived<SelectOption[]>(
+		Array.from(
+			new Set(
+				[
+					...technologies,
+					...(formData.technology.trim() ? [formData.technology.trim()] : [])
+				].filter((value) => value.trim().length > 0)
+			)
+		)
+			.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+			.map((value) => ({ id: value, name: value }))
+	);
+
+	const differentiatorOptions = $derived<SelectOption[]>(
+		Array.from(
+			new Set(
+				[
+					...differentiators,
+					...(formData.differentiator.trim() ? [formData.differentiator.trim()] : [])
+				].filter((value) => value.trim().length > 0)
+			)
+		)
+			.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+			.map((value) => ({ id: value, name: value }))
+	);
+
 	const supplierHelperText = $derived.by(() => {
 		if (!formData.supplierId) return 'Selecciona o crea el proveedor responsable de este lente.';
 		if (formData.supplierId.startsWith('pending_')) {
@@ -211,6 +242,12 @@
 		}
 		return 'Este material ya esta registrado y listo para reutilizar.';
 	});
+
+	const technologyHelperText =
+		'Selecciona una tecnologia existente o escribe una nueva para mantener consistencia.';
+
+	const differentiatorHelperText =
+		'Opcional: etiqueta libre para variantes como cilindro bajo, alto, alto 2, etc.';
 
 	// Auto-name generation
 	let autoNameEnabled = $state(!initialItem); // Auto-name only for new items
@@ -233,6 +270,9 @@
 
 		// Technology (optional)
 		if (formData.technology.trim()) parts.push(formData.technology.trim());
+
+		// Differentiator (optional)
+		if (formData.differentiator.trim()) parts.push(formData.differentiator.trim());
 
 		// Type
 		const typeLabel = getLensTypeLabel(formData.type);
@@ -601,15 +641,36 @@
 						</Select>
 					</div>
 
-					<div class="md:col-span-2">
-						<Label for="lc_technology" class={fieldLabelClass}>Tecnologia de fabricacion</Label>
-						<Input
-							id="lc_technology"
+					<div>
+						<CreatableSelect
+							label="Tecnologia de fabricacion"
 							name="technology"
 							bind:value={formData.technology}
-							placeholder="Ej: Digital Freeform High Definition"
-							class="mt-2 rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
+							options={technologyOptions}
+							placeholder="Ej: Convencional, Precisa, Freeform"
+							creatable
+							onCreatePending={(name) => ({ id: name, name })}
+							error={activeForm.fields.technology?.issues()
+								? getFormErrorMessage(activeForm.fields.technology.issues())
+								: null}
 						/>
+						<p class={helperTextClass}>{technologyHelperText}</p>
+					</div>
+
+					<div>
+						<CreatableSelect
+							label="Etiqueta"
+							name="differentiator"
+							bind:value={formData.differentiator}
+							options={differentiatorOptions}
+							placeholder="Ej: Cilindro Alto 2"
+							creatable
+							onCreatePending={(name) => ({ id: name, name })}
+							error={activeForm.fields.differentiator?.issues()
+								? getFormErrorMessage(activeForm.fields.differentiator.issues())
+								: null}
+						/>
+						<p class={helperTextClass}>{differentiatorHelperText}</p>
 					</div>
 
 					<div class="md:col-span-2">
@@ -646,7 +707,7 @@
 							</p>
 						{:else if autoNameEnabled}
 							<p class={helperTextClass}>
-								Se genera automaticamente con proveedor, material, tecnologia y tipo.
+								Se genera automaticamente con proveedor, material, tecnologia, etiqueta y tipo.
 							</p>
 						{/if}
 					</div>

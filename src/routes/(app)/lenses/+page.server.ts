@@ -2,6 +2,7 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import {
 	getAllLensMaterials,
+	getLensCatalogDistinctValues,
 	getLensCatalogItemsWithRelations
 } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
@@ -29,16 +30,29 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		rawType && ALL_LENS_TYPES.includes(rawType as LensType) ? (rawType as LensType) : undefined;
 	const supplierId = searchParams.get('supplier')?.trim() || undefined;
 	const materialId = searchParams.get('material')?.trim() || undefined;
+	const technology = searchParams.get('technology')?.trim() || undefined;
+	const differentiator = searchParams.get('differentiator')?.trim() || undefined;
 
-	const [materials, catalogItems, suppliers] = await Promise.all([
+	const [materials, catalogItems, distinctValues, suppliers] = await Promise.all([
 		getAllLensMaterials(),
-		getLensCatalogItemsWithRelations({ search, source, type, supplierId, materialId }),
+		getLensCatalogItemsWithRelations({
+			search,
+			source,
+			type,
+			supplierId,
+			materialId,
+			technology,
+			differentiator
+		}),
+		getLensCatalogDistinctValues(),
 		getAllSuppliers({ orderBy: 'name' })
 	]);
 
 	return {
 		materials,
 		catalogItems,
+		technologies: distinctValues.technologies,
+		differentiators: distinctValues.differentiators,
 		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name }))
 	};
 };

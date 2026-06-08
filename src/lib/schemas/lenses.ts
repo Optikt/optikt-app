@@ -90,6 +90,7 @@ const BaseLensCatalogItemSchema = z.object({
 	name: NameSchema(),
 	type: z.enum(LensType, 'Tipo de lente requerido'),
 	technology: z.string().max(100).optional(),
+	differentiator: z.string().max(100).optional(),
 	materialId: PendingEntitySchema('pending_material_', 'Seleccione un material'),
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
@@ -140,7 +141,9 @@ export const ListLensCatalogSchema = z.object({
 	source: z.enum(LensCatalogSource).optional(),
 	supplierId: z.uuid().optional(),
 	materialId: z.uuid().optional(),
-	type: z.enum(LensType).optional()
+	type: z.enum(LensType).optional(),
+	technology: z.string().max(100).optional(),
+	differentiator: z.string().max(100).optional()
 });
 
 // Schema for lens-specific supplier operations (different from SupplierIdSchema in suppliers.ts)

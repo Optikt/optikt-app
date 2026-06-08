@@ -38,6 +38,7 @@ function makeLensItem(
 		name: 'Alpha Lens',
 		type: LensType.MONOFOCAL,
 		technology: null,
+		differentiator: null,
 		materialId: 'material-1',
 		hasAr: false,
 		hasBluecut: false,

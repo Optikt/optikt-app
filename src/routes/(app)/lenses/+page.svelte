@@ -24,7 +24,7 @@
 	type ActiveTab = 'catalog' | 'materials';
 
 	let { data }: { data: PageData } = $props();
-	let { materials, catalogItems, suppliers } = untrack(() => data);
+	let { materials, catalogItems, suppliers, technologies, differentiators } = untrack(() => data);
 	const initialQuery = untrack(() => page.url.searchParams);
 	const initialPage = parsePageParam(initialQuery.get('page'));
 	const initialSearch = initialQuery.get('q') ?? '';
@@ -32,6 +32,8 @@
 	const initialType = initialQuery.get('type');
 	const initialSupplier = initialQuery.get('supplier') ?? '';
 	const initialMaterial = initialQuery.get('material') ?? '';
+	const initialTechnology = initialQuery.get('technology') ?? '';
+	const initialDifferentiator = initialQuery.get('differentiator') ?? '';
 	const CATALOG_PER_PAGE = 10;
 
 	function parseSource(value: string | null): LensCatalogSource | '' {
@@ -59,6 +61,8 @@
 	let typeFilter = $state<LensType | ''>(parseType(initialType));
 	let supplierFilter = $state(initialSupplier);
 	let materialFilter = $state(initialMaterial);
+	let technologyFilter = $state(initialTechnology);
+	let differentiatorFilter = $state(initialDifferentiator);
 	let catalogPage = $state(clampPage(initialPage, catalogItems.length));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
@@ -67,7 +71,9 @@
 			sourceFilter !== '' ||
 			typeFilter !== '' ||
 			supplierFilter !== '' ||
-			materialFilter !== ''
+			materialFilter !== '' ||
+			technologyFilter !== '' ||
+			differentiatorFilter !== ''
 	);
 
 	const catalogSummary = $derived.by(() => ({
@@ -80,6 +86,12 @@
 		[...suppliers]
 			.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
 			.map((supplier) => ({ id: supplier.id, name: supplier.name }))
+	);
+	const technologyOptions = $derived(
+		technologies.map((technology) => ({ id: technology, name: technology }))
+	);
+	const differentiatorOptions = $derived(
+		differentiators.map((differentiator) => ({ id: differentiator, name: differentiator }))
 	);
 	const pagedCatalogItems = $derived.by(() => {
 		const start = (catalogPage - 1) * CATALOG_PER_PAGE;
@@ -97,6 +109,8 @@
 			setQueryParam(params, 'type', typeFilter || null);
 			setQueryParam(params, 'supplier', supplierFilter || null);
 			setQueryParam(params, 'material', materialFilter || null);
+			setQueryParam(params, 'technology', technologyFilter || null);
+			setQueryParam(params, 'differentiator', differentiatorFilter || null);
 			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
 		});
 	}
@@ -110,7 +124,9 @@
 				source: sourceFilter || undefined,
 				type: typeFilter || undefined,
 				supplierId: supplierFilter || undefined,
-				materialId: materialFilter || undefined
+				materialId: materialFilter || undefined,
+				technology: technologyFilter || undefined,
+				differentiator: differentiatorFilter || undefined
 			}).run();
 			catalogPage = 1;
 		} catch (error) {
@@ -138,12 +154,22 @@
 		void fetchCatalog();
 	}
 
+	function handleTechnologyFilterChange(_selected: { id: string; name: string } | null) {
+		void fetchCatalog();
+	}
+
+	function handleDifferentiatorFilterChange(_selected: { id: string; name: string } | null) {
+		void fetchCatalog();
+	}
+
 	function clearFilters() {
 		search = '';
 		sourceFilter = '';
 		typeFilter = '';
 		supplierFilter = '';
 		materialFilter = '';
+		technologyFilter = '';
+		differentiatorFilter = '';
 		void fetchCatalog();
 	}
 
@@ -248,7 +274,7 @@
 	{#if activeTab === 'catalog'}
 		<section class="glass-card bg-surface-container-low p-2 sm:p-3 md:p-4">
 			<div
-				class="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_auto] xl:items-center"
+				class="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_200px_200px_auto] xl:items-center"
 			>
 				<div class="relative col-span-full sm:col-span-1">
 					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
@@ -258,7 +284,7 @@
 						type="search"
 						bind:value={search}
 						oninput={handleSearch}
-						placeholder="Buscar lente, proveedor o material..."
+						placeholder="Buscar lente, proveedor, material, tecnologia o etiqueta..."
 						class="w-full rounded-lg border-none bg-surface-container-high p-2 pl-9 text-xs text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:p-3 sm:pl-11 sm:text-sm"
 					/>
 				</div>
@@ -312,6 +338,28 @@
 						<option value={material.id}>{material.name}</option>
 					{/each}
 				</select>
+
+				<div class="hidden sm:block">
+					<SelectInput
+						bind:value={technologyFilter}
+						options={technologyOptions}
+						placeholder="Tecnologia"
+						onChange={handleTechnologyFilterChange}
+						valueField="id"
+						labelField="name"
+					/>
+				</div>
+
+				<div class="hidden sm:block">
+					<SelectInput
+						bind:value={differentiatorFilter}
+						options={differentiatorOptions}
+						placeholder="Etiqueta"
+						onChange={handleDifferentiatorFilterChange}
+						valueField="id"
+						labelField="name"
+					/>
+				</div>
 
 				<button
 					type="button"

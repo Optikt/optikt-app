@@ -2,16 +2,21 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
-import { findLensCatalogItemById, getAllLensMaterials } from '$lib/server/db/queries/lenses';
+import {
+	findLensCatalogItemById,
+	getAllLensMaterials,
+	getLensCatalogDistinctValues
+} from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
 
-	const [item, materials, suppliers] = await Promise.all([
+	const [item, materials, suppliers, distinctValues] = await Promise.all([
 		findLensCatalogItemById(params.id),
 		getAllLensMaterials(),
-		getAllSuppliers()
+		getAllSuppliers({ orderBy: 'name' }),
+		getLensCatalogDistinctValues()
 	]);
 
 	if (!item) {
@@ -26,6 +31,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			name: m.name,
 			refractiveIndex: m.refractiveIndex
 		})),
-		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name }))
+		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name })),
+		technologies: distinctValues.technologies,
+		differentiators: distinctValues.differentiators
 	};
 };

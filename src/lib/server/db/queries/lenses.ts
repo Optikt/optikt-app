@@ -104,6 +104,8 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	supplierId?: string;
 	materialId?: string;
 	type?: LensType;
+	technology?: string;
+	differentiator?: string;
 }): Promise<LensCatalogItemWithRelations[]> {
 	const conditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
 
@@ -118,6 +120,12 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	}
 	if (options?.type) {
 		conditions.push(eq(lensCatalogItems.type, options.type));
+	}
+	if (options?.technology) {
+		conditions.push(eq(lensCatalogItems.technology, options.technology));
+	}
+	if (options?.differentiator) {
+		conditions.push(eq(lensCatalogItems.differentiator, options.differentiator));
 	}
 
 	const results = await db
@@ -144,14 +152,16 @@ export async function getLensCatalogItemsWithRelations(options?: {
 		ranges: [] as LensOpticalRange[]
 	}));
 
-	// Text search in memory (name, supplier name, material name)
+	// Text search in memory (name, supplier, material, technology, differentiator)
 	if (options?.search) {
 		const searchLower = options.search.toLowerCase();
 		items = items.filter(
 			(item) =>
 				item.name.toLowerCase().includes(searchLower) ||
 				item.supplier?.name.toLowerCase().includes(searchLower) ||
-				item.material?.name.toLowerCase().includes(searchLower)
+				item.material?.name.toLowerCase().includes(searchLower) ||
+				item.technology?.toLowerCase().includes(searchLower) ||
+				item.differentiator?.toLowerCase().includes(searchLower)
 		);
 	}
 
@@ -174,6 +184,31 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	}
 
 	return items;
+}
+
+export async function getLensCatalogDistinctValues(): Promise<{
+	technologies: string[];
+	differentiators: string[];
+}> {
+	const rows = await db
+		.select({
+			technology: lensCatalogItems.technology,
+			differentiator: lensCatalogItems.differentiator
+		})
+		.from(lensCatalogItems)
+		.where(and(isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)));
+
+	const technologies = Array.from(
+		new Set(rows.map((row) => row.technology?.trim()).filter((value): value is string => !!value))
+	).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+	const differentiators = Array.from(
+		new Set(
+			rows.map((row) => row.differentiator?.trim()).filter((value): value is string => !!value)
+		)
+	).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+	return { technologies, differentiators };
 }
 
 export async function findLensCatalogItemById(
