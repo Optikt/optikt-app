@@ -333,7 +333,9 @@
 					</p>
 					{#if item.technology || item.differentiator}
 						<p class="text-xs text-on-surface-variant">
-							{#if item.technology}Tecnología: {item.technology}{/if}{#if item.technology && item.differentiator} · {/if}{#if item.differentiator}Etiqueta: {item.differentiator}{/if}
+							{#if item.technology}Tecnología: {item.technology}{/if}{#if item.technology && item.differentiator}
+								·
+							{/if}{#if item.differentiator}Etiqueta: {item.differentiator}{/if}
 						</p>
 					{/if}
 					<div class="flex flex-wrap gap-1.5">
