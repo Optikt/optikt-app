@@ -12,9 +12,10 @@
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { PageHeader } from '$lib/components/ui';
 	import { PaymentForm } from '$lib/components/sales';
-	import { formatPrice, formatDate } from '$lib/utils';
+	import { formatPrice, formatDate, replaceUrlSearch, setQueryParam } from '$lib/utils';
 	import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';
 	import { untrack } from 'svelte';
@@ -24,11 +25,21 @@
 	let rows = $state<ReceivableRow[]>(untrack(() => data.rows));
 	let summary = $state<ReceivablesSummary>(untrack(() => data.summary));
 	let bcvRate = $state<number>(untrack(() => data.bcvRate));
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialAge = initialQuery.get('age');
+	const initialSort = initialQuery.get('sort');
 
 	// Filters
-	let searchQuery = $state('');
-	let ageFilter = $state<'' | 'recent' | 'tracking' | 'overdue'>('');
-	let sortBy = $state<'balance' | 'oldest' | 'name'>('balance');
+	let searchQuery = $state(initialSearch);
+	let ageFilter = $state<'' | 'recent' | 'tracking' | 'overdue'>(
+		initialAge === 'recent' || initialAge === 'tracking' || initialAge === 'overdue'
+			? initialAge
+			: ''
+	);
+	let sortBy = $state<'balance' | 'oldest' | 'name'>(
+		initialSort === 'oldest' || initialSort === 'name' ? initialSort : 'balance'
+	);
 
 	// Payment modal
 	let paymentModal = $state<{
@@ -86,10 +97,19 @@
 		searchQuery.trim().length > 0 || ageFilter !== '' || sortBy !== 'balance'
 	);
 
+	function syncUrl(): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', searchQuery.trim());
+			setQueryParam(params, 'age', ageFilter || null);
+			setQueryParam(params, 'sort', sortBy === 'balance' ? null : sortBy);
+		});
+	}
+
 	function clearFilters() {
 		searchQuery = '';
 		ageFilter = '';
 		sortBy = 'balance';
+		syncUrl();
 	}
 
 	function openPaymentModal(row: ReceivableRow) {
@@ -129,7 +149,7 @@
 	function handleSearch() {
 		clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => {
-			// Triggers reactivity since searchQuery is already bound
+			syncUrl();
 		}, 150);
 	}
 </script>
@@ -227,6 +247,7 @@
 				id="receivables-age-filter"
 				name="receivables-age-filter"
 				bind:value={ageFilter}
+				onchange={syncUrl}
 				class="min-w-[180px] flex-1 rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 md:flex-none"
 			>
 				<option value="">Todas las antigüedades</option>
@@ -239,6 +260,7 @@
 				id="receivables-sort"
 				name="receivables-sort"
 				bind:value={sortBy}
+				onchange={syncUrl}
 				class="min-w-[170px] flex-1 rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 md:flex-none"
 			>
 				<option value="balance">Mayor deuda</option>

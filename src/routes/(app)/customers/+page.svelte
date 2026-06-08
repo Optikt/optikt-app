@@ -3,7 +3,14 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getErrorMessage } from '$lib/utils';
+	import { page } from '$app/state';
+	import {
+		getErrorMessage,
+		parseBooleanParam,
+		parsePageParam,
+		replaceUrlSearch,
+		setQueryParam
+	} from '$lib/utils';
 	import { listCustomers } from '$lib/remote/customers.remote';
 	import { CustomersTable } from '$lib/components/customers';
 	import { PageHeader } from '$lib/components/ui';
@@ -15,12 +22,16 @@
 	// Server data
 	let { data } = $props();
 	let { initialCustomers, totalCount, newThisMonth, pendingSalesCustomers } = untrack(() => data);
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialPage = parsePageParam(initialQuery.get('page'));
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialIncludeDeleted = parseBooleanParam(initialQuery.get('deleted'));
 
 	// Data state - initialize from server
 	let customersData = $state<PaginatedResult<Customer>>({
 		items: initialCustomers,
 		total: totalCount,
-		page: 1,
+		page: initialPage,
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
@@ -28,11 +39,20 @@
 	const canAct = $derived(canOperate(data.user.role));
 
 	// Filter state
-	let search = $state('');
-	let includeDeleted = $state(false);
+	let search = $state(initialSearch);
+	let includeDeleted = $state(initialIncludeDeleted);
+
+	function syncUrl(nextPage: number): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', search.trim());
+			setQueryParam(params, 'deleted', includeDeleted ? '1' : null);
+			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
+		});
+	}
 
 	// Fetch customers (for filtering/pagination)
 	async function fetchCustomers(page = 1) {
+		syncUrl(page);
 		loading = true;
 		try {
 			customersData = await listCustomers({
@@ -53,6 +73,14 @@
 	function handleSearch() {
 		clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => fetchCustomers(1), 300);
+	}
+
+	function handleView(customer: Customer): void {
+		goto(resolve(`/customers/${customer.id}`));
+	}
+
+	function getViewHref(customer: Customer): string {
+		return resolve(`/customers/${customer.id}`);
 	}
 </script>
 
@@ -118,6 +146,8 @@
 		totalPages={customersData.totalPages}
 		{loading}
 		canManage={canAct}
+		onView={handleView}
+		{getViewHref}
 		onRefresh={() => fetchCustomers(customersData.page)}
 		onPageChange={fetchCustomers}
 	/>

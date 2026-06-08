@@ -3,8 +3,15 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { PageHeader, SelectInput } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
+	import {
+		getErrorMessage,
+		parseBooleanParam,
+		parsePageParam,
+		replaceUrlSearch,
+		setQueryParam
+	} from '$lib/utils';
 	import {
 		getProductInventoryStats,
 		listProducts,
@@ -26,16 +33,36 @@
 
 	let { data } = $props();
 	let { initialProducts, totalCount, stats: initialStats, brands, suppliers } = untrack(() => data);
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialPage = parsePageParam(initialQuery.get('page'));
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialType = initialQuery.get('type');
+	const initialStock = initialQuery.get('stock');
+	const initialBrand = initialQuery.get('brand') ?? '';
+	const initialSupplier = initialQuery.get('supplier') ?? '';
+	const initialIncludeDeleted = parseBooleanParam(initialQuery.get('deleted'));
 
 	const sortedBrands = $derived([...brands].sort((a, b) => a.name.localeCompare(b.name, 'es')));
 	const sortedSuppliers = $derived(
 		[...suppliers].sort((a, b) => a.name.localeCompare(b.name, 'es'))
 	);
 
+	function parseProductType(value: string | null): ProductType | '' {
+		if (!value) return '';
+		return ALL_PRODUCT_TYPES.includes(value as ProductType) ? (value as ProductType) : '';
+	}
+
+	function parseProductStock(value: string | null): ProductStockFilter | '' {
+		if (!value) return '';
+		return ALL_PRODUCT_STOCK_FILTERS.includes(value as ProductStockFilter)
+			? (value as ProductStockFilter)
+			: '';
+	}
+
 	let productsData = $state<PaginatedResult<ProductWithRelations>>({
 		items: initialProducts as ProductWithRelations[],
 		total: totalCount,
-		page: 1,
+		page: initialPage,
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
@@ -43,12 +70,24 @@
 	let loading = $state(false);
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
-	let search = $state('');
-	let typeFilter = $state<ProductType | ''>('');
-	let stockFilter = $state<ProductStockFilter | ''>('');
-	let brandFilter = $state('');
-	let supplierFilter = $state('');
-	let includeDeleted = $state(false);
+	let search = $state(initialSearch);
+	let typeFilter = $state<ProductType | ''>(parseProductType(initialType));
+	let stockFilter = $state<ProductStockFilter | ''>(parseProductStock(initialStock));
+	let brandFilter = $state(initialBrand);
+	let supplierFilter = $state(initialSupplier);
+	let includeDeleted = $state(initialIncludeDeleted);
+
+	function syncUrl(nextPage: number): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', search.trim());
+			setQueryParam(params, 'type', typeFilter || null);
+			setQueryParam(params, 'stock', stockFilter || null);
+			setQueryParam(params, 'brand', brandFilter || null);
+			setQueryParam(params, 'supplier', supplierFilter || null);
+			setQueryParam(params, 'deleted', includeDeleted ? '1' : null);
+			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
+		});
+	}
 
 	const hasActiveFilters = $derived(
 		search.trim().length > 0 ||
@@ -60,6 +99,7 @@
 	);
 
 	async function fetchProducts(page = 1) {
+		syncUrl(page);
 		loading = true;
 		try {
 			productsData = await listProducts({
@@ -119,6 +159,14 @@
 
 	function handleEdit(product: ProductWithRelations) {
 		goto(resolve(`/products/${product.id}/update`));
+	}
+
+	function getViewHref(product: ProductWithRelations): string {
+		return resolve(`/products/${product.id}`);
+	}
+
+	function getEditHref(product: ProductWithRelations): string {
+		return resolve(`/products/${product.id}/update`);
 	}
 </script>
 
@@ -300,6 +348,8 @@
 		{loading}
 		onView={handleView}
 		onEdit={isAdmin ? handleEdit : undefined}
+		{getViewHref}
+		getEditHref={isAdmin ? getEditHref : undefined}
 		canManage={isAdmin}
 		onRefresh={() => {
 			fetchProducts(productsData.page);

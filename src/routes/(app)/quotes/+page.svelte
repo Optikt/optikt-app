@@ -11,8 +11,9 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { PageHeader } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, parsePageParam, replaceUrlSearch, setQueryParam } from '$lib/utils';
 	import { listQuotes, getQuoteStats } from '$lib/remote/quotes.remote';
 	import { QuotesTable } from '$lib/components/quotes';
 	import { canOperate } from '$lib/shared/enums';
@@ -28,12 +29,21 @@
 	// Server data
 	let { data } = $props();
 	let { initialQuotes, totalCount, stats: initialStats } = untrack(() => data);
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialPage = parsePageParam(initialQuery.get('page'));
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialStatus = initialQuery.get('status');
+
+	function parseQuoteStatus(value: string | null): QuoteStatus | '' {
+		if (!value) return '';
+		return ALL_QUOTE_STATUSES.includes(value as QuoteStatus) ? (value as QuoteStatus) : '';
+	}
 
 	// Data state
 	let quotesData = $state<PaginatedQuotes>({
 		quotes: initialQuotes,
 		total: totalCount,
-		page: 1,
+		page: initialPage,
 		perPage: 10,
 		totalPages: Math.ceil(totalCount / 10)
 	});
@@ -42,11 +52,20 @@
 	let canAct = $derived(canOperate(data.user.role));
 
 	// Filter state
-	let search = $state('');
-	let statusFilter = $state<QuoteStatus | ''>('');
+	let search = $state(initialSearch);
+	let statusFilter = $state<QuoteStatus | ''>(parseQuoteStatus(initialStatus));
+
+	function syncUrl(nextPage: number): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', search.trim());
+			setQueryParam(params, 'status', statusFilter || null);
+			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
+		});
+	}
 
 	// Fetch quotes
 	async function fetchQuotes(page = 1) {
+		syncUrl(page);
 		loading = true;
 		try {
 			quotesData = await listQuotes({
@@ -93,6 +112,10 @@
 	// Navigate to quote detail page
 	function handleView(quote: QuoteWithRelations) {
 		goto(resolve(`/quotes/${quote.id}`));
+	}
+
+	function getViewHref(quote: QuoteWithRelations): string {
+		return resolve(`/quotes/${quote.id}`);
 	}
 </script>
 
@@ -225,6 +248,7 @@
 		{loading}
 		canManage={canAct}
 		onView={handleView}
+		{getViewHref}
 		onRefresh={() => {
 			fetchQuotes(quotesData.page);
 			refreshStats();

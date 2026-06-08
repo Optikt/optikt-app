@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { FlaskConical, LibraryBig, Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { LensCatalogTable, LensMaterialsTab } from '$lib/components/lenses';
 	import { PageHeader } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
+	import { parsePageParam, replaceUrlSearch, setQueryParam, getErrorMessage } from '$lib/utils';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
 	import {
 		ALL_LENS_SOURCES,
@@ -24,16 +25,41 @@
 
 	let { data }: { data: PageData } = $props();
 	let { materials, catalogItems, suppliers } = untrack(() => data);
+	const initialQuery = untrack(() => page.url.searchParams);
+	const initialPage = parsePageParam(initialQuery.get('page'));
+	const initialSearch = initialQuery.get('q') ?? '';
+	const initialSource = initialQuery.get('source');
+	const initialType = initialQuery.get('type');
+	const initialSupplier = initialQuery.get('supplier') ?? '';
+	const initialMaterial = initialQuery.get('material') ?? '';
+	const CATALOG_PER_PAGE = 10;
+
+	function parseSource(value: string | null): LensCatalogSource | '' {
+		if (!value) return '';
+		return ALL_LENS_SOURCES.includes(value as LensCatalogSource)
+			? (value as LensCatalogSource)
+			: '';
+	}
+
+	function parseType(value: string | null): LensType | '' {
+		if (!value) return '';
+		return ALL_LENS_TYPES.includes(value as LensType) ? (value as LensType) : '';
+	}
+
+	function clampPage(target: number, totalItems: number): number {
+		const maxPage = Math.max(1, Math.ceil(totalItems / CATALOG_PER_PAGE));
+		return Math.min(Math.max(target, 1), maxPage);
+	}
 
 	let activeTab = $state<ActiveTab>('catalog');
 	let items = $state<LensCatalogItemWithRelations[]>(catalogItems);
 	let catalogLoading = $state(false);
-	let search = $state('');
-	let sourceFilter = $state<LensCatalogSource | ''>('');
-	let typeFilter = $state<LensType | ''>('');
-	let supplierFilter = $state('');
-	let materialFilter = $state('');
-	let page = $state(1);
+	let search = $state(initialSearch);
+	let sourceFilter = $state<LensCatalogSource | ''>(parseSource(initialSource));
+	let typeFilter = $state<LensType | ''>(parseType(initialType));
+	let supplierFilter = $state(initialSupplier);
+	let materialFilter = $state(initialMaterial);
+	let catalogPage = $state(clampPage(initialPage, catalogItems.length));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
 	const hasActiveFilters = $derived(
@@ -49,12 +75,29 @@
 		finished: items.filter((item) => item.source === LensCatalogSource.FINISHED).length,
 		lab: items.filter((item) => item.source === LensCatalogSource.LAB).length
 	}));
+	const totalCatalogPages = $derived(Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)));
+	const pagedCatalogItems = $derived.by(() => {
+		const start = (catalogPage - 1) * CATALOG_PER_PAGE;
+		return items.slice(start, start + CATALOG_PER_PAGE);
+	});
 
 	const pageTitle = $derived(
 		activeTab === 'catalog' ? 'Catálogo de Lentes' : 'Materiales de Lentes'
 	);
 
+	function syncCatalogUrl(nextPage: number): void {
+		replaceUrlSearch(page.url, (params) => {
+			setQueryParam(params, 'q', search.trim());
+			setQueryParam(params, 'source', sourceFilter || null);
+			setQueryParam(params, 'type', typeFilter || null);
+			setQueryParam(params, 'supplier', supplierFilter || null);
+			setQueryParam(params, 'material', materialFilter || null);
+			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
+		});
+	}
+
 	async function fetchCatalog() {
+		syncCatalogUrl(1);
 		catalogLoading = true;
 		try {
 			items = await listLensCatalog({
@@ -64,7 +107,7 @@
 				supplierId: supplierFilter || undefined,
 				materialId: materialFilter || undefined
 			}).run();
-			page = 1;
+			catalogPage = 1;
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando catálogo de lentes'));
@@ -96,7 +139,8 @@
 	}
 
 	function handleCatalogPageChange(nextPage: number) {
-		page = nextPage;
+		catalogPage = clampPage(nextPage, items.length);
+		syncCatalogUrl(catalogPage);
 	}
 
 	function openCreateLens() {
@@ -109,6 +153,14 @@
 
 	function openLensEdit(id: string) {
 		goto(resolve(`/lenses/${id}/edit`));
+	}
+
+	function getViewHref(item: LensCatalogItemWithRelations): string {
+		return resolve(`/lenses/${item.id}`);
+	}
+
+	function getEditHref(item: LensCatalogItemWithRelations): string {
+		return resolve(`/lenses/${item.id}/edit`);
 	}
 </script>
 
@@ -270,16 +322,18 @@
 		</section>
 
 		<LensCatalogTable
-			{items}
-			{page}
-			perPage={Math.max(items.length, 1)}
+			items={pagedCatalogItems}
+			page={catalogPage}
+			perPage={CATALOG_PER_PAGE}
 			total={items.length}
-			totalPages={1}
+			totalPages={totalCatalogPages}
 			loading={catalogLoading}
 			onRefresh={fetchCatalog}
 			onPageChange={handleCatalogPageChange}
 			onView={(item) => openLensDetail(item.id)}
 			onEdit={isAdmin ? (item) => openLensEdit(item.id) : undefined}
+			{getViewHref}
+			getEditHref={isAdmin ? getEditHref : undefined}
 			canManage={isAdmin}
 		/>
 	{:else}

@@ -5,15 +5,34 @@ import {
 	getLensCatalogItemsWithRelations
 } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import {
+	ALL_LENS_SOURCES,
+	ALL_LENS_TYPES,
+	type LensCatalogSource,
+	type LensType
+} from '$lib/shared/enums';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
 		error(401, 'No autorizado');
 	}
 
+	const searchParams = url.searchParams;
+	const search = searchParams.get('q')?.trim() || undefined;
+	const rawSource = searchParams.get('source');
+	const source =
+		rawSource && ALL_LENS_SOURCES.includes(rawSource as LensCatalogSource)
+			? (rawSource as LensCatalogSource)
+			: undefined;
+	const rawType = searchParams.get('type');
+	const type =
+		rawType && ALL_LENS_TYPES.includes(rawType as LensType) ? (rawType as LensType) : undefined;
+	const supplierId = searchParams.get('supplier')?.trim() || undefined;
+	const materialId = searchParams.get('material')?.trim() || undefined;
+
 	const [materials, catalogItems, suppliers] = await Promise.all([
 		getAllLensMaterials(),
-		getLensCatalogItemsWithRelations(),
+		getLensCatalogItemsWithRelations({ search, source, type, supplierId, materialId }),
 		getAllSuppliers()
 	]);
 
