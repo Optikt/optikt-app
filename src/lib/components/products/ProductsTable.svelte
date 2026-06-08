@@ -10,6 +10,9 @@
 	import { isLowStock } from '$lib/utils/products';
 	import ProductReactivateModal from './ProductReactivateModal.svelte';
 
+	type ProductViewHref = `/products/${string}`;
+	type ProductEditHref = `/products/${string}/update`;
+
 	interface Props {
 		products: ProductWithRelations[];
 		page: number;
@@ -19,8 +22,8 @@
 		loading?: boolean;
 		onView?: (product: ProductWithRelations) => void;
 		onEdit?: (product: ProductWithRelations) => void;
-		getViewHref?: (product: ProductWithRelations) => string;
-		getEditHref?: (product: ProductWithRelations) => string;
+		getViewHref?: (product: ProductWithRelations) => ProductViewHref;
+		getEditHref?: (product: ProductWithRelations) => ProductEditHref;
 		canManage?: boolean;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
@@ -220,7 +223,7 @@
 				<div class="flex shrink-0 items-center gap-2">
 					{#if viewHref}
 						<a
-							href={resolve(viewHref as App.Pathname)}
+							href={resolve(viewHref)}
 							class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 text-outline transition-colors hover:border-brand-blue/30 hover:bg-info-container hover:text-on-info-container"
 							title="Ver producto"
 							aria-label="Ver producto"
@@ -263,7 +266,7 @@
 									{#if !product.deletedAt}
 										{#if editHref}
 											<a
-												href={resolve(editHref as App.Pathname)}
+												href={resolve(editHref)}
 												onclick={() => closeMobileActions()}
 												class="flex w-full items-center px-4 py-2.5 text-left text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low"
 											>
@@ -434,7 +437,7 @@
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
-							href={resolve(viewHref as App.Pathname)}
+							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
 							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver producto"
@@ -464,7 +467,7 @@
 					{#if canManage && !product.deletedAt}
 						{#if editHref}
 							<a
-								href={resolve(editHref as App.Pathname)}
+								href={resolve(editHref)}
 								onclick={(event) => event.stopPropagation()}
 								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
 								title="Editar producto"

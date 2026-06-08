@@ -8,6 +8,8 @@
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 
+	type CustomerViewHref = `/customers/${string}`;
+
 	interface Props {
 		customers: Customer[];
 		page: number;
@@ -17,7 +19,7 @@
 		loading?: boolean;
 		canManage?: boolean;
 		onView?: (customer: Customer) => void;
-		getViewHref?: (customer: Customer) => string;
+		getViewHref?: (customer: Customer) => CustomerViewHref;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -160,7 +162,7 @@
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
-							href={resolve(viewHref as App.Pathname)}
+							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
 							class="rounded-md p-1.5 text-on-surface-variant hover:bg-surface-container-high hover:text-brand-blue"
 							title="Ver detalles"

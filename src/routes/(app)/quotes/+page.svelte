@@ -114,8 +114,8 @@
 		goto(resolve(`/quotes/${quote.id}`));
 	}
 
-	function getViewHref(quote: QuoteWithRelations): string {
-		return resolve(`/quotes/${quote.id}`);
+	function getViewHref(quote: QuoteWithRelations): `/quotes/${string}` {
+		return `/quotes/${quote.id}`;
 	}
 </script>
 

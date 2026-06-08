@@ -216,8 +216,8 @@
 		void goto(resolve(`/purchases/${purchaseOrder.id}`));
 	}
 
-	function getViewHref(purchaseOrder: PurchaseOrderWithRelations): string {
-		return resolve(`/purchases/${purchaseOrder.id}`);
+	function getViewHref(purchaseOrder: PurchaseOrderWithRelations): `/purchases/${string}` {
+		return `/purchases/${purchaseOrder.id}`;
 	}
 </script>
 
