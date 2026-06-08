@@ -190,6 +190,13 @@
       "when": 1780764152078,
       "tag": "0026_purchase_order_source_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1780958400000,
+      "tag": "0027_lens_catalog_differentiator",
+      "breakpoints": true
     }
   ]
 }
