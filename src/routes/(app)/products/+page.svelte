@@ -161,12 +161,12 @@
 		goto(resolve(`/products/${product.id}/update`));
 	}
 
-	function getViewHref(product: ProductWithRelations): string {
-		return resolve(`/products/${product.id}`);
+	function getViewHref(product: ProductWithRelations): `/products/${string}` {
+		return `/products/${product.id}`;
 	}
 
-	function getEditHref(product: ProductWithRelations): string {
-		return resolve(`/products/${product.id}/update`);
+	function getEditHref(product: ProductWithRelations): `/products/${string}/update` {
+		return `/products/${product.id}/update`;
 	}
 </script>
 

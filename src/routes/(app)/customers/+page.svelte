@@ -79,8 +79,8 @@
 		goto(resolve(`/customers/${customer.id}`));
 	}
 
-	function getViewHref(customer: Customer): string {
-		return resolve(`/customers/${customer.id}`);
+	function getViewHref(customer: Customer): `/customers/${string}` {
+		return `/customers/${customer.id}`;
 	}
 </script>
 

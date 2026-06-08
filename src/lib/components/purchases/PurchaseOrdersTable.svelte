@@ -10,6 +10,8 @@
 	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 
+	type PurchaseViewHref = `/purchases/${string}`;
+
 	interface Props {
 		purchaseOrders: PurchaseOrderWithRelations[];
 		page: number;
@@ -18,7 +20,7 @@
 		totalPages: number;
 		loading?: boolean;
 		onView?: (purchaseOrder: PurchaseOrderWithRelations) => void;
-		getViewHref?: (purchaseOrder: PurchaseOrderWithRelations) => string;
+		getViewHref?: (purchaseOrder: PurchaseOrderWithRelations) => PurchaseViewHref;
 		onPageChange: (page: number) => void;
 	}
 
@@ -191,7 +193,7 @@
 			<td class="px-4 py-4 text-right">
 				{#if viewHref}
 					<a
-						href={resolve(viewHref as App.Pathname)}
+						href={resolve(viewHref)}
 						onclick={(event) => event.stopPropagation()}
 						class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 						title="Ver detalle"
@@ -224,7 +226,7 @@
 	{#snippet mobileCard(purchaseOrder)}
 		{@const mobileViewHref = getViewHref?.(purchaseOrder)}
 		{#if mobileViewHref}
-			<a href={resolve(mobileViewHref as App.Pathname)} class="block w-full space-y-4 text-left">
+			<a href={resolve(mobileViewHref)} class="block w-full space-y-4 text-left">
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
 						<p class="font-mono text-sm font-semibold text-brand-navy">

@@ -155,12 +155,12 @@
 		goto(resolve(`/lenses/${id}/edit`));
 	}
 
-	function getViewHref(item: LensCatalogItemWithRelations): string {
-		return resolve(`/lenses/${item.id}`);
+	function getViewHref(item: LensCatalogItemWithRelations): `/lenses/${string}` {
+		return `/lenses/${item.id}`;
 	}
 
-	function getEditHref(item: LensCatalogItemWithRelations): string {
-		return resolve(`/lenses/${item.id}/edit`);
+	function getEditHref(item: LensCatalogItemWithRelations): `/lenses/${string}/edit` {
+		return `/lenses/${item.id}/edit`;
 	}
 </script>
 

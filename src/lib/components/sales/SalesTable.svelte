@@ -7,6 +7,8 @@
 	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
 
+	type SaleViewHref = `/sales/${string}`;
+
 	interface Props {
 		sales: SaleWithRelations[];
 		page: number;
@@ -18,7 +20,7 @@
 		currentUserId?: string;
 		currentUserRole?: UserRole;
 		onView?: (sale: SaleWithRelations) => void;
-		getViewHref?: (sale: SaleWithRelations) => string;
+		getViewHref?: (sale: SaleWithRelations) => SaleViewHref;
 		onRefresh?: () => void;
 		onPageChange: (page: number) => void;
 	}
@@ -160,7 +162,7 @@
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
-							href={resolve(viewHref as App.Pathname)}
+							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
 							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver detalle"

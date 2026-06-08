@@ -133,8 +133,8 @@
 		goto(resolve(`/sales/${sale.id}`));
 	}
 
-	function getViewHref(sale: SaleWithRelations): string {
-		return resolve(`/sales/${sale.id}`);
+	function getViewHref(sale: SaleWithRelations): `/sales/${string}` {
+		return `/sales/${sale.id}`;
 	}
 </script>
 

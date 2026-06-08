@@ -15,6 +15,9 @@
 		TreatmentBadge
 	} from '$lib/components/ui';
 
+	type LensViewHref = `/lenses/${string}`;
+	type LensEditHref = `/lenses/${string}/edit`;
+
 	interface Props {
 		items: LensCatalogItemWithRelations[];
 		page: number;
@@ -24,8 +27,8 @@
 		loading?: boolean;
 		onView?: (item: LensCatalogItemWithRelations) => void;
 		onEdit?: (item: LensCatalogItemWithRelations) => void;
-		getViewHref?: (item: LensCatalogItemWithRelations) => string;
-		getEditHref?: (item: LensCatalogItemWithRelations) => string;
+		getViewHref?: (item: LensCatalogItemWithRelations) => LensViewHref;
+		getEditHref?: (item: LensCatalogItemWithRelations) => LensEditHref;
 		canManage?: boolean;
 		onRefresh?: () => void | Promise<void>;
 		onPageChange: (page: number) => void;
@@ -239,7 +242,7 @@
 			<div class="flex flex-wrap items-center gap-2">
 				{#if viewHref}
 					<a
-						href={resolve(viewHref as App.Pathname)}
+						href={resolve(viewHref)}
 						class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-info-container px-4 text-sm font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 					>
 						<Eye class="h-4 w-4" />
@@ -259,7 +262,7 @@
 				{#if canManage}
 					{#if editHref}
 						<a
-							href={resolve(editHref as App.Pathname)}
+							href={resolve(editHref)}
 							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
 							title="Editar lente"
 							aria-label="Editar lente"
@@ -467,7 +470,7 @@
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
-							href={resolve(viewHref as App.Pathname)}
+							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
 							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver lente"
@@ -497,7 +500,7 @@
 					{#if canManage}
 						{#if editHref}
 							<a
-								href={resolve(editHref as App.Pathname)}
+								href={resolve(editHref)}
 								onclick={(event) => event.stopPropagation()}
 								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
 								title="Editar lente"
