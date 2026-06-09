@@ -130,7 +130,10 @@
 
 				<div class="shrink-0 text-right">
 					{#if item.salePrice != null}
-						<p class="font-mono text-sm font-bold text-brand-navy" title={`Costo par: ${formatPrice(item.pairPurchasePrice)}`}>
+						<p
+							class="font-mono text-sm font-bold text-brand-navy"
+							title={`Costo par: ${formatPrice(item.pairPurchasePrice)}`}
+						>
 							{formatPrice(item.salePrice)}
 						</p>
 					{:else}
@@ -162,63 +165,65 @@
 				{/if}
 			</div>
 
-			<div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-low px-2.5 py-2">
+			<div
+				class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-low px-2.5 py-2"
+			>
 				<AppBadge variant={statusVariant(item)}>{statusLabel(item)}</AppBadge>
 				<div class="flex items-center gap-1">
-				{#if viewHref}
-					<a
-						href={resolve(viewHref)}
-						class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
-						title="Ver lente"
-						aria-label="Ver lente"
-					>
-						<Eye class="h-3.5 w-3.5" />
-					</a>
-				{:else if onView}
-					<button
-						type="button"
-						onclick={() => onView?.(item)}
-						class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
-						title="Ver lente"
-						aria-label="Ver lente"
-					>
-						<Eye class="h-3.5 w-3.5" />
-					</button>
-				{/if}
-
-				{#if canManage}
-					{#if editHref}
+					{#if viewHref}
 						<a
-							href={resolve(editHref)}
-							class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar lente"
-							aria-label="Editar lente"
+							href={resolve(viewHref)}
+							class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver lente"
+							aria-label="Ver lente"
 						>
-							<SquarePen class="h-3.5 w-3.5" />
+							<Eye class="h-3.5 w-3.5" />
 						</a>
-					{:else if onEdit}
+					{:else if onView}
 						<button
 							type="button"
-							onclick={() => onEdit?.(item)}
-							class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar lente"
+							onclick={() => onView?.(item)}
+							class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver lente"
+							aria-label="Ver lente"
 						>
-							<SquarePen class="h-3.5 w-3.5" />
+							<Eye class="h-3.5 w-3.5" />
 						</button>
 					{/if}
-				{/if}
 
-				{#if canManage}
-					<button
-						type="button"
-						onclick={() => openDelete(item)}
-						class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-						title="Eliminar lente"
-						aria-label="Eliminar lente"
-					>
-						<Trash2 class="h-3.5 w-3.5" />
-					</button>
-				{/if}
+					{#if canManage}
+						{#if editHref}
+							<a
+								href={resolve(editHref)}
+								class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar lente"
+								aria-label="Editar lente"
+							>
+								<SquarePen class="h-3.5 w-3.5" />
+							</a>
+						{:else if onEdit}
+							<button
+								type="button"
+								onclick={() => onEdit?.(item)}
+								class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar lente"
+							>
+								<SquarePen class="h-3.5 w-3.5" />
+							</button>
+						{/if}
+					{/if}
+
+					{#if canManage}
+						<button
+							type="button"
+							onclick={() => openDelete(item)}
+							class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+							title="Eliminar lente"
+							aria-label="Eliminar lente"
+						>
+							<Trash2 class="h-3.5 w-3.5" />
+						</button>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -247,7 +252,9 @@
 					{#if primaryRange}
 						<div class="flex flex-wrap items-center gap-2">
 							<div class="inline-flex items-center gap-1">
-								<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">ESF</p>
+								<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">
+									ESF
+								</p>
 								<span
 									class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-xs font-bold text-brand-navy tabular-nums"
 								>
@@ -257,7 +264,9 @@
 
 							{#if primaryRange.cylinderLabel}
 								<div class="inline-flex items-center gap-1">
-									<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">CIL</p>
+									<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">
+										CIL
+									</p>
 									<span
 										class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-xs font-bold text-brand-navy tabular-nums"
 									>
