@@ -268,7 +268,7 @@
 			onclick={() => onView?.(item)}
 		>
 			<td class="px-3 py-2 align-middle">
-				<div class="min-w-[18rem] max-w-[28rem] xl:max-w-none">
+				<div class="max-w-[28rem] min-w-[18rem] xl:max-w-none">
 					<p class="truncate text-sm font-semibold text-on-surface">{item.name}</p>
 					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
 						<span class="truncate">{supplierLabel(item)}</span>

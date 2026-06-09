@@ -72,7 +72,7 @@
 
 	async function refreshMaterials() {
 		try {
-				materials = await listLensMaterials(undefined).run();
+			materials = await listLensMaterials(undefined).run();
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando materiales'));
