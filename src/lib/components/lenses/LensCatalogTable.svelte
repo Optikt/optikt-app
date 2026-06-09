@@ -81,6 +81,16 @@
 		return item.supplier?.name?.trim() || 'Sin proveedor';
 	}
 
+	function sourceMicroBadgeLabel(item: LensCatalogItemWithRelations): string {
+		return item.source === LensCatalogSource.FINISHED ? 'Terminado' : 'Laboratorio';
+	}
+
+	function sourceMicroBadgeClass(item: LensCatalogItemWithRelations): string {
+		return item.source === LensCatalogSource.FINISHED
+			? 'bg-brand-blue-light/35 text-brand-blue-dark'
+			: 'bg-amber-100 text-amber-800';
+	}
+
 	async function handleDelete() {
 		if (!selectedItem) return;
 
@@ -125,7 +135,14 @@
 			<div class="flex items-start justify-between gap-2">
 				<div class="min-w-0 flex-1">
 					<h3 class="truncate text-sm leading-5 font-semibold text-on-surface">{item.name}</h3>
-					<p class="truncate text-[11px] text-on-surface-variant">{supplierLabel(item)}</p>
+					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
+						<span class="truncate">{supplierLabel(item)}</span>
+						<span
+							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(item)}"
+						>
+							{sourceMicroBadgeLabel(item)}
+						</span>
+					</div>
 				</div>
 
 				<div class="shrink-0 text-right">
@@ -244,7 +261,14 @@
 			<td class="px-3 py-2 align-middle">
 				<div class="max-w-[28rem] min-w-[18rem]">
 					<p class="truncate text-sm font-semibold text-on-surface">{item.name}</p>
-					<p class="truncate text-[11px] text-on-surface-variant">{supplierLabel(item)}</p>
+					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
+						<span class="truncate">{supplierLabel(item)}</span>
+						<span
+							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(item)}"
+						>
+							{sourceMicroBadgeLabel(item)}
+						</span>
+					</div>
 				</div>
 			</td>
 			<td class="px-3 py-2 align-middle">
