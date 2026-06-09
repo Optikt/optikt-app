@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { FlaskConical, LibraryBig, Plus, RotateCcw, Search } from '@lucide/svelte';
+	import { Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { LensCatalogTable, LensMaterialsTab } from '$lib/components/lenses';
 	import { PageHeader, SelectInput } from '$lib/components/ui';
@@ -34,7 +34,7 @@
 	const initialMaterial = initialQuery.get('material') ?? '';
 	const initialTechnology = initialQuery.get('technology') ?? '';
 	const initialDifferentiator = initialQuery.get('differentiator') ?? '';
-	const CATALOG_PER_PAGE = 10;
+	const CATALOG_PER_PAGE = 20;
 
 	function parseSource(value: string | null): LensCatalogSource | '' {
 		if (!value) return '';
@@ -63,6 +63,14 @@
 	let materialFilter = $state(initialMaterial);
 	let technologyFilter = $state(initialTechnology);
 	let differentiatorFilter = $state(initialDifferentiator);
+	let showAdvancedFilters = $state(
+		initialSource != null ||
+			initialType != null ||
+			initialSupplier.length > 0 ||
+			initialMaterial.length > 0 ||
+			initialTechnology.length > 0 ||
+			initialDifferentiator.length > 0
+	);
 	let catalogPage = $state(clampPage(initialPage, catalogItems.length));
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
@@ -76,11 +84,6 @@
 			differentiatorFilter !== ''
 	);
 
-	const catalogSummary = $derived.by(() => ({
-		total: items.length,
-		finished: items.filter((item) => item.source === LensCatalogSource.FINISHED).length,
-		lab: items.filter((item) => item.source === LensCatalogSource.LAB).length
-	}));
 	const totalCatalogPages = $derived(Math.max(1, Math.ceil(items.length / CATALOG_PER_PAGE)));
 	const supplierOptions = $derived.by(() =>
 		[...suppliers]
@@ -170,7 +173,12 @@
 		materialFilter = '';
 		technologyFilter = '';
 		differentiatorFilter = '';
+		showAdvancedFilters = false;
 		void fetchCatalog();
+	}
+
+	function toggleAdvancedFilters() {
+		showAdvancedFilters = !showAdvancedFilters;
 	}
 
 	function handleCatalogPageChange(nextPage: number) {
@@ -250,107 +258,120 @@
 	</PageHeader>
 
 	{#if activeTab === 'catalog'}
-		<section class="glass-card bg-surface-container-low p-2 sm:p-3 md:p-4">
-			<div
-				class="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_200px_200px_auto] xl:items-center"
-			>
-				<div class="relative col-span-full sm:col-span-1">
-					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
-					<input
-						id="lens-catalog-search"
-						name="lens-catalog-search"
-						type="search"
-						bind:value={search}
-						oninput={handleSearch}
-						placeholder="Buscar lente, proveedor, material, tecnologia o etiqueta..."
-						class="w-full rounded-lg border-none bg-surface-container-high p-2 pl-9 text-xs text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:p-3 sm:pl-11 sm:text-sm"
-					/>
+		<section class="glass-card bg-surface-container-low p-2 sm:p-3">
+			<div class="space-y-2">
+				<div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+					<div class="relative min-w-0 flex-1">
+						<Search class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
+						<input
+							id="lens-catalog-search"
+							name="lens-catalog-search"
+							type="search"
+							bind:value={search}
+							oninput={handleSearch}
+							placeholder="Buscar por lente, material, tecnologia, proveedor o propiedades"
+							class="h-10 w-full rounded-lg border-none bg-surface-container-high px-3 pl-9 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						/>
+					</div>
+
+					<button
+						type="button"
+						onclick={toggleAdvancedFilters}
+						class="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high px-3 text-xs font-semibold tracking-[0.12em] text-on-surface uppercase transition-colors hover:bg-surface-container-highest"
+						aria-expanded={showAdvancedFilters}
+					>
+						Filtros avanzados
+					</button>
+
+					<button
+						type="button"
+						onclick={clearFilters}
+						disabled={!hasActiveFilters}
+						class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
+							? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
+							: 'bg-surface-container-high text-outline'}"
+						aria-label="Limpiar filtros"
+						title="Limpiar filtros"
+					>
+						<RotateCcw class="h-3.5 w-3.5" />
+					</button>
 				</div>
 
-				<select
-					id="lens-source-filter"
-					name="lens-source-filter"
-					bind:value={sourceFilter}
-					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:px-4 sm:py-3 sm:text-sm"
-				>
-					<option value="">Origen</option>
-					{#each ALL_LENS_SOURCES as source (source)}
-						<option value={source}>{getLensSourceLabel(source)}</option>
-					{/each}
-				</select>
+				{#if showAdvancedFilters}
+					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-6">
+						<select
+							id="lens-source-filter"
+							name="lens-source-filter"
+							bind:value={sourceFilter}
+							onchange={handleFilterChange}
+							class="h-10 rounded-lg border-none bg-surface-container-high px-3 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						>
+							<option value="">Origen</option>
+							{#each ALL_LENS_SOURCES as source (source)}
+								<option value={source}>{getLensSourceLabel(source)}</option>
+							{/each}
+						</select>
 
-				<select
-					id="lens-type-filter"
-					name="lens-type-filter"
-					bind:value={typeFilter}
-					onchange={handleFilterChange}
-					class="rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:px-4 sm:py-3 sm:text-sm"
-				>
-					<option value="">Tipo</option>
-					{#each ALL_LENS_TYPES as type (type)}
-						<option value={type}>{getLensTypeLabel(type)}</option>
-					{/each}
-				</select>
+						<select
+							id="lens-type-filter"
+							name="lens-type-filter"
+							bind:value={typeFilter}
+							onchange={handleFilterChange}
+							class="h-10 rounded-lg border-none bg-surface-container-high px-3 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						>
+							<option value="">Tipo</option>
+							{#each ALL_LENS_TYPES as type (type)}
+								<option value={type}>{getLensTypeLabel(type)}</option>
+							{/each}
+						</select>
 
-				<div class="hidden sm:block">
-					<SelectInput
-						bind:value={supplierFilter}
-						options={supplierOptions}
-						placeholder="Proveedor"
-						onChange={handleSupplierFilterChange}
-						valueField="id"
-						labelField="name"
-					/>
-				</div>
+						<div>
+							<SelectInput
+								bind:value={supplierFilter}
+								options={supplierOptions}
+								placeholder="Proveedor"
+								onChange={handleSupplierFilterChange}
+								valueField="id"
+								labelField="name"
+							/>
+						</div>
 
-				<select
-					id="lens-material-filter"
-					name="lens-material-filter"
-					bind:value={materialFilter}
-					onchange={handleFilterChange}
-					class="hidden rounded-lg border-none bg-surface-container-high px-2 py-2 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:block sm:px-4 sm:py-3 sm:text-sm"
-				>
-					<option value="">Material</option>
-					{#each materials as material (material.id)}
-						<option value={material.id}>{material.name}</option>
-					{/each}
-				</select>
+						<select
+							id="lens-material-filter"
+							name="lens-material-filter"
+							bind:value={materialFilter}
+							onchange={handleFilterChange}
+							class="h-10 rounded-lg border-none bg-surface-container-high px-3 text-xs font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+						>
+							<option value="">Material</option>
+							{#each materials as material (material.id)}
+								<option value={material.id}>{material.name}</option>
+							{/each}
+						</select>
 
-				<div class="hidden sm:block">
-					<SelectInput
-						bind:value={technologyFilter}
-						options={technologyOptions}
-						placeholder="Tecnologia"
-						onChange={handleTechnologyFilterChange}
-						valueField="id"
-						labelField="name"
-					/>
-				</div>
+						<div>
+							<SelectInput
+								bind:value={technologyFilter}
+								options={technologyOptions}
+								placeholder="Tecnologia"
+								onChange={handleTechnologyFilterChange}
+								valueField="id"
+								labelField="name"
+							/>
+						</div>
 
-				<div class="hidden sm:block">
-					<SelectInput
-						bind:value={differentiatorFilter}
-						options={differentiatorOptions}
-						placeholder="Etiqueta"
-						onChange={handleDifferentiatorFilterChange}
-						valueField="id"
-						labelField="name"
-					/>
-				</div>
-
-				<button
-					type="button"
-					onclick={clearFilters}
-					disabled={!hasActiveFilters}
-					class="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:h-[3rem] sm:w-[3rem] xl:justify-self-end {hasActiveFilters
-						? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
-						: 'bg-surface-container-high text-outline'}"
-					aria-label="Limpiar filtros"
-					title="Limpiar filtros"
-				>
-					<RotateCcw class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-				</button>
+						<div>
+							<SelectInput
+								bind:value={differentiatorFilter}
+								options={differentiatorOptions}
+								placeholder="Etiqueta"
+								onChange={handleDifferentiatorFilterChange}
+								valueField="id"
+								labelField="name"
+							/>
+						</div>
+					</div>
+				{/if}
 			</div>
 		</section>
 
