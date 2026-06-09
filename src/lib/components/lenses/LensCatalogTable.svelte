@@ -176,6 +176,13 @@
 								CIL {primaryRange.cylinderLabel}
 							</span>
 						{/if}
+						{#if primaryRange.additionLabel}
+							<span
+								class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-navy"
+							>
+								ADD {primaryRange.additionLabel}
+							</span>
+						{/if}
 					</div>
 				{:else}
 					<p class="text-xs font-semibold text-outline">
@@ -299,6 +306,19 @@
 										class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-xs font-bold text-brand-navy tabular-nums"
 									>
 										{primaryRange.cylinderLabel}
+									</span>
+								</div>
+							{/if}
+
+							{#if primaryRange.additionLabel}
+								<div class="inline-flex items-center gap-1">
+									<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">
+										ADD
+									</p>
+									<span
+										class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-xs font-bold text-brand-navy tabular-nums"
+									>
+										{primaryRange.additionLabel}
 									</span>
 								</div>
 							{/if}
