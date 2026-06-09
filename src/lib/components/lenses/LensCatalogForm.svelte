@@ -681,7 +681,9 @@
 					<div class="md:col-span-2">
 						<div class="mb-2 flex items-center justify-between">
 							<Label for="lc_name" class={fieldLabelClass}>Nombre tecnico</Label>
-							<label class="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant">
+							<label
+								class="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant"
+							>
 								<input
 									type="checkbox"
 									bind:checked={autoNameEnabled}
@@ -708,7 +710,8 @@
 							</p>
 						{:else if autoNameEnabled}
 							<p class={helperTextClass}>
-								Se genera automaticamente con proveedor, material, tecnologia, etiqueta, tratamientos y tipo.
+								Se genera automaticamente con proveedor, material, tecnologia, etiqueta,
+								tratamientos y tipo.
 							</p>
 						{/if}
 					</div>
