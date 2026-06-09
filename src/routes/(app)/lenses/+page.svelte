@@ -250,28 +250,6 @@
 	</PageHeader>
 
 	{#if activeTab === 'catalog'}
-		<div class="flex flex-wrap gap-2">
-			<div
-				class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-			>
-				<LibraryBig class="h-3.5 w-3.5" />
-				{catalogSummary.total} lentes
-			</div>
-			<div
-				class="inline-flex items-center gap-2 rounded-full bg-info-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-info-container uppercase"
-			>
-				{catalogSummary.finished} terminados
-			</div>
-			<div
-				class="inline-flex items-center gap-2 rounded-full bg-warning-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-warning-container uppercase"
-			>
-				<FlaskConical class="h-3.5 w-3.5" />
-				{catalogSummary.lab} laboratorio
-			</div>
-		</div>
-	{/if}
-
-	{#if activeTab === 'catalog'}
 		<section class="glass-card bg-surface-container-low p-2 sm:p-3 md:p-4">
 			<div
 				class="grid grid-cols-[1fr_1fr_auto] gap-2 sm:grid-cols-4 md:gap-3 lg:gap-3 xl:grid-cols-[minmax(260px,1.2fr)_180px_180px_200px_200px_200px_200px_auto] xl:items-center"
