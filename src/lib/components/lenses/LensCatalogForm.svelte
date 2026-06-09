@@ -275,9 +275,9 @@
 		if (formData.differentiator.trim()) parts.push(formData.differentiator.trim());
 
 		// Treatments (optional tags)
+		if (formData.isPhotochromic) parts.push('FOTO');
 		if (formData.hasAr) parts.push('AR');
 		if (formData.hasBluecut) parts.push('BLUE');
-		if (formData.isPhotochromic) parts.push('FOTO');
 
 		// Type
 		const typeLabel = getLensTypeLabel(formData.type);

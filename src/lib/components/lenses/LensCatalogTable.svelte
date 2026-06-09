@@ -4,16 +4,10 @@
 	import { resolve } from '$app/paths';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { getLensSourceLabel, LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
+	import { LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
 	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import {
-		AppBadge,
-		ConfirmModal,
-		DataGrid,
-		LensTypeBadge,
-		TreatmentBadge
-	} from '$lib/components/ui';
+	import { AppBadge, ConfirmModal, DataGrid } from '$lib/components/ui';
 
 	type LensViewHref = `/lenses/${string}`;
 	type LensEditHref = `/lenses/${string}/edit`;
@@ -56,7 +50,6 @@
 
 	const columns = [
 		{ key: 'lens', label: 'Lente' },
-		{ key: 'properties', label: 'Propiedades' },
 		{ key: 'ranges', label: 'Rangos ópticos' },
 		{ key: 'price', label: 'Precio venta', align: 'right' as const },
 		{ key: 'status', label: 'Estado', align: 'right' as const },
@@ -66,10 +59,6 @@
 	function openDelete(item: LensCatalogItemWithRelations) {
 		selectedItem = item;
 		showDeleteModal = true;
-	}
-
-	function sourceVariant(source: string): 'info' | 'warning' {
-		return source === LensCatalogSource.FINISHED ? 'info' : 'warning';
 	}
 
 	function statusVariant(
@@ -90,6 +79,16 @@
 
 	function supplierLabel(item: LensCatalogItemWithRelations): string {
 		return item.supplier?.name?.trim() || 'Sin proveedor';
+	}
+
+	function sourceMicroBadgeLabel(item: LensCatalogItemWithRelations): string {
+		return item.source === LensCatalogSource.FINISHED ? 'Terminado' : 'Laboratorio';
+	}
+
+	function sourceMicroBadgeClass(item: LensCatalogItemWithRelations): string {
+		return item.source === LensCatalogSource.FINISHED
+			? 'bg-brand-blue-light/35 text-brand-blue-dark'
+			: 'bg-amber-100 text-amber-800';
 	}
 
 	async function handleDelete() {
@@ -130,174 +129,121 @@
 	{#snippet mobileCard(item)}
 		{@const displayRanges = collapseRangesForDisplay(item.ranges ?? [])}
 		{@const primaryRange = displayRanges[0]}
-		{@const extraRanges = displayRanges.slice(1)}
 		{@const viewHref = getViewHref?.(item)}
 		{@const editHref = getEditHref?.(item)}
-		<div class="space-y-4">
-			<div class="flex items-start justify-between gap-3">
+		<div class="space-y-2.5">
+			<div class="flex items-start justify-between gap-2">
 				<div class="min-w-0 flex-1">
-					<h3 class="text-sm leading-6 font-semibold text-on-surface">{item.name}</h3>
-					<p class="mt-1 text-xs text-on-surface-variant">{supplierLabel(item)}</p>
+					<h3 class="truncate text-sm leading-5 font-semibold text-on-surface">{item.name}</h3>
+					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
+						<span class="truncate">{supplierLabel(item)}</span>
+						<span
+							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(
+								item
+							)}"
+						>
+							{sourceMicroBadgeLabel(item)}
+						</span>
+					</div>
 				</div>
 
 				<div class="shrink-0 text-right">
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						Precio venta
-					</p>
 					{#if item.salePrice != null}
-						<p class="font-mono text-base font-bold text-brand-navy">
+						<p
+							class="font-mono text-sm font-bold text-brand-navy"
+							title={`Costo par: ${formatPrice(item.pairPurchasePrice)}`}
+						>
 							{formatPrice(item.salePrice)}
 						</p>
 					{:else}
-						<p class="text-sm font-semibold text-outline">Por definir</p>
+						<p class="text-xs font-semibold text-outline">Por definir</p>
 					{/if}
 				</div>
 			</div>
 
-			<div class="flex flex-wrap gap-1.5">
-				<AppBadge variant={sourceVariant(item.source)}>{getLensSourceLabel(item.source)}</AppBadge>
-				<LensTypeBadge type={item.type} />
-				{#if item.material?.name}
-					<AppBadge variant="neutral">{item.material.name}</AppBadge>
-				{/if}
-				{#if item.differentiator}
-					<AppBadge variant="neutral">{item.differentiator}</AppBadge>
-				{/if}
-			</div>
-
-			{#if item.technology}
-				<p class="text-xs text-on-surface-variant">Tecnología: {item.technology}</p>
-			{/if}
-
-			{#if item.hasAr || item.hasBluecut || item.isPhotochromic}
-				<div class="flex flex-wrap gap-1.5">
-					{#if item.hasAr}
-						<TreatmentBadge type="antiReflective" />
-					{/if}
-					{#if item.hasBluecut}
-						<TreatmentBadge type="blueBlock" />
-					{/if}
-					{#if item.isPhotochromic}
-						<TreatmentBadge type="photochromic" />
-					{/if}
-				</div>
-			{/if}
-
-			<div class="rounded-xl bg-surface-container-low p-3">
-				<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-					Rango óptico
-				</p>
+			<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
 				{#if primaryRange}
-					<div class="mt-2 flex flex-wrap gap-2">
+					<div class="flex flex-wrap gap-1.5">
 						<span
-							class="inline-flex rounded-lg bg-surface-container-high px-2.5 py-1 font-mono text-xs font-semibold text-brand-navy"
+							class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-navy"
 						>
 							ESF {primaryRange.sphereLabel}
 						</span>
 						{#if primaryRange.cylinderLabel}
 							<span
-								class="inline-flex rounded-lg bg-surface-container-high px-2.5 py-1 font-mono text-xs font-semibold text-brand-navy"
+								class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-navy"
 							>
 								CIL {primaryRange.cylinderLabel}
 							</span>
 						{/if}
-						{#if primaryRange.additionLabel}
-							<span
-								class="inline-flex rounded-lg bg-surface-container-high px-2.5 py-1 font-mono text-xs font-semibold text-brand-navy"
-							>
-								ADD {primaryRange.additionLabel}
-							</span>
-						{/if}
 					</div>
-					{#if extraRanges.length > 0}
-						<p class="mt-2 text-xs text-on-surface-variant">
-							+{extraRanges.length} rango{extraRanges.length === 1 ? '' : 's'} adicional{extraRanges.length ===
-							1
-								? ''
-								: 'es'}
-						</p>
-					{/if}
 				{:else}
-					<p class="mt-2 text-xs font-semibold text-outline">
+					<p class="text-xs font-semibold text-outline">
 						{item.source === LensCatalogSource.LAB ? 'Consultar laboratorio' : 'Sin rangos'}
 					</p>
 				{/if}
 			</div>
 
 			<div
-				class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-container-low p-3"
+				class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-low px-2.5 py-2"
 			>
-				<div>
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						Costo par
-					</p>
-					<p class="font-mono text-sm font-semibold text-brand-navy">
-						{formatPrice(item.pairPurchasePrice)}
-					</p>
-				</div>
-
-				<div class="flex items-center gap-2">
-					<AppBadge variant={statusVariant(item)}>{statusLabel(item)}</AppBadge>
-					{#if item.inventoryMode === LensInventoryMode.STOCK}
-						<span class="font-mono text-sm font-semibold text-brand-navy">
-							{item.stock ?? 0}
-						</span>
-					{/if}
-				</div>
-			</div>
-
-			<div class="flex flex-wrap items-center gap-2">
-				{#if viewHref}
-					<a
-						href={resolve(viewHref)}
-						class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-info-container px-4 text-sm font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
-					>
-						<Eye class="h-4 w-4" />
-						Ver lente
-					</a>
-				{:else if onView}
-					<button
-						type="button"
-						onclick={() => onView?.(item)}
-						class="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-info-container px-4 text-sm font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
-					>
-						<Eye class="h-4 w-4" />
-						Ver lente
-					</button>
-				{/if}
-
-				{#if canManage}
-					{#if editHref}
+				<AppBadge variant={statusVariant(item)}>{statusLabel(item)}</AppBadge>
+				<div class="flex items-center gap-1">
+					{#if viewHref}
 						<a
-							href={resolve(editHref)}
-							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar lente"
-							aria-label="Editar lente"
+							href={resolve(viewHref)}
+							class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver lente"
+							aria-label="Ver lente"
 						>
-							<SquarePen class="h-4 w-4" />
+							<Eye class="h-3.5 w-3.5" />
 						</a>
-					{:else if onEdit}
+					{:else if onView}
 						<button
 							type="button"
-							onclick={() => onEdit?.(item)}
-							class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-							title="Editar lente"
+							onclick={() => onView?.(item)}
+							class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							title="Ver lente"
+							aria-label="Ver lente"
 						>
-							<SquarePen class="h-4 w-4" />
+							<Eye class="h-3.5 w-3.5" />
 						</button>
 					{/if}
-				{/if}
 
-				{#if canManage}
-					<button
-						type="button"
-						onclick={() => openDelete(item)}
-						class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-						title="Eliminar lente"
-					>
-						<Trash2 class="h-4 w-4" />
-					</button>
-				{/if}
+					{#if canManage}
+						{#if editHref}
+							<a
+								href={resolve(editHref)}
+								class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar lente"
+								aria-label="Editar lente"
+							>
+								<SquarePen class="h-3.5 w-3.5" />
+							</a>
+						{:else if onEdit}
+							<button
+								type="button"
+								onclick={() => onEdit?.(item)}
+								class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar lente"
+							>
+								<SquarePen class="h-3.5 w-3.5" />
+							</button>
+						{/if}
+					{/if}
+
+					{#if canManage}
+						<button
+							type="button"
+							onclick={() => openDelete(item)}
+							class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+							title="Eliminar lente"
+							aria-label="Eliminar lente"
+						>
+							<Trash2 class="h-3.5 w-3.5" />
+						</button>
+					{/if}
+				</div>
 			</div>
 		</div>
 	{/snippet}
@@ -314,80 +260,45 @@
 				: ''}"
 			onclick={() => onView?.(item)}
 		>
-			<td class="px-4 py-5 align-top">
-				<div class="max-w-[18rem] min-w-[15rem] space-y-2">
-					<p class="text-sm leading-6 font-semibold text-on-surface">{item.name}</p>
-					<p class="text-xs text-on-surface-variant">{supplierLabel(item)}</p>
-				</div>
-			</td>
-			<td class="px-4 py-5 align-top">
-				<div class="min-w-[13rem] space-y-2">
-					<div class="flex flex-wrap gap-1.5">
-						<AppBadge variant={sourceVariant(item.source)}
-							>{getLensSourceLabel(item.source)}</AppBadge
+			<td class="px-3 py-2 align-middle">
+				<div class="max-w-[28rem] min-w-[18rem]">
+					<p class="truncate text-sm font-semibold text-on-surface">{item.name}</p>
+					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
+						<span class="truncate">{supplierLabel(item)}</span>
+						<span
+							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(
+								item
+							)}"
 						>
-						<LensTypeBadge type={item.type} />
-					</div>
-					<p class="text-xs text-on-surface-variant">
-						{item.material?.name ?? 'Material por definir'}
-					</p>
-					{#if item.technology || item.differentiator}
-						<p class="text-xs text-on-surface-variant">
-							{#if item.technology}Tecnología: {item.technology}{/if}{#if item.technology && item.differentiator}
-								·
-							{/if}{#if item.differentiator}Etiqueta: {item.differentiator}{/if}
-						</p>
-					{/if}
-					<div class="flex flex-wrap gap-1.5">
-						{#if item.hasAr}
-							<TreatmentBadge type="antiReflective" />
-						{/if}
-						{#if item.hasBluecut}
-							<TreatmentBadge type="blueBlock" />
-						{/if}
-						{#if item.isPhotochromic}
-							<TreatmentBadge type="photochromic" />
-						{/if}
+							{sourceMicroBadgeLabel(item)}
+						</span>
 					</div>
 				</div>
 			</td>
-			<td class="px-4 py-5 align-top">
-				<div class="min-w-[14rem]">
+			<td class="px-3 py-2 align-middle">
+				<div class="min-w-[15rem]">
 					{#if primaryRange}
-						<div class="flex flex-wrap items-end gap-3">
-							<div class="space-y-1">
-								<p class="text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">
-									Esfera
+						<div class="flex flex-wrap items-center gap-2">
+							<div class="inline-flex items-center gap-1">
+								<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">
+									ESF
 								</p>
 								<span
-									class="inline-flex rounded-md bg-surface-container-high px-2.5 py-1 font-mono text-xs font-bold text-brand-navy"
+									class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-xs font-bold text-brand-navy tabular-nums"
 								>
 									{primaryRange.sphereLabel}
 								</span>
 							</div>
 
 							{#if primaryRange.cylinderLabel}
-								<div class="space-y-1">
-									<p class="text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">
-										Cilindro
+								<div class="inline-flex items-center gap-1">
+									<p class="text-[10px] font-semibold tracking-[0.15em] text-outline uppercase">
+										CIL
 									</p>
 									<span
-										class="inline-flex rounded-md bg-surface-container-high px-2.5 py-1 font-mono text-xs font-bold text-brand-navy"
+										class="inline-flex rounded-md bg-surface-container-high px-2 py-0.5 font-mono text-xs font-bold text-brand-navy tabular-nums"
 									>
 										{primaryRange.cylinderLabel}
-									</span>
-								</div>
-							{/if}
-
-							{#if primaryRange.additionLabel}
-								<div class="space-y-1">
-									<p class="text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">
-										Adición
-									</p>
-									<span
-										class="inline-flex rounded-md bg-surface-container-high px-2.5 py-1 font-mono text-xs font-bold text-brand-navy"
-									>
-										{primaryRange.additionLabel}
 									</span>
 								</div>
 							{/if}
@@ -398,7 +309,7 @@
 										type="button"
 										aria-label={`Ver los ${displayRanges.length} rangos del lente`}
 										onclick={(event) => event.stopPropagation()}
-										class="inline-flex cursor-help rounded-md bg-brand-blue-light/30 px-2.5 py-1 text-[10px] font-semibold tracking-[0.16em] text-brand-blue-dark uppercase transition-colors hover:bg-brand-blue-light/45 focus-visible:ring-2 focus-visible:ring-brand-blue/35 focus-visible:outline-none"
+										class="inline-flex cursor-help rounded-md bg-brand-blue-light/30 px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-brand-blue-dark uppercase transition-colors hover:bg-brand-blue-light/45 focus-visible:ring-2 focus-visible:ring-brand-blue/35 focus-visible:outline-none"
 									>
 										+{extraRanges.length} rango{extraRanges.length === 1 ? '' : 's'}
 									</button>
@@ -449,50 +360,48 @@
 						</div>
 					{:else}
 						<span
-							class="inline-flex rounded-md bg-surface-container-low px-3 py-1.5 text-xs font-semibold tracking-[0.16em] text-outline uppercase"
+							class="inline-flex rounded-md bg-surface-container-low px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.12em] text-outline uppercase"
 						>
 							{item.source === LensCatalogSource.LAB ? 'Consultar' : 'Sin rangos'}
 						</span>
 					{/if}
 				</div>
 			</td>
-			<td class="px-4 py-5 text-right align-top">
-				<div class="space-y-1">
+			<td class="px-3 py-2 text-right align-middle">
+				<div>
 					{#if item.salePrice != null}
-						<p class="font-mono text-base font-bold text-brand-navy">
+						<p
+							class="font-mono text-sm font-bold text-brand-navy tabular-nums"
+							title={`Costo par: ${formatPrice(item.pairPurchasePrice)}`}
+						>
 							{formatPrice(item.salePrice)}
 						</p>
 					{:else}
-						<p class="text-sm font-semibold text-outline">Por definir</p>
+						<p class="text-xs font-semibold text-outline">Por definir</p>
 					{/if}
-					<p class="text-[10px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Costo par {formatPrice(item.pairPurchasePrice)}
-					</p>
 				</div>
 			</td>
-			<td class="px-4 py-5 text-right align-top">
+			<td class="px-3 py-2 text-right align-middle">
 				<div class="flex flex-col items-end gap-1.5">
 					<AppBadge variant={statusVariant(item)}>{statusLabel(item)}</AppBadge>
 					{#if item.inventoryMode === LensInventoryMode.STOCK}
-						<span class="font-mono text-xs font-semibold text-brand-navy">
+						<span class="font-mono text-[11px] font-semibold text-brand-navy tabular-nums">
 							{item.stock ?? 0} unid.
 						</span>
 					{/if}
 				</div>
 			</td>
-			<td class="px-4 py-5 text-right align-top">
+			<td class="px-3 py-2 text-right align-middle">
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
 							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
-							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver lente"
+							aria-label="Ver lente"
 						>
-							<span class="inline-flex items-center gap-1.5">
-								<Eye class="h-3.5 w-3.5" />
-								Ver
-							</span>
+							<Eye class="h-3.5 w-3.5" />
 						</a>
 					{:else if onView}
 						<button
@@ -501,13 +410,11 @@
 								event.stopPropagation();
 								onView?.(item);
 							}}
-							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-info-container text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver lente"
+							aria-label="Ver lente"
 						>
-							<span class="inline-flex items-center gap-1.5">
-								<Eye class="h-3.5 w-3.5" />
-								Ver
-							</span>
+							<Eye class="h-3.5 w-3.5" />
 						</button>
 					{/if}
 
@@ -516,11 +423,11 @@
 							<a
 								href={resolve(editHref)}
 								onclick={(event) => event.stopPropagation()}
-								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								class="inline-flex h-7 w-7 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
 								title="Editar lente"
 								aria-label="Editar lente"
 							>
-								<SquarePen class="h-4 w-4" />
+								<SquarePen class="h-3.5 w-3.5" />
 							</a>
 						{:else if onEdit}
 							<button
@@ -529,10 +436,11 @@
 									event.stopPropagation();
 									onEdit?.(item);
 								}}
-								class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								class="inline-flex h-7 w-7 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
 								title="Editar lente"
+								aria-label="Editar lente"
 							>
-								<SquarePen class="h-4 w-4" />
+								<SquarePen class="h-3.5 w-3.5" />
 							</button>
 						{/if}
 					{/if}
@@ -544,10 +452,11 @@
 								event.stopPropagation();
 								openDelete(item);
 							}}
-							class="rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+							class="inline-flex h-7 w-7 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
 							title="Eliminar lente"
+							aria-label="Eliminar lente"
 						>
-							<Trash2 class="h-4 w-4" />
+							<Trash2 class="h-3.5 w-3.5" />
 						</button>
 					{/if}
 				</div>
