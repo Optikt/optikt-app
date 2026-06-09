@@ -138,7 +138,9 @@
 					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
 						<span class="truncate">{supplierLabel(item)}</span>
 						<span
-							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(item)}"
+							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(
+								item
+							)}"
 						>
 							{sourceMicroBadgeLabel(item)}
 						</span>
@@ -264,7 +266,9 @@
 					<div class="flex items-center gap-2 text-[11px] text-on-surface-variant">
 						<span class="truncate">{supplierLabel(item)}</span>
 						<span
-							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(item)}"
+							class="inline-flex shrink-0 items-center rounded-sm px-1.5 py-0 text-[10px] leading-[1.1] font-semibold {sourceMicroBadgeClass(
+								item
+							)}"
 						>
 							{sourceMicroBadgeLabel(item)}
 						</span>
