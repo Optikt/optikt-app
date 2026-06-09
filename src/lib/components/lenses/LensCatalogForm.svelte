@@ -571,7 +571,7 @@
 				<div class="mt-6 grid gap-x-6 gap-y-5 md:grid-cols-2">
 					<div>
 						<CreatableSelect
-							label="Proveedor *"
+							label="Proveedor"
 							name="supplierId"
 							bind:value={formData.supplierId}
 							options={supplierOptions}
@@ -588,7 +588,7 @@
 
 					<div>
 						<CreatableSelect
-							label="Material *"
+							label="Material"
 							name="materialId"
 							bind:value={formData.materialId}
 							options={materialOptions}
