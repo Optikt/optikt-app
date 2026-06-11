@@ -66,7 +66,7 @@
 		existingRanges = [],
 		materials = [],
 		suppliers = [],
-		technologies = [],
+		// technologies = [],
 		differentiators = [],
 		supplierTechnologies: initialSupplierTechnologies = [],
 		cancelHref = '/lenses',
