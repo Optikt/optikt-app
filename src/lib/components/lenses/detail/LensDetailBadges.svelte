@@ -2,7 +2,6 @@
 	import { Factory, Warehouse, Eye, CircleCheck, CircleX, Clock, Package } from '@lucide/svelte';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import {
-		getInventoryModeLabel,
 		getLensSourceLabel,
 		getLensTypeLabel,
 		getLensTypeBadgeColor,
