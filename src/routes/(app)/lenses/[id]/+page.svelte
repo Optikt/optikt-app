@@ -6,8 +6,8 @@
 	import { untrack } from 'svelte';
 	import { ChangeHistoryModal } from '$lib/components/history';
 	import { ConfirmModal, PageHeader } from '$lib/components/ui';
-	import LensDetailHeroCard from '$lib/components/lenses/detail/LensDetailHeroCard.svelte';
-	import LensDetailOperationPanel from '$lib/components/lenses/detail/LensDetailOperationPanel.svelte';
+	import LensDetailBadges from '$lib/components/lenses/detail/LensDetailBadges.svelte';
+	import LensDetailTechnicalPanel from '$lib/components/lenses/detail/LensDetailTechnicalPanel.svelte';
 	import LensDetailOpticalPanel from '$lib/components/lenses/detail/LensDetailOpticalPanel.svelte';
 	import LensDetailSidebar from '$lib/components/lenses/detail/LensDetailSidebar.svelte';
 	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
@@ -83,12 +83,12 @@
 		{/snippet}
 	</PageHeader>
 
-	<LensDetailHeroCard {item} />
+	<LensDetailBadges {item} />
 
 	<div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
 		<div class="space-y-6">
+			<LensDetailTechnicalPanel {item} />
 			<LensDetailOpticalPanel {item} />
-			<LensDetailOperationPanel {item} canManageInventory={isAdmin} />
 		</div>
 		<LensDetailSidebar {item} onOpenHistory={() => (showHistoryModal = true)} />
 	</div>
