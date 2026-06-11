@@ -16,7 +16,8 @@ import { enumValues } from './utils';
 import {
 	LensCatalogSource,
 	LensPriceType,
-	LensInventoryMode
+	LensInventoryMode,
+	LensType
 } from '../../../shared/enums/lensTypes';
 
 // ============================================================================
@@ -26,6 +27,7 @@ import {
 export const lensCatalogSourceEnum = pgEnum('lens_catalog_source', enumValues(LensCatalogSource));
 export const lensPriceTypeEnum = pgEnum('lens_price_type', enumValues(LensPriceType));
 export const lensInventoryModeEnum = pgEnum('lens_inventory_mode', enumValues(LensInventoryMode));
+export const lensTypeEnum = pgEnum('lens_type', enumValues(LensType));
 
 // ============================================================================
 // LENS MATERIALS (unchanged)
@@ -62,6 +64,40 @@ export const lensMaterials = pgTable(
 );
 
 // ============================================================================
+// LENS TECHNOLOGIES - digital designs offered by labs (e.g. "Precisa", "Evo-S")
+// ============================================================================
+
+export const lensTechnologies = pgTable(
+	'lens_technologies',
+	{
+		id: uuid().primaryKey().notNull().defaultRandom(),
+		supplierId: uuid('supplier_id').notNull(),
+		name: varchar().notNull(),
+		/** Minimum fitting height required for this design (mm) */
+		minFittingHeight: doublePrecision('min_fitting_height'),
+		isActive: boolean('is_active').notNull().default(true),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+			.notNull()
+			.defaultNow()
+	},
+	(table) => [
+		index('ix_lens_technologies_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
+		index('ix_lens_technologies_supplier_id').using(
+			'btree',
+			table.supplierId.asc().nullsLast().op('uuid_ops')
+		),
+		foreignKey({
+			columns: [table.supplierId],
+			foreignColumns: [suppliers.id],
+			name: 'lens_technologies_supplier_id_fkey'
+		}).onDelete('cascade')
+	]
+);
+
+// ============================================================================
 // LENS CATALOG ITEMS (simplified)
 // ============================================================================
 
@@ -72,15 +108,28 @@ export const lensCatalogItems = pgTable(
 		source: lensCatalogSourceEnum().notNull().default('LAB'),
 		supplierId: uuid('supplier_id').notNull(),
 		name: varchar().notNull(),
-		type: varchar().notNull(),
-		technology: varchar(),
-		differentiator: varchar(),
+		/** Lens type: MONOFOCAL | BIFOCAL | PROGRESSIVE | OCCUPATIONAL */
+		type: lensTypeEnum().notNull(),
+		/**
+		 * Reference to the digital design/technology used by the lab.
+		 * Nullable — finished lenses do not use a digital design.
+		 */
+		technologyId: uuid('technology_id'),
+		/**
+		 * Free-form differentiator tags (e.g. ["UV400", "Hidrofóbico"]).
+		 * Native Postgres varchar array — use GIN index for efficient searches.
+		 */
+		differentiators: varchar('differentiators').array(),
 		materialId: uuid('material_id').notNull(),
 
 		// --- Inherent traits (booleans) ---
 		hasAr: boolean('has_ar').notNull().default(false),
+		/** Available AR coating color variants (e.g. ["Verde", "Azul"]). */
+		arColors: varchar('ar_colors').array(),
 		hasBluecut: boolean('has_bluecut').notNull().default(false),
 		isPhotochromic: boolean('is_photochromic').notNull().default(false),
+		/** Available photochromic color variants (e.g. ["Gris", "Marrón"]). */
+		photochromicColors: varchar('photochromic_colors').array(),
 
 		// --- Pricing ---
 		priceType: lensPriceTypeEnum('price_type').notNull().default('UNIT'),
@@ -119,14 +168,14 @@ export const lensCatalogItems = pgTable(
 			'btree',
 			table.supplierId.asc().nullsLast().op('uuid_ops')
 		),
-		index('ix_lens_catalog_items_technology').using(
+		index('ix_lens_catalog_items_technology_id').using(
 			'btree',
-			table.technology.asc().nullsLast().op('text_ops')
+			table.technologyId.asc().nullsLast().op('uuid_ops')
 		),
-		index('ix_lens_catalog_items_differentiator').using(
-			'btree',
-			table.differentiator.asc().nullsLast().op('text_ops')
-		),
+		// GIN indexes for efficient containment / overlap queries on array columns
+		index('ix_lens_catalog_items_differentiators').using('gin', table.differentiators),
+		index('ix_lens_catalog_items_ar_colors').using('gin', table.arColors),
+		index('ix_lens_catalog_items_photochromic_colors').using('gin', table.photochromicColors),
 		foreignKey({
 			columns: [table.materialId],
 			foreignColumns: [lensMaterials.id],
@@ -136,7 +185,12 @@ export const lensCatalogItems = pgTable(
 			columns: [table.supplierId],
 			foreignColumns: [suppliers.id],
 			name: 'lens_catalog_items_supplier_id_fkey'
-		}).onDelete('cascade')
+		}).onDelete('cascade'),
+		foreignKey({
+			columns: [table.technologyId],
+			foreignColumns: [lensTechnologies.id],
+			name: 'lens_catalog_items_technology_id_fkey'
+		}).onDelete('restrict')
 	]
 );
 
@@ -179,6 +233,8 @@ export const lensOpticalRanges = pgTable(
 // Type exports
 export type LensMaterial = typeof lensMaterials.$inferSelect;
 export type NewLensMaterial = typeof lensMaterials.$inferInsert;
+export type LensTechnology = typeof lensTechnologies.$inferSelect;
+export type NewLensTechnology = typeof lensTechnologies.$inferInsert;
 export type LensCatalogItem = typeof lensCatalogItems.$inferSelect;
 export type NewLensCatalogItem = typeof lensCatalogItems.$inferInsert;
 export type LensOpticalRange = typeof lensOpticalRanges.$inferSelect;
