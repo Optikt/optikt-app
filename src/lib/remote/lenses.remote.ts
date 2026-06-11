@@ -13,8 +13,11 @@ import {
 	UpdateLensMaterialSchema,
 	CreateLensCatalogItemSchema,
 	UpdateLensCatalogItemSchema,
+	CreateLensTechnologySchema,
+	UpdateLensTechnologySchema,
 	LensIdSchema,
-	ListLensCatalogSchema
+	ListLensCatalogSchema,
+	LensSupplierIdSchema
 } from '$lib/schemas/lenses';
 import { ManualLensAdjustmentSchema } from '$lib/schemas/inventory';
 import {
@@ -28,7 +31,11 @@ import {
 	getLensCatalogItemsWithRelations,
 	findLensCatalogItemById,
 	deleteLensCatalogItem,
-	resolvePendingLensMaterial
+	resolvePendingLensMaterial,
+	getTechnologiesBySupplier,
+	findLensTechnologyById,
+	createLensTechnology,
+	updateLensTechnology
 } from '$lib/server/db/queries/lenses';
 import {
 	createInventoryLot,
@@ -44,7 +51,7 @@ import {
 	getNextPONumber
 } from '$lib/server/db/queries/purchaseOrders';
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
-import type { LensMaterial, LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
+import type { LensMaterial, LensTechnology, LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
 import { nowISO } from '$lib/dates';
@@ -258,9 +265,50 @@ export const listLensCatalog = query(
 			supplierId: data.supplierId,
 			materialId: data.materialId,
 			type: data.type,
-			technology: data.technology,
-			differentiator: data.differentiator
+			technologyId: data.technologyId
 		});
+	}
+);
+
+// ============================================================================
+// LENS TECHNOLOGIES
+// ============================================================================
+
+export const listTechnologiesBySupplier = query(
+	LensSupplierIdSchema,
+	async (data): Promise<LensTechnology[]> => {
+		requireAuth();
+
+		return getTechnologiesBySupplier(data.supplierId);
+	}
+);
+
+export const createLensTechnologyForm = form(
+	CreateLensTechnologySchema,
+	async (data): Promise<LensTechnology> => {
+		requireAdmin();
+
+		const tech = await createLensTechnology(data);
+		await auditService.logCreate('lens_technology', tech, getAuditContext());
+		return tech;
+	}
+);
+
+export const updateLensTechnologyForm = form(
+	UpdateLensTechnologySchema,
+	async (data): Promise<LensTechnology> => {
+		requireAdmin();
+
+		const { id, ...updates } = data;
+
+		const existing = await findLensTechnologyById(id);
+		if (!existing) invalid('Tecnología no encontrada');
+
+		const updated = await updateLensTechnology(id, updates);
+		if (!updated) invalid('Error actualizando tecnología');
+
+		await auditService.logUpdate('lens_technology', id, existing, updated, getAuditContext());
+		return updated;
 	}
 );
 
