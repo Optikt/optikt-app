@@ -131,9 +131,12 @@ const BaseLensCatalogItemSchema = z.object({
 	type: z.nativeEnum(LensType, { message: 'Tipo de lente requerido' }),
 	/**
 	 * Foreign key to lens_technologies.
-	 * Nullable — finished lenses (FINISHED source) do not use a digital design.
+	 * Optional — finished lenses (FINISHED source) do not use a digital design.
 	 */
-	technologyId: z.string().uuid().nullable().optional(),
+	technologyId: z
+		.union([z.literal(''), z.string().uuid()])
+		.optional()
+		.transform((val) => val || undefined),
 	/**
 	 * Free-form differentiator tags (e.g. ["UV400", "Hidrofóbico"]).
 	 * Sent as a JSON string from forms; parsed to string[].
@@ -143,6 +146,7 @@ const BaseLensCatalogItemSchema = z.object({
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialRefractiveIndex: RefractiveIndexSchema.optional(),
+	pendingTechnologyName: z.string().optional(),
 	ranges: RangesJsonSchema,
 
 	// --- Inherent traits (booleans) ---

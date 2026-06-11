@@ -24,6 +24,7 @@
 		suppliers={data.suppliers}
 		technologies={data.technologies}
 		differentiators={data.differentiators}
+		supplierTechnologies={data.supplierTechnologies}
 		cancelHref="/lenses"
 	/>
 </div>

@@ -1,4 +1,4 @@
-import { eq, isNull, and, ilike, desc, inArray } from 'drizzle-orm';
+import { eq, isNull, and, ilike, desc, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -92,17 +92,12 @@ export async function getTechnologiesBySupplier(supplierId: string): Promise<Len
 	return await db
 		.select()
 		.from(lensTechnologies)
-		.where(
-			and(eq(lensTechnologies.supplierId, supplierId), eq(lensTechnologies.isActive, true))
-		)
+		.where(and(eq(lensTechnologies.supplierId, supplierId), eq(lensTechnologies.isActive, true)))
 		.orderBy(lensTechnologies.name);
 }
 
 export async function findLensTechnologyById(id: string): Promise<LensTechnology | null> {
-	const [tech] = await db
-		.select()
-		.from(lensTechnologies)
-		.where(eq(lensTechnologies.id, id));
+	const [tech] = await db.select().from(lensTechnologies).where(eq(lensTechnologies.id, id));
 	return tech ?? null;
 }
 
@@ -159,6 +154,8 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	type?: LensType;
 	/** Filter by technology FK (replaces old free-text filter) */
 	technologyId?: string;
+	/** Filter by specific differentiator tag */
+	differentiator?: string;
 }): Promise<LensCatalogItemWithRelations[]> {
 	const conditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
 
@@ -206,6 +203,14 @@ export async function getLensCatalogItemsWithRelations(options?: {
 		technologyName: r.technologyName ?? null,
 		ranges: [] as LensOpticalRange[]
 	}));
+
+	// Filter by specific differentiator tag in memory
+	if (options?.differentiator) {
+		const diffLower = options.differentiator.toLowerCase();
+		items = items.filter((item) =>
+			item.differentiators?.some((d) => d.toLowerCase() === diffLower)
+		);
+	}
 
 	// Text search in memory (name, supplier, material, technologyName, differentiators)
 	if (options?.search) {
@@ -410,4 +415,64 @@ export async function resolvePendingLensMaterial(
 		})
 		.returning();
 	return created.id;
+}
+
+export async function resolvePendingTechnology(
+	pendingName: string,
+	supplierId: string,
+	now: string,
+	executor: DbOrTx = db
+): Promise<string> {
+	const [existing] = await executor
+		.select()
+		.from(lensTechnologies)
+		.where(
+			and(
+				ilike(lensTechnologies.name, pendingName),
+				eq(lensTechnologies.supplierId, supplierId),
+				eq(lensTechnologies.isActive, true)
+			)
+		);
+
+	if (existing) return existing.id;
+
+	const [created] = await executor
+		.insert(lensTechnologies)
+		.values({
+			id: crypto.randomUUID(),
+			supplierId,
+			name: pendingName,
+			createdAt: now,
+			updatedAt: now
+		})
+		.returning();
+	return created.id;
+}
+
+/**
+ * Retrieve distinct active technologies and unique unnested differentiator tags.
+ */
+export async function getLensCatalogDistinctValues(): Promise<{
+	technologies: { id: string; name: string }[];
+	differentiators: string[];
+}> {
+	const techs = await db
+		.select({ id: lensTechnologies.id, name: lensTechnologies.name })
+		.from(lensTechnologies)
+		.where(eq(lensTechnologies.isActive, true))
+		.orderBy(lensTechnologies.name);
+
+	const diffRows = await db
+		.select({ diff: sql<string | null>`unnest(${lensCatalogItems.differentiators})` })
+		.from(lensCatalogItems)
+		.where(isNull(lensCatalogItems.deletedAt));
+
+	const differentiators = [
+		...new Set(diffRows.map((row) => row.diff).filter((s): s is string => s !== null))
+	].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+	return {
+		technologies: techs,
+		differentiators
+	};
 }

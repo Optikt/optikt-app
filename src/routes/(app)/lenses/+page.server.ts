@@ -41,7 +41,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			type,
 			supplierId,
 			materialId,
-			technology,
+			technologyId: technology,
 			differentiator
 		}),
 		getLensCatalogDistinctValues(),

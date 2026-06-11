@@ -37,8 +37,10 @@ function makeLensItem(
 		supplierId: 'supplier-1',
 		name: 'Alpha Lens',
 		type: LensType.MONOFOCAL,
-		technology: null,
-		differentiator: null,
+		technologyId: null,
+		differentiators: [],
+		arColors: null,
+		photochromicColors: null,
 		materialId: 'material-1',
 		hasAr: false,
 		hasBluecut: false,
@@ -59,6 +61,7 @@ function makeLensItem(
 		updatedAt: '2026-04-20T00:00:00.000Z',
 		material: null,
 		supplier: null,
+		technologyName: null,
 		ranges: [],
 		...overrides
 	};

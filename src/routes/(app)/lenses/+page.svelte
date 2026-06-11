@@ -90,9 +90,7 @@
 			.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
 			.map((supplier) => ({ id: supplier.id, name: supplier.name }))
 	);
-	const technologyOptions = $derived(
-		technologies.map((technology) => ({ id: technology, name: technology }))
-	);
+	const technologyOptions = $derived(technologies);
 	const differentiatorOptions = $derived(
 		differentiators.map((differentiator) => ({ id: differentiator, name: differentiator }))
 	);
@@ -128,8 +126,7 @@
 				type: typeFilter || undefined,
 				supplierId: supplierFilter || undefined,
 				materialId: materialFilter || undefined,
-				technology: technologyFilter || undefined,
-				differentiator: differentiatorFilter || undefined
+				technologyId: technologyFilter || undefined
 			}).run();
 			catalogPage = 1;
 		} catch (error) {

@@ -5,7 +5,8 @@ import { UserRole } from '$lib/shared/enums';
 import {
 	findLensCatalogItemById,
 	getAllLensMaterials,
-	getLensCatalogDistinctValues
+	getLensCatalogDistinctValues,
+	getTechnologiesBySupplier
 } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
@@ -23,6 +24,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Lente no encontrado');
 	}
 
+	const supplierTechnologies =
+		item.supplierId && !item.supplierId.startsWith('pending_')
+			? await getTechnologiesBySupplier(item.supplierId)
+			: [];
+
 	return {
 		item,
 		ranges: item.ranges,
@@ -33,6 +39,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		})),
 		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name })),
 		technologies: distinctValues.technologies,
-		differentiators: distinctValues.differentiators
+		differentiators: distinctValues.differentiators,
+		supplierTechnologies: supplierTechnologies.map((t) => ({ id: t.id, name: t.name }))
 	};
 };

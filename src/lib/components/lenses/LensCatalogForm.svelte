@@ -5,7 +5,11 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import { createLensCatalogItemForm, updateLensCatalogItemForm } from '$lib/remote/lenses.remote';
+	import {
+		createLensCatalogItemForm,
+		updateLensCatalogItemForm,
+		listTechnologiesBySupplier
+	} from '$lib/remote/lenses.remote';
 	import {
 		CreatableSelect,
 		TaxToggle,
@@ -48,8 +52,9 @@
 		existingRanges?: LensOpticalRange[];
 		materials: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
-		technologies?: string[];
+		technologies?: { id: string; name: string }[];
 		differentiators?: string[];
+		supplierTechnologies?: { id: string; name: string }[];
 		cancelHref?: string;
 		formId?: string;
 		showActions?: boolean;
@@ -63,6 +68,7 @@
 		suppliers = [],
 		technologies = [],
 		differentiators = [],
+		supplierTechnologies: initialSupplierTechnologies = [],
 		cancelHref = '/lenses',
 		formId = 'lens-catalog-form',
 		showActions = true,
@@ -106,8 +112,10 @@
 		supplierId: initialItem?.supplierId ?? '',
 		name: initialItem?.name ?? '',
 		type: (initialItem?.type as LensType) ?? LensType.MONOFOCAL,
-		technology: initialItem?.technology ?? '',
-		differentiator: initialItem?.differentiator ?? '',
+		technologyId: initialItem?.technologyId ?? '',
+		differentiators: (initialItem?.differentiators as string[]) ?? [],
+		arColors: (initialItem?.arColors as string[]) ?? [],
+		photochromicColors: (initialItem?.photochromicColors as string[]) ?? [],
 		materialId: initialItem?.materialId ?? '',
 		// Inherent traits
 		hasAr: initialItem?.hasAr ?? false,
@@ -126,6 +134,66 @@
 		stock: initialItem?.stock != null ? initialItem.stock.toString() : '0',
 		notes: initialItem?.notes ?? ''
 	});
+
+	// Comma-separated text states for arrays
+	let differentiatorsText = $state(
+		initialItem?.differentiators ? (initialItem.differentiators as string[]).join(', ') : ''
+	);
+	let arColorsText = $state(
+		initialItem?.arColors ? (initialItem.arColors as string[]).join(', ') : ''
+	);
+	let photochromicColorsText = $state(
+		initialItem?.photochromicColors ? (initialItem.photochromicColors as string[]).join(', ') : ''
+	);
+
+	// Reactively update array fields from comma-separated inputs
+	$effect(() => {
+		formData.differentiators = differentiatorsText
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+	});
+	$effect(() => {
+		formData.arColors = arColorsText
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+	});
+	$effect(() => {
+		formData.photochromicColors = photochromicColorsText
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+	});
+
+	// Dynamic supplier technologies list
+	let supplierTechnologies = $state<Array<{ id: string; name: string }>>([]);
+
+	// Seed with initial technologies from server load (only happens once on mount)
+	$effect(() => {
+		if (initialSupplierTechnologies.length > 0) {
+			supplierTechnologies = initialSupplierTechnologies;
+		}
+	});
+
+	function handleSupplierChange(selected: { id: string; name: string } | null) {
+		const supplierId = selected?.id ?? '';
+		formData.supplierId = supplierId;
+		formData.technologyId = '';
+		if (supplierId && !supplierId.startsWith('pending_')) {
+			listTechnologiesBySupplier({ supplierId })
+				.run()
+				.then((res) => {
+					supplierTechnologies = res;
+				})
+				.catch((err) => {
+					console.error(err);
+					supplierTechnologies = [];
+				});
+		} else {
+			supplierTechnologies = [];
+		}
+	}
 
 	// Live pair purchase price - always the cost of two lenses
 	let livePairPurchasePrice = $derived.by(() => {
@@ -201,32 +269,6 @@
 		suppliers.map((s) => ({ id: s.id, name: s.name }))
 	);
 
-	const technologyOptions = $derived<SelectOption[]>(
-		Array.from(
-			new Set(
-				[
-					...technologies,
-					...(formData.technology.trim() ? [formData.technology.trim()] : [])
-				].filter((value) => value.trim().length > 0)
-			)
-		)
-			.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
-			.map((value) => ({ id: value, name: value }))
-	);
-
-	const differentiatorOptions = $derived<SelectOption[]>(
-		Array.from(
-			new Set(
-				[
-					...differentiators,
-					...(formData.differentiator.trim() ? [formData.differentiator.trim()] : [])
-				].filter((value) => value.trim().length > 0)
-			)
-		)
-			.sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
-			.map((value) => ({ id: value, name: value }))
-	);
-
 	const supplierHelperText = $derived.by(() => {
 		if (!formData.supplierId) return 'Selecciona o crea el proveedor responsable de este lente.';
 		if (formData.supplierId.startsWith('pending_')) {
@@ -244,10 +286,13 @@
 	});
 
 	const technologyHelperText =
-		'Selecciona una tecnologia existente o escribe una nueva para mantener consistencia.';
+		'Selecciona la tecnología de fabricación digital para este lente de laboratorio.';
 
-	const differentiatorHelperText =
-		'Opcional: etiqueta libre para variantes como cilindro bajo, alto, alto 2, etc.';
+	const differentiatorHelperText = $derived.by(() =>
+		differentiators.length > 0
+			? `Opcional: etiquetas descriptivas separadas por comas (sugeridas: ${differentiators.slice(0, 3).join(', ')}).`
+			: 'Opcional: etiquetas descriptivas separadas por comas (ej. Cilindro Alto 2, UV400).'
+	);
 
 	// Auto-name generation
 	let autoNameEnabled = $state(true);
@@ -269,14 +314,29 @@
 		else if (pendingMat) parts.push(pendingMat.name);
 
 		// Technology (optional)
-		if (formData.technology.trim()) parts.push(formData.technology.trim());
+		if (formData.technologyId) {
+			const tech = supplierTechnologies.find((t) => t.id === formData.technologyId);
+			if (tech) parts.push(tech.name);
+		}
 
-		// Differentiator (optional)
-		if (formData.differentiator.trim()) parts.push(formData.differentiator.trim());
+		// Differentiators (optional)
+		if (formData.differentiators && formData.differentiators.length > 0) {
+			parts.push(formData.differentiators.join(' · '));
+		}
 
 		// Treatments (optional tags)
-		if (formData.isPhotochromic) parts.push('FOTO');
-		if (formData.hasAr) parts.push('AR');
+		if (formData.isPhotochromic) {
+			parts.push('FOTO');
+			if (formData.photochromicColors && formData.photochromicColors.length > 0) {
+				parts.push(`(${formData.photochromicColors.join('/')})`);
+			}
+		}
+		if (formData.hasAr) {
+			parts.push('AR');
+			if (formData.arColors && formData.arColors.length > 0) {
+				parts.push(`(${formData.arColors.join('/')})`);
+			}
+		}
 		if (formData.hasBluecut) parts.push('BLUE');
 
 		// Type
@@ -467,13 +527,18 @@
 		return { id: pendingId, name, isPending: true };
 	}
 
+	function handleCreatePendingTechnology(name: string): SelectOption {
+		const pendingId = `pending_technology_${generateUUID()}`;
+		return { id: pendingId, name, isPending: true };
+	}
+
 	function getPendingName(pendingId: string): string | null {
 		if (!pendingId.startsWith('pending_')) return null;
 		const sup = pendingSuppliers.find((s) => s.pendingId === pendingId);
 		if (sup) return sup.name;
 		const mat = pendingMaterials.find((m) => m.pendingId === pendingId);
 		if (mat) return mat.name;
-		return null;
+		return pendingId.startsWith('pending_technology_') ? formData.name : null;
 	}
 
 	function handleCreateResult() {
@@ -485,8 +550,15 @@
 			return;
 		}
 		const result = currentCreateForm.result;
+		const createdId =
+			typeof result === 'object' &&
+			result !== null &&
+			'id' in result &&
+			typeof result.id === 'string'
+				? result.id
+				: null;
 		toast.success('Lente agregado al catálogo');
-		goto(resolve(result ? `/lenses/${result.id}` : '/lenses'));
+		goto(resolve(createdId ? `/lenses/${createdId}` : '/lenses'));
 	}
 
 	function handleUpdateResult() {
@@ -550,6 +622,13 @@
 			value={getPendingName(formData.materialId) ?? ''}
 		/>
 	{/if}
+	{#if formData.technologyId?.startsWith('pending_technology_')}
+		<input
+			type="hidden"
+			name="pendingTechnologyName"
+			value={getPendingName(formData.technologyId) ?? ''}
+		/>
+	{/if}
 {/snippet}
 
 {#snippet formFields()}
@@ -559,6 +638,13 @@
 	<input type="hidden" name="isPhotochromic" value={String(formData.isPhotochromic)} />
 	<input type="hidden" name="priceType" value={formData.priceType} />
 	<input type="hidden" name="ranges" value={serializedRanges} />
+	<input type="hidden" name="differentiators" value={JSON.stringify(formData.differentiators)} />
+	<input type="hidden" name="arColors" value={JSON.stringify(formData.arColors)} />
+	<input
+		type="hidden"
+		name="photochromicColors"
+		value={JSON.stringify(formData.photochromicColors)}
+	/>
 
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
 		<div class="space-y-6 lg:col-span-7">
@@ -573,12 +659,13 @@
 						<CreatableSelect
 							label="Proveedor"
 							name="supplierId"
-							bind:value={formData.supplierId}
+							value={formData.supplierId}
 							options={supplierOptions}
 							placeholder="Ej: Novak"
 							required
 							creatable
 							onCreatePending={handleCreatePendingSupplier}
+							onchange={handleSupplierChange}
 							error={activeForm.fields.supplierId?.issues()
 								? getFormErrorMessage(activeForm.fields.supplierId.issues())
 								: null}
@@ -648,32 +735,38 @@
 
 					<div>
 						<CreatableSelect
-							label="Tecnologia de fabricacion"
-							name="technology"
-							bind:value={formData.technology}
-							options={technologyOptions}
-							placeholder="Ej: Convencional, Precisa, Freeform"
+							label="Tecnología de fabricación"
+							name="technologyId"
+							value={formData.technologyId}
+							options={supplierTechnologies}
+							placeholder="Sin tecnología / diseño digital"
 							creatable
-							onCreatePending={(name) => ({ id: name, name })}
-							error={activeForm.fields.technology?.issues()
-								? getFormErrorMessage(activeForm.fields.technology.issues())
-								: null}
+							disabled={formData.source === LensCatalogSource.FINISHED}
+							onCreatePending={handleCreatePendingTechnology}
+							onchange={(selected) => {
+								formData.technologyId = selected?.id ?? '';
+							}}
 						/>
-						<p class={helperTextClass}>{technologyHelperText}</p>
+						<p class={helperTextClass}>
+							{#if formData.source === LensCatalogSource.FINISHED}
+								No aplicable para lentes terminados.
+							{:else if supplierTechnologies.length === 0}
+								El proveedor seleccionado no tiene tecnologías registradas.
+							{:else}
+								{technologyHelperText}
+							{/if}
+						</p>
 					</div>
 
 					<div>
-						<CreatableSelect
-							label="Etiqueta"
-							name="differentiator"
-							bind:value={formData.differentiator}
-							options={differentiatorOptions}
-							placeholder="Ej: Cilindro Alto 2"
-							creatable
-							onCreatePending={(name) => ({ id: name, name })}
-							error={activeForm.fields.differentiator?.issues()
-								? getFormErrorMessage(activeForm.fields.differentiator.issues())
-								: null}
+						<Label for="lc_differentiators" class={fieldLabelClass}
+							>Etiquetas / Diferenciadores</Label
+						>
+						<Input
+							id="lc_differentiators"
+							bind:value={differentiatorsText}
+							placeholder="Ej: Cilindro Alto 2, UV400, Extra Delgado"
+							class="mt-2 rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
 						/>
 						<p class={helperTextClass}>{differentiatorHelperText}</p>
 					</div>
@@ -717,26 +810,64 @@
 					</div>
 
 					<div class="border-t border-outline-variant/20 pt-4 md:col-span-2">
-						<p class={fieldLabelClass}>Tratamientos incluidos</p>
-						<div class="mt-4 grid gap-3 md:grid-cols-3">
-							<label
-								class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
-							>
-								<span>Antirreflejo (AR)</span>
-								<Checkbox bind:checked={formData.hasAr} />
-							</label>
-							<label
-								class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
-							>
-								<span>Proteccion Bluecut</span>
-								<Checkbox bind:checked={formData.hasBluecut} />
-							</label>
-							<label
-								class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
-							>
-								<span>Fotocromatico</span>
-								<Checkbox bind:checked={formData.isPhotochromic} />
-							</label>
+						<p class={fieldLabelClass}>Tratamientos y colores</p>
+						<div class="mt-4 grid gap-4 md:grid-cols-3">
+							<div class="space-y-2">
+								<label
+									class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
+								>
+									<span>Antirreflejo (AR)</span>
+									<Checkbox bind:checked={formData.hasAr} />
+								</label>
+								{#if formData.hasAr}
+									<div>
+										<Label
+											for="lc_ar_colors"
+											class="text-[10px] font-semibold tracking-wider text-outline uppercase"
+											>Colores AR</Label
+										>
+										<Input
+											id="lc_ar_colors"
+											bind:value={arColorsText}
+											placeholder="Ej: Verde, Azul"
+											class="mt-1 rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
+										/>
+									</div>
+								{/if}
+							</div>
+
+							<div class="space-y-2">
+								<label
+									class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
+								>
+									<span>Proteccion Bluecut</span>
+									<Checkbox bind:checked={formData.hasBluecut} />
+								</label>
+							</div>
+
+							<div class="space-y-2">
+								<label
+									class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm font-medium text-brand-navy"
+								>
+									<span>Fotocromatico</span>
+									<Checkbox bind:checked={formData.isPhotochromic} />
+								</label>
+								{#if formData.isPhotochromic}
+									<div>
+										<Label
+											for="lc_photochromic_colors"
+											class="text-[10px] font-semibold tracking-wider text-outline uppercase"
+											>Colores Fotocromático</Label
+										>
+										<Input
+											id="lc_photochromic_colors"
+											bind:value={photochromicColorsText}
+											placeholder="Ej: Gris, Café"
+											class="mt-1 rounded-xl border-0 bg-surface-container-low placeholder:text-outline"
+										/>
+									</div>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
