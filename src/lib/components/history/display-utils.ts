@@ -154,6 +154,12 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		description: 'Descripción',
 		isActive: 'Activo'
 	},
+	lens_technology: {
+		name: 'Nombre',
+		supplierId: 'Proveedor',
+		minFittingHeight: 'Altura mínima de montaje',
+		isActive: 'Activo'
+	},
 	lens_treatment: {
 		name: 'Nombre',
 		code: 'Código',
