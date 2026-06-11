@@ -61,9 +61,15 @@ import {
 } from '$lib/shared/enums';
 import { getErrorMessage } from '$lib/utils';
 
-/** Compute the always-per-pair purchase price from the raw basePrice and priceType. */
-function computePairPurchasePrice(basePrice: number, priceType: string): number {
-	return priceType === LensPriceType.UNIT ? basePrice * 2 : basePrice;
+/** Compute the always-per-pair purchase price from the raw basePrice, mountingPrice, shippingPrice and priceType. */
+function computePairPurchasePrice(
+	basePrice: number,
+	mountingPrice: number,
+	shippingPrice: number,
+	priceType: string
+): number {
+	const totalPerUnit = basePrice + mountingPrice + shippingPrice;
+	return priceType === LensPriceType.UNIT ? totalPerUnit * 2 : totalPerUnit;
 }
 
 // ============================================================================
@@ -291,7 +297,12 @@ export const createLensCatalogItemForm = form(
 			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
 			const stockValue = rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
 
-			const pairPurchasePrice = computePairPurchasePrice(rest.basePrice, rest.priceType);
+			const pairPurchasePrice = computePairPurchasePrice(
+				rest.basePrice,
+				rest.mountingPrice,
+				rest.shippingPrice,
+				rest.priceType
+			);
 
 			const [item] = await tx
 				.insert(lensCatalogItems)
@@ -404,8 +415,15 @@ export const updateLensCatalogItemForm = form(
 
 				// Recompute pairPurchasePrice from the effective basePrice and priceType
 				const effectiveBasePrice = rest.basePrice ?? existing.basePrice;
+				const effectiveMountingPrice = rest.mountingPrice ?? existing.mountingPrice;
+				const effectiveShippingPrice = rest.shippingPrice ?? existing.shippingPrice;
 				const effectivePriceType = rest.priceType ?? existing.priceType;
-				const pairPurchasePrice = computePairPurchasePrice(effectiveBasePrice, effectivePriceType);
+				const pairPurchasePrice = computePairPurchasePrice(
+					effectiveBasePrice,
+					effectiveMountingPrice,
+					effectiveShippingPrice,
+					effectivePriceType
+				);
 
 				const [updated] = await tx
 					.update(lensCatalogItems)

@@ -91,6 +91,10 @@
 			: 'bg-amber-100 text-amber-800';
 	}
 
+	function totalCost(item: LensCatalogItemWithRelations): number {
+		return item.pairPurchasePrice + item.mountingPrice + item.shippingPrice;
+	}
+
 	async function handleDelete() {
 		if (!selectedItem) return;
 
@@ -151,7 +155,7 @@
 					{#if item.salePrice != null}
 						<p
 							class="font-mono text-sm font-bold text-brand-navy"
-							title={`Costo par: ${formatPrice(item.pairPurchasePrice)}`}
+							title={`Costo total: ${formatPrice(totalCost(item))}`}
 						>
 							{formatPrice(item.salePrice)}
 						</p>
@@ -387,17 +391,19 @@
 					{/if}
 				</div>
 			</td>
-			<td class="px-3 py-2 text-right align-middle">
-				<div>
+			<td class="px-3 py-2 align-middle">
+				<div class="flex flex-col items-end justify-center">
 					{#if item.salePrice != null}
-						<p
-							class="font-mono text-sm font-bold text-brand-navy tabular-nums"
-							title={`Costo par: ${formatPrice(item.pairPurchasePrice)}`}
-						>
+						<span class="font-mono text-sm font-bold text-brand-navy tabular-nums">
 							{formatPrice(item.salePrice)}
-						</p>
+						</span>
+						{#if item.pairPurchasePrice != null}
+							<span class="text-xs text-slate-500">
+								Costo: {formatPrice(totalCost(item))}
+							</span>
+						{/if}
 					{:else}
-						<p class="text-xs font-semibold text-outline">Por definir</p>
+						<span class="text-xs font-semibold text-outline">Por definir</span>
 					{/if}
 				</div>
 			</td>

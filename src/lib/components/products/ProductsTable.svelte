@@ -430,8 +430,17 @@
 					<span class="font-mono text-sm font-semibold text-brand-navy">{product.stock}</span>
 				</div>
 			</td>
-			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
-				{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'}
+			<td class="px-4 py-4">
+				<div class="flex flex-col items-end justify-center">
+					<span class="font-mono text-sm font-bold text-brand-navy">
+						{product.currentSalePrice != null ? formatPrice(product.currentSalePrice) : '-'} -
+					</span>
+					{#if product.currentPurchasePrice != null}
+						<span class="text-xs text-slate-500">
+							Costo: {formatPrice(product.currentPurchasePrice)}
+						</span>
+					{/if}
+				</div>
 			</td>
 			<td class="px-4 py-4 text-right">
 				<div class="flex items-center justify-end gap-1">
