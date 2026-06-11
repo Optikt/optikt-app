@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { AppBadge, TreatmentBadge } from '$lib/components/ui';
-	import {
-		getPriceTypeLabel,
-	} from '$lib/shared/enums';
+	import { getPriceTypeLabel } from '$lib/shared/enums';
 	import { getLensInventorySummary } from './helpers';
 
 	interface Props {
@@ -19,50 +17,58 @@
 	);
 </script>
 
-<section class="rounded-[1.75rem] bg-white px-6 py-6 shadow-sm sm:px-7 border border-surface-container-high">
-    <h2 class="text-xs font-semibold tracking-[0.16em] text-outline uppercase mb-4">Propiedades técnicas</h2>
+<section
+	class="rounded-[1.75rem] border border-surface-container-high bg-white px-6 py-6 shadow-sm sm:px-7"
+>
+	<h2 class="mb-4 text-xs font-semibold tracking-[0.16em] text-outline uppercase">
+		Propiedades técnicas
+	</h2>
 
-	<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div>
+	<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+		<div>
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Proveedor</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
 				{item.supplier?.name ?? '-'}
 			</p>
 		</div>
-        <div>
+		<div>
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Material</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
 				{item.material?.name ?? '-'}
 			</p>
 		</div>
-        <div>
+		<div>
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tecnología</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
 				{item.technology ?? '-'}
 			</p>
 		</div>
-        <div>
+		<div>
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Índice</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
 				{refractiveIndexLabel}
 			</p>
 		</div>
-        <div>
+		<div>
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Inventario</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
-                {inventorySummary}
+				{inventorySummary}
 			</p>
 		</div>
-        <div>
-			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tipo de precio</p>
+		<div>
+			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+				Tipo de precio
+			</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
-                {getPriceTypeLabel(item.priceType)}
+				{getPriceTypeLabel(item.priceType)}
 			</p>
 		</div>
 	</div>
 
-	<div class="mt-6 pt-6 border-t border-surface-container-high">
-		<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase mb-2">Tratamientos</p>
+	<div class="mt-6 border-t border-surface-container-high pt-6">
+		<p class="mb-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+			Tratamientos
+		</p>
 		<div class="flex flex-wrap gap-2">
 			{#if item.hasAr}
 				<TreatmentBadge type="antiReflective" />
