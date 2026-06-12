@@ -1,4 +1,4 @@
-import { eq, isNull, and, ilike, desc, inArray, sql } from 'drizzle-orm';
+import { eq, isNull, and, or, ilike, desc, inArray, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -88,11 +88,24 @@ export async function deleteLensMaterial(id: string): Promise<boolean> {
 // LENS TECHNOLOGIES
 // ============================================================================
 
-export async function getTechnologiesBySupplier(supplierId: string): Promise<LensTechnology[]> {
+export async function getTechnologiesBySupplier(
+	supplierId?: string,
+	includeTechnologyId?: string
+): Promise<LensTechnology[]> {
+	const orConditions: ReturnType<typeof isNull>[] = [isNull(lensTechnologies.supplierId)];
+
+	if (supplierId) {
+		orConditions.push(eq(lensTechnologies.supplierId, supplierId));
+	}
+
+	if (includeTechnologyId) {
+		orConditions.push(eq(lensTechnologies.id, includeTechnologyId));
+	}
+
 	return await db
 		.select()
 		.from(lensTechnologies)
-		.where(and(eq(lensTechnologies.supplierId, supplierId), eq(lensTechnologies.isActive, true)))
+		.where(and(eq(lensTechnologies.isActive, true), or(...orConditions)))
 		.orderBy(lensTechnologies.name);
 }
 
@@ -419,28 +432,46 @@ export async function resolvePendingLensMaterial(
 
 export async function resolvePendingTechnology(
 	pendingName: string,
-	supplierId: string,
+	supplierId: string | null | undefined,
 	now: string,
 	executor: DbOrTx = db
 ): Promise<string> {
-	const [existing] = await executor
+	// First, look for an existing global technology with this name
+	const [globalTech] = await executor
 		.select()
 		.from(lensTechnologies)
 		.where(
 			and(
 				ilike(lensTechnologies.name, pendingName),
-				eq(lensTechnologies.supplierId, supplierId),
+				isNull(lensTechnologies.supplierId),
 				eq(lensTechnologies.isActive, true)
 			)
 		);
 
-	if (existing) return existing.id;
+	if (globalTech) return globalTech.id;
 
+	// Then, look for an existing supplier-specific technology (only if supplierId provided)
+	if (supplierId) {
+		const [supplierTech] = await executor
+			.select()
+			.from(lensTechnologies)
+			.where(
+				and(
+					ilike(lensTechnologies.name, pendingName),
+					eq(lensTechnologies.supplierId, supplierId),
+					eq(lensTechnologies.isActive, true)
+				)
+			);
+
+		if (supplierTech) return supplierTech.id;
+	}
+
+	// Create a new technology (with or without supplier)
 	const [created] = await executor
 		.insert(lensTechnologies)
 		.values({
 			id: crypto.randomUUID(),
-			supplierId,
+			supplierId: supplierId ?? null,
 			name: pendingName,
 			createdAt: now,
 			updatedAt: now
