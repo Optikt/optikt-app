@@ -134,7 +134,7 @@ const BaseLensCatalogItemSchema = z.object({
 	 * Optional — finished lenses (FINISHED source) do not use a digital design.
 	 */
 	technologyId: z
-		.union([z.literal(''), z.string().uuid()])
+		.union([z.literal(''), z.uuid(), z.string().startsWith('pending_technology_')])
 		.optional()
 		.transform((val) => val || undefined),
 	/**
@@ -147,6 +147,7 @@ const BaseLensCatalogItemSchema = z.object({
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialRefractiveIndex: RefractiveIndexSchema.optional(),
 	pendingTechnologyName: z.string().optional(),
+	isGlobalTechnology: CoercedBoolean.default(false),
 	ranges: RangesJsonSchema,
 
 	// --- Inherent traits (booleans) ---
@@ -204,5 +205,5 @@ export const ListLensCatalogSchema = z.object({
 
 // Schema for lens-specific supplier operations (different from SupplierIdSchema in suppliers.ts)
 export const LensSupplierIdSchema = z.object({
-	supplierId: z.uuid()
+	supplierId: z.uuid().optional()
 });
