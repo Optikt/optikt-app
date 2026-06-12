@@ -16,6 +16,7 @@
 	import { PageHeader } from '$lib/components/ui';
 	import { PaymentForm } from '$lib/components/sales';
 	import { formatPrice, formatDate, replaceUrlSearch, setQueryParam } from '$lib/utils';
+	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
 	import { getPaymentMethodLabel } from '$lib/shared/enums';
 	import { untrack } from 'svelte';
@@ -24,7 +25,8 @@
 
 	let rows = $state<ReceivableRow[]>(untrack(() => data.rows));
 	let summary = $state<ReceivablesSummary>(untrack(() => data.summary));
-	let bcvRate = $state<number>(untrack(() => data.bcvRate));
+	const store = getExchangeRatesStore();
+	const bcvRate = $derived(store.bcvRate);
 	const initialQuery = untrack(() => page.url.searchParams);
 	const initialSearch = initialQuery.get('q') ?? '';
 	const initialAge = initialQuery.get('age');
@@ -51,7 +53,6 @@
 		const next = untrack(() => data);
 		rows = next.rows;
 		summary = next.summary;
-		bcvRate = next.bcvRate;
 	}
 
 	// Filtered + sorted rows

@@ -9,7 +9,6 @@ import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovemen
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { MovementReferenceType } from '$lib/shared/enums';
 import { suppliers } from '$lib/server/db/schema';
-import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -21,10 +20,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const [items, payments, bcvRate, movements, supplierList] = await Promise.all([
+	const [items, payments, movements, supplierList] = await Promise.all([
 		getSaleItemsWithDetails(params.id),
 		getSalePayments(params.id, { includeVoided: true }),
-		getExchangeRateValue('USD'),
 		getMovementsWithDetails({
 			referenceType: MovementReferenceType.SALE,
 			referenceId: params.id,
@@ -37,7 +35,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		sale,
 		items,
 		payments,
-		bcvRate: bcvRate ?? 0,
 		movements,
 		suppliers: supplierList
 	};

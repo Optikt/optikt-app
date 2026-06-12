@@ -27,6 +27,7 @@
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
 	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
+	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
@@ -39,8 +40,9 @@
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
 	let items = $state<SaleItemWithDetails[]>(untrack(() => data.items));
 	let payments = $state<SalePayment[]>(untrack(() => data.payments));
-	let bcvRate = $state<number>(untrack(() => data.bcvRate));
 	let movements = $state<MovementWithDetails[]>(untrack(() => data.movements));
+	const store = getExchangeRatesStore();
+	const bcvRate = $derived(store.bcvRate);
 	let showCancelModal = $state(false);
 	let showPaymentComposer = $state(false);
 
@@ -78,7 +80,6 @@
 		sale = next.sale;
 		items = next.items;
 		payments = next.payments;
-		bcvRate = next.bcvRate;
 		movements = next.movements;
 	}
 

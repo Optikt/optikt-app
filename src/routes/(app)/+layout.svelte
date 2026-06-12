@@ -6,6 +6,7 @@
 	import { fade } from 'svelte/transition';
 	import { setInventoryCountContext, setUiConfig, type InventoryCountContext } from '$lib/context';
 	import { AppNavbar, Sidebar } from '$lib/components/layout';
+	import { initExchangeRatesPolling } from '$lib/stores/exchangeRates.svelte';
 
 	let { children, data } = $props();
 
@@ -30,6 +31,8 @@
 		sidebarCollapsed: () => sidebarCollapsed
 	});
 	setInventoryCountContext(inventoryCountContext);
+
+	$effect(() => initExchangeRatesPolling());
 
 	let mainEl = $state<HTMLElement>();
 	const scrollPositions = new SvelteMap<string, number>();
