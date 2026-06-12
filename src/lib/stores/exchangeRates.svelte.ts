@@ -7,8 +7,8 @@ let snapshot = $state<ExchangeRatesSnapshot | null>(null);
 let loading = $state(true);
 let error = $state<string | null>(null);
 
-let bcvRate = $derived(snapshot?.rates.find((r) => r.code === 'USD')?.value ?? 0);
-let rates = $derived(snapshot?.rates ?? []);
+const bcvRate = $derived(snapshot?.rates.find((r) => r.code === 'USD')?.value ?? 0);
+const rates = $derived(snapshot?.rates ?? []);
 
 export function getExchangeRatesStore() {
 	return {
@@ -56,7 +56,7 @@ export function initExchangeRatesPolling() {
 
 	async function load() {
 		try {
-			const res = await fetch(resolve("/api/exchange-rates"));
+			const res = await fetch(resolve('/api/exchange-rates'));
 			if (!res.ok) throw new Error('Error al cargar tasas');
 			snapshot = await res.json();
 			error = null;
