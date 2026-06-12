@@ -43,7 +43,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			refractiveIndex: m.refractiveIndex
 		})),
 		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name })),
-		technologies: distinctValues.technologies,
 		differentiators: distinctValues.differentiators,
 		supplierTechnologies: supplierTechnologies.map((t) => ({ id: t.id, name: t.name })),
 		technologyIsGlobal
