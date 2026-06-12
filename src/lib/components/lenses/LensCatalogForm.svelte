@@ -52,9 +52,9 @@
 		existingRanges?: LensOpticalRange[];
 		materials: { id: string; name: string }[];
 		suppliers: { id: string; name: string }[];
-		technologies?: { id: string; name: string }[];
 		differentiators?: string[];
 		supplierTechnologies?: { id: string; name: string }[];
+		technologyIsGlobal?: boolean;
 		cancelHref?: string;
 		formId?: string;
 		showActions?: boolean;
@@ -66,9 +66,9 @@
 		existingRanges = [],
 		materials = [],
 		suppliers = [],
-		// technologies = [],
 		differentiators = [],
 		supplierTechnologies: initialSupplierTechnologies = [],
+		technologyIsGlobal: initialTechnologyIsGlobal = false,
 		cancelHref = '/lenses',
 		formId = 'lens-catalog-form',
 		showActions = true,
@@ -105,6 +105,7 @@
 	// Pending entities
 	let pendingSuppliers = $state<PendingEntity[]>([]);
 	let pendingMaterials = $state<PendingEntity[]>([]);
+	let pendingTechnologies = $state<PendingEntity[]>([]);
 
 	// Form data - numeric fields are strings because they bind to <Input type="number">
 	let formData = $state({
@@ -167,32 +168,26 @@
 	});
 
 	// Dynamic supplier technologies list
-	let supplierTechnologies = $state<Array<{ id: string; name: string }>>([]);
-
-	// Seed with initial technologies from server load (only happens once on mount)
-	$effect(() => {
-		if (initialSupplierTechnologies.length > 0) {
-			supplierTechnologies = initialSupplierTechnologies;
-		}
-	});
+	let supplierTechnologies = $state<Array<{ id: string; name: string }>>(
+		untrack(() => initialSupplierTechnologies)
+	);
+	let isGlobalTechnology = $state(untrack(() => initialTechnologyIsGlobal));
 
 	function handleSupplierChange(selected: { id: string; name: string } | null) {
 		const supplierId = selected?.id ?? '';
 		formData.supplierId = supplierId;
 		formData.technologyId = '';
-		if (supplierId && !supplierId.startsWith('pending_')) {
-			listTechnologiesBySupplier({ supplierId })
-				.run()
-				.then((res) => {
-					supplierTechnologies = res;
-				})
-				.catch((err) => {
-					console.error(err);
-					supplierTechnologies = [];
-				});
-		} else {
-			supplierTechnologies = [];
-		}
+		listTechnologiesBySupplier({
+			supplierId: supplierId && !supplierId.startsWith('pending_') ? supplierId : undefined
+		})
+			.run()
+			.then((res) => {
+				supplierTechnologies = res;
+			})
+			.catch((err) => {
+				console.error(err);
+				supplierTechnologies = [];
+			});
 	}
 
 	// Live pair purchase price - always the cost of two lenses
@@ -316,7 +311,9 @@
 		// Technology (optional)
 		if (formData.technologyId) {
 			const tech = supplierTechnologies.find((t) => t.id === formData.technologyId);
+			const pendingTech = pendingTechnologies.find((t) => t.pendingId === formData.technologyId);
 			if (tech) parts.push(tech.name);
+			else if (pendingTech) parts.push(pendingTech.name);
 		}
 
 		// Differentiators (optional)
@@ -529,6 +526,7 @@
 
 	function handleCreatePendingTechnology(name: string): SelectOption {
 		const pendingId = `pending_technology_${generateUUID()}`;
+		pendingTechnologies = [...pendingTechnologies, { pendingId, name }];
 		return { id: pendingId, name, isPending: true };
 	}
 
@@ -538,7 +536,9 @@
 		if (sup) return sup.name;
 		const mat = pendingMaterials.find((m) => m.pendingId === pendingId);
 		if (mat) return mat.name;
-		return pendingId.startsWith('pending_technology_') ? formData.name : null;
+		const tech = pendingTechnologies.find((t) => t.pendingId === pendingId);
+		if (tech) return tech.name;
+		return null;
 	}
 
 	function handleCreateResult() {
@@ -636,6 +636,7 @@
 	<input type="hidden" name="hasAr" value={String(formData.hasAr)} />
 	<input type="hidden" name="hasBluecut" value={String(formData.hasBluecut)} />
 	<input type="hidden" name="isPhotochromic" value={String(formData.isPhotochromic)} />
+	<input type="hidden" name="isGlobalTechnology" value={String(isGlobalTechnology)} />
 	<input type="hidden" name="priceType" value={formData.priceType} />
 	<input type="hidden" name="ranges" value={serializedRanges} />
 	<input type="hidden" name="differentiators" value={JSON.stringify(formData.differentiators)} />
@@ -734,6 +735,24 @@
 					</div>
 
 					<div>
+						<!-- <div>
+					<CreatableSelect
+						label="Proveedor"
+						name="supplierId"
+						value={formData.supplierId}
+						options={supplierOptions}
+						placeholder="Ej: Novak"
+						required
+						creatable
+						onCreatePending={handleCreatePendingSupplier}
+						onchange={handleSupplierChange}
+						error={activeForm.fields.supplierId?.issues()
+							? getFormErrorMessage(activeForm.fields.supplierId.issues())
+							: null}
+					/>
+					<p class={helperTextClass}>{supplierHelperText}</p>
+				</div> -->
+						<!--  -->
 						<CreatableSelect
 							label="Tecnología de fabricación"
 							name="technologyId"
@@ -741,17 +760,28 @@
 							options={supplierTechnologies}
 							placeholder="Sin tecnología / diseño digital"
 							creatable
-							disabled={formData.source === LensCatalogSource.FINISHED}
 							onCreatePending={handleCreatePendingTechnology}
 							onchange={(selected) => {
 								formData.technologyId = selected?.id ?? '';
 							}}
 						/>
+						<div class="mt-1.5 flex items-center gap-2">
+							<input
+								type="checkbox"
+								id="lc_global_tech"
+								bind:checked={isGlobalTechnology}
+								class="h-3.5 w-3.5 rounded border-outline-variant"
+								disabled={!formData.supplierId || formData.supplierId.startsWith('pending_')}
+							/>
+							<Label for="lc_global_tech" class="text-[11px] font-medium text-on-surface-variant"
+								>Tecnología global (aplica a todos los proveedores)</Label
+							>
+						</div>
 						<p class={helperTextClass}>
-							{#if formData.source === LensCatalogSource.FINISHED}
-								No aplicable para lentes terminados.
-							{:else if supplierTechnologies.length === 0}
-								El proveedor seleccionado no tiene tecnologías registradas.
+							{#if supplierTechnologies.length === 0}
+								{formData.supplierId && !formData.supplierId.startsWith('pending_')
+									? 'No hay tecnologías globales ni específicas para este proveedor.'
+									: 'No hay tecnologías globales registradas.'}
 							{:else}
 								{technologyHelperText}
 							{/if}
