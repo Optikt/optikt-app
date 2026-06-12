@@ -71,7 +71,7 @@ export const lensTechnologies = pgTable(
 	'lens_technologies',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
-		supplierId: uuid('supplier_id').notNull(),
+		supplierId: uuid('supplier_id'),
 		name: varchar().notNull(),
 		/** Minimum fitting height required for this design (mm) */
 		minFittingHeight: doublePrecision('min_fitting_height'),
@@ -93,7 +93,7 @@ export const lensTechnologies = pgTable(
 			columns: [table.supplierId],
 			foreignColumns: [suppliers.id],
 			name: 'lens_technologies_supplier_id_fkey'
-		}).onDelete('cascade')
+		}).onDelete('set null')
 	]
 );
 
