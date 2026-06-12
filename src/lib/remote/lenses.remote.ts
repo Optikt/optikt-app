@@ -347,6 +347,7 @@ export const createLensCatalogItemForm = form(
 			pendingMaterialName,
 			pendingMaterialRefractiveIndex,
 			pendingTechnologyName,
+			isGlobalTechnology,
 			ranges
 		} = data;
 		let { supplierId, materialId, technologyId } = data;
@@ -378,10 +379,21 @@ export const createLensCatalogItemForm = form(
 			if (
 				typeof technologyId === 'string' &&
 				technologyId.startsWith('pending_technology_') &&
-				pendingTechnologyName &&
-				supplierId
+				pendingTechnologyName
 			) {
-				technologyId = await resolvePendingTechnology(pendingTechnologyName, supplierId, now, tx);
+				const effectiveSupplierId =
+					typeof supplierId === 'string' &&
+					supplierId &&
+					!supplierId.startsWith('pending_') &&
+					!isGlobalTechnology
+						? supplierId
+						: null;
+				technologyId = await resolvePendingTechnology(
+					pendingTechnologyName,
+					effectiveSupplierId,
+					now,
+					tx
+				);
 			}
 
 			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
@@ -492,6 +504,7 @@ export const updateLensCatalogItemForm = form(
 			pendingMaterialName,
 			pendingMaterialRefractiveIndex,
 			pendingTechnologyName,
+			isGlobalTechnology,
 			ranges
 		} = data;
 		let { supplierId, materialId, technologyId } = data;
@@ -541,10 +554,21 @@ export const updateLensCatalogItemForm = form(
 				if (
 					typeof technologyId === 'string' &&
 					technologyId.startsWith('pending_technology_') &&
-					pendingTechnologyName &&
-					supplierId
+					pendingTechnologyName
 				) {
-					technologyId = await resolvePendingTechnology(pendingTechnologyName, supplierId, now, tx);
+					const effectiveSupplierId =
+						typeof supplierId === 'string' &&
+						supplierId &&
+						!supplierId.startsWith('pending_') &&
+						!isGlobalTechnology
+							? supplierId
+							: null;
+					technologyId = await resolvePendingTechnology(
+						pendingTechnologyName,
+						effectiveSupplierId,
+						now,
+						tx
+					);
 				}
 
 				// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
