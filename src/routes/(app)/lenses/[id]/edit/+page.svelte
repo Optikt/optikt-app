@@ -22,9 +22,9 @@
 		existingRanges={data.ranges}
 		materials={data.materials}
 		suppliers={data.suppliers}
-		technologies={data.technologies}
 		differentiators={data.differentiators}
 		supplierTechnologies={data.supplierTechnologies}
+		technologyIsGlobal={data.technologyIsGlobal}
 		cancelHref="/lenses"
 	/>
 </div>
