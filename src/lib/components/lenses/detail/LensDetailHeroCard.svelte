@@ -73,10 +73,12 @@
 		<div class="rounded-[1.25rem] bg-surface-container-low px-4 py-4">
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tecnología</p>
 			<p class="mt-2 text-base font-semibold text-brand-navy">
-				{item.technology ?? 'Sin tecnología'}
+				{item.technologyName ?? 'Sin tecnología'}
 			</p>
 			<p class="mt-1 text-sm text-on-surface-variant">
-				{item.differentiator ? `Etiqueta: ${item.differentiator}` : 'Sin etiqueta'}
+				{item.differentiators && item.differentiators.length > 0
+					? `Etiquetas: ${item.differentiators.join(' · ')}`
+					: 'Sin etiqueta'}
 			</p>
 		</div>
 

@@ -75,6 +75,7 @@ export const ALL_ENTITY_TYPES = [
 	'brand',
 	'material',
 	'lens_material',
+	'lens_technology',
 	'lens_treatment',
 	'surplus_unit',
 	'quote',

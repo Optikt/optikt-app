@@ -46,7 +46,6 @@
 		<LensCatalogForm
 			materials={data.materials}
 			suppliers={data.suppliers}
-			technologies={data.technologies}
 			differentiators={data.differentiators}
 			cancelHref="/lenses"
 			formId="lens-create-form"

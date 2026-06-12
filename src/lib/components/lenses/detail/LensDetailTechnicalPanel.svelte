@@ -40,7 +40,7 @@
 		<div>
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tecnología</p>
 			<p class="mt-1 text-sm font-bold text-brand-navy">
-				{item.technology ?? '-'}
+				{item.technologyName ?? '-'}
 			</p>
 		</div>
 		<div>
@@ -65,23 +65,68 @@
 		</div>
 	</div>
 
-	<div class="mt-6 border-t border-surface-container-high pt-6">
-		<p class="mb-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-			Tratamientos
-		</p>
-		<div class="flex flex-wrap gap-2">
-			{#if item.hasAr}
-				<TreatmentBadge type="antiReflective" />
-			{/if}
-			{#if item.hasBluecut}
-				<TreatmentBadge type="blueBlock" />
-			{/if}
-			{#if item.isPhotochromic}
-				<TreatmentBadge type="photochromic" />
-			{/if}
-			{#if !hasTreatments}
-				<AppBadge variant="neutral">Ninguno</AppBadge>
-			{/if}
+	<div class="mt-6 grid gap-6 border-t border-surface-container-high pt-6 md:grid-cols-2">
+		<div>
+			<p class="mb-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+				Tratamientos
+			</p>
+			<div class="flex flex-wrap items-start gap-4">
+				{#if item.hasAr}
+					<div class="flex flex-col gap-1.5">
+						<TreatmentBadge type="antiReflective" />
+						{#if item.arColors && item.arColors.length > 0}
+							<div class="flex flex-wrap items-center gap-1">
+								{#each item.arColors as color (color)}
+									<span
+										class="inline-flex items-center rounded-full bg-surface-container px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-on-surface-variant uppercase"
+									>
+										{color}
+									</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
+				{#if item.hasBluecut}
+					<TreatmentBadge type="blueBlock" />
+				{/if}
+				{#if item.isPhotochromic}
+					<div class="flex flex-col gap-1.5">
+						<TreatmentBadge type="photochromic" />
+						{#if item.photochromicColors && item.photochromicColors.length > 0}
+							<div class="flex flex-wrap items-center gap-1">
+								{#each item.photochromicColors as color (color)}
+									<span
+										class="inline-flex items-center rounded-full bg-surface-container px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-on-surface-variant uppercase"
+									>
+										{color}
+									</span>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
+				{#if !hasTreatments}
+					<AppBadge variant="neutral">Ninguno</AppBadge>
+				{/if}
+			</div>
 		</div>
+
+		{#if item.differentiators && item.differentiators.length > 0}
+			<div>
+				<p class="mb-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+					Diferenciadores / Etiquetas
+				</p>
+				<div class="flex flex-wrap gap-1.5">
+					{#each item.differentiators as tag (tag)}
+						<span
+							class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1 text-xs font-semibold text-on-surface"
+						>
+							{tag}
+						</span>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	</div>
 </section>

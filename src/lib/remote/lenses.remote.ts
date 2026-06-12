@@ -13,8 +13,11 @@ import {
 	UpdateLensMaterialSchema,
 	CreateLensCatalogItemSchema,
 	UpdateLensCatalogItemSchema,
+	CreateLensTechnologySchema,
+	UpdateLensTechnologySchema,
 	LensIdSchema,
-	ListLensCatalogSchema
+	ListLensCatalogSchema,
+	LensSupplierIdSchema
 } from '$lib/schemas/lenses';
 import { ManualLensAdjustmentSchema } from '$lib/schemas/inventory';
 import {
@@ -28,7 +31,12 @@ import {
 	getLensCatalogItemsWithRelations,
 	findLensCatalogItemById,
 	deleteLensCatalogItem,
-	resolvePendingLensMaterial
+	resolvePendingLensMaterial,
+	getTechnologiesBySupplier,
+	findLensTechnologyById,
+	createLensTechnology,
+	updateLensTechnology,
+	resolvePendingTechnology
 } from '$lib/server/db/queries/lenses';
 import {
 	createInventoryLot,
@@ -44,7 +52,13 @@ import {
 	getNextPONumber
 } from '$lib/server/db/queries/purchaseOrders';
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
-import type { LensMaterial, LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
+import type {
+	LensMaterial,
+	LensTechnology,
+	LensCatalogItem,
+	LensOpticalRange,
+	NewLensCatalogItem
+} from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
 import { nowISO } from '$lib/dates';
@@ -258,9 +272,50 @@ export const listLensCatalog = query(
 			supplierId: data.supplierId,
 			materialId: data.materialId,
 			type: data.type,
-			technology: data.technology,
-			differentiator: data.differentiator
+			technologyId: data.technologyId
 		});
+	}
+);
+
+// ============================================================================
+// LENS TECHNOLOGIES
+// ============================================================================
+
+export const listTechnologiesBySupplier = query(
+	LensSupplierIdSchema,
+	async (data): Promise<LensTechnology[]> => {
+		requireAuth();
+
+		return getTechnologiesBySupplier(data.supplierId);
+	}
+);
+
+export const createLensTechnologyForm = form(
+	CreateLensTechnologySchema,
+	async (data): Promise<LensTechnology> => {
+		requireAdmin();
+
+		const tech = await createLensTechnology(data);
+		await auditService.logCreate('lens_technology', tech, getAuditContext());
+		return tech;
+	}
+);
+
+export const updateLensTechnologyForm = form(
+	UpdateLensTechnologySchema,
+	async (data): Promise<LensTechnology> => {
+		requireAdmin();
+
+		const { id, ...updates } = data;
+
+		const existing = await findLensTechnologyById(id);
+		if (!existing) invalid('Tecnología no encontrada');
+
+		const updated = await updateLensTechnology(id, updates);
+		if (!updated) invalid('Error actualizando tecnología');
+
+		await auditService.logUpdate('lens_technology', id, existing, updated, getAuditContext());
+		return updated;
 	}
 );
 
@@ -270,22 +325,49 @@ export const createLensCatalogItemForm = form(
 		requireAdmin();
 
 		const {
+			source,
+			name,
+			type,
+			differentiators,
+			hasAr,
+			arColors,
+			hasBluecut,
+			isPhotochromic,
+			photochromicColors,
+			priceType,
+			basePrice,
+			salePrice,
+			mountingPrice,
+			shippingPrice,
+			isTaxable,
+			inventoryMode,
+			stock,
+			notes,
 			pendingSupplierName,
 			pendingMaterialName,
 			pendingMaterialRefractiveIndex,
-			ranges,
-			...rest
+			pendingTechnologyName,
+			isGlobalTechnology,
+			ranges
 		} = data;
-		let { supplierId, materialId } = data;
+		let { supplierId, materialId, technologyId } = data;
 
 		const result = await db.transaction(async (tx) => {
 			const now = nowISO();
 
-			if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+			if (
+				typeof supplierId === 'string' &&
+				supplierId.startsWith('pending_') &&
+				pendingSupplierName
+			) {
 				supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 			}
 
-			if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+			if (
+				typeof materialId === 'string' &&
+				materialId.startsWith('pending_material_') &&
+				pendingMaterialName
+			) {
 				materialId = await resolvePendingLensMaterial(
 					pendingMaterialName,
 					pendingMaterialRefractiveIndex,
@@ -294,29 +376,65 @@ export const createLensCatalogItemForm = form(
 				);
 			}
 
+			if (
+				typeof technologyId === 'string' &&
+				technologyId.startsWith('pending_technology_') &&
+				pendingTechnologyName
+			) {
+				const effectiveSupplierId =
+					typeof supplierId === 'string' &&
+					supplierId &&
+					!supplierId.startsWith('pending_') &&
+					!isGlobalTechnology
+						? supplierId
+						: null;
+				technologyId = await resolvePendingTechnology(
+					pendingTechnologyName,
+					effectiveSupplierId,
+					now,
+					tx
+				);
+			}
+
 			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
-			const stockValue = rest.inventoryMode === 'ON_DEMAND' ? null : (rest.stock ?? 0);
+			const stockValue = inventoryMode === 'ON_DEMAND' ? null : (stock ?? 0);
 
 			const pairPurchasePrice = computePairPurchasePrice(
-				rest.basePrice,
-				rest.mountingPrice,
-				rest.shippingPrice,
-				rest.priceType
+				basePrice,
+				mountingPrice,
+				shippingPrice,
+				priceType
 			);
 
-			const [item] = await tx
-				.insert(lensCatalogItems)
-				.values({
-					...rest,
-					id: crypto.randomUUID(),
-					supplierId,
-					materialId,
-					pairPurchasePrice,
-					stock: stockValue,
-					createdAt: now,
-					updatedAt: now
-				})
-				.returning();
+			const insertValues: NewLensCatalogItem = {
+				id: crypto.randomUUID(),
+				source,
+				supplierId,
+				name,
+				type,
+				materialId,
+				hasAr,
+				arColors,
+				hasBluecut,
+				isPhotochromic,
+				photochromicColors,
+				priceType,
+				basePrice,
+				salePrice,
+				mountingPrice,
+				shippingPrice,
+				isTaxable,
+				inventoryMode,
+				stock: stockValue,
+				notes,
+				differentiators,
+				pairPurchasePrice,
+				createdAt: now,
+				updatedAt: now,
+				...(technologyId ? { technologyId } : {})
+			};
+
+			const [item] = await tx.insert(lensCatalogItems).values(insertValues).returning();
 
 			// Insert optical ranges
 			// Ensure min ≤ max ordering for cylinder/addition (required by
@@ -363,13 +481,33 @@ export const updateLensCatalogItemForm = form(
 
 		const {
 			id,
+			source,
+			name,
+			type,
+			differentiators,
+			hasAr,
+			arColors,
+			hasBluecut,
+			isPhotochromic,
+			photochromicColors,
+			priceType,
+			basePrice,
+			salePrice,
+			mountingPrice,
+			shippingPrice,
+			isTaxable,
+			inventoryMode,
+			stock,
+			notes,
+			isActive,
 			pendingSupplierName,
 			pendingMaterialName,
 			pendingMaterialRefractiveIndex,
-			ranges,
-			...rest
+			pendingTechnologyName,
+			isGlobalTechnology,
+			ranges
 		} = data;
-		let { supplierId, materialId } = rest;
+		let { supplierId, materialId, technologyId } = data;
 
 		const { oldItem, result, rangesChanged, oldRangesSummary, newRangesSummary } =
 			await db.transaction(async (tx) => {
@@ -392,11 +530,19 @@ export const updateLensCatalogItemForm = form(
 					.from(lensOpticalRanges)
 					.where(eq(lensOpticalRanges.lensCatalogItemId, id));
 
-				if (supplierId && supplierId.startsWith('pending_') && pendingSupplierName) {
+				if (
+					typeof supplierId === 'string' &&
+					supplierId.startsWith('pending_') &&
+					pendingSupplierName
+				) {
 					supplierId = await resolvePendingSupplier(pendingSupplierName, now, tx);
 				}
 
-				if (materialId && materialId.startsWith('pending_material_') && pendingMaterialName) {
+				if (
+					typeof materialId === 'string' &&
+					materialId.startsWith('pending_material_') &&
+					pendingMaterialName
+				) {
 					materialId = await resolvePendingLensMaterial(
 						pendingMaterialName,
 						pendingMaterialRefractiveIndex,
@@ -405,19 +551,35 @@ export const updateLensCatalogItemForm = form(
 					);
 				}
 
+				if (
+					typeof technologyId === 'string' &&
+					technologyId.startsWith('pending_technology_') &&
+					pendingTechnologyName
+				) {
+					const effectiveSupplierId =
+						typeof supplierId === 'string' &&
+						supplierId &&
+						!supplierId.startsWith('pending_') &&
+						!isGlobalTechnology
+							? supplierId
+							: null;
+					technologyId = await resolvePendingTechnology(
+						pendingTechnologyName,
+						effectiveSupplierId,
+						now,
+						tx
+					);
+				}
+
 				// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
 				const stockOverride =
-					rest.inventoryMode === 'ON_DEMAND'
-						? { stock: null }
-						: rest.stock !== undefined
-							? {}
-							: { stock: 0 };
+					inventoryMode === 'ON_DEMAND' ? { stock: null } : stock !== undefined ? {} : { stock: 0 };
 
 				// Recompute pairPurchasePrice from the effective basePrice and priceType
-				const effectiveBasePrice = rest.basePrice ?? existing.basePrice;
-				const effectiveMountingPrice = rest.mountingPrice ?? existing.mountingPrice;
-				const effectiveShippingPrice = rest.shippingPrice ?? existing.shippingPrice;
-				const effectivePriceType = rest.priceType ?? existing.priceType;
+				const effectiveBasePrice = basePrice ?? existing.basePrice;
+				const effectiveMountingPrice = mountingPrice ?? existing.mountingPrice;
+				const effectiveShippingPrice = shippingPrice ?? existing.shippingPrice;
+				const effectivePriceType = priceType ?? existing.priceType;
 				const pairPurchasePrice = computePairPurchasePrice(
 					effectiveBasePrice,
 					effectiveMountingPrice,
@@ -425,16 +587,36 @@ export const updateLensCatalogItemForm = form(
 					effectivePriceType
 				);
 
+				const updateValues: Partial<NewLensCatalogItem> = {
+					...(source !== undefined && { source }),
+					...(name !== undefined && { name }),
+					...(type !== undefined && { type }),
+					...(technologyId !== undefined && { technologyId: technologyId || null }),
+					...(differentiators !== undefined && { differentiators }),
+					...(supplierId !== undefined && { supplierId }),
+					...(materialId !== undefined && { materialId }),
+					...(hasAr !== undefined && { hasAr }),
+					...(arColors !== undefined && { arColors }),
+					...(hasBluecut !== undefined && { hasBluecut }),
+					...(isPhotochromic !== undefined && { isPhotochromic }),
+					...(photochromicColors !== undefined && { photochromicColors }),
+					...(priceType !== undefined && { priceType }),
+					...(basePrice !== undefined && { basePrice }),
+					...(salePrice !== undefined && { salePrice }),
+					...(mountingPrice !== undefined && { mountingPrice }),
+					...(shippingPrice !== undefined && { shippingPrice }),
+					...(isTaxable !== undefined && { isTaxable }),
+					...(inventoryMode !== undefined && { inventoryMode }),
+					...(notes !== undefined && { notes }),
+					...(isActive !== undefined && { isActive }),
+					...stockOverride,
+					pairPurchasePrice,
+					updatedAt: now
+				};
+
 				const [updated] = await tx
 					.update(lensCatalogItems)
-					.set({
-						...rest,
-						...(supplierId !== undefined && { supplierId }),
-						...(materialId !== undefined && { materialId }),
-						...stockOverride,
-						pairPurchasePrice,
-						updatedAt: now
-					})
+					.set(updateValues)
 					.where(eq(lensCatalogItems.id, id))
 					.returning();
 

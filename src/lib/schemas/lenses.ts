@@ -34,6 +34,24 @@ export const UpdateLensMaterialSchema = CreateLensMaterialSchema.partial().exten
 });
 
 // ============================================================================
+// LENS TECHNOLOGIES
+// ============================================================================
+
+export const CreateLensTechnologySchema = z.object({
+	supplierId: z.uuid('Seleccione un proveedor'),
+	name: NameSchema(),
+	minFittingHeight: CoercedNumber.min(0, 'Altura mínima debe ser ≥ 0').optional()
+});
+
+export const UpdateLensTechnologySchema = CreateLensTechnologySchema.partial().extend({
+	id: z.uuid(),
+	isActive: z.boolean().optional()
+});
+
+export type CreateLensTechnologyInput = z.infer<typeof CreateLensTechnologySchema>;
+export type UpdateLensTechnologyInput = z.infer<typeof UpdateLensTechnologySchema>;
+
+// ============================================================================
 // OPTICAL RANGE (used inside catalog item schemas)
 // ============================================================================
 
@@ -84,23 +102,62 @@ const RangesJsonSchema = z
 	.transform((val) => JSON.parse(val) as unknown[])
 	.pipe(z.array(OpticalRangeSchema));
 
+/**
+ * JSON string → parsed string[] pipeline for array fields (differentiators, colors).
+ * Accepts both a raw JSON string from a form submission and a pre-parsed array
+ * (when used programmatically).
+ */
+const StringArraySchema = z
+	.union([
+		z
+			.string()
+			.transform((val) => {
+				try {
+					return JSON.parse(val) as unknown;
+				} catch {
+					return [];
+				}
+			})
+			.pipe(z.array(z.string())),
+		z.array(z.string())
+	])
+	.default([]);
+
 const BaseLensCatalogItemSchema = z.object({
 	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),
 	supplierId: PendingEntitySchema('pending_', 'Seleccione un proveedor'),
 	name: NameSchema(),
-	type: z.enum(LensType, 'Tipo de lente requerido'),
-	technology: z.string().max(100).optional(),
-	differentiator: z.string().max(100).optional(),
+	/** Lens type — strict enum, mapped to Postgres lens_type */
+	type: z.nativeEnum(LensType, { message: 'Tipo de lente requerido' }),
+	/**
+	 * Foreign key to lens_technologies.
+	 * Optional — finished lenses (FINISHED source) do not use a digital design.
+	 */
+	technologyId: z
+		.union([z.literal(''), z.uuid(), z.string().startsWith('pending_technology_')])
+		.optional()
+		.transform((val) => val || undefined),
+	/**
+	 * Free-form differentiator tags (e.g. ["UV400", "Hidrofóbico"]).
+	 * Sent as a JSON string from forms; parsed to string[].
+	 */
+	differentiators: StringArraySchema,
 	materialId: PendingEntitySchema('pending_material_', 'Seleccione un material'),
 	pendingSupplierName: z.string().optional(),
 	pendingMaterialName: z.string().optional(),
 	pendingMaterialRefractiveIndex: RefractiveIndexSchema.optional(),
+	pendingTechnologyName: z.string().optional(),
+	isGlobalTechnology: CoercedBoolean.default(false),
 	ranges: RangesJsonSchema,
 
 	// --- Inherent traits (booleans) ---
 	hasAr: CoercedBoolean.default(false),
+	/** Available AR coating color variants (e.g. ["Verde", "Azul"]). */
+	arColors: StringArraySchema,
 	hasBluecut: CoercedBoolean.default(false),
 	isPhotochromic: CoercedBoolean.default(false),
+	/** Available photochromic color variants (e.g. ["Gris", "Marrón"]). */
+	photochromicColors: StringArraySchema,
 
 	// --- Pricing ---
 	priceType: z.enum(LensPriceType).default(LensPriceType.UNIT),
@@ -141,12 +198,12 @@ export const ListLensCatalogSchema = z.object({
 	source: z.enum(LensCatalogSource).optional(),
 	supplierId: z.uuid().optional(),
 	materialId: z.uuid().optional(),
-	type: z.enum(LensType).optional(),
-	technology: z.string().max(100).optional(),
-	differentiator: z.string().max(100).optional()
+	type: z.nativeEnum(LensType).optional(),
+	/** Filter by technology FK — replaces old free-text `technology` filter */
+	technologyId: z.uuid().optional()
 });
 
 // Schema for lens-specific supplier operations (different from SupplierIdSchema in suppliers.ts)
 export const LensSupplierIdSchema = z.object({
-	supplierId: z.uuid()
+	supplierId: z.uuid().optional()
 });
