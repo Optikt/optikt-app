@@ -272,7 +272,7 @@ export async function getMovementsWithDetails(options?: GetMovementsOptions) {
 			lensName: lensCatalogItems.name,
 			lensType: lensCatalogItems.type,
 			itemName: sql<string | null>`COALESCE(${products.name}, ${lensCatalogItems.name})`,
-			itemCode: sql<string | null>`COALESCE(${products.sku}, ${lensCatalogItems.type})`,
+			itemCode: sql<string | null>`COALESCE(${products.sku}, ${lensCatalogItems.type}::text)`,
 			quantityDelta: inventoryMovements.quantityDelta,
 			quantityBefore: inventoryMovements.quantityBefore,
 			quantityAfter: inventoryMovements.quantityAfter,
