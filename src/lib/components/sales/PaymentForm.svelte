@@ -27,11 +27,12 @@
 		getDefaultPaymentCalculationMode,
 		type PaymentCalculationMode
 	} from './paymentFormCalculations';
+	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 
 	interface Props {
 		saleId: string;
 		remainingBcvUsd: number;
-		bcvRate: number;
+		bcvRate?: number;
 		onPaymentAdded?: (paidAmount: number) => void;
 	}
 
@@ -52,8 +53,11 @@
 
 	const FOREIGN_METHODS: PaymentMethod[] = [PaymentMethod.EFECTIVO_USD, PaymentMethod.BINANCE_USDT];
 
-	let { saleId, remainingBcvUsd, bcvRate, onPaymentAdded }: Props = $props();
-	const defaultBcvRateInput = $derived(bcvRate > 0 ? bcvRate.toFixed(2) : '');
+	let { saleId, remainingBcvUsd, bcvRate = 0, onPaymentAdded }: Props = $props();
+	const store = getExchangeRatesStore();
+	const storeBcvRate = $derived(store.bcvRate);
+	const effectiveBcvRate = $derived(bcvRate > 0 ? bcvRate : storeBcvRate);
+	const defaultBcvRateInput = $derived(effectiveBcvRate > 0 ? effectiveBcvRate.toFixed(2) : '');
 
 	let paymentMethod = $state<PaymentMethod | ''>('');
 	let lastEditedField = $state<PaymentCalculationMode>('target');

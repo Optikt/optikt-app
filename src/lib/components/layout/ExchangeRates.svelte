@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import {
 		Calculator,
 		CircleDollarSign,
@@ -12,76 +11,49 @@
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import {
-		fetchExchangeRates,
-		refreshExchangeRatesCommand
-	} from '$lib/remote/exchangeRates.remote';
+	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { fromISO, toRelative, toRelativeShort } from '$lib/dates';
 	import { getErrorMessage } from '$lib/utils';
-	import type { ExchangeRateEntry, ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
+	import type { ExchangeRateEntry } from '$lib/shared/exchangeRates';
 	import CurrencyCalculatorModal from './CurrencyCalculatorModal.svelte';
+
+	const store = getExchangeRatesStore();
+
+	const rates = $derived(store.rates);
 
 	let open = $state(false);
 	let calcOpen = $state(false);
-	let loading = $state(true);
 	let refreshing = $state(false);
 	let tick = $state(0);
-	let snapshot = $state<ExchangeRatesSnapshot | null>(null);
-	let loadError = $state<string | null>(null);
 
-	const rates = $derived(snapshot?.rates ?? []);
-
-	function getFooterLabel(currentSnapshot: ExchangeRatesSnapshot | null, _tick: number) {
-		if (!currentSnapshot) {
+	function getFooterLabel(_tick: number) {
+		if (!store.snapshot) {
 			return 'Cargando tasas...';
 		}
 
-		if (!currentSnapshot.configured) {
+		if (!store.configured) {
 			return 'API de tasas no configurada';
 		}
 
-		if (currentSnapshot.lastFetchedAt) {
-			return `Actualizadas ${toRelative(fromISO(currentSnapshot.lastFetchedAt))}`;
+		if (store.lastFetchedAt) {
+			return `Actualizadas ${toRelative(fromISO(store.lastFetchedAt))}`;
 		}
 
-		return currentSnapshot.lastError ?? 'Sin actualizaciones recientes';
+		return store.lastError ?? 'Sin actualizaciones recientes';
 	}
 
 	const footerLabel = $derived.by(() => {
-		return getFooterLabel(snapshot, tick);
+		return getFooterLabel(tick);
 	});
-
-	async function loadRates(options: { silent?: boolean; imperative?: boolean } = {}) {
-		const { silent = false, imperative = false } = options;
-
-		if (!silent && !snapshot) {
-			loading = true;
-		}
-
-		try {
-			snapshot = imperative ? await fetchExchangeRates().run() : await fetchExchangeRates();
-			loadError = null;
-		} catch (error) {
-			loadError = getErrorMessage(error, 'No se pudieron cargar las tasas');
-			if (!silent) {
-				console.error(error);
-				toast.error(loadError);
-			}
-		} finally {
-			loading = false;
-		}
-	}
 
 	async function handleRefresh(event: MouseEvent) {
 		event.stopPropagation();
 		refreshing = true;
 
 		try {
-			snapshot = await refreshExchangeRatesCommand({});
-			loadError = null;
+			await store.refresh();
 			toast.success('Tasas actualizadas');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'No se pudieron actualizar las tasas'));
 		} finally {
 			refreshing = false;
@@ -102,9 +74,6 @@
 
 	function toggle() {
 		open = !open;
-		if (open && !snapshot) {
-			void loadRates({ imperative: true });
-		}
 	}
 
 	function handleClickOutside(event: MouseEvent) {
@@ -129,18 +98,11 @@
 	}
 
 	$effect(() => {
-		untrack(() => void loadRates());
-
-		const refreshInterval = window.setInterval(() => {
-			void loadRates({ silent: true, imperative: true });
-		}, 60_000);
-
 		const clockInterval = window.setInterval(() => {
 			tick += 1;
 		}, 30_000);
 
 		return () => {
-			window.clearInterval(refreshInterval);
 			window.clearInterval(clockInterval);
 		};
 	});
@@ -204,7 +166,7 @@
 				</div>
 			</div>
 
-			{#if loading && !snapshot}
+			{#if store.loading && !store.snapshot}
 				<div class="flex-1 space-y-1 overflow-y-auto p-3">
 					{#each [1, 2, 3] as row (row)}
 						<div class="flex items-center gap-3 rounded-xl px-3 py-2.5">
@@ -275,8 +237,8 @@
 						<div class="min-w-0">
 							<p class="text-sm font-medium text-slate-800">Tasas no disponibles</p>
 							<p class="mt-0.5 text-xs leading-relaxed text-slate-500">
-								{loadError ??
-									snapshot?.lastError ??
+								{store.error ??
+									store.lastError ??
 									'Todavía no hay datos cargados desde la API externa.'}
 							</p>
 						</div>
@@ -287,7 +249,7 @@
 			<div class="flex shrink-0 items-center justify-between border-t border-slate-100 px-4 py-2.5">
 				<div>
 					<p class="text-xs text-slate-400">{footerLabel}</p>
-					{#if snapshot?.isStale}
+					{#if store.isStale}
 						<p class="mt-1 text-[11px] font-medium text-amber-600">
 							Podrían estar desactualizadas.
 						</p>
@@ -313,7 +275,7 @@
 
 <CurrencyCalculatorModal
 	bind:open={calcOpen}
-	{snapshot}
+	snapshot={store.snapshot}
 	{refreshing}
 	onClose={() => (calcOpen = false)}
 	onRefresh={handleRefresh}
