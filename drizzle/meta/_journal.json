@@ -204,6 +204,13 @@
       "when": 1781192907836,
       "tag": "0028_heavy_bill_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1781274774067,
+      "tag": "0029_gifted_skrulls",
+      "breakpoints": true
     }
   ]
 }
