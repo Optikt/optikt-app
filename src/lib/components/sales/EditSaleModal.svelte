@@ -56,7 +56,7 @@
 	// ── Lens editing state ─────────────────────────────────────────────────
 	let editingLensId = $state<string | null>(null); // null = adding new
 	let editLensTmp: EditableItem = $state(createEmptyLensDraft());
-	let editLensTreatments: { supplierTreatmentId: string; name: string; price: number; isTaxable: boolean; category: string; _keep?: boolean }[] = $state([]);
+	let editLensTreatments: { supplierTreatmentId: string; name: string; price: number; salePrice: number; isTaxable: boolean; category: string; _keep?: boolean }[] = $state([]);
 
 	// ── Add forms visibility ───────────────────────────────────────────────
 	let showAddProduct = $state(false);
@@ -100,6 +100,12 @@
 		if (!supplierId) return [];
 		return treatments.filter((t) => t.supplierId === supplierId);
 	});
+
+	let selectableTreatments = $derived(
+		availableTreatments.filter(
+			(t) => !editLensTreatments.some((et) => et.supplierTreatmentId === t.id)
+		)
+	);
 
 	let selectedLens = $derived(
 		editLensTmp.lensCatalogItemId
@@ -200,7 +206,8 @@
 			.map((t) => ({
 				supplierTreatmentId: t.supplierTreatmentId ?? '',
 				name: t.snapshotName ?? 'Tratamiento',
-				price: t.unitPrice,
+				price: (t.snapshotBaseCost ?? t.unitPrice) / 2,
+				salePrice: t.unitPrice / 2,
 				isTaxable: t.snapshotIsTaxable ?? true,
 				category: t.snapshotTreatmentCategory ?? '',
 				_keep: true
@@ -231,22 +238,20 @@
 		}
 	}
 
-	function addTreatmentToEdit() {
-		const selected = editLensTreatments.map((t) => t.supplierTreatmentId);
-		const available = availableTreatments.filter((t) => !selected.includes(t.id));
-		if (available.length === 0) {
-			toast.error('No hay más tratamientos disponibles para este proveedor');
-			return;
-		}
-		const t = available[0];
+	function addTreatmentFromSelect(treatmentId: string) {
+		if (!treatmentId) return;
+		const treatment = availableTreatments.find((t) => t.id === treatmentId);
+		if (!treatment) return;
+		const salePrice = treatment.salePrice ?? treatment.price;
 		editLensTreatments = [
 			...editLensTreatments,
 			{
-				supplierTreatmentId: t.id,
-				name: t.name,
-				price: t.price,
-				isTaxable: t.isTaxable,
-				category: t.category,
+				supplierTreatmentId: treatment.id,
+				name: treatment.name,
+				price: treatment.price,
+				salePrice,
+				isTaxable: treatment.isTaxable,
+				category: treatment.category,
 				_keep: true
 			}
 		];
@@ -285,13 +290,14 @@
 				parentSaleItemId: lensItemId,
 				supplierTreatmentId: t.supplierTreatmentId,
 				quantity: 1,
-				unitPrice: t.price,
+				unitPrice: t.salePrice * 2,
 				discount: 0,
 				discountType: DiscountType.FIXED,
 				snapshotName: t.name,
 				snapshotBrand: selectedLens?.supplier?.name ?? editLensTmp.snapshotBrand,
 				snapshotTreatmentCategory: t.category,
 				snapshotIsTaxable: t.isTaxable,
+				snapshotBaseCost: t.price * 2,
 				_removed: false
 			};
 			updated = [...updated, treatmentRow];
@@ -756,10 +762,20 @@
 								<div>
 									<div class="mb-2 flex items-center justify-between">
 										<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Tratamientos ({editLensTreatments.length})</p>
-										<button type="button" onclick={addTreatmentToEdit} disabled={availableTreatments.length === 0}
-											class="inline-flex items-center gap-1 rounded-lg bg-purple-600 px-2.5 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-purple-700 disabled:opacity-50">
-											<Plus class="h-3 w-3" /> Agregar
-										</button>
+										<select
+											value=""
+											disabled={selectableTreatments.length === 0}
+											onchange={(e: Event) => {
+												const target = e.target as HTMLSelectElement;
+												const val = target.value;
+												if (val) { addTreatmentFromSelect(val); target.value = ''; }
+											}}
+											class="w-44 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+											<option value="" disabled>{selectableTreatments.length === 0 ? 'No hay más disponibles' : 'Agregar tratamiento...'}</option>
+											{#each selectableTreatments as t (t.id)}
+												<option value={t.id}>{t.name} — {formatPrice(t.salePrice ?? t.price)} <span class="text-xs">/ ojo</span></option>
+											{/each}
+										</select>
 									</div>
 									{#if editLensTreatments.length === 0}
 										<p class="text-xs text-slate-400 italic">Sin tratamientos seleccionados</p>
@@ -769,7 +785,7 @@
 												<div class="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs dark:border-slate-600 dark:bg-slate-700">
 													<FlaskConical class="h-3.5 w-3.5 shrink-0 text-purple-600" />
 													<span class="flex-1 font-medium text-slate-800 dark:text-slate-200">{t.name}</span>
-													<span class="font-mono text-slate-600 dark:text-slate-400">{formatPrice(t.price)}</span>
+													<span class="font-mono text-slate-600 dark:text-slate-400">{formatPrice(t.salePrice * 2)}</span>
 													<button type="button" onclick={() => removeTreatmentFromEdit(idx)}
 														class="flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
 														title="Quitar tratamiento">
