@@ -6,9 +6,10 @@ import {
 	getSalePayments
 } from '$lib/server/db/queries/sales';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';
+import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
+import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses';
 import { MovementReferenceType } from '$lib/shared/enums';
-import { suppliers } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -20,22 +21,29 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const [items, payments, movements, supplierList] = await Promise.all([
-		getSaleItemsWithDetails(params.id),
-		getSalePayments(params.id, { includeVoided: true }),
-		getMovementsWithDetails({
-			referenceType: MovementReferenceType.SALE,
-			referenceId: params.id,
-			orderSort: 'asc'
-		}),
-		getAllSuppliers({ columns: { id: suppliers.id, name: suppliers.name } })
-	]);
+	const [items, payments, movements, supplierList, allProducts, allLensItems, allTreatments] =
+		await Promise.all([
+			getSaleItemsWithDetails(params.id),
+			getSalePayments(params.id, { includeVoided: true }),
+			getMovementsWithDetails({
+				referenceType: MovementReferenceType.SALE,
+				referenceId: params.id,
+				orderSort: 'asc'
+			}),
+			getAllSuppliers({ orderBy: 'name' }),
+			getAllProductsWithRelations({}),
+			getLensCatalogItemsWithRelations(),
+			getAllTreatments()
+		]);
 
 	return {
 		sale,
 		items,
 		payments,
 		movements,
-		suppliers: supplierList
+		suppliers: supplierList,
+		allProducts,
+		allLensItems,
+		allTreatments
 	};
 };

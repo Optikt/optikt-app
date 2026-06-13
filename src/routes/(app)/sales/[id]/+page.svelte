@@ -5,7 +5,10 @@
 		ChevronUp,
 		FileText,
 		History,
+		Pen,
+		Play,
 		Printer,
+		CheckCircle2,
 		Wallet
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
@@ -13,22 +16,24 @@
 	import { resolve } from '$app/paths';
 	import {
 		CancelSaleModal,
+		EditSaleModal,
 		PaymentForm,
 		PaymentsTable,
 		SaleBalanceCards,
 		SaleItemsTable,
 		SaleMovementsSection
 	} from '$lib/components/sales';
-	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
+	import { ConfirmModal, PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import {
 		computeSnapshotTaxBreakdown,
 		getSnapshotTaxLabel
 	} from '$lib/components/sales/saleItemHelpers';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
-	import { RefundStatus, SaleStatus } from '$lib/shared/enums';
+	import { RefundStatus, SaleStatus, UserRole } from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
+	import { markAsInProgress, markAsCompleted } from '$lib/remote/sales.remote';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
@@ -44,7 +49,14 @@
 	const store = getExchangeRatesStore();
 	const bcvRate = $derived(store.bcvRate);
 	let showCancelModal = $state(false);
+	let showEditModal = $state(false);
 	let showPaymentComposer = $state(false);
+
+	// State transition confirmations
+	let showInProgressConfirm = $state(false);
+	let showCompletedConfirm = $state(false);
+	let transitionReason = $state('');
+	let transitioning = $state(false);
 
 	let formattedOrderNumber = $derived(`#${String(sale.orderNumber).padStart(4, '0')}`);
 	let remainingBcvUsd = $derived(Math.max(0, sale.total - sale.paidAmountBcvUsd));
@@ -54,6 +66,7 @@
 	let canAct = $derived(canOperate(data.user.role));
 	let canManageSale = $derived(canManageSaleByOwner(data.user.role, data.user.id, sale.sellerId));
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
+	let isInProgress = $derived(sale.status === SaleStatus.IN_PROGRESS);
 
 	let pendingFreeItemCount = $derived(
 		items.filter(
@@ -64,8 +77,9 @@
 	);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
-	let canPrintReceipt = $derived(isPending || isCompleted);
-	let showPaymentForm = $derived(canAct && isPending && remainingBcvUsd > 0.01);
+	let canPrintReceipt = $derived((isPending || isInProgress || isCompleted) && !isCancelled);
+	let showPaymentForm = $derived(canAct && (isPending || isInProgress) && remainingBcvUsd > 0.01);
+	let isAdmin = $derived(data.user.role === UserRole.ADMIN || data.user.role === UserRole.MANAGER);
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
 	);
@@ -172,6 +186,56 @@
 			});
 		}
 	}
+
+	async function handleMarkInProgress() {
+		if (!transitionReason.trim()) return;
+		transitioning = true;
+		try {
+			const result = await markAsInProgress({ id: sale.id, reason: transitionReason.trim() });
+			if (result.success) {
+				toast.success('Venta marcada como En Progreso');
+				showInProgressConfirm = false;
+				transitionReason = '';
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error al actualizar estado');
+			}
+		} catch (e) {
+			console.error(e);
+			toast.error('Error al marcar como En Progreso');
+		} finally {
+			transitioning = false;
+		}
+	}
+
+	async function handleMarkCompleted() {
+		if (!transitionReason.trim()) return;
+		transitioning = true;
+		try {
+			const result = await markAsCompleted({ id: sale.id, reason: transitionReason.trim() });
+			if (result.success) {
+				toast.success('Venta completada');
+				showCompletedConfirm = false;
+				transitionReason = '';
+				await invalidateAll();
+				syncFromData();
+			} else {
+				toast.error(result.error ?? 'Error al completar venta');
+			}
+		} catch (e) {
+			console.error(e);
+			toast.error('Error al completar venta');
+		} finally {
+			transitioning = false;
+		}
+	}
+
+	async function handleEditSuccess() {
+		showEditModal = false;
+		await invalidateAll();
+		syncFromData();
+	}
 </script>
 
 <svelte:head>
@@ -221,7 +285,52 @@
 				Ver historial
 			</button>
 
-			{#if canManageSale && isPending}
+			{#if canManageSale && (isPending || isInProgress)}
+				<button
+					type="button"
+					onclick={() => (showEditModal = true)}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<Pen class="h-4 w-4" />
+					Editar venta
+				</button>
+			{/if}
+
+			{#if isPending && isAdmin}
+				<button
+					type="button"
+					onclick={() => {
+						transitionReason = '';
+						showInProgressConfirm = true;
+					}}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<Play class="h-4 w-4" />
+					En Progreso
+				</button>
+			{/if}
+
+			{#if isInProgress && canManageSale}
+				<button
+					type="button"
+					onclick={() => {
+						transitionReason = '';
+						showCompletedConfirm = true;
+					}}
+					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
+						'neutral'
+					)}"
+				>
+					<CheckCircle2 class="h-4 w-4" />
+					Completar
+				</button>
+			{/if}
+
+			{#if canManageSale && (isPending || isInProgress)}
 				<button
 					type="button"
 					onclick={() => (showCancelModal = true)}
@@ -413,7 +522,7 @@
 				<PaymentsTable
 					{payments}
 					saleId={sale.id}
-					allowVoid={canManageSale && isPending}
+					allowVoid={canManageSale && (isPending || isInProgress)}
 					onPaymentVoided={handlePaymentVoided}
 				/>
 			</div>
@@ -490,9 +599,74 @@
 	{/if}
 </div>
 
+<EditSaleModal
+	bind:open={showEditModal}
+	{sale}
+	{items}
+	products={data.allProducts}
+	lensItems={data.allLensItems}
+	treatments={data.allTreatments}
+	onSuccess={handleEditSuccess}
+/>
+
 <CancelSaleModal
 	bind:open={showCancelModal}
 	saleId={sale.id}
 	paidAmountBcvUsd={sale.paidAmountBcvUsd}
 	onSuccess={handleCancelSuccess}
 />
+
+<!-- Mark as In Progress confirmation -->
+<ConfirmModal
+	bind:open={showInProgressConfirm}
+	title="Marcar como En Progreso"
+	confirmLabel="Marcar En Progreso"
+	confirmColor="blue"
+	loading={transitioning}
+	permanent={transitioning}
+	onConfirm={handleMarkInProgress}
+	onCancel={() => {
+		showInProgressConfirm = false;
+		transitionReason = '';
+	}}
+>
+	{#snippet body()}
+		<p class="mb-3 text-sm text-gray-700">
+			Va a marcar esta venta como <strong>En Progreso</strong>. Esto indica que el pedido está
+			siendo procesado.
+		</p>
+		<textarea
+			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+			rows="2"
+			placeholder="Motivo (opcional)..."
+			bind:value={transitionReason}
+		></textarea>
+	{/snippet}
+</ConfirmModal>
+
+<!-- Mark as Completed confirmation -->
+<ConfirmModal
+	bind:open={showCompletedConfirm}
+	title="Completar Venta"
+	confirmLabel="Completar Venta"
+	confirmColor="green"
+	loading={transitioning}
+	permanent={transitioning}
+	onConfirm={handleMarkCompleted}
+	onCancel={() => {
+		showCompletedConfirm = false;
+		transitionReason = '';
+	}}
+>
+	{#snippet body()}
+		<p class="mb-3 text-sm text-gray-700">
+			Va a marcar esta venta como <strong>Completada</strong>. ¿Está seguro?
+		</p>
+		<textarea
+			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-green-400 focus:ring-1 focus:ring-green-400"
+			rows="2"
+			placeholder="Motivo (opcional)..."
+			bind:value={transitionReason}
+		></textarea>
+	{/snippet}
+</ConfirmModal>

@@ -315,6 +315,40 @@ export const EnrichFreeQuoteItemSchema = z
 	});
 
 // ============================================================================
+// UPDATE SALE SCHEMA
+// ============================================================================
+
+export const UpdateSaleSchema = z.object({
+	id: z.uuid('ID de venta inválido'),
+	reason: z.string().min(1, 'El motivo de la modificación es obligatorio'),
+	/** Always-editable header fields */
+	customerId: z.uuid().optional(),
+	saleDate: z.iso.date().optional(),
+	notes: z.string().optional(),
+	discount: CoercedNumber.min(0).optional(),
+	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
+	snapshotTaxRate: CoercedNumber.min(0).optional(),
+	/** Full replacement of sale items (if provided) */
+	items: z.array(SaleItemSchema).optional()
+});
+
+// ============================================================================
+// STATE TRANSITION SCHEMAS
+// ============================================================================
+
+/** Mark a sale as IN_PROGRESS */
+export const MarkAsInProgressSchema = z.object({
+	id: z.uuid('ID de venta inválido'),
+	reason: z.string().min(1, 'El motivo es obligatorio')
+});
+
+/** Mark a sale as COMPLETED */
+export const MarkAsCompletedSchema = z.object({
+	id: z.uuid('ID de venta inválido'),
+	reason: z.string().min(1, 'El motivo es obligatorio')
+});
+
+// ============================================================================
 // ID SCHEMAS
 // ============================================================================
 
@@ -339,3 +373,6 @@ export type CancelSaleInput = z.infer<typeof CancelSaleSchema>;
 export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;
 export type EnrichFreeItemInput = z.infer<typeof EnrichFreeItemSchema>;
 export type EnrichFreeQuoteItemInput = z.infer<typeof EnrichFreeQuoteItemSchema>;
+export type UpdateSaleInput = z.infer<typeof UpdateSaleSchema>;
+export type MarkAsInProgressInput = z.infer<typeof MarkAsInProgressSchema>;
+export type MarkAsCompletedInput = z.infer<typeof MarkAsCompletedSchema>;

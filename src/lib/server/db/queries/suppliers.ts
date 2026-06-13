@@ -231,6 +231,14 @@ export async function resolvePendingSupplier(
 // SUPPLIER TREATMENTS
 // ============================================================================
 
+/** Get all treatments across all suppliers */
+export async function getAllTreatments(): Promise<SupplierTreatment[]> {
+	return db
+		.select()
+		.from(supplierTreatments)
+		.orderBy(asc(supplierTreatments.supplierId), asc(supplierTreatments.category), asc(supplierTreatments.name));
+}
+
 /** List treatments for a specific supplier */
 export async function getSupplierTreatments(
 	supplierId: string,
