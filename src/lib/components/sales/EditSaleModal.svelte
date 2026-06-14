@@ -29,6 +29,7 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import ItemSelect from './ItemSelect.svelte';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -53,10 +54,10 @@
 	let saving = $state(false);
 
 	// ── Header fields ──────────────────────────────────────────────────────
-	let saleDate = $state(sale.saleDate.slice(0, 10));
-	let notes = $state(sale.notes ?? '');
-	let discount = $state(sale.discount);
-	let discountType = $state<string>(sale.discountType);
+	let saleDate = $state(untrack(() => sale.saleDate.slice(0, 10)));
+	let notes = $state(untrack(() => sale.notes ?? ''));
+	let discount = $state(untrack(() => sale.discount));
+	let discountType = $state<string>(untrack(() => sale.discountType));
 
 	// ── Reason (mandatory) ──────────────────────────────────────────────────
 	let reason = $state('');
@@ -64,7 +65,7 @@
 
 	// ── Editable items ─────────────────────────────────────────────────────
 	type EditableItem = SaleItemInput & { _removed?: boolean };
-	let editableItems = $state<EditableItem[]>(items.map(existingItemToInput));
+	let editableItems = $state<EditableItem[]>(untrack(() => items.map(existingItemToInput)));
 
 	// ── Lens editing state ─────────────────────────────────────────────────
 	let editingLensId = $state<string | null>(null); // null = adding new
