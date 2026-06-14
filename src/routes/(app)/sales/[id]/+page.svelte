@@ -624,6 +624,7 @@
 	confirmColor="blue"
 	loading={transitioning}
 	permanent={transitioning}
+	confirmDisabled={!transitionReason.trim()}
 	onConfirm={handleMarkInProgress}
 	onCancel={() => {
 		showInProgressConfirm = false;
@@ -635,10 +636,14 @@
 			Va a marcar esta venta como <strong>En Progreso</strong>. Esto indica que el pedido está
 			siendo procesado.
 		</p>
+		<label for="in-progress-reason" class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+			Motivo <span class="text-red-500">*</span>
+		</label>
 		<textarea
+			id="in-progress-reason"
 			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
 			rows="2"
-			placeholder="Motivo (opcional)..."
+			placeholder="Ej: Se envió al laboratorio..."
 			bind:value={transitionReason}
 		></textarea>
 	{/snippet}
@@ -652,6 +657,7 @@
 	confirmColor="green"
 	loading={transitioning}
 	permanent={transitioning}
+	confirmDisabled={!transitionReason.trim()}
 	onConfirm={handleMarkCompleted}
 	onCancel={() => {
 		showCompletedConfirm = false;
@@ -662,10 +668,14 @@
 		<p class="mb-3 text-sm text-gray-700">
 			Va a marcar esta venta como <strong>Completada</strong>. ¿Está seguro?
 		</p>
+		<label for="complete-reason" class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+			Motivo <span class="text-red-500">*</span>
+		</label>
 		<textarea
+			id="complete-reason"
 			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-green-400 focus:ring-1 focus:ring-green-400"
 			rows="2"
-			placeholder="Motivo (opcional)..."
+			placeholder="Ej: Cliente retiró orden..."
 			bind:value={transitionReason}
 		></textarea>
 	{/snippet}
