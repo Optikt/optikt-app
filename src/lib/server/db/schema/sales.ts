@@ -24,6 +24,7 @@ import {
 	FreeItemCategory,
 	FreeItemEnrichmentStatus
 } from '../../../shared/enums/lensTypes';
+import { SaleStatus } from '../../../shared/enums/salesTypes';
 
 // ============================================================================
 // SALE ITEM TYPE ENUM
@@ -35,6 +36,7 @@ export const freeItemEnrichmentStatusEnum = pgEnum(
 	'free_item_enrichment_status',
 	enumValues(FreeItemEnrichmentStatus)
 );
+export const saleStatusEnum = pgEnum('sale_status', enumValues(SaleStatus));
 
 // ============================================================================
 // SALES (ORDERS)
@@ -49,8 +51,8 @@ export const sales = pgTable(
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
 		saleDate: timestamp('sale_date', { withTimezone: true, mode: 'string' }).notNull(),
-		/** PENDING → COMPLETED (auto when fully paid) → CANCELLED */
-		status: varchar().notNull().default('PENDING'),
+		/** PENDING → IN_PROGRESS → COMPLETED (auto when fully paid) → CANCELLED */
+		status: saleStatusEnum('status').notNull().default('PENDING'),
 		subtotal: doublePrecision().notNull(),
 		/** Global discount value (fixed amount or percentage input) */
 		discount: doublePrecision().notNull().default(0),

@@ -11,6 +11,7 @@ import type { BadgeVariant } from '$lib/shared/badge-variants';
 
 export enum SaleStatus {
 	PENDING = 'PENDING',
+	IN_PROGRESS = 'IN_PROGRESS',
 	COMPLETED = 'COMPLETED',
 	CANCELLED = 'CANCELLED'
 }
@@ -19,6 +20,7 @@ export const ALL_SALE_STATUSES = Object.values(SaleStatus) as SaleStatus[];
 
 export const SALE_STATUS_LABELS: Record<SaleStatus, string> = {
 	[SaleStatus.PENDING]: 'Pendiente',
+	[SaleStatus.IN_PROGRESS]: 'En Progreso',
 	[SaleStatus.COMPLETED]: 'Completada',
 	[SaleStatus.CANCELLED]: 'Cancelada'
 };
@@ -29,6 +31,7 @@ export function getSaleStatusLabel(status: string): string {
 
 export const saleStatusColors: Record<SaleStatus, BadgeVariant> = {
 	[SaleStatus.PENDING]: 'warning',
+	[SaleStatus.IN_PROGRESS]: 'info',
 	[SaleStatus.COMPLETED]: 'success',
 	[SaleStatus.CANCELLED]: 'error'
 };

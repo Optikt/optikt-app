@@ -445,9 +445,12 @@ export async function createSaleItem(data: NewSaleItem): Promise<SaleItem> {
 /**
  * Create multiple sale items
  */
-export async function createSaleItems(items: NewSaleItem[]): Promise<SaleItem[]> {
+export async function createSaleItems(
+	items: NewSaleItem[],
+	executor: DbOrTx = db
+): Promise<SaleItem[]> {
 	const now = nowISO();
-	return await db
+	return await executor
 		.insert(saleItems)
 		.values(
 			items.map((item) => ({
@@ -458,6 +461,33 @@ export async function createSaleItems(items: NewSaleItem[]): Promise<SaleItem[]>
 			}))
 		)
 		.returning();
+}
+
+/**
+ * Find a sale item by ID
+ */
+export async function findSaleItemById(
+	id: string,
+	executor: DbOrTx = db
+): Promise<SaleItem | null> {
+	const [item] = await executor
+		.select()
+		.from(saleItems)
+		.where(and(eq(saleItems.id, id), isNull(saleItems.deletedAt)));
+	return item ?? null;
+}
+
+/**
+ * Soft-delete a sale item by ID (sets deletedAt).
+ * Returns the deleted item or null if not found.
+ */
+export async function deleteSaleItem(id: string, executor: DbOrTx = db): Promise<SaleItem | null> {
+	const [item] = await executor
+		.update(saleItems)
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
+		.where(and(eq(saleItems.id, id), isNull(saleItems.deletedAt)))
+		.returning();
+	return item ?? null;
 }
 
 /**

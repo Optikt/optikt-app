@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { SaleItemSchema, CreateSaleSchema, CancelSaleSchema } from '$lib/schemas/sales';
+import {
+	SaleItemSchema,
+	CreateSaleSchema,
+	CancelSaleSchema,
+	UpdateSaleSchema,
+	MarkAsInProgressSchema,
+	MarkAsCompletedSchema
+} from '$lib/schemas/sales';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { DiscountType, RefundStatus } from '$lib/shared/enums';
 
@@ -499,5 +506,151 @@ describe('EnrichFreeItemSchema', () => {
 			opticalNotes: 'OD -3.00 sph, color verde'
 		});
 		expect(result.success).toBe(true);
+	});
+});
+
+// ── UpdateSaleSchema ──────────────────────────────────────────────────────
+
+describe('UpdateSaleSchema', () => {
+	const validBase = {
+		id: crypto.randomUUID(),
+		reason: 'Cliente cambió de opinión'
+	};
+
+	it('accepts a minimal update with only id and reason', () => {
+		const result = UpdateSaleSchema.safeParse(validBase);
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts header-only field changes', () => {
+		const result = UpdateSaleSchema.safeParse({
+			...validBase,
+			customerId: crypto.randomUUID(),
+			saleDate: '2025-06-15',
+			notes: 'Nota actualizada',
+			discount: 10,
+			discountType: DiscountType.FIXED,
+			snapshotTaxRate: 8
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts header changes with items replacement', () => {
+		const lensItem = {
+			id: crypto.randomUUID(),
+			itemType: SaleItemType.LENS_PAIR,
+			lensCatalogItemId: crypto.randomUUID(),
+			quantity: 1,
+			unitPrice: 30,
+			discount: 0,
+			discountType: DiscountType.FIXED
+		};
+		const treatment = {
+			itemType: SaleItemType.TREATMENT,
+			parentSaleItemId: lensItem.id,
+			supplierTreatmentId: crypto.randomUUID(),
+			quantity: 1,
+			unitPrice: 15,
+			discount: 0,
+			discountType: DiscountType.FIXED
+		};
+		const result = UpdateSaleSchema.safeParse({
+			...validBase,
+			discount: 5,
+			items: [lensItem, treatment]
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.items).toHaveLength(2);
+		}
+	});
+
+	it('rejects when reason is empty', () => {
+		const result = UpdateSaleSchema.safeParse({
+			...validBase,
+			reason: ''
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects when id is invalid', () => {
+		const result = UpdateSaleSchema.safeParse({
+			...validBase,
+			id: 'not-a-uuid'
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects items with invalid item data (negative price)', () => {
+		const result = UpdateSaleSchema.safeParse({
+			...validBase,
+			items: [
+				{
+					itemType: SaleItemType.PRODUCT,
+					productId: crypto.randomUUID(),
+					quantity: 1,
+					unitPrice: -5,
+					discount: 0,
+					discountType: DiscountType.FIXED
+				}
+			]
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+// ── MarkAsInProgressSchema ─────────────────────────────────────────────────
+
+describe('MarkAsInProgressSchema', () => {
+	it('accepts valid input', () => {
+		const result = MarkAsInProgressSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: 'Iniciando proceso'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects empty reason', () => {
+		const result = MarkAsInProgressSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: ''
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid id', () => {
+		const result = MarkAsInProgressSchema.safeParse({
+			id: 'bad',
+			reason: 'Iniciando proceso'
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+// ── MarkAsCompletedSchema ──────────────────────────────────────────────────
+
+describe('MarkAsCompletedSchema', () => {
+	it('accepts valid input', () => {
+		const result = MarkAsCompletedSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: 'Venta completada'
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects empty reason', () => {
+		const result = MarkAsCompletedSchema.safeParse({
+			id: crypto.randomUUID(),
+			reason: ''
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid id', () => {
+		const result = MarkAsCompletedSchema.safeParse({
+			id: 'bad',
+			reason: 'Venta completada'
+		});
+		expect(result.success).toBe(false);
 	});
 });

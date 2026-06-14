@@ -21,6 +21,7 @@
 		onCancel?: () => void; // When provided, caller controls closing. Otherwise auto-closes.
 		shouldConfirm?: () => boolean | Promise<boolean>; // Determine if confirmation should be shown
 		permanent?: boolean;
+		confirmDisabled?: boolean;
 	}
 
 	let {
@@ -41,7 +42,8 @@
 		onSecondary,
 		onCancel,
 		shouldConfirm,
-		permanent = false
+		permanent = false,
+		confirmDisabled = false
 	}: Props = $props();
 
 	let isChecking = $state(false);
@@ -100,7 +102,7 @@
 		{/if}
 		<div class="flex justify-end gap-2">
 			<Button color="light" onclick={handleCancel} disabled={isBusy}>{cancelLabel}</Button>
-			<Button color={confirmColor} onclick={handleConfirm} disabled={isBusy}>
+			<Button color={confirmColor} onclick={handleConfirm} disabled={isBusy || confirmDisabled}>
 				{#if loading || isChecking}<Spinner size="4" class="mr-2" />{/if}
 				{confirmLabel}
 			</Button>

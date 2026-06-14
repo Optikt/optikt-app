@@ -13,7 +13,10 @@ import {
 	VoidPaymentSchema,
 	CustomerLookupSchema,
 	UpdateSaleItemCostsSchema,
-	EnrichFreeItemSchema
+	EnrichFreeItemSchema,
+	UpdateSaleSchema,
+	MarkAsInProgressSchema,
+	MarkAsCompletedSchema
 } from '$lib/schemas/sales';
 import {
 	getAllSales,
@@ -27,7 +30,7 @@ import {
 	addSalePayment,
 	voidSalePayment,
 	recalcSalePaidAmount,
-	updateSale,
+	updateSale as updateSaleQuery,
 	getNextOrderNumber,
 	updateSaleItemCosts
 } from '$lib/server/db/queries/sales';
@@ -511,7 +514,11 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 		// Auto-complete if fully paid (small tolerance for floating point).
 		// completedAt anchors delivery-based revenue recognition.
 		if (newPaidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
-			await updateSale(data.saleId, { status: SaleStatus.COMPLETED, completedAt: nowISO() }, tx);
+			await updateSaleQuery(
+				data.saleId,
+				{ status: SaleStatus.COMPLETED, completedAt: nowISO() },
+				tx
+			);
 		}
 
 		return { payment: newPayment, paidAmount: newPaidAmount };
@@ -568,7 +575,7 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
 
 		// If sale was COMPLETED but now underpaid, revert to PENDING and clear completedAt.
 		if (sale.status === SaleStatus.COMPLETED && newPaidAmount < sale.total - 0.01) {
-			await updateSale(data.saleId, { status: SaleStatus.PENDING, completedAt: null }, tx);
+			await updateSaleQuery(data.saleId, { status: SaleStatus.PENDING, completedAt: null }, tx);
 		}
 
 		return newPaidAmount;
@@ -696,7 +703,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 		const hasPriorPayments = existing.paidAmountBcvUsd > 0;
 		const refundStatus = hasPriorPayments ? data.refundStatus : RefundStatus.NO_PAYMENT;
 
-		await updateSale(
+		await updateSaleQuery(
 			data.id,
 			{
 				status: SaleStatus.CANCELLED,
@@ -871,4 +878,392 @@ export const enrichFreeItem = command(EnrichFreeItemSchema, async (data) => {
 	);
 
 	return { success: true as const, freeDetails: updated };
+});
+
+// ============================================================================
+// UPDATE SALE
+// ============================================================================
+
+/**
+ * Edit an existing sale: update header fields and/or replace items.
+ *
+ * Strict state/role enforcement:
+ * - COMPLETED: blocked entirely.
+ * - IN_PROGRESS: only ADMIN/MANAGER may edit.
+ * - PENDING: allowed for authorized users.
+ *
+ * When items change the full inventory is reset (CANCEL_REVERT) and
+ * re-consumed (SALE_OUT) inside the same transaction.
+ */
+export const updateSale = command(UpdateSaleSchema, async (data) => {
+	const user = requireAuth();
+	const context = getAuditContext();
+
+	// Read validation (outside transaction)
+	const existing = await findSaleById(data.id);
+	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
+	if (existing.status === SaleStatus.CANCELLED) {
+		return { success: false as const, error: 'No se puede modificar una venta cancelada' };
+	}
+
+	if (!canManageSaleByOwner(user.role, user.id, existing.sellerId)) {
+		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
+	}
+
+	if (existing.status === SaleStatus.COMPLETED) {
+		return { success: false as const, error: 'No se puede modificar una venta completada' };
+	}
+
+	const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MANAGER;
+	if (existing.status === SaleStatus.IN_PROGRESS && !isAdmin) {
+		return {
+			success: false as const,
+			error: 'Solo administradores pueden modificar ventas en progreso'
+		};
+	}
+
+	// Payment protection
+	const paidAmount = existing.paidAmountBcvUsd;
+
+	// Validate customer reference if changed
+	if (data.customerId) {
+		const customer = await findCustomerById(data.customerId);
+		if (!customer) return { success: false as const, error: 'Cliente no encontrado' };
+	}
+
+	// Calculate new totals
+	const hasItemChanges = !!data.items && data.items.length > 0;
+	if (data.items && data.items.length === 0) {
+		return { success: false as const, error: 'La venta debe tener al menos un artículo' };
+	}
+
+	let newSubtotal = existing.subtotal;
+
+	if (hasItemChanges) {
+		newSubtotal = data.items!.reduce((acc, item) => {
+			const lineTotal = item.unitPrice * item.quantity;
+			const itemDiscount = computeDiscount(item.discount, item.discountType, lineTotal);
+			return acc + lineTotal - itemDiscount;
+		}, 0);
+	}
+
+	const newDiscount = data.discount ?? existing.discount;
+	const newDiscountType = data.discountType ?? existing.discountType;
+	const newGlobalDiscount = computeDiscount(newDiscount, newDiscountType, newSubtotal);
+	const newTotal = Math.max(0, newSubtotal - newGlobalDiscount);
+
+	if (newTotal < paidAmount - 0.01) {
+		return {
+			success: false as const,
+			error:
+				'La modificación reduce el total por debajo de lo ya cobrado. Por favor cancele esta venta y cree una nueva.'
+		};
+	}
+
+	// All writes in a single transaction
+	const updatedSale = await db.transaction(async (tx) => {
+		if (hasItemChanges) {
+			// ── 1. Revert all existing SALE_OUT inventory movements ──────────
+			const saleOutMovements = await tx
+				.select()
+				.from(inventoryMovements)
+				.where(
+					and(
+						eq(inventoryMovements.referenceType, MovementReferenceType.SALE),
+						eq(inventoryMovements.referenceId, data.id),
+						eq(inventoryMovements.movementType, InventoryMovementType.SALE_OUT)
+					)
+				);
+
+			for (const movement of saleOutMovements) {
+				const quantityToReturn = Math.abs(movement.quantityDelta);
+				const updatedLot = await returnToLot(movement.lotId, quantityToReturn, tx);
+
+				await createInventoryMovement(
+					{
+						movementType: InventoryMovementType.CANCEL_REVERT,
+						lotId: movement.lotId,
+						itemType: 'PRODUCT',
+						productId: movement.productId!,
+						quantityDelta: quantityToReturn,
+						quantityBefore: updatedLot.quantityAvailable - quantityToReturn,
+						quantityAfter: updatedLot.quantityAvailable,
+						referenceType: MovementReferenceType.SALE,
+						referenceId: data.id,
+						createdById: context.userId!
+					},
+					tx
+				);
+			}
+
+			// ── 2. Restore cached stock counters ────────────────────────────
+			const oldItems = await tx
+				.select()
+				.from(saleItems)
+				.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+
+			for (const item of oldItems) {
+				if (item.productId) {
+					const [product] = await tx
+						.select({ id: products.id, stock: products.stock })
+						.from(products)
+						.where(eq(products.id, item.productId));
+
+					if (product && product.stock !== null) {
+						await tx
+							.update(products)
+							.set({ stock: product.stock + item.quantity, updatedAt: nowISO() })
+							.where(eq(products.id, item.productId));
+					}
+				}
+
+				if (item.lensCatalogItemId) {
+					const [lens] = await tx
+						.select({
+							id: lensCatalogItems.id,
+							stock: lensCatalogItems.stock,
+							inventoryMode: lensCatalogItems.inventoryMode
+						})
+						.from(lensCatalogItems)
+						.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+
+					if (lens && lens.inventoryMode === 'STOCK' && lens.stock !== null) {
+						await tx
+							.update(lensCatalogItems)
+							.set({ stock: lens.stock + item.quantity, updatedAt: nowISO() })
+							.where(eq(lensCatalogItems.id, item.lensCatalogItemId));
+					}
+				}
+			}
+
+			// ── 3. Soft-delete all existing sale items (cascade handles free_details + child treatments) ──
+			await tx
+				.update(saleItems)
+				.set({ deletedAt: nowISO(), updatedAt: nowISO() })
+				.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
+
+			// ── 4. Insert new items + consume inventory ──────────────────────
+			for (const item of data.items!) {
+				const saleItemId = item.id ?? crypto.randomUUID();
+
+				let lotId: string | null = null;
+				let snapshotCostTotal: number | null = null;
+				let snapshotCostUnit: number | null = null;
+				let snapshotLotsCount: number | null = null;
+
+				if (item.itemType !== SaleItemType.FREE_ITEM) {
+					({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
+						await consumeFifoForSaleItem(tx, data.id, item, context.userId!));
+				}
+
+				const lensSnapshotCosts = resolveLensSnapshotCosts(item);
+
+				await tx.insert(saleItems).values({
+					id: saleItemId,
+					saleId: data.id,
+					itemType: item.itemType,
+					parentSaleItemId: item.parentSaleItemId ?? null,
+					productId: item.productId ?? null,
+					lensCatalogItemId: item.lensCatalogItemId ?? null,
+					supplierTreatmentId: item.supplierTreatmentId ?? null,
+					lotId,
+					prescriptionId: item.prescriptionId ?? null,
+					odSphere: item.odSphere ?? null,
+					odCylinder: item.odCylinder ?? null,
+					odAxis: item.odAxis ?? null,
+					odAddition: item.odAddition ?? null,
+					osSphere: item.osSphere ?? null,
+					osCylinder: item.osCylinder ?? null,
+					osAxis: item.osAxis ?? null,
+					osAddition: item.osAddition ?? null,
+					quantity: item.quantity,
+					unitPrice: item.unitPrice,
+					discount: item.discount,
+					discountType: item.discountType,
+					snapshotName: item.snapshotName ?? null,
+					snapshotSku: item.snapshotSku ?? null,
+					snapshotBrand: item.snapshotBrand ?? null,
+					snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+					snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
+					snapshotLotsCount,
+					snapshotBaseCost: item.snapshotBaseCost ?? null,
+					snapshotMountingPrice: item.snapshotMountingPrice ?? null,
+					snapshotShippingPrice: item.snapshotShippingPrice ?? null,
+					snapshotSalePrice: item.snapshotSalePrice ?? null,
+					snapshotPriceType: item.snapshotPriceType ?? null,
+					snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
+					snapshotIsTaxable: item.snapshotIsTaxable ?? null,
+					shippingCostPending: item.shippingCostPending ?? false,
+					notes: item.notes ?? null,
+					createdAt: nowISO(),
+					updatedAt: nowISO()
+				});
+
+				if (item.itemType === SaleItemType.FREE_ITEM) {
+					await tx.insert(saleItemFreeDetails).values({
+						id: crypto.randomUUID(),
+						saleItemId,
+						category: item.freeItemCategory!,
+						description: item.freeItemDescription!,
+						enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
+						unitCost: item.freeItemUnitCost ?? null,
+						supplierId: item.freeItemSupplierId ?? null,
+						opticalNotes: item.freeItemOpticalNotes ?? null,
+						createdAt: nowISO(),
+						updatedAt: nowISO()
+					});
+				}
+			}
+
+			// ── 5. Recalculate tax snapshot if provided ─────────────────────
+			const taxRate = data.snapshotTaxRate ?? existing.snapshotTaxRate;
+			const updateData: Record<string, unknown> = {
+				subtotal: newSubtotal,
+				total: newTotal,
+				snapshotTaxRate: taxRate,
+				updatedAt: nowISO()
+			};
+
+			if (data.customerId) updateData.customerId = data.customerId;
+			if (data.saleDate) updateData.saleDate = data.saleDate;
+			if (data.notes !== undefined) updateData.notes = data.notes;
+			if (data.discount !== undefined) updateData.discount = data.discount;
+			if (data.discountType !== undefined) updateData.discountType = data.discountType;
+
+			const [updated] = await tx
+				.update(sales)
+				.set(updateData)
+				.where(eq(sales.id, data.id))
+				.returning();
+
+			return updated;
+		}
+
+		// ── Header-only update (no item changes) ───────────────────────────
+		const headerUpdate: Record<string, unknown> = {
+			updatedAt: nowISO()
+		};
+		if (data.customerId) headerUpdate.customerId = data.customerId;
+		if (data.saleDate) headerUpdate.saleDate = data.saleDate;
+		if (data.notes !== undefined) headerUpdate.notes = data.notes;
+		if (data.discount !== undefined) headerUpdate.discount = data.discount;
+		if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
+		if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
+
+		// If discount changed without items, recalculate total
+		if (data.discount !== undefined || data.discountType !== undefined) {
+			headerUpdate.total = newTotal;
+			headerUpdate.subtotal = existing.subtotal;
+		}
+
+		const [updated] = await tx
+			.update(sales)
+			.set(headerUpdate)
+			.where(eq(sales.id, data.id))
+			.returning();
+
+		return updated;
+	});
+
+	if (!updatedSale) {
+		return { success: false as const, error: 'Error al actualizar la venta' };
+	}
+
+	// Audit (best-effort, after transaction succeeds)
+	await auditService.logUpdate(
+		'sale',
+		data.id,
+		existing,
+		updatedSale,
+		{ ...context, reason: data.reason },
+		{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
+	);
+
+	return { success: true as const, sale: updatedSale };
+});
+
+// ============================================================================
+// STATE TRANSITIONS
+// ============================================================================
+
+/**
+ * Transition a sale from PENDING → IN_PROGRESS.
+ */
+export const markAsInProgress = command(MarkAsInProgressSchema, async (data) => {
+	const user = requireAuth();
+	const context = getAuditContext();
+
+	const existing = await findSaleById(data.id);
+	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
+
+	if (!canManageSaleByOwner(user.role, user.id, existing.sellerId)) {
+		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
+	}
+
+	if (existing.status !== SaleStatus.PENDING) {
+		return {
+			success: false as const,
+			error: 'Solo se pueden marcar como "En Progreso" ventas en estado Pendiente'
+		};
+	}
+
+	const updated = await db.transaction(async (tx) => {
+		return updateSaleQuery(data.id, { status: SaleStatus.IN_PROGRESS }, tx);
+	});
+
+	if (!updated) {
+		return { success: false as const, error: 'Error al actualizar la venta' };
+	}
+
+	await auditService.logUpdate(
+		'sale',
+		data.id,
+		existing,
+		updated,
+		{ ...context, reason: data.reason },
+		{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
+	);
+
+	return { success: true as const, sale: updated };
+});
+
+/**
+ * Transition a sale from IN_PROGRESS → COMPLETED.
+ */
+export const markAsCompleted = command(MarkAsCompletedSchema, async (data) => {
+	const user = requireAuth();
+	const context = getAuditContext();
+
+	const existing = await findSaleById(data.id);
+	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
+
+	if (!canManageSaleByOwner(user.role, user.id, existing.sellerId)) {
+		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
+	}
+
+	if (existing.status !== SaleStatus.IN_PROGRESS) {
+		return {
+			success: false as const,
+			error: 'Solo se pueden completar ventas en estado "En Progreso"'
+		};
+	}
+
+	const updated = await db.transaction(async (tx) => {
+		return updateSaleQuery(data.id, { status: SaleStatus.COMPLETED, completedAt: nowISO() }, tx);
+	});
+
+	if (!updated) {
+		return { success: false as const, error: 'Error al actualizar la venta' };
+	}
+
+	await auditService.logUpdate(
+		'sale',
+		data.id,
+		existing,
+		updated,
+		{ ...context, reason: data.reason },
+		{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
+	);
+
+	return { success: true as const, sale: updated };
 });

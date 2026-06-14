@@ -45,7 +45,7 @@
 		existingPrescription = null,
 		selectedCatalogLensType = null,
 		hasMixedCatalogLensTypes = false,
-		showAddition: _showAddition = false,
+		showAddition = false,
 		compact: _compact = false,
 		errors = {}
 	}: Props = $props();
@@ -252,87 +252,7 @@
 
 	<!-- Eye values -->
 	<div class={_compact ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 gap-4 md:grid-cols-2'}>
-		<!-- Right Eye (OD) -->
-		<div
-			class={_compact
-				? 'rounded-[1rem] border border-blue-200/80 bg-[linear-gradient(180deg,#f4f8ff_0%,#edf4ff_100%)] p-3.5 shadow-sm'
-				: 'rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/50 p-3'}
-		>
-			<div class="mb-2 flex items-center gap-2">
-				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500">
-					<Eye class="h-3 w-3 text-white" />
-				</div>
-				<h5 class="text-sm font-semibold text-blue-800">OD - Ojo Derecho</h5>
-			</div>
-			<div
-				class={_compact
-					? 'grid grid-cols-2 gap-2.5'
-					: `grid grid-cols-2 gap-2 ${!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
-			>
-				<div>
-					<Label class="mb-0.5 text-xs text-slate-500">Esfera</Label>
-					<Input
-						type="number"
-						step={0.25}
-						placeholder="-2.00"
-						bind:value={values.odSphere}
-						class="font-mono text-sm {errors?.odSphere ? '!border-red-400' : ''}"
-					/>
-					{#if errors?.odSphere}
-						<p class="mt-0.5 text-xs text-red-500">{errors.odSphere}</p>
-					{/if}
-				</div>
-				<div>
-					<Label class="mb-0.5 text-xs text-slate-500">Cilindro</Label>
-					<Input
-						type="number"
-						step={0.25}
-						min={-10}
-						max={0}
-						placeholder="-0.50"
-						bind:value={values.odCylinder}
-						class="font-mono text-sm {errors?.odCylinder ? '!border-red-400' : ''}"
-					/>
-					{#if errors?.odCylinder}
-						<p class="mt-0.5 text-xs text-red-500">{errors.odCylinder}</p>
-					{/if}
-				</div>
-				<div class={_compact && isMonofocal ? 'col-span-2' : ''}>
-					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
-					<Input
-						type="number"
-						step={1}
-						min={0}
-						max={180}
-						placeholder="180"
-						bind:value={values.odAxis}
-						class="font-mono text-sm {errors?.odAxis ? '!border-red-400' : ''}"
-					/>
-					{#if errors?.odAxis}
-						<p class="mt-0.5 text-xs text-red-500">{errors.odAxis}</p>
-					{/if}
-				</div>
-				{#if !isMonofocal}
-					<div>
-						<Label class="mb-0.5 text-xs text-slate-500">Adición</Label>
-						<Input
-							type="number"
-							step={0.25}
-							min={0}
-							max={5}
-							placeholder="+1.50"
-							bind:value={values.odAddition}
-							class="font-mono text-sm {errors?.odAddition ? '!border-red-400' : ''}"
-						/>
-						{#if errors?.odAddition}
-							<p class="mt-0.5 text-xs text-red-500">{errors.odAddition}</p>
-						{/if}
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Left Eye (OI) -->
+		<!-- Left Eye (OI) — always first -->
 		<div
 			class={_compact
 				? 'rounded-[1rem] border border-violet-200/80 bg-[linear-gradient(180deg,#fbf6ff_0%,#f4ecff_100%)] p-3.5 shadow-sm'
@@ -347,7 +267,7 @@
 			<div
 				class={_compact
 					? 'grid grid-cols-2 gap-2.5'
-					: `grid grid-cols-2 gap-2 ${!isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
+					: `grid grid-cols-2 gap-2 ${showAddition || !isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
 			>
 				<div>
 					<Label class="mb-0.5 text-xs text-slate-500">Esfera</Label>
@@ -377,7 +297,7 @@
 						<p class="mt-0.5 text-xs text-red-500">{errors.oiCylinder}</p>
 					{/if}
 				</div>
-				<div class={_compact && isMonofocal ? 'col-span-2' : ''}>
+				<div class={_compact && isMonofocal && !showAddition ? 'col-span-2' : ''}>
 					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
 					<Input
 						type="number"
@@ -392,7 +312,7 @@
 						<p class="mt-0.5 text-xs text-red-500">{errors.oiAxis}</p>
 					{/if}
 				</div>
-				{#if !isMonofocal}
+				{#if showAddition || !isMonofocal}
 					<div>
 						<Label class="mb-0.5 text-xs text-slate-500">Adición</Label>
 						<Input
@@ -406,6 +326,86 @@
 						/>
 						{#if errors?.oiAddition}
 							<p class="mt-0.5 text-xs text-red-500">{errors.oiAddition}</p>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Right Eye (OD) — second -->
+		<div
+			class={_compact
+				? 'rounded-[1rem] border border-blue-200/80 bg-[linear-gradient(180deg,#f4f8ff_0%,#edf4ff_100%)] p-3.5 shadow-sm'
+				: 'rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-blue-50/50 p-3'}
+		>
+			<div class="mb-2 flex items-center gap-2">
+				<div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500">
+					<Eye class="h-3 w-3 text-white" />
+				</div>
+				<h5 class="text-sm font-semibold text-blue-800">OD - Ojo Derecho</h5>
+			</div>
+			<div
+				class={_compact
+					? 'grid grid-cols-2 gap-2.5'
+					: `grid grid-cols-2 gap-2 ${showAddition || !isMonofocal ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}
+			>
+				<div>
+					<Label class="mb-0.5 text-xs text-slate-500">Esfera</Label>
+					<Input
+						type="number"
+						step={0.25}
+						placeholder="-2.00"
+						bind:value={values.odSphere}
+						class="font-mono text-sm {errors?.odSphere ? '!border-red-400' : ''}"
+					/>
+					{#if errors?.odSphere}
+						<p class="mt-0.5 text-xs text-red-500">{errors.odSphere}</p>
+					{/if}
+				</div>
+				<div>
+					<Label class="mb-0.5 text-xs text-slate-500">Cilindro</Label>
+					<Input
+						type="number"
+						step={0.25}
+						min={-10}
+						max={0}
+						placeholder="-0.50"
+						bind:value={values.odCylinder}
+						class="font-mono text-sm {errors?.odCylinder ? '!border-red-400' : ''}"
+					/>
+					{#if errors?.odCylinder}
+						<p class="mt-0.5 text-xs text-red-500">{errors.odCylinder}</p>
+					{/if}
+				</div>
+				<div class={_compact && isMonofocal && !showAddition ? 'col-span-2' : ''}>
+					<Label class="mb-0.5 text-xs text-slate-500">Eje</Label>
+					<Input
+						type="number"
+						step={1}
+						min={0}
+						max={180}
+						placeholder="180"
+						bind:value={values.odAxis}
+						class="font-mono text-sm {errors?.odAxis ? '!border-red-400' : ''}"
+					/>
+					{#if errors?.odAxis}
+						<p class="mt-0.5 text-xs text-red-500">{errors.odAxis}</p>
+					{/if}
+				</div>
+				{#if showAddition || !isMonofocal}
+					<div>
+						<Label class="mb-0.5 text-xs text-slate-500">Adición</Label>
+						<Input
+							type="number"
+							step={0.25}
+							min={0}
+							max={5}
+							placeholder="+1.50"
+							bind:value={values.odAddition}
+							class="font-mono text-sm {errors?.odAddition ? '!border-red-400' : ''}"
+						/>
+						{#if errors?.odAddition}
+							<p class="mt-0.5 text-xs text-red-500">{errors.odAddition}</p>
 						{/if}
 					</div>
 				{/if}
