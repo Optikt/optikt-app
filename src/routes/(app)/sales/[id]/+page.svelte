@@ -1,8 +1,6 @@
 <script lang="ts">
 	import {
 		CircleX,
-		ChevronDown,
-		ChevronUp,
 		FileText,
 		History,
 		Pen,
@@ -11,7 +9,6 @@
 		CheckCircle2,
 		Wallet
 	} from '@lucide/svelte';
-	import { autoAnimate } from '@formkit/auto-animate';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
@@ -19,18 +16,13 @@
 		EditSaleModal,
 		PaymentForm,
 		PaymentsTable,
-		SaleBalanceCards,
 		SaleItemsTable,
 		SaleMovementsSection
 	} from '$lib/components/sales';
 	import { ConfirmModal, PageHeader, SaleStatusBadge } from '$lib/components/ui';
-	import {
-		computeSnapshotTaxBreakdown,
-		getSnapshotTaxLabel
-	} from '$lib/components/sales/saleItemHelpers';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
-	import { RefundStatus, SaleStatus, UserRole } from '$lib/shared/enums';
+	import { RefundStatus, SaleStatus, UserRole, getSaleStatusLabel } from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import { markAsInProgress, markAsCompleted } from '$lib/remote/sales.remote';
@@ -39,7 +31,7 @@
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
 	import { toast } from 'svelte-sonner';
-	import { tick, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 
 	let { data } = $props();
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
@@ -50,7 +42,6 @@
 	const bcvRate = $derived(store.bcvRate);
 	let showCancelModal = $state(false);
 	let showEditModal = $state(false);
-	let showPaymentComposer = $state(false);
 
 	// State transition confirmations
 	let showInProgressConfirm = $state(false);
@@ -83,8 +74,6 @@
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
 	);
-	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate));
-	let taxLabel = $derived(getSnapshotTaxLabel(sale.snapshotTaxRate));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
 	);
@@ -106,14 +95,6 @@
 		return sale.customer?.idNumber ?? 'Documento no registrado';
 	}
 
-	function actionButtonClasses(variant: 'neutral' | 'danger'): string {
-		if (variant === 'danger') {
-			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
-		}
-
-		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
-	}
-
 	function refundCardClasses(): string {
 		if (sale.refundStatus === RefundStatus.REFUNDED) {
 			return 'bg-error-container/70 text-on-error-container';
@@ -133,13 +114,11 @@
 	}
 
 	async function handleCancelSuccess() {
-		showPaymentComposer = false;
 		await invalidateAll();
 		syncFromData();
 	}
 
 	async function handlePaymentAdded(_newPaidAmount: number) {
-		showPaymentComposer = false;
 		await invalidateAll();
 		syncFromData();
 	}
@@ -173,18 +152,6 @@
 			behavior: 'smooth',
 			block: 'start'
 		});
-	}
-
-	async function togglePaymentComposer(forceOpen?: boolean) {
-		showPaymentComposer = forceOpen ?? !showPaymentComposer;
-
-		if (showPaymentComposer) {
-			await tick();
-			document.getElementById('payment-composer')?.scrollIntoView({
-				behavior: 'smooth',
-				block: 'start'
-			});
-		}
 	}
 
 	async function handleMarkInProgress() {
@@ -242,361 +209,336 @@
 	<title>Venta {formattedOrderNumber} - {customerName()} - Optikt</title>
 </svelte:head>
 
-<div class="space-y-6 p-6">
-	<PageHeader
-		title={`Venta ${formattedOrderNumber}`}
-		subtitle="Detalle de venta"
-		backLabel="Volver a Ventas"
-		backOnClick={goBack}
-	>
-		{#snippet actions()}
-			{#if canPrintReceipt}
-				<button
-					type="button"
-					onclick={openPrintView}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<FileText class="h-4 w-4" />
-					Ver recibo
-				</button>
-
-				<button
-					type="button"
-					onclick={openPdfReceipt}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Printer class="h-4 w-4" />
-					Imprimir PDF
-				</button>
-			{/if}
-
-			<button
-				type="button"
-				onclick={scrollToHistory}
-				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-					'neutral'
-				)}"
-			>
-				<History class="h-4 w-4" />
-				Ver historial
-			</button>
-
-			{#if canManageSale && (isPending || isInProgress)}
-				<button
-					type="button"
-					onclick={() => (showEditModal = true)}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Pen class="h-4 w-4" />
-					Editar venta
-				</button>
-			{/if}
-
-			{#if isPending && isAdmin}
-				<button
-					type="button"
-					onclick={() => {
-						transitionReason = '';
-						showInProgressConfirm = true;
-					}}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Play class="h-4 w-4" />
-					En Progreso
-				</button>
-			{/if}
-
-			{#if isInProgress && canManageSale}
-				<button
-					type="button"
-					onclick={() => {
-						transitionReason = '';
-						showCompletedConfirm = true;
-					}}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<CheckCircle2 class="h-4 w-4" />
-					Completar
-				</button>
-			{/if}
-
-			{#if canManageSale && (isPending || isInProgress)}
-				<button
-					type="button"
-					onclick={() => (showCancelModal = true)}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'danger'
-					)}"
-				>
-					<CircleX class="h-4 w-4" />
-					Cancelar venta
-				</button>
-			{/if}
-		{/snippet}
-	</PageHeader>
-
-	<div class="-mt-2 flex flex-wrap items-center gap-3 text-on-surface-variant">
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+<div class="min-h-screen bg-gray-100">
+	<div class="mx-auto max-w-7xl px-8 py-8">
+		<PageHeader
+			title={`Venta ${formattedOrderNumber}`}
+			subtitle="Detalle de venta"
+			backLabel="Volver a Ventas"
+			backOnClick={goBack}
 		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Orden</span>
-			<span class="font-mono text-sm font-semibold text-brand-navy">{formattedOrderNumber}</span>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Cliente</span>
-			<span class="font-semibold text-brand-navy">{customerName()}</span>
-			<span class="font-mono text-sm text-outline">{customerIdNumber()}</span>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Fecha</span>
-			<span class="font-semibold text-brand-navy"
-				>{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}</span
-			>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Vendedor</span>
-			<span class="font-semibold text-brand-navy">{sale.seller?.fullName ?? 'Sin asignar'}</span>
-		</div>
-		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
-			<SaleStatusBadge status={sale.status} />
-		</div>
-	</div>
+			{#snippet actions()}
+				{#if canPrintReceipt}
+					<button
+						type="button"
+						onclick={openPrintView}
+						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+					>
+						<FileText class="h-4 w-4" />
+						Ver recibo
+					</button>
 
-	{#if sale.notes || isCancelled}
-		<div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.95fr)]">
-			{#if sale.notes}
-				<section class="rounded-[1.5rem] bg-surface-container-low p-6">
-					<div class="flex items-start gap-3">
-						<div
-							class="flex h-11 w-11 items-center justify-center rounded-xl bg-info-container text-on-info-container"
-						>
-							<FileText class="h-5 w-5" />
-						</div>
-						<div>
-							<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-								Observaciones
-							</p>
-							<p class="mt-2 text-base leading-relaxed whitespace-pre-wrap text-on-surface">
-								{sale.notes}
-							</p>
-						</div>
-					</div>
-				</section>
-			{/if}
+					<button
+						type="button"
+						onclick={openPdfReceipt}
+						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+					>
+						<Printer class="h-4 w-4" />
+						Imprimir PDF
+					</button>
+				{/if}
 
-			{#if isCancelled}
-				<section class="rounded-[1.5rem] p-6 {refundCardClasses()}">
-					<div class="flex items-start gap-3">
-						<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/30">
-							<CircleX class="h-5 w-5" />
-						</div>
-						<div class="space-y-3">
+				<button
+					type="button"
+					onclick={scrollToHistory}
+					class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+				>
+					<History class="h-4 w-4" />
+					Historial
+				</button>
+
+				{#if canManageSale && (isPending || isInProgress)}
+					<button
+						type="button"
+						onclick={() => (showEditModal = true)}
+						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+					>
+						<Pen class="h-4 w-4" />
+						Editar
+					</button>
+				{/if}
+
+				{#if isPending && isAdmin}
+					<button
+						type="button"
+						onclick={() => {
+							transitionReason = '';
+							showInProgressConfirm = true;
+						}}
+						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+					>
+						<Play class="h-4 w-4" />
+						En Progreso
+					</button>
+				{/if}
+
+				{#if isInProgress && canManageSale}
+					<button
+						type="button"
+						onclick={() => {
+							transitionReason = '';
+							showCompletedConfirm = true;
+						}}
+						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+					>
+						<CheckCircle2 class="h-4 w-4" />
+						Completar
+					</button>
+				{/if}
+
+				{#if canManageSale && (isPending || isInProgress)}
+					<button
+						type="button"
+						onclick={() => (showCancelModal = true)}
+						class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-red-600 uppercase shadow-sm transition-colors hover:bg-red-100"
+					>
+						<CircleX class="h-4 w-4" />
+						Cancelar
+					</button>
+				{/if}
+			{/snippet}
+		</PageHeader>
+
+		<!-- Info chips row -->
+		<div class="-mt-1 mb-6 flex flex-wrap items-center gap-2">
+			<div class="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
+				<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Orden</span>
+				<span class="font-mono text-sm font-semibold text-gray-900">{formattedOrderNumber}</span>
+			</div>
+			<div class="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
+				<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Cliente</span
+				>
+				<span class="text-sm font-semibold text-gray-900">{customerName()}</span>
+				<span class="font-mono text-xs text-gray-400">{customerIdNumber()}</span>
+			</div>
+			<div class="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
+				<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Fecha</span>
+				<span class="text-sm font-semibold text-gray-900"
+					>{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}</span
+				>
+			</div>
+			<div class="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
+				<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+					>Vendedor</span
+				>
+				<span class="text-sm font-semibold text-gray-900"
+					>{sale.seller?.fullName ?? 'Sin asignar'}</span
+				>
+			</div>
+			<div class="inline-flex items-center rounded-lg bg-white px-3 py-2 shadow-sm">
+				{#if sale.status === 'IN_PROGRESS'}
+					<span
+						class="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-blue-700 uppercase"
+					>
+						{getSaleStatusLabel(sale.status)}
+					</span>
+				{:else}
+					<SaleStatusBadge status={sale.status} />
+				{/if}
+			</div>
+		</div>
+
+		{#if sale.notes || isCancelled}
+			<div class="mb-6 grid gap-4 lg:grid-cols-2">
+				{#if sale.notes}
+					<section class="rounded-xl bg-white px-5 py-4 shadow-sm">
+						<div class="flex items-start gap-3">
+							<div
+								class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600"
+							>
+								<FileText class="h-5 w-5" />
+							</div>
 							<div>
-								<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">
-									Estado de cancelación
+								<p class="text-[11px] font-semibold tracking-[0.14em] text-gray-400 uppercase">
+									Observaciones
 								</p>
-								<h2 class="mt-2 text-2xl font-semibold text-current">{refundDecisionTitle()}</h2>
-								<p class="mt-1 text-sm leading-relaxed text-current/80">
-									{sale.cancellationReason ?? 'Sin motivo registrado'}
+								<p class="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+									{sale.notes}
 								</p>
 							</div>
+						</div>
+					</section>
+				{/if}
 
-							<div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-current/85">
-								{#if sale.cancelledAt}
-									<span
-										>{formatDate(sale.cancelledAt, {
-											dateStyle: 'medium',
-											timeStyle: 'short'
-										})}</span
-									>
-								{/if}
-								{#if sale.cancelledBy}
-									<span>Por: {sale.cancelledBy.fullName}</span>
-								{/if}
+				{#if isCancelled}
+					<section class="rounded-xl p-5 shadow-sm {refundCardClasses()}">
+						<div class="flex items-start gap-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/30">
+								<CircleX class="h-5 w-5" />
 							</div>
+							<div class="space-y-3">
+								<div>
+									<p class="text-[11px] font-semibold tracking-[0.14em] uppercase opacity-70">
+										Estado de cancelación
+									</p>
+									<h2 class="mt-1.5 text-xl font-semibold text-current">{refundDecisionTitle()}</h2>
+									<p class="mt-1 text-sm leading-relaxed text-current/80">
+										{sale.cancellationReason ?? 'Sin motivo registrado'}
+									</p>
+								</div>
 
-							{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
-								<div class="rounded-2xl bg-white/30 px-4 py-3 text-sm">
-									<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">
-										Resolución financiera
-									</p>
-									<p class="mt-1 font-mono text-lg font-semibold text-current">
-										{formatPrice(sale.refundAmount ?? 0)}
-									</p>
-									{#if sale.refundNotes}
-										<p class="mt-1 text-sm whitespace-pre-wrap text-current/80">
-											{sale.refundNotes}
-										</p>
+								<div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-current/85">
+									{#if sale.cancelledAt}
+										<span
+											>{formatDate(sale.cancelledAt, {
+												dateStyle: 'medium',
+												timeStyle: 'short'
+											})}</span
+										>
+									{/if}
+									{#if sale.cancelledBy}
+										<span>Por: {sale.cancelledBy.fullName}</span>
 									{/if}
 								</div>
-							{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
-								<div class="rounded-2xl bg-white/30 px-4 py-3 text-sm text-current/85">
-									Sin pagos previos, no aplica reembolso.
-								</div>
-							{/if}
+
+								{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
+									<div class="rounded-xl bg-white/30 px-4 py-3 text-sm">
+										<p class="text-[11px] font-semibold tracking-[0.14em] uppercase opacity-70">
+											Resolución financiera
+										</p>
+										<p class="mt-1 font-mono text-lg font-semibold text-current">
+											{formatPrice(sale.refundAmount ?? 0)}
+										</p>
+										{#if sale.refundNotes}
+											<p class="mt-1 text-sm whitespace-pre-wrap text-current/80">
+												{sale.refundNotes}
+											</p>
+										{/if}
+									</div>
+								{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
+									<div class="rounded-xl bg-white/30 px-4 py-3 text-sm text-current/85">
+										Sin pagos previos, no aplica reembolso.
+									</div>
+								{/if}
+							</div>
 						</div>
-					</div>
-				</section>
-			{/if}
-		</div>
-	{/if}
+					</section>
+				{/if}
+			</div>
+		{/if}
 
-	{#if pendingFreeItemCount > 0}
-		<div class="rounded-[1.25rem] border border-amber-200 bg-amber-50 px-5 py-4">
-			<p class="text-sm font-semibold text-amber-800">
-				⚠ Esta venta tiene {pendingFreeItemCount}
-				{pendingFreeItemCount === 1 ? 'ítem libre pendiente' : 'ítems libres pendientes'} de completar.
-			</p>
-			<p class="mt-1 text-xs text-amber-700">
-				Los reportes de margen estarán incompletos hasta que se registren los costos.
-			</p>
-		</div>
-	{/if}
+		{#if pendingFreeItemCount > 0}
+			<div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+				<p class="text-sm font-semibold text-amber-800">
+					⚠ {pendingFreeItemCount}
+					{pendingFreeItemCount === 1 ? 'ítem libre pendiente' : 'ítems libres pendientes'} de completar.
+				</p>
+			</div>
+		{/if}
 
-	<SaleItemsTable
-		{items}
-		subtotal={sale.subtotal}
-		allowCostEdit={canAct}
-		suppliers={data.suppliers}
-		onCostsUpdated={async () => {
-			await invalidateAll();
-			syncFromData();
-		}}
-	/>
-
-	<SaleBalanceCards
-		subtotal={sale.subtotal}
-		total={sale.total}
-		discountType={sale.discountType}
-		discount={sale.discount}
-		paidAmountBcvUsd={sale.paidAmountBcvUsd}
-		{remainingBcvUsd}
-		{paymentProgressPercent}
-		paymentsCount={payments.length}
-		{taxBreakdown}
-		{taxLabel}
-		{isCancelled}
-		{isCompleted}
-		refundStatus={sale.refundStatus}
-		refundAmount={sale.refundAmount}
-		refundDecisionTitle={refundDecisionTitle()}
-	/>
-
-	<section id="sale-history" class="space-y-4" use:autoAnimate>
-		<div class="glass-card overflow-hidden">
+		<!-- Grid: right column first for mobile -->
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+			<!-- Right column (first DOM → on top on mobile, right on desktop) -->
 			<div
-				class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
+				class="space-y-6 lg:sticky lg:top-8 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:self-start"
 			>
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-					>
-						<Wallet class="h-5 w-5" />
-					</div>
-					<div>
-						<h2 class="text-xl font-semibold text-brand-navy">Historial de pagos</h2>
-						<p class="text-sm text-on-surface-variant">
-							Registro cronológico de abonos y anulaciones.
-						</p>
-					</div>
-				</div>
-			</div>
-
-			<div class="px-6 pb-6">
-				<PaymentsTable
-					{payments}
-					saleId={sale.id}
-					allowVoid={canManageSale && (isPending || isInProgress)}
-					onPaymentVoided={handlePaymentVoided}
-				/>
-			</div>
-		</div>
-
-		{#if showPaymentForm}
-			<section class="glass-card overflow-hidden">
-				<div
-					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 lg:flex-row lg:items-start lg:justify-between"
-				>
-					<div>
-						<h2 class="text-xl font-semibold text-brand-navy">Registrar pago</h2>
-						<p class="mt-1 max-w-2xl text-sm text-on-surface-variant">
-							Selecciona el método y edita cualquiera de los dos montos; el otro se recalcula
-							automáticamente.
-						</p>
-					</div>
-
-					<div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-						<div
-							class="rounded-xl px-4 py-3 text-sm {remainingBcvUsd > 0.01
-								? 'bg-brand-navy text-white'
-								: 'bg-success-container text-on-success-container'}"
-						>
-							<p
-								class="text-xs font-semibold tracking-[0.14em] uppercase {remainingBcvUsd > 0.01
-									? 'text-white/68'
-									: 'text-on-success-container/70'}"
+				<div class="rounded-xl bg-white p-6 shadow-sm">
+					<div class="space-y-4">
+						<div class="flex items-center justify-between">
+							<span class="text-xs text-gray-400">Total deuda</span>
+							<span class="font-mono text-lg font-bold text-gray-900"
+								>{formatPrice(sale.total)}</span
 							>
-								Pendiente actual
+						</div>
+						<div class="flex items-center justify-between">
+							<span class="text-xs text-gray-400">Total pagado</span>
+							<span class="font-mono text-lg font-bold text-emerald-600"
+								>{formatPrice(sale.paidAmountBcvUsd)}</span
+							>
+						</div>
+						<div class="border-t border-gray-100 pt-4">
+							<p class="mb-1 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+								Saldo pendiente
 							</p>
-							<p class="mt-1 font-mono text-xl font-semibold">
+							<p class="font-mono text-4xl font-bold text-amber-600">
 								{formatPrice(remainingBcvUsd)}
 							</p>
 						</div>
-						<button
-							type="button"
-							onclick={() => togglePaymentComposer()}
-							class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition-colors hover:bg-brand-gold-dark"
-						>
-							{#if showPaymentComposer}
-								<ChevronUp class="h-4 w-4" />
-								Ocultar formulario
-							{:else}
-								<ChevronDown class="h-4 w-4" />
-								Registrar abono
-							{/if}
-						</button>
+						{#if remainingBcvUsd > 0.01}
+							<div class="h-1.5 rounded-full bg-amber-100">
+								<div
+									class="h-full rounded-full bg-amber-400"
+									style={`width: ${paymentProgressPercent}%`}
+								></div>
+							</div>
+							<div class="flex items-center justify-between text-[11px] text-amber-600">
+								<span>{formatPrice(sale.paidAmountBcvUsd)} cubierto</span>
+								<span>{paymentProgressPercent.toFixed(0)}%</span>
+							</div>
+						{/if}
+						{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
+							<p class="text-xs text-gray-500">
+								{refundDecisionTitle()} por
+								<span class="font-mono font-semibold">{formatPrice(sale.refundAmount ?? 0)}</span>
+							</p>
+						{/if}
 					</div>
 				</div>
 
-				{#if showPaymentComposer}
-					<div class="px-6 pt-6 pb-6">
-						<div id="payment-composer" class="rounded-[1.5rem] bg-surface-container-lowest p-5">
-							<PaymentForm
+				{#if showPaymentForm}
+					<div class="rounded-xl bg-white p-6 shadow-sm">
+						<PaymentForm
+							saleId={sale.id}
+							{remainingBcvUsd}
+							{bcvRate}
+							onPaymentAdded={handlePaymentAdded}
+						/>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Left column (second DOM → below on mobile, left on desktop) -->
+			<div class="space-y-6 lg:col-span-2 lg:col-start-1 lg:row-start-1">
+				<SaleItemsTable
+					{items}
+					subtotal={sale.subtotal}
+					allowCostEdit={canAct}
+					suppliers={data.suppliers}
+					onCostsUpdated={async () => {
+						await invalidateAll();
+						syncFromData();
+					}}
+				/>
+
+				<section id="sale-history">
+					<div class="rounded-xl bg-white shadow-sm">
+						<div
+							class="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
+						>
+							<div class="flex items-center gap-3">
+								<div
+									class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-brand-navy"
+								>
+									<Wallet class="h-5 w-5" />
+								</div>
+								<div>
+									<h2 class="text-base font-semibold text-gray-900">Historial de pagos</h2>
+									<p class="text-xs text-gray-500">Registro cronológico de abonos y anulaciones.</p>
+								</div>
+							</div>
+						</div>
+
+						<div class="px-5 pb-5">
+							<PaymentsTable
+								{payments}
 								saleId={sale.id}
-								{remainingBcvUsd}
-								{bcvRate}
-								onPaymentAdded={handlePaymentAdded}
+								allowVoid={canManageSale && (isPending || isInProgress)}
+								onPaymentVoided={handlePaymentVoided}
 							/>
 						</div>
 					</div>
-				{/if}
-			</section>
+				</section>
+
+				<SaleMovementsSection {movements} />
+			</div>
+		</div>
+
+		{#if lastUpdatedLabel}
+			<footer class="mt-8 border-t border-gray-200 pt-4 text-xs text-gray-400 italic">
+				Última actualización registrada {lastUpdatedLabel}
+			</footer>
 		{/if}
-	</section>
-
-	<SaleMovementsSection {movements} />
-
-	{#if lastUpdatedLabel}
-		<footer class="border-t border-surface-container-high pt-6 text-sm text-outline italic">
-			Última actualización registrada {lastUpdatedLabel}
-		</footer>
-	{/if}
+	</div>
 </div>
 
 <EditSaleModal

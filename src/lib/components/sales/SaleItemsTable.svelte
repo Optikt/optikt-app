@@ -1,27 +1,17 @@
 <script lang="ts">
-	import {
-		Check,
-		Eye,
-		FlaskConical,
-		Package,
-		Pencil,
-		ShoppingCart,
-		Sparkles,
-		Truck,
-		X
-	} from '@lucide/svelte';
+	import { Check, Eye, FlaskConical, Package, Pencil, Sparkles, Truck, X } from '@lucide/svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import {
 		SaleItemType,
 		FreeItemCategory,
-		FreeItemEnrichmentStatus,
-		getFreeItemCategoryLabel
+		FreeItemEnrichmentStatus
 	} from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
 	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
-	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
+	import { hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
 	import { buildPersistedDisplayGroups } from './saleItemHelpers';
 
 	interface DisplayGroup {
@@ -61,6 +51,9 @@
 	let enrichIsReEnriching = $state(false);
 	let enrichConfirming = $state(false);
 
+	// Expanded prescription panels
+	let expandedItems = new SvelteMap<string, boolean>();
+
 	let supplierMap = $derived(new Map(suppliers.map((s) => [s.id, s.name])));
 
 	let mainItems = $derived(items.filter((item) => item.itemType !== SaleItemType.TREATMENT));
@@ -75,6 +68,14 @@
 		)
 	);
 
+	function toggleExpanded(key: string) {
+		expandedItems.set(key, !expandedItems.get(key));
+	}
+
+	function isExpanded(key: string): boolean {
+		return expandedItems.get(key) ?? false;
+	}
+
 	function itemLabel(group: DisplayGroup): string {
 		if (group.item.itemType === SaleItemType.FREE_ITEM) {
 			return group.item.freeDetails?.description ?? 'Ítem libre';
@@ -87,21 +88,51 @@
 		);
 	}
 
-	function itemTypeLabel(item: SaleItemWithDetails): string {
-		if (item.itemType === SaleItemType.LENS_PAIR) return 'Cristal';
-		if (item.itemType === SaleItemType.FREE_ITEM) return 'Ítem Libre';
-		return 'Producto';
+	function splitItemName(group: DisplayGroup): { principal: string; details: string } {
+		const name = itemLabel(group);
+		const parts = name.split('·').map((s) => s.trim());
+		if (parts.length > 1) {
+			return { principal: parts[0], details: parts.slice(1).join(' · ') };
+		}
+		const sku = group.item.snapshotSku ?? group.item.product?.sku;
+		if (sku) {
+			return { principal: name, details: sku };
+		}
+		return { principal: name, details: '' };
 	}
 
-	function itemTypeClasses(item: SaleItemWithDetails): string {
-		if (item.itemType === SaleItemType.LENS_PAIR) {
-			return 'bg-info-container text-on-info-container';
+	function itemBadge(itemType: string): { label: string; classes: string } {
+		if (itemType === SaleItemType.LENS_PAIR) {
+			return {
+				label: 'CRISTAL',
+				classes: 'text-amber-700 bg-amber-100 border-amber-200'
+			};
 		}
-		if (item.itemType === SaleItemType.FREE_ITEM) {
-			return 'bg-amber-100 text-amber-700';
+		if (itemType === SaleItemType.FREE_ITEM) {
+			return {
+				label: 'ÍTEM LIBRE',
+				classes: 'text-gray-600 bg-gray-100 border-gray-200'
+			};
 		}
+		return {
+			label: 'MONTURA',
+			classes: 'text-indigo-700 bg-indigo-50 border-indigo-100'
+		};
+	}
 
-		return 'bg-surface-container-high text-on-surface-variant';
+	function iconContainerClasses(itemType: string): string {
+		if (itemType === SaleItemType.LENS_PAIR) {
+			return 'bg-amber-100 border-amber-200 text-amber-700';
+		}
+		if (itemType === SaleItemType.FREE_ITEM) {
+			return 'bg-gray-100 border-gray-200 text-gray-500';
+		}
+		return 'bg-indigo-50 border-indigo-100 text-indigo-600';
+	}
+
+	function rowHoverClasses(itemType: string): string {
+		if (itemType === SaleItemType.LENS_PAIR) return 'hover:bg-amber-50/30';
+		return 'hover:bg-gray-50/50';
 	}
 
 	function startEnrich(item: SaleItemWithDetails, isReEnriching = false) {
@@ -133,7 +164,6 @@
 			toast.error('El costo real debe ser mayor a 0');
 			return;
 		}
-		// Re-enriching requires an extra confirmation step
 		if (enrichIsReEnriching && !enrichConfirming) {
 			enrichConfirming = true;
 			return;
@@ -168,15 +198,10 @@
 		}
 	}
 
-	// ── Total internal cost ──────────────────────────────────────────────
-	// Use displayGroups so that lens pairs (OD + OI) are counted only once.
-	// snapshotBaseCost = pairPurchasePrice is stored on each eye item, so
-	// iterating raw items would double-count when both eyes are enabled.
 	let totalInternalCost = $derived.by(() => {
 		let total = 0;
 		for (const group of displayGroups) {
 			if (group.item.itemType === SaleItemType.FREE_ITEM) {
-				// Only count enriched free items with known costs
 				if (group.item.freeDetails?.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED) {
 					total += (group.item.freeDetails.unitCost ?? 0) * group.quantity;
 				}
@@ -209,7 +234,6 @@
 		)
 	);
 
-	// ── Edit helpers ─────────────────────────────────────────────────────
 	function startEdit(item: SaleItemWithDetails) {
 		if (!allowCostEdit) return;
 
@@ -249,435 +273,476 @@
 			saving = false;
 		}
 	}
+
+	function handleRowKeydown(e: KeyboardEvent, key: string) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			toggleExpanded(key);
+		}
+	}
+
+	function prescriptionValue(val: number | null | undefined): string {
+		return val != null ? String(val) : '—';
+	}
 </script>
 
-<section class="glass-card overflow-hidden">
-	<div
-		class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-	>
-		<div class="flex items-center gap-3">
-			<div
-				class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-			>
-				<ShoppingCart class="h-5 w-5" />
-			</div>
-			<div>
-				<h2 class="text-xl font-semibold text-brand-navy">Artículos y servicios</h2>
-				<p class="text-sm text-on-surface-variant">
-					{displayGroups.length} línea{displayGroups.length !== 1 ? 's' : ''} principal{displayGroups.length !==
-					1
-						? 'es'
-						: ''}
-				</p>
-			</div>
-		</div>
+<section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+	<div class="flex items-center justify-between border-b border-gray-200 bg-gray-50/50 px-5 py-3.5">
+		<h3 class="text-sm font-bold tracking-tight text-gray-800">Artículos y servicios</h3>
+		<span
+			class="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs font-medium text-gray-400"
+		>
+			{displayGroups.length} item{displayGroups.length !== 1 ? 's' : ''}
+		</span>
 	</div>
 
-	<div class="overflow-x-auto">
-		<table class="w-full min-w-[880px] text-sm">
-			<thead class="bg-surface-container-low text-left">
-				<tr>
-					<th class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Artículo</th
-					>
-					<th class="px-6 py-4 text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Tipo</th
-					>
-					<th
-						class="px-6 py-4 text-center text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Cant.</th
-					>
-					<th
-						class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Precio unit.</th
-					>
-					<th
-						class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Desc.</th
-					>
-					<th
-						class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>Subtotal</th
-					>
-				</tr>
-			</thead>
-			<tbody class="divide-y divide-surface-container-low">
-				{#each displayGroups as group (group.key)}
-					{@const odSummary = formatPrescriptionEye(group.item, 'od')}
-					{@const osSummary = formatPrescriptionEye(group.item, 'os')}
-					<tr
-						class="bg-surface-container-lowest transition-colors hover:bg-surface-container-low/35"
-					>
-						<td class="px-6 py-5 align-top">
-							<div class="flex items-start gap-4">
-								<div
-									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {group.item
-										.itemType === SaleItemType.LENS_PAIR
-										? 'bg-info-container text-on-info-container'
-										: group.item.itemType === SaleItemType.FREE_ITEM
-											? 'bg-amber-100 text-amber-600'
-											: 'bg-surface-container-low text-on-surface-variant'}"
+	<div
+		class="grid grid-cols-[1fr_70px_110px_130px] gap-2 border-b border-gray-200 bg-gray-50/30 px-5 py-2.5 text-[11px] font-semibold tracking-wider text-gray-500 uppercase"
+	>
+		<span>Producto</span>
+		<span class="text-center">Cant.</span>
+		<span class="text-right">Precio</span>
+		<span class="text-right">Total</span>
+	</div>
+
+	<div class="divide-y divide-gray-100">
+		{#each displayGroups as group (group.key)}
+			{@const isLens = group.item.itemType === SaleItemType.LENS_PAIR}
+			{@const hasRx = isLens && hasPrescriptionSnapshot(group.item)}
+			{@const badge = itemBadge(group.item.itemType)}
+			{@const iconCls = iconContainerClasses(group.item.itemType)}
+			{@const hoverCls = rowHoverClasses(group.item.itemType)}
+			{@const nameParts = splitItemName(group)}
+			<div>
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+				<div
+					class="grid grid-cols-[1fr_70px_110px_130px] items-center gap-2 px-5 py-4 {hasRx
+						? `cursor-pointer ${hoverCls} transition-colors`
+						: hoverCls}"
+					onclick={hasRx ? () => toggleExpanded(group.key) : undefined}
+					role={hasRx ? 'button' : undefined}
+					tabindex={hasRx ? 0 : undefined}
+					onkeydown={hasRx ? (e) => handleRowKeydown(e, group.key) : undefined}
+				>
+					<div class="flex min-w-0 items-center gap-3">
+						<div
+							class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border {iconCls}"
+						>
+							{#if isLens}
+								<Eye class="h-4 w-4" />
+							{:else if group.item.itemType === SaleItemType.FREE_ITEM}
+								<Sparkles class="h-4 w-4" />
+							{:else}
+								<Package class="h-4 w-4" />
+							{/if}
+						</div>
+						<div class="min-w-0">
+							<div class="flex items-center gap-2">
+								<p class="truncate text-sm font-semibold text-gray-900">
+									{nameParts.principal}
+								</p>
+								<span
+									class="flex-shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase {badge.classes}"
 								>
-									{#if group.item.itemType === SaleItemType.LENS_PAIR}
-										<Eye class="h-5 w-5" />
-									{:else if group.item.itemType === SaleItemType.FREE_ITEM}
-										<Sparkles class="h-5 w-5" />
-									{:else}
-										<Package class="h-5 w-5" />
-									{/if}
-								</div>
-								<div>
-									<p class="text-lg leading-tight font-semibold text-brand-navy">
-										{itemLabel(group)}
-									</p>
-									<div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-outline">
-										{#if group.item.itemType === SaleItemType.FREE_ITEM && group.item.freeDetails}
-											<span
-												class="rounded-full bg-surface-container-high px-2 py-0.5 font-semibold text-on-surface-variant"
+									{badge.label}
+								</span>
+							</div>
+							<div class="mt-0.5 flex flex-wrap items-center gap-1.5">
+								{#if nameParts.details}
+									<span class="truncate text-xs text-gray-400">{nameParts.details}</span>
+								{/if}
+								{#if group.discountAmount > 0}
+									<span class="text-[11px] text-red-500">
+										-{formatPrice(group.discountAmount)}
+										{#if group.item.discountType === DiscountType.PERCENTAGE}
+											({group.item.discount}%)
+										{/if}
+									</span>
+								{/if}
+							</div>
+
+							{#if group.item.itemType === SaleItemType.FREE_ITEM && group.item.freeDetails}
+								{@const fd = group.item.freeDetails}
+								{#if fd.enrichmentStatus === FreeItemEnrichmentStatus.PENDING}
+									<div
+										class="mt-2 rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
+									>
+										<p class="font-semibold">⚠ Pendiente de completar</p>
+										<p class="mt-0.5 text-on-surface-variant">
+											Costo y proveedor no registrados aún
+										</p>
+										{#if allowCostEdit}
+											<button
+												type="button"
+												onclick={() => startEnrich(group.item)}
+												class="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
 											>
-												{getFreeItemCategoryLabel(group.item.freeDetails.category)}
-											</span>
-										{:else}
-											{#if group.item.snapshotSku ?? group.item.product?.sku}
-												<span class="font-mono"
-													>{group.item.snapshotSku ?? group.item.product?.sku}</span
-												>
-											{/if}
-											{#if group.item.snapshotCostUnit != null}
-												<span class="font-mono">
-													Costo {formatPrice(group.item.snapshotCostUnit)}
-													{#if group.item.snapshotLotsCount != null && group.item.snapshotLotsCount > 1}
-														· {group.item.snapshotLotsCount} lotes
-													{/if}
-												</span>
-											{/if}
+												Completar ítem →
+											</button>
 										{/if}
 									</div>
-									{#if group.item.itemType === SaleItemType.FREE_ITEM && group.item.freeDetails}
-										{@const fd = group.item.freeDetails}
-										{#if fd.enrichmentStatus === FreeItemEnrichmentStatus.PENDING}
-											<div
-												class="mt-2 rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
-											>
-												<p class="font-semibold">⚠ Pendiente de completar</p>
-												<p class="mt-0.5 text-on-surface-variant">
-													Costo y proveedor no registrados aún
-												</p>
-												{#if allowCostEdit}
-													<button
-														type="button"
-														onclick={() => startEnrich(group.item)}
-														class="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-700"
-													>
-														Completar ítem →
-													</button>
-												{/if}
-											</div>
-										{:else if fd.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED}
-											<div class="mt-2 space-y-0.5 text-xs text-on-surface-variant">
-												<div class="flex items-center justify-between gap-2">
-													<p class="font-semibold text-green-700">✓ Completado</p>
-													{#if allowCostEdit}
-														<button
-															type="button"
-															onclick={() => startEnrich(group.item, true)}
-															class="inline-flex items-center gap-1 rounded-lg bg-surface-container-high px-2 py-1 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-highest"
-														>
-															<Pencil size={11} />
-															Editar
-														</button>
-													{/if}
-												</div>
-												{#if fd.unitCost != null}
-													<p>
-														Costo: <span class="font-mono font-semibold"
-															>{formatPrice(fd.unitCost)}</span
-														>
-														{#if fd.unitCost > 0}
-															· Margen: <span class="font-semibold"
-																>{Math.round(
-																	((group.item.unitPrice - fd.unitCost) / fd.unitCost) * 100
-																)}%</span
-															>
-														{/if}
-													</p>
-												{/if}
-												{#if fd.supplierId}
-													{@const supplierName = supplierMap.get(fd.supplierId)}
-													{#if supplierName}
-														<p>Proveedor: <span class="font-semibold">{supplierName}</span></p>
-													{/if}
-												{/if}
-												{#if fd.opticalNotes}
-													<p class="italic">{fd.opticalNotes}</p>
-												{/if}
-											</div>
-										{/if}
-									{/if}
-									{#if group.item.itemType === SaleItemType.LENS_PAIR && hasPrescriptionSnapshot(group.item) && (odSummary || osSummary)}
-										<div class="mt-2 space-y-1 text-xs text-on-surface-variant">
-											{#if odSummary}
-												<p class="font-mono">{odSummary}</p>
-											{/if}
-											{#if osSummary}
-												<p class="font-mono">{osSummary}</p>
-											{/if}
-										</div>
-									{/if}
-									{#if group.item.itemType === SaleItemType.LENS_PAIR && (group.item.snapshotBaseCost != null || group.item.snapshotMountingPrice != null || group.item.snapshotShippingPrice != null)}
-										{#if editingItemId === group.item.id}
-											<div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
-												<label class="flex items-center gap-1">
-													<span class="text-on-surface-variant">Cristales:</span>
-													<input
-														type="number"
-														step="0.01"
-														min="0"
-														bind:value={editBaseCost}
-														class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-													/>
-												</label>
-												<label class="flex items-center gap-1">
-													<span class="text-on-surface-variant">Montaje:</span>
-													<input
-														type="number"
-														step="0.01"
-														min="0"
-														bind:value={editMounting}
-														class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-													/>
-												</label>
-												{#if !editShippingPending}
-													<label class="flex items-center gap-1">
-														<span class="text-on-surface-variant">Envío:</span>
-														<input
-															type="number"
-															step="0.01"
-															min="0"
-															bind:value={editShipping}
-															class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-														/>
-													</label>
-												{/if}
-												<label class="flex items-center gap-1.5 text-on-surface-variant">
-													<input
-														type="checkbox"
-														bind:checked={editShippingPending}
-														class="h-3.5 w-3.5 rounded border-outline-variant accent-brand-blue"
-													/>
-													Envío pendiente
-												</label>
-												<div class="flex items-center gap-1">
-													<button
-														type="button"
-														onclick={saveEdit}
-														disabled={saving}
-														class="inline-flex items-center justify-center rounded-md bg-brand-blue p-1.5 text-white transition-colors hover:bg-brand-blue/80 disabled:opacity-50"
-														title="Guardar"
-													>
-														<Check class="h-3.5 w-3.5" />
-													</button>
-													<button
-														type="button"
-														onclick={cancelEdit}
-														disabled={saving}
-														class="inline-flex items-center justify-center rounded-md bg-surface-container-high p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest disabled:opacity-50"
-														title="Cancelar"
-													>
-														<X class="h-3.5 w-3.5" />
-													</button>
-												</div>
-											</div>
-										{:else}
-											{@const baseCost = group.item.snapshotBaseCost ?? 0}
-											{@const mounting = group.item.snapshotMountingPrice ?? 0}
-											{@const shipping = group.item.snapshotShippingPrice ?? 0}
-											{@const isPending = group.item.shippingCostPending ?? false}
-											{@const costTotal =
-												group.item.snapshotCostTotal ??
-												baseCost + mounting + (isPending ? 0 : shipping)}
-											<div
-												class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
-											>
-												<span
-													>Cristales: <span class="font-mono text-brand-navy"
-														>{formatPrice(baseCost)}</span
-													></span
-												>
-												{#if mounting > 0}
-													<span
-														>Montaje: <span class="font-mono text-brand-navy"
-															>{formatPrice(mounting)}</span
-														></span
-													>
-												{/if}
-												{#if isPending}
-													<span
-														class="inline-flex items-center gap-1 rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
-													>
-														<Truck class="h-3 w-3" />
-														Envío pendiente
-													</span>
-												{:else if shipping > 0}
-													<span
-														>Envío: <span class="font-mono text-brand-navy"
-															>{formatPrice(shipping)}</span
-														></span
-													>
-												{/if}
-												<span class="font-semibold"
-													>Total: <span class="font-mono text-brand-navy"
-														>{formatPrice(costTotal)}</span
-													></span
-												>
-												{#if allowCostEdit}
-													<button
-														type="button"
-														onclick={() => startEdit(group.item)}
-														class="inline-flex items-center justify-center rounded-md p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-navy"
-														title="Editar costos"
-													>
-														<Pencil class="h-3.5 w-3.5" />
-													</button>
-												{/if}
-											</div>
-										{/if}
-									{:else if group.item.itemType === SaleItemType.LENS_PAIR}
-										<div class="mt-2 flex items-center gap-2 text-xs text-outline">
-											<span>Sin costos registrados</span>
+								{:else if fd.enrichmentStatus === FreeItemEnrichmentStatus.ENRICHED}
+									<div class="mt-2 space-y-0.5 text-xs text-on-surface-variant">
+										<div class="flex items-center justify-between gap-2">
+											<p class="font-semibold text-green-700">✓ Completado</p>
 											{#if allowCostEdit}
 												<button
 													type="button"
-													onclick={() => startEdit(group.item)}
-													class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-brand-blue transition-colors hover:bg-surface-container-high"
+													onclick={() => startEnrich(group.item, true)}
+													class="inline-flex items-center gap-1 rounded-lg bg-surface-container-high px-2 py-1 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-highest"
 												>
-													<Pencil class="h-3 w-3" />
-													Agregar
+													<Pencil size={11} />
+													Editar
 												</button>
 											{/if}
 										</div>
+										{#if fd.unitCost != null}
+											<p>
+												Costo: <span class="font-mono font-semibold"
+													>{formatPrice(fd.unitCost)}</span
+												>
+												{#if fd.unitCost > 0}
+													· Margen: <span class="font-semibold"
+														>{Math.round(
+															((group.item.unitPrice - fd.unitCost) / fd.unitCost) * 100
+														)}%</span
+													>
+												{/if}
+											</p>
+										{/if}
+										{#if fd.supplierId}
+											{@const supplierName = supplierMap.get(fd.supplierId)}
+											{#if supplierName}
+												<p>Proveedor: <span class="font-semibold">{supplierName}</span></p>
+											{/if}
+										{/if}
+										{#if fd.opticalNotes}
+											<p class="italic">{fd.opticalNotes}</p>
+										{/if}
+									</div>
+								{/if}
+							{/if}
+
+							{#if isLens && (group.item.snapshotBaseCost != null || group.item.snapshotMountingPrice != null || group.item.snapshotShippingPrice != null)}
+								{#if editingItemId === group.item.id}
+									<div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+										<label class="flex items-center gap-1">
+											<span class="text-on-surface-variant">Cristales:</span>
+											<input
+												type="number"
+												step="0.01"
+												min="0"
+												bind:value={editBaseCost}
+												class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+											/>
+										</label>
+										<label class="flex items-center gap-1">
+											<span class="text-on-surface-variant">Montaje:</span>
+											<input
+												type="number"
+												step="0.01"
+												min="0"
+												bind:value={editMounting}
+												class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+											/>
+										</label>
+										{#if !editShippingPending}
+											<label class="flex items-center gap-1">
+												<span class="text-on-surface-variant">Envío:</span>
+												<input
+													type="number"
+													step="0.01"
+													min="0"
+													bind:value={editShipping}
+													class="w-20 rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+												/>
+											</label>
+										{/if}
+										<label class="flex items-center gap-1.5 text-on-surface-variant">
+											<input
+												type="checkbox"
+												bind:checked={editShippingPending}
+												class="h-3.5 w-3.5 rounded border-outline-variant accent-brand-blue"
+											/>
+											Envío pendiente
+										</label>
+										<div class="flex items-center gap-1">
+											<button
+												type="button"
+												onclick={saveEdit}
+												disabled={saving}
+												class="inline-flex items-center justify-center rounded-md bg-brand-blue p-1.5 text-white transition-colors hover:bg-brand-blue/80 disabled:opacity-50"
+												title="Guardar"
+											>
+												<Check class="h-3.5 w-3.5" />
+											</button>
+											<button
+												type="button"
+												onclick={cancelEdit}
+												disabled={saving}
+												class="inline-flex items-center justify-center rounded-md bg-surface-container-high p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-highest disabled:opacity-50"
+												title="Cancelar"
+											>
+												<X class="h-3.5 w-3.5" />
+											</button>
+										</div>
+									</div>
+								{:else}
+									{@const baseCost = group.item.snapshotBaseCost ?? 0}
+									{@const mounting = group.item.snapshotMountingPrice ?? 0}
+									{@const shipping = group.item.snapshotShippingPrice ?? 0}
+									{@const isPending = group.item.shippingCostPending ?? false}
+									{@const costTotal =
+										group.item.snapshotCostTotal ??
+										baseCost + mounting + (isPending ? 0 : shipping)}
+									<div
+										class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
+									>
+										<span
+											>Cristales: <span class="font-mono text-brand-navy"
+												>{formatPrice(baseCost)}</span
+											></span
+										>
+										{#if mounting > 0}
+											<span
+												>Montaje: <span class="font-mono text-brand-navy"
+													>{formatPrice(mounting)}</span
+												></span
+											>
+										{/if}
+										{#if isPending}
+											<span
+												class="inline-flex items-center gap-1 rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
+											>
+												<Truck class="h-3 w-3" />
+												Envío pendiente
+											</span>
+										{:else if shipping > 0}
+											<span
+												>Envío: <span class="font-mono text-brand-navy"
+													>{formatPrice(shipping)}</span
+												></span
+											>
+										{/if}
+										<span class="font-semibold"
+											>Total: <span class="font-mono text-brand-navy">{formatPrice(costTotal)}</span
+											></span
+										>
+										{#if allowCostEdit}
+											<button
+												type="button"
+												onclick={() => startEdit(group.item)}
+												class="inline-flex items-center justify-center rounded-md p-1 text-outline transition-colors hover:bg-surface-container-high hover:text-brand-navy"
+												title="Editar costos"
+											>
+												<Pencil class="h-3.5 w-3.5" />
+											</button>
+										{/if}
+									</div>
+								{/if}
+							{:else if isLens}
+								<div class="mt-2 flex items-center gap-2 text-xs text-outline">
+									<span>Sin costos registrados</span>
+									{#if allowCostEdit}
+										<button
+											type="button"
+											onclick={() => startEdit(group.item)}
+											class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-brand-blue transition-colors hover:bg-surface-container-high"
+										>
+											<Pencil class="h-3 w-3" />
+											Agregar
+										</button>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					</div>
+
+					<span class="text-center text-sm font-medium text-gray-700">{group.quantity}</span>
+					<span class="text-right text-sm text-gray-500">{formatPrice(group.item.unitPrice)}</span>
+					<div class="flex items-center justify-end gap-1.5">
+						<span class="text-sm font-bold text-gray-900">{formatPrice(group.lineTotal)}</span>
+						{#if hasRx}
+							<div
+								class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-gray-100"
+							>
+								<svg
+									class="h-3 w-3 text-gray-500 transition-transform duration-200"
+									class:rotate-180={isExpanded(group.key)}
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2.5"
+								>
+									<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+								</svg>
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				{#if hasRx}
+					<div
+						class="overflow-hidden transition-all duration-300 ease-in-out"
+						class:max-h-[500px]={isExpanded(group.key)}
+						class:opacity-100={isExpanded(group.key)}
+						class:max-h-0={!isExpanded(group.key)}
+						class:opacity-0={!isExpanded(group.key)}
+					>
+						<div class="px-5 pb-4">
+							<div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+								<div class="mb-3 flex items-center gap-2">
+									<div class="flex h-5 w-5 items-center justify-center rounded bg-slate-200">
+										<svg
+											class="h-3 w-3 text-slate-600"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="2"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+											/>
+										</svg>
+									</div>
+									<span class="text-xs font-bold tracking-widest text-slate-600 uppercase"
+										>Prescripción</span
+									>
+								</div>
+
+								<div class="grid grid-cols-[40px_repeat(5,minmax(50px,1fr))] gap-x-3 gap-y-2">
+									<div></div>
+									<span class="text-center text-[10px] font-bold text-slate-500">ESF</span>
+									<span class="text-center text-[10px] font-bold text-slate-500">CIL</span>
+									<span class="text-center text-[10px] font-bold text-slate-500">EJE</span>
+									<span class="text-center text-[10px] font-bold text-slate-500">ADD</span>
+									<span class="text-center text-[10px] font-bold text-slate-500">DIP</span>
+
+									<div class="flex items-center gap-1.5">
+										<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></span>
+										<span class="text-[11px] font-bold text-slate-600">OI</span>
+									</div>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osSphere)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osCylinder)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osAxis)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osAddition)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>—</span
+									>
+
+									<div class="flex items-center gap-1.5">
+										<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500"></span>
+										<span class="text-[11px] font-bold text-slate-600">OD</span>
+									</div>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.odSphere)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.odCylinder)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.odAxis)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.odAddition)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>—</span
+									>
+								</div>
+
+								<div class="mt-3 flex gap-6 border-t border-slate-200 pt-3 text-[11px]">
+									<span class="text-slate-500"
+										>Alt. Montaje OI: <strong class="font-mono text-slate-800">—</strong></span
+									>
+									<span class="text-slate-500"
+										>Alt. Montaje OD: <strong class="font-mono text-slate-800">—</strong></span
+									>
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				{#each group.treatments as treatment (treatment.id)}
+					<div
+						class="grid grid-cols-[1fr_70px_110px_130px] items-center gap-2 px-5 py-4 transition-colors hover:bg-gray-50/50"
+					>
+						<div class="flex min-w-0 items-center gap-3">
+							<div
+								class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-purple-100 bg-purple-50"
+							>
+								<FlaskConical class="h-4 w-4 text-purple-600" />
+							</div>
+							<div class="min-w-0">
+								<p class="truncate text-sm font-semibold text-gray-900">
+									{treatment.supplierTreatment?.name ?? 'Tratamiento'}
+								</p>
+								<div class="mt-0.5 flex flex-wrap items-center gap-1.5">
+									<span
+										class="inline-flex items-center rounded border border-purple-100 bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-purple-700 uppercase"
+									>
+										Tratamiento
+									</span>
+									{#if treatment.supplierTreatment?.category}
+										<span class="text-xs text-gray-400">
+											{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}
+										</span>
 									{/if}
 								</div>
 							</div>
-						</td>
-						<td class="px-6 py-5 align-top">
-							<span
-								class="inline-flex rounded-full px-3 py-1 text-[10px] font-bold tracking-[0.14em] uppercase {itemTypeClasses(
-									group.item
-								)}"
-							>
-								{itemTypeLabel(group.item)}
-							</span>
-						</td>
-						<td
-							class="px-6 py-5 text-center align-top font-mono text-lg font-semibold text-brand-navy"
-							>{group.quantity}</td
+						</div>
+						<span class="text-center text-sm font-medium text-gray-700">{treatment.quantity}</span>
+						<span class="text-right text-sm text-gray-500">{formatPrice(treatment.unitPrice)}</span>
+						<span class="text-right text-sm font-bold text-gray-900"
+							>{formatPrice(treatment.unitPrice * treatment.quantity)}</span
 						>
-						<td class="px-6 py-5 text-right align-top font-mono text-base text-on-surface-variant">
-							{formatPrice(group.item.unitPrice)}
-						</td>
-						<td
-							class="px-6 py-5 text-right align-top font-mono text-base {group.discountAmount > 0
-								? 'text-error'
-								: 'text-outline'}"
-						>
-							{#if group.discountAmount > 0}
-								-{formatPrice(group.discountAmount)}
-								{#if group.item.discountType === DiscountType.PERCENTAGE}
-									<span class="text-xs text-outline">({group.item.discount}%)</span>
-								{/if}
-							{:else}
-								$0.00
-							{/if}
-						</td>
-						<td class="px-6 py-5 text-right align-top font-mono text-lg font-bold text-brand-navy">
-							{formatPrice(group.lineTotal)}
-						</td>
-					</tr>
-
-					{#each group.treatments as treatment (treatment.id)}
-						<tr
-							class="bg-surface-container-lowest/80 transition-colors hover:bg-surface-container-low/35"
-						>
-							<td class="px-6 py-5 align-top">
-								<div class="flex items-start gap-4">
-									<div
-										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-container text-on-purple-container"
-									>
-										<FlaskConical class="h-5 w-5" />
-									</div>
-									<div>
-										<p class="text-lg leading-tight font-semibold text-brand-navy">
-											{treatment.supplierTreatment?.name ?? 'Tratamiento'}
-										</p>
-										{#if treatment.supplierTreatment?.category}
-											<p class="mt-1 text-xs text-outline">
-												{getTreatmentCategoryLabel(treatment.supplierTreatment.category)}
-											</p>
-										{/if}
-									</div>
-								</div>
-							</td>
-							<td class="px-6 py-5 align-top">
-								<span
-									class="inline-flex rounded-full bg-purple-container px-3 py-1 text-[10px] font-bold tracking-[0.14em] text-on-purple-container uppercase"
-								>
-									Tratamiento
-								</span>
-							</td>
-							<td
-								class="px-6 py-5 text-center align-top font-mono text-lg font-semibold text-brand-navy"
-								>{treatment.quantity}</td
-							>
-							<td
-								class="px-6 py-5 text-right align-top font-mono text-base text-on-surface-variant"
-							>
-								{formatPrice(treatment.unitPrice)}
-							</td>
-							<td class="px-6 py-5 text-right align-top font-mono text-base text-outline">$0.00</td>
-							<td
-								class="px-6 py-5 text-right align-top font-mono text-lg font-bold text-brand-navy"
-							>
-								{formatPrice(treatment.unitPrice * treatment.quantity)}
-							</td>
-						</tr>
-					{/each}
+					</div>
 				{/each}
-			</tbody>
-			<tfoot class="bg-surface-container-low/60">
-				{#if hasAnyCost}
-					<tr class="border-b border-surface-container-low">
-						<td
-							colspan="5"
-							class="px-6 py-4 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-						>
-							Costo interno total
-						</td>
-						<td
-							class="px-6 py-4 text-right font-mono text-lg font-semibold text-on-surface-variant"
-						>
-							{formatPrice(totalInternalCost)}
-						</td>
-					</tr>
-				{/if}
-				<tr>
-					<td
-						colspan="5"
-						class="px-6 py-5 text-right text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase"
-					>
-						Subtotal general
-					</td>
-					<td class="px-6 py-5 text-right font-mono text-2xl font-bold text-brand-navy">
-						{formatPrice(subtotal)}
-					</td>
-				</tr>
-			</tfoot>
-		</table>
+			</div>
+		{/each}
+	</div>
+
+	<div class="border-t border-gray-200 bg-gray-50/50 px-5 py-4">
+		{#if hasAnyCost}
+			<div class="flex items-center justify-between">
+				<span class="text-xs font-medium tracking-wider text-gray-400 uppercase">
+					Costo interno total
+				</span>
+				<span class="text-xs font-medium text-gray-500">
+					{formatPrice(totalInternalCost)}
+				</span>
+			</div>
+			<div class="mt-2 border-t border-gray-200 pt-2"></div>
+		{/if}
+		<div class="flex items-center justify-between">
+			<span class="text-sm font-bold text-gray-700">Subtotal general</span>
+			<span class="text-base font-bold text-gray-900">{formatPrice(subtotal)}</span>
+		</div>
 	</div>
 </section>
 
 {#if enrichingItemId}
-	<!-- Enrich Free Item modal -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
 		role="dialog"

@@ -76,48 +76,39 @@
 	<div
 		class="rounded-[1.5rem] px-6 py-6 shadow-[0_10px_30px_rgba(21,35,70,0.14)] {remainingBcvUsd >
 		0.01
-			? 'bg-brand-navy text-white'
+			? 'border border-amber-200 bg-amber-50'
 			: 'bg-success-container text-on-success-container'}"
 	>
 		<div class="flex items-start justify-between gap-4">
 			<div>
 				<p
-					class="text-xs font-semibold tracking-[0.14em] uppercase {remainingBcvUsd > 0.01
-						? 'text-white/68'
+					class="text-[11px] font-semibold tracking-[0.14em] uppercase {remainingBcvUsd > 0.01
+						? 'text-amber-700'
 						: 'text-on-success-container/70'}"
 				>
 					Saldo pendiente
 				</p>
 				<p
-					class="mt-4 font-mono text-3xl font-bold tracking-tight md:text-4xl {remainingBcvUsd >
+					class="mt-2 font-mono text-4xl font-bold tracking-tight md:text-5xl {remainingBcvUsd >
 					0.01
-						? 'text-white'
+						? 'text-amber-500'
 						: 'text-on-success-container'}"
 				>
 					{formatPrice(remainingBcvUsd)}
 				</p>
 			</div>
-
-			<span
-				class="rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.16em] uppercase {remainingBcvUsd >
-				0.01
-					? 'bg-brand-gold/15 text-brand-gold'
-					: 'bg-white/30 text-on-success-container'}"
-			>
-				{remainingBcvUsd > 0.01 ? 'Prioridad' : 'Cubierto'}
-			</span>
 		</div>
 
-		<div class="mt-6 h-2 rounded-full {remainingBcvUsd > 0.01 ? 'bg-white/10' : 'bg-white/35'}">
+		<div class="mt-6 h-2 rounded-full {remainingBcvUsd > 0.01 ? 'bg-amber-100' : 'bg-white/35'}">
 			<div
-				class="h-full rounded-full {remainingBcvUsd > 0.01 ? 'bg-brand-gold' : 'bg-white'}"
+				class="h-full rounded-full {remainingBcvUsd > 0.01 ? 'bg-amber-400' : 'bg-white'}"
 				style={`width: ${paymentProgressPercent}%`}
 			></div>
 		</div>
 
 		<div
 			class="mt-3 flex items-center justify-between text-sm {remainingBcvUsd > 0.01
-				? 'text-white/75'
+				? 'text-amber-600'
 				: 'text-on-success-container/80'}"
 		>
 			<span>Cubierto</span>
@@ -128,14 +119,14 @@
 			{#if isCancelled && refundStatus && refundStatus !== RefundStatus.NO_PAYMENT}
 				<p
 					class="text-base {remainingBcvUsd > 0.01
-						? 'text-white/80'
+						? 'text-amber-700'
 						: 'text-on-success-container/80'}"
 				>
 					{refundDecisionTitle} por
 					<span class="font-mono font-semibold">{formatPrice(refundAmount ?? 0)}</span>
 				</p>
 			{:else if remainingBcvUsd > 0.01}
-				<p class="text-base text-white/80">Este es el monto que falta para cerrar la venta.</p>
+				<p class="text-base text-amber-700">Este es el monto que falta para cerrar la venta.</p>
 			{:else if isCompleted}
 				<p class="text-base text-on-success-container/80">
 					La venta ya quedó completamente cubierta.

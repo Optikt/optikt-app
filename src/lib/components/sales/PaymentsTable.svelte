@@ -96,10 +96,13 @@
 </script>
 
 {#if payments.length === 0}
-	<div
-		class="rounded-[1.5rem] bg-surface-container-low px-6 py-10 text-center text-base text-slate-400"
-	>
-		No hay pagos registrados
+	<div class="flex flex-col items-center justify-center gap-3 rounded-2xl bg-slate-50 px-6 py-12">
+		<div class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+			<WalletCards class="h-8 w-8 text-slate-300" />
+		</div>
+		<p class="text-base font-semibold text-slate-400">
+			Aún no hay pagos registrados para esta venta
+		</p>
 	</div>
 {:else}
 	<div class="overflow-hidden rounded-[1.5rem] bg-surface-container-low">
