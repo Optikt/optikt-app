@@ -909,10 +909,12 @@
 								<div class="grid grid-cols-4 gap-3">
 									<div>
 										<label
+											for="lens-quantity"
 											class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 											>Cant.</label
 										>
 										<input
+											id="lens-quantity"
 											type="number"
 											bind:value={editLensTmp.quantity}
 											min="1"
@@ -921,10 +923,12 @@
 									</div>
 									<div>
 										<label
+											for="lens-price"
 											class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 											>Precio</label
 										>
 										<input
+											id="lens-price"
 											type="number"
 											bind:value={editLensTmp.unitPrice}
 											min="0"
@@ -934,10 +938,12 @@
 									</div>
 									<div>
 										<label
+											for="lens-discount"
 											class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 											>Desc.</label
 										>
 										<input
+											id="lens-discount"
 											type="number"
 											bind:value={editLensTmp.discount}
 											min="0"
@@ -947,10 +953,12 @@
 									</div>
 									<div>
 										<label
+											for="lens-discount-type"
 											class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 											>Tipo desc.</label
 										>
 										<select
+											id="lens-discount-type"
 											bind:value={editLensTmp.discountType}
 											class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
 										>
