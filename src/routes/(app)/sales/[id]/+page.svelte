@@ -636,7 +636,10 @@
 			Va a marcar esta venta como <strong>En Progreso</strong>. Esto indica que el pedido está
 			siendo procesado.
 		</p>
-		<label for="in-progress-reason" class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+		<label
+			for="in-progress-reason"
+			class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase"
+		>
 			Motivo <span class="text-red-500">*</span>
 		</label>
 		<textarea
@@ -668,7 +671,10 @@
 		<p class="mb-3 text-sm text-gray-700">
 			Va a marcar esta venta como <strong>Completada</strong>. ¿Está seguro?
 		</p>
-		<label for="complete-reason" class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
+		<label
+			for="complete-reason"
+			class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase"
+		>
 			Motivo <span class="text-red-500">*</span>
 		</label>
 		<textarea
