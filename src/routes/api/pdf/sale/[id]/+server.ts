@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	if (sale.status !== SaleStatus.PENDING && sale.status !== SaleStatus.COMPLETED) {
+	if (sale.status === SaleStatus.CANCELLED) {
 		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
