@@ -244,12 +244,12 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gray-100">
-	<div class="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">
+	<div class="mx-auto max-w-7xl px-4 py-4">
 		<!-- Back link -->
 		<button
 			type="button"
 			onclick={goBack}
-			class="mb-3 flex cursor-pointer items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-blue-600"
+			class="mb-2 flex cursor-pointer items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-blue-600"
 		>
 			<ArrowLeft class="h-4 w-4" />
 			Volver a Ventas
@@ -257,7 +257,7 @@
 
 		<!-- Header card -->
 		<div
-			class="mb-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm sm:flex-row sm:items-center"
+			class="mb-4 flex flex-col items-start justify-between gap-4 rounded-xl border border-gray-100/50 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
 		>
 			<div>
 				<p class="text-xs font-semibold tracking-widest text-slate-400 uppercase">
