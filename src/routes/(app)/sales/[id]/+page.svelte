@@ -560,9 +560,7 @@
 												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} -
 												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
 												{#if payment.reference}
-													<span class="text-xs text-outline"
-														>(Ref. {payment.reference})</span
-													>
+													<span class="text-xs text-outline">(Ref. {payment.reference})</span>
 												{/if}
 											</span>
 											<span class="text-sm font-bold text-on-surface">
