@@ -554,7 +554,7 @@
 									<div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
 										<div class="flex items-baseline justify-between">
 											<span class="text-sm font-semibold text-slate-800">
-												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
+												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} -
 												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
 												{#if payment.reference}
 													<span class="font-mono text-xs text-slate-500"
@@ -632,14 +632,20 @@
 				</div>
 
 				<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
+
+				{#if lastUpdatedLabel}
+					<div class="border-gray-200 pt-4 text-end text-sm text-gray-700 italic">
+						Última actualización en la venta {lastUpdatedLabel}
+					</div>
+				{/if}
 			</div>
 		</div>
 
-		{#if lastUpdatedLabel}
+		<!-- {#if lastUpdatedLabel}
 			<footer class="mt-8 border-t border-gray-200 pt-4 text-xs text-gray-400 italic">
 				Última actualización registrada {lastUpdatedLabel}
 			</footer>
-		{/if}
+		{/if} -->
 	</div>
 </div>
 
