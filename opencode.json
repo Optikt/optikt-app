@@ -1,3 +1,6 @@
 {
-  "plugin": ["/home/nanezx/.ponytail/.opencode/plugins/ponytail.mjs"]
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "@howaboua/opencode-planning-toolkit@latest"
+  ]
 }
