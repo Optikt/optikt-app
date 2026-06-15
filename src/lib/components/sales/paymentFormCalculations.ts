@@ -1,4 +1,4 @@
-import { isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
+import { isBsPaymentMethod, PaymentMethod } from '$lib/shared/enums';
 
 export type PaymentCalculationMode = 'target' | 'native';
 
@@ -16,7 +16,7 @@ interface CalculateUsdBcvAmountParams extends BaseCalculationParams {
 	paymentAmount: number;
 }
 
-function roundCurrency(value: number): number {
+export function roundCurrency(value: number): number {
 	return Number(value.toFixed(2));
 }
 

@@ -1,45 +1,46 @@
 <script lang="ts">
 	import {
+		ArrowLeft,
 		CircleX,
-		ChevronDown,
-		ChevronUp,
+		ClipboardList,
 		FileText,
-		History,
 		Pen,
 		Play,
 		Printer,
-		CheckCircle2,
-		Wallet
+		CircleCheck,
+		X as XIcon
 	} from '@lucide/svelte';
-	import { autoAnimate } from '@formkit/auto-animate';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import {
 		CancelSaleModal,
 		EditSaleModal,
 		PaymentForm,
-		PaymentsTable,
-		SaleBalanceCards,
 		SaleItemsTable,
-		SaleMovementsSection
+		SaleMovementsModal
 	} from '$lib/components/sales';
-	import { ConfirmModal, PageHeader, SaleStatusBadge } from '$lib/components/ui';
-	import {
-		computeSnapshotTaxBreakdown,
-		getSnapshotTaxLabel
-	} from '$lib/components/sales/saleItemHelpers';
+	import { ConfirmModal, SaleStatusBadge } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
-	import { RefundStatus, SaleStatus, UserRole } from '$lib/shared/enums';
+	import {
+		PaymentMethod,
+		PAYMENT_METHOD_LABELS,
+		RefundStatus,
+		SaleStatus,
+		UserRole,
+		getSaleStatusLabel,
+		isBsPaymentMethod
+	} from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import { markAsInProgress, markAsCompleted } from '$lib/remote/sales.remote';
+	import { computeTaxBreakdown } from '$lib/shared/tax';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
 	import { toast } from 'svelte-sonner';
-	import { tick, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 
 	let { data } = $props();
 	let sale = $state<SaleWithRelations>(untrack(() => data.sale));
@@ -50,7 +51,21 @@
 	const bcvRate = $derived(store.bcvRate);
 	let showCancelModal = $state(false);
 	let showEditModal = $state(false);
-	let showPaymentComposer = $state(false);
+
+	// Drawer state
+	let showDrawer = $state(false);
+	let drawerResetCount = $state(0);
+
+	// Stock movements modal
+	let showStockModal = $state(false);
+
+	function openStockModal() {
+		showStockModal = true;
+	}
+
+	function closeStockModal() {
+		showStockModal = false;
+	}
 
 	// State transition confirmations
 	let showInProgressConfirm = $state(false);
@@ -83,10 +98,21 @@
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
 	);
-	let taxBreakdown = $derived(computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate));
-	let taxLabel = $derived(getSnapshotTaxLabel(sale.snapshotTaxRate));
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
+	);
+
+	const taxBreakdown = $derived(
+		computeTaxBreakdown(
+			items.map((i) => ({
+				unitPrice: i.unitPrice,
+				quantity: i.quantity,
+				discount: i.discount,
+				discountType: i.discountType as 'FIXED' | 'PERCENTAGE',
+				isTaxable: i.snapshotIsTaxable ?? false,
+				taxRate: sale.snapshotTaxRate
+			}))
+		)
 	);
 
 	function syncFromData() {
@@ -106,24 +132,16 @@
 		return sale.customer?.idNumber ?? 'Documento no registrado';
 	}
 
-	function actionButtonClasses(variant: 'neutral' | 'danger'): string {
-		if (variant === 'danger') {
-			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
-		}
-
-		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
-	}
-
 	function refundCardClasses(): string {
 		if (sale.refundStatus === RefundStatus.REFUNDED) {
-			return 'bg-error-container/70 text-on-error-container';
+			return 'bg-red-50 border-red-200 text-red-800';
 		}
 
 		if (sale.refundStatus === RefundStatus.RETAINED) {
-			return 'bg-warning-container/75 text-on-warning-container';
+			return 'bg-amber-50 border-amber-200 text-amber-800';
 		}
 
-		return 'bg-surface-container-low text-on-surface-variant';
+		return 'bg-gray-50 border-gray-200 text-gray-700';
 	}
 
 	function refundDecisionTitle(): string {
@@ -133,20 +151,14 @@
 	}
 
 	async function handleCancelSuccess() {
-		showPaymentComposer = false;
 		await invalidateAll();
 		syncFromData();
 	}
 
 	async function handlePaymentAdded(_newPaidAmount: number) {
-		showPaymentComposer = false;
 		await invalidateAll();
 		syncFromData();
-	}
-
-	async function handlePaymentVoided() {
-		await invalidateAll();
-		syncFromData();
+		showDrawer = false;
 	}
 
 	function goBack() {
@@ -166,25 +178,6 @@
 	function warnIfReceiptMayExceedHalfLetter() {
 		if (!receiptHalfLetterOverflowRisk) return;
 		toast.warning('Este recibo tiene muchos ítems o pagos y puede superar media carta.');
-	}
-
-	function scrollToHistory() {
-		document.getElementById('sale-history')?.scrollIntoView({
-			behavior: 'smooth',
-			block: 'start'
-		});
-	}
-
-	async function togglePaymentComposer(forceOpen?: boolean) {
-		showPaymentComposer = forceOpen ?? !showPaymentComposer;
-
-		if (showPaymentComposer) {
-			await tick();
-			document.getElementById('payment-composer')?.scrollIntoView({
-				behavior: 'smooth',
-				block: 'start'
-			});
-		}
 	}
 
 	async function handleMarkInProgress() {
@@ -236,367 +229,498 @@
 		await invalidateAll();
 		syncFromData();
 	}
+
+	function openDrawer() {
+		showDrawer = true;
+	}
+
+	function closeDrawer() {
+		showDrawer = false;
+	}
 </script>
 
 <svelte:head>
 	<title>Venta {formattedOrderNumber} - {customerName()} - Optikt</title>
 </svelte:head>
 
-<div class="space-y-6 p-6">
-	<PageHeader
-		title={`Venta ${formattedOrderNumber}`}
-		subtitle="Detalle de venta"
-		backLabel="Volver a Ventas"
-		backOnClick={goBack}
-	>
-		{#snippet actions()}
-			{#if canPrintReceipt}
-				<button
-					type="button"
-					onclick={openPrintView}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<FileText class="h-4 w-4" />
-					Ver recibo
-				</button>
-
-				<button
-					type="button"
-					onclick={openPdfReceipt}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Printer class="h-4 w-4" />
-					Imprimir PDF
-				</button>
-			{/if}
-
-			<button
-				type="button"
-				onclick={scrollToHistory}
-				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-					'neutral'
-				)}"
-			>
-				<History class="h-4 w-4" />
-				Ver historial
-			</button>
-
-			{#if canManageSale && (isPending || isInProgress)}
-				<button
-					type="button"
-					onclick={() => (showEditModal = true)}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Pen class="h-4 w-4" />
-					Editar venta
-				</button>
-			{/if}
-
-			{#if isPending && isAdmin}
-				<button
-					type="button"
-					onclick={() => {
-						transitionReason = '';
-						showInProgressConfirm = true;
-					}}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<Play class="h-4 w-4" />
-					En Progreso
-				</button>
-			{/if}
-
-			{#if isInProgress && canManageSale}
-				<button
-					type="button"
-					onclick={() => {
-						transitionReason = '';
-						showCompletedConfirm = true;
-					}}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<CheckCircle2 class="h-4 w-4" />
-					Completar
-				</button>
-			{/if}
-
-			{#if canManageSale && (isPending || isInProgress)}
-				<button
-					type="button"
-					onclick={() => (showCancelModal = true)}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'danger'
-					)}"
-				>
-					<CircleX class="h-4 w-4" />
-					Cancelar venta
-				</button>
-			{/if}
-		{/snippet}
-	</PageHeader>
-
-	<div class="-mt-2 flex flex-wrap items-center gap-3 text-on-surface-variant">
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+<div class="min-h-screen bg-surface">
+	<div class="mx-auto max-w-7xl px-4 py-4">
+		<!-- Back link -->
+		<button
+			type="button"
+			onclick={goBack}
+			class="mb-2 flex cursor-pointer items-center gap-1.5 text-sm text-outline transition-colors hover:text-brand-blue"
 		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Orden</span>
-			<span class="font-mono text-sm font-semibold text-brand-navy">{formattedOrderNumber}</span>
-		</div>
+			<ArrowLeft class="h-4 w-4" />
+			Volver a Ventas
+		</button>
+
+		<!-- Header card -->
 		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
+			class="mb-4 flex flex-col items-start justify-between gap-4 rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-4 shadow-[var(--ds-shadow-md)] sm:flex-row sm:items-center"
 		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Cliente</span>
-			<span class="font-semibold text-brand-navy">{customerName()}</span>
-			<span class="font-mono text-sm text-outline">{customerIdNumber()}</span>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Fecha</span>
-			<span class="font-semibold text-brand-navy"
-				>{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}</span
-			>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Vendedor</span>
-			<span class="font-semibold text-brand-navy">{sale.seller?.fullName ?? 'Sin asignar'}</span>
-		</div>
-		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
-			<SaleStatusBadge status={sale.status} />
-		</div>
-	</div>
+			<div>
+				<p class="text-xs font-semibold tracking-widest text-on-surface-variant uppercase">
+					Detalle de venta
+				</p>
+				<h1 class="mt-0 text-2xl font-bold text-on-surface">
+					Venta {formattedOrderNumber}
+				</h1>
+			</div>
 
-	{#if sale.notes || isCancelled}
-		<div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.95fr)]">
-			{#if sale.notes}
-				<section class="rounded-[1.5rem] bg-surface-container-low p-6">
-					<div class="flex items-start gap-3">
-						<div
-							class="flex h-11 w-11 items-center justify-center rounded-xl bg-info-container text-on-info-container"
-						>
-							<FileText class="h-5 w-5" />
-						</div>
-						<div>
-							<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-								Observaciones
-							</p>
-							<p class="mt-2 text-base leading-relaxed whitespace-pre-wrap text-on-surface">
-								{sale.notes}
-							</p>
-						</div>
-					</div>
-				</section>
-			{/if}
-
-			{#if isCancelled}
-				<section class="rounded-[1.5rem] p-6 {refundCardClasses()}">
-					<div class="flex items-start gap-3">
-						<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/30">
-							<CircleX class="h-5 w-5" />
-						</div>
-						<div class="space-y-3">
-							<div>
-								<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">
-									Estado de cancelación
-								</p>
-								<h2 class="mt-2 text-2xl font-semibold text-current">{refundDecisionTitle()}</h2>
-								<p class="mt-1 text-sm leading-relaxed text-current/80">
-									{sale.cancellationReason ?? 'Sin motivo registrado'}
-								</p>
-							</div>
-
-							<div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-current/85">
-								{#if sale.cancelledAt}
-									<span
-										>{formatDate(sale.cancelledAt, {
-											dateStyle: 'medium',
-											timeStyle: 'short'
-										})}</span
-									>
-								{/if}
-								{#if sale.cancelledBy}
-									<span>Por: {sale.cancelledBy.fullName}</span>
-								{/if}
-							</div>
-
-							{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
-								<div class="rounded-2xl bg-white/30 px-4 py-3 text-sm">
-									<p class="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-70">
-										Resolución financiera
-									</p>
-									<p class="mt-1 font-mono text-lg font-semibold text-current">
-										{formatPrice(sale.refundAmount ?? 0)}
-									</p>
-									{#if sale.refundNotes}
-										<p class="mt-1 text-sm whitespace-pre-wrap text-current/80">
-											{sale.refundNotes}
-										</p>
-									{/if}
-								</div>
-							{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
-								<div class="rounded-2xl bg-white/30 px-4 py-3 text-sm text-current/85">
-									Sin pagos previos, no aplica reembolso.
-								</div>
-							{/if}
-						</div>
-					</div>
-				</section>
-			{/if}
-		</div>
-	{/if}
-
-	{#if pendingFreeItemCount > 0}
-		<div class="rounded-[1.25rem] border border-amber-200 bg-amber-50 px-5 py-4">
-			<p class="text-sm font-semibold text-amber-800">
-				⚠ Esta venta tiene {pendingFreeItemCount}
-				{pendingFreeItemCount === 1 ? 'ítem libre pendiente' : 'ítems libres pendientes'} de completar.
-			</p>
-			<p class="mt-1 text-xs text-amber-700">
-				Los reportes de margen estarán incompletos hasta que se registren los costos.
-			</p>
-		</div>
-	{/if}
-
-	<SaleItemsTable
-		{items}
-		subtotal={sale.subtotal}
-		allowCostEdit={canAct}
-		suppliers={data.suppliers}
-		onCostsUpdated={async () => {
-			await invalidateAll();
-			syncFromData();
-		}}
-	/>
-
-	<SaleBalanceCards
-		subtotal={sale.subtotal}
-		total={sale.total}
-		discountType={sale.discountType}
-		discount={sale.discount}
-		paidAmountBcvUsd={sale.paidAmountBcvUsd}
-		{remainingBcvUsd}
-		{paymentProgressPercent}
-		paymentsCount={payments.length}
-		{taxBreakdown}
-		{taxLabel}
-		{isCancelled}
-		{isCompleted}
-		refundStatus={sale.refundStatus}
-		refundAmount={sale.refundAmount}
-		refundDecisionTitle={refundDecisionTitle()}
-	/>
-
-	<section id="sale-history" class="space-y-4" use:autoAnimate>
-		<div class="glass-card overflow-hidden">
-			<div
-				class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-			>
-				<div class="flex items-center gap-3">
-					<div
-						class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+			<!-- Actions -->
+			<div class="flex shrink-0 flex-wrap items-center gap-3">
+				<!-- Grupo A: Sistema (baja jerarquía) -->
+				{#if canPrintReceipt}
+					<button
+						type="button"
+						onclick={openPrintView}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface-variant shadow-[var(--ds-shadow-md)] transition-colors hover:bg-surface-container-low"
 					>
-						<Wallet class="h-5 w-5" />
-					</div>
-					<div>
-						<h2 class="text-xl font-semibold text-brand-navy">Historial de pagos</h2>
-						<p class="text-sm text-on-surface-variant">
-							Registro cronológico de abonos y anulaciones.
-						</p>
-					</div>
-				</div>
-			</div>
+						<FileText class="h-4 w-4" />
+						Ver Recibo
+					</button>
 
-			<div class="px-6 pb-6">
-				<PaymentsTable
-					{payments}
-					saleId={sale.id}
-					allowVoid={canManageSale && (isPending || isInProgress)}
-					onPaymentVoided={handlePaymentVoided}
-				/>
-			</div>
-		</div>
+					<button
+						type="button"
+						onclick={openPdfReceipt}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface-variant shadow-[var(--ds-shadow-md)] transition-colors hover:bg-surface-container-low"
+					>
+						<Printer class="h-4 w-4" />
+						Imprimir PDF
+					</button>
+				{/if}
 
-		{#if showPaymentForm}
-			<section class="glass-card overflow-hidden">
-				<div
-					class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 lg:flex-row lg:items-start lg:justify-between"
-				>
-					<div>
-						<h2 class="text-xl font-semibold text-brand-navy">Registrar pago</h2>
-						<p class="mt-1 max-w-2xl text-sm text-on-surface-variant">
-							Selecciona el método y edita cualquiera de los dos montos; el otro se recalcula
-							automáticamente.
-						</p>
-					</div>
+				<!-- Grupo B: Flujo (alta jerarquía) -->
+				{#if canManageSale && (isPending || isInProgress)}
+					<button
+						type="button"
+						onclick={() => (showEditModal = true)}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-info-container px-3 py-2 text-xs font-semibold text-on-info-container shadow-[var(--ds-shadow-md)] transition-colors hover:bg-info-container"
+					>
+						<Pen class="h-4 w-4" />
+						Editar
+					</button>
+				{/if}
 
-					<div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-						<div
-							class="rounded-xl px-4 py-3 text-sm {remainingBcvUsd > 0.01
-								? 'bg-brand-navy text-white'
-								: 'bg-success-container text-on-success-container'}"
-						>
-							<p
-								class="text-xs font-semibold tracking-[0.14em] uppercase {remainingBcvUsd > 0.01
-									? 'text-white/68'
-									: 'text-on-success-container/70'}"
-							>
-								Pendiente actual
-							</p>
-							<p class="mt-1 font-mono text-xl font-semibold">
-								{formatPrice(remainingBcvUsd)}
-							</p>
-						</div>
+				{#if isPending && isAdmin}
+					<button
+						type="button"
+						onclick={() => {
+							transitionReason = '';
+							showInProgressConfirm = true;
+						}}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] bg-brand-blue px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors hover:bg-brand-blue-dark"
+					>
+						<Play class="h-4 w-4" />
+						En Progreso
+					</button>
+				{/if}
+
+				{#if isInProgress && canManageSale}
+					<button
+						type="button"
+						onclick={() => {
+							transitionReason = '';
+							showCompletedConfirm = true;
+						}}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors {remainingBcvUsd <=
+						0.01
+							? 'bg-success hover:bg-success/90'
+							: 'bg-brand-blue hover:bg-brand-blue-dark'}"
+					>
+						<CircleCheck class="h-4 w-4" />
+						Completar
+					</button>
+				{/if}
+
+				<!-- Grupo C: Destructivo (aislado) -->
+				{#if canManageSale && (isPending || isInProgress)}
+					<div class="ml-4 border-l border-error-container pl-4">
 						<button
 							type="button"
-							onclick={() => togglePaymentComposer()}
-							class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition-colors hover:bg-brand-gold-dark"
+							onclick={() => (showCancelModal = true)}
+							class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-error-container px-3 py-2 text-xs font-semibold text-on-error-container shadow-[var(--ds-shadow-md)] transition-colors hover:bg-error-container"
 						>
-							{#if showPaymentComposer}
-								<ChevronUp class="h-4 w-4" />
-								Ocultar formulario
-							{:else}
-								<ChevronDown class="h-4 w-4" />
-								Registrar abono
-							{/if}
+							<CircleX class="h-4 w-4" />
+							Cancelar
 						</button>
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		{#if sale.notes || isCancelled}
+			<div class="mb-6 grid gap-4 lg:grid-cols-2">
+				{#if sale.notes}
+					<section class="rounded-xl border border-gray-100/50 bg-white px-5 py-4 shadow-sm">
+						<div class="flex items-start gap-3">
+							<div
+								class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600"
+							>
+								<FileText class="h-5 w-5" />
+							</div>
+							<div>
+								<p class="text-sm font-medium text-gray-500">Observaciones</p>
+								<p class="mt-1.5 text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+									{sale.notes}
+								</p>
+							</div>
+						</div>
+					</section>
+				{/if}
+
+				{#if isCancelled}
+					<section class="rounded-xl border p-5 shadow-sm {refundCardClasses()}">
+						<div class="flex items-start gap-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/30">
+								<CircleX class="h-5 w-5" />
+							</div>
+							<div class="space-y-3">
+								<div>
+									<p class="text-sm font-medium opacity-70">Estado de cancelación</p>
+									<h2 class="mt-1.5 text-xl font-semibold text-current">{refundDecisionTitle()}</h2>
+									<p class="mt-1 text-sm leading-relaxed text-current/80">
+										{sale.cancellationReason ?? 'Sin motivo registrado'}
+									</p>
+								</div>
+
+								<div class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-current/85">
+									{#if sale.cancelledAt}
+										<span
+											>{formatDate(sale.cancelledAt, {
+												dateStyle: 'medium',
+												timeStyle: 'short'
+											})}</span
+										>
+									{/if}
+									{#if sale.cancelledBy}
+										<span>Por: {sale.cancelledBy.fullName}</span>
+									{/if}
+								</div>
+
+								{#if sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
+									<div class="rounded-xl bg-white/30 px-4 py-3 text-sm">
+										<p class="text-sm font-medium opacity-70">Resolución financiera</p>
+										<p class="mt-1 font-mono text-lg font-semibold text-current">
+											{formatPrice(sale.refundAmount ?? 0)}
+										</p>
+										{#if sale.refundNotes}
+											<p class="mt-1 text-sm whitespace-pre-wrap text-current/80">
+												{sale.refundNotes}
+											</p>
+										{/if}
+									</div>
+								{:else if sale.refundStatus === RefundStatus.NO_PAYMENT}
+									<div class="rounded-xl bg-white/30 px-4 py-3 text-sm text-current/85">
+										Sin pagos previos, no aplica reembolso.
+									</div>
+								{/if}
+							</div>
+						</div>
+					</section>
+				{/if}
+			</div>
+		{/if}
+
+		{#if pendingFreeItemCount > 0}
+			<div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
+				<p class="text-sm font-semibold text-amber-800">
+					⚠ {pendingFreeItemCount}
+					{pendingFreeItemCount === 1 ? 'ítem libre pendiente' : 'ítems libres pendientes'} de completar.
+				</p>
+			</div>
+		{/if}
+
+		<!-- 2-column POS layout -->
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+			<!-- Left Column (60%) -->
+			<div class="space-y-6 lg:col-span-3">
+				<!-- Customer & Order Info Card -->
+				<div class="rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm">
+					<div class="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+						<div>
+							<p class="text-sm font-medium text-gray-500">Cliente</p>
+							<p class="mt-0.5 text-base font-semibold text-gray-900">{customerName()}</p>
+							<p class="text-xs text-gray-400">{customerIdNumber()}</p>
+						</div>
+						<div>
+							<p class="text-sm font-medium text-gray-500">Vendedor</p>
+							<p class="mt-0.5 text-base font-semibold text-gray-900">
+								{sale.seller?.fullName ?? 'Sin asignar'}
+							</p>
+						</div>
+						<div>
+							<p class="text-sm font-medium text-gray-500">N° Orden</p>
+							<p class="mt-0.5 text-base font-semibold text-gray-900">{formattedOrderNumber}</p>
+						</div>
+						<div>
+							<p class="text-sm font-medium text-gray-500">Fecha</p>
+							<p class="mt-0.5 text-base font-semibold text-gray-900">
+								{formatDateOnly(sale.saleDate, { dateStyle: 'medium' })}
+							</p>
+						</div>
+						<div>
+							<p class="text-sm font-medium text-gray-500">Estado</p>
+							<div class="mt-0.5">
+								{#if sale.status === 'IN_PROGRESS'}
+									<span
+										class="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-blue-700 uppercase"
+									>
+										{getSaleStatusLabel(sale.status)}
+									</span>
+								{:else}
+									<SaleStatusBadge status={sale.status} />
+								{/if}
+							</div>
+						</div>
 					</div>
 				</div>
 
-				{#if showPaymentComposer}
-					<div class="px-6 pt-6 pb-6">
-						<div id="payment-composer" class="rounded-[1.5rem] bg-surface-container-lowest p-5">
-							<PaymentForm
-								saleId={sale.id}
-								{remainingBcvUsd}
-								{bcvRate}
-								onPaymentAdded={handlePaymentAdded}
-							/>
+				<!-- Items Table -->
+				<SaleItemsTable
+					{items}
+					subtotal={sale.subtotal}
+					allowCostEdit={canAct}
+					suppliers={data.suppliers}
+					onCostsUpdated={async () => {
+						await invalidateAll();
+						syncFromData();
+					}}
+				/>
+			</div>
+
+			<!-- Right Column (40%) - Sticky Mini Summary -->
+			<div class="lg:sticky lg:top-6 lg:col-span-2">
+				<div
+					class="flex max-h-[calc(100vh-8rem)] flex-col rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-md)]"
+				>
+					<div class="flex-shrink-0 space-y-4">
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<span class="text-xs text-outline">Subtotal</span>
+								<span class="text-xs font-semibold text-on-surface"
+									>{formatPrice(sale.subtotal)}</span
+								>
+							</div>
+							<div class="flex items-center justify-between">
+								<span class="text-xs text-outline">IVA ({sale.snapshotTaxRate}%)</span>
+								<span class="text-xs font-semibold text-on-surface"
+									>{formatPrice(taxBreakdown.taxAmount)}</span
+								>
+							</div>
 						</div>
+
+						<div>
+							{#if remainingBcvUsd > 0.01}
+								<p class="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
+									Saldo Pendiente
+								</p>
+								<p class="mt-1 text-3xl font-extrabold text-brand-gold-dark">
+									{formatPrice(remainingBcvUsd)}
+								</p>
+								<div class="mt-3 h-1.5 rounded-full bg-amber-100">
+									<div
+										class="h-full rounded-full bg-amber-400"
+										style={`width: ${paymentProgressPercent}%`}
+									></div>
+								</div>
+								<div class="mt-1 flex items-center justify-between text-[11px] text-amber-600">
+									<span>{formatPrice(sale.paidAmountBcvUsd)} cubierto</span>
+									<span>{paymentProgressPercent.toFixed(0)}%</span>
+								</div>
+							{:else}
+								<p class="text-3xl font-extrabold text-success">Pagado</p>
+							{/if}
+						</div>
+
+						{#if showPaymentForm}
+							<button
+								type="button"
+								onclick={openDrawer}
+								class="w-full cursor-pointer rounded-[var(--ds-radius-lg)] bg-brand-blue px-5 py-3.5 text-sm font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors hover:bg-brand-blue-dark"
+							>
+								Cobrar / Registrar Pago
+							</button>
+						{/if}
+					</div>
+
+					<div class="mt-4 border-t border-outline-variant/50"></div>
+
+					<div class="mt-4 flex-1 overflow-y-auto">
+						<p class="mb-3 text-sm font-semibold text-on-surface-variant">Abonos Registrados</p>
+						{#if payments.length > 0}
+							<div class="space-y-2">
+								{#each payments as payment (payment.id)}
+									<div
+										class="rounded-[var(--ds-radius-lg)] border border-outline-variant bg-surface-container-low p-3"
+									>
+										<div class="flex items-baseline justify-between">
+											<span class="text-sm font-semibold text-on-surface">
+												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} -
+												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
+												{#if payment.reference}
+													<span class="text-xs text-outline">(Ref. {payment.reference})</span>
+												{/if}
+											</span>
+											<span class="text-sm font-bold text-on-surface">
+												{formatPrice(payment.amountBcvUsd)}
+											</span>
+										</div>
+										<div class="mt-1 flex items-baseline justify-between">
+											{#if isBsPaymentMethod(payment.paymentMethod as unknown as PaymentMethod)}
+												<span class="font-mono text-xs text-outline"
+													>Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
+												>
+												<span class="text-xs font-semibold text-on-surface-variant"
+													>Bs. {Number(payment.amount).toLocaleString('es-VE', {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2
+													})}</span
+												>
+											{:else if (payment.paymentMethod as unknown as PaymentMethod) === PaymentMethod.BINANCE_USDT}
+												<span class="font-mono text-xs text-outline"
+													>Tasa USDT: {Number(payment.exchangeRate ?? 0).toFixed(2)}</span
+												>
+												<span class="text-xs font-semibold text-on-surface-variant"
+													>USDT {Number(payment.amount).toLocaleString('es-VE', {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2
+													})}</span
+												>
+											{:else}
+												<span class="font-mono text-xs text-outline"
+													>Efectivo $ • Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
+												>
+												<span class="text-xs font-semibold text-on-surface-variant"
+													>Bs. {Number(payment.amountBcvUsd * payment.bcvRate).toLocaleString(
+														'es-VE',
+														{ minimumFractionDigits: 2, maximumFractionDigits: 2 }
+													)}</span
+												>
+											{/if}
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="py-6 text-center text-sm text-outline italic">
+								Aún no hay abonos registrados
+							</p>
+						{/if}
+					</div>
+				</div>
+
+				{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
+					<div
+						class="mt-4 rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-md)]"
+					>
+						<p class="text-sm font-medium text-outline">{refundDecisionTitle()}</p>
+						<p class="mt-1 font-mono text-2xl font-bold text-on-surface">
+							{formatPrice(sale.refundAmount ?? 0)}
+						</p>
 					</div>
 				{/if}
-			</section>
+
+				<!-- Stock movements trigger -->
+				<div class="mt-2 text-right">
+					<button
+						type="button"
+						onclick={openStockModal}
+						class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
+					>
+						<ClipboardList class="h-4 w-4" />
+						Ver movimientos de stock ({movements.length})
+					</button>
+				</div>
+
+				<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
+
+				{#if lastUpdatedLabel}
+					<div class="border-outline-variant pt-4 text-end text-sm text-on-surface-variant italic">
+						Última actualización en la venta {lastUpdatedLabel}
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- {#if lastUpdatedLabel}
+			<footer class="mt-8 border-t border-gray-200 pt-4 text-xs text-gray-400 italic">
+				Última actualización registrada {lastUpdatedLabel}
+			</footer>
+		{/if} -->
+	</div>
+</div>
+
+<!-- Sliding Payment Drawer -->
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && showDrawer) {
+			drawerResetCount++;
+			closeDrawer();
+		}
+	}}
+/>
+
+<div
+	class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-in-out"
+	class:opacity-0={!showDrawer}
+	class:pointer-events-none={!showDrawer}
+></div>
+
+<div
+	class="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out"
+	class:translate-x-full={!showDrawer}
+	class:translate-x-0={showDrawer}
+>
+	<!-- Drawer Header -->
+	<div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+		<h2 class="text-lg font-bold text-gray-900">Procesar Pago</h2>
+		<button
+			type="button"
+			onclick={() => {
+				drawerResetCount++;
+				closeDrawer();
+			}}
+			class="cursor-pointer rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+		>
+			<XIcon class="h-5 w-5" />
+		</button>
+	</div>
+
+	<!-- Drawer Body (scrollable) -->
+	<div class="flex-1 overflow-y-auto px-6 py-4">
+		<!-- SALDO PENDIENTE -->
+		{#if remainingBcvUsd > 0.01}
+			<p class="text-2xl font-bold text-amber-600">{formatPrice(remainingBcvUsd)}</p>
+		{:else}
+			<p class="text-2xl font-bold text-green-600">Pagado</p>
 		{/if}
-	</section>
 
-	<SaleMovementsSection {movements} />
+		<!-- Fiscal Data -->
+		<div class="mt-3 space-y-1">
+			<div class="flex items-center justify-between">
+				<span class="text-xs text-gray-400">Base Imponible</span>
+				<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxableBase)}</span>
+			</div>
+			<div class="flex items-center justify-between">
+				<span class="text-xs text-gray-400">IVA ({sale.snapshotTaxRate}%)</span>
+				<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxAmount)}</span>
+			</div>
+		</div>
 
-	{#if lastUpdatedLabel}
-		<footer class="border-t border-surface-container-high pt-6 text-sm text-outline italic">
-			Última actualización registrada {lastUpdatedLabel}
-		</footer>
-	{/if}
+		<!-- Payment Form (drawer variant) -->
+		<div class="mt-4">
+			<PaymentForm
+				saleId={sale.id}
+				{remainingBcvUsd}
+				{bcvRate}
+				variant="drawer"
+				drawerResetKey={drawerResetCount}
+				onPaymentAdded={handlePaymentAdded}
+			/>
+		</div>
+	</div>
 </div>
 
 <EditSaleModal
