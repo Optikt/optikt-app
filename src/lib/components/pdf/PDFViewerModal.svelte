@@ -1,15 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import {
-		X,
-		ChevronLeft,
-		ChevronRight,
-		Download,
-		ZoomIn,
-		ZoomOut,
-		Maximize,
-		Minimize,
-		Printer
+		X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Maximize, Minimize, Printer
 	} from '@lucide/svelte';
 
 	interface Props {
@@ -31,6 +23,12 @@
 	let error = $state<string | null>(null);
 	let unsub: (() => void) | null = null;
 
+	const l10n = {
+		get: async (_id: string, _args: unknown, fallback: string) => fallback,
+		pause: async () => {},
+		resume: async () => {}
+	};
+
 	onMount(async () => {
 		if (!url) {
 			loading = false;
@@ -51,24 +49,15 @@
 			const instance = new mod.PDFSlick({
 				container,
 				store,
-				options: {
-					scaleValue: '1',
-					l10n: {
-						get: async (_id: string, _args: unknown, fallback: string) => fallback,
-						pause: async () => {},
-						resume: async () => {}
-					}
-				}
+				options: { scaleValue: '1', l10n }
 			});
 			instance.loadDocument(url);
 			store.setState({ pdfSlick: instance });
-			unsub = store.subscribe(
-				(s: { pageNumber: number; numPages: number; scale: number }) => {
-					pageNumber = s.pageNumber;
-					numPages = s.numPages;
-					scale = s.scale;
-				}
-			);
+			unsub = store.subscribe((s: { pageNumber: number; numPages: number; scale: number }) => {
+				pageNumber = s.pageNumber;
+				numPages = s.numPages;
+				scale = s.scale;
+			});
 			pdfSlick = instance;
 			loading = false;
 		} catch (e) {
@@ -90,95 +79,53 @@
 		}
 	});
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') onClose();
-	}
-
-	function handleBackdropClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) onClose();
-	}
-
-	function zoomIn() {
-		pdfSlick?.increaseScale();
-	}
-
-	function zoomOut() {
-		pdfSlick?.decreaseScale();
-	}
-
-	function zoomPageWidth() {
-		if (pdfSlick) {
-			pdfSlick.currentScaleValue = 'page-width';
-		}
-	}
-
-	function zoomPageFit() {
-		if (pdfSlick) {
-			pdfSlick.currentScaleValue = 'page-fit';
-		}
-	}
-
-	function zoomActual() {
-		if (pdfSlick) {
-			pdfSlick.currentScale = 1;
-		}
-	}
-
-	function print() {
-		window.open(url, '_blank', 'noopener,noreferrer');
+	function close(e: KeyboardEvent | MouseEvent) {
+		if (e instanceof MouseEvent && e.target !== e.currentTarget) return;
+		if (e instanceof KeyboardEvent && e.key !== 'Escape') return;
 		onClose();
 	}
 
+	function zoomOut() { pdfSlick?.decreaseScale(); }
+	function zoomIn() { pdfSlick?.increaseScale(); }
+	function zoomActual() { if (pdfSlick) pdfSlick.currentScale = 1; }
+	function zoomPageWidth() { if (pdfSlick) pdfSlick.currentScaleValue = 'page-width'; }
+	function zoomPageFit() { if (pdfSlick) pdfSlick.currentScaleValue = 'page-fit'; }
+	function print() { window.open(url, '_blank', 'noopener,noreferrer'); onClose(); }
 	function download() {
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = fileName;
-		link.click();
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = fileName;
+		a.click();
 	}
 
 	const scalePercent = $derived(Math.round(scale * 100));
+	const busy = $derived(loading || !!error || !pdfSlick);
+
+	const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30';
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-	class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
-	onkeydown={handleKeydown}
-	onclick={handleBackdropClick}
->
-	<div
-		role="dialog"
-		aria-modal="true"
-		class="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-		style="height: 88vh;"
-	>
+<div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4" onkeydown={close} onclick={close}>
+	<div role="dialog" aria-modal="true" class="flex w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl" style="height: 88vh;">
 		<!-- Header -->
-		<div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
+		<div class="flex shrink-0 items-center justify-between bg-brand-navy px-5 py-3">
 			<div class="min-w-0">
-				<h2 class="truncate text-sm font-semibold text-brand-navy">{title}</h2>
-				<p class="mt-0.5 text-[11px] text-slate-400">
-					{loading ? 'Preparando documento…' : error ?? `${pageNumber} / ${numPages}`}
+				<h2 class="truncate text-sm font-semibold text-white">{title}</h2>
+				<p class="mt-0.5 text-[11px] text-white/50">
+					{loading ? 'Preparando documento…' : (error ?? `${pageNumber} / ${numPages}`)}
 				</p>
 			</div>
-			<div class="flex items-center gap-1.5">
-				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-					onclick={onClose}
-					title="Cerrar"
-				>
-					<X size={18} />
-				</button>
-			</div>
+			<button type="button" class={btn} onclick={onClose} title="Cerrar">
+				<X size={18} />
+			</button>
 		</div>
 
-		<!-- Body -->
+		<!-- Viewer -->
 		<div class="relative min-h-0 flex-1 bg-slate-200/70">
 			{#if loading}
 				<div class="flex h-full items-center justify-center">
 					<div class="flex flex-col items-center gap-3">
-						<div
-							class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-brand-blue"
-						></div>
+						<div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-brand-blue"></div>
 						<p class="text-sm text-slate-500">Generando PDF…</p>
 					</div>
 				</div>
@@ -197,90 +144,61 @@
 			</div>
 		</div>
 
-		<!-- Footer toolbar -->
-		<div
-			class="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-4 py-2.5"
-		>
-			<!-- Zoom controls -->
-			<div class="flex items-center gap-1">
-				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
-					onclick={zoomOut}
-					disabled={loading || !!error || !pdfSlick}
-					title="Alejar"
-				>
+		<!-- Toolbar -->
+		<div class="flex shrink-0 items-center justify-between gap-2 bg-brand-navy px-4 py-2.5">
+			<div class="flex items-center gap-0.5">
+				<button type="button" class={btn} onclick={zoomOut} disabled={busy} title="Alejar">
 					<ZoomOut size={16} />
 				</button>
 				<button
 					type="button"
-					class="inline-flex h-7 min-w-[4.5rem] items-center justify-center rounded-md px-2 font-mono text-xs font-medium text-slate-600 transition-colors hover:bg-white"
+					class="inline-flex h-7 min-w-[4.5rem] items-center justify-center rounded-md px-2 font-mono text-xs font-medium text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
 					onclick={zoomActual}
-					disabled={loading || !!error || !pdfSlick}
+					disabled={busy}
 					title="100%"
 				>
 					{scalePercent}%
 				</button>
-				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
-					onclick={zoomIn}
-					disabled={loading || !!error || !pdfSlick}
-					title="Acercar"
-				>
+				<button type="button" class={btn} onclick={zoomIn} disabled={busy} title="Acercar">
 					<ZoomIn size={16} />
 				</button>
-				<span class="mx-1 h-5 w-px bg-slate-200"></span>
-				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
-					onclick={zoomPageWidth}
-					disabled={loading || !!error || !pdfSlick}
-					title="Ancho de página"
-				>
+
+				<span class="mx-1 h-5 w-px bg-white/15"></span>
+
+				<button type="button" class={btn} onclick={zoomPageWidth} disabled={busy} title="Ancho de página">
 					<Minimize size={14} />
 				</button>
-				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
-					onclick={zoomPageFit}
-					disabled={loading || !!error || !pdfSlick}
-					title="Ajustar a la página"
-				>
+				<button type="button" class={btn} onclick={zoomPageFit} disabled={busy} title="Ajustar a la página">
 					<Maximize size={14} />
 				</button>
 			</div>
 
-			<!-- Page navigation -->
-			<div class="flex items-center gap-1">
+			<div class="flex items-center gap-0.5">
 				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+					type="button" class={btn}
 					onclick={() => pdfSlick?.gotoPage(Math.max(pageNumber - 1, 1))}
-					disabled={pageNumber <= 1 || loading || !!error || !pdfSlick}
+					disabled={pageNumber <= 1 || busy}
 				>
 					<ChevronLeft size={16} />
 				</button>
-				<span class="min-w-[4.5rem] text-center font-mono text-xs font-medium text-slate-600">
+				<span class="min-w-[4.5rem] text-center font-mono text-xs font-medium text-white/70">
 					{numPages > 0 ? `${pageNumber} / ${numPages}` : '–'}
 				</span>
 				<button
-					type="button"
-					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+					type="button" class={btn}
 					onclick={() => pdfSlick?.gotoPage(Math.min(pageNumber + 1, numPages))}
-					disabled={pageNumber >= numPages || loading || !!error || !pdfSlick}
+					disabled={pageNumber >= numPages || busy}
 				>
 					<ChevronRight size={16} />
 				</button>
 			</div>
 
-			<!-- Actions -->
 			<div class="flex items-center gap-1.5">
 				<button
 					type="button"
-					class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+					class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 shadow-sm transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-30"
 					onclick={print}
-					disabled={loading || !!error || !pdfSlick}
+					disabled={busy}
 				>
 					<Printer size={14} />
 					Imprimir
