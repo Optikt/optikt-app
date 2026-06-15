@@ -19,6 +19,7 @@
 		SaleItemsTable,
 		SaleMovementsModal
 	} from '$lib/components/sales';
+	import { PDFViewerModal } from '$lib/components/pdf';
 	import { ConfirmModal, SaleStatusBadge } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
@@ -58,6 +59,10 @@
 
 	// Stock movements modal
 	let showStockModal = $state(false);
+
+	// PDF preview modal
+	let showPdfPreview = $state(false);
+	let pdfUrl = $derived(resolve(`/api/pdf/sale/${sale.id}`));
 
 	function openStockModal() {
 		showStockModal = true;
@@ -165,11 +170,6 @@
 		goto(resolve('/sales'));
 	}
 
-	function openPrintView() {
-		warnIfReceiptMayExceedHalfLetter();
-		window.open(resolve(`/print/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
-	}
-
 	function openPdfReceipt() {
 		warnIfReceiptMayExceedHalfLetter();
 		window.open(resolve(`/api/pdf/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
@@ -274,7 +274,7 @@
 				{#if canPrintReceipt}
 					<button
 						type="button"
-						onclick={openPrintView}
+						onclick={() => (showPdfPreview = true)}
 						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface-variant shadow-[var(--ds-shadow-md)] transition-colors hover:bg-surface-container-low"
 					>
 						<FileText class="h-4 w-4" />
@@ -775,6 +775,16 @@
 		></textarea>
 	{/snippet}
 </ConfirmModal>
+
+<!-- PDF Preview Modal -->
+{#if showPdfPreview}
+	<PDFViewerModal
+		url={pdfUrl}
+		title="Recibo de Venta {formattedOrderNumber}"
+		fileName={`recibo-venta-${String(sale.orderNumber).padStart(4, '0')}.pdf`}
+		onClose={() => (showPdfPreview = false)}
+	/>
+{/if}
 
 <!-- Mark as Completed confirmation -->
 <ConfirmModal

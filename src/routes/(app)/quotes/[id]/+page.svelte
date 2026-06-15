@@ -12,6 +12,7 @@
 		ClipboardList,
 		Sparkles
 	} from '@lucide/svelte';
+	import { PDFViewerModal } from '$lib/components/pdf';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -76,6 +77,10 @@
 	let actionLoading = $state(false);
 	let showCancelModal = $state(false);
 	let showConvertModal = $state(false);
+
+	// PDF preview modal
+	let showPdfPreview = $state(false);
+	let pdfUrl = $derived(resolve(`/api/pdf/quote/${quote.id}`));
 
 	// Customer assignment state (for DRAFT quotes without customer)
 	let assignCustomerId = $state('');
@@ -171,10 +176,6 @@
 		goto(resolve('/quotes'));
 	}
 
-	function openPrintView() {
-		window.open(resolve(`/print/quote/${quote.id}`), '_blank', 'noopener,noreferrer');
-	}
-
 	function openPdfQuote() {
 		window.open(resolve(`/api/pdf/quote/${quote.id}`), '_blank', 'noopener,noreferrer');
 	}
@@ -194,7 +195,7 @@
 		{#snippet actions()}
 			<button
 				type="button"
-				onclick={openPrintView}
+				onclick={() => (showPdfPreview = true)}
 				class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
 					'neutral'
 				)}"
@@ -664,6 +665,16 @@
 		</div>
 	</section>
 </div>
+
+<!-- PDF Preview Modal -->
+{#if showPdfPreview}
+	<PDFViewerModal
+		url={pdfUrl}
+		title="Presupuesto {formattedQuoteNumber}"
+		fileName={`presupuesto-${String(quote.quoteNumber).padStart(4, '0')}.pdf`}
+		onClose={() => (showPdfPreview = false)}
+	/>
+{/if}
 
 <!-- Cancel Confirmation -->
 <ConfirmModal
