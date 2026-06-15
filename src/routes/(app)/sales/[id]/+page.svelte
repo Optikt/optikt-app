@@ -139,10 +139,7 @@
 	async function handlePaymentAdded(_newPaidAmount: number) {
 		await invalidateAll();
 		syncFromData();
-		const newRemaining = Math.max(0, sale.total - sale.paidAmountBcvUsd);
-		if (newRemaining <= 0.01) {
-			showDrawer = false;
-		}
+		showDrawer = false;
 	}
 
 	async function handlePaymentVoided() {
