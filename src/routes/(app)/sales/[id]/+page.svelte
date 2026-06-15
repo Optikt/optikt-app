@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		ArrowLeft,
 		CircleX,
 		ClipboardList,
 		FileText,
@@ -18,7 +19,7 @@
 		SaleItemsTable,
 		SaleMovementsModal
 	} from '$lib/components/sales';
-	import { ConfirmModal, PageHeader, SaleStatusBadge } from '$lib/components/ui';
+	import { ConfirmModal, SaleStatusBadge } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
 	import {
@@ -244,38 +245,58 @@
 
 <div class="min-h-screen bg-gray-100">
 	<div class="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">
-		<PageHeader
-			title={`Venta ${formattedOrderNumber}`}
-			subtitle="Detalle de venta"
-			backLabel="Volver a Ventas"
-			backOnClick={goBack}
+		<!-- Back link -->
+		<button
+			type="button"
+			onclick={goBack}
+			class="mb-3 flex cursor-pointer items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-blue-600"
 		>
-			{#snippet actions()}
+			<ArrowLeft class="h-4 w-4" />
+			Volver a Ventas
+		</button>
+
+		<!-- Header card -->
+		<div
+			class="mb-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm sm:flex-row sm:items-center"
+		>
+			<div>
+				<p class="text-xs font-semibold tracking-widest text-slate-400 uppercase">
+					Detalle de venta
+				</p>
+				<h1 class="mt-0 text-2xl font-bold text-slate-900">
+					Venta {formattedOrderNumber}
+				</h1>
+			</div>
+
+			<!-- Actions -->
+			<div class="flex shrink-0 flex-wrap items-center gap-3">
+				<!-- Grupo A: Sistema (baja jerarquía) -->
 				{#if canPrintReceipt}
 					<button
 						type="button"
 						onclick={openPrintView}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
 					>
 						<FileText class="h-4 w-4" />
-						Ver recibo
+						Ver Recibo
 					</button>
 
 					<button
 						type="button"
 						onclick={openPdfReceipt}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
 					>
 						<Printer class="h-4 w-4" />
 						Imprimir PDF
 					</button>
 				{/if}
 
+				<!-- Grupo B: Flujo (alta jerarquía) -->
 				{#if canManageSale && (isPending || isInProgress)}
 					<button
 						type="button"
 						onclick={() => (showEditModal = true)}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
 					>
 						<Pen class="h-4 w-4" />
 						Editar
@@ -289,7 +310,7 @@
 							transitionReason = '';
 							showInProgressConfirm = true;
 						}}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
 					>
 						<Play class="h-4 w-4" />
 						En Progreso
@@ -303,25 +324,31 @@
 							transitionReason = '';
 							showCompletedConfirm = true;
 						}}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors {remainingBcvUsd <=
+						0.01
+							? 'bg-green-600 hover:bg-green-700'
+							: 'bg-blue-600 hover:bg-blue-700'}"
 					>
 						<CircleCheck class="h-4 w-4" />
 						Completar
 					</button>
 				{/if}
 
+				<!-- Grupo C: Destructivo (aislado) -->
 				{#if canManageSale && (isPending || isInProgress)}
-					<button
-						type="button"
-						onclick={() => (showCancelModal = true)}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-50 px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-red-600 uppercase shadow-sm transition-colors hover:bg-red-100"
-					>
-						<CircleX class="h-4 w-4" />
-						Cancelar
-					</button>
+					<div class="ml-4 border-l border-red-200 pl-4">
+						<button
+							type="button"
+							onclick={() => (showCancelModal = true)}
+							class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50"
+						>
+							<CircleX class="h-4 w-4" />
+							Cancelar
+						</button>
+					</div>
 				{/if}
-			{/snippet}
-		</PageHeader>
+			</div>
+		</div>
 
 		{#if sale.notes || isCancelled}
 			<div class="mb-6 grid gap-4 lg:grid-cols-2">
