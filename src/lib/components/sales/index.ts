@@ -9,4 +9,5 @@ export { default as ItemSelect } from './ItemSelect.svelte';
 export { default as PrescriptionInput } from './PrescriptionInput.svelte';
 export { default as SaleBalanceCards } from './SaleBalanceCards.svelte';
 export { default as SaleItemsTable } from './SaleItemsTable.svelte';
+export { default as SaleMovementsModal } from './SaleMovementsModal.svelte';
 export { default as SaleMovementsSection } from './SaleMovementsSection.svelte';
