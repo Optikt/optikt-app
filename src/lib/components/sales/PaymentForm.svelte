@@ -66,6 +66,7 @@
 	const storeBcvRate = $derived(store.bcvRate);
 	const effectiveBcvRate = $derived(bcvRate > 0 ? bcvRate : storeBcvRate);
 	const defaultBcvRateInput = $derived(effectiveBcvRate > 0 ? effectiveBcvRate.toFixed(2) : '');
+	const binanceRate = $derived(store.rates.find((r) => r.code === 'USDT')?.value ?? 0);
 
 	let paymentMethod = $state<PaymentMethod | ''>('');
 	let lastEditedField = $state<PaymentCalculationMode>('target');
@@ -74,6 +75,7 @@
 	let exchangeRateInput = $state('');
 	let currentBcvRateInput = $state('');
 	let bcvRateEditable = $state(false);
+	let drawerRateInput = $state('');
 	let paymentDate = $state(toISODate(nowUTC()));
 	let reference = $state('');
 	let notes = $state('');
@@ -131,6 +133,7 @@
 
 	const activeBcvRate = $derived(inputToNumber(currentBcvRateInput || defaultBcvRateInput));
 	const exchangeRateValue = $derived(inputToNumber(exchangeRateInput));
+	const drawerRateValue = $derived(inputToNumber(drawerRateInput));
 	const manualTargetAmount = $derived(inputToNumber(targetAmountInput));
 	const manualNativeAmount = $derived(inputToNumber(nativeAmountInput));
 	const needsExchangeRate = $derived(
@@ -139,14 +142,25 @@
 	const exchangeRateLabel = $derived(
 		paymentMethod ? getExchangeRateLabel(paymentMethod as PaymentMethod) : ''
 	);
+	const calcBcvRate = $derived(
+		variant === 'drawer' && isBsPaymentMethod(paymentMethod as PaymentMethod)
+			? drawerRateValue
+			: activeBcvRate
+	);
+	const calcExchangeRate = $derived(
+		variant === 'drawer' && paymentMethod === PaymentMethod.BINANCE_USDT
+			? drawerRateValue
+			: exchangeRateValue
+	);
+
 	const targetToNativeAmount = $derived.by(() => {
 		if (!paymentMethod) return 0;
 
 		return calculatePaymentAmountFromUsdBcv({
 			method: paymentMethod as PaymentMethod,
 			usdBcvAmount: manualTargetAmount,
-			bcvRate: activeBcvRate,
-			exchangeRate: exchangeRateValue
+			bcvRate: calcBcvRate,
+			exchangeRate: calcExchangeRate
 		});
 	});
 	const nativeToTargetAmount = $derived.by(() => {
@@ -155,8 +169,8 @@
 		return calculateUsdBcvFromPaymentAmount({
 			method: paymentMethod as PaymentMethod,
 			paymentAmount: manualNativeAmount,
-			bcvRate: activeBcvRate,
-			exchangeRate: exchangeRateValue
+			bcvRate: calcBcvRate,
+			exchangeRate: calcExchangeRate
 		});
 	});
 	const resolvedAmountUsd = $derived(
@@ -242,6 +256,7 @@
 		exchangeRateInput = '';
 		currentBcvRateInput = '';
 		bcvRateEditable = false;
+		drawerRateInput = '';
 		paymentDate = toISODate(nowUTC());
 		reference = '';
 		notes = '';
@@ -253,6 +268,7 @@
 		targetAmountInput = '';
 		nativeAmountInput = '';
 		exchangeRateInput = '';
+		drawerRateInput = '';
 		reference = '';
 		notes = '';
 		showNotes = false;
@@ -264,6 +280,13 @@
 		targetAmountInput = '';
 		nativeAmountInput = '';
 		exchangeRateInput = '';
+		drawerRateInput = isBsPaymentMethod(method)
+			? defaultBcvRateInput
+			: method === PaymentMethod.BINANCE_USDT
+				? binanceRate > 0
+					? binanceRate.toFixed(2)
+					: ''
+				: '';
 		reference = '';
 		notes = '';
 		showNotes = false;
@@ -293,9 +316,24 @@
 			return;
 		}
 
-		if (needsExchangeRate && exchangeRateValue <= 0) return;
+		if (variant === 'drawer') {
+			if (paymentMethod !== PaymentMethod.EFECTIVO_USD && drawerRateValue <= 0) return;
+		} else if (needsExchangeRate && exchangeRateValue <= 0) {
+			return;
+		}
 
 		const isFinalPayment = pendingAfterPayment <= 0.01;
+
+		const submitBcvRate =
+			variant === 'drawer' && isBsPaymentMethod(paymentMethod as PaymentMethod)
+				? drawerRateValue
+				: activeBcvRate;
+		const submitExchangeRate =
+			variant === 'drawer' && paymentMethod === PaymentMethod.BINANCE_USDT
+				? drawerRateValue
+				: needsExchangeRate
+					? exchangeRateValue
+					: undefined;
 
 		submitting = true;
 		try {
@@ -305,8 +343,8 @@
 				paymentDate,
 				amount: resolvedNativeAmount,
 				usdBcvAmount: resolvedAmountUsd,
-				exchangeRate: needsExchangeRate ? exchangeRateValue : undefined,
-				bcvRate: activeBcvRate,
+				exchangeRate: submitExchangeRate,
+				bcvRate: submitBcvRate,
 				reference: referenceToSubmit,
 				notes: notes.trim() || undefined
 			});
@@ -338,9 +376,13 @@
 	}
 
 	const hasValidAmounts = $derived(resolvedAmountUsd > 0 && resolvedNativeAmount > 0);
+	const hasValidRate = $derived(
+		variant !== 'drawer' || paymentMethod === PaymentMethod.EFECTIVO_USD || drawerRateValue > 0
+	);
 	const canSubmit = $derived(
 		!!paymentMethod &&
 			hasValidAmounts &&
+			hasValidRate &&
 			!!paymentDate &&
 			hasRequiredReference &&
 			activeBcvRate > 0 &&
@@ -431,12 +473,50 @@
 			</div>
 
 			{#if variant === 'drawer'}
-				<div
-					class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-100 p-3"
-				>
-					<span class="text-sm font-bold text-slate-800">BCV: {activeBcvRate.toFixed(2)}</span>
-					<span class="text-xs font-medium text-slate-600">{paymentDate}</span>
-				</div>
+				{#if paymentMethod !== PaymentMethod.EFECTIVO_USD}
+					<label class="block space-y-1">
+						<span class="text-sm font-bold text-slate-700">Tasa de Cambio</span>
+						<input
+							type="number"
+							value={drawerRateInput}
+							oninput={(event) => {
+								drawerRateInput = (event.currentTarget as HTMLInputElement).value;
+							}}
+							step="0.01"
+							min="0"
+							placeholder={defaultBcvRateInput || '0.00'}
+							class="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-center font-mono text-lg font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+						/>
+					</label>
+				{/if}
+				{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
+					<div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+						<p class="mb-1 text-xs font-bold tracking-wider text-indigo-600 uppercase">
+							Recibirás en Bs
+						</p>
+						<p class="font-mono text-3xl font-extrabold text-indigo-900">
+							{formatBsAmount(resolvedNativeAmount)}
+						</p>
+						{#if resolvedAmountUsd > 0}
+							<p class="mt-1 text-xs font-medium text-indigo-500">
+								{drawerRateValue > 0
+									? `${drawerRateValue.toFixed(2)} × ${formatPrice(resolvedAmountUsd)}`
+									: ''}
+							</p>
+						{/if}
+					</div>
+				{:else}
+					<div class="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+						<p class="text-xs font-bold tracking-wider text-amber-700 uppercase">
+							Recibirás en {paymentMethod === PaymentMethod.BINANCE_USDT ? 'USDT' : 'USD'}
+						</p>
+						<p class="mt-0.5 font-mono text-2xl font-extrabold text-amber-900">
+							{nativeFieldValue && inputToNumber(nativeFieldValue) > 0
+								? `${inputToNumber(nativeFieldValue).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paymentMethod === PaymentMethod.EFECTIVO_USD ? 'USD' : 'USDT'}`
+								: '-'}
+						</p>
+					</div>
+				{/if}
 			{:else}
 				<div class="flex items-center gap-2">
 					<div class="flex-1">
@@ -488,53 +568,53 @@
 						/>
 					</div>
 				</div>
-			{/if}
 
-			{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
-				<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-					<p class="mb-1 text-xs font-bold tracking-wider text-indigo-600 uppercase">
-						Recibirás en Bs
-					</p>
-					<p class="font-mono text-3xl font-extrabold text-indigo-900">
-						{formatBsAmount(resolvedNativeAmount)}
-					</p>
-					{#if resolvedAmountUsd > 0}
-						<p class="mt-1 text-xs font-medium text-indigo-500">
-							{activeBcvRate.toFixed(2)} × {formatPrice(resolvedAmountUsd)}
+				{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
+					<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+						<p class="mb-1 text-xs font-bold tracking-wider text-indigo-600 uppercase">
+							Recibirás en Bs
 						</p>
-					{/if}
-				</div>
-			{:else}
-				<label class="block space-y-1">
-					<span class="mb-1 block text-xs font-semibold text-slate-700">
-						{exchangeRateLabel}
-					</span>
-					<div class="relative">
-						<span class="absolute top-1/2 left-3 -translate-y-1/2 font-mono text-xs text-gray-400"
-							>Bs</span
-						>
-						<input
-							type="number"
-							value={exchangeRateInput}
-							oninput={(event) => {
-								exchangeRateInput = (event.currentTarget as HTMLInputElement).value;
-							}}
-							step="0.01"
-							min="0"
-							placeholder="0.00"
-							class="w-full rounded-lg border-2 border-slate-300 bg-white py-2 pr-3 pl-7 font-mono text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-						/>
+						<p class="font-mono text-3xl font-extrabold text-indigo-900">
+							{formatBsAmount(resolvedNativeAmount)}
+						</p>
+						{#if resolvedAmountUsd > 0}
+							<p class="mt-1 text-xs font-medium text-indigo-500">
+								{activeBcvRate.toFixed(2)} × {formatPrice(resolvedAmountUsd)}
+							</p>
+						{/if}
 					</div>
-				</label>
+				{:else}
+					<label class="block space-y-1">
+						<span class="mb-1 block text-xs font-semibold text-slate-700">
+							{exchangeRateLabel}
+						</span>
+						<div class="relative">
+							<span class="absolute top-1/2 left-3 -translate-y-1/2 font-mono text-xs text-gray-400"
+								>Bs</span
+							>
+							<input
+								type="number"
+								value={exchangeRateInput}
+								oninput={(event) => {
+									exchangeRateInput = (event.currentTarget as HTMLInputElement).value;
+								}}
+								step="0.01"
+								min="0"
+								placeholder="0.00"
+								class="w-full rounded-lg border-2 border-slate-300 bg-white py-2 pr-3 pl-7 font-mono text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+							/>
+						</div>
+					</label>
 
-				<div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
-					<p class="text-xs font-bold tracking-wider text-amber-700 uppercase">Recibes</p>
-					<p class="mt-0.5 font-mono text-2xl font-extrabold text-amber-900">
-						{nativeFieldValue && inputToNumber(nativeFieldValue) > 0
-							? `${inputToNumber(nativeFieldValue).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paymentMethod === PaymentMethod.EFECTIVO_USD ? 'USD' : 'USDT'}`
-							: '-'}
-					</p>
-				</div>
+					<div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+						<p class="text-xs font-bold tracking-wider text-amber-700 uppercase">Recibes</p>
+						<p class="mt-0.5 font-mono text-2xl font-extrabold text-amber-900">
+							{nativeFieldValue && inputToNumber(nativeFieldValue) > 0
+								? `${inputToNumber(nativeFieldValue).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paymentMethod === PaymentMethod.EFECTIVO_USD ? 'USD' : 'USDT'}`
+								: '-'}
+						</p>
+					</div>
+				{/if}
 			{/if}
 
 			{#if showExtraFields}
@@ -614,7 +694,7 @@
 			<button
 				type="button"
 				onclick={handleSubmit}
-				disabled={!canSubmit || (needsExchangeRate && exchangeRateValue <= 0)}
+				disabled={!canSubmit}
 				class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 {variant ===
 				'drawer'
 					? pendingAfterPayment <= 0.01
