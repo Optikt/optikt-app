@@ -33,6 +33,8 @@
 		remainingBcvUsd: number;
 		bcvRate?: number;
 		onPaymentAdded?: (paidAmount: number) => void;
+		drawerResetKey?: number;
+		variant?: 'default' | 'drawer';
 	}
 
 	interface ReferenceConfig {
@@ -52,7 +54,14 @@
 
 	const FOREIGN_METHODS: PaymentMethod[] = [PaymentMethod.EFECTIVO_USD, PaymentMethod.BINANCE_USDT];
 
-	let { saleId, remainingBcvUsd, bcvRate = 0, onPaymentAdded }: Props = $props();
+	let {
+		saleId,
+		remainingBcvUsd,
+		bcvRate = 0,
+		onPaymentAdded,
+		drawerResetKey = 0,
+		variant = 'default'
+	}: Props = $props();
 	const store = getExchangeRatesStore();
 	const storeBcvRate = $derived(store.bcvRate);
 	const effectiveBcvRate = $derived(bcvRate > 0 ? bcvRate : storeBcvRate);
@@ -71,6 +80,23 @@
 	let showNotes = $state(false);
 	let showExtraFields = $state(false);
 	let submitting = $state(false);
+	let amountInputEl = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (variant !== 'drawer') return;
+		if (paymentMethod && amountInputEl) {
+			amountInputEl.focus();
+		}
+	});
+
+	let prevDrawerResetKey = 0;
+	$effect(() => {
+		const key = drawerResetKey;
+		if (key !== prevDrawerResetKey) {
+			prevDrawerResetKey = key;
+			reset();
+		}
+	});
 
 	function inputToNumber(value: string): number {
 		const parsed = Number(value);
@@ -83,8 +109,14 @@
 
 	function pillClasses(method: PaymentMethod): string {
 		const isActive = paymentMethod === method;
-		const isBs = isBsPaymentMethod(method);
 
+		if (variant === 'drawer') {
+			return isActive
+				? 'bg-blue-600 border border-blue-600 text-white font-bold shadow-sm'
+				: 'bg-white border-2 border-slate-300 text-slate-800 font-semibold hover:border-slate-400';
+		}
+
+		const isBs = isBsPaymentMethod(method);
 		return isActive
 			? isBs
 				? 'bg-brand-navy text-white ring-2 ring-brand-navy/20'
@@ -217,6 +249,15 @@
 		showExtraFields = false;
 	}
 
+	function partialReset() {
+		targetAmountInput = '';
+		nativeAmountInput = '';
+		exchangeRateInput = '';
+		reference = '';
+		notes = '';
+		showNotes = false;
+	}
+
 	function selectPaymentMethod(method: PaymentMethod) {
 		paymentMethod = method;
 		lastEditedField = getDefaultPaymentCalculationMode(method);
@@ -254,6 +295,8 @@
 
 		if (needsExchangeRate && exchangeRateValue <= 0) return;
 
+		const isFinalPayment = pendingAfterPayment <= 0.01;
+
 		submitting = true;
 		try {
 			const result = await addPayment({
@@ -279,7 +322,12 @@
 					? 'Pago registrado. La venta quedó cubierta.'
 					: `Pago registrado. Quedan ${formatPrice(remainingAfterSave)} pendientes.`
 			);
-			reset();
+
+			if (isFinalPayment) {
+				reset();
+			} else {
+				partialReset();
+			}
 			onPaymentAdded?.(result.paidAmount);
 		} catch (error) {
 			console.error(error);
@@ -298,6 +346,9 @@
 			activeBcvRate > 0 &&
 			!submitting
 	);
+	const drawerSubmitLabel = $derived(
+		pendingAfterPayment <= 0.01 ? 'Finalizar Venta' : 'Aplicar Pago'
+	);
 	const submitLabel = $derived(
 		hasValidAmounts ? `Registrar abono de ${formatPrice(resolvedAmountUsd)}` : 'Registrar pago'
 	);
@@ -305,15 +356,19 @@
 
 <div class="space-y-4">
 	<div>
-		<p class="mb-2.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+		<p
+			class="mb-2.5 {variant === 'drawer'
+				? 'text-sm font-semibold text-slate-700'
+				: 'text-xs font-semibold tracking-wider text-gray-400 uppercase'}"
+		>
 			Método de pago
 		</p>
-		<div class="grid grid-cols-2 gap-1.5">
+		<div class="grid grid-cols-2 gap-2">
 			{#each [...BOLIVAR_METHODS, ...FOREIGN_METHODS] as method (method)}
 				<button
 					type="button"
 					onclick={() => selectPaymentMethod(method)}
-					class={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all ${pillClasses(method)}`}
+					class={`inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${variant === 'drawer' ? 'rounded-full border-2 px-4 py-2 text-sm' : 'rounded-lg'} ${pillClasses(method)}`}
 				>
 					{#if method === PaymentMethod.PAGO_MOVIL_BS}
 						<Smartphone class="h-3.5 w-3.5 shrink-0" />
@@ -338,7 +393,9 @@
 				<div class="flex items-center justify-between">
 					<label
 						for="pay-amount"
-						class="text-xs font-semibold tracking-wider text-gray-400 uppercase"
+						class={variant === 'drawer'
+							? 'text-sm font-semibold text-slate-700'
+							: 'text-xs font-semibold tracking-wider text-gray-400 uppercase'}
 					>
 						Monto a abonar <span class="font-normal tracking-normal text-gray-300 normal-case"
 							>(USD BCV)</span
@@ -364,79 +421,92 @@
 						placeholder={remainingBcvUsd.toFixed(2)}
 						step="0.01"
 						min="0"
-						class="w-full rounded-lg border border-gray-200 bg-white py-3 pr-3.5 pl-7 font-mono text-lg font-bold text-gray-900 placeholder-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
+						bind:this={amountInputEl}
+						class="w-full rounded-lg bg-white py-3 pr-3.5 pl-7 font-mono text-lg font-bold text-slate-900 placeholder-slate-400 focus:outline-none {variant ===
+						'drawer'
+							? 'border-2 border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+							: 'border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15'}"
 					/>
 				</div>
 			</div>
 
-			<div class="flex items-center gap-2">
-				<div class="flex-1">
-					<label
-						for="pay-bcv"
-						class="mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
-					>
-						Tasa BCV
-					</label>
-					<div class="relative">
-						<input
-							id="pay-bcv"
-							type="number"
-							value={bcvRateEditable
-								? currentBcvRateInput
-								: currentBcvRateInput || defaultBcvRateInput}
-							oninput={(event) => {
-								currentBcvRateInput = (event.currentTarget as HTMLInputElement).value;
-							}}
-							readonly={!bcvRateEditable}
-							step="0.01"
-							min="0"
-							class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-xs text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none {bcvRateEditable
-								? ''
-								: 'opacity-60'}"
-						/>
-						<button
-							type="button"
-							onclick={() => (bcvRateEditable = !bcvRateEditable)}
-							class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+			{#if variant === 'drawer'}
+				<div
+					class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-100 p-3"
+				>
+					<span class="text-sm font-bold text-slate-800">BCV: {activeBcvRate.toFixed(2)}</span>
+					<span class="text-xs font-medium text-slate-600">{paymentDate}</span>
+				</div>
+			{:else}
+				<div class="flex items-center gap-2">
+					<div class="flex-1">
+						<label
+							for="pay-bcv"
+							class="mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
 						>
-							<Pencil class="h-3 w-3" />
-						</button>
+							Tasa BCV
+						</label>
+						<div class="relative">
+							<input
+								id="pay-bcv"
+								type="number"
+								value={bcvRateEditable
+									? currentBcvRateInput
+									: currentBcvRateInput || defaultBcvRateInput}
+								oninput={(event) => {
+									currentBcvRateInput = (event.currentTarget as HTMLInputElement).value;
+								}}
+								readonly={!bcvRateEditable}
+								step="0.01"
+								min="0"
+								class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-xs text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none {bcvRateEditable
+									? ''
+									: 'opacity-60'}"
+							/>
+							<button
+								type="button"
+								onclick={() => (bcvRateEditable = !bcvRateEditable)}
+								class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+							>
+								<Pencil class="h-3 w-3" />
+							</button>
+						</div>
+					</div>
+					<div class="flex-[0.7]">
+						<label
+							for="pay-date"
+							class="mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+						>
+							Fecha
+						</label>
+						<input
+							id="pay-date"
+							type="date"
+							bind:value={paymentDate}
+							max="9999-12-31"
+							class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
+						/>
 					</div>
 				</div>
-				<div class="flex-[0.7]">
-					<label
-						for="pay-date"
-						class="mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
-					>
-						Fecha
-					</label>
-					<input
-						id="pay-date"
-						type="date"
-						bind:value={paymentDate}
-						max="9999-12-31"
-						class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
-					/>
-				</div>
-			</div>
+			{/if}
 
 			{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
-				<div class="rounded-lg bg-gray-900 px-4 py-3">
-					<p class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+				<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+					<p class="mb-1 text-xs font-bold tracking-wider text-indigo-600 uppercase">
 						Recibirás en Bs
 					</p>
-					<p class="mt-0.5 font-mono text-xl font-bold text-white">
+					<p class="font-mono text-3xl font-extrabold text-indigo-900">
 						{formatBsAmount(resolvedNativeAmount)}
 					</p>
 					{#if resolvedAmountUsd > 0}
-						<p class="mt-0.5 text-[11px] text-gray-400">
+						<p class="mt-1 text-xs font-medium text-indigo-500">
 							{activeBcvRate.toFixed(2)} × {formatPrice(resolvedAmountUsd)}
 						</p>
 					{/if}
 				</div>
 			{:else}
 				<label class="block space-y-1">
-					<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+					<span class="mb-1 block text-xs font-semibold text-slate-700">
 						{exchangeRateLabel}
 					</span>
 					<div class="relative">
@@ -452,14 +522,14 @@
 							step="0.01"
 							min="0"
 							placeholder="0.00"
-							class="w-full rounded-lg border border-gray-200 bg-white py-2 pr-3 pl-7 font-mono text-xs text-gray-900 placeholder-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
+							class="w-full rounded-lg border-2 border-slate-300 bg-white py-2 pr-3 pl-7 font-mono text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
 						/>
 					</div>
 				</label>
 
 				<div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
-					<p class="text-[10px] font-semibold tracking-wider text-amber-700 uppercase">Recibes</p>
-					<p class="mt-0.5 font-mono text-xl font-bold text-amber-600">
+					<p class="text-xs font-bold tracking-wider text-amber-700 uppercase">Recibes</p>
+					<p class="mt-0.5 font-mono text-2xl font-extrabold text-amber-900">
 						{nativeFieldValue && inputToNumber(nativeFieldValue) > 0
 							? `${inputToNumber(nativeFieldValue).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paymentMethod === PaymentMethod.EFECTIVO_USD ? 'USD' : 'USDT'}`
 							: '-'}
@@ -469,7 +539,11 @@
 
 			{#if showExtraFields}
 				<label class="block space-y-1">
-					<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+					<span
+						class={variant === 'drawer'
+							? 'mb-1 block text-xs font-semibold text-slate-700'
+							: 'text-[10px] font-semibold tracking-wider text-gray-400 uppercase'}
+					>
 						{referenceConfig.label}
 						{#if !referenceConfig.required}
 							<span class="font-normal tracking-normal text-gray-300 normal-case">(opcional)</span>
@@ -479,7 +553,10 @@
 						type="text"
 						bind:value={reference}
 						placeholder={referenceConfig.placeholder}
-						class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
+						class="w-full rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none {variant ===
+						'drawer'
+							? 'border-2 border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+							: 'border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15'}"
 					/>
 					{#if referenceConfig.helper}
 						<p class="text-[10px] text-gray-400">{referenceConfig.helper}</p>
@@ -504,7 +581,10 @@
 						type="text"
 						bind:value={notes}
 						placeholder="Observaciones"
-						class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
+						class="w-full rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none {variant ===
+						'drawer'
+							? 'border-2 border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+							: 'border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15'}"
 					/>
 				{/if}
 			{/if}
@@ -535,9 +615,14 @@
 				type="button"
 				onclick={handleSubmit}
 				disabled={!canSubmit || (needsExchangeRate && exchangeRateValue <= 0)}
-				class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+				class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 {variant ===
+				'drawer'
+					? pendingAfterPayment <= 0.01
+						? 'bg-green-600 hover:bg-green-700'
+						: 'bg-blue-600 hover:bg-blue-700'
+					: 'bg-emerald-600 hover:bg-emerald-700'}"
 			>
-				{submitLabel}
+				{variant === 'drawer' ? drawerSubmitLabel : submitLabel}
 			</button>
 		</div>
 	{/if}

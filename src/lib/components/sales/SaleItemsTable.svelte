@@ -297,7 +297,7 @@
 	</div>
 
 	<div
-		class="grid grid-cols-[1fr_70px_110px_130px] gap-2 border-b border-gray-200 bg-gray-50/30 px-5 py-2.5 text-[11px] font-semibold tracking-wider text-gray-500 uppercase"
+		class="grid grid-cols-[3fr_1fr_1fr_1.2fr] gap-2 border-b border-gray-200 bg-gray-50/30 px-5 py-2.5 text-[11px] font-semibold tracking-wider text-gray-500 uppercase"
 	>
 		<span>Producto</span>
 		<span class="text-center">Cant.</span>
@@ -316,7 +316,7 @@
 			<div>
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 				<div
-					class="grid grid-cols-[1fr_70px_110px_130px] items-center gap-2 px-5 py-4 {hasRx
+					class="grid grid-cols-[3fr_1fr_1fr_1.2fr] items-center gap-2 px-5 py-4 {hasRx
 						? `cursor-pointer ${hoverCls} transition-colors`
 						: hoverCls}"
 					onclick={hasRx ? () => toggleExpanded(group.key) : undefined}
@@ -686,7 +686,7 @@
 
 				{#each group.treatments as treatment (treatment.id)}
 					<div
-						class="grid grid-cols-[1fr_70px_110px_130px] items-center gap-2 px-5 py-4 transition-colors hover:bg-gray-50/50"
+						class="grid grid-cols-[3fr_1fr_1fr_1.2fr] items-center gap-2 px-5 py-4 transition-colors hover:bg-gray-50/50"
 					>
 						<div class="flex min-w-0 items-center gap-3">
 							<div
