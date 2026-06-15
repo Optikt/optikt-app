@@ -28,7 +28,8 @@
 		RefundStatus,
 		SaleStatus,
 		UserRole,
-		getSaleStatusLabel
+		getSaleStatusLabel,
+		isBsPaymentMethod
 	} from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
@@ -553,18 +554,49 @@
 						{#if payments.length > 0}
 							<div class="space-y-2">
 								{#each payments as payment (payment.id)}
-									<div class="flex items-center justify-between">
-										<p class="min-w-0 truncate text-sm font-medium text-gray-600">
-											{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
-											{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
-										</p>
-										<p
-											class="ml-2 shrink-0 text-sm font-bold {remainingBcvUsd <= 0.01
-												? 'text-green-600'
-												: 'text-gray-900'}"
-										>
-											{formatPrice(payment.amountBcvUsd)}
-										</p>
+									<div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+										<div class="flex items-baseline justify-between">
+											<span class="text-sm font-semibold text-slate-800">
+												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
+												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
+											</span>
+											<span class="text-sm font-bold text-slate-900">
+												{formatPrice(payment.amountBcvUsd)}
+											</span>
+										</div>
+										<div class="mt-1 flex items-baseline justify-between">
+											{#if isBsPaymentMethod(payment.paymentMethod as unknown as PaymentMethod)}
+												<span class="text-xs text-slate-500"
+													>Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
+												>
+												<span class="text-xs font-semibold text-slate-600"
+													>Bs. {Number(payment.amount).toLocaleString('es-VE', {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2
+													})}</span
+												>
+											{:else if (payment.paymentMethod as unknown as PaymentMethod) === PaymentMethod.BINANCE_USDT}
+												<span class="text-xs text-slate-500"
+													>Tasa USDT: {Number(payment.exchangeRate ?? 0).toFixed(2)}</span
+												>
+												<span class="text-xs font-semibold text-slate-600"
+													>USDT {Number(payment.amount).toLocaleString('es-VE', {
+														minimumFractionDigits: 2,
+														maximumFractionDigits: 2
+													})}</span
+												>
+											{:else}
+												<span class="text-xs text-slate-500"
+													>Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
+												>
+												<span class="text-xs font-semibold text-slate-600"
+													>Bs. {Number(payment.amountBcvUsd * payment.bcvRate).toLocaleString(
+														'es-VE',
+														{ minimumFractionDigits: 2, maximumFractionDigits: 2 }
+													)}</span
+												>
+											{/if}
+										</div>
 									</div>
 								{/each}
 							</div>
