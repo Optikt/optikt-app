@@ -3,7 +3,9 @@ import { error } from '@sveltejs/kit';
 import {
 	getAllLensMaterials,
 	getLensCatalogDistinctValues,
-	getLensCatalogItemsWithRelations
+	getLensCatalogItemsWithRelations,
+	getAllTechnologies,
+	getAllDifferentiators
 } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import {
@@ -33,24 +35,29 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const technology = searchParams.get('technology')?.trim() || undefined;
 	const differentiator = searchParams.get('differentiator')?.trim() || undefined;
 
-	const [materials, catalogItems, distinctValues, suppliers] = await Promise.all([
-		getAllLensMaterials(),
-		getLensCatalogItemsWithRelations({
-			search,
-			source,
-			type,
-			supplierId,
-			materialId,
-			technologyId: technology,
-			differentiator
-		}),
-		getLensCatalogDistinctValues(),
-		getAllSuppliers({ orderBy: 'name' })
-	]);
+	const [materials, catalogItems, distinctValues, suppliers, allTechnologies, allDifferentiators] =
+		await Promise.all([
+			getAllLensMaterials(),
+			getLensCatalogItemsWithRelations({
+				search,
+				source,
+				type,
+				supplierId,
+				materialId,
+				technologyId: technology,
+				differentiator
+			}),
+			getLensCatalogDistinctValues(),
+			getAllSuppliers({ orderBy: 'name' }),
+			getAllTechnologies(),
+			getAllDifferentiators()
+		]);
 
 	return {
 		materials,
 		catalogItems,
+		allTechnologies,
+		allDifferentiators,
 		technologies: distinctValues.technologies,
 		differentiators: distinctValues.differentiators,
 		suppliers: suppliers.map((s) => ({ id: s.id, name: s.name }))

@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { LensCatalogTable, LensMaterialsTab } from '$lib/components/lenses';
+	import { LensCatalogTable, LensPropertiesTab } from '$lib/components/lenses';
 	import { PageHeader, SelectInput } from '$lib/components/ui';
 	import { parsePageParam, replaceUrlSearch, setQueryParam, getErrorMessage } from '$lib/utils';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
@@ -21,10 +21,10 @@
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
 
-	type ActiveTab = 'catalog' | 'materials';
+	type ActiveTab = 'catalog' | 'properties';
 
 	let { data }: { data: PageData } = $props();
-	let { materials, catalogItems, suppliers, technologies, differentiators } = untrack(() => data);
+	let { materials, catalogItems, suppliers, technologies, differentiators, allTechnologies, allDifferentiators } = untrack(() => data);
 	const initialQuery = untrack(() => page.url.searchParams);
 	const initialPage = parsePageParam(initialQuery.get('page'));
 	const initialSearch = initialQuery.get('q') ?? '';
@@ -100,7 +100,7 @@
 	});
 
 	const pageTitle = $derived(
-		activeTab === 'catalog' ? 'Catálogo de Lentes' : 'Materiales de Lentes'
+		activeTab === 'catalog' ? 'Catálogo de Lentes' : 'Propiedades de Lentes'
 	);
 
 	function syncCatalogUrl(nextPage: number): void {
@@ -240,14 +240,14 @@
 					</button>
 					<button
 						type="button"
-						onclick={() => (activeTab = 'materials')}
-						aria-pressed={activeTab === 'materials'}
+						onclick={() => (activeTab = 'properties')}
+						aria-pressed={activeTab === 'properties'}
 						class="flex-1 rounded-xl px-4 py-2 text-xs font-semibold tracking-[0.18em] uppercase transition-colors sm:flex-none sm:px-5 {activeTab ===
-						'materials'
+						'properties'
 							? 'bg-brand-navy text-white'
 							: 'text-on-surface-variant hover:bg-surface-container-lowest'}"
 					>
-						Materiales
+						Propiedades
 					</button>
 				</div>
 			</div>
@@ -388,6 +388,12 @@
 			canManage={isAdmin}
 		/>
 	{:else}
-		<LensMaterialsTab initialMaterials={materials} canManage={isAdmin} />
+		<LensPropertiesTab
+			initialMaterials={materials}
+			initialTechnologies={allTechnologies}
+			initialDifferentiators={allDifferentiators}
+			initialSuppliers={suppliers}
+			canManage={isAdmin}
+		/>
 	{/if}
 </div>
