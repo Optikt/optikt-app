@@ -494,29 +494,29 @@
 			<!-- Right Column (40%) - Sticky Mini Summary -->
 			<div class="lg:sticky lg:top-6 lg:col-span-2">
 				<div
-					class="flex max-h-[calc(100vh-8rem)] flex-col rounded-xl border border-gray-100/50 bg-white shadow-sm"
+					class="flex max-h-[calc(100vh-8rem)] flex-col rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm"
 				>
-					<div class="flex-shrink-0 p-6">
-						<div class="space-y-3">
+					<div class="flex-shrink-0 space-y-4">
+						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<span class="text-sm font-medium text-gray-500">Subtotal</span>
-								<span class="text-sm font-semibold text-gray-900">{formatPrice(sale.subtotal)}</span
+								<span class="text-xs text-gray-500">Subtotal</span>
+								<span class="text-xs font-semibold text-gray-900">{formatPrice(sale.subtotal)}</span
 								>
 							</div>
 							<div class="flex items-center justify-between">
-								<span class="text-sm font-medium text-gray-500">IVA ({sale.snapshotTaxRate}%)</span>
-								<span class="text-sm font-semibold text-gray-900"
+								<span class="text-xs text-gray-500">IVA ({sale.snapshotTaxRate}%)</span>
+								<span class="text-xs font-semibold text-gray-900"
 									>{formatPrice(taxBreakdown.taxAmount)}</span
 								>
 							</div>
 						</div>
 
-						<div class="mt-5 border-t border-gray-100 pt-5">
+						<div>
 							{#if remainingBcvUsd > 0.01}
-								<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">
-									Saldo pendiente
+								<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+									Saldo Pendiente
 								</p>
-								<p class="mt-1 font-mono text-3xl font-bold text-amber-600">
+								<p class="mt-1 text-3xl font-extrabold text-amber-600">
 									{formatPrice(remainingBcvUsd)}
 								</p>
 								<div class="mt-3 h-1.5 rounded-full bg-amber-100">
@@ -530,7 +530,7 @@
 									<span>{paymentProgressPercent.toFixed(0)}%</span>
 								</div>
 							{:else}
-								<p class="font-mono text-3xl font-bold text-green-600">Pagado</p>
+								<p class="text-3xl font-extrabold text-green-600">Pagado</p>
 							{/if}
 						</div>
 
@@ -538,27 +538,28 @@
 							<button
 								type="button"
 								onclick={openDrawer}
-								class="mt-6 w-full cursor-pointer rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+								class="w-full cursor-pointer rounded-lg bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
 							>
 								Cobrar / Registrar Pago
 							</button>
 						{/if}
 					</div>
 
-					<div class="mx-6 border-t border-gray-200"></div>
+					<div class="mt-4 border-t border-gray-200"></div>
 
-					<div class="flex-1 overflow-y-auto px-6 pt-4 pb-6">
-						<h3 class="mb-3 text-xs font-bold tracking-wider text-gray-500 uppercase">
-							Pagos Registrados
-						</h3>
+					<div class="mt-4 flex-1 overflow-y-auto">
+						<p class="mb-3 text-sm font-semibold text-slate-700">Abonos Registrados</p>
 						{#if payments.length > 0}
 							<div class="space-y-2">
 								{#each payments as payment (payment.id)}
 									<div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
 										<div class="flex items-baseline justify-between">
 											<span class="text-sm font-semibold text-slate-800">
-												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} -
+												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
 												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
+												{#if payment.reference}
+													<span class="font-mono text-xs text-slate-500">(Ref. {payment.reference})</span>
+												{/if}
 											</span>
 											<span class="text-sm font-bold text-slate-900">
 												{formatPrice(payment.amountBcvUsd)}
@@ -566,7 +567,7 @@
 										</div>
 										<div class="mt-1 flex items-baseline justify-between">
 											{#if isBsPaymentMethod(payment.paymentMethod as unknown as PaymentMethod)}
-												<span class="text-xs text-slate-500"
+												<span class="font-mono text-xs text-slate-600"
 													>Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
 												>
 												<span class="text-xs font-semibold text-slate-600"
@@ -576,7 +577,7 @@
 													})}</span
 												>
 											{:else if (payment.paymentMethod as unknown as PaymentMethod) === PaymentMethod.BINANCE_USDT}
-												<span class="text-xs text-slate-500"
+												<span class="font-mono text-xs text-slate-600"
 													>Tasa USDT: {Number(payment.exchangeRate ?? 0).toFixed(2)}</span
 												>
 												<span class="text-xs font-semibold text-slate-600"
@@ -586,8 +587,8 @@
 													})}</span
 												>
 											{:else}
-												<span class="text-xs text-slate-500"
-													>Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
+												<span class="font-mono text-xs text-slate-600"
+													>Efectivo $ • Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
 												>
 												<span class="text-xs font-semibold text-slate-600"
 													>Bs. {Number(payment.amountBcvUsd * payment.bcvRate).toLocaleString(
@@ -601,8 +602,8 @@
 								{/each}
 							</div>
 						{:else}
-							<p class="py-4 text-center text-sm text-gray-400 italic">
-								Aún no hay pagos registrados
+							<p class="py-6 text-center text-sm text-gray-400 italic">
+								Aún no hay abonos registrados
 							</p>
 						{/if}
 					</div>
