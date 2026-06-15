@@ -7,7 +7,7 @@
 		Play,
 		Printer,
 		CircleCheck,
-		X as XIcon,
+		X as XIcon
 	} from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
