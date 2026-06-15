@@ -243,13 +243,13 @@
 	<title>Venta {formattedOrderNumber} - {customerName()} - Optikt</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-100">
+<div class="min-h-screen bg-surface">
 	<div class="mx-auto max-w-7xl px-4 py-4">
 		<!-- Back link -->
 		<button
 			type="button"
 			onclick={goBack}
-			class="mb-2 flex cursor-pointer items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-blue-600"
+			class="mb-2 flex cursor-pointer items-center gap-1.5 text-sm text-outline transition-colors hover:text-brand-blue"
 		>
 			<ArrowLeft class="h-4 w-4" />
 			Volver a Ventas
@@ -257,13 +257,13 @@
 
 		<!-- Header card -->
 		<div
-			class="mb-4 flex flex-col items-start justify-between gap-4 rounded-xl border border-gray-100/50 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
+			class="mb-4 flex flex-col items-start justify-between gap-4 rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-4 shadow-[var(--ds-shadow-md)] sm:flex-row sm:items-center"
 		>
 			<div>
-				<p class="text-xs font-semibold tracking-widest text-slate-400 uppercase">
+				<p class="text-xs font-semibold tracking-widest text-on-surface-variant uppercase">
 					Detalle de venta
 				</p>
-				<h1 class="mt-0 text-2xl font-bold text-slate-900">
+				<h1 class="mt-0 text-2xl font-bold text-on-surface">
 					Venta {formattedOrderNumber}
 				</h1>
 			</div>
@@ -275,7 +275,7 @@
 					<button
 						type="button"
 						onclick={openPrintView}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface-variant shadow-[var(--ds-shadow-md)] transition-colors hover:bg-surface-container-low"
 					>
 						<FileText class="h-4 w-4" />
 						Ver Recibo
@@ -284,7 +284,7 @@
 					<button
 						type="button"
 						onclick={openPdfReceipt}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface-variant shadow-[var(--ds-shadow-md)] transition-colors hover:bg-surface-container-low"
 					>
 						<Printer class="h-4 w-4" />
 						Imprimir PDF
@@ -296,7 +296,7 @@
 					<button
 						type="button"
 						onclick={() => (showEditModal = true)}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-info-container px-3 py-2 text-xs font-semibold text-on-info-container shadow-[var(--ds-shadow-md)] transition-colors hover:bg-info-container"
 					>
 						<Pen class="h-4 w-4" />
 						Editar
@@ -310,7 +310,7 @@
 							transitionReason = '';
 							showInProgressConfirm = true;
 						}}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] bg-brand-blue px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors hover:bg-brand-blue-dark"
 					>
 						<Play class="h-4 w-4" />
 						En Progreso
@@ -324,10 +324,10 @@
 							transitionReason = '';
 							showCompletedConfirm = true;
 						}}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors {remainingBcvUsd <=
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors {remainingBcvUsd <=
 						0.01
-							? 'bg-green-600 hover:bg-green-700'
-							: 'bg-blue-600 hover:bg-blue-700'}"
+							? 'bg-success hover:bg-success/90'
+							: 'bg-brand-blue hover:bg-brand-blue-dark'}"
 					>
 						<CircleCheck class="h-4 w-4" />
 						Completar
@@ -336,11 +336,11 @@
 
 				<!-- Grupo C: Destructivo (aislado) -->
 				{#if canManageSale && (isPending || isInProgress)}
-					<div class="ml-4 border-l border-red-200 pl-4">
+					<div class="ml-4 border-l border-error-container pl-4">
 						<button
 							type="button"
 							onclick={() => (showCancelModal = true)}
-							class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 shadow-sm transition-colors hover:bg-red-50"
+							class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-error-container px-3 py-2 text-xs font-semibold text-on-error-container shadow-[var(--ds-shadow-md)] transition-colors hover:bg-error-container"
 						>
 							<CircleX class="h-4 w-4" />
 							Cancelar
@@ -493,18 +493,19 @@
 			<!-- Right Column (40%) - Sticky Mini Summary -->
 			<div class="lg:sticky lg:top-6 lg:col-span-2">
 				<div
-					class="flex max-h-[calc(100vh-8rem)] flex-col rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm"
+					class="flex max-h-[calc(100vh-8rem)] flex-col rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-md)]"
 				>
 					<div class="flex-shrink-0 space-y-4">
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<span class="text-xs text-gray-500">Subtotal</span>
-								<span class="text-xs font-semibold text-gray-900">{formatPrice(sale.subtotal)}</span
+								<span class="text-xs text-outline">Subtotal</span>
+								<span class="text-xs font-semibold text-on-surface"
+									>{formatPrice(sale.subtotal)}</span
 								>
 							</div>
 							<div class="flex items-center justify-between">
-								<span class="text-xs text-gray-500">IVA ({sale.snapshotTaxRate}%)</span>
-								<span class="text-xs font-semibold text-gray-900"
+								<span class="text-xs text-outline">IVA ({sale.snapshotTaxRate}%)</span>
+								<span class="text-xs font-semibold text-on-surface"
 									>{formatPrice(taxBreakdown.taxAmount)}</span
 								>
 							</div>
@@ -512,10 +513,10 @@
 
 						<div>
 							{#if remainingBcvUsd > 0.01}
-								<p class="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+								<p class="text-xs font-semibold tracking-wider text-on-surface-variant uppercase">
 									Saldo Pendiente
 								</p>
-								<p class="mt-1 text-3xl font-extrabold text-amber-600">
+								<p class="mt-1 text-3xl font-extrabold text-brand-gold-dark">
 									{formatPrice(remainingBcvUsd)}
 								</p>
 								<div class="mt-3 h-1.5 rounded-full bg-amber-100">
@@ -529,7 +530,7 @@
 									<span>{paymentProgressPercent.toFixed(0)}%</span>
 								</div>
 							{:else}
-								<p class="text-3xl font-extrabold text-green-600">Pagado</p>
+								<p class="text-3xl font-extrabold text-success">Pagado</p>
 							{/if}
 						</div>
 
@@ -537,61 +538,63 @@
 							<button
 								type="button"
 								onclick={openDrawer}
-								class="w-full cursor-pointer rounded-lg bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+								class="w-full cursor-pointer rounded-[var(--ds-radius-lg)] bg-brand-blue px-5 py-3.5 text-sm font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors hover:bg-brand-blue-dark"
 							>
 								Cobrar / Registrar Pago
 							</button>
 						{/if}
 					</div>
 
-					<div class="mt-4 border-t border-gray-200"></div>
+					<div class="mt-4 border-t border-outline-variant/50"></div>
 
 					<div class="mt-4 flex-1 overflow-y-auto">
-						<p class="mb-3 text-sm font-semibold text-slate-700">Abonos Registrados</p>
+						<p class="mb-3 text-sm font-semibold text-on-surface-variant">Abonos Registrados</p>
 						{#if payments.length > 0}
 							<div class="space-y-2">
 								{#each payments as payment (payment.id)}
-									<div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+									<div
+										class="rounded-[var(--ds-radius-lg)] border border-outline-variant bg-surface-container-low p-3"
+									>
 										<div class="flex items-baseline justify-between">
-											<span class="text-sm font-semibold text-slate-800">
+											<span class="text-sm font-semibold text-on-surface">
 												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} -
 												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
 												{#if payment.reference}
-													<span class="font-mono text-xs text-slate-500"
+													<span class="text-xs text-outline"
 														>(Ref. {payment.reference})</span
 													>
 												{/if}
 											</span>
-											<span class="text-sm font-bold text-slate-900">
+											<span class="text-sm font-bold text-on-surface">
 												{formatPrice(payment.amountBcvUsd)}
 											</span>
 										</div>
 										<div class="mt-1 flex items-baseline justify-between">
 											{#if isBsPaymentMethod(payment.paymentMethod as unknown as PaymentMethod)}
-												<span class="font-mono text-xs text-slate-600"
+												<span class="font-mono text-xs text-outline"
 													>Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
 												>
-												<span class="text-xs font-semibold text-slate-600"
+												<span class="text-xs font-semibold text-on-surface-variant"
 													>Bs. {Number(payment.amount).toLocaleString('es-VE', {
 														minimumFractionDigits: 2,
 														maximumFractionDigits: 2
 													})}</span
 												>
 											{:else if (payment.paymentMethod as unknown as PaymentMethod) === PaymentMethod.BINANCE_USDT}
-												<span class="font-mono text-xs text-slate-600"
+												<span class="font-mono text-xs text-outline"
 													>Tasa USDT: {Number(payment.exchangeRate ?? 0).toFixed(2)}</span
 												>
-												<span class="text-xs font-semibold text-slate-600"
+												<span class="text-xs font-semibold text-on-surface-variant"
 													>USDT {Number(payment.amount).toLocaleString('es-VE', {
 														minimumFractionDigits: 2,
 														maximumFractionDigits: 2
 													})}</span
 												>
 											{:else}
-												<span class="font-mono text-xs text-slate-600"
+												<span class="font-mono text-xs text-outline"
 													>Efectivo $ • Tasa BCV: {Number(payment.bcvRate).toFixed(2)}</span
 												>
-												<span class="text-xs font-semibold text-slate-600"
+												<span class="text-xs font-semibold text-on-surface-variant"
 													>Bs. {Number(payment.amountBcvUsd * payment.bcvRate).toLocaleString(
 														'es-VE',
 														{ minimumFractionDigits: 2, maximumFractionDigits: 2 }
@@ -603,7 +606,7 @@
 								{/each}
 							</div>
 						{:else}
-							<p class="py-6 text-center text-sm text-gray-400 italic">
+							<p class="py-6 text-center text-sm text-outline italic">
 								Aún no hay abonos registrados
 							</p>
 						{/if}
@@ -611,9 +614,11 @@
 				</div>
 
 				{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
-					<div class="mt-4 rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm">
-						<p class="text-sm font-medium text-gray-500">{refundDecisionTitle()}</p>
-						<p class="mt-1 font-mono text-2xl font-bold text-gray-900">
+					<div
+						class="mt-4 rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-md)]"
+					>
+						<p class="text-sm font-medium text-outline">{refundDecisionTitle()}</p>
+						<p class="mt-1 font-mono text-2xl font-bold text-on-surface">
 							{formatPrice(sale.refundAmount ?? 0)}
 						</p>
 					</div>
@@ -624,7 +629,7 @@
 					<button
 						type="button"
 						onclick={openStockModal}
-						class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
+						class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
 					>
 						<ClipboardList class="h-4 w-4" />
 						Ver movimientos de stock ({movements.length})
@@ -634,7 +639,7 @@
 				<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
 
 				{#if lastUpdatedLabel}
-					<div class="border-gray-200 pt-4 text-end text-sm text-gray-700 italic">
+					<div class="border-outline-variant pt-4 text-end text-sm text-on-surface-variant italic">
 						Última actualización en la venta {lastUpdatedLabel}
 					</div>
 				{/if}
