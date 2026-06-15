@@ -468,20 +468,6 @@
 						syncFromData();
 					}}
 				/>
-
-				<!-- Stock movements trigger -->
-				<div class="mt-2 text-right">
-					<button
-						type="button"
-						onclick={openStockModal}
-						class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
-					>
-						<ClipboardList class="h-4 w-4" />
-						Ver movimientos de stock ({movements.length})
-					</button>
-				</div>
-
-				<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
 			</div>
 
 			<!-- Right Column (40%) - Sticky Mini Summary -->
@@ -612,6 +598,20 @@
 						</p>
 					</div>
 				{/if}
+
+				<!-- Stock movements trigger -->
+				<div class="mt-2 text-right">
+					<button
+						type="button"
+						onclick={openStockModal}
+						class="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
+					>
+						<ClipboardList class="h-4 w-4" />
+						Ver movimientos de stock ({movements.length})
+					</button>
+				</div>
+
+				<SaleMovementsModal {movements} open={showStockModal} onclose={closeStockModal} />
 			</div>
 		</div>
 
