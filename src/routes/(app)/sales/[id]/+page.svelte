@@ -457,36 +457,6 @@
 					}}
 				/>
 
-				<!-- Payment History -->
-				<section id="sale-history">
-					<div class="rounded-xl border border-gray-100/50 bg-white shadow-sm">
-						<div
-							class="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
-						>
-							<div class="flex items-center gap-3">
-								<div
-									class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-brand-navy"
-								>
-									<Wallet class="h-5 w-5" />
-								</div>
-								<div>
-									<h2 class="text-base font-semibold text-gray-900">Historial de pagos</h2>
-									<p class="text-xs text-gray-500">Registro cronológico de abonos y anulaciones.</p>
-								</div>
-							</div>
-						</div>
-
-						<div class="px-5 pb-5">
-							<PaymentsTable
-								{payments}
-								saleId={sale.id}
-								allowVoid={canManageSale && (isPending || isInProgress)}
-								onPaymentVoided={handlePaymentVoided}
-							/>
-						</div>
-					</div>
-				</section>
-
 				<!-- Inventory Movements -->
 				<SaleMovementsSection {movements} />
 			</div>
@@ -558,7 +528,9 @@
 												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
 												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
 												{#if payment.reference}
-													<span class="font-mono text-xs text-slate-500">(Ref. {payment.reference})</span>
+													<span class="font-mono text-xs text-slate-500"
+														>(Ref. {payment.reference})</span
+													>
 												{/if}
 											</span>
 											<span class="text-sm font-bold text-slate-900">
