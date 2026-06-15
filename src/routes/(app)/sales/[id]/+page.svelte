@@ -22,7 +22,14 @@
 	import { ConfirmModal, PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
-	import { RefundStatus, SaleStatus, UserRole, getSaleStatusLabel } from '$lib/shared/enums';
+	import {
+		PaymentMethod,
+		PAYMENT_METHOD_LABELS,
+		RefundStatus,
+		SaleStatus,
+		UserRole,
+		getSaleStatusLabel
+	} from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import { markAsInProgress, markAsCompleted } from '$lib/remote/sales.remote';
@@ -485,55 +492,90 @@
 
 			<!-- Right Column (40%) - Sticky Mini Summary -->
 			<div class="lg:sticky lg:top-6 lg:col-span-2">
-				<div class="rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm">
-					<div class="space-y-3">
-						<div class="flex items-center justify-between">
-							<span class="text-sm font-medium text-gray-500">Subtotal</span>
-							<span class="text-sm font-semibold text-gray-900">{formatPrice(sale.subtotal)}</span>
+				<div
+					class="flex max-h-[calc(100vh-8rem)] flex-col rounded-xl border border-gray-100/50 bg-white shadow-sm"
+				>
+					<div class="flex-shrink-0 p-6">
+						<div class="space-y-3">
+							<div class="flex items-center justify-between">
+								<span class="text-sm font-medium text-gray-500">Subtotal</span>
+								<span class="text-sm font-semibold text-gray-900">{formatPrice(sale.subtotal)}</span
+								>
+							</div>
+							<div class="flex items-center justify-between">
+								<span class="text-sm font-medium text-gray-500">IVA ({sale.snapshotTaxRate}%)</span>
+								<span class="text-sm font-semibold text-gray-900"
+									>{formatPrice(taxBreakdown.taxAmount)}</span
+								>
+							</div>
 						</div>
-						<div class="flex items-center justify-between">
-							<span class="text-sm font-medium text-gray-500">IVA ({sale.snapshotTaxRate}%)</span>
-							<span class="text-sm font-semibold text-gray-900"
-								>{formatPrice(taxBreakdown.taxAmount)}</span
-							>
-						</div>
-					</div>
 
-					<div class="mt-5 border-t border-gray-100 pt-5">
-						{#if remainingBcvUsd > 0.01}
-							<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">
-								Saldo pendiente
-							</p>
-							<p class="mt-1 font-mono text-3xl font-bold text-amber-600">
-								{formatPrice(remainingBcvUsd)}
-							</p>
-							<div class="mt-3 h-1.5 rounded-full bg-amber-100">
-								<div
-									class="h-full rounded-full bg-amber-400"
-									style={`width: ${paymentProgressPercent}%`}
-								></div>
-							</div>
-							<div class="mt-1 flex items-center justify-between text-[11px] text-amber-600">
-								<span>{formatPrice(sale.paidAmountBcvUsd)} cubierto</span>
-								<span>{paymentProgressPercent.toFixed(0)}%</span>
-							</div>
-						{:else}
-							<p class="font-mono text-3xl font-bold text-green-600">Pagado</p>
+						<div class="mt-5 border-t border-gray-100 pt-5">
+							{#if remainingBcvUsd > 0.01}
+								<p class="text-xs font-semibold tracking-wider text-gray-400 uppercase">
+									Saldo pendiente
+								</p>
+								<p class="mt-1 font-mono text-3xl font-bold text-amber-600">
+									{formatPrice(remainingBcvUsd)}
+								</p>
+								<div class="mt-3 h-1.5 rounded-full bg-amber-100">
+									<div
+										class="h-full rounded-full bg-amber-400"
+										style={`width: ${paymentProgressPercent}%`}
+									></div>
+								</div>
+								<div class="mt-1 flex items-center justify-between text-[11px] text-amber-600">
+									<span>{formatPrice(sale.paidAmountBcvUsd)} cubierto</span>
+									<span>{paymentProgressPercent.toFixed(0)}%</span>
+								</div>
+							{:else}
+								<p class="font-mono text-3xl font-bold text-green-600">Pagado</p>
+							{/if}
+						</div>
+
+						{#if showPaymentForm}
+							<button
+								type="button"
+								onclick={openDrawer}
+								class="mt-6 w-full cursor-pointer rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+							>
+								Cobrar / Registrar Pago
+							</button>
 						{/if}
 					</div>
 
-					{#if showPaymentForm}
-						<button
-							type="button"
-							onclick={openDrawer}
-							class="mt-6 w-full cursor-pointer rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
-						>
-							Cobrar / Registrar Pago
-						</button>
-					{/if}
+					<div class="mx-6 border-t border-gray-200"></div>
+
+					<div class="flex-1 overflow-y-auto px-6 pt-4 pb-6">
+						<h3 class="mb-3 text-xs font-bold tracking-wider text-gray-500 uppercase">
+							Pagos Registrados
+						</h3>
+						{#if payments.length > 0}
+							<div class="space-y-2">
+								{#each payments as payment (payment.id)}
+									<div class="flex items-center justify-between">
+										<p class="min-w-0 truncate text-sm font-medium text-gray-600">
+											{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
+											{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
+										</p>
+										<p
+											class="ml-2 shrink-0 text-sm font-bold {remainingBcvUsd <= 0.01
+												? 'text-green-600'
+												: 'text-gray-900'}"
+										>
+											{formatPrice(payment.amountBcvUsd)}
+										</p>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="py-4 text-center text-sm text-gray-400 italic">
+								Aún no hay pagos registrados
+							</p>
+						{/if}
+					</div>
 				</div>
 
-				<!-- Overlay progress summary (if cancelled with refund) -->
 				{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
 					<div class="mt-4 rounded-xl border border-gray-100/50 bg-white p-6 shadow-sm">
 						<p class="text-sm font-medium text-gray-500">{refundDecisionTitle()}</p>
