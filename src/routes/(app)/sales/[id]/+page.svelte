@@ -6,9 +6,8 @@
 		Pen,
 		Play,
 		Printer,
-		CheckCircle2,
-		Wallet,
-		X as XIcon
+		CircleCheck,
+		X as XIcon,
 	} from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -16,7 +15,6 @@
 		CancelSaleModal,
 		EditSaleModal,
 		PaymentForm,
-		PaymentsTable,
 		SaleItemsTable,
 		SaleMovementsModal
 	} from '$lib/components/sales';
@@ -160,11 +158,6 @@
 		await invalidateAll();
 		syncFromData();
 		showDrawer = false;
-	}
-
-	async function handlePaymentVoided() {
-		await invalidateAll();
-		syncFromData();
 	}
 
 	function goBack() {
@@ -312,7 +305,7 @@
 						}}
 						class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs font-semibold tracking-[0.14em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-gray-50"
 					>
-						<CheckCircle2 class="h-4 w-4" />
+						<CircleCheck class="h-4 w-4" />
 						Completar
 					</button>
 				{/if}
