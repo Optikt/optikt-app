@@ -557,7 +557,7 @@
 									<div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
 										<div class="flex items-baseline justify-between">
 											<span class="text-sm font-semibold text-slate-800">
-												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} —
+												{formatDateOnly(payment.paymentDate, { dateStyle: 'medium' })} -
 												{PAYMENT_METHOD_LABELS[payment.paymentMethod as unknown as PaymentMethod]}
 											</span>
 											<span class="text-sm font-bold text-slate-900">
