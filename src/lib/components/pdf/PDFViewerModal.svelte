@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import {
-		X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Maximize, Minimize, Printer
+		X,
+		ChevronLeft,
+		ChevronRight,
+		Download,
+		ZoomIn,
+		ZoomOut,
+		Maximize,
+		Minimize,
+		Printer
 	} from '@lucide/svelte';
 
 	interface Props {
@@ -85,12 +93,25 @@
 		onClose();
 	}
 
-	function zoomOut() { pdfSlick?.decreaseScale(); }
-	function zoomIn() { pdfSlick?.increaseScale(); }
-	function zoomActual() { if (pdfSlick) pdfSlick.currentScale = 1; }
-	function zoomPageWidth() { if (pdfSlick) pdfSlick.currentScaleValue = 'page-width'; }
-	function zoomPageFit() { if (pdfSlick) pdfSlick.currentScaleValue = 'page-fit'; }
-	function print() { window.open(url, '_blank', 'noopener,noreferrer'); onClose(); }
+	function zoomOut() {
+		pdfSlick?.decreaseScale();
+	}
+	function zoomIn() {
+		pdfSlick?.increaseScale();
+	}
+	function zoomActual() {
+		if (pdfSlick) pdfSlick.currentScale = 1;
+	}
+	function zoomPageWidth() {
+		if (pdfSlick) pdfSlick.currentScaleValue = 'page-width';
+	}
+	function zoomPageFit() {
+		if (pdfSlick) pdfSlick.currentScaleValue = 'page-fit';
+	}
+	function print() {
+		window.open(url, '_blank', 'noopener,noreferrer');
+		onClose();
+	}
 	function download() {
 		const a = document.createElement('a');
 		a.href = url;
@@ -101,12 +122,22 @@
 	const scalePercent = $derived(Math.round(scale * 100));
 	const busy = $derived(loading || !!error || !pdfSlick);
 
-	const btn = 'inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30';
+	const btn =
+		'inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30';
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4" onkeydown={close} onclick={close}>
-	<div role="dialog" aria-modal="true" class="flex w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl" style="height: 88vh;">
+<div
+	class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4"
+	onkeydown={close}
+	onclick={close}
+>
+	<div
+		role="dialog"
+		aria-modal="true"
+		class="flex w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+		style="height: 88vh;"
+	>
 		<!-- Header -->
 		<div class="flex shrink-0 items-center justify-between bg-brand-navy px-5 py-3">
 			<div class="min-w-0">
@@ -125,7 +156,9 @@
 			{#if loading}
 				<div class="flex h-full items-center justify-center">
 					<div class="flex flex-col items-center gap-3">
-						<div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-brand-blue"></div>
+						<div
+							class="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-brand-blue"
+						></div>
 						<p class="text-sm text-slate-500">Generando PDF…</p>
 					</div>
 				</div>
@@ -165,17 +198,30 @@
 
 				<span class="mx-1 h-5 w-px bg-white/15"></span>
 
-				<button type="button" class={btn} onclick={zoomPageWidth} disabled={busy} title="Ancho de página">
+				<button
+					type="button"
+					class={btn}
+					onclick={zoomPageWidth}
+					disabled={busy}
+					title="Ancho de página"
+				>
 					<Minimize size={14} />
 				</button>
-				<button type="button" class={btn} onclick={zoomPageFit} disabled={busy} title="Ajustar a la página">
+				<button
+					type="button"
+					class={btn}
+					onclick={zoomPageFit}
+					disabled={busy}
+					title="Ajustar a la página"
+				>
 					<Maximize size={14} />
 				</button>
 			</div>
 
 			<div class="flex items-center gap-0.5">
 				<button
-					type="button" class={btn}
+					type="button"
+					class={btn}
 					onclick={() => pdfSlick?.gotoPage(Math.max(pageNumber - 1, 1))}
 					disabled={pageNumber <= 1 || busy}
 				>
@@ -185,7 +231,8 @@
 					{numPages > 0 ? `${pageNumber} / ${numPages}` : '–'}
 				</span>
 				<button
-					type="button" class={btn}
+					type="button"
+					class={btn}
 					onclick={() => pdfSlick?.gotoPage(Math.min(pageNumber + 1, numPages))}
 					disabled={pageNumber >= numPages || busy}
 				>
