@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, Cpu, Pencil, Search, Trash2, X } from '@lucide/svelte';
+	import { Check, Cpu, Pencil, Search, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		createLensTechnologyForm,
@@ -12,7 +12,7 @@
 	import type { PaginatedResult } from '$lib/types';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal, SlideOver } from '$lib/components/ui';
 
 	interface Props {
 		initialTechnologies: LensTechnology[];
@@ -244,236 +244,209 @@
 	{/if}
 </div>
 
-<!-- Drawer -->
-{#if showDrawer}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="fixed inset-0 z-50">
-		<div class="fixed inset-0 bg-black/40" onclick={closeDrawer}></div>
-		<div
-			class="fixed right-0 top-0 h-full w-full max-w-lg bg-surface-container-lowest shadow-lg overflow-y-auto rounded-l-xl"
+<SlideOver
+	bind:open={showDrawer}
+	onclose={closeDrawer}
+	title={editingId ? 'Actualiza la ficha técnica' : 'Agrega una tecnología de fabricación'}
+	subtitle={editingId ? 'EDITANDO TECNOLOGÍA' : 'NUEVA TECNOLOGÍA'}
+>
+	{#if editingId}
+		<form
+			data-form-id={updateFormId}
+			{...currentUpdateForm.enhance(async ({ submit }) => {
+				loading = true;
+				try {
+					await submit();
+					const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
+					if (allIssues.length === 0) {
+						toast.success('Tecnología actualizada');
+						closeDrawer();
+						await refreshData();
+					} else {
+						toastUnboundErrors(allIssues);
+					}
+				} catch (error) {
+					console.error(error);
+					toast.error('Error actualizando tecnología');
+				} finally {
+					loading = false;
+				}
+			})}
+			class="grid gap-3 sm:grid-cols-[1fr_220px_140px]"
 		>
-			<!-- Drawer Header -->
-			<div class="flex items-start justify-between gap-3 px-6 pt-6 pb-4">
-				<div>
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						{editingId ? 'Editando' : 'Nueva'} tecnología
-					</p>
-					<p class="mt-0.5 text-sm font-bold text-on-surface">
-						{editingId ? 'Actualiza la ficha técnica' : 'Agrega una tecnología de fabricación'}
-					</p>
-				</div>
+			<input type="hidden" name="id" value={editingId} />
+			<div>
+				<label
+					for="tech-name-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Nombre</label
+				>
+				<input
+					id="tech-name-edit"
+					name="name"
+					type="text"
+					bind:value={draftName}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+				{#if currentUpdateForm.fields.name?.issues()}
+					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
+				{/if}
+			</div>
+			<div>
+				<label
+					for="tech-supplier-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Proveedor</label
+				>
+				<select
+					id="tech-supplier-edit"
+					name="supplierId"
+					bind:value={draftSupplierId}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				>
+					<option value="">Global (sin proveedor)</option>
+					{#each suppliers as s (s.id)}
+						<option value={s.id}>{s.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label
+					for="tech-height-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Altura mín.</label
+				>
+				{#if draftMinFittingHeight}
+					<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
+				{/if}
+				<input
+					id="tech-height-edit"
+					type="number"
+					bind:value={draftMinFittingHeight}
+					step="0.5"
+					min="0"
+					placeholder="mm"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+			</div>
+			<div class="flex justify-end gap-2 sm:col-span-3">
 				<button
 					type="button"
 					onclick={closeDrawer}
-					class="rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>Cancelar</button
 				>
-					<X class="h-4 w-4" />
+				<button
+					type="submit"
+					disabled={loading}
+					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
+				>
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
+							class="h-4 w-4"
+						/>{/if}
+					Guardar
 				</button>
 			</div>
-
-			<!-- Drawer Content -->
-			<div class="px-6 pb-6">
-				{#if editingId}
-					<form
-						data-form-id={updateFormId}
-						{...currentUpdateForm.enhance(async ({ submit }) => {
-							loading = true;
-							try {
-								await submit();
-								const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
-								if (allIssues.length === 0) {
-									toast.success('Tecnología actualizada');
-									closeDrawer();
-									await refreshData();
-								} else {
-									toastUnboundErrors(allIssues);
-								}
-							} catch (error) {
-								console.error(error);
-								toast.error('Error actualizando tecnología');
-							} finally {
-								loading = false;
-							}
-						})}
-						class="grid gap-3 sm:grid-cols-[1fr_220px_140px]"
-					>
-						<input type="hidden" name="id" value={editingId} />
-						<div>
-							<label
-								for="tech-name-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Nombre</label
-							>
-							<input
-								id="tech-name-edit"
-								name="name"
-								type="text"
-								bind:value={draftName}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-							{#if currentUpdateForm.fields.name?.issues()}
-								<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
-							{/if}
-						</div>
-						<div>
-							<label
-								for="tech-supplier-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Proveedor</label
-							>
-							<select
-								id="tech-supplier-edit"
-								name="supplierId"
-								bind:value={draftSupplierId}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							>
-								<option value="">Global (sin proveedor)</option>
-								{#each suppliers as s (s.id)}
-									<option value={s.id}>{s.name}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label
-								for="tech-height-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Altura mín.</label
-							>
-							{#if draftMinFittingHeight}
-								<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
-							{/if}
-							<input
-								id="tech-height-edit"
-								type="number"
-								bind:value={draftMinFittingHeight}
-								step="0.5"
-								min="0"
-								placeholder="mm"
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-						</div>
-						<div class="flex justify-end gap-2 sm:col-span-3">
-							<button
-								type="button"
-								onclick={closeDrawer}
-								class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-								>Cancelar</button
-							>
-							<button
-								type="submit"
-								disabled={loading}
-								class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
-							>
-								{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-										class="h-4 w-4"
-									/>{/if}
-								Guardar
-							</button>
-						</div>
-					</form>
-				{:else}
-					<form
-						data-form-id={createFormId}
-						{...currentCreateForm.enhance(async ({ submit }) => {
-							loading = true;
-							try {
-								await submit();
-								const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
-								if (allIssues.length === 0) {
-									toast.success('Tecnología creada');
-									closeDrawer();
-									await refreshData();
-								} else {
-									toastUnboundErrors(allIssues);
-								}
-							} catch (error) {
-								console.error(error);
-								toast.error('Error creando tecnología');
-							} finally {
-								loading = false;
-							}
-						})}
-						class="grid gap-3 sm:grid-cols-[1fr_220px_140px]"
-					>
-						<div>
-							<label
-								for="tech-name-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Nombre</label
-							>
-							<input
-								id="tech-name-create"
-								name="name"
-								type="text"
-								bind:value={draftName}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-							{#if currentCreateForm.fields.name?.issues()}
-								<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
-							{/if}
-						</div>
-						<div>
-							<label
-								for="tech-supplier-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Proveedor</label
-							>
-							<select
-								id="tech-supplier-create"
-								name="supplierId"
-								bind:value={draftSupplierId}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							>
-								<option value="">Global (sin proveedor)</option>
-								{#each suppliers as s (s.id)}
-									<option value={s.id}>{s.name}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label
-								for="tech-height-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Altura mín.</label
-							>
-							{#if draftMinFittingHeight}
-								<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
-							{/if}
-							<input
-								id="tech-height-create"
-								type="number"
-								bind:value={draftMinFittingHeight}
-								step="0.5"
-								min="0"
-								placeholder="mm"
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-						</div>
-						<div class="flex justify-end gap-2 sm:col-span-3">
-							<button
-								type="button"
-								onclick={closeDrawer}
-								class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-								>Cancelar</button
-							>
-							<button
-								type="submit"
-								disabled={loading}
-								class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
-							>
-								{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-										class="h-4 w-4"
-									/>{/if}
-								Crear
-							</button>
-						</div>
-					</form>
+		</form>
+	{:else}
+		<form
+			data-form-id={createFormId}
+			{...currentCreateForm.enhance(async ({ submit }) => {
+				loading = true;
+				try {
+					await submit();
+					const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
+					if (allIssues.length === 0) {
+						toast.success('Tecnología creada');
+						closeDrawer();
+						await refreshData();
+					} else {
+						toastUnboundErrors(allIssues);
+					}
+				} catch (error) {
+					console.error(error);
+					toast.error('Error creando tecnología');
+				} finally {
+					loading = false;
+				}
+			})}
+			class="grid gap-3 sm:grid-cols-[1fr_220px_140px]"
+		>
+			<div>
+				<label
+					for="tech-name-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Nombre</label
+				>
+				<input
+					id="tech-name-create"
+					name="name"
+					type="text"
+					bind:value={draftName}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+				{#if currentCreateForm.fields.name?.issues()}
+					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
 				{/if}
 			</div>
-		</div>
-	</div>
-{/if}
+			<div>
+				<label
+					for="tech-supplier-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Proveedor</label
+				>
+				<select
+					id="tech-supplier-create"
+					name="supplierId"
+					bind:value={draftSupplierId}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				>
+					<option value="">Global (sin proveedor)</option>
+					{#each suppliers as s (s.id)}
+						<option value={s.id}>{s.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div>
+				<label
+					for="tech-height-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Altura mín.</label
+				>
+				{#if draftMinFittingHeight}
+					<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
+				{/if}
+				<input
+					id="tech-height-create"
+					type="number"
+					bind:value={draftMinFittingHeight}
+					step="0.5"
+					min="0"
+					placeholder="mm"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+			</div>
+			<div class="flex justify-end gap-2 sm:col-span-3">
+				<button
+					type="button"
+					onclick={closeDrawer}
+					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>Cancelar</button
+				>
+				<button
+					type="submit"
+					disabled={loading}
+					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
+				>
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
+							class="h-4 w-4"
+						/>{/if}
+					Crear
+				</button>
+			</div>
+		</form>
+	{/if}
+</SlideOver>
 
 <ConfirmModal
 	bind:open={showDeleteModal}

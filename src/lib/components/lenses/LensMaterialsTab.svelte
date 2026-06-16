@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, FlaskConical, Pencil, Search, Trash2, X } from '@lucide/svelte';
+	import { Check, FlaskConical, Pencil, Search, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		createLensMaterialForm,
@@ -10,7 +10,7 @@
 	import type { LensMaterial } from '$lib/server/db/schema';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal, SlideOver } from '$lib/components/ui';
 	import { untrack } from 'svelte';
 
 	interface Props {
@@ -228,260 +228,233 @@
 	{/if}
 </div>
 
-<!-- Drawer -->
-{#if showDrawer}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="fixed inset-0 z-50">
-		<div class="fixed inset-0 bg-black/40" onclick={closeDrawer}></div>
-		<div
-			class="fixed right-0 top-0 h-full w-full max-w-lg bg-surface-container-lowest shadow-lg overflow-y-auto rounded-l-xl"
+<SlideOver
+	bind:open={showDrawer}
+	onclose={closeDrawer}
+	title={editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
+	subtitle={editingId ? 'EDITANDO MATERIAL' : 'NUEVO MATERIAL'}
+>
+	{#if editingId}
+		<form
+			data-form-id={updateFormId}
+			{...currentUpdateForm.enhance(async ({ submit }) => {
+				loading = true;
+				try {
+					await submit();
+					const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
+					if (allIssues.length === 0) {
+						toast.success('Material actualizado');
+						closeDrawer();
+						await refreshMaterials();
+					} else {
+						toastUnboundErrors(allIssues);
+					}
+				} catch (error) {
+					console.error(error);
+					toast.error('Error actualizando material');
+				} finally {
+					loading = false;
+				}
+			})}
+			class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
 		>
-			<!-- Drawer Header -->
-			<div class="flex items-start justify-between gap-3 px-6 pt-6 pb-4">
-				<div>
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						{editingId ? 'Editando' : 'Nuevo'} material
-					</p>
-					<p class="mt-0.5 text-sm font-bold text-on-surface">
-						{editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
-					</p>
-				</div>
+			<input type="hidden" name="id" value={editingId} />
+			<div>
+				<label
+					for="mat-name-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Nombre</label
+				>
+				<input
+					id="mat-name-edit"
+					name="name"
+					type="text"
+					bind:value={draftName}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+				{#if currentUpdateForm.fields.name?.issues()}
+					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
+				{/if}
+			</div>
+			<div>
+				<label
+					for="mat-code-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Código</label
+				>
+				<input
+					id="mat-code-edit"
+					name="code"
+					type="text"
+					bind:value={draftCode}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+				{#if currentUpdateForm.fields.code?.issues()}
+					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.code.issues()}</p>
+				{/if}
+			</div>
+			<div>
+				<label
+					for="mat-index-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Índice</label
+				>
+				{#if draftRefractiveIndex}
+					<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
+				{/if}
+				<input
+					id="mat-index-edit"
+					type="number"
+					bind:value={draftRefractiveIndex}
+					step="0.01"
+					placeholder="1.50"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+			</div>
+			<div>
+				<label
+					for="mat-desc-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Descripción</label
+				>
+				<input
+					id="mat-desc-edit"
+					name="description"
+					type="text"
+					bind:value={draftDescription}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+			</div>
+			<div class="flex justify-end gap-2 sm:col-span-4">
 				<button
 					type="button"
 					onclick={closeDrawer}
-					class="rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>Cancelar</button
 				>
-					<X class="h-4 w-4" />
+				<button
+					type="submit"
+					disabled={loading}
+					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
+				>
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
+							class="h-4 w-4"
+						/>{/if}
+					Guardar
 				</button>
 			</div>
-
-			<!-- Drawer Content -->
-			<div class="px-6 pb-6">
-				{#if editingId}
-					<form
-						data-form-id={updateFormId}
-						{...currentUpdateForm.enhance(async ({ submit }) => {
-							loading = true;
-							try {
-								await submit();
-								const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
-								if (allIssues.length === 0) {
-									toast.success('Material actualizado');
-									closeDrawer();
-									await refreshMaterials();
-								} else {
-									toastUnboundErrors(allIssues);
-								}
-							} catch (error) {
-								console.error(error);
-								toast.error('Error actualizando material');
-							} finally {
-								loading = false;
-							}
-						})}
-						class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
-					>
-						<input type="hidden" name="id" value={editingId} />
-						<div>
-							<label
-								for="mat-name-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Nombre</label
-							>
-							<input
-								id="mat-name-edit"
-								name="name"
-								type="text"
-								bind:value={draftName}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-							{#if currentUpdateForm.fields.name?.issues()}
-								<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
-							{/if}
-						</div>
-						<div>
-							<label
-								for="mat-code-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Código</label
-							>
-							<input
-								id="mat-code-edit"
-								name="code"
-								type="text"
-								bind:value={draftCode}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-							{#if currentUpdateForm.fields.code?.issues()}
-								<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.code.issues()}</p>
-							{/if}
-						</div>
-						<div>
-							<label
-								for="mat-index-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Índice</label
-							>
-							{#if draftRefractiveIndex}
-								<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
-							{/if}
-							<input
-								id="mat-index-edit"
-								type="number"
-								bind:value={draftRefractiveIndex}
-								step="0.01"
-								placeholder="1.50"
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-						</div>
-						<div>
-							<label
-								for="mat-desc-edit"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Descripción</label
-							>
-							<input
-								id="mat-desc-edit"
-								name="description"
-								type="text"
-								bind:value={draftDescription}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-						</div>
-						<div class="flex justify-end gap-2 sm:col-span-4">
-							<button
-								type="button"
-								onclick={closeDrawer}
-								class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-								>Cancelar</button
-							>
-							<button
-								type="submit"
-								disabled={loading}
-								class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
-							>
-								{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-										class="h-4 w-4"
-									/>{/if}
-								Guardar
-							</button>
-						</div>
-					</form>
-				{:else}
-					<form
-						data-form-id={createFormId}
-						{...currentCreateForm.enhance(async ({ submit }) => {
-							loading = true;
-							try {
-								await submit();
-								const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
-								if (allIssues.length === 0) {
-									toast.success('Material creado');
-									closeDrawer();
-									await refreshMaterials();
-								} else {
-									toastUnboundErrors(allIssues);
-								}
-							} catch (error) {
-								console.error(error);
-								toast.error('Error creando material');
-							} finally {
-								loading = false;
-							}
-						})}
-						class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
-					>
-						<div>
-							<label
-								for="mat-name-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Nombre</label
-							>
-							<input
-								id="mat-name-create"
-								name="name"
-								type="text"
-								bind:value={draftName}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-							{#if currentCreateForm.fields.name?.issues()}
-								<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
-							{/if}
-						</div>
-						<div>
-							<label
-								for="mat-code-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Código</label
-							>
-							<input
-								id="mat-code-create"
-								name="code"
-								type="text"
-								bind:value={draftCode}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-							{#if currentCreateForm.fields.code?.issues()}
-								<p class="mt-1 text-xs text-error">{currentCreateForm.fields.code.issues()}</p>
-							{/if}
-						</div>
-						<div>
-							<label
-								for="mat-index-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Índice</label
-							>
-							{#if draftRefractiveIndex}
-								<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
-							{/if}
-							<input
-								id="mat-index-create"
-								type="number"
-								bind:value={draftRefractiveIndex}
-								step="0.01"
-								placeholder="1.50"
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-						</div>
-						<div>
-							<label
-								for="mat-desc-create"
-								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-								>Descripción</label
-							>
-							<input
-								id="mat-desc-create"
-								name="description"
-								type="text"
-								bind:value={draftDescription}
-								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
-							/>
-						</div>
-						<div class="flex justify-end gap-2 sm:col-span-4">
-							<button
-								type="button"
-								onclick={closeDrawer}
-								class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-								>Cancelar</button
-							>
-							<button
-								type="submit"
-								disabled={loading}
-								class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
-							>
-								{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-										class="h-4 w-4"
-									/>{/if}
-								Crear
-							</button>
-						</div>
-					</form>
+		</form>
+	{:else}
+		<form
+			data-form-id={createFormId}
+			{...currentCreateForm.enhance(async ({ submit }) => {
+				loading = true;
+				try {
+					await submit();
+					const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
+					if (allIssues.length === 0) {
+						toast.success('Material creado');
+						closeDrawer();
+						await refreshMaterials();
+					} else {
+						toastUnboundErrors(allIssues);
+					}
+				} catch (error) {
+					console.error(error);
+					toast.error('Error creando material');
+				} finally {
+					loading = false;
+				}
+			})}
+			class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
+		>
+			<div>
+				<label
+					for="mat-name-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Nombre</label
+				>
+				<input
+					id="mat-name-create"
+					name="name"
+					type="text"
+					bind:value={draftName}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+				{#if currentCreateForm.fields.name?.issues()}
+					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
 				{/if}
 			</div>
-		</div>
-	</div>
-{/if}
+			<div>
+				<label
+					for="mat-code-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Código</label
+				>
+				<input
+					id="mat-code-create"
+					name="code"
+					type="text"
+					bind:value={draftCode}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+				{#if currentCreateForm.fields.code?.issues()}
+					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.code.issues()}</p>
+				{/if}
+			</div>
+			<div>
+				<label
+					for="mat-index-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Índice</label
+				>
+				{#if draftRefractiveIndex}
+					<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
+				{/if}
+				<input
+					id="mat-index-create"
+					type="number"
+					bind:value={draftRefractiveIndex}
+					step="0.01"
+					placeholder="1.50"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+			</div>
+			<div>
+				<label
+					for="mat-desc-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Descripción</label
+				>
+				<input
+					id="mat-desc-create"
+					name="description"
+					type="text"
+					bind:value={draftDescription}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				/>
+			</div>
+			<div class="flex justify-end gap-2 sm:col-span-4">
+				<button
+					type="button"
+					onclick={closeDrawer}
+					class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>Cancelar</button
+				>
+				<button
+					type="submit"
+					disabled={loading}
+					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
+				>
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
+							class="h-4 w-4"
+						/>{/if}
+					Crear
+				</button>
+			</div>
+		</form>
+	{/if}
+</SlideOver>
 
 <ConfirmModal
 	bind:open={showDeleteModal}
