@@ -135,9 +135,7 @@ export async function updateLensTechnology(
 	return updated ?? null;
 }
 
-export async function getAllTechnologies(options?: {
-	search?: string;
-}): Promise<LensTechnology[]> {
+export async function getAllTechnologies(options?: { search?: string }): Promise<LensTechnology[]> {
 	const conditions = [eq(lensTechnologies.isActive, true)];
 
 	if (options?.search) {
@@ -161,9 +159,7 @@ export async function deleteLensTechnology(id: string): Promise<boolean> {
 	return !!updated;
 }
 
-export async function getAllDifferentiators(options?: {
-	search?: string;
-}): Promise<string[]> {
+export async function getAllDifferentiators(options?: { search?: string }): Promise<string[]> {
 	const diffRows = await db
 		.select({ diff: sql<string | null>`unnest(${lensCatalogItems.differentiators})` })
 		.from(lensCatalogItems)
@@ -181,10 +177,7 @@ export async function getAllDifferentiators(options?: {
 	return result;
 }
 
-export async function renameDifferentiator(
-	oldName: string,
-	newName: string
-): Promise<void> {
+export async function renameDifferentiator(oldName: string, newName: string): Promise<void> {
 	await db
 		.update(lensCatalogItems)
 		.set({

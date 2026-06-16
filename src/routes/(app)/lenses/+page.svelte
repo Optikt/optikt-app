@@ -24,7 +24,15 @@
 	type ActiveTab = 'catalog' | 'properties';
 
 	let { data }: { data: PageData } = $props();
-	let { materials, catalogItems, suppliers, technologies, differentiators, allTechnologies, allDifferentiators } = untrack(() => data);
+	let {
+		materials,
+		catalogItems,
+		suppliers,
+		technologies,
+		differentiators,
+		allTechnologies,
+		allDifferentiators
+	} = untrack(() => data);
 	const initialQuery = untrack(() => page.url.searchParams);
 	const initialPage = parsePageParam(initialQuery.get('page'));
 	const initialSearch = initialQuery.get('q') ?? '';

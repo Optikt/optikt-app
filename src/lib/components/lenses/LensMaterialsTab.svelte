@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { autoAnimate } from '@formkit/auto-animate';
-	import { Check, FlaskConical, Pencil, Plus, Search, Trash2, X } from '@lucide/svelte';
+	import { Check, FlaskConical, Pencil, Search, Trash2, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		createLensMaterialForm,
@@ -11,22 +10,27 @@
 	import type { LensMaterial } from '$lib/server/db/schema';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { AppBadge, ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal } from '$lib/components/ui';
 	import { untrack } from 'svelte';
 
 	interface Props {
 		initialMaterials: LensMaterial[];
 		canManage?: boolean;
+		drawTrigger: number;
 	}
 
-	let { initialMaterials, canManage = true }: Props = $props();
+	let {
+		initialMaterials,
+		canManage = true,
+		drawTrigger
+	}: Props = $props();
 
 	let materials = $state<LensMaterial[]>(untrack(() => initialMaterials));
 	let search = $state('');
 	let loading = $state(false);
-	let showComposer = $state(false);
 	let editingId = $state<string | null>(null);
 	let showDeleteModal = $state(false);
+	let showDrawer = $state(false);
 	let deleteLoading = $state(false);
 	let selectedMaterial = $state<LensMaterial | null>(null);
 
@@ -43,9 +47,7 @@
 
 	const filteredMaterials = $derived.by(() => {
 		const term = search.trim().toLowerCase();
-
 		if (!term) return materials;
-
 		return materials.filter((material) => {
 			const haystack = [
 				material.name,
@@ -55,19 +57,12 @@
 			]
 				.join(' ')
 				.toLowerCase();
-
 			return haystack.includes(term);
 		});
 	});
 
-	const stats = $derived.by(() => {
-		const withIndex = materials.filter((material) => material.refractiveIndex != null).length;
-
-		return {
-			total: materials.length,
-			withIndex,
-			withoutIndex: materials.length - withIndex
-		};
+	$effect(() => {
+		if (drawTrigger > 0) startAdd();
 	});
 
 	async function refreshMaterials() {
@@ -88,18 +83,16 @@
 
 	function startAdd() {
 		if (!canManage) return;
-
 		editingId = null;
-		showComposer = true;
+		showDrawer = true;
 		resetDraft();
 		createFormId = generateUUID();
 	}
 
 	function startEdit(material: LensMaterial) {
 		if (!canManage) return;
-
 		editingId = material.id;
-		showComposer = true;
+		showDrawer = true;
 		draftName = material.name;
 		draftCode = material.code;
 		draftRefractiveIndex = material.refractiveIndex?.toString() ?? '';
@@ -107,30 +100,26 @@
 		updateFormId = generateUUID();
 	}
 
-	function closeComposer() {
-		showComposer = false;
+	function closeDrawer() {
+		showDrawer = false;
 		editingId = null;
 		resetDraft();
 	}
 
 	function openDelete(material: LensMaterial) {
 		if (!canManage) return;
-
 		selectedMaterial = material;
 		showDeleteModal = true;
 	}
 
 	async function handleDelete() {
 		if (!selectedMaterial) return;
-
 		deleteLoading = true;
 		try {
 			await deleteLensMaterialById({ id: selectedMaterial.id });
 			toast.success('Material eliminado');
 			showDeleteModal = false;
-			if (editingId === selectedMaterial.id) {
-				closeComposer();
-			}
+			if (editingId === selectedMaterial.id) closeDrawer();
 			await refreshMaterials();
 		} catch (error) {
 			console.error(error);
@@ -140,83 +129,135 @@
 		}
 	}
 
-	function formatIndex(value: number | null): string {
-		return value == null ? '-' : value.toFixed(2);
+	function getIndexChip(index: number | null): { label: string; cls: string } {
+		if (index == null)
+			return { label: 'Sin índice', cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning' };
+		if (index >= 1.67)
+			return {
+				label: `Índice ${index.toFixed(2)}`,
+				cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning'
+			};
+		if (index >= 1.6)
+			return { label: `Índice ${index.toFixed(2)}`, cls: 'rounded-lg bg-info-container px-2 py-0.5 text-xs font-bold text-info' };
+		return {
+			label: `Índice ${index.toFixed(2)}`,
+			cls: 'rounded-lg bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant'
+		};
 	}
 </script>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap gap-2">
-		<div
-			class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-		>
-			<FlaskConical class="h-3.5 w-3.5" />
-			{stats.total} materiales
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-full bg-info-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-info-container uppercase"
-		>
-			{stats.withIndex} con índice cargado
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-full bg-warning-container px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-warning-container uppercase"
-		>
-			{stats.withoutIndex} por completar
-		</div>
+<div class="space-y-3">
+	<!-- Search -->
+	<div class="relative">
+		<Search class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
+		<input
+			type="search"
+			bind:value={search}
+			placeholder="Buscar por nombre, código o índice..."
+			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+		/>
 	</div>
 
-	<section class="glass-card bg-surface-container-low p-4">
-		<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-			<div class="relative lg:max-w-md lg:flex-1">
-				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
-				<input
-					id="lens-material-search"
-					name="lens-material-search"
-					type="search"
-					bind:value={search}
-					placeholder="Buscar por nombre, código o índice..."
-					class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-				/>
+	<!-- Grid de Cards -->
+	{#if filteredMaterials.length === 0}
+		<div class="flex flex-col items-center justify-center py-12 text-center">
+			<div
+				class="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container-low text-outline"
+			>
+				<FlaskConical class="h-6 w-6" />
 			</div>
-
-			{#if canManage}
-				<button
-					type="button"
-					onclick={startAdd}
-					class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.2em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
-				>
-					<Plus class="h-4 w-4" />
-					Nuevo material
-				</button>
-			{/if}
+			<p class="mt-3 font-semibold text-on-surface-variant">No hay materiales para mostrar</p>
+			<p class="mt-1 text-sm text-outline">Ajusta la búsqueda o crea un nuevo material.</p>
 		</div>
-	</section>
-
-	<div class="space-y-6" use:autoAnimate>
-		{#if canManage && showComposer}
-			<section class="rounded-2xl bg-surface-container-lowest p-5 shadow-sm">
-				<div class="mb-4 flex items-start justify-between gap-4">
-					<div>
-						<p class="text-xs font-semibold tracking-[0.18em] text-outline uppercase">
-							{editingId ? 'Editar material' : 'Nuevo material'}
-						</p>
-						<h3 class="font-heading mt-1 text-xl font-bold text-brand-navy">
-							{editingId
-								? 'Actualiza la ficha técnica del material'
-								: 'Agrega un material a la biblioteca'}
-						</h3>
+	{:else}
+		<div class="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
+			{#each filteredMaterials as material (material.id)}
+				<div
+					class="flex cursor-pointer flex-col gap-1.5 rounded-xl border border-outline-variant/25 bg-surface-container-lowest p-2.5 shadow-sm transition-all hover:shadow-md"
+				>
+					<!-- Top: Name + Status -->
+					<div class="flex items-start justify-between gap-2">
+						<div class="min-w-0">
+							<p class="truncate text-base font-bold text-on-surface">{material.name}</p>
+						</div>
+						<span
+							class="shrink-0 rounded-lg bg-success-container px-2 py-0.5 text-xs font-semibold text-success"
+						>
+							Activo
+						</span>
 					</div>
 
-					<button
-						type="button"
-						onclick={closeComposer}
-						class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-brand-navy"
-						aria-label="Cerrar editor de material"
-					>
-						<X class="h-4 w-4" />
-					</button>
-				</div>
+					<!-- Attribute Chips -->
+					<div class="flex flex-wrap gap-1 items-center justify-between">
+						<span class="font-mono text-xs text-outline">{material.code}</span>
+						<span class="{getIndexChip(material.refractiveIndex).cls}">
+							{getIndexChip(material.refractiveIndex).label}
+						</span>
+					</div>
 
+					{#if material.description}
+						<p class="line-clamp-2 text-xs text-on-surface-variant" title={material.description}>{material.description}</p>
+					{/if}
+
+					<div class="flex-1"></div>
+
+					<!-- Divider + Actions -->
+					<div class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5">
+						{#if canManage}
+							<button
+								type="button"
+								onclick={() => startEdit(material)}
+								class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Editar"
+							>
+								<Pencil class="h-3.5 w-3.5" />
+							</button>
+							<button
+								type="button"
+								onclick={() => openDelete(material)}
+								class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+								title="Eliminar"
+							>
+								<Trash2 class="h-3.5 w-3.5" />
+							</button>
+						{/if}
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
+</div>
+
+<!-- Drawer -->
+{#if showDrawer}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="fixed inset-0 z-50">
+		<div class="fixed inset-0 bg-black/40" onclick={closeDrawer}></div>
+		<div
+			class="fixed right-0 top-0 h-full w-full max-w-lg bg-surface-container-lowest shadow-lg overflow-y-auto rounded-l-xl"
+		>
+			<!-- Drawer Header -->
+			<div class="flex items-start justify-between gap-3 px-6 pt-6 pb-4">
+				<div>
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						{editingId ? 'Editando' : 'Nuevo'} material
+					</p>
+					<p class="mt-0.5 text-sm font-bold text-on-surface">
+						{editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
+					</p>
+				</div>
+				<button
+					type="button"
+					onclick={closeDrawer}
+					class="rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			</div>
+
+			<!-- Drawer Content -->
+			<div class="px-6 pb-6">
 				{#if editingId}
 					<form
 						data-form-id={updateFormId}
@@ -225,10 +266,9 @@
 							try {
 								await submit();
 								const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
-
 								if (allIssues.length === 0) {
 									toast.success('Material actualizado');
-									closeComposer();
+									closeDrawer();
 									await refreshMaterials();
 								} else {
 									toastUnboundErrors(allIssues);
@@ -240,108 +280,91 @@
 								loading = false;
 							}
 						})}
-						class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_220px_180px_minmax(0,1.4fr)]"
+						class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
 					>
 						<input type="hidden" name="id" value={editingId} />
-
 						<div>
 							<label
-								for="lens-material-name-edit"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-name-edit"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Nombre</label
 							>
-								Nombre
-							</label>
 							<input
-								id="lens-material-name-edit"
+								id="mat-name-edit"
 								name="name"
 								type="text"
 								bind:value={draftName}
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
 							{#if currentUpdateForm.fields.name?.issues()}
-								<p class="mt-2 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
+								<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
 							{/if}
 						</div>
-
 						<div>
 							<label
-								for="lens-material-code-edit"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-code-edit"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Código</label
 							>
-								Código
-							</label>
 							<input
-								id="lens-material-code-edit"
+								id="mat-code-edit"
 								name="code"
 								type="text"
 								bind:value={draftCode}
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 font-mono text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
 							{#if currentUpdateForm.fields.code?.issues()}
-								<p class="mt-2 text-xs text-error">{currentUpdateForm.fields.code.issues()}</p>
+								<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.code.issues()}</p>
 							{/if}
 						</div>
-
 						<div>
 							<label
-								for="lens-material-index-edit"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-index-edit"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Índice</label
 							>
-								Índice
-							</label>
 							{#if draftRefractiveIndex}
 								<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
 							{/if}
 							<input
-								id="lens-material-index-edit"
+								id="mat-index-edit"
 								type="number"
 								bind:value={draftRefractiveIndex}
 								step="0.01"
 								placeholder="1.50"
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 font-mono text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
-							{#if currentUpdateForm.fields.refractiveIndex?.issues()}
-								<p class="mt-2 text-xs text-error">
-									{currentUpdateForm.fields.refractiveIndex.issues()}
-								</p>
-							{/if}
 						</div>
-
 						<div>
 							<label
-								for="lens-material-description-edit"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-desc-edit"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Descripción</label
 							>
-								Descripción
-							</label>
 							<input
-								id="lens-material-description-edit"
+								id="mat-desc-edit"
 								name="description"
 								type="text"
 								bind:value={draftDescription}
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
 						</div>
-
-						<div class="flex justify-end gap-3 xl:col-span-4">
+						<div class="flex justify-end gap-2 sm:col-span-4">
 							<button
 								type="button"
-								onclick={closeComposer}
-								class="rounded-lg bg-surface-container-low px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+								onclick={closeDrawer}
+								class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+								>Cancelar</button
 							>
-								Cancelar
-							</button>
 							<button
 								type="submit"
 								disabled={loading}
-								class="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-60"
+								class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
 							>
-								{#if loading}
-									<span class="spinner"></span>
-								{:else}
-									<Check class="h-4 w-4" />
-								{/if}
-								Guardar cambios
+								{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
+										class="h-4 w-4"
+									/>{/if}
+								Guardar
 							</button>
 						</div>
 					</form>
@@ -353,10 +376,9 @@
 							try {
 								await submit();
 								const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
-
 								if (allIssues.length === 0) {
 									toast.success('Material creado');
-									closeComposer();
+									closeDrawer();
 									await refreshMaterials();
 								} else {
 									toastUnboundErrors(allIssues);
@@ -368,239 +390,98 @@
 								loading = false;
 							}
 						})}
-						class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_220px_180px_minmax(0,1.4fr)]"
+						class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
 					>
 						<div>
 							<label
-								for="lens-material-name-create"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-name-create"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Nombre</label
 							>
-								Nombre
-							</label>
 							<input
-								id="lens-material-name-create"
+								id="mat-name-create"
 								name="name"
 								type="text"
 								bind:value={draftName}
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
 							{#if currentCreateForm.fields.name?.issues()}
-								<p class="mt-2 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
+								<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
 							{/if}
 						</div>
-
 						<div>
 							<label
-								for="lens-material-code-create"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-code-create"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Código</label
 							>
-								Código
-							</label>
 							<input
-								id="lens-material-code-create"
+								id="mat-code-create"
 								name="code"
 								type="text"
 								bind:value={draftCode}
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 font-mono text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
 							{#if currentCreateForm.fields.code?.issues()}
-								<p class="mt-2 text-xs text-error">{currentCreateForm.fields.code.issues()}</p>
+								<p class="mt-1 text-xs text-error">{currentCreateForm.fields.code.issues()}</p>
 							{/if}
 						</div>
-
 						<div>
 							<label
-								for="lens-material-index-create"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-index-create"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Índice</label
 							>
-								Índice
-							</label>
 							{#if draftRefractiveIndex}
 								<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
 							{/if}
 							<input
-								id="lens-material-index-create"
+								id="mat-index-create"
 								type="number"
 								bind:value={draftRefractiveIndex}
 								step="0.01"
 								placeholder="1.50"
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 font-mono text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
-							{#if currentCreateForm.fields.refractiveIndex?.issues()}
-								<p class="mt-2 text-xs text-error">
-									{currentCreateForm.fields.refractiveIndex.issues()}
-								</p>
-							{/if}
 						</div>
-
 						<div>
 							<label
-								for="lens-material-description-create"
-								class="mb-2 block text-xs font-semibold tracking-[0.18em] text-outline uppercase"
+								for="mat-desc-create"
+								class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+								>Descripción</label
 							>
-								Descripción
-							</label>
 							<input
-								id="lens-material-description-create"
+								id="mat-desc-create"
 								name="description"
 								type="text"
 								bind:value={draftDescription}
-								class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 							/>
 						</div>
-
-						<div class="flex justify-end gap-3 xl:col-span-4">
+						<div class="flex justify-end gap-2 sm:col-span-4">
 							<button
 								type="button"
-								onclick={closeComposer}
-								class="rounded-lg bg-surface-container-low px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+								onclick={closeDrawer}
+								class="h-9 rounded-lg bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+								>Cancelar</button
 							>
-								Cancelar
-							</button>
 							<button
 								type="submit"
 								disabled={loading}
-								class="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-60"
+								class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
 							>
-								{#if loading}
-									<span class="spinner"></span>
-								{:else}
-									<Check class="h-4 w-4" />
-								{/if}
-								Crear material
+								{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
+										class="h-4 w-4"
+									/>{/if}
+								Crear
 							</button>
 						</div>
 					</form>
 				{/if}
-			</section>
-		{/if}
+			</div>
+		</div>
 	</div>
-
-	<section class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-sm">
-		<div class="overflow-x-auto">
-			<table class="w-full min-w-[880px] text-left">
-				<thead>
-					<tr class="bg-surface-container-low">
-						<th
-							class="px-6 py-4 text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-						>
-							Material
-						</th>
-						<th
-							class="px-6 py-4 text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-						>
-							Código
-						</th>
-						<th
-							class="px-6 py-4 text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-						>
-							Índice
-						</th>
-						<th
-							class="px-6 py-4 text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-						>
-							Descripción
-						</th>
-						<th
-							class="px-6 py-4 text-right text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-						>
-							Estado
-						</th>
-						{#if canManage}
-							<th
-								class="px-6 py-4 text-right text-[10px] font-semibold tracking-[0.22em] text-outline uppercase"
-							>
-								Acciones
-							</th>
-						{/if}
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-surface-container-low" use:autoAnimate>
-					{#if filteredMaterials.length === 0}
-						<tr>
-							<td colspan={canManage ? 6 : 5} class="px-6 py-12 text-center">
-								<div class="mx-auto max-w-md space-y-2">
-									<p class="font-medium text-on-surface-variant">No hay materiales para mostrar</p>
-									<p class="text-sm text-outline">
-										Ajusta la búsqueda o crea un nuevo material para comenzar.
-									</p>
-								</div>
-							</td>
-						</tr>
-					{:else}
-						{#each filteredMaterials as material (material.id)}
-							<tr class="transition-colors hover:bg-surface-container-low">
-								<td class="px-6 py-5">
-									<div class="flex items-center gap-4">
-										<div
-											class="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-container-high text-brand-blue"
-										>
-											<FlaskConical class="h-5 w-5" />
-										</div>
-										<div>
-											<p class="font-semibold text-on-surface">{material.name}</p>
-											{#if material.description}
-												<p class="mt-1 text-xs text-outline">Ficha técnica activa</p>
-											{/if}
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-5">
-									<span
-										class="rounded-md bg-surface-container-high px-2.5 py-1 font-mono text-xs font-semibold text-on-surface-variant"
-									>
-										{material.code}
-									</span>
-								</td>
-								<td class="px-6 py-5 font-mono text-sm font-semibold text-brand-navy">
-									{formatIndex(material.refractiveIndex)}
-								</td>
-								<td class="px-6 py-5 text-sm text-on-surface-variant">
-									{material.description ?? '-'}
-								</td>
-								<td class="px-6 py-5 text-right">
-									<AppBadge variant="success">Activo</AppBadge>
-								</td>
-								{#if canManage}
-									<td class="px-6 py-5 text-right">
-										<div class="flex items-center justify-end gap-1">
-											<button
-												type="button"
-												onclick={() => startEdit(material)}
-												class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-												title="Editar material"
-											>
-												<Pencil class="h-4 w-4" />
-											</button>
-
-											<button
-												type="button"
-												onclick={() => openDelete(material)}
-												class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-												title="Eliminar material"
-											>
-												<Trash2 class="h-4 w-4" />
-											</button>
-										</div>
-									</td>
-								{/if}
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
-		</div>
-
-		<div
-			class="flex items-center justify-between gap-4 px-6 py-4 text-xs font-semibold tracking-[0.18em] text-outline uppercase"
-		>
-			<p>Mostrando {filteredMaterials.length} de {materials.length} materiales</p>
-			{#if search.trim()}
-				<p>Filtro activo</p>
-			{/if}
-		</div>
-	</section>
-</div>
+{/if}
 
 <ConfirmModal
 	bind:open={showDeleteModal}

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Modal, Button, Spinner } from 'flowbite-svelte';
-	import { autoAnimate } from '@formkit/auto-animate';
-	import { Check, Pencil, Search, Tags, Trash2 } from '@lucide/svelte';
+	import { Pencil, Search, Tags, Trash2 } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		listDifferentiators,
@@ -21,16 +20,11 @@
 
 	let differentiators = $state<string[]>([]);
 	let search = $state('');
-	let loading = $state(false);
-
-	// Rename modal state
-	let showRenameModal = $state(false);
 	let renameLoading = $state(false);
+	let showRenameModal = $state(false);
 	let renameOldName = $state('');
 	let renameNewName = $state('');
 	let renameFormId = $state(generateUUID());
-
-	// Delete modal state
 	let showDeleteModal = $state(false);
 	let deleteLoading = $state(false);
 	let deleteName = $state('');
@@ -43,7 +37,6 @@
 		return differentiators.filter((d) => d.toLowerCase().includes(term));
 	});
 
-	// Initialize from SSR data
 	$effect(() => {
 		if (!differentiators.length && initialDifferentiators.length) {
 			differentiators = [...initialDifferentiators];
@@ -97,105 +90,78 @@
 	}
 </script>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap gap-2">
-		<div
-			class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-		>
-			<Tags class="h-3.5 w-3.5" />
-			{differentiators.length} etiquetas
-		</div>
+<div class="space-y-3">
+	<!-- Search -->
+	<div class="relative">
+		<Search class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
+		<input
+			type="search"
+			bind:value={search}
+			placeholder="Buscar etiqueta..."
+			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+		/>
 	</div>
 
-	<section class="glass-card bg-surface-container-low p-4">
-		<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-			<div class="relative lg:max-w-md lg:flex-1">
-				<Search class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline" />
-				<input
-					id="lens-differentiator-search"
-					name="lens-differentiator-search"
-					type="search"
-					bind:value={search}
-					placeholder="Buscar etiqueta..."
-					class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-				/>
+	<!-- Grid de Cards -->
+	{#if filteredDifferentiators.length === 0}
+		<div class="flex flex-col items-center justify-center py-12 text-center">
+			<div
+				class="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container-low text-outline"
+			>
+				<Tags class="h-6 w-6" />
 			</div>
+			<p class="mt-3 font-semibold text-on-surface-variant">No hay etiquetas para mostrar</p>
+			<p class="mt-1 text-sm text-outline">
+				Las etiquetas se crean al asignarlas en los lentes.
+			</p>
 		</div>
-	</section>
+	{:else}
+		<div class="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
+			{#each filteredDifferentiators as tag (tag)}
+				<div
+					class="flex cursor-pointer flex-col gap-1.5 rounded-xl border border-outline-variant/25 bg-surface-container-lowest p-2.5 shadow-sm transition-all hover:shadow-md"
+				>
+					<!-- Top: Name + Status -->
+					<div class="flex items-start justify-between gap-2">
+						<p class="truncate text-base font-bold text-on-surface">{tag}</p>
+						<span
+							class="shrink-0 rounded-lg bg-info-container px-2 py-0.5 text-xs font-semibold text-info"
+						>
+							En lentes
+						</span>
+					</div>
 
-	<section class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-sm">
-		<div class="overflow-x-auto">
-			<table class="w-full min-w-[500px] text-left">
-				<thead>
-					<tr class="bg-surface-container-low">
-						<th class="px-6 py-4 text-[10px] font-semibold tracking-[0.22em] text-outline uppercase">
-							Etiqueta
-						</th>
-						<th class="px-6 py-4 text-[10px] font-semibold tracking-[0.22em] text-outline uppercase">
-							Acciones
-						</th>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-surface-container-low" use:autoAnimate>
-					{#if filteredDifferentiators.length === 0}
-						<tr>
-							<td colspan={canManage ? 2 : 1} class="px-6 py-12 text-center">
-								<div class="mx-auto max-w-md space-y-2">
-									<p class="font-medium text-on-surface-variant">No hay etiquetas para mostrar</p>
-									<p class="text-sm text-outline">Las etiquetas se crean automáticamente al asignarlas en los lentes.</p>
-								</div>
-							</td>
-						</tr>
-					{:else}
-						{#each filteredDifferentiators as tag (tag)}
-							<tr class="transition-colors hover:bg-surface-container-low">
-								<td class="px-6 py-5">
-									<div class="flex items-center gap-4">
-										<div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-container-high text-brand-blue">
-											<Tags class="h-5 w-5" />
-										</div>
-										<div>
-											<span class="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-high px-3 py-1.5 text-sm font-semibold text-on-surface-variant">
-												{tag}
-											</span>
-										</div>
-									</div>
-								</td>
-								<td class="px-6 py-5 text-right">
-									{#if canManage}
-										<div class="flex items-center justify-end gap-1">
-											<button
-												type="button"
-												onclick={() => openRename(tag)}
-												class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
-												title="Renombrar etiqueta"
-											>
-												<Pencil class="h-4 w-4" />
-											</button>
-											<button
-												type="button"
-												onclick={() => openDelete(tag)}
-												class="rounded-md p-2 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-												title="Eliminar etiqueta"
-											>
-												<Trash2 class="h-4 w-4" />
-											</button>
-										</div>
-									{/if}
-								</td>
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
+					<!-- Description -->
+					<p class="text-xs text-on-surface-variant">Usada en lentes del catálogo</p>
+
+					<!-- Spacer -->
+					<div class="flex-1"></div>
+
+					<!-- Divider + Actions -->
+					<div class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5">
+						{#if canManage}
+							<button
+								type="button"
+								onclick={() => openRename(tag)}
+								class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
+								title="Renombrar"
+							>
+								<Pencil class="h-3.5 w-3.5" />
+							</button>
+							<button
+								type="button"
+								onclick={() => openDelete(tag)}
+								class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+								title="Eliminar"
+							>
+								<Trash2 class="h-3.5 w-3.5" />
+							</button>
+						{/if}
+					</div>
+				</div>
+			{/each}
 		</div>
-		<div class="flex items-center justify-between gap-4 px-6 py-4 text-xs font-semibold tracking-[0.18em] text-outline uppercase">
-			<p>Mostrando {filteredDifferentiators.length} de {differentiators.length} etiquetas</p>
-			{#if search.trim()}
-				<p>Filtro activo</p>
-			{/if}
-		</div>
-	</section>
+	{/if}
 </div>
 
 <!-- Rename Modal -->
@@ -225,34 +191,36 @@
 	>
 		<input type="hidden" name="oldName" value={renameOldName} />
 		<div>
-			<label for="rename-old-display" class="mb-1 block text-xs font-semibold text-outline uppercase">
-				Nombre actual
-			</label>
+			<label
+				for="rename-old-display"
+				class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+				>Nombre actual</label
+			>
 			<input
 				id="rename-old-display"
 				type="text"
 				value={renameOldName}
 				disabled
-				class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface"
+				class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface"
 			/>
 		</div>
 		<div>
-			<label for="rename-new-name" class="mb-1 block text-xs font-semibold text-outline uppercase">
-				Nuevo nombre *
-			</label>
+			<label
+				for="rename-new-name"
+				class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+				>Nuevo nombre</label
+			>
 			<input
 				id="rename-new-name"
 				name="newName"
 				type="text"
 				bind:value={renameNewName}
-				placeholder="Nuevo nombre de la etiqueta"
-				class="w-full rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
 			/>
 			{#if currentRenameForm.fields.newName?.issues()}
-				<p class="mt-2 text-xs text-error">{currentRenameForm.fields.newName.issues()}</p>
+				<p class="mt-1 text-xs text-error">{currentRenameForm.fields.newName.issues()}</p>
 			{/if}
 		</div>
-
 		<div class="mt-2 flex justify-end gap-2">
 			<Button color="light" onclick={closeRename} disabled={renameLoading}>Cancelar</Button>
 			<Button type="submit" color="blue" disabled={renameLoading}>
