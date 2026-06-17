@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, FlaskConical, Pencil, Search, Trash2 } from '@lucide/svelte';
+	import { Check, FlaskConical, Pencil, Search, Trash2, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		createLensMaterialForm,
@@ -231,9 +231,28 @@
 <SlideOver
 	bind:open={showDrawer}
 	onclose={closeDrawer}
-	title={editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
-	subtitle={editingId ? 'EDITANDO MATERIAL' : 'NUEVO MATERIAL'}
 >
+	{#snippet header({ onclose })}
+		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
+			<div class="min-w-0">
+				{#if editingId}
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">EDITANDO MATERIAL</p>
+				{:else}
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">NUEVO MATERIAL</p>
+				{/if}
+				<h2 class="truncate text-sm font-bold text-on-surface">
+					{editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
+				</h2>
+			</div>
+			<button
+				type="button"
+				onclick={onclose}
+				class="shrink-0 cursor-pointer rounded-md max-sm:p-3 p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</div>
+	{/snippet}
 	{#if editingId}
 		<form
 			data-form-id={updateFormId}

@@ -7,7 +7,8 @@
 		Pen,
 		Play,
 		Printer,
-		CircleCheck
+		CircleCheck,
+		X
 	} from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -654,9 +655,22 @@
 <SlideOver
 	bind:open={showDrawer}
 	onclose={() => { drawerResetCount++; closeDrawer(); }}
-	title="Procesar Pago"
 	size="md"
 >
+	{#snippet header({ onclose })}
+		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
+			<div class="min-w-0">
+				<h2 class="truncate text-sm font-bold text-on-surface">Procesar Pago</h2>
+			</div>
+			<button
+				type="button"
+				onclick={onclose}
+				class="shrink-0 cursor-pointer rounded-md max-sm:p-3 p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</div>
+	{/snippet}
 	<!-- SALDO PENDIENTE -->
 	{#if remainingBcvUsd > 0.01}
 		<p class="text-2xl font-bold text-amber-600">{formatPrice(remainingBcvUsd)}</p>

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { fly, fade } from 'svelte/transition';
 	import { slide } from 'svelte/transition';
+	import { SlideOver } from '$lib/components/ui';
 	import {
 		Package,
 		Eye,
@@ -512,40 +512,28 @@
 	}
 </script>
 
-{#if open}
-	<!-- Overlay -->
-	<div class="fixed inset-0 z-50" transition:fade={{ duration: 200 }}>
-		<div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
-
-		<!-- Slide-over panel -->
-		<div
-			class="fixed top-0 right-0 flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl dark:bg-slate-900"
-			transition:fly={{ x: '100%', duration: 250, easing: (t) => 1 - Math.pow(1 - t, 3) }}
-		>
-			<!-- ═══ HEADER — Fixed ═══ -->
-			<header
-				class="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700"
+<SlideOver bind:open size="xl" onclose={handleClose}>
+	{#snippet header({ onclose })}
+		<header class="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+			<div class="min-w-0 flex-1">
+				<h2 class="truncate text-lg font-bold text-brand-navy dark:text-white">
+					Modificar Orden #{String(sale.orderNumber).padStart(4, '0')}
+				</h2>
+				<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+					Los cambios se registrarán en auditoría. Artículos nuevos consumirán inventario.
+				</p>
+			</div>
+			<button
+				type="button"
+				onclick={onclose}
+				disabled={saving}
+				class="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl max-sm:h-10 max-sm:w-10 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-300"
 			>
-				<div class="min-w-0 flex-1">
-					<h2 class="truncate text-lg font-bold text-brand-navy dark:text-white">
-						Modificar Orden #{String(sale.orderNumber).padStart(4, '0')}
-					</h2>
-					<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-						Los cambios se registrarán en auditoría. Artículos nuevos consumirán inventario.
-					</p>
-				</div>
-				<button
-					type="button"
-					onclick={handleClose}
-					disabled={saving}
-					class="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-				>
-					<X class="h-5 w-5" />
-				</button>
-			</header>
-
-			<!-- ═══ BODY — Scrollable ═══ -->
-			<div class="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+				<X class="h-5 w-5" />
+			</button>
+		</header>
+	{/snippet}
+	<div class="space-y-5">
 				<!-- ── Card: Información General ── -->
 				<section
 					class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
@@ -1321,7 +1309,6 @@
 						{/if}
 					</div>
 				</section>
-			</div>
 
 			<!-- ═══ FOOTER — Fixed ═══ -->
 			<footer
@@ -1384,6 +1371,5 @@
 					</div>
 				</div>
 			</footer>
-		</div>
 	</div>
-{/if}
+</SlideOver>
