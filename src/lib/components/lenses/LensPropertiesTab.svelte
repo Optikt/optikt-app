@@ -24,7 +24,8 @@
 	}: Props = $props();
 
 	let activeSubTab = $state<SubTab>('materials');
-	let drawTrigger = $state(0);
+	let materialsTrigger = $state(0);
+	let technologiesTrigger = $state(0);
 
 	const subTabs: { id: SubTab; label: string; icon: any }[] = [
 		{ id: 'materials', label: 'Materiales', icon: FlaskConical },
@@ -42,6 +43,11 @@
 				return '';
 		}
 	});
+
+	function handleNewClick() {
+		if (activeSubTab === 'materials') materialsTrigger++;
+		if (activeSubTab === 'technologies') technologiesTrigger++;
+	}
 </script>
 
 <div class="flex items-center justify-between border-b border-outline-variant/50 pb-3">
@@ -63,7 +69,7 @@
 	{#if canManage && activeSubTab !== 'differentiators'}
 		<button
 			type="button"
-			onclick={() => { drawTrigger++ }}
+			onclick={handleNewClick}
 			class="inline-flex items-center gap-2 rounded-lg bg-brand-blue px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm"
 		>
 			<Plus class="h-4 w-4" />
@@ -73,11 +79,13 @@
 </div>
 
 <div class="mt-4">
-	{#if activeSubTab === 'materials'}
-		<LensMaterialsTab {initialMaterials} {canManage} {drawTrigger} />
-	{:else if activeSubTab === 'technologies'}
-		<LensTechnologiesTab {initialTechnologies} {initialSuppliers} {canManage} {drawTrigger} />
-	{:else if activeSubTab === 'differentiators'}
+	<div class:hidden={activeSubTab !== 'materials'}>
+		<LensMaterialsTab {initialMaterials} {canManage} drawTrigger={materialsTrigger} />
+	</div>
+	<div class:hidden={activeSubTab !== 'technologies'}>
+		<LensTechnologiesTab {initialTechnologies} {initialSuppliers} {canManage} drawTrigger={technologiesTrigger} />
+	</div>
+	<div class:hidden={activeSubTab !== 'differentiators'}>
 		<LensDifferentiatorsTab {initialDifferentiators} {canManage} />
-	{/if}
+	</div>
 </div>
