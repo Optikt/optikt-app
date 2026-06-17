@@ -98,7 +98,7 @@
 			type="search"
 			bind:value={search}
 			placeholder="Buscar etiqueta..."
-			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 		/>
 	</div>
 
@@ -111,9 +111,7 @@
 				<Tags class="h-6 w-6" />
 			</div>
 			<p class="mt-3 font-semibold text-on-surface-variant">No hay etiquetas para mostrar</p>
-			<p class="mt-1 text-sm text-outline">
-				Las etiquetas se crean al asignarlas en los lentes.
-			</p>
+			<p class="mt-1 text-sm text-outline">Las etiquetas se crean al asignarlas en los lentes.</p>
 		</div>
 	{:else}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
@@ -138,7 +136,9 @@
 					<div class="flex-1"></div>
 
 					<!-- Divider + Actions -->
-					<div class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5">
+					<div
+						class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5"
+					>
 						{#if canManage}
 							<button
 								type="button"
@@ -215,7 +215,7 @@
 				name="newName"
 				type="text"
 				bind:value={renameNewName}
-				class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+				class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 			/>
 			{#if currentRenameForm.fields.newName?.issues()}
 				<p class="mt-1 text-xs text-error">{currentRenameForm.fields.newName.issues()}</p>

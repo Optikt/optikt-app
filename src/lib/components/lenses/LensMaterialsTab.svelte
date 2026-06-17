@@ -19,11 +19,7 @@
 		drawTrigger: number;
 	}
 
-	let {
-		initialMaterials,
-		canManage = true,
-		drawTrigger
-	}: Props = $props();
+	let { initialMaterials, canManage = true, drawTrigger }: Props = $props();
 
 	let materials = $state<LensMaterial[]>(untrack(() => initialMaterials));
 	let search = $state('');
@@ -131,14 +127,20 @@
 
 	function getIndexChip(index: number | null): { label: string; cls: string } {
 		if (index == null)
-			return { label: 'Sin índice', cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning' };
+			return {
+				label: 'Sin índice',
+				cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning'
+			};
 		if (index >= 1.67)
 			return {
 				label: `Índice ${index.toFixed(2)}`,
 				cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning'
 			};
 		if (index >= 1.6)
-			return { label: `Índice ${index.toFixed(2)}`, cls: 'rounded-lg bg-info-container px-2 py-0.5 text-xs font-bold text-info' };
+			return {
+				label: `Índice ${index.toFixed(2)}`,
+				cls: 'rounded-lg bg-info-container px-2 py-0.5 text-xs font-bold text-info'
+			};
 		return {
 			label: `Índice ${index.toFixed(2)}`,
 			cls: 'rounded-lg bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant'
@@ -154,7 +156,7 @@
 			type="search"
 			bind:value={search}
 			placeholder="Buscar por nombre, código o índice..."
-			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 		/>
 	</div>
 
@@ -188,21 +190,25 @@
 					</div>
 
 					<!-- Attribute Chips -->
-					<div class="flex flex-wrap gap-1 items-center justify-between">
+					<div class="flex flex-wrap items-center justify-between gap-1">
 						<span class="font-mono text-xs text-outline">{material.code}</span>
-						<span class="{getIndexChip(material.refractiveIndex).cls}">
+						<span class={getIndexChip(material.refractiveIndex).cls}>
 							{getIndexChip(material.refractiveIndex).label}
 						</span>
 					</div>
 
 					{#if material.description}
-						<p class="line-clamp-2 text-xs text-on-surface-variant" title={material.description}>{material.description}</p>
+						<p class="line-clamp-2 text-xs text-on-surface-variant" title={material.description}>
+							{material.description}
+						</p>
 					{/if}
 
 					<div class="flex-1"></div>
 
 					<!-- Divider + Actions -->
-					<div class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5">
+					<div
+						class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5"
+					>
 						{#if canManage}
 							<button
 								type="button"
@@ -228,17 +234,20 @@
 	{/if}
 </div>
 
-<SlideOver
-	bind:open={showDrawer}
-	onclose={closeDrawer}
->
+<SlideOver bind:open={showDrawer} onclose={closeDrawer}>
 	{#snippet header({ onclose })}
-		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
+		<div
+			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
+		>
 			<div class="min-w-0">
 				{#if editingId}
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">EDITANDO MATERIAL</p>
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						EDITANDO MATERIAL
+					</p>
 				{:else}
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">NUEVO MATERIAL</p>
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						NUEVO MATERIAL
+					</p>
 				{/if}
 				<h2 class="truncate text-sm font-bold text-on-surface">
 					{editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
@@ -247,7 +256,7 @@
 			<button
 				type="button"
 				onclick={onclose}
-				class="shrink-0 cursor-pointer rounded-md max-sm:p-3 p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+				class="shrink-0 cursor-pointer rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant max-sm:p-3"
 			>
 				<X class="h-4 w-4" />
 			</button>
@@ -289,7 +298,7 @@
 					name="name"
 					type="text"
 					bind:value={draftName}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 				{#if currentUpdateForm.fields.name?.issues()}
 					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
@@ -306,7 +315,7 @@
 					name="code"
 					type="text"
 					bind:value={draftCode}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 				{#if currentUpdateForm.fields.code?.issues()}
 					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.code.issues()}</p>
@@ -327,7 +336,7 @@
 					bind:value={draftRefractiveIndex}
 					step="0.01"
 					placeholder="1.50"
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div>
@@ -341,7 +350,7 @@
 					name="description"
 					type="text"
 					bind:value={draftDescription}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-4">
@@ -356,9 +365,7 @@
 					disabled={loading}
 					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
 				>
-					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-							class="h-4 w-4"
-						/>{/if}
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check class="h-4 w-4" />{/if}
 					Guardar
 				</button>
 			</div>
@@ -398,7 +405,7 @@
 					name="name"
 					type="text"
 					bind:value={draftName}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 				{#if currentCreateForm.fields.name?.issues()}
 					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
@@ -415,7 +422,7 @@
 					name="code"
 					type="text"
 					bind:value={draftCode}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 				{#if currentCreateForm.fields.code?.issues()}
 					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.code.issues()}</p>
@@ -436,7 +443,7 @@
 					bind:value={draftRefractiveIndex}
 					step="0.01"
 					placeholder="1.50"
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div>
@@ -450,7 +457,7 @@
 					name="description"
 					type="text"
 					bind:value={draftDescription}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-4">
@@ -465,9 +472,7 @@
 					disabled={loading}
 					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
 				>
-					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-							class="h-4 w-4"
-						/>{/if}
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check class="h-4 w-4" />{/if}
 					Crear
 				</button>
 			</div>

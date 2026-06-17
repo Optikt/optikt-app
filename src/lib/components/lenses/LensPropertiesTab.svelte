@@ -55,7 +55,9 @@
 		{#each subTabs as tab (tab.id)}
 			<button
 				type="button"
-				onclick={() => { activeSubTab = tab.id }}
+				onclick={() => {
+					activeSubTab = tab.id;
+				}}
 				class="inline-flex items-center gap-1.5 border-b-2 pb-1 text-sm font-semibold transition-colors {activeSubTab ===
 				tab.id
 					? 'border-brand-blue text-brand-blue'
@@ -83,7 +85,12 @@
 		<LensMaterialsTab {initialMaterials} {canManage} drawTrigger={materialsTrigger} />
 	</div>
 	<div class:hidden={activeSubTab !== 'technologies'}>
-		<LensTechnologiesTab {initialTechnologies} {initialSuppliers} {canManage} drawTrigger={technologiesTrigger} />
+		<LensTechnologiesTab
+			{initialTechnologies}
+			{initialSuppliers}
+			{canManage}
+			drawTrigger={technologiesTrigger}
+		/>
 	</div>
 	<div class:hidden={activeSubTab !== 'differentiators'}>
 		<LensDifferentiatorsTab {initialDifferentiators} {canManage} />

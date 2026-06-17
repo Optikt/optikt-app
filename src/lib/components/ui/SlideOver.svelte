@@ -51,7 +51,9 @@
 
 <div
 	bind:this={panel}
-	class="fixed right-0 top-0 z-50 flex h-full w-full {maxWidth[size]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
+	class="fixed top-0 right-0 z-50 flex h-full w-full {maxWidth[
+		size
+	]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
 	class:translate-x-full={!open}
 	class:translate-x-0={open}
 	role="dialog"

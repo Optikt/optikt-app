@@ -654,18 +654,23 @@
 
 <SlideOver
 	bind:open={showDrawer}
-	onclose={() => { drawerResetCount++; closeDrawer(); }}
+	onclose={() => {
+		drawerResetCount++;
+		closeDrawer();
+	}}
 	size="md"
 >
 	{#snippet header({ onclose })}
-		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
+		<div
+			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
+		>
 			<div class="min-w-0">
 				<h2 class="truncate text-sm font-bold text-on-surface">Procesar Pago</h2>
 			</div>
 			<button
 				type="button"
 				onclick={onclose}
-				class="shrink-0 cursor-pointer rounded-md max-sm:p-3 p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+				class="shrink-0 cursor-pointer rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant max-sm:p-3"
 			>
 				<X class="h-4 w-4" />
 			</button>

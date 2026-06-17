@@ -21,12 +21,7 @@
 		drawTrigger: number;
 	}
 
-	let {
-		initialTechnologies,
-		initialSuppliers,
-		canManage = true,
-		drawTrigger
-	}: Props = $props();
+	let { initialTechnologies, initialSuppliers, canManage = true, drawTrigger }: Props = $props();
 
 	let technologies = $state<LensTechnology[]>([]);
 	let suppliers = $state<{ id: string; name: string }[]>([]);
@@ -164,7 +159,7 @@
 			type="search"
 			bind:value={search}
 			placeholder="Buscar tecnología..."
-			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 		/>
 	</div>
 
@@ -190,7 +185,12 @@
 						<div class="min-w-0">
 							<p class="truncate text-base font-bold text-on-surface">{tech.name}</p>
 							{#if tech.supplierId}
-								<p class="line-clamp-1 text-xs text-on-surface-variant" title={getSupplierName(tech.supplierId)}>{getSupplierName(tech.supplierId)}</p>
+								<p
+									class="line-clamp-1 text-xs text-on-surface-variant"
+									title={getSupplierName(tech.supplierId)}
+								>
+									{getSupplierName(tech.supplierId)}
+								</p>
 							{/if}
 						</div>
 						<span
@@ -202,7 +202,7 @@
 
 					<!-- Attribute Chips -->
 					<div class="flex flex-wrap gap-1">
-						<span class="{getSupplierChip(tech.supplierId).cls}">
+						<span class={getSupplierChip(tech.supplierId).cls}>
 							{getSupplierChip(tech.supplierId).label}
 						</span>
 						{#if tech.minFittingHeight != null}
@@ -218,7 +218,9 @@
 					<div class="flex-1"></div>
 
 					<!-- Divider + Actions -->
-					<div class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5">
+					<div
+						class="flex items-center justify-end gap-1 border-t border-outline-variant/20 pt-1.5"
+					>
 						{#if canManage}
 							<button
 								type="button"
@@ -244,17 +246,20 @@
 	{/if}
 </div>
 
-<SlideOver
-	bind:open={showDrawer}
-	onclose={closeDrawer}
->
+<SlideOver bind:open={showDrawer} onclose={closeDrawer}>
 	{#snippet header({ onclose })}
-		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
+		<div
+			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
+		>
 			<div class="min-w-0">
 				{#if editingId}
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">EDITANDO TECNOLOGÍA</p>
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						EDITANDO TECNOLOGÍA
+					</p>
 				{:else}
-					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">NUEVA TECNOLOGÍA</p>
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
+						NUEVA TECNOLOGÍA
+					</p>
 				{/if}
 				<h2 class="truncate text-sm font-bold text-on-surface">
 					{editingId ? 'Actualiza la ficha técnica' : 'Agrega una tecnología de fabricación'}
@@ -263,7 +268,7 @@
 			<button
 				type="button"
 				onclick={onclose}
-				class="shrink-0 cursor-pointer rounded-md max-sm:p-3 p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+				class="shrink-0 cursor-pointer rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant max-sm:p-3"
 			>
 				<X class="h-4 w-4" />
 			</button>
@@ -305,7 +310,7 @@
 					name="name"
 					type="text"
 					bind:value={draftName}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 				{#if currentUpdateForm.fields.name?.issues()}
 					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.name.issues()}</p>
@@ -321,7 +326,7 @@
 					id="tech-supplier-edit"
 					name="supplierId"
 					bind:value={draftSupplierId}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				>
 					<option value="">Global (sin proveedor)</option>
 					{#each suppliers as s (s.id)}
@@ -345,7 +350,7 @@
 					step="0.5"
 					min="0"
 					placeholder="mm"
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-3">
@@ -360,9 +365,7 @@
 					disabled={loading}
 					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
 				>
-					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-							class="h-4 w-4"
-						/>{/if}
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check class="h-4 w-4" />{/if}
 					Guardar
 				</button>
 			</div>
@@ -402,7 +405,7 @@
 					name="name"
 					type="text"
 					bind:value={draftName}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 				{#if currentCreateForm.fields.name?.issues()}
 					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.name.issues()}</p>
@@ -418,7 +421,7 @@
 					id="tech-supplier-create"
 					name="supplierId"
 					bind:value={draftSupplierId}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				>
 					<option value="">Global (sin proveedor)</option>
 					{#each suppliers as s (s.id)}
@@ -442,7 +445,7 @@
 					step="0.5"
 					min="0"
 					placeholder="mm"
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:outline-none focus:ring-2 focus:ring-brand-blue/15"
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-3">
@@ -457,9 +460,7 @@
 					disabled={loading}
 					class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-navy px-4 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-125 disabled:opacity-60"
 				>
-					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check
-							class="h-4 w-4"
-						/>{/if}
+					{#if loading}<span class="spinner h-4 w-4"></span>{:else}<Check class="h-4 w-4" />{/if}
 					Crear
 				</button>
 			</div>
