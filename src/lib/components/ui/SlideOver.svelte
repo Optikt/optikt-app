@@ -30,12 +30,15 @@
 		onclose?.();
 	}
 
-	function onPanelKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Escape') handleClose();
-	}
-
 	$effect(() => {
-		if (open) panel?.focus();
+		if (!open) return;
+		panel?.focus();
+
+		function onKeyDown(e: KeyboardEvent) {
+			if (e.key === 'Escape') handleClose();
+		}
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
 	});
 </script>
 
@@ -54,7 +57,6 @@
 	role="dialog"
 	aria-modal="true"
 	tabindex="-1"
-	onkeydown={onPanelKeyDown}
 >
 	{#if header}
 		{@render header({ onclose: handleClose })}
