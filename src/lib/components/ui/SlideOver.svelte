@@ -25,29 +25,39 @@
 		lg: 'max-w-lg'
 	} as const;
 
+	let panel: HTMLDivElement | undefined = $state();
+
 	function handleClose() {
 		open = false;
 		onclose?.();
 	}
-</script>
 
-<svelte:window onkeydown={(e) => { if (e.key === 'Escape' && open) handleClose(); }} />
+	function onPanelKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Escape') handleClose();
+	}
+
+	$effect(() => {
+		if (open) panel?.focus();
+	});
+</script>
 
 <div
 	class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-in-out"
 	class:opacity-0={!open}
 	class:pointer-events-none={!open}
-	onclick={handleClose}
 	role="presentation"
 ></div>
 
 <div
-	class="fixed right-0 top-0 z-50 flex h-full w-full {maxWidth[size]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out"
+	bind:this={panel}
+	class="fixed right-0 top-0 z-50 flex h-full w-full {maxWidth[size]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
 	class:translate-x-full={!open}
 	class:translate-x-0={open}
 	role="dialog"
 	aria-modal="true"
 	aria-label={title}
+	tabindex="-1"
+	onkeydown={onPanelKeyDown}
 >
 	{#if title}
 		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
