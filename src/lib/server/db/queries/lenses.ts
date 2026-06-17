@@ -27,7 +27,8 @@ export async function getAllLensMaterials(): Promise<LensMaterial[]> {
 	return await db
 		.select()
 		.from(lensMaterials)
-		.where(and(isNull(lensMaterials.deletedAt), eq(lensMaterials.isActive, true)));
+		.where(and(isNull(lensMaterials.deletedAt), eq(lensMaterials.isActive, true)))
+		.orderBy(lensMaterials.name);
 }
 
 export async function findLensMaterialById(id: string): Promise<LensMaterial | null> {
