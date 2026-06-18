@@ -181,8 +181,14 @@
 			<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-purple-container uppercase">
 				{getLensTypeLabel(item.type)}
 			</span>
-			<span class="inline-flex items-center gap-1.5 rounded-full bg-success-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-success-container uppercase">
-				Activo
+			<span
+				class="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold tracking-[0.12em] uppercase"
+				class:bg-success-container={item.isActive}
+				class:text-on-success-container={item.isActive}
+				class:bg-surface-container-high={!item.isActive}
+				class:text-outline={!item.isActive}
+			>
+				{item.isActive ? 'Activo' : 'Inactivo'}
 			</span>
 			<span class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-warning-container uppercase">
 				{inventorySummary}
@@ -274,18 +280,18 @@
 					</div>
 				{/if}
 
-				<!-- Differentiators inline -->
-				{#if item.differentiators && item.differentiators.length > 0}
-					<div class="mt-4 flex flex-wrap items-center gap-2">
-						<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Etiquetas</p>
-						{#each item.differentiators as tag (tag)}
-							<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs font-semibold text-on-surface">{tag}</span>
-						{/each}
-					</div>
-				{/if}
-			</div>
+			<!-- Differentiators inline -->
+			{#if item.differentiators && item.differentiators.some(t => t.trim().length > 0)}
+				<div class="mt-4 flex flex-wrap items-center gap-2">
+					<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Etiquetas</p>
+					{#each item.differentiators.filter(t => t.trim().length > 0) as tag (tag)}
+						<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs font-semibold text-on-surface">{tag}</span>
+					{/each}
+				</div>
+			{/if}
+		</div>
 
-			<!-- Optical ranges + notes -->
+		<!-- Optical ranges + notes -->
 			<LensDetailOpticalPanel {item} />
 		{/if}
 
@@ -429,14 +435,14 @@
 						{/if}
 					</div>
 
-					<div class="mt-6 rounded-[1.25rem] bg-white/10 px-4 py-4 backdrop-blur-sm">
-						<p class="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">Precio de venta</p>
-						{#if item.salePrice}
+					{#if item.salePrice}
+						<div class="mt-6 rounded-[1.25rem] bg-white/10 px-4 py-4 backdrop-blur-sm">
+							<p class="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">Precio de venta</p>
 							<p class="mt-3 font-mono text-4xl font-bold tracking-tight text-white">
 								{formatPrice(item.salePrice)}
 							</p>
-						{/if}
-					</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -524,8 +530,14 @@
 			<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-purple-container uppercase">
 				{getLensTypeLabel(item.type)}
 			</span>
-			<span class="inline-flex items-center gap-1.5 rounded-full bg-success-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-success-container uppercase">
-				Activo
+			<span
+				class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase"
+				class:bg-success-container={item.isActive}
+				class:text-on-success-container={item.isActive}
+				class:bg-surface-container-high={!item.isActive}
+				class:text-outline={!item.isActive}
+			>
+				{item.isActive ? 'Activo' : 'Inactivo'}
 			</span>
 			<span class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-warning-container uppercase">
 				{inventorySummary}
@@ -600,16 +612,16 @@
 				</div>
 			{/if}
 
-			<!-- Differentiators inline -->
-			{#if item.differentiators && item.differentiators.length > 0}
-				<div class="mt-4 flex flex-wrap items-center gap-2">
-					<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Etiquetas</p>
-					{#each item.differentiators as tag (tag)}
-						<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1 text-xs font-semibold text-on-surface">{tag}</span>
-					{/each}
-				</div>
-			{/if}
-		</div>
+		<!-- Differentiators inline -->
+		{#if item.differentiators && item.differentiators.some(t => t.trim().length > 0)}
+			<div class="mt-4 flex flex-wrap items-center gap-2">
+				<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Etiquetas</p>
+				{#each item.differentiators.filter(t => t.trim().length > 0) as tag (tag)}
+					<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1 text-xs font-semibold text-on-surface">{tag}</span>
+				{/each}
+			</div>
+		{/if}
+	</div>
 
 		<!-- Optical ranges + notes -->
 		<LensDetailOpticalPanel {item} />
