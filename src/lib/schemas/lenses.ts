@@ -63,7 +63,7 @@ export const RenameDifferentiatorSchema = z.object({
 });
 
 export const DeleteDifferentiatorSchema = z.object({
-	name: z.string().min(1, 'Etiqueta requerida')
+	name: z.string()
 });
 
 // ============================================================================
@@ -136,7 +136,8 @@ const StringArraySchema = z
 			.pipe(z.array(z.string())),
 		z.array(z.string())
 	])
-	.default([]);
+	.default([])
+	.transform((arr) => arr.filter((s) => s.length > 0));
 
 const BaseLensCatalogItemSchema = z.object({
 	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),

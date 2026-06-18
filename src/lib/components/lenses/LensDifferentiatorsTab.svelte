@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { Modal, Button, Spinner } from 'flowbite-svelte';
-	import { Pencil, Search, Tags, Trash2 } from '@lucide/svelte';
+	import { Pencil, Search, Tags, Trash2, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
 		listDifferentiators,
 		renameDifferentiatorForm,
 		deleteDifferentiatorById
 	} from '$lib/remote/lenses.remote';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal, SlideOver } from '$lib/components/ui';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 
@@ -164,8 +163,22 @@
 	{/if}
 </div>
 
-<!-- Rename Modal -->
-<Modal bind:open={showRenameModal} title="Renombrar etiqueta" size="sm">
+<!-- Rename SlideOver -->
+<SlideOver bind:open={showRenameModal} size="md" onclose={closeRename}>
+	{#snippet header({ onclose })}
+		<div class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4">
+			<div class="min-w-0">
+				<h2 class="truncate text-sm font-bold text-on-surface">Renombrar etiqueta</h2>
+			</div>
+			<button
+				type="button"
+				onclick={onclose}
+				class="shrink-0 cursor-pointer rounded-md max-sm:p-3 p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant"
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</div>
+	{/snippet}
 	<form
 		data-form-id={renameFormId}
 		{...currentRenameForm.enhance(async ({ submit }) => {
@@ -222,14 +235,22 @@
 			{/if}
 		</div>
 		<div class="mt-2 flex justify-end gap-2">
-			<Button color="light" onclick={closeRename} disabled={renameLoading}>Cancelar</Button>
-			<Button type="submit" color="blue" disabled={renameLoading}>
-				{#if renameLoading}<Spinner size="4" class="mr-2" />{/if}
+			<button
+				type="button"
+				onclick={closeRename}
+				disabled={renameLoading}
+				class="inline-flex items-center gap-2 rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:opacity-50"
+			>Cancelar</button>
+			<button
+				type="submit"
+				disabled={renameLoading}
+				class="inline-flex items-center gap-2 rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-blue-dark disabled:opacity-50"
+			>
 				Renombrar
-			</Button>
+			</button>
 		</div>
 	</form>
-</Modal>
+</SlideOver>
 
 <!-- Delete Modal -->
 <ConfirmModal
