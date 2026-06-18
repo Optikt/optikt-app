@@ -85,7 +85,7 @@
 	<!-- Unified sticky header: title bar + tabs (anchored below navbar) -->
 	<div class="sticky z-40 flex flex-col bg-white shadow-sm">
 		<!-- Top App Bar -->
-		<div class="flex items-center gap-3 border-b border-[var(--color-surface-container-high)] bg-white px-4 py-3">
+		<div class="flex items-center gap-3 border-b border-[var(--color-surface-container-high)] bg-white px-2 py-1">
 		<button
 			type="button"
 			onclick={goBack}
