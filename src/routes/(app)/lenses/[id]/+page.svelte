@@ -508,7 +508,7 @@
 	</section>
 
 	<!-- TECHNICAL INFO (desktop: left column) -->
-	<div class="flex flex-col gap-5 lg:col-span-8 lg:col-start-1 lg:row-start-1">
+	<div class="flex flex-col gap-y-4 lg:col-span-8 lg:col-start-1 lg:row-start-1">
 		<PageHeader
 			title={item.name}
 			subtitle="Detalle de lente"
@@ -517,7 +517,7 @@
 		/>
 
 		<!-- Tags row -->
-		<div class="flex flex-wrap items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2 -mt-4">
 			<span class="inline-flex items-center gap-1.5 rounded-full bg-info-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-info-container uppercase">
 				{getLensSourceLabel(item.source)}
 			</span>
