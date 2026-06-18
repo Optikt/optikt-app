@@ -14,7 +14,8 @@ import {
 	PendingEntitySchema,
 	SphereSchema,
 	CylinderSchema,
-	AdditionSchema
+	AdditionSchema,
+	ListPaginationSchema
 } from './common';
 
 // ============================================================================
@@ -38,7 +39,10 @@ export const UpdateLensMaterialSchema = CreateLensMaterialSchema.partial().exten
 // ============================================================================
 
 export const CreateLensTechnologySchema = z.object({
-	supplierId: z.uuid('Seleccione un proveedor'),
+	supplierId: z
+		.union([z.string().max(0), z.uuid()])
+		.optional()
+		.transform((val) => (val ? val : undefined)),
 	name: NameSchema(),
 	minFittingHeight: CoercedNumber.min(0, 'Altura mínima debe ser ≥ 0').optional()
 });
@@ -50,6 +54,17 @@ export const UpdateLensTechnologySchema = CreateLensTechnologySchema.partial().e
 
 export type CreateLensTechnologyInput = z.infer<typeof CreateLensTechnologySchema>;
 export type UpdateLensTechnologyInput = z.infer<typeof UpdateLensTechnologySchema>;
+
+export const ListTechnologiesSchema = ListPaginationSchema;
+
+export const RenameDifferentiatorSchema = z.object({
+	oldName: z.string().min(1, 'Nombre original requerido'),
+	newName: z.string().min(1, 'Nuevo nombre requerido')
+});
+
+export const DeleteDifferentiatorSchema = z.object({
+	name: z.string()
+});
 
 // ============================================================================
 // OPTICAL RANGE (used inside catalog item schemas)
@@ -121,7 +136,8 @@ const StringArraySchema = z
 			.pipe(z.array(z.string())),
 		z.array(z.string())
 	])
-	.default([]);
+	.default([])
+	.transform((arr) => arr.filter((s) => s.length > 0));
 
 const BaseLensCatalogItemSchema = z.object({
 	source: z.enum(LensCatalogSource).default(LensCatalogSource.LAB),

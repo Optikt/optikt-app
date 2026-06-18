@@ -160,6 +160,9 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		minFittingHeight: 'Altura mínima de montaje',
 		isActive: 'Activo'
 	},
+	lens_differentiator: {
+		nombre: 'Nombre'
+	},
 	lens_treatment: {
 		name: 'Nombre',
 		code: 'Código',

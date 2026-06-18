@@ -27,7 +27,8 @@ export async function getAllLensMaterials(): Promise<LensMaterial[]> {
 	return await db
 		.select()
 		.from(lensMaterials)
-		.where(and(isNull(lensMaterials.deletedAt), eq(lensMaterials.isActive, true)));
+		.where(and(isNull(lensMaterials.deletedAt), eq(lensMaterials.isActive, true)))
+		.orderBy(lensMaterials.name);
 }
 
 export async function findLensMaterialById(id: string): Promise<LensMaterial | null> {
@@ -133,6 +134,80 @@ export async function updateLensTechnology(
 		.where(eq(lensTechnologies.id, id))
 		.returning();
 	return updated ?? null;
+}
+
+export async function getAllTechnologies(options?: { search?: string }): Promise<LensTechnology[]> {
+	const conditions = [eq(lensTechnologies.isActive, true)];
+
+	if (options?.search) {
+		const searchTerm = `%${options.search.toLowerCase()}%`;
+		conditions.push(ilike(lensTechnologies.name, searchTerm));
+	}
+
+	return await db
+		.select()
+		.from(lensTechnologies)
+		.where(and(...conditions))
+		.orderBy(lensTechnologies.name);
+}
+
+export async function deleteLensTechnology(id: string): Promise<boolean> {
+	const [updated] = await db
+		.update(lensTechnologies)
+		.set({ isActive: false, updatedAt: nowISO() })
+		.where(and(eq(lensTechnologies.id, id), eq(lensTechnologies.isActive, true)))
+		.returning({ id: lensTechnologies.id });
+	return !!updated;
+}
+
+export async function getAllDifferentiators(options?: { search?: string }): Promise<string[]> {
+	const diffRows = await db
+		.select({ diff: sql<string | null>`unnest(${lensCatalogItems.differentiators})` })
+		.from(lensCatalogItems)
+		.where(isNull(lensCatalogItems.deletedAt));
+
+	let result = [
+		...new Set(
+			diffRows.map((row) => row.diff).filter((s): s is string => s !== null && s.length > 0)
+		)
+	].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+
+	if (options?.search) {
+		const searchLower = options.search.toLowerCase();
+		result = result.filter((d) => d.toLowerCase().includes(searchLower));
+	}
+
+	return result;
+}
+
+export async function renameDifferentiator(oldName: string, newName: string): Promise<void> {
+	await db
+		.update(lensCatalogItems)
+		.set({
+			differentiators: sql`array_replace(${lensCatalogItems.differentiators}, ${oldName}, ${newName})`,
+			updatedAt: nowISO()
+		})
+		.where(
+			and(
+				isNull(lensCatalogItems.deletedAt),
+				sql`${oldName} = ANY(${lensCatalogItems.differentiators})`
+			)
+		);
+}
+
+export async function deleteDifferentiator(name: string): Promise<void> {
+	await db
+		.update(lensCatalogItems)
+		.set({
+			differentiators: sql`array_remove(${lensCatalogItems.differentiators}, ${name})`,
+			updatedAt: nowISO()
+		})
+		.where(
+			and(
+				isNull(lensCatalogItems.deletedAt),
+				sql`${name} = ANY(${lensCatalogItems.differentiators})`
+			)
+		);
 }
 
 // ============================================================================

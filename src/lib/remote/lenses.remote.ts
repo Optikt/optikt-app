@@ -17,7 +17,10 @@ import {
 	UpdateLensTechnologySchema,
 	LensIdSchema,
 	ListLensCatalogSchema,
-	LensSupplierIdSchema
+	LensSupplierIdSchema,
+	ListTechnologiesSchema,
+	RenameDifferentiatorSchema,
+	DeleteDifferentiatorSchema
 } from '$lib/schemas/lenses';
 import { ManualLensAdjustmentSchema } from '$lib/schemas/inventory';
 import {
@@ -36,7 +39,12 @@ import {
 	findLensTechnologyById,
 	createLensTechnology,
 	updateLensTechnology,
-	resolvePendingTechnology
+	resolvePendingTechnology,
+	getAllTechnologies,
+	deleteLensTechnology,
+	getAllDifferentiators,
+	renameDifferentiator,
+	deleteDifferentiator
 } from '$lib/server/db/queries/lenses';
 import {
 	createInventoryLot,
@@ -316,6 +324,72 @@ export const updateLensTechnologyForm = form(
 
 		await auditService.logUpdate('lens_technology', id, existing, updated, getAuditContext());
 		return updated;
+	}
+);
+
+export const listTechnologies = query(
+	ListTechnologiesSchema,
+	async (data): Promise<LensTechnology[]> => {
+		requireAuth();
+
+		return getAllTechnologies({ search: data.search });
+	}
+);
+
+export const deleteLensTechnologyById = command(LensIdSchema, async (data): Promise<void> => {
+	requireAdmin();
+
+	const existing = await findLensTechnologyById(data.id);
+	if (!existing) throw new Error('Tecnología no encontrada');
+
+	const deleted = await deleteLensTechnology(data.id);
+	if (!deleted) throw new Error('Error eliminando tecnología');
+
+	await auditService.logDelete('lens_technology', existing, getAuditContext());
+});
+
+// ============================================================================
+// LENS DIFFERENTIATORS
+// ============================================================================
+
+export const listDifferentiators = query(
+	ListTechnologiesSchema,
+	async (data): Promise<string[]> => {
+		requireAuth();
+
+		return getAllDifferentiators({ search: data.search });
+	}
+);
+
+export const renameDifferentiatorForm = form(
+	RenameDifferentiatorSchema,
+	async (data): Promise<void> => {
+		requireAdmin();
+
+		await renameDifferentiator(data.oldName, data.newName);
+		await auditService.logCustom(
+			'lens_differentiator',
+			`rename:${data.oldName}`,
+			'update',
+			{ nombre: { old: data.oldName, new: data.newName } },
+			getAuditContext()
+		);
+	}
+);
+
+export const deleteDifferentiatorById = command(
+	DeleteDifferentiatorSchema,
+	async (data): Promise<void> => {
+		requireAdmin();
+
+		await deleteDifferentiator(data.name);
+		await auditService.logCustom(
+			'lens_differentiator',
+			`delete:${data.name}`,
+			'delete',
+			{ nombre: { old: data.name, new: null } },
+			getAuditContext()
+		);
 	}
 );
 

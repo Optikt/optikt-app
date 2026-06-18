@@ -8,7 +8,7 @@
 		Play,
 		Printer,
 		CircleCheck,
-		X as XIcon
+		X
 	} from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -20,7 +20,7 @@
 		SaleMovementsModal
 	} from '$lib/components/sales';
 	import { PDFViewerModal } from '$lib/components/pdf';
-	import { ConfirmModal, SaleStatusBadge } from '$lib/components/ui';
+	import { ConfirmModal, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
 	import {
@@ -652,76 +652,61 @@
 	</div>
 </div>
 
-<!-- Sliding Payment Drawer -->
-<svelte:window
-	onkeydown={(e) => {
-		if (e.key === 'Escape' && showDrawer) {
-			drawerResetCount++;
-			closeDrawer();
-		}
+<SlideOver
+	bind:open={showDrawer}
+	onclose={() => {
+		drawerResetCount++;
+		closeDrawer();
 	}}
-/>
-
-<div
-	class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-in-out"
-	class:opacity-0={!showDrawer}
-	class:pointer-events-none={!showDrawer}
-></div>
-
-<div
-	class="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out"
-	class:translate-x-full={!showDrawer}
-	class:translate-x-0={showDrawer}
+	size="md"
 >
-	<!-- Drawer Header -->
-	<div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-		<h2 class="text-lg font-bold text-gray-900">Procesar Pago</h2>
-		<button
-			type="button"
-			onclick={() => {
-				drawerResetCount++;
-				closeDrawer();
-			}}
-			class="cursor-pointer rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+	{#snippet header({ onclose })}
+		<div
+			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
 		>
-			<XIcon class="h-5 w-5" />
-		</button>
-	</div>
-
-	<!-- Drawer Body (scrollable) -->
-	<div class="flex-1 overflow-y-auto px-6 py-4">
-		<!-- SALDO PENDIENTE -->
-		{#if remainingBcvUsd > 0.01}
-			<p class="text-2xl font-bold text-amber-600">{formatPrice(remainingBcvUsd)}</p>
-		{:else}
-			<p class="text-2xl font-bold text-green-600">Pagado</p>
-		{/if}
-
-		<!-- Fiscal Data -->
-		<div class="mt-3 space-y-1">
-			<div class="flex items-center justify-between">
-				<span class="text-xs text-gray-400">Base Imponible</span>
-				<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxableBase)}</span>
+			<div class="min-w-0">
+				<h2 class="truncate text-sm font-bold text-on-surface">Procesar Pago</h2>
 			</div>
-			<div class="flex items-center justify-between">
-				<span class="text-xs text-gray-400">IVA ({sale.snapshotTaxRate}%)</span>
-				<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxAmount)}</span>
-			</div>
+			<button
+				type="button"
+				onclick={onclose}
+				class="shrink-0 cursor-pointer rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant max-sm:p-3"
+			>
+				<X class="h-4 w-4" />
+			</button>
 		</div>
+	{/snippet}
+	<!-- SALDO PENDIENTE -->
+	{#if remainingBcvUsd > 0.01}
+		<p class="text-2xl font-bold text-amber-600">{formatPrice(remainingBcvUsd)}</p>
+	{:else}
+		<p class="text-2xl font-bold text-green-600">Pagado</p>
+	{/if}
 
-		<!-- Payment Form (drawer variant) -->
-		<div class="mt-4">
-			<PaymentForm
-				saleId={sale.id}
-				{remainingBcvUsd}
-				{bcvRate}
-				variant="drawer"
-				drawerResetKey={drawerResetCount}
-				onPaymentAdded={handlePaymentAdded}
-			/>
+	<!-- Fiscal Data -->
+	<div class="mt-3 space-y-1">
+		<div class="flex items-center justify-between">
+			<span class="text-xs text-gray-400">Base Imponible</span>
+			<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxableBase)}</span>
+		</div>
+		<div class="flex items-center justify-between">
+			<span class="text-xs text-gray-400">IVA ({sale.snapshotTaxRate}%)</span>
+			<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxAmount)}</span>
 		</div>
 	</div>
-</div>
+
+	<!-- Payment Form (drawer variant) -->
+	<div class="mt-4">
+		<PaymentForm
+			saleId={sale.id}
+			{remainingBcvUsd}
+			{bcvRate}
+			variant="drawer"
+			drawerResetKey={drawerResetCount}
+			onPaymentAdded={handlePaymentAdded}
+		/>
+	</div>
+</SlideOver>
 
 <EditSaleModal
 	bind:open={showEditModal}

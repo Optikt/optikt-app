@@ -77,6 +77,7 @@ export const ALL_ENTITY_TYPES = [
 	'lens_material',
 	'lens_technology',
 	'lens_treatment',
+	'lens_differentiator',
 	'surplus_unit',
 	'quote',
 	'cash_expense',

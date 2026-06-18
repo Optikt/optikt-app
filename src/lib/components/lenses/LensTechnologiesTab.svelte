@@ -1,80 +1,106 @@
 <script lang="ts">
-	import { Check, FlaskConical, Pencil, Search, Trash2, X } from '@lucide/svelte';
+	import { Check, Cpu, Pencil, Search, Trash2, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
-		createLensMaterialForm,
-		deleteLensMaterialById,
-		listLensMaterials,
-		updateLensMaterialForm
+		createLensTechnologyForm,
+		updateLensTechnologyForm,
+		deleteLensTechnologyById,
+		listTechnologies
 	} from '$lib/remote/lenses.remote';
-	import type { LensMaterial } from '$lib/server/db/schema';
+	import { listSuppliers } from '$lib/remote/suppliers.remote';
+	import type { LensTechnology } from '$lib/server/db/schema';
+	import type { PaginatedResult } from '$lib/types';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { ConfirmModal, SlideOver } from '$lib/components/ui';
-	import { untrack } from 'svelte';
 
 	interface Props {
-		initialMaterials: LensMaterial[];
+		initialTechnologies: LensTechnology[];
+		initialSuppliers: { id: string; name: string }[];
 		canManage?: boolean;
 		drawTrigger: number;
 	}
 
-	let { initialMaterials, canManage = true, drawTrigger }: Props = $props();
+	let { initialTechnologies, initialSuppliers, canManage = true, drawTrigger }: Props = $props();
 
-	let materials = $state<LensMaterial[]>(untrack(() => initialMaterials));
+	let technologies = $state<LensTechnology[]>([]);
+	let suppliers = $state<{ id: string; name: string }[]>([]);
 	let search = $state('');
 	let loading = $state(false);
 	let editingId = $state<string | null>(null);
 	let showDeleteModal = $state(false);
 	let showDrawer = $state(false);
 	let deleteLoading = $state(false);
-	let selectedMaterial = $state<LensMaterial | null>(null);
+	let selectedTechnology = $state<LensTechnology | null>(null);
 
 	let draftName = $state('');
-	let draftCode = $state('');
-	let draftRefractiveIndex = $state('');
-	let draftDescription = $state('');
+	let draftSupplierId = $state('');
+	let draftMinFittingHeight = $state('');
 
 	let createFormId = $state(generateUUID());
 	let updateFormId = $state(generateUUID());
 
-	const currentCreateForm = $derived(createLensMaterialForm.for(createFormId));
-	const currentUpdateForm = $derived(updateLensMaterialForm.for(updateFormId));
+	const currentCreateForm = $derived(createLensTechnologyForm.for(createFormId));
+	const currentUpdateForm = $derived(updateLensTechnologyForm.for(updateFormId));
 
-	const filteredMaterials = $derived.by(() => {
+	const filteredTechnologies = $derived.by(() => {
 		const term = search.trim().toLowerCase();
-		if (!term) return materials;
-		return materials.filter((material) => {
-			const haystack = [
-				material.name,
-				material.code,
-				material.description ?? '',
-				material.refractiveIndex?.toString() ?? ''
-			]
-				.join(' ')
-				.toLowerCase();
+		if (!term) return technologies;
+		return technologies.filter((tech) => {
+			const haystack = [tech.name, tech.supplierId ?? ''].join(' ').toLowerCase();
 			return haystack.includes(term);
 		});
+	});
+
+	$effect(() => {
+		if (!technologies.length && initialTechnologies.length) {
+			technologies = [...initialTechnologies];
+			suppliers = [...initialSuppliers];
+		}
 	});
 
 	$effect(() => {
 		if (drawTrigger > 0) startAdd();
 	});
 
-	async function refreshMaterials() {
+	async function refreshData() {
 		try {
-			materials = await listLensMaterials(undefined).run();
+			const [techs, supps] = await Promise.all([
+				listTechnologies({ page: 1, perPage: 100 }).run(),
+				listSuppliers({ page: 1, perPage: 100 }).run()
+			]);
+			technologies = techs;
+			suppliers = (supps as PaginatedResult<{ id: string; name: string }>).items.map((s) => ({
+				id: s.id,
+				name: s.name
+			}));
 		} catch (error) {
 			console.error(error);
-			toast.error(getErrorMessage(error, 'Error cargando materiales'));
+			toast.error(getErrorMessage(error, 'Error cargando datos'));
 		}
+	}
+
+	function getSupplierName(supplierId: string | null): string {
+		if (!supplierId) return 'Global';
+		return suppliers.find((s) => s.id === supplierId)?.name ?? '-';
+	}
+
+	function getSupplierChip(supplierId: string | null): { label: string; cls: string } {
+		if (!supplierId)
+			return {
+				label: 'Global',
+				cls: 'rounded-lg bg-info-container px-2 py-0.5 text-xs font-bold text-info'
+			};
+		return {
+			label: getSupplierName(supplierId),
+			cls: 'rounded-lg bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant'
+		};
 	}
 
 	function resetDraft() {
 		draftName = '';
-		draftCode = '';
-		draftRefractiveIndex = '';
-		draftDescription = '';
+		draftSupplierId = '';
+		draftMinFittingHeight = '';
 	}
 
 	function startAdd() {
@@ -85,14 +111,13 @@
 		createFormId = generateUUID();
 	}
 
-	function startEdit(material: LensMaterial) {
+	function startEdit(tech: LensTechnology) {
 		if (!canManage) return;
-		editingId = material.id;
+		editingId = tech.id;
 		showDrawer = true;
-		draftName = material.name;
-		draftCode = material.code;
-		draftRefractiveIndex = material.refractiveIndex?.toString() ?? '';
-		draftDescription = material.description ?? '';
+		draftName = tech.name;
+		draftSupplierId = tech.supplierId ?? '';
+		draftMinFittingHeight = tech.minFittingHeight?.toString() ?? '';
 		updateFormId = generateUUID();
 	}
 
@@ -102,49 +127,27 @@
 		resetDraft();
 	}
 
-	function openDelete(material: LensMaterial) {
+	function openDelete(tech: LensTechnology) {
 		if (!canManage) return;
-		selectedMaterial = material;
+		selectedTechnology = tech;
 		showDeleteModal = true;
 	}
 
 	async function handleDelete() {
-		if (!selectedMaterial) return;
+		if (!selectedTechnology) return;
 		deleteLoading = true;
 		try {
-			await deleteLensMaterialById({ id: selectedMaterial.id });
-			toast.success('Material eliminado');
+			await deleteLensTechnologyById({ id: selectedTechnology.id });
+			toast.success('Tecnología eliminada');
 			showDeleteModal = false;
-			if (editingId === selectedMaterial.id) closeDrawer();
-			await refreshMaterials();
+			if (editingId === selectedTechnology.id) closeDrawer();
+			await refreshData();
 		} catch (error) {
 			console.error(error);
-			toast.error(getErrorMessage(error, 'Error eliminando material'));
+			toast.error(getErrorMessage(error, 'Error eliminando tecnología'));
 		} finally {
 			deleteLoading = false;
 		}
-	}
-
-	function getIndexChip(index: number | null): { label: string; cls: string } {
-		if (index == null)
-			return {
-				label: 'Sin índice',
-				cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning'
-			};
-		if (index >= 1.67)
-			return {
-				label: `Índice ${index.toFixed(2)}`,
-				cls: 'rounded-lg bg-warning-container px-2 py-0.5 text-xs font-bold text-warning'
-			};
-		if (index >= 1.6)
-			return {
-				label: `Índice ${index.toFixed(2)}`,
-				cls: 'rounded-lg bg-info-container px-2 py-0.5 text-xs font-bold text-info'
-			};
-		return {
-			label: `Índice ${index.toFixed(2)}`,
-			cls: 'rounded-lg bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant'
-		};
 	}
 </script>
 
@@ -155,32 +158,40 @@
 		<input
 			type="search"
 			bind:value={search}
-			placeholder="Buscar por nombre, código o índice..."
+			placeholder="Buscar tecnología..."
 			class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest px-3 pl-9 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 		/>
 	</div>
 
 	<!-- Grid de Cards -->
-	{#if filteredMaterials.length === 0}
+	{#if filteredTechnologies.length === 0}
 		<div class="flex flex-col items-center justify-center py-12 text-center">
 			<div
 				class="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container-low text-outline"
 			>
-				<FlaskConical class="h-6 w-6" />
+				<Cpu class="h-6 w-6" />
 			</div>
-			<p class="mt-3 font-semibold text-on-surface-variant">No hay materiales para mostrar</p>
-			<p class="mt-1 text-sm text-outline">Ajusta la búsqueda o crea un nuevo material.</p>
+			<p class="mt-3 font-semibold text-on-surface-variant">No hay tecnologías para mostrar</p>
+			<p class="mt-1 text-sm text-outline">Ajusta la búsqueda o crea una nueva tecnología.</p>
 		</div>
 	{:else}
 		<div class="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
-			{#each filteredMaterials as material (material.id)}
+			{#each filteredTechnologies as tech (tech.id)}
 				<div
 					class="flex cursor-pointer flex-col gap-1.5 rounded-xl border border-outline-variant/25 bg-surface-container-lowest p-2.5 shadow-sm transition-all hover:shadow-md"
 				>
 					<!-- Top: Name + Status -->
 					<div class="flex items-start justify-between gap-2">
 						<div class="min-w-0">
-							<p class="truncate text-base font-bold text-on-surface">{material.name}</p>
+							<p class="truncate text-base font-bold text-on-surface">{tech.name}</p>
+							{#if tech.supplierId}
+								<p
+									class="line-clamp-1 text-xs text-on-surface-variant"
+									title={getSupplierName(tech.supplierId)}
+								>
+									{getSupplierName(tech.supplierId)}
+								</p>
+							{/if}
 						</div>
 						<span
 							class="shrink-0 rounded-lg bg-success-container px-2 py-0.5 text-xs font-semibold text-success"
@@ -190,19 +201,20 @@
 					</div>
 
 					<!-- Attribute Chips -->
-					<div class="flex flex-wrap items-center justify-between gap-1">
-						<span class="font-mono text-xs text-outline">{material.code}</span>
-						<span class={getIndexChip(material.refractiveIndex).cls}>
-							{getIndexChip(material.refractiveIndex).label}
+					<div class="flex flex-wrap gap-1">
+						<span class={getSupplierChip(tech.supplierId).cls}>
+							{getSupplierChip(tech.supplierId).label}
 						</span>
+						{#if tech.minFittingHeight != null}
+							<span
+								class="rounded-lg bg-surface-container-high px-2 py-0.5 text-xs font-bold text-on-surface-variant"
+							>
+								Alt. mín: {tech.minFittingHeight} mm
+							</span>
+						{/if}
 					</div>
 
-					{#if material.description}
-						<p class="line-clamp-2 text-xs text-on-surface-variant" title={material.description}>
-							{material.description}
-						</p>
-					{/if}
-
+					<!-- Spacer -->
 					<div class="flex-1"></div>
 
 					<!-- Divider + Actions -->
@@ -212,7 +224,7 @@
 						{#if canManage}
 							<button
 								type="button"
-								onclick={() => startEdit(material)}
+								onclick={() => startEdit(tech)}
 								class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-brand-blue"
 								title="Editar"
 							>
@@ -220,7 +232,7 @@
 							</button>
 							<button
 								type="button"
-								onclick={() => openDelete(material)}
+								onclick={() => openDelete(tech)}
 								class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
 								title="Eliminar"
 							>
@@ -242,15 +254,15 @@
 			<div class="min-w-0">
 				{#if editingId}
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						EDITANDO MATERIAL
+						EDITANDO TECNOLOGÍA
 					</p>
 				{:else}
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">
-						NUEVO MATERIAL
+						NUEVA TECNOLOGÍA
 					</p>
 				{/if}
 				<h2 class="truncate text-sm font-bold text-on-surface">
-					{editingId ? 'Actualiza la ficha técnica' : 'Agrega un material a la biblioteca'}
+					{editingId ? 'Actualiza la ficha técnica' : 'Agrega una tecnología de fabricación'}
 				</h2>
 			</div>
 			<button
@@ -271,15 +283,15 @@
 					await submit();
 					const allIssues = currentUpdateForm.fields.allIssues?.() ?? [];
 					if (allIssues.length === 0) {
-						toast.success('Material actualizado');
+						toast.success('Tecnología actualizada');
 						closeDrawer();
-						await refreshMaterials();
+						await refreshData();
 					} else {
 						toastUnboundErrors(allIssues);
 					}
 				} catch (error) {
 					console.error(error);
-					toast.error('Error actualizando material');
+					toast.error('Error actualizando tecnología');
 				} finally {
 					loading = false;
 				}
@@ -287,14 +299,14 @@
 			class="grid gap-3 sm:grid-cols-2"
 		>
 			<input type="hidden" name="id" value={editingId} />
-			<div class="max-sm:col-span-1 sm:col-span-2">
+			<div>
 				<label
-					for="mat-name-edit"
+					for="tech-name-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
 					>Nombre</label
 				>
 				<input
-					id="mat-name-edit"
+					id="tech-name-edit"
 					name="name"
 					type="text"
 					bind:value={draftName}
@@ -306,52 +318,40 @@
 			</div>
 			<div>
 				<label
-					for="mat-code-edit"
+					for="tech-height-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Código</label
+					>Altura mín.</label
 				>
-				<input
-					id="mat-code-edit"
-					name="code"
-					type="text"
-					bind:value={draftCode}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				/>
-				{#if currentUpdateForm.fields.code?.issues()}
-					<p class="mt-1 text-xs text-error">{currentUpdateForm.fields.code.issues()}</p>
-				{/if}
-			</div>
-			<div>
-				<label
-					for="mat-index-edit"
-					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Índice</label
-				>
-				{#if draftRefractiveIndex}
-					<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
+				{#if draftMinFittingHeight}
+					<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
 				{/if}
 				<input
-					id="mat-index-edit"
+					id="tech-height-edit"
 					type="number"
-					bind:value={draftRefractiveIndex}
-					step="0.01"
-					placeholder="1.50"
+					bind:value={draftMinFittingHeight}
+					step="0.5"
+					min="0"
+					placeholder="mm"
 					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div class="sm:col-span-2">
 				<label
-					for="mat-desc-edit"
+					for="tech-supplier-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Descripción</label
+					>Proveedor</label
 				>
-				<textarea
-					id="mat-desc-edit"
-					name="description"
-					bind:value={draftDescription}
-					rows="3"
-					class="w-full resize-none rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				></textarea>
+				<select
+					id="tech-supplier-edit"
+					name="supplierId"
+					bind:value={draftSupplierId}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+				>
+					<option value="">Global (sin proveedor)</option>
+					{#each suppliers as s (s.id)}
+						<option value={s.id}>{s.name}</option>
+					{/each}
+				</select>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-2">
 				<button
@@ -379,29 +379,29 @@
 					await submit();
 					const allIssues = currentCreateForm.fields.allIssues?.() ?? [];
 					if (allIssues.length === 0) {
-						toast.success('Material creado');
+						toast.success('Tecnología creada');
 						closeDrawer();
-						await refreshMaterials();
+						await refreshData();
 					} else {
 						toastUnboundErrors(allIssues);
 					}
 				} catch (error) {
 					console.error(error);
-					toast.error('Error creando material');
+					toast.error('Error creando tecnología');
 				} finally {
 					loading = false;
 				}
 			})}
 			class="grid gap-3 sm:grid-cols-2"
 		>
-			<div class="max-sm:col-span-1 sm:col-span-2">
+			<div>
 				<label
-					for="mat-name-create"
+					for="tech-name-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
 					>Nombre</label
 				>
 				<input
-					id="mat-name-create"
+					id="tech-name-create"
 					name="name"
 					type="text"
 					bind:value={draftName}
@@ -413,52 +413,40 @@
 			</div>
 			<div>
 				<label
-					for="mat-code-create"
+					for="tech-height-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Código</label
+					>Altura mín.</label
 				>
-				<input
-					id="mat-code-create"
-					name="code"
-					type="text"
-					bind:value={draftCode}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				/>
-				{#if currentCreateForm.fields.code?.issues()}
-					<p class="mt-1 text-xs text-error">{currentCreateForm.fields.code.issues()}</p>
-				{/if}
-			</div>
-			<div>
-				<label
-					for="mat-index-create"
-					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Índice</label
-				>
-				{#if draftRefractiveIndex}
-					<input type="hidden" name="refractiveIndex" value={draftRefractiveIndex} />
+				{#if draftMinFittingHeight}
+					<input type="hidden" name="minFittingHeight" value={draftMinFittingHeight} />
 				{/if}
 				<input
-					id="mat-index-create"
+					id="tech-height-create"
 					type="number"
-					bind:value={draftRefractiveIndex}
-					step="0.01"
-					placeholder="1.50"
+					bind:value={draftMinFittingHeight}
+					step="0.5"
+					min="0"
+					placeholder="mm"
 					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
 			<div class="sm:col-span-2">
 				<label
-					for="mat-desc-create"
+					for="tech-supplier-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Descripción</label
+					>Proveedor</label
 				>
-				<textarea
-					id="mat-desc-create"
-					name="description"
-					bind:value={draftDescription}
-					rows="3"
-					class="w-full resize-none rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				></textarea>
+				<select
+					id="tech-supplier-create"
+					name="supplierId"
+					bind:value={draftSupplierId}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+				>
+					<option value="">Global (sin proveedor)</option>
+					{#each suppliers as s (s.id)}
+						<option value={s.id}>{s.name}</option>
+					{/each}
+				</select>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-2">
 				<button
@@ -482,9 +470,9 @@
 
 <ConfirmModal
 	bind:open={showDeleteModal}
-	title="Eliminar material"
-	message={selectedMaterial
-		? `¿Eliminar "${selectedMaterial.name}" de la biblioteca de materiales?`
+	title="Eliminar tecnología"
+	message={selectedTechnology
+		? `¿Eliminar "${selectedTechnology.name}" de la biblioteca de tecnologías?`
 		: undefined}
 	confirmLabel="Eliminar"
 	confirmColor="red"
