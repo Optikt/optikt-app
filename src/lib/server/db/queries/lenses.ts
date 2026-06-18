@@ -167,7 +167,9 @@ export async function getAllDifferentiators(options?: { search?: string }): Prom
 		.where(isNull(lensCatalogItems.deletedAt));
 
 	let result = [
-		...new Set(diffRows.map((row) => row.diff).filter((s): s is string => s !== null && s.length > 0))
+		...new Set(
+			diffRows.map((row) => row.diff).filter((s): s is string => s !== null && s.length > 0)
+		)
 	].sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
 
 	if (options?.search) {

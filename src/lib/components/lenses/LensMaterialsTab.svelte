@@ -287,7 +287,7 @@
 			class="grid gap-3 sm:grid-cols-2"
 		>
 			<input type="hidden" name="id" value={editingId} />
-			<div class="sm:col-span-2 max-sm:col-span-1">
+			<div class="max-sm:col-span-1 sm:col-span-2">
 				<label
 					for="mat-name-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
@@ -350,7 +350,7 @@
 					name="description"
 					bind:value={draftDescription}
 					rows="3"
-					class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none resize-none"
+					class="w-full resize-none rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				></textarea>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-2">
@@ -394,7 +394,7 @@
 			})}
 			class="grid gap-3 sm:grid-cols-2"
 		>
-			<div class="sm:col-span-2 max-sm:col-span-1">
+			<div class="max-sm:col-span-1 sm:col-span-2">
 				<label
 					for="mat-name-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
@@ -457,7 +457,7 @@
 					name="description"
 					bind:value={draftDescription}
 					rows="3"
-					class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none resize-none"
+					class="w-full resize-none rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				></textarea>
 			</div>
 			<div class="flex justify-end gap-2 sm:col-span-2">
