@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { Pencil, Trash2, ArrowRightLeft, History, Package } from '@lucide/svelte';
+	import {
+		Pencil,
+		Trash2,
+		ArrowRightLeft,
+		History,
+		ArrowLeft,
+		MoreVertical
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -22,6 +29,9 @@
 	let showHistoryModal = $state(false);
 	const isAdmin = $derived(isAdminRole(data.user.role));
 
+	let mobileTab = $state<'detalles' | 'comercial' | 'historial'>('detalles');
+	let showContextMenu = $state(false);
+
 	const marginPercent = $derived(getLensMarginPercent(item.pairPurchasePrice, item.salePrice));
 	const inventorySummary = $derived(getLensInventorySummary(item.inventoryMode, item.stock));
 	const refractiveIndexLabel = $derived(
@@ -37,6 +47,10 @@
 		goto(resolve(`/lenses/${item.id}/edit`));
 	}
 
+	function goBack() {
+		goto(resolve('/lenses'));
+	}
+
 	async function confirmDelete() {
 		deleteLoading = true;
 		try {
@@ -49,37 +63,350 @@
 		} finally {
 			deleteLoading = false;
 			showDeleteModal = false;
+			showContextMenu = false;
+		}
+	}
+
+	function handleContextMenuClick(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('[data-context-menu]')) {
+			showContextMenu = false;
 		}
 	}
 </script>
 
+<svelte:document onclick={handleContextMenuClick} />
 <svelte:head>
 	<title>{item.name} - Catálogo de Lentes - Optikt</title>
 </svelte:head>
 
-<div class="mx-auto max-w-7xl grid grid-cols-1 gap-4 p-4 pb-28 lg:grid-cols-12 lg:gap-6 lg:p-6 lg:pb-6">
-	<!-- PRICING + HISTORY (mobile: first in DOM; desktop: right column, sticky) -->
-	<section class="lg:col-span-4 lg:col-start-9 lg:row-start-1">
-		<div class="flex flex-col gap-4 lg:sticky lg:top-14">
-			<!-- Commercial pricing card -->
-			<div class="relative overflow-hidden rounded-2xl bg-brand-navy px-5 py-5 text-white shadow-[var(--ds-shadow-lg)] sm:rounded-[1.75rem] sm:px-7 sm:py-6">
+<!-- ─── MOBILE VIEW (< lg) ─────────────────────────────────────────────── -->
+<div class="lg:hidden">
+	<!-- Unified sticky header: title bar + tabs (anchored below navbar) -->
+	<div class="sticky z-40 flex flex-col bg-white shadow-sm">
+		<!-- Top App Bar -->
+		<div class="flex items-center gap-3 border-b border-[var(--color-surface-container-high)] bg-white px-4 py-3">
+		<button
+			type="button"
+			onclick={goBack}
+			class="flex h-10 w-10 items-center justify-center rounded-xl text-brand-navy transition-colors hover:bg-surface-container"
+			aria-label="Volver al catálogo"
+		>
+			<ArrowLeft class="h-5 w-5" />
+		</button>
+		<h1 class="min-w-0 flex-1 truncate font-heading text-base font-bold text-brand-navy">
+			{item.name}
+		</h1>
+		{#if isAdmin}
+			<div class="relative" data-context-menu>
+				<button
+					type="button"
+					onclick={() => (showContextMenu = !showContextMenu)}
+					class="flex h-10 w-10 items-center justify-center rounded-xl text-brand-navy transition-colors hover:bg-surface-container"
+					aria-label="Más opciones"
+				>
+					<MoreVertical class="h-5 w-5" />
+				</button>
+				{#if showContextMenu}
+					<div class="absolute right-0 top-full z-50 mt-1 min-w-44 rounded-xl border border-[var(--color-surface-container-high)] bg-white py-1 shadow-lg">
+						<button
+							type="button"
+							onclick={() => { showContextMenu = false; openEdit(); }}
+							class="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+						>
+							<Pencil class="h-4 w-4" />
+							Editar
+						</button>
+						<button
+							type="button"
+							onclick={() => (showDeleteModal = true)}
+							class="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold text-on-error-container transition-colors hover:bg-error-container"
+						>
+							<Trash2 class="h-4 w-4" />
+							Eliminar
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</div>
+
+	<!-- Tab bar -->
+	<div class="flex gap-0 border-b border-[var(--color-surface-container-high)] bg-white px-4">
+		<button
+			type="button"
+			onclick={() => (mobileTab = 'detalles')}
+			class="relative px-4 py-3 text-xs font-bold tracking-[0.12em] uppercase transition-colors"
+			class:text-brand-navy={mobileTab === 'detalles'}
+			class:text-outline={mobileTab !== 'detalles'}
+		>
+			Detalles
+			{#if mobileTab === 'detalles'}
+				<span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand-navy"></span>
+			{/if}
+		</button>
+		<button
+			type="button"
+			onclick={() => (mobileTab = 'comercial')}
+			class="relative px-4 py-3 text-xs font-bold tracking-[0.12em] uppercase transition-colors"
+			class:text-brand-navy={mobileTab === 'comercial'}
+			class:text-outline={mobileTab !== 'comercial'}
+		>
+			Comercial
+			{#if mobileTab === 'comercial'}
+				<span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand-gold"></span>
+			{/if}
+		</button>
+		<button
+			type="button"
+			onclick={() => (mobileTab = 'historial')}
+			class="relative px-4 py-3 text-xs font-bold tracking-[0.12em] uppercase transition-colors"
+			class:text-brand-navy={mobileTab === 'historial'}
+			class:text-outline={mobileTab !== 'historial'}
+		>
+			Historial
+			{#if mobileTab === 'historial'}
+				<span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand-navy"></span>
+			{/if}
+		</button>
+	</div>
+</div>
+
+	<!-- Tags row (below tabs, normal flow) -->
+	<div class="overflow-x-auto scrollbar-none px-4 pt-3">
+		<div class="flex items-center gap-2 whitespace-nowrap">
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-info-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-info-container uppercase">
+				{getLensSourceLabel(item.source)}
+			</span>
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-purple-container uppercase">
+				{getLensTypeLabel(item.type)}
+			</span>
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-success-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-success-container uppercase">
+				Activo
+			</span>
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-warning-container uppercase">
+				{inventorySummary}
+			</span>
+		</div>
+	</div>
+
+	<!-- Tab content -->
+	<div class="space-y-4 px-4 pt-3 pb-24">
+		{#if mobileTab === 'detalles'}
+			<!-- Sale price hero banner -->
+			{#if item.salePrice}
+				<div class="rounded-2xl bg-gradient-to-r from-brand-navy to-[var(--color-brand-navy-light)] p-4 text-white shadow-[var(--ds-shadow-md)]">
+					<p class="text-[10px] font-semibold tracking-[0.16em] text-brand-gold uppercase">Precio de venta</p>
+					<p class="mt-1 font-mono text-3xl font-bold tracking-tight text-white">
+						{formatPrice(item.salePrice)}
+					</p>
+					{#if marginPercent != null}
+						<p class="mt-1 text-sm text-white/72">Margen {marginPercent >= 0 ? '+' : ''}{marginPercent.toFixed(0)}% sobre costo por par</p>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Specs grid -->
+			<div class="rounded-2xl border border-[var(--color-surface-container-high)] bg-surface-container-lowest p-4 shadow-[var(--ds-shadow-md)]">
+				<div class="grid grid-cols-2 gap-y-4 gap-x-3">
+					{#if item.material}
+						<div>
+							<p class="text-xs text-outline font-medium">Material</p>
+							<p class="mt-0.5 font-heading text-sm font-semibold text-brand-navy">{item.material.name}</p>
+							<p class="text-xs text-on-surface-variant">{item.material.code}</p>
+						</div>
+					{/if}
+					{#if item.supplier}
+						<div>
+							<p class="text-xs text-outline font-medium">Proveedor</p>
+							<p class="mt-0.5 font-heading text-sm font-semibold text-brand-navy">{item.supplier.name}</p>
+						</div>
+					{/if}
+					<div>
+						<p class="text-xs text-outline font-medium">Índice de refracción</p>
+						<p class="mt-0.5 font-mono text-sm font-semibold tracking-tight text-brand-navy">
+							{refractiveIndexLabel ?? '—'}
+						</p>
+					</div>
+					{#if item.technologyName}
+						<div>
+							<p class="text-xs text-outline font-medium">Tecnología</p>
+							<p class="mt-0.5 font-heading text-sm font-semibold text-brand-navy">{item.technologyName}</p>
+						</div>
+					{/if}
+					<div>
+						<p class="text-xs text-outline font-medium">Tipo de precio</p>
+						<p class="mt-0.5 text-sm font-semibold text-brand-navy">{getPriceTypeLabel(item.priceType)}</p>
+					</div>
+					<div>
+						<p class="text-xs text-outline font-medium">IVA</p>
+						<p class="mt-0.5 text-sm font-semibold text-brand-navy">{getLensTaxSummary(item.isTaxable)}</p>
+					</div>
+					<div class="col-span-2">
+						<p class="text-xs text-outline font-medium">Inventario</p>
+						<p class="mt-0.5 font-heading text-sm font-semibold text-brand-navy">{inventorySummary}</p>
+						<p class="text-xs text-on-surface-variant">{getInventoryModeLabel(item.inventoryMode)}</p>
+						{#if isAdmin && item.inventoryMode === 'STOCK'}
+							<a
+								href={resolve(`/lenses/${item.id}/adjustments`)}
+								class="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-2 text-[11px] font-semibold text-brand-blue transition-colors hover:bg-surface-container hover:text-brand-navy"
+							>
+								<ArrowRightLeft class="h-3.5 w-3.5" />
+								Ajustar stock
+							</a>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Treatments inline -->
+				{#if item.hasAr || item.hasBluecut || item.isPhotochromic}
+					<div class="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--color-surface-container-high)] pt-4">
+						<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tratamientos</p>
+						{#if item.hasAr}
+							<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container">AR</span>
+						{/if}
+						{#if item.hasBluecut}
+							<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container">Bluecut</span>
+						{/if}
+						{#if item.isPhotochromic}
+							<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container">Fotocromático</span>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Differentiators inline -->
+				{#if item.differentiators && item.differentiators.length > 0}
+					<div class="mt-4 flex flex-wrap items-center gap-2">
+						<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Etiquetas</p>
+						{#each item.differentiators as tag (tag)}
+							<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs font-semibold text-on-surface">{tag}</span>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Optical ranges + notes -->
+			<LensDetailOpticalPanel {item} />
+		{/if}
+
+		{#if mobileTab === 'comercial'}
+			<!-- Cost breakdown card (no sale price — shown in Detalles tab) -->
+			<div class="relative overflow-hidden rounded-2xl bg-brand-navy p-4 text-white shadow-[var(--ds-shadow-lg)]">
 				<div class="absolute -top-16 right-[-2rem] h-40 w-40 rounded-full bg-brand-gold/15 blur-3xl"></div>
 				<div class="relative">
 					<div class="flex items-start justify-between gap-3">
 						<div>
-							<p class="text-[10px] font-semibold tracking-[0.16em] text-brand-gold uppercase sm:text-xs">
-								Resumen comercial
-							</p>
-							<h2 class="font-heading mt-1.5 text-xl font-bold text-white sm:mt-2 sm:text-2xl">Costo y venta</h2>
+							<p class="text-[10px] font-semibold tracking-[0.16em] text-brand-gold uppercase">Desglose de costos</p>
+							<h2 class="font-heading mt-1.5 text-xl font-bold text-white">Costos internos</h2>
 						</div>
 						{#if marginPercent != null}
-							<span class="shrink-0 rounded-full bg-brand-gold px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-navy uppercase sm:px-3">
+							<span class="shrink-0 rounded-full bg-brand-gold px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-navy uppercase">
+								Margen {marginPercent >= 0 ? '+' : ''}{marginPercent.toFixed(0)}%
+							</span>
+						{/if}
+					</div>
+
+					<div class="mt-4 flex flex-col gap-3 text-sm text-white/78">
+						<div class="flex items-center justify-between gap-4">
+							<span>Costo base {getPriceTypeLabel(item.priceType).toLowerCase()}</span>
+							<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
+						</div>
+						<div class="flex items-center justify-between gap-4">
+							<span>Costo por par</span>
+							<span class="font-mono font-semibold text-white">{formatPrice(item.pairPurchasePrice)}</span>
+						</div>
+						{#if item.mountingPrice > 0}
+							<div class="flex items-center justify-between gap-4">
+								<span>Montaje</span>
+								<span class="font-mono font-semibold text-white">{formatPrice(item.mountingPrice)}</span>
+							</div>
+						{/if}
+						{#if item.shippingPrice > 0}
+							<div class="flex items-center justify-between gap-4">
+								<span>Envío</span>
+								<span class="font-mono font-semibold text-white">{formatPrice(item.shippingPrice)}</span>
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		{#if mobileTab === 'historial'}
+			<!-- History section -->
+			<div class="rounded-2xl bg-surface-container-low p-4 shadow-[var(--ds-shadow-sm)]">
+				<div class="flex items-center gap-3">
+					<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-container-lowest text-brand-navy shadow-[var(--ds-shadow-sm)]">
+						<History class="h-4 w-4" />
+					</div>
+					<div class="min-w-0 flex-1">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Historial</p>
+						<h2 class="font-heading mt-0.5 text-base font-bold text-brand-navy">Trazabilidad del registro</h2>
+					</div>
+				</div>
+
+				<div class="mt-4 divide-y divide-[var(--color-surface-container-high)]">
+					<div class="flex items-center justify-between gap-4 py-3">
+						<div>
+							<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Creado</p>
+							<p class="mt-1 text-sm font-medium text-brand-navy">
+								{formatDate(item.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
+							</p>
+						</div>
+					</div>
+					<div class="flex items-center justify-between gap-4 py-3">
+						<div>
+							<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Última actualización</p>
+							<p class="mt-1 text-sm font-medium text-brand-navy">
+								{formatDate(item.updatedAt, { dateStyle: 'medium', timeStyle: 'short' })}
+							</p>
+						</div>
+					</div>
+					<div class="flex items-center justify-between gap-4 py-3">
+						<div>
+							<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Registro</p>
+							<p class="mt-1 font-mono text-xs leading-5 break-all text-on-surface-variant">{item.id}</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-4">
+					<button
+						type="button"
+						onclick={() => (showHistoryModal = true)}
+						class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-navy px-5 py-3.5 text-xs font-semibold tracking-[0.16em] text-white uppercase transition-colors hover:bg-brand-navy-dark"
+					>
+						<History class="h-4 w-4" />
+						Abrir historial completo
+					</button>
+				</div>
+			</div>
+		{/if}
+	</div>
+</div>
+
+<!-- ─── DESKTOP VIEW (lg+) ─────────────────────────────────────────────── -->
+<div class="mx-auto hidden max-w-7xl grid-cols-1 gap-4 p-4 pb-28 lg:grid lg:grid-cols-12 lg:gap-6 lg:p-6 lg:pb-6">
+	<!-- PRICING + HISTORY (desktop: right column, sticky) -->
+	<section class="lg:col-span-4 lg:col-start-9 lg:row-start-1">
+		<div class="flex flex-col gap-4 lg:sticky lg:top-14">
+			<!-- Commercial pricing card -->
+			<div class="relative overflow-hidden rounded-[1.75rem] bg-brand-navy px-7 py-6 text-white shadow-[var(--ds-shadow-lg)]">
+				<div class="absolute -top-16 right-[-2rem] h-40 w-40 rounded-full bg-brand-gold/15 blur-3xl"></div>
+				<div class="relative">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<p class="text-xs font-semibold tracking-[0.16em] text-brand-gold uppercase">Resumen comercial</p>
+							<h2 class="font-heading mt-2 text-2xl font-bold text-white">Costo y venta</h2>
+						</div>
+						{#if marginPercent != null}
+							<span class="shrink-0 rounded-full bg-brand-gold px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-navy uppercase">
 								{marginPercent >= 0 ? '+' : ''}{marginPercent.toFixed(0)}%
 							</span>
 						{/if}
 					</div>
 
-					<div class="mt-4 flex flex-col gap-3 text-sm text-white/78 sm:mt-6">
+					<div class="mt-6 flex flex-col gap-3 text-sm text-white/78">
 						<div class="flex items-center justify-between gap-4">
 							<span>Costo base {getPriceTypeLabel(item.priceType).toLowerCase()}</span>
 							<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
@@ -102,10 +429,10 @@
 						{/if}
 					</div>
 
-					<div class="mt-4 rounded-xl bg-white/10 px-4 py-4 sm:mt-6 sm:rounded-[1.25rem] sm:backdrop-blur-sm">
-						<p class="text-[10px] font-semibold tracking-[0.14em] text-white/72 uppercase sm:text-xs">Precio de venta</p>
+					<div class="mt-6 rounded-[1.25rem] bg-white/10 px-4 py-4 backdrop-blur-sm">
+						<p class="text-xs font-semibold tracking-[0.14em] text-white/72 uppercase">Precio de venta</p>
 						{#if item.salePrice}
-							<p class="mt-2 font-mono text-4xl font-bold tracking-tight text-white sm:mt-3 sm:text-4xl">
+							<p class="mt-3 font-mono text-4xl font-bold tracking-tight text-white">
 								{formatPrice(item.salePrice)}
 							</p>
 						{/if}
@@ -113,49 +440,42 @@
 				</div>
 			</div>
 
-			<!-- History section -->
-			<div class="rounded-2xl bg-surface-container-low px-5 py-5 shadow-[var(--ds-shadow-sm)] sm:rounded-[1.75rem] sm:px-7 sm:py-6">
-				<div class="flex items-center gap-3 sm:items-start">
-					<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-container-lowest text-brand-navy shadow-[var(--ds-shadow-sm)] sm:mt-1 sm:h-10 sm:w-10 sm:rounded-2xl">
+			<!-- History card -->
+			<div class="rounded-[1.75rem] bg-surface-container-low px-7 py-6 shadow-[var(--ds-shadow-sm)]">
+				<div class="flex items-start gap-3">
+					<div class="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-surface-container-lowest text-brand-navy shadow-[var(--ds-shadow-sm)]">
 						<History class="h-4 w-4" />
 					</div>
 					<div class="min-w-0 flex-1">
-						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase sm:text-xs">Historial</p>
-						<h2 class="font-heading mt-0.5 text-base font-bold text-brand-navy sm:mt-2 sm:text-2xl">Trazabilidad del registro</h2>
+						<p class="text-xs font-semibold tracking-[0.16em] text-outline uppercase">Historial</p>
+						<h2 class="font-heading mt-2 text-2xl font-bold text-brand-navy">Trazabilidad del registro</h2>
 					</div>
 				</div>
 
-				<!-- Mobile: compact table-like rows -->
-				<div class="mt-4 divide-y divide-[var(--color-surface-container-high)] sm:mt-5 sm:space-y-3 sm:divide-y-0">
-					<div class="flex items-center justify-between gap-4 py-3 sm:rounded-[1.25rem] sm:bg-surface-container-lowest sm:px-4 sm:py-4 sm:shadow-[var(--ds-shadow-sm)]">
-						<div>
-							<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Creado</p>
-							<p class="mt-1 text-sm font-medium text-brand-navy">
-								{formatDate(item.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
-							</p>
-						</div>
+				<div class="mt-5 space-y-3">
+					<div class="rounded-[1.25rem] bg-surface-container-lowest px-4 py-4 shadow-[var(--ds-shadow-sm)]">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Creado</p>
+						<p class="mt-2 text-sm font-medium text-brand-navy">
+							{formatDate(item.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
+						</p>
 					</div>
-					<div class="flex items-center justify-between gap-4 py-3 sm:rounded-[1.25rem] sm:bg-surface-container-lowest sm:px-4 sm:py-4 sm:shadow-[var(--ds-shadow-sm)]">
-						<div>
-							<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Última actualización</p>
-							<p class="mt-1 text-sm font-medium text-brand-navy">
-								{formatDate(item.updatedAt, { dateStyle: 'medium', timeStyle: 'short' })}
-							</p>
-						</div>
+					<div class="rounded-[1.25rem] bg-surface-container-lowest px-4 py-4 shadow-[var(--ds-shadow-sm)]">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Última actualización</p>
+						<p class="mt-2 text-sm font-medium text-brand-navy">
+							{formatDate(item.updatedAt, { dateStyle: 'medium', timeStyle: 'short' })}
+						</p>
 					</div>
-					<div class="flex items-center justify-between gap-4 py-3 sm:rounded-[1.25rem] sm:bg-surface-container-lowest sm:px-4 sm:py-4 sm:shadow-[var(--ds-shadow-sm)]">
-						<div>
-							<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Registro</p>
-							<p class="mt-1 font-mono text-xs leading-5 break-all text-on-surface-variant sm:leading-6">{item.id}</p>
-						</div>
+					<div class="rounded-[1.25rem] bg-surface-container-lowest px-4 py-4 shadow-[var(--ds-shadow-sm)]">
+						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Registro</p>
+						<p class="mt-2 font-mono text-xs leading-6 break-all text-on-surface-variant">{item.id}</p>
 					</div>
 				</div>
 
-				<div class="mt-4 sm:mt-4">
+				<div class="mt-4">
 					<button
 						type="button"
 						onclick={() => (showHistoryModal = true)}
-						class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-navy px-5 py-3.5 text-xs font-semibold tracking-[0.16em] text-white uppercase transition-colors hover:bg-brand-navy-dark sm:py-3"
+						class="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-navy px-5 py-3 text-xs font-semibold tracking-[0.16em] text-white uppercase transition-colors hover:bg-brand-navy-dark"
 					>
 						<History class="h-4 w-4" />
 						Abrir historial completo
@@ -165,7 +485,7 @@
 
 			<!-- Desktop action buttons -->
 			{#if isAdmin}
-				<div class="hidden gap-3 lg:flex">
+				<div class="flex gap-3">
 					<button
 						type="button"
 						onclick={() => (showDeleteModal = true)}
@@ -187,8 +507,8 @@
 		</div>
 	</section>
 
-	<!-- TECHNICAL INFO (mobile: second in DOM; desktop: left column) -->
-	<div class="flex flex-col gap-4 lg:col-span-8 lg:col-start-1 lg:row-start-1 lg:gap-5">
+	<!-- TECHNICAL INFO (desktop: left column) -->
+	<div class="flex flex-col gap-5 lg:col-span-8 lg:col-start-1 lg:row-start-1">
 		<PageHeader
 			title={item.name}
 			subtitle="Detalle de lente"
@@ -196,74 +516,68 @@
 			backHref="/lenses"
 		/>
 
-		<!-- Tags row — larger touch targets on mobile -->
+		<!-- Tags row -->
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="inline-flex items-center gap-1.5 rounded-full bg-info-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-info-container uppercase sm:py-1.5 sm:text-[10px]">
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-info-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-info-container uppercase">
 				{getLensSourceLabel(item.source)}
 			</span>
-			<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-purple-container uppercase sm:py-1.5 sm:text-[10px]">
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-purple-container uppercase">
 				{getLensTypeLabel(item.type)}
 			</span>
-			<span class="inline-flex items-center gap-1.5 rounded-full bg-success-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-success-container uppercase sm:py-1.5 sm:text-[10px]">
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-success-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-success-container uppercase">
 				Activo
 			</span>
-			<span class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-warning-container uppercase sm:py-1.5 sm:text-[10px]">
+			<span class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-warning-container uppercase">
 				{inventorySummary}
 			</span>
 		</div>
 
-		<!-- Specs grid — single column on mobile, multi-column on larger screens -->
-		<div class="rounded-2xl border border-[var(--color-surface-container-high)] bg-surface-container-lowest px-5 py-5 shadow-[var(--ds-shadow-md)] sm:rounded-[1.75rem] sm:px-7 sm:py-6">
-			<div class="flex flex-col gap-4 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-5 md:grid-cols-3">
+		<!-- Specs grid card -->
+		<div class="rounded-[1.75rem] border border-[var(--color-surface-container-high)] bg-surface-container-lowest px-7 py-6 shadow-[var(--ds-shadow-md)]">
+			<div class="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3">
 				{#if item.material}
 					<div>
 						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Material</p>
-						<p class="mt-1 font-heading text-sm font-bold text-brand-navy sm:mt-1.5">{item.material.name}</p>
+						<p class="mt-1.5 font-heading text-sm font-bold text-brand-navy">{item.material.name}</p>
 						<p class="mt-0.5 text-xs text-on-surface-variant">{item.material.code}</p>
 					</div>
 				{/if}
-
 				{#if item.supplier}
 					<div>
 						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Proveedor</p>
-						<p class="mt-1 font-heading text-sm font-bold text-brand-navy sm:mt-1.5">{item.supplier.name}</p>
+						<p class="mt-1.5 font-heading text-sm font-bold text-brand-navy">{item.supplier.name}</p>
 					</div>
 				{/if}
-
 				<div>
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Índice de refracción</p>
-					<p class="mt-1 font-mono text-sm font-bold tracking-tight text-brand-navy sm:mt-1.5">
+					<p class="mt-1.5 font-mono text-sm font-bold tracking-tight text-brand-navy">
 						{refractiveIndexLabel ?? '—'}
 					</p>
 				</div>
-
 				{#if item.technologyName}
 					<div>
 						<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tecnología</p>
-						<p class="mt-1 font-heading text-sm font-bold text-brand-navy sm:mt-1.5">{item.technologyName}</p>
+						<p class="mt-1.5 font-heading text-sm font-bold text-brand-navy">{item.technologyName}</p>
 					</div>
 				{/if}
-
 				<div>
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tipo de precio</p>
-					<p class="mt-1 text-sm font-bold text-brand-navy sm:mt-1.5">{getPriceTypeLabel(item.priceType)}</p>
+					<p class="mt-1.5 text-sm font-bold text-brand-navy">{getPriceTypeLabel(item.priceType)}</p>
 				</div>
-
 				<div>
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">IVA</p>
-					<p class="mt-1 text-sm font-bold text-brand-navy sm:mt-1.5">{getLensTaxSummary(item.isTaxable)}</p>
+					<p class="mt-1.5 text-sm font-bold text-brand-navy">{getLensTaxSummary(item.isTaxable)}</p>
 				</div>
-
-				<div class="sm:col-span-2 md:col-span-1">
+				<div>
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Inventario</p>
-					<p class="mt-1 font-heading text-sm font-bold text-brand-navy sm:mt-1.5">{inventorySummary}</p>
+					<p class="mt-1.5 font-heading text-sm font-bold text-brand-navy">{inventorySummary}</p>
 					<p class="mt-0.5 text-xs text-on-surface-variant">{getInventoryModeLabel(item.inventoryMode)}</p>
 					{#if isAdmin && item.inventoryMode === 'STOCK'}
 						<a
 							href={resolve(`/lenses/${item.id}/adjustments`)}
-							class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-2 text-[11px] font-semibold text-brand-blue transition-colors hover:bg-surface-container hover:text-brand-navy sm:py-1.5 sm:text-[10px]"
+							class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-surface px-2.5 py-1.5 text-[10px] font-semibold text-brand-blue transition-colors hover:bg-surface-container hover:text-brand-navy"
 						>
-							<ArrowRightLeft class="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+							<ArrowRightLeft class="h-3 w-3" />
 							Ajustar stock
 						</a>
 					{/if}
@@ -273,15 +587,15 @@
 			<!-- Treatments inline -->
 			{#if item.hasAr || item.hasBluecut || item.isPhotochromic}
 				<div class="mt-5 flex flex-wrap items-center gap-2 border-t border-[var(--color-surface-container-high)] pt-5">
-					<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase sm:text-xs">Tratamientos</p>
+					<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Tratamientos</p>
 					{#if item.hasAr}
-						<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container sm:py-1 sm:text-[11px]">AR</span>
+						<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1 text-[11px] font-bold text-on-info-container">AR</span>
 					{/if}
 					{#if item.hasBluecut}
-						<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container sm:py-1 sm:text-[11px]">Bluecut</span>
+						<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1 text-[11px] font-bold text-on-info-container">Bluecut</span>
 					{/if}
 					{#if item.isPhotochromic}
-						<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1.5 text-xs font-bold text-on-info-container sm:py-1 sm:text-[11px]">Fotocromático</span>
+						<span class="inline-flex items-center gap-1 rounded-lg bg-info-container px-2.5 py-1 text-[11px] font-bold text-on-info-container">Fotocromático</span>
 					{/if}
 				</div>
 			{/if}
@@ -289,9 +603,9 @@
 			<!-- Differentiators inline -->
 			{#if item.differentiators && item.differentiators.length > 0}
 				<div class="mt-4 flex flex-wrap items-center gap-2">
-					<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase sm:text-xs">Etiquetas</p>
+					<p class="mr-2 text-[10px] font-semibold tracking-[0.16em] text-outline uppercase">Etiquetas</p>
 					{#each item.differentiators as tag (tag)}
-						<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs font-semibold text-on-surface sm:py-1">{tag}</span>
+						<span class="inline-flex items-center rounded-lg bg-surface-container-high px-2.5 py-1 text-xs font-semibold text-on-surface">{tag}</span>
 					{/each}
 				</div>
 			{/if}
@@ -302,31 +616,7 @@
 	</div>
 </div>
 
-<!-- Sticky bottom action bar (mobile only) -->
-{#if isAdmin}
-	<div class="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-surface-container-high)] bg-white px-4 pb-[env(safe-area-inset-bottom)] py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] lg:relative lg:hidden">
-		<div class="mx-auto flex max-w-lg items-center gap-3">
-			<button
-				type="button"
-				onclick={() => (showDeleteModal = true)}
-				class="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg bg-error-container px-4 py-3 text-xs font-bold tracking-[0.18em] text-on-error-container uppercase transition-colors hover:brightness-[0.98]"
-			>
-				<Trash2 class="h-4 w-4" />
-				Eliminar
-			</button>
-			<button
-				type="button"
-				onclick={openEdit}
-				class="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg bg-brand-gold px-5 py-3 text-xs font-bold tracking-[0.18em] text-brand-navy uppercase shadow-sm transition-colors hover:bg-brand-gold-dark"
-			>
-				<Pencil class="h-4 w-4" />
-				Editar
-			</button>
-		</div>
-	</div>
-{/if}
-
-<!-- Delete Confirmation Modal -->
+<!-- ─── MODALS ─────────────────────────────────────────────────────────── -->
 <ConfirmModal
 	bind:open={showDeleteModal}
 	title="Eliminar Lente"
@@ -338,7 +628,6 @@
 	onCancel={() => (showDeleteModal = false)}
 />
 
-<!-- History Modal -->
 <ChangeHistoryModal
 	bind:open={showHistoryModal}
 	title={item.name}
@@ -346,3 +635,14 @@
 	entityId={item.id}
 	{relatedNames}
 />
+
+<!-- ─── GLOBAL STYLES (mobile only) ───────────────────────────────────── -->
+<style>
+	@media (max-width: 1023px) {
+		:global(.hamburger-nav-toggle) ~ *,
+		:global([aria-label="Abrir menú de navegación"]),
+		:global([aria-label="Cerrar menú de navegación"]) {
+			display: none !important;
+		}
+	}
+</style>
