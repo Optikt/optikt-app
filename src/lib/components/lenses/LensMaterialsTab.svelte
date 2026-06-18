@@ -234,7 +234,7 @@
 	{/if}
 </div>
 
-<SlideOver bind:open={showDrawer} onclose={closeDrawer}>
+<SlideOver bind:open={showDrawer} onclose={closeDrawer} size="xl">
 	{#snippet header({ onclose })}
 		<div
 			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
@@ -284,10 +284,10 @@
 					loading = false;
 				}
 			})}
-			class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
+			class="grid gap-3 sm:grid-cols-2"
 		>
 			<input type="hidden" name="id" value={editingId} />
-			<div>
+			<div class="sm:col-span-2 max-sm:col-span-1">
 				<label
 					for="mat-name-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
@@ -339,21 +339,21 @@
 					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
-			<div>
+			<div class="sm:col-span-2">
 				<label
 					for="mat-desc-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
 					>Descripción</label
 				>
-				<input
+				<textarea
 					id="mat-desc-edit"
 					name="description"
-					type="text"
 					bind:value={draftDescription}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				/>
+					rows="3"
+					class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none resize-none"
+				></textarea>
 			</div>
-			<div class="flex justify-end gap-2 sm:col-span-4">
+			<div class="flex justify-end gap-2 sm:col-span-2">
 				<button
 					type="button"
 					onclick={closeDrawer}
@@ -392,9 +392,9 @@
 					loading = false;
 				}
 			})}
-			class="grid gap-3 sm:grid-cols-[1fr_160px_140px_1fr]"
+			class="grid gap-3 sm:grid-cols-2"
 		>
-			<div>
+			<div class="sm:col-span-2 max-sm:col-span-1">
 				<label
 					for="mat-name-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
@@ -446,21 +446,21 @@
 					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
-			<div>
+			<div class="sm:col-span-2">
 				<label
 					for="mat-desc-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
 					>Descripción</label
 				>
-				<input
+				<textarea
 					id="mat-desc-create"
 					name="description"
-					type="text"
 					bind:value={draftDescription}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				/>
+					rows="3"
+					class="w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 py-2 text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none resize-none"
+				></textarea>
 			</div>
-			<div class="flex justify-end gap-2 sm:col-span-4">
+			<div class="flex justify-end gap-2 sm:col-span-2">
 				<button
 					type="button"
 					onclick={closeDrawer}

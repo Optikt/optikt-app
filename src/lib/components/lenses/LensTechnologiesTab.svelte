@@ -246,7 +246,7 @@
 	{/if}
 </div>
 
-<SlideOver bind:open={showDrawer} onclose={closeDrawer}>
+<SlideOver bind:open={showDrawer} onclose={closeDrawer} size="xl">
 	{#snippet header({ onclose })}
 		<div
 			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
@@ -296,7 +296,7 @@
 					loading = false;
 				}
 			})}
-			class="grid gap-3 sm:grid-cols-[1fr_220px_140px]"
+			class="grid gap-3 sm:grid-cols-2"
 		>
 			<input type="hidden" name="id" value={editingId} />
 			<div>
@@ -318,24 +318,6 @@
 			</div>
 			<div>
 				<label
-					for="tech-supplier-edit"
-					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Proveedor</label
-				>
-				<select
-					id="tech-supplier-edit"
-					name="supplierId"
-					bind:value={draftSupplierId}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				>
-					<option value="">Global (sin proveedor)</option>
-					{#each suppliers as s (s.id)}
-						<option value={s.id}>{s.name}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label
 					for="tech-height-edit"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
 					>Altura mín.</label
@@ -353,7 +335,25 @@
 					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
-			<div class="flex justify-end gap-2 sm:col-span-3">
+			<div class="sm:col-span-2">
+				<label
+					for="tech-supplier-edit"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Proveedor</label
+				>
+				<select
+					id="tech-supplier-edit"
+					name="supplierId"
+					bind:value={draftSupplierId}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+				>
+					<option value="">Global (sin proveedor)</option>
+					{#each suppliers as s (s.id)}
+						<option value={s.id}>{s.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="flex justify-end gap-2 sm:col-span-2">
 				<button
 					type="button"
 					onclick={closeDrawer}
@@ -392,7 +392,7 @@
 					loading = false;
 				}
 			})}
-			class="grid gap-3 sm:grid-cols-[1fr_220px_140px]"
+			class="grid gap-3 sm:grid-cols-2"
 		>
 			<div>
 				<label
@@ -413,24 +413,6 @@
 			</div>
 			<div>
 				<label
-					for="tech-supplier-create"
-					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
-					>Proveedor</label
-				>
-				<select
-					id="tech-supplier-create"
-					name="supplierId"
-					bind:value={draftSupplierId}
-					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
-				>
-					<option value="">Global (sin proveedor)</option>
-					{#each suppliers as s (s.id)}
-						<option value={s.id}>{s.name}</option>
-					{/each}
-				</select>
-			</div>
-			<div>
-				<label
 					for="tech-height-create"
 					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
 					>Altura mín.</label
@@ -448,7 +430,25 @@
 					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 font-mono text-sm text-on-surface transition-all placeholder:text-outline focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
 				/>
 			</div>
-			<div class="flex justify-end gap-2 sm:col-span-3">
+			<div class="sm:col-span-2">
+				<label
+					for="tech-supplier-create"
+					class="mb-1 block text-[10px] font-semibold tracking-[0.16em] text-outline uppercase"
+					>Proveedor</label
+				>
+				<select
+					id="tech-supplier-create"
+					name="supplierId"
+					bind:value={draftSupplierId}
+					class="h-9 w-full rounded-lg border border-outline-variant/50 bg-surface-container-low px-3 text-sm text-on-surface transition-all focus:border-brand-blue/30 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none"
+				>
+					<option value="">Global (sin proveedor)</option>
+					{#each suppliers as s (s.id)}
+						<option value={s.id}>{s.name}</option>
+					{/each}
+				</select>
+			</div>
+			<div class="flex justify-end gap-2 sm:col-span-2">
 				<button
 					type="button"
 					onclick={closeDrawer}
