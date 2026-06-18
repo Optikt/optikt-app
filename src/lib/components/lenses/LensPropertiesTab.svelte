@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { FlaskConical, Cpu, Plus, Tags } from '@lucide/svelte';
+	import type { Component } from 'svelte';
 	import LensMaterialsTab from './LensMaterialsTab.svelte';
 	import LensTechnologiesTab from './LensTechnologiesTab.svelte';
 	import LensDifferentiatorsTab from './LensDifferentiatorsTab.svelte';
@@ -27,7 +28,7 @@
 	let materialsTrigger = $state(0);
 	let technologiesTrigger = $state(0);
 
-	const subTabs: { id: SubTab; label: string; icon: any }[] = [
+	const subTabs: { id: SubTab; label: string; icon: Component<{ class?: string }> }[] = [
 		{ id: 'materials', label: 'Materiales', icon: FlaskConical },
 		{ id: 'technologies', label: 'Tecnologías', icon: Cpu },
 		{ id: 'differentiators', label: 'Etiquetas', icon: Tags }
