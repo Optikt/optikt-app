@@ -271,6 +271,13 @@
 			</div>
 		</div>
 	{/if}
+
+		<button onclick={() => {
+			console.log("rates: ", $state.snapshot(store.snapshot))
+			
+	}}>
+		aaa
+	</button>
 </div>
 
 <CurrencyCalculatorModal

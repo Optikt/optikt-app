@@ -197,7 +197,7 @@
 				{#if rates.length === 0}
 					<p class="px-5 py-6 text-center text-sm text-slate-400">Tasas no disponibles</p>
 				{:else}
-					{#each conversions as conv (conv.code)}
+					{#each conversions as conv (conv.rate.sourceKey)}
 						{@const style = conv.code === 'Bs' ? null : getRateStyle(conv.rate.sourceKey)}
 						<div class="flex items-center gap-3 px-4 py-2.5">
 							<!-- Icon badge -->
