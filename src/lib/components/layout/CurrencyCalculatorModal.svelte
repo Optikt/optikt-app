@@ -22,9 +22,17 @@
 
 	const amount = $derived(parseFloat(rawInput) || 0);
 
-	// Short currency code from sourceKey (esd_bcv → USD, usdt_binance → USDT)
+	// Short currency code from sourceKey (usd_bcv → USD, usdt_binance → USDT)
 	function currencyCode(sourceKey: string): string {
 		return sourceKey.split('_')[0].toUpperCase();
+	}
+
+	// Distinctive short label for selector buttons (differentiates USDT variants)
+	function buttonLabel(sourceKey: string): string {
+		if (sourceKey === 'usdt') return 'USDT';
+		if (sourceKey === 'usdt_compra') return 'USDT Compra';
+		if (sourceKey === 'usdt_venta') return 'USDT Venta';
+		return currencyCode(sourceKey);
 	}
 
 	type ConversionResult = {
@@ -115,7 +123,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="calc-modal-title"
-			class="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
+			class="w-full max-w-sm overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 max-h-[85vh]"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -149,7 +157,7 @@
 			<!-- Input section -->
 			<div class="px-5 pt-4 pb-3">
 				<!-- Base currency selector -->
-				<div class="mb-3 flex gap-1.5">
+				<div class="mb-3 flex flex-wrap gap-1.5">
 					<button
 						type="button"
 						class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors {baseCurrency ===
@@ -169,7 +177,7 @@
 								: 'bg-slate-100 text-slate-600 hover:bg-slate-200'}"
 							onclick={() => (baseCurrency = rate.sourceKey)}
 						>
-							{currencyCode(rate.sourceKey)}
+							{buttonLabel(rate.sourceKey)}
 						</button>
 					{/each}
 				</div>
@@ -193,32 +201,32 @@
 			</div>
 
 			<!-- Results -->
-			<div class="divide-y divide-slate-100 border-t border-slate-100 pb-2">
+			<div class="divide-y divide-slate-100 border-t border-slate-100 pb-1">
 				{#if rates.length === 0}
 					<p class="px-5 py-6 text-center text-sm text-slate-400">Tasas no disponibles</p>
 				{:else}
 					{#each conversions as conv (conv.rate.sourceKey)}
 						{@const style = conv.code === 'Bs' ? null : getRateStyle(conv.rate.sourceKey)}
-						<div class="flex items-center gap-3 px-4 py-2.5">
+						<div class="flex items-center gap-2 px-3 py-2">
 							<!-- Icon badge -->
 							{#if conv.code === 'Bs'}
 								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-gold/20"
+									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gold/20"
 								>
 									<span class="text-xs font-bold text-amber-600">Bs</span>
 								</div>
 							{:else if style?.svgSrc}
 								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full {style.bg}"
+									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
 								>
-									<img src={style.svgSrc} alt={conv.code} class="h-4 w-4" />
+									<img src={style.svgSrc} alt={conv.code} class="h-3.5 w-3.5" />
 								</div>
 							{:else if style?.icon}
 								{@const Icon = style.icon}
 								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full {style.bg}"
+									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
 								>
-									<Icon size={16} class={style.iconClass} />
+									<Icon size={14} class={style.iconClass} />
 								</div>
 							{/if}
 
@@ -253,33 +261,28 @@
 
 			<!-- Rates reference footer -->
 			{#if rates.length > 0}
-				<div class="border-t border-slate-100 px-5 py-3">
-					<p class="mb-2 text-[11px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
+				<div class="border-t border-slate-100 px-4 py-2.5">
+					<p class="mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
 						Tasas actuales
 					</p>
-					<div class="grid grid-cols-3 gap-2">
+					<div class="grid grid-cols-3 gap-1.5">
 						{#each rates as rate (rate.sourceKey)}
 							{@const style = getRateStyle(rate.sourceKey)}
-							<div class="flex flex-col items-center gap-1 rounded-xl bg-slate-50 px-2 py-2.5">
-								<div class="flex h-7 w-7 items-center justify-center rounded-full {style.bg}">
+							<div class="flex flex-col items-center gap-0.5 rounded-xl bg-slate-50 px-1.5 py-1.5">
+								<div class="flex h-6 w-6 items-center justify-center rounded-full {style.bg}">
 									{#if style.svgSrc}
-										<img
-											src={style.svgSrc}
-											alt={currencyCode(rate.sourceKey)}
-											class="h-3.5 w-3.5"
-										/>
+										<img src={style.svgSrc} alt={buttonLabel(rate.sourceKey)} class="h-3 w-3" />
 									{:else if style.icon}
 										{@const Icon = style.icon}
-										<Icon size={13} class={style.iconClass} />
+										<Icon size={11} class={style.iconClass} />
 									{/if}
 								</div>
-								<span class="text-[11px] font-medium text-slate-500"
-									>{currencyCode(rate.sourceKey)}</span
+								<span class="text-[10px] font-medium text-slate-500"
+									>{buttonLabel(rate.sourceKey)}</span
 								>
-								<span class="font-mono text-sm font-bold text-brand-navy tabular-nums">
+								<span class="font-mono text-xs font-bold text-brand-navy tabular-nums">
 									{rate.value.toFixed(2)}
 								</span>
-								<span class="text-[10px] text-slate-400">Bs</span>
 							</div>
 						{/each}
 					</div>

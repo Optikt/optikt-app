@@ -26,7 +26,9 @@ const cache: ExchangeRatesCache = {
 const KNOWN_RATE_KEYS: Record<string, { code: string; label: string }> = {
 	usd_bcv: { code: 'USD', label: 'USD (BCV)' },
 	eur_bcv: { code: 'EUR', label: 'EUR (BCV)' },
-	usdt_binance: { code: 'USDT', label: 'USDT (Binance)' }
+	usdt: { code: 'USDT', label: 'USDT (Promedio)' },
+	usdt_compra: { code: 'USDT', label: 'USDT (Compra)' },
+	usdt_venta: { code: 'USDT', label: 'USDT (Venta)' }
 };
 
 function roundExchangeRate(value: number): number {

@@ -88,7 +88,7 @@
 		try {
 			const rates = await fetchLatestRates().run();
 			const usd = rates.find((r) => r.currency.code === 'USD');
-			const usdt = rates.find((r) => r.currency.code === 'USDT');
+			const usdt = rates.find((r) => r.id === 'usdt');
 			if (usd) {
 				bcvRateHint = usd.rateToVes;
 				form.bcvRate = usd.rateToVes.toFixed(2);

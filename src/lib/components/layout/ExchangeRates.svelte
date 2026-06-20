@@ -134,7 +134,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="exchange-rates-title"
-			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:max-h-[32rem] md:w-80 md:rounded-xl md:shadow-lg"
+			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:max-h-[40rem] md:w-80 md:rounded-xl md:shadow-lg"
 		>
 			<div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
 				<div>
@@ -180,20 +180,20 @@
 					{/each}
 				</div>
 			{:else if rates.length > 0}
-				<div class="flex-1 divide-y divide-slate-100 overflow-y-auto p-2">
+				<div class="flex-1 space-y-0.5 overflow-y-auto p-1.5">
 					{#each rates as rate (rate.sourceKey)}
 						{@const style = getRateStyle(rate.sourceKey)}
 						<div
-							class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-50"
+							class="flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-colors hover:bg-slate-50"
 						>
 							<div
-								class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {style.bg}"
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
 							>
 								{#if style.svgSrc}
-									<img src={style.svgSrc} alt="Tether" class="h-5 w-5" />
+									<img src={style.svgSrc} alt="Tether" class="h-4 w-4" />
 								{:else if style.icon}
 									{@const Icon = style.icon}
-									<Icon size={18} class={style.text} />
+									<Icon size={16} class={style.text} />
 								{/if}
 							</div>
 							<div class="min-w-0 flex-1">
@@ -205,20 +205,20 @@
 									{toRelativeShort(fromISO(rate.lastUpdated))}
 								</p>
 							</div>
-							<div class="flex w-28 shrink-0 items-center justify-end gap-0.5">
+							<div class="flex w-24 shrink-0 items-center justify-end gap-0.5">
 								<div class="text-right">
-									<span class="font-mono text-xl font-bold text-brand-navy tabular-nums"
+									<span class="font-mono text-lg font-bold text-brand-navy tabular-nums"
 										>{formatRate(rate.value)}</span
 									>
 									<span class="ml-1 text-[11px] text-slate-400">Bs</span>
 								</div>
 								<button
 									type="button"
-									class="ml-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-brand-blue/10 hover:text-brand-blue"
+									class="ml-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-brand-blue/10 hover:text-brand-blue"
 									title="Copiar {rate.label}"
 									onclick={(event) => handleCopy(rate, event)}
 								>
-									<Copy size={13} />
+									<Copy size={11} />
 								</button>
 							</div>
 						</div>

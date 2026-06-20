@@ -67,7 +67,7 @@
 	const storeBcvRate = $derived(store.bcvRate);
 	const effectiveBcvRate = $derived(bcvRate > 0 ? bcvRate : storeBcvRate);
 	const defaultBcvRateInput = $derived(effectiveBcvRate > 0 ? effectiveBcvRate.toFixed(2) : '');
-	const binanceRate = $derived(store.rates.find((r) => r.code === 'USDT')?.value ?? 0);
+	const binanceRate = $derived(store.rates.find((r) => r.sourceKey === 'usdt')?.value ?? 0);
 
 	let paymentMethod = $state<PaymentMethod | ''>('');
 	let lastEditedField = $state<PaymentCalculationMode>('target');
