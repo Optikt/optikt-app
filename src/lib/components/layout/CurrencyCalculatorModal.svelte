@@ -123,7 +123,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="calc-modal-title"
-			class="w-full max-w-sm overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 max-h-[85vh]"
+			class="flex max-h-[85vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -200,94 +200,96 @@
 				</div>
 			</div>
 
-			<!-- Results -->
-			<div class="divide-y divide-slate-100 border-t border-slate-100 pb-1">
-				{#if rates.length === 0}
-					<p class="px-5 py-6 text-center text-sm text-slate-400">Tasas no disponibles</p>
-				{:else}
-					{#each conversions as conv (conv.rate.sourceKey)}
-						{@const style = conv.code === 'Bs' ? null : getRateStyle(conv.rate.sourceKey)}
-						<div class="flex items-center gap-2 px-3 py-2">
-							<!-- Icon badge -->
-							{#if conv.code === 'Bs'}
-								<div
-									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gold/20"
-								>
-									<span class="text-xs font-bold text-amber-600">Bs</span>
-								</div>
-							{:else if style?.svgSrc}
-								<div
-									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
-								>
-									<img src={style.svgSrc} alt={conv.code} class="h-3.5 w-3.5" />
-								</div>
-							{:else if style?.icon}
-								{@const Icon = style.icon}
-								<div
-									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
-								>
-									<Icon size={14} class={style.iconClass} />
-								</div>
-							{/if}
-
-							<!-- Label -->
-							<div class="min-w-0 flex-1">
-								<p class="text-sm font-semibold text-brand-navy">{conv.label}</p>
-								{#if conv.code !== 'Bs'}
-									<p
-										class="text-[11px] text-slate-400"
-										title="Proveedor actualizó {toRelative(fromISO(conv.rate.lastUpdated))}"
+			<div class="flex-1 overflow-y-auto">
+				<!-- Results -->
+				<div class="divide-y divide-slate-100 border-t border-slate-100 pb-1">
+					{#if rates.length === 0}
+						<p class="px-5 py-6 text-center text-sm text-slate-400">Tasas no disponibles</p>
+					{:else}
+						{#each conversions as conv (conv.rate.sourceKey)}
+							{@const style = conv.code === 'Bs' ? null : getRateStyle(conv.rate.sourceKey)}
+							<div class="flex items-center gap-2 px-3 py-2">
+								<!-- Icon badge -->
+								{#if conv.code === 'Bs'}
+									<div
+										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gold/20"
 									>
-										{toRelativeShort(fromISO(conv.rate.lastUpdated))}
-									</p>
+										<span class="text-xs font-bold text-amber-600">Bs</span>
+									</div>
+								{:else if style?.svgSrc}
+									<div
+										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
+									>
+										<img src={style.svgSrc} alt={conv.code} class="h-3.5 w-3.5" />
+									</div>
+								{:else if style?.icon}
+									{@const Icon = style.icon}
+									<div
+										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {style.bg}"
+									>
+										<Icon size={14} class={style.iconClass} />
+									</div>
 								{/if}
-							</div>
 
-							<!-- Value -->
-							<div class="text-right">
-								<span
-									class="font-mono text-lg font-bold tabular-nums {conv.value === 0
-										? 'text-slate-300'
-										: 'text-brand-navy'}"
-								>
-									{formatValue(conv.value)}
-								</span>
-								<span class="ml-1 text-[11px] text-slate-400">{conv.code}</span>
-							</div>
-						</div>
-					{/each}
-				{/if}
-			</div>
-
-			<!-- Rates reference footer -->
-			{#if rates.length > 0}
-				<div class="border-t border-slate-100 px-4 py-2.5">
-					<p class="mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
-						Tasas actuales
-					</p>
-					<div class="grid grid-cols-3 gap-1.5">
-						{#each rates as rate (rate.sourceKey)}
-							{@const style = getRateStyle(rate.sourceKey)}
-							<div class="flex flex-col items-center gap-0.5 rounded-xl bg-slate-50 px-1.5 py-1.5">
-								<div class="flex h-6 w-6 items-center justify-center rounded-full {style.bg}">
-									{#if style.svgSrc}
-										<img src={style.svgSrc} alt={buttonLabel(rate.sourceKey)} class="h-3 w-3" />
-									{:else if style.icon}
-										{@const Icon = style.icon}
-										<Icon size={11} class={style.iconClass} />
+								<!-- Label -->
+								<div class="min-w-0 flex-1">
+									<p class="text-sm font-semibold text-brand-navy">{conv.label}</p>
+									{#if conv.code !== 'Bs'}
+										<p
+											class="text-[11px] text-slate-400"
+											title="Proveedor actualizó {toRelative(fromISO(conv.rate.lastUpdated))}"
+										>
+											{toRelativeShort(fromISO(conv.rate.lastUpdated))}
+										</p>
 									{/if}
 								</div>
-								<span class="text-[10px] font-medium text-slate-500"
-									>{buttonLabel(rate.sourceKey)}</span
-								>
-								<span class="font-mono text-xs font-bold text-brand-navy tabular-nums">
-									{rate.value.toFixed(2)}
-								</span>
+
+								<!-- Value -->
+								<div class="text-right">
+									<span
+										class="font-mono text-lg font-bold tabular-nums {conv.value === 0
+											? 'text-slate-300'
+											: 'text-brand-navy'}"
+									>
+										{formatValue(conv.value)}
+									</span>
+									<span class="ml-1 text-[11px] text-slate-400">{conv.code}</span>
+								</div>
 							</div>
 						{/each}
-					</div>
+					{/if}
 				</div>
-			{/if}
+
+				<!-- Rates reference footer -->
+				{#if rates.length > 0}
+					<div class="border-t border-slate-100 px-4 py-2.5">
+						<p class="mb-1.5 text-[10px] font-semibold tracking-[0.14em] text-slate-400 uppercase">
+							Tasas actuales
+						</p>
+						<div class="grid grid-cols-3 gap-1.5">
+							{#each rates as rate (rate.sourceKey)}
+								{@const style = getRateStyle(rate.sourceKey)}
+								<div class="flex flex-col items-center gap-0.5 rounded-xl bg-slate-50 px-1.5 py-1.5">
+									<div class="flex h-6 w-6 items-center justify-center rounded-full {style.bg}">
+										{#if style.svgSrc}
+											<img src={style.svgSrc} alt={buttonLabel(rate.sourceKey)} class="h-3 w-3" />
+										{:else if style.icon}
+											{@const Icon = style.icon}
+											<Icon size={11} class={style.iconClass} />
+										{/if}
+									</div>
+									<span class="text-[10px] font-medium text-slate-500"
+										>{buttonLabel(rate.sourceKey)}</span
+									>
+									<span class="font-mono text-xs font-bold text-brand-navy tabular-nums">
+										{rate.value.toFixed(2)}
+									</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 {/if}
