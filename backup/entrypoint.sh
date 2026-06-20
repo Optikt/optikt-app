@@ -16,8 +16,8 @@ echo "  Schedule : ${CRON_SCHEDULE}"
 echo "  Timezone : ${TZ:-UTC}"
 echo "==========================================="
 
-# Write crontab for root
-echo "${CRON_SCHEDULE} /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1" | crontab -
+# Write crontab for root — redirect to stdout for docker logs
+echo "${CRON_SCHEDULE} /usr/local/bin/backup.sh > /dev/stdout 2>&1" | crontab -
 
 # Start crond in foreground (busybox crond)
 exec crond -f -l 2

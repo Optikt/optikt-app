@@ -44,6 +44,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
       PG_HOST: postgres
