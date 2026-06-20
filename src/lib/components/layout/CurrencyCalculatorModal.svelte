@@ -269,7 +269,9 @@
 						<div class="grid grid-cols-3 gap-1.5">
 							{#each rates as rate (rate.sourceKey)}
 								{@const style = getRateStyle(rate.sourceKey)}
-								<div class="flex flex-col items-center gap-0.5 rounded-xl bg-slate-50 px-1.5 py-1.5">
+								<div
+									class="flex flex-col items-center gap-0.5 rounded-xl bg-slate-50 px-1.5 py-1.5"
+								>
 									<div class="flex h-6 w-6 items-center justify-center rounded-full {style.bg}">
 										{#if style.svgSrc}
 											<img src={style.svgSrc} alt={buttonLabel(rate.sourceKey)} class="h-3 w-3" />
