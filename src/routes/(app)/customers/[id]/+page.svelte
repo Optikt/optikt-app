@@ -645,29 +645,29 @@
 				<div class="overflow-hidden rounded-xl border border-outline-variant/30">
 					<table class="w-full">
 						<thead>
-							<tr class="bg-brand-navy">
+							<tr class="border-b border-outline-variant bg-surface-container-high">
 								<th
-									class="px-4 py-2.5 text-left text-[10px] font-bold tracking-widest text-brand-gold uppercase"
+									class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 									>Fecha</th
 								>
 								<th
-									class="px-4 py-2.5 text-left text-[10px] font-bold tracking-widest text-brand-gold uppercase"
+									class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 									>Tipo</th
 								>
 								<th
-									class="px-4 py-2.5 text-left text-[10px] font-bold tracking-widest text-brand-gold uppercase"
+									class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 									>OD</th
 								>
 								<th
-									class="px-4 py-2.5 text-left text-[10px] font-bold tracking-widest text-brand-gold uppercase"
+									class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 									>OS</th
 								>
 								<th
-									class="px-4 py-2.5 text-left text-[10px] font-bold tracking-widest text-brand-gold uppercase"
+									class="px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 									>Estado</th
 								>
 								<th
-									class="px-4 py-2.5 text-right text-[10px] font-bold tracking-widest text-brand-gold uppercase"
+									class="px-4 py-2.5 text-right text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 									>Acciones</th
 								>
 							</tr>

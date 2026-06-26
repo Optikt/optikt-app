@@ -5,6 +5,7 @@
 		key: string;
 		label: string;
 		align?: 'left' | 'right';
+		hiddenClass?: string;
 	}
 
 	interface Props {
@@ -82,13 +83,13 @@
 		>
 			<table class="w-full">
 				<thead>
-					<tr class="bg-brand-navy">
+					<tr class="border-b border-outline-variant bg-surface-container-high">
 						{#each columns as col (col.key)}
 							<th
-								class="px-4 py-3 text-[10px] font-bold tracking-widest text-brand-gold uppercase {col.align ===
+								class="px-3 py-2.5 text-xs font-semibold tracking-wide text-on-surface-variant uppercase {col.align ===
 								'right'
 									? 'text-right'
-									: 'text-left'}"
+									: 'text-left'} {col.hiddenClass ?? ''}"
 							>
 								{col.label}
 							</th>
@@ -125,7 +126,7 @@
 					onclick={() => goToPage(pg)}
 					class="min-w-[2rem] rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors {pg ===
 					page
-						? 'bg-brand-navy text-white'
+						? 'bg-brand-blue text-white'
 						: 'text-on-surface-variant hover:bg-surface-container-high'}"
 				>
 					{pg}

@@ -392,20 +392,29 @@
 		<div class="overflow-x-auto">
 			<table class="min-w-full border-separate border-spacing-0">
 				<thead>
-					<tr class="bg-brand-navy text-left text-white">
-						<th class="px-6 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase"
+					<tr class="border-b border-outline-variant bg-surface-container-high text-left">
+						<th
+							class="px-6 py-3.5 text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 							>Descripcion del item</th
 						>
-						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase">Cant.</th>
-						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase"
+						<th
+							class="px-4 py-3.5 text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
+							>Cant.</th
+						>
+						<th
+							class="px-4 py-3.5 text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 							>P. Unitario</th
 						>
-						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase">Impuesto</th
+						<th
+							class="px-4 py-3.5 text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
+							>Impuesto</th
 						>
-						<th class="px-4 py-5 text-[10px] font-semibold tracking-[0.18em] uppercase"
+						<th
+							class="px-4 py-3.5 text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 							>Descuento</th
 						>
-						<th class="px-6 py-5 text-right text-[10px] font-semibold tracking-[0.18em] uppercase"
+						<th
+							class="px-6 py-3.5 text-right text-xs font-semibold tracking-wide text-on-surface-variant uppercase"
 							>Subtotal</th
 						>
 					</tr>
