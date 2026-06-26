@@ -33,19 +33,25 @@
 <!-- disable rule here since we already resolved the path name after passing it -->
 <!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
-	title={label}
+	title={collapsed ? label : undefined}
 	{href}
 	onclick={onSelect}
 	class={[
-		'mx-2 my-0.5 flex items-center rounded-lg py-2.5 no-underline transition-colors duration-150 hover:bg-slate-50',
-		collapsed ? 'relative justify-center px-2' : 'justify-between gap-3 px-4',
+		'relative mx-2 my-0.5 flex items-center rounded-lg py-2.5 no-underline transition-colors duration-150',
+		collapsed ? 'justify-center px-2' : 'justify-between gap-3 px-4',
 		isActive
 			? 'bg-brand-blue/10 font-medium text-brand-blue'
-			: 'text-slate-600 hover:text-slate-800'
+			: 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
 	]}
 >
+	{#if isActive && collapsed}
+		<span
+			class="absolute top-1/2 left-0 h-6 w-1 -translate-y-1/2 rounded-r-full bg-brand-blue"
+			aria-hidden="true"
+		></span>
+	{/if}
 	<span class={['flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3']}>
-		<Icon size={20} class="shrink-0" />
+		<Icon size={collapsed ? 22 : 20} class="shrink-0" />
 		{#if !collapsed}
 			<span class="truncate">{label}</span>
 		{/if}

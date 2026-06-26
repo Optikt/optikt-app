@@ -101,7 +101,7 @@
 	/>
 
 	{#if isAdminOrManager}
-		<div class={['my-2 h-px bg-slate-200', compact ? 'mx-5' : 'mx-4']}></div>
+		<div class={['my-2 h-px bg-slate-200', compact ? 'mx-3' : 'mx-4']}></div>
 		{#each adminManagerItems as item (item.href)}
 			<NavLink
 				href={resolve(item.href)}
