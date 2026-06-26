@@ -11,3 +11,6 @@ export { default as SaleBalanceCards } from './SaleBalanceCards.svelte';
 export { default as SaleItemsTable } from './SaleItemsTable.svelte';
 export { default as SaleMovementsModal } from './SaleMovementsModal.svelte';
 export { default as SaleMovementsSection } from './SaleMovementsSection.svelte';
+export { default as SalePaymentProgress } from './SalePaymentProgress.svelte';
+export { default as SaleStatsCards } from './SaleStatsCards.svelte';
+export { default as SaleFilterBar } from './SaleFilterBar.svelte';

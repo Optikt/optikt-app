@@ -1,15 +1,5 @@
 <script lang="ts">
-	import {
-		CircleX,
-		Clock3,
-		Plus,
-		ReceiptText,
-		RotateCcw,
-		Search,
-		CircleCheck,
-		Truck,
-		Sparkles
-	} from '@lucide/svelte';
+	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -22,10 +12,10 @@
 		setQueryParam
 	} from '$lib/utils';
 	import { listSales, getSalesStats } from '$lib/remote/sales.remote';
-	import { SalesTable } from '$lib/components/sales';
+	import { SaleFilterBar, SalesTable, SaleStatsCards } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
 	import { canOperate } from '$lib/shared/enums';
-	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
+	import type { SaleStatus } from '$lib/shared/enums';
 	import type { SaleWithRelations, SalesStats } from '$lib/server/db/queries/sales';
 	import type { PaginatedSales } from '$lib/remote/sales.remote';
 	import { untrack } from 'svelte';
@@ -39,6 +29,14 @@
 	const initialStatus = initialQuery.get('status');
 	const initialShippingPending = parseBooleanParam(initialQuery.get('shippingPending'));
 	const initialFreeItem = parseBooleanParam(initialQuery.get('freeItem'));
+
+	const ALL_SALE_STATUSES: SaleStatus[] = [
+		'PENDING',
+		'IN_PROGRESS',
+		'COMPLETED',
+		'CANCELLED',
+		'REFUNDED'
+	] as SaleStatus[];
 
 	function parseSaleStatus(value: string | null): SaleStatus | '' {
 		if (!value) return '';
@@ -73,7 +71,6 @@
 		});
 	}
 
-	// Fetch sales
 	async function fetchSales(page = 1) {
 		syncUrl(page);
 		loading = true;
@@ -102,18 +99,28 @@
 		}
 	}
 
-	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
-	function handleSearch() {
+	function handleSearch(value: string) {
+		search = value;
 		clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => {
-			fetchSales(1);
+			void fetchSales(1);
 		}, 300);
 	}
 
-	// Filter change
-	function handleFilterChange() {
-		fetchSales(1);
+	function handleStatusChange(value: string) {
+		statusFilter = parseSaleStatus(value || null);
+		void fetchSales(1);
+	}
+
+	function toggleShippingPending() {
+		shippingPendingFilter = !shippingPendingFilter;
+		void fetchSales(1);
+	}
+
+	function toggleFreeItem() {
+		hasFreeItemFilter = !hasFreeItemFilter;
+		void fetchSales(1);
 	}
 
 	function clearFilters() {
@@ -121,16 +128,15 @@
 		statusFilter = '';
 		shippingPendingFilter = false;
 		hasFreeItemFilter = false;
-		fetchSales(1);
+		void fetchSales(1);
 	}
 
 	let hasActiveFilters = $derived(
 		search.trim().length > 0 || statusFilter !== '' || shippingPendingFilter || hasFreeItemFilter
 	);
 
-	// Navigate to sale detail page
 	function handleView(sale: SaleWithRelations) {
-		goto(resolve(`/sales/${sale.id}`));
+		void goto(resolve(`/sales/${sale.id}`));
 	}
 
 	function getViewHref(sale: SaleWithRelations): `/sales/${string}` {
@@ -142,7 +148,7 @@
 	<title>Ventas - Optikt</title>
 </svelte:head>
 
-<div class="p-6">
+<div class="space-y-4 p-4">
 	<PageHeader title="Ventas">
 		{#snippet actions()}
 			{#if canAct}
@@ -157,134 +163,20 @@
 		{/snippet}
 	</PageHeader>
 
-	<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-highest text-brand-navy"
-				>
-					<ReceiptText size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-					Ventas Mensuales
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.monthly}</p>
-			</div>
-		</div>
+	<SaleStatsCards {stats} />
 
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
-				>
-					<Clock3 size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-warning-container uppercase">
-					Ventas Pendientes
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.pending}</p>
-			</div>
-		</div>
-
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-success-container text-on-success-container"
-				>
-					<CircleCheck size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-success-container uppercase">
-					Ventas Completadas
-				</p>
-				<p class="font-heading text-3xl font-bold text-brand-navy">{stats.completed}</p>
-			</div>
-		</div>
-
-		<div class="glass-card p-5">
-			<div class="mb-3 flex items-center gap-3">
-				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container"
-				>
-					<CircleX size={20} />
-				</div>
-				<p class="text-xs font-semibold tracking-wider text-on-error-container uppercase">
-					Ventas Canceladas
-				</p>
-				<p class="font-heading text-3xl font-bold text-error">{stats.cancelled}</p>
-			</div>
-		</div>
-	</div>
-
-	<div
-		class="glass-card mb-6 flex flex-col gap-4 bg-surface-container-low p-4 md:flex-row md:items-center"
-	>
-		<div class="relative flex-1">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
-			<input
-				id="sales-search"
-				name="sales-search"
-				type="search"
-				bind:value={search}
-				oninput={handleSearch}
-				placeholder="Buscar por cliente, vendedor o # de orden..."
-				class="w-full rounded-lg border-none bg-surface-container-high p-3 pl-10 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-			/>
-		</div>
-
-		<div class="flex w-full gap-3 md:w-auto">
-			<select
-				id="sales-status-filter"
-				name="sales-status-filter"
-				bind:value={statusFilter}
-				onchange={handleFilterChange}
-				class="min-w-[220px] flex-1 rounded-lg border-none bg-surface-container-high px-4 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 md:flex-none"
-			>
-				<option value="">Todos los estados</option>
-				{#each ALL_SALE_STATUSES as s (s)}
-					<option value={s}>{SALE_STATUS_LABELS[s]}</option>
-				{/each}
-			</select>
-
-			<button
-				onclick={() => {
-					shippingPendingFilter = !shippingPendingFilter;
-					handleFilterChange();
-				}}
-				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors {shippingPendingFilter
-					? 'bg-warning-container text-on-warning-container'
-					: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}"
-				title="Filtrar ventas con envío pendiente"
-			>
-				<Truck size={16} />
-				<span class="hidden sm:inline">Envío pendiente</span>
-			</button>
-
-			<button
-				onclick={() => {
-					hasFreeItemFilter = !hasFreeItemFilter;
-					handleFilterChange();
-				}}
-				class="inline-flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors {hasFreeItemFilter
-					? 'bg-amber-100 text-amber-700'
-					: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}"
-				title="Filtrar ventas con ítems libres"
-			>
-				<Sparkles size={16} />
-				<span class="hidden sm:inline">Ítem libre</span>
-			</button>
-
-			<button
-				onclick={clearFilters}
-				disabled={!hasActiveFilters}
-				class="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
-					? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
-					: 'bg-surface-container-high text-outline'}"
-				title="Limpiar filtros"
-			>
-				<RotateCcw size={18} />
-			</button>
-		</div>
-	</div>
+	<SaleFilterBar
+		{search}
+		{statusFilter}
+		{shippingPendingFilter}
+		{hasFreeItemFilter}
+		{hasActiveFilters}
+		onSearch={handleSearch}
+		onStatusChange={handleStatusChange}
+		onToggleShippingPending={toggleShippingPending}
+		onToggleFreeItem={toggleFreeItem}
+		onClearFilters={clearFilters}
+	/>
 
 	<SalesTable
 		sales={salesData.sales}
@@ -299,9 +191,9 @@
 		onView={handleView}
 		{getViewHref}
 		onRefresh={() => {
-			fetchSales(salesData.page);
-			refreshStats();
+			void fetchSales(salesData.page);
+			void refreshStats();
 		}}
-		onPageChange={(page) => fetchSales(page)}
+		onPageChange={(page) => void fetchSales(page)}
 	/>
 </div>

@@ -2,7 +2,7 @@
 	import { CircleX, Eye, ReceiptText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { DataGrid, SaleStatusBadge } from '$lib/components/ui';
-	import { CancelSaleModal } from '$lib/components/sales';
+	import { CancelSaleModal, SalePaymentProgress } from '$lib/components/sales';
 	import { formatPrice, formatDateOnly } from '$lib/utils';
 	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
@@ -76,15 +76,14 @@
 		return `${sale.customer.firstName} ${sale.customer.lastName}`;
 	}
 
-	function paidPercent(sale: SaleWithRelations): number {
-		if (sale.total <= 0) return 100;
-		return Math.min(100, Math.round((sale.paidAmountBcvUsd / sale.total) * 100));
-	}
-
-	function paidLabel(sale: SaleWithRelations, pct: number): string {
-		if (pct >= 100) return 'Pago completo';
-		if (sale.paidAmountBcvUsd > 0) return `${formatPrice(sale.paidAmountBcvUsd)} abonado`;
-		return 'Sin abono';
+	function getInitials(value: string | null | undefined): string {
+		if (!value) return '?';
+		return value
+			.split(' ')
+			.filter(Boolean)
+			.slice(0, 2)
+			.map((chunk) => chunk[0]?.toUpperCase() ?? '')
+			.join('');
 	}
 </script>
 
@@ -106,71 +105,63 @@
 	{/snippet}
 
 	{#snippet row(sale)}
-		{@const pct = paidPercent(sale)}
 		{@const canCancel = canCancelSale(sale)}
 		{@const viewHref = getViewHref?.(sale)}
+		{@const sellerName = sale.seller?.fullName ?? '-'}
 		<tr
 			class="bg-surface-container-lowest transition-colors {onView
 				? 'cursor-pointer hover:bg-surface-container-low'
 				: ''}"
 			onclick={() => onView?.(sale)}
 		>
-			<td class="px-4 py-4">
+			<td class="px-3 py-3">
 				<span class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</span>
 			</td>
-			<td class="px-4 py-4">
-				<div class="font-medium text-on-surface">{customerName(sale)}</div>
-				{#if sale.customer?.idNumber}
-					<div class="font-mono text-xs text-outline">{sale.customer.idNumber}</div>
-				{/if}
-			</td>
-			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{formatDateOnly(sale.saleDate, { day: '2-digit', month: 'short', year: 'numeric' })}
-			</td>
-			<td class="px-4 py-4 text-right font-mono text-sm font-bold text-brand-navy">
-				{formatPrice(sale.total)}
-			</td>
-			<td class="px-4 py-4">
-				<div class="max-w-32">
-					<div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
-						<div
-							class="h-full rounded-full transition-all {pct >= 100
-								? 'bg-success'
-								: pct > 0
-									? 'bg-warning'
-									: 'bg-outline-variant'}"
-							style="width: {pct}%"
-						></div>
-					</div>
-					<p
-						class="mt-1 font-mono text-[10px] font-bold tracking-wider uppercase"
-						class:text-success={pct >= 100}
-						class:text-warning={pct > 0 && pct < 100}
-						class:text-outline={pct === 0}
-					>
-						{paidLabel(sale, pct)}
-					</p>
+			<td class="px-3 py-3">
+				<div class="min-w-0">
+					<span class="truncate text-sm font-medium text-on-surface">{customerName(sale)}</span>
+					{#if sale.customer?.idNumber}
+						<span class="ml-1.5 font-mono text-xs text-outline">{sale.customer.idNumber}</span>
+					{/if}
 				</div>
 			</td>
-			<td class="px-4 py-4">
+			<td class="px-3 py-3 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
+				{formatDateOnly(sale.saleDate, { day: '2-digit', month: '2-digit', year: '2-digit' })}
+			</td>
+			<td class="px-3 py-3 text-right font-mono text-sm font-bold text-brand-navy tabular-nums">
+				{formatPrice(sale.total)}
+			</td>
+			<td class="px-3 py-3">
+				<div class="max-w-32">
+					<SalePaymentProgress {sale} />
+				</div>
+			</td>
+			<td class="px-3 py-3">
 				<SaleStatusBadge status={sale.status} />
 			</td>
-			<td class="px-4 py-4 text-sm text-on-surface-variant">
-				{sale.seller?.fullName ?? '-'}
+			<td class="px-3 py-3">
+				<div class="flex items-center gap-2" title={sellerName}>
+					<div
+						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
+					>
+						{getInitials(sellerName)}
+					</div>
+					<span class="hidden truncate text-sm text-on-surface-variant lg:inline">
+						{sellerName}
+					</span>
+				</div>
 			</td>
-			<td class="px-4 py-4 text-right">
+			<td class="px-3 py-3 text-right">
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
 							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
-							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-info-container px-3 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver detalle"
 						>
-							<span class="inline-flex items-center gap-1.5">
-								<Eye class="h-3.5 w-3.5" />
-								Ver
-							</span>
+							<Eye class="h-3.5 w-3.5" />
+							Ver
 						</a>
 					{:else if onView}
 						<button
@@ -178,13 +169,11 @@
 								event.stopPropagation();
 								onView?.(sale);
 							}}
-							class="rounded-md bg-info-container px-3 py-1.5 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-info-container px-3 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
 							title="Ver detalle"
 						>
-							<span class="inline-flex items-center gap-1.5">
-								<Eye class="h-3.5 w-3.5" />
-								Ver
-							</span>
+							<Eye class="h-3.5 w-3.5" />
+							Ver
 						</button>
 					{/if}
 					{#if canCancel}
@@ -204,6 +193,92 @@
 				</div>
 			</td>
 		</tr>
+	{/snippet}
+
+	{#snippet mobileCard(sale)}
+		{@const mobileViewHref = getViewHref?.(sale)}
+		{@const sellerName = sale.seller?.fullName ?? '-'}
+		{#if mobileViewHref}
+			<a href={resolve(mobileViewHref)} class="block w-full space-y-3 py-1 text-left">
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<p class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</p>
+						<p class="mt-0.5 truncate text-sm font-medium text-on-surface">
+							{customerName(sale)}
+						</p>
+					</div>
+					<SaleStatusBadge status={sale.status} />
+				</div>
+
+				<div class="grid grid-cols-3 gap-2 text-sm">
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+						<p class="text-[9px] font-semibold tracking-wider text-outline uppercase">Fecha</p>
+						<p class="mt-0.5 font-mono text-xs font-semibold text-on-surface tabular-nums">
+							{formatDateOnly(sale.saleDate, { day: '2-digit', month: '2-digit', year: '2-digit' })}
+						</p>
+					</div>
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+						<p class="text-[9px] font-semibold tracking-wider text-outline uppercase">Total</p>
+						<p class="mt-0.5 font-mono text-xs font-semibold text-brand-navy tabular-nums">
+							{formatPrice(sale.total)}
+						</p>
+					</div>
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+						<p class="text-[9px] font-semibold tracking-wider text-outline uppercase">Por</p>
+						<p
+							class="mt-0.5 truncate text-xs font-semibold text-on-surface-variant"
+							title={sellerName}
+						>
+							{sellerName}
+						</p>
+					</div>
+				</div>
+
+				<div class="max-w-48">
+					<SalePaymentProgress {sale} compact />
+				</div>
+			</a>
+		{:else}
+			<button type="button" class="w-full space-y-3 py-1 text-left" onclick={() => onView?.(sale)}>
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<p class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</p>
+						<p class="mt-0.5 truncate text-sm font-medium text-on-surface">
+							{customerName(sale)}
+						</p>
+					</div>
+					<SaleStatusBadge status={sale.status} />
+				</div>
+
+				<div class="grid grid-cols-3 gap-2 text-sm">
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+						<p class="text-[9px] font-semibold tracking-wider text-outline uppercase">Fecha</p>
+						<p class="mt-0.5 font-mono text-xs font-semibold text-on-surface tabular-nums">
+							{formatDateOnly(sale.saleDate, { day: '2-digit', month: '2-digit', year: '2-digit' })}
+						</p>
+					</div>
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+						<p class="text-[9px] font-semibold tracking-wider text-outline uppercase">Total</p>
+						<p class="mt-0.5 font-mono text-xs font-semibold text-brand-navy tabular-nums">
+							{formatPrice(sale.total)}
+						</p>
+					</div>
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+						<p class="text-[9px] font-semibold tracking-wider text-outline uppercase">Por</p>
+						<p
+							class="mt-0.5 truncate text-xs font-semibold text-on-surface-variant"
+							title={sellerName}
+						>
+							{sellerName}
+						</p>
+					</div>
+				</div>
+
+				<div class="max-w-48">
+					<SalePaymentProgress {sale} compact />
+				</div>
+			</button>
+		{/if}
 	{/snippet}
 </DataGrid>
 
