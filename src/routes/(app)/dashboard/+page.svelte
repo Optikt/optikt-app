@@ -94,7 +94,7 @@
 	<meta name="description" content="Optikt Dashboard - Centro de Operaciones" />
 </svelte:head>
 
-<div class="space-y-4 p-4 sm:space-y-6 sm:p-6">
+<div class="space-y-4 sm:space-y-6 p-4">
 	<DashboardHeader showPrimaryAction={canAct} />
 
 	<!-- Balance Card -->

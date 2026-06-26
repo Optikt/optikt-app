@@ -217,7 +217,7 @@
 	<title>Órdenes de Compra - Optikt</title>
 </svelte:head>
 
-<div class="space-y-4 p-4 lg:space-y-5 lg:p-5">
+<div class="space-y-4 p-4">
 	<PageHeader title="Órdenes de Compra">
 		{#snippet actions()}
 			<button
