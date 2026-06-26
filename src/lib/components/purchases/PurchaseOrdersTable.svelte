@@ -182,11 +182,15 @@
 				</span>
 			</td>
 			<td class="px-3 py-3">
-				<div
-					class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
-					title={creatorName}
-				>
-					{getInitials(creatorName)}
+				<div class="flex items-center gap-2" title={creatorName}>
+					<div
+						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
+					>
+						{getInitials(creatorName)}
+					</div>
+					<span class="hidden truncate text-sm text-on-surface-variant lg:inline">
+						{creatorName}
+					</span>
 				</div>
 			</td>
 			<td class="px-3 py-3 text-right">
@@ -260,7 +264,7 @@
 							class="mt-0.5 truncate text-xs font-semibold text-on-surface-variant"
 							title={creatorName}
 						>
-							{getInitials(creatorName)}
+							{creatorName}
 						</p>
 					</div>
 				</div>
@@ -316,7 +320,7 @@
 							class="mt-0.5 truncate text-xs font-semibold text-on-surface-variant"
 							title={creatorName}
 						>
-							{getInitials(creatorName)}
+							{creatorName}
 						</p>
 					</div>
 				</div>
