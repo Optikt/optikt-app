@@ -244,7 +244,7 @@
 	}
 </script>
 
-<div class="space-y-3">
+<form class="space-y-3" autocomplete="off" onsubmit={(e) => e.preventDefault()}>
 	{#if mode !== 'create'}
 		<!-- Search row: prefix + document input + buttons inline -->
 		<div class="flex items-center gap-2">
@@ -496,4 +496,4 @@
 			</div>
 		</div>
 	{/if}
-</div>
+</form>
