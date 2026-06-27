@@ -16,7 +16,6 @@
 		entityNumberValue?: string;
 		stepLabel?: string;
 		stepTitle?: string;
-		stepDescription?: string;
 		summaryLabel?: string;
 		summaryValue?: string;
 		primaryLabel?: string;
@@ -35,7 +34,6 @@
 		entityNumberValue,
 		stepLabel = 'Paso 1: Información',
 		stepTitle = 'Selecciona o registra al cliente',
-		stepDescription = 'Busca por documento para reutilizar un cliente existente o crea uno nuevo desde este mismo paso.',
 		summaryLabel = 'Orden',
 		summaryValue,
 		primaryLabel = 'Continuar',
@@ -73,7 +71,6 @@
 		<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
 			{stepLabel} - {stepTitle}
 		</p>
-		<p class="mb-3 text-xs leading-5 text-on-surface-variant">{stepDescription}</p>
 
 		<div class="mt-3 rounded-xl bg-surface-container-low p-3">
 			<CustomerLookupInput
