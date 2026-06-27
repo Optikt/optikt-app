@@ -71,7 +71,7 @@
 					<input
 						type="date"
 						bind:value={orderDate}
-						class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:bg-surface-container-high focus:ring-1 focus:ring-brand-blue"
+						class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:border-brand-blue hover:bg-surface-container-high focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
 					/>
 				{/if}
 			</div>
