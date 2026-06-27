@@ -274,26 +274,9 @@
 			bind:saleDate={quoteDate}
 			bind:secondaryDate={validUntil}
 			bind:notes
-			entityPanelLabel="Detalles del presupuesto"
-			entityNumberLabel="Número de presupuesto"
 			entityNumberValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
-			primaryDateLabel="Fecha del presupuesto"
-			primaryDateHelp="Define la fecha base del presupuesto para su seguimiento comercial."
-			secondaryDateLabel="Válido hasta"
-			customerHint="Puedes asociar un cliente ahora o continuar sin cliente y asignarlo después, antes de convertir el presupuesto en venta."
 			stepTitle="Prepara la información base del presupuesto"
 			stepDescription="Usa la misma búsqueda y registro inline de ventas para asociar un cliente, definir vigencia y dejar contexto comercial antes de cargar productos."
-			notesLabel="Nota del presupuesto"
-			notesDescription="Deja observaciones comerciales, condiciones de validez o contexto útil para quien convierta este presupuesto en venta."
-			notesPlaceholder="Ej: precio sujeto a cambio, vigencia limitada, observaciones del cliente..."
-			notesRows={4}
-			workflowName="presupuesto"
-			helperDefaultCopy="Busca por cédula o RIF para reutilizar un cliente existente. Si aún no existe, puedes registrarlo inline o dejar el presupuesto sin cliente y asignarlo más adelante."
-			creatingCardValue="Cliente para presupuesto"
-			creatingGuidePoints={[
-				'Registra datos reales para que luego la conversión a venta no requiera correcciones manuales.',
-				'Si todavía no tienes el cliente confirmado, puedes continuar y asociarlo antes de convertir el presupuesto.'
-			]}
 			summaryLabel="Presupuesto"
 			summaryValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
 			valid={true}
@@ -321,7 +304,6 @@
 			selectedCustomerContextLabel="Cliente asociado al presupuesto"
 			noCustomerContextLabel="Presupuesto sin cliente"
 			itemsSectionTitle="Artículos del presupuesto"
-			prescriptionSectionTitle="Parámetros ópticos del presupuesto"
 			onCancel={goToQuotes}
 			valid={step2Valid}
 			onnext={nextStep}

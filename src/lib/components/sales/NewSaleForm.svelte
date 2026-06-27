@@ -97,7 +97,8 @@
 	let customerId = $state('');
 	let selectedCustomer = $state<Customer | null>(null);
 	let newCustomer = $state<NewCustomerData | null>(null);
-	let saleDate = $state<Date>(nowUTC());
+	const initialDate = nowUTC();
+	let saleDate = $state(initialDate);
 	let discount = $state(0);
 	let discountType = $state<DiscountTypeEnum>(DiscountType.FIXED);
 	let notes = $state('');
@@ -106,7 +107,7 @@
 	const formattedOrderNumber = $derived(
 		nextOrderNumber ? `#${String(nextOrderNumber).padStart(4, '0')}` : ''
 	);
-	let orderDateIso = $state(dateToISODateString(saleDate));
+	let orderDateIso = $state(dateToISODateString(initialDate));
 
 	// Sync: user edits date in WizardHeader → update saleDate
 	$effect(() => {

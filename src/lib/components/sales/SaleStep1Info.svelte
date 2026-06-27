@@ -13,24 +13,10 @@
 		secondaryDate?: string;
 		notes: string;
 		nextOrderNumber?: number;
-		entityPanelLabel?: string;
-		entityNumberLabel?: string;
 		entityNumberValue?: string;
-		primaryDateLabel?: string;
-		primaryDateHelp?: string;
-		secondaryDateLabel?: string;
-		customerHint?: string;
 		stepLabel?: string;
 		stepTitle?: string;
 		stepDescription?: string;
-		notesLabel?: string;
-		notesDescription?: string;
-		notesPlaceholder?: string;
-		notesRows?: number;
-		workflowName?: string;
-		helperDefaultCopy?: string;
-		creatingCardValue?: string;
-		creatingGuidePoints?: string[];
 		summaryLabel?: string;
 		summaryValue?: string;
 		primaryLabel?: string;
@@ -46,49 +32,16 @@
 		secondaryDate = $bindable(''),
 		notes = $bindable(),
 		nextOrderNumber,
-		entityPanelLabel = 'Detalles de la orden',
-		entityNumberLabel = 'Orden',
 		entityNumberValue,
-		primaryDateLabel = 'Fecha',
-		primaryDateHelp = '',
-		secondaryDateLabel,
-		customerHint = '',
 		stepLabel = 'Paso 1: Información',
 		stepTitle = 'Selecciona o registra al cliente',
 		stepDescription = 'Busca por documento para reutilizar un cliente existente o crea uno nuevo desde este mismo paso.',
-		notesLabel = 'Nota de la venta',
-		notesDescription = '',
-		notesPlaceholder = 'Ej: montura propia, prioridad de entrega, indicaciones internas...',
-		notesRows = 3,
-		workflowName = 'venta',
-		helperDefaultCopy = '',
-		creatingCardValue = 'Cliente particular',
-		creatingGuidePoints = [
-			'Usa nombre y apellido reales para mantener el historial limpio.',
-			'Si el documento ya existe, vuelve a búsqueda y selecciona el cliente.'
-		],
 		summaryLabel = 'Orden',
 		summaryValue,
 		primaryLabel = 'Continuar',
 		valid,
 		onnext
 	}: Props = $props();
-
-	// Suppress unused vars — these props are used by NewQuoteForm (quotes wizard)
-	void entityPanelLabel;
-	void entityNumberLabel;
-	void primaryDateLabel;
-	void primaryDateHelp;
-	void secondaryDateLabel;
-	void customerHint;
-	void notesDescription;
-	void notesRows;
-	void workflowName;
-	void helperDefaultCopy;
-	void creatingCardValue;
-	void creatingGuidePoints;
-	void notesLabel;
-	void notesPlaceholder;
 
 	let creatingCustomer = $state(newCustomer !== null);
 

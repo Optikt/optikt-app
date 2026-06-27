@@ -75,7 +75,6 @@
 		selectedCustomerContextLabel?: string;
 		noCustomerContextLabel?: string;
 		itemsSectionTitle?: string;
-		prescriptionSectionTitle?: string;
 		onCancel?: () => void;
 		valid: boolean;
 		onnext: () => void;
@@ -99,15 +98,11 @@
 		selectedCustomerContextLabel = 'Cliente asociado',
 		noCustomerContextLabel = 'Venta sin cliente',
 		itemsSectionTitle = 'Artículos de la venta',
-		prescriptionSectionTitle = 'Parámetros ópticos de la venta',
 		onCancel,
 		valid,
 		onnext,
 		onprev
 	}: Props = $props();
-
-	// Suppress unused — used by NewQuoteForm (quotes wizard)
-	void prescriptionSectionTitle;
 
 	interface QuickAddOption {
 		key: string;
