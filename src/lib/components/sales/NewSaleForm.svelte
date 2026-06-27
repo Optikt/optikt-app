@@ -15,6 +15,7 @@
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
+	import type { Snippet } from 'svelte'
 	import { WizardHeader } from '$lib/components/ui';
 	import {
 		buildStep2PrescriptionConfirmation,
@@ -38,7 +39,7 @@
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
 		defaultTaxRate?: number;
-		breadcrumbs?: import('svelte').Snippet;
+		breadcrumbs?: Snippet;
 	}
 
 	let {
