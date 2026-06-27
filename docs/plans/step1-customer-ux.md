@@ -5,11 +5,13 @@ plan status: active
 ---
 
 ## Idea
+
 ## Context
 
 The sale wizard Step 1 (customer association/creation) has UX problems that cause excessive scrolling, especially when creating a new customer inline. The existing `sale-wizard-redesign` plan addressed the LAYOUT (sidebar removal, compact bar) but NOT the customer lookup UX.
 
 **Current problems (from screenshot analysis):**
+
 1. **Manual search**: User must type document + click "Buscar" button. Should auto-search on input.
 2. **Excessive scroll on create**: Inline creation form has 5 fields + dirección stacked vertically (~420px tall). Combined with notes card, requires 2x viewport scroll.
 3. **Validation as banner**: "Nombre, apellido y documento son requeridos..." appears as banner at bottom of form — requires scroll to see. Should be inline per-field.
@@ -30,11 +32,13 @@ The sale wizard Step 1 (customer association/creation) has UX problems that caus
 **Secondary file:** `src/lib/components/sales/SaleStep1Info.svelte` (notes textarea rows)
 
 **NOT in scope:**
+
 - Backend logic (lookupCustomer remote function stays as-is)
 - Step 2 or Step 3 changes
 - Mobile responsive (desktop-first per user)
 
 ## Implementation
+
 - CustomerLookupInput: Remove 'CLIENTE' label row (lines 227-256). Integrate 'Limpiar' and 'Nuevo cliente' buttons inline with the search fields row. Saves ~60px vertical.
 - CustomerLookupInput: Implement auto-search with debounce. Add searchTimeout state, trigger handleSearch() 600ms after idDigits input stops. Remove 'Buscar' button (lines 293-308). Keep Enter key for immediate search. Show spinner in document input while searching.
 - CustomerLookupInput: Compact creation form to 2-column grid. Row 1: Nombre | Apellido. Row 2: CI (prefix+digits inline) | Telefono. Row 3: Email (full width). Row 4: Direccion textarea 2 rows. Reduce field gap from gap-4 to gap-3. Reduce field padding from px-4 py-3 to px-3 py-2.5.
@@ -46,6 +50,8 @@ The sale wizard Step 1 (customer association/creation) has UX problems that caus
 - Verify: run pnpm prettier, pnpm eslint, pnpm svelte-check, pnpm test:unit. Test at 1280x720: customer lookup without scroll, creation form fits in viewport, 'no encontrado' state visible without scroll.
 
 ## Required Specs
+
 <!-- SPECS_START -->
+
 - step1-customer-patterns
 <!-- SPECS_END -->

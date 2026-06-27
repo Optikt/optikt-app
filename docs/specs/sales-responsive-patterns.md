@@ -5,19 +5,20 @@ Scope: feature
 # Sales Listing Page Redesign — Responsive Component Patterns
 
 ## Scope
+
 Feature spec for the `/sales` listing page refactor, documenting the responsive design patterns, component APIs, and breakpoint behavior established in `/purchases` and replicated here.
 
 ---
 
 ## Responsive Breakpoints
 
-| Breakpoint | Width | Behavior |
-|---|---|---|
-| Default (mobile) | <768px | Stats cards: 2x2 vertical grid. Filter bar: collapsible (toggle). Table: mobile cards. |
-| `md` | 768–1023px | Stats: 2x2 grid. Filter bar: collapsed by default. Table: desktop visible. |
-| `lg` | 1024–1279px | Stats: 4-col horizontal. Filter bar: filters visible inline flex-wrap. Table: desktop, mobile cards hidden. |
-| `xl` | 1280–1535px | Full desktop layout. Vendedor shows name beside avatar. |
-| `2xl` | 1536px+ | Tasa BCV column (if any) becomes visible. |
+| Breakpoint       | Width       | Behavior                                                                                                    |
+| ---------------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| Default (mobile) | <768px      | Stats cards: 2x2 vertical grid. Filter bar: collapsible (toggle). Table: mobile cards.                      |
+| `md`             | 768–1023px  | Stats: 2x2 grid. Filter bar: collapsed by default. Table: desktop visible.                                  |
+| `lg`             | 1024–1279px | Stats: 4-col horizontal. Filter bar: filters visible inline flex-wrap. Table: desktop, mobile cards hidden. |
+| `xl`             | 1280–1535px | Full desktop layout. Vendedor shows name beside avatar.                                                     |
+| `2xl`            | 1536px+     | Tasa BCV column (if any) becomes visible.                                                                   |
 
 **Office target:** 1280x720 with sidebar open (w-60). Content area ~1000px. All components must fit at `<xl`.
 
@@ -28,16 +29,18 @@ Feature spec for the `/sales` listing page refactor, documenting the responsive 
 ### SaleStatsCards.svelte
 
 **Props:**
+
 ```ts
 interface SalesStats {
-  monthly: number;
-  pending: number;
-  completed: number;
-  cancelled: number;
+	monthly: number;
+	pending: number;
+	completed: number;
+	cancelled: number;
 }
 ```
 
 **Layout:**
+
 - Mobile default: `grid grid-cols-2 gap-2` — vertical stack per card (icon → number → label)
 - Desktop `lg`: `grid-cols-4 gap-4` — horizontal row (icon | number + label)
 - Cards: `rounded-lg bg-surface-container-low px-3 py-2` (not glass-card)
@@ -53,22 +56,24 @@ interface SalesStats {
 ### SaleFilterBar.svelte
 
 **Props:**
+
 ```ts
 interface Props {
-  search: string;
-  statusFilter: SaleStatus | '';
-  shippingPendingFilter: boolean;
-  hasFreeItemFilter: boolean;
-  hasActiveFilters: boolean;
-  onSearch: (value: string) => void;
-  onStatusChange: (value: string) => void;
-  onToggleShippingPending: () => void;
-  onToggleFreeItem: () => void;
-  onClearFilters: () => void;
+	search: string;
+	statusFilter: SaleStatus | '';
+	shippingPendingFilter: boolean;
+	hasFreeItemFilter: boolean;
+	hasActiveFilters: boolean;
+	onSearch: (value: string) => void;
+	onStatusChange: (value: string) => void;
+	onToggleShippingPending: () => void;
+	onToggleFreeItem: () => void;
+	onClearFilters: () => void;
 }
 ```
 
 **Layout:**
+
 - Mobile: search input + filter toggle button + clear button in one row. Filters panel (grid-cols-2) expands below toggle.
 - Desktop `lg`: search input + clear in top row, filters as `flex-wrap gap-2` row below.
 - Toggle button: `lg:hidden`, shows `SlidersHorizontal` icon + "Filtros" + active count badge.
@@ -85,14 +90,16 @@ interface Props {
 ### SalePaymentProgress.svelte
 
 **Props:**
+
 ```ts
 interface Props {
-  sale: SaleWithRelations;
-  compact?: boolean;
+	sale: SaleWithRelations;
+	compact?: boolean;
 }
 ```
 
 **Layout:**
+
 - Regular: progress bar (h-1.5, rounded-full) + label text below
 - Compact: progress bar only (h-1), no label
 - Colors: `bg-success` (100%), `bg-warning` (partial), `bg-outline-variant` (0%)
@@ -122,6 +129,7 @@ interface Props {
 **Layout:** Full-width card `rounded-2xl border p-4 shadow-sm` with `<a>` or `<button>` wrapper.
 
 **Content hierarchy:**
+
 1. Top row: order number + customer name (left), status badge (right)
 2. 3-column grid: Date, Total, Vendedor initials
 3. Payment progress bar (compact mode, no label)
@@ -143,6 +151,7 @@ interface Props {
 ## Shared Component Compatibility
 
 These patterns do NOT affect shared components used by other pages:
+
 - `DataGrid.svelte` — already refactored (light header, responsive columns)
 - `PageHeader.svelte` — unchanged
 - `AppBadge.svelte` / `SaleStatusBadge.svelte` — unchanged
