@@ -16,9 +16,7 @@
 	import type { Customer } from '$lib/server/db/schema';
 
 	interface Props {
-		/** Resolved customer ID (either found or will be created) */
 		customerId: string;
-		/** Inline new customer data when creating */
 		newCustomer: {
 			firstName: string;
 			lastName: string;
@@ -28,11 +26,8 @@
 			address: string;
 			notes: string;
 		} | null;
-		/** The full found customer object (for display in other steps) */
 		selectedCustomer: Customer | null;
-		/** Exposes whether the inline create form is visible */
 		creatingCustomer?: boolean;
-		/** Callback when customer selection changes */
 		onchange?: () => void;
 	}
 
@@ -44,7 +39,6 @@
 		onchange
 	}: Props = $props();
 
-	// Lookup state
 	let docType = $state<IdDocPrefix>('V');
 	let idDigits = $state('');
 	let searching = $state(false);
@@ -53,7 +47,6 @@
 		newCustomer ? 'create' : selectedCustomer ? 'found' : 'idle'
 	);
 
-	// Inline creation fields
 	let firstName = $state(newCustomer?.firstName ?? '');
 	let lastName = $state(newCustomer?.lastName ?? '');
 	let primaryPhone = $state(newCustomer?.primaryPhone ?? '');
@@ -61,9 +54,19 @@
 	let address = $state(newCustomer?.address ?? '');
 	let customerNotes = $state(newCustomer?.notes ?? '');
 
-	const fieldLabelClass = 'text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase';
+	let touchedFirstName = $state(false);
+	let touchedLastName = $state(false);
+	let touchedIdDigits = $state(false);
+
+	const fieldLabelClass = 'text-[10px] font-semibold tracking-[0.14em] text-slate-500 uppercase';
 	const fieldInputClass =
-		'w-full rounded-xl border-none bg-surface-container-high px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+		'w-full rounded-lg border-none bg-surface-container-high px-3 py-2.5 text-sm text-on-surface placeholder:text-slate-400 focus:ring-1 focus:ring-brand-blue';
+	const prefixSelectClass =
+		'rounded-lg border-none bg-surface-container-high px-2 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-brand-blue text-center font-semibold shrink-0';
+
+	const firstNameError = $derived(touchedFirstName && !firstName.trim());
+	const lastNameError = $derived(touchedLastName && !lastName.trim());
+	const idDigitsError = $derived(touchedIdDigits && !idDigits.trim());
 
 	function applyIdNumberValue(value: string) {
 		const match = value.match(ID_NUMBER_RE);
@@ -72,7 +75,6 @@
 			idDigits = match[2];
 			return;
 		}
-
 		idDigits = value.replace(/\D/g, '').slice(0, 10);
 	}
 
@@ -85,7 +87,6 @@
 		applyIdNumberValue(selectedCustomer.idNumber);
 	}
 
-	/** Build the full normalized idNumber from prefix + digits */
 	function buildIdNumber(): string {
 		const digits = idDigits.replace(/\D/g, '');
 		if (!digits) return '';
@@ -107,7 +108,8 @@
 		}
 	}
 
-	/** Handle digit input - only allow numbers, max 10 digits */
+	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+
 	function handleDigitsInput(e: Event) {
 		const input = e.target as HTMLInputElement;
 		idDigits = input.value.replace(/\D/g, '').slice(0, 10);
@@ -117,11 +119,16 @@
 		} else {
 			syncNewCustomer();
 		}
+
+		clearTimeout(searchTimeout);
+		if (idDigits.length >= 1 && mode !== 'create') {
+			searching = true;
+			searchTimeout = setTimeout(() => void handleSearch(), 600);
+		}
 	}
 
 	function handleDocTypeChange(e: Event) {
 		docType = (e.target as HTMLSelectElement).value as IdDocPrefix;
-
 		if (mode !== 'create') {
 			clearResolvedState();
 		} else {
@@ -131,7 +138,10 @@
 
 	async function handleSearch() {
 		const fullId = buildIdNumber();
-		if (!fullId) return;
+		if (!fullId) {
+			searching = false;
+			return;
+		}
 
 		searching = true;
 		try {
@@ -165,7 +175,8 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			handleSearch();
+			clearTimeout(searchTimeout);
+			void handleSearch();
 		}
 	}
 
@@ -173,6 +184,9 @@
 		clearResolvedState();
 		creatingCustomer = true;
 		mode = 'create';
+		touchedFirstName = false;
+		touchedLastName = false;
+		touchedIdDigits = false;
 		syncNewCustomer();
 		onchange?.();
 	}
@@ -187,10 +201,14 @@
 		email = '';
 		address = '';
 		customerNotes = '';
+		touchedFirstName = false;
+		touchedLastName = false;
+		touchedIdDigits = false;
 		onchange?.();
 	}
 
 	function reset() {
+		clearTimeout(searchTimeout);
 		docType = 'V';
 		idDigits = '';
 		foundCustomer = null;
@@ -205,6 +223,9 @@
 		email = '';
 		address = '';
 		customerNotes = '';
+		touchedFirstName = false;
+		touchedLastName = false;
+		touchedIdDigits = false;
 		onchange?.();
 	}
 
@@ -223,209 +244,194 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-		<p class={fieldLabelClass}>Cliente</p>
-
+<div class="space-y-3">
+	{#if mode !== 'create'}
+		<!-- Search row: prefix + document input + buttons inline -->
 		<div class="flex items-center gap-2">
+			<select
+				value={docType}
+				onchange={handleDocTypeChange}
+				class="{prefixSelectClass} w-14"
+				aria-label="Prefijo de documento"
+			>
+				{#each ID_DOC_PREFIXES as type (type)}
+					<option value={type}>{type}</option>
+				{/each}
+			</select>
+
+			<div class="relative min-w-0 flex-1">
+				<Search
+					class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
+				/>
+				<input
+					type="text"
+					inputmode="numeric"
+					placeholder="Cédula o RIF..."
+					value={idDigits}
+					oninput={handleDigitsInput}
+					onkeydown={handleKeydown}
+					class="{fieldInputClass} pl-10 {idDigitsError ? 'ring-1 ring-error/40' : ''}"
+					onblur={() => (touchedIdDigits = true)}
+				/>
+				{#if searching}
+					<div
+						class="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-brand-blue/30 border-t-brand-blue"
+					></div>
+				{/if}
+			</div>
+
+			<button
+				type="button"
+				onclick={startCreateMode}
+				aria-label="Nuevo cliente"
+				title="Nuevo cliente"
+				class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15"
+			>
+				<UserPlus class="h-4 w-4" />
+			</button>
+
 			{#if mode !== 'idle' || idDigits}
 				<button
 					type="button"
 					onclick={reset}
-					class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold tracking-[0.16em] text-on-surface-variant uppercase transition-colors hover:bg-surface-container-high"
+					aria-label="Limpiar"
+					title="Limpiar"
+					class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high"
 				>
 					<X class="h-4 w-4" />
-					Limpiar
 				</button>
 			{/if}
-
-			<button
-				type="button"
-				onclick={creatingCustomer ? returnToLookup : startCreateMode}
-				aria-label={creatingCustomer ? 'Volver a búsqueda' : 'Nuevo cliente'}
-				title={creatingCustomer ? 'Volver a búsqueda' : 'Nuevo cliente'}
-				class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15"
-			>
-				{#if creatingCustomer}
-					<X class="h-5 w-5" />
-				{:else}
-					<UserPlus class="h-6 w-6" />
-				{/if}
-			</button>
-		</div>
-	</div>
-
-	{#if mode !== 'create'}
-		<div class="grid gap-3 lg:max-w-[34rem] lg:grid-cols-[4.75rem_minmax(14rem,20rem)_auto]">
-			<div>
-				<label class={fieldLabelClass} for="customer-doc-type">Prefijo</label>
-				<select
-					id="customer-doc-type"
-					value={docType}
-					onchange={handleDocTypeChange}
-					class={`${fieldInputClass} mt-2`}
-				>
-					{#each ID_DOC_PREFIXES as type (type)}
-						<option value={type}>{type}</option>
-					{/each}
-				</select>
-			</div>
-
-			<div>
-				<label class={fieldLabelClass} for="customer-lookup">Documento</label>
-				<div class="relative mt-2">
-					<Search
-						class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-outline"
-					/>
-					<input
-						id="customer-lookup"
-						type="text"
-						inputmode="numeric"
-						placeholder="Ingrese Cédula o RIF para buscar..."
-						value={idDigits}
-						oninput={handleDigitsInput}
-						onkeydown={handleKeydown}
-						class={`${fieldInputClass} pl-11`}
-					/>
-				</div>
-			</div>
-
-			<div class="lg:self-end">
-				<button
-					type="button"
-					onclick={handleSearch}
-					disabled={!idDigits.trim() || searching}
-					class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-navy px-5 py-3 text-sm font-bold text-white shadow-[0_12px_30px_rgba(21,35,70,0.18)] transition-all hover:bg-brand-navy-dark disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-outline disabled:shadow-none lg:w-auto"
-				>
-					{#if searching}
-						<span class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-						></span>
-					{:else}
-						<Search class="h-4 w-4" />
-					{/if}
-					Buscar
-				</button>
-			</div>
 		</div>
 
 		{#if mode === 'found' && foundCustomer}
-			<div class="rounded-[1.5rem] bg-surface-container-lowest px-5 py-5 shadow-sm">
-				<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-					<div class="flex items-start gap-4">
-						<div
-							class="flex h-14 w-14 items-center justify-center rounded-2xl bg-info-container text-sm font-bold text-brand-navy"
-						>
-							{customerInitials(foundCustomer)}
-						</div>
-
-						<div class="min-w-0">
-							<p class="text-xl font-semibold text-brand-navy">
-								{foundCustomer.firstName}
-								{foundCustomer.lastName}
-							</p>
-							<div class="mt-2 flex flex-wrap gap-x-3 gap-y-2 text-sm text-on-surface-variant">
-								<span class="inline-flex items-center gap-1.5 font-mono">
-									<IdCard class="h-4 w-4 text-outline" />
-									{foundCustomer.idNumber}
+			<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
+				<div class="flex items-center gap-3">
+					<div
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info-container text-sm font-bold text-brand-navy"
+					>
+						{customerInitials(foundCustomer)}
+					</div>
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-lg font-semibold text-brand-navy">
+							{foundCustomer.firstName}
+							{foundCustomer.lastName}
+						</p>
+						<div class="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-on-surface-variant">
+							<span class="inline-flex items-center gap-1 font-mono">
+								<IdCard class="h-3 w-3 text-outline" />
+								{foundCustomer.idNumber}
+							</span>
+							{#if foundCustomer.primaryPhone}
+								<span class="inline-flex items-center gap-1">
+									<Phone class="h-3 w-3 text-outline" />
+									{foundCustomer.primaryPhone}
 								</span>
-								{#if foundCustomer.primaryPhone}
-									<span class="inline-flex items-center gap-1.5">
-										<Phone class="h-4 w-4 text-outline" />
-										{foundCustomer.primaryPhone}
-									</span>
-								{/if}
-								{#if foundCustomer.email}
-									<span class="inline-flex items-center gap-1.5">
-										<Mail class="h-4 w-4 text-outline" />
-										{foundCustomer.email}
-									</span>
-								{/if}
-							</div>
+							{/if}
+							{#if foundCustomer.email}
+								<span class="inline-flex items-center gap-1">
+									<Mail class="h-3 w-3 text-outline" />
+									{foundCustomer.email}
+								</span>
+							{/if}
 						</div>
 					</div>
-
-					<div class="flex items-center gap-2 text-brand-blue">
+					<div class="flex shrink-0 items-center gap-1.5">
 						<span
-							class="rounded-full bg-brand-gold px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-navy uppercase"
+							class="rounded-full bg-brand-gold px-2 py-0.5 text-[9px] font-bold tracking-[0.12em] text-brand-navy uppercase"
 						>
-							Cliente seleccionado
+							Seleccionado
 						</span>
-						<CheckCircle2 class="h-5 w-5" />
+						<CheckCircle2 class="h-4 w-4 text-brand-blue" />
 					</div>
 				</div>
 			</div>
 		{:else if mode === 'missing'}
 			<div
 				transition:slide={{ duration: 180 }}
-				class="rounded-[1.5rem] bg-warning-container/50 px-5 py-5 text-on-surface"
+				class="flex items-center gap-3 rounded-lg bg-warning-container/50 px-4 py-3"
 			>
-				<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-					<div class="flex items-start gap-4">
-						<div
-							class="flex h-12 w-12 items-center justify-center rounded-2xl bg-warning-container text-on-warning-container"
-						>
-							<CircleAlert class="h-5 w-5" />
-						</div>
-
-						<div>
-							<p class="text-sm font-semibold text-on-surface">
-								No encontramos un cliente con el documento {buildIdNumber()}.
-							</p>
-							<p class="mt-1 text-sm leading-6 text-on-surface-variant">
-								Puedes revisar el documento o abrir el registro inline para crearlo ahora.
-							</p>
-						</div>
-					</div>
-
-					<button
-						type="button"
-						onclick={startCreateMode}
-						class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-navy px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-navy-dark"
-					>
-						<UserPlus class="h-4 w-4" />
-						Crear cliente
-					</button>
+				<div
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning-container text-on-warning-container"
+				>
+					<CircleAlert class="h-4 w-4" />
 				</div>
+				<p class="min-w-0 flex-1 text-sm text-on-surface">
+					No encontramos <span class="font-mono font-semibold">{buildIdNumber()}</span>. ¿Crear
+					nuevo cliente?
+				</p>
+				<button
+					type="button"
+					onclick={startCreateMode}
+					class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-gold px-3 py-2 text-xs font-bold text-brand-navy transition-colors hover:bg-brand-gold-dark"
+				>
+					<UserPlus class="h-3.5 w-3.5" />
+					Crear
+				</button>
 			</div>
 		{/if}
 	{/if}
 
 	{#if mode === 'create'}
-		<div transition:slide={{ duration: 180 }} class="space-y-5">
-			<div class="grid gap-4 md:grid-cols-24">
-				<div class="md:col-span-7">
+		<div transition:slide={{ duration: 180 }} class="space-y-3">
+			<div class="mb-1 flex items-center justify-between">
+				<p class="text-sm font-semibold text-brand-navy">Nuevo cliente</p>
+				<button
+					type="button"
+					onclick={returnToLookup}
+					class="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-brand-navy"
+				>
+					<X class="h-3.5 w-3.5" />
+					Volver a búsqueda
+				</button>
+			</div>
+
+			<div class="grid grid-cols-2 gap-3">
+				<div>
 					<label class={fieldLabelClass} for="new-firstName">Nombre</label>
 					<input
 						id="new-firstName"
 						type="text"
 						bind:value={firstName}
-						oninput={syncNewCustomer}
+						oninput={() => {
+							syncNewCustomer();
+							touchedFirstName = true;
+						}}
+						onblur={() => (touchedFirstName = true)}
 						placeholder="Ej: Juan"
-						class={`${fieldInputClass} mt-2`}
+						class="{fieldInputClass} mt-1 {firstNameError ? 'ring-1 ring-error/40' : ''}"
 					/>
+					{#if firstNameError}
+						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
+					{/if}
 				</div>
 
-				<div class="md:col-span-7">
+				<div>
 					<label class={fieldLabelClass} for="new-lastName">Apellido</label>
 					<input
 						id="new-lastName"
 						type="text"
 						bind:value={lastName}
-						oninput={syncNewCustomer}
+						oninput={() => {
+							syncNewCustomer();
+							touchedLastName = true;
+						}}
+						onblur={() => (touchedLastName = true)}
 						placeholder="Ej: Pérez"
-						class={`${fieldInputClass} mt-2`}
+						class="{fieldInputClass} mt-1 {lastNameError ? 'ring-1 ring-error/40' : ''}"
 					/>
+					{#if lastNameError}
+						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
+					{/if}
 				</div>
 
-				<div class="md:col-span-10">
-					<!-- <label class={fieldLabelClass} for="new-idNumber">Documento de identidad</label> -->
-					<label class={fieldLabelClass} for="new-idNumber">CI</label>
-					<div class="mt-2 grid gap-3 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+				<div>
+					<label class={fieldLabelClass} for="new-idNumber">Documento</label>
+					<div class="mt-1 flex gap-2">
 						<select
 							id="new-doc-type"
 							value={docType}
 							onchange={handleDocTypeChange}
-							class={`${fieldInputClass} w-fit`}
+							class="{prefixSelectClass} w-14"
 						>
 							{#each ID_DOC_PREFIXES as type (type)}
 								<option value={type}>{type}</option>
@@ -436,14 +442,21 @@
 							type="text"
 							inputmode="numeric"
 							value={idDigits}
-							oninput={handleDigitsInput}
+							oninput={(e) => {
+								handleDigitsInput(e);
+								touchedIdDigits = true;
+							}}
+							onblur={() => (touchedIdDigits = true)}
 							placeholder="00.000.000"
-							class={fieldInputClass}
+							class="{fieldInputClass} min-w-0 flex-1 {idDigitsError ? 'ring-1 ring-error/40' : ''}"
 						/>
 					</div>
+					{#if idDigitsError}
+						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
+					{/if}
 				</div>
 
-				<div class="md:col-span-12">
+				<div>
 					<label class={fieldLabelClass} for="new-phone">Teléfono</label>
 					<input
 						id="new-phone"
@@ -451,11 +464,11 @@
 						bind:value={primaryPhone}
 						oninput={syncNewCustomer}
 						placeholder="+58 412 000 0000"
-						class={`${fieldInputClass} mt-2`}
+						class="{fieldInputClass} mt-1"
 					/>
 				</div>
 
-				<div class="md:col-span-12">
+				<div class="col-span-2">
 					<label class={fieldLabelClass} for="new-email">Email</label>
 					<input
 						id="new-email"
@@ -463,11 +476,11 @@
 						bind:value={email}
 						oninput={syncNewCustomer}
 						placeholder="cliente@ejemplo.com"
-						class={`${fieldInputClass} mt-2`}
+						class="{fieldInputClass} mt-1"
 					/>
 				</div>
 
-				<div class="md:col-span-24">
+				<div class="col-span-2">
 					<label class={fieldLabelClass} for="new-address">Dirección</label>
 					<textarea
 						id="new-address"
@@ -475,16 +488,10 @@
 						oninput={syncNewCustomer}
 						rows={2}
 						placeholder="Av. Principal, Centro..."
-						class={`${fieldInputClass} mt-2 min-h-24 resize-none`}
+						class="{fieldInputClass} mt-1 min-h-16 resize-none"
 					></textarea>
 				</div>
 			</div>
-
-			{#if !firstName.trim() || !lastName.trim() || !buildIdNumber()}
-				<p class="rounded-xl bg-warning-container/60 px-4 py-3 text-sm text-on-warning-container">
-					Nombre, apellido y documento son requeridos para continuar al siguiente paso.
-				</p>
-			{/if}
 		</div>
 	{/if}
 </div>

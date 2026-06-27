@@ -44,7 +44,6 @@
 		hasPrescriptionErrors
 	} from './saleItemHelpers';
 	import type { PrescriptionFieldErrors } from './saleItemHelpers';
-	import PrescriptionInput from './PrescriptionInput.svelte';
 	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
@@ -57,6 +56,7 @@
 		type IncludedAccessoryMap
 	} from './includedAccessories';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
+	import SalePrescriptionSlideOver from './SalePrescriptionSlideOver.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -159,6 +159,7 @@
 	let quickAddOpen = $state(false);
 	let quickAddFilter = $state<QuickAddFilter>('all');
 	let costOpenFor = $state<string | null>(null);
+	let showPrescriptionSlideOver = $state(false);
 
 	const quickAddPlaceholder = $derived.by(() => {
 		if (quickAddFilter === 'product') return 'Buscar producto por nombre o código...';
@@ -868,6 +869,16 @@
 					{/if}
 					<span>{contextStatus}</span>
 				</div>
+				{#if hasLensItem}
+					<button
+						type="button"
+						onclick={() => (showPrescriptionSlideOver = true)}
+						class="inline-flex items-center gap-1.5 self-start rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/25"
+					>
+						<Eye class="h-3.5 w-3.5" />
+						Fórmula
+					</button>
+				{/if}
 			</div>
 		</div>
 
@@ -1055,7 +1066,7 @@
 		</div>
 	</div>
 
-	<div class="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_22rem]">
+	<div class="grid gap-4">
 		<!-- Articulos del flujo -->
 		<div class="space-y-4">
 			<div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
@@ -1630,95 +1641,6 @@
 				</div>
 			</div>
 		</div>
-
-		<!-- Formula del paciente -->
-		<div class="space-y-4">
-			{#if hasLensItem}
-				<div
-					class="rounded-[1.6rem] border border-[#dbe6f8] bg-[linear-gradient(180deg,#f7faff_0%,#eff4fb_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:px-5"
-				>
-					<div class="mb-4 flex items-center gap-3">
-						<div
-							class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-brand-blue shadow-sm"
-						>
-							<Eye class="h-4 w-4" />
-						</div>
-						<div>
-							<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-								Fórmula
-							</p>
-							<h4 class="text-base font-semibold text-brand-navy">{prescriptionSectionTitle}</h4>
-						</div>
-					</div>
-
-					<div class="rounded-[1.25rem] bg-white/92 px-3.5 py-3.5 shadow-sm ring-1 ring-white/80">
-						{#if lensTypeSuggestion.hasMixedCatalogLensTypes}
-							<div
-								class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950"
-							>
-								<div class="flex items-start gap-2.5">
-									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0" />
-									<div>
-										<p class="text-sm font-semibold">Tipos de cristal distintos detectados</p>
-										<p class="mt-1 text-sm leading-6 text-amber-900">
-											Hay cristales de tipos distintos en la misma operación. Por eso el tipo de
-											lente de la prescripción ya no se sincroniza automáticamente y debes revisarlo
-											de forma manual antes de continuar.
-										</p>
-									</div>
-								</div>
-							</div>
-						{:else if lensTypeDecisionContext}
-							<div
-								class="mb-3 rounded-[1rem] border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950"
-							>
-								<div class="flex items-start gap-2.5">
-									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0" />
-									<div class="min-w-0 flex-1">
-										<p class="text-sm font-semibold">Confirma el tipo de lente base</p>
-										<p class="mt-1 text-sm leading-6 text-amber-900">
-											El cristal seleccionado es
-											<strong>{getLensTypeLabel(lensTypeDecisionContext.catalogLensType)}</strong>,
-											pero la fórmula guardada del cliente venía como
-											<strong
-												>{getLensTypeLabel(lensTypeDecisionContext.prescriptionLensType)}</strong
-											>. Por defecto tomamos el tipo del cristal. Confirma si quieres mantenerlo o
-											volver al tipo de la fórmula previa.
-										</p>
-										<div class="mt-3 flex flex-wrap gap-2">
-											<button
-												type="button"
-												onclick={keepCatalogLensType}
-												class="rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700"
-											>
-												Mantener {getLensTypeLabel(lensTypeDecisionContext.catalogLensType)}
-											</button>
-											<button
-												type="button"
-												onclick={useExistingPrescriptionLensType}
-												class="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
-											>
-												Usar {getLensTypeLabel(lensTypeDecisionContext.prescriptionLensType)}
-											</button>
-										</div>
-									</div>
-								</div>
-							</div>
-						{/if}
-
-						<PrescriptionInput
-							bind:values={prescriptionValues}
-							existingPrescription={customerPrescription}
-							selectedCatalogLensType={lensTypeSuggestion.catalogLensType}
-							hasMixedCatalogLensTypes={lensTypeSuggestion.hasMixedCatalogLensTypes}
-							showAddition={prescriptionValues.lensType !== 'MONOFOCAL'}
-							compact={true}
-							errors={visibleRxErrors}
-						/>
-					</div>
-				</div>
-			{/if}
-		</div>
 	</div>
 
 	{#if !valid}
@@ -1747,5 +1669,18 @@
 		summaryValue={formatPrice(partialTotal)}
 		onBack={onprev}
 		onPrimary={onnext}
+	/>
+
+	<SalePrescriptionSlideOver
+		bind:open={showPrescriptionSlideOver}
+		{prescriptionValues}
+		{customerPrescription}
+		{lensTypeSuggestion}
+		{lensTypeDecisionContext}
+		{visibleRxErrors}
+		{hasLensItem}
+		onclose={() => (showPrescriptionSlideOver = false)}
+		onKeepCatalogLensType={keepCatalogLensType}
+		onUseExistingPrescriptionLensType={useExistingPrescriptionLensType}
 	/>
 </div>

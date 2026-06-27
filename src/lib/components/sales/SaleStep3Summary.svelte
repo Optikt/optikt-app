@@ -91,7 +91,7 @@
 		secondaryContextLabel,
 		discount = $bindable(),
 		discountType = $bindable(),
-		notes,
+		notes = $bindable(),
 		nextOrderNumber,
 		defaultTaxRate = DEFAULT_TAX_RATE,
 		entityLabel = 'Orden',
@@ -371,21 +371,22 @@
 			</div>
 		</div>
 
-		{#if notes}
-			<div class="mt-4 border-t border-outline-variant/10 pt-4">
-				<div
-					class="flex items-start gap-3 rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant"
-				>
-					<FileText class="mt-0.5 h-4 w-4 shrink-0 text-brand-blue" />
-					<div class="min-w-0">
-						<p class="text-[10px] font-semibold tracking-[0.18em] text-brand-blue uppercase">
-							Notas
-						</p>
-						<p class="mt-1 line-clamp-2">{notes}</p>
-					</div>
+		<div class="mt-4 border-t border-outline-variant/10 pt-4">
+			<div class="flex items-start gap-3 rounded-xl bg-surface-container-low px-4 py-3">
+				<FileText class="mt-1 h-4 w-4 shrink-0 text-brand-blue" />
+				<div class="min-w-0 flex-1">
+					<p class="text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
+						Nota de la venta
+					</p>
+					<textarea
+						bind:value={notes}
+						rows={2}
+						placeholder="Observaciones, acuerdos o contexto para el equipo..."
+						class="mt-1.5 w-full resize-none rounded-lg border-none bg-surface-container-highest px-3 py-2 text-sm text-on-surface placeholder:text-slate-400 focus:ring-1 focus:ring-brand-blue"
+					></textarea>
 				</div>
 			</div>
-		{/if}
+		</div>
 	</section>
 
 	<section class="overflow-hidden rounded-[1.5rem] bg-surface-container-lowest shadow-sm">
@@ -723,96 +724,94 @@
 					</div>
 				</div>
 
-				{#if notes}
-					<div class="rounded-2xl bg-warning-container/45 px-4 py-4 sm:px-5">
-						<div class="mb-2 flex items-center gap-2 text-on-warning-container">
-							<FileText class="h-4 w-4" />
-							<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">Notas</p>
-						</div>
-						<p class="text-sm text-on-warning-container sm:text-base">{notes}</p>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<div class="space-y-4">
-			<div class="rounded-[1.5rem] bg-surface-container-low p-6 shadow-sm">
-				<div class="space-y-4 text-sm sm:text-base">
-					<div
-						class="pb4 flex items-center justify-between gap-4 border-b border-outline-variant/50"
-					>
-						<span class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-							Base imponible
-						</span>
-						<span class="font-mono font-semibold text-brand-navy">
-							{formatPrice(adjustedTaxBreakdown.taxableBase)}
-						</span>
-					</div>
-
-					<div
-						class="pb4 flex items-center justify-between gap-4 border-b border-outline-variant/50"
-					>
-						<span class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-							Total descuentos
-						</span>
-						<span class="font-mono font-semibold text-error">
-							-{formatPrice(appliedGlobalDiscount)}
-						</span>
-					</div>
-
-					<div class="flex items-center justify-between gap-4">
-						<div class="flex items-center gap-2">
-							<span
-								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+				<div class="space-y-4">
+					<div class="rounded-[1.5rem] bg-surface-container-low p-6 shadow-sm">
+						<div class="space-y-4 text-sm sm:text-base">
+							<div
+								class="pb4 flex items-center justify-between gap-4 border-b border-outline-variant/50"
 							>
-								{taxSummaryLabel}
-							</span>
-							<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
-						</div>
-						<span class="font-mono font-semibold text-brand-navy">
-							{formatPrice(adjustedTaxBreakdown.taxAmount)}
-						</span>
-					</div>
+								<span
+									class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+								>
+									Base imponible
+								</span>
+								<span class="font-mono font-semibold text-brand-navy">
+									{formatPrice(adjustedTaxBreakdown.taxableBase)}
+								</span>
+							</div>
 
-					{#if adjustedTaxBreakdown.exemptTotal > 0}
-						<div class="flex items-center justify-between gap-4">
-							<span
-								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+							<div
+								class="pb4 flex items-center justify-between gap-4 border-b border-outline-variant/50"
 							>
-								Exento
-							</span>
-							<span class="font-mono font-semibold text-brand-navy">
-								{formatPrice(adjustedTaxBreakdown.exemptTotal)}
-							</span>
-						</div>
-					{/if}
-				</div>
-			</div>
+								<span
+									class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+								>
+									Total descuentos
+								</span>
+								<span class="font-mono font-semibold text-error">
+									-{formatPrice(appliedGlobalDiscount)}
+								</span>
+							</div>
 
-			<div
-				class="relative overflow-hidden rounded-[1.5rem] bg-brand-navy px-6 py-7 text-white shadow-[0_24px_60px_rgba(21,35,70,0.22)] sm:px-8"
-			>
-				<div class="absolute top-0 right-0 h-40 w-40 rounded-full bg-brand-gold/10 blur-3xl"></div>
-				<div class="relative z-10 flex items-end justify-between gap-6">
-					<div>
-						<p class="text-xs font-semibold tracking-[0.24em] text-brand-gold uppercase">
-							{totalCardEyebrow}
-						</p>
-						<p class="mt-3 font-mono text-4xl font-bold tracking-[-0.04em] text-white sm:text-5xl">
-							{formatPrice(total)}
-						</p>
-						<p class="mt-3 text-sm text-white/65 sm:text-base">
-							{items.length} articulo{items.length !== 1 ? 's' : ''} · {totalRenderedRows} fila{totalRenderedRows !==
-							1
-								? 's'
-								: ''} revisadas
-						</p>
+							<div class="flex items-center justify-between gap-4">
+								<div class="flex items-center gap-2">
+									<span
+										class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+									>
+										{taxSummaryLabel}
+									</span>
+									<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
+								</div>
+								<span class="font-mono font-semibold text-brand-navy">
+									{formatPrice(adjustedTaxBreakdown.taxAmount)}
+								</span>
+							</div>
+
+							{#if adjustedTaxBreakdown.exemptTotal > 0}
+								<div class="flex items-center justify-between gap-4">
+									<span
+										class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+									>
+										Exento
+									</span>
+									<span class="font-mono font-semibold text-brand-navy">
+										{formatPrice(adjustedTaxBreakdown.exemptTotal)}
+									</span>
+								</div>
+							{/if}
+						</div>
 					</div>
 
 					<div
-						class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-gold text-brand-navy shadow-lg shadow-black/15"
+						class="relative overflow-hidden rounded-[1.5rem] bg-brand-navy px-6 py-7 text-white shadow-[0_24px_60px_rgba(21,35,70,0.22)] sm:px-8"
 					>
-						<ShoppingCart class="h-8 w-8" />
+						<div
+							class="absolute top-0 right-0 h-40 w-40 rounded-full bg-brand-gold/10 blur-3xl"
+						></div>
+						<div class="relative z-10 flex items-end justify-between gap-6">
+							<div>
+								<p class="text-xs font-semibold tracking-[0.24em] text-brand-gold uppercase">
+									{totalCardEyebrow}
+								</p>
+								<p
+									class="mt-3 font-mono text-4xl font-bold tracking-[-0.04em] text-white sm:text-5xl"
+								>
+									{formatPrice(total)}
+								</p>
+								<p class="mt-3 text-sm text-white/65 sm:text-base">
+									{items.length} articulo{items.length !== 1 ? 's' : ''} · {totalRenderedRows} fila{totalRenderedRows !==
+									1
+										? 's'
+										: ''} revisadas
+								</p>
+							</div>
+
+							<div
+								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-gold text-brand-navy shadow-lg shadow-black/15"
+							>
+								<ShoppingCart class="h-8 w-8" />
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

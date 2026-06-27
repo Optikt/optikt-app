@@ -6,7 +6,7 @@
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { isDiscountValueValid } from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
+	import { nowUTC, fromISODate } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -100,6 +100,26 @@
 	let discountType = $state<DiscountTypeEnum>(DiscountType.FIXED);
 	let notes = $state('');
 	let submitting = $state(false);
+
+	const formattedOrderNumber = $derived(
+		nextOrderNumber ? `#${String(nextOrderNumber).padStart(4, '0')}` : ''
+	);
+	let orderDateIso = $state(dateToISODateString(saleDate));
+
+	// Sync: user edits date in WizardHeader → update saleDate
+	$effect(() => {
+		const parsed = fromISODate(orderDateIso);
+		if (parsed && parsed.getTime() !== saleDate.getTime()) {
+			saleDate = parsed;
+		}
+	});
+	// Sync: saleDate changes externally → update WizardHeader input
+	$effect(() => {
+		const iso = dateToISODateString(saleDate);
+		if (iso !== orderDateIso) {
+			orderDateIso = iso;
+		}
+	});
 
 	// ============================================================================
 	// CUSTOMER PRESCRIPTION STATE
@@ -298,11 +318,12 @@
 
 <div class="w-full">
 	<WizardHeader
-		title="Nueva Venta"
 		steps={STEPS}
 		{currentStep}
 		{canNavigateToStep}
 		onStepSelect={(step) => goToStep(step as WizardStep)}
+		orderNumber={formattedOrderNumber}
+		bind:orderDate={orderDateIso}
 	/>
 
 	<!-- Step 1: Información -->
@@ -347,7 +368,7 @@
 			{saleDate}
 			bind:discount
 			bind:discountType
-			{notes}
+			bind:notes
 			{nextOrderNumber}
 			{defaultTaxRate}
 			{products}

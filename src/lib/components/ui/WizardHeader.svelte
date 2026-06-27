@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Hash } from '@lucide/svelte';
 	import { Check } from '@lucide/svelte';
 	import PageHeader from './PageHeader.svelte';
 
@@ -8,72 +9,84 @@
 	}
 
 	interface Props {
-		title: string;
+		title?: string;
 		subtitle?: string;
 		steps: WizardStepMeta[];
 		currentStep: number;
 		canNavigateToStep: (step: number) => boolean;
 		onStepSelect: (step: number) => void;
+		orderNumber?: string;
+		orderDate?: string;
 	}
 
-	let { title, subtitle, steps, currentStep, canNavigateToStep, onStepSelect }: Props = $props();
-
-	function stepButtonClass(stepNum: number): string {
-		const isActive = currentStep === stepNum;
-		const isComplete = currentStep > stepNum;
-
-		const base = 'group flex flex-col items-center gap-3 text-center transition-all duration-200';
-		const state = isActive || isComplete ? 'text-brand-navy' : 'text-slate-400';
-		const cursor = canNavigateToStep(stepNum) ? 'cursor-pointer' : 'cursor-not-allowed';
-		return `${base} ${state} ${cursor}`;
-	}
+	let {
+		title = '',
+		subtitle,
+		steps,
+		currentStep,
+		canNavigateToStep,
+		onStepSelect,
+		orderNumber,
+		orderDate = $bindable()
+	}: Props = $props();
 
 	function stepBadgeClass(stepNum: number): string {
 		const isActive = currentStep === stepNum;
 		const isComplete = currentStep > stepNum;
 		const base =
-			'flex h-12 w-12 items-center justify-center rounded-2xl font-mono text-base font-bold transition-all duration-200';
-		const state = isActive
-			? 'bg-brand-navy text-white shadow-[0_18px_40px_rgba(21,35,70,0.18)]'
-			: isComplete
-				? 'bg-brand-gold text-brand-navy shadow-sm'
-				: 'bg-surface-container-high text-outline group-hover:bg-surface-container-highest group-hover:text-brand-navy';
-		return `${base} ${state}`;
+			'flex h-8 w-8 items-center justify-center rounded-lg font-mono text-sm font-bold transition-all duration-200';
+		if (isActive) return `${base} bg-brand-navy text-white`;
+		if (isComplete) return `${base} bg-brand-gold text-brand-navy`;
+		return `${base} bg-surface-container-high text-outline group-hover:bg-surface-container-highest group-hover:text-on-surface-variant`;
 	}
 
 	function stepLabelClass(stepNum: number): string {
 		const isActive = currentStep === stepNum;
 		const isComplete = currentStep > stepNum;
-		const base = 'text-[11px] font-semibold tracking-[0.16em] uppercase whitespace-nowrap';
-		const state =
-			isActive || isComplete
-				? 'text-brand-navy'
-				: 'text-slate-400 group-hover:text-on-surface-variant';
-		return `${base} ${state}`;
-	}
-
-	function stepConnectorClass(stepNum: number): string {
-		return `mt-6 h-px w-10 shrink-0 rounded-full sm:w-16 ${currentStep > stepNum ? 'bg-brand-gold/70' : 'bg-surface-container-high'}`;
+		const base = 'text-[10px] font-semibold tracking-[0.14em] uppercase whitespace-nowrap';
+		if (isActive || isComplete) return `${base} text-brand-navy`;
+		return `${base} text-slate-400 group-hover:text-on-surface-variant`;
 	}
 </script>
 
 <PageHeader {title} {subtitle}>
 	{#snippet actions()}
-		<nav aria-label={title} class="overflow-x-auto xl:-mt-4 xl:pt-0">
-			<div class="flex min-w-max items-start justify-start gap-2 px-1 sm:gap-4 xl:justify-end">
-				{#each steps as step (step.num)}
-					<div class="flex items-start gap-2 sm:gap-4">
+		<div class="flex items-center gap-4">
+			{#if orderNumber || orderDate}
+				<div class="hidden items-center gap-2 text-xs lg:flex">
+					{#if orderNumber}
+						<div class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue">
+							<Hash class="h-3.5 w-3.5" />
+							<span class="font-mono font-semibold">{orderNumber}</span>
+						</div>
+					{/if}
+					{#if orderDate}
+						<input
+							type="date"
+							bind:value={orderDate}
+							class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:bg-surface-container-high focus:ring-1 focus:ring-brand-blue"
+						/>
+					{/if}
+				</div>
+			{/if}
+			<nav aria-label={title}>
+				<div class="flex min-w-max items-center gap-1.5 sm:gap-2">
+					{#each steps as step (step.num)}
 						<button
 							type="button"
 							onclick={() => {
 								if (canNavigateToStep(step.num)) onStepSelect(step.num);
 							}}
 							disabled={!canNavigateToStep(step.num)}
-							class={stepButtonClass(step.num)}
+							class="group flex items-center gap-2 text-center transition-colors {canNavigateToStep(
+								step.num
+							)
+								? 'cursor-pointer'
+								: 'cursor-not-allowed'}"
 						>
 							<span class={stepBadgeClass(step.num)}>
 								{#if currentStep > step.num}
-									<Check class="h-4 w-4" />
+									<Check class="h-3.5 w-3.5" />
 								{:else}
 									{step.num}
 								{/if}
@@ -81,11 +94,15 @@
 							<span class={stepLabelClass(step.num)}>{step.label}</span>
 						</button>
 						{#if step.num < steps.length}
-							<div class={stepConnectorClass(step.num)}></div>
+							<div
+								class="h-px w-6 shrink-0 rounded-full sm:w-10 {currentStep > step.num
+									? 'bg-brand-gold/70'
+									: 'bg-surface-container-high'}"
+							></div>
 						{/if}
-					</div>
-				{/each}
-			</div>
-		</nav>
+					{/each}
+				</div>
+			</nav>
+		</div>
 	{/snippet}
 </PageHeader>
