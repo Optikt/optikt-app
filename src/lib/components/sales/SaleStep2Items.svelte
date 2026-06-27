@@ -106,6 +106,9 @@
 		onprev
 	}: Props = $props();
 
+	// Suppress unused — used by NewQuoteForm (quotes wizard)
+	void prescriptionSectionTitle;
+
 	interface QuickAddOption {
 		key: string;
 		id: string;

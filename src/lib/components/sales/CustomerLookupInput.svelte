@@ -266,6 +266,7 @@
 				<input
 					type="text"
 					inputmode="numeric"
+					autocomplete="off"
 					placeholder="Cédula o RIF..."
 					value={idDigits}
 					oninput={handleDigitsInput}
@@ -441,6 +442,7 @@
 							id="new-idNumber"
 							type="text"
 							inputmode="numeric"
+							autocomplete="off"
 							value={idDigits}
 							oninput={(e) => {
 								handleDigitsInput(e);

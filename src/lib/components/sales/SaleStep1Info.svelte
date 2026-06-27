@@ -55,6 +55,7 @@
 		customerHint = '',
 		stepLabel = 'Paso 1: Información',
 		stepTitle = 'Selecciona o registra al cliente',
+		stepDescription = 'Busca por documento para reutilizar un cliente existente o crea uno nuevo desde este mismo paso.',
 		notesLabel = 'Nota de la venta',
 		notesDescription = '',
 		notesPlaceholder = 'Ej: montura propia, prioridad de entrega, indicaciones internas...',
@@ -119,6 +120,7 @@
 		<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
 			{stepLabel} - {stepTitle}
 		</p>
+		<p class="mb-3 text-xs leading-5 text-on-surface-variant">{stepDescription}</p>
 
 		<div class="mt-3 rounded-xl bg-surface-container-low p-3">
 			<CustomerLookupInput
