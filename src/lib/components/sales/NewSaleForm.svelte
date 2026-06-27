@@ -38,6 +38,7 @@
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
 		defaultTaxRate?: number;
+		breadcrumbs?: import('svelte').Snippet;
 	}
 
 	let {
@@ -45,7 +46,8 @@
 		lensItems,
 		suppliers: _suppliers,
 		nextOrderNumber,
-		defaultTaxRate
+		defaultTaxRate,
+		breadcrumbs
 	}: Props = $props();
 
 	// ============================================================================
@@ -317,13 +319,14 @@
 </script>
 
 <div class="w-full">
-	<WizardHeader
+		<WizardHeader
 		steps={STEPS}
 		{currentStep}
 		{canNavigateToStep}
 		onStepSelect={(step) => goToStep(step as WizardStep)}
 		orderNumber={formattedOrderNumber}
 		bind:orderDate={orderDateIso}
+		{breadcrumbs}
 	/>
 
 	<!-- Step 1: Información -->

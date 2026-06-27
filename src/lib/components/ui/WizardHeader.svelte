@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Hash } from '@lucide/svelte';
 	import { Check } from '@lucide/svelte';
+	import type { Snippet } from 'svelte';
 	import PageHeader from './PageHeader.svelte';
 
 	interface WizardStepMeta {
@@ -17,6 +18,7 @@
 		onStepSelect: (step: number) => void;
 		orderNumber?: string;
 		orderDate?: string;
+		breadcrumbs?: Snippet;
 	}
 
 	let {
@@ -27,7 +29,8 @@
 		canNavigateToStep,
 		onStepSelect,
 		orderNumber,
-		orderDate = $bindable()
+		orderDate = $bindable(),
+		breadcrumbs
 	}: Props = $props();
 
 	function stepBadgeClass(stepNum: number): string {
@@ -51,26 +54,25 @@
 
 <PageHeader {title} {subtitle}>
 	{#snippet actions()}
-		<div class="flex items-center gap-4">
-			{#if orderNumber || orderDate}
-				<div class="hidden items-center gap-2 text-xs lg:flex">
-					{#if orderNumber}
-						<div
-							class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue"
-						>
-							<Hash class="h-3.5 w-3.5" />
-							<span class="font-mono font-semibold">{orderNumber}</span>
-						</div>
-					{/if}
-					{#if orderDate}
-						<input
-							type="date"
-							bind:value={orderDate}
-							class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:bg-surface-container-high focus:ring-1 focus:ring-brand-blue"
-						/>
-					{/if}
-				</div>
+		<div class="flex items-center justify-between gap-3 lg:gap-4">
+			{#if breadcrumbs}
+				{@render breadcrumbs()}
 			{/if}
+			<div class="hidden items-center gap-2 text-xs lg:flex">
+				{#if orderNumber}
+					<div class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue">
+						<Hash class="h-3.5 w-3.5" />
+						<span class="font-mono font-semibold">{orderNumber}</span>
+					</div>
+				{/if}
+				{#if orderDate}
+					<input
+						type="date"
+						bind:value={orderDate}
+						class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:bg-surface-container-high focus:ring-1 focus:ring-brand-blue"
+					/>
+				{/if}
+			</div>
 			<nav aria-label={title}>
 				<div class="flex min-w-max items-center gap-1.5 sm:gap-2">
 					{#each steps as step (step.num)}
