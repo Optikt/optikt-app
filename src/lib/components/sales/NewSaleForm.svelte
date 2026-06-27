@@ -319,7 +319,7 @@
 </script>
 
 <div class="w-full">
-		<WizardHeader
+	<WizardHeader
 		steps={STEPS}
 		{currentStep}
 		{canNavigateToStep}

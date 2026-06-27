@@ -60,7 +60,9 @@
 			{/if}
 			<div class="hidden items-center gap-2 text-xs lg:flex">
 				{#if orderNumber}
-					<div class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue">
+					<div
+						class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue"
+					>
 						<Hash class="h-3.5 w-3.5" />
 						<span class="font-mono font-semibold">{orderNumber}</span>
 					</div>
