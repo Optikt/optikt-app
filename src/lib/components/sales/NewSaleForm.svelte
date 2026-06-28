@@ -106,7 +106,7 @@
 	let submitting = $state(false);
 
 	const formattedOrderNumber = $derived(
-		nextOrderNumber ? `#${String(nextOrderNumber).padStart(4, '0')}` : ''
+		nextOrderNumber ? `${String(nextOrderNumber).padStart(4, '0')}` : ''
 	);
 	let orderDateIso = $state(dateToISODateString(initialDate));
 
