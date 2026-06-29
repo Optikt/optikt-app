@@ -2,11 +2,9 @@
 	import { untrack } from 'svelte';
 	import { Input, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
-	import {
+	import 	{
 		Trash2,
 		ChevronRight,
-		User,
-		Hash,
 		Eye,
 		FlaskConical,
 		Search,
@@ -826,100 +824,36 @@
 	});
 </script>
 
-<div class="space-y-4">
-	<div class="grid grid-cols-6 gap-4">
-		<!-- Cliente resumen -->
-		<div class="col-span-4 rounded-[1.5rem] bg-brand-navy px-5 py-4 text-white shadow-sm">
-			<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-				<div class="flex flex-wrap items-center gap-5 sm:gap-6">
-					<div>
-						<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-							{entityNumberLabel}
-						</p>
-						<p class="font-mono text-2xl font-bold text-white tabular-nums">
-							{nextOrderNumber ?? '-'}
-						</p>
-					</div>
-					<div class="hidden h-10 w-px bg-white/10 sm:block"></div>
-					<div class="flex items-start gap-3">
-						<div
-							class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white"
-						>
-							<User class="h-4 w-4" />
-						</div>
-						<div>
-							<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-								Cliente
-							</p>
-							<p class="text-lg font-semibold text-white">{displayCustomerName}</p>
-							<p class="mt-1 font-mono text-xs text-white/60">{displayCustomerId}</p>
-						</div>
-					</div>
+<div class="flex gap-4 items-start">
+	<!-- ============================================================
+	LEFT COLUMN: Customer banner + Search + Items
+	============================================================ -->
+	<div class="flex-1 min-w-0 space-y-4">
+		<!-- Compact customer banner -->
+		<div class="rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm">
+			<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+				<div class="flex items-center gap-2 text-xs font-semibold">
+					<span class="font-mono tracking-wide text-white/60">{entityNumberLabel} {nextOrderNumber ?? '-'}</span>
+					<span class="h-3 w-px bg-white/15"></span>
+					<span class="truncate max-w-[12rem]">{displayCustomerName}</span>
+					<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
 				</div>
-
-				<div
-					class="inline-flex max-w-max items-center gap-1.5 self-start rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white/75 uppercase"
-				>
-					{#if customerPrescription}
-						<Eye class="h-3.5 w-3.5" />
-					{:else}
-						<Hash class="h-3.5 w-3.5" />
+				<div class="flex items-center gap-2">
+					<span class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
+						{#if customerPrescription}<Eye class="mr-1 inline h-3 w-3" />{/if}{contextStatus}
+					</span>
+					{#if hasLensItem}
+						<button type="button" onclick={() => (showPrescriptionSlideOver = true)}
+							class="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-white/25">
+							<Eye class="h-3 w-3" /> Fórmula
+						</button>
 					{/if}
-					<span>{contextStatus}</span>
-				</div>
-				{#if hasLensItem}
-					<button
-						type="button"
-						onclick={() => (showPrescriptionSlideOver = true)}
-						class="inline-flex items-center gap-1.5 self-start rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/25"
-					>
-						<Eye class="h-3.5 w-3.5" />
-						Fórmula
-					</button>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Resumen parcial -->
-		<div
-			class="col-span-2 row-span-2 rounded-[1.5rem] bg-brand-navy px-5 py-5 text-white shadow-sm"
-		>
-			<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-				Resumen parcial
-			</p>
-			<div class="mt-4 space-y-3 text-sm">
-				<div class="flex items-center justify-between gap-4 text-white/75">
-					<span>Ítems seleccionados</span>
-					<span class="font-mono font-semibold text-white tabular-nums">{selectedItemCount}</span>
-				</div>
-				<div class="flex items-center justify-between gap-4 text-white/75">
-					<span>Productos y lentes</span>
-					<span class="font-mono font-semibold text-white tabular-nums"
-						>{formatPrice(coreItemsSubtotal)}</span
-					>
-				</div>
-				{#if selectedTreatmentCount > 0}
-					<div class="flex items-center justify-between gap-4 text-white/75">
-						<span>Tratamientos ({selectedTreatmentCount})</span>
-						<span class="font-mono font-semibold text-white tabular-nums"
-							>{formatPrice(treatmentsSubtotal)}</span
-						>
-					</div>
-				{/if}
-				<div class="h-px bg-white/10"></div>
-				<div class="flex items-end justify-between gap-4">
-					<p class="text-[11px] font-semibold tracking-[0.16em] text-white/60 uppercase">
-						Total previo al resumen
-					</p>
-					<p class="font-mono text-2xl font-bold text-white tabular-nums">
-						{formatPrice(partialTotal)}
-					</p>
 				</div>
 			</div>
 		</div>
 
 		<!-- Search bar -->
-		<div class="col-span-4 rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
+		<div class="rounded-xl bg-surface-container-low px-4 py-4 sm:px-5">
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-center">
 				<div class="relative min-w-0 flex-1 lg:max-w-3xl">
 					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -1059,626 +993,304 @@
 						<Sparkles class="h-3.5 w-3.5" />
 						Ítem Libre
 					</button>
-				</div>
-			</div>
 		</div>
 	</div>
+</div>
 
-	<div class="grid gap-4">
-		<!-- Articulos del flujo -->
-		<div class="space-y-4">
-			<div class="rounded-[1.5rem] bg-surface-container-low px-4 py-4 sm:px-5">
-				<div class="mb-4 flex items-center justify-between gap-3">
-					<div>
-						<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">Paso 2</p>
-						<h3 class="text-lg font-semibold text-brand-navy">{itemsSectionTitle}</h3>
-					</div>
-					<span
-						class="rounded-full bg-surface-container-lowest px-3 py-1 text-xs font-semibold text-on-surface-variant"
-					>
-						{selectedItemCount}
-						{selectedItemCount === 1 ? 'ítem' : 'ítems'}
-					</span>
+<!-- Items list -->
+		<div class="rounded-xl bg-surface-container-low px-4 py-4 sm:px-5">
+			<div class="mb-3 flex items-center justify-between gap-3">
+				<div>
+					<h3 class="text-sm font-semibold text-brand-navy">{itemsSectionTitle}</h3>
 				</div>
+				<span class="rounded-full bg-surface-container-lowest px-2 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase">
+					{selectedItemCount} {selectedItemCount === 1 ? 'ítem' : 'ítems'}
+				</span>
+			</div>
 
-				<div class="space-y-3" use:autoAnimate>
-					{#if items.length === 0}
-						<div
-							class="flex flex-col items-center justify-center rounded-[1.25rem] border border-dashed border-outline-variant/40 bg-surface-container-lowest px-6 py-10 text-center"
-						>
-							<div
-								class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue"
-							>
-								<Search class="h-5 w-5" />
-							</div>
-							<div class="mt-4 max-w-md space-y-2">
-								<h4 class="text-base font-semibold text-brand-navy">
-									Agrega el primer artículo desde la búsqueda
-								</h4>
-							</div>
+			<div class="space-y-2" use:autoAnimate>
+				{#if items.length === 0}
+					<div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant/40 bg-surface-container-lowest px-4 py-8 text-center">
+						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue">
+							<Search class="h-4 w-4" />
 						</div>
-					{:else}
-						{#each items as item, index (item.id)}
-							{@const product = item.kind === 'product' ? getProduct(item) : undefined}
-							{@const lens = item.kind === 'lens' ? getLensForDisplay(item) : undefined}
-							{@const maxStock = item.kind === 'product' ? getProductMaxStock(item) : null}
-							{@const availableStock =
-								item.kind === 'product'
-									? getAvailableStockForProduct(item.productId, item.id)
-									: null}
-							{@const rangeWarnings = item.kind === 'lens' ? getRangeWarnings(item) : []}
-							{@const availableTreatments =
-								item.kind === 'lens' ? getAvailableTreatments(item) : []}
-							{@const eyeCount = item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
-							{@const treatmentTotal = item.kind === 'lens' ? getTreatmentTotal(item) : 0}
+						<h4 class="mt-3 text-sm font-semibold text-brand-navy">Agrega el primer artículo desde la búsqueda</h4>
+					</div>
+				{:else}
+					{#each items as item, index (item.id)}
+						{@const product = item.kind === 'product' ? getProduct(item) : undefined}
+						{@const lens = item.kind === 'lens' ? getLensForDisplay(item) : undefined}
+						{@const maxStock = item.kind === 'product' ? getProductMaxStock(item) : null}
+						{@const availableStock = item.kind === 'product' ? getAvailableStockForProduct(item.productId, item.id) : null}
+						{@const rangeWarnings = item.kind === 'lens' ? getRangeWarnings(item) : []}
+						{@const availableTreatments = item.kind === 'lens' ? getAvailableTreatments(item) : []}
+						{@const eyeCount = item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
+						{@const treatmentTotal = item.kind === 'lens' ? getTreatmentTotal(item) : 0}
 
-							<div
-								class="rounded-[1.2rem] p-4 shadow-sm {item.isIncludedAccessory
-									? 'border border-amber-200/80 bg-amber-50/70'
-									: 'bg-surface-container-lowest'}"
-							>
-								<div class="space-y-4">
-									<div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-										<div class="flex min-w-0 flex-1 items-start gap-3">
-											<div
-												class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl {item.kind ===
-												'lens'
-													? 'bg-brand-blue/15 text-brand-blue'
-													: 'bg-surface-container-high text-brand-navy'}"
-											>
-												{#if item.kind === 'lens'}
-													<Eye class="h-4 w-4" />
-												{:else}
-													<Package class="h-4 w-4" />
-												{/if}
-											</div>
-											<div class="min-w-0">
-												<div class="flex flex-wrap items-center gap-2">
-													<p
-														class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
-													>
-														Ítem {index + 1}
-													</p>
-													<span
-														class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {item.kind ===
-														'lens'
-															? 'bg-brand-blue/10 text-brand-blue'
-															: 'bg-surface-container-high text-on-surface-variant'}"
-													>
-														{item.kind === 'lens' ? 'Lente' : 'Producto'}
-													</span>
-													{#if item.isIncludedAccessory}
-														<span
-															class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase"
-														>
-															<Paperclip class="h-3 w-3" />
-															Accesorio incluido
-														</span>
-													{/if}
-													{#if item.kind === 'product' && maxStock !== null}
-														<span
-															class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==
-																null && availableStock <= 3
-																? 'bg-warning-container text-on-warning-container'
-																: 'bg-success-container text-on-success-container'}"
-														>
-															{availableStock ?? maxStock} disponibles
-														</span>
-													{/if}
-												</div>
-												<h4 class="truncate text-base font-semibold text-brand-navy">
-													{#if item.kind === 'product'}
-														{product?.name ?? 'Producto por seleccionar'}
-													{:else}
-														{lens?.name ?? 'Lente por seleccionar'}
-													{/if}
-												</h4>
-												{#if item.kind === 'product' && product}
-													<p class="mt-1 text-xs text-on-surface-variant">
-														{#if product.sku}
-															<span class="font-mono">{product.sku}</span>
-														{/if}
-														{#if product.brand}
-															<span>{product.sku ? ' · ' : ''}{product.brand.name}</span>
-														{/if}
-													</p>
-												{:else if item.kind === 'lens' && lens}
-													<div
-														class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-on-surface-variant"
-													>
-														<span
-															class="rounded-full bg-brand-blue/10 px-2 py-0.5 font-semibold text-brand-blue"
-															>{getLensSourceLabel(lens.source)}</span
-														>
-														<span
-															class="rounded-full bg-surface-container-high px-2 py-0.5 font-semibold text-on-surface-variant"
-															>{getLensTypeLabel(lens.type)}</span
-														>
-														{#if lens.material}
-															<span>{lens.material.name}</span>
-														{/if}
-														{#if lens.supplier}
-															<span>· {lens.supplier.name}</span>
-														{/if}
-													</div>
-												{/if}
-											</div>
+						<div class="rounded-lg p-3 shadow-sm {item.isIncludedAccessory ? 'border border-amber-200/80 bg-amber-50/70' : 'bg-surface-container-lowest'}">
+							<div class="space-y-3">
+								<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+									<div class="flex min-w-0 flex-1 items-start gap-2.5">
+										<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind === 'lens' ? 'bg-brand-blue/15 text-brand-blue' : 'bg-surface-container-high text-brand-navy'}">
+											{#if item.kind === 'lens'}<Eye class="h-3.5 w-3.5" />{:else}<Package class="h-3.5 w-3.5" />{/if}
 										</div>
-
-										<div
-											class="grid gap-3 sm:grid-cols-3 xl:min-w-[25rem] xl:grid-cols-[6.5rem_8rem_8rem_auto] xl:items-end"
-										>
-											<div>
-												<Label
-													for="qty-{item.id}"
-													class="mb-1.5 text-[11px] font-semibold text-outline uppercase"
-												>
-													Cantidad
-												</Label>
-												{#if item.kind === 'product'}
-													<Input
-														id="qty-{item.id}"
-														type="number"
-														bind:value={item.quantity}
-														min="1"
-														max={availableStock !== null && availableStock > 0
-															? availableStock
-															: undefined}
-														class="font-mono"
-													/>
-												{:else if item.kind === 'free'}
-													<Input
-														id="qty-{item.id}"
-														type="number"
-														bind:value={item.quantity}
-														min="1"
-														class="font-mono"
-													/>
-												{:else}
-													<Input
-														id="qty-{item.id}"
-														type="number"
-														value="1"
-														disabled
-														class="font-mono"
-													/>
+										<div class="min-w-0">
+											<div class="flex flex-wrap items-center gap-1.5">
+												<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Ítem {index + 1}</p>
+												<span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {item.kind === 'lens' ? 'bg-brand-blue/10 text-brand-blue' : 'bg-surface-container-high text-on-surface-variant'}">
+													{item.kind === 'lens' ? 'Lente' : 'Producto'}
+												</span>
+												{#if item.isIncludedAccessory}
+													<span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase">
+														<Paperclip class="h-2.5 w-2.5" /> Accesorio
+													</span>
 												{/if}
-												{#if item.kind === 'product' && availableStock !== null && item.quantity > availableStock}
-													<p class="mt-1 text-xs text-red-600">Disponible: {availableStock}</p>
+												{#if item.kind === 'product' && maxStock !== null}
+													<span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !== null && availableStock <= 3 ? 'bg-warning-container text-on-warning-container' : 'bg-success-container text-on-success-container'}">
+														{availableStock ?? maxStock} disp.
+													</span>
 												{/if}
 											</div>
-
-											<div>
-												<Label
-													for="price-{item.id}"
-													class="mb-1.5 text-[11px] font-semibold text-outline uppercase"
-												>
-													Precio unit.
-												</Label>
-												<Input
-													id="price-{item.id}"
-													type="number"
-													bind:value={item.unitPrice}
-													step="0.01"
-													min="0"
-													class="font-mono"
-												/>
-											</div>
-
-											<div>
-												<p class="mb-1.5 text-[11px] font-semibold text-outline uppercase">Total</p>
-												<div class="rounded-xl bg-surface-container-low px-3 py-3">
-													<p class="font-mono text-lg font-semibold text-brand-navy tabular-nums">
-														{formatPrice(step2ItemLineTotal(item))}
-													</p>
+											<h4 class="truncate text-sm font-semibold text-brand-navy">
+												{#if item.kind === 'product'}{product?.name ?? 'Producto por seleccionar'}{:else}{lens?.name ?? 'Lente por seleccionar'}{/if}
+											</h4>
+											{#if item.kind === 'product' && product}
+												<p class="text-[11px] text-on-surface-variant">
+													{#if product.sku}<span class="font-mono">{product.sku}</span>{/if}
+													{#if product.brand}<span>{product.sku ? ' · ' : ''}{product.brand.name}</span>{/if}
+												</p>
+											{:else if item.kind === 'lens' && lens}
+												<div class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-on-surface-variant">
+													<span class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 font-semibold text-brand-blue">{getLensSourceLabel(lens.source)}</span>
+													<span class="rounded-full bg-surface-container-high px-1.5 py-0.5 font-semibold text-on-surface-variant">{getLensTypeLabel(lens.type)}</span>
+													{#if lens.material}<span>{lens.material.name}</span>{/if}
+													{#if lens.supplier}<span>· {lens.supplier.name}</span>{/if}
 												</div>
-											</div>
-
-											<div class="flex items-end justify-end">
-												<button
-													type="button"
-													onclick={() => removeItem(item.id)}
-													class="rounded-xl p-2 text-red-500 transition-colors hover:bg-error-container/60 hover:text-red-700"
-													title="Eliminar ítem"
-												>
-													<Trash2 class="h-4 w-4" />
-												</button>
-											</div>
+											{/if}
 										</div>
 									</div>
 
-									{#if item.kind === 'free' && item.freeItem}
-										<div class="space-y-4 rounded-[1rem] bg-amber-50/60 p-4">
-											<div class="grid gap-4 sm:grid-cols-2">
-												<div>
-													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
-														Categoría *
-													</Label>
-													<select
-														bind:value={item.freeItem.category}
-														class="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-													>
-														{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
-															<option value={cat}>{getFreeItemCategoryLabel(cat)}</option>
-														{/each}
-													</select>
-												</div>
-
-												<div>
-													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
-														Descripción *
-													</Label>
-													<Input
-														bind:value={item.freeItem.description}
-														placeholder="LC Novak -2.50 miel, hidrogel..."
-														maxlength={500}
-													/>
-												</div>
-											</div>
-
-											<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-												Opcional - completar después si no está disponible
-											</p>
-
-											<div class="grid gap-4 sm:grid-cols-2">
-												<div>
-													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
-														Costo estimado (USD)
-													</Label>
-													<Input
-														type="number"
-														value={item.freeItem.unitCost ?? undefined}
-														oninput={(event) => {
-															if (event.currentTarget instanceof HTMLInputElement) {
-																setFreeItemUnitCost(item, event.currentTarget.value);
-															}
-														}}
-														placeholder="0.00"
-														step="0.01"
-														min="0"
-														class="font-mono"
-													/>
-												</div>
-
-												<div>
-													<Label class="mb-1.5 text-[11px] font-semibold text-outline uppercase">
-														Notas ópticas
-													</Label>
-													<Input
-														bind:value={item.freeItem.opticalNotes}
-														placeholder="OD -2.50 sph, color miel..."
-														maxlength={1000}
-													/>
-												</div>
+									<div class="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem] xl:grid-cols-[5rem_7rem_6rem_auto] xl:items-end">
+										<div>
+											<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase">Cant.</Label>
+											{#if item.kind === 'product'}
+												<Input id="qty-{item.id}" type="number" bind:value={item.quantity} min="1" max={availableStock !== null && availableStock > 0 ? availableStock : undefined} class="font-mono text-sm" />
+											{:else if item.kind === 'free'}
+												<Input id="qty-{item.id}" type="number" bind:value={item.quantity} min="1" class="font-mono text-sm" />
+											{:else}
+												<Input id="qty-{item.id}" type="number" value="1" disabled class="font-mono text-sm" />
+											{/if}
+											{#if item.kind === 'product' && availableStock !== null && item.quantity > availableStock}
+												<p class="mt-0.5 text-[10px] text-red-600">Disp: {availableStock}</p>
+											{/if}
+										</div>
+										<div>
+											<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase">Precio</Label>
+											<Input id="price-{item.id}" type="number" bind:value={item.unitPrice} step="0.01" min="0" class="font-mono text-sm" />
+										</div>
+										<div>
+											<p class="mb-1 text-[10px] font-semibold text-outline uppercase">Total</p>
+											<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+												<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">{formatPrice(step2ItemLineTotal(item))}</p>
 											</div>
 										</div>
-									{/if}
-
-									{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-										<div class="space-y-3 rounded-[1rem] bg-surface-container-low p-4">
-											<div
-												class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between"
-												use:autoAnimate
-											>
-												<div class="flex flex-wrap items-center gap-2">
-													<span class="text-sm font-medium text-on-surface-variant"
-														>Ojos habilitados</span
-													>
-													<label
-														class="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-surface-container-lowest px-3 py-1.5 text-sm font-semibold text-brand-navy shadow-sm"
-													>
-														<input
-															type="checkbox"
-															bind:checked={item.lensPair.od.enabled}
-															onchange={() => {
-																syncPrescription(item);
-																recalcSuggestedPrice(item);
-															}}
-															class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-														/>
-														<span>OD</span>
-													</label>
-													<label
-														class="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-surface-container-lowest px-3 py-1.5 text-sm font-semibold text-brand-navy shadow-sm"
-													>
-														<input
-															type="checkbox"
-															bind:checked={item.lensPair.oi.enabled}
-															onchange={() => {
-																syncPrescription(item);
-																recalcSuggestedPrice(item);
-															}}
-															class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-														/>
-														<span>OI</span>
-													</label>
-												</div>
-
-												{#if rangeWarnings.length > 0}
-													<div
-														class="rounded-xl bg-warning-container/60 px-4 py-3 text-on-warning-container"
-													>
-														<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">
-															Fuera de rango óptico
-														</p>
-														<ul class="mt-2 space-y-1 text-sm">
-															{#each rangeWarnings as warning (warning)}
-																<li>{warning}</li>
-															{/each}
-														</ul>
-													</div>
-												{/if}
-
-												{#if eyeCount == 0}
-													<p class="text-xs font-medium text-red-600">
-														Debe habilitar al menos un ojo
-													</p>
-												{/if}
-											</div>
-
-											<div
-												class="grid gap-3 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
-												use:autoAnimate
-											>
-												{#if eyeCount > 0 && lens && item.costOverrides}
-													{@const co = item.costOverrides}
-													{@const effectiveShipping = item.shippingCostPending
-														? 0
-														: co.shippingPrice}
-													{@const internalCostTotal =
-														co.baseCost + co.mountingPrice + effectiveShipping}
-													<div
-														class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm"
-														use:autoAnimate
-													>
-														<button
-															type="button"
-															onclick={() => {
-																costOpenFor = costOpenFor === item.id ? null : item.id;
-															}}
-															class="flex w-full cursor-pointer items-center justify-between gap-3"
-														>
-															<div>
-																<p
-																	class="text-start text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
-																>
-																	Costo interno
-																</p>
-																<p class="mt-1 text-justify text-xs text-on-surface-variant">
-																	Editar desglose de cristales, montaje y envío
-																</p>
-															</div>
-															<div class="flex items-center gap-2">
-																<span class="font-mono text-sm font-semibold text-brand-navy">
-																	{formatPrice(internalCostTotal)}
-																</span>
-																{#if item.shippingCostPending}
-																	<span
-																		class="rounded-full bg-warning-container px-2 py-0.5 text-[10px] font-semibold tracking-wide text-on-warning-container"
-																		>Envío pendiente</span
-																	>
-																{/if}
-																<ChevronRight
-																	class="h-4 w-4 text-on-surface-variant transition-transform {costOpenFor ===
-																	item.id
-																		? 'rotate-90'
-																		: ''}"
-																/>
-															</div>
-														</button>
-
-														{#if costOpenFor === item.id}
-															<div
-																class="mt-3 space-y-2 border-t border-outline-variant/30 pt-3 text-sm text-on-surface-variant"
-															>
-																<div class="flex items-center justify-between gap-3">
-																	<span class="shrink-0">
-																		Cristales × {eyeCount}
-																		<!-- Cristales{lens.priceType === 'PAIR' ? ' (par)' : ` × ${eyeCount}`} -->
-																	</span>
-																	<input
-																		type="number"
-																		bind:value={co.baseCost}
-																		step="0.01"
-																		min="0"
-																		class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																	/>
-																</div>
-																<div class="flex items-center justify-between gap-3">
-																	<span class="shrink-0">Montaje</span>
-																	<input
-																		type="number"
-																		bind:value={co.mountingPrice}
-																		step="0.01"
-																		min="0"
-																		class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																	/>
-																</div>
-																<div class="flex items-center justify-between gap-3">
-																	<span class="shrink-0">Envío</span>
-																	<div class="flex items-center gap-2">
-																		{#if item.shippingCostPending}
-																			<span class="text-xs text-on-surface-variant/60 italic"
-																				>Pendiente</span
-																			>
-																		{:else}
-																			<input
-																				type="number"
-																				bind:value={co.shippingPrice}
-																				step="0.01"
-																				min="0"
-																				class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																			/>
-																		{/if}
-																	</div>
-																</div>
-																<label
-																	class="flex cursor-pointer items-center gap-2 text-xs text-on-surface-variant"
-																>
-																	<input
-																		type="checkbox"
-																		bind:checked={item.shippingCostPending}
-																		class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-																	/>
-																	<span>Costo de envío pendiente</span>
-																</label>
-																<div
-																	class="flex items-center justify-between gap-3 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
-																>
-																	<span>Total</span>
-																	<span class="font-mono">{formatPrice(internalCostTotal)}</span>
-																</div>
-															</div>
-														{/if}
-													</div>
-												{/if}
-
-												{#if availableTreatments.length > 0}
-													<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
-														<div
-															class="mb-3 flex items-center justify-between gap-3"
-															use:autoAnimate
-														>
-															<div class="flex items-center gap-2">
-																<FlaskConical class="h-4 w-4 text-brand-blue" />
-																<p
-																	class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase"
-																>
-																	Tratamientos
-																</p>
-															</div>
-															{#if treatmentTotal > 0}
-																<span class="font-mono text-sm font-semibold text-brand-navy"
-																	>{formatPrice(treatmentTotal)}</span
-																>
-															{/if}
-														</div>
-
-														<div class="space-y-2" use:autoAnimate>
-															{#each availableTreatments as treatment (treatment.id)}
-																{@const selected = isTreatmentSelected(item, treatment.id)}
-																{@const selectedTreatment = item.treatments.find(
-																	(t) => t.supplierTreatmentId === treatment.id
-																)}
-																<div
-																	class="rounded-xl px-3 py-2 transition-colors {selected
-																		? 'bg-surface-container-low'
-																		: 'bg-surface hover:bg-surface-container-low'}"
-																	use:autoAnimate
-																>
-																	<label class="flex cursor-pointer items-center gap-3">
-																		<input
-																			type="checkbox"
-																			checked={selected}
-																			onchange={() => toggleTreatment(item, treatment)}
-																			class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-																		/>
-																		<div class="min-w-0 flex-1">
-																			<div class="flex flex-wrap items-center gap-2">
-																				<span class="font-medium text-brand-navy"
-																					>{treatment.name}</span
-																				>
-																				<span
-																					class="rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {treatment.category ===
-																					TreatmentCategory.AR
-																						? 'bg-brand-blue/10 text-brand-blue'
-																						: 'bg-surface-container-high text-on-surface-variant'}"
-																				>
-																					{getTreatmentCategoryLabel(treatment.category)}
-																				</span>
-																			</div>
-																			{#if selectedTreatment}
-																				<p class="mt-1 text-xs text-on-surface-variant">
-																					Multiplica por {eyeCount}
-																					{eyeCount === 1 ? 'ojo' : 'ojos'}
-																				</p>
-																			{/if}
-																		</div>
-																		<span class="font-mono text-sm font-semibold text-brand-navy"
-																			>{formatPrice(
-																				selectedTreatment?.price ??
-																					treatment.salePrice ??
-																					treatment.price
-																			)}</span
-																		>
-																	</label>
-
-																	{#if selected && selectedTreatment}
-																		<div
-																			class="mt-2 ml-7 flex flex-wrap items-center gap-3 text-xs text-on-surface-variant"
-																		>
-																			<label class="inline-flex items-center gap-2">
-																				<span>Precio:</span>
-																				<input
-																					type="number"
-																					bind:value={selectedTreatment.price}
-																					step="0.01"
-																					min="0"
-																					class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-sm text-brand-navy focus:border-brand-blue focus:outline-none"
-																				/>
-																			</label>
-																			<span class="font-mono"
-																				>× {eyeCount} = {formatPrice(
-																					selectedTreatment.price * eyeCount
-																				)}</span
-																			>
-																		</div>
-																	{/if}
-																</div>
-															{/each}
-														</div>
-													</div>
-												{/if}
-											</div>
+										<div class="flex items-end justify-end">
+											<button type="button" onclick={() => removeItem(item.id)} class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-error-container/60 hover:text-red-700" title="Eliminar ítem">
+												<Trash2 class="h-3.5 w-3.5" />
+											</button>
 										</div>
-									{/if}
+									</div>
 								</div>
+
+								{#if item.kind === 'free' && item.freeItem}
+									<div class="space-y-3 rounded-lg bg-amber-50/60 p-3">
+										<div class="grid gap-3 sm:grid-cols-2">
+											<div>
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Categoría *</Label>
+												<select bind:value={item.freeItem.category} class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none">
+													{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
+														<option value={cat}>{getFreeItemCategoryLabel(cat)}</option>
+													{/each}
+												</select>
+											</div>
+											<div>
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Descripción *</Label>
+												<Input bind:value={item.freeItem.description} placeholder="LC Novak -2.50 miel, hidrogel..." maxlength={500} />
+											</div>
+										</div>
+										<div class="grid gap-3 sm:grid-cols-2">
+											<div>
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Costo estimado</Label>
+												<Input type="number" value={item.freeItem.unitCost ?? undefined} oninput={(event) => { if (event.currentTarget instanceof HTMLInputElement) { setFreeItemUnitCost(item, event.currentTarget.value); } }} placeholder="0.00" step="0.01" min="0" class="font-mono" />
+											</div>
+											<div>
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Notas ópticas</Label>
+												<Input bind:value={item.freeItem.opticalNotes} placeholder="OD -2.50 sph, color miel..." maxlength={1000} />
+											</div>
+										</div>
+									</div>
+								{/if}
+
+								{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
+									<div class="space-y-2 rounded-lg bg-surface-container-low p-3">
+										<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
+											<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Ojos</span>
+											<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
+												<input type="checkbox" bind:checked={item.lensPair.od.enabled} onchange={() => { syncPrescription(item); recalcSuggestedPrice(item); }} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+												<span>OD</span>
+											</label>
+											<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
+												<input type="checkbox" bind:checked={item.lensPair.oi.enabled} onchange={() => { syncPrescription(item); recalcSuggestedPrice(item); }} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+												<span>OI</span>
+											</label>
+											{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">Habilita al menos un ojo</p>{/if}
+										</div>
+										{#if rangeWarnings.length > 0}
+											<div class="rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container">
+												{#each rangeWarnings as warning (warning)}<p>{warning}</p>{/each}
+											</div>
+										{/if}
+
+										<div class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>
+											{#if eyeCount > 0 && lens && item.costOverrides}
+												{@const co = item.costOverrides}
+												{@const effectiveShipping = item.shippingCostPending ? 0 : co.shippingPrice}
+												{@const internalCostTotal = co.baseCost + co.mountingPrice + effectiveShipping}
+												<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm" use:autoAnimate>
+													<button type="button" onclick={() => { costOpenFor = costOpenFor === item.id ? null : item.id; }} class="flex w-full cursor-pointer items-center justify-between gap-2">
+														<div class="text-start">
+															<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Costo interno</p>
+														</div>
+														<div class="flex items-center gap-1.5">
+															<span class="font-mono text-xs font-semibold text-brand-navy">{formatPrice(internalCostTotal)}</span>
+															{#if item.shippingCostPending}<span class="rounded-full bg-warning-container px-1.5 py-0.5 text-[9px] font-semibold text-on-warning-container">Pendiente</span>{/if}
+															<ChevronRight class="h-3.5 w-3.5 text-on-surface-variant transition-transform {costOpenFor === item.id ? 'rotate-90' : ''}" />
+														</div>
+													</button>
+													{#if costOpenFor === item.id}
+														<div class="mt-2 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs text-on-surface-variant">
+															<div class="flex items-center justify-between gap-2"><span>Cristales × {eyeCount}</span>
+																<input type="number" bind:value={co.baseCost} step="0.01" min="0" class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" /></div>
+															<div class="flex items-center justify-between gap-2"><span>Montaje</span>
+																<input type="number" bind:value={co.mountingPrice} step="0.01" min="0" class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" /></div>
+															<div class="flex items-center justify-between gap-2"><span>Envío</span>
+																{#if item.shippingCostPending}<span class="text-xs text-on-surface-variant/50 italic">Pendiente</span>
+																{:else}<input type="number" bind:value={co.shippingPrice} step="0.01" min="0" class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" />{/if}
+															</div>
+															<label class="flex cursor-pointer items-center gap-1.5 text-[11px]"><input type="checkbox" bind:checked={item.shippingCostPending} class="h-3 w-3 rounded border-slate-300" /> <span>Costo de envío pendiente</span></label>
+															<div class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-1.5 font-semibold text-brand-navy"><span>Total</span><span class="font-mono">{formatPrice(internalCostTotal)}</span></div>
+														</div>
+													{/if}
+												</div>
+											{/if}
+
+											{#if availableTreatments.length > 0}
+												<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm">
+													<div class="mb-2 flex items-center justify-between gap-2" use:autoAnimate>
+														<div class="flex items-center gap-1.5"><FlaskConical class="h-3.5 w-3.5 text-brand-blue" /><p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Tratamientos</p></div>
+														{#if treatmentTotal > 0}<span class="font-mono text-xs font-semibold text-brand-navy">{formatPrice(treatmentTotal)}</span>{/if}
+													</div>
+													<div class="space-y-1.5" use:autoAnimate>
+														{#each availableTreatments as treatment (treatment.id)}
+															{@const selected = isTreatmentSelected(item, treatment.id)}
+															{@const selectedTreatment = item.treatments.find((t) => t.supplierTreatmentId === treatment.id)}
+															<div class="rounded-lg px-2.5 py-1.5 transition-colors {selected ? 'bg-surface-container-low' : 'bg-surface hover:bg-surface-container-low'}" use:autoAnimate>
+																<label class="flex cursor-pointer items-center gap-2">
+																	<input type="checkbox" checked={selected} onchange={() => toggleTreatment(item, treatment)} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+																	<div class="min-w-0 flex-1">
+																		<div class="flex flex-wrap items-center gap-1.5">
+																			<span class="text-xs font-medium text-brand-navy">{treatment.name}</span>
+																			<span class="rounded-full px-1 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {treatment.category === TreatmentCategory.AR ? 'bg-brand-blue/10 text-brand-blue' : 'bg-surface-container-high text-on-surface-variant'}">{getTreatmentCategoryLabel(treatment.category)}</span>
+																		</div>
+																	</div>
+																	<span class="font-mono text-xs font-semibold text-brand-navy">{formatPrice(selectedTreatment?.price ?? treatment.salePrice ?? treatment.price)}</span>
+																</label>
+																{#if selected && selectedTreatment}
+																	<div class="mt-1.5 ml-5.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+																		<label class="inline-flex items-center gap-1.5"><span class="text-[11px]">Precio:</span><input type="number" bind:value={selectedTreatment.price} step="0.01" min="0" class="w-20 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" /></label>
+																		<span class="font-mono text-[11px]">× {eyeCount} = {formatPrice(selectedTreatment.price * eyeCount)}</span>
+																	</div>
+																{/if}
+															</div>
+														{/each}
+													</div>
+												</div>
+											{/if}
+										</div>
+									</div>
+								{/if}
 							</div>
-						{/each}
-					{/if}
+						</div>
+					{/each}
+				{/if}
+			</div>
+		</div>
+
+		{#if !valid}
+			{@const reasons = getValidationReasons()}
+			{#if reasons.length > 0}
+				<div class="rounded-lg bg-warning-container/60 px-4 py-2.5 text-on-warning-container sm:px-5">
+					<p class="text-[10px] font-semibold tracking-[0.14em] uppercase">Para continuar</p>
+					<ul class="mt-1.5 space-y-0.5 text-xs">
+						{#each reasons as reason, index (index)}<li>{reason}</li>{/each}
+					</ul>
+				</div>
+			{/if}
+		{/if}
+
+		<SaleWizardFloatingActions
+			showBack={true}
+			{onCancel}
+			primaryLabel="Continuar"
+			primaryDisabled={!valid}
+			primaryKind="next"
+			summaryLabel="Total previo"
+			summaryValue={formatPrice(partialTotal)}
+			onBack={onprev}
+			onPrimary={onnext}
+		/>
+	</div>
+
+	<!-- ============================================================
+	RIGHT COLUMN: Sticky Summary Sidebar
+	============================================================ -->
+	<div class="sticky top-24 w-64 shrink-0 space-y-4">
+		<div class="rounded-xl bg-brand-navy px-4 py-4 text-white shadow-sm">
+			<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">Resumen parcial</p>
+			<div class="mt-3 space-y-2.5 text-xs">
+				<div class="flex items-center justify-between gap-2 text-white/70">
+					<span>Ítems</span>
+					<span class="font-mono font-semibold text-white tabular-nums">{selectedItemCount}</span>
+				</div>
+				<div class="flex items-center justify-between gap-2 text-white/70">
+					<span>Productos y lentes</span>
+					<span class="font-mono font-semibold text-white tabular-nums">{formatPrice(coreItemsSubtotal)}</span>
+				</div>
+				{#if selectedTreatmentCount > 0}
+					<div class="flex items-center justify-between gap-2 text-white/70">
+						<span>Tratamientos ({selectedTreatmentCount})</span>
+						<span class="font-mono font-semibold text-white tabular-nums">{formatPrice(treatmentsSubtotal)}</span>
+					</div>
+				{/if}
+				<div class="h-px bg-white/10"></div>
+				<div class="flex items-end justify-between gap-2">
+					<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">Total previo</p>
+					<p class="font-mono text-xl font-bold text-white tabular-nums">{formatPrice(partialTotal)}</p>
 				</div>
 			</div>
 		</div>
 	</div>
-
-	{#if !valid}
-		{@const reasons = getValidationReasons()}
-		{#if reasons.length > 0}
-			<div
-				class="rounded-[1.25rem] bg-warning-container/60 px-4 py-3 text-on-warning-container sm:px-5"
-			>
-				<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">Para continuar</p>
-				<ul class="mt-2 space-y-1 text-sm">
-					{#each reasons as reason, index (index)}
-						<li>{reason}</li>
-					{/each}
-				</ul>
-			</div>
-		{/if}
-	{/if}
-
-	<SaleWizardFloatingActions
-		showBack={true}
-		{onCancel}
-		primaryLabel="Continuar"
-		primaryDisabled={!valid}
-		primaryKind="next"
-		summaryLabel="Total previo"
-		summaryValue={formatPrice(partialTotal)}
-		onBack={onprev}
-		onPrimary={onnext}
-	/>
-
-	<SalePrescriptionSlideOver
-		bind:open={showPrescriptionSlideOver}
-		{prescriptionValues}
-		{customerPrescription}
-		{lensTypeSuggestion}
-		{lensTypeDecisionContext}
-		{visibleRxErrors}
-		{hasLensItem}
-		onclose={() => (showPrescriptionSlideOver = false)}
-		onKeepCatalogLensType={keepCatalogLensType}
-		onUseExistingPrescriptionLensType={useExistingPrescriptionLensType}
-	/>
 </div>
+
+<SalePrescriptionSlideOver
+	bind:open={showPrescriptionSlideOver}
+	{prescriptionValues}
+	{customerPrescription}
+	{lensTypeSuggestion}
+	{lensTypeDecisionContext}
+	{visibleRxErrors}
+	{hasLensItem}
+	onclose={() => (showPrescriptionSlideOver = false)}
+	onKeepCatalogLensType={keepCatalogLensType}
+	onUseExistingPrescriptionLensType={useExistingPrescriptionLensType}
+/>
