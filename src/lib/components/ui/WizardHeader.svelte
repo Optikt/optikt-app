@@ -54,31 +54,33 @@
 
 <PageHeader {title} {subtitle}>
 	{#snippet actions()}
-		<div class="flex items-center justify-between gap-3 lg:gap-4">
-			{#if breadcrumbs}
-				{@render breadcrumbs()}
-			{/if}
-			{#if orderNumber || orderDate}
-				<div class="hidden items-center gap-2 text-xs lg:flex">
-					{#if orderNumber}
-						<div
-							class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue"
-						>
-							<Hash class="h-3.5 w-3.5" />
-							<span class="font-mono font-semibold">{orderNumber}</span>
-						</div>
-					{/if}
-					{#if orderDate}
-						<input
-							type="date"
-							bind:value={orderDate}
-							class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:border-brand-blue hover:bg-surface-container-high focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
-						/>
-					{/if}
-				</div>
-			{/if}
-			<nav aria-label={title}>
-				<div class="flex min-w-max items-center gap-1.5 sm:gap-2">
+		<div class="flex items-start justify-between gap-4">
+			<div class="flex min-w-0 flex-col gap-1">
+				{#if breadcrumbs}
+					{@render breadcrumbs()}
+				{/if}
+				{#if orderNumber || orderDate}
+					<div class="flex items-center gap-2 text-xs">
+						{#if orderNumber}
+							<div
+								class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue"
+							>
+								<Hash class="h-3.5 w-3.5" />
+								<span class="font-mono font-semibold">{orderNumber}</span>
+							</div>
+						{/if}
+						{#if orderDate}
+							<input
+								type="date"
+								bind:value={orderDate}
+								class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:border-brand-blue hover:bg-surface-container-high focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
+							/>
+						{/if}
+					</div>
+				{/if}
+			</div>
+			<nav aria-label={title} class="flex-shrink-0">
+				<div class="flex items-center gap-1.5 sm:gap-2">
 					{#each steps as step (step.num)}
 						<button
 							type="button"

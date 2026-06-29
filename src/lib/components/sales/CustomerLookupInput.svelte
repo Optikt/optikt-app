@@ -386,7 +386,7 @@
 				</button>
 			</div>
 
-			<div class="grid grid-cols-2 gap-3">
+			<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
 				<div>
 					<label class={fieldLabelClass} for="new-firstName">Nombre</label>
 					<input
@@ -423,6 +423,18 @@
 					{#if lastNameError}
 						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
 					{/if}
+				</div>
+
+				<div>
+					<label class={fieldLabelClass} for="new-email">Email</label>
+					<input
+						id="new-email"
+						type="email"
+						bind:value={email}
+						oninput={syncNewCustomer}
+						placeholder="cliente@ejemplo.com"
+						class="{fieldInputClass} mt-1"
+					/>
 				</div>
 
 				<div>
@@ -470,19 +482,7 @@
 					/>
 				</div>
 
-				<div class="col-span-2">
-					<label class={fieldLabelClass} for="new-email">Email</label>
-					<input
-						id="new-email"
-						type="email"
-						bind:value={email}
-						oninput={syncNewCustomer}
-						placeholder="cliente@ejemplo.com"
-						class="{fieldInputClass} mt-1"
-					/>
-				</div>
-
-				<div class="col-span-2">
+				<div class="col-span-2 lg:col-span-3">
 					<label class={fieldLabelClass} for="new-address">Dirección</label>
 					<textarea
 						id="new-address"

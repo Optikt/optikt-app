@@ -276,7 +276,6 @@
 			bind:notes
 			entityNumberValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
 			stepTitle="Prepara la información base del presupuesto"
-			stepDescription="Usa la misma búsqueda y registro inline de ventas para asociar un cliente, definir vigencia y dejar contexto comercial antes de cargar productos."
 			summaryLabel="Presupuesto"
 			summaryValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
 			valid={true}

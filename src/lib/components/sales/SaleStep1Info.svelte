@@ -68,7 +68,7 @@
 
 	<!-- Customer lookup: full width -->
 	<div class="rounded-xl bg-surface-container-lowest px-4 py-4 shadow-sm">
-		<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
+		<p class="mb-1 text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
 			{stepLabel} - {stepTitle}
 		</p>
 
