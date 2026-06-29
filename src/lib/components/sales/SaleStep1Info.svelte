@@ -72,14 +72,21 @@
 			{stepLabel} - {stepTitle}
 		</p>
 
-		<div class="mt-3 rounded-xl bg-surface-container-low p-3">
+		<CustomerLookupInput
+			bind:customerId
+			bind:newCustomer
+			bind:selectedCustomer
+			bind:creatingCustomer
+		/>
+
+		<!-- <div class="mt-3 rounded-xl bg-surface-container-low p-3">
 			<CustomerLookupInput
 				bind:customerId
 				bind:newCustomer
 				bind:selectedCustomer
 				bind:creatingCustomer
 			/>
-		</div>
+		</div> -->
 	</div>
 
 	<SaleWizardFloatingActions
