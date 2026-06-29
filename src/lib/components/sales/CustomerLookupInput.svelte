@@ -8,6 +8,7 @@
 		Phone,
 		Search,
 		UserPlus,
+		ArrowLeft,
 		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
@@ -379,9 +380,9 @@
 				<button
 					type="button"
 					onclick={returnToLookup}
-					class="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-brand-navy"
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/40 bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant transition-colors hover:border-brand-navy hover:text-brand-navy"
 				>
-					<X class="h-3.5 w-3.5" />
+					<ArrowLeft class="h-3.5 w-3.5" />
 					Volver a búsqueda
 				</button>
 			</div>
