@@ -13,9 +13,7 @@
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
 	import { WizardHeader } from '$lib/components/ui';
-	import {
-		buildStep2PrescriptionConfirmation
-	} from '$lib/components/sales/saleItemHelpers';
+	import { buildStep2PrescriptionConfirmation } from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import SaleStep1Info from '$lib/components/sales/SaleStep1Info.svelte';

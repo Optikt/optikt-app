@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { Input, Label } from 'flowbite-svelte';
 	import { toast } from 'svelte-sonner';
-	import 	{
+	import {
 		Trash2,
 		ChevronRight,
 		Eye,
@@ -643,8 +643,11 @@
 	function getRangeWarnings(item: SaleItemRow): string[] {
 		if (item.kind !== 'lens' || !item.lensPair) return [];
 		const pair = item.lensPair;
-		const hasRx = pair.od.prescription.sphere != null || pair.od.prescription.cylinder != null ||
-			pair.oi.prescription.sphere != null || pair.oi.prescription.cylinder != null;
+		const hasRx =
+			pair.od.prescription.sphere != null ||
+			pair.od.prescription.cylinder != null ||
+			pair.oi.prescription.sphere != null ||
+			pair.oi.prescription.cylinder != null;
 		if (!hasRx) return [];
 		return getLensRangeWarningsForItem(item.id, step2PrescriptionConfirmation);
 	}
@@ -693,9 +696,12 @@
 
 	const canCopyRxToAll = $derived(
 		selectedLensCount >= 2 &&
-		items.some((i) => i.kind === 'lens' && i.lensPair && (
-			i.lensPair.od.prescription.sphere != null || i.lensPair.oi.prescription.sphere != null
-		))
+			items.some(
+				(i) =>
+					i.kind === 'lens' &&
+					i.lensPair &&
+					(i.lensPair.od.prescription.sphere != null || i.lensPair.oi.prescription.sphere != null)
+			)
 	);
 
 	function copyFirstRxToAll() {
@@ -727,20 +733,22 @@
 	});
 </script>
 
-<div class="flex gap-4 items-start">
+<div class="flex items-start gap-4">
 	<!-- ============================================================
 	LEFT COLUMN: Customer banner + Search + Items
 	============================================================ -->
-	<div class="flex-1 min-w-0 space-y-4">
+	<div class="min-w-0 flex-1 space-y-4">
 		<!-- Compact customer banner -->
 		<div class="rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm">
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
 				<div class="flex items-center gap-2 text-xs font-semibold">
-					<span class="truncate max-w-[12rem]">{displayCustomerName}</span>
+					<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
 					<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
 				</div>
 				<div class="flex items-center gap-2">
-					<span class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
+					<span
+						class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase"
+					>
 						{contextStatus}
 					</span>
 				</div>
@@ -748,226 +756,273 @@
 		</div>
 
 		<!-- Search bar -->
-		<div class="rounded-xl bg-surface-container-low px-4 py-4 sm:px-5">
-			<div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-				<div class="relative min-w-0 flex-1 lg:max-w-3xl">
-					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-					<input
-						bind:value={quickAddQuery}
-						oninput={handleQuickAddInput}
-						onkeydown={handleQuickAddKeydown}
-						onblur={handleQuickAddBlur}
-						onfocus={() => {
-							if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
-						}}
-						placeholder={quickAddPlaceholder}
-						class="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-8 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-					/>
-					{#if quickAddQuery}
-						<button
-							type="button"
-							onclick={resetQuickAdd}
-							class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
-						>
-							<X class="h-3.5 w-3.5" />
-						</button>
-					{/if}
-
-					{#if quickAddOpen}
-						<div
-							class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
-						>
-							{#if totalQuickAddResults > 0}
-								{#if visibleProductQuickAddOptions.length > 0}
-									<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-										<div
-											class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-										>
-											<Package class="h-3 w-3" />
-											Productos ({visibleProductQuickAddOptions.length})
-										</div>
-									</div>
-									{#each visibleProductQuickAddOptions as option (option.key)}
-										<button
-											type="button"
-											onclick={() => void selectQuickAddOption(option)}
-											class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-										>
-											<div
-												class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
-											>
-												<Package class="h-4 w-4" />
-											</div>
-											<div class="min-w-0 flex-1">
-												<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
-												<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
-											</div>
-											<div class="text-right">
-												<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-													{formatPrice(option.price)}
-												</p>
-												{#if option.stock !== null}
-													<p class="text-[11px] font-medium text-emerald-600">
-														{option.stock} disp.
-													</p>
-												{/if}
-											</div>
-										</button>
-									{/each}
-								{/if}
-
-								{#if visibleLensQuickAddOptions.length > 0}
-									<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-										<div
-											class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-										>
-											<Eye class="h-3 w-3" />
-											Lentes ({visibleLensQuickAddOptions.length})
-										</div>
-									</div>
-									{#each visibleLensQuickAddOptions as option (option.key)}
-										<button
-											type="button"
-											onclick={() => void selectQuickAddOption(option)}
-											class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-										>
-											<div
-												class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
-											>
-												<Eye class="h-4 w-4" />
-											</div>
-											<div class="min-w-0 flex-1">
-												<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
-												<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
-											</div>
-											<div class="text-right">
-												<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-													{formatPrice(option.price)}
-												</p>
-												{#if option.inventoryMode === 'ON_DEMAND'}
-													<p class="text-[11px] font-medium text-blue-600">Por pedido</p>
-												{:else if option.stock !== null}
-													<p class="text-[11px] font-medium text-slate-500">{option.stock} disp.</p>
-												{/if}
-											</div>
-										</button>
-									{/each}
-								{/if}
-							{:else}
-								<div class="py-6 text-center">
-									<p class="text-sm text-slate-500">
-										Sin resultados para &quot;{quickAddQuery.trim()}&quot;
-									</p>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
-
-				<div class="inline-flex items-center gap-2">
-					<div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-						{#each quickAddFilterOptions as option (option.value)}
-							<button
-								type="button"
-								onclick={() => setQuickAddFilter(option.value)}
-								class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
-								option.value
-									? 'bg-brand-navy text-white'
-									: 'text-slate-600 hover:bg-slate-50'}"
-							>
-								{option.label}
-							</button>
-						{/each}
-					</div>
-
+		<div class="flex gap-3 rounded-xl">
+			<div class="relative min-w-0 flex-1 lg:max-w-3xl">
+				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+				<input
+					bind:value={quickAddQuery}
+					oninput={handleQuickAddInput}
+					onkeydown={handleQuickAddKeydown}
+					onblur={handleQuickAddBlur}
+					onfocus={() => {
+						if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
+					}}
+					placeholder={quickAddPlaceholder}
+					class="w-full rounded-lg border border-slate-200 bg-white px-8 py-2.5 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+				/>
+				{#if quickAddQuery}
 					<button
 						type="button"
-						onclick={addFreeItem}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+						onclick={resetQuickAdd}
+						class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
 					>
-						<Sparkles class="h-3.5 w-3.5" />
-						Ítem Libre
+						<X class="h-3.5 w-3.5" />
 					</button>
-					{#if canCopyRxToAll}
+				{/if}
+
+				{#if quickAddOpen}
+					<div
+						class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+					>
+						{#if totalQuickAddResults > 0}
+							{#if visibleProductQuickAddOptions.length > 0}
+								<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
+									<div
+										class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+									>
+										<Package class="h-3 w-3" />
+										Productos ({visibleProductQuickAddOptions.length})
+									</div>
+								</div>
+								{#each visibleProductQuickAddOptions as option (option.key)}
+									<button
+										type="button"
+										onclick={() => void selectQuickAddOption(option)}
+										class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+									>
+										<div
+											class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
+										>
+											<Package class="h-4 w-4" />
+										</div>
+										<div class="min-w-0 flex-1">
+											<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
+											<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
+										</div>
+										<div class="text-right">
+											<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+												{formatPrice(option.price)}
+											</p>
+											{#if option.stock !== null}
+												<p class="text-[11px] font-medium text-emerald-600">
+													{option.stock} disp.
+												</p>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							{/if}
+
+							{#if visibleLensQuickAddOptions.length > 0}
+								<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
+									<div
+										class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+									>
+										<Eye class="h-3 w-3" />
+										Lentes ({visibleLensQuickAddOptions.length})
+									</div>
+								</div>
+								{#each visibleLensQuickAddOptions as option (option.key)}
+									<button
+										type="button"
+										onclick={() => void selectQuickAddOption(option)}
+										class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+									>
+										<div
+											class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
+										>
+											<Eye class="h-4 w-4" />
+										</div>
+										<div class="min-w-0 flex-1">
+											<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
+											<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
+										</div>
+										<div class="text-right">
+											<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+												{formatPrice(option.price)}
+											</p>
+											{#if option.inventoryMode === 'ON_DEMAND'}
+												<p class="text-[11px] font-medium text-blue-600">Por pedido</p>
+											{:else if option.stock !== null}
+												<p class="text-[11px] font-medium text-slate-500">{option.stock} disp.</p>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							{/if}
+						{:else}
+							<div class="py-6 text-center">
+								<p class="text-sm text-slate-500">
+									Sin resultados para &quot;{quickAddQuery.trim()}&quot;
+								</p>
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</div>
+
+			<div class="inline-flex items-center gap-2">
+				<div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+					{#each quickAddFilterOptions as option (option.value)}
 						<button
 							type="button"
-							onclick={copyFirstRxToAll}
-							class="inline-flex items-center gap-1.5 rounded-lg border border-brand-blue/30 bg-brand-blue/5 px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+							onclick={() => setQuickAddFilter(option.value)}
+							class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
+							option.value
+								? 'bg-brand-navy text-white'
+								: 'text-slate-600 hover:bg-slate-50'}"
 						>
-							<Copy class="h-3.5 w-3.5" />
-							Copiar Rx a todos
+							{option.label}
 						</button>
-					{/if}
-		</div>
-	</div>
-</div>
+					{/each}
+				</div>
 
-<!-- Items list -->
+				<button
+					type="button"
+					onclick={addFreeItem}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+				>
+					<Sparkles class="h-3.5 w-3.5" />
+					Ítem Libre
+				</button>
+				{#if canCopyRxToAll}
+					<button
+						type="button"
+						onclick={copyFirstRxToAll}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-brand-blue/30 bg-brand-blue/5 px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+					>
+						<Copy class="h-3.5 w-3.5" />
+						Copiar Rx a todos
+					</button>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Items list -->
 		<div class="rounded-xl bg-surface-container-low px-4 py-4 sm:px-5">
 			<div class="mb-3 flex items-center justify-between gap-3">
 				<div>
 					<h3 class="text-sm font-semibold text-brand-navy">{itemsSectionTitle}</h3>
 				</div>
-				<span class="rounded-full bg-surface-container-lowest px-2 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase">
-					{selectedItemCount} {selectedItemCount === 1 ? 'ítem' : 'ítems'}
+				<span
+					class="rounded-full bg-surface-container-lowest px-2 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase"
+				>
+					{selectedItemCount}
+					{selectedItemCount === 1 ? 'ítem' : 'ítems'}
 				</span>
 			</div>
 
 			<div class="space-y-2" use:autoAnimate>
 				{#if items.length === 0}
-					<div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant/40 bg-surface-container-lowest px-4 py-8 text-center">
-						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue">
+					<div
+						class="flex flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant/40 bg-surface-container-lowest px-4 py-8 text-center"
+					>
+						<div
+							class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue"
+						>
 							<Search class="h-4 w-4" />
 						</div>
-						<h4 class="mt-3 text-sm font-semibold text-brand-navy">Agrega el primer artículo desde la búsqueda</h4>
+						<h4 class="mt-3 text-sm font-semibold text-brand-navy">
+							Agrega el primer artículo desde la búsqueda
+						</h4>
 					</div>
 				{:else}
 					{#each items as item, index (item.id)}
 						{@const product = item.kind === 'product' ? getProduct(item) : undefined}
 						{@const lens = item.kind === 'lens' ? getLensForDisplay(item) : undefined}
 						{@const maxStock = item.kind === 'product' ? getProductMaxStock(item) : null}
-						{@const availableStock = item.kind === 'product' ? getAvailableStockForProduct(item.productId, item.id) : null}
+						{@const availableStock =
+							item.kind === 'product' ? getAvailableStockForProduct(item.productId, item.id) : null}
 						{@const rangeWarnings = item.kind === 'lens' ? getRangeWarnings(item) : []}
 						{@const availableTreatments = item.kind === 'lens' ? getAvailableTreatments(item) : []}
 						{@const eyeCount = item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
 						{@const treatmentTotal = item.kind === 'lens' ? getTreatmentTotal(item) : 0}
 
-						<div class="rounded-lg p-3 shadow-sm {item.isIncludedAccessory ? 'border border-amber-200/80 bg-amber-50/70' : 'bg-surface-container-lowest'}">
+						<div
+							class="rounded-lg p-3 shadow-sm {item.isIncludedAccessory
+								? 'border border-amber-200/80 bg-amber-50/70'
+								: 'bg-surface-container-lowest'}"
+						>
 							<div class="space-y-3">
 								<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
 									<div class="flex min-w-0 flex-1 items-start gap-2.5">
-										<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind === 'lens' ? 'bg-brand-blue/15 text-brand-blue' : 'bg-surface-container-high text-brand-navy'}">
-											{#if item.kind === 'lens'}<Eye class="h-3.5 w-3.5" />{:else}<Package class="h-3.5 w-3.5" />{/if}
+										<div
+											class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind ===
+											'lens'
+												? 'bg-brand-blue/15 text-brand-blue'
+												: 'bg-surface-container-high text-brand-navy'}"
+										>
+											{#if item.kind === 'lens'}<Eye class="h-3.5 w-3.5" />{:else}<Package
+													class="h-3.5 w-3.5"
+												/>{/if}
 										</div>
 										<div class="min-w-0">
 											<div class="flex flex-wrap items-center gap-1.5">
-												<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Ítem {index + 1}</p>
-												<span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {item.kind === 'lens' ? 'bg-brand-blue/10 text-brand-blue' : 'bg-surface-container-high text-on-surface-variant'}">
+												<p
+													class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+												>
+													Ítem {index + 1}
+												</p>
+												<span
+													class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {item.kind ===
+													'lens'
+														? 'bg-brand-blue/10 text-brand-blue'
+														: 'bg-surface-container-high text-on-surface-variant'}"
+												>
 													{item.kind === 'lens' ? 'Lente' : 'Producto'}
 												</span>
 												{#if item.isIncludedAccessory}
-													<span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase">
+													<span
+														class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase"
+													>
 														<Paperclip class="h-2.5 w-2.5" /> Accesorio
 													</span>
 												{/if}
 												{#if item.kind === 'product' && maxStock !== null}
-													<span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !== null && availableStock <= 3 ? 'bg-warning-container text-on-warning-container' : 'bg-success-container text-on-success-container'}">
+													<span
+														class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==
+															null && availableStock <= 3
+															? 'bg-warning-container text-on-warning-container'
+															: 'bg-success-container text-on-success-container'}"
+													>
 														{availableStock ?? maxStock} disp.
 													</span>
 												{/if}
 											</div>
 											<h4 class="truncate text-sm font-semibold text-brand-navy">
-												{#if item.kind === 'product'}{product?.name ?? 'Producto por seleccionar'}{:else}{lens?.name ?? 'Lente por seleccionar'}{/if}
+												{#if item.kind === 'product'}{product?.name ??
+														'Producto por seleccionar'}{:else}{lens?.name ??
+														'Lente por seleccionar'}{/if}
 											</h4>
 											{#if item.kind === 'product' && product}
 												<p class="text-[11px] text-on-surface-variant">
 													{#if product.sku}<span class="font-mono">{product.sku}</span>{/if}
-													{#if product.brand}<span>{product.sku ? ' · ' : ''}{product.brand.name}</span>{/if}
+													{#if product.brand}<span
+															>{product.sku ? ' · ' : ''}{product.brand.name}</span
+														>{/if}
 												</p>
 											{:else if item.kind === 'lens' && lens}
-												<div class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-on-surface-variant">
-													<span class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 font-semibold text-brand-blue">{getLensSourceLabel(lens.source)}</span>
-													<span class="rounded-full bg-surface-container-high px-1.5 py-0.5 font-semibold text-on-surface-variant">{getLensTypeLabel(lens.type)}</span>
+												<div
+													class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-on-surface-variant"
+												>
+													<span
+														class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 font-semibold text-brand-blue"
+														>{getLensSourceLabel(lens.source)}</span
+													>
+													<span
+														class="rounded-full bg-surface-container-high px-1.5 py-0.5 font-semibold text-on-surface-variant"
+														>{getLensTypeLabel(lens.type)}</span
+													>
 													{#if lens.material}<span>{lens.material.name}</span>{/if}
 													{#if lens.supplier}<span>· {lens.supplier.name}</span>{/if}
 												</div>
@@ -975,32 +1030,75 @@
 										</div>
 									</div>
 
-									<div class="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem] xl:grid-cols-[5rem_7rem_6rem_auto] xl:items-end">
+									<div
+										class="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem] xl:grid-cols-[5rem_7rem_6rem_auto] xl:items-end"
+									>
 										<div>
-											<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase">Cant.</Label>
+											<Label
+												for="qty-{item.id}"
+												class="mb-1 text-[10px] font-semibold text-outline uppercase">Cant.</Label
+											>
 											{#if item.kind === 'product'}
-												<Input id="qty-{item.id}" type="number" bind:value={item.quantity} min="1" max={availableStock !== null && availableStock > 0 ? availableStock : undefined} class="font-mono text-sm" />
+												<Input
+													id="qty-{item.id}"
+													type="number"
+													bind:value={item.quantity}
+													min="1"
+													max={availableStock !== null && availableStock > 0
+														? availableStock
+														: undefined}
+													class="font-mono text-sm"
+												/>
 											{:else if item.kind === 'free'}
-												<Input id="qty-{item.id}" type="number" bind:value={item.quantity} min="1" class="font-mono text-sm" />
+												<Input
+													id="qty-{item.id}"
+													type="number"
+													bind:value={item.quantity}
+													min="1"
+													class="font-mono text-sm"
+												/>
 											{:else}
-												<Input id="qty-{item.id}" type="number" value="1" disabled class="font-mono text-sm" />
+												<Input
+													id="qty-{item.id}"
+													type="number"
+													value="1"
+													disabled
+													class="font-mono text-sm"
+												/>
 											{/if}
 											{#if item.kind === 'product' && availableStock !== null && item.quantity > availableStock}
 												<p class="mt-0.5 text-[10px] text-red-600">Disp: {availableStock}</p>
 											{/if}
 										</div>
 										<div>
-											<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase">Precio</Label>
-											<Input id="price-{item.id}" type="number" bind:value={item.unitPrice} step="0.01" min="0" class="font-mono text-sm" />
+											<Label
+												for="price-{item.id}"
+												class="mb-1 text-[10px] font-semibold text-outline uppercase">Precio</Label
+											>
+											<Input
+												id="price-{item.id}"
+												type="number"
+												bind:value={item.unitPrice}
+												step="0.01"
+												min="0"
+												class="font-mono text-sm"
+											/>
 										</div>
 										<div>
 											<p class="mb-1 text-[10px] font-semibold text-outline uppercase">Total</p>
 											<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
-												<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">{formatPrice(step2ItemLineTotal(item))}</p>
+												<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
+													{formatPrice(step2ItemLineTotal(item))}
+												</p>
 											</div>
 										</div>
 										<div class="flex items-end justify-end">
-											<button type="button" onclick={() => removeItem(item.id)} class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-error-container/60 hover:text-red-700" title="Eliminar ítem">
+											<button
+												type="button"
+												onclick={() => removeItem(item.id)}
+												class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-error-container/60 hover:text-red-700"
+												title="Eliminar ítem"
+											>
 												<Trash2 class="h-3.5 w-3.5" />
 											</button>
 										</div>
@@ -1011,26 +1109,57 @@
 									<div class="space-y-3 rounded-lg bg-amber-50/60 p-3">
 										<div class="grid gap-3 sm:grid-cols-2">
 											<div>
-												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Categoría *</Label>
-												<select bind:value={item.freeItem.category} class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none">
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+													>Categoría *</Label
+												>
+												<select
+													bind:value={item.freeItem.category}
+													class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+												>
 													{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
 														<option value={cat}>{getFreeItemCategoryLabel(cat)}</option>
 													{/each}
 												</select>
 											</div>
 											<div>
-												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Descripción *</Label>
-												<Input bind:value={item.freeItem.description} placeholder="LC Novak -2.50 miel, hidrogel..." maxlength={500} />
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+													>Descripción *</Label
+												>
+												<Input
+													bind:value={item.freeItem.description}
+													placeholder="LC Novak -2.50 miel, hidrogel..."
+													maxlength={500}
+												/>
 											</div>
 										</div>
 										<div class="grid gap-3 sm:grid-cols-2">
 											<div>
-												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Costo estimado</Label>
-												<Input type="number" value={item.freeItem.unitCost ?? undefined} oninput={(event) => { if (event.currentTarget instanceof HTMLInputElement) { setFreeItemUnitCost(item, event.currentTarget.value); } }} placeholder="0.00" step="0.01" min="0" class="font-mono" />
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+													>Costo estimado</Label
+												>
+												<Input
+													type="number"
+													value={item.freeItem.unitCost ?? undefined}
+													oninput={(event) => {
+														if (event.currentTarget instanceof HTMLInputElement) {
+															setFreeItemUnitCost(item, event.currentTarget.value);
+														}
+													}}
+													placeholder="0.00"
+													step="0.01"
+													min="0"
+													class="font-mono"
+												/>
 											</div>
 											<div>
-												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Notas ópticas</Label>
-												<Input bind:value={item.freeItem.opticalNotes} placeholder="OD -2.50 sph, color miel..." maxlength={1000} />
+												<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+													>Notas ópticas</Label
+												>
+												<Input
+													bind:value={item.freeItem.opticalNotes}
+													placeholder="OD -2.50 sph, color miel..."
+													maxlength={1000}
+												/>
 											</div>
 										</div>
 									</div>
@@ -1039,19 +1168,40 @@
 								{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 									<div class="space-y-2 rounded-lg bg-surface-container-low p-3">
 										<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
-											<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Ojos</span>
-											<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
-												<input type="checkbox" bind:checked={item.lensPair.od.enabled} onchange={() => recalcSuggestedPrice(item)} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+											<span
+												class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+												>Ojos</span
+											>
+											<label
+												class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+											>
+												<input
+													type="checkbox"
+													bind:checked={item.lensPair.od.enabled}
+													onchange={() => recalcSuggestedPrice(item)}
+													class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+												/>
 												<span>OD</span>
 											</label>
-											<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
-												<input type="checkbox" bind:checked={item.lensPair.oi.enabled} onchange={() => recalcSuggestedPrice(item)} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+											<label
+												class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+											>
+												<input
+													type="checkbox"
+													bind:checked={item.lensPair.oi.enabled}
+													onchange={() => recalcSuggestedPrice(item)}
+													class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+												/>
 												<span>OI</span>
 											</label>
-											{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">Habilita al menos un ojo</p>{/if}
+											{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">
+													Habilita al menos un ojo
+												</p>{/if}
 										</div>
 										{#if rangeWarnings.length > 0}
-											<div class="rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container">
+											<div
+												class="rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
+											>
 												{#each rangeWarnings as warning (warning)}<p>{warning}</p>{/each}
 											</div>
 										{/if}
@@ -1060,133 +1210,398 @@
 										<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm">
 											<button
 												type="button"
-												onclick={() => { prescriptionOpenFor = prescriptionOpenFor === item.id ? null : item.id; }}
+												onclick={() => {
+													prescriptionOpenFor = prescriptionOpenFor === item.id ? null : item.id;
+												}}
 												class="flex w-full cursor-pointer items-center justify-between gap-2"
 											>
 												<div class="flex items-center gap-1.5">
 													<Eye class="h-3.5 w-3.5 text-brand-blue" />
-													<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Fórmula</p>
+													<p
+														class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+													>
+														Fórmula
+													</p>
 												</div>
 												<div class="flex items-center gap-1.5">
 													{#if rxErrorsPerLens[item.id] && Object.keys(rxErrorsPerLens[item.id]).length > 0}
-														<span class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container">Pendiente</span>
+														<span
+															class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
+															>Pendiente</span
+														>
 													{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
-														<span class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container">Completa</span>
+														<span
+															class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
+															>Completa</span
+														>
 													{/if}
-													<ChevronRight class="h-3.5 w-3.5 text-on-surface-variant transition-transform {prescriptionOpenFor === item.id ? 'rotate-90' : ''}" />
+													<ChevronRight
+														class="h-3.5 w-3.5 text-on-surface-variant transition-transform {prescriptionOpenFor ===
+														item.id
+															? 'rotate-90'
+															: ''}"
+													/>
 												</div>
 											</button>
 											{#if prescriptionOpenFor === item.id}
 												{@const rxErrs = rxErrorsPerLens[item.id] ?? {}}
 												{@const id = item.id}
-												<div class="mt-2 space-y-2.5 border-t border-outline-variant/30 pt-2">
-													<div class="flex flex-wrap items-center gap-3">
-														<div class="flex-1">
-															<label for="rx-{id}-doctor" class="mb-0.5 block text-[10px] font-semibold text-outline uppercase">Médico</label>
-															<input id="rx-{id}-doctor" type="text" bind:value={item.lensPair.doctorName} placeholder="Nombre del doctor" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.doctorName ? '!border-red-400' : ''}" />
-															{#if rxErrs.doctorName}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.doctorName}</p>{/if}
+												<div class="mt-2 border-t border-outline-variant/30 pt-2">
+													<div class="mb-2 flex items-center justify-end">
+														<button
+															type="button"
+															onclick={() => copyOdToOi(item.lensPair!)}
+															class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
+														>
+															<Copy class="h-3 w-3" />
+															Copiar OD → OI
+														</button>
+													</div>
+													<div class="grid grid-cols-2 gap-2.5">
+														<div
+															class="overflow-hidden rounded-lg border border-blue-200 bg-blue-50/30"
+														>
+															<div class="bg-blue-100/60 px-3 py-1.5">
+																<p class="text-xs font-semibold text-blue-700">OD</p>
+															</div>
+															<div class="space-y-2 p-2.5">
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-od-sphere"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Esfera</label
+																		>
+																		<input
+																			id="rx-{id}-od-sphere"
+																			type="number"
+																			step="0.25"
+																			placeholder="-2.00"
+																			bind:value={item.lensPair.od.prescription.sphere}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odSphere
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.odSphere}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.odSphere}
+																		</p>{/if}
+																</div>
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-od-cylinder"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Cilindro</label
+																		>
+																		<input
+																			id="rx-{id}-od-cylinder"
+																			type="number"
+																			step="0.25"
+																			min={-10}
+																			max={0}
+																			placeholder="-0.50"
+																			bind:value={item.lensPair.od.prescription.cylinder}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odCylinder
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.odCylinder}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.odCylinder}
+																		</p>{/if}
+																</div>
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-od-axis"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Eje</label
+																		>
+																		<input
+																			id="rx-{id}-od-axis"
+																			type="number"
+																			step="1"
+																			min={0}
+																			max={180}
+																			placeholder="180"
+																			bind:value={item.lensPair.od.prescription.axis}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odAxis
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.odAxis}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.odAxis}
+																		</p>{/if}
+																</div>
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-od-addition"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Adición</label
+																		>
+																		<input
+																			id="rx-{id}-od-addition"
+																			type="number"
+																			step="0.25"
+																			min={0}
+																			max={5}
+																			placeholder="+1.50"
+																			bind:value={item.lensPair.od.prescription.addition}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odAddition
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.odAddition}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.odAddition}
+																		</p>{/if}
+																</div>
+															</div>
 														</div>
-														<div>
-															<label for="rx-{id}-lens-type" class="mb-0.5 block text-[10px] font-semibold text-outline uppercase">Tipo de lente</label>
-															<select id="rx-{id}-lens-type" bind:value={item.lensPair.lensType} class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none">
+														<div
+															class="overflow-hidden rounded-lg border border-rose-200 bg-rose-50/30"
+														>
+															<div class="bg-rose-100/60 px-3 py-1.5">
+																<p class="text-xs font-semibold text-rose-700">OI</p>
+															</div>
+															<div class="space-y-2 p-2.5">
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-oi-sphere"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Esfera</label
+																		>
+																		<input
+																			id="rx-{id}-oi-sphere"
+																			type="number"
+																			step="0.25"
+																			placeholder="-2.00"
+																			bind:value={item.lensPair.oi.prescription.sphere}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiSphere
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.oiSphere}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.oiSphere}
+																		</p>{/if}
+																</div>
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-oi-cylinder"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Cilindro</label
+																		>
+																		<input
+																			id="rx-{id}-oi-cylinder"
+																			type="number"
+																			step="0.25"
+																			min={-10}
+																			max={0}
+																			placeholder="-0.50"
+																			bind:value={item.lensPair.oi.prescription.cylinder}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiCylinder
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.oiCylinder}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.oiCylinder}
+																		</p>{/if}
+																</div>
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-oi-axis"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Eje</label
+																		>
+																		<input
+																			id="rx-{id}-oi-axis"
+																			type="number"
+																			step="1"
+																			min={0}
+																			max={180}
+																			placeholder="180"
+																			bind:value={item.lensPair.oi.prescription.axis}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiAxis
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.oiAxis}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.oiAxis}
+																		</p>{/if}
+																</div>
+																<div>
+																	<div class="flex items-center gap-2">
+																		<label
+																			for="rx-{id}-oi-addition"
+																			class="w-16 flex-shrink-0 text-[11px] text-slate-600"
+																			>Adición</label
+																		>
+																		<input
+																			id="rx-{id}-oi-addition"
+																			type="number"
+																			step="0.25"
+																			min={0}
+																			max={5}
+																			placeholder="+1.50"
+																			bind:value={item.lensPair.oi.prescription.addition}
+																			class="flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiAddition
+																				? '!border-red-400'
+																				: ''}"
+																		/>
+																	</div>
+																	{#if rxErrs.oiAddition}<p class="mt-0.5 text-[10px] text-red-500">
+																			{rxErrs.oiAddition}
+																		</p>{/if}
+																</div>
+															</div>
+														</div>
+													</div>
+													<div
+														class="mt-3 flex flex-wrap items-center gap-4 border-t border-outline-variant/30 pt-2"
+													>
+														<div class="flex items-center gap-1.5">
+															<label
+																for="rx-{id}-doctor"
+																class="text-[10px] font-semibold text-outline uppercase"
+																>Médico</label
+															>
+															<input
+																id="rx-{id}-doctor"
+																type="text"
+																bind:value={item.lensPair.doctorName}
+																placeholder="Nombre del doctor"
+																class="w-40 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.doctorName
+																	? '!border-red-400'
+																	: ''}"
+															/>
+															{#if rxErrs.doctorName}<p class="text-[10px] text-red-500">
+																	{rxErrs.doctorName}
+																</p>{/if}
+														</div>
+														<div class="flex items-center gap-1.5">
+															<label
+																for="rx-{id}-lens-type"
+																class="text-[10px] font-semibold text-outline uppercase">Tipo</label
+															>
+															<select
+																id="rx-{id}-lens-type"
+																bind:value={item.lensPair.lensType}
+																class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+															>
 																{#each ALL_LENS_TYPES as type (type)}
 																	<option value={type}>{getLensTypeLabel(type)}</option>
 																{/each}
 															</select>
-														</div>
-														<button
-															type="button"
-															onclick={() => copyOdToOi(item.lensPair!)}
-															class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
-														>
-															<Copy class="h-3 w-3" />
-															OD → OI
-														</button>
-													</div>
-													<div class="grid grid-cols-2 gap-2.5">
-														<div class="rounded-lg border border-blue-200/60 bg-blue-50/50 p-2.5">
-															<p class="mb-1.5 text-[10px] font-semibold text-blue-700">OD - Ojo Derecho</p>
-															<div class="grid grid-cols-2 gap-1.5">
-																<div>
-																	<label for="rx-{id}-od-sphere" class="mb-0.5 block text-[9px] text-slate-500">Esfera</label>
-																	<input id="rx-{id}-od-sphere" type="number" step="0.25" placeholder="-2.00" bind:value={item.lensPair.od.prescription.sphere} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odSphere ? '!border-red-400' : ''}" />
-																	{#if rxErrs.odSphere}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odSphere}</p>{/if}
-																</div>
-																<div>
-																	<label for="rx-{id}-od-cylinder" class="mb-0.5 block text-[9px] text-slate-500">Cilindro</label>
-																	<input id="rx-{id}-od-cylinder" type="number" step="0.25" min={-10} max={0} placeholder="-0.50" bind:value={item.lensPair.od.prescription.cylinder} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odCylinder ? '!border-red-400' : ''}" />
-																	{#if rxErrs.odCylinder}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odCylinder}</p>{/if}
-																</div>
-																<div>
-																	<label for="rx-{id}-od-axis" class="mb-0.5 block text-[9px] text-slate-500">Eje</label>
-																	<input id="rx-{id}-od-axis" type="number" step="1" min={0} max={180} placeholder="180" bind:value={item.lensPair.od.prescription.axis} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odAxis ? '!border-red-400' : ''}" />
-																	{#if rxErrs.odAxis}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odAxis}</p>{/if}
-																</div>
-																<div>
-																	<label for="rx-{id}-od-addition" class="mb-0.5 block text-[9px] text-slate-500">Adición</label>
-																	<input id="rx-{id}-od-addition" type="number" step="0.25" min={0} max={5} placeholder="+1.50" bind:value={item.lensPair.od.prescription.addition} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odAddition ? '!border-red-400' : ''}" />
-																	{#if rxErrs.odAddition}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odAddition}</p>{/if}
-																</div>
-															</div>
-														</div>
-														<div class="rounded-lg border border-violet-200/60 bg-violet-50/50 p-2.5">
-															<p class="mb-1.5 text-[10px] font-semibold text-violet-700">OI - Ojo Izquierdo</p>
-															<div class="grid grid-cols-2 gap-1.5">
-																<div>
-																	<label for="rx-{id}-oi-sphere" class="mb-0.5 block text-[9px] text-slate-500">Esfera</label>
-																	<input id="rx-{id}-oi-sphere" type="number" step="0.25" placeholder="-2.00" bind:value={item.lensPair.oi.prescription.sphere} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiSphere ? '!border-red-400' : ''}" />
-																	{#if rxErrs.oiSphere}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiSphere}</p>{/if}
-																</div>
-																<div>
-																	<label for="rx-{id}-oi-cylinder" class="mb-0.5 block text-[9px] text-slate-500">Cilindro</label>
-																	<input id="rx-{id}-oi-cylinder" type="number" step="0.25" min={-10} max={0} placeholder="-0.50" bind:value={item.lensPair.oi.prescription.cylinder} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiCylinder ? '!border-red-400' : ''}" />
-																	{#if rxErrs.oiCylinder}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiCylinder}</p>{/if}
-																</div>
-																<div>
-																	<label for="rx-{id}-oi-axis" class="mb-0.5 block text-[9px] text-slate-500">Eje</label>
-																	<input id="rx-{id}-oi-axis" type="number" step="1" min={0} max={180} placeholder="180" bind:value={item.lensPair.oi.prescription.axis} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiAxis ? '!border-red-400' : ''}" />
-																	{#if rxErrs.oiAxis}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiAxis}</p>{/if}
-																</div>
-																<div>
-																	<label for="rx-{id}-oi-addition" class="mb-0.5 block text-[9px] text-slate-500">Adición</label>
-																	<input id="rx-{id}-oi-addition" type="number" step="0.25" min={0} max={5} placeholder="+1.50" bind:value={item.lensPair.oi.prescription.addition} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiAddition ? '!border-red-400' : ''}" />
-																	{#if rxErrs.oiAddition}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiAddition}</p>{/if}
-																</div>
-															</div>
 														</div>
 													</div>
 												</div>
 											{/if}
 										</div>
 
-										<div class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>
+										<div
+											class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
+											use:autoAnimate
+										>
 											{#if eyeCount > 0 && lens && item.costOverrides}
 												{@const co = item.costOverrides}
 												{@const effectiveShipping = item.shippingCostPending ? 0 : co.shippingPrice}
-												{@const internalCostTotal = co.baseCost + co.mountingPrice + effectiveShipping}
-												<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm" use:autoAnimate>
-													<button type="button" onclick={() => { costOpenFor = costOpenFor === item.id ? null : item.id; }} class="flex w-full cursor-pointer items-center justify-between gap-2">
+												{@const internalCostTotal =
+													co.baseCost + co.mountingPrice + effectiveShipping}
+												<div
+													class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm"
+													use:autoAnimate
+												>
+													<button
+														type="button"
+														onclick={() => {
+															costOpenFor = costOpenFor === item.id ? null : item.id;
+														}}
+														class="flex w-full cursor-pointer items-center justify-between gap-2"
+													>
 														<div class="text-start">
-															<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Costo interno</p>
+															<p
+																class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+															>
+																Costo interno
+															</p>
 														</div>
 														<div class="flex items-center gap-1.5">
-															<span class="font-mono text-xs font-semibold text-brand-navy">{formatPrice(internalCostTotal)}</span>
-															{#if item.shippingCostPending}<span class="rounded-full bg-warning-container px-1.5 py-0.5 text-[9px] font-semibold text-on-warning-container">Pendiente</span>{/if}
-															<ChevronRight class="h-3.5 w-3.5 text-on-surface-variant transition-transform {costOpenFor === item.id ? 'rotate-90' : ''}" />
+															<span class="font-mono text-xs font-semibold text-brand-navy"
+																>{formatPrice(internalCostTotal)}</span
+															>
+															{#if item.shippingCostPending}<span
+																	class="rounded-full bg-warning-container px-1.5 py-0.5 text-[9px] font-semibold text-on-warning-container"
+																	>Pendiente</span
+																>{/if}
+															<ChevronRight
+																class="h-3.5 w-3.5 text-on-surface-variant transition-transform {costOpenFor ===
+																item.id
+																	? 'rotate-90'
+																	: ''}"
+															/>
 														</div>
 													</button>
 													{#if costOpenFor === item.id}
-														<div class="mt-2 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs text-on-surface-variant">
-															<div class="flex items-center justify-between gap-2"><span>Cristales × {eyeCount}</span>
-																<input type="number" bind:value={co.baseCost} step="0.01" min="0" class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" /></div>
-															<div class="flex items-center justify-between gap-2"><span>Montaje</span>
-																<input type="number" bind:value={co.mountingPrice} step="0.01" min="0" class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" /></div>
-															<div class="flex items-center justify-between gap-2"><span>Envío</span>
-																{#if item.shippingCostPending}<span class="text-xs text-on-surface-variant/50 italic">Pendiente</span>
-																{:else}<input type="number" bind:value={co.shippingPrice} step="0.01" min="0" class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" />{/if}
+														<div
+															class="mt-2 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs text-on-surface-variant"
+														>
+															<div class="flex items-center justify-between gap-2">
+																<span>Cristales × {eyeCount}</span>
+																<input
+																	type="number"
+																	bind:value={co.baseCost}
+																	step="0.01"
+																	min="0"
+																	class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+																/>
 															</div>
-															<label class="flex cursor-pointer items-center gap-1.5 text-[11px]"><input type="checkbox" bind:checked={item.shippingCostPending} class="h-3 w-3 rounded border-slate-300" /> <span>Costo de envío pendiente</span></label>
-															<div class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-1.5 font-semibold text-brand-navy"><span>Total</span><span class="font-mono">{formatPrice(internalCostTotal)}</span></div>
+															<div class="flex items-center justify-between gap-2">
+																<span>Montaje</span>
+																<input
+																	type="number"
+																	bind:value={co.mountingPrice}
+																	step="0.01"
+																	min="0"
+																	class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+																/>
+															</div>
+															<div class="flex items-center justify-between gap-2">
+																<span>Envío</span>
+																{#if item.shippingCostPending}<span
+																		class="text-xs text-on-surface-variant/50 italic"
+																		>Pendiente</span
+																	>
+																{:else}<input
+																		type="number"
+																		bind:value={co.shippingPrice}
+																		step="0.01"
+																		min="0"
+																		class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+																	/>{/if}
+															</div>
+															<label class="flex cursor-pointer items-center gap-1.5 text-[11px]"
+																><input
+																	type="checkbox"
+																	bind:checked={item.shippingCostPending}
+																	class="h-3 w-3 rounded border-slate-300"
+																/> <span>Costo de envío pendiente</span></label
+															>
+															<div
+																class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-1.5 font-semibold text-brand-navy"
+															>
+																<span>Total</span><span class="font-mono"
+																	>{formatPrice(internalCostTotal)}</span
+																>
+															</div>
 														</div>
 													{/if}
 												</div>
@@ -1195,28 +1610,78 @@
 											{#if availableTreatments.length > 0}
 												<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm">
 													<div class="mb-2 flex items-center justify-between gap-2" use:autoAnimate>
-														<div class="flex items-center gap-1.5"><FlaskConical class="h-3.5 w-3.5 text-brand-blue" /><p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Tratamientos</p></div>
-														{#if treatmentTotal > 0}<span class="font-mono text-xs font-semibold text-brand-navy">{formatPrice(treatmentTotal)}</span>{/if}
+														<div class="flex items-center gap-1.5">
+															<FlaskConical class="h-3.5 w-3.5 text-brand-blue" />
+															<p
+																class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+															>
+																Tratamientos
+															</p>
+														</div>
+														{#if treatmentTotal > 0}<span
+																class="font-mono text-xs font-semibold text-brand-navy"
+																>{formatPrice(treatmentTotal)}</span
+															>{/if}
 													</div>
 													<div class="space-y-1.5" use:autoAnimate>
 														{#each availableTreatments as treatment (treatment.id)}
 															{@const selected = isTreatmentSelected(item, treatment.id)}
-															{@const selectedTreatment = item.treatments.find((t) => t.supplierTreatmentId === treatment.id)}
-															<div class="rounded-lg px-2.5 py-1.5 transition-colors {selected ? 'bg-surface-container-low' : 'bg-surface hover:bg-surface-container-low'}" use:autoAnimate>
+															{@const selectedTreatment = item.treatments.find(
+																(t) => t.supplierTreatmentId === treatment.id
+															)}
+															<div
+																class="rounded-lg px-2.5 py-1.5 transition-colors {selected
+																	? 'bg-surface-container-low'
+																	: 'bg-surface hover:bg-surface-container-low'}"
+																use:autoAnimate
+															>
 																<label class="flex cursor-pointer items-center gap-2">
-																	<input type="checkbox" checked={selected} onchange={() => toggleTreatment(item, treatment)} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+																	<input
+																		type="checkbox"
+																		checked={selected}
+																		onchange={() => toggleTreatment(item, treatment)}
+																		class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+																	/>
 																	<div class="min-w-0 flex-1">
 																		<div class="flex flex-wrap items-center gap-1.5">
-																			<span class="text-xs font-medium text-brand-navy">{treatment.name}</span>
-																			<span class="rounded-full px-1 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {treatment.category === TreatmentCategory.AR ? 'bg-brand-blue/10 text-brand-blue' : 'bg-surface-container-high text-on-surface-variant'}">{getTreatmentCategoryLabel(treatment.category)}</span>
+																			<span class="text-xs font-medium text-brand-navy"
+																				>{treatment.name}</span
+																			>
+																			<span
+																				class="rounded-full px-1 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {treatment.category ===
+																				TreatmentCategory.AR
+																					? 'bg-brand-blue/10 text-brand-blue'
+																					: 'bg-surface-container-high text-on-surface-variant'}"
+																				>{getTreatmentCategoryLabel(treatment.category)}</span
+																			>
 																		</div>
 																	</div>
-																	<span class="font-mono text-xs font-semibold text-brand-navy">{formatPrice(selectedTreatment?.price ?? treatment.salePrice ?? treatment.price)}</span>
+																	<span class="font-mono text-xs font-semibold text-brand-navy"
+																		>{formatPrice(
+																			selectedTreatment?.price ??
+																				treatment.salePrice ??
+																				treatment.price
+																		)}</span
+																	>
 																</label>
 																{#if selected && selectedTreatment}
-																	<div class="mt-1.5 ml-5.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
-																		<label class="inline-flex items-center gap-1.5"><span class="text-[11px]">Precio:</span><input type="number" bind:value={selectedTreatment.price} step="0.01" min="0" class="w-20 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none" /></label>
-																		<span class="font-mono text-[11px]">× {eyeCount} = {formatPrice(selectedTreatment.price * eyeCount)}</span>
+																	<div
+																		class="mt-1.5 ml-5.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant"
+																	>
+																		<label class="inline-flex items-center gap-1.5"
+																			><span class="text-[11px]">Precio:</span><input
+																				type="number"
+																				bind:value={selectedTreatment.price}
+																				step="0.01"
+																				min="0"
+																				class="w-20 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+																			/></label
+																		>
+																		<span class="font-mono text-[11px]"
+																			>× {eyeCount} = {formatPrice(
+																				selectedTreatment.price * eyeCount
+																			)}</span
+																		>
 																	</div>
 																{/if}
 															</div>
@@ -1237,7 +1702,9 @@
 		{#if !valid}
 			{@const reasons = getValidationReasons()}
 			{#if reasons.length > 0}
-				<div class="rounded-lg bg-warning-container/60 px-4 py-2.5 text-on-warning-container sm:px-5">
+				<div
+					class="rounded-lg bg-warning-container/60 px-4 py-2.5 text-on-warning-container sm:px-5"
+				>
 					<p class="text-[10px] font-semibold tracking-[0.14em] uppercase">Para continuar</p>
 					<ul class="mt-1.5 space-y-0.5 text-xs">
 						{#each reasons as reason, index (index)}<li>{reason}</li>{/each}
@@ -1264,7 +1731,9 @@
 	============================================================ -->
 	<div class="sticky top-24 w-64 shrink-0 space-y-4">
 		<div class="rounded-xl bg-brand-navy px-4 py-4 text-white shadow-sm">
-			<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">Resumen parcial</p>
+			<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
+				Resumen parcial
+			</p>
 			<div class="mt-3 space-y-2.5 text-xs">
 				<div class="flex items-center justify-between gap-2 text-white/70">
 					<span>Ítems</span>
@@ -1272,22 +1741,28 @@
 				</div>
 				<div class="flex items-center justify-between gap-2 text-white/70">
 					<span>Productos y lentes</span>
-					<span class="font-mono font-semibold text-white tabular-nums">{formatPrice(coreItemsSubtotal)}</span>
+					<span class="font-mono font-semibold text-white tabular-nums"
+						>{formatPrice(coreItemsSubtotal)}</span
+					>
 				</div>
 				{#if selectedTreatmentCount > 0}
 					<div class="flex items-center justify-between gap-2 text-white/70">
 						<span>Tratamientos ({selectedTreatmentCount})</span>
-						<span class="font-mono font-semibold text-white tabular-nums">{formatPrice(treatmentsSubtotal)}</span>
+						<span class="font-mono font-semibold text-white tabular-nums"
+							>{formatPrice(treatmentsSubtotal)}</span
+						>
 					</div>
 				{/if}
 				<div class="h-px bg-white/10"></div>
 				<div class="flex items-end justify-between gap-2">
-					<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">Total previo</p>
-					<p class="font-mono text-xl font-bold text-white tabular-nums">{formatPrice(partialTotal)}</p>
+					<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
+						Total previo
+					</p>
+					<p class="font-mono text-xl font-bold text-white tabular-nums">
+						{formatPrice(partialTotal)}
+					</p>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
-
-

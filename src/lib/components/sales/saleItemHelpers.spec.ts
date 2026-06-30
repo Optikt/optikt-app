@@ -91,8 +91,14 @@ function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
 }
 
 type RxOverrides = Partial<{
-	odSphere: number | null; odCylinder: number | null; odAxis: number | null; odAddition: number | null;
-	oiSphere: number | null; oiCylinder: number | null; oiAxis: number | null; oiAddition: number | null;
+	odSphere: number | null;
+	odCylinder: number | null;
+	odAxis: number | null;
+	odAddition: number | null;
+	oiSphere: number | null;
+	oiCylinder: number | null;
+	oiAxis: number | null;
+	oiAddition: number | null;
 	lensType: string;
 }>;
 
@@ -111,8 +117,8 @@ function makeConfirmation(
 			return isNaN(n) ? null : n;
 		};
 		pair.od.prescription = {
-			sphere: toNum(overrides.odSphere) ?? 1.00,
-			cylinder: toNum(overrides.odCylinder) ?? -0.50,
+			sphere: toNum(overrides.odSphere) ?? 1.0,
+			cylinder: toNum(overrides.odCylinder) ?? -0.5,
 			axis: toNum(overrides.odAxis) ?? 90,
 			addition: toNum(overrides.odAddition) ?? null
 		};
@@ -249,12 +255,14 @@ describe('buildStep2PrescriptionConfirmation', () => {
 		const lensRow = makeConfirmationLensRow();
 		if (lensRow.lensPair) {
 			lensRow.lensPair.od.prescription = { sphere: 1, cylinder: -0.5, axis: 90, addition: null };
-			lensRow.lensPair.oi.prescription = { sphere: null, cylinder: null, axis: null, addition: null };
+			lensRow.lensPair.oi.prescription = {
+				sphere: null,
+				cylinder: null,
+				axis: null,
+				addition: null
+			};
 		}
-		const confirmation = buildStep2PrescriptionConfirmation(
-			[lensRow],
-			[makeLensItem()]
-		);
+		const confirmation = buildStep2PrescriptionConfirmation([lensRow], [makeLensItem()]);
 
 		expect(confirmation.items[0]?.eyes[0]?.prescriptionSummary).toContain('Esf +1.00');
 	});

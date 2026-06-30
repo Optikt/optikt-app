@@ -13,7 +13,7 @@
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
-	import type { Snippet } from 'svelte'
+	import type { Snippet } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
 	import {
 		buildStep2PrescriptionConfirmation,
@@ -254,10 +254,9 @@
 		try {
 			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
-			const prescription = buildPrescriptionPayload(
-				items,
-				dateToISODateString(saleDate)
-			) as Parameters<typeof createSale>[0]['prescription'] | undefined;
+			const prescription = buildPrescriptionPayload(items, dateToISODateString(saleDate)) as
+				| Parameters<typeof createSale>[0]['prescription']
+				| undefined;
 
 			const result = await createSale({
 				customerId: customerId || undefined,

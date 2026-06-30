@@ -116,8 +116,14 @@ describe('buildPrescriptionPayload', () => {
 			quantity: 1,
 			lensPair: {
 				catalogItemId: 'lens-1',
-				od: { enabled: true, prescription: { sphere: 2, cylinder: -0.5, axis: 180, addition: 1.5 } },
-				oi: { enabled: true, prescription: { sphere: 1.75, cylinder: -0.25, axis: 170, addition: 1.5 } },
+				od: {
+					enabled: true,
+					prescription: { sphere: 2, cylinder: -0.5, axis: 180, addition: 1.5 }
+				},
+				oi: {
+					enabled: true,
+					prescription: { sphere: 1.75, cylinder: -0.25, axis: 170, addition: 1.5 }
+				},
 				lensType: LensType.PROGRESSIVE,
 				doctorName: 'Dr. Martinez'
 			},
