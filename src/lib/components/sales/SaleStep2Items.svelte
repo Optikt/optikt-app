@@ -1729,9 +1729,9 @@
 	<!-- ============================================================
 	RIGHT COLUMN: Sticky Summary Sidebar
 	============================================================ -->
-	<div class="sticky top-24 w-64 shrink-0 space-y-4">
+	<div class="sticky w-64 shrink-0 space-y-4">
 		<div class="rounded-xl bg-brand-navy px-4 py-4 text-white shadow-sm">
-			<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
+			<p class="text-[10px] font-bold tracking-[0.14em] text-brand-gold uppercase">
 				Resumen parcial
 			</p>
 			<div class="mt-3 space-y-2.5 text-xs">
