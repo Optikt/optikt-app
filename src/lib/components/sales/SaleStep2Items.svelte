@@ -736,8 +736,6 @@
 		<div class="rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm">
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
 				<div class="flex items-center gap-2 text-xs font-semibold">
-					<span class="font-mono tracking-wide text-white/60">{entityNumberLabel} {nextOrderNumber ?? '-'}</span>
-					<span class="h-3 w-px bg-white/15"></span>
 					<span class="truncate max-w-[12rem]">{displayCustomerName}</span>
 					<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
 				</div>
