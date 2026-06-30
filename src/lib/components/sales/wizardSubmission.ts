@@ -289,21 +289,30 @@ export function buildQuoteItemsFromWizard(
 }
 
 export function buildPrescriptionPayload(
-	values: WizardPrescriptionValues,
+	items: SaleItemRow[],
 	prescriptionDate: string
 ): PrescriptionFieldsPayload | undefined {
-	if (!hasPrescriptionValues(values)) return undefined;
+	const lensItem = items.find((i) => i.kind === 'lens' && i.lensPair);
+	if (!lensItem?.lensPair) return undefined;
+
+	const pair = lensItem.lensPair;
+	const hasValues =
+		pair.od.prescription.sphere != null ||
+		pair.od.prescription.cylinder != null ||
+		pair.oi.prescription.sphere != null ||
+		pair.oi.prescription.cylinder != null;
+	if (!hasValues) return undefined;
 
 	return {
 		prescriptionDate,
-		odSphere: values.odSphere,
-		odCylinder: values.odCylinder,
-		odAxis: values.odAxis || undefined,
-		odAddition: values.odAddition,
-		osSphere: values.oiSphere,
-		osCylinder: values.oiCylinder,
-		osAxis: values.oiAxis || undefined,
-		osAddition: values.oiAddition,
+		odSphere: pair.od.prescription.sphere ?? undefined,
+		odCylinder: pair.od.prescription.cylinder ?? undefined,
+		odAxis: pair.od.prescription.axis ?? undefined,
+		odAddition: pair.od.prescription.addition ?? undefined,
+		osSphere: pair.oi.prescription.sphere ?? undefined,
+		osCylinder: pair.oi.prescription.cylinder ?? undefined,
+		osAxis: pair.oi.prescription.axis ?? undefined,
+		osAddition: pair.oi.prescription.addition ?? undefined,
 		dp: undefined,
 		npRight: undefined,
 		npLeft: undefined,
@@ -312,9 +321,9 @@ export function buildPrescriptionPayload(
 		treatmentBlueBlock: false,
 		treatmentPhotochromic: false,
 		treatmentOther: undefined,
-		recommendedLensType: (values.lensType as LensType) || LensType.MONOFOCAL,
+		recommendedLensType: (pair.lensType as LensType) || LensType.MONOFOCAL,
 		notes: undefined,
-		doctorName: values.doctorName,
+		doctorName: pair.doctorName || undefined,
 		isCurrent: true
-	};
+	} as PrescriptionFieldsPayload;
 }

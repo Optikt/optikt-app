@@ -38,7 +38,9 @@ const lensRow: SaleItemRow = {
 		oi: {
 			enabled: true,
 			prescription: { sphere: 1.75, cylinder: -0.25, axis: 170, addition: 1.5 }
-		}
+		},
+		lensType: LensType.MONOFOCAL,
+		doctorName: ''
 	},
 	treatments: [
 		{
@@ -106,50 +108,60 @@ describe('buildQuoteItemsFromWizard', () => {
 });
 
 describe('buildPrescriptionPayload', () => {
-	it('builds a current prescription payload from wizard values', () => {
-		const result = buildPrescriptionPayload(
-			{
-				odSphere: '2.00',
-				odCylinder: '-0.50',
-				odAxis: '180',
-				odAddition: '1.50',
-				oiSphere: '1.75',
-				oiCylinder: '-0.25',
-				oiAxis: '170',
-				oiAddition: '1.50',
+	it('builds a current prescription payload from the first lens item', () => {
+		const item: SaleItemRow = {
+			id: 'row-1',
+			kind: 'lens',
+			productId: '',
+			quantity: 1,
+			lensPair: {
+				catalogItemId: 'lens-1',
+				od: { enabled: true, prescription: { sphere: 2, cylinder: -0.5, axis: 180, addition: 1.5 } },
+				oi: { enabled: true, prescription: { sphere: 1.75, cylinder: -0.25, axis: 170, addition: 1.5 } },
 				lensType: LensType.PROGRESSIVE,
 				doctorName: 'Dr. Martinez'
 			},
-			'2026-04-14'
-		);
+			treatments: [],
+			freeItem: null,
+			unitPrice: 25,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: '',
+			costOverrides: null,
+			shippingCostPending: false,
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null
+		};
+		const result = buildPrescriptionPayload([item], '2026-04-14');
 
 		expect(result).toMatchObject({
 			prescriptionDate: '2026-04-14',
-			odSphere: '2.00',
-			osSphere: '1.75',
+			odSphere: 2,
+			osSphere: 1.75,
 			recommendedLensType: LensType.PROGRESSIVE,
 			doctorName: 'Dr. Martinez',
 			isCurrent: true
 		});
 	});
 
-	it('returns undefined when no prescription values are present', () => {
-		expect(
-			buildPrescriptionPayload(
-				{
-					odSphere: '',
-					odCylinder: '',
-					odAxis: '',
-					odAddition: '',
-					oiSphere: '',
-					oiCylinder: '',
-					oiAxis: '',
-					oiAddition: '',
-					lensType: LensType.MONOFOCAL,
-					doctorName: ''
-				},
-				'2026-04-14'
-			)
-		).toBeUndefined();
+	it('returns undefined when no lens items have prescription values', () => {
+		const item: SaleItemRow = {
+			id: 'row-1',
+			kind: 'product',
+			productId: 'prod-1',
+			quantity: 1,
+			lensPair: null,
+			treatments: [],
+			freeItem: null,
+			unitPrice: 10,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: '',
+			costOverrides: null,
+			shippingCostPending: false,
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null
+		};
+		expect(buildPrescriptionPayload([item], '2026-04-14')).toBeUndefined();
 	});
 });

@@ -7,19 +7,14 @@
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { PrescriptionValues } from '$lib/components/sales/PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
 	import { WizardHeader } from '$lib/components/ui';
 	import {
-		buildStep2PrescriptionConfirmation,
-		getRequiredEyes,
-		validatePrescriptionFields,
-		hasPrescriptionErrors
+		buildStep2PrescriptionConfirmation
 	} from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
@@ -143,23 +138,6 @@
 	});
 
 	// ============================================================================
-	// SHARED PRESCRIPTION STATE
-	// ============================================================================
-
-	let prescriptionValues = $state<PrescriptionValues>({
-		odSphere: '',
-		odCylinder: '',
-		odAxis: '',
-		odAddition: '',
-		oiSphere: '',
-		oiCylinder: '',
-		oiAxis: '',
-		oiAddition: '',
-		lensType: LensType.MONOFOCAL,
-		doctorName: ''
-	});
-
-	// ============================================================================
 	// ITEMS STATE
 	// ============================================================================
 
@@ -167,7 +145,7 @@
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
 	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+		buildStep2PrescriptionConfirmation(items, lensItems)
 	);
 
 	// ============================================================================
@@ -199,15 +177,7 @@
 			})
 	);
 
-	const requiredEyes = $derived(getRequiredEyes(items));
-
-	const rxErrors = $derived(
-		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
-	);
-
-	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
-
-	const step2Valid = $derived(itemsValid && !hasInvalidPrescription);
+	const step2Valid = $derived(itemsValid);
 
 	const canSubmit = $derived(step2Valid && !submitting);
 
@@ -289,7 +259,6 @@
 		<SaleStep2Items
 			bind:items
 			bind:includedAccessoryMap
-			bind:prescriptionValues
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}

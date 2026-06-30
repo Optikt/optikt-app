@@ -257,6 +257,73 @@ export function getRequiredEyes(items: SaleItemRow[]): { needsOd: boolean; needs
 	return { needsOd, needsOi };
 }
 
+function validateNumericEyeFields(
+	sphere: number | null,
+	cylinder: number | null,
+	axis: number | null,
+	addition: number | null,
+	requiresAddition: boolean
+): Record<string, string> {
+	const errs: Record<string, string> = {};
+	if (sphere === null && cylinder === null) {
+		errs.sphere = 'Esfera o cilindro requerido';
+		errs.cylinder = 'Esfera o cilindro requerido';
+	}
+	if (cylinder !== null && cylinder !== 0 && axis === null) {
+		errs.axis = 'Eje requerido con cilindro';
+	}
+	if (requiresAddition) {
+		if (addition === null || addition === 0) {
+			errs.addition = 'Adición requerida';
+		}
+	}
+	return errs;
+}
+
+/** Validate a single lens item's prescription fields. Returns empty object when valid. */
+export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldErrors {
+	const errors: PrescriptionFieldErrors = {};
+	if (item.kind !== 'lens' || !item.lensPair) return errors;
+	const pair = item.lensPair;
+	const requiresAddition = pair.lensType !== LensType.MONOFOCAL;
+	const needsPrescription = pair.od.enabled || pair.oi.enabled;
+	if (needsPrescription && (!pair.doctorName || pair.doctorName.trim() === '')) {
+		errors.doctorName = 'Doctor es requerido';
+	}
+	if (pair.od.enabled) {
+		const od = validateNumericEyeFields(
+			pair.od.prescription.sphere,
+			pair.od.prescription.cylinder,
+			pair.od.prescription.axis,
+			pair.od.prescription.addition,
+			requiresAddition
+		);
+		if (od.sphere) errors.odSphere = od.sphere;
+		if (od.cylinder) errors.odCylinder = od.cylinder;
+		if (od.axis) errors.odAxis = od.axis;
+		if (od.addition) errors.odAddition = od.addition;
+	}
+	if (pair.oi.enabled) {
+		const oi = validateNumericEyeFields(
+			pair.oi.prescription.sphere,
+			pair.oi.prescription.cylinder,
+			pair.oi.prescription.axis,
+			pair.oi.prescription.addition,
+			requiresAddition
+		);
+		if (oi.sphere) errors.oiSphere = oi.sphere;
+		if (oi.cylinder) errors.oiCylinder = oi.cylinder;
+		if (oi.axis) errors.oiAxis = oi.axis;
+		if (oi.addition) errors.oiAddition = oi.addition;
+	}
+	return errors;
+}
+
+export function hasLensPrescriptionErrors(item: SaleItemRow): boolean {
+	if (item.kind !== 'lens' || !item.lensPair) return false;
+	return Object.keys(validateLensPrescription(item)).length > 0;
+}
+
 function validateEyeFields(
 	sphere: string,
 	cylinder: string,
@@ -389,18 +456,6 @@ export interface LensTypeSuggestionState {
 	conflictingPrescriptionLensType: string | null;
 }
 
-interface Step2PrescriptionValues {
-	odSphere: string | number | null | undefined;
-	odCylinder: string | number | null | undefined;
-	odAxis: string | number | null | undefined;
-	odAddition: string | number | null | undefined;
-	oiSphere: string | number | null | undefined;
-	oiCylinder: string | number | null | undefined;
-	oiAxis: string | number | null | undefined;
-	oiAddition: string | number | null | undefined;
-	lensType: string;
-}
-
 function parseNullablePrescriptionValue(value: string | number | null | undefined): number | null {
 	if (value === null || value === undefined) return null;
 
@@ -511,34 +566,34 @@ function buildLensConfirmationEyeResult(
 
 export function buildStep2PrescriptionConfirmation(
 	items: SaleItemRow[],
-	lensItems: LensCatalogItemWithRelations[],
-	values: Step2PrescriptionValues
+	lensItems: LensCatalogItemWithRelations[]
 ): Step2PrescriptionConfirmation {
 	const lensResults = items
 		.filter((item) => item.kind === 'lens' && (item.lensPair?.catalogItemId ?? '') !== '')
 		.map((item) => {
 			const lens = findLensItem(item, lensItems);
 			const ranges = lens?.ranges ?? [];
+			const pair = item.lensPair!;
 			const eyes = [
 				buildLensConfirmationEyeResult(
 					'OD',
-					item.lensPair?.od.enabled ?? false,
+					pair.od.enabled,
 					{
-						sphere: values.odSphere,
-						cylinder: values.odCylinder,
-						axis: values.odAxis,
-						addition: values.odAddition
+						sphere: pair.od.prescription.sphere,
+						cylinder: pair.od.prescription.cylinder,
+						axis: pair.od.prescription.axis,
+						addition: pair.od.prescription.addition
 					},
 					ranges
 				),
 				buildLensConfirmationEyeResult(
 					'OI',
-					item.lensPair?.oi.enabled ?? false,
+					pair.oi.enabled,
 					{
-						sphere: values.oiSphere,
-						cylinder: values.oiCylinder,
-						axis: values.oiAxis,
-						addition: values.oiAddition
+						sphere: pair.oi.prescription.sphere,
+						cylinder: pair.oi.prescription.cylinder,
+						axis: pair.oi.prescription.axis,
+						addition: pair.oi.prescription.addition
 					},
 					ranges
 				)
@@ -552,8 +607,8 @@ export function buildStep2PrescriptionConfirmation(
 				itemId: item.id,
 				lensName: lens?.name ?? 'Lente por seleccionar',
 				catalogLensType: lens?.type ?? '',
-				prescriptionLensType: values.lensType,
-				typeMatches: lens?.type === values.lensType,
+				prescriptionLensType: pair.lensType,
+				typeMatches: lens?.type === pair.lensType,
 				hasRanges: ranges.length > 0,
 				eyes,
 				rangeWarnings

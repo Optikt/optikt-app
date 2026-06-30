@@ -11,7 +11,8 @@
 		Package,
 		Paperclip,
 		Sparkles,
-		X
+		X,
+		Copy
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
@@ -23,7 +24,8 @@
 		getLensSourceLabel,
 		getTreatmentCategoryLabel,
 		getFreeItemCategoryLabel,
-		ALL_FREE_ITEM_CATEGORIES
+		ALL_FREE_ITEM_CATEGORIES,
+		ALL_LENS_TYPES
 	} from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -34,15 +36,12 @@
 		findLensItem,
 		getAvailableProductStock,
 		getLensRangeWarningsForItem,
-		getLensTypeSuggestionState,
-		getRequiredEyes,
 		buildStep2PrescriptionConfirmation,
 		step2ItemLineTotal,
-		validatePrescriptionFields,
-		hasPrescriptionErrors
+		validateLensPrescription,
+		hasLensPrescriptionErrors
 	} from './saleItemHelpers';
 	import type { PrescriptionFieldErrors } from './saleItemHelpers';
-	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import { createEmptyLensPair, createEmptyFreeItemData } from './newSaleTypes';
@@ -54,12 +53,10 @@
 		type IncludedAccessoryMap
 	} from './includedAccessories';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
-	import SalePrescriptionSlideOver from './SalePrescriptionSlideOver.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
 		includedAccessoryMap: IncludedAccessoryMap;
-		prescriptionValues: PrescriptionValues;
 		customerPrescription: Prescription | null;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
@@ -82,7 +79,6 @@
 	let {
 		items = $bindable(),
 		includedAccessoryMap = $bindable(),
-		prescriptionValues = $bindable(),
 		customerPrescription,
 		selectedCustomer,
 		newCustomer,
@@ -155,12 +151,12 @@
 	let quickAddOpen = $state(false);
 	let quickAddFilter = $state<QuickAddFilter>('all');
 	let costOpenFor = $state<string | null>(null);
-	let showPrescriptionSlideOver = $state(false);
+	let prescriptionOpenFor = $state<string | null>(null);
 
 	const quickAddPlaceholder = $derived.by(() => {
 		if (quickAddFilter === 'product') return 'Buscar producto por nombre o código...';
 		if (quickAddFilter === 'lens') return 'Buscar lente por nombre, material o tipo...';
-		return 'Buscar productos, lentes... (+3.50 -2.00)';
+		return 'Buscar items...';
 	});
 
 	const quickAddOptions = $derived.by((): QuickAddOption[] => {
@@ -303,7 +299,7 @@
 		item.lensPair = createEmptyLensPair();
 		item.lensPair.catalogItemId = option.id;
 
-		// Initialize cost overrides from catalog values
+		// Initialize cost overrides from catalog values and auto-set lens type
 		const lens = lensItems.find((l) => l.id === option.id);
 		if (lens) {
 			item.costOverrides = {
@@ -311,9 +307,9 @@
 				mountingPrice: lens.mountingPrice,
 				shippingPrice: lens.shippingPrice
 			};
+			item.lensPair.lensType = lens.type;
 		}
 
-		syncPrescription(item);
 		recalcSuggestedPrice(item);
 		return item;
 	}
@@ -525,73 +521,10 @@
 		return isNaN(n) ? null : n;
 	}
 
-	function parseNumOrZero(v: string): number {
-		return parseNullableNum(v) ?? 0;
-	}
-
 	function setFreeItemUnitCost(item: SaleItemRow, value: string) {
 		if (!item.freeItem) return;
 		item.freeItem.unitCost = parseNullableNum(value);
 	}
-
-	function parseAddition(v: string): number | null {
-		const n = parseNullableNum(v);
-		// Addition of 0 means no addition in practice.
-		if (n === null || n === 0) return null;
-		return n;
-	}
-
-	function parseAxis(v: string, cylinder: number): number | null {
-		// Axis is relevant only when cylinder is present.
-		if (cylinder === 0) return null;
-		return parseNullableNum(v);
-	}
-
-	/** Sync shared prescription form values into the lens pair */
-	function syncPrescription(item: SaleItemRow) {
-		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return;
-
-		const pair = item.lensPair;
-
-		const odCylinder = parseNumOrZero(prescriptionValues.odCylinder);
-		const oiCylinder = parseNumOrZero(prescriptionValues.oiCylinder);
-
-		pair.od.prescription = {
-			sphere: parseNumOrZero(prescriptionValues.odSphere),
-			cylinder: odCylinder,
-			axis: parseAxis(prescriptionValues.odAxis, odCylinder),
-			addition: parseAddition(prescriptionValues.odAddition)
-		};
-		pair.oi.prescription = {
-			sphere: parseNumOrZero(prescriptionValues.oiSphere),
-			cylinder: oiCylinder,
-			axis: parseAxis(prescriptionValues.oiAxis, oiCylinder),
-			addition: parseAddition(prescriptionValues.oiAddition)
-		};
-	}
-
-	// Re-evaluate all lens items when prescription changes
-	$effect(() => {
-		// Track only prescription value changes as dependencies
-		void prescriptionValues.odSphere;
-		void prescriptionValues.odCylinder;
-		void prescriptionValues.odAxis;
-		void prescriptionValues.odAddition;
-		void prescriptionValues.oiSphere;
-		void prescriptionValues.oiCylinder;
-		void prescriptionValues.oiAxis;
-		void prescriptionValues.oiAddition;
-		void prescriptionValues.lensType;
-
-		// Untrack items iteration + writes to avoid infinite re-trigger loop
-		untrack(() => {
-			for (const item of items) {
-				if (item.kind === 'lens' && item.lensPair?.catalogItemId) {
-					syncPrescription(item);
-				}
-			}
-		});
-	});
 
 	// ============================================================================
 	// HELPERS
@@ -623,77 +556,9 @@
 	// PRESCRIPTION VALIDATION
 	// ============================================================================
 
-	const requiredEyes = $derived(getRequiredEyes(items));
-
-	const rxErrors: PrescriptionFieldErrors = $derived(
-		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
-	);
-
-	/** Only show Rx errors once the user has started filling in prescription fields */
-	const anyRxFieldFilled = $derived(
-		prescriptionValues.odSphere !== '' ||
-			prescriptionValues.odCylinder !== '' ||
-			prescriptionValues.odAxis !== '' ||
-			prescriptionValues.odAddition !== '' ||
-			prescriptionValues.oiSphere !== '' ||
-			prescriptionValues.oiCylinder !== '' ||
-			prescriptionValues.oiAxis !== '' ||
-			prescriptionValues.oiAddition !== ''
-	);
-
-	const visibleRxErrors: PrescriptionFieldErrors = $derived(anyRxFieldFilled ? rxErrors : {});
-
 	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+		buildStep2PrescriptionConfirmation(items, lensItems)
 	);
-
-	const lensTypeSuggestion = $derived(
-		getLensTypeSuggestionState(items, lensItems, customerPrescription?.recommendedLensType ?? null)
-	);
-
-	type LensTypeDecisionContext = {
-		catalogLensType: string;
-		prescriptionLensType: string;
-	};
-
-	let lensTypeDecisionContext = $state<LensTypeDecisionContext | null>(null);
-	let lastLensTypeSuggestionSignature = '';
-
-	$effect(() => {
-		const suggestionSignature = `${lensTypeSuggestion.catalogLensTypes.join('|')}::${lensTypeSuggestion.conflictingPrescriptionLensType ?? ''}`;
-
-		if (suggestionSignature === lastLensTypeSuggestionSignature) return;
-
-		untrack(() => {
-			lastLensTypeSuggestionSignature = suggestionSignature;
-			lensTypeDecisionContext = null;
-
-			if (lensTypeSuggestion.hasMixedCatalogLensTypes || !lensTypeSuggestion.catalogLensType) {
-				return;
-			}
-
-			prescriptionValues.lensType = lensTypeSuggestion.catalogLensType;
-
-			if (lensTypeSuggestion.conflictingPrescriptionLensType) {
-				lensTypeDecisionContext = {
-					catalogLensType: lensTypeSuggestion.catalogLensType,
-					prescriptionLensType: lensTypeSuggestion.conflictingPrescriptionLensType
-				};
-			}
-		});
-	});
-
-	function keepCatalogLensType() {
-		if (!lensTypeDecisionContext) return;
-		prescriptionValues.lensType = lensTypeDecisionContext.catalogLensType;
-		lensTypeDecisionContext = null;
-	}
-
-	function useExistingPrescriptionLensType() {
-		if (!lensTypeDecisionContext) return;
-		prescriptionValues.lensType = lensTypeDecisionContext.prescriptionLensType;
-		lensTypeDecisionContext = null;
-	}
 
 	// ============================================================================
 	// VALIDATION REASONS (for "Siguiente" button feedback)
@@ -715,6 +580,9 @@
 				if (!item.lensPair?.od.enabled && !item.lensPair?.oi.enabled) {
 					reasons.push(`Ítem #${num}: habilite al menos un ojo`);
 				}
+				if (hasLensPrescriptionErrors(item)) {
+					reasons.push(`Ítem #${num}: complete los campos de prescripción requeridos`);
+				}
 			}
 			if (item.kind === 'product' && item.productId) {
 				const availableStock = getAvailableStockForProduct(item.productId, item.id);
@@ -733,9 +601,6 @@
 					reasons.push(`Ítem #${num}: el precio de venta debe ser mayor a 0`);
 				}
 			}
-		}
-		if (hasPrescriptionErrors(rxErrors)) {
-			reasons.push('Complete los campos de prescripción requeridos');
 		}
 		return reasons;
 	}
@@ -776,8 +641,11 @@
 	// ============================================================================
 
 	function getRangeWarnings(item: SaleItemRow): string[] {
-		if (!anyRxFieldFilled) return [];
-		if (item.kind !== 'lens') return [];
+		if (item.kind !== 'lens' || !item.lensPair) return [];
+		const pair = item.lensPair;
+		const hasRx = pair.od.prescription.sphere != null || pair.od.prescription.cylinder != null ||
+			pair.oi.prescription.sphere != null || pair.oi.prescription.cylinder != null;
+		if (!hasRx) return [];
 		return getLensRangeWarningsForItem(item.id, step2PrescriptionConfirmation);
 	}
 
@@ -822,6 +690,41 @@
 		if (selectedLensCount > 0) return 'Fórmula manual requerida';
 		return noCustomerContextLabel;
 	});
+
+	const canCopyRxToAll = $derived(
+		selectedLensCount >= 2 &&
+		items.some((i) => i.kind === 'lens' && i.lensPair && (
+			i.lensPair.od.prescription.sphere != null || i.lensPair.oi.prescription.sphere != null
+		))
+	);
+
+	function copyFirstRxToAll() {
+		const firstLens = items.find((i) => i.kind === 'lens' && i.lensPair);
+		if (!firstLens?.lensPair) return;
+		const src = firstLens.lensPair;
+		for (const item of items) {
+			if (item.kind !== 'lens' || !item.lensPair || item.id === firstLens.id) continue;
+			const dest = item.lensPair;
+			dest.od.prescription = { ...src.od.prescription };
+			dest.oi.prescription = { ...src.oi.prescription };
+			dest.lensType = src.lensType;
+			dest.doctorName = src.doctorName;
+		}
+	}
+
+	function copyOdToOi(pair: import('./newSaleTypes').LensPairEntry) {
+		pair.oi.prescription = { ...pair.od.prescription };
+	}
+
+	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
+		const map: Record<string, PrescriptionFieldErrors> = {};
+		for (const item of items) {
+			if (item.kind === 'lens') {
+				map[item.id] = validateLensPrescription(item);
+			}
+		}
+		return map;
+	});
 </script>
 
 <div class="flex gap-4 items-start">
@@ -840,14 +743,8 @@
 				</div>
 				<div class="flex items-center gap-2">
 					<span class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
-						{#if customerPrescription}<Eye class="mr-1 inline h-3 w-3" />{/if}{contextStatus}
+						{contextStatus}
 					</span>
-					{#if hasLensItem}
-						<button type="button" onclick={() => (showPrescriptionSlideOver = true)}
-							class="inline-flex items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-white/25">
-							<Eye class="h-3 w-3" /> Fórmula
-						</button>
-					{/if}
 				</div>
 			</div>
 		</div>
@@ -866,7 +763,7 @@
 							if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
 						}}
 						placeholder={quickAddPlaceholder}
-						class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pr-10 pl-10 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+						class="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-8 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 					/>
 					{#if quickAddQuery}
 						<button
@@ -993,6 +890,16 @@
 						<Sparkles class="h-3.5 w-3.5" />
 						Ítem Libre
 					</button>
+					{#if canCopyRxToAll}
+						<button
+							type="button"
+							onclick={copyFirstRxToAll}
+							class="inline-flex items-center gap-1.5 rounded-lg border border-brand-blue/30 bg-brand-blue/5 px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+						>
+							<Copy class="h-3.5 w-3.5" />
+							Copiar Rx a todos
+						</button>
+					{/if}
 		</div>
 	</div>
 </div>
@@ -1136,11 +1043,11 @@
 										<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
 											<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Ojos</span>
 											<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
-												<input type="checkbox" bind:checked={item.lensPair.od.enabled} onchange={() => { syncPrescription(item); recalcSuggestedPrice(item); }} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+												<input type="checkbox" bind:checked={item.lensPair.od.enabled} onchange={() => recalcSuggestedPrice(item)} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
 												<span>OD</span>
 											</label>
 											<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
-												<input type="checkbox" bind:checked={item.lensPair.oi.enabled} onchange={() => { syncPrescription(item); recalcSuggestedPrice(item); }} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
+												<input type="checkbox" bind:checked={item.lensPair.oi.enabled} onchange={() => recalcSuggestedPrice(item)} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
 												<span>OI</span>
 											</label>
 											{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">Habilita al menos un ojo</p>{/if}
@@ -1150,6 +1057,109 @@
 												{#each rangeWarnings as warning (warning)}<p>{warning}</p>{/each}
 											</div>
 										{/if}
+
+										<!-- Prescription accordion -->
+										<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm">
+											<button
+												type="button"
+												onclick={() => { prescriptionOpenFor = prescriptionOpenFor === item.id ? null : item.id; }}
+												class="flex w-full cursor-pointer items-center justify-between gap-2"
+											>
+												<div class="flex items-center gap-1.5">
+													<Eye class="h-3.5 w-3.5 text-brand-blue" />
+													<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">Fórmula</p>
+												</div>
+												<div class="flex items-center gap-1.5">
+													{#if rxErrorsPerLens[item.id] && Object.keys(rxErrorsPerLens[item.id]).length > 0}
+														<span class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container">Pendiente</span>
+													{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+														<span class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container">Completa</span>
+													{/if}
+													<ChevronRight class="h-3.5 w-3.5 text-on-surface-variant transition-transform {prescriptionOpenFor === item.id ? 'rotate-90' : ''}" />
+												</div>
+											</button>
+											{#if prescriptionOpenFor === item.id}
+												{@const rxErrs = rxErrorsPerLens[item.id] ?? {}}
+												{@const id = item.id}
+												<div class="mt-2 space-y-2.5 border-t border-outline-variant/30 pt-2">
+													<div class="flex flex-wrap items-center gap-3">
+														<div class="flex-1">
+															<label for="rx-{id}-doctor" class="mb-0.5 block text-[10px] font-semibold text-outline uppercase">Médico</label>
+															<input id="rx-{id}-doctor" type="text" bind:value={item.lensPair.doctorName} placeholder="Nombre del doctor" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.doctorName ? '!border-red-400' : ''}" />
+															{#if rxErrs.doctorName}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.doctorName}</p>{/if}
+														</div>
+														<div>
+															<label for="rx-{id}-lens-type" class="mb-0.5 block text-[10px] font-semibold text-outline uppercase">Tipo de lente</label>
+															<select id="rx-{id}-lens-type" bind:value={item.lensPair.lensType} class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none">
+																{#each ALL_LENS_TYPES as type (type)}
+																	<option value={type}>{getLensTypeLabel(type)}</option>
+																{/each}
+															</select>
+														</div>
+														<button
+															type="button"
+															onclick={() => copyOdToOi(item.lensPair!)}
+															class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
+														>
+															<Copy class="h-3 w-3" />
+															OD → OI
+														</button>
+													</div>
+													<div class="grid grid-cols-2 gap-2.5">
+														<div class="rounded-lg border border-blue-200/60 bg-blue-50/50 p-2.5">
+															<p class="mb-1.5 text-[10px] font-semibold text-blue-700">OD - Ojo Derecho</p>
+															<div class="grid grid-cols-2 gap-1.5">
+																<div>
+																	<label for="rx-{id}-od-sphere" class="mb-0.5 block text-[9px] text-slate-500">Esfera</label>
+																	<input id="rx-{id}-od-sphere" type="number" step="0.25" placeholder="-2.00" bind:value={item.lensPair.od.prescription.sphere} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odSphere ? '!border-red-400' : ''}" />
+																	{#if rxErrs.odSphere}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odSphere}</p>{/if}
+																</div>
+																<div>
+																	<label for="rx-{id}-od-cylinder" class="mb-0.5 block text-[9px] text-slate-500">Cilindro</label>
+																	<input id="rx-{id}-od-cylinder" type="number" step="0.25" min={-10} max={0} placeholder="-0.50" bind:value={item.lensPair.od.prescription.cylinder} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odCylinder ? '!border-red-400' : ''}" />
+																	{#if rxErrs.odCylinder}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odCylinder}</p>{/if}
+																</div>
+																<div>
+																	<label for="rx-{id}-od-axis" class="mb-0.5 block text-[9px] text-slate-500">Eje</label>
+																	<input id="rx-{id}-od-axis" type="number" step="1" min={0} max={180} placeholder="180" bind:value={item.lensPair.od.prescription.axis} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odAxis ? '!border-red-400' : ''}" />
+																	{#if rxErrs.odAxis}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odAxis}</p>{/if}
+																</div>
+																<div>
+																	<label for="rx-{id}-od-addition" class="mb-0.5 block text-[9px] text-slate-500">Adición</label>
+																	<input id="rx-{id}-od-addition" type="number" step="0.25" min={0} max={5} placeholder="+1.50" bind:value={item.lensPair.od.prescription.addition} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.odAddition ? '!border-red-400' : ''}" />
+																	{#if rxErrs.odAddition}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.odAddition}</p>{/if}
+																</div>
+															</div>
+														</div>
+														<div class="rounded-lg border border-violet-200/60 bg-violet-50/50 p-2.5">
+															<p class="mb-1.5 text-[10px] font-semibold text-violet-700">OI - Ojo Izquierdo</p>
+															<div class="grid grid-cols-2 gap-1.5">
+																<div>
+																	<label for="rx-{id}-oi-sphere" class="mb-0.5 block text-[9px] text-slate-500">Esfera</label>
+																	<input id="rx-{id}-oi-sphere" type="number" step="0.25" placeholder="-2.00" bind:value={item.lensPair.oi.prescription.sphere} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiSphere ? '!border-red-400' : ''}" />
+																	{#if rxErrs.oiSphere}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiSphere}</p>{/if}
+																</div>
+																<div>
+																	<label for="rx-{id}-oi-cylinder" class="mb-0.5 block text-[9px] text-slate-500">Cilindro</label>
+																	<input id="rx-{id}-oi-cylinder" type="number" step="0.25" min={-10} max={0} placeholder="-0.50" bind:value={item.lensPair.oi.prescription.cylinder} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiCylinder ? '!border-red-400' : ''}" />
+																	{#if rxErrs.oiCylinder}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiCylinder}</p>{/if}
+																</div>
+																<div>
+																	<label for="rx-{id}-oi-axis" class="mb-0.5 block text-[9px] text-slate-500">Eje</label>
+																	<input id="rx-{id}-oi-axis" type="number" step="1" min={0} max={180} placeholder="180" bind:value={item.lensPair.oi.prescription.axis} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiAxis ? '!border-red-400' : ''}" />
+																	{#if rxErrs.oiAxis}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiAxis}</p>{/if}
+																</div>
+																<div>
+																	<label for="rx-{id}-oi-addition" class="mb-0.5 block text-[9px] text-slate-500">Adición</label>
+																	<input id="rx-{id}-oi-addition" type="number" step="0.25" min={0} max={5} placeholder="+1.50" bind:value={item.lensPair.oi.prescription.addition} class="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.oiAddition ? '!border-red-400' : ''}" />
+																	{#if rxErrs.oiAddition}<p class="mt-0.5 text-[10px] text-red-500">{rxErrs.oiAddition}</p>{/if}
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											{/if}
+										</div>
 
 										<div class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>
 											{#if eyeCount > 0 && lens && item.costOverrides}
@@ -1282,15 +1292,4 @@
 	</div>
 </div>
 
-<SalePrescriptionSlideOver
-	bind:open={showPrescriptionSlideOver}
-	{prescriptionValues}
-	{customerPrescription}
-	{lensTypeSuggestion}
-	{lensTypeDecisionContext}
-	{visibleRxErrors}
-	{hasLensItem}
-	onclose={() => (showPrescriptionSlideOver = false)}
-	onKeepCatalogLensType={keepCatalogLensType}
-	onUseExistingPrescriptionLensType={useExistingPrescriptionLensType}
-/>
+

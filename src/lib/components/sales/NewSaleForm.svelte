@@ -8,10 +8,8 @@
 	import { isDiscountValueValid } from '$lib/utils';
 	import { nowUTC, fromISODate } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
@@ -21,12 +19,9 @@
 		buildStep2PrescriptionConfirmation,
 		calculateSaleSummarySubtotal,
 		getAvailableProductStock,
-		getRequiredEyes,
-		isItemDiscountValid,
-		validatePrescriptionFields,
-		hasPrescriptionErrors
+		isItemDiscountValid
 	} from './saleItemHelpers';
-	import { buildPrescriptionPayload, buildSaleItemsFromWizard } from './wizardSubmission';
+	import { buildSaleItemsFromWizard, buildPrescriptionPayload } from './wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import SaleStep1Info from './SaleStep1Info.svelte';
 	import SaleStep2Items from './SaleStep2Items.svelte';
@@ -154,23 +149,6 @@
 	});
 
 	// ============================================================================
-	// SHARED PRESCRIPTION STATE
-	// ============================================================================
-
-	let prescriptionValues = $state<PrescriptionValues>({
-		odSphere: '',
-		odCylinder: '',
-		odAxis: '',
-		odAddition: '',
-		oiSphere: '',
-		oiCylinder: '',
-		oiAxis: '',
-		oiAddition: '',
-		lensType: LensType.MONOFOCAL,
-		doctorName: ''
-	});
-
-	// ============================================================================
 	// ITEMS STATE
 	// ============================================================================
 
@@ -178,7 +156,7 @@
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
 	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+		buildStep2PrescriptionConfirmation(items, lensItems)
 	);
 
 	// ============================================================================
@@ -227,15 +205,7 @@
 		})
 	);
 
-	const requiredEyes = $derived(getRequiredEyes(items));
-
-	const rxErrors = $derived(
-		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
-	);
-
-	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
-
-	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
+	const step2Valid = $derived(itemsValid && !hasOutOfStockItem);
 
 	const subtotal = $derived(calculateSaleSummarySubtotal(items));
 
@@ -284,12 +254,10 @@
 		try {
 			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
-			const prescription = items.some((item) => item.kind === 'lens')
-				? (buildPrescriptionPayload(
-						prescriptionValues,
-						dateToISODateString(saleDate)
-					) as Parameters<typeof createSale>[0]['prescription'])
-				: undefined;
+			const prescription = buildPrescriptionPayload(
+				items,
+				dateToISODateString(saleDate)
+			) as Parameters<typeof createSale>[0]['prescription'] | undefined;
 
 			const result = await createSale({
 				customerId: customerId || undefined,
@@ -350,7 +318,6 @@
 		<SaleStep2Items
 			bind:items
 			bind:includedAccessoryMap
-			bind:prescriptionValues
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}

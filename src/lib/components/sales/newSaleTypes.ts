@@ -1,4 +1,5 @@
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
+import { LensType } from '$lib/shared/enums';
 import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
 export type ItemKind = 'product' | 'lens' | 'free';
@@ -23,6 +24,8 @@ export interface LensPairEntry {
 	catalogItemId: string;
 	od: LensEyeEntry;
 	oi: LensEyeEntry;
+	lensType: string;
+	doctorName: string;
 }
 
 /** Internal cost overrides - allows the user to edit cost values in the wizard */
@@ -89,7 +92,9 @@ export function createEmptyLensPair(): LensPairEntry {
 	return {
 		catalogItemId: '',
 		od: createEmptyEyeEntry(),
-		oi: createEmptyEyeEntry()
+		oi: createEmptyEyeEntry(),
+		lensType: LensType.MONOFOCAL,
+		doctorName: ''
 	};
 }
 

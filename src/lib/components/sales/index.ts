@@ -14,4 +14,3 @@ export { default as SaleMovementsSection } from './SaleMovementsSection.svelte';
 export { default as SalePaymentProgress } from './SalePaymentProgress.svelte';
 export { default as SaleStatsCards } from './SaleStatsCards.svelte';
 export { default as SaleFilterBar } from './SaleFilterBar.svelte';
-export { default as SalePrescriptionSlideOver } from './SalePrescriptionSlideOver.svelte';
