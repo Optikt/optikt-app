@@ -150,6 +150,7 @@
 	let quickAddQuery = $state('');
 	let quickAddOpen = $state(false);
 	let quickAddFilter = $state<QuickAddFilter>('all');
+	const activeFilterIdx = $derived(quickAddFilterOptions.findIndex((o) => o.value === quickAddFilter));
 	let costOpenFor = $state<string | null>(null);
 	let prescriptionOpenFor = $state<string | null>(null);
 
@@ -872,15 +873,16 @@
 			</div>
 
 			<div class="inline-flex items-center gap-2">
-				<div class="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+				<div class="relative inline-grid overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm" style="grid-template-columns: repeat({quickAddFilterOptions.length}, 1fr)">
+					<div
+						class="absolute top-1 bottom-1 left-1 rounded-md bg-brand-navy shadow-sm transition-transform duration-200 ease-out"
+						style="width: calc((100% - 0.5rem) / {quickAddFilterOptions.length}); transform: translateX(calc({activeFilterIdx} * 100%))"
+					></div>
 					{#each quickAddFilterOptions as option (option.value)}
 						<button
 							type="button"
 							onclick={() => setQuickAddFilter(option.value)}
-							class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors {quickAddFilter ===
-							option.value
-								? 'bg-brand-navy text-white'
-								: 'text-slate-600 hover:bg-slate-50'}"
+							class="relative z-10 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 {quickAddFilter === option.value ? 'text-white' : 'text-slate-600 hover:text-slate-800'}"
 						>
 							{option.label}
 						</button>
