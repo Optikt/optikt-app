@@ -757,7 +757,7 @@
 		</div>
 
 		<!-- Search bar -->
-		<div class="flex gap-3 rounded-xl">
+		<div class="flex gap-1 rounded-xl">
 			<div class="relative min-w-0 flex-1 lg:max-w-3xl">
 				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
 				<input
@@ -872,7 +872,7 @@
 				{/if}
 			</div>
 
-			<div class="inline-flex items-center gap-2">
+			<div class="inline-flex items-center gap-1">
 				<div class="relative inline-grid overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm" style="grid-template-columns: repeat({quickAddFilterOptions.length}, 1fr)">
 					<div
 						class="absolute top-1 bottom-1 left-1 rounded-md bg-brand-navy shadow-sm transition-transform duration-200 ease-out"
@@ -894,7 +894,7 @@
 					onclick={addFreeItem}
 					class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
 				>
-					<Sparkles class="h-3.5 w-3.5" />
+					<!-- <Sparkles class="h-3.5 w-3.5" /> -->
 					Ítem Libre
 				</button>
 				{#if canCopyRxToAll}
