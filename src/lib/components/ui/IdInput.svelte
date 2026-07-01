@@ -85,8 +85,8 @@
 		</Label>
 	{/if}
 
-	<div class="flex gap-2">
-		<Select bind:value={idType} {disabled} class="w-20 shrink-0" onchange={handleTypeChange}>
+	<div class="flex gap-1">
+		<Select bind:value={idType} {disabled} class="w-14 shrink-0" onchange={handleTypeChange}>
 			{#each ID_DOC_PREFIXES as type (type)}
 				<option value={type}>{type}</option>
 			{/each}
