@@ -55,7 +55,7 @@
 	const resolvedSummaryValue = $derived(summaryValue ?? resolvedEntityNumberValue);
 </script>
 
-<div class="space-y-3">
+<div class="space-y-2">
 	<!-- Customer lookup: full width -->
 	<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
 		
