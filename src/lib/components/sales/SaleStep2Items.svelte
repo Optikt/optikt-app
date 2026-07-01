@@ -797,128 +797,127 @@
 	</div>
 
 	<!-- Search bar -->
-	<div class="flex gap-1 rounded-xl">
-		<div class="relative min-w-0 flex-1 lg:max-w-3xl">
-			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-			<input
-				bind:value={quickAddQuery}
-				oninput={handleQuickAddInput}
-				onkeydown={handleQuickAddKeydown}
-				onblur={handleQuickAddBlur}
-				onfocus={() => {
-					if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
-				}}
-				placeholder={quickAddPlaceholder}
-				class="w-full rounded-lg border border-slate-200 bg-white px-8 py-2.5 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-			/>
-			{#if quickAddQuery}
-				<button
-					type="button"
-					onclick={resetQuickAdd}
-					class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
-				>
-					<X class="h-3.5 w-3.5" />
-				</button>
-			{/if}
+	 <!-- TODO: Use the Search bar component -->
+	<div class="relative min-w-0 flex-1 lg:max-w-3xl">
+		<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+		<input
+			bind:value={quickAddQuery}
+			oninput={handleQuickAddInput}
+			onkeydown={handleQuickAddKeydown}
+			onblur={handleQuickAddBlur}
+			onfocus={() => {
+				if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
+			}}
+			placeholder={quickAddPlaceholder}
+			class="w-full rounded-lg border border-slate-200 bg-white px-8 py-2.5 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+		/>
+		{#if quickAddQuery}
+			<button
+				type="button"
+				onclick={resetQuickAdd}
+				class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
+			>
+				<X class="h-3.5 w-3.5" />
+			</button>
+		{/if}
 
-			{#if quickAddOpen}
-				<div
-					class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
-				>
-					{#if totalQuickAddResults > 0}
-						{#if visibleProductQuickAddOptions.length > 0}
-							<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-								<div
-									class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-								>
-									<Package class="h-3 w-3" />
-									Productos ({visibleProductQuickAddOptions.length})
-								</div>
+		{#if quickAddOpen}
+			<div
+				class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+			>
+				{#if totalQuickAddResults > 0}
+					{#if visibleProductQuickAddOptions.length > 0}
+						<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
+							<div
+								class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+							>
+								<Package class="h-3 w-3" />
+								Productos ({visibleProductQuickAddOptions.length})
 							</div>
-							{#each visibleProductQuickAddOptions as option (option.key)}
-								<button
-									type="button"
-									onclick={() => void selectQuickAddOption(option)}
-									class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-								>
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
-									>
-										<Package class="h-4 w-4" />
-									</div>
-									<div class="min-w-0 flex-1">
-										<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
-											{option.name}
-										</p>
-										<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
-											{option.secondaryText}
-										</p>
-									</div>
-									<div class="text-right">
-										<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-											{formatPrice(option.price)}
-										</p>
-										{#if option.stock !== null}
-											<p class="text-[11px] font-medium text-emerald-600">
-												{option.stock} disp.
-											</p>
-										{/if}
-									</div>
-								</button>
-							{/each}
-						{/if}
-
-						{#if visibleLensQuickAddOptions.length > 0}
-							<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-								<div
-									class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
-								>
-									<Eye class="h-3 w-3" />
-									Lentes ({visibleLensQuickAddOptions.length})
-								</div>
-							</div>
-							{#each visibleLensQuickAddOptions as option (option.key)}
-								<button
-									type="button"
-									onclick={() => void selectQuickAddOption(option)}
-									class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
-								>
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
-									>
-										<Eye class="h-4 w-4" />
-									</div>
-									<div class="min-w-0 flex-1">
-										<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
-											{option.name}
-										</p>
-										<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
-											{option.secondaryText}
-										</p>
-									</div>
-									<div class="text-right">
-										<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
-											{formatPrice(option.price)}
-										</p>
-										{#if option.inventoryMode === 'ON_DEMAND'}
-											<p class="text-[11px] font-medium text-blue-600">Por pedido</p>
-										{:else if option.stock !== null}
-											<p class="text-[11px] font-medium text-slate-500">{option.stock} disp.</p>
-										{/if}
-									</div>
-								</button>
-							{/each}
-						{/if}
-					{:else}
-						<div class="py-6 text-center">
-							<p class="text-sm text-slate-500">
-								Sin resultados para &quot;{quickAddQuery.trim()}&quot;
-							</p>
 						</div>
+						{#each visibleProductQuickAddOptions as option (option.key)}
+							<button
+								type="button"
+								onclick={() => void selectQuickAddOption(option)}
+								class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+							>
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
+								>
+									<Package class="h-4 w-4" />
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
+										{option.name}
+									</p>
+									<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
+										{option.secondaryText}
+									</p>
+								</div>
+								<div class="text-right">
+									<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+										{formatPrice(option.price)}
+									</p>
+									{#if option.stock !== null}
+										<p class="text-[11px] font-medium text-emerald-600">
+											{option.stock} disp.
+										</p>
+									{/if}
+								</div>
+							</button>
+						{/each}
 					{/if}
-				</div>
-			{/if}
-		</div>
+
+					{#if visibleLensQuickAddOptions.length > 0}
+						<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
+							<div
+								class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+							>
+								<Eye class="h-3 w-3" />
+								Lentes ({visibleLensQuickAddOptions.length})
+							</div>
+						</div>
+						{#each visibleLensQuickAddOptions as option (option.key)}
+							<button
+								type="button"
+								onclick={() => void selectQuickAddOption(option)}
+								class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+							>
+								<div
+									class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
+								>
+									<Eye class="h-4 w-4" />
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
+										{option.name}
+									</p>
+									<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
+										{option.secondaryText}
+									</p>
+								</div>
+								<div class="text-right">
+									<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+										{formatPrice(option.price)}
+									</p>
+									{#if option.inventoryMode === 'ON_DEMAND'}
+										<p class="text-[11px] font-medium text-blue-600">Por pedido</p>
+									{:else if option.stock !== null}
+										<p class="text-[11px] font-medium text-slate-500">{option.stock} disp.</p>
+									{/if}
+								</div>
+							</button>
+						{/each}
+					{/if}
+				{:else}
+					<div class="py-6 text-center">
+						<p class="text-sm text-slate-500">
+							Sin resultados para &quot;{quickAddQuery.trim()}&quot;
+						</p>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Items list -->
