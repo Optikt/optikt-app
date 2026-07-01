@@ -278,7 +278,7 @@
 		</div>
 
 		{#if mode === 'found' && foundCustomer}
-			<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
+			<div class="rounded-xl bg-success/5 px-4 py-3 border-2 shadow-sm border-success w-1/2 mx-auto">
 				<div class="flex items-center gap-3">
 					<div
 						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info-container text-sm font-bold text-brand-navy"
