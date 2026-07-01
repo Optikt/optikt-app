@@ -385,23 +385,11 @@
 				{/if}
 			</div>
 
-			<div class="col-span-2">
-				<label class={fieldLabelClass} for="new-email">Email</label>
-				<input
-					id="new-email"
-					type="email"
-					bind:value={email}
-					oninput={syncNewCustomer}
-					placeholder="cliente@ejemplo.com"
-					class="{fieldInputClass} mt-1"
-				/>
-			</div>
-
-			<div class="col-span-2">
+			<div class="col-span-3">
 				<IdInput bind:value={idValue} onchange={handleIdChange} label="Documento" error={idDigitsError ? 'Requerido' : null} required />
 			</div>
 
-			<div class="col-span-2">
+			<div class="col-span-3">
 				<label class={fieldLabelClass} for="new-phone">Teléfono</label>
 				<input
 					id="new-phone"
@@ -413,7 +401,23 @@
 				/>
 			</div>
 
-			<div class="col-span-2 lg:col-span-3">
+			<div class="col-span-4">
+				<label class={fieldLabelClass} for="new-email">Email</label>
+				<input
+					id="new-email"
+					type="email"
+					bind:value={email}
+					oninput={syncNewCustomer}
+					placeholder="cliente@ejemplo.com"
+					class="{fieldInputClass} mt-1"
+				/>
+			</div>
+
+
+
+
+
+			<div class="col-span-2 lg:col-span-6">
 				<label class={fieldLabelClass} for="new-address">Dirección</label>
 				<textarea
 					id="new-address"
