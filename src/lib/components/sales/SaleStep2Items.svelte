@@ -823,6 +823,8 @@
 		{/if}
 
 		{#if quickAddOpen}
+			<!-- TODO: We should have some component for this since we have a global search bar too. We could have a simplified
+			 and complex one, so we can use moe specific things here -->
 			<div
 				class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 			>
