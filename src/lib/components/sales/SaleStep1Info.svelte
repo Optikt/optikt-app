@@ -51,21 +51,6 @@
 </script>
 
 <div class="space-y-4">
-	<!-- Creating customer: compact inline navy banner -->
-	{#if creatingCustomer}
-		<div class="rounded-lg bg-brand-navy px-4 py-2.5 text-white">
-			<div class="flex items-center gap-2.5">
-				<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/10">
-					<UserPlus class="h-3.5 w-3.5 text-brand-gold" />
-				</div>
-				<p class="text-xs">
-					<span class="font-semibold">Registro de nuevo cliente</span>
-					<span class="text-white/60"> — Completa los datos para continuar</span>
-				</p>
-			</div>
-		</div>
-	{/if}
-
 	<!-- Customer lookup: full width -->
 	<div class="rounded-xl bg-surface-container-lowest px-4 py-4 shadow-sm">
 		<p class="mb-1 text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
