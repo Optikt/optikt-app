@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import {
-		CheckCircle2,
+		CircleCheck,
 		CircleAlert,
 		IdCard,
 		Mail,
@@ -315,7 +315,7 @@
 						>
 							Seleccionado
 						</span>
-						<CheckCircle2 class="h-4 w-4 text-brand-blue" />
+						<CircleCheck class="h-4 w-4 text-brand-blue" />
 					</div>
 				</div>
 			</div>
