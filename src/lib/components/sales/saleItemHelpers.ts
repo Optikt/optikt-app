@@ -128,6 +128,10 @@ export interface PrescriptionFieldErrors {
 	oiCylinder?: string;
 	oiAxis?: string;
 	oiAddition?: string;
+	odDp?: string;
+	oiDp?: string;
+	odNp?: string;
+	oiNp?: string;
 	doctorName?: string;
 }
 
@@ -302,6 +306,12 @@ export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldEr
 		if (od.cylinder) errors.odCylinder = od.cylinder;
 		if (od.axis) errors.odAxis = od.axis;
 		if (od.addition) errors.odAddition = od.addition;
+		if (pair.od.dp != null && (pair.od.dp < 10 || pair.od.dp > 80)) {
+			errors.odDp = 'DP debe ser 10-80';
+		}
+		if (pair.od.np != null && (pair.od.np < 10 || pair.od.np > 80)) {
+			errors.odNp = 'NP debe ser 10-80';
+		}
 	}
 	if (pair.oi.enabled) {
 		const oi = validateNumericEyeFields(
@@ -315,6 +325,12 @@ export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldEr
 		if (oi.cylinder) errors.oiCylinder = oi.cylinder;
 		if (oi.axis) errors.oiAxis = oi.axis;
 		if (oi.addition) errors.oiAddition = oi.addition;
+		if (pair.oi.dp != null && (pair.oi.dp < 10 || pair.oi.dp > 80)) {
+			errors.oiDp = 'DP debe ser 10-80';
+		}
+		if (pair.oi.np != null && (pair.oi.np < 10 || pair.oi.np > 80)) {
+			errors.oiNp = 'NP debe ser 10-80';
+		}
 	}
 	return errors;
 }

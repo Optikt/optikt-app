@@ -17,6 +17,8 @@ export interface SelectedTreatment {
 export interface LensEyeEntry {
 	enabled: boolean;
 	prescription: LensOrderedPrescription;
+	dp: number | null;
+	np: number | null;
 }
 
 /** A lens pair entry - both eyes sharing the same catalog item */
@@ -83,7 +85,9 @@ export interface NewCustomerData {
 export function createEmptyEyeEntry(): LensEyeEntry {
 	return {
 		enabled: true,
-		prescription: { sphere: null, cylinder: null, axis: null, addition: null }
+		prescription: { sphere: null, cylinder: null, axis: null, addition: null },
+		dp: null,
+		np: null
 	};
 }
 
