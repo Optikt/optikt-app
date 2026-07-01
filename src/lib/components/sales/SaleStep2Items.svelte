@@ -807,8 +807,8 @@
 											<Package class="h-4 w-4" />
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
-											<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
+											<p class="truncate text-sm font-medium text-slate-800" title={option.name}>{option.name}</p>
+											<p class="truncate text-xs text-slate-500" title={option.secondaryText}>{option.secondaryText}</p>
 										</div>
 										<div class="text-right">
 											<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
@@ -845,8 +845,8 @@
 											<Eye class="h-4 w-4" />
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-slate-800">{option.name}</p>
-											<p class="truncate text-xs text-slate-500">{option.secondaryText}</p>
+											<p class="truncate text-sm font-medium text-slate-800" title={option.name}>{option.name}</p>
+											<p class="truncate text-xs text-slate-500" title={option.secondaryText}>{option.secondaryText}</p>
 										</div>
 										<div class="text-right">
 											<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
