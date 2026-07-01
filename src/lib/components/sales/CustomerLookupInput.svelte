@@ -6,7 +6,6 @@
 		IdCard,
 		Mail,
 		Phone,
-		Search,
 		UserPlus,
 		ArrowLeft,
 		X
@@ -15,6 +14,7 @@
 	import { lookupCustomer } from '$lib/remote/sales.remote';
 	import { getErrorMessage, ID_DOC_PREFIXES, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
 	import type { Customer } from '$lib/server/db/schema';
+	import {IdInput} from "$lib/components/ui"
 
 	interface Props {
 		customerId: string;
@@ -42,6 +42,8 @@
 
 	let docType = $state<IdDocPrefix>('V');
 	let idDigits = $state('');
+	let idValue = $state('');
+	let prevDocType = $state<IdDocPrefix>('V');
 	let searching = $state(false);
 	let foundCustomer = $state<Customer | null>(selectedCustomer);
 	let mode = $state<'idle' | 'found' | 'missing' | 'create'>(
@@ -62,21 +64,23 @@
 	const fieldLabelClass = 'text-[10px] font-semibold tracking-[0.14em] text-slate-500 uppercase';
 	const fieldInputClass =
 		'w-full rounded-lg border-none bg-surface-container-high px-3 py-2.5 text-sm text-on-surface placeholder:text-slate-400 focus:ring-1 focus:ring-brand-blue';
-	const prefixSelectClass =
-		'rounded-lg border-none bg-surface-container-high px-2 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-brand-blue text-center font-semibold shrink-0';
 
 	const firstNameError = $derived(touchedFirstName && !firstName.trim());
 	const lastNameError = $derived(touchedLastName && !lastName.trim());
-	const idDigitsError = $derived(touchedIdDigits && !idDigits.trim());
+	const parsedIdDigits = $derived.by((): string => {
+		const match = idValue.match(ID_NUMBER_RE);
+		return match ? match[2] : '';
+	});
+	const idDigitsError = $derived(touchedIdDigits && !parsedIdDigits);
+	const hasIdValue = $derived(parsedIdDigits.length > 0);
 
 	function applyIdNumberValue(value: string) {
+		idValue = value;
 		const match = value.match(ID_NUMBER_RE);
 		if (match) {
+			prevDocType = match[1] as IdDocPrefix;
 			docType = match[1] as IdDocPrefix;
-			idDigits = match[2];
-			return;
 		}
-		idDigits = value.replace(/\D/g, '').slice(0, 10);
 	}
 
 	if (newCustomer?.idNumber) {
@@ -86,12 +90,6 @@
 
 	if (selectedCustomer?.idNumber) {
 		applyIdNumberValue(selectedCustomer.idNumber);
-	}
-
-	function buildIdNumber(): string {
-		const digits = idDigits.replace(/\D/g, '');
-		if (!digits) return '';
-		return `${docType}-${digits}`;
 	}
 
 	function customerInitials(customer: Customer): string {
@@ -111,34 +109,31 @@
 
 	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
 
-	function handleDigitsInput(e: Event) {
-		const input = e.target as HTMLInputElement;
-		idDigits = input.value.replace(/\D/g, '').slice(0, 10);
+	function handleIdChange(val: string) {
+		idValue = val;
+		const match = val.match(ID_NUMBER_RE);
+		const newType = (match?.[1] as IdDocPrefix) || 'V';
+		const digits = match?.[2] || '';
+		touchedIdDigits = true;
 
-		if (mode !== 'create') {
-			clearResolvedState();
-		} else {
-			syncNewCustomer();
+		if (newType !== prevDocType) {
+			prevDocType = newType;
+			docType = newType;
+			if (mode !== 'create') {
+				clearResolvedState();
+			} else {
+				syncNewCustomer();
+			}
 		}
 
 		clearTimeout(searchTimeout);
-		if (idDigits.length >= 1 && mode !== 'create') {
+		if (digits.length >= 1 && mode !== 'create') {
 			searching = true;
-			searchTimeout = setTimeout(() => void handleSearch(), 600);
+			searchTimeout = setTimeout(() => void handleSearch(val), 600);
 		}
 	}
 
-	function handleDocTypeChange(e: Event) {
-		docType = (e.target as HTMLSelectElement).value as IdDocPrefix;
-		if (mode !== 'create') {
-			clearResolvedState();
-		} else {
-			syncNewCustomer();
-		}
-	}
-
-	async function handleSearch() {
-		const fullId = buildIdNumber();
+	async function handleSearch(fullId?: string) {
 		if (!fullId) {
 			searching = false;
 			return;
@@ -177,7 +172,8 @@
 		if (e.key === 'Enter') {
 			e.preventDefault();
 			clearTimeout(searchTimeout);
-			void handleSearch();
+			const match = idValue.match(ID_NUMBER_RE);
+			if (match) void handleSearch(`${match[1]}-${match[2]}`);
 		}
 	}
 
@@ -210,8 +206,9 @@
 
 	function reset() {
 		clearTimeout(searchTimeout);
+		idValue = '';
+		prevDocType = 'V';
 		docType = 'V';
-		idDigits = '';
 		foundCustomer = null;
 		mode = 'idle';
 		creatingCustomer = false;
@@ -235,7 +232,7 @@
 			newCustomer = {
 				firstName,
 				lastName,
-				idNumber: buildIdNumber(),
+				idNumber: idValue,
 				primaryPhone,
 				email,
 				address,
@@ -245,45 +242,18 @@
 	}
 </script>
 
-<form class="space-y-3" autocomplete="off" onsubmit={(e) => e.preventDefault()}>
+<form class="space-y-2" autocomplete="off" onsubmit={(e) => e.preventDefault()}>
 	{#if mode !== 'create'}
-		<!-- Search row: prefix + document input + buttons inline -->
+		<!-- Search row: document ID + buttons inline -->
 		<div class="flex items-center gap-2">
-		<!-- TODO: Make a global component for  -->
-			<select
-				value={docType}
-				onchange={handleDocTypeChange}
-				class="{prefixSelectClass} w-14"
-				aria-label="Prefijo de documento"
-			>
-				{#each ID_DOC_PREFIXES as type (type)}
-					<option value={type}>{type}</option>
-				{/each}
-			</select>
-			
-
-			<div class="relative min-w-0 flex-1">
-				<Search
-					class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
-				/>
-				<input
-					type="text"
-					inputmode="numeric"
-					autocomplete="off"
-					placeholder="Cédula o RIF..."
-					value={idDigits}
-					oninput={handleDigitsInput}
-					onkeydown={handleKeydown}
-					class="{fieldInputClass} pl-10 {idDigitsError ? 'ring-1 ring-error/40' : ''}"
-					onblur={() => (touchedIdDigits = true)}
-				/>
-				{#if searching}
-					<div
-						class="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-brand-blue/30 border-t-brand-blue"
-					></div>
-				{/if}
+			<div class="min-w-0 flex-1">
+				<IdInput bind:value={idValue} onchange={handleIdChange} onkeydown={handleKeydown} />
 			</div>
-
+			{#if searching}
+				<div
+					class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-brand-blue/30 border-t-brand-blue"
+				></div>
+			{/if}
 			<button
 				type="button"
 				onclick={startCreateMode}
@@ -294,7 +264,7 @@
 				<UserPlus class="h-4 w-4" />
 			</button>
 
-			{#if mode !== 'idle' || idDigits}
+			{#if mode !== 'idle' || hasIdValue}
 				<button
 					type="button"
 					onclick={reset}
@@ -360,7 +330,7 @@
 					<CircleAlert class="h-4 w-4" />
 				</div>
 				<p class="min-w-0 flex-1 text-sm text-on-surface">
-					No encontramos <span class="font-mono font-semibold">{buildIdNumber()}</span>. ¿Crear
+					No encontramos <span class="font-mono font-semibold">{idValue}</span>. ¿Crear
 					nuevo cliente?
 				</p>
 				<button
@@ -376,7 +346,7 @@
 	{/if}
 
 	{#if mode === 'create'}
-		<div transition:slide={{ duration: 180 }} class="space-y-3">
+		<div transition:slide={{ duration: 180 }} class="space-y-2">
 			<div class="mb-1 flex items-center justify-between">
 				<p class="text-sm font-semibold text-brand-navy">Nuevo cliente</p>
 				<button
@@ -389,7 +359,7 @@
 				</button>
 			</div>
 
-			<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
+			<div class="grid grid-cols-2 gap-2 lg:grid-cols-3">
 				<div>
 					<label class={fieldLabelClass} for="new-firstName">Nombre</label>
 					<input
@@ -441,36 +411,7 @@
 				</div>
 
 				<div>
-					<label class={fieldLabelClass} for="new-idNumber">Documento</label>
-					<div class="mt-1 flex gap-2">
-						<select
-							id="new-doc-type"
-							value={docType}
-							onchange={handleDocTypeChange}
-							class="{prefixSelectClass} w-14"
-						>
-							{#each ID_DOC_PREFIXES as type (type)}
-								<option value={type}>{type}</option>
-							{/each}
-						</select>
-						<input
-							id="new-idNumber"
-							type="text"
-							inputmode="numeric"
-							autocomplete="off"
-							value={idDigits}
-							oninput={(e) => {
-								handleDigitsInput(e);
-								touchedIdDigits = true;
-							}}
-							onblur={() => (touchedIdDigits = true)}
-							placeholder="00.000.000"
-							class="{fieldInputClass} min-w-0 flex-1 {idDigitsError ? 'ring-1 ring-error/40' : ''}"
-						/>
-					</div>
-					{#if idDigitsError}
-						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
-					{/if}
+					<IdInput bind:value={idValue} onchange={handleIdChange} label="Documento" error={idDigitsError ? 'Requerido' : null} required />
 				</div>
 
 				<div>

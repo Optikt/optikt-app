@@ -50,9 +50,9 @@
 	const resolvedSummaryValue = $derived(summaryValue ?? resolvedEntityNumberValue);
 </script>
 
-<div class="space-y-4">
+<div class="space-y-3">
 	<!-- Customer lookup: full width -->
-	<div class="rounded-xl bg-surface-container-lowest px-4 py-4 shadow-sm">
+	<div class="rounded-xl bg-surface-container-lowest px-4 py-3 shadow-sm">
 		<p class="mb-1 text-[10px] font-semibold tracking-[0.14em] text-brand-blue uppercase">
 			{stepLabel} - {stepTitle}
 		</p>

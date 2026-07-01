@@ -10,6 +10,8 @@
 		error?: RemoteFormIssue[] | string | null;
 		disabled?: boolean;
 		required?: boolean;
+		onchange?: (val: string) => void;
+		onkeydown?: (e: KeyboardEvent) => void;
 	}
 
 	let {
@@ -18,7 +20,9 @@
 		name,
 		error = null,
 		disabled = false,
-		required = false
+		required = false,
+		onchange,
+		onkeydown
 	}: Props = $props();
 
 	let idType = $state<IdDocPrefix>('V');
@@ -53,6 +57,7 @@
 			value = '';
 			previousValue = '';
 		}
+		onchange?.(value);
 	}
 
 	// Handle number input - only allow digits, max 10
@@ -93,6 +98,7 @@
 			placeholder="12345678"
 			value={idNumber}
 			oninput={handleInput}
+			onkeydown={onkeydown}
 			aria-invalid={hasError}
 			{disabled}
 			maxlength={10}
