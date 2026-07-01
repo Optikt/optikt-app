@@ -813,6 +813,7 @@
 		/>
 		{#if quickAddQuery}
 			<button
+				title="Limpiar búsqueda"
 				type="button"
 				onclick={resetQuickAdd}
 				class="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600"
