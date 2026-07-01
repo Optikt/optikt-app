@@ -29,6 +29,7 @@
 		} | null;
 		selectedCustomer: Customer | null;
 		creatingCustomer?: boolean;
+		resetKey?: number;
 		onchange?: () => void;
 	}
 
@@ -37,6 +38,7 @@
 		newCustomer = $bindable(),
 		selectedCustomer = $bindable(),
 		creatingCustomer = $bindable(false),
+		resetKey = 0,
 		onchange
 	}: Props = $props();
 
@@ -188,7 +190,7 @@
 		onchange?.();
 	}
 
-	function returnToLookup() {
+	export 	function cleanCustomerCreation() {
 		creatingCustomer = false;
 		mode = 'idle';
 		newCustomer = null;
@@ -204,26 +206,24 @@
 		onchange?.();
 	}
 
+	let prevResetKey: number;
+
+	$effect(() => {
+		if (resetKey !== prevResetKey) {
+			prevResetKey = resetKey;
+			cleanCustomerCreation();
+		}
+	});
+
 	function reset() {
 		clearTimeout(searchTimeout);
+		cleanCustomerCreation()
 		idValue = '';
 		prevDocType = 'V';
 		docType = 'V';
 		foundCustomer = null;
-		mode = 'idle';
-		creatingCustomer = false;
 		customerId = '';
-		newCustomer = null;
 		selectedCustomer = null;
-		firstName = '';
-		lastName = '';
-		primaryPhone = '';
-		email = '';
-		address = '';
-		customerNotes = '';
-		touchedFirstName = false;
-		touchedLastName = false;
-		touchedIdDigits = false;
 		onchange?.();
 	}
 
@@ -346,97 +346,83 @@
 	{/if}
 
 	{#if mode === 'create'}
-		<div transition:slide={{ duration: 180 }} class="space-y-2">
-			<div class="mb-1 flex items-center justify-between">
-				<p class="text-sm font-semibold text-brand-navy">Nuevo cliente</p>
-				<button
-					type="button"
-					onclick={returnToLookup}
-					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/40 bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant transition-colors hover:border-brand-navy hover:text-brand-navy"
-				>
-					<ArrowLeft class="h-3.5 w-3.5" />
-					Volver a búsqueda
-				</button>
+		<div transition:slide={{ duration: 180 }}  class="grid grid-cols-2 gap-2 lg:grid-cols-3">
+			<div>
+				<label class={fieldLabelClass} for="new-firstName">Nombre</label>
+				<input
+					id="new-firstName"
+					type="text"
+					bind:value={firstName}
+					oninput={() => {
+						syncNewCustomer();
+						touchedFirstName = true;
+					}}
+					onblur={() => (touchedFirstName = true)}
+					placeholder="Ej: Juan"
+					class="{fieldInputClass} mt-1 {firstNameError ? 'ring-1 ring-error/40' : ''}"
+				/>
+				{#if firstNameError}
+					<p class="mt-0.5 text-[10px] text-error">Requerido</p>
+				{/if}
 			</div>
 
-			<div class="grid grid-cols-2 gap-2 lg:grid-cols-3">
-				<div>
-					<label class={fieldLabelClass} for="new-firstName">Nombre</label>
-					<input
-						id="new-firstName"
-						type="text"
-						bind:value={firstName}
-						oninput={() => {
-							syncNewCustomer();
-							touchedFirstName = true;
-						}}
-						onblur={() => (touchedFirstName = true)}
-						placeholder="Ej: Juan"
-						class="{fieldInputClass} mt-1 {firstNameError ? 'ring-1 ring-error/40' : ''}"
-					/>
-					{#if firstNameError}
-						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
-					{/if}
-				</div>
+			<div>
+				<label class={fieldLabelClass} for="new-lastName">Apellido</label>
+				<input
+					id="new-lastName"
+					type="text"
+					bind:value={lastName}
+					oninput={() => {
+						syncNewCustomer();
+						touchedLastName = true;
+					}}
+					onblur={() => (touchedLastName = true)}
+					placeholder="Ej: Pérez"
+					class="{fieldInputClass} mt-1 {lastNameError ? 'ring-1 ring-error/40' : ''}"
+				/>
+				{#if lastNameError}
+					<p class="mt-0.5 text-[10px] text-error">Requerido</p>
+				{/if}
+			</div>
 
-				<div>
-					<label class={fieldLabelClass} for="new-lastName">Apellido</label>
-					<input
-						id="new-lastName"
-						type="text"
-						bind:value={lastName}
-						oninput={() => {
-							syncNewCustomer();
-							touchedLastName = true;
-						}}
-						onblur={() => (touchedLastName = true)}
-						placeholder="Ej: Pérez"
-						class="{fieldInputClass} mt-1 {lastNameError ? 'ring-1 ring-error/40' : ''}"
-					/>
-					{#if lastNameError}
-						<p class="mt-0.5 text-[10px] text-error">Requerido</p>
-					{/if}
-				</div>
+			<div>
+				<label class={fieldLabelClass} for="new-email">Email</label>
+				<input
+					id="new-email"
+					type="email"
+					bind:value={email}
+					oninput={syncNewCustomer}
+					placeholder="cliente@ejemplo.com"
+					class="{fieldInputClass} mt-1"
+				/>
+			</div>
 
-				<div>
-					<label class={fieldLabelClass} for="new-email">Email</label>
-					<input
-						id="new-email"
-						type="email"
-						bind:value={email}
-						oninput={syncNewCustomer}
-						placeholder="cliente@ejemplo.com"
-						class="{fieldInputClass} mt-1"
-					/>
-				</div>
+			<div>
+				<IdInput bind:value={idValue} onchange={handleIdChange} label="Documento" error={idDigitsError ? 'Requerido' : null} required />
+			</div>
 
-				<div>
-					<IdInput bind:value={idValue} onchange={handleIdChange} label="Documento" error={idDigitsError ? 'Requerido' : null} required />
-				</div>
+			<div>
+				<label class={fieldLabelClass} for="new-phone">Teléfono</label>
+				<input
+					id="new-phone"
+					type="tel"
+					bind:value={primaryPhone}
+					oninput={syncNewCustomer}
+					placeholder="+58 412 000 0000"
+					class="{fieldInputClass} mt-1"
+				/>
+			</div>
 
-				<div>
-					<label class={fieldLabelClass} for="new-phone">Teléfono</label>
-					<input
-						id="new-phone"
-						type="tel"
-						bind:value={primaryPhone}
-						oninput={syncNewCustomer}
-						placeholder="+58 412 000 0000"
-						class="{fieldInputClass} mt-1"
-					/>
-				</div>
-
-				<div class="col-span-2 lg:col-span-3">
-					<label class={fieldLabelClass} for="new-address">Dirección</label>
-					<textarea
-						id="new-address"
-						bind:value={address}
-						oninput={syncNewCustomer}
-						rows={2}
-						placeholder="Av. Principal, Centro..."
-						class="{fieldInputClass} mt-1 min-h-16 resize-none"
-					></textarea>
-				</div>
+			<div class="col-span-2 lg:col-span-3">
+				<label class={fieldLabelClass} for="new-address">Dirección</label>
+				<textarea
+					id="new-address"
+					bind:value={address}
+					oninput={syncNewCustomer}
+					rows={2}
+					placeholder="Av. Principal, Centro..."
+					class="{fieldInputClass} mt-1 min-h-16 resize-none"
+				></textarea>
 			</div>
 		</div>
 	{/if}
