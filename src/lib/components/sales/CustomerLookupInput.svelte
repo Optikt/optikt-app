@@ -346,8 +346,8 @@
 	{/if}
 
 	{#if mode === 'create'}
-		<div transition:slide={{ duration: 180 }}  class="grid grid-cols-2 gap-2 lg:grid-cols-3">
-			<div>
+		<div transition:slide={{ duration: 180 }}  class="grid grid-cols-2 gap-2 lg:grid-cols-10">
+			<div class="col-span-2">
 				<label class={fieldLabelClass} for="new-firstName">Nombre</label>
 				<input
 					id="new-firstName"
@@ -366,7 +366,7 @@
 				{/if}
 			</div>
 
-			<div>
+			<div class="col-span-2">
 				<label class={fieldLabelClass} for="new-lastName">Apellido</label>
 				<input
 					id="new-lastName"
@@ -385,7 +385,7 @@
 				{/if}
 			</div>
 
-			<div>
+			<div class="col-span-2">
 				<label class={fieldLabelClass} for="new-email">Email</label>
 				<input
 					id="new-email"
@@ -397,11 +397,11 @@
 				/>
 			</div>
 
-			<div>
+			<div class="col-span-2">
 				<IdInput bind:value={idValue} onchange={handleIdChange} label="Documento" error={idDigitsError ? 'Requerido' : null} required />
 			</div>
 
-			<div>
+			<div class="col-span-2">
 				<label class={fieldLabelClass} for="new-phone">Teléfono</label>
 				<input
 					id="new-phone"
