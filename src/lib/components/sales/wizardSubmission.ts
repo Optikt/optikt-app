@@ -10,33 +10,7 @@ import type { z } from 'zod';
 import type { SaleItemRow } from './newSaleTypes';
 import { getEnabledEyeCount } from './saleItemHelpers';
 
-interface WizardPrescriptionValues {
-	odSphere: string | number;
-	odCylinder: string | number;
-	odAxis: string | number;
-	odAddition: string | number;
-	oiSphere: string | number;
-	oiCylinder: string | number;
-	oiAxis: string | number;
-	oiAddition: string | number;
-	lensType: string;
-	doctorName: string;
-}
-
 type PrescriptionFieldsPayload = z.input<typeof PrescriptionFieldsSchema>;
-
-function hasPrescriptionValues(values: WizardPrescriptionValues): boolean {
-	return [
-		values.odSphere,
-		values.odCylinder,
-		values.odAxis,
-		values.odAddition,
-		values.oiSphere,
-		values.oiCylinder,
-		values.oiAxis,
-		values.oiAddition
-	].some((value) => value != null && String(value).trim() !== '');
-}
 
 function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWithRelations[]) {
 	if (item.kind !== 'lens' || !item.lensPair) return null;
