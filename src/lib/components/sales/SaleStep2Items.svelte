@@ -10,7 +10,6 @@
 		Search,
 		Package,
 		Paperclip,
-		Sparkles,
 		X,
 		Copy
 	} from '@lucide/svelte';
@@ -62,8 +61,6 @@
 		newCustomer: NewCustomerData | null;
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
-		nextOrderNumber?: number;
-		entityNumberLabel?: string;
 		customerFallbackName?: string;
 		customerFallbackDocument?: string;
 		newCustomerContextLabel?: string;
@@ -84,8 +81,6 @@
 		newCustomer,
 		products,
 		lensItems,
-		nextOrderNumber,
-		entityNumberLabel = 'Orden #',
 		customerFallbackName = 'Venta de mostrador',
 		customerFallbackDocument = 'Sin cliente asignado',
 		newCustomerContextLabel = 'Cliente nuevo en esta venta',
@@ -249,8 +244,6 @@
 	// ============================================================================
 	// ITEMS MANAGEMENT
 	// ============================================================================
-
-	const hasLensItem = $derived(items.some((i) => i.kind === 'lens'));
 
 	function createEmptyItem(): SaleItemRow {
 		return {
@@ -662,10 +655,6 @@
 			.length
 	);
 
-	const selectedTreatmentCount = $derived(
-		items.reduce((count, item) => count + item.treatments.length, 0)
-	);
-
 	const coreItemsSubtotal = $derived(
 		items.reduce((sum, item) => sum + step2ItemLineTotal(item), 0)
 	);
@@ -742,7 +731,7 @@
 	});
 </script>
 
-<div class="flex items-start gap-4">
+<div>
 	<!-- ============================================================
 	LEFT COLUMN: Customer banner + Search + Items
 	============================================================ -->
@@ -916,7 +905,6 @@
 					onclick={addFreeItem}
 					class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
 				>
-					<!-- <Sparkles class="h-3.5 w-3.5" /> -->
 					Ítem Libre
 				</button>
 				{#if canCopyRxToAll}
@@ -1765,45 +1753,5 @@
 			onBack={onprev}
 			onPrimary={onnext}
 		/>
-	</div>
-
-	<!-- ============================================================
-	RIGHT COLUMN: Sticky Summary Sidebar
-	============================================================ -->
-	<div class="sticky w-64 shrink-0 space-y-4">
-		<div class="rounded-xl bg-brand-navy px-4 py-4 text-white shadow-sm">
-			<p class="text-[10px] font-bold tracking-[0.14em] text-brand-gold uppercase">
-				Resumen parcial
-			</p>
-			<div class="mt-3 space-y-2.5 text-xs">
-				<div class="flex items-center justify-between gap-2 text-white/70">
-					<span>Ítems</span>
-					<span class="font-mono font-semibold text-white tabular-nums">{selectedItemCount}</span>
-				</div>
-				<div class="flex items-center justify-between gap-2 text-white/70">
-					<span>Productos y lentes</span>
-					<span class="font-mono font-semibold text-white tabular-nums"
-						>{formatPrice(coreItemsSubtotal)}</span
-					>
-				</div>
-				{#if selectedTreatmentCount > 0}
-					<div class="flex items-center justify-between gap-2 text-white/70">
-						<span>Tratamientos ({selectedTreatmentCount})</span>
-						<span class="font-mono font-semibold text-white tabular-nums"
-							>{formatPrice(treatmentsSubtotal)}</span
-						>
-					</div>
-				{/if}
-				<div class="h-px bg-white/10"></div>
-				<div class="flex items-end justify-between gap-2">
-					<p class="text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase">
-						Total previo
-					</p>
-					<p class="font-mono text-xl font-bold text-white tabular-nums">
-						{formatPrice(partialTotal)}
-					</p>
-				</div>
-			</div>
-		</div>
 	</div>
 </div>

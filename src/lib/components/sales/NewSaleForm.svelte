@@ -322,7 +322,6 @@
 			{newCustomer}
 			{products}
 			{lensItems}
-			{nextOrderNumber}
 			valid={step2Valid}
 			onnext={nextStep}
 			onprev={prevStep}

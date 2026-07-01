@@ -262,8 +262,6 @@
 			{newCustomer}
 			{products}
 			{lensItems}
-			nextOrderNumber={nextQuoteNumber}
-			entityNumberLabel="Presupuesto #"
 			customerFallbackName="Presupuesto sin cliente"
 			customerFallbackDocument="Cliente opcional"
 			newCustomerContextLabel="Cliente nuevo para este presupuesto"
