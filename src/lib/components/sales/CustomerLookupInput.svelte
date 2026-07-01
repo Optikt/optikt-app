@@ -14,7 +14,7 @@
 	import { lookupCustomer } from '$lib/remote/sales.remote';
 	import { getErrorMessage, ID_DOC_PREFIXES, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
 	import type { Customer } from '$lib/server/db/schema';
-	import {IdInput} from "$lib/components/ui"
+	import { IdInput } from '$lib/components/ui';
 
 	interface Props {
 		customerId: string;
@@ -190,7 +190,7 @@
 		onchange?.();
 	}
 
-	export 	function cleanCustomerCreation() {
+	export function cleanCustomerCreation() {
 		creatingCustomer = false;
 		mode = 'idle';
 		newCustomer = null;
@@ -217,7 +217,7 @@
 
 	function reset() {
 		clearTimeout(searchTimeout);
-		cleanCustomerCreation()
+		cleanCustomerCreation();
 		idValue = '';
 		prevDocType = 'V';
 		docType = 'V';
@@ -330,8 +330,8 @@
 					<CircleAlert class="h-4 w-4" />
 				</div>
 				<p class="min-w-0 flex-1 text-sm text-on-surface">
-					No encontramos <span class="font-mono font-semibold">{idValue}</span>. ¿Crear
-					nuevo cliente?
+					No encontramos <span class="font-mono font-semibold">{idValue}</span>. ¿Crear nuevo
+					cliente?
 				</p>
 				<button
 					type="button"
@@ -346,7 +346,7 @@
 	{/if}
 
 	{#if mode === 'create'}
-		<div transition:slide={{ duration: 180 }}  class="grid grid-cols-2 gap-2 lg:grid-cols-10">
+		<div transition:slide={{ duration: 180 }} class="grid grid-cols-2 gap-2 lg:grid-cols-10">
 			<div class="col-span-2">
 				<label class={fieldLabelClass} for="new-firstName">Nombre</label>
 				<input
@@ -386,7 +386,13 @@
 			</div>
 
 			<div class="col-span-3">
-				<IdInput bind:value={idValue} onchange={handleIdChange} label="Documento" error={idDigitsError ? 'Requerido' : null} required />
+				<IdInput
+					bind:value={idValue}
+					onchange={handleIdChange}
+					label="Documento"
+					error={idDigitsError ? 'Requerido' : null}
+					required
+				/>
 			</div>
 
 			<div class="col-span-3">
@@ -412,10 +418,6 @@
 					class="{fieldInputClass} mt-1"
 				/>
 			</div>
-
-
-
-
 
 			<div class="col-span-2 lg:col-span-6">
 				<label class={fieldLabelClass} for="new-address">Dirección</label>

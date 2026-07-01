@@ -98,7 +98,7 @@
 			placeholder="12345678"
 			value={idNumber}
 			oninput={handleInput}
-			onkeydown={onkeydown}
+			{onkeydown}
 			aria-invalid={hasError}
 			{disabled}
 			maxlength={10}
