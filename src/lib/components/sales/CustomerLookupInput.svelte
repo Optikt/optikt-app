@@ -1,14 +1,6 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
-	import {
-		CircleCheck,
-		CircleAlert,
-		IdCard,
-		Mail,
-		Phone,
-		UserPlus,
-		X
-	} from '@lucide/svelte';
+	import { CircleCheck, CircleAlert, IdCard, Mail, Phone, UserPlus, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { lookupCustomer } from '$lib/remote/sales.remote';
 	import { getErrorMessage, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
