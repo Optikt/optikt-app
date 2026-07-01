@@ -11,7 +11,12 @@
 		Package,
 		Paperclip,
 		X,
-		Copy
+		Copy,
+
+
+		PackagePlus
+
+
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
@@ -732,20 +737,66 @@
 </script>
 
 <div class="min-w-0 flex-1 space-y-2">
-	<!-- Compact customer banner -->
-	<div class="rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm">
-		<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-			<div class="flex items-center gap-2 text-xs font-semibold">
-				<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
-				<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
+	<div class="inline-flex gap-1 justify-between w-full">
+		<!-- Compact customer banner -->
+		<div class="rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm">
+			<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+				<div class="flex items-center gap-2 text-xs font-semibold">
+					<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
+					<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<span
+						class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase"
+					>
+						{contextStatus}
+					</span>
+				</div>
 			</div>
-			<div class="flex items-center gap-2">
-				<span
-					class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase"
+		</div>
+
+		<!-- Change product type search -->
+		<div class="inline-flex items-center gap-1">
+			<div
+				class="relative inline-grid overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm"
+				style="grid-template-columns: repeat({quickAddFilterOptions.length}, 1fr)"
+			>
+				<div
+					class="absolute top-1 bottom-1 left-1 rounded-md bg-brand-navy shadow-sm transition-transform duration-200 ease-out"
+					style="width: calc((100% - 0.5rem) / {quickAddFilterOptions.length}); transform: translateX(calc({activeFilterIdx} * 100%))"
+				></div>
+				{#each quickAddFilterOptions as option (option.value)}
+					<button
+						type="button"
+						onclick={() => setQuickAddFilter(option.value)}
+						class="relative z-10 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 {quickAddFilter ===
+						option.value
+							? 'text-white'
+							: 'text-slate-600 hover:text-slate-800'}"
+					>
+						{option.label}
+					</button>
+				{/each}
+			</div>
+
+			<button
+				type="button"
+				onclick={addFreeItem}
+				class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+			>
+				<PackagePlus class="h-3.5 w-3.5" />
+				Ítem Libre
+			</button>
+			{#if canCopyRxToAll}
+				<button
+					type="button"
+					onclick={copyFirstRxToAll}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-brand-blue/30 bg-brand-blue/5 px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
 				>
-					{contextStatus}
-				</span>
-			</div>
+					<Copy class="h-3.5 w-3.5" />
+					Copiar Rx a todos
+				</button>
+			{/if}
 		</div>
 	</div>
 
@@ -873,7 +924,7 @@
 			{/if}
 		</div>
 
-		<div class="inline-flex items-center gap-1">
+		<!-- <div class="inline-flex items-center gap-1">
 			<div
 				class="relative inline-grid overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm"
 				style="grid-template-columns: repeat({quickAddFilterOptions.length}, 1fr)"
@@ -913,7 +964,7 @@
 					Copiar Rx a todos
 				</button>
 			{/if}
-		</div>
+		</div> -->
 	</div>
 
 	<!-- Items list -->
@@ -976,9 +1027,7 @@
 									</div>
 									<div class="min-w-0">
 										<div class="flex flex-wrap items-center gap-1.5">
-											<p
-												class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-											>
+											<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
 												Ítem {index + 1}
 											</p>
 											<span
@@ -1176,8 +1225,7 @@
 							{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 								<div class="space-y-2 rounded-lg bg-surface-container-low p-3">
 									<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
-										<span
-											class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+										<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
 											>Ojos</span
 										>
 										<label
@@ -1259,8 +1307,7 @@
 													<div class="flex items-center gap-1.5">
 														<label
 															for="rx-{id}-doctor"
-															class="text-[10px] font-semibold text-outline uppercase"
-															>Médico</label
+															class="text-[10px] font-semibold text-outline uppercase">Médico</label
 														>
 														<input
 															id="rx-{id}-doctor"
@@ -1303,34 +1350,22 @@
 													<div
 														class="text-center text-[10px] font-semibold text-outline uppercase"
 													></div>
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													>
+													<div class="text-center text-[10px] font-semibold text-outline uppercase">
 														ESF
 													</div>
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													>
+													<div class="text-center text-[10px] font-semibold text-outline uppercase">
 														CIL
 													</div>
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													>
+													<div class="text-center text-[10px] font-semibold text-outline uppercase">
 														EJE
 													</div>
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													>
+													<div class="text-center text-[10px] font-semibold text-outline uppercase">
 														ADD
 													</div>
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													>
+													<div class="text-center text-[10px] font-semibold text-outline uppercase">
 														DP
 													</div>
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													>
+													<div class="text-center text-[10px] font-semibold text-outline uppercase">
 														DNP
 													</div>
 													<div
@@ -1602,8 +1637,7 @@
 														<div class="flex items-center justify-between gap-2">
 															<span>Envío</span>
 															{#if item.shippingCostPending}<span
-																	class="text-xs text-on-surface-variant/50 italic"
-																	>Pendiente</span
+																	class="text-xs text-on-surface-variant/50 italic">Pendiente</span
 																>
 															{:else}<input
 																	type="number"
@@ -1727,9 +1761,7 @@
 	{#if !valid}
 		{@const reasons = getValidationReasons()}
 		{#if reasons.length > 0}
-			<div
-				class="rounded-lg bg-warning-container/60 px-4 py-2.5 text-on-warning-container sm:px-5"
-			>
+			<div class="rounded-lg bg-warning-container/60 px-4 py-2.5 text-on-warning-container sm:px-5">
 				<p class="text-[10px] font-semibold tracking-[0.14em] uppercase">Para continuar</p>
 				<ul class="mt-1.5 space-y-0.5 text-xs">
 					{#each reasons as reason, index (index)}<li>{reason}</li>{/each}
