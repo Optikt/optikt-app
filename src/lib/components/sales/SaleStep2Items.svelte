@@ -150,7 +150,9 @@
 	let quickAddQuery = $state('');
 	let quickAddOpen = $state(false);
 	let quickAddFilter = $state<QuickAddFilter>('all');
-	const activeFilterIdx = $derived(quickAddFilterOptions.findIndex((o) => o.value === quickAddFilter));
+	const activeFilterIdx = $derived(
+		quickAddFilterOptions.findIndex((o) => o.value === quickAddFilter)
+	);
 	let costOpenFor = $state<string | null>(null);
 	let prescriptionOpenFor = $state<string | null>(null);
 
@@ -783,7 +785,7 @@
 
 				{#if quickAddOpen}
 					<div
-						class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] min-w-[600px] max-w-full wmax overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+						class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 					>
 						{#if totalQuickAddResults > 0}
 							{#if visibleProductQuickAddOptions.length > 0}
@@ -807,8 +809,12 @@
 											<Package class="h-4 w-4" />
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-slate-800" title={option.name}>{option.name}</p>
-											<p class="truncate text-xs text-slate-500" title={option.secondaryText}>{option.secondaryText}</p>
+											<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
+												{option.name}
+											</p>
+											<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
+												{option.secondaryText}
+											</p>
 										</div>
 										<div class="text-right">
 											<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
@@ -845,8 +851,12 @@
 											<Eye class="h-4 w-4" />
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-slate-800" title={option.name}>{option.name}</p>
-											<p class="truncate text-xs text-slate-500" title={option.secondaryText}>{option.secondaryText}</p>
+											<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
+												{option.name}
+											</p>
+											<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
+												{option.secondaryText}
+											</p>
 										</div>
 										<div class="text-right">
 											<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
@@ -873,7 +883,10 @@
 			</div>
 
 			<div class="inline-flex items-center gap-1">
-				<div class="relative inline-grid overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm" style="grid-template-columns: repeat({quickAddFilterOptions.length}, 1fr)">
+				<div
+					class="relative inline-grid overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-sm"
+					style="grid-template-columns: repeat({quickAddFilterOptions.length}, 1fr)"
+				>
 					<div
 						class="absolute top-1 bottom-1 left-1 rounded-md bg-brand-navy shadow-sm transition-transform duration-200 ease-out"
 						style="width: calc((100% - 0.5rem) / {quickAddFilterOptions.length}); transform: translateX(calc({activeFilterIdx} * 100%))"
@@ -882,7 +895,10 @@
 						<button
 							type="button"
 							onclick={() => setQuickAddFilter(option.value)}
-							class="relative z-10 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 {quickAddFilter === option.value ? 'text-white' : 'text-slate-600 hover:text-slate-800'}"
+							class="relative z-10 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 {quickAddFilter ===
+							option.value
+								? 'text-white'
+								: 'text-slate-600 hover:text-slate-800'}"
 						>
 							{option.label}
 						</button>
