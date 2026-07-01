@@ -249,6 +249,7 @@
 	{#if mode !== 'create'}
 		<!-- Search row: prefix + document input + buttons inline -->
 		<div class="flex items-center gap-2">
+		<!-- TODO: Make a global component for  -->
 			<select
 				value={docType}
 				onchange={handleDocTypeChange}
@@ -259,6 +260,7 @@
 					<option value={type}>{type}</option>
 				{/each}
 			</select>
+			
 
 			<div class="relative min-w-0 flex-1">
 				<Search
