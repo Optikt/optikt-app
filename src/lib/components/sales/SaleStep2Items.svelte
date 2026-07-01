@@ -783,7 +783,7 @@
 
 				{#if quickAddOpen}
 					<div
-						class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+						class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] min-w-[600px] max-w-full wmax overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 					>
 						{#if totalQuickAddResults > 0}
 							{#if visibleProductQuickAddOptions.length > 0}
