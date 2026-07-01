@@ -7,12 +7,11 @@
 		Mail,
 		Phone,
 		UserPlus,
-		ArrowLeft,
 		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { lookupCustomer } from '$lib/remote/sales.remote';
-	import { getErrorMessage, ID_DOC_PREFIXES, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
+	import { getErrorMessage, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
 	import type { Customer } from '$lib/server/db/schema';
 	import { IdInput } from '$lib/components/ui';
 
@@ -42,10 +41,8 @@
 		onchange
 	}: Props = $props();
 
-	let docType = $state<IdDocPrefix>('V');
-	let idDigits = $state('');
-	let idValue = $state('');
 	let prevDocType = $state<IdDocPrefix>('V');
+	let idValue = $state('');
 	let searching = $state(false);
 	let foundCustomer = $state<Customer | null>(selectedCustomer);
 	let mode = $state<'idle' | 'found' | 'missing' | 'create'>(
@@ -81,7 +78,6 @@
 		const match = value.match(ID_NUMBER_RE);
 		if (match) {
 			prevDocType = match[1] as IdDocPrefix;
-			docType = match[1] as IdDocPrefix;
 		}
 	}
 
@@ -120,7 +116,6 @@
 
 		if (newType !== prevDocType) {
 			prevDocType = newType;
-			docType = newType;
 			if (mode !== 'create') {
 				clearResolvedState();
 			} else {
@@ -220,7 +215,6 @@
 		cleanCustomerCreation();
 		idValue = '';
 		prevDocType = 'V';
-		docType = 'V';
 		foundCustomer = null;
 		customerId = '';
 		selectedCustomer = null;

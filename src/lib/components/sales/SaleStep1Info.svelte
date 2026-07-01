@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ArrowLeft, UserPlus } from '@lucide/svelte';
+	import { ArrowLeft } from '@lucide/svelte';
 	import CustomerLookupInput from './CustomerLookupInput.svelte';
 	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
 	import type { Customer } from '$lib/server/db/schema';
