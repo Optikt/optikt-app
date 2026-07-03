@@ -87,7 +87,7 @@
 		newCustomerContextLabel = 'Cliente nuevo en esta venta',
 		selectedCustomerContextLabel = 'Cliente asociado',
 		noCustomerContextLabel = 'Venta sin cliente',
-		itemsSectionTitle = 'Artículos de la venta',
+		itemsSectionTitle = 'Artículos',
 		onCancel,
 		valid,
 		onnext,
@@ -924,16 +924,14 @@
 	</div>
 
 	<!-- Items list -->
-	<div class="rounded-xl bg-surface-container-low px-4 py-4 sm:px-5">
-		<div class="mb-3 flex items-center justify-between gap-3">
-			<div>
-				<h3 class="text-sm font-semibold text-brand-navy">{itemsSectionTitle}</h3>
-			</div>
+	<div class="py-2">
+		<div class="mb-2 flex items-center gap-4">
+			<h3 class="text-sm font-semibold text-brand-navy">{itemsSectionTitle}</h3>
 			<span
-				class="rounded-full bg-surface-container-lowest px-2 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase"
+				class="rounded-full bg-surface-container-lowest px-2 py-0.5 text-[14px] font-semibold uppercase border"
 			>
 				{selectedItemCount}
-				{selectedItemCount === 1 ? 'ítem' : 'ítems'}
+				{selectedItemCount === 1 ? 'item' : 'items'}
 			</span>
 		</div>
 
@@ -964,11 +962,10 @@
 					{@const treatmentTotal = item.kind === 'lens' ? getTreatmentTotal(item) : 0}
 
 					<div
-						class="rounded-lg p-3 shadow-sm {item.isIncludedAccessory
+						class="space-y-3 rounded-lg p-3 {item.isIncludedAccessory
 							? 'border border-amber-200/80 bg-amber-50/70'
-							: 'bg-surface-container-lowest'}"
+							: 'border border-slate-200 bg-white'}"
 					>
-						<div class="space-y-3">
 							<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
 								<div class="flex min-w-0 flex-1 items-start gap-2.5">
 									<div
@@ -1179,7 +1176,7 @@
 							{/if}
 
 							{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-								<div class="space-y-2 rounded-lg bg-surface-container-low p-3">
+								<div class="space-y-2 border-t border-slate-100 pt-2">
 									<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
 										<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
 											>Ojos</span
@@ -1219,7 +1216,9 @@
 									{/if}
 
 									<!-- Prescription accordion -->
-									<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm">
+									<div
+									use:autoAnimate
+									>
 										<button
 											type="button"
 											onclick={() => {
@@ -1533,7 +1532,6 @@
 											{@const internalCostTotal =
 												co.baseCost + co.mountingPrice + effectiveShipping}
 											<div
-												class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm"
 												use:autoAnimate
 											>
 												<button
@@ -1623,7 +1621,7 @@
 										{/if}
 
 										{#if availableTreatments.length > 0}
-											<div class="rounded-lg bg-surface-container-lowest px-3 py-2 shadow-sm">
+											<div>
 												<div class="mb-2 flex items-center justify-between gap-2" use:autoAnimate>
 													<div class="flex items-center gap-1.5">
 														<FlaskConical class="h-3.5 w-3.5 text-brand-blue" />
@@ -1707,7 +1705,6 @@
 									</div>
 								</div>
 							{/if}
-						</div>
 					</div>
 				{/each}
 			{/if}
