@@ -797,7 +797,7 @@
 	</div>
 
 	<!-- Search bar -->
-	 <!-- TODO: Use the Search bar component -->
+	<!-- TODO: Use the Search bar component -->
 	<div class="relative min-w-0 flex-1 lg:max-w-3xl">
 		<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
 		<input
@@ -928,7 +928,7 @@
 		<div class="mb-2 flex items-center gap-4">
 			<h3 class="text-sm font-semibold text-brand-navy">{itemsSectionTitle}</h3>
 			<span
-				class="rounded-full bg-surface-container-lowest px-2 py-0.5 text-[14px] font-semibold uppercase border"
+				class="rounded-full border bg-surface-container-lowest px-2 py-0.5 text-[14px] font-semibold uppercase"
 			>
 				{selectedItemCount}
 				{selectedItemCount === 1 ? 'item' : 'items'}
@@ -966,745 +966,735 @@
 							? 'border border-amber-200/80 bg-amber-50/70'
 							: 'border border-slate-200 bg-white'}"
 					>
-							<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-								<div class="flex min-w-0 flex-1 items-start gap-2.5">
-									<div
-										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind ===
-										'lens'
-											? 'bg-brand-blue/15 text-brand-blue'
-											: 'bg-surface-container-high text-brand-navy'}"
-									>
-										{#if item.kind === 'lens'}<Eye class="h-3.5 w-3.5" />{:else}<Package
-												class="h-3.5 w-3.5"
-											/>{/if}
-									</div>
-									<div class="min-w-0">
-										<div class="flex flex-wrap items-center gap-1.5">
-											<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
-												Ítem {index + 1}
-											</p>
-											<span
-												class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {item.kind ===
-												'lens'
-													? 'bg-brand-blue/10 text-brand-blue'
-													: 'bg-surface-container-high text-on-surface-variant'}"
-											>
-												{item.kind === 'lens' ? 'Lente' : 'Producto'}
-											</span>
-											{#if item.isIncludedAccessory}
-												<span
-													class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase"
-												>
-													<Paperclip class="h-2.5 w-2.5" /> Accesorio
-												</span>
-											{/if}
-											{#if item.kind === 'product' && maxStock !== null}
-												<span
-													class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==
-														null && availableStock <= 3
-														? 'bg-warning-container text-on-warning-container'
-														: 'bg-success-container text-on-success-container'}"
-												>
-													{availableStock ?? maxStock} disp.
-												</span>
-											{/if}
-										</div>
-										<h4 class="truncate text-sm font-semibold text-brand-navy">
-											{#if item.kind === 'product'}{product?.name ??
-													'Producto por seleccionar'}{:else}{lens?.name ??
-													'Lente por seleccionar'}{/if}
-										</h4>
-										{#if item.kind === 'product' && product}
-											<p class="text-[11px] text-on-surface-variant">
-												{#if product.sku}<span class="font-mono">{product.sku}</span>{/if}
-												{#if product.brand}<span
-														>{product.sku ? ' · ' : ''}{product.brand.name}</span
-													>{/if}
-											</p>
-										{:else if item.kind === 'lens' && lens}
-											<div
-												class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-on-surface-variant"
-											>
-												<span
-													class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 font-semibold text-brand-blue"
-													>{getLensSourceLabel(lens.source)}</span
-												>
-												<span
-													class="rounded-full bg-surface-container-high px-1.5 py-0.5 font-semibold text-on-surface-variant"
-													>{getLensTypeLabel(lens.type)}</span
-												>
-												{#if lens.material}<span>{lens.material.name}</span>{/if}
-												{#if lens.supplier}<span>· {lens.supplier.name}</span>{/if}
-											</div>
-										{/if}
-									</div>
-								</div>
-
+						<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+							<div class="flex min-w-0 flex-1 items-start gap-2.5">
 								<div
-									class="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem] xl:grid-cols-[5rem_7rem_6rem_auto] xl:items-end"
+									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind ===
+									'lens'
+										? 'bg-brand-blue/15 text-brand-blue'
+										: 'bg-surface-container-high text-brand-navy'}"
 								>
-									<div>
-										<Label
-											for="qty-{item.id}"
-											class="mb-1 text-[10px] font-semibold text-outline uppercase">Cant.</Label
+									{#if item.kind === 'lens'}<Eye class="h-3.5 w-3.5" />{:else}<Package
+											class="h-3.5 w-3.5"
+										/>{/if}
+								</div>
+								<div class="min-w-0">
+									<div class="flex flex-wrap items-center gap-1.5">
+										<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
+											Ítem {index + 1}
+										</p>
+										<span
+											class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {item.kind ===
+											'lens'
+												? 'bg-brand-blue/10 text-brand-blue'
+												: 'bg-surface-container-high text-on-surface-variant'}"
 										>
-										{#if item.kind === 'product'}
-											<Input
-												id="qty-{item.id}"
-												type="number"
-												bind:value={item.quantity}
-												min="1"
-												max={availableStock !== null && availableStock > 0
-													? availableStock
-													: undefined}
-												class="font-mono text-sm"
-											/>
-										{:else if item.kind === 'free'}
-											<Input
-												id="qty-{item.id}"
-												type="number"
-												bind:value={item.quantity}
-												min="1"
-												class="font-mono text-sm"
-											/>
-										{:else}
-											<Input
-												id="qty-{item.id}"
-												type="number"
-												value="1"
-												disabled
-												class="font-mono text-sm"
-											/>
+											{item.kind === 'lens' ? 'Lente' : 'Producto'}
+										</span>
+										{#if item.isIncludedAccessory}
+											<span
+												class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-amber-800 uppercase"
+											>
+												<Paperclip class="h-2.5 w-2.5" /> Accesorio
+											</span>
 										{/if}
-										{#if item.kind === 'product' && availableStock !== null && item.quantity > availableStock}
-											<p class="mt-0.5 text-[10px] text-red-600">Disp: {availableStock}</p>
+										{#if item.kind === 'product' && maxStock !== null}
+											<span
+												class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase {availableStock !==
+													null && availableStock <= 3
+													? 'bg-warning-container text-on-warning-container'
+													: 'bg-success-container text-on-success-container'}"
+											>
+												{availableStock ?? maxStock} disp.
+											</span>
 										{/if}
 									</div>
-									<div>
-										<Label
-											for="price-{item.id}"
-											class="mb-1 text-[10px] font-semibold text-outline uppercase">Precio</Label
+									<h4 class="truncate text-sm font-semibold text-brand-navy">
+										{#if item.kind === 'product'}{product?.name ??
+												'Producto por seleccionar'}{:else}{lens?.name ??
+												'Lente por seleccionar'}{/if}
+									</h4>
+									{#if item.kind === 'product' && product}
+										<p class="text-[11px] text-on-surface-variant">
+											{#if product.sku}<span class="font-mono">{product.sku}</span>{/if}
+											{#if product.brand}<span>{product.sku ? ' · ' : ''}{product.brand.name}</span
+												>{/if}
+										</p>
+									{:else if item.kind === 'lens' && lens}
+										<div
+											class="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-on-surface-variant"
 										>
-										<Input
-											id="price-{item.id}"
-											type="number"
-											bind:value={item.unitPrice}
-											step="0.01"
-											min="0"
-											class="font-mono text-sm"
-										/>
-									</div>
-									<div>
-										<p class="mb-1 text-[10px] font-semibold text-outline uppercase">Total</p>
-										<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
-											<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-												{formatPrice(step2ItemLineTotal(item))}
-											</p>
+											<span
+												class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 font-semibold text-brand-blue"
+												>{getLensSourceLabel(lens.source)}</span
+											>
+											<span
+												class="rounded-full bg-surface-container-high px-1.5 py-0.5 font-semibold text-on-surface-variant"
+												>{getLensTypeLabel(lens.type)}</span
+											>
+											{#if lens.material}<span>{lens.material.name}</span>{/if}
+											{#if lens.supplier}<span>· {lens.supplier.name}</span>{/if}
 										</div>
-									</div>
-									<div class="flex items-end justify-end">
-										<button
-											type="button"
-											onclick={() => removeItem(item.id)}
-											class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-error-container/60 hover:text-red-700"
-											title="Eliminar ítem"
-										>
-											<Trash2 class="h-3.5 w-3.5" />
-										</button>
-									</div>
+									{/if}
 								</div>
 							</div>
 
-							{#if item.kind === 'free' && item.freeItem}
-								<div class="space-y-3 rounded-lg bg-amber-50/60 p-3">
-									<div class="grid gap-3 sm:grid-cols-2">
-										<div>
-											<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
-												>Categoría *</Label
-											>
-											<select
-												bind:value={item.freeItem.category}
-												class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-											>
-												{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
-													<option value={cat}>{getFreeItemCategoryLabel(cat)}</option>
-												{/each}
-											</select>
-										</div>
-										<div>
-											<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
-												>Descripción *</Label
-											>
-											<Input
-												bind:value={item.freeItem.description}
-												placeholder="LC Novak -2.50 miel, hidrogel..."
-												maxlength={500}
-											/>
-										</div>
-									</div>
-									<div class="grid gap-3 sm:grid-cols-2">
-										<div>
-											<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
-												>Costo estimado</Label
-											>
-											<Input
-												type="number"
-												value={item.freeItem.unitCost ?? undefined}
-												oninput={(event) => {
-													if (event.currentTarget instanceof HTMLInputElement) {
-														setFreeItemUnitCost(item, event.currentTarget.value);
-													}
-												}}
-												placeholder="0.00"
-												step="0.01"
-												min="0"
-												class="font-mono"
-											/>
-										</div>
-										<div>
-											<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
-												>Notas ópticas</Label
-											>
-											<Input
-												bind:value={item.freeItem.opticalNotes}
-												placeholder="OD -2.50 sph, color miel..."
-												maxlength={1000}
-											/>
-										</div>
+							<div
+								class="grid gap-2 sm:grid-cols-3 xl:min-w-[22rem] xl:grid-cols-[5rem_7rem_6rem_auto] xl:items-end"
+							>
+								<div>
+									<Label
+										for="qty-{item.id}"
+										class="mb-1 text-[10px] font-semibold text-outline uppercase">Cant.</Label
+									>
+									{#if item.kind === 'product'}
+										<Input
+											id="qty-{item.id}"
+											type="number"
+											bind:value={item.quantity}
+											min="1"
+											max={availableStock !== null && availableStock > 0
+												? availableStock
+												: undefined}
+											class="font-mono text-sm"
+										/>
+									{:else if item.kind === 'free'}
+										<Input
+											id="qty-{item.id}"
+											type="number"
+											bind:value={item.quantity}
+											min="1"
+											class="font-mono text-sm"
+										/>
+									{:else}
+										<Input
+											id="qty-{item.id}"
+											type="number"
+											value="1"
+											disabled
+											class="font-mono text-sm"
+										/>
+									{/if}
+									{#if item.kind === 'product' && availableStock !== null && item.quantity > availableStock}
+										<p class="mt-0.5 text-[10px] text-red-600">Disp: {availableStock}</p>
+									{/if}
+								</div>
+								<div>
+									<Label
+										for="price-{item.id}"
+										class="mb-1 text-[10px] font-semibold text-outline uppercase">Precio</Label
+									>
+									<Input
+										id="price-{item.id}"
+										type="number"
+										bind:value={item.unitPrice}
+										step="0.01"
+										min="0"
+										class="font-mono text-sm"
+									/>
+								</div>
+								<div>
+									<p class="mb-1 text-[10px] font-semibold text-outline uppercase">Total</p>
+									<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+										<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
+											{formatPrice(step2ItemLineTotal(item))}
+										</p>
 									</div>
 								</div>
-							{/if}
+								<div class="flex items-end justify-end">
+									<button
+										type="button"
+										onclick={() => removeItem(item.id)}
+										class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-error-container/60 hover:text-red-700"
+										title="Eliminar ítem"
+									>
+										<Trash2 class="h-3.5 w-3.5" />
+									</button>
+								</div>
+							</div>
+						</div>
 
-							{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-								<div class="space-y-2 border-t border-slate-100 pt-2">
-									<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
-										<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-											>Ojos</span
+						{#if item.kind === 'free' && item.freeItem}
+							<div class="space-y-3 rounded-lg bg-amber-50/60 p-3">
+								<div class="grid gap-3 sm:grid-cols-2">
+									<div>
+										<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+											>Categoría *</Label
 										>
-										<label
-											class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+										<select
+											bind:value={item.freeItem.category}
+											class="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 										>
-											<input
-												type="checkbox"
-												bind:checked={item.lensPair.od.enabled}
-												onchange={() => recalcSuggestedPrice(item)}
-												class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-											/>
-											<span>OD</span>
-										</label>
-										<label
-											class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
-										>
-											<input
-												type="checkbox"
-												bind:checked={item.lensPair.oi.enabled}
-												onchange={() => recalcSuggestedPrice(item)}
-												class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-											/>
-											<span>OI</span>
-										</label>
-										{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">
-												Habilita al menos un ojo
-											</p>{/if}
+											{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
+												<option value={cat}>{getFreeItemCategoryLabel(cat)}</option>
+											{/each}
+										</select>
 									</div>
-									{#if rangeWarnings.length > 0}
-										<div
-											class="rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
+									<div>
+										<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+											>Descripción *</Label
 										>
-											{#each rangeWarnings as warning (warning)}<p>{warning}</p>{/each}
+										<Input
+											bind:value={item.freeItem.description}
+											placeholder="LC Novak -2.50 miel, hidrogel..."
+											maxlength={500}
+										/>
+									</div>
+								</div>
+								<div class="grid gap-3 sm:grid-cols-2">
+									<div>
+										<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+											>Costo estimado</Label
+										>
+										<Input
+											type="number"
+											value={item.freeItem.unitCost ?? undefined}
+											oninput={(event) => {
+												if (event.currentTarget instanceof HTMLInputElement) {
+													setFreeItemUnitCost(item, event.currentTarget.value);
+												}
+											}}
+											placeholder="0.00"
+											step="0.01"
+											min="0"
+											class="font-mono"
+										/>
+									</div>
+									<div>
+										<Label class="mb-1 text-[10px] font-semibold text-outline uppercase"
+											>Notas ópticas</Label
+										>
+										<Input
+											bind:value={item.freeItem.opticalNotes}
+											placeholder="OD -2.50 sph, color miel..."
+											maxlength={1000}
+										/>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
+							<div class="space-y-2 border-t border-slate-100 pt-2">
+								<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
+									<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+										>Ojos</span
+									>
+									<label
+										class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+									>
+										<input
+											type="checkbox"
+											bind:checked={item.lensPair.od.enabled}
+											onchange={() => recalcSuggestedPrice(item)}
+											class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+										/>
+										<span>OD</span>
+									</label>
+									<label
+										class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+									>
+										<input
+											type="checkbox"
+											bind:checked={item.lensPair.oi.enabled}
+											onchange={() => recalcSuggestedPrice(item)}
+											class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+										/>
+										<span>OI</span>
+									</label>
+									{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">
+											Habilita al menos un ojo
+										</p>{/if}
+								</div>
+								{#if rangeWarnings.length > 0}
+									<div
+										class="rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
+									>
+										{#each rangeWarnings as warning (warning)}<p>{warning}</p>{/each}
+									</div>
+								{/if}
+
+								<!-- Prescription accordion -->
+								<div use:autoAnimate>
+									<button
+										type="button"
+										onclick={() => {
+											prescriptionOpenFor = prescriptionOpenFor === item.id ? null : item.id;
+										}}
+										class="flex w-full cursor-pointer items-center justify-between gap-2"
+									>
+										<div class="flex items-center gap-1.5">
+											<Eye class="h-3.5 w-3.5 text-brand-blue" />
+											<p class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase">
+												Fórmula
+											</p>
+										</div>
+										<div class="flex items-center gap-1.5">
+											{#if rxErrorsPerLens[item.id] && Object.keys(rxErrorsPerLens[item.id]).length > 0}
+												<span
+													class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
+													>Pendiente</span
+												>
+											{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+												<span
+													class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
+													>Completa</span
+												>
+											{/if}
+											<ChevronRight
+												class="h-3.5 w-3.5 text-on-surface-variant transition-transform {prescriptionOpenFor ===
+												item.id
+													? 'rotate-90'
+													: ''}"
+											/>
+										</div>
+									</button>
+									{#if prescriptionOpenFor === item.id}
+										{@const rxErrs = rxErrorsPerLens[item.id] ?? {}}
+										{@const id = item.id}
+										<div class="mt-2 border-t border-outline-variant/30 pt-2">
+											<div class="mb-3 flex flex-wrap items-center gap-3">
+												<div class="flex items-center gap-1.5">
+													<label
+														for="rx-{id}-doctor"
+														class="text-[10px] font-semibold text-outline uppercase">Médico</label
+													>
+													<input
+														id="rx-{id}-doctor"
+														type="text"
+														bind:value={item.lensPair.doctorName}
+														placeholder="Nombre del doctor"
+														class="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.doctorName
+															? '!border-red-400'
+															: ''}"
+													/>
+													{#if rxErrs.doctorName}<p class="text-[10px] text-red-500">
+															{rxErrs.doctorName}
+														</p>{/if}
+												</div>
+												<div class="flex items-center gap-1.5">
+													<label
+														for="rx-{id}-lens-type"
+														class="text-[10px] font-semibold text-outline uppercase">Tipo</label
+													>
+													<select
+														id="rx-{id}-lens-type"
+														bind:value={item.lensPair.lensType}
+														class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+													>
+														{#each ALL_LENS_TYPES as type (type)}
+															<option value={type}>{getLensTypeLabel(type)}</option>
+														{/each}
+													</select>
+												</div>
+												<button
+													type="button"
+													onclick={() => copyOiToOd(item.lensPair!)}
+													class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
+												>
+													<Copy class="h-3 w-3" />
+													Copiar OI → OD
+												</button>
+											</div>
+											<div class="grid grid-cols-[3.5rem_repeat(6,1fr)] gap-x-1.5 gap-y-1">
+												<div
+													class="text-center text-[10px] font-semibold text-outline uppercase"
+												></div>
+												<div class="text-center text-[10px] font-semibold text-outline uppercase">
+													ESF
+												</div>
+												<div class="text-center text-[10px] font-semibold text-outline uppercase">
+													CIL
+												</div>
+												<div class="text-center text-[10px] font-semibold text-outline uppercase">
+													EJE
+												</div>
+												<div class="text-center text-[10px] font-semibold text-outline uppercase">
+													ADD
+												</div>
+												<div class="text-center text-[10px] font-semibold text-outline uppercase">
+													DP
+												</div>
+												<div class="text-center text-[10px] font-semibold text-outline uppercase">
+													DNP
+												</div>
+												<div
+													class="flex items-center rounded-lg bg-rose-50/30 px-2 py-1.5 text-xs font-semibold text-rose-700"
+												>
+													OI
+												</div>
+												<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+													<input
+														id="rx-{id}-oi-sphere"
+														type="number"
+														step="0.25"
+														placeholder="-2.00"
+														bind:value={item.lensPair.oi.prescription.sphere}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiSphere
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.oiSphere}<p class="text-[10px] text-red-500">
+															{rxErrs.oiSphere}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+													<input
+														id="rx-{id}-oi-cylinder"
+														type="number"
+														step="0.25"
+														min={-10}
+														max={0}
+														placeholder="-0.50"
+														bind:value={item.lensPair.oi.prescription.cylinder}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiCylinder
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.oiCylinder}<p class="text-[10px] text-red-500">
+															{rxErrs.oiCylinder}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+													<input
+														id="rx-{id}-oi-axis"
+														type="number"
+														step="1"
+														min={0}
+														max={180}
+														placeholder="180"
+														bind:value={item.lensPair.oi.prescription.axis}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiAxis
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.oiAxis}<p class="text-[10px] text-red-500">
+															{rxErrs.oiAxis}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+													<input
+														id="rx-{id}-oi-addition"
+														type="number"
+														step="0.25"
+														min={0}
+														max={5}
+														placeholder="+1.50"
+														bind:value={item.lensPair.oi.prescription.addition}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiAddition
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.oiAddition}<p class="text-[10px] text-red-500">
+															{rxErrs.oiAddition}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+													<input
+														id="rx-{id}-oi-dp"
+														type="number"
+														step="1"
+														min={10}
+														max={80}
+														bind:value={item.lensPair.oi.dp}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiDp
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.oiDp}<p class="text-[10px] text-red-500">
+															{rxErrs.oiDp}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+													<input
+														id="rx-{id}-oi-np"
+														type="number"
+														step="1"
+														min={10}
+														max={80}
+														bind:value={item.lensPair.oi.np}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiNp
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.oiNp}<p class="text-[10px] text-red-500">
+															{rxErrs.oiNp}
+														</p>{/if}
+												</div>
+												<div
+													class="flex items-center rounded-lg bg-blue-50/30 px-2 py-1.5 text-xs font-semibold text-blue-700"
+												>
+													OD
+												</div>
+												<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+													<input
+														id="rx-{id}-od-sphere"
+														type="number"
+														step="0.25"
+														placeholder="-2.00"
+														bind:value={item.lensPair.od.prescription.sphere}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odSphere
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.odSphere}<p class="text-[10px] text-red-500">
+															{rxErrs.odSphere}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+													<input
+														id="rx-{id}-od-cylinder"
+														type="number"
+														step="0.25"
+														min={-10}
+														max={0}
+														placeholder="-0.50"
+														bind:value={item.lensPair.od.prescription.cylinder}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odCylinder
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.odCylinder}<p class="text-[10px] text-red-500">
+															{rxErrs.odCylinder}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+													<input
+														id="rx-{id}-od-axis"
+														type="number"
+														step="1"
+														min={0}
+														max={180}
+														placeholder="180"
+														bind:value={item.lensPair.od.prescription.axis}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odAxis
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.odAxis}<p class="text-[10px] text-red-500">
+															{rxErrs.odAxis}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+													<input
+														id="rx-{id}-od-addition"
+														type="number"
+														step="0.25"
+														min={0}
+														max={5}
+														placeholder="+1.50"
+														bind:value={item.lensPair.od.prescription.addition}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odAddition
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.odAddition}<p class="text-[10px] text-red-500">
+															{rxErrs.odAddition}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+													<input
+														id="rx-{id}-od-dp"
+														type="number"
+														step="1"
+														min={10}
+														max={80}
+														bind:value={item.lensPair.od.dp}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odDp
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.odDp}<p class="text-[10px] text-red-500">
+															{rxErrs.odDp}
+														</p>{/if}
+												</div>
+												<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+													<input
+														id="rx-{id}-od-np"
+														type="number"
+														step="1"
+														min={10}
+														max={80}
+														bind:value={item.lensPair.od.np}
+														class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odNp
+															? 'text-red-600'
+															: ''}"
+													/>{#if rxErrs.odNp}<p class="text-[10px] text-red-500">
+															{rxErrs.odNp}
+														</p>{/if}
+												</div>
+											</div>
+										</div>
+									{/if}
+								</div>
+
+								<div
+									class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
+									use:autoAnimate
+								>
+									{#if eyeCount > 0 && lens && item.costOverrides}
+										{@const co = item.costOverrides}
+										{@const effectiveShipping = item.shippingCostPending ? 0 : co.shippingPrice}
+										{@const internalCostTotal = co.baseCost + co.mountingPrice + effectiveShipping}
+										<div use:autoAnimate>
+											<button
+												type="button"
+												onclick={() => {
+													costOpenFor = costOpenFor === item.id ? null : item.id;
+												}}
+												class="flex w-full cursor-pointer items-center justify-between gap-2"
+											>
+												<div class="text-start">
+													<p
+														class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
+													>
+														Costo interno
+													</p>
+												</div>
+												<div class="flex items-center gap-1.5">
+													<span class="font-mono text-xs font-semibold text-brand-navy"
+														>{formatPrice(internalCostTotal)}</span
+													>
+													{#if item.shippingCostPending}<span
+															class="rounded-full bg-warning-container px-1.5 py-0.5 text-[9px] font-semibold text-on-warning-container"
+															>Pendiente</span
+														>{/if}
+													<ChevronRight
+														class="h-3.5 w-3.5 text-on-surface-variant transition-transform {costOpenFor ===
+														item.id
+															? 'rotate-90'
+															: ''}"
+													/>
+												</div>
+											</button>
+											{#if costOpenFor === item.id}
+												<div
+													class="mt-2 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs text-on-surface-variant"
+												>
+													<div class="flex items-center justify-between gap-2">
+														<span>Cristales × {eyeCount}</span>
+														<input
+															type="number"
+															bind:value={co.baseCost}
+															step="0.01"
+															min="0"
+															class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+														/>
+													</div>
+													<div class="flex items-center justify-between gap-2">
+														<span>Montaje</span>
+														<input
+															type="number"
+															bind:value={co.mountingPrice}
+															step="0.01"
+															min="0"
+															class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+														/>
+													</div>
+													<div class="flex items-center justify-between gap-2">
+														<span>Envío</span>
+														{#if item.shippingCostPending}<span
+																class="text-xs text-on-surface-variant/50 italic">Pendiente</span
+															>
+														{:else}<input
+																type="number"
+																bind:value={co.shippingPrice}
+																step="0.01"
+																min="0"
+																class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+															/>{/if}
+													</div>
+													<label class="flex cursor-pointer items-center gap-1.5 text-[11px]"
+														><input
+															type="checkbox"
+															bind:checked={item.shippingCostPending}
+															class="h-3 w-3 rounded border-slate-300"
+														/> <span>Costo de envío pendiente</span></label
+													>
+													<div
+														class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-1.5 font-semibold text-brand-navy"
+													>
+														<span>Total</span><span class="font-mono"
+															>{formatPrice(internalCostTotal)}</span
+														>
+													</div>
+												</div>
+											{/if}
 										</div>
 									{/if}
 
-									<!-- Prescription accordion -->
-									<div
-									use:autoAnimate
-									>
-										<button
-											type="button"
-											onclick={() => {
-												prescriptionOpenFor = prescriptionOpenFor === item.id ? null : item.id;
-											}}
-											class="flex w-full cursor-pointer items-center justify-between gap-2"
-										>
-											<div class="flex items-center gap-1.5">
-												<Eye class="h-3.5 w-3.5 text-brand-blue" />
-												<p
-													class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-												>
-													Fórmula
-												</p>
-											</div>
-											<div class="flex items-center gap-1.5">
-												{#if rxErrorsPerLens[item.id] && Object.keys(rxErrorsPerLens[item.id]).length > 0}
-													<span
-														class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
-														>Pendiente</span
+									{#if availableTreatments.length > 0}
+										<div>
+											<div class="mb-2 flex items-center justify-between gap-2" use:autoAnimate>
+												<div class="flex items-center gap-1.5">
+													<FlaskConical class="h-3.5 w-3.5 text-brand-blue" />
+													<p
+														class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
 													>
-												{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
-													<span
-														class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
-														>Completa</span
-													>
-												{/if}
-												<ChevronRight
-													class="h-3.5 w-3.5 text-on-surface-variant transition-transform {prescriptionOpenFor ===
-													item.id
-														? 'rotate-90'
-														: ''}"
-												/>
-											</div>
-										</button>
-										{#if prescriptionOpenFor === item.id}
-											{@const rxErrs = rxErrorsPerLens[item.id] ?? {}}
-											{@const id = item.id}
-											<div class="mt-2 border-t border-outline-variant/30 pt-2">
-												<div class="mb-3 flex flex-wrap items-center gap-3">
-													<div class="flex items-center gap-1.5">
-														<label
-															for="rx-{id}-doctor"
-															class="text-[10px] font-semibold text-outline uppercase">Médico</label
-														>
-														<input
-															id="rx-{id}-doctor"
-															type="text"
-															bind:value={item.lensPair.doctorName}
-															placeholder="Nombre del doctor"
-															class="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {rxErrs.doctorName
-																? '!border-red-400'
-																: ''}"
-														/>
-														{#if rxErrs.doctorName}<p class="text-[10px] text-red-500">
-																{rxErrs.doctorName}
-															</p>{/if}
-													</div>
-													<div class="flex items-center gap-1.5">
-														<label
-															for="rx-{id}-lens-type"
-															class="text-[10px] font-semibold text-outline uppercase">Tipo</label
-														>
-														<select
-															id="rx-{id}-lens-type"
-															bind:value={item.lensPair.lensType}
-															class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
-														>
-															{#each ALL_LENS_TYPES as type (type)}
-																<option value={type}>{getLensTypeLabel(type)}</option>
-															{/each}
-														</select>
-													</div>
-													<button
-														type="button"
-														onclick={() => copyOiToOd(item.lensPair!)}
-														class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
-													>
-														<Copy class="h-3 w-3" />
-														Copiar OI → OD
-													</button>
+														Tratamientos
+													</p>
 												</div>
-												<div class="grid grid-cols-[3.5rem_repeat(6,1fr)] gap-x-1.5 gap-y-1">
-													<div
-														class="text-center text-[10px] font-semibold text-outline uppercase"
-													></div>
-													<div class="text-center text-[10px] font-semibold text-outline uppercase">
-														ESF
-													</div>
-													<div class="text-center text-[10px] font-semibold text-outline uppercase">
-														CIL
-													</div>
-													<div class="text-center text-[10px] font-semibold text-outline uppercase">
-														EJE
-													</div>
-													<div class="text-center text-[10px] font-semibold text-outline uppercase">
-														ADD
-													</div>
-													<div class="text-center text-[10px] font-semibold text-outline uppercase">
-														DP
-													</div>
-													<div class="text-center text-[10px] font-semibold text-outline uppercase">
-														DNP
-													</div>
-													<div
-														class="flex items-center rounded-lg bg-rose-50/30 px-2 py-1.5 text-xs font-semibold text-rose-700"
-													>
-														OI
-													</div>
-													<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
-														<input
-															id="rx-{id}-oi-sphere"
-															type="number"
-															step="0.25"
-															placeholder="-2.00"
-															bind:value={item.lensPair.oi.prescription.sphere}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiSphere
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.oiSphere}<p class="text-[10px] text-red-500">
-																{rxErrs.oiSphere}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
-														<input
-															id="rx-{id}-oi-cylinder"
-															type="number"
-															step="0.25"
-															min={-10}
-															max={0}
-															placeholder="-0.50"
-															bind:value={item.lensPair.oi.prescription.cylinder}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiCylinder
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.oiCylinder}<p class="text-[10px] text-red-500">
-																{rxErrs.oiCylinder}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
-														<input
-															id="rx-{id}-oi-axis"
-															type="number"
-															step="1"
-															min={0}
-															max={180}
-															placeholder="180"
-															bind:value={item.lensPair.oi.prescription.axis}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiAxis
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.oiAxis}<p class="text-[10px] text-red-500">
-																{rxErrs.oiAxis}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
-														<input
-															id="rx-{id}-oi-addition"
-															type="number"
-															step="0.25"
-															min={0}
-															max={5}
-															placeholder="+1.50"
-															bind:value={item.lensPair.oi.prescription.addition}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiAddition
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.oiAddition}<p class="text-[10px] text-red-500">
-																{rxErrs.oiAddition}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
-														<input
-															id="rx-{id}-oi-dp"
-															type="number"
-															step="1"
-															min={10}
-															max={80}
-															bind:value={item.lensPair.oi.dp}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiDp
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.oiDp}<p class="text-[10px] text-red-500">
-																{rxErrs.oiDp}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
-														<input
-															id="rx-{id}-oi-np"
-															type="number"
-															step="1"
-															min={10}
-															max={80}
-															bind:value={item.lensPair.oi.np}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.oiNp
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.oiNp}<p class="text-[10px] text-red-500">
-																{rxErrs.oiNp}
-															</p>{/if}
-													</div>
-													<div
-														class="flex items-center rounded-lg bg-blue-50/30 px-2 py-1.5 text-xs font-semibold text-blue-700"
-													>
-														OD
-													</div>
-													<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
-														<input
-															id="rx-{id}-od-sphere"
-															type="number"
-															step="0.25"
-															placeholder="-2.00"
-															bind:value={item.lensPair.od.prescription.sphere}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odSphere
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.odSphere}<p class="text-[10px] text-red-500">
-																{rxErrs.odSphere}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
-														<input
-															id="rx-{id}-od-cylinder"
-															type="number"
-															step="0.25"
-															min={-10}
-															max={0}
-															placeholder="-0.50"
-															bind:value={item.lensPair.od.prescription.cylinder}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odCylinder
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.odCylinder}<p class="text-[10px] text-red-500">
-																{rxErrs.odCylinder}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
-														<input
-															id="rx-{id}-od-axis"
-															type="number"
-															step="1"
-															min={0}
-															max={180}
-															placeholder="180"
-															bind:value={item.lensPair.od.prescription.axis}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odAxis
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.odAxis}<p class="text-[10px] text-red-500">
-																{rxErrs.odAxis}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
-														<input
-															id="rx-{id}-od-addition"
-															type="number"
-															step="0.25"
-															min={0}
-															max={5}
-															placeholder="+1.50"
-															bind:value={item.lensPair.od.prescription.addition}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odAddition
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.odAddition}<p class="text-[10px] text-red-500">
-																{rxErrs.odAddition}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
-														<input
-															id="rx-{id}-od-dp"
-															type="number"
-															step="1"
-															min={10}
-															max={80}
-															bind:value={item.lensPair.od.dp}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odDp
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.odDp}<p class="text-[10px] text-red-500">
-																{rxErrs.odDp}
-															</p>{/if}
-													</div>
-													<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
-														<input
-															id="rx-{id}-od-np"
-															type="number"
-															step="1"
-															min={10}
-															max={80}
-															bind:value={item.lensPair.od.np}
-															class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {rxErrs.odNp
-																? 'text-red-600'
-																: ''}"
-														/>{#if rxErrs.odNp}<p class="text-[10px] text-red-500">
-																{rxErrs.odNp}
-															</p>{/if}
-													</div>
-												</div>
+												{#if treatmentTotal > 0}<span
+														class="font-mono text-xs font-semibold text-brand-navy"
+														>{formatPrice(treatmentTotal)}</span
+													>{/if}
 											</div>
-										{/if}
-									</div>
-
-									<div
-										class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]"
-										use:autoAnimate
-									>
-										{#if eyeCount > 0 && lens && item.costOverrides}
-											{@const co = item.costOverrides}
-											{@const effectiveShipping = item.shippingCostPending ? 0 : co.shippingPrice}
-											{@const internalCostTotal =
-												co.baseCost + co.mountingPrice + effectiveShipping}
-											<div
-												use:autoAnimate
-											>
-												<button
-													type="button"
-													onclick={() => {
-														costOpenFor = costOpenFor === item.id ? null : item.id;
-													}}
-													class="flex w-full cursor-pointer items-center justify-between gap-2"
-												>
-													<div class="text-start">
-														<p
-															class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-														>
-															Costo interno
-														</p>
-													</div>
-													<div class="flex items-center gap-1.5">
-														<span class="font-mono text-xs font-semibold text-brand-navy"
-															>{formatPrice(internalCostTotal)}</span
-														>
-														{#if item.shippingCostPending}<span
-																class="rounded-full bg-warning-container px-1.5 py-0.5 text-[9px] font-semibold text-on-warning-container"
-																>Pendiente</span
-															>{/if}
-														<ChevronRight
-															class="h-3.5 w-3.5 text-on-surface-variant transition-transform {costOpenFor ===
-															item.id
-																? 'rotate-90'
-																: ''}"
-														/>
-													</div>
-												</button>
-												{#if costOpenFor === item.id}
+											<div class="space-y-1.5" use:autoAnimate>
+												{#each availableTreatments as treatment (treatment.id)}
+													{@const selected = isTreatmentSelected(item, treatment.id)}
+													{@const selectedTreatment = item.treatments.find(
+														(t) => t.supplierTreatmentId === treatment.id
+													)}
 													<div
-														class="mt-2 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs text-on-surface-variant"
+														class="rounded-lg px-2.5 py-1.5 transition-colors {selected
+															? 'bg-surface-container-low'
+															: 'bg-surface hover:bg-surface-container-low'}"
+														use:autoAnimate
 													>
-														<div class="flex items-center justify-between gap-2">
-															<span>Cristales × {eyeCount}</span>
+														<label class="flex cursor-pointer items-center gap-2">
 															<input
-																type="number"
-																bind:value={co.baseCost}
-																step="0.01"
-																min="0"
-																class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-															/>
-														</div>
-														<div class="flex items-center justify-between gap-2">
-															<span>Montaje</span>
-															<input
-																type="number"
-																bind:value={co.mountingPrice}
-																step="0.01"
-																min="0"
-																class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-															/>
-														</div>
-														<div class="flex items-center justify-between gap-2">
-															<span>Envío</span>
-															{#if item.shippingCostPending}<span
-																	class="text-xs text-on-surface-variant/50 italic">Pendiente</span
-																>
-															{:else}<input
-																	type="number"
-																	bind:value={co.shippingPrice}
-																	step="0.01"
-																	min="0"
-																	class="w-24 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-																/>{/if}
-														</div>
-														<label class="flex cursor-pointer items-center gap-1.5 text-[11px]"
-															><input
 																type="checkbox"
-																bind:checked={item.shippingCostPending}
-																class="h-3 w-3 rounded border-slate-300"
-															/> <span>Costo de envío pendiente</span></label
-														>
-														<div
-															class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-1.5 font-semibold text-brand-navy"
-														>
-															<span>Total</span><span class="font-mono"
-																>{formatPrice(internalCostTotal)}</span
-															>
-														</div>
-													</div>
-												{/if}
-											</div>
-										{/if}
-
-										{#if availableTreatments.length > 0}
-											<div>
-												<div class="mb-2 flex items-center justify-between gap-2" use:autoAnimate>
-													<div class="flex items-center gap-1.5">
-														<FlaskConical class="h-3.5 w-3.5 text-brand-blue" />
-														<p
-															class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-														>
-															Tratamientos
-														</p>
-													</div>
-													{#if treatmentTotal > 0}<span
-															class="font-mono text-xs font-semibold text-brand-navy"
-															>{formatPrice(treatmentTotal)}</span
-														>{/if}
-												</div>
-												<div class="space-y-1.5" use:autoAnimate>
-													{#each availableTreatments as treatment (treatment.id)}
-														{@const selected = isTreatmentSelected(item, treatment.id)}
-														{@const selectedTreatment = item.treatments.find(
-															(t) => t.supplierTreatmentId === treatment.id
-														)}
-														<div
-															class="rounded-lg px-2.5 py-1.5 transition-colors {selected
-																? 'bg-surface-container-low'
-																: 'bg-surface hover:bg-surface-container-low'}"
-															use:autoAnimate
-														>
-															<label class="flex cursor-pointer items-center gap-2">
-																<input
-																	type="checkbox"
-																	checked={selected}
-																	onchange={() => toggleTreatment(item, treatment)}
-																	class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-																/>
-																<div class="min-w-0 flex-1">
-																	<div class="flex flex-wrap items-center gap-1.5">
-																		<span class="text-xs font-medium text-brand-navy"
-																			>{treatment.name}</span
-																		>
-																		<span
-																			class="rounded-full px-1 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {treatment.category ===
-																			TreatmentCategory.AR
-																				? 'bg-brand-blue/10 text-brand-blue'
-																				: 'bg-surface-container-high text-on-surface-variant'}"
-																			>{getTreatmentCategoryLabel(treatment.category)}</span
-																		>
-																	</div>
+																checked={selected}
+																onchange={() => toggleTreatment(item, treatment)}
+																class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+															/>
+															<div class="min-w-0 flex-1">
+																<div class="flex flex-wrap items-center gap-1.5">
+																	<span class="text-xs font-medium text-brand-navy"
+																		>{treatment.name}</span
+																	>
+																	<span
+																		class="rounded-full px-1 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {treatment.category ===
+																		TreatmentCategory.AR
+																			? 'bg-brand-blue/10 text-brand-blue'
+																			: 'bg-surface-container-high text-on-surface-variant'}"
+																		>{getTreatmentCategoryLabel(treatment.category)}</span
+																	>
 																</div>
-																<span class="font-mono text-xs font-semibold text-brand-navy"
-																	>{formatPrice(
-																		selectedTreatment?.price ??
-																			treatment.salePrice ??
-																			treatment.price
+															</div>
+															<span class="font-mono text-xs font-semibold text-brand-navy"
+																>{formatPrice(
+																	selectedTreatment?.price ?? treatment.salePrice ?? treatment.price
+																)}</span
+															>
+														</label>
+														{#if selected && selectedTreatment}
+															<div
+																class="mt-1.5 ml-5.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant"
+															>
+																<label class="inline-flex items-center gap-1.5"
+																	><span class="text-[11px]">Precio:</span><input
+																		type="number"
+																		bind:value={selectedTreatment.price}
+																		step="0.01"
+																		min="0"
+																		class="w-20 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
+																	/></label
+																>
+																<span class="font-mono text-[11px]"
+																	>× {eyeCount} = {formatPrice(
+																		selectedTreatment.price * eyeCount
 																	)}</span
 																>
-															</label>
-															{#if selected && selectedTreatment}
-																<div
-																	class="mt-1.5 ml-5.5 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant"
-																>
-																	<label class="inline-flex items-center gap-1.5"
-																		><span class="text-[11px]">Precio:</span><input
-																			type="number"
-																			bind:value={selectedTreatment.price}
-																			step="0.01"
-																			min="0"
-																			class="w-20 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
-																		/></label
-																	>
-																	<span class="font-mono text-[11px]"
-																		>× {eyeCount} = {formatPrice(
-																			selectedTreatment.price * eyeCount
-																		)}</span
-																	>
-																</div>
-															{/if}
-														</div>
-													{/each}
-												</div>
+															</div>
+														{/if}
+													</div>
+												{/each}
 											</div>
-										{/if}
-									</div>
+										</div>
+									{/if}
 								</div>
-							{/if}
+							</div>
+						{/if}
 					</div>
 				{/each}
 			{/if}
