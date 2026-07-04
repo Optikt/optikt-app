@@ -687,9 +687,11 @@
 		>
 			<div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
 				<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
-				<span class="font-mono text-[12px]">{displayCustomerId}</span>
+				<span class="font-mono text-[12px] text-white/80">{displayCustomerId}</span>
 			</div>
-			<p class="rounded-full border-2 px-2 text-[10px] font-bold tracking-[0.14em] uppercase">
+			<p
+				class="rounded-full border-2 px-2 text-[10px] font-bold tracking-[0.14em] text-white/80 uppercase"
+			>
 				{contextStatus}
 			</p>
 		</div>
