@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ArrowLeft } from '@lucide/svelte';
-	import CustomerLookupInput from './CustomerLookupInput.svelte';
-	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
+	import CustomerLookupInput from '../CustomerLookupInput.svelte';
+	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import type { Customer } from '$lib/server/db/schema';
-	import type { NewCustomerData } from './newSaleTypes';
+	import type { NewCustomerData } from '../newSaleTypes';
 
 	interface Props {
 		customerId: string;

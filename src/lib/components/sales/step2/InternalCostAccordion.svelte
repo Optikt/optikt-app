@@ -3,7 +3,7 @@
 	import { formatPrice } from '$lib/utils';
 
 	interface Props {
-		costOverrides: import('./newSaleTypes').CostOverrides;
+		costOverrides: import('../newSaleTypes').CostOverrides;
 		shippingCostPending: boolean;
 		eyeCount: number;
 		open: boolean;

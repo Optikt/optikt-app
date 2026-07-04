@@ -6,7 +6,7 @@
 	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
 
 	interface Props {
-		treatments: import('./newSaleTypes').SelectedTreatment[];
+		treatments: import('../newSaleTypes').SelectedTreatment[];
 		availableTreatments: import('$lib/server/db/schema').SupplierTreatment[];
 		eyeCount: number;
 		treatmentTotal: number;

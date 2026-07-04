@@ -16,8 +16,8 @@
 	import { buildStep2PrescriptionConfirmation } from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-	import SaleStep1Info from '$lib/components/sales/SaleStep1Info.svelte';
-	import SaleStep2Items from '$lib/components/sales/SaleStep2Items.svelte';
+	import SaleStep1Info from '$lib/components/sales/step1/SaleStep1Info.svelte';
+	import SaleStep2Items from '$lib/components/sales/step2/SaleStep2Items.svelte';
 	import PrescriptionValidationModal from '$lib/components/sales/PrescriptionValidationModal.svelte';
 	import QuoteStep3Summary from './QuoteStep3Summary.svelte';
 

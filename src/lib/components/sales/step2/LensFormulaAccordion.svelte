@@ -2,10 +2,10 @@
 	import { Copy } from '@lucide/svelte';
 	import { Disclosure } from '$lib/components/ui';
 	import { getLensTypeLabel, ALL_LENS_TYPES } from '$lib/shared/enums/lensTypes';
-	import type { PrescriptionFieldErrors } from './saleItemHelpers';
+	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 
 	interface Props {
-		pair: import('./newSaleTypes').LensPairEntry;
+		pair: import('../newSaleTypes').LensPairEntry;
 		rxErrs: PrescriptionFieldErrors;
 		open: boolean;
 		itemId: string;

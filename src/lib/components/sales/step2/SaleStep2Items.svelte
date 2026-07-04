@@ -19,19 +19,19 @@
 		step2ItemLineTotal,
 		validateLensPrescription,
 		hasLensPrescriptionErrors
-	} from './saleItemHelpers';
-	import type { PrescriptionFieldErrors } from './saleItemHelpers';
+	} from '../saleItemHelpers';
+	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
-	import { createEmptyLensPair, createEmptyFreeItemData } from './newSaleTypes';
+	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
+	import { createEmptyLensPair, createEmptyFreeItemData } from '../newSaleTypes';
 	import {
 		allowsDuplicateProductLines,
 		canAutoIncludeAccessories,
 		linkIncludedAccessories,
 		removeItemWithIncludedAccessories,
 		type IncludedAccessoryMap
-	} from './includedAccessories';
-	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
+	} from '../includedAccessories';
+	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import SaleStep2ItemCard from './SaleStep2ItemCard.svelte';
 
 	interface Props {
@@ -662,7 +662,7 @@
 		}
 	}
 
-	function copyOiToOd(pair: import('./newSaleTypes').LensPairEntry) {
+	function copyOiToOd(pair: import('../newSaleTypes').LensPairEntry) {
 		pair.od.prescription = { ...pair.oi.prescription };
 		pair.od.dp = pair.oi.dp;
 		pair.od.np = pair.oi.np;

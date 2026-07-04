@@ -23,9 +23,9 @@
 	} from './saleItemHelpers';
 	import { buildSaleItemsFromWizard, buildPrescriptionPayload } from './wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-	import SaleStep1Info from './SaleStep1Info.svelte';
-	import SaleStep2Items from './SaleStep2Items.svelte';
-	import SaleStep3Summary from './SaleStep3Summary.svelte';
+	import SaleStep1Info from './step1/SaleStep1Info.svelte';
+	import SaleStep2Items from './step2/SaleStep2Items.svelte';
+	import SaleStep3Summary from './step3/SaleStep3Summary.svelte';
 	import PrescriptionValidationModal from './PrescriptionValidationModal.svelte';
 
 	interface Props {

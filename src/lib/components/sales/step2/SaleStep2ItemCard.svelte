@@ -4,12 +4,12 @@
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { formatPrice } from '$lib/utils';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
-	import { findProduct, findLensItem, step2ItemLineTotal } from './saleItemHelpers';
-	import type { PrescriptionFieldErrors } from './saleItemHelpers';
+	import { findProduct, findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
+	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import type { SaleItemRow } from './newSaleTypes';
+	import type { SaleItemRow } from '../newSaleTypes';
 	import LensFormulaAccordion from './LensFormulaAccordion.svelte';
 	import InternalCostAccordion from './InternalCostAccordion.svelte';
 	import LensTreatmentSelector from './LensTreatmentSelector.svelte';

@@ -21,7 +21,7 @@
 		getItemName as _getItemName,
 		isItemDiscountValid,
 		itemLineTotal
-	} from './saleItemHelpers';
+	} from '../saleItemHelpers';
 	import {
 		DiscountType,
 		getTreatmentCategoryLabel,
@@ -33,8 +33,8 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { Customer } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from './newSaleTypes';
-	import SaleWizardFloatingActions from './SaleWizardFloatingActions.svelte';
+	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from '../newSaleTypes';
+	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import {
 		decomposePrice,
 		DEFAULT_TAX_RATE,

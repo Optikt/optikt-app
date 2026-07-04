@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import SaleStep3Summary from '$lib/components/sales/SaleStep3Summary.svelte';
+	import SaleStep3Summary from '$lib/components/sales/step3/SaleStep3Summary.svelte';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import { fromISODate } from '$lib/dates';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';

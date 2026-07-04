@@ -5,7 +5,7 @@
 	import { getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 
 	interface Props {
-		freeItem: import('./newSaleTypes').FreeItemData;
+		freeItem: import('../newSaleTypes').FreeItemData;
 	}
 
 	let { freeItem = $bindable() }: Props = $props();
