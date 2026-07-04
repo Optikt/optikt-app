@@ -689,7 +689,7 @@
 					<span class="font-mono text-[12px] text-white/75">{displayCustomerId}</span>
 				</div>
 				<p
-					class="rounded-full bg-white40 border-2 px-2 py-0.5 text-[10px] font-bold tracking-[0.14em] text-white/75 uppercase"
+					class="rounded-full border-2 px-2 text-[10px] font-bold tracking-[0.14em] text-white/75 uppercase"
 				>
 					{contextStatus}
 				</p>
