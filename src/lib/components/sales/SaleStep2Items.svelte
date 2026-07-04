@@ -685,13 +685,11 @@
 		<div
 			class="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl bg-brand-navy px-4 py-2.5 text-white shadow-sm"
 		>
-			<div class="flex items-center gap-2 text-xs font-semibold">
+			<div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
 				<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
-				<span class="font-mono text-[12px] text-white/75">{displayCustomerId}</span>
+				<span class="font-mono text-[12px]">{displayCustomerId}</span>
 			</div>
-			<p
-				class="rounded-full border-2 px-2 text-[10px] font-bold tracking-[0.14em] text-white/75 uppercase"
-			>
+			<p class="rounded-full border-2 px-2 text-[10px] font-bold tracking-[0.14em] uppercase">
 				{contextStatus}
 			</p>
 		</div>
