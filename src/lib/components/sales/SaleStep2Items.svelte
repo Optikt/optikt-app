@@ -688,10 +688,10 @@
 					<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
 					<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
 				</div>
-					<p
-						class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase"
-					>
-						{contextStatus}
+				<p
+					class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase"
+				>
+					{contextStatus}
 				</p>
 			</div>
 		</div>
