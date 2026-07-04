@@ -686,10 +686,10 @@
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
 				<div class="flex items-center gap-2 text-xs font-semibold">
 					<span class="max-w-[12rem] truncate">{displayCustomerName}</span>
-					<span class="font-mono text-[11px] text-white/50">{displayCustomerId}</span>
+					<span class="font-mono text-[12px] text-white/75">{displayCustomerId}</span>
 				</div>
 				<p
-					class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-white/60 uppercase"
+					class="rounded-full bg-white40 border-2 px-2 py-0.5 text-[10px] font-bold tracking-[0.14em] text-white/75 uppercase"
 				>
 					{contextStatus}
 				</p>
