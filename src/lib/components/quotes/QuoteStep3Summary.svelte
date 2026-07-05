@@ -5,8 +5,6 @@
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import { fromISODate } from '$lib/dates';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { Customer } from '$lib/server/db/schema';
 
 	interface Props {
@@ -20,8 +18,6 @@
 		validUntil: string;
 		nextQuoteNumber?: number;
 		defaultTaxRate?: number;
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		submitting: boolean;
 		canSubmit: boolean;
 		onprev: () => void;
@@ -39,8 +35,6 @@
 		validUntil,
 		nextQuoteNumber,
 		defaultTaxRate,
-		products,
-		lensItems,
 		submitting,
 		canSubmit,
 		onprev,
@@ -80,8 +74,6 @@
 	onCancel={goToQuotes}
 	secondaryContextDate={validUntilDate}
 	secondaryContextLabel={validUntilDate ? 'Valido hasta' : undefined}
-	{products}
-	{lensItems}
 	{submitting}
 	{canSubmit}
 	{onprev}

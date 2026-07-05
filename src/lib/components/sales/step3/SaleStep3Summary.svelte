@@ -35,6 +35,8 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from '../newSaleTypes';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
+	import { getContext } from 'svelte';
+	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import {
 		decomposePrice,
 		DEFAULT_TAX_RATE,
@@ -68,8 +70,6 @@
 		primaryLabel?: string;
 		cancelLabel?: string;
 		onCancel?: () => void;
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		submitting: boolean;
 		canSubmit: boolean;
 		onprev: () => void;
@@ -107,13 +107,13 @@
 		primaryLabel = 'Confirmar y Registrar Venta',
 		cancelLabel = 'Cancelar',
 		onCancel,
-		products,
-		lensItems,
 		submitting,
 		canSubmit,
 		onprev,
 		onsubmit
 	}: Props = $props();
+
+	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
 	const subtotal = $derived(calculateSaleSummarySubtotal(items));
 
