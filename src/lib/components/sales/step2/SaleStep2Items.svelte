@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, getContext } from 'svelte';
+	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import { toast } from 'svelte-sonner';
 	import { Search } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
@@ -43,8 +44,6 @@
 		customerPrescription: Prescription | null;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		customerFallbackName?: string;
 		customerFallbackDocument?: string;
 		newCustomerContextLabel?: string;
@@ -63,8 +62,6 @@
 		customerPrescription,
 		selectedCustomer,
 		newCustomer,
-		products,
-		lensItems,
 		customerFallbackName = 'Venta de mostrador',
 		customerFallbackDocument = 'Sin cliente asignado',
 		newCustomerContextLabel = 'Cliente nuevo en esta venta',
@@ -76,6 +73,8 @@
 		onnext,
 		onprev
 	}: Props = $props();
+
+	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
 	// ============================================================================
 	// ITEMS MANAGEMENT
@@ -541,8 +540,6 @@
 
 	<SaleStep2SearchBar
 		filter={quickAddFilter}
-		{products}
-		{lensItems}
 		{items}
 		onselect={(option) => selectQuickAddOption(option)}
 	/>
@@ -577,8 +574,6 @@
 				{#each items as item, _index (item.id)}
 					<SaleStep2ItemCard
 						{item}
-						{products}
-						{lensItems}
 						availableTreatments={item.kind === 'lens' ? getAvailableTreatments(item) : []}
 						rxErrs={rxErrorsPerLens[item.id] ?? {}}
 						onremove={() => removeItem(item.id)}

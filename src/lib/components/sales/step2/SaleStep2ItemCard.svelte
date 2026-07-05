@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { Package, Eye, Trash2 } from '@lucide/svelte';
 	import { Input, Label } from 'flowbite-svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
@@ -6,10 +7,9 @@
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { findProduct, findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import type { SaleItemRow } from '../newSaleTypes';
+	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import LensFormulaAccordion from './LensFormulaAccordion.svelte';
 	import InternalCostAccordion from './InternalCostAccordion.svelte';
 	import LensTreatmentSelector from './LensTreatmentSelector.svelte';
@@ -17,8 +17,6 @@
 
 	interface Props {
 		item: SaleItemRow;
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		availableTreatments: SupplierTreatment[];
 		rxErrs: PrescriptionFieldErrors;
 		onremove: () => void;
@@ -33,8 +31,6 @@
 
 	let {
 		item = $bindable(),
-		products,
-		lensItems,
 		availableTreatments,
 		rxErrs = {},
 		onremove,
@@ -46,6 +42,8 @@
 		treatmentTotal = 0,
 		isIncludedAccessory = false
 	}: Props = $props();
+
+	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
 	const product = $derived(item.kind === 'product' ? findProduct(item, products) : undefined);
 	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);

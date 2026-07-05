@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { getContext } from 'svelte';
 	import { Search, X, Package, Eye } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { allowsDuplicateProductLines } from '../includedAccessories';
+	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { allowsDuplicateProductLines } from '../includedAccessories';
 
 	interface QuickAddOption {
 		key: string;
@@ -22,19 +24,17 @@
 
 	interface Props {
 		filter: 'all' | 'product' | 'lens';
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		items: { productId: string; kind: string }[];
 		onselect: (option: QuickAddOption) => void;
 	}
 
 	let {
 		filter,
-		products,
-		lensItems,
 		items,
 		onselect
 	}: Props = $props();
+
+	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
 	let quickAddQuery = $state('');
 	let quickAddOpen = $state(false);
