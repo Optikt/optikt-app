@@ -12,7 +12,9 @@
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
+	import { setContext } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
+	import { CATALOG_KEY } from '$lib/components/sales/wizardContext';
 	import { buildStep2PrescriptionConfirmation } from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
@@ -36,6 +38,8 @@
 		nextQuoteNumber,
 		defaultTaxRate
 	}: Props = $props();
+
+	setContext(CATALOG_KEY, { get products() { return products; }, get lensItems() { return lensItems; } });
 
 	// ============================================================================
 	// WIZARD STATE
@@ -260,8 +264,6 @@
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}
-			{products}
-			{lensItems}
 			customerFallbackName="Presupuesto sin cliente"
 			customerFallbackDocument="Cliente opcional"
 			newCustomerContextLabel="Cliente nuevo para este presupuesto"
@@ -288,8 +290,6 @@
 			{validUntil}
 			{nextQuoteNumber}
 			{defaultTaxRate}
-			{products}
-			{lensItems}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}

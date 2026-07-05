@@ -14,7 +14,9 @@
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
 	import type { Snippet } from 'svelte';
+	import { setContext } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
+	import { CATALOG_KEY } from './wizardContext';
 	import {
 		buildStep2PrescriptionConfirmation,
 		calculateSaleSummarySubtotal,
@@ -43,8 +45,10 @@
 		suppliers: _suppliers,
 		nextOrderNumber,
 		defaultTaxRate,
-		breadcrumbs
+		breadcrumbs,
 	}: Props = $props();
+
+	setContext(CATALOG_KEY, { get products() { return products; }, get lensItems() { return lensItems; } });
 
 	// ============================================================================
 	// WIZARD STATE
@@ -320,8 +324,6 @@
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}
-			{products}
-			{lensItems}
 			valid={step2Valid}
 			onnext={nextStep}
 			onprev={prevStep}
@@ -341,8 +343,6 @@
 			bind:notes
 			{nextOrderNumber}
 			{defaultTaxRate}
-			{products}
-			{lensItems}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}
