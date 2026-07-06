@@ -469,7 +469,7 @@
 	});
 </script>
 
-<div class="min-w-0 flex-1 space-y-2">
+<div class="min-w-0 flex-1 space-y-1">
 	<div class="inline-flex w-full justify-between gap-1">
 		<!-- Compact customer banner -->
 		<SaleStep2CustomerBanner
@@ -487,15 +487,14 @@
 		/>
 	</div>
 
-	<SaleStep2SearchBar
-		filter={quickAddFilter}
-		{items}
-		onselect={(option) => selectQuickAddOption(option)}
-	/>
+	<div class="flex flex-wrap gap-4" >
+		<SaleStep2SearchBar
+			filter={quickAddFilter}
+			{items}
+			onselect={(option) => selectQuickAddOption(option)}
+		/>
 
-	<!-- Items list -->
-	<div class="py-2">
-		<div class="mb-2 flex items-center gap-4">
+		<div class="flex items-center gap-4 px-2">
 			<h3 class="text-sm font-semibold text-brand-navy">{itemsSectionTitle}</h3>
 			<span
 				class="rounded-full border bg-surface-container-lowest px-2 py-0.5 text-[14px] font-semibold uppercase"
@@ -504,8 +503,11 @@
 				{selectedItemCount === 1 ? 'item' : 'items'}
 			</span>
 		</div>
+	</div>
+	<!-- Items list -->
+	<div>
 
-		<div class="space-y-2" use:autoAnimate>
+		<div class="space-y-1" use:autoAnimate>
 			{#if items.length === 0}
 				<div
 					class="flex flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant/40 bg-surface-container-lowest px-4 py-8 text-center"
