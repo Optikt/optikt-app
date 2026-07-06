@@ -245,14 +245,22 @@
 				{/if}
 
 				<!-- Fórmula summary + slide-over -->
-				<div class="flex items-center justify-between rounded-lg bg-surface-container-lowest px-3 py-2">
+				<div
+					class="flex items-center justify-between rounded-lg bg-surface-container-lowest px-3 py-2"
+				>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-1.5 text-xs">
 							<span class="font-semibold text-brand-navy">Fórmula</span>
 							{#if rxErrs && Object.keys(rxErrs).length > 0}
-								<span class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container">Pendiente</span>
+								<span
+									class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
+									>Pendiente</span
+								>
 							{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
-								<span class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container">Completa</span>
+								<span
+									class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
+									>Completa</span
+								>
 							{/if}
 						</div>
 						{#if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
@@ -266,7 +274,7 @@
 					</div>
 					<button
 						type="button"
-						onclick={() => formulaOpen = true}
+						onclick={() => (formulaOpen = true)}
 						class="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
 					>
 						Editar
