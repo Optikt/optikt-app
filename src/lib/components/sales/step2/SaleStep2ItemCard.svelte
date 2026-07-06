@@ -69,7 +69,7 @@
 </script>
 
 <div
-	class="rounded-lg p-2 {isIncludedAccessory
+	class="rounded-lg p-2 bg-white {isIncludedAccessory
 		? 'border border-amber-200/80 bg-amber-50/70'
 		: 'border border-slate-200'}"
 >
