@@ -54,7 +54,7 @@
 <div
 	class="rounded-lg p-2 bg-white {isIncludedAccessory
 		? 'border border-amber-200/80 bg-amber-50/70'
-		: 'border border-slate-400'}"
+		: 'border border-slate-300'}"
 >
 	<div class="space-y-2">
 		<!-- Item header row -->

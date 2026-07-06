@@ -156,7 +156,7 @@
 			if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
 		}}
 		placeholder={quickAddPlaceholder}
-		class="w-full rounded-lg border border-slate-200 bg-white px-8 py-2.5 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+		class="w-full rounded-lg border border-slate-400 bg-white px-8 py-2.5 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 	/>
 	{#if quickAddQuery}
 		<button
