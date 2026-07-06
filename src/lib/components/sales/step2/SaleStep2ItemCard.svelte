@@ -10,7 +10,7 @@
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import type { SaleItemRow } from '../newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
-	import LensFormulaAccordion from './LensFormulaAccordion.svelte';
+	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';
 	import InternalCostAccordion from './InternalCostAccordion.svelte';
 	import LensTreatmentSelector from './LensTreatmentSelector.svelte';
 	import FreeItemFields from './FreeItemFields.svelte';
@@ -55,6 +55,17 @@
 
 	let formulaOpen = $state(false);
 	let costOpen = $state(false);
+
+	function formatEyeSummary(eye: import('../newSaleTypes').LensEyeEntry): string {
+		const parts: string[] = [];
+		if (eye.prescription.sphere != null) parts.push(`${eye.prescription.sphere}`);
+		if (eye.prescription.cylinder != null) parts.push(`${eye.prescription.cylinder}`);
+		if (eye.prescription.axis != null) parts.push(`${eye.prescription.axis}°`);
+		if (eye.prescription.addition != null) parts.push(`+${eye.prescription.addition}`);
+		if (eye.dp != null) parts.push(`DP ${eye.dp}`);
+		if (eye.np != null) parts.push(`NP ${eye.np}`);
+		return parts.join(' / ') || '—';
+	}
 </script>
 
 <div
@@ -233,16 +244,44 @@
 					</div>
 				{/if}
 
-				<!-- Prescription accordion -->
-				<LensFormulaAccordion
-					pair={item.lensPair}
-					{rxErrs}
-					bind:open={formulaOpen}
-					itemId={item.id}
-					hasRxValues={item.lensPair.od.prescription.sphere != null ||
-						item.lensPair.oi.prescription.sphere != null}
-					{oncopyoi}
-				/>
+				<!-- Fórmula summary + slide-over -->
+				<div class="flex items-center justify-between rounded-lg bg-surface-container-lowest px-3 py-2">
+					<div class="min-w-0 flex-1">
+						<div class="flex items-center gap-1.5 text-xs">
+							<span class="font-semibold text-brand-navy">Fórmula</span>
+							{#if rxErrs && Object.keys(rxErrs).length > 0}
+								<span class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container">Pendiente</span>
+							{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+								<span class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container">Completa</span>
+							{/if}
+						</div>
+						{#if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+							<p class="mt-0.5 truncate text-[11px] text-on-surface-variant">
+								OI: {formatEyeSummary(item.lensPair.oi)}
+							</p>
+							<p class="truncate text-[11px] text-on-surface-variant">
+								OD: {formatEyeSummary(item.lensPair.od)}
+							</p>
+						{/if}
+					</div>
+					<button
+						type="button"
+						onclick={() => formulaOpen = true}
+						class="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+					>
+						Editar
+					</button>
+				</div>
+
+				{#if formulaOpen}
+					<SaleFormulaSlideOver
+						bind:open={formulaOpen}
+						pair={item.lensPair}
+						{rxErrs}
+						itemId={item.id}
+						{oncopyoi}
+					/>
+				{/if}
 
 				<!-- Cost + Treatments grid -->
 				<div class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>

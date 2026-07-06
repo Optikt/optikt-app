@@ -11,13 +11,7 @@
 		canCopyRxToAll?: boolean;
 	}
 
-	let {
-		filter,
-		onfilterchange,
-		onaddfree,
-		oncopyrx,
-		canCopyRxToAll = false
-	}: Props = $props();
+	let { filter, onfilterchange, onaddfree, oncopyrx, canCopyRxToAll = false }: Props = $props();
 
 	const quickAddFilterOptions: { value: QuickAddFilter; label: string }[] = [
 		{ value: 'all', label: 'Todo' },
@@ -25,9 +19,7 @@
 		{ value: 'lens', label: 'Lentes' }
 	];
 
-	const activeFilterIdx = $derived(
-		quickAddFilterOptions.findIndex((o) => o.value === filter)
-	);
+	const activeFilterIdx = $derived(quickAddFilterOptions.findIndex((o) => o.value === filter));
 </script>
 
 <div class="inline-flex items-center gap-1">
@@ -44,7 +36,9 @@
 				type="button"
 				onclick={() => onfilterchange(option.value)}
 				class="relative z-10 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 {filter ===
-				option.value ? 'text-white' : 'text-slate-600 hover:text-slate-800'}"
+				option.value
+					? 'text-white'
+					: 'text-slate-600 hover:text-slate-800'}"
 			>
 				{option.label}
 			</button>

@@ -39,7 +39,14 @@
 		defaultTaxRate
 	}: Props = $props();
 
-	setContext(CATALOG_KEY, { get products() { return products; }, get lensItems() { return lensItems; } });
+	setContext(CATALOG_KEY, {
+		get products() {
+			return products;
+		},
+		get lensItems() {
+			return lensItems;
+		}
+	});
 
 	// ============================================================================
 	// WIZARD STATE

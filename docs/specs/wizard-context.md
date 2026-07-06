@@ -22,8 +22,8 @@ import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses
 export const CATALOG_KEY = Symbol('catalog');
 
 export interface CatalogData {
-  readonly products: ProductWithRelations[];
-  readonly lensItems: LensCatalogItemWithRelations[];
+	readonly products: ProductWithRelations[];
+	readonly lensItems: LensCatalogItemWithRelations[];
 }
 ```
 
@@ -37,16 +37,16 @@ setContext<CatalogData>(CATALOG_KEY, { products, lensItems });
 
 ### Consumers (8 components to update)
 
-| Component | Remove from Props | Add |
-|---|---|---|
-| `SaleStep2Items.svelte` | `products`, `lensItems` | `const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY)` |
-| `SaleStep2ItemCard.svelte` | `products`, `lensItems` | same |
-| `SaleStep2SearchBar.svelte` | `products`, `lensItems` | same |
-| `SaleStep3Summary.svelte` | `products`, `lensItems` | same |
-| `QuoteStep3Summary.svelte` | `products`, `lensItems` | same |
-| `NewSaleForm.svelte` | (removes pass-through) | `setContext(CATALOG_KEY, ...)` |
-| `NewQuoteForm.svelte` | (removes pass-through) | `setContext(CATALOG_KEY, ...)` |
-| `SaleStep2Toolbar.svelte` | (doesn't use them — no change) | — |
+| Component                   | Remove from Props              | Add                                                                    |
+| --------------------------- | ------------------------------ | ---------------------------------------------------------------------- |
+| `SaleStep2Items.svelte`     | `products`, `lensItems`        | `const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY)` |
+| `SaleStep2ItemCard.svelte`  | `products`, `lensItems`        | same                                                                   |
+| `SaleStep2SearchBar.svelte` | `products`, `lensItems`        | same                                                                   |
+| `SaleStep3Summary.svelte`   | `products`, `lensItems`        | same                                                                   |
+| `QuoteStep3Summary.svelte`  | `products`, `lensItems`        | same                                                                   |
+| `NewSaleForm.svelte`        | (removes pass-through)         | `setContext(CATALOG_KEY, ...)`                                         |
+| `NewQuoteForm.svelte`       | (removes pass-through)         | `setContext(CATALOG_KEY, ...)`                                         |
+| `SaleStep2Toolbar.svelte`   | (doesn't use them — no change) | —                                                                      |
 
 ### Template cleanup
 
@@ -54,6 +54,7 @@ setContext<CatalogData>(CATALOG_KEY, { products, lensItems });
 - <SaleStep2Items {products} {lensItems} ... />
 + <SaleStep2Items ... />
 ```
+
 Repeat for all consumers.
 
 ## Phase 2: Sale Data (mutable — $state wrapper)
@@ -64,23 +65,23 @@ Repeat for all consumers.
 export const SALE_KEY = Symbol('sale');
 
 export interface SaleCtx {
-  items: SaleItemRow[];
-  includedAccessoryMap: IncludedAccessoryMap;
-  selectedCustomer: Customer | null;
-  newCustomer: NewCustomerData | null;
-  customerPrescription: Prescription | null;
-  labels: {
-    fallbackName: string;
-    fallbackDocument: string;
-    newCustomerContextLabel: string;
-    selectedCustomerContextLabel: string;
-    noCustomerContextLabel: string;
-  };
-  discount: number;
-  discountType: DiscountType;
-  notes: string;
-  saleDate: Date;
-  secondaryDate: string;
+	items: SaleItemRow[];
+	includedAccessoryMap: IncludedAccessoryMap;
+	selectedCustomer: Customer | null;
+	newCustomer: NewCustomerData | null;
+	customerPrescription: Prescription | null;
+	labels: {
+		fallbackName: string;
+		fallbackDocument: string;
+		newCustomerContextLabel: string;
+		selectedCustomerContextLabel: string;
+		noCustomerContextLabel: string;
+	};
+	discount: number;
+	discountType: DiscountType;
+	notes: string;
+	saleDate: Date;
+	secondaryDate: string;
 }
 ```
 
@@ -88,23 +89,23 @@ export interface SaleCtx {
 
 ```ts
 const saleCtx: SaleCtx = $state({
-  items,
-  includedAccessoryMap,
-  selectedCustomer,
-  newCustomer,
-  customerPrescription,
-  labels: {
-    fallbackName: customerFallbackName,
-    fallbackDocument: customerFallbackDocument,
-    newCustomerContextLabel,
-    selectedCustomerContextLabel,
-    noCustomerContextLabel
-  },
-  discount,
-  discountType,
-  notes,
-  saleDate,
-  secondaryDate: ''
+	items,
+	includedAccessoryMap,
+	selectedCustomer,
+	newCustomer,
+	customerPrescription,
+	labels: {
+		fallbackName: customerFallbackName,
+		fallbackDocument: customerFallbackDocument,
+		newCustomerContextLabel,
+		selectedCustomerContextLabel,
+		noCustomerContextLabel
+	},
+	discount,
+	discountType,
+	notes,
+	saleDate,
+	secondaryDate: ''
 });
 setContext(SALE_KEY, saleCtx);
 ```
@@ -129,11 +130,11 @@ Same pattern — `getContext<SaleCtx>(SALE_KEY)` and read from the object.
 
 ### Props to remove from wizard steps
 
-| Component | Props removed |
-|---|---|
-| `SaleStep1Info` | `customerId`, `selectedCustomer`, `newCustomer`, `saleDate`, `notes` |
-| `SaleStep2Items` | `customerPrescription`, `selectedCustomer`, `newCustomer`, `customerFallbackName`, `customerFallbackDocument`, `newCustomerContextLabel`, `selectedCustomerContextLabel`, `noCustomerContextLabel`, `items`, `includedAccessoryMap` |
-| `SaleStep3Summary` | `selectedCustomer`, `newCustomer`, `saleDate`, `discount`, `discountType`, `notes`, `customerId`, `items` |
+| Component          | Props removed                                                                                                                                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SaleStep1Info`    | `customerId`, `selectedCustomer`, `newCustomer`, `saleDate`, `notes`                                                                                                                                                                |
+| `SaleStep2Items`   | `customerPrescription`, `selectedCustomer`, `newCustomer`, `customerFallbackName`, `customerFallbackDocument`, `newCustomerContextLabel`, `selectedCustomerContextLabel`, `noCustomerContextLabel`, `items`, `includedAccessoryMap` |
+| `SaleStep3Summary` | `selectedCustomer`, `newCustomer`, `saleDate`, `discount`, `discountType`, `notes`, `customerId`, `items`                                                                                                                           |
 
 ### What stays as props (can't be in context)
 

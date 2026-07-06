@@ -28,11 +28,7 @@
 		onselect: (option: QuickAddOption) => void;
 	}
 
-	let {
-		filter,
-		items,
-		onselect
-	}: Props = $props();
+	let { filter, items, onselect }: Props = $props();
 
 	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
@@ -65,18 +61,20 @@
 						const secondaryBits = [product.brand?.name, product.sku].filter(
 							(value): value is string => Boolean(value)
 						);
-						return [{
-							key: `product:${product.id}`,
-							id: product.id,
-							kind: 'product' as const,
-							name: product.name,
-							label: product.sku ? `${product.name} (${product.sku})` : product.name,
-							secondaryText: secondaryBits.join(' · '),
-							stock: product.stock,
-							brandId: product.brandId ?? null,
-							productType: product.type,
-							price: product.currentSalePrice ?? 0
-						}];
+						return [
+							{
+								key: `product:${product.id}`,
+								id: product.id,
+								kind: 'product' as const,
+								name: product.name,
+								label: product.sku ? `${product.name} (${product.sku})` : product.name,
+								secondaryText: secondaryBits.join(' · '),
+								stock: product.stock,
+								brandId: product.brandId ?? null,
+								productType: product.type,
+								price: product.currentSalePrice ?? 0
+							}
+						];
 					});
 
 		const lensOptions =
@@ -121,12 +119,26 @@
 	);
 	const totalQuickAddResults = $derived(visibleQuickAddOptions.length);
 
-	function closeQuickAdd() { quickAddOpen = false; }
-	function resetQuickAdd() { quickAddQuery = ''; quickAddOpen = false; }
-	function handleQuickAddInput() { quickAddOpen = quickAddQuery.trim().length >= 2; }
-	function handleQuickAddBlur() { setTimeout(() => { quickAddOpen = false; }, 200); }
+	function closeQuickAdd() {
+		quickAddOpen = false;
+	}
+	function resetQuickAdd() {
+		quickAddQuery = '';
+		quickAddOpen = false;
+	}
+	function handleQuickAddInput() {
+		quickAddOpen = quickAddQuery.trim().length >= 2;
+	}
+	function handleQuickAddBlur() {
+		setTimeout(() => {
+			quickAddOpen = false;
+		}, 200);
+	}
 	function handleQuickAddKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') { closeQuickAdd(); return; }
+		if (event.key === 'Escape') {
+			closeQuickAdd();
+			return;
+		}
 		if (event.key === 'Enter' && visibleQuickAddOptions.length > 0) {
 			event.preventDefault();
 			onselect(visibleQuickAddOptions[0]);
@@ -142,7 +154,9 @@
 		oninput={handleQuickAddInput}
 		onkeydown={handleQuickAddKeydown}
 		onblur={handleQuickAddBlur}
-		onfocus={() => { if (quickAddQuery.trim().length >= 2) quickAddOpen = true; }}
+		onfocus={() => {
+			if (quickAddQuery.trim().length >= 2) quickAddOpen = true;
+		}}
 		placeholder={quickAddPlaceholder}
 		class="w-full rounded-lg border border-slate-200 bg-white px-8 py-2.5 text-sm text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none"
 	/>
@@ -164,7 +178,9 @@
 			{#if totalQuickAddResults > 0}
 				{#if visibleProductQuickAddOptions.length > 0}
 					<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-						<div class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase">
+						<div
+							class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+						>
 							<Package class="h-3 w-3" />
 							Productos ({visibleProductQuickAddOptions.length})
 						</div>
@@ -172,17 +188,32 @@
 					{#each visibleProductQuickAddOptions as option (option.key)}
 						<button
 							type="button"
-							onclick={() => { onselect(option); resetQuickAdd(); }}
+							onclick={() => {
+								onselect(option);
+								resetQuickAdd();
+							}}
 							class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
 						>
-							<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"><Package class="h-4 w-4" /></div>
+							<div
+								class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600"
+							>
+								<Package class="h-4 w-4" />
+							</div>
 							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-slate-800" title={option.name}>{option.name}</p>
-								<p class="truncate text-xs text-slate-500" title={option.secondaryText}>{option.secondaryText}</p>
+								<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
+									{option.name}
+								</p>
+								<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
+									{option.secondaryText}
+								</p>
 							</div>
 							<div class="text-right">
-								<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">{formatPrice(option.price)}</p>
-								{#if option.stock !== null}<p class="text-[11px] font-medium text-emerald-600">{option.stock} disp.</p>{/if}
+								<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+									{formatPrice(option.price)}
+								</p>
+								{#if option.stock !== null}<p class="text-[11px] font-medium text-emerald-600">
+										{option.stock} disp.
+									</p>{/if}
 							</div>
 						</button>
 					{/each}
@@ -190,7 +221,9 @@
 
 				{#if visibleLensQuickAddOptions.length > 0}
 					<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
-						<div class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase">
+						<div
+							class="flex items-center gap-1.5 text-xs font-medium tracking-wider text-slate-400 uppercase"
+						>
 							<Eye class="h-3 w-3" />
 							Lentes ({visibleLensQuickAddOptions.length})
 						</div>
@@ -198,16 +231,29 @@
 					{#each visibleLensQuickAddOptions as option (option.key)}
 						<button
 							type="button"
-							onclick={() => { onselect(option); resetQuickAdd(); }}
+							onclick={() => {
+								onselect(option);
+								resetQuickAdd();
+							}}
 							class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
 						>
-							<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"><Eye class="h-4 w-4" /></div>
+							<div
+								class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-500"
+							>
+								<Eye class="h-4 w-4" />
+							</div>
 							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium text-slate-800" title={option.name}>{option.name}</p>
-								<p class="truncate text-xs text-slate-500" title={option.secondaryText}>{option.secondaryText}</p>
+								<p class="truncate text-sm font-medium text-slate-800" title={option.name}>
+									{option.name}
+								</p>
+								<p class="truncate text-xs text-slate-500" title={option.secondaryText}>
+									{option.secondaryText}
+								</p>
 							</div>
 							<div class="text-right">
-								<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">{formatPrice(option.price)}</p>
+								<p class="font-mono text-sm font-medium whitespace-nowrap text-slate-700">
+									{formatPrice(option.price)}
+								</p>
 								{#if option.inventoryMode === 'ON_DEMAND'}
 									<p class="text-[11px] font-medium text-blue-600">Por pedido</p>
 								{:else if option.stock !== null}
@@ -219,7 +265,9 @@
 				{/if}
 			{:else}
 				<div class="py-6 text-center">
-					<p class="text-sm text-slate-500">Sin resultados para &quot;{quickAddQuery.trim()}&quot;</p>
+					<p class="text-sm text-slate-500">
+						Sin resultados para &quot;{quickAddQuery.trim()}&quot;
+					</p>
 				</div>
 			{/if}
 		</div>

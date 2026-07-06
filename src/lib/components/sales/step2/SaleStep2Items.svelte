@@ -531,7 +531,7 @@
 
 		<SaleStep2Toolbar
 			filter={quickAddFilter}
-			onfilterchange={(f) => quickAddFilter = f}
+			onfilterchange={(f) => (quickAddFilter = f)}
 			{canCopyRxToAll}
 			oncopyrx={copyFirstRxToAll}
 			onaddfree={addFreeItem}

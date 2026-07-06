@@ -15,6 +15,6 @@ export { default as SaleStatsCards } from './SaleStatsCards.svelte';
 export { default as SaleFilterBar } from './SaleFilterBar.svelte';
 export { default as SaleStep2ItemCard } from './step2/SaleStep2ItemCard.svelte';
 export { default as InternalCostAccordion } from './step2/InternalCostAccordion.svelte';
-export { default as LensFormulaAccordion } from './step2/LensFormulaAccordion.svelte';
 export { default as LensTreatmentSelector } from './step2/LensTreatmentSelector.svelte';
+export { default as SaleFormulaSlideOver } from './step2/SaleFormulaSlideOver.svelte';
 export { default as FreeItemFields } from './step2/FreeItemFields.svelte';
