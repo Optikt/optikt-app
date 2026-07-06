@@ -69,11 +69,11 @@
 </script>
 
 <div
-	class="rounded-lg p-3 {isIncludedAccessory
+	class="rounded-lg p-2 {isIncludedAccessory
 		? 'border border-amber-200/80 bg-amber-50/70'
 		: 'border border-slate-200'}"
 >
-	<div class="space-y-3">
+	<div class="space-y-2">
 		<!-- Item header row -->
 		<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
 			<div class="flex min-w-0 flex-1 items-start gap-2.5">
