@@ -43,7 +43,7 @@
 </script>
 
 <div
-	class="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-in-out"
+	class="fixed inset-0 z-54 bg-black/50 transition-opacity duration-300 ease-in-out"
 	class:opacity-0={!open}
 	class:pointer-events-none={!open}
 	role="presentation"
@@ -51,7 +51,7 @@
 
 <div
 	bind:this={panel}
-	class="fixed top-0 right-0 z-50 flex h-full w-full {maxWidth[
+	class="fixed top-0 right-0 z-55 flex h-full w-full {maxWidth[
 		size
 	]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
 	class:translate-x-full={!open}

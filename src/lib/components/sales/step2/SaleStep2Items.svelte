@@ -7,14 +7,11 @@
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import { DiscountType, LensCatalogSource } from '$lib/shared/enums';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
 	import {
 		getAvailableProductStock,
-		getLensRangeWarningsForItem,
-		buildStep2PrescriptionConfirmation,
 		step2ItemLineTotal,
 		validateLensPrescription,
 		hasLensPrescriptionErrors,
@@ -312,33 +309,6 @@
 		});
 	});
 
-	function getAvailableTreatments(item: SaleItemRow): SupplierTreatment[] {
-		if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return [];
-		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
-		if (!lens?.supplier) return [];
-		// FINISHED lenses come with coatings already applied - no treatments to add
-		if (lens.source === LensCatalogSource.FINISHED) return [];
-		return treatmentCache[lens.supplier.id] ?? [];
-	}
-
-	function toggleTreatment(item: SaleItemRow, treatment: SupplierTreatment) {
-		const idx = item.treatments.findIndex((t) => t.supplierTreatmentId === treatment.id);
-		if (idx >= 0) {
-			item.treatments = item.treatments.filter((t) => t.supplierTreatmentId !== treatment.id);
-		} else {
-			// Replace any existing treatment of the same category (max 1 per category)
-			item.treatments = [
-				...item.treatments.filter((t) => t.category !== treatment.category),
-				{
-					supplierTreatmentId: treatment.id,
-					name: treatment.name,
-					category: treatment.category,
-					price: treatment.salePrice ?? treatment.price,
-					isTaxable: treatment.isTaxable
-				}
-			];
-		}
-	}
 
 	// ============================================================================
 	// PRESCRIPTION VALIDATION
@@ -346,11 +316,6 @@
 
 	// ============================================================================
 
-	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems)
-	);
-
-	// ============================================================================
 	// VALIDATION REASONS (for "Siguiente" button feedback)
 	// ============================================================================
 
@@ -419,22 +384,6 @@
 		}
 		// Fallback to cost-based price
 		return lens.pairPurchasePrice + lens.mountingPrice + lens.shippingPrice;
-	}
-
-	// ============================================================================
-	// OPTICAL RANGE VALIDATION
-	// ============================================================================
-
-	function getRangeWarnings(item: SaleItemRow): string[] {
-		if (item.kind !== 'lens' || !item.lensPair) return [];
-		const pair = item.lensPair;
-		const hasRx =
-			pair.od.prescription.sphere != null ||
-			pair.od.prescription.cylinder != null ||
-			pair.oi.prescription.sphere != null ||
-			pair.oi.prescription.cylinder != null;
-		if (!hasRx) return [];
-		return getLensRangeWarningsForItem(item.id, step2PrescriptionConfirmation);
 	}
 
 	const selectedItemCount = $derived(items.length);
@@ -574,15 +523,10 @@
 				{#each items as item, _index (item.id)}
 					<SaleStep2ItemCard
 						{item}
-						availableTreatments={item.kind === 'lens' ? getAvailableTreatments(item) : []}
 						rxErrs={rxErrorsPerLens[item.id] ?? {}}
 						onremove={() => removeItem(item.id)}
-						ontoggletreatment={(treatment) => toggleTreatment(item, treatment)}
-						onrecalcprice={() => recalcSuggestedPrice(item)}
 						oncopyoi={() => copyOiToOd(item.lensPair!)}
-						lensRangeWarnings={item.kind === 'lens' ? getRangeWarnings(item) : []}
 						eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
-						treatmentTotal={item.kind === 'lens' ? getLensTreatmentsTotal(item) : 0}
 						isIncludedAccessory={item.isIncludedAccessory}
 					/>
 				{/each}

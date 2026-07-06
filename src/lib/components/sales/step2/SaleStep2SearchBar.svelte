@@ -5,8 +5,6 @@
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { allowsDuplicateProductLines } from '../includedAccessories';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 
 	interface QuickAddOption {
 		key: string;

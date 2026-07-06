@@ -2,44 +2,31 @@
 	import { getContext } from 'svelte';
 	import { Package, Eye, Trash2 } from '@lucide/svelte';
 	import { Input, Label } from 'flowbite-svelte';
-	import { autoAnimate } from '@formkit/auto-animate';
 	import { formatPrice } from '$lib/utils';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { findProduct, findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import type { SaleItemRow } from '../newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';
-	import InternalCostAccordion from './InternalCostAccordion.svelte';
-	import LensTreatmentSelector from './LensTreatmentSelector.svelte';
+	import SaleCostSlideOver from './SaleCostSlideOver.svelte';
 	import FreeItemFields from './FreeItemFields.svelte';
 
 	interface Props {
 		item: SaleItemRow;
-		availableTreatments: SupplierTreatment[];
 		rxErrs: PrescriptionFieldErrors;
 		onremove: () => void;
-		ontoggletreatment: (treatment: SupplierTreatment) => void;
-		onrecalcprice: () => void;
 		oncopyoi: () => void;
-		lensRangeWarnings: string[];
 		eyeCount: number;
-		treatmentTotal: number;
 		isIncludedAccessory: boolean;
 	}
 
 	let {
 		item = $bindable(),
-		availableTreatments,
 		rxErrs = {},
 		onremove,
-		ontoggletreatment,
-		onrecalcprice,
 		oncopyoi,
-		lensRangeWarnings = [],
 		eyeCount = 0,
-		treatmentTotal = 0,
 		isIncludedAccessory = false
 	}: Props = $props();
 
@@ -56,16 +43,12 @@
 	let formulaOpen = $state(false);
 	let costOpen = $state(false);
 
-	function formatEyeSummary(eye: import('../newSaleTypes').LensEyeEntry): string {
-		const parts: string[] = [];
-		if (eye.prescription.sphere != null) parts.push(`${eye.prescription.sphere}`);
-		if (eye.prescription.cylinder != null) parts.push(`${eye.prescription.cylinder}`);
-		if (eye.prescription.axis != null) parts.push(`${eye.prescription.axis}°`);
-		if (eye.prescription.addition != null) parts.push(`+${eye.prescription.addition}`);
-		if (eye.dp != null) parts.push(`DP ${eye.dp}`);
-		if (eye.np != null) parts.push(`NP ${eye.np}`);
-		return parts.join(' / ') || '—';
-	}
+	const internalCostTotal = $derived.by(() => {
+		if (!lens || !item.costOverrides) return 0;
+		const effectiveShipping = item.shippingCostPending ? 0 : item.costOverrides.shippingPrice;
+		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
+	});
+
 </script>
 
 <div
@@ -203,114 +186,56 @@
 
 		<!-- Lens-specific section -->
 		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-			<div class="space-y-2 border-t border-slate-100 pt-2">
-				<!-- Ojos toggles -->
-				<div class="flex flex-wrap items-center gap-3" use:autoAnimate>
-					<span class="text-[10px] font-semibold tracking-[0.14em] text-outline uppercase"
-						>Ojos</span
-					>
-					<label
-						class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
-					>
-						<input
-							type="checkbox"
-							bind:checked={item.lensPair.od.enabled}
-							onchange={onrecalcprice}
-							class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-						/>
-						<span>OD</span>
-					</label>
-					<label
-						class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
-					>
-						<input
-							type="checkbox"
-							bind:checked={item.lensPair.oi.enabled}
-							onchange={onrecalcprice}
-							class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-						/>
-						<span>OI</span>
-					</label>
-					{#if eyeCount == 0}<p class="text-[10px] font-medium text-red-600">
-							Habilita al menos un ojo
-						</p>{/if}
-				</div>
-
-				{#if lensRangeWarnings.length > 0}
-					<div
-						class="rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
-					>
-						{#each lensRangeWarnings as warning (warning)}<p>{warning}</p>{/each}
-					</div>
-				{/if}
-
-				<!-- Fórmula summary + slide-over -->
-				<div
-					class="flex items-center justify-between rounded-lg bg-surface-container-lowest px-3 py-2"
-				>
-					<div class="min-w-0 flex-1">
-						<div class="flex items-center gap-1.5 text-xs">
-							<span class="font-semibold text-brand-navy">Fórmula</span>
-							{#if rxErrs && Object.keys(rxErrs).length > 0}
-								<span
-									class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
-									>Pendiente</span
-								>
-							{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
-								<span
-									class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
-									>Completa</span
-								>
-							{/if}
-						</div>
-						{#if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
-							<p class="mt-0.5 truncate text-[11px] text-on-surface-variant">
-								OI: {formatEyeSummary(item.lensPair.oi)}
-							</p>
-							<p class="truncate text-[11px] text-on-surface-variant">
-								OD: {formatEyeSummary(item.lensPair.od)}
-							</p>
-						{/if}
-					</div>
+			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-xs">
+				<div class="flex items-center gap-1.5">
+					<span class="font-semibold text-brand-navy">Fórmula</span>
+					{#if rxErrs && Object.keys(rxErrs).length > 0}
+						<span class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container">Pendiente</span>
+					{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+						<span class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container">Completa</span>
+					{/if}
 					<button
 						type="button"
 						onclick={() => (formulaOpen = true)}
-						class="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+						class="inline-flex items-center gap-0.5 rounded-lg px-1.5 py-0.5 font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
 					>
 						Editar
 					</button>
 				</div>
 
-				{#if formulaOpen}
-					<SaleFormulaSlideOver
-						bind:open={formulaOpen}
-						pair={item.lensPair}
-						{rxErrs}
-						itemId={item.id}
-						{oncopyoi}
-					/>
+				{#if lens && item.costOverrides}
+					<div class="flex items-center gap-1.5">
+						<span class="text-on-surface-variant">Costo</span>
+						<span class="font-mono font-semibold text-brand-navy">{formatPrice(internalCostTotal)}</span>
+						<button
+							type="button"
+							onclick={() => (costOpen = true)}
+							class="inline-flex items-center gap-0.5 rounded-lg px-1.5 py-0.5 font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+						>
+							Editar
+						</button>
+					</div>
 				{/if}
-
-				<!-- Cost + Treatments grid -->
-				<div class="grid gap-2 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" use:autoAnimate>
-					{#if eyeCount > 0 && lens && item.costOverrides}
-						<InternalCostAccordion
-							costOverrides={item.costOverrides}
-							bind:shippingCostPending={item.shippingCostPending}
-							{eyeCount}
-							bind:open={costOpen}
-						/>
-					{/if}
-
-					<LensTreatmentSelector
-						treatments={item.treatments}
-						{availableTreatments}
-						{eyeCount}
-						{treatmentTotal}
-						ontoggle={ontoggletreatment}
-					/>
-				</div>
 			</div>
+
+			{#if formulaOpen}
+				<SaleFormulaSlideOver
+					bind:open={formulaOpen}
+					pair={item.lensPair}
+					{rxErrs}
+					itemId={item.id}
+					{oncopyoi}
+				/>
+			{/if}
+
+			{#if costOpen}
+				<SaleCostSlideOver
+					bind:open={costOpen}
+					costOverrides={item.costOverrides!}
+					bind:shippingCostPending={item.shippingCostPending}
+					{eyeCount}
+				/>
+			{/if}
 		{/if}
 	</div>
 </div>
