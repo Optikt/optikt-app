@@ -110,30 +110,21 @@
 					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Cant</Label
 					>
-					{#if item.kind === 'product'}
-						<Input
-							id="qty-{item.id}"
-							type="number"
-							bind:value={item.quantity}
-							min="1"
-							max={maxStock ?? undefined}
-							class="font-mono text-sm"
-						/>
-					{:else if item.kind === 'free'}
-						<Input
-							id="qty-{item.id}"
-							type="number"
-							bind:value={item.quantity}
-							min="1"
-							class="font-mono text-sm"
-						/>
-					{:else}
-						<Input id="qty-{item.id}" type="number" value="1" disabled class="font-mono text-sm" />
-					{/if}
+
+					<Input
+						id="qty-{item.id}"
+						type="number"
+						class="font-mono text-sm"
+						disabled={item.kind === 'lens'}
+						min="1"
+						max={item.kind === 'product' ? (maxStock ?? undefined) : undefined}
+						bind:value={item.quantity}
+					/>
 				</div>
 				{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
 					<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
 				{/if}
+
 				<div>
 					<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Precio</Label
