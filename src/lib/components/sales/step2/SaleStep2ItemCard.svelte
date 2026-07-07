@@ -187,19 +187,19 @@
 					<span class="font-semibold text-brand-navy">Fórmula</span>
 					{#if rxErrs && Object.keys(rxErrs).length > 0}
 						<span
-							class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
+							class="rounded-full bg-error-container px-1.5 py-0.5 text-[12px] font-semibold text-on-error-container"
 							>Pendiente</span
 						>
 					{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
 						<span
-							class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
+							class="rounded-full bg-success-container px-1.5 py-0.5 text-[12px] font-semibold text-on-success-container"
 							>Completa</span
 						>
 					{/if}
 					<button
 						type="button"
 						onclick={() => (formulaOpen = true)}
-						class="inline-flex items-center gap-0.5 rounded-lg px-1.5 py-0.5 font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+						class="inline-flex items-center rounded-lg px-1.5 py-0.5 font-semibold text-brand-blue underline transition-colors hover:bg-brand-blue/10"
 					>
 						Editar
 					</button>
@@ -207,14 +207,14 @@
 
 				{#if lens && item.costOverrides}
 					<div class="flex items-center gap-1.5">
-						<span class="text-on-surface-variant">Costo</span>
+						<span class="under text-on-surface-variant">Costo: </span>
 						<span class="font-mono font-semibold text-brand-navy"
 							>{formatPrice(internalCostTotal)}</span
 						>
 						<button
 							type="button"
 							onclick={() => (costOpen = true)}
-							class="inline-flex items-center gap-0.5 rounded-lg px-1.5 py-0.5 font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+							class="inline-flex items-center rounded-lg px-1.5 py-0.5 font-semibold text-brand-blue underline transition-colors hover:bg-brand-blue/10"
 						>
 							Editar
 						</button>
