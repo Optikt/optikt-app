@@ -18,7 +18,9 @@
 	}: Props = $props();
 
 	const effectiveShipping = $derived(shippingCostPending ? 0 : costOverrides.shippingPrice);
-	const internalCostTotal = $derived(costOverrides.baseCost + costOverrides.mountingPrice + effectiveShipping);
+	const internalCostTotal = $derived(
+		costOverrides.baseCost + costOverrides.mountingPrice + effectiveShipping
+	);
 </script>
 
 <SlideOver bind:open size="lg">
@@ -59,7 +61,7 @@
 		<div class="flex items-center justify-between gap-2">
 			<span>Envío</span>
 			{#if shippingCostPending}
-				<span class="text-xs italic text-on-surface-variant/50">Pendiente</span>
+				<span class="text-xs text-on-surface-variant/50 italic">Pendiente</span>
 			{:else}
 				<input
 					type="number"
@@ -71,10 +73,16 @@
 			{/if}
 		</div>
 		<label class="flex cursor-pointer items-center gap-1.5 text-xs">
-			<input type="checkbox" bind:checked={shippingCostPending} class="h-3 w-3 rounded border-slate-300" />
+			<input
+				type="checkbox"
+				bind:checked={shippingCostPending}
+				class="h-3 w-3 rounded border-slate-300"
+			/>
 			<span>Costo de envío pendiente</span>
 		</label>
-		<div class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy">
+		<div
+			class="flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-2 font-semibold text-brand-navy"
+		>
 			<span>Total</span>
 			<span class="font-mono">{formatPrice(internalCostTotal)}</span>
 		</div>

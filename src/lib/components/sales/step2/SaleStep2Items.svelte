@@ -309,7 +309,6 @@
 		});
 	});
 
-
 	// ============================================================================
 	// PRESCRIPTION VALIDATION
 	// ============================================================================
@@ -487,7 +486,7 @@
 		/>
 	</div>
 
-	<div class="flex flex-wrap gap-4" >
+	<div class="flex flex-wrap gap-4">
 		<SaleStep2SearchBar
 			filter={quickAddFilter}
 			{items}
@@ -506,7 +505,6 @@
 	</div>
 	<!-- Items list -->
 	<div>
-
 		<div class="space-y-1" use:autoAnimate>
 			{#if items.length === 0}
 				<div

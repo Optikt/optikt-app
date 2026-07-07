@@ -68,18 +68,30 @@
 					{#each ALL_LENS_TYPES as type (type)}
 						<option value={type}>{getLensTypeLabel(type)}</option>
 					{/each}
-			</select>
-		</div>
-		<span class="text-[10px] font-semibold text-outline uppercase">Ojos</span>
-		<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
-			<input type="checkbox" bind:checked={pair.od.enabled} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
-			<span>OD</span>
-		</label>
-		<label class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm">
-			<input type="checkbox" bind:checked={pair.oi.enabled} class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue" />
-			<span>OI</span>
-		</label>
-		<button
+				</select>
+			</div>
+			<span class="text-[10px] font-semibold text-outline uppercase">Ojos</span>
+			<label
+				class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+			>
+				<input
+					type="checkbox"
+					bind:checked={pair.od.enabled}
+					class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+				/>
+				<span>OD</span>
+			</label>
+			<label
+				class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
+			>
+				<input
+					type="checkbox"
+					bind:checked={pair.oi.enabled}
+					class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+				/>
+				<span>OI</span>
+			</label>
+			<button
 				type="button"
 				onclick={oncopyoi}
 				class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"

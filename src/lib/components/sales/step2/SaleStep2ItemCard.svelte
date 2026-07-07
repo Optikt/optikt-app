@@ -48,11 +48,10 @@
 		const effectiveShipping = item.shippingCostPending ? 0 : item.costOverrides.shippingPrice;
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
-
 </script>
 
 <div
-	class="rounded-lg p-2 bg-white {isIncludedAccessory
+	class="rounded-lg bg-white p-2 {isIncludedAccessory
 		? 'border border-amber-200/80 bg-amber-50/70'
 		: 'border border-slate-300 hover:border-slate-400'}"
 >
@@ -107,11 +106,11 @@
 
 			<!-- Inline controls row -->
 			<div class="flex shrink-0 items-end gap-3">
-				{#if item.kind === 'product'}
-					<div>
-						<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
-							>Cant</Label
-						>
+				<div>
+					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
+						>Cant</Label
+					>
+					{#if item.kind === 'product'}
 						<Input
 							id="qty-{item.id}"
 							type="number"
@@ -120,12 +119,7 @@
 							max={maxStock ?? undefined}
 							class="font-mono text-sm"
 						/>
-					</div>
-				{:else if item.kind === 'free'}
-					<div>
-						<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
-							>Cant</Label
-						>
+					{:else if item.kind === 'free'}
 						<Input
 							id="qty-{item.id}"
 							type="number"
@@ -133,15 +127,10 @@
 							min="1"
 							class="font-mono text-sm"
 						/>
-					</div>
-				{:else}
-					<div>
-						<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
-							>Cant</Label
-						>
+					{:else}
 						<Input id="qty-{item.id}" type="number" value="1" disabled class="font-mono text-sm" />
-					</div>
-				{/if}
+					{/if}
+				</div>
 				{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
 					<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
 				{/if}
@@ -186,13 +175,21 @@
 
 		<!-- Lens-specific section -->
 		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-xs">
+			<div
+				class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-xs"
+			>
 				<div class="flex items-center gap-1.5">
 					<span class="font-semibold text-brand-navy">Fórmula</span>
 					{#if rxErrs && Object.keys(rxErrs).length > 0}
-						<span class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container">Pendiente</span>
+						<span
+							class="rounded-full bg-error-container px-1.5 py-0.5 text-[9px] font-semibold text-on-error-container"
+							>Pendiente</span
+						>
 					{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
-						<span class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container">Completa</span>
+						<span
+							class="rounded-full bg-success-container px-1.5 py-0.5 text-[9px] font-semibold text-on-success-container"
+							>Completa</span
+						>
 					{/if}
 					<button
 						type="button"
@@ -206,7 +203,9 @@
 				{#if lens && item.costOverrides}
 					<div class="flex items-center gap-1.5">
 						<span class="text-on-surface-variant">Costo</span>
-						<span class="font-mono font-semibold text-brand-navy">{formatPrice(internalCostTotal)}</span>
+						<span class="font-mono font-semibold text-brand-navy"
+							>{formatPrice(internalCostTotal)}</span
+						>
 						<button
 							type="button"
 							onclick={() => (costOpen = true)}
