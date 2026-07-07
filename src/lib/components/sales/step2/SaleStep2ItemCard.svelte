@@ -58,7 +58,7 @@
 	<div class="space-y-1">
 		<!-- Item header row -->
 		<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-			<div class="flex min-w-0 flex-1 items-start gap-2.5 w-2/3">
+			<div class="flex w-2/3 min-w-0 flex-1 items-start gap-2.5">
 				<div
 					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind === 'lens'
 						? 'bg-brand-blue/15 text-brand-blue'
@@ -105,7 +105,7 @@
 			</div>
 
 			<!-- Inline controls row -->
-			<div class="flex shrink-0 items-start gap-3 w-1/3">
+			<div class="flex w-1/3 shrink-0 items-start gap-3">
 				<div class="w-1/2">
 					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Cant</Label
@@ -120,9 +120,9 @@
 						max={item.kind === 'product' ? (maxStock ?? undefined) : undefined}
 						bind:value={item.quantity}
 					/>
-				{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
-					<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
-				{/if}
+					{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
+						<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
+					{/if}
 				</div>
 
 				<div class="w-1/2">
