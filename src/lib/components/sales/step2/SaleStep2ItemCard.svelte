@@ -181,7 +181,7 @@
 		<!-- Lens-specific section -->
 		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 			<div
-				class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2 text-xs"
+				class="flex w-2/3 flex-wrap items-center gap-x-4 gap-y-1 divide-x divide-slate-300 border-t border-slate-200 px-2 pt-2 text-xs"
 			>
 				<div class="flex items-center gap-1.5">
 					<span class="font-semibold text-brand-navy">Fórmula</span>
