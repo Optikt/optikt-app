@@ -105,7 +105,7 @@
 			</div>
 
 			<!-- Inline controls row -->
-			<div class="flex shrink-0 items-end gap-3 w-1/3">
+			<div class="flex shrink-0 items-start gap-3 w-1/3">
 				<div class="w-1/2">
 					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Cant</Label
