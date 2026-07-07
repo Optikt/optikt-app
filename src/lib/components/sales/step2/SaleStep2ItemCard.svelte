@@ -69,38 +69,52 @@
 						/>{/if}
 				</div>
 				<div class="min-w-0">
-					<div class="flex flex-wrap items-center gap-1.5">
+					<div class="flex flex-col flex-wrap items-start">
 						<span class="truncate text-sm font-semibold text-brand-navy">
 							{lens?.name ?? product?.name ?? 'Ítem libre'}
 						</span>
-						{#if item.kind === 'product' && product?.brand}
-							<span
-								class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-on-surface-variant uppercase"
-								>{product.brand.name}</span
-							>
-						{/if}
-						{#if item.kind === 'lens' && lens}
-							<span
-								class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[9px] font-semibold text-brand-blue uppercase"
-								>{getLensSourceLabel(lens.source)}</span
-							>
-							<span
-								class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[9px] font-semibold text-on-surface-variant uppercase"
-								>{getLensTypeLabel(lens.type)}</span
-							>
-						{/if}
-						{#if isIncludedAccessory}
-							<span
-								class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 uppercase"
-								>Accesorio</span
-							>
-						{/if}
+						<div class="flex items-center gap-1.5">
+							<!-- Products -->
+							{#if item.kind === 'product' && product}
+								{#if product.description}
+									<p class="mt0.5 truncate text-[11px] text-on-surface-variant">
+										{product.description}
+									</p>
+								{/if}
+								{#if product.brand}
+									<span
+										class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-on-surface-variant uppercase"
+										>{product.brand.name}</span
+									>
+								{/if}
+							{/if}
+
+							<!-- Lenses -->
+							{#if item.kind === 'lens' && lens}
+								{#if lens.supplier?.name}
+									<p class="truncate text-[12px] font-semibold text-on-surface-variant">
+										{lens.supplier.name}
+									</p>
+								{/if}
+								<span
+									class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-blue uppercase"
+									>{getLensSourceLabel(lens.source)}</span
+								>
+								<span
+									class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase"
+									>{getLensTypeLabel(lens.type)}</span
+								>
+							{/if}
+
+							<!-- Included accesory -->
+							{#if isIncludedAccessory}
+								<span
+									class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 uppercase"
+									>Accesorio</span
+								>
+							{/if}
+						</div>
 					</div>
-					{#if item.kind === 'product' && product}
-						<p class="mt-0.5 truncate text-[11px] text-on-surface-variant">{product.description}</p>
-					{:else if item.kind === 'lens' && lens}
-						<p class="mt-0.5 truncate text-[11px] text-on-surface-variant">{lens.supplier?.name}</p>
-					{/if}
 				</div>
 			</div>
 
