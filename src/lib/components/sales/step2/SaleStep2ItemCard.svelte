@@ -51,11 +51,11 @@
 </script>
 
 <div
-	class="rounded-lg bg-white p-2 {isIncludedAccessory
+	class="rounded-lg bg-white p-1 {isIncludedAccessory
 		? 'border border-amber-200/80 bg-amber-50/70'
 		: 'border border-slate-300 hover:border-slate-400'}"
 >
-	<div class="space-y-2">
+	<div class="space-y-1">
 		<!-- Item header row -->
 		<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
 			<div class="flex min-w-0 flex-1 items-start gap-2.5">
@@ -120,10 +120,10 @@
 						max={item.kind === 'product' ? (maxStock ?? undefined) : undefined}
 						bind:value={item.quantity}
 					/>
-				</div>
 				{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
 					<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
 				{/if}
+				</div>
 
 				<div>
 					<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
