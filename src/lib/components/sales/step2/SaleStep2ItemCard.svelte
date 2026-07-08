@@ -67,7 +67,7 @@
 
 {#snippet eyeSummary(eye: LensConfirmationEye, lensEntry: LensEyeEntry)}
 	{@const segments = formatEyeSummary(lensEntry)}
-	<p class="truncate font-mono text-[12px] text-on-surface-variant text-wrap">
+	<p class="truncate font-mono text-[12px] text-wrap text-on-surface-variant">
 		<span class="font-bold"><span class="underline">{eye}</span>:</span>
 		{#each segments as seg, i}
 			{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
@@ -94,12 +94,23 @@
 							class="h-3.5 w-3.5"
 						/>{/if}
 				</div>
-				<div class="min-w-0">
-					<div class="flex flex-col flex-wrap items-start">
+				<div class="min-w-0 w-full">
+					<div class="flex flex-col flex-wrap items-start gap-y-1 w-full">
 						<span class="truncate text-sm font-semibold text-brand-navy">
 							{lens?.name ?? product?.name ?? 'Ítem libre'}
 						</span>
-						<div class="flex items-center gap-1.5">
+						<div
+							class={[
+								'flex items-center gap-2',
+								{
+									'w-2/3 border-b border-slate-200 pb-0.5':
+										item.kind === 'lens' &&
+										item.lensPair &&
+										(item.lensPair.od.prescription.sphere != null ||
+											item.lensPair.oi.prescription.sphere != null)
+								}
+							]}
+						>
 							<!-- Products -->
 							{#if item.kind === 'product' && product}
 								{#if product.description}
@@ -132,13 +143,6 @@
 								>
 							{/if}
 
-							{#if item.kind === 'lens' && item.lensPair && (item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)}
-								<div>
-									{@render eyeSummary('OI', item.lensPair.oi)}
-									{@render eyeSummary('OD', item.lensPair.od)}
-								</div>
-							{/if}
-
 							<!-- Included accesory -->
 							{#if isIncludedAccessory}
 								<span
@@ -147,6 +151,13 @@
 								>
 							{/if}
 						</div>
+
+						{#if item.kind === 'lens' && item.lensPair && (item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)}
+							<div>
+								{@render eyeSummary('OI', item.lensPair.oi)}
+								{@render eyeSummary('OD', item.lensPair.od)}
+							</div>
+						{/if}
 					</div>
 				</div>
 			</div>
