@@ -24,9 +24,9 @@ const lensItems = [
 	}
 ] as const;
 
-const lensRow: SaleItemRow = {
+const lensRow: import("./newSaleTypes").SaleItemRow = {
 	id: 'row-1',
-	kind: 'lens',
+	kind: 'lens' as const,
 	productId: '',
 	quantity: 1,
 	lensPair: {
@@ -55,16 +55,15 @@ const lensRow: SaleItemRow = {
 			isTaxable: true
 		}
 	],
-	freeItem: null,
 	unitPrice: 25,
 	discount: 0,
 	discountType: DiscountType.FIXED,
 	notes: '',
-	costOverrides: null,
+	costOverrides: { baseCost: 4.6, mountingPrice: 3, shippingPrice: 10 },
 	shippingCostPending: true,
 	isIncludedAccessory: false,
 	includedAccessoryParentItemId: null
-};
+} as const;
 
 describe('buildSaleItemsFromWizard', () => {
 	it('serializes one lens pair row plus treatment children', () => {
@@ -113,7 +112,7 @@ describe('buildQuoteItemsFromWizard', () => {
 
 describe('buildPrescriptionPayload', () => {
 	it('builds a current prescription payload from the first lens item', () => {
-		const item: SaleItemRow = {
+		const item: any = {
 			id: 'row-1',
 			kind: 'lens',
 			productId: '',
@@ -135,13 +134,20 @@ describe('buildPrescriptionPayload', () => {
 				lensType: LensType.PROGRESSIVE,
 				doctorName: 'Dr. Martinez'
 			},
-			treatments: [],
-			freeItem: null,
 			unitPrice: 25,
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			notes: '',
-			costOverrides: null,
+			costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+	treatments: [
+		{
+			supplierTreatmentId: 'treatment-1',
+			name: 'Antirreflejo',
+			category: 'AR',
+			price: 5,
+			isTaxable: true
+		}
+	],
 			shippingCostPending: false,
 			isIncludedAccessory: false,
 			includedAccessoryParentItemId: null
@@ -159,19 +165,25 @@ describe('buildPrescriptionPayload', () => {
 	});
 
 	it('returns undefined when no lens items have prescription values', () => {
-		const item: SaleItemRow = {
+		const item: any = {
 			id: 'row-1',
 			kind: 'product',
 			productId: 'prod-1',
 			quantity: 1,
-			lensPair: null,
-			treatments: [],
-			freeItem: null,
 			unitPrice: 10,
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			notes: '',
-			costOverrides: null,
+			costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+	treatments: [
+		{
+			supplierTreatmentId: 'treatment-1',
+			name: 'Antirreflejo',
+			category: 'AR',
+			price: 5,
+			isTaxable: true
+		}
+	],
 			shippingCostPending: false,
 			isIncludedAccessory: false,
 			includedAccessoryParentItemId: null

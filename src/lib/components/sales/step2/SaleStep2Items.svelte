@@ -21,7 +21,7 @@
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
-	import { createEmptyLensPair, createEmptyFreeItemData } from '../newSaleTypes';
+	import { createEmptyProductItem, createEmptyLensItem, createEmptyLensPair, createEmptyFreeItem, createEmptyFreeItemData } from '../newSaleTypes';
 	import {
 		allowsDuplicateProductLines,
 		canAutoIncludeAccessories,
@@ -77,26 +77,6 @@
 	// ITEMS MANAGEMENT
 	// ============================================================================
 
-	function createEmptyItem(): SaleItemRow {
-		return {
-			id: crypto.randomUUID(),
-			kind: 'product',
-			isIncludedAccessory: false,
-			includedAccessoryParentItemId: null,
-			productId: '',
-			quantity: 1,
-			lensPair: null,
-			treatments: [],
-			freeItem: null,
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			notes: '',
-			costOverrides: null,
-			shippingCostPending: false
-		};
-	}
-
 	function createIncludedAccessoryItem(
 		parentItemId: string,
 		accessoryRule: {
@@ -118,12 +98,11 @@
 			}
 		})();
 		return {
-			...createEmptyItem(),
-			productId: accessoryRule.accessoryProductId,
+			...createEmptyProductItem(accessoryRule.accessoryProductId),
 			unitPrice: price,
 			isIncludedAccessory: true,
 			includedAccessoryParentItemId: parentItemId
-		};
+		} as SaleItemRow;
 	}
 
 	function getAvailableStockForProduct(productId: string, excludeItemId?: string): number | null {
@@ -137,17 +116,15 @@
 		brandId?: string | null;
 		productType?: string;
 	}): SaleItemRow {
-		const item = createEmptyItem();
-		item.kind = option.kind;
-
 		if (option.kind === 'product') {
-			item.productId = option.id;
+			const item = createEmptyProductItem(option.id);
 			item.unitPrice = option.price;
 			return item;
 		}
 
-		item.lensPair = createEmptyLensPair();
+		const item = createEmptyLensItem();
 		item.lensPair.catalogItemId = option.id;
+		item.productId = option.id;
 
 		const lens = lensItems.find((l) => l.id === option.id);
 		if (lens) {
@@ -258,23 +235,7 @@
 	}
 
 	function addFreeItem() {
-		const item: SaleItemRow = {
-			id: crypto.randomUUID(),
-			kind: 'free',
-			isIncludedAccessory: false,
-			includedAccessoryParentItemId: null,
-			productId: '',
-			quantity: 1,
-			lensPair: null,
-			treatments: [],
-			freeItem: createEmptyFreeItemData(),
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			notes: '',
-			costOverrides: null,
-			shippingCostPending: false
-		};
+		const item = createEmptyFreeItem();
 		items = [...items, item];
 	}
 
@@ -298,10 +259,12 @@
 
 	// Load treatments when a lens item's supplier changes
 	$effect(() => {
-		const lensItemsInCart = items.filter((i) => i.kind === 'lens' && i.lensPair?.catalogItemId);
+		const lensItemsInCart = items.filter((i): i is import('../newSaleTypes').LensSaleItemRow =>
+			i.kind === 'lens'
+		);
 		untrack(() => {
 			for (const item of lensItemsInCart) {
-				const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+				const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
 				if (lens?.supplier?.id && lens.source !== LensCatalogSource.FINISHED) {
 					loadTreatmentsForSupplier(lens.supplier.id);
 				}
@@ -366,8 +329,8 @@
 	/** Recalculate unitPrice to the suggested sale price for the lens only (excluding treatments).
 	 *  Uses salePrice (sell price) when available, otherwise falls back to basePrice (cost). */
 	function recalcSuggestedPrice(item: SaleItemRow) {
-		if (item.kind !== 'lens' || !item.lensPair) return;
-		const lens = lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+		if (item.kind !== 'lens') return;
+		const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
 		if (!lens) return;
 
 		const eyeCount = getEnabledEyeCount(item);
@@ -434,8 +397,8 @@
 	);
 
 	function copyFirstRxToAll() {
-		const firstLens = items.find((i) => i.kind === 'lens' && i.lensPair);
-		if (!firstLens?.lensPair) return;
+		const firstLens = items.find((i): i is import('../newSaleTypes').LensSaleItemRow => i.kind === 'lens');
+		if (!firstLens) return;
 		const src = firstLens.lensPair;
 		for (const item of items) {
 			if (item.kind !== 'lens' || !item.lensPair || item.id === firstLens.id) continue;
@@ -451,10 +414,11 @@
 		}
 	}
 
-	function copyOiToOd(pair: import('../newSaleTypes').LensPairEntry) {
-		pair.od.prescription = { ...pair.oi.prescription };
-		pair.od.dp = pair.oi.dp;
-		pair.od.np = pair.oi.np;
+	function copyOiToOd(item: SaleItemRow) {
+		if (item.kind !== 'lens') return;
+		item.lensPair.od.prescription = { ...item.lensPair.oi.prescription };
+		item.lensPair.od.dp = item.lensPair.oi.dp;
+		item.lensPair.od.np = item.lensPair.oi.np;
 	}
 
 	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
@@ -525,7 +489,7 @@
 						{item}
 						rxErrs={rxErrorsPerLens[item.id] ?? {}}
 						onremove={() => removeItem(item.id)}
-						oncopyoi={() => copyOiToOd(item.lensPair!)}
+						oncopyoi={() => copyOiToOd(item)}
 						eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
 						isIncludedAccessory={item.isIncludedAccessory}
 					/>

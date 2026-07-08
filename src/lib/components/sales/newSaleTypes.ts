@@ -1,4 +1,4 @@
-import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
+import { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 import { LensType } from '$lib/shared/enums';
 import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
@@ -46,29 +46,89 @@ export interface FreeItemData {
 	opticalNotes: string;
 }
 
-export interface SaleItemRow {
+// ─── DISCRIMINATED UNION: SaleItemRow ───
+
+interface BaseSaleItemRow {
 	id: string;
-	kind: ItemKind;
 	isIncludedAccessory: boolean;
 	includedAccessoryParentItemId: string | null;
-	// Product fields
-	productId: string;
 	quantity: number;
-	// Lens fields (only when kind === 'lens')
-	lensPair: LensPairEntry | null;
-	// Treatments (only when kind === 'lens')
-	treatments: SelectedTreatment[];
-	// Free item data (only when kind === 'free')
-	freeItem: FreeItemData | null;
-	// Shared
 	unitPrice: number;
 	discount: number;
 	discountType: DiscountTypeEnum;
 	notes: string;
-	// Internal cost overrides (only when kind === 'lens')
-	costOverrides: CostOverrides | null;
-	/** When true, shipping cost is unknown at sale time and will be filled later */
+}
+
+export interface ProductSaleItemRow extends BaseSaleItemRow {
+	kind: 'product';
+	productId: string;
+}
+
+export interface LensSaleItemRow extends BaseSaleItemRow {
+	kind: 'lens';
+	productId: string;
+	lensPair: LensPairEntry;
+	treatments: SelectedTreatment[];
+	costOverrides: CostOverrides;
 	shippingCostPending: boolean;
+}
+
+export interface FreeSaleItemRow extends BaseSaleItemRow {
+	kind: 'free';
+	productId: string;
+	freeItem: FreeItemData;
+}
+
+export type SaleItemRow = ProductSaleItemRow | LensSaleItemRow | FreeSaleItemRow;
+
+export function createEmptyProductItem(productId = ''): ProductSaleItemRow {
+	return {
+		id: crypto.randomUUID(),
+		kind: 'product',
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		productId,
+		quantity: 1,
+		unitPrice: 0,
+		discount: 0,
+		discountType: DiscountTypeEnum.FIXED,
+		notes: ''
+	};
+}
+
+export function createEmptyLensItem(): LensSaleItemRow {
+	return {
+		id: crypto.randomUUID(),
+		kind: 'lens',
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		productId: '',
+		quantity: 1,
+		lensPair: createEmptyLensPair(),
+		treatments: [],
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+		shippingCostPending: false,
+		unitPrice: 0,
+		discount: 0,
+		discountType: DiscountTypeEnum.FIXED,
+		notes: ''
+	};
+}
+
+export function createEmptyFreeItem(): FreeSaleItemRow {
+	return {
+		id: crypto.randomUUID(),
+		kind: 'free',
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		productId: '',
+		quantity: 1,
+		freeItem: createEmptyFreeItemData(),
+		unitPrice: 0,
+		discount: 0,
+		discountType: DiscountTypeEnum.FIXED,
+		notes: ''
+	};
 }
 
 export interface NewCustomerData {

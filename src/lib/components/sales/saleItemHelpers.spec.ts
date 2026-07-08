@@ -67,7 +67,7 @@ function makeLensItem(
 	};
 }
 
-function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
+function makeConfirmationLensRow(id: string = 'row-1'): import('./newSaleTypes').LensSaleItemRow {
 	const lensPair = createEmptyLensPair();
 	lensPair.catalogItemId = 'lens-1';
 
@@ -78,13 +78,12 @@ function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
 		quantity: 1,
 		lensPair,
 		treatments: [],
-		freeItem: null,
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+		shippingCostPending: false,
 		unitPrice: 30,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null
 	};
@@ -231,15 +230,10 @@ describe('buildStep2PrescriptionConfirmation', () => {
 					kind: 'product',
 					productId: 'product-1',
 					quantity: 1,
-					lensPair: null,
-					treatments: [],
-					freeItem: null,
 					unitPrice: 10,
 					discount: 0,
 					discountType: DiscountType.FIXED,
 					notes: '',
-					costOverrides: null,
-					shippingCostPending: false,
 					isIncludedAccessory: false,
 					includedAccessoryParentItemId: null
 				}
@@ -375,35 +369,23 @@ describe('getSnapshotTaxLabel', () => {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
-	const {
-		freeItem,
-		isIncludedAccessory = false,
-		includedAccessoryParentItemId = null,
-		...rest
-	} = overrides;
-
+function makeProductRow(overrides: Partial<import('./newSaleTypes').ProductSaleItemRow> = {}): import('./newSaleTypes').ProductSaleItemRow {
 	return {
 		id: 'item-1',
 		kind: 'product',
 		productId: 'prod-1',
 		quantity: 1,
-		lensPair: null,
-		treatments: [],
 		unitPrice: 100,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
-		isIncludedAccessory,
-		includedAccessoryParentItemId,
-		...rest,
-		freeItem: freeItem ?? null
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		...overrides
 	};
 }
 
-function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
+function makeLensRow(treatments: SelectedTreatment[] = []): import('./newSaleTypes').LensSaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'lens-1';
 	return {
@@ -413,13 +395,12 @@ function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
 		quantity: 1,
 		lensPair: pair,
 		treatments,
-		freeItem: null,
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+		shippingCostPending: false,
 		unitPrice: 50,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null
 	};
@@ -523,8 +504,8 @@ describe('step2ItemLineTotal', () => {
 
 describe('treatmentsTotal', () => {
 	// This function is defined inline in Step 2 and Step 3 - test the logic here
-	function treatmentsTotal(item: SaleItemRow): number {
-		return item.treatments.reduce((sum, t) => sum + t.price, 0);
+	function treatmentsTotal(item: any): number {
+		return item.treatments.reduce((sum: number, t: { price: number }) => sum + t.price, 0);
 	}
 
 	it('returns 0 when no treatments', () => {
@@ -546,8 +527,8 @@ describe('treatmentsTotal', () => {
 // already includes treatments. The subtotal is just sum(itemLineTotal).
 
 describe('subtotal (Step 3)', () => {
-	function subtotal(items: SaleItemRow[]): number {
-		return items.reduce((acc, item) => acc + itemLineTotal(item), 0);
+	function subtotal(items: any[]): number {
+		return items.reduce((acc: number, item) => acc + itemLineTotal(item), 0);
 	}
 
 	it('computes subtotal with product only', () => {

@@ -15,20 +15,17 @@ function createProductRow(
 	id: string,
 	productId: string,
 	parentItemId: string | null = null
-): SaleItemRow {
+): any {
 	return {
 		id,
 		kind: 'product',
 		productId,
 		quantity: 1,
-		lensPair: null,
-		treatments: [],
-		freeItem: null,
 		unitPrice: 0,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
 		shippingCostPending: false,
 		isIncludedAccessory: parentItemId !== null,
 		includedAccessoryParentItemId: parentItemId

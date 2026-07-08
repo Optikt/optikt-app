@@ -32,6 +32,10 @@
 
 	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
+	const isLensKind = $derived(item.kind === 'lens');
+	const isProductKind = $derived(item.kind === 'product');
+	const isFreeKind = $derived(item.kind === 'free');
+
 	const product = $derived(item.kind === 'product' ? findProduct(item, products) : undefined);
 	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);
 	const maxStock = $derived(
@@ -44,21 +48,21 @@
 	let costOpen = $state(false);
 
 	const internalCostTotal = $derived.by(() => {
-		if (!lens || !item.costOverrides) return 0;
+		if (item.kind !== 'lens' || !lens) return 0;
 		const effectiveShipping = item.shippingCostPending ? 0 : item.costOverrides.shippingPrice;
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
 
-	const isLensKind = $derived(item.kind === 'lens');
-	const isProductKind = $derived(item.kind === 'product');
-	const isFreeKind = $derived(item.kind === 'free');
+
 	const hasRx = $derived(
-		isLensKind &&
+		item.kind === 'lens' &&
 			!!item.lensPair &&
 			(item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)
 	);
-	const outOfStock = $derived(isProductKind && maxStock !== null && item.quantity > maxStock);
-	const hasLensItem = $derived(isLensKind && !!item.lensPair?.catalogItemId);
+	const outOfStock = $derived(
+		item.kind === 'product' && maxStock !== null && item.quantity > maxStock
+	);
+	const hasLensItem = $derived(item.kind === 'lens' && !!item.lensPair?.catalogItemId);
 
 	function formatEyeSummary(eye: LensEyeEntry): { label: string; value: string }[] {
 		const parts: { label: string; value: string }[] = [];
@@ -113,8 +117,7 @@
 								'flex items-center gap-2',
 								{
 									'w-2/3 border-b border-slate-200 pb-0.5':
-										isLensKind &&
-										!!item.lensPair &&
+										item.kind === 'lens' &&
 										(item.lensPair.od.prescription.sphere != null ||
 											item.lensPair.oi.prescription.sphere != null)
 								}
@@ -161,7 +164,7 @@
 							{/if}
 						</div>
 
-						{#if hasRx && item.lensPair}
+						{#if item.kind === 'lens' && (item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)}
 							<div>
 								{@render eyeSummary('OI', item.lensPair.oi)}
 								{@render eyeSummary('OD', item.lensPair.od)}
@@ -227,12 +230,12 @@
 		</div>
 
 		<!-- Free item fields -->
-		{#if isFreeKind && item.freeItem}
+		{#if item.kind === 'free' && item.freeItem}
 			<FreeItemFields freeItem={item.freeItem} />
 		{/if}
 
 		<!-- Lens-specific section -->
-		{#if hasLensItem}
+		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 			<div
 				class="flex w-2/3 flex-wrap items-center gap-x-4 gap-y-1 divide-x divide-slate-300 border-t border-slate-200 px-2 pt-2 text-xs"
 			>
@@ -243,7 +246,7 @@
 							class="rounded-full bg-error-container px-1.5 py-0.5 text-[12px] font-semibold text-on-error-container"
 							>Pendiente</span
 						>
-					{:else if item.lensPair!.od.prescription.sphere != null || item.lensPair!.oi.prescription.sphere != null}
+					{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
 						<span
 							class="rounded-full bg-success-container px-1.5 py-0.5 text-[12px] font-semibold text-on-success-container"
 							>Completa</span
@@ -258,7 +261,7 @@
 					</button>
 				</div>
 
-				{#if lens && item.costOverrides}
+				{#if item.kind === 'lens' && lens && item.costOverrides}
 					<div class="flex items-center gap-1.5">
 						<span class="under text-on-surface-variant">Costo: </span>
 						<span class="font-mono font-semibold text-brand-navy"
@@ -277,10 +280,10 @@
 		{/if}
 	</div>
 
-	{#if hasLensItem}
+	{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 		<SaleFormulaSlideOver
 			bind:open={formulaOpen}
-			pair={item.lensPair!}
+			pair={item.lensPair}
 			{rxErrs}
 			itemId={item.id}
 			{oncopyoi}
@@ -288,7 +291,7 @@
 
 		<SaleCostSlideOver
 			bind:open={costOpen}
-			costOverrides={item.costOverrides!}
+			costOverrides={item.costOverrides}
 			bind:shippingCostPending={item.shippingCostPending}
 			{eyeCount}
 		/>

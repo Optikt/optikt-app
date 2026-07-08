@@ -5,7 +5,7 @@
 
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import type { SaleItemRow } from './newSaleTypes';
+import type { SaleItemRow, LensSaleItemRow, FreeSaleItemRow } from './newSaleTypes';
 import { LensType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
@@ -29,8 +29,8 @@ export function findLensItem(
 	item: SaleItemRow,
 	lensItems: LensCatalogItemWithRelations[]
 ): LensCatalogItemWithRelations | undefined {
-	if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return undefined;
-	return lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+	if (item.kind !== 'lens' || !item.lensPair.catalogItemId) return undefined;
+	return lensItems.find((l) => l.id === item.lensPair.catalogItemId);
 }
 
 export function getItemName(
@@ -253,7 +253,7 @@ export function getRequiredEyes(items: SaleItemRow[]): { needsOd: boolean; needs
 	let needsOd = false;
 	let needsOi = false;
 	for (const item of items) {
-		if (item.kind === 'lens' && item.lensPair) {
+		if (item.kind === 'lens') {
 			if (item.lensPair.od.enabled) needsOd = true;
 			if (item.lensPair.oi.enabled) needsOi = true;
 		}
@@ -287,7 +287,7 @@ function validateNumericEyeFields(
 /** Validate a single lens item's prescription fields. Returns empty object when valid. */
 export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldErrors {
 	const errors: PrescriptionFieldErrors = {};
-	if (item.kind !== 'lens' || !item.lensPair) return errors;
+	if (item.kind !== 'lens') return errors;
 	const pair = item.lensPair;
 	const requiresAddition = pair.lensType !== LensType.MONOFOCAL;
 	const needsPrescription = pair.od.enabled || pair.oi.enabled;
@@ -336,7 +336,7 @@ export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldEr
 }
 
 export function hasLensPrescriptionErrors(item: SaleItemRow): boolean {
-	if (item.kind !== 'lens' || !item.lensPair) return false;
+	if (item.kind !== 'lens') return false;
 	return Object.keys(validateLensPrescription(item)).length > 0;
 }
 
@@ -584,12 +584,13 @@ export function buildStep2PrescriptionConfirmation(
 	items: SaleItemRow[],
 	lensItems: LensCatalogItemWithRelations[]
 ): Step2PrescriptionConfirmation {
-	const lensResults = items
-		.filter((item) => item.kind === 'lens' && (item.lensPair?.catalogItemId ?? '') !== '')
+	const lensResults = (items.filter((item): item is LensSaleItemRow =>
+		item.kind === 'lens' && item.lensPair.catalogItemId !== ''
+	) as LensSaleItemRow[])
 		.map((item) => {
 			const lens = findLensItem(item, lensItems);
 			const ranges = lens?.ranges ?? [];
-			const pair = item.lensPair!;
+			const pair = item.lensPair;
 			const eyes = [
 				buildLensConfirmationEyeResult(
 					'OD',
@@ -631,14 +632,15 @@ export function buildStep2PrescriptionConfirmation(
 			};
 		});
 
-	const freeResults: FreeItemConfirmationResult[] = items
-		.filter((item) => item.kind === 'free' && item.freeItem !== null)
+	const freeResults: FreeItemConfirmationResult[] = (items.filter((item): item is FreeSaleItemRow =>
+		item.kind === 'free'
+	) as FreeSaleItemRow[])
 		.map((item) => ({
 			itemId: item.id,
-			categoryLabel: getFreeItemCategoryLabel(item.freeItem!.category),
-			description: item.freeItem!.description,
+			categoryLabel: getFreeItemCategoryLabel(item.freeItem.category),
+			description: item.freeItem.description,
 			unitPrice: item.unitPrice,
-			hasCost: item.freeItem!.unitCost !== null && item.freeItem!.unitCost > 0
+			hasCost: item.freeItem.unitCost !== null && item.freeItem.unitCost > 0
 		}));
 
 	return {
@@ -665,7 +667,7 @@ export function getLensTypeSuggestionState(
 	const catalogLensTypes = Array.from(
 		new Set(
 			items
-				.filter((item) => item.kind === 'lens' && (item.lensPair?.catalogItemId ?? '') !== '')
+				.filter((item) => item.kind === 'lens' && item.lensPair.catalogItemId !== '')
 				.map((item) => findLensItem(item, lensItems)?.type ?? null)
 				.filter((type): type is string => Boolean(type))
 		)
@@ -692,7 +694,7 @@ export function getLensTypeSuggestionState(
 
 /** Get the number of enabled eyes for a lens item. */
 export function getEnabledEyeCount(item: SaleItemRow): number {
-	if (!item.lensPair) return 0;
+	if (item.kind !== 'lens') return 0;
 	return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
 }
 
@@ -720,7 +722,7 @@ export function buildTaxItemsFromWizard(
 				taxRate: defaultTaxRate
 			});
 		} else if (item.kind === 'lens') {
-			const lens = lensItems.find((l) => l.id === item.lensPair?.catalogItemId);
+			const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
 			result.push({
 				unitPrice: item.unitPrice,
 				quantity: 1,
