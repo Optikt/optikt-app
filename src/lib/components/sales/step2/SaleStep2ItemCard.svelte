@@ -16,7 +16,6 @@
 		item: SaleItemRow;
 		rxErrs: PrescriptionFieldErrors;
 		onremove: () => void;
-		oncopyoi: () => void;
 		eyeCount: number;
 		isIncludedAccessory: boolean;
 	}
@@ -25,7 +24,6 @@
 		item = $bindable(),
 		rxErrs = {},
 		onremove,
-		oncopyoi,
 		eyeCount = 0,
 		isIncludedAccessory = false
 	}: Props = $props();
@@ -284,15 +282,12 @@
 		<SaleFormulaSlideOver
 			bind:open={formulaOpen}
 			pair={item.lensPair}
-			{rxErrs}
-			itemId={item.id}
-			{oncopyoi}
 		/>
 
 		<SaleCostSlideOver
 			bind:open={costOpen}
 			costOverrides={item.costOverrides}
-			bind:shippingCostPending={item.shippingCostPending}
+			shippingCostPending={item.shippingCostPending}
 			{eyeCount}
 		/>
 	{/if}

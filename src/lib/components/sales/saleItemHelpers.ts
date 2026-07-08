@@ -5,7 +5,7 @@
 
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import type { SaleItemRow, LensSaleItemRow, FreeSaleItemRow } from './newSaleTypes';
+import type { SaleItemRow, LensSaleItemRow, FreeSaleItemRow, LensPairEntry } from './newSaleTypes';
 import { LensType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
@@ -284,11 +284,12 @@ function validateNumericEyeFields(
 	return errs;
 }
 
-/** Validate a single lens item's prescription fields. Returns empty object when valid. */
-export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldErrors {
+/**
+ * Validate a single lens pair's prescription fields.
+ * Returns empty object when valid.
+ */
+export function validateLensPair(pair: LensPairEntry): PrescriptionFieldErrors {
 	const errors: PrescriptionFieldErrors = {};
-	if (item.kind !== 'lens') return errors;
-	const pair = item.lensPair;
 	const requiresAddition = pair.lensType !== LensType.MONOFOCAL;
 	const needsPrescription = pair.od.enabled || pair.oi.enabled;
 	if (needsPrescription && (!pair.doctorName || pair.doctorName.trim() === '')) {
@@ -333,6 +334,12 @@ export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldEr
 		}
 	}
 	return errors;
+}
+
+/** Validate a single lens item's prescription fields. Returns empty object when valid. */
+export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldErrors {
+	if (item.kind !== 'lens') return {};
+	return validateLensPair(item.lensPair);
 }
 
 export function hasLensPrescriptionErrors(item: SaleItemRow): boolean {

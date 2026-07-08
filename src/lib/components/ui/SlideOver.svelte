@@ -8,13 +8,15 @@
 		onclose,
 		size = 'lg' as Size,
 		children,
-		header
+		header,
+		footer
 	}: {
 		open?: boolean;
 		onclose?: () => void;
 		size?: Size;
 		children: Snippet;
 		header?: Snippet<[{ onclose: () => void }]>;
+		footer?: Snippet;
 	} = $props();
 
 	const maxWidth = {
@@ -67,4 +69,8 @@
 	<div class="flex-1 overflow-y-auto px-6 py-4">
 		{@render children()}
 	</div>
+
+	{#if footer}
+		{@render footer()}
+	{/if}
 </div>

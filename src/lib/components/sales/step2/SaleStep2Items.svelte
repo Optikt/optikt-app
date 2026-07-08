@@ -414,13 +414,6 @@
 		}
 	}
 
-	function copyOiToOd(item: SaleItemRow) {
-		if (item.kind !== 'lens') return;
-		item.lensPair.od.prescription = { ...item.lensPair.oi.prescription };
-		item.lensPair.od.dp = item.lensPair.oi.dp;
-		item.lensPair.od.np = item.lensPair.oi.np;
-	}
-
 	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
 		const map: Record<string, PrescriptionFieldErrors> = {};
 		for (const item of items) {
@@ -489,7 +482,6 @@
 						{item}
 						rxErrs={rxErrorsPerLens[item.id] ?? {}}
 						onremove={() => removeItem(item.id)}
-						oncopyoi={() => copyOiToOd(item)}
 						eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
 						isIncludedAccessory={item.isIncludedAccessory}
 					/>

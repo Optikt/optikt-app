@@ -21,6 +21,7 @@
 		buildStep2PrescriptionConfirmation,
 		calculateSaleSummarySubtotal,
 		getAvailableProductStock,
+		hasLensPrescriptionErrors,
 		isItemDiscountValid
 	} from './saleItemHelpers';
 	import { buildSaleItemsFromWizard, buildPrescriptionPayload } from './wizardSubmission';
@@ -195,12 +196,13 @@
 						i.unitPrice > 0
 					);
 				}
-				// lens
-				return (
-					(i.lensPair?.catalogItemId ?? '') !== '' &&
-					(i.lensPair!.od.enabled || i.lensPair!.oi.enabled) &&
-					i.unitPrice >= 0
-				);
+			// lens
+			return (
+				(i.lensPair?.catalogItemId ?? '') !== '' &&
+				(i.lensPair!.od.enabled || i.lensPair!.oi.enabled) &&
+				i.unitPrice >= 0 &&
+				!hasLensPrescriptionErrors(i)
+			);
 			})
 	);
 
