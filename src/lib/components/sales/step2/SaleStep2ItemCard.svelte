@@ -49,6 +49,16 @@
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
 
+	const isLensKind = $derived(item.kind === 'lens');
+	const isProductKind = $derived(item.kind === 'product');
+	const isFreeKind = $derived(item.kind === 'free');
+	const hasRx = $derived(
+		isLensKind &&
+			!!item.lensPair &&
+			(item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)
+	);
+	const outOfStock = $derived(isProductKind && maxStock !== null && item.quantity > maxStock);
+
 	function formatEyeSummary(eye: LensEyeEntry): { label: string; value: string }[] {
 		const parts: { label: string; value: string }[] = [];
 		if (eye.prescription.sphere != null)
@@ -86,16 +96,14 @@
 		<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
 			<div class="flex w-2/3 min-w-0 flex-1 items-start gap-2.5">
 				<div
-					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {item.kind === 'lens'
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {isLensKind
 						? 'bg-brand-blue/15 text-brand-blue'
 						: 'bg-surface-container-high text-brand-navy'}"
 				>
-					{#if item.kind === 'lens'}<Eye class="h-3.5 w-3.5" />{:else}<Package
-							class="h-3.5 w-3.5"
-						/>{/if}
+					{#if isLensKind}<Eye class="h-3.5 w-3.5" />{:else}<Package class="h-3.5 w-3.5" />{/if}
 				</div>
-				<div class="min-w-0 w-full">
-					<div class="flex flex-col flex-wrap items-start gap-y-1 w-full">
+				<div class="w-full min-w-0">
+					<div class="flex w-full flex-col flex-wrap items-start gap-y-1">
 						<span class="truncate text-sm font-semibold text-brand-navy">
 							{lens?.name ?? product?.name ?? 'Ítem libre'}
 						</span>
@@ -104,15 +112,15 @@
 								'flex items-center gap-2',
 								{
 									'w-2/3 border-b border-slate-200 pb-0.5':
-										item.kind === 'lens' &&
-										item.lensPair &&
+										isLensKind &&
+										!!item.lensPair &&
 										(item.lensPair.od.prescription.sphere != null ||
 											item.lensPair.oi.prescription.sphere != null)
 								}
 							]}
 						>
 							<!-- Products -->
-							{#if item.kind === 'product' && product}
+							{#if isProductKind && product}
 								{#if product.description}
 									<p class="mt0.5 truncate text-[11px] text-on-surface-variant">
 										{product.description}
@@ -127,7 +135,7 @@
 							{/if}
 
 							<!-- Lenses -->
-							{#if item.kind === 'lens' && lens}
+							{#if isLensKind && lens}
 								{#if lens.supplier?.name}
 									<p class="truncate text-[12px] font-semibold text-on-surface-variant">
 										{lens.supplier.name}
@@ -152,7 +160,7 @@
 							{/if}
 						</div>
 
-						{#if item.kind === 'lens' && item.lensPair && (item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)}
+						{#if hasRx && item.lensPair}
 							<div>
 								{@render eyeSummary('OI', item.lensPair.oi)}
 								{@render eyeSummary('OD', item.lensPair.od)}
@@ -173,12 +181,12 @@
 						id="qty-{item.id}"
 						type="number"
 						class="font-mono text-sm"
-						disabled={item.kind === 'lens'}
+						disabled={isLensKind}
 						min="1"
-						max={item.kind === 'product' ? (maxStock ?? undefined) : undefined}
+						max={isProductKind ? (maxStock ?? undefined) : undefined}
 						bind:value={item.quantity}
 					/>
-					{#if item.kind === 'product' && maxStock !== null && item.quantity > maxStock}
+					{#if outOfStock}
 						<p class="mt-0.5 text-[10px] text-red-600">Disp: {maxStock}</p>
 					{/if}
 				</div>
@@ -218,12 +226,12 @@
 		</div>
 
 		<!-- Free item fields -->
-		{#if item.kind === 'free' && item.freeItem}
+		{#if isFreeKind && item.freeItem}
 			<FreeItemFields freeItem={item.freeItem} />
 		{/if}
 
 		<!-- Lens-specific section -->
-		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
+		{#if isLensKind && item.lensPair?.catalogItemId}
 			<div
 				class="flex w-2/3 flex-wrap items-center gap-x-4 gap-y-1 divide-x divide-slate-300 border-t border-slate-200 px-2 pt-2 text-xs"
 			>
