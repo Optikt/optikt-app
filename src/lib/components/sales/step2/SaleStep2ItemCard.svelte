@@ -49,26 +49,30 @@
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
 
-	function formatEyeSummary(eye: LensEyeEntry): string {
-		const parts: string[] = [];
-		if (eye.prescription.sphere != null) parts.push(`${eye.prescription.sphere}`);
-		if (eye.prescription.cylinder != null) parts.push(`${eye.prescription.cylinder}`);
-		if (eye.prescription.axis != null) parts.push(`${eye.prescription.axis}°`);
-		if (eye.prescription.addition != null) parts.push(`+${eye.prescription.addition}`);
-		if (eye.dp != null) parts.push(`DP ${eye.dp}`);
-		if (eye.np != null) parts.push(`NP ${eye.np}`);
-		return parts.join(' / ') || '—';
+	function formatEyeSummary(eye: LensEyeEntry): { label: string; value: string }[] {
+		const parts: { label: string; value: string }[] = [];
+		if (eye.prescription.sphere != null)
+			parts.push({ label: 'ESF', value: `${eye.prescription.sphere}` });
+		if (eye.prescription.cylinder != null)
+			parts.push({ label: 'CIL', value: `${eye.prescription.cylinder}` });
+		if (eye.prescription.axis != null)
+			parts.push({ label: 'EJE', value: `${eye.prescription.axis}°` });
+		if (eye.prescription.addition != null)
+			parts.push({ label: 'ADD', value: `+${eye.prescription.addition}` });
+		if (eye.dp != null) parts.push({ label: 'DP', value: `${eye.dp}` });
+		if (eye.np != null) parts.push({ label: 'NP', value: `${eye.np}` });
+		return parts;
 	}
 </script>
 
 {#snippet eyeSummary(eye: LensConfirmationEye, lensEntry: LensEyeEntry)}
+	{@const segments = formatEyeSummary(lensEntry)}
 	<p class="truncate font-mono text-[12px] text-on-surface-variant">
-		<span class="font-semibold">
-			{eye}:
-		</span>
-		<span>
-			{formatEyeSummary(lensEntry)}
-		</span>
+		<span class="font-bold"><span class="underline">{eye}</span>:</span>
+		{#each segments as seg, i}
+			{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
+			<span class="font-semibold text-brand-navy">{seg.label}</span>&nbsp;{seg.value}
+		{/each}
 	</p>
 {/snippet}
 
