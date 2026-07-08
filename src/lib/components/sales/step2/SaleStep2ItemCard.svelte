@@ -5,8 +5,8 @@
 	import { formatPrice } from '$lib/utils';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { findProduct, findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
-	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
-	import type { SaleItemRow } from '../newSaleTypes';
+	import type { LensConfirmationEye, PrescriptionFieldErrors } from '../saleItemHelpers';
+	import type { LensEyeEntry, SaleItemRow } from '../newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';
 	import SaleCostSlideOver from './SaleCostSlideOver.svelte';
@@ -48,7 +48,29 @@
 		const effectiveShipping = item.shippingCostPending ? 0 : item.costOverrides.shippingPrice;
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
+
+	function formatEyeSummary(eye: LensEyeEntry): string {
+		const parts: string[] = [];
+		if (eye.prescription.sphere != null) parts.push(`${eye.prescription.sphere}`);
+		if (eye.prescription.cylinder != null) parts.push(`${eye.prescription.cylinder}`);
+		if (eye.prescription.axis != null) parts.push(`${eye.prescription.axis}°`);
+		if (eye.prescription.addition != null) parts.push(`+${eye.prescription.addition}`);
+		if (eye.dp != null) parts.push(`DP ${eye.dp}`);
+		if (eye.np != null) parts.push(`NP ${eye.np}`);
+		return parts.join(' / ') || '—';
+	}
 </script>
+
+{#snippet eyeSummary(eye: LensConfirmationEye, lensEntry: LensEyeEntry)}
+	<p class="truncate font-mono text-[12px] text-on-surface-variant">
+		<span class="font-semibold">
+			{eye}:
+		</span>
+		<span>
+			{formatEyeSummary(lensEntry)}
+		</span>
+	</p>
+{/snippet}
 
 <div
 	class="rounded-lg bg-white p-1 {isIncludedAccessory
@@ -104,6 +126,13 @@
 									class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase"
 									>{getLensTypeLabel(lens.type)}</span
 								>
+							{/if}
+
+							{#if item.kind === 'lens' && item.lensPair && (item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)}
+								<div>
+									{@render eyeSummary('OI', item.lensPair.oi)}
+									{@render eyeSummary('OD', item.lensPair.od)}
+								</div>
 							{/if}
 
 							<!-- Included accesory -->
