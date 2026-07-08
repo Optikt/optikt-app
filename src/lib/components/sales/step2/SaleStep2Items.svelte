@@ -21,7 +21,13 @@
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
-	import { createEmptyProductItem, createEmptyLensItem, createEmptyLensPair, createEmptyFreeItem, createEmptyFreeItemData } from '../newSaleTypes';
+	import {
+		createEmptyProductItem,
+		createEmptyLensItem,
+		createEmptyLensPair,
+		createEmptyFreeItem,
+		createEmptyFreeItemData
+	} from '../newSaleTypes';
 	import {
 		allowsDuplicateProductLines,
 		canAutoIncludeAccessories,
@@ -259,8 +265,8 @@
 
 	// Load treatments when a lens item's supplier changes
 	$effect(() => {
-		const lensItemsInCart = items.filter((i): i is import('../newSaleTypes').LensSaleItemRow =>
-			i.kind === 'lens'
+		const lensItemsInCart = items.filter(
+			(i): i is import('../newSaleTypes').LensSaleItemRow => i.kind === 'lens'
 		);
 		untrack(() => {
 			for (const item of lensItemsInCart) {
@@ -397,7 +403,9 @@
 	);
 
 	function copyFirstRxToAll() {
-		const firstLens = items.find((i): i is import('../newSaleTypes').LensSaleItemRow => i.kind === 'lens');
+		const firstLens = items.find(
+			(i): i is import('../newSaleTypes').LensSaleItemRow => i.kind === 'lens'
+		);
 		if (!firstLens) return;
 		const src = firstLens.lensPair;
 		for (const item of items) {

@@ -273,6 +273,9 @@ function validateNumericEyeFields(
 		errs.sphere = 'Esfera o cilindro requerido';
 		errs.cylinder = 'Esfera o cilindro requerido';
 	}
+	if (cylinder !== null && cylinder > 0) {
+		errs.cylinder = 'Cilindro debe ser negativo o cero';
+	}
 	if (cylinder !== null && cylinder !== 0 && axis === null) {
 		errs.axis = 'Eje requerido con cilindro';
 	}
@@ -591,64 +594,64 @@ export function buildStep2PrescriptionConfirmation(
 	items: SaleItemRow[],
 	lensItems: LensCatalogItemWithRelations[]
 ): Step2PrescriptionConfirmation {
-	const lensResults = (items.filter((item): item is LensSaleItemRow =>
-		item.kind === 'lens' && item.lensPair.catalogItemId !== ''
-	) as LensSaleItemRow[])
-		.map((item) => {
-			const lens = findLensItem(item, lensItems);
-			const ranges = lens?.ranges ?? [];
-			const pair = item.lensPair;
-			const eyes = [
-				buildLensConfirmationEyeResult(
-					'OD',
-					pair.od.enabled,
-					{
-						sphere: pair.od.prescription.sphere,
-						cylinder: pair.od.prescription.cylinder,
-						axis: pair.od.prescription.axis,
-						addition: pair.od.prescription.addition
-					},
-					ranges
-				),
-				buildLensConfirmationEyeResult(
-					'OI',
-					pair.oi.enabled,
-					{
-						sphere: pair.oi.prescription.sphere,
-						cylinder: pair.oi.prescription.cylinder,
-						axis: pair.oi.prescription.axis,
-						addition: pair.oi.prescription.addition
-					},
-					ranges
-				)
-			].filter((result): result is LensConfirmationEyeResult => result !== null);
+	const lensResults = (
+		items.filter(
+			(item): item is LensSaleItemRow => item.kind === 'lens' && item.lensPair.catalogItemId !== ''
+		) as LensSaleItemRow[]
+	).map((item) => {
+		const lens = findLensItem(item, lensItems);
+		const ranges = lens?.ranges ?? [];
+		const pair = item.lensPair;
+		const eyes = [
+			buildLensConfirmationEyeResult(
+				'OD',
+				pair.od.enabled,
+				{
+					sphere: pair.od.prescription.sphere,
+					cylinder: pair.od.prescription.cylinder,
+					axis: pair.od.prescription.axis,
+					addition: pair.od.prescription.addition
+				},
+				ranges
+			),
+			buildLensConfirmationEyeResult(
+				'OI',
+				pair.oi.enabled,
+				{
+					sphere: pair.oi.prescription.sphere,
+					cylinder: pair.oi.prescription.cylinder,
+					axis: pair.oi.prescription.axis,
+					addition: pair.oi.prescription.addition
+				},
+				ranges
+			)
+		].filter((result): result is LensConfirmationEyeResult => result !== null);
 
-			const rangeWarnings = eyes
-				.filter((eye) => eye.status === 'out-of-range')
-				.map((eye) => `${eye.eye} (${eye.prescriptionSummary}) fuera del rango óptico del cristal`);
+		const rangeWarnings = eyes
+			.filter((eye) => eye.status === 'out-of-range')
+			.map((eye) => `${eye.eye} (${eye.prescriptionSummary}) fuera del rango óptico del cristal`);
 
-			return {
-				itemId: item.id,
-				lensName: lens?.name ?? 'Lente por seleccionar',
-				catalogLensType: lens?.type ?? '',
-				prescriptionLensType: pair.lensType,
-				typeMatches: lens?.type === pair.lensType,
-				hasRanges: ranges.length > 0,
-				eyes,
-				rangeWarnings
-			};
-		});
-
-	const freeResults: FreeItemConfirmationResult[] = (items.filter((item): item is FreeSaleItemRow =>
-		item.kind === 'free'
-	) as FreeSaleItemRow[])
-		.map((item) => ({
+		return {
 			itemId: item.id,
-			categoryLabel: getFreeItemCategoryLabel(item.freeItem.category),
-			description: item.freeItem.description,
-			unitPrice: item.unitPrice,
-			hasCost: item.freeItem.unitCost !== null && item.freeItem.unitCost > 0
-		}));
+			lensName: lens?.name ?? 'Lente por seleccionar',
+			catalogLensType: lens?.type ?? '',
+			prescriptionLensType: pair.lensType,
+			typeMatches: lens?.type === pair.lensType,
+			hasRanges: ranges.length > 0,
+			eyes,
+			rangeWarnings
+		};
+	});
+
+	const freeResults: FreeItemConfirmationResult[] = (
+		items.filter((item): item is FreeSaleItemRow => item.kind === 'free') as FreeSaleItemRow[]
+	).map((item) => ({
+		itemId: item.id,
+		categoryLabel: getFreeItemCategoryLabel(item.freeItem.category),
+		description: item.freeItem.description,
+		unitPrice: item.unitPrice,
+		hasCost: item.freeItem.unitCost !== null && item.freeItem.unitCost > 0
+	}));
 
 	return {
 		hasLensItems: lensResults.length > 0,

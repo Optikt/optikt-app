@@ -80,8 +80,9 @@
 		<!-- Header: Médico + Tipo + Ojos + Copy -->
 		<div class="flex flex-wrap items-center gap-3">
 			<div class="flex items-center gap-1.5">
-				<label for="rx-{pair.catalogItemId}-doctor" class="text-[10px] font-semibold text-outline uppercase"
-					>Médico</label
+				<label
+					for="rx-{pair.catalogItemId}-doctor"
+					class="text-[10px] font-semibold text-outline uppercase">Médico</label
 				>
 				<input
 					id="rx-{pair.catalogItemId}-doctor"
@@ -92,7 +93,9 @@
 						? '!border-red-400'
 						: ''}"
 				/>
-				{#if draftRxErrs.doctorName}<p class="text-[10px] text-red-500">{draftRxErrs.doctorName}</p>{/if}
+				{#if draftRxErrs.doctorName}<p class="text-[10px] text-red-500">
+						{draftRxErrs.doctorName}
+					</p>{/if}
 			</div>
 			<div class="flex items-center gap-1.5">
 				<span class="text-[10px] font-semibold text-outline uppercase">Tipo</span>
@@ -163,7 +166,9 @@
 					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiSphere
 						? 'text-red-600'
 						: ''}"
-				/>{#if draftRxErrs.oiSphere}<p class="text-[10px] text-red-500">{draftRxErrs.oiSphere}</p>{/if}
+				/>{#if draftRxErrs.oiSphere}<p class="text-[10px] text-red-500">
+						{draftRxErrs.oiSphere}
+					</p>{/if}
 			</div>
 			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
 				<input
@@ -176,7 +181,9 @@
 					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiCylinder
 						? 'text-red-600'
 						: ''}"
-				/>{#if draftRxErrs.oiCylinder}<p class="text-[10px] text-red-500">{draftRxErrs.oiCylinder}</p>{/if}
+				/>{#if draftRxErrs.oiCylinder}<p class="text-[10px] text-red-500">
+						{draftRxErrs.oiCylinder}
+					</p>{/if}
 			</div>
 			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
 				<input
@@ -203,7 +210,9 @@
 						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiAddition
 							? 'text-red-600'
 							: ''}"
-					/>{#if draftRxErrs.oiAddition}<p class="text-[10px] text-red-500">{draftRxErrs.oiAddition}</p>{/if}
+					/>{#if draftRxErrs.oiAddition}<p class="text-[10px] text-red-500">
+							{draftRxErrs.oiAddition}
+						</p>{/if}
 				</div>
 			{/if}
 			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
@@ -247,7 +256,9 @@
 					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odSphere
 						? 'text-red-600'
 						: ''}"
-				/>{#if draftRxErrs.odSphere}<p class="text-[10px] text-red-500">{draftRxErrs.odSphere}</p>{/if}
+				/>{#if draftRxErrs.odSphere}<p class="text-[10px] text-red-500">
+						{draftRxErrs.odSphere}
+					</p>{/if}
 			</div>
 			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
 				<input
@@ -260,7 +271,9 @@
 					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odCylinder
 						? 'text-red-600'
 						: ''}"
-				/>{#if draftRxErrs.odCylinder}<p class="text-[10px] text-red-500">{draftRxErrs.odCylinder}</p>{/if}
+				/>{#if draftRxErrs.odCylinder}<p class="text-[10px] text-red-500">
+						{draftRxErrs.odCylinder}
+					</p>{/if}
 			</div>
 			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
 				<input
@@ -287,7 +300,9 @@
 						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odAddition
 							? 'text-red-600'
 							: ''}"
-					/>{#if draftRxErrs.odAddition}<p class="text-[10px] text-red-500">{draftRxErrs.odAddition}</p>{/if}
+					/>{#if draftRxErrs.odAddition}<p class="text-[10px] text-red-500">
+							{draftRxErrs.odAddition}
+						</p>{/if}
 				</div>
 			{/if}
 			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">

@@ -51,7 +51,6 @@
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
 
-
 	const hasRx = $derived(
 		item.kind === 'lens' &&
 			!!item.lensPair &&
@@ -82,10 +81,14 @@
 	{@const segments = formatEyeSummary(lensEntry)}
 	<p class="truncate font-mono text-[12px] text-wrap text-on-surface-variant">
 		<span class="font-bold"><span class="underline">{eye}</span>:</span>
-		{#each segments as seg, i}
-			{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
-			<span class="font-semibold text-brand-navy">{seg.label}</span>&nbsp;{seg.value}
-		{/each}
+		{#if segments.length > 0}
+			{#each segments as seg, i}
+				{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
+				<span class="font-semibold text-brand-navy">{seg.label}</span>&nbsp;{seg.value}
+			{/each}
+		{:else}
+			<span class="text-slate-400 italic">--</span>
+		{/if}
 	</p>
 {/snippet}
 
@@ -162,7 +165,7 @@
 							{/if}
 						</div>
 
-						{#if item.kind === 'lens' && (item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)}
+						{#if item.kind === 'lens'}
 							<div>
 								{@render eyeSummary('OI', item.lensPair.oi)}
 								{@render eyeSummary('OD', item.lensPair.od)}
@@ -279,10 +282,7 @@
 	</div>
 
 	{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
-		<SaleFormulaSlideOver
-			bind:open={formulaOpen}
-			pair={item.lensPair}
-		/>
+		<SaleFormulaSlideOver bind:open={formulaOpen} pair={item.lensPair} />
 
 		<SaleCostSlideOver
 			bind:open={costOpen}

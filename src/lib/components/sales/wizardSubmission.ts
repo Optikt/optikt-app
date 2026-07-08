@@ -266,7 +266,9 @@ export function buildPrescriptionPayload(
 	items: SaleItemRow[],
 	prescriptionDate: string
 ): PrescriptionFieldsPayload | undefined {
-	const lensItem = items.find((i): i is import('./newSaleTypes').LensSaleItemRow => i.kind === 'lens');
+	const lensItem = items.find(
+		(i): i is import('./newSaleTypes').LensSaleItemRow => i.kind === 'lens'
+	);
 	if (!lensItem) return undefined;
 
 	const pair = lensItem.lensPair;

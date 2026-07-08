@@ -11,11 +11,7 @@ import {
 import { DiscountType } from '$lib/shared/enums';
 import type { SaleItemRow } from './newSaleTypes';
 
-function createProductRow(
-	id: string,
-	productId: string,
-	parentItemId: string | null = null
-): any {
+function createProductRow(id: string, productId: string, parentItemId: string | null = null): any {
 	return {
 		id,
 		kind: 'product',

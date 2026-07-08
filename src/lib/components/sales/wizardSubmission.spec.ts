@@ -24,7 +24,7 @@ const lensItems = [
 	}
 ] as const;
 
-const lensRow: import("./newSaleTypes").SaleItemRow = {
+const lensRow: import('./newSaleTypes').SaleItemRow = {
 	id: 'row-1',
 	kind: 'lens' as const,
 	productId: '',
@@ -139,15 +139,15 @@ describe('buildPrescriptionPayload', () => {
 			discountType: DiscountType.FIXED,
 			notes: '',
 			costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
-	treatments: [
-		{
-			supplierTreatmentId: 'treatment-1',
-			name: 'Antirreflejo',
-			category: 'AR',
-			price: 5,
-			isTaxable: true
-		}
-	],
+			treatments: [
+				{
+					supplierTreatmentId: 'treatment-1',
+					name: 'Antirreflejo',
+					category: 'AR',
+					price: 5,
+					isTaxable: true
+				}
+			],
 			shippingCostPending: false,
 			isIncludedAccessory: false,
 			includedAccessoryParentItemId: null
@@ -175,15 +175,15 @@ describe('buildPrescriptionPayload', () => {
 			discountType: DiscountType.FIXED,
 			notes: '',
 			costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
-	treatments: [
-		{
-			supplierTreatmentId: 'treatment-1',
-			name: 'Antirreflejo',
-			category: 'AR',
-			price: 5,
-			isTaxable: true
-		}
-	],
+			treatments: [
+				{
+					supplierTreatmentId: 'treatment-1',
+					name: 'Antirreflejo',
+					category: 'AR',
+					price: 5,
+					isTaxable: true
+				}
+			],
 			shippingCostPending: false,
 			isIncludedAccessory: false,
 			includedAccessoryParentItemId: null

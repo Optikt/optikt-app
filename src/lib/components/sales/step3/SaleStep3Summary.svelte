@@ -203,7 +203,10 @@
 	const displayEntityValue = $derived.by(() => entityValue ?? `#${nextOrderNumber ?? 'Pendiente'}`);
 
 	const totalRenderedRows = $derived.by(() =>
-		items.reduce((count, item) => count + 1 + (item.kind === 'lens' ? item.treatments.length : 0), 0)
+		items.reduce(
+			(count, item) => count + 1 + (item.kind === 'lens' ? item.treatments.length : 0),
+			0
+		)
 	);
 
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {

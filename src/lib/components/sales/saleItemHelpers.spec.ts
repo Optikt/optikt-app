@@ -369,7 +369,9 @@ describe('getSnapshotTaxLabel', () => {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-function makeProductRow(overrides: Partial<import('./newSaleTypes').ProductSaleItemRow> = {}): import('./newSaleTypes').ProductSaleItemRow {
+function makeProductRow(
+	overrides: Partial<import('./newSaleTypes').ProductSaleItemRow> = {}
+): import('./newSaleTypes').ProductSaleItemRow {
 	return {
 		id: 'item-1',
 		kind: 'product',
@@ -385,7 +387,9 @@ function makeProductRow(overrides: Partial<import('./newSaleTypes').ProductSaleI
 	};
 }
 
-function makeLensRow(treatments: SelectedTreatment[] = []): import('./newSaleTypes').LensSaleItemRow {
+function makeLensRow(
+	treatments: SelectedTreatment[] = []
+): import('./newSaleTypes').LensSaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'lens-1';
 	return {
