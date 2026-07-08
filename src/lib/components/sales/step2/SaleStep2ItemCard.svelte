@@ -58,6 +58,7 @@
 			(item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)
 	);
 	const outOfStock = $derived(isProductKind && maxStock !== null && item.quantity > maxStock);
+	const hasLensItem = $derived(isLensKind && !!item.lensPair?.catalogItemId);
 
 	function formatEyeSummary(eye: LensEyeEntry): { label: string; value: string }[] {
 		const parts: { label: string; value: string }[] = [];
@@ -231,7 +232,7 @@
 		{/if}
 
 		<!-- Lens-specific section -->
-		{#if isLensKind && item.lensPair?.catalogItemId}
+		{#if hasLensItem}
 			<div
 				class="flex w-2/3 flex-wrap items-center gap-x-4 gap-y-1 divide-x divide-slate-300 border-t border-slate-200 px-2 pt-2 text-xs"
 			>
@@ -242,7 +243,7 @@
 							class="rounded-full bg-error-container px-1.5 py-0.5 text-[12px] font-semibold text-on-error-container"
 							>Pendiente</span
 						>
-					{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+					{:else if item.lensPair!.od.prescription.sphere != null || item.lensPair!.oi.prescription.sphere != null}
 						<span
 							class="rounded-full bg-success-container px-1.5 py-0.5 text-[12px] font-semibold text-on-success-container"
 							>Completa</span
@@ -277,10 +278,10 @@
 		{/if}
 		</div>
 
-		{#if isLensKind && item.lensPair?.catalogItemId}
+		{#if hasLensItem}
 			<SaleFormulaSlideOver
 				bind:open={formulaOpen}
-				pair={item.lensPair}
+				pair={item.lensPair!}
 				{rxErrs}
 				itemId={item.id}
 				{oncopyoi}
