@@ -274,24 +274,23 @@
 					</div>
 				{/if}
 			</div>
-
 		{/if}
-		</div>
+	</div>
 
-		{#if hasLensItem}
-			<SaleFormulaSlideOver
-				bind:open={formulaOpen}
-				pair={item.lensPair!}
-				{rxErrs}
-				itemId={item.id}
-				{oncopyoi}
-			/>
+	{#if hasLensItem}
+		<SaleFormulaSlideOver
+			bind:open={formulaOpen}
+			pair={item.lensPair!}
+			{rxErrs}
+			itemId={item.id}
+			{oncopyoi}
+		/>
 
-			<SaleCostSlideOver
-				bind:open={costOpen}
-				costOverrides={item.costOverrides!}
-				bind:shippingCostPending={item.shippingCostPending}
-				{eyeCount}
-			/>
-		{/if}
+		<SaleCostSlideOver
+			bind:open={costOpen}
+			costOverrides={item.costOverrides!}
+			bind:shippingCostPending={item.shippingCostPending}
+			{eyeCount}
+		/>
+	{/if}
 </div>
