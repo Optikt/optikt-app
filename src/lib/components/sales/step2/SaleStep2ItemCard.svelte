@@ -67,7 +67,7 @@
 
 {#snippet eyeSummary(eye: LensConfirmationEye, lensEntry: LensEyeEntry)}
 	{@const segments = formatEyeSummary(lensEntry)}
-	<p class="truncate font-mono text-[12px] text-on-surface-variant">
+	<p class="truncate font-mono text-[12px] text-on-surface-variant text-wrap">
 		<span class="font-bold"><span class="underline">{eye}</span>:</span>
 		{#each segments as seg, i}
 			{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
