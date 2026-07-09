@@ -64,7 +64,7 @@
 		>
 			<!-- Header -->
 			<div class="flex items-center justify-between border-b border-slate-200 px-6 py-3">
-				<h3 class="text-base font-semibold text-brand-navy">Revisión óptica</h3>
+				<h3 class="text-lg font-semibold text-brand-navy">Revisión óptica</h3>
 				<button
 					type="button"
 					onclick={onCancel}
@@ -75,10 +75,10 @@
 			</div>
 
 			<!-- Body -->
-			<div class="max-h-[55vh] overflow-y-auto px-6 py-3">
+			<div class="max-h-[55vh] overflow-y-auto px-4 py-2">
 				{#if !confirmation.hasLensItems}
 					<div
-						class="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700"
+						class="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-base text-emerald-700"
 					>
 						<CircleCheck class="h-4 w-4 shrink-0" />
 						Sin validación óptica pendiente
@@ -86,12 +86,14 @@
 				{:else}
 					<div class="space-y-2">
 						{#each confirmation.items as item, index (item.itemId)}
-							<div class="rounded-lg border border-slate-200 px-3 py-2">
-								<p class="text-[11px] font-semibold tracking-wider text-outline uppercase">
-									Cristal {index + 1}
-									<span class="ml-1 text-brand-navy normal-case">{item.lensName}</span>
-									<span class="ml-1 text-outline normal-case"
-										>— {getLensTypeLabel(item.prescriptionLensType)}</span
+							<div class="rounded-g not-last:border-b not-last:pb-2 border-slate-300 px-3py-2">
+								<p class="text-[12px] font-semibold tracking-wider text-outline underline underline-offset-2">
+								<span class="uppercase text-black font-bold">
+									{index + 1}:
+								</span>
+									<span class="text-brand-navy">{item.lensName}</span>
+									<span class="tex-outline"
+										> / {getLensTypeLabel(item.prescriptionLensType)}</span
 									>
 								</p>
 								<div class="mt-1 space-y-0.5">
