@@ -68,10 +68,24 @@
 		draft.od.np = draft.oi.np;
 	}
 
+	function clearPrescription() {
+		return { sphere: null, cylinder: null, axis: null, addition: null };
+	}
+
 	function handleApply() {
 		pair.doctorName = draft.doctorName;
-		pair.od = { ...draft.od };
-		pair.oi = { ...draft.oi };
+		pair.od = {
+			...draft.od,
+			prescription: draft.od.enabled ? draft.od.prescription : clearPrescription(),
+			dp: draft.od.enabled ? draft.od.dp : null,
+			np: draft.od.enabled ? draft.od.np : null
+		};
+		pair.oi = {
+			...draft.oi,
+			prescription: draft.oi.enabled ? draft.oi.prescription : clearPrescription(),
+			dp: draft.oi.enabled ? draft.oi.dp : null,
+			np: draft.oi.enabled ? draft.oi.np : null
+		};
 		open = false;
 	}
 
@@ -126,20 +140,20 @@
 			>
 				<input
 					type="checkbox"
-					bind:checked={draft.od.enabled}
+					bind:checked={draft.oi.enabled}
 					class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
 				/>
-				<span>OD</span>
+				<span>OI</span>
 			</label>
 			<label
 				class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
 			>
 				<input
 					type="checkbox"
-					bind:checked={draft.oi.enabled}
+					bind:checked={draft.od.enabled}
 					class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
 				/>
-				<span>OI</span>
+				<span>OD</span>
 			</label>
 			<button
 				type="button"
@@ -182,7 +196,8 @@
 					step="0.25"
 					placeholder="-2.00"
 					bind:value={draft.oi.prescription.sphere}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			<div
@@ -197,7 +212,8 @@
 					max={0}
 					placeholder="-0.50"
 					bind:value={draft.oi.prescription.cylinder}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			<div
@@ -212,7 +228,8 @@
 					max={180}
 					placeholder="180"
 					bind:value={draft.oi.prescription.axis}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			{#if requiresAddition}
@@ -228,7 +245,8 @@
 						max={5}
 						placeholder="+1.50"
 						bind:value={draft.oi.prescription.addition}
-						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+						disabled={!draft.oi.enabled}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 					/>
 				</div>
 			{/if}
@@ -244,7 +262,8 @@
 					max={80}
 					placeholder="62"
 					bind:value={draft.oi.dp}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			<div
@@ -259,7 +278,8 @@
 					max={80}
 					placeholder="30"
 					bind:value={draft.oi.np}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 
@@ -278,7 +298,8 @@
 					step="0.25"
 					placeholder="-2.00"
 					bind:value={draft.od.prescription.sphere}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.od.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			<div
@@ -293,7 +314,8 @@
 					max={0}
 					placeholder="-0.50"
 					bind:value={draft.od.prescription.cylinder}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.od.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			<div
@@ -308,7 +330,8 @@
 					max={180}
 					placeholder="180"
 					bind:value={draft.od.prescription.axis}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.od.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			{#if requiresAddition}
@@ -324,7 +347,8 @@
 						max={5}
 						placeholder="+1.50"
 						bind:value={draft.od.prescription.addition}
-						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+						disabled={!draft.od.enabled}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 					/>
 				</div>
 			{/if}
@@ -340,7 +364,8 @@
 					max={80}
 					placeholder="62"
 					bind:value={draft.od.dp}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.od.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 			<div
@@ -355,7 +380,8 @@
 					max={80}
 					placeholder="30"
 					bind:value={draft.od.np}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					disabled={!draft.od.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
 		</div>
