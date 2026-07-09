@@ -41,7 +41,10 @@
 		if (draftCost.mountingPrice == null || Number.isNaN(draftCost.mountingPrice)) {
 			errs.mountingPrice = 'Costo de montaje es requerido';
 		}
-		if (!draftShipPending && (draftCost.shippingPrice == null || Number.isNaN(draftCost.shippingPrice))) {
+		if (
+			!draftShipPending &&
+			(draftCost.shippingPrice == null || Number.isNaN(draftCost.shippingPrice))
+		) {
 			errs.shippingPrice = 'Costo de envío es requerido';
 		}
 		return errs;
