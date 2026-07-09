@@ -101,6 +101,7 @@
 										<div class="flex items-center justify-between gap-2">
 											<EyeSummary
 												eye={eye.eye}
+												textSize={14}
 												lensEntry={{
 													enabled: true,
 													prescription: {

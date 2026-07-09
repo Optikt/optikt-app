@@ -4,9 +4,10 @@
 	interface Props {
 		eye: string;
 		lensEntry: LensEyeEntry;
+		textSize?: number;
 	}
 
-	let { eye, lensEntry }: Props = $props();
+	let { eye, lensEntry, textSize = 12 }: Props = $props();
 
 	function formatEyeSummary(entry: LensEyeEntry): { label: string; value: string }[] {
 		const parts: { label: string; value: string }[] = [];
@@ -26,7 +27,7 @@
 	const segments = $derived(formatEyeSummary(lensEntry));
 </script>
 
-<p class="truncate font-mono text-[12px] text-wrap text-on-surface-variant">
+<p class="truncate font-mono text-wrap text-on-surface-variant" style="font-size: {textSize}px">
 	<span class="font-bold"><span class="underline">{eye}</span>:</span>
 	{#if segments.length > 0}
 		{#each segments as seg, i}
