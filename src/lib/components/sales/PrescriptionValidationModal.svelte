@@ -14,17 +14,10 @@
 		onCancel: () => void;
 	}
 
-	let {
-		open = $bindable(),
-		confirmation,
-		onConfirm,
-		onCancel
-	}: Props = $props();
+	let { open = $bindable(), confirmation, onConfirm, onCancel }: Props = $props();
 
 	const hasRangeWarnings = $derived(
-		confirmation.items.some((item) =>
-			item.eyes.some((eye) => eye.status !== 'in-range')
-		)
+		confirmation.items.some((item) => item.eyes.some((eye) => eye.status !== 'in-range'))
 	);
 
 	function getEyeColor(status: string): string {
@@ -86,15 +79,15 @@
 				{:else}
 					<div class="space-y-2">
 						{#each confirmation.items as item, index (item.itemId)}
-							<div class="not-last:border-b not-last:pb-2 border-slate-300">
-								<p class="text-[16px] font-semibold tracking-wider text-outline underline underline-offset-2">
-								<span class="uppercase text-black font-bold">
-									{index + 1}:
-								</span>
+							<div class="border-slate-300 not-last:border-b not-last:pb-2">
+								<p
+									class="text-[16px] font-semibold tracking-wider text-outline underline underline-offset-2"
+								>
+									<span class="font-bold text-black uppercase">
+										{index + 1}:
+									</span>
 									<span class="text-brand-navy">{item.lensName}</span>
-									<span class="tex-outline"
-										> / {getLensTypeLabel(item.prescriptionLensType)}</span
-									>
+									<span class="tex-outline"> / {getLensTypeLabel(item.prescriptionLensType)}</span>
 								</p>
 								<div class="mt-1 space-y-0.5">
 									{#each item.eyes as eye (eye.eye)}
@@ -115,7 +108,9 @@
 												}}
 											/>
 											<span
-												class="inline-flex shrink-0 items-center gap-0.5 text-xs {getEyeColor(eye.status)}"
+												class="inline-flex shrink-0 items-center gap-0.5 text-xs {getEyeColor(
+													eye.status
+												)}"
 											>
 												{#if eye.status === 'in-range'}
 													<CircleCheck class="h-3.5 w-3.5" />
@@ -167,8 +162,8 @@
 					>
 						<p class="font-semibold">Revisar disponibilidad</p>
 						<p class="mt-0.5 leading-5">
-							Algunos valores están fuera de rango o requieren confirmación del
-							laboratorio. Contacta al proveedor antes de procesar el pedido.
+							Algunos valores están fuera de rango o requieren confirmación del laboratorio.
+							Contacta al proveedor antes de procesar el pedido.
 						</p>
 					</div>
 				{/if}

@@ -63,8 +63,6 @@
 	const hasLensItem = $derived(item.kind === 'lens' && !!item.lensPair?.catalogItemId);
 </script>
 
-
-
 <div
 	class="rounded-lg bg-white p-1 {isIncludedAccessory
 		? 'border border-amber-200/80 bg-amber-50/70'
