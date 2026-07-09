@@ -111,7 +111,8 @@
 	<div class="space-y-4">
 		<!-- Header: Médico + Tipo + Ojos + Copy -->
 		<div class="flex flex-wrap items-center gap-3">
-			<div class="flex items-center gap-1.5">
+			<!-- Doctor -->
+			<div class="flex items-center gap-2">
 				<label
 					for="rx-{pair.catalogItemId}-doctor"
 					class="text-[10px] font-semibold text-outline uppercase">Médico</label
@@ -126,7 +127,9 @@
 						: 'border-slate-200'}"
 				/>
 			</div>
-			<div class="flex items-center gap-1.5">
+
+			<!-- Lens type -->
+			<div class="flex items-center gap-2">
 				<span class="text-[10px] font-semibold text-outline uppercase">Tipo</span>
 				<span
 					class="rounded-full bg-brand-blue/10 px-2.5 py-0.5 text-xs font-semibold text-brand-blue"
@@ -134,35 +137,45 @@
 					{getLensTypeLabel(draft.lensType)}
 				</span>
 			</div>
-			<span class="text-[10px] font-semibold text-outline uppercase">Ojos</span>
-			<label
-				class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
-			>
-				<input
-					type="checkbox"
-					bind:checked={draft.oi.enabled}
-					class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-				/>
-				<span>OI</span>
-			</label>
-			<label
-				class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm"
-			>
-				<input
-					type="checkbox"
-					bind:checked={draft.od.enabled}
-					class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-				/>
-				<span>OD</span>
-			</label>
-			<button
-				type="button"
-				onclick={handleCopyOiToOd}
-				class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
-			>
-				<Copy class="h-3 w-3" />
-				Copiar OI → OD
-			</button>
+
+			<!-- Eyes -->
+			<div class="flex items-center gap-2">
+				<span class="text-[10px] font-semibold text-outline uppercase">Ojos</span>
+
+				<!-- OI -->
+				<label
+					class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm hover:bg-surface-container-low"
+				>
+					<input
+						type="checkbox"
+						bind:checked={draft.oi.enabled}
+						class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+					/>
+					<span>OI</span>
+				</label>
+
+				<!-- OD -->
+				<label
+					class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm hover:bg-surface-container-low"
+				>
+					<input
+						type="checkbox"
+						bind:checked={draft.od.enabled}
+						class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+					/>
+					<span>OD</span>
+				</label>
+
+				<!-- Copy OI -> OD -->
+				<button
+					type="button"
+					onclick={handleCopyOiToOd}
+					class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
+				>
+					<Copy class="h-3 w-3" />
+					Copiar OI → OD
+				</button>
+			</div>
 		</div>
 
 		<!-- Prescription table -->
@@ -398,7 +411,11 @@
 					</p>
 					{#each errorsByEye as group}
 						{#if group.label}
-							<p class="mb-0.5 mt-1 text-[11px] font-semibold tracking-wider text-red-800 uppercase">{group.label}</p>
+							<p
+								class="mt-1 mb-0.5 text-[11px] font-semibold tracking-wider text-red-800 uppercase"
+							>
+								{group.label}
+							</p>
 						{/if}
 						<ul class="list-inside list-disc space-y-0.5">
 							{#each group.errors as msg}
