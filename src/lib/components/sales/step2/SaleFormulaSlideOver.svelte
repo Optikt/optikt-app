@@ -346,7 +346,8 @@
 			<button
 				type="button"
 				onclick={handleApply}
-				class="inline-flex items-center gap-1 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-navy/90"
+				disabled={Object.keys(draftRxErrs).length > 0}
+				class="inline-flex items-center gap-1 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:opacity-40"
 			>
 				<Check class="h-3.5 w-3.5" />
 				Aceptar
