@@ -5,9 +5,10 @@
 	import { formatPrice } from '$lib/utils';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { findProduct, findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
-	import type { LensConfirmationEye, PrescriptionFieldErrors } from '../saleItemHelpers';
-	import type { LensEyeEntry, SaleItemRow } from '../newSaleTypes';
+	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
+	import type { SaleItemRow } from '../newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
+	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
 	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';
 	import SaleCostSlideOver from './SaleCostSlideOver.svelte';
 	import FreeItemFields from './FreeItemFields.svelte';
@@ -60,37 +61,9 @@
 		item.kind === 'product' && maxStock !== null && item.quantity > maxStock
 	);
 	const hasLensItem = $derived(item.kind === 'lens' && !!item.lensPair?.catalogItemId);
-
-	function formatEyeSummary(eye: LensEyeEntry): { label: string; value: string }[] {
-		const parts: { label: string; value: string }[] = [];
-		if (eye.prescription.sphere != null)
-			parts.push({ label: 'ESF', value: `${eye.prescription.sphere}` });
-		if (eye.prescription.cylinder != null)
-			parts.push({ label: 'CIL', value: `${eye.prescription.cylinder}` });
-		if (eye.prescription.axis != null)
-			parts.push({ label: 'EJE', value: `${eye.prescription.axis}°` });
-		if (eye.prescription.addition != null)
-			parts.push({ label: 'ADD', value: `+${eye.prescription.addition}` });
-		if (eye.dp != null) parts.push({ label: 'DP', value: `${eye.dp}` });
-		if (eye.np != null) parts.push({ label: 'NP', value: `${eye.np}` });
-		return parts;
-	}
 </script>
 
-{#snippet eyeSummary(eye: LensConfirmationEye, lensEntry: LensEyeEntry)}
-	{@const segments = formatEyeSummary(lensEntry)}
-	<p class="truncate font-mono text-[12px] text-wrap text-on-surface-variant">
-		<span class="font-bold"><span class="underline">{eye}</span>:</span>
-		{#if segments.length > 0}
-			{#each segments as seg, i}
-				{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
-				<span class="font-semibold text-brand-navy">{seg.label}</span>&nbsp;{seg.value}
-			{/each}
-		{:else}
-			<span class="text-slate-400 italic">--</span>
-		{/if}
-	</p>
-{/snippet}
+
 
 <div
 	class="rounded-lg bg-white p-1 {isIncludedAccessory
@@ -167,8 +140,8 @@
 
 						{#if item.kind === 'lens'}
 							<div>
-								{@render eyeSummary('OI', item.lensPair.oi)}
-								{@render eyeSummary('OD', item.lensPair.od)}
+								<EyeSummary eye="OI" lensEntry={item.lensPair.oi} />
+								<EyeSummary eye="OD" lensEntry={item.lensPair.od} />
 							</div>
 						{/if}
 					</div>

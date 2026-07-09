@@ -446,6 +446,10 @@ export interface LensConfirmationEyeResult {
 	eye: LensConfirmationEye;
 	status: LensConfirmationEyeStatus;
 	prescriptionSummary: string;
+	sphere: number | null;
+	cylinder: number | null;
+	axis: number | null;
+	addition: number | null;
 }
 
 export interface LensConfirmationItemResult {
@@ -535,7 +539,7 @@ function buildEyePrescriptionSummary(
 		parts.push(`Add ${formatSignedOpticalValue(addition)}`);
 	}
 
-	return parts.join(' · ');
+	return parts.join(' / ');
 }
 
 function isWithinOpticalRange(
@@ -572,7 +576,11 @@ function buildLensConfirmationEyeResult(
 		return {
 			eye,
 			status: 'lab-review',
-			prescriptionSummary
+			prescriptionSummary,
+			sphere,
+			cylinder,
+			axis,
+			addition
 		};
 	}
 
@@ -586,7 +594,11 @@ function buildLensConfirmationEyeResult(
 	return {
 		eye,
 		status: fitsAnyRange ? 'in-range' : 'out-of-range',
-		prescriptionSummary
+		prescriptionSummary,
+		sphere,
+		cylinder,
+		axis,
+		addition
 	};
 }
 
