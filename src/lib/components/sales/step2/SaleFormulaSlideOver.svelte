@@ -402,10 +402,10 @@
 	</div>
 
 	{#snippet footer()}
-		<div class="border-t border-slate-200 px-6 py-3" >
+		<div class="border-t border-slate-200 px-6 py-3">
 			{#if Object.keys(draftRxErrs).length > 0}
 				<div class="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700" use:autoAnimate>
-					<p class="mb-1 font-semibold" >
+					<p class="mb-1 font-semibold">
 						{Object.keys(draftRxErrs).length === 1
 							? '1 error pendiente'
 							: `${Object.keys(draftRxErrs).length} errores pendientes`}
@@ -418,7 +418,7 @@
 								{group.label}
 							</p>
 						{/if}
-						<ul class="list-inside list-disc space-y-0.5" use:autoAnimate> 
+						<ul class="list-inside list-disc space-y-0.5" use:autoAnimate>
 							{#each group.errors as msg (msg)}
 								<li class="text-red-600">{msg}</li>
 							{/each}
