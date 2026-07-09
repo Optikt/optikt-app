@@ -139,7 +139,7 @@
 			</div>
 
 			<!-- Eyes -->
-			<div class="flex items-center gap-2">
+			<div class="flex flex-wrap items-center gap-2">
 				<span class="text-[10px] font-semibold text-outline uppercase">Ojos</span>
 
 				<!-- OI -->
