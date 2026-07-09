@@ -86,7 +86,7 @@
 				{:else}
 					<div class="space-y-2">
 						{#each confirmation.items as item, index (item.itemId)}
-							<div class="rounded-g not-last:border-b not-last:pb-2 border-slate-300 px-3py-2">
+							<div class="not-last:border-b not-last:pb-2 border-slate-300">
 								<p class="text-[12px] font-semibold tracking-wider text-outline underline underline-offset-2">
 								<span class="uppercase text-black font-bold">
 									{index + 1}:
