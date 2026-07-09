@@ -46,20 +46,20 @@
 	const requiresAddition = $derived(draft.lensType !== LensType.MONOFOCAL);
 
 	const errorsByEye = $derived.by(() => {
-		const od: string[] = [];
-		const oi: string[] = [];
-		const general: string[] = [];
+		const od = new Set<string>();
+		const oi = new Set<string>();
+		const general = new Set<string>();
 
 		for (const [key, msg] of Object.entries(draftRxErrs)) {
-			if (key.startsWith('od')) od.push(msg);
-			else if (key.startsWith('oi')) oi.push(msg);
-			else general.push(msg);
+			if (key.startsWith('od')) od.add(msg);
+			else if (key.startsWith('oi')) oi.add(msg);
+			else general.add(msg);
 		}
 
 		const groups: { label: string; errors: string[] }[] = [];
-		if (general.length > 0) groups.push({ label: '', errors: general });
-		if (oi.length > 0) groups.push({ label: 'OI', errors: oi });
-		if (od.length > 0) groups.push({ label: 'OD', errors: od });
+		if (general.size > 0) groups.push({ label: '', errors: [...general] });
+		if (oi.size > 0) groups.push({ label: 'OI', errors: [...oi] });
+		if (od.size > 0) groups.push({ label: 'OD', errors: [...od] });
 		return groups;
 	});
 
@@ -404,23 +404,22 @@
 	{#snippet footer()}
 		<div class="border-t border-slate-200 px-6 py-3" >
 			{#if Object.keys(draftRxErrs).length > 0}
-				<div class="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+				<div class="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700" use:autoAnimate>
 					<p class="mb-1 font-semibold" >
 						{Object.keys(draftRxErrs).length === 1
 							? '1 error pendiente'
 							: `${Object.keys(draftRxErrs).length} errores pendientes`}
 					</p>
-					{#each errorsByEye as group}
+					{#each errorsByEye as group (group.label)}
 						{#if group.label}
 							<p
-								
 								class="mt-1 mb-0.5 text-[11px] font-semibold tracking-wider text-red-800 uppercase"
 							>
 								{group.label}
 							</p>
 						{/if}
-						<ul class="list-inside list-disc space-y-0.5" use:autoAnimate>
-							{#each group.errors as msg}
+						<ul class="list-inside list-disc space-y-0.5" use:autoAnimate> 
+							{#each group.errors as msg (msg)}
 								<li class="text-red-600">{msg}</li>
 							{/each}
 						</ul>
