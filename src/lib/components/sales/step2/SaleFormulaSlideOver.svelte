@@ -44,6 +44,24 @@
 
 	const requiresAddition = $derived(draft.lensType !== LensType.MONOFOCAL);
 
+	const errorsByEye = $derived.by(() => {
+		const od: string[] = [];
+		const oi: string[] = [];
+		const general: string[] = [];
+
+		for (const [key, msg] of Object.entries(draftRxErrs)) {
+			if (key.startsWith('od')) od.push(msg);
+			else if (key.startsWith('oi')) oi.push(msg);
+			else general.push(msg);
+		}
+
+		const groups: { label: string; errors: string[] }[] = [];
+		if (general.length > 0) groups.push({ label: '', errors: general });
+		if (od.length > 0) groups.push({ label: 'OD', errors: od });
+		if (oi.length > 0) groups.push({ label: 'OI', errors: oi });
+		return groups;
+	});
+
 	function handleCopyOiToOd() {
 		draft.od.prescription = { ...draft.oi.prescription };
 		draft.od.dp = draft.oi.dp;
@@ -89,13 +107,10 @@
 					type="text"
 					bind:value={draft.doctorName}
 					placeholder="Nombre del doctor"
-					class="w-36 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {draftRxErrs.doctorName
-						? '!border-red-400'
-						: ''}"
+					class="w-36 rounded-lg border bg-white px-2 py-1 text-xs text-slate-700 placeholder-slate-400 transition-colors focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:outline-none {draftRxErrs.doctorName
+						? 'border-red-300'
+						: 'border-slate-200'}"
 				/>
-				{#if draftRxErrs.doctorName}<p class="text-[10px] text-red-500">
-						{draftRxErrs.doctorName}
-					</p>{/if}
 			</div>
 			<div class="flex items-center gap-1.5">
 				<span class="text-[10px] font-semibold text-outline uppercase">Tipo</span>
@@ -157,20 +172,24 @@
 			>
 				OI
 			</div>
-			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiSphere
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
 				<input
 					type="number"
 					step="0.25"
 					placeholder="-2.00"
 					bind:value={draft.oi.prescription.sphere}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiSphere
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.oiSphere}<p class="text-[10px] text-red-500">
-						{draftRxErrs.oiSphere}
-					</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
-			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiCylinder
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
 				<input
 					type="number"
 					step="0.25"
@@ -178,14 +197,14 @@
 					max={0}
 					placeholder="-0.50"
 					bind:value={draft.oi.prescription.cylinder}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiCylinder
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.oiCylinder}<p class="text-[10px] text-red-500">
-						{draftRxErrs.oiCylinder}
-					</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
-			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAxis
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
 				<input
 					type="number"
 					step="1"
@@ -193,13 +212,15 @@
 					max={180}
 					placeholder="180"
 					bind:value={draft.oi.prescription.axis}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiAxis
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.oiAxis}<p class="text-[10px] text-red-500">{draftRxErrs.oiAxis}</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
 			{#if requiresAddition}
-				<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+				<div
+					class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAddition
+						? 'border-red-300'
+						: 'border-rose-200/60'}"
+				>
 					<input
 						type="number"
 						step="0.25"
@@ -207,15 +228,15 @@
 						max={5}
 						placeholder="+1.50"
 						bind:value={draft.oi.prescription.addition}
-						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiAddition
-							? 'text-red-600'
-							: ''}"
-					/>{#if draftRxErrs.oiAddition}<p class="text-[10px] text-red-500">
-							{draftRxErrs.oiAddition}
-						</p>{/if}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					/>
 				</div>
 			{/if}
-			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiDp
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
 				<input
 					type="number"
 					step="1"
@@ -223,12 +244,14 @@
 					max={80}
 					placeholder="62"
 					bind:value={draft.oi.dp}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiDp
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.oiDp}<p class="text-[10px] text-red-500">{draftRxErrs.oiDp}</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
-			<div class="rounded-lg border border-rose-200/60 bg-rose-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiNp
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
 				<input
 					type="number"
 					step="1"
@@ -236,10 +259,8 @@
 					max={80}
 					placeholder="30"
 					bind:value={draft.oi.np}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.oiNp
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.oiNp}<p class="text-[10px] text-red-500">{draftRxErrs.oiNp}</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
 
 			<div
@@ -247,20 +268,24 @@
 			>
 				OD
 			</div>
-			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odSphere
+					? 'border-red-300'
+					: 'border-blue-200/60'}"
+			>
 				<input
 					type="number"
 					step="0.25"
 					placeholder="-2.00"
 					bind:value={draft.od.prescription.sphere}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odSphere
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.odSphere}<p class="text-[10px] text-red-500">
-						{draftRxErrs.odSphere}
-					</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
-			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odCylinder
+					? 'border-red-300'
+					: 'border-blue-200/60'}"
+			>
 				<input
 					type="number"
 					step="0.25"
@@ -268,14 +293,14 @@
 					max={0}
 					placeholder="-0.50"
 					bind:value={draft.od.prescription.cylinder}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odCylinder
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.odCylinder}<p class="text-[10px] text-red-500">
-						{draftRxErrs.odCylinder}
-					</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
-			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odAxis
+					? 'border-red-300'
+					: 'border-blue-200/60'}"
+			>
 				<input
 					type="number"
 					step="1"
@@ -283,13 +308,15 @@
 					max={180}
 					placeholder="180"
 					bind:value={draft.od.prescription.axis}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odAxis
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.odAxis}<p class="text-[10px] text-red-500">{draftRxErrs.odAxis}</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
 			{#if requiresAddition}
-				<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+				<div
+					class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odAddition
+						? 'border-red-300'
+						: 'border-blue-200/60'}"
+				>
 					<input
 						type="number"
 						step="0.25"
@@ -297,15 +324,15 @@
 						max={5}
 						placeholder="+1.50"
 						bind:value={draft.od.prescription.addition}
-						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odAddition
-							? 'text-red-600'
-							: ''}"
-					/>{#if draftRxErrs.odAddition}<p class="text-[10px] text-red-500">
-							{draftRxErrs.odAddition}
-						</p>{/if}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+					/>
 				</div>
 			{/if}
-			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odDp
+					? 'border-red-300'
+					: 'border-blue-200/60'}"
+			>
 				<input
 					type="number"
 					step="1"
@@ -313,12 +340,14 @@
 					max={80}
 					placeholder="62"
 					bind:value={draft.od.dp}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odDp
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.odDp}<p class="text-[10px] text-red-500">{draftRxErrs.odDp}</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
-			<div class="rounded-lg border border-blue-200/60 bg-blue-50/40 p-0.5">
+			<div
+				class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odNp
+					? 'border-red-300'
+					: 'border-blue-200/60'}"
+			>
 				<input
 					type="number"
 					step="1"
@@ -326,32 +355,51 @@
 					max={80}
 					placeholder="30"
 					bind:value={draft.od.np}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none {draftRxErrs.odNp
-						? 'text-red-600'
-						: ''}"
-				/>{#if draftRxErrs.odNp}<p class="text-[10px] text-red-500">{draftRxErrs.odNp}</p>{/if}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none"
+				/>
 			</div>
 		</div>
 	</div>
 
 	{#snippet footer()}
-		<div class="flex items-center justify-end gap-2 border-t border-slate-200 px-6 py-3">
-			<button
-				type="button"
-				onclick={handleCancel}
-				class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
-			>
-				Cancelar
-			</button>
-			<button
-				type="button"
-				onclick={handleApply}
-				disabled={Object.keys(draftRxErrs).length > 0}
-				class="inline-flex items-center gap-1 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:opacity-40"
-			>
-				<Check class="h-3.5 w-3.5" />
-				Aceptar
-			</button>
+		<div class="border-t border-slate-200 px-6 py-3">
+			{#if Object.keys(draftRxErrs).length > 0}
+				<div class="mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+					<p class="mb-1 font-semibold">
+						{Object.keys(draftRxErrs).length === 1
+							? '1 error pendiente'
+							: `${Object.keys(draftRxErrs).length} errores pendientes`}
+					</p>
+					{#each errorsByEye as group}
+						{#if group.label}
+							<p class="mb-0.5 mt-1 text-[11px] font-semibold tracking-wider text-red-800 uppercase">{group.label}</p>
+						{/if}
+						<ul class="list-inside list-disc space-y-0.5">
+							{#each group.errors as msg}
+								<li class="text-red-600">{msg}</li>
+							{/each}
+						</ul>
+					{/each}
+				</div>
+			{/if}
+			<div class="flex items-center justify-end gap-2">
+				<button
+					type="button"
+					onclick={handleCancel}
+					class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+				>
+					Cancelar
+				</button>
+				<button
+					type="button"
+					onclick={handleApply}
+					disabled={Object.keys(draftRxErrs).length > 0}
+					class="inline-flex items-center gap-1 rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:opacity-40"
+				>
+					<Check class="h-3.5 w-3.5" />
+					Aceptar
+				</button>
+			</div>
 		</div>
 	{/snippet}
 </SlideOver>
