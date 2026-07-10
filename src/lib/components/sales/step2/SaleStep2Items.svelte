@@ -35,7 +35,7 @@
 	} from '../includedAccessories';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import SaleStep2ItemCard from './SaleStep2ItemCard.svelte';
-	import SaleStep2CustomerBanner from './SaleStep2CustomerBanner.svelte';
+	import SaleCustomerBanner from '../SaleCustomerBanner.svelte';
 	import SaleStep2Toolbar from './SaleStep2Toolbar.svelte';
 	import SaleStep2SearchBar from './SaleStep2SearchBar.svelte';
 
@@ -430,7 +430,7 @@
 <div class="min-w-0 flex-1 space-y-1">
 	<div class="inline-flex w-full justify-between gap-1">
 		<!-- Compact customer banner -->
-		<SaleStep2CustomerBanner
+		<SaleCustomerBanner
 			name={displayCustomerName}
 			document={displayCustomerId}
 			statusLabel={contextStatus}
