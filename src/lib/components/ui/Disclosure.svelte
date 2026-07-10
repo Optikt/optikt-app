@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChevronRight } from '@lucide/svelte';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		title: string;
@@ -9,7 +10,7 @@
 		summaryValue?: string;
 		statusBadge?: string;
 		statusVariant?: 'error' | 'success' | 'warning';
-		children: import('svelte').Snippet;
+		children: Snippet;
 	}
 
 	let {

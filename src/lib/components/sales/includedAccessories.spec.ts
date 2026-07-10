@@ -9,9 +9,13 @@ import {
 	type IncludedAccessoryMap
 } from './includedAccessories';
 import { DiscountType } from '$lib/shared/enums';
-import type { SaleItemRow } from './newSaleTypes';
+import type { ProductSaleItemRow } from './newSaleTypes';
 
-function createProductRow(id: string, productId: string, parentItemId: string | null = null): any {
+function createProductRow(
+	id: string,
+	productId: string,
+	parentItemId: string | null = null
+): ProductSaleItemRow {
 	return {
 		id,
 		kind: 'product',
@@ -21,8 +25,6 @@ function createProductRow(id: string, productId: string, parentItemId: string | 
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
-		shippingCostPending: false,
 		isIncludedAccessory: parentItemId !== null,
 		includedAccessoryParentItemId: parentItemId
 	};

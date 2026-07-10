@@ -26,7 +26,13 @@ import {
 	step2ItemLineTotal,
 	type Step2PrescriptionConfirmation
 } from './saleItemHelpers';
-import { createEmptyLensPair, type SaleItemRow, type SelectedTreatment } from './newSaleTypes';
+import {
+	createEmptyLensPair,
+	type LensSaleItemRow,
+	type ProductSaleItemRow,
+	type SaleItemRow,
+	type SelectedTreatment
+} from './newSaleTypes';
 
 function makeLensItem(
 	overrides: Partial<LensCatalogItemWithRelations> = {}
@@ -67,7 +73,7 @@ function makeLensItem(
 	};
 }
 
-function makeConfirmationLensRow(id: string = 'row-1'): import('./newSaleTypes').LensSaleItemRow {
+function makeConfirmationLensRow(id: string = 'row-1'): LensSaleItemRow {
 	const lensPair = createEmptyLensPair();
 	lensPair.catalogItemId = 'lens-1';
 
@@ -369,9 +375,7 @@ describe('getSnapshotTaxLabel', () => {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-function makeProductRow(
-	overrides: Partial<import('./newSaleTypes').ProductSaleItemRow> = {}
-): import('./newSaleTypes').ProductSaleItemRow {
+function makeProductRow(overrides: Partial<ProductSaleItemRow> = {}): ProductSaleItemRow {
 	return {
 		id: 'item-1',
 		kind: 'product',
@@ -387,9 +391,7 @@ function makeProductRow(
 	};
 }
 
-function makeLensRow(
-	treatments: SelectedTreatment[] = []
-): import('./newSaleTypes').LensSaleItemRow {
+function makeLensRow(treatments: SelectedTreatment[] = []): LensSaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'lens-1';
 	return {
@@ -508,7 +510,7 @@ describe('step2ItemLineTotal', () => {
 
 describe('treatmentsTotal', () => {
 	// This function is defined inline in Step 2 and Step 3 - test the logic here
-	function treatmentsTotal(item: any): number {
+	function treatmentsTotal(item: LensSaleItemRow): number {
 		return item.treatments.reduce((sum: number, t: { price: number }) => sum + t.price, 0);
 	}
 
@@ -531,7 +533,7 @@ describe('treatmentsTotal', () => {
 // already includes treatments. The subtotal is just sum(itemLineTotal).
 
 describe('subtotal (Step 3)', () => {
-	function subtotal(items: any[]): number {
+	function subtotal(items: SaleItemRow[]): number {
 		return items.reduce((acc: number, item) => acc + itemLineTotal(item), 0);
 	}
 

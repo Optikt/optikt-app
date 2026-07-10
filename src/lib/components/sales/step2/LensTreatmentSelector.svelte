@@ -4,13 +4,15 @@
 	import { formatPrice } from '$lib/utils';
 	import { TreatmentCategory } from '$lib/shared/enums';
 	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
+	import type { SelectedTreatment } from '../newSaleTypes';
+	import type { SupplierTreatment } from '$lib/server/db/schema';
 
 	interface Props {
-		treatments: import('../newSaleTypes').SelectedTreatment[];
-		availableTreatments: import('$lib/server/db/schema').SupplierTreatment[];
+		treatments: SelectedTreatment[];
+		availableTreatments:SupplierTreatment[];
 		eyeCount: number;
 		treatmentTotal: number;
-		ontoggle: (treatment: import('$lib/server/db/schema').SupplierTreatment) => void;
+		ontoggle: (treatment:SupplierTreatment) => void;
 	}
 
 	let {

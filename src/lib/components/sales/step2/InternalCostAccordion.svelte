@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { Disclosure } from '$lib/components/ui';
 	import { formatPrice } from '$lib/utils';
+	import type { CostOverrides } from '../newSaleTypes';
 
 	interface Props {
-		costOverrides: import('../newSaleTypes').CostOverrides;
+		costOverrides: CostOverrides;
 		shippingCostPending: boolean;
 		eyeCount: number;
 		open: boolean;

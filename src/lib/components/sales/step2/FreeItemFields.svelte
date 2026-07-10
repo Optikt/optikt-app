@@ -3,9 +3,10 @@
 	import { Input as FlowbiteInput } from 'flowbite-svelte';
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import { getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
+	import type { FreeItemData } from '../newSaleTypes';
 
 	interface Props {
-		freeItem: import('../newSaleTypes').FreeItemData;
+		freeItem: FreeItemData;
 	}
 
 	let { freeItem = $bindable() }: Props = $props();

@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { DiscountType } from '$lib/shared/enums';
 import { LensPriceType, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 
-import type { SaleItemRow } from './newSaleTypes';
 import {
 	buildPrescriptionPayload,
 	buildQuoteItemsFromWizard,
 	buildSaleItemsFromWizard
 } from './wizardSubmission';
+import type { LensSaleItemRow, ProductSaleItemRow, SaleItemRow } from './newSaleTypes';
 
 const lensItems = [
 	{
@@ -24,7 +24,7 @@ const lensItems = [
 	}
 ] as const;
 
-const lensRow: import('./newSaleTypes').SaleItemRow = {
+const lensRow: SaleItemRow = {
 	id: 'row-1',
 	kind: 'lens' as const,
 	productId: '',
@@ -112,7 +112,7 @@ describe('buildQuoteItemsFromWizard', () => {
 
 describe('buildPrescriptionPayload', () => {
 	it('builds a current prescription payload from the first lens item', () => {
-		const item: any = {
+		const item: LensSaleItemRow = {
 			id: 'row-1',
 			kind: 'lens',
 			productId: '',
@@ -165,7 +165,7 @@ describe('buildPrescriptionPayload', () => {
 	});
 
 	it('returns undefined when no lens items have prescription values', () => {
-		const item: any = {
+		const item: ProductSaleItemRow = {
 			id: 'row-1',
 			kind: 'product',
 			productId: 'prod-1',
@@ -174,17 +174,6 @@ describe('buildPrescriptionPayload', () => {
 			discount: 0,
 			discountType: DiscountType.FIXED,
 			notes: '',
-			costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
-			treatments: [
-				{
-					supplierTreatmentId: 'treatment-1',
-					name: 'Antirreflejo',
-					category: 'AR',
-					price: 5,
-					isTaxable: true
-				}
-			],
-			shippingCostPending: false,
 			isIncludedAccessory: false,
 			includedAccessoryParentItemId: null
 		};

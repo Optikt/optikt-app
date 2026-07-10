@@ -7,7 +7,7 @@ import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { z } from 'zod';
 
-import type { SaleItemRow } from './newSaleTypes';
+import type { LensSaleItemRow, SaleItemRow } from './newSaleTypes';
 import { getEnabledEyeCount } from './saleItemHelpers';
 
 type PrescriptionFieldsPayload = z.input<typeof PrescriptionFieldsSchema>;
@@ -267,7 +267,7 @@ export function buildPrescriptionPayload(
 	prescriptionDate: string
 ): PrescriptionFieldsPayload | undefined {
 	const lensItem = items.find(
-		(i): i is import('./newSaleTypes').LensSaleItemRow => i.kind === 'lens'
+		(i): i is LensSaleItemRow => i.kind === 'lens'
 	);
 	if (!lensItem) return undefined;
 
