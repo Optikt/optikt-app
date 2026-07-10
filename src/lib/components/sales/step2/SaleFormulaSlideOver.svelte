@@ -4,6 +4,7 @@
 	import { getLensTypeLabel, LensType } from '$lib/shared/enums/lensTypes';
 	import type { LensPairEntry } from '../newSaleTypes';
 	import { validateLensPair, type PrescriptionFieldErrors } from '../saleItemHelpers';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { autoAnimate } from '@formkit/auto-animate';
 
 	interface Props {
@@ -46,9 +47,9 @@
 	const requiresAddition = $derived(draft.lensType !== LensType.MONOFOCAL);
 
 	const errorsByEye = $derived.by(() => {
-		const od = new Set<string>();
-		const oi = new Set<string>();
-		const general = new Set<string>();
+		const od = new SvelteSet<string>();
+		const oi = new SvelteSet<string>();
+		const general = new SvelteSet<string>();
 
 		for (const [key, msg] of Object.entries(draftRxErrs)) {
 			if (key.startsWith('od')) od.add(msg);
