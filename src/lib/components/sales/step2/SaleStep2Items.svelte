@@ -6,7 +6,7 @@
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import { DiscountType, LensCatalogSource } from '$lib/shared/enums';
+	import { LensCatalogSource } from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
@@ -20,13 +20,11 @@
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
+	import type { SaleItemRow, NewCustomerData, LensSaleItemRow } from '../newSaleTypes';
 	import {
 		createEmptyProductItem,
 		createEmptyLensItem,
-		createEmptyLensPair,
-		createEmptyFreeItem,
-		createEmptyFreeItemData
+		createEmptyFreeItem
 	} from '../newSaleTypes';
 	import {
 		allowsDuplicateProductLines,
@@ -266,7 +264,7 @@
 	// Load treatments when a lens item's supplier changes
 	$effect(() => {
 		const lensItemsInCart = items.filter(
-			(i): i is import('../newSaleTypes').LensSaleItemRow => i.kind === 'lens'
+			(i): i is LensSaleItemRow => i.kind === 'lens'
 		);
 		untrack(() => {
 			for (const item of lensItemsInCart) {
@@ -404,7 +402,7 @@
 
 	function copyFirstRxToAll() {
 		const firstLens = items.find(
-			(i): i is import('../newSaleTypes').LensSaleItemRow => i.kind === 'lens'
+			(i): i is LensSaleItemRow => i.kind === 'lens'
 		);
 		if (!firstLens) return;
 		const src = firstLens.lensPair;

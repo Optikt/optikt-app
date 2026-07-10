@@ -3,7 +3,7 @@
 	import { Trash2 } from '@lucide/svelte';
 	import { Input, Label } from 'flowbite-svelte';
 	import { formatPrice } from '$lib/utils';
-	import { findProduct, findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
+	import { findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { SaleItemRow } from '../newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
@@ -33,7 +33,6 @@
 	const isLensKind = $derived(item.kind === 'lens');
 	const isProductKind = $derived(item.kind === 'product');
 
-	const product = $derived(item.kind === 'product' ? findProduct(item, products) : undefined);
 	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);
 	const maxStock = $derived(
 		item.kind === 'product' && item.productId
@@ -50,15 +49,9 @@
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
 	});
 
-	const hasRx = $derived(
-		item.kind === 'lens' &&
-			!!item.lensPair &&
-			(item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null)
-	);
 	const outOfStock = $derived(
 		item.kind === 'product' && maxStock !== null && item.quantity > maxStock
 	);
-	const hasLensItem = $derived(item.kind === 'lens' && !!item.lensPair?.catalogItemId);
 </script>
 
 <div
