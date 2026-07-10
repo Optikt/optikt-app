@@ -307,7 +307,6 @@
 	<PrescriptionValidationModal
 		bind:open={showPrescriptionValidationModal}
 		confirmation={step2PrescriptionConfirmation}
-		workflowLabel="presupuesto"
 		onCancel={handlePrescriptionValidationCancel}
 		onConfirm={handlePrescriptionValidationConfirm}
 	/>

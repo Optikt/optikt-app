@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Calendar, FileText, Hash, User } from '@lucide/svelte';
+	import { Calendar, FileText, User } from '@lucide/svelte';
 	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
 	import {
 		calculateSaleSummarySubtotal,
@@ -9,7 +9,6 @@
 		getEnabledEyeCount,
 		getItemDiscountBase,
 		getItemDiscountMax,
-		getItemName as _getItemName,
 		isItemDiscountValid,
 		itemLineTotal
 	} from '../saleItemHelpers';
@@ -22,7 +21,7 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { Customer } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData, SelectedTreatment } from '../newSaleTypes';
+	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import { getContext } from 'svelte';
@@ -54,9 +53,6 @@
 		submittingStatusLabel?: string;
 		readyStatusLabel?: string;
 		pendingStatusLabel?: string;
-		adjustmentsEyebrow?: string;
-		adjustmentsTitle?: string;
-		totalCardEyebrow?: string;
 		primaryLabel?: string;
 		cancelLabel?: string;
 		onCancel?: () => void;
@@ -84,16 +80,13 @@
 		notes = $bindable(),
 		nextOrderNumber,
 		defaultTaxRate = DEFAULT_TAX_RATE,
-		entityLabel = 'Orden',
+		entityLabel,
 		entityValue,
 		customerFallbackName = 'Venta sin cliente',
 		customerFallbackDocument = 'Sin documento',
 		submittingStatusLabel = 'Registrando venta',
 		readyStatusLabel = 'Revision final',
 		pendingStatusLabel = 'Ajustes pendientes',
-		adjustmentsEyebrow = 'Ajustes globales',
-		adjustmentsTitle = 'Cierre comercial',
-		totalCardEyebrow = 'Total neto a pagar',
 		primaryLabel = 'Confirmar y Registrar Venta',
 		cancelLabel = 'Cancelar',
 		onCancel,
@@ -192,27 +185,12 @@
 
 	const displayEntityValue = $derived.by(() => entityValue ?? `#${nextOrderNumber ?? 'Pendiente'}`);
 
-	const totalRenderedRows = $derived.by(() =>
-		items.reduce(
-			(count, item) => count + 1 + (item.kind === 'lens' ? item.treatments.length : 0),
-			0
-		)
-	);
-
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
 		return findProduct(item, products);
 	}
 
 	function getLens(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
 		return findLensItem(item, lensItems);
-	}
-
-	function getItemName(item: SaleItemRow): string {
-		return _getItemName(item, products, lensItems);
-	}
-
-	function getItemProductType(item: SaleItemRow): string | null {
-		return getProduct(item)?.type ?? null;
 	}
 
 	function formatDisplayDate(date: Date): string {
@@ -249,10 +227,6 @@
 
 		const lens = getLens(item);
 		return getTaxMeta(lens?.isTaxable ?? false, defaultTaxRate);
-	}
-
-	function getTreatmentTaxMeta(treatment: SelectedTreatment): TaxDisplayMeta {
-		return getTaxMeta(treatment.isTaxable, defaultTaxRate);
 	}
 
 	function getDiscountToggleButtonClass(isActive: boolean): string {
@@ -314,6 +288,7 @@
 	<!-- Header compacto: orden · cliente · fecha · estado -->
 	<div class="flex shrink-0 items-center justify-between gap-2">
 		<div class="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
+			{#if entityLabel}<span>{entityLabel}</span>&nbsp;{/if}
 			<span class="font-semibold text-brand-navy">{displayEntityValue}</span>
 			<span class="text-slate-300">·</span>
 			<User class="h-3 w-3 shrink-0" />
@@ -350,7 +325,7 @@
 	<div class="flex min-h-0 flex-1 gap-3">
 		<!-- Items -->
 		<div class="min-w-0 flex-1 space-y-1 overflow-y-auto">
-			{#each items as item, itemIndex (item.id)}
+			{#each items as item (item.id)}
 				{@const itemTaxMeta = getItemTaxMeta(item)}
 				<div class="rounded-lg border border-slate-300 bg-white p-1">
 					<div class="space-y-1">

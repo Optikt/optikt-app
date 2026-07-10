@@ -9,7 +9,6 @@
 	interface Props {
 		open: boolean;
 		confirmation: Step2PrescriptionConfirmation;
-		workflowLabel?: string;
 		onConfirm: () => void;
 		onCancel: () => void;
 	}

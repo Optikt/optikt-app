@@ -67,9 +67,6 @@
 	submittingStatusLabel="Creando presupuesto"
 	readyStatusLabel="Listo para crear"
 	pendingStatusLabel="Revisa el presupuesto"
-	adjustmentsEyebrow="Ajustes del presupuesto"
-	adjustmentsTitle="Cierre del presupuesto"
-	totalCardEyebrow="Total estimado"
 	primaryLabel="Crear Presupuesto"
 	onCancel={goToQuotes}
 	secondaryContextDate={validUntilDate}
