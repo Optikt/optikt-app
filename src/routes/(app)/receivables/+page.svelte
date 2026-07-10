@@ -399,8 +399,8 @@
 <!-- Payment Modal -->
 {#if paymentModal.open && paymentModal.row}
 	{@const row = paymentModal.row}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
+		role="presentation"
 		class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-12 backdrop-blur-sm"
 		onkeydown={(e) => e.key === 'Escape' && closePaymentModal()}
 		onclick={(e) => {
