@@ -279,6 +279,9 @@ function validateNumericEyeFields(
 	if (cylinder !== null && cylinder !== 0 && axis === null) {
 		errs.axis = 'Eje requerido con cilindro';
 	}
+	if (axis !== null && (axis < 0 || axis > 180 || !Number.isInteger(axis))) {
+		errs.axis = 'Eje debe ser entero entre 0 y 180';
+	}
 	if (requiresAddition) {
 		if (addition === null || addition === 0) {
 			errs.addition = 'Adición requerida';
@@ -310,11 +313,19 @@ export function validateLensPair(pair: LensPairEntry): PrescriptionFieldErrors {
 		if (od.cylinder) errors.odCylinder = od.cylinder;
 		if (od.axis) errors.odAxis = od.axis;
 		if (od.addition) errors.odAddition = od.addition;
-		if (pair.od.dp != null && (pair.od.dp < 10 || pair.od.dp > 80)) {
-			errors.odDp = 'DP debe ser 10-80';
+		if (pair.od.dp != null) {
+			if (!Number.isInteger(pair.od.dp)) {
+				errors.odDp = 'DP debe ser número entero';
+			} else if (pair.od.dp < 10 || pair.od.dp > 80) {
+				errors.odDp = 'DP debe ser 10-80';
+			}
 		}
-		if (pair.od.np != null && (pair.od.np < 10 || pair.od.np > 80)) {
-			errors.odNp = 'NP debe ser 10-80';
+		if (pair.od.np != null) {
+			if (!Number.isInteger(pair.od.np)) {
+				errors.odNp = 'NP debe ser número entero';
+			} else if (pair.od.np < 10 || pair.od.np > 80) {
+				errors.odNp = 'NP debe ser 10-80';
+			}
 		}
 	}
 	if (pair.oi.enabled) {
@@ -329,11 +340,19 @@ export function validateLensPair(pair: LensPairEntry): PrescriptionFieldErrors {
 		if (oi.cylinder) errors.oiCylinder = oi.cylinder;
 		if (oi.axis) errors.oiAxis = oi.axis;
 		if (oi.addition) errors.oiAddition = oi.addition;
-		if (pair.oi.dp != null && (pair.oi.dp < 10 || pair.oi.dp > 80)) {
-			errors.oiDp = 'DP debe ser 10-80';
+		if (pair.oi.dp != null) {
+			if (!Number.isInteger(pair.oi.dp)) {
+				errors.oiDp = 'DP debe ser número entero';
+			} else if (pair.oi.dp < 10 || pair.oi.dp > 80) {
+				errors.oiDp = 'DP debe ser 10-80';
+			}
 		}
-		if (pair.oi.np != null && (pair.oi.np < 10 || pair.oi.np > 80)) {
-			errors.oiNp = 'NP debe ser 10-80';
+		if (pair.oi.np != null) {
+			if (!Number.isInteger(pair.oi.np)) {
+				errors.oiNp = 'NP debe ser número entero';
+			} else if (pair.oi.np < 10 || pair.oi.np > 80) {
+				errors.oiNp = 'NP debe ser 10-80';
+			}
 		}
 	}
 	return errors;
