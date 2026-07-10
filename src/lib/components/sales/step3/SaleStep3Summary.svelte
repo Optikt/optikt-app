@@ -166,8 +166,6 @@
 		return customerFallbackDocument;
 	});
 
-
-
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
 		return findProduct(item, products);
 	}

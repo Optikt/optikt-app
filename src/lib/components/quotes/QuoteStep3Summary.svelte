@@ -34,8 +34,6 @@
 		onsubmit
 	}: Props = $props();
 
-
-
 	function goToQuotes() {
 		goto(resolve('/quotes'));
 	}
