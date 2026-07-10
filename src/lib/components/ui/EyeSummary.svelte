@@ -30,7 +30,7 @@
 <p class="truncate font-mono text-wrap text-on-surface-variant" style="font-size: {textSize}px">
 	<span class="font-bold"><span class="underline">{eye}</span>:</span>
 	{#if segments.length > 0}
-		{#each segments as seg, i}
+		{#each segments as seg, i (seg.label)}
 			{#if i > 0}<span class="text-slate-500">&nbsp;/</span>{/if}
 			<span class="font-semibold text-brand-navy">{seg.label}</span>&nbsp;{seg.value}
 		{/each}
