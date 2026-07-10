@@ -6,6 +6,7 @@
 	import { validateLensPair, type PrescriptionFieldErrors } from '../saleItemHelpers';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { autoAnimate } from '@formkit/auto-animate';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -34,7 +35,7 @@
 		};
 	}
 
-	let draft = $state<LensPairEntry>(clonePair(pair));
+	let draft = $state<LensPairEntry>(clonePair(untrack(() => pair)));
 
 	$effect(() => {
 		if (open) {

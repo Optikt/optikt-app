@@ -4,6 +4,7 @@
 	import { formatPrice } from '$lib/utils';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import type { CostOverrides } from '../newSaleTypes';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -18,7 +19,7 @@
 		return { baseCost: c.baseCost, mountingPrice: c.mountingPrice, shippingPrice: c.shippingPrice };
 	}
 
-	let draftCost = $state<CostOverrides>(cloneCost(costOverrides));
+	let draftCost = $state<CostOverrides>(cloneCost(untrack(() => costOverrides)));
 	let draftShipPending = $state(false);
 
 	$effect(() => {
