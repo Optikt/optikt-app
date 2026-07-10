@@ -80,18 +80,15 @@
 			];
 		}
 
-		const next: QuickAction[] = [{ label: 'Catálogo', href: '/lenses', icon: Eye }];
-
-		next.unshift({ label: 'Nuevo Cliente', href: '/customers', icon: UserPlus });
-		next.splice(1, 0, {
-			label: 'Nuevo Presupuesto',
-			href: '/quotes/new',
-			icon: FilePlus
-		});
+		const next: QuickAction[] = [
+			{ label: 'Nuevo Cliente', href: '/customers', icon: UserPlus },
+			{ label: 'Nuevo Presupuesto', href: '/quotes/new', icon: FilePlus },
+			{ label: 'Catálogo', href: '/lenses', icon: Eye }
+		];
 
 		if (isAdmin) {
 			next.push({ label: 'Reportes', href: '/reports', icon: ChartColumn });
-		}
+		}	
 
 		return next;
 	});
