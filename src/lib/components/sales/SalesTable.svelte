@@ -118,10 +118,10 @@
 				<span class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</span>
 			</td>
 			<td class="max-w-[180px] px-2 py-2.5">
-				<div class="min-w-0 truncate">
-					<span class="text-sm font-medium text-on-surface">{customerName(sale)}</span>
+				<div class="min-w-0">
+					<span class="block truncate text-sm font-medium text-on-surface">{customerName(sale)}</span>
 					{#if sale.customer?.idNumber}
-						<span class="ml-1 font-mono text-xs text-outline">{sale.customer.idNumber}</span>
+						<span class="block truncate font-mono text-[11px] text-outline">{sale.customer.idNumber}</span>
 					{/if}
 				</div>
 			</td>
