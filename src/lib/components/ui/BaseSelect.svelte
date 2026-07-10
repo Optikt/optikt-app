@@ -1,7 +1,9 @@
 <script lang="ts">
 	import Svelecte from 'svelecte';
 	import { Label } from 'flowbite-svelte';
-	import type { Snippet } from 'svelte';
+	import type { ComponentProps, Snippet } from 'svelte';
+
+	type SvelecteProps = ComponentProps<typeof Svelecte>;
 
 	interface Props {
 		/** Selected value (ID) */
@@ -25,11 +27,10 @@
 		/** Snippet for rendering each dropdown option */
 		option?: Snippet<[option: object, inputValue: string]>;
 		/** Snippet for rendering the selected value */
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-		selection?: Snippet<[selectedOptions: object[], bindItem: Function]>;
+		selection?: SvelecteProps['selection'];
+		// selection?: Snippet<[selectedOptions: object[], bindItem: Function]>;
 		/** Change handler */
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		onChange?: (selected: any) => void;
+		onChange?: (selected: string | Record<string, unknown>) => void;
 		/** Enable creation of new options */
 		creatable?: boolean;
 		/** Handler for creating new options */
@@ -38,8 +39,7 @@
 			valueField: string;
 			labelField: string;
 			prefix: string;
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		}) => any;
+		}) => Record<string, unknown>;
 		/** Prefix shown before new option text */
 		creatablePrefix?: string;
 		/** Keep created items in internal list */
