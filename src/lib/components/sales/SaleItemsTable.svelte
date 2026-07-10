@@ -320,7 +320,7 @@
 						? `cursor-pointer ${hoverCls} transition-colors`
 						: hoverCls}"
 					onclick={hasRx ? () => toggleExpanded(group.key) : undefined}
-					role={hasRx ? 'button' : undefined}
+					role={hasRx ? 'button' : 'group'}
 					tabindex={hasRx ? 0 : undefined}
 					onkeydown={hasRx ? (e) => handleRowKeydown(e, group.key) : undefined}
 				>
