@@ -121,9 +121,8 @@
 						{/if}
 
 						{#if quote.conversionSaleId}
-							<!-- eslint-disable-next-line svelte/valid-compile -->
 							<a
-								href={resolve(`/sales/${quote.conversionSaleId}` as '/')}
+								href={resolve(`/sales/${quote.conversionSaleId}`)}
 								class="mb-2 inline-flex items-center gap-1.5 rounded-lg bg-brand-blue/10 px-3 py-1.5 text-xs font-medium text-brand-blue transition-colors hover:bg-brand-blue/20"
 							>
 								Ver venta generada
@@ -132,9 +131,8 @@
 						{/if}
 
 						<!-- Link to full quote -->
-						<!-- eslint-disable-next-line svelte/valid-compile -->
 						<a
-							href={resolve(`/quotes/${quote.id}` as '/')}
+							href={resolve(`/quotes/${quote.id}`)}
 							class="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-blue transition-colors hover:text-brand-blue/80"
 						>
 							Ver presupuesto completo
