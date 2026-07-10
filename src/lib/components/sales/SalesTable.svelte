@@ -119,9 +119,13 @@
 			</td>
 			<td class="max-w-[180px] px-2 py-2.5">
 				<div class="min-w-0">
-					<span class="block truncate text-sm font-medium text-on-surface">{customerName(sale)}</span>
+					<span class="block truncate text-sm font-medium text-on-surface"
+						>{customerName(sale)}</span
+					>
 					{#if sale.customer?.idNumber}
-						<span class="block truncate font-mono text-[11px] text-outline">{sale.customer.idNumber}</span>
+						<span class="block truncate font-mono text-[11px] text-outline"
+							>{sale.customer.idNumber}</span
+						>
 					{/if}
 				</div>
 			</td>
