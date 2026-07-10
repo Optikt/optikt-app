@@ -172,7 +172,7 @@
 
 	{#if quickAddOpen}
 		<div
-			class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[280px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60 md:max-h-[420px]"
+			class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 		>
 			{#if totalQuickAddResults > 0}
 				{#if visibleProductQuickAddOptions.length > 0}
