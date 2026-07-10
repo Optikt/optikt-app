@@ -2,6 +2,7 @@
 	import { getContext } from 'svelte';
 	import { Search, X, Package, Eye } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
+	import { matchesAllTokens } from '$lib/utils/search';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { allowsDuplicateProductLines } from '../includedAccessories';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
@@ -101,11 +102,11 @@
 	});
 
 	const visibleQuickAddOptions = $derived.by(() => {
-		const query = quickAddQuery.trim().toLowerCase();
+		const query = quickAddQuery.trim();
 		if (query.length < 2) return [];
 		return quickAddOptions.filter((option) => {
-			const searchableText = `${option.name} ${option.label} ${option.secondaryText}`.toLowerCase();
-			return searchableText.includes(query);
+			const searchableText = `${option.name} ${option.secondaryText}`;
+			return matchesAllTokens(query, searchableText);
 		});
 	});
 
@@ -171,7 +172,7 @@
 
 	{#if quickAddOpen}
 		<div
-			class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[420px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
+			class="wmax absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[280px] max-w-full min-w-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60 md:max-h-[420px]"
 		>
 			{#if totalQuickAddResults > 0}
 				{#if visibleProductQuickAddOptions.length > 0}
