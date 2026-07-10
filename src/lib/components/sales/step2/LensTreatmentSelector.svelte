@@ -9,10 +9,10 @@
 
 	interface Props {
 		treatments: SelectedTreatment[];
-		availableTreatments:SupplierTreatment[];
+		availableTreatments: SupplierTreatment[];
 		eyeCount: number;
 		treatmentTotal: number;
-		ontoggle: (treatment:SupplierTreatment) => void;
+		ontoggle: (treatment: SupplierTreatment) => void;
 	}
 
 	let {

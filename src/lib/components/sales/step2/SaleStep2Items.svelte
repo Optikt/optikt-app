@@ -263,9 +263,7 @@
 
 	// Load treatments when a lens item's supplier changes
 	$effect(() => {
-		const lensItemsInCart = items.filter(
-			(i): i is LensSaleItemRow => i.kind === 'lens'
-		);
+		const lensItemsInCart = items.filter((i): i is LensSaleItemRow => i.kind === 'lens');
 		untrack(() => {
 			for (const item of lensItemsInCart) {
 				const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
@@ -401,9 +399,7 @@
 	);
 
 	function copyFirstRxToAll() {
-		const firstLens = items.find(
-			(i): i is LensSaleItemRow => i.kind === 'lens'
-		);
+		const firstLens = items.find((i): i is LensSaleItemRow => i.kind === 'lens');
 		if (!firstLens) return;
 		const src = firstLens.lensPair;
 		for (const item of items) {
