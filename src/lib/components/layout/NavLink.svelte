@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { Component } from 'svelte';
-	import type { ResolvedPathname } from '$app/types';
+	import type { StaticRoute } from '$lib/shared/routes';
 
 	let {
 		href,
@@ -13,7 +14,7 @@
 		collapsed = false,
 		onSelect
 	}: {
-		href: ResolvedPathname;
+		href: StaticRoute;
 		label: string;
 		icon: Component;
 		badge?: string;
@@ -30,11 +31,9 @@
 	);
 </script>
 
-<!-- disable rule here since we already resolved the path name after passing it -->
-<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
-	title={collapsed ? label : undefined}
-	{href}
+	title={label}
+	href={resolve(href)}
 	onclick={onSelect}
 	class={[
 		'relative mx-2 my-0.5 flex items-center rounded-lg py-2.5 no-underline transition-colors duration-150',
@@ -80,4 +79,3 @@
 		{/if}
 	{/if}
 </a>
-<!-- eslint-enable svelte/no-navigation-without-resolve -->
