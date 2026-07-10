@@ -265,7 +265,7 @@
 			statusLabel={statusMeta.label}
 		/>
 		<div
-			class="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 transition-colors duration-150 border-slate-300 hover:border-slate-400 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-100"
+			class="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 transition-colors duration-150 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-100 hover:border-slate-400"
 		>
 			<FileText class="h-3 w-3 shrink-0 text-slate-400" />
 			<input
