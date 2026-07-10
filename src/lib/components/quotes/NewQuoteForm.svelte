@@ -290,12 +290,9 @@
 			{items}
 			{selectedCustomer}
 			{newCustomer}
-			{quoteDate}
 			bind:discount
 			bind:discountType
 			{notes}
-			{validUntil}
-			{nextQuoteNumber}
 			{defaultTaxRate}
 			{submitting}
 			{canSubmit}

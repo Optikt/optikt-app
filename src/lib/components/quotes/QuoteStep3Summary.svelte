@@ -3,7 +3,6 @@
 	import { resolve } from '$app/paths';
 	import SaleStep3Summary from '$lib/components/sales/step3/SaleStep3Summary.svelte';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
-	import { fromISODate } from '$lib/dates';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { Customer } from '$lib/server/db/schema';
 
@@ -11,12 +10,9 @@
 		items: SaleItemRow[];
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
-		quoteDate: Date;
 		discount: number;
 		discountType: DiscountTypeEnum;
 		notes: string;
-		validUntil: string;
-		nextQuoteNumber?: number;
 		defaultTaxRate?: number;
 		submitting: boolean;
 		canSubmit: boolean;
@@ -28,12 +24,9 @@
 		items,
 		selectedCustomer,
 		newCustomer,
-		quoteDate,
 		discount = $bindable(),
 		discountType = $bindable(),
 		notes,
-		validUntil,
-		nextQuoteNumber,
 		defaultTaxRate,
 		submitting,
 		canSubmit,
@@ -41,9 +34,7 @@
 		onsubmit
 	}: Props = $props();
 
-	const quoteReference = $derived.by(() => (nextQuoteNumber ? `P-${nextQuoteNumber}` : undefined));
 
-	const validUntilDate = $derived.by(() => fromISODate(validUntil) ?? null);
 
 	function goToQuotes() {
 		goto(resolve('/quotes'));
@@ -54,14 +45,10 @@
 	{items}
 	{selectedCustomer}
 	{newCustomer}
-	saleDate={quoteDate}
 	bind:discount
 	bind:discountType
 	{notes}
-	nextOrderNumber={nextQuoteNumber}
 	{defaultTaxRate}
-	entityLabel="Presupuesto"
-	entityValue={quoteReference}
 	customerFallbackName="Presupuesto sin cliente"
 	customerFallbackDocument="Cliente opcional"
 	submittingStatusLabel="Creando presupuesto"
@@ -69,8 +56,6 @@
 	pendingStatusLabel="Revisa el presupuesto"
 	primaryLabel="Crear Presupuesto"
 	onCancel={goToQuotes}
-	secondaryContextDate={validUntilDate}
-	secondaryContextLabel={validUntilDate ? 'Valido hasta' : undefined}
 	{submitting}
 	{canSubmit}
 	{onprev}

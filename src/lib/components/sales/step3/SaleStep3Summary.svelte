@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Calendar, FileText, User } from '@lucide/svelte';
+	import { FileText } from '@lucide/svelte';
 	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
 	import {
 		calculateSaleSummarySubtotal,
@@ -22,6 +22,7 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
+	import SaleCustomerBanner from '../SaleCustomerBanner.svelte';
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import { getContext } from 'svelte';
@@ -38,16 +39,10 @@
 		customerId?: string;
 		selectedCustomer: Customer | null;
 		newCustomer: NewCustomerData | null;
-		saleDate: Date;
-		secondaryContextDate?: Date | null;
-		secondaryContextLabel?: string;
 		discount: number;
 		discountType: DiscountTypeEnum;
 		notes: string;
-		nextOrderNumber?: number;
 		defaultTaxRate?: number;
-		entityLabel?: string;
-		entityValue?: string;
 		customerFallbackName?: string;
 		customerFallbackDocument?: string;
 		submittingStatusLabel?: string;
@@ -72,16 +67,10 @@
 		customerId = '',
 		selectedCustomer,
 		newCustomer,
-		saleDate,
-		secondaryContextDate = null,
-		secondaryContextLabel,
 		discount = $bindable(),
 		discountType = $bindable(),
 		notes = $bindable(),
-		nextOrderNumber,
 		defaultTaxRate = DEFAULT_TAX_RATE,
-		entityLabel,
-		entityValue,
 		customerFallbackName = 'Venta sin cliente',
 		customerFallbackDocument = 'Sin documento',
 		submittingStatusLabel = 'Registrando venta',
@@ -177,13 +166,7 @@
 		return customerFallbackDocument;
 	});
 
-	const displaySaleDate = $derived.by(() => formatDisplayDate(saleDate));
 
-	const displaySecondaryContextDate = $derived.by(() =>
-		secondaryContextDate ? formatDisplayDate(secondaryContextDate) : null
-	);
-
-	const displayEntityValue = $derived.by(() => entityValue ?? `#${nextOrderNumber ?? 'Pendiente'}`);
 
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
 		return findProduct(item, products);
@@ -191,14 +174,6 @@
 
 	function getLens(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
 		return findLensItem(item, lensItems);
-	}
-
-	function formatDisplayDate(date: Date): string {
-		return new Intl.DateTimeFormat('es-VE', {
-			day: '2-digit',
-			month: 'short',
-			year: 'numeric'
-		}).format(date);
 	}
 
 	function formatTaxRate(rate: number): string {
@@ -285,30 +260,11 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-2">
-	<!-- Header compacto: orden · cliente · fecha · estado -->
-	<div class="flex shrink-0 items-center justify-between gap-2">
-		<div class="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
-			{#if entityLabel}<span>{entityLabel}</span>&nbsp;{/if}
-			<span class="font-semibold text-brand-navy">{displayEntityValue}</span>
-			<span class="text-slate-300">·</span>
-			<User class="h-3 w-3 shrink-0" />
-			<span class="truncate">{displayCustomerName}</span>
-			<span class="shrink-0 text-outline">({displayCustomerDocument})</span>
-			<span class="text-slate-300">·</span>
-			<Calendar class="h-3 w-3 shrink-0" />
-			<span>{displaySaleDate}</span>
-			{#if displaySecondaryContextDate && secondaryContextLabel}
-				<span class="text-slate-300">·</span>
-				<span class="text-outline">{secondaryContextLabel}</span>
-				<span>{displaySecondaryContextDate}</span>
-			{/if}
-		</div>
-		<div
-			class="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase {statusMeta.className}"
-		>
-			{statusMeta.label}
-		</div>
-	</div>
+	<SaleCustomerBanner
+		name={displayCustomerName}
+		document={displayCustomerDocument}
+		statusLabel={statusMeta.label}
+	/>
 
 	<!-- Nota inline -->
 	<div class="flex shrink-0 items-center gap-1.5">

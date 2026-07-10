@@ -346,11 +346,9 @@
 			{customerId}
 			{selectedCustomer}
 			{newCustomer}
-			{saleDate}
 			bind:discount
 			bind:discountType
 			bind:notes
-			{nextOrderNumber}
 			{defaultTaxRate}
 			{submitting}
 			{canSubmit}
