@@ -584,12 +584,21 @@ function buildLensConfirmationEyeResult(
 		};
 	}
 
-	const fitsAnyRange = ranges.some(
-		(range) =>
-			isWithinOpticalRange(sphere, range.sphereMin, range.sphereMax) &&
-			isWithinOpticalRange(cylinder, range.cylinderMin ?? null, range.cylinderMax ?? null) &&
-			isWithinOpticalRange(addition, range.additionMin ?? null, range.additionMax ?? null)
-	);
+	const fitsAnyRange = ranges.some((range) => {
+		const sphereOk = isWithinOpticalRange(sphere, range.sphereMin, range.sphereMax);
+
+		const cylinderOk =
+			range.cylinderMin === null && range.cylinderMax === null
+				? cylinder === null
+				: isWithinOpticalRange(cylinder, range.cylinderMin ?? null, range.cylinderMax ?? null);
+
+		const additionOk =
+			range.additionMin === null && range.additionMax === null
+				? addition === null
+				: isWithinOpticalRange(addition, range.additionMin ?? null, range.additionMax ?? null);
+
+		return sphereOk && cylinderOk && additionOk;
+	});
 
 	return {
 		eye,

@@ -218,7 +218,7 @@
 							class="rounded-full bg-error-container px-1.5 py-0.5 text-[12px] font-semibold text-on-error-container"
 							>Pendiente</span
 						>
-					{:else if item.lensPair.od.prescription.sphere != null || item.lensPair.oi.prescription.sphere != null}
+					{:else if item.lensPair.od.enabled || item.lensPair.oi.enabled}
 						<span
 							class="rounded-full bg-success-container px-1.5 py-0.5 text-[12px] font-semibold text-on-success-container"
 							>Completa</span
