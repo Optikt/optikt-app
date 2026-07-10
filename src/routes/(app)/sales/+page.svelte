@@ -148,22 +148,22 @@
 	<title>Ventas - Optikt</title>
 </svelte:head>
 
-<div class="space-y-4 p-4">
-	<PageHeader title="Ventas">
-		{#snippet actions()}
-			{#if canAct}
-				<button
-					onclick={() => goto(resolve('/sales/new'))}
-					class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
-				>
-					<Plus size={18} />
-					NUEVA VENTA
-				</button>
-			{/if}
-		{/snippet}
-	</PageHeader>
-
-	<SaleStatsCards {stats} />
+<div class="flex flex-col gap-3 p-4">
+	<div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+		<div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
+			<PageHeader title="Ventas" />
+			<SaleStatsCards {stats} />
+		</div>
+		{#if canAct}
+			<button
+				onclick={() => goto(resolve('/sales/new'))}
+				class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-gold px-3 py-1.5 text-xs font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md sm:gap-2 sm:px-4 sm:text-sm"
+			>
+				<Plus size={16} />
+				NUEVA VENTA
+			</button>
+		{/if}
+	</div>
 
 	<SaleFilterBar
 		{search}

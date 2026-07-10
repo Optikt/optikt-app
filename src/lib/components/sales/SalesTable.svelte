@@ -48,7 +48,7 @@
 		{ key: 'total', label: 'Total (USD)', align: 'right' as const },
 		{ key: 'paid', label: 'Progreso de Pago' },
 		{ key: 'status', label: 'Estado' },
-		{ key: 'seller', label: 'Vendedor' },
+		{ key: 'seller', label: 'Vendedor', hiddenClass: 'hidden 2xl:table-cell' },
 		{ key: 'actions', label: 'Acciones', align: 'right' as const }
 	];
 
@@ -114,54 +114,52 @@
 				: ''}"
 			onclick={() => onView?.(sale)}
 		>
-			<td class="px-3 py-3">
+			<td class="px-2 py-2.5">
 				<span class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</span>
 			</td>
-			<td class="px-3 py-3">
-				<div class="min-w-0">
-					<span class="truncate text-sm font-medium text-on-surface">{customerName(sale)}</span>
+			<td class="max-w-[180px] px-2 py-2.5">
+				<div class="min-w-0 truncate">
+					<span class="text-sm font-medium text-on-surface">{customerName(sale)}</span>
 					{#if sale.customer?.idNumber}
-						<span class="ml-1.5 font-mono text-xs text-outline">{sale.customer.idNumber}</span>
+						<span class="ml-1 font-mono text-xs text-outline">{sale.customer.idNumber}</span>
 					{/if}
 				</div>
 			</td>
-			<td class="px-3 py-3 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
+			<td class="px-2 py-2.5 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
 				{formatDateOnly(sale.saleDate, { day: '2-digit', month: '2-digit', year: '2-digit' })}
 			</td>
-			<td class="px-3 py-3 text-right font-mono text-sm font-bold text-brand-navy tabular-nums">
+			<td class="px-2 py-2.5 text-right font-mono text-sm font-bold text-brand-navy tabular-nums">
 				{formatPrice(sale.total)}
 			</td>
-			<td class="px-3 py-3">
-				<div class="max-w-32">
+			<td class="px-2 py-2.5">
+				<div class="max-w-28">
 					<SalePaymentProgress {sale} />
 				</div>
 			</td>
-			<td class="px-3 py-3">
+			<td class="px-2 py-2.5">
 				<SaleStatusBadge status={sale.status} />
 			</td>
-			<td class="px-3 py-3">
+			<td class="hidden px-2 py-2.5 2xl:table-cell">
 				<div class="flex items-center gap-2" title={sellerName}>
 					<div
 						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
 					>
 						{getInitials(sellerName)}
 					</div>
-					<span class="hidden truncate text-sm text-on-surface-variant lg:inline">
-						{sellerName}
-					</span>
+					<span class="truncate text-sm text-on-surface-variant">{sellerName}</span>
 				</div>
 			</td>
-			<td class="px-3 py-3 text-right">
+			<td class="px-2 py-2.5 text-right">
 				<div class="flex items-center justify-end gap-1">
 					{#if viewHref}
 						<a
 							href={resolve(viewHref)}
 							onclick={(event) => event.stopPropagation()}
-							class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-info-container px-3 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 2xl:w-auto 2xl:gap-1.5 2xl:px-3"
 							title="Ver detalle"
 						>
 							<Eye class="h-3.5 w-3.5" />
-							Ver
+							<span class="hidden 2xl:inline">Ver</span>
 						</a>
 					{:else if onView}
 						<button
@@ -169,11 +167,11 @@
 								event.stopPropagation();
 								onView?.(sale);
 							}}
-							class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-info-container px-3 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+							class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 2xl:w-auto 2xl:gap-1.5 2xl:px-3"
 							title="Ver detalle"
 						>
 							<Eye class="h-3.5 w-3.5" />
-							Ver
+							<span class="hidden 2xl:inline">Ver</span>
 						</button>
 					{/if}
 					{#if canCancel}
@@ -182,7 +180,7 @@
 								event.stopPropagation();
 								openCancel(sale);
 							}}
-							class="rounded-md p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container"
+							class="rounded-md p-1.5 text-red-400 hover:bg-error-container hover:text-red-600"
 							title="Cancelar venta"
 						>
 							<CircleX class="h-4 w-4" />

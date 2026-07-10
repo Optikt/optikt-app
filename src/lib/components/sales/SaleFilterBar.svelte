@@ -35,14 +35,14 @@
 	);
 
 	const selectClass =
-		'rounded-lg border-none bg-surface-container-high px-3 py-3 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+		'rounded-lg border-none bg-surface-container-high px-3 py-2.5 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 	const inputClass =
-		'w-full rounded-lg border-none bg-surface-container-high p-3 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+		'w-full rounded-lg border-none bg-surface-container-high p-2.5 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 	const toggleButtonClass = (active: boolean, activeClass: string) =>
-		`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-medium transition-colors ${active ? activeClass : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}`;
+		`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active ? activeClass : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}`;
 </script>
 
-<section class="glass-card min-w-0 bg-surface-container-low p-3 lg:p-4">
+<section class="glass-card min-w-0 bg-surface-container-low p-2 lg:p-3">
 	<!-- Single flex-wrap row: search + filters + toggle + clear -->
 	<div class="flex flex-wrap items-center gap-2">
 		<div class="relative min-w-0 flex-1 basis-48">
