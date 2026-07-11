@@ -513,7 +513,7 @@
 	{#if isEditMode && prescription}
 		<!-- UPDATE FORM -->
 		<form
-			{...currentUpdateForm.enhance(async ({ form: formEl, submit }) => {
+			{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
 				await handleSubmit(formEl, submit, handleUpdateResult);
 			})}
 		>
@@ -536,7 +536,7 @@
 	{:else}
 		<!-- CREATE FORM -->
 		<form
-			{...currentCreateForm.enhance(async ({ form: formEl, submit }) => {
+			{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
 				await handleSubmit(formEl, submit, handleCreateResult);
 			})}
 		>

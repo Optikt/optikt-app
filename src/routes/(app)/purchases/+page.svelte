@@ -135,7 +135,7 @@
 				hasOverdueBalance: overdueBalanceFilter ? true : undefined,
 				orderBy,
 				orderSort
-			}).run();
+			});
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando órdenes de compra'));

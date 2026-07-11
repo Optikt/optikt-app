@@ -63,7 +63,7 @@
 
 		try {
 			const suppliersQuery = listSuppliersForBrand({ id: brandId });
-			const suppliers = imperative ? await suppliersQuery.run() : await suppliersQuery;
+			const suppliers = imperative ? await suppliersQuery : await suppliersQuery;
 			if (requestId !== relationRequestId) return;
 			relatedSuppliers = suppliers;
 		} catch (error) {
@@ -82,7 +82,7 @@
 	async function loadSupplierOptions() {
 		loadingSupplierOptions = true;
 		try {
-			supplierOptions = await listSupplierRelationOptions({}).run();
+			supplierOptions = await listSupplierRelationOptions({});
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando proveedores disponibles'));

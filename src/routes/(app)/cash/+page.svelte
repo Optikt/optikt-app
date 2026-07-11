@@ -31,9 +31,9 @@
 		loading = true;
 		try {
 			const [r, d, p] = await Promise.all([
-				getCashReportQuery({ from: dateFrom, to: dateTo }).run(),
-				getDailyBreakdownQuery({ from: dateFrom, to: dateTo }).run(),
-				getPipelineQuery().run()
+				getCashReportQuery({ from: dateFrom, to: dateTo }),
+				getDailyBreakdownQuery({ from: dateFrom, to: dateTo }),
+				getPipelineQuery()
 			]);
 			report = r;
 			daily = d;

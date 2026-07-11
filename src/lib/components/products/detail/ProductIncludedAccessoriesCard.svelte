@@ -85,8 +85,8 @@
 		loading = true;
 		try {
 			const [nextBrandAccessories, nextOverride] = await Promise.all([
-				getBrandAccessories({ brandId: product.brand.id }).run(),
-				getProductAccessoryOverride({ id: product.id }).run()
+				getBrandAccessories({ brandId: product.brand.id }),
+				getProductAccessoryOverride({ id: product.id })
 			]);
 
 			brandAccessories = nextBrandAccessories as AccessoryRule[];
@@ -113,7 +113,7 @@
 					page,
 					perPage: ACCESSORY_OPTIONS_PAGE_SIZE,
 					type: ProductType.ACCESSORY
-				}).run();
+				});
 
 				nextOptions.push(
 					...result.items.map((candidate) => ({

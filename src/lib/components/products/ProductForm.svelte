@@ -430,7 +430,7 @@
 
 <form
 	id={formId}
-	{...activeForm.enhance(async ({ form: formEl, submit }) => {
+	{...activeForm.enhance(async ({ element: formEl, submit }) => {
 		await handleSubmit(formEl, submit);
 	})}
 	class="w-full space-y-6"

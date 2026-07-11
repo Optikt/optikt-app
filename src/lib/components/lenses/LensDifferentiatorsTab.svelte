@@ -44,7 +44,7 @@
 
 	async function refreshData() {
 		try {
-			const tags = await listDifferentiators({ page: 1, perPage: 100 }).run();
+			const tags = await listDifferentiators({ page: 1, perPage: 100 });
 			differentiators = tags;
 		} catch (error) {
 			console.error(error);

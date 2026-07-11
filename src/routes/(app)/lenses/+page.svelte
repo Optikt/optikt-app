@@ -135,7 +135,7 @@
 				supplierId: supplierFilter || undefined,
 				materialId: materialFilter || undefined,
 				technologyId: technologyFilter || undefined
-			}).run();
+			});
 			catalogPage = 1;
 		} catch (error) {
 			console.error(error);

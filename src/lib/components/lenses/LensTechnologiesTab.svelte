@@ -66,8 +66,8 @@
 	async function refreshData() {
 		try {
 			const [techs, supps] = await Promise.all([
-				listTechnologies({ page: 1, perPage: 100 }).run(),
-				listSuppliers({ page: 1, perPage: 100 }).run()
+				listTechnologies({ page: 1, perPage: 100 }),
+				listSuppliers({ page: 1, perPage: 100 })
 			]);
 			technologies = techs;
 			suppliers = (supps as PaginatedResult<{ id: string; name: string }>).items.map((s) => ({

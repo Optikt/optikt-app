@@ -65,7 +65,7 @@
 
 		try {
 			const rulesQuery = getBrandAccessories({ brandId: brand.id });
-			const nextRules = imperative ? await rulesQuery.run() : await rulesQuery;
+			const nextRules = imperative ? await rulesQuery : await rulesQuery;
 			if (currentRequestId !== requestId) return;
 			rules = nextRules as AccessoryRule[];
 		} catch (error) {
@@ -94,7 +94,7 @@
 					page,
 					perPage: ACCESSORY_OPTIONS_PAGE_SIZE,
 					type: ProductType.ACCESSORY
-				}).run();
+				});
 
 				nextOptions.push(
 					...result.items.map((product) => ({

@@ -73,7 +73,7 @@
 				perPage: 10,
 				search: search || undefined,
 				status: statusFilter || undefined
-			}).run();
+			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando presupuestos'));
 		} finally {
@@ -83,7 +83,7 @@
 
 	async function refreshStats() {
 		try {
-			stats = await getQuoteStats({}).run();
+			stats = await getQuoteStats({});
 		} catch (e) {
 			console.error(e);
 		}

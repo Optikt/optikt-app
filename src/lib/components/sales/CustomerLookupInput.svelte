@@ -130,7 +130,7 @@
 
 		searching = true;
 		try {
-			const result = await lookupCustomer({ idNumber: fullId }).run();
+			const result = await lookupCustomer({ idNumber: fullId });
 
 			if (result.customer) {
 				foundCustomer = result.customer;
