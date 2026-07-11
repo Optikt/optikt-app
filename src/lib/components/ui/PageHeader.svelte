@@ -26,8 +26,9 @@
 			{backLabel}
 		</button>
 	{:else if backLabel && backHref}
+		<!-- FIXME: resolve tipado estrictamente por SvelteKit, no acepta string genérico -->
 		<a
-			href={resolve(backHref)}
+			href={resolve(backHref as '/')}
 			class="mb-3 flex items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-brand-blue"
 		>
 			<ArrowLeft size={16} />
