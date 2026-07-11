@@ -12,8 +12,10 @@
 ## Estado base actual
 
 - Backend core, CRUD principal, wizard de ventas/presupuestos, FIFO inventory, compras, dashboard y reportes basicos ya estan operativos.
-- El redesign ya esta aplicado en `(auth)/+layout`, `(app)/+layout`, `/login`, `/dashboard`, `/customers`, `/sales`, `/quotes`, `/products`, `/lenses` y `/purchases`.
-- Validacion actual: `pnpm test:unit` (480 tests) y `pnpm check` en verde.
+- El redesign esta aplicado en `(auth)/+layout`, `(app)/+layout`, `/login`, `/dashboard`, `/customers`, `/sales`, `/quotes`, `/products`, `/lenses` y `/purchases`.
+- Redesign completo del wizard de ventas (Step 1, 2, 3) para viewport 1280x559 — slide-overs, draft pattern, validación inline, resumen compacto.
+- Redesign responsive de la lista de ventas (`/sales`) con columnas ajustables, stats inline, scroll horizontal controlado.
+- Validacion actual: `pnpm test:unit` (715 tests), `pnpm check` 0 errors, `eslint` 0 errors.
 - La deuda tecnica se documenta unicamente en `TECH_DEBT.md`.
 
 ---
@@ -32,6 +34,15 @@
 
 - Stitch project: `2149962653469234227`
 - Showcase de tokens: `2025c374`
+
+**Completado**
+
+| Ruta                          | Alcance                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `/sales` (wizard)             | Redesign completo step 1, 2, 3 para 1280×559. Slide-overs, draft pattern, validacion inline, EyeSummary component, SaleItemInfo, context API. |
+| `/sales` (listado)            | Redesign responsive con columnas ajustables, stats inline, scroll horizontal, ocultar vendedor en viewports angostos, filtros compactos. |
+| `/sales/[id]`                 | Card de abonos compacta con scroll independiente, titulo fuera del scroll. |
+| Componentes compartidos       | EyeSummary, SaleItemInfo, SaleCustomerBanner, routes.ts con tipos de rutas, matchesAllTokens para busqueda. |
 
 **Pendiente por pagina**
 
