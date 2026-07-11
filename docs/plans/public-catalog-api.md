@@ -48,4 +48,5 @@ Principios: cero duplicacion de datos (misma DB; el JSON en R2 es cache derivado
 <!-- SPECS_START -->
 
 - public-catalog-arch
+
 <!-- SPECS_END -->

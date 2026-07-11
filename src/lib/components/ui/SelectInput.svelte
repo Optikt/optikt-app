@@ -6,8 +6,7 @@
 	type SvelecteProps = ComponentProps<typeof Svelecte>;
 	type OptionRecord = Record<string, unknown>;
 	type Options =
-		| Array<{ label: string; value: string | number }>
-		| Array<{ name: string; id: string | number }>;
+		Array<{ label: string; value: string | number }> | Array<{ name: string; id: string | number }>;
 
 	type PropType = Omit<SvelecteProps, 'options'> & {
 		options?: Options;

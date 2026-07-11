@@ -268,8 +268,7 @@
 			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
 			const prescription = buildPrescriptionPayload(items, dateToISODateString(saleDate)) as
-				| Parameters<typeof createSale>[0]['prescription']
-				| undefined;
+				Parameters<typeof createSale>[0]['prescription'] | undefined;
 
 			const result = await createSale({
 				customerId: customerId || undefined,

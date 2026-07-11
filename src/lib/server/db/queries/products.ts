@@ -29,12 +29,7 @@ export type ProductWithRelations = Product & {
 
 /** Sortable product columns */
 export type ProductOrderBy =
-	| 'name'
-	| 'sku'
-	| 'currentSalePrice'
-	| 'stock'
-	| 'createdAt'
-	| 'updatedAt';
+	'name' | 'sku' | 'currentSalePrice' | 'stock' | 'createdAt' | 'updatedAt';
 
 /** Options for filtering products (shared between query and count) */
 export interface ProductFilterOptions {

@@ -6,9 +6,7 @@ export type SelectOptionRecord = Record<string, SelectOptionPrimitive>;
 
 /** Supported payload shapes emitted by shared single-select wrappers. */
 export type SelectChangeValue =
-	| SelectOptionPrimitive
-	| SelectOptionRecord
-	| Array<SelectOptionPrimitive | SelectOptionRecord>;
+	SelectOptionPrimitive | SelectOptionRecord | Array<SelectOptionPrimitive | SelectOptionRecord>;
 
 function getOptionFieldValue(option: object, valueField: string): string {
 	const fieldValue = (option as SelectOptionRecord)[valueField];
