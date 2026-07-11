@@ -26,9 +26,8 @@
 			{backLabel}
 		</button>
 	{:else if backLabel && backHref}
-		<!-- eslint-disable-next-line svelte/valid-compile -->
 		<a
-			href={resolve(backHref as '/')}
+			href={resolve(backHref)}
 			class="mb-3 flex items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-brand-blue"
 		>
 			<ArrowLeft size={16} />

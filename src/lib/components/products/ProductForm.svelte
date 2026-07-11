@@ -225,7 +225,7 @@
 	}
 
 	function navigateToCancelHref() {
-		goto(resolve(cancelHref as '/'));
+		goto(resolve(cancelHref));
 	}
 
 	$effect(() => {
