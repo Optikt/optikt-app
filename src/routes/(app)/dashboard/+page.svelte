@@ -88,7 +88,7 @@
 
 		if (isAdmin) {
 			next.push({ label: 'Reportes', href: '/reports', icon: ChartColumn });
-		}	
+		}
 
 		return next;
 	});
