@@ -37,12 +37,12 @@
 
 **Completado**
 
-| Ruta                          | Alcance                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| `/sales` (wizard)             | Redesign completo step 1, 2, 3 para 1280×559. Slide-overs, draft pattern, validacion inline, EyeSummary component, SaleItemInfo, context API. |
-| `/sales` (listado)            | Redesign responsive con columnas ajustables, stats inline, scroll horizontal, ocultar vendedor en viewports angostos, filtros compactos. |
-| `/sales/[id]`                 | Card de abonos compacta con scroll independiente, titulo fuera del scroll. |
-| Componentes compartidos       | EyeSummary, SaleItemInfo, SaleCustomerBanner, routes.ts con tipos de rutas, matchesAllTokens para busqueda. |
+| Ruta                    | Alcance                                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/sales` (wizard)       | Redesign completo step 1, 2, 3 para 1280×559. Slide-overs, draft pattern, validacion inline, EyeSummary component, SaleItemInfo, context API. |
+| `/sales` (listado)      | Redesign responsive con columnas ajustables, stats inline, scroll horizontal, ocultar vendedor en viewports angostos, filtros compactos.      |
+| `/sales/[id]`           | Card de abonos compacta con scroll independiente, titulo fuera del scroll.                                                                    |
+| Componentes compartidos | EyeSummary, SaleItemInfo, SaleCustomerBanner, routes.ts con tipos de rutas, matchesAllTokens para busqueda.                                   |
 
 **Pendiente por pagina**
 
