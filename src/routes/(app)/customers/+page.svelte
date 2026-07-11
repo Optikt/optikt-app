@@ -60,7 +60,7 @@
 				perPage: 10,
 				search: search || undefined,
 				includeDeleted
-			}).run();
+			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando clientes'));
 		} finally {

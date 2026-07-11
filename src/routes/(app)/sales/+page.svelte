@@ -82,7 +82,7 @@
 				status: statusFilter || undefined,
 				shippingCostPending: shippingPendingFilter || undefined,
 				hasFreeItem: hasFreeItemFilter || undefined
-			}).run();
+			});
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando ventas'));
@@ -93,7 +93,7 @@
 
 	async function refreshStats() {
 		try {
-			stats = await getSalesStats({}).run();
+			stats = await getSalesStats({});
 		} catch (e) {
 			console.error(e);
 		}

@@ -54,8 +54,8 @@
 
 		try {
 			const [nextNotifications, nextUnreadCount] = await Promise.all([
-				imperative ? fetchMyNotifications().run() : fetchMyNotifications(),
-				imperative ? fetchUnreadNotificationsCount().run() : fetchUnreadNotificationsCount()
+				imperative ? fetchMyNotifications() : fetchMyNotifications(),
+				imperative ? fetchUnreadNotificationsCount() : fetchUnreadNotificationsCount()
 			]);
 
 			notifications = nextNotifications;

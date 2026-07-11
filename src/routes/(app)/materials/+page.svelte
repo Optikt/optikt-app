@@ -50,7 +50,7 @@
 				search: search || undefined,
 				productType: (productTypeFilter as MaterialCategory) || undefined,
 				includeDeleted
-			}).run();
+			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando materiales'));
 		} finally {

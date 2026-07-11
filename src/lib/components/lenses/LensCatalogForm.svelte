@@ -180,7 +180,6 @@
 		listTechnologiesBySupplier({
 			supplierId: supplierId && !supplierId.startsWith('pending_') ? supplierId : undefined
 		})
-			.run()
 			.then((res) => {
 				supplierTechnologies = res;
 			})

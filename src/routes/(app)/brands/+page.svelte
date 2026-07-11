@@ -42,7 +42,7 @@
 				perPage: 10,
 				search: search || undefined,
 				includeDeleted
-			}).run();
+			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando marcas'));
 		} finally {

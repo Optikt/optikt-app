@@ -79,7 +79,7 @@
 
 		try {
 			const brandsQuery = listBrandsForSupplier({ id: supplierId });
-			const brands = imperative ? await brandsQuery.run() : await brandsQuery;
+			const brands = imperative ? await brandsQuery : await brandsQuery;
 			if (requestId !== relationRequestId) return;
 			relatedBrands = brands;
 		} catch (error) {
@@ -98,7 +98,7 @@
 	async function loadBrandOptions() {
 		loadingBrandOptions = true;
 		try {
-			brandOptions = await listBrandRelationOptions({}).run();
+			brandOptions = await listBrandRelationOptions({});
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando marcas disponibles'));

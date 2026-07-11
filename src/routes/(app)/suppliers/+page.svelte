@@ -45,7 +45,7 @@
 				search: search || undefined,
 				type: typeFilter || undefined,
 				includeDeleted
-			}).run();
+			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando proveedores'));
 		} finally {

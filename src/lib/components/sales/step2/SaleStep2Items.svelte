@@ -160,7 +160,7 @@
 			const accessories = await getAccessoriesForProduct({
 				productId: option.id,
 				brandId: option.brandId
-			}).run();
+			});
 
 			if (!items.some((item) => item.id === parentItem.id)) {
 				return;

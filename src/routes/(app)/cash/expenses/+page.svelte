@@ -70,7 +70,7 @@
 				to: dateTo,
 				category: categoryFilter || undefined,
 				includeVoided
-			}).run();
+			});
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando egresos'));
@@ -86,7 +86,7 @@
 		usdtRateHint = null;
 		// Pre-fill BCV rate
 		try {
-			const rates = await fetchLatestRates().run();
+			const rates = await fetchLatestRates();
 			const usd = rates.find((r) => r.currency.code === 'USD');
 			const usdt = rates.find((r) => r.id === 'usdt');
 			if (usd) {

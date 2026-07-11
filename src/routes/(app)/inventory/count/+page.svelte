@@ -232,7 +232,7 @@
 				limit: 100,
 				scopeType: historyScopeFilter || undefined,
 				openedOn: historyOpenedOn || undefined
-			}).run();
+			});
 
 			if (requestId !== historyRequestId) {
 				return;

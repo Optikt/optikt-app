@@ -21,11 +21,11 @@
 {/if}
 
 <form
-	{...login.enhance(async ({ submit, form }) => {
+	{...login.enhance(async ({ submit, element }) => {
 		errorMessage = null;
 		try {
 			await submit();
-			form.reset();
+			element.reset();
 		} catch (e) {
 			if (e && typeof e === 'object' && 'body' in e) {
 				const body = e.body as { message?: string };

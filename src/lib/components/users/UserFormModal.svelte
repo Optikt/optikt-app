@@ -116,7 +116,7 @@
 	{#if isEditMode && user}
 		<!-- UPDATE FORM -->
 		<form
-			{...currentUpdateForm.enhance(async ({ form: formEl, submit }) => {
+			{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
 				isSubmitting = true;
 				try {
 					await submit();
@@ -208,7 +208,7 @@
 	{:else}
 		<!-- CREATE FORM -->
 		<form
-			{...currentCreateForm.enhance(async ({ form: formEl, submit }) => {
+			{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
 				isSubmitting = true;
 				try {
 					await submit();

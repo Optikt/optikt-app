@@ -101,7 +101,7 @@
 	// Prescriptions
 	async function fetchPrescriptions() {
 		try {
-			prescriptions = await listPrescriptions({ customerId: customer.id }).run();
+			prescriptions = await listPrescriptions({ customerId: customer.id });
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando fórmulas'));

@@ -54,7 +54,7 @@
 		showDeleteModal = true;
 
 		try {
-			const result = await checkBrandCanDelete({ id: brand.id }).run();
+			const result = await checkBrandCanDelete({ id: brand.id });
 			productCount = result.productCount;
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error verificando marca'));

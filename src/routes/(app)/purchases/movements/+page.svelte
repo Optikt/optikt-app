@@ -73,7 +73,7 @@
 				search: search || undefined,
 				dateFrom: dateFrom || undefined,
 				dateTo: dateTo || undefined
-			}).run();
+			});
 		} catch (error) {
 			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando movimientos'));

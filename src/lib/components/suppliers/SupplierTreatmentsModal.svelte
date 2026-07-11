@@ -65,7 +65,7 @@
 		loading = true;
 		try {
 			const treatmentsQuery = listSupplierTreatments({ supplierId: supplier.id });
-			treatments = imperative ? await treatmentsQuery.run() : await treatmentsQuery;
+			treatments = imperative ? await treatmentsQuery : await treatmentsQuery;
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando tratamientos'));
