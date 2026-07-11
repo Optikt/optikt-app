@@ -11,6 +11,7 @@
 		Minimize,
 		Printer
 	} from '@lucide/svelte';
+	import type { PDFSlick } from '@pdfslick/core';
 
 	interface Props {
 		url: string;
@@ -22,8 +23,7 @@
 	let { url, title = 'Vista previa', fileName = 'documento.pdf', onClose }: Props = $props();
 
 	let container: HTMLDivElement;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	let pdfSlick: any = $state(null);
+	let pdfSlick: PDFSlick | null = $state(null);
 	let pageNumber = $state(1);
 	let numPages = $state(0);
 	let scale = $state(1);
@@ -126,8 +126,8 @@
 		'inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30';
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+	role="presentation"
 	class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 p-4"
 	onkeydown={close}
 	onclick={close}

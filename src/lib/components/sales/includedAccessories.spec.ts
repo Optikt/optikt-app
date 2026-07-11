@@ -9,27 +9,22 @@ import {
 	type IncludedAccessoryMap
 } from './includedAccessories';
 import { DiscountType } from '$lib/shared/enums';
-import type { SaleItemRow } from './newSaleTypes';
+import type { ProductSaleItemRow } from './newSaleTypes';
 
 function createProductRow(
 	id: string,
 	productId: string,
 	parentItemId: string | null = null
-): SaleItemRow {
+): ProductSaleItemRow {
 	return {
 		id,
 		kind: 'product',
 		productId,
 		quantity: 1,
-		lensPair: null,
-		treatments: [],
-		freeItem: null,
 		unitPrice: 0,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
 		isIncludedAccessory: parentItemId !== null,
 		includedAccessoryParentItemId: parentItemId
 	};

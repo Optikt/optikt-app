@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import { X } from '@lucide/svelte';
 	import {
 		House,
@@ -19,6 +18,7 @@
 	} from '@lucide/svelte';
 	import { getInventoryCountContext } from '$lib/context';
 	import { isAdminRole, UserRole } from '$lib/shared/enums';
+	import { NAV_ITEMS, ADMIN_ITEMS, SUPER_ADMIN_ITEMS } from '$lib/shared/routes';
 	import type { LucideIcon } from '$lib/types/index.js';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
 	import NavLink from './NavLink.svelte';
@@ -50,28 +50,9 @@
 		wallet: Wallet
 	};
 
-	const navItems = [
-		{ href: '/dashboard', label: 'Dashboard', icon: 'home' },
-		{ href: '/customers', label: 'Clientes', icon: 'users' },
-		{ href: '/products', label: 'Inventario', icon: 'package' },
-		{ href: '/sales', label: 'Ventas', icon: 'shopping' },
-		{ href: '/receivables', label: 'Cuentas por Cobrar', icon: 'receivables' },
-		{ href: '/quotes', label: 'Presupuestos', icon: 'quotes' },
-		{ href: '/lenses', label: 'Catálogo Lentes', icon: 'eye' },
-		{ href: '/brands', label: 'Marcas', icon: 'tag' },
-		{ href: '/materials', label: 'Materiales', icon: 'layers' },
-		{ href: '/suppliers', label: 'Proveedores', icon: 'truck' }
-	] as const;
-
-	// Items visible to ADMIN and MANAGER
-	const adminManagerItems = [
-		{ href: '/purchases', label: 'Compras', icon: 'purchases' },
-		{ href: '/cash', label: 'Caja', icon: 'wallet' },
-		{ href: '/reports', label: 'Reportes', icon: 'reports' }
-	] as const;
-
-	// Items visible only to ADMIN
-	const adminOnlyItems = [{ href: '/users', label: 'Usuarios', icon: 'shield' }] as const;
+	const navItems = NAV_ITEMS;
+	const adminManagerItems = ADMIN_ITEMS;
+	const adminOnlyItems = SUPER_ADMIN_ITEMS;
 
 	const isAdminOrManager = $derived(isAdminRole(user.role));
 	const isAdmin = $derived(user.role === UserRole.ADMIN);
@@ -80,7 +61,7 @@
 {#snippet navigation(onSelect = undefined as (() => void) | undefined, compact = false)}
 	{#each navItems as item (item.href)}
 		<NavLink
-			href={resolve(item.href)}
+			href={item.href}
 			label={item.label}
 			icon={iconMap[item.icon]}
 			matchSubPaths
@@ -90,7 +71,7 @@
 	{/each}
 
 	<NavLink
-		href={resolve('/inventory/count')}
+		href="/inventory/count"
 		label="Conteo Físico"
 		icon={ClipboardList}
 		badge={inventoryCountContext.activeSession ? 'EN PROGRESO' : undefined}
@@ -104,7 +85,7 @@
 		<div class={['my-2 h-px bg-slate-200', compact ? 'mx-3' : 'mx-4']}></div>
 		{#each adminManagerItems as item (item.href)}
 			<NavLink
-				href={resolve(item.href)}
+				href={item.href}
 				label={item.label}
 				icon={iconMap[item.icon]}
 				collapsed={compact}
@@ -116,7 +97,7 @@
 	{#if isAdmin}
 		{#each adminOnlyItems as item (item.href)}
 			<NavLink
-				href={resolve(item.href)}
+				href={item.href}
 				label={item.label}
 				icon={iconMap[item.icon]}
 				collapsed={compact}

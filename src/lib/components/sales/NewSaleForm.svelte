@@ -6,30 +6,29 @@
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { isDiscountValueValid } from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
+	import { nowUTC, fromISODate } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { PrescriptionValues } from './PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
+	import type { Snippet } from 'svelte';
+	import { setContext } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
+	import { CATALOG_KEY } from './wizardContext';
 	import {
 		buildStep2PrescriptionConfirmation,
 		calculateSaleSummarySubtotal,
 		getAvailableProductStock,
-		getRequiredEyes,
-		isItemDiscountValid,
-		validatePrescriptionFields,
-		hasPrescriptionErrors
+		hasLensPrescriptionErrors,
+		isItemDiscountValid
 	} from './saleItemHelpers';
-	import { buildPrescriptionPayload, buildSaleItemsFromWizard } from './wizardSubmission';
+	import { buildSaleItemsFromWizard, buildPrescriptionPayload } from './wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-	import SaleStep1Info from './SaleStep1Info.svelte';
-	import SaleStep2Items from './SaleStep2Items.svelte';
-	import SaleStep3Summary from './SaleStep3Summary.svelte';
+	import SaleStep1Info from './step1/SaleStep1Info.svelte';
+	import SaleStep2Items from './step2/SaleStep2Items.svelte';
+	import SaleStep3Summary from './step3/SaleStep3Summary.svelte';
 	import PrescriptionValidationModal from './PrescriptionValidationModal.svelte';
 
 	interface Props {
@@ -38,6 +37,7 @@
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
 		defaultTaxRate?: number;
+		breadcrumbs?: Snippet;
 	}
 
 	let {
@@ -45,8 +45,18 @@
 		lensItems,
 		suppliers: _suppliers,
 		nextOrderNumber,
-		defaultTaxRate
+		defaultTaxRate,
+		breadcrumbs
 	}: Props = $props();
+
+	setContext(CATALOG_KEY, {
+		get products() {
+			return products;
+		},
+		get lensItems() {
+			return lensItems;
+		}
+	});
 
 	// ============================================================================
 	// WIZARD STATE
@@ -95,11 +105,32 @@
 	let customerId = $state('');
 	let selectedCustomer = $state<Customer | null>(null);
 	let newCustomer = $state<NewCustomerData | null>(null);
-	let saleDate = $state<Date>(nowUTC());
+	const initialDate = nowUTC();
+	let saleDate = $state(initialDate);
 	let discount = $state(0);
 	let discountType = $state<DiscountTypeEnum>(DiscountType.FIXED);
 	let notes = $state('');
 	let submitting = $state(false);
+
+	const formattedOrderNumber = $derived(
+		nextOrderNumber ? `${String(nextOrderNumber).padStart(4, '0')}` : ''
+	);
+	let orderDateIso = $state(dateToISODateString(initialDate));
+
+	// Sync: user edits date in WizardHeader → update saleDate
+	$effect(() => {
+		const parsed = fromISODate(orderDateIso);
+		if (parsed && parsed.getTime() !== saleDate.getTime()) {
+			saleDate = parsed;
+		}
+	});
+	// Sync: saleDate changes externally → update WizardHeader input
+	$effect(() => {
+		const iso = dateToISODateString(saleDate);
+		if (iso !== orderDateIso) {
+			orderDateIso = iso;
+		}
+	});
 
 	// ============================================================================
 	// CUSTOMER PRESCRIPTION STATE
@@ -130,23 +161,6 @@
 	});
 
 	// ============================================================================
-	// SHARED PRESCRIPTION STATE
-	// ============================================================================
-
-	let prescriptionValues = $state<PrescriptionValues>({
-		odSphere: '',
-		odCylinder: '',
-		odAxis: '',
-		odAddition: '',
-		oiSphere: '',
-		oiCylinder: '',
-		oiAxis: '',
-		oiAddition: '',
-		lensType: LensType.MONOFOCAL,
-		doctorName: ''
-	});
-
-	// ============================================================================
 	// ITEMS STATE
 	// ============================================================================
 
@@ -154,7 +168,7 @@
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
 	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+		buildStep2PrescriptionConfirmation(items, lensItems)
 	);
 
 	// ============================================================================
@@ -186,7 +200,8 @@
 				return (
 					(i.lensPair?.catalogItemId ?? '') !== '' &&
 					(i.lensPair!.od.enabled || i.lensPair!.oi.enabled) &&
-					i.unitPrice >= 0
+					i.unitPrice >= 0 &&
+					!hasLensPrescriptionErrors(i)
 				);
 			})
 	);
@@ -203,15 +218,7 @@
 		})
 	);
 
-	const requiredEyes = $derived(getRequiredEyes(items));
-
-	const rxErrors = $derived(
-		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
-	);
-
-	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
-
-	const step2Valid = $derived(itemsValid && !hasOutOfStockItem && !hasInvalidPrescription);
+	const step2Valid = $derived(itemsValid && !hasOutOfStockItem);
 
 	const subtotal = $derived(calculateSaleSummarySubtotal(items));
 
@@ -260,12 +267,9 @@
 		try {
 			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
-			const prescription = items.some((item) => item.kind === 'lens')
-				? (buildPrescriptionPayload(
-						prescriptionValues,
-						dateToISODateString(saleDate)
-					) as Parameters<typeof createSale>[0]['prescription'])
-				: undefined;
+			const prescription = buildPrescriptionPayload(items, dateToISODateString(saleDate)) as
+				| Parameters<typeof createSale>[0]['prescription']
+				| undefined;
 
 			const result = await createSale({
 				customerId: customerId || undefined,
@@ -298,11 +302,13 @@
 
 <div class="w-full">
 	<WizardHeader
-		title="Nueva Venta"
 		steps={STEPS}
 		{currentStep}
 		{canNavigateToStep}
 		onStepSelect={(step) => goToStep(step as WizardStep)}
+		orderNumber={formattedOrderNumber}
+		bind:orderDate={orderDateIso}
+		{breadcrumbs}
 	/>
 
 	<!-- Step 1: Información -->
@@ -324,13 +330,9 @@
 		<SaleStep2Items
 			bind:items
 			bind:includedAccessoryMap
-			bind:prescriptionValues
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}
-			{products}
-			{lensItems}
-			{nextOrderNumber}
 			valid={step2Valid}
 			onnext={nextStep}
 			onprev={prevStep}
@@ -344,14 +346,10 @@
 			{customerId}
 			{selectedCustomer}
 			{newCustomer}
-			{saleDate}
 			bind:discount
 			bind:discountType
-			{notes}
-			{nextOrderNumber}
+			bind:notes
 			{defaultTaxRate}
-			{products}
-			{lensItems}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}
@@ -362,7 +360,6 @@
 	<PrescriptionValidationModal
 		bind:open={showPrescriptionValidationModal}
 		confirmation={step2PrescriptionConfirmation}
-		workflowLabel="venta"
 		onCancel={handlePrescriptionValidationCancel}
 		onConfirm={handlePrescriptionValidationConfirm}
 	/>

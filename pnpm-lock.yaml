@@ -51,8 +51,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0(svelte@5.55.4)
       svelte-sonner:
-        specifier: ^1.0.7
-        version: 1.0.7(svelte@5.55.4)
+        specifier: ^1.1.1
+        version: 1.1.1(svelte@5.55.4)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -3541,8 +3541,8 @@ packages:
       svelte:
         optional: true
 
-  svelte-sonner@1.0.7:
-    resolution: {integrity: sha512-1EUFYmd7q/xfs2qCHwJzGPh9n5VJ3X6QjBN10fof2vxgy8fYE7kVfZ7uGnd7i6fQaWIr5KvXcwYXE/cmTEjk5A==}
+  svelte-sonner@1.1.1:
+    resolution: {integrity: sha512-5cd3p7wa4cq0NsqslMwdlPb7x1JglEZ/GKrLePWNr5bCxR1nagAVrY01FRFrXfUGs41miLt3C327+8XJo5BzZw==}
     peerDependencies:
       svelte: ^5.0.0
 
@@ -7001,7 +7001,7 @@ snapshots:
     optionalDependencies:
       svelte: 5.55.4
 
-  svelte-sonner@1.0.7(svelte@5.55.4):
+  svelte-sonner@1.1.1(svelte@5.55.4):
     dependencies:
       runed: 0.28.0(svelte@5.55.4)
       svelte: 5.55.4

@@ -5,8 +5,8 @@ import {
 	getRequiredEyes
 } from './saleItemHelpers';
 import { DiscountType } from '$lib/shared/enums';
-import type { SaleItemRow } from './newSaleTypes';
 import { createEmptyLensPair } from './newSaleTypes';
+import type { LensSaleItemRow, SelectedTreatment } from './newSaleTypes';
 
 function makeValues(overrides: Partial<Record<string, string>> = {}) {
 	return {
@@ -24,7 +24,11 @@ function makeValues(overrides: Partial<Record<string, string>> = {}) {
 	};
 }
 
-function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
+function makeLensItem(
+	odEnabled = true,
+	oiEnabled = true,
+	treatments: SelectedTreatment[] = []
+): LensSaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'some-lens';
 	pair.od.enabled = odEnabled;
@@ -35,13 +39,12 @@ function makeLensItem(odEnabled = true, oiEnabled = true): SaleItemRow {
 		productId: '',
 		quantity: 1,
 		lensPair: pair,
-		treatments: [],
-		freeItem: null,
+		treatments,
 		unitPrice: 100,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
 		shippingCostPending: false,
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null

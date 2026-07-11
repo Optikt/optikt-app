@@ -7,36 +7,10 @@ import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { z } from 'zod';
 
-import type { SaleItemRow } from './newSaleTypes';
+import type { LensSaleItemRow, SaleItemRow } from './newSaleTypes';
 import { getEnabledEyeCount } from './saleItemHelpers';
 
-interface WizardPrescriptionValues {
-	odSphere: string | number;
-	odCylinder: string | number;
-	odAxis: string | number;
-	odAddition: string | number;
-	oiSphere: string | number;
-	oiCylinder: string | number;
-	oiAxis: string | number;
-	oiAddition: string | number;
-	lensType: string;
-	doctorName: string;
-}
-
 type PrescriptionFieldsPayload = z.input<typeof PrescriptionFieldsSchema>;
-
-function hasPrescriptionValues(values: WizardPrescriptionValues): boolean {
-	return [
-		values.odSphere,
-		values.odCylinder,
-		values.odAxis,
-		values.odAddition,
-		values.oiSphere,
-		values.oiCylinder,
-		values.oiAxis,
-		values.oiAddition
-	].some((value) => value != null && String(value).trim() !== '');
-}
 
 function buildLensPairItemBase(item: SaleItemRow, lensItems: LensCatalogItemWithRelations[]) {
 	if (item.kind !== 'lens' || !item.lensPair) return null;
@@ -289,32 +263,41 @@ export function buildQuoteItemsFromWizard(
 }
 
 export function buildPrescriptionPayload(
-	values: WizardPrescriptionValues,
+	items: SaleItemRow[],
 	prescriptionDate: string
 ): PrescriptionFieldsPayload | undefined {
-	if (!hasPrescriptionValues(values)) return undefined;
+	const lensItem = items.find((i): i is LensSaleItemRow => i.kind === 'lens');
+	if (!lensItem) return undefined;
+
+	const pair = lensItem.lensPair;
+	const hasValues =
+		pair.od.prescription.sphere != null ||
+		pair.od.prescription.cylinder != null ||
+		pair.oi.prescription.sphere != null ||
+		pair.oi.prescription.cylinder != null;
+	if (!hasValues) return undefined;
 
 	return {
 		prescriptionDate,
-		odSphere: values.odSphere,
-		odCylinder: values.odCylinder,
-		odAxis: values.odAxis || undefined,
-		odAddition: values.odAddition,
-		osSphere: values.oiSphere,
-		osCylinder: values.oiCylinder,
-		osAxis: values.oiAxis || undefined,
-		osAddition: values.oiAddition,
-		dp: undefined,
-		npRight: undefined,
-		npLeft: undefined,
+		odSphere: pair.od.prescription.sphere ?? undefined,
+		odCylinder: pair.od.prescription.cylinder ?? undefined,
+		odAxis: pair.od.prescription.axis ?? undefined,
+		odAddition: pair.od.prescription.addition ?? undefined,
+		osSphere: pair.oi.prescription.sphere ?? undefined,
+		osCylinder: pair.oi.prescription.cylinder ?? undefined,
+		osAxis: pair.oi.prescription.axis ?? undefined,
+		osAddition: pair.oi.prescription.addition ?? undefined,
+		dp: pair.od.dp ?? undefined,
+		npRight: pair.od.np ?? undefined,
+		npLeft: pair.oi.np ?? undefined,
 		altura: undefined,
 		treatmentAntiReflective: false,
 		treatmentBlueBlock: false,
 		treatmentPhotochromic: false,
 		treatmentOther: undefined,
-		recommendedLensType: (values.lensType as LensType) || LensType.MONOFOCAL,
+		recommendedLensType: (pair.lensType as LensType) || LensType.MONOFOCAL,
 		notes: undefined,
-		doctorName: values.doctorName,
+		doctorName: pair.doctorName || undefined,
 		isCurrent: true
-	};
+	} as PrescriptionFieldsPayload;
 }

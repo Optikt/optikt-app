@@ -79,7 +79,7 @@
 
 	<div class={mobileCard ? 'hidden lg:block' : 'block'}>
 		<div
-			class="relative overflow-visible rounded-xl border border-outline-variant/30 bg-surface-container-lowest"
+			class="relative overflow-x-auto rounded-xl border border-outline-variant/30 bg-surface-container-lowest"
 		>
 			<table class="w-full">
 				<thead>

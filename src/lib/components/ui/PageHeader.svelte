@@ -26,7 +26,7 @@
 			{backLabel}
 		</button>
 	{:else if backLabel && backHref}
-		<!-- eslint-disable-next-line svelte/valid-compile -->
+		<!-- FIXME: resolve tipado estrictamente por SvelteKit, no acepta string genérico -->
 		<a
 			href={resolve(backHref as '/')}
 			class="mb-3 flex items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-brand-blue"
@@ -37,16 +37,20 @@
 	{/if}
 
 	<header class="flex flex-row items-start justify-between gap-3 sm:gap-4">
-		<div>
-			{#if subtitle}
-				<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
-					{subtitle}
-				</p>
-			{/if}
-			<h1 class="font-heading m-0 text-xl font-bold text-brand-navy sm:text-2xl lg:text-3xl">
-				{title}
-			</h1>
-		</div>
+		{#if subtitle || title}
+			<div>
+				{#if subtitle}
+					<p class="mb-0 text-xs font-semibold tracking-widest text-slate-400 uppercase">
+						{subtitle}
+					</p>
+				{/if}
+				{#if title}
+					<h1 class="font-heading m-0 text-xl font-bold text-brand-navy sm:text-2xl lg:text-3xl">
+						{title}
+					</h1>
+				{/if}
+			</div>
+		{/if}
 
 		{#if actions}
 			<div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">

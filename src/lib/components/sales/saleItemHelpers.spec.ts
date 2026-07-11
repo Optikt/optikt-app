@@ -26,7 +26,13 @@ import {
 	step2ItemLineTotal,
 	type Step2PrescriptionConfirmation
 } from './saleItemHelpers';
-import { createEmptyLensPair, type SaleItemRow, type SelectedTreatment } from './newSaleTypes';
+import {
+	createEmptyLensPair,
+	type LensSaleItemRow,
+	type ProductSaleItemRow,
+	type SaleItemRow,
+	type SelectedTreatment
+} from './newSaleTypes';
 
 function makeLensItem(
 	overrides: Partial<LensCatalogItemWithRelations> = {}
@@ -67,7 +73,7 @@ function makeLensItem(
 	};
 }
 
-function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
+function makeConfirmationLensRow(id: string = 'row-1'): LensSaleItemRow {
 	const lensPair = createEmptyLensPair();
 	lensPair.catalogItemId = 'lens-1';
 
@@ -78,35 +84,58 @@ function makeConfirmationLensRow(id: string = 'row-1'): SaleItemRow {
 		quantity: 1,
 		lensPair,
 		treatments: [],
-		freeItem: null,
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+		shippingCostPending: false,
 		unitPrice: 30,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null
 	};
 }
 
+type RxOverrides = Partial<{
+	odSphere: number | null;
+	odCylinder: number | null;
+	odAxis: number | null;
+	odAddition: number | null;
+	oiSphere: number | null;
+	oiCylinder: number | null;
+	oiAxis: number | null;
+	oiAddition: number | null;
+	lensType: string;
+}>;
+
 function makeConfirmation(
-	overrides: Partial<Parameters<typeof buildStep2PrescriptionConfirmation>[2]> = {},
+	overrides: RxOverrides = {},
 	items: SaleItemRow[] = [makeConfirmationLensRow()],
 	lensItems: LensCatalogItemWithRelations[] = [makeLensItem()]
 ): Step2PrescriptionConfirmation {
-	return buildStep2PrescriptionConfirmation(items, lensItems, {
-		odSphere: '1.00',
-		odCylinder: '-0.50',
-		odAxis: '90',
-		odAddition: '',
-		oiSphere: '1.25',
-		oiCylinder: '-0.25',
-		oiAxis: '85',
-		oiAddition: '',
-		lensType: LensType.MONOFOCAL,
-		...overrides
-	});
+	const row = items.find((i) => i.kind === 'lens');
+	if (row?.lensPair) {
+		const pair = row.lensPair;
+		const toNum = (v: string | number | null | undefined): number | null => {
+			if (v == null) return null;
+			if (typeof v === 'number') return v;
+			const n = Number(v);
+			return isNaN(n) ? null : n;
+		};
+		pair.od.prescription = {
+			sphere: toNum(overrides.odSphere) ?? 1.0,
+			cylinder: toNum(overrides.odCylinder) ?? -0.5,
+			axis: toNum(overrides.odAxis) ?? 90,
+			addition: toNum(overrides.odAddition) ?? null
+		};
+		pair.oi.prescription = {
+			sphere: toNum(overrides.oiSphere) ?? 1.25,
+			cylinder: toNum(overrides.oiCylinder) ?? -0.25,
+			axis: toNum(overrides.oiAxis) ?? 85,
+			addition: toNum(overrides.oiAddition) ?? null
+		};
+		pair.lensType = overrides.lensType ?? LensType.MONOFOCAL;
+	}
+	return buildStep2PrescriptionConfirmation(items, lensItems);
 }
 
 describe('buildStep2PrescriptionConfirmation', () => {
@@ -168,7 +197,7 @@ describe('buildStep2PrescriptionConfirmation', () => {
 		});
 
 		const confirmation = makeConfirmation(
-			{ odSphere: '3.50', oiSphere: '0.75' },
+			{ odSphere: 3.5, oiSphere: 0.75 },
 			[makeConfirmationLensRow()],
 			[lens]
 		);
@@ -207,31 +236,15 @@ describe('buildStep2PrescriptionConfirmation', () => {
 					kind: 'product',
 					productId: 'product-1',
 					quantity: 1,
-					lensPair: null,
-					treatments: [],
-					freeItem: null,
 					unitPrice: 10,
 					discount: 0,
 					discountType: DiscountType.FIXED,
 					notes: '',
-					costOverrides: null,
-					shippingCostPending: false,
 					isIncludedAccessory: false,
 					includedAccessoryParentItemId: null
 				}
 			],
-			[makeLensItem()],
-			{
-				odSphere: '',
-				odCylinder: '',
-				odAxis: '',
-				odAddition: '',
-				oiSphere: '',
-				oiCylinder: '',
-				oiAxis: '',
-				oiAddition: '',
-				lensType: LensType.MONOFOCAL
-			}
+			[makeLensItem()]
 		);
 
 		expect(confirmation.hasLensItems).toBe(false);
@@ -239,21 +252,17 @@ describe('buildStep2PrescriptionConfirmation', () => {
 	});
 
 	it('accepts numeric prescription values without crashing while editing', () => {
-		const confirmation = buildStep2PrescriptionConfirmation(
-			[makeConfirmationLensRow()],
-			[makeLensItem()],
-			{
-				odSphere: 1,
-				odCylinder: -0.5,
-				odAxis: 90,
-				odAddition: 0,
-				oiSphere: '',
-				oiCylinder: '',
-				oiAxis: '',
-				oiAddition: '',
-				lensType: LensType.MONOFOCAL
-			}
-		);
+		const lensRow = makeConfirmationLensRow();
+		if (lensRow.lensPair) {
+			lensRow.lensPair.od.prescription = { sphere: 1, cylinder: -0.5, axis: 90, addition: null };
+			lensRow.lensPair.oi.prescription = {
+				sphere: null,
+				cylinder: null,
+				axis: null,
+				addition: null
+			};
+		}
+		const confirmation = buildStep2PrescriptionConfirmation([lensRow], [makeLensItem()]);
 
 		expect(confirmation.items[0]?.eyes[0]?.prescriptionSummary).toContain('Esf +1.00');
 	});
@@ -366,35 +375,23 @@ describe('getSnapshotTaxLabel', () => {
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
-function makeProductRow(overrides: Partial<SaleItemRow> = {}): SaleItemRow {
-	const {
-		freeItem,
-		isIncludedAccessory = false,
-		includedAccessoryParentItemId = null,
-		...rest
-	} = overrides;
-
+function makeProductRow(overrides: Partial<ProductSaleItemRow> = {}): ProductSaleItemRow {
 	return {
 		id: 'item-1',
 		kind: 'product',
 		productId: 'prod-1',
 		quantity: 1,
-		lensPair: null,
-		treatments: [],
 		unitPrice: 100,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
-		isIncludedAccessory,
-		includedAccessoryParentItemId,
-		...rest,
-		freeItem: freeItem ?? null
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		...overrides
 	};
 }
 
-function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
+function makeLensRow(treatments: SelectedTreatment[] = []): LensSaleItemRow {
 	const pair = createEmptyLensPair();
 	pair.catalogItemId = 'lens-1';
 	return {
@@ -404,13 +401,12 @@ function makeLensRow(treatments: SelectedTreatment[] = []): SaleItemRow {
 		quantity: 1,
 		lensPair: pair,
 		treatments,
-		freeItem: null,
+		costOverrides: { baseCost: 0, mountingPrice: 0, shippingPrice: 0 },
+		shippingCostPending: false,
 		unitPrice: 50,
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: '',
-		costOverrides: null,
-		shippingCostPending: false,
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null
 	};
@@ -514,8 +510,8 @@ describe('step2ItemLineTotal', () => {
 
 describe('treatmentsTotal', () => {
 	// This function is defined inline in Step 2 and Step 3 - test the logic here
-	function treatmentsTotal(item: SaleItemRow): number {
-		return item.treatments.reduce((sum, t) => sum + t.price, 0);
+	function treatmentsTotal(item: LensSaleItemRow): number {
+		return item.treatments.reduce((sum: number, t: { price: number }) => sum + t.price, 0);
 	}
 
 	it('returns 0 when no treatments', () => {
@@ -538,7 +534,7 @@ describe('treatmentsTotal', () => {
 
 describe('subtotal (Step 3)', () => {
 	function subtotal(items: SaleItemRow[]): number {
-		return items.reduce((acc, item) => acc + itemLineTotal(item), 0);
+		return items.reduce((acc: number, item) => acc + itemLineTotal(item), 0);
 	}
 
 	it('computes subtotal with product only', () => {

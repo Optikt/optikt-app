@@ -5,7 +5,7 @@
 
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import type { SaleItemRow } from './newSaleTypes';
+import type { SaleItemRow, LensSaleItemRow, FreeSaleItemRow, LensPairEntry } from './newSaleTypes';
 import { LensType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
@@ -29,8 +29,8 @@ export function findLensItem(
 	item: SaleItemRow,
 	lensItems: LensCatalogItemWithRelations[]
 ): LensCatalogItemWithRelations | undefined {
-	if (item.kind !== 'lens' || !item.lensPair?.catalogItemId) return undefined;
-	return lensItems.find((l) => l.id === item.lensPair!.catalogItemId);
+	if (item.kind !== 'lens' || !item.lensPair.catalogItemId) return undefined;
+	return lensItems.find((l) => l.id === item.lensPair.catalogItemId);
 }
 
 export function getItemName(
@@ -128,6 +128,10 @@ export interface PrescriptionFieldErrors {
 	oiCylinder?: string;
 	oiAxis?: string;
 	oiAddition?: string;
+	odDp?: string;
+	oiDp?: string;
+	odNp?: string;
+	oiNp?: string;
 	doctorName?: string;
 }
 
@@ -249,12 +253,120 @@ export function getRequiredEyes(items: SaleItemRow[]): { needsOd: boolean; needs
 	let needsOd = false;
 	let needsOi = false;
 	for (const item of items) {
-		if (item.kind === 'lens' && item.lensPair) {
+		if (item.kind === 'lens') {
 			if (item.lensPair.od.enabled) needsOd = true;
 			if (item.lensPair.oi.enabled) needsOi = true;
 		}
 	}
 	return { needsOd, needsOi };
+}
+
+function validateNumericEyeFields(
+	sphere: number | null,
+	cylinder: number | null,
+	axis: number | null,
+	addition: number | null,
+	requiresAddition: boolean
+): Record<string, string> {
+	const errs: Record<string, string> = {};
+	if (sphere === null && cylinder === null) {
+		errs.sphere = 'Esfera o cilindro requerido';
+		errs.cylinder = 'Esfera o cilindro requerido';
+	}
+	if (cylinder !== null && cylinder > 0) {
+		errs.cylinder = 'Cilindro debe ser negativo o cero';
+	}
+	if (cylinder !== null && cylinder !== 0 && axis === null) {
+		errs.axis = 'Eje requerido con cilindro';
+	}
+	if (axis !== null && (axis < 0 || axis > 180 || !Number.isInteger(axis))) {
+		errs.axis = 'Eje debe ser entero entre 0 y 180';
+	}
+	if (requiresAddition) {
+		if (addition === null || addition === 0) {
+			errs.addition = 'Adición requerida';
+		}
+	}
+	return errs;
+}
+
+/**
+ * Validate a single lens pair's prescription fields.
+ * Returns empty object when valid.
+ */
+export function validateLensPair(pair: LensPairEntry): PrescriptionFieldErrors {
+	const errors: PrescriptionFieldErrors = {};
+	const requiresAddition = pair.lensType !== LensType.MONOFOCAL;
+	const needsPrescription = pair.od.enabled || pair.oi.enabled;
+	if (needsPrescription && (!pair.doctorName || pair.doctorName.trim() === '')) {
+		errors.doctorName = 'Doctor es requerido';
+	}
+	if (pair.od.enabled) {
+		const od = validateNumericEyeFields(
+			pair.od.prescription.sphere,
+			pair.od.prescription.cylinder,
+			pair.od.prescription.axis,
+			pair.od.prescription.addition,
+			requiresAddition
+		);
+		if (od.sphere) errors.odSphere = od.sphere;
+		if (od.cylinder) errors.odCylinder = od.cylinder;
+		if (od.axis) errors.odAxis = od.axis;
+		if (od.addition) errors.odAddition = od.addition;
+		if (pair.od.dp != null) {
+			if (!Number.isInteger(pair.od.dp)) {
+				errors.odDp = 'DP debe ser número entero';
+			} else if (pair.od.dp < 10 || pair.od.dp > 80) {
+				errors.odDp = 'DP debe ser 10-80';
+			}
+		}
+		if (pair.od.np != null) {
+			if (!Number.isInteger(pair.od.np)) {
+				errors.odNp = 'NP debe ser número entero';
+			} else if (pair.od.np < 10 || pair.od.np > 80) {
+				errors.odNp = 'NP debe ser 10-80';
+			}
+		}
+	}
+	if (pair.oi.enabled) {
+		const oi = validateNumericEyeFields(
+			pair.oi.prescription.sphere,
+			pair.oi.prescription.cylinder,
+			pair.oi.prescription.axis,
+			pair.oi.prescription.addition,
+			requiresAddition
+		);
+		if (oi.sphere) errors.oiSphere = oi.sphere;
+		if (oi.cylinder) errors.oiCylinder = oi.cylinder;
+		if (oi.axis) errors.oiAxis = oi.axis;
+		if (oi.addition) errors.oiAddition = oi.addition;
+		if (pair.oi.dp != null) {
+			if (!Number.isInteger(pair.oi.dp)) {
+				errors.oiDp = 'DP debe ser número entero';
+			} else if (pair.oi.dp < 10 || pair.oi.dp > 80) {
+				errors.oiDp = 'DP debe ser 10-80';
+			}
+		}
+		if (pair.oi.np != null) {
+			if (!Number.isInteger(pair.oi.np)) {
+				errors.oiNp = 'NP debe ser número entero';
+			} else if (pair.oi.np < 10 || pair.oi.np > 80) {
+				errors.oiNp = 'NP debe ser 10-80';
+			}
+		}
+	}
+	return errors;
+}
+
+/** Validate a single lens item's prescription fields. Returns empty object when valid. */
+export function validateLensPrescription(item: SaleItemRow): PrescriptionFieldErrors {
+	if (item.kind !== 'lens') return {};
+	return validateLensPair(item.lensPair);
+}
+
+export function hasLensPrescriptionErrors(item: SaleItemRow): boolean {
+	if (item.kind !== 'lens') return false;
+	return Object.keys(validateLensPrescription(item)).length > 0;
 }
 
 function validateEyeFields(
@@ -353,6 +465,10 @@ export interface LensConfirmationEyeResult {
 	eye: LensConfirmationEye;
 	status: LensConfirmationEyeStatus;
 	prescriptionSummary: string;
+	sphere: number | null;
+	cylinder: number | null;
+	axis: number | null;
+	addition: number | null;
 }
 
 export interface LensConfirmationItemResult {
@@ -387,18 +503,6 @@ export interface LensTypeSuggestionState {
 	catalogLensTypes: string[];
 	hasMixedCatalogLensTypes: boolean;
 	conflictingPrescriptionLensType: string | null;
-}
-
-interface Step2PrescriptionValues {
-	odSphere: string | number | null | undefined;
-	odCylinder: string | number | null | undefined;
-	odAxis: string | number | null | undefined;
-	odAddition: string | number | null | undefined;
-	oiSphere: string | number | null | undefined;
-	oiCylinder: string | number | null | undefined;
-	oiAxis: string | number | null | undefined;
-	oiAddition: string | number | null | undefined;
-	lensType: string;
 }
 
 function parseNullablePrescriptionValue(value: string | number | null | undefined): number | null {
@@ -454,7 +558,7 @@ function buildEyePrescriptionSummary(
 		parts.push(`Add ${formatSignedOpticalValue(addition)}`);
 	}
 
-	return parts.join(' · ');
+	return parts.join(' / ');
 }
 
 function isWithinOpticalRange(
@@ -491,84 +595,103 @@ function buildLensConfirmationEyeResult(
 		return {
 			eye,
 			status: 'lab-review',
-			prescriptionSummary
+			prescriptionSummary,
+			sphere,
+			cylinder,
+			axis,
+			addition
 		};
 	}
 
-	const fitsAnyRange = ranges.some(
-		(range) =>
-			isWithinOpticalRange(sphere, range.sphereMin, range.sphereMax) &&
-			isWithinOpticalRange(cylinder, range.cylinderMin ?? null, range.cylinderMax ?? null) &&
-			isWithinOpticalRange(addition, range.additionMin ?? null, range.additionMax ?? null)
-	);
+	const fitsAnyRange = ranges.some((range) => {
+		const sphereOk = isWithinOpticalRange(sphere, range.sphereMin, range.sphereMax);
+
+		const cylinderOk =
+			range.cylinderMin === null && range.cylinderMax === null
+				? cylinder === null
+				: isWithinOpticalRange(cylinder, range.cylinderMin ?? null, range.cylinderMax ?? null);
+
+		const additionOk =
+			range.additionMin === null && range.additionMax === null
+				? addition === null
+				: isWithinOpticalRange(addition, range.additionMin ?? null, range.additionMax ?? null);
+
+		return sphereOk && cylinderOk && additionOk;
+	});
 
 	return {
 		eye,
 		status: fitsAnyRange ? 'in-range' : 'out-of-range',
-		prescriptionSummary
+		prescriptionSummary,
+		sphere,
+		cylinder,
+		axis,
+		addition
 	};
 }
 
 export function buildStep2PrescriptionConfirmation(
 	items: SaleItemRow[],
-	lensItems: LensCatalogItemWithRelations[],
-	values: Step2PrescriptionValues
+	lensItems: LensCatalogItemWithRelations[]
 ): Step2PrescriptionConfirmation {
-	const lensResults = items
-		.filter((item) => item.kind === 'lens' && (item.lensPair?.catalogItemId ?? '') !== '')
-		.map((item) => {
-			const lens = findLensItem(item, lensItems);
-			const ranges = lens?.ranges ?? [];
-			const eyes = [
-				buildLensConfirmationEyeResult(
-					'OD',
-					item.lensPair?.od.enabled ?? false,
-					{
-						sphere: values.odSphere,
-						cylinder: values.odCylinder,
-						axis: values.odAxis,
-						addition: values.odAddition
-					},
-					ranges
-				),
-				buildLensConfirmationEyeResult(
-					'OI',
-					item.lensPair?.oi.enabled ?? false,
-					{
-						sphere: values.oiSphere,
-						cylinder: values.oiCylinder,
-						axis: values.oiAxis,
-						addition: values.oiAddition
-					},
-					ranges
-				)
-			].filter((result): result is LensConfirmationEyeResult => result !== null);
+	const lensResults = (
+		items.filter(
+			(item): item is LensSaleItemRow => item.kind === 'lens' && item.lensPair.catalogItemId !== ''
+		) as LensSaleItemRow[]
+	).map((item) => {
+		const lens = findLensItem(item, lensItems);
+		const ranges = lens?.ranges ?? [];
+		const pair = item.lensPair;
+		const eyes = [
+			buildLensConfirmationEyeResult(
+				'OD',
+				pair.od.enabled,
+				{
+					sphere: pair.od.prescription.sphere,
+					cylinder: pair.od.prescription.cylinder,
+					axis: pair.od.prescription.axis,
+					addition: pair.od.prescription.addition
+				},
+				ranges
+			),
+			buildLensConfirmationEyeResult(
+				'OI',
+				pair.oi.enabled,
+				{
+					sphere: pair.oi.prescription.sphere,
+					cylinder: pair.oi.prescription.cylinder,
+					axis: pair.oi.prescription.axis,
+					addition: pair.oi.prescription.addition
+				},
+				ranges
+			)
+		].filter((result): result is LensConfirmationEyeResult => result !== null);
 
-			const rangeWarnings = eyes
-				.filter((eye) => eye.status === 'out-of-range')
-				.map((eye) => `${eye.eye} (${eye.prescriptionSummary}) fuera del rango óptico del cristal`);
+		const rangeWarnings = eyes
+			.filter((eye) => eye.status === 'out-of-range')
+			.map((eye) => `${eye.eye} (${eye.prescriptionSummary}) fuera del rango óptico del cristal`);
 
-			return {
-				itemId: item.id,
-				lensName: lens?.name ?? 'Lente por seleccionar',
-				catalogLensType: lens?.type ?? '',
-				prescriptionLensType: values.lensType,
-				typeMatches: lens?.type === values.lensType,
-				hasRanges: ranges.length > 0,
-				eyes,
-				rangeWarnings
-			};
-		});
-
-	const freeResults: FreeItemConfirmationResult[] = items
-		.filter((item) => item.kind === 'free' && item.freeItem !== null)
-		.map((item) => ({
+		return {
 			itemId: item.id,
-			categoryLabel: getFreeItemCategoryLabel(item.freeItem!.category),
-			description: item.freeItem!.description,
-			unitPrice: item.unitPrice,
-			hasCost: item.freeItem!.unitCost !== null && item.freeItem!.unitCost > 0
-		}));
+			lensName: lens?.name ?? 'Lente por seleccionar',
+			catalogLensType: lens?.type ?? '',
+			prescriptionLensType: pair.lensType,
+			typeMatches: lens?.type === pair.lensType,
+			hasRanges: ranges.length > 0,
+			eyes,
+			rangeWarnings
+		};
+	});
+
+	const freeResults: FreeItemConfirmationResult[] = (
+		items.filter((item): item is FreeSaleItemRow => item.kind === 'free') as FreeSaleItemRow[]
+	).map((item) => ({
+		itemId: item.id,
+		categoryLabel: getFreeItemCategoryLabel(item.freeItem.category),
+		description: item.freeItem.description,
+		unitPrice: item.unitPrice,
+		hasCost: item.freeItem.unitCost !== null && item.freeItem.unitCost > 0
+	}));
 
 	return {
 		hasLensItems: lensResults.length > 0,
@@ -594,7 +717,7 @@ export function getLensTypeSuggestionState(
 	const catalogLensTypes = Array.from(
 		new Set(
 			items
-				.filter((item) => item.kind === 'lens' && (item.lensPair?.catalogItemId ?? '') !== '')
+				.filter((item) => item.kind === 'lens' && item.lensPair.catalogItemId !== '')
 				.map((item) => findLensItem(item, lensItems)?.type ?? null)
 				.filter((type): type is string => Boolean(type))
 		)
@@ -621,7 +744,7 @@ export function getLensTypeSuggestionState(
 
 /** Get the number of enabled eyes for a lens item. */
 export function getEnabledEyeCount(item: SaleItemRow): number {
-	if (!item.lensPair) return 0;
+	if (item.kind !== 'lens') return 0;
 	return (item.lensPair.od.enabled ? 1 : 0) + (item.lensPair.oi.enabled ? 1 : 0);
 }
 
@@ -649,7 +772,7 @@ export function buildTaxItemsFromWizard(
 				taxRate: defaultTaxRate
 			});
 		} else if (item.kind === 'lens') {
-			const lens = lensItems.find((l) => l.id === item.lensPair?.catalogItemId);
+			const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
 			result.push({
 				unitPrice: item.unitPrice,
 				quantity: 1,

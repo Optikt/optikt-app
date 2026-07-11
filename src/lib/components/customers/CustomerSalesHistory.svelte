@@ -158,9 +158,8 @@
 						{/if}
 
 						<!-- Link to full sale -->
-						<!-- eslint-disable-next-line svelte/valid-compile -->
 						<a
-							href={resolve(`/sales/${sale.id}` as '/')}
+							href={resolve(`/sales/${sale.id}`)}
 							class="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-blue transition-colors hover:text-brand-blue/80"
 						>
 							Ver venta completa

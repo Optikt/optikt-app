@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { Component } from 'svelte';
-	import type { ResolvedPathname } from '$app/types';
+	import type { StaticRoute } from '$lib/shared/routes';
 
 	let {
 		label,
@@ -8,15 +9,13 @@
 		icon: Icon
 	}: {
 		label: string;
-		href: ResolvedPathname;
+		href: StaticRoute;
 		icon: Component;
 	} = $props();
 </script>
 
-<!-- disable rule here since we already resolved the path name after passing it -->
-<!-- eslint-disable svelte/no-navigation-without-resolve -->
 <a
-	{href}
+	href={resolve(href)}
 	class="flex min-h-[5.25rem] flex-col items-center justify-center gap-2.5 rounded-xl bg-white/10 p-4 no-underline transition-all duration-150 hover:bg-white/20"
 >
 	<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">

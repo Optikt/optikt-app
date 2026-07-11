@@ -54,7 +54,7 @@
 
 <svelte:document onclick={handleClickOutside} />
 
-<header class="sticky top-0 z-50 border-b border-slate-200 bg-brand-navy print:hidden">
+<header class="sticky top-0 z-50 bg-brand-navy print:hidden">
 	<div class="flex min-h-14 items-center gap-3 px-4 py-2 sm:px-6">
 		<button
 			type="button"

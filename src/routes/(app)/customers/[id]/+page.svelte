@@ -159,9 +159,8 @@
 
 <div class="p-6">
 	<!-- Back link -->
-	<!-- eslint-disable-next-line svelte/valid-compile -->
 	<a
-		href={resolve('/customers' as '/')}
+		href={resolve('/customers')}
 		class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:text-brand-blue"
 	>
 		<ArrowLeft class="h-4 w-4" />

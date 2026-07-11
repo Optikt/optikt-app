@@ -20,6 +20,7 @@ export { default as RifInput } from './RifInput.svelte';
 export { default as WhatsAppInput } from './WhatsAppInput.svelte';
 export { default as InstagramInput } from './InstagramInput.svelte';
 export { default as IdInput } from './IdInput.svelte';
+export { default as Disclosure } from './Disclosure.svelte';
 export { default as CreatableSelect } from './CreatableSelect.svelte';
 export { default as BaseSelect } from './BaseSelect.svelte';
 export { default as SelectInput } from './SelectInput.svelte';

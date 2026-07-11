@@ -7,24 +7,19 @@
 	import { getErrorMessage, dateToISODateString } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import { LensType } from '$lib/shared/enums/lensTypes';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { PrescriptionValues } from '$lib/components/sales/PrescriptionInput.svelte';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';
+	import { setContext } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
-	import {
-		buildStep2PrescriptionConfirmation,
-		getRequiredEyes,
-		validatePrescriptionFields,
-		hasPrescriptionErrors
-	} from '$lib/components/sales/saleItemHelpers';
+	import { CATALOG_KEY } from '$lib/components/sales/wizardContext';
+	import { buildStep2PrescriptionConfirmation } from '$lib/components/sales/saleItemHelpers';
 	import { buildQuoteItemsFromWizard } from '$lib/components/sales/wizardSubmission';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-	import SaleStep1Info from '$lib/components/sales/SaleStep1Info.svelte';
-	import SaleStep2Items from '$lib/components/sales/SaleStep2Items.svelte';
+	import SaleStep1Info from '$lib/components/sales/step1/SaleStep1Info.svelte';
+	import SaleStep2Items from '$lib/components/sales/step2/SaleStep2Items.svelte';
 	import PrescriptionValidationModal from '$lib/components/sales/PrescriptionValidationModal.svelte';
 	import QuoteStep3Summary from './QuoteStep3Summary.svelte';
 
@@ -43,6 +38,15 @@
 		nextQuoteNumber,
 		defaultTaxRate
 	}: Props = $props();
+
+	setContext(CATALOG_KEY, {
+		get products() {
+			return products;
+		},
+		get lensItems() {
+			return lensItems;
+		}
+	});
 
 	// ============================================================================
 	// WIZARD STATE
@@ -143,23 +147,6 @@
 	});
 
 	// ============================================================================
-	// SHARED PRESCRIPTION STATE
-	// ============================================================================
-
-	let prescriptionValues = $state<PrescriptionValues>({
-		odSphere: '',
-		odCylinder: '',
-		odAxis: '',
-		odAddition: '',
-		oiSphere: '',
-		oiCylinder: '',
-		oiAxis: '',
-		oiAddition: '',
-		lensType: LensType.MONOFOCAL,
-		doctorName: ''
-	});
-
-	// ============================================================================
 	// ITEMS STATE
 	// ============================================================================
 
@@ -167,7 +154,7 @@
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
 	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems, prescriptionValues)
+		buildStep2PrescriptionConfirmation(items, lensItems)
 	);
 
 	// ============================================================================
@@ -199,15 +186,7 @@
 			})
 	);
 
-	const requiredEyes = $derived(getRequiredEyes(items));
-
-	const rxErrors = $derived(
-		validatePrescriptionFields(prescriptionValues, requiredEyes.needsOd, requiredEyes.needsOi)
-	);
-
-	const hasInvalidPrescription = $derived(hasPrescriptionErrors(rxErrors));
-
-	const step2Valid = $derived(itemsValid && !hasInvalidPrescription);
+	const step2Valid = $derived(itemsValid);
 
 	const canSubmit = $derived(step2Valid && !submitting);
 
@@ -274,26 +253,8 @@
 			bind:saleDate={quoteDate}
 			bind:secondaryDate={validUntil}
 			bind:notes
-			entityPanelLabel="Detalles del presupuesto"
-			entityNumberLabel="Número de presupuesto"
 			entityNumberValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
-			primaryDateLabel="Fecha del presupuesto"
-			primaryDateHelp="Define la fecha base del presupuesto para su seguimiento comercial."
-			secondaryDateLabel="Válido hasta"
-			customerHint="Puedes asociar un cliente ahora o continuar sin cliente y asignarlo después, antes de convertir el presupuesto en venta."
 			stepTitle="Prepara la información base del presupuesto"
-			stepDescription="Usa la misma búsqueda y registro inline de ventas para asociar un cliente, definir vigencia y dejar contexto comercial antes de cargar productos."
-			notesLabel="Nota del presupuesto"
-			notesDescription="Deja observaciones comerciales, condiciones de validez o contexto útil para quien convierta este presupuesto en venta."
-			notesPlaceholder="Ej: precio sujeto a cambio, vigencia limitada, observaciones del cliente..."
-			notesRows={4}
-			workflowName="presupuesto"
-			helperDefaultCopy="Busca por cédula o RIF para reutilizar un cliente existente. Si aún no existe, puedes registrarlo inline o dejar el presupuesto sin cliente y asignarlo más adelante."
-			creatingCardValue="Cliente para presupuesto"
-			creatingGuidePoints={[
-				'Registra datos reales para que luego la conversión a venta no requiera correcciones manuales.',
-				'Si todavía no tienes el cliente confirmado, puedes continuar y asociarlo antes de convertir el presupuesto.'
-			]}
 			summaryLabel="Presupuesto"
 			summaryValue={`P-${String(nextQuoteNumber ?? 0).padStart(4, '0')}`}
 			valid={true}
@@ -307,21 +268,15 @@
 		<SaleStep2Items
 			bind:items
 			bind:includedAccessoryMap
-			bind:prescriptionValues
 			{customerPrescription}
 			{selectedCustomer}
 			{newCustomer}
-			{products}
-			{lensItems}
-			nextOrderNumber={nextQuoteNumber}
-			entityNumberLabel="Presupuesto #"
 			customerFallbackName="Presupuesto sin cliente"
 			customerFallbackDocument="Cliente opcional"
 			newCustomerContextLabel="Cliente nuevo para este presupuesto"
 			selectedCustomerContextLabel="Cliente asociado al presupuesto"
 			noCustomerContextLabel="Presupuesto sin cliente"
 			itemsSectionTitle="Artículos del presupuesto"
-			prescriptionSectionTitle="Parámetros ópticos del presupuesto"
 			onCancel={goToQuotes}
 			valid={step2Valid}
 			onnext={nextStep}
@@ -335,15 +290,10 @@
 			{items}
 			{selectedCustomer}
 			{newCustomer}
-			{quoteDate}
 			bind:discount
 			bind:discountType
 			{notes}
-			{validUntil}
-			{nextQuoteNumber}
 			{defaultTaxRate}
-			{products}
-			{lensItems}
 			{submitting}
 			{canSubmit}
 			onprev={prevStep}
@@ -354,7 +304,6 @@
 	<PrescriptionValidationModal
 		bind:open={showPrescriptionValidationModal}
 		confirmation={step2PrescriptionConfirmation}
-		workflowLabel="presupuesto"
 		onCancel={handlePrescriptionValidationCancel}
 		onConfirm={handlePrescriptionValidationConfirm}
 	/>

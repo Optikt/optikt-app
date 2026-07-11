@@ -311,9 +311,11 @@
 									</p>
 								</div>
 								<p class="text-[9.5px] text-slate-500">
-									{formatPaymentReceiptDate(payment.paymentDate)} - {formatPaymentBcvAmount(
-										payment
-									)}
+									{formatPaymentReceiptDate(payment.paymentDate)}
+									{#if payment.reference}
+										| Ref: {payment.reference.slice(-6)}
+									{/if}
+									| {formatPaymentBcvAmount(payment)}
 								</p>
 							</div>
 						{/each}

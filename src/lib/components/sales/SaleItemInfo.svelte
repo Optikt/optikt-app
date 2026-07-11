@@ -1,0 +1,94 @@
+<script lang="ts">
+	import { getContext } from 'svelte';
+	import { Package, Eye } from '@lucide/svelte';
+	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { findProduct, findLensItem } from './saleItemHelpers';
+	import type { SaleItemRow } from './newSaleTypes';
+	import { CATALOG_KEY, type CatalogData } from './wizardContext';
+	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
+
+	interface Props {
+		item: SaleItemRow;
+		showAccessoryBadge?: boolean;
+	}
+
+	let { item, showAccessoryBadge = false }: Props = $props();
+
+	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
+
+	const isLensKind = $derived(item.kind === 'lens');
+	const isProductKind = $derived(item.kind === 'product');
+
+	const product = $derived(item.kind === 'product' ? findProduct(item, products) : undefined);
+	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);
+</script>
+
+<div class="flex w-2/3 min-w-0 flex-1 items-start gap-2.5">
+	<div
+		class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {isLensKind
+			? 'bg-brand-blue/15 text-brand-blue'
+			: 'bg-surface-container-high text-brand-navy'}"
+	>
+		{#if isLensKind}
+			<Eye class="h-3.5 w-3.5" />
+		{:else}
+			<Package class="h-3.5 w-3.5" />
+		{/if}
+	</div>
+	<div class="w-full min-w-0">
+		<div class="flex w-full flex-col flex-wrap items-start gap-y-1">
+			<span class="truncate text-sm font-semibold text-brand-navy">
+				{lens?.name ?? product?.name ?? 'Ítem libre'}
+			</span>
+			<div class="flex items-center gap-2">
+				{#if isProductKind && product}
+					{#if product.description}
+						<p class="mt0.5 truncate text-[11px] text-on-surface-variant">
+							{product.description}
+						</p>
+					{/if}
+					{#if product.brand}
+						<span
+							class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-on-surface-variant uppercase"
+						>
+							{product.brand.name}
+						</span>
+					{/if}
+				{/if}
+
+				{#if isLensKind && lens}
+					{#if lens.supplier?.name}
+						<p class="truncate text-[12px] font-semibold text-on-surface-variant">
+							{lens.supplier.name}
+						</p>
+					{/if}
+					<span
+						class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-blue uppercase"
+					>
+						{getLensSourceLabel(lens.source)}
+					</span>
+					<span
+						class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant uppercase"
+					>
+						{getLensTypeLabel(lens.type)}
+					</span>
+				{/if}
+
+				{#if showAccessoryBadge}
+					<span
+						class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 uppercase"
+					>
+						Accesorio
+					</span>
+				{/if}
+			</div>
+
+			{#if item.kind === 'lens'}
+				<div>
+					<EyeSummary eye="OI" lensEntry={item.lensPair.oi} />
+					<EyeSummary eye="OD" lensEntry={item.lensPair.od} />
+				</div>
+			{/if}
+		</div>
+	</div>
+</div>

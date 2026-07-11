@@ -22,6 +22,8 @@
 	import { canOperate, isAdminRole } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
 	import { resolve } from '$app/paths';
+	import type { LucideIcon } from '$lib/types/index.js';
+	import type { StaticRoute } from '$lib/shared/routes.js';
 
 	let { data } = $props();
 
@@ -62,27 +64,30 @@
 		}
 	]);
 
-	const actions = $derived.by(() => {
+	type QuickAction = {
+		label: string;
+		href: StaticRoute;
+		icon: LucideIcon;
+	};
+
+	const actions: QuickAction[] = $derived.by(() => {
 		if (!canAct) {
 			return [
-				{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye },
-				{ label: 'Ventas', href: resolve('/sales'), icon: ShoppingCart },
-				{ label: 'Presupuestos', href: resolve('/quotes'), icon: FileText },
-				{ label: 'Productos', href: resolve('/products'), icon: ShoppingBag }
+				{ label: 'Catálogo', href: '/lenses', icon: Eye },
+				{ label: 'Ventas', href: '/sales', icon: ShoppingCart },
+				{ label: 'Presupuestos', href: '/quotes', icon: FileText },
+				{ label: 'Productos', href: '/products', icon: ShoppingBag }
 			];
 		}
 
-		const next = [{ label: 'Catálogo', href: resolve('/lenses'), icon: Eye }];
-
-		next.unshift({ label: 'Nuevo Cliente', href: resolve('/customers'), icon: UserPlus });
-		next.splice(1, 0, {
-			label: 'Nuevo Presupuesto',
-			href: resolve('/quotes/new'),
-			icon: FilePlus
-		});
+		const next: QuickAction[] = [
+			{ label: 'Nuevo Cliente', href: '/customers', icon: UserPlus },
+			{ label: 'Nuevo Presupuesto', href: '/quotes/new', icon: FilePlus },
+			{ label: 'Catálogo', href: '/lenses', icon: Eye }
+		];
 
 		if (isAdmin) {
-			next.push({ label: 'Reportes', href: resolve('/reports'), icon: ChartColumn });
+			next.push({ label: 'Reportes', href: '/reports', icon: ChartColumn });
 		}
 
 		return next;

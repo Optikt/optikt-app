@@ -225,6 +225,7 @@
 	}
 
 	function navigateToCancelHref() {
+		// FIXME: resolve tipado estrictamente por SvelteKit, no acepta string genérico
 		goto(resolve(cancelHref as '/'));
 	}
 

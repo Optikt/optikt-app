@@ -1,262 +1,190 @@
 <script lang="ts">
-	import { Modal } from 'flowbite-svelte';
-	import { AlertTriangle, CheckCircle2, CircleAlert, FlaskConical, Sparkles } from '@lucide/svelte';
+	import { X, CircleCheck, CircleAlert, AlertTriangle, Sparkles } from '@lucide/svelte';
+	import { fade, fly } from 'svelte/transition';
 	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
-	import type {
-		LensConfirmationEyeResult,
-		LensConfirmationItemResult,
-		Step2PrescriptionConfirmation
-	} from './saleItemHelpers';
+	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
+	import type { Step2PrescriptionConfirmation } from './saleItemHelpers';
 
 	interface Props {
 		open: boolean;
 		confirmation: Step2PrescriptionConfirmation;
-		workflowLabel?: string;
 		onConfirm: () => void;
 		onCancel: () => void;
 	}
 
-	let {
-		open = $bindable(),
-		confirmation,
-		workflowLabel = 'operación',
-		onConfirm,
-		onCancel
-	}: Props = $props();
+	let { open = $bindable(), confirmation, onConfirm, onCancel }: Props = $props();
 
-	function handleClose() {
-		onCancel();
+	const hasRangeWarnings = $derived(
+		confirmation.items.some((item) => item.eyes.some((eye) => eye.status !== 'in-range'))
+	);
+
+	function getEyeColor(status: string): string {
+		if (status === 'in-range') return 'text-emerald-600';
+		if (status === 'out-of-range') return 'text-amber-600';
+		return 'text-slate-500';
 	}
 
-	function handleConfirm() {
-		onConfirm();
-	}
-
-	function getTypeStatusClasses(item: LensConfirmationItemResult): string {
-		return item.typeMatches
-			? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-			: 'border-amber-200 bg-amber-50 text-amber-950';
-	}
-
-	function getTypeStatusLabel(item: LensConfirmationItemResult): string {
-		return item.typeMatches ? 'Coincide con la prescripción' : 'No coincide con la prescripción';
-	}
-
-	function getEyeStatusClasses(eye: LensConfirmationEyeResult): string {
-		if (eye.status === 'in-range') {
-			return 'border-emerald-200 bg-emerald-50 text-emerald-900';
-		}
-
-		if (eye.status === 'out-of-range') {
-			return 'border-amber-200 bg-amber-50 text-amber-950';
-		}
-
-		return 'border-slate-200 bg-slate-100 text-slate-800';
-	}
-
-	function getEyeStatusLabel(eye: LensConfirmationEyeResult): string {
-		if (eye.status === 'in-range') return 'Dentro de rango';
-		if (eye.status === 'out-of-range') return 'Revisar rango';
+	function getEyeLabel(status: string): string {
+		if (status === 'in-range') return 'En rango';
+		if (status === 'out-of-range') return 'Revisar rango';
 		return 'Consultar laboratorio';
 	}
+
+	$effect(() => {
+		if (!open) return;
+		function onKeyDown(e: KeyboardEvent) {
+			if (e.key === 'Escape') onCancel();
+		}
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	});
 </script>
 
-<Modal bind:open size="lg" title="Confirmar revisión óptica" permanent onclose={handleClose}>
-	<div class="space-y-4">
-		<div class="rounded-[1.25rem] border border-slate-200 bg-surface-container-low px-4 py-4">
-			<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-				Antes del resumen
-			</p>
-			<h3 class="mt-2 text-lg font-semibold text-brand-navy">
-				Haz una revisión final antes de continuar
-			</h3>
-			<p class="mt-2 text-sm leading-6 text-on-surface-variant">
-				{#if confirmation.hasLensItems && confirmation.freeItems.length > 0}
-					Confirma que la fórmula y los ítems libres ingresados para esta {workflowLabel} son correctos
-					antes de continuar al resumen.
-				{:else if confirmation.hasLensItems}
-					Confirma que la fórmula ingresada para esta {workflowLabel} corresponde al cristal seleccionado
-					y que encaja con el catálogo cuando existan rangos ópticos cargados.
-				{:else if confirmation.freeItems.length > 0}
-					Esta {workflowLabel} incluye ítems libres. Revisa que la descripción y el precio estén correctos
-					antes de continuar.
+{#if open}
+	<div class="fixed inset-0 z-50 flex items-center justify-center">
+		<div
+			class="fixed inset-0 bg-black/50"
+			transition:fade={{ duration: 200 }}
+			role="presentation"
+			onclick={onCancel}
+		></div>
+
+		<div
+			class="relative z-10 mx-4 w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+			transition:fly={{ duration: 200, y: 24 }}
+		>
+			<!-- Header -->
+			<div class="flex items-center justify-between border-b border-slate-200 px-6 py-3">
+				<h3 class="text-lg font-semibold text-brand-navy">Revisión óptica</h3>
+				<button
+					type="button"
+					onclick={onCancel}
+					class="rounded-lg p-1 text-slate-400 transition-colors hover:bg-surface-container-high hover:text-slate-600"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			</div>
+
+			<!-- Body -->
+			<div class="max-h-[55vh] overflow-y-auto px-4 py-2">
+				{#if !confirmation.hasLensItems}
+					<div
+						class="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-base text-emerald-700"
+					>
+						<CircleCheck class="h-4 w-4 shrink-0" />
+						Sin validación óptica pendiente
+					</div>
 				{:else}
-					Esta {workflowLabel} no incluye cristales. No hay validación óptica pendiente, pero dejamos
-					esta confirmación antes de pasar al resumen.
-				{/if}
-			</p>
-		</div>
-
-		{#if confirmation.hasMultipleLenses}
-			<div class="rounded-[1rem] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
-				<div class="flex items-start gap-3">
-					<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
-					<div>
-						<p class="text-sm font-semibold">Múltiples lentes en una misma operación</p>
-						<p class="mt-1 text-sm leading-6 text-amber-900">
-							No es el caso habitual. Normalmente conviene separar cada par en ventas o presupuestos
-							distintos, aunque puedes continuar si este caso lo requiere.
-						</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		{#if !confirmation.hasLensItems}
-			<div class="rounded-[1rem] border border-slate-200 bg-white px-4 py-4 shadow-sm">
-				<div class="flex items-start gap-3">
-					<CheckCircle2 class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-					<div>
-						<p class="text-sm font-semibold text-brand-navy">Sin validación óptica pendiente</p>
-						<p class="mt-1 text-sm leading-6 text-on-surface-variant">
-							Solo hay productos o artículos no ópticos en esta operación. Puedes continuar al
-							resumen sin más revisión técnica en este paso.
-						</p>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<div class="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
-				{#each confirmation.items as item, index (item.itemId)}
-					<div class="rounded-[1rem] border border-slate-200 bg-white p-4 shadow-sm">
-						<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div>
-								<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-									Cristal {index + 1}
+					<div class="space-y-2">
+						{#each confirmation.items as item, index (item.itemId)}
+							<div class="border-slate-300 not-last:border-b not-last:pb-2">
+								<p
+									class="text-[16px] font-semibold tracking-wider text-outline underline underline-offset-2"
+								>
+									<span class="font-bold text-black uppercase">
+										{index + 1}:
+									</span>
+									<span class="text-brand-navy">{item.lensName}</span>
+									<span class="tex-outline"> / {getLensTypeLabel(item.prescriptionLensType)}</span>
 								</p>
-								<h4 class="mt-1 text-base font-semibold text-brand-navy">{item.lensName}</h4>
-							</div>
-							<span
-								class="rounded-full bg-surface-container-low px-3 py-1 text-xs font-semibold text-on-surface-variant"
-							>
-								{item.eyes.length}
-								{item.eyes.length === 1 ? 'ojo validado' : 'ojos validados'}
-							</span>
-						</div>
-
-						<div class="mt-4 grid gap-3 lg:grid-cols-2">
-							<div class={`rounded-[0.9rem] border px-4 py-3 ${getTypeStatusClasses(item)}`}>
-								<div class="flex items-start gap-3">
-									{#if item.typeMatches}
-										<CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
-									{:else}
-										<CircleAlert class="mt-0.5 h-4 w-4 shrink-0" />
-									{/if}
-									<div>
-										<p class="text-sm font-semibold">{getTypeStatusLabel(item)}</p>
-										<p class="mt-1 text-sm leading-6">
-											Catálogo: {item.catalogLensType
-												? getLensTypeLabel(item.catalogLensType)
-												: 'Sin tipo'}
-											· Prescripción: {getLensTypeLabel(item.prescriptionLensType)}
-										</p>
-									</div>
-								</div>
-							</div>
-
-							<div
-								class="rounded-[0.9rem] border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900"
-							>
-								<div class="flex items-start gap-3">
-									<FlaskConical class="mt-0.5 h-4 w-4 shrink-0 text-slate-600" />
-									<div>
-										<p class="text-sm font-semibold">Chequeo de rango óptico</p>
-										<p class="mt-1 text-sm leading-6 text-slate-700">
-											{#if item.hasRanges}
-												Se comparó la fórmula con los rangos cargados para este cristal.
-											{:else}
-												Este cristal no tiene rangos definidos. Confirma la fórmula y luego consulta
-												con el laboratorio antes de cerrar el caso.
-											{/if}
-										</p>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<div class="mt-4 space-y-2">
-							{#each item.eyes as eye (eye.eye)}
-								<div class={`rounded-[0.9rem] border px-4 py-3 ${getEyeStatusClasses(eye)}`}>
-									<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-										<div>
-											<p class="text-[11px] font-semibold tracking-[0.16em] uppercase">
-												{eye.eye}
-											</p>
-											<p class="mt-1 font-mono text-sm tabular-nums">{eye.prescriptionSummary}</p>
+								<div class="mt-1 space-y-0.5">
+									{#each item.eyes as eye (eye.eye)}
+										<div class="flex items-center justify-between gap-2">
+											<EyeSummary
+												eye={eye.eye}
+												textSize={14}
+												lensEntry={{
+													enabled: true,
+													prescription: {
+														sphere: eye.sphere,
+														cylinder: eye.cylinder,
+														axis: eye.axis,
+														addition: eye.addition
+													},
+													dp: null,
+													np: null
+												}}
+											/>
+											<span
+												class="inline-flex shrink-0 items-center gap-0.5 text-xs {getEyeColor(
+													eye.status
+												)}"
+											>
+												{#if eye.status === 'in-range'}
+													<CircleCheck class="h-3.5 w-3.5" />
+												{:else if eye.status === 'out-of-range'}
+													<CircleAlert class="h-3.5 w-3.5" />
+												{:else}
+													<AlertTriangle class="h-3.5 w-3.5" />
+												{/if}
+												{getEyeLabel(eye.status)}
+											</span>
 										</div>
-										<span
-											class="rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase"
-										>
-											{getEyeStatusLabel(eye)}
-										</span>
-									</div>
+									{/each}
 								</div>
-							{/each}
-						</div>
+							</div>
+						{/each}
 					</div>
-				{/each}
-			</div>
-		{/if}
+				{/if}
 
-		{#if confirmation.freeItems.length > 0}
-			<div class="space-y-2">
-				<p class="text-[11px] font-semibold tracking-[0.16em] text-outline uppercase">
-					Ítems libres ({confirmation.freeItems.length})
-				</p>
-				{#each confirmation.freeItems as freeItem (freeItem.itemId)}
-					<div class="rounded-[1rem] border border-slate-200 bg-white p-4 shadow-sm">
-						<div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-							<div class="flex items-start gap-3">
-								<Sparkles class="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-								<div>
+				{#if confirmation.freeItems.length > 0}
+					<div class="mt-3 space-y-1">
+						<p class="text-[11px] font-semibold tracking-wider text-outline uppercase">
+							Ítems libres ({confirmation.freeItems.length})
+						</p>
+						{#each confirmation.freeItems as freeItem (freeItem.itemId)}
+							<div
+								class="flex items-center justify-between gap-2 rounded-lg bg-violet-50/50 px-3 py-1.5 text-xs"
+							>
+								<span class="truncate text-slate-700">
+									<Sparkles class="mr-1 inline h-3 w-3 shrink-0 text-violet-500" />
 									<span
-										class="inline-block rounded-full bg-violet-100 px-2.5 py-0.5 text-[11px] font-semibold text-violet-800"
+										class="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800"
 									>
 										{freeItem.categoryLabel}
 									</span>
-									<p class="mt-1 text-sm font-semibold text-brand-navy">{freeItem.description}</p>
-								</div>
-							</div>
-							<div class="flex shrink-0 flex-col items-end gap-1">
-								<span class="text-sm font-semibold text-brand-navy">
-									{formatPrice(freeItem.unitPrice)}
+									{freeItem.description}
 								</span>
-								{#if freeItem.hasCost}
-									<span
-										class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800"
-									>
-										Costo estimado cargado
-									</span>
-								{:else}
-									<span
-										class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
-									>
-										Sin costo estimado
-									</span>
-								{/if}
+								<span class="shrink-0 font-semibold text-brand-navy"
+									>{formatPrice(freeItem.unitPrice)}</span
+								>
 							</div>
-						</div>
+						{/each}
 					</div>
-				{/each}
-			</div>
-		{/if}
-	</div>
+				{/if}
 
-	<div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-		<button
-			type="button"
-			onclick={handleClose}
-			class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-		>
-			Volver a editar
-		</button>
-		<button
-			type="button"
-			onclick={handleConfirm}
-			class="rounded-xl bg-brand-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-navy/90"
-		>
-			Confirmar y continuar
-		</button>
+				{#if hasRangeWarnings}
+					<div
+						class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"
+						transition:fade={{ duration: 200 }}
+					>
+						<p class="font-semibold">Revisar disponibilidad</p>
+						<p class="mt-0.5 leading-5">
+							Algunos valores están fuera de rango o requieren confirmación del laboratorio.
+							Contacta al proveedor antes de procesar el pedido.
+						</p>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Footer -->
+			<div class="flex items-center justify-end gap-2 border-t border-slate-200 px-6 py-3">
+				<button
+					type="button"
+					onclick={onCancel}
+					class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+				>
+					Volver a editar
+				</button>
+				<button
+					type="button"
+					onclick={onConfirm}
+					class="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-navy/90"
+				>
+					Continuar
+				</button>
+			</div>
+		</div>
 	</div>
-</Modal>
+{/if}
