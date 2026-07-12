@@ -12,6 +12,7 @@
 		ChartColumn,
 		Shield,
 		FileText,
+		ClipboardCheck,
 		ClipboardList,
 		HandCoins,
 		Wallet
@@ -46,11 +47,19 @@
 		shield: Shield,
 		quotes: FileText,
 		purchases: ClipboardList,
+		'clipboard-check': ClipboardCheck,
 		receivables: HandCoins,
 		wallet: Wallet
 	};
 
 	const navItems = NAV_ITEMS;
+
+	function resolvedIcon(item: (typeof NAV_ITEMS)[number]): LucideIcon {
+		if ('activeIcon' in item && inventoryCountContext.activeSession) {
+			return iconMap[item.activeIcon as keyof typeof iconMap];
+		}
+		return iconMap[item.icon];
+	}
 	const adminManagerItems = ADMIN_ITEMS;
 	const adminOnlyItems = SUPER_ADMIN_ITEMS;
 
@@ -63,23 +72,12 @@
 		<NavLink
 			href={item.href}
 			label={item.label}
-			icon={iconMap[item.icon]}
+			icon={resolvedIcon(item)}
 			matchSubPaths
 			collapsed={compact}
 			{onSelect}
 		/>
 	{/each}
-
-	<NavLink
-		href="/inventory/count"
-		label="Conteo Físico"
-		icon={ClipboardList}
-		badge={inventoryCountContext.activeSession ? 'EN PROGRESO' : undefined}
-		badgeDisplay="dot"
-		matchSubPaths
-		collapsed={compact}
-		{onSelect}
-	/>
 
 	{#if isAdminOrManager}
 		<div class={['my-2 h-px bg-slate-200', compact ? 'mx-3' : 'mx-4']}></div>
