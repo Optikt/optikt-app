@@ -48,18 +48,24 @@
 				import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
 				import('pdfjs-dist')
 			]);
-			GlobalWorkerOptions.workerSrc = workerUrl;
 
 			const mod = await import('@pdfslick/core');
 			import('@pdfslick/core/dist/pdf_viewer.css');
+
+			GlobalWorkerOptions.workerSrc = workerUrl;
 
 			const store = mod.create();
 			const instance = new mod.PDFSlick({
 				container,
 				store,
-				options: { scaleValue: '1', l10n }
+				options: { scaleValue: '1', l10n },
+				onError(err: unknown) {
+					console.error('PDFSlick error:', err);
+					error = 'Error al cargar el PDF';
+					loading = false;
+				}
 			});
-			instance.loadDocument(url);
+			await instance.loadDocument(url);
 			store.setState({ pdfSlick: instance });
 			unsub = store.subscribe((s: { pageNumber: number; numPages: number; scale: number }) => {
 				pageNumber = s.pageNumber;
