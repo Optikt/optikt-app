@@ -39,7 +39,7 @@ importers:
         specifier: ^1.13.8
         version: 1.13.8
       pdfjs-dist:
-        specifier: ^6.1.200
+        specifier: ^6.0.227
         version: 6.1.200
       postgres:
         specifier: ^3.4.9
@@ -3425,10 +3425,6 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
-  pdfjs-dist@6.0.227:
-    resolution: {integrity: sha512-/P6M4SXw+70waMVLUM7rdRtvo+dEzqE1t6W/zQNvBETo2MaRa5rrvCcAYdfWGiUzadTgM0lJmRApUrW0d9zgKg==}
-    engines: {node: '>=22.13.0 || >=24'}
-
   pdfjs-dist@6.1.200:
     resolution: {integrity: sha512-o8MolyzirkkLrcdsae/HEOiIcXWI7DS5zGpvqW8xTC2YUsW30rltFw2bDGvw/fskUdEMrQm2br68jzDS5BH2vw==}
     engines: {node: '>=22.13.0 || >=24'}
@@ -5232,7 +5228,7 @@ snapshots:
 
   '@pdfslick/core@4.0.0(react@19.2.4)':
     dependencies:
-      pdfjs-dist: 6.0.227
+      pdfjs-dist: 6.1.200
       zustand: 5.0.14(react@19.2.4)
     transitivePeerDependencies:
       - '@types/react'
@@ -7017,10 +7013,6 @@ snapshots:
       minipass: 7.1.3
 
   pathe@2.0.3: {}
-
-  pdfjs-dist@6.0.227:
-    optionalDependencies:
-      '@napi-rs/canvas': 1.0.0
 
   pdfjs-dist@6.1.200:
     optionalDependencies:
