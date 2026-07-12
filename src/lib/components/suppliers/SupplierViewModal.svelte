@@ -5,7 +5,7 @@
 		Mail,
 		Globe,
 		MapPin,
-		Instagram,
+		Camera,
 		MessageCircle,
 		User,
 		FileText,
@@ -231,7 +231,7 @@
 
 					{#if supplier.instagram}
 						<div class="flex items-center gap-3">
-							<Instagram class="h-4 w-4 text-slate-400" />
+							<Camera class="h-4 w-4 text-slate-400" />
 							<a
 								href="https://instagram.com/{supplier.instagram.replace('@', '')}"
 								target="_blank"

@@ -59,7 +59,7 @@
 	},
 	"dependencies": {
 		"@formkit/auto-animate": "^0.10.0",
-		"@lucide/svelte": "^0.577.0",
+		"@lucide/svelte": "^1.24.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@pdfslick/core": "^4.0.0",
 		"@sentry/sveltekit": "^10",
