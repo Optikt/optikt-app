@@ -10,7 +10,12 @@ export const NAV_ITEMS = [
 	{ href: '/brands', label: 'Marcas', icon: 'tag' },
 	{ href: '/materials', label: 'Materiales', icon: 'layers' },
 	{ href: '/suppliers', label: 'Proveedores', icon: 'truck' },
-	{ href: '/inventory/count', label: 'Conteo Físico', icon: 'purchases', activeIcon: 'clipboard-check' }
+	{
+		href: '/inventory/count',
+		label: 'Conteo Físico',
+		icon: 'purchases',
+		activeIcon: 'clipboard-check'
+	}
 ] as const;
 export type NavRoute = (typeof NAV_ITEMS)[number]['href'];
 
