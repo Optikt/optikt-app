@@ -3,8 +3,7 @@ import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
 export type AdjustmentStepStatus = 'current' | 'complete' | 'upcoming';
 
 export type ManualAdjustmentType =
-	| InventoryMovementType.ADJUSTMENT_IN
-	| InventoryMovementType.ADJUSTMENT_OUT;
+	InventoryMovementType.ADJUSTMENT_IN | InventoryMovementType.ADJUSTMENT_OUT;
 
 export interface AdjustmentStep {
 	id: number;

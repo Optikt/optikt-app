@@ -129,13 +129,11 @@
 	const unreviewedWarningLines = $derived(
 		items
 			.filter((item) => !item.isReviewed)
-			.map(
-				(item): UnreviewedWarningLine => ({
-					id: item.id,
-					title: getDraftItemTitle(item),
-					quantity: Number(item.quantity || 0)
-				})
-			)
+			.map((item): UnreviewedWarningLine => ({
+				id: item.id,
+				title: getDraftItemTitle(item),
+				quantity: Number(item.quantity || 0)
+			}))
 	);
 	const zeroValueWarningLines = $derived(
 		items

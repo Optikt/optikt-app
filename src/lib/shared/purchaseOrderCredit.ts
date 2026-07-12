@@ -43,12 +43,7 @@ export interface PurchaseOrderBalanceSummary {
 }
 
 export type PurchaseOrderDueState =
-	| 'NONE'
-	| 'PAID'
-	| 'OVERDUE'
-	| 'DUE_TODAY'
-	| 'UPCOMING'
-	| 'EARLY_DISCOUNT_AVAILABLE';
+	'NONE' | 'PAID' | 'OVERDUE' | 'DUE_TODAY' | 'UPCOMING' | 'EARLY_DISCOUNT_AVAILABLE';
 
 export interface PurchaseOrderDueStatus {
 	kind: PurchaseOrderDueState;
