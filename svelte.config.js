@@ -14,9 +14,6 @@ const config = {
 			remoteFunctions: true,
 			instrumentation: {
 				server: true
-			},
-			tracing: {
-				server: true
 			}
 		}
 	},

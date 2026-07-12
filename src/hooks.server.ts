@@ -1,10 +1,6 @@
-import * as Sentry from '@sentry/sveltekit';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
 import * as auth from '$lib/server/auth';
 import { registerPdfBrowserShutdown } from '$lib/server/pdf';
-
-const sentryDsn = process.env.SENTRY_DSN ?? process.env.PUBLIC_SENTRY_DSN;
 
 registerPdfBrowserShutdown();
 
@@ -64,23 +60,6 @@ const serverHandleError: HandleServerError = ({ error, event, status, message })
 		cause
 	});
 
-	// Enrich the Sentry event with the real cause (Drizzle/Postgres errors
-	// usually carry the useful detail in `error.cause`, not in `error.message`).
-	if (sentryDsn) {
-		Sentry.withScope((scope) => {
-			scope.setTag('server_error_path', event.url.pathname);
-			scope.setContext('request', {
-				url: event.url.href,
-				method: event.request.method,
-				status
-			});
-			if (cause)
-				scope.setContext('error_cause', typeof cause === 'string' ? { value: cause } : cause);
-			Sentry.captureException(error);
-		});
-	}
-
-	// La app es interna así que devolvemos el mensaje real al cliente.
 	const detail =
 		typeof cause === 'object' && cause && 'message' in cause
 			? String((cause as { message?: unknown }).message ?? '')
@@ -92,8 +71,5 @@ const serverHandleError: HandleServerError = ({ error, event, status, message })
 	};
 };
 
-export const handleError = sentryDsn
-	? Sentry.handleErrorWithSentry(serverHandleError)
-	: serverHandleError;
-
-export const handle: Handle = sentryDsn ? sequence(Sentry.sentryHandle(), handleAuth) : handleAuth;
+export const handleError = serverHandleError;
+export const handle: Handle = handleAuth;
