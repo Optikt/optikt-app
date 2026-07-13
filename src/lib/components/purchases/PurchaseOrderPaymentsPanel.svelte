@@ -523,8 +523,7 @@
 						bind:value={notesInput}
 						rows="3"
 						class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface focus:border-brand-blue focus:outline-none"
-						placeholder="Observaciones del pago"
-					></textarea>
+						placeholder="Observaciones del pago"></textarea>
 				</label>
 			</div>
 
@@ -802,8 +801,7 @@
 					bind:value={benefitNoteInput}
 					rows="3"
 					class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface focus:border-brand-blue focus:outline-none"
-					placeholder="Ej. Proveedor aplicó redondeo o dejó crédito para próxima compra"
-				></textarea>
+					placeholder="Ej. Proveedor aplicó redondeo o dejó crédito para próxima compra"></textarea>
 			</label>
 			<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
 				Aplicar a esta PO reduce el saldo y entra en reportes. Solo anotarlo guarda la decisión sin

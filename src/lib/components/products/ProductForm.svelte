@@ -740,8 +740,7 @@
 							bind:value={formData.description}
 							rows="4"
 							placeholder="Detalles tecnicos, bisagra, materiales especiales o indicaciones del producto..."
-							class={`${getFieldClass(null)} resize-none`}
-						></textarea>
+							class={`${getFieldClass(null)} resize-none`}></textarea>
 					</div>
 				</div>
 			</section>

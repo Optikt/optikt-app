@@ -415,8 +415,7 @@
 					oninput={syncNewCustomer}
 					rows={2}
 					placeholder="Av. Principal, Centro..."
-					class="{fieldInputClass} mt-1 min-h-16 resize-none"
-				></textarea>
+					class="{fieldInputClass} mt-1 min-h-16 resize-none"></textarea>
 			</div>
 		</div>
 	{/if}

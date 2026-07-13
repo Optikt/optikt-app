@@ -209,8 +209,7 @@
 				rows="3"
 				placeholder="Motivo de cancelación (mínimo 10 caracteres)..."
 				bind:value={cancelReason}
-				oninput={() => (cancelReasonError = '')}
-			></textarea>
+				oninput={() => (cancelReasonError = '')}></textarea>
 			{#if cancelReasonError}
 				<p class="mt-1 text-xs text-red-600">{cancelReasonError}</p>
 			{/if}
@@ -273,8 +272,7 @@
 								rows="2"
 								placeholder="Detalle sobre la decisión (mínimo 10 caracteres)..."
 								bind:value={refundNotes}
-								oninput={() => (refundNotesError = '')}
-							></textarea>
+								oninput={() => (refundNotesError = '')}></textarea>
 							{#if refundNotesError}
 								<p class="mt-1 text-xs text-red-600">{refundNotesError}</p>
 							{/if}

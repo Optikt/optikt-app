@@ -739,8 +739,7 @@
 										bind:value={editing.notes}
 										rows="2"
 										class="w-full rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-sm text-on-surface"
-										placeholder="Nota opcional"
-									></textarea>
+										placeholder="Nota opcional"></textarea>
 								{/if}
 							</div>
 						{:else if line.countedStock !== null}
@@ -917,8 +916,7 @@
 									bind:value={editing.notes}
 									rows="2"
 									class="w-full rounded-lg border border-outline-variant/30 bg-white px-3 py-2 text-sm text-on-surface"
-									placeholder="Nota opcional"
-								></textarea>
+									placeholder="Nota opcional"></textarea>
 							{/if}
 						</div>
 					{:else if adjustmentPath}
@@ -1114,8 +1112,7 @@
 						bind:value={cancelReason}
 						rows="4"
 						class="w-full rounded-xl border border-outline-variant/25 bg-surface-container px-4 py-3 text-sm text-on-surface"
-						placeholder="Indica por qué se cancela la sesión"
-					></textarea>
+						placeholder="Indica por qué se cancela la sesión"></textarea>
 				</label>
 
 				<div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
