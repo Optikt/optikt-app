@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Label } from 'bits-ui';
+	import { Label } from '$lib/components/ui/label';
 	import { getFormErrorMessage } from '$lib/utils';
 	import type { ClassValue } from 'svelte/elements';
 
@@ -70,9 +70,9 @@
 
 <div class={divClass} data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
-		<Label.Root for={inputId} class={['mb-2 block text-sm font-medium', hasError ? 'text-red-500' : 'text-slate-700'].join(' ')}>
+		<Label for={inputId} class={['mb-2 block text-sm font-medium', hasError ? 'text-red-500' : 'text-slate-700'].join(' ')}>
 			{label}
-		</Label.Root>
+		</Label>
 	{/if}
 	<input
 		{id}
