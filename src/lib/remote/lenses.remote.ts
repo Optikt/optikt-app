@@ -697,7 +697,7 @@ export const updateLensCatalogItemForm = form(
 				if (!updated) invalid('Error actualizando item');
 
 				// Handle optical ranges - only delete/reinsert if semantically changed
-				let insertedRanges: LensOpticalRange[] = [];
+				let insertedRanges: LensOpticalRange[];
 				let rangesChanged = false;
 				let oldRangesSummary = '';
 				let newRangesSummary = '';
