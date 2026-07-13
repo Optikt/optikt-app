@@ -24,4 +24,5 @@ Replace all flowbite-svelte components with shadcn-svelte (bits-ui) equivalents 
 ## Required Specs
 <!-- SPECS_START -->
 - flowbite-migration-arch
+- flowbite-migration-detail
 <!-- SPECS_END -->
