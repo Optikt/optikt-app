@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Textarea, Helper, Label, type TextareaProps } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { getFormErrorMessage } from '$lib/utils';
 
-	interface Props extends TextareaProps {
+	interface Props {
 		value: string;
 		error?: RemoteFormIssue[] | string | null;
 		label?: string;
@@ -14,6 +14,7 @@
 		readonly?: boolean;
 		rows?: number;
 		class?: string;
+		required?: boolean;
 	}
 
 	let {
@@ -30,32 +31,37 @@
 		required = false
 	}: Props = $props();
 
-	// Use name as fallback for id (for the label's "for" attribute)
 	const inputId = $derived(id ?? name);
-
-	// Use unified error handling
 	const displayError = $derived(getFormErrorMessage(error));
 	const hasError = $derived(!!displayError);
 </script>
 
-<!-- Wrapper div ensures this is a single item when used -->
 <div data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
-		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
+		<Label for={inputId} class={hasError ? 'text-red-500' : ''}>{label}</Label>
 	{/if}
-	<Textarea
-		id={inputId}
+	<textarea
+		{id}
 		{name}
 		{placeholder}
 		{disabled}
 		{readonly}
 		{rows}
-		class={['w-full placeholder:text-slate-400', className]}
-		bind:value
-		aria-invalid={hasError}
 		{required}
-	/>
+		bind:value
+		aria-invalid={hasError || undefined}
+		class={[
+			'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm shadow-sm transition-colors',
+			'placeholder:text-slate-400',
+			'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
+			'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
+			hasError
+				? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+				: 'border-slate-300',
+			className
+		].filter(Boolean).join(' ')}
+	></textarea>
 	{#if displayError}
-		<Helper color="red">{displayError}</Helper>
+		<p class="mt-1 text-sm text-red-500">{displayError}</p>
 	{/if}
 </div>
