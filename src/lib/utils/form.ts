@@ -4,7 +4,6 @@
 
 import type { RemoteFormIssue } from '@sveltejs/kit';
 import { toast } from 'svelte-sonner';
-import { captureClientException } from './errors';
 
 const ERROR_FIELD_SELECTORS =
 	'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"], [class*="ring-red"]';
@@ -129,11 +128,9 @@ export function toastUnboundErrors(allIssues: RemoteFormIssue[]): void {
 		}
 
 		if (unboundIssues.length > 0) {
-			captureClientException(
-				'remote-form.unbound-issues',
-				new Error('Remote form validation failed for fields without visible UI binding'),
-				{ issues: unboundIssues }
-			);
+			console.error('remote-form.unbound-issues', {
+				issues: unboundIssues
+			});
 		}
 	}, 100);
 }
