@@ -9,7 +9,6 @@ export * from './csv';
 export * from './selectValue';
 export * from './urlState';
 import { type ClassValue, clsx } from 'clsx';
-import type { SvelteHTMLElements } from 'svelte/elements';
 
 export function cn(...inputs: ClassValue[]): string {
 	return clsx(inputs);

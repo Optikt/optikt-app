@@ -65,6 +65,7 @@
 {#if href}
 	<a
 		bind:this={ref}
+		data-sveltekit-reload
 		data-slot="button"
 		class={cn(buttonVariants({ variant, size }), className)}
 		href={disabled ? undefined : href}

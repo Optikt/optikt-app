@@ -97,9 +97,6 @@
 					openPicker();
 				}
 			}}
-			role="combobox"
-			aria-expanded="false"
-			aria-haspopup="dialog"
 			aria-label={label || 'Seleccionar fecha'}
 		/>
 		<input
