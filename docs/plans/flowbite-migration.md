@@ -5,9 +5,11 @@ plan status: active
 ---
 
 ## Idea
+
 Replace all flowbite-svelte components with shadcn-svelte (bits-ui) equivalents across 57 files. Migrate wrapper components first (FormInput, ConfirmModal, etc.), then domain modals, then pages. Finally remove flowbite from package.json and layout.css. Each migration step must pass pnpm check, lint, tests, and visual review. No UI changes. No push without user review.
 
 ## Implementation
+
 - Fase 1a: Migrate FormInput.svelte wrapper (replaces Input+Label+Helper with shadcn equivalents) → check → lint → test → visual review → commit
 - Fase 1b: Migrate FormTextarea.svelte → check → lint → test → commit
 - Fase 1c: Migrate FormDatepicker.svelte (Calendar+Popover shadcn) → check → lint → test → commit
@@ -22,7 +24,10 @@ Replace all flowbite-svelte components with shadcn-svelte (bits-ui) equivalents 
 - Fase 5b: Remove flowbite and flowbite-svelte from package.json → pnpm install → check → lint → test → commit
 
 ## Required Specs
+
 <!-- SPECS_START -->
+
 - flowbite-migration-arch
 - flowbite-migration-detail
+
 <!-- SPECS_END -->
