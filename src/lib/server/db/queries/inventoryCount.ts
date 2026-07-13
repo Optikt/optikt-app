@@ -314,7 +314,7 @@ async function createSnapshotLines(
 	data: InventoryCountSnapshotInput,
 	executor: DbOrTx
 ) {
-	let rows: SnapshotRow[] = [];
+	let rows: SnapshotRow[];
 
 	if (data.scopeType === 'ALL') {
 		const [productsRows, lensRows] = await Promise.all([

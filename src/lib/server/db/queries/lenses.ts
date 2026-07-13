@@ -434,7 +434,7 @@ export async function updateLensCatalogItem(
 
 		if (!updated) return null;
 
-		let insertedRanges: LensOpticalRange[] = [];
+		let insertedRanges: LensOpticalRange[];
 		if (ranges) {
 			// Delete existing ranges and replace
 			await tx.delete(lensOpticalRanges).where(eq(lensOpticalRanges.lensCatalogItemId, id));

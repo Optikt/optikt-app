@@ -732,8 +732,7 @@
 								bind:value={notes}
 								rows="5"
 								class="w-full rounded-2xl border border-outline-variant/25 bg-surface-container px-4 py-3 text-sm text-on-surface"
-								placeholder="Observaciones opcionales para esta sesión"
-							></textarea>
+								placeholder="Observaciones opcionales para esta sesión"></textarea>
 						</label>
 
 						{#if formError}

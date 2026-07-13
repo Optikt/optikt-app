@@ -43,6 +43,12 @@ export default defineConfig(
 				parser: ts.parser,
 				svelteConfig
 			}
+		},
+
+		rules: {
+			// $bindable() props appear as unused assignments to ESLint,
+			// but Svelte's runtime reads them for two-way binding.
+			'no-useless-assignment': 'off'
 		}
 	},
 	{

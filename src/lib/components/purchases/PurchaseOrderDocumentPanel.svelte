@@ -186,8 +186,7 @@
 					placeholder="Observaciones internas o acuerdos con proveedor..."
 					aria-label="Observaciones"
 					required
-					minlength={6}
-				></textarea>
+					minlength={6}></textarea>
 				{#if notesTooShort}
 					<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
 				{/if}

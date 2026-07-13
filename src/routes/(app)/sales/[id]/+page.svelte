@@ -756,8 +756,7 @@
 			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
 			rows="2"
 			placeholder="Ej: Se envió al laboratorio..."
-			bind:value={transitionReason}
-		></textarea>
+			bind:value={transitionReason}></textarea>
 	{/snippet}
 </ConfirmModal>
 
@@ -801,7 +800,6 @@
 			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-green-400 focus:ring-1 focus:ring-green-400"
 			rows="2"
 			placeholder="Ej: Cliente retiró orden..."
-			bind:value={transitionReason}
-		></textarea>
+			bind:value={transitionReason}></textarea>
 	{/snippet}
 </ConfirmModal>
