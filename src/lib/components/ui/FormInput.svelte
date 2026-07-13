@@ -60,17 +60,22 @@
 			'placeholder:text-slate-400',
 			'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
 			'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
-			hasError
-				? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-				: 'border-slate-300',
+			hasError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300',
 			className
-		].filter(Boolean).join(' ')
+		]
+			.filter(Boolean)
+			.join(' ')
 	);
 </script>
 
 <div class={divClass} data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
-		<Label for={inputId} class={['mb-2 block text-sm font-medium', hasError ? 'text-red-500' : 'text-slate-700'].join(' ')}>
+		<Label
+			for={inputId}
+			class={['mb-2 block text-sm font-medium', hasError ? 'text-red-500' : 'text-slate-700'].join(
+				' '
+			)}
+		>
 			{label}
 		</Label>
 	{/if}
