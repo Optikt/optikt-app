@@ -61,11 +61,3 @@ export function reportClientError(
 		...serializeErrorDetails(error)
 	});
 }
-
-export function captureClientException(
-	source: string,
-	error: unknown,
-	context: Record<string, unknown> = {}
-): void {
-	reportClientError(source, error, context);
-}
