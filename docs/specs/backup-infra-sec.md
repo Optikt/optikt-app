@@ -36,6 +36,7 @@ networks:
 ```
 
 **Security constraints:**
+
 - Socket mounted as READ-ONLY (`:ro`)
 - Only POST, CONTAINERS, and EXEC permissions enabled
 - Proxy on isolated `internal: true` network — unreachable from internet
@@ -54,11 +55,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ```
 
 In `backup/backup.sh`, add after successful completion:
+
 ```bash
 date +%s > /tmp/backup-last-run
 ```
 
 This ensures Docker auto-restarts the container if:
+
 - `crond` process dies
 - No backup has run in the last 25 hours (90000 seconds → buffer over 24h schedule)
 
@@ -67,17 +70,21 @@ This ensures Docker auto-restarts the container if:
 All calls go through `DOCKER_HOST=http://docker-proxy:2375`:
 
 ### List Backups
+
 1. POST /v1.41/containers/optikt-backup/exec → create exec with `["rclone", "lsl", "gdrive:", "--config", "/etc/rclone/rclone.conf"]`
 2. POST /v1.41/exec/{id}/start → get stdout
 3. Parse rclone lsl output: `{filename, sizeBytes, modifiedAt}`
 
 ### Run Backup Now
+
 1. POST /v1.41/containers/optikt-backup/exec → create exec with `["/usr/local/bin/backup.sh"]`
 2. POST /v1.41/exec/{id}/start → fire and forget (detached mode)
 
 ### Restart Container
+
 1. POST /v1.41/containers/optikt-backup/restart
 
 ### Get Status
+
 1. POST /v1.41/containers/optikt-backup/exec → `["pgrep", "crond"]` → returns PID or empty
 2. Read /tmp/backup-last-run from container (or use a separate healthcheck endpoint)
