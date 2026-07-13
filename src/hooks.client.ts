@@ -1,4 +1,3 @@
-import { env } from '$env/dynamic/public';
 import type { HandleClientError } from '@sveltejs/kit';
 import { reportClientError } from '$lib/utils';
 
