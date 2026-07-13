@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Svelecte from 'svelecte';
-	import { Label } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import type { ComponentProps, Snippet } from 'svelte';
 
 	type SvelecteProps = ComponentProps<typeof Svelecte>;
