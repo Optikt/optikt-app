@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Select, Input, Helper, Label } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { getFormErrorMessage, ID_DOC_PREFIXES, RIF_RE, type IdDocPrefix } from '$lib/utils';
 
 	interface Props {
@@ -71,17 +71,27 @@
 
 <div>
 	{#if label}
-		<Label color={hasError ? 'red' : undefined} class="mb-2">{label}</Label>
+		<Label class={['mb-2', hasError ? 'text-red-500' : ''].join(' ')}>{label}</Label>
 	{/if}
 
 	<div class="flex gap-2">
-		<Select bind:value={rifType} {disabled} class="w-20 shrink-0" onchange={handleTypeChange}>
+		<select
+			bind:value={rifType}
+			{disabled}
+			onchange={handleTypeChange}
+			class={[
+				'w-20 shrink-0 rounded-lg border bg-white px-2 py-2.5 text-sm shadow-sm transition-colors',
+				'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
+				'disabled:cursor-not-allowed disabled:opacity-50',
+				hasError ? 'border-red-500' : 'border-slate-300'
+			].join(' ')}
+		>
 			{#each ID_DOC_PREFIXES as type (type)}
 				<option value={type}>{type}</option>
 			{/each}
-		</Select>
+		</select>
 
-		<Input
+		<input
 			type="text"
 			inputmode="numeric"
 			placeholder="12345678-9"
@@ -90,8 +100,16 @@
 			onblur={handleBlur}
 			{disabled}
 			maxlength={9}
-			color={hasError ? 'red' : undefined}
-			class="placeholder:text-slate-400"
+			aria-invalid={hasError || undefined}
+			class={[
+				'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm shadow-sm transition-colors',
+				'placeholder:text-slate-400',
+				'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
+				'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
+				hasError
+					? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+					: 'border-slate-300'
+			].join(' ')}
 		/>
 	</div>
 
@@ -99,6 +117,6 @@
 	<input type="hidden" {name} bind:value />
 
 	{#if error}
-		<Helper color="red" class="mt-1">{error}</Helper>
+		<p class="mt-1 text-sm text-red-500">{error}</p>
 	{/if}
 </div>

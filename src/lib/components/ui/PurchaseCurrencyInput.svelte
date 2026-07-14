@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Label, Select } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { ArrowRight, TrendingUp, TriangleAlert } from '@lucide/svelte';
 	import {
 		CurrencyCode,
@@ -84,11 +84,15 @@
 <div class="grid gap-4 md:grid-cols-2">
 	<div>
 		<Label for="{idPrefix}purchaseCurrency" class="mb-2">Moneda de compra *</Label>
-		<Select id="{idPrefix}purchaseCurrency" bind:value={purchaseCurrency}>
+		<select
+			id="{idPrefix}purchaseCurrency"
+			bind:value={purchaseCurrency}
+			class="block w-full rounded-lg border border-slate-300 bg-white px-2 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue disabled:cursor-not-allowed disabled:opacity-50"
+		>
 			{#each ALL_CURRENCY_CODES as code (code)}
 				<option value={code}>{CURRENCY_LABELS[code]}</option>
 			{/each}
-		</Select>
+		</select>
 	</div>
 	<div>
 		<Label for="{idPrefix}purchaseDate" class="mb-2">Fecha de compra *</Label>
