@@ -61,9 +61,7 @@
 					onclick={() => handlePageChange(p)}
 					class={[
 						'inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-sm font-medium transition-colors',
-						p === page
-							? 'bg-brand-blue text-white'
-							: 'hover:bg-slate-100'
+						p === page ? 'bg-brand-blue text-white' : 'hover:bg-slate-100'
 					].join(' ')}
 				>
 					{p}

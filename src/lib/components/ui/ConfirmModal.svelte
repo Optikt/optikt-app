@@ -11,7 +11,10 @@
 		xl: 'sm:max-w-xl'
 	};
 
-	const colorMap: Record<string, 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'> = {
+	const colorMap: Record<
+		string,
+		'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+	> = {
 		blue: 'default',
 		red: 'destructive',
 		green: 'default',
@@ -130,8 +133,19 @@
 				<Button variant={secondaryVariant} onclick={() => onSecondary?.()} disabled={isBusy}>
 					{#if secondaryLoading}
 						<svg class="mr-2 inline-block h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							/>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+							/>
 						</svg>
 					{/if}
 					{secondaryLabel}
@@ -139,11 +153,26 @@
 			{/if}
 			<div class="flex justify-end gap-2">
 				<Button variant="outline" onclick={handleCancel} disabled={isBusy}>{cancelLabel}</Button>
-				<Button variant={confirmVariant} onclick={handleConfirm} disabled={isBusy || confirmDisabled}>
+				<Button
+					variant={confirmVariant}
+					onclick={handleConfirm}
+					disabled={isBusy || confirmDisabled}
+				>
 					{#if loading || isChecking}
 						<svg class="mr-2 inline-block h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							/>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+							/>
 						</svg>
 					{/if}
 					{confirmLabel}

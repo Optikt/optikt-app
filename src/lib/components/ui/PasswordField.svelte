@@ -63,9 +63,7 @@
 				'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
 				'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
 				'pr-10',
-				hasError
-					? 'border-red-500 focus:ring-red-500 focus:border-red-500'
-					: 'border-slate-300'
+				hasError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300'
 			].join(' ')}
 		/>
 		<button
