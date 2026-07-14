@@ -105,6 +105,26 @@
 	--font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+@theme inline {
+	/* ── shadcn-svelte / bits-ui theme ──────────────────────────────────── */
+	--color-background: #ffffff;
+	--color-foreground: #1b1b1e;
+	--color-primary: var(--color-brand-blue);
+	--color-primary-foreground: var(--color-on-primary);
+	--color-destructive: var(--color-error);
+	--color-destructive-foreground: var(--color-on-error);
+	--color-secondary: var(--color-surface-container-low);
+	--color-secondary-foreground: var(--color-on-surface);
+	--color-muted: var(--color-surface-container);
+	--color-muted-foreground: var(--color-on-surface-variant);
+	--color-popover: #ffffff;
+	--color-popover-foreground: var(--color-on-surface);
+	--color-ring: var(--color-brand-blue);
+	--color-input: var(--color-outline-variant);
+	--color-border: var(--color-outline-variant);
+	--radius-md: 0.5rem;
+}
+
 /* Design System Tokens (per design-ui.md) */
 /* NOTE: Using 'ds-' prefix to avoid conflicting with Tailwind's built-in tokens */
 @theme {
