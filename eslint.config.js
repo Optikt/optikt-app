@@ -56,5 +56,11 @@ export default defineConfig(
 		rules: {
 			'svelte/require-store-reactive-access': 'off'
 		}
+	},
+	{
+		files: ['**/ui/button/button.svelte'],
+		rules: {
+			'svelte/no-navigation-without-resolve': 'off'
+		}
 	}
 );

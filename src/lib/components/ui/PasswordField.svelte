@@ -13,7 +13,6 @@
 		placeholder?: string;
 		disabled?: boolean;
 		autocomplete?: 'off' | 'on' | 'new-password' | 'current-password';
-		size?: 'sm' | 'md' | 'lg';
 		class?: string;
 		required?: boolean;
 	}
@@ -27,7 +26,6 @@
 		placeholder = '••••••••',
 		disabled = false,
 		autocomplete,
-		size = 'md',
 		class: className,
 		required = false
 	}: Props = $props();

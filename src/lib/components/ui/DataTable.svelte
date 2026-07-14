@@ -260,10 +260,12 @@
 {:else if items.length > 0}
 	<table class="w-full text-sm">
 		<thead class="bg-slate-50">
-			{@render header()}
-			{#if actionsSnippet || defaultActions}
-				<th class="px-4 py-3 text-right font-semibold">Acciones</th>
-			{/if}
+			<tr>
+				{@render header()}
+				{#if actionsSnippet || defaultActions}
+					<th class="px-4 py-3 text-right font-semibold">Acciones</th>
+				{/if}
+			</tr>
 		</thead>
 		<tbody>
 			{#each items as item (item.id)}

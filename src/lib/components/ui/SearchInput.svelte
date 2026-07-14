@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Search } from '@lucide/svelte';
-	import { Label } from '$lib/components/ui/label';
 
 	interface Props {
 		value: string;
