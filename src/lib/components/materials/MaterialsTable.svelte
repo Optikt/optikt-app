@@ -1,14 +1,5 @@
 <script lang="ts">
-	import {
-		TableHeadCell,
-		TableBodyCell,
-		Modal,
-		Button,
-		Input,
-		Label,
-		Spinner,
-		Badge
-	} from 'flowbite-svelte';
+	import { TableBodyCell, Modal, Button, Input, Label, Spinner, Badge } from 'flowbite-svelte';
 	import { Tag, TriangleAlert, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteMaterialById } from '$lib/remote/materials.remote';
