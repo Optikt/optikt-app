@@ -276,7 +276,6 @@
 
 			<!-- Custom rate section -->
 			<div class="border-t border-slate-100 px-5 pt-3 pb-2">
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					role="button"
 					tabindex="0"
