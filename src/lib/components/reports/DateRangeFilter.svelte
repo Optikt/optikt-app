@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Search } from '@lucide/svelte';
 
 	let {

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from 'svelte-sonner';
 	import type { EntityType } from '$lib/server/db/schema';
 	import { getHistory } from '$lib/remote/history.remote';
@@ -62,12 +63,17 @@
 	}
 </script>
 
-<Modal bind:open size="lg" title="📜 Historial de cambios - {title}" outsideclose>
-	<div class="max-h-[60vh] overflow-y-auto pr-2">
-		<ChangeHistoryList {entityType} {entries} {loading} {relatedNames} />
-	</div>
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>📜 Historial de cambios - {title}</Dialog.Title>
+		</Dialog.Header>
+		<div class="max-h-[60vh] overflow-y-auto pr-2">
+			<ChangeHistoryList {entityType} {entries} {loading} {relatedNames} />
+		</div>
 
-	<div class="mt-6 flex justify-end">
-		<Button color="light" onclick={handleClose}>Cerrar</Button>
-	</div>
-</Modal>
+		<Dialog.Footer class="flex justify-end">
+			<Button variant="outline" onclick={handleClose}>Cerrar</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

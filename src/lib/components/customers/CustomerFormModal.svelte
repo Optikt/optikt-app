@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button, Spinner } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createCustomerWithPrescription, updateCustomerForm } from '$lib/remote/customers.remote';
@@ -150,199 +151,241 @@
 	}
 </script>
 
-<Modal bind:open size="lg" {title} outsideclose onclose={onClose}>
-	{#if isEditMode && customer}
-		<!-- UPDATE FORM -->
-		<form
-			{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleUpdateResult(formEl);
-				} catch (e) {
-					console.error(e);
-					toast.error(getErrorMessage(e, 'Error actualizando cliente'));
-				} finally {
-					isSubmitting = false;
-				}
-			})}
-			class="space-y-5"
-		>
-			<input type="hidden" name="id" value={customer.id} />
+<Dialog.Root
+	bind:open
+	onOpenChangeComplete={(o) => {
+		if (!o) onClose();
+	}}
+>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>{title}</Dialog.Title>
+		</Dialog.Header>
+		{#if isEditMode && customer}
+			<!-- UPDATE FORM -->
+			<form
+				{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
+					isSubmitting = true;
+					try {
+						await submit();
+						handleUpdateResult(formEl);
+					} catch (e) {
+						console.error(e);
+						toast.error(getErrorMessage(e, 'Error actualizando cliente'));
+					} finally {
+						isSubmitting = false;
+					}
+				})}
+				class="space-y-5"
+			>
+				<input type="hidden" name="id" value={customer.id} />
 
-			<div class="grid gap-4 sm:grid-cols-2">
+				<div class="grid gap-4 sm:grid-cols-2">
+					<FormInput
+						name="firstName"
+						label="Nombre"
+						required
+						bind:value={formData.firstName}
+						error={currentUpdateForm.fields.firstName?.issues()}
+					/>
+					<FormInput
+						name="lastName"
+						label="Apellido"
+						required
+						bind:value={formData.lastName}
+						error={currentUpdateForm.fields.lastName?.issues()}
+					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<IdInput
+						name="idNumber"
+						label="Cédula"
+						bind:value={formData.idNumber}
+						error={currentUpdateForm.fields.idNumber?.issues()}
+					/>
+					<FormDatepicker
+						name="birthDate"
+						label="Fecha de Nacimiento"
+						required
+						bind:value={formData.birthDate}
+						availableTo={today}
+						error={currentUpdateForm.fields.birthDate?.issues()}
+					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<FormInput
+						name="primaryPhone"
+						label="Teléfono"
+						type="tel"
+						required
+						placeholder="+58 412-1234567"
+						bind:value={formData.primaryPhone}
+						error={currentUpdateForm.fields.primaryPhone?.issues()}
+					/>
+					<FormInput
+						name="email"
+						label="Email"
+						type="email"
+						placeholder="cliente@email.com"
+						bind:value={formData.email}
+						error={currentUpdateForm.fields.email?.issues()}
+					/>
+				</div>
+
 				<FormInput
-					name="firstName"
-					label="Nombre"
-					required
-					bind:value={formData.firstName}
-					error={currentUpdateForm.fields.firstName?.issues()}
+					name="address"
+					label="Dirección"
+					placeholder="Av. Principal, Centro..."
+					bind:value={formData.address}
 				/>
+
+				<FormTextarea
+					name="notes"
+					label="Notas"
+					placeholder="Observaciones sobre el cliente..."
+					rows={2}
+					bind:value={formData.notes}
+				/>
+
+				<div class="flex justify-end gap-3 border-t pt-4">
+					<Button variant="outline" onclick={onClose}>Cancelar</Button>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}<svg
+								class="mx-auto h-5 w-5 animate-spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>{/if}
+						{submitText}
+					</Button>
+				</div>
+			</form>
+		{:else}
+			<!-- CREATE FORM -->
+			<form
+				{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
+					isSubmitting = true;
+					try {
+						await submit();
+						handleCreateResult(formEl);
+					} catch (e) {
+						console.error(e);
+						toast.error(getErrorMessage(e, 'Error creando cliente'));
+					} finally {
+						isSubmitting = false;
+					}
+				})}
+				class="space-y-5"
+			>
+				<div class="grid gap-4 sm:grid-cols-2">
+					<FormInput
+						name="firstName"
+						label="Nombre"
+						required
+						bind:value={formData.firstName}
+						error={currentCreateForm.fields.firstName?.issues()}
+					/>
+					<FormInput
+						name="lastName"
+						label="Apellido"
+						required
+						bind:value={formData.lastName}
+						error={currentCreateForm.fields.lastName?.issues()}
+					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<IdInput
+						name="idNumber"
+						label="Cédula"
+						bind:value={formData.idNumber}
+						error={currentCreateForm.fields.idNumber?.issues()}
+					/>
+					<FormDatepicker
+						name="birthDate"
+						label="Fecha de Nacimiento"
+						required
+						bind:value={formData.birthDate}
+						availableTo={today}
+						error={currentCreateForm.fields.birthDate?.issues()}
+					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<FormInput
+						name="primaryPhone"
+						label="Teléfono"
+						type="tel"
+						required
+						placeholder="+58 412-1234567"
+						bind:value={formData.primaryPhone}
+						error={currentCreateForm.fields.primaryPhone?.issues()}
+					/>
+					<FormInput
+						name="email"
+						label="Email"
+						type="email"
+						placeholder="cliente@email.com"
+						bind:value={formData.email}
+						error={currentCreateForm.fields.email?.issues()}
+					/>
+				</div>
+
 				<FormInput
-					name="lastName"
-					label="Apellido"
-					required
-					bind:value={formData.lastName}
-					error={currentUpdateForm.fields.lastName?.issues()}
+					name="address"
+					label="Dirección"
+					placeholder="Av. Principal, Centro..."
+					bind:value={formData.address}
 				/>
-			</div>
 
-			<div class="grid gap-4 sm:grid-cols-2">
-				<IdInput
-					name="idNumber"
-					label="Cédula"
-					bind:value={formData.idNumber}
-					error={currentUpdateForm.fields.idNumber?.issues()}
+				<FormTextarea
+					name="notes"
+					label="Notas"
+					placeholder="Observaciones sobre el cliente..."
+					rows={2}
+					bind:value={formData.notes}
 				/>
-				<FormDatepicker
-					name="birthDate"
-					label="Fecha de Nacimiento"
-					required
-					bind:value={formData.birthDate}
-					availableTo={today}
-					error={currentUpdateForm.fields.birthDate?.issues()}
-				/>
-			</div>
 
-			<div class="grid gap-4 sm:grid-cols-2">
-				<FormInput
-					name="primaryPhone"
-					label="Teléfono"
-					type="tel"
-					required
-					placeholder="+58 412-1234567"
-					bind:value={formData.primaryPhone}
-					error={currentUpdateForm.fields.primaryPhone?.issues()}
-				/>
-				<FormInput
-					name="email"
-					label="Email"
-					type="email"
-					placeholder="cliente@email.com"
-					bind:value={formData.email}
-					error={currentUpdateForm.fields.email?.issues()}
-				/>
-			</div>
-
-			<FormInput
-				name="address"
-				label="Dirección"
-				placeholder="Av. Principal, Centro..."
-				bind:value={formData.address}
-			/>
-
-			<FormTextarea
-				name="notes"
-				label="Notas"
-				placeholder="Observaciones sobre el cliente..."
-				rows={2}
-				bind:value={formData.notes}
-			/>
-
-			<div class="flex justify-end gap-3 border-t pt-4">
-				<Button color="light" onclick={onClose}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{:else}
-		<!-- CREATE FORM -->
-		<form
-			{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleCreateResult(formEl);
-				} catch (e) {
-					console.error(e);
-					toast.error(getErrorMessage(e, 'Error creando cliente'));
-				} finally {
-					isSubmitting = false;
-				}
-			})}
-			class="space-y-5"
-		>
-			<div class="grid gap-4 sm:grid-cols-2">
-				<FormInput
-					name="firstName"
-					label="Nombre"
-					required
-					bind:value={formData.firstName}
-					error={currentCreateForm.fields.firstName?.issues()}
-				/>
-				<FormInput
-					name="lastName"
-					label="Apellido"
-					required
-					bind:value={formData.lastName}
-					error={currentCreateForm.fields.lastName?.issues()}
-				/>
-			</div>
-
-			<div class="grid gap-4 sm:grid-cols-2">
-				<IdInput
-					name="idNumber"
-					label="Cédula"
-					bind:value={formData.idNumber}
-					error={currentCreateForm.fields.idNumber?.issues()}
-				/>
-				<FormDatepicker
-					name="birthDate"
-					label="Fecha de Nacimiento"
-					required
-					bind:value={formData.birthDate}
-					availableTo={today}
-					error={currentCreateForm.fields.birthDate?.issues()}
-				/>
-			</div>
-
-			<div class="grid gap-4 sm:grid-cols-2">
-				<FormInput
-					name="primaryPhone"
-					label="Teléfono"
-					type="tel"
-					required
-					placeholder="+58 412-1234567"
-					bind:value={formData.primaryPhone}
-					error={currentCreateForm.fields.primaryPhone?.issues()}
-				/>
-				<FormInput
-					name="email"
-					label="Email"
-					type="email"
-					placeholder="cliente@email.com"
-					bind:value={formData.email}
-					error={currentCreateForm.fields.email?.issues()}
-				/>
-			</div>
-
-			<FormInput
-				name="address"
-				label="Dirección"
-				placeholder="Av. Principal, Centro..."
-				bind:value={formData.address}
-			/>
-
-			<FormTextarea
-				name="notes"
-				label="Notas"
-				placeholder="Observaciones sobre el cliente..."
-				rows={2}
-				bind:value={formData.notes}
-			/>
-
-			<div class="flex justify-end gap-3 border-t pt-4">
-				<Button color="light" onclick={onClose}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{/if}
-</Modal>
+				<div class="flex justify-end gap-3 border-t pt-4">
+					<Button variant="outline" onclick={onClose}>Cancelar</Button>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}<svg
+								class="mx-auto h-5 w-5 animate-spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>{/if}
+						{submitText}
+					</Button>
+				</div>
+			</form>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Reactivate Confirmation Modal -->
 <CustomerReactivateModal
