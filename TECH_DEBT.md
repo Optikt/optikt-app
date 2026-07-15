@@ -16,4 +16,4 @@
 
 ---
 
-**Prioridad sugerida**: 1) terminar de sacar `flowbite-svelte` de los flujos activos/shared UI, 2) cubrir con E2E el wizard óptico de ventas/presupuestos, y 3) decidir si las operaciones con múltiples cristales se van a soportar de verdad con Rx por item o si se van a restringir.
+**Prioridad sugerida**: 1) cubrir con E2E el wizard óptico de ventas/presupuestos, y 2) decidir si las operaciones con múltiples cristales se van a soportar de verdad con Rx por item o si se van a restringir.
