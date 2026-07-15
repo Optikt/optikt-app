@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { Button } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Plus, Ban, Download, Printer, X } from '@lucide/svelte';
 	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
 	import {

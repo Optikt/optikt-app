@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Select, Toggle } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
@@ -99,7 +99,7 @@
 			<p class="text-slate-500">Gestiona el catálogo de materiales de productos</p>
 		</div>
 		{#if isAdmin}
-			<Button color="blue" onclick={openCreate}>
+			<Button onclick={openCreate}>
 				<Plus class="mr-2 h-5 w-5" />
 				Agregar Material
 			</Button>
@@ -116,19 +116,16 @@
 			oninput={handleSearch}
 			class="min-w-64 flex-1"
 		/>
-		<Select bind:value={productTypeFilter} onchange={handleFilterChange} class="w-44">
+		<select bind:value={productTypeFilter} onchange={handleFilterChange} class="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue">
 			<option value="">Todos los tipos</option>
 			{#each MATERIAL_CATEGORIES as t (t)}
 				<option value={t}>{MATERIAL_CATEGORY_LABELS[t]}</option>
 			{/each}
-		</Select>
-		<Toggle
-			bind:checked={includeDeleted}
-			onchange={handleFilterChange}
-			class="text-sm text-slate-600"
-		>
-			Mostrar eliminados
-		</Toggle>
+		</select>
+		<label class="flex items-center gap-2 text-sm text-slate-600">
+		<input type="checkbox" bind:checked={includeDeleted} onchange={handleFilterChange} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" />
+		Mostrar eliminados
+	</label>
 	</div>
 
 	<!-- Table -->

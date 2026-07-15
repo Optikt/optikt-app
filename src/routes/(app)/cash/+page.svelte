@@ -2,7 +2,7 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
-	import { Button } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { formatPrice, formatDate, downloadCsv, getErrorMessage } from '$lib/utils';
 	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
 	import {
