@@ -53,12 +53,6 @@
 		return missing;
 	});
 
-	// Lens type options for select (no empty option - defaults to MONOFOCAL)
-	const lensTypeOptions = ALL_LENS_TYPES.map((type) => ({
-		value: type,
-		name: getLensTypeLabel(type)
-	}));
-
 	// Form data
 	let formData = $state({
 		prescriptionDate: undefined as Date | undefined,

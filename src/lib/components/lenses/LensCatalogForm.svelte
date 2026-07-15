@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
 	import { Label } from '$lib/components/ui/label';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { Info } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -969,7 +967,6 @@
 						{@const cylinderHasErrors = cylinderErrors.length > 0}
 						{@const additionHasErrors = additionErrors.length > 0}
 						{@const previewLines = getOpticalRangePreview(range)}
-						{@const sphereModeToggleId = `range-sphere-mode-${i}`}
 						{@const sphereStartLabel =
 							range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE ? 'Exterior' : 'Desde'}
 						{@const sphereEndLabel =
