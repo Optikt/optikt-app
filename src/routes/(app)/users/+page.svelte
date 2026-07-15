@@ -125,13 +125,23 @@
 			oninput={handleSearch}
 			class="min-w-64 flex-1"
 		/>
-		<select bind:value={roleFilter} onchange={handleFilterChange} class="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue">
+		<select
+			bind:value={roleFilter}
+			onchange={handleFilterChange}
+			class="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+		>
 			<option value="">Todos los roles</option>
 			{#each ALL_ROLES as role, index (`${role}-${index}`)}
 				<option value={role}>{role}</option>
 			{/each}
 		</select>
-		<label class="flex items-center gap-2 text-sm"><input type="checkbox" bind:checked={includeInactive} onchange={handleFilterChange} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" />
+		<label class="flex items-center gap-2 text-sm"
+			><input
+				type="checkbox"
+				bind:checked={includeInactive}
+				onchange={handleFilterChange}
+				class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+			/>
 			Incluir inactivos
 		</label>
 	</div>

@@ -116,16 +116,25 @@
 			oninput={handleSearch}
 			class="min-w-64 flex-1"
 		/>
-		<select bind:value={productTypeFilter} onchange={handleFilterChange} class="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue">
+		<select
+			bind:value={productTypeFilter}
+			onchange={handleFilterChange}
+			class="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+		>
 			<option value="">Todos los tipos</option>
 			{#each MATERIAL_CATEGORIES as t (t)}
 				<option value={t}>{MATERIAL_CATEGORY_LABELS[t]}</option>
 			{/each}
 		</select>
 		<label class="flex items-center gap-2 text-sm text-slate-600">
-		<input type="checkbox" bind:checked={includeDeleted} onchange={handleFilterChange} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" />
-		Mostrar eliminados
-	</label>
+			<input
+				type="checkbox"
+				bind:checked={includeDeleted}
+				onchange={handleFilterChange}
+				class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+			/>
+			Mostrar eliminados
+		</label>
 	</div>
 
 	<!-- Table -->

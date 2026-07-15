@@ -104,9 +104,14 @@
 			class="min-w-64 flex-1"
 		/>
 		<label class="flex items-center gap-2 text-sm text-slate-600">
-		<input type="checkbox" bind:checked={includeDeleted} onchange={() => fetchBrands(1)} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" />
-		Mostrar eliminados
-	</label>
+			<input
+				type="checkbox"
+				bind:checked={includeDeleted}
+				onchange={() => fetchBrands(1)}
+				class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+			/>
+			Mostrar eliminados
+		</label>
 	</div>
 
 	<!-- Table -->
