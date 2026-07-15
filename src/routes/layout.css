@@ -13,7 +13,7 @@
 @custom-variant not-last (&:not(:last-child));
 /* ── Optikt Clarity — Design Tokens from Stitch ──────────────────────────── */
 @theme {
-	/* Flowbite primary scale — mapped to sky-blue (tertiary) for focus/interactive */
+	/* Primary scale — mapped to sky-blue (tertiary) for focus/interactive */
 	--color-primary-50: #f0f9fd;
 	--color-primary-100: #d4eef8;
 	--color-primary-200: #a8ddf1;
@@ -25,7 +25,7 @@
 	--color-primary-800: #1e4f5e;
 	--color-primary-900: #19424e;
 
-	/* Flowbite secondary scale — mapped to golden-yellow */
+	/* Secondary scale — mapped to golden-yellow */
 	--color-secondary-50: #fffceb;
 	--color-secondary-100: #fff6c6;
 	--color-secondary-200: #ffe080;
@@ -200,9 +200,10 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
-   Fix Flowbite Input placeholder color.
-   Flowbite's "default" color variant sets `text-gray-900` but NO light-mode
-   `placeholder-*` class, so placeholders inherit the dark text color.
+   Fix Input placeholder color.
+   The form components use `placeholder:text-slate-400` on individual inputs, but
+   some native inputs (e.g. date inputs) don't always inherit it. This rule
+   catches all stragglers and ensures light-mode placeholders are readable.
    This rule is intentionally OUTSIDE @layer so it beats all layered styles
    (Tailwind v4 cascade: un-layered > any @layer).
    ────────────────────────────────────────────────────────────────────────────── */

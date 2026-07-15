@@ -27,7 +27,6 @@
 **Objetivo**
 
 - Terminar de migrar las pantallas restantes al design system "Precision Visionary".
-- Sacar Flowbite de las rutas y componentes compartidos que sigan activos.
 - Mantener el foco en implementacion visual; la deuda tecnica vive en `TECH_DEBT.md`.
 
 **Referencia de diseno**
@@ -73,7 +72,7 @@
 **Criterio de cierre por pantalla**
 
 - Usa componentes y tokens del design system vigente.
-- No deja dependencias nuevas de Flowbite en UI activa.
+- No deja dependencias nuevas de shadcn-svelte en UI activa.
 - Pasa `pnpm lint`, `pnpm test:unit` y `pnpm check`.
 
 ---
