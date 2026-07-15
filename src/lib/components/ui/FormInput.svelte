@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Input, Helper, Label, type InputProps } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { getFormErrorMessage } from '$lib/utils';
 	import type { ClassValue } from 'svelte/elements';
 
-	interface Props extends InputProps {
+	interface Props {
 		value: string;
 		error?: RemoteFormIssue[] | string | null;
 		label?: string;
@@ -15,10 +15,14 @@
 		disabled?: boolean;
 		readonly?: boolean;
 		autocomplete?: 'off' | 'on' | 'new-password' | 'current-password' | 'email' | 'username';
-		size?: 'sm' | 'md' | 'lg';
 		title?: string;
 		class?: ClassValue;
 		divClass?: ClassValue;
+		required?: boolean;
+		step?: string | number;
+		min?: string | number;
+		max?: string | number;
+		hidden?: boolean;
 	}
 
 	let {
@@ -32,7 +36,6 @@
 		disabled = false,
 		readonly = false,
 		autocomplete,
-		size = 'md',
 		divClass,
 		class: className,
 		required = false,
@@ -43,40 +46,58 @@
 		hidden
 	}: Props = $props();
 
-	// Use name as fallback for id (for the label's "for" attribute)
 	const inputId = $derived(id ?? name);
-
-	// Use unified error handling
 	const displayError = $derived(getFormErrorMessage(error));
 	const hasError = $derived(!!displayError);
+
+	const stepStr = $derived(step !== undefined ? String(step) : undefined);
+	const minStr = $derived(min !== undefined ? String(min) : undefined);
+	const maxStr = $derived(max !== undefined ? String(max) : undefined);
+
+	const inputClass = $derived(
+		[
+			'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm shadow-sm transition-colors',
+			'placeholder:text-slate-400',
+			'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
+			'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
+			hasError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300',
+			className
+		]
+			.filter(Boolean)
+			.join(' ')
+	);
 </script>
 
-<!-- Wrapper div ensures this is a single item when used -->
 <div class={divClass} data-form-field={name} data-field-error={hasError ? 'true' : undefined}>
 	{#if label}
-		<Label for={inputId} color={hasError ? 'red' : undefined} class="mb-2">{label}</Label>
+		<Label
+			for={inputId}
+			class={['mb-2 block text-sm font-medium', hasError ? 'text-red-500' : 'text-slate-700'].join(
+				' '
+			)}
+		>
+			{label}
+		</Label>
 	{/if}
-	<Input
-		id={inputId}
+	<input
+		{id}
 		{name}
 		{type}
 		{placeholder}
 		{disabled}
 		{readonly}
 		{autocomplete}
-		{size}
-		class={['placeholder:text-slate-400', className]}
-		bind:value
-		aria-invalid={hasError}
-		color={hasError ? 'red' : undefined}
 		{required}
 		{title}
-		{step}
-		{min}
-		{max}
+		step={stepStr}
+		min={minStr}
+		max={maxStr}
 		{hidden}
+		bind:value
+		aria-invalid={hasError || undefined}
+		class={inputClass}
 	/>
 	{#if displayError}
-		<Helper color="red">{displayError}</Helper>
+		<p class="mt-1 text-sm text-red-500">{displayError}</p>
 	{/if}
 </div>

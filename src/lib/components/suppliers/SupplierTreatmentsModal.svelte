@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button, Select, Spinner } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Plus, Pencil, Trash2, FlaskConical, X, Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
@@ -157,302 +158,336 @@
 	}
 </script>
 
-<Modal
+<Dialog.Root
 	bind:open
-	size="lg"
-	title="Tratamientos - {supplier?.name ?? ''}"
-	outsideclose
-	onclose={handleClose}
+	onOpenChangeComplete={(o) => {
+		if (!o) handleClose();
+	}}
 >
-	{#if loading}
-		<div class="flex items-center justify-center py-12">
-			<Spinner size="8" />
-		</div>
-	{:else}
-		<div class="space-y-4">
-			<!-- Treatment list -->
-			{#if treatments.length === 0 && !showCreateForm}
-				<div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center">
-					<FlaskConical class="mx-auto mb-3 h-8 w-8 text-slate-400" />
-					<p class="text-sm font-medium text-slate-600">No hay tratamientos registrados</p>
-					<p class="mt-1 text-xs text-slate-400">
-						{canManage
-							? 'Agrega tratamientos que este laboratorio ofrece'
-							: 'Este proveedor no tiene tratamientos registrados'}
-					</p>
-				</div>
-			{:else}
-				<div class="divide-y divide-slate-100 rounded-lg border border-slate-200">
-					{#each treatments as treatment (treatment.id)}
-						{#if canManage && editingId === treatment.id}
-							<!-- Inline edit form -->
-							<form
-								{...currentEditForm.enhance(async ({ submit }) => {
-									await submit();
-									await handleEditResult();
-								})}
-								class="space-y-3 bg-blue-50/50 p-3"
-							>
-								<input type="hidden" name="id" value={treatment.id} />
-								<div class="flex items-center gap-3">
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>Tratamientos - {supplier?.name ?? ''}</Dialog.Title>
+		</Dialog.Header>
+		{#if loading}
+			<div class="flex items-center justify-center py-12">
+				<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+					><circle
+						class="opacity-25"
+						cx="12"
+						cy="12"
+						r="10"
+						stroke="currentColor"
+						stroke-width="4"
+					/><path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+					/></svg
+				>
+			</div>
+		{:else}
+			<div class="space-y-4">
+				<!-- Treatment list -->
+				{#if treatments.length === 0 && !showCreateForm}
+					<div
+						class="rounded-lg border border-dashed border-slate-300 bg-slate-50 py-10 text-center"
+					>
+						<FlaskConical class="mx-auto mb-3 h-8 w-8 text-slate-400" />
+						<p class="text-sm font-medium text-slate-600">No hay tratamientos registrados</p>
+						<p class="mt-1 text-xs text-slate-400">
+							{canManage
+								? 'Agrega tratamientos que este laboratorio ofrece'
+								: 'Este proveedor no tiene tratamientos registrados'}
+						</p>
+					</div>
+				{:else}
+					<div class="divide-y divide-slate-100 rounded-lg border border-slate-200">
+						{#each treatments as treatment (treatment.id)}
+							{#if canManage && editingId === treatment.id}
+								<!-- Inline edit form -->
+								<form
+									{...currentEditForm.enhance(async ({ submit }) => {
+										await submit();
+										await handleEditResult();
+									})}
+									class="space-y-3 bg-blue-50/50 p-3"
+								>
+									<input type="hidden" name="id" value={treatment.id} />
+									<div class="flex items-center gap-3">
+										<div class="flex-1">
+											<input
+												name="name"
+												type="text"
+												value={treatment.name}
+												class="w-full rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+												placeholder="Nombre"
+											/>
+											{#if currentEditForm.fields.name?.issues()}
+												<p class="mt-1 text-xs text-red-500">
+													{currentEditForm.fields.name.issues()}
+												</p>
+											{/if}
+										</div>
+										<select
+											name="category"
+											value={treatment.category}
+											class="w-36 text-sm block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+										>
+											{#each ALL_TREATMENT_CATEGORIES as cat (cat)}
+												<option value={cat}>{TREATMENT_CATEGORY_LABELS[cat]}</option>
+											{/each}
+										</select>
+										<div class="flex gap-1">
+											<Button type="submit" size="xs" class="p-1.5">
+												<Check class="h-3.5 w-3.5" />
+											</Button>
+											<Button
+												type="button"
+												size="xs"
+												variant="outline"
+												class="p-1.5"
+												onclick={cancelEdit}
+											>
+												<X class="h-3.5 w-3.5" />
+											</Button>
+										</div>
+									</div>
+									<div class="flex items-center gap-3">
+										<div class="w-28">
+											<label
+												for="edit-price-{treatment.id}"
+												class="mb-1 block text-[11px] font-medium text-slate-500">Costo</label
+											>
+											<input
+												id="edit-price-{treatment.id}"
+												name="price"
+												type="number"
+												step="0.01"
+												min="0"
+												value={treatment.price}
+												class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
+												placeholder="0.00"
+											/>
+										</div>
+										<div class="w-28">
+											<label
+												for="edit-salePrice-{treatment.id}"
+												class="mb-1 block text-[11px] font-medium text-slate-500"
+												>Precio Venta</label
+											>
+											<input
+												id="edit-salePrice-{treatment.id}"
+												name="salePrice"
+												type="number"
+												step="0.01"
+												min="0"
+												value={treatment.salePrice ?? ''}
+												class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
+												placeholder="0.00"
+											/>
+										</div>
+										<div class="flex items-center gap-2 pt-4">
+											<input type="hidden" name="isTaxable" value={String(editTaxable)} />
+											<button
+												type="button"
+												class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {editTaxable
+													? 'bg-blue-600'
+													: 'bg-slate-200'}"
+												onclick={() => (editTaxable = !editTaxable)}
+												role="switch"
+												aria-checked={editTaxable}
+												aria-label="IVA"
+											>
+												<span
+													class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {editTaxable
+														? 'translate-x-4'
+														: 'translate-x-0'}"
+												></span>
+											</button>
+											<span class="text-xs text-slate-600">IVA</span>
+										</div>
+									</div>
+								</form>
+							{:else}
+								<!-- Display row -->
+								<div
+									class="flex items-center gap-3 px-4 py-3 {!treatment.isActive
+										? 'opacity-50'
+										: ''}"
+								>
 									<div class="flex-1">
-										<input
-											name="name"
-											type="text"
-											value={treatment.name}
-											class="w-full rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-											placeholder="Nombre"
-										/>
-										{#if currentEditForm.fields.name?.issues()}
-											<p class="mt-1 text-xs text-red-500">
-												{currentEditForm.fields.name.issues()}
-											</p>
-										{/if}
+										<span class="text-sm font-medium text-slate-800">{treatment.name}</span>
 									</div>
-									<Select name="category" value={treatment.category} class="w-36 text-sm">
-										{#each ALL_TREATMENT_CATEGORIES as cat (cat)}
-											<option value={cat}>{TREATMENT_CATEGORY_LABELS[cat]}</option>
-										{/each}
-									</Select>
-									<div class="flex gap-1">
-										<Button type="submit" size="xs" color="blue" class="p-1.5">
-											<Check class="h-3.5 w-3.5" />
-										</Button>
-										<Button
-											type="button"
-											size="xs"
-											color="light"
-											class="p-1.5"
-											onclick={cancelEdit}
-										>
-											<X class="h-3.5 w-3.5" />
-										</Button>
-									</div>
-								</div>
-								<div class="flex items-center gap-3">
-									<div class="w-28">
-										<label
-											for="edit-price-{treatment.id}"
-											class="mb-1 block text-[11px] font-medium text-slate-500">Costo</label
-										>
-										<input
-											id="edit-price-{treatment.id}"
-											name="price"
-											type="number"
-											step="0.01"
-											min="0"
-											value={treatment.price}
-											class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
-											placeholder="0.00"
-										/>
-									</div>
-									<div class="w-28">
-										<label
-											for="edit-salePrice-{treatment.id}"
-											class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label
-										>
-										<input
-											id="edit-salePrice-{treatment.id}"
-											name="salePrice"
-											type="number"
-											step="0.01"
-											min="0"
-											value={treatment.salePrice ?? ''}
-											class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
-											placeholder="0.00"
-										/>
-									</div>
-									<div class="flex items-center gap-2 pt-4">
-										<input type="hidden" name="isTaxable" value={String(editTaxable)} />
-										<button
-											type="button"
-											class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {editTaxable
-												? 'bg-blue-600'
-												: 'bg-slate-200'}"
-											onclick={() => (editTaxable = !editTaxable)}
-											role="switch"
-											aria-checked={editTaxable}
-											aria-label="IVA"
-										>
-											<span
-												class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {editTaxable
-													? 'translate-x-4'
-													: 'translate-x-0'}"
-											></span>
-										</button>
-										<span class="text-xs text-slate-600">IVA</span>
-									</div>
-								</div>
-							</form>
-						{:else}
-							<!-- Display row -->
-							<div
-								class="flex items-center gap-3 px-4 py-3 {!treatment.isActive ? 'opacity-50' : ''}"
-							>
-								<div class="flex-1">
-									<span class="text-sm font-medium text-slate-800">{treatment.name}</span>
-								</div>
-								<span
-									class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-									{treatment.category === TreatmentCategory.AR
-										? 'bg-blue-100 text-blue-700'
-										: 'bg-violet-100 text-violet-700'}"
-								>
-									{getTreatmentCategoryLabel(treatment.category)}
-								</span>
-								{#if treatment.isTaxable}
 									<span
-										class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
-										>IVA</span
+										class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+										{treatment.category === TreatmentCategory.AR
+											? 'bg-blue-100 text-blue-700'
+											: 'bg-violet-100 text-violet-700'}"
 									>
-								{/if}
-								<span class="text-right font-mono text-xs text-slate-400" title="Costo">
-									{formatPrice(treatment.price)}
-								</span>
-								<span
-									class="w-24 text-right font-mono text-sm font-medium text-slate-700"
-									title="Precio Venta"
-								>
-									{formatPrice(treatment.salePrice ?? treatment.price)}
-								</span>
-								{#if !treatment.isActive}
-									<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
-										>Inactivo</span
+										{getTreatmentCategoryLabel(treatment.category)}
+									</span>
+									{#if treatment.isTaxable}
+										<span
+											class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+											>IVA</span
+										>
+									{/if}
+									<span class="text-right font-mono text-xs text-slate-400" title="Costo">
+										{formatPrice(treatment.price)}
+									</span>
+									<span
+										class="w-24 text-right font-mono text-sm font-medium text-slate-700"
+										title="Precio Venta"
 									>
-								{/if}
-								{#if canManage}
-									<div class="flex gap-1">
-										<button
-											type="button"
-											class="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600"
-											onclick={() => startEdit(treatment)}
+										{formatPrice(treatment.salePrice ?? treatment.price)}
+									</span>
+									{#if !treatment.isActive}
+										<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
+											>Inactivo</span
 										>
-											<Pencil class="h-3.5 w-3.5" />
-										</button>
-										<button
-											type="button"
-											class="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-											onclick={() => openDelete(treatment)}
-										>
-											<Trash2 class="h-3.5 w-3.5" />
-										</button>
-									</div>
+									{/if}
+									{#if canManage}
+										<div class="flex gap-1">
+											<button
+												type="button"
+												class="rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600"
+												onclick={() => startEdit(treatment)}
+											>
+												<Pencil class="h-3.5 w-3.5" />
+											</button>
+											<button
+												type="button"
+												class="rounded p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+												onclick={() => openDelete(treatment)}
+											>
+												<Trash2 class="h-3.5 w-3.5" />
+											</button>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						{/each}
+					</div>
+				{/if}
+
+				<!-- Create form (inline at bottom) -->
+				{#if canManage && showCreateForm && supplier}
+					<form
+						{...currentCreateForm.enhance(async ({ submit }) => {
+							await submit();
+							await handleCreateResult();
+						})}
+						class="space-y-3 rounded-lg border border-blue-200 bg-blue-50/30 p-3"
+					>
+						<input type="hidden" name="supplierId" value={supplier.id} />
+						<div class="flex items-start gap-3">
+							<div class="flex-1">
+								<input
+									name="name"
+									type="text"
+									class="w-full rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+									placeholder="Nombre del tratamiento"
+								/>
+								{#if currentCreateForm.fields.name?.issues()}
+									<p class="mt-1 text-xs text-red-500">{currentCreateForm.fields.name.issues()}</p>
 								{/if}
 							</div>
-						{/if}
-					{/each}
-				</div>
-			{/if}
+							<select
+								name="category"
+								value={TreatmentCategory.AR}
+								class="w-36 text-sm block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+							>
+								{#each ALL_TREATMENT_CATEGORIES as cat (cat)}
+									<option value={cat}>{TREATMENT_CATEGORY_LABELS[cat]}</option>
+								{/each}
+							</select>
+							<div class="flex gap-1">
+								<Button type="submit" size="xs" class="p-1.5">
+									<Check class="h-3.5 w-3.5" />
+								</Button>
+								<Button
+									type="button"
+									size="xs"
+									variant="outline"
+									class="p-1.5"
+									onclick={cancelCreate}
+								>
+									<X class="h-3.5 w-3.5" />
+								</Button>
+							</div>
+						</div>
+						<div class="flex items-center gap-3">
+							<div class="w-28">
+								<label for="create-price" class="mb-1 block text-[11px] font-medium text-slate-500"
+									>Costo</label
+								>
+								<input
+									id="create-price"
+									name="price"
+									type="number"
+									step="0.01"
+									min="0"
+									class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
+									placeholder="0.00"
+								/>
+								{#if currentCreateForm.fields.price?.issues()}
+									<p class="mt-1 text-xs text-red-500">{currentCreateForm.fields.price.issues()}</p>
+								{/if}
+							</div>
+							<div class="w-28">
+								<label
+									for="create-salePrice"
+									class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label
+								>
+								<input
+									id="create-salePrice"
+									name="salePrice"
+									type="number"
+									step="0.01"
+									min="0"
+									class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
+									placeholder="0.00"
+								/>
+							</div>
+							<div class="flex items-center gap-2 pt-4">
+								<input type="hidden" name="isTaxable" value={String(createTaxable)} />
+								<button
+									type="button"
+									class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {createTaxable
+										? 'bg-blue-600'
+										: 'bg-slate-200'}"
+									onclick={() => (createTaxable = !createTaxable)}
+									role="switch"
+									aria-checked={createTaxable}
+									aria-label="IVA"
+								>
+									<span
+										class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {createTaxable
+											? 'translate-x-4'
+											: 'translate-x-0'}"
+									></span>
+								</button>
+								<span class="text-xs text-slate-600">IVA</span>
+							</div>
+						</div>
+					</form>
+				{/if}
+			</div>
+		{/if}
 
-			<!-- Create form (inline at bottom) -->
-			{#if canManage && showCreateForm && supplier}
-				<form
-					{...currentCreateForm.enhance(async ({ submit }) => {
-						await submit();
-						await handleCreateResult();
-					})}
-					class="space-y-3 rounded-lg border border-blue-200 bg-blue-50/30 p-3"
-				>
-					<input type="hidden" name="supplierId" value={supplier.id} />
-					<div class="flex items-start gap-3">
-						<div class="flex-1">
-							<input
-								name="name"
-								type="text"
-								class="w-full rounded-md border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500"
-								placeholder="Nombre del tratamiento"
-							/>
-							{#if currentCreateForm.fields.name?.issues()}
-								<p class="mt-1 text-xs text-red-500">{currentCreateForm.fields.name.issues()}</p>
-							{/if}
-						</div>
-						<Select name="category" value={TreatmentCategory.AR} class="w-36 text-sm">
-							{#each ALL_TREATMENT_CATEGORIES as cat (cat)}
-								<option value={cat}>{TREATMENT_CATEGORY_LABELS[cat]}</option>
-							{/each}
-						</Select>
-						<div class="flex gap-1">
-							<Button type="submit" size="xs" color="blue" class="p-1.5">
-								<Check class="h-3.5 w-3.5" />
-							</Button>
-							<Button type="button" size="xs" color="light" class="p-1.5" onclick={cancelCreate}>
-								<X class="h-3.5 w-3.5" />
-							</Button>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<div class="w-28">
-							<label for="create-price" class="mb-1 block text-[11px] font-medium text-slate-500"
-								>Costo</label
-							>
-							<input
-								id="create-price"
-								name="price"
-								type="number"
-								step="0.01"
-								min="0"
-								class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
-								placeholder="0.00"
-							/>
-							{#if currentCreateForm.fields.price?.issues()}
-								<p class="mt-1 text-xs text-red-500">{currentCreateForm.fields.price.issues()}</p>
-							{/if}
-						</div>
-						<div class="w-28">
-							<label
-								for="create-salePrice"
-								class="mb-1 block text-[11px] font-medium text-slate-500">Precio Venta</label
-							>
-							<input
-								id="create-salePrice"
-								name="salePrice"
-								type="number"
-								step="0.01"
-								min="0"
-								class="w-full rounded-md border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
-								placeholder="0.00"
-							/>
-						</div>
-						<div class="flex items-center gap-2 pt-4">
-							<input type="hidden" name="isTaxable" value={String(createTaxable)} />
-							<button
-								type="button"
-								class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none {createTaxable
-									? 'bg-blue-600'
-									: 'bg-slate-200'}"
-								onclick={() => (createTaxable = !createTaxable)}
-								role="switch"
-								aria-checked={createTaxable}
-								aria-label="IVA"
-							>
-								<span
-									class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 {createTaxable
-										? 'translate-x-4'
-										: 'translate-x-0'}"
-								></span>
-							</button>
-							<span class="text-xs text-slate-600">IVA</span>
-						</div>
-					</div>
-				</form>
-			{/if}
-		</div>
-	{/if}
-
-	{#snippet footer()}
-		<div class="flex w-full items-center {canManage ? 'justify-between' : 'justify-end'}">
+		<Dialog.Footer class="flex w-full items-center {canManage ? 'justify-between' : 'justify-end'}">
 			{#if canManage && !showCreateForm && !loading}
-				<Button size="sm" color="blue" outline onclick={openCreate}>
+				<Button size="sm" variant="outline" onclick={openCreate}>
 					<Plus class="mr-1.5 h-4 w-4" />
 					Agregar Tratamiento
 				</Button>
 			{:else if canManage}
 				<div></div>
 			{/if}
-			<Button size="sm" color="light" onclick={handleClose}>Cerrar</Button>
-		</div>
-	{/snippet}
-</Modal>
+			<Button size="sm" variant="outline" onclick={handleClose}>Cerrar</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Delete confirmation -->
 <ConfirmModal

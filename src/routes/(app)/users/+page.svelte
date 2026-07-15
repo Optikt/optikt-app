@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Select, Checkbox } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
@@ -109,7 +109,7 @@
 			<h1 class="text-3xl font-bold tracking-tight text-slate-900">Usuarios</h1>
 			<p class="text-slate-500">Gestiona los usuarios del sistema</p>
 		</div>
-		<Button color="blue" onclick={openCreate}>
+		<Button onclick={openCreate}>
 			<Plus class="mr-2 h-5 w-5" />
 			Agregar Usuario
 		</Button>
@@ -125,15 +125,25 @@
 			oninput={handleSearch}
 			class="min-w-64 flex-1"
 		/>
-		<Select bind:value={roleFilter} onchange={handleFilterChange} class="w-40">
+		<select
+			bind:value={roleFilter}
+			onchange={handleFilterChange}
+			class="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+		>
 			<option value="">Todos los roles</option>
 			{#each ALL_ROLES as role, index (`${role}-${index}`)}
 				<option value={role}>{role}</option>
 			{/each}
-		</Select>
-		<Checkbox bind:checked={includeInactive} onchange={handleFilterChange}>
+		</select>
+		<label class="flex items-center gap-2 text-sm"
+			><input
+				type="checkbox"
+				bind:checked={includeInactive}
+				onchange={handleFilterChange}
+				class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+			/>
 			Incluir inactivos
-		</Checkbox>
+		</label>
 	</div>
 
 	<!-- Table -->

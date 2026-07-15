@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Input, Helper, Label } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { Eye, EyeOff } from '@lucide/svelte';
 	import { getFormErrorMessage } from '$lib/utils';
 
@@ -13,7 +13,6 @@
 		placeholder?: string;
 		disabled?: boolean;
 		autocomplete?: 'off' | 'on' | 'new-password' | 'current-password';
-		size?: 'sm' | 'md' | 'lg';
 		class?: string;
 		required?: boolean;
 	}
@@ -27,7 +26,6 @@
 		placeholder = '••••••••',
 		disabled = false,
 		autocomplete,
-		size = 'md',
 		class: className,
 		required = false
 	}: Props = $props();
@@ -44,21 +42,27 @@
 
 <div class={className}>
 	{#if label}
-		<Label for={inputId} color={hasError ? 'red' : undefined}>{label}</Label>
+		<Label for={inputId} class={hasError ? 'text-red-500' : ''}>{label}</Label>
 	{/if}
 	<div class="relative">
-		<Input
+		<input
 			type={showPassword ? 'text' : 'password'}
 			id={inputId}
 			{name}
 			{placeholder}
 			{disabled}
 			{autocomplete}
-			{size}
-			class="pr-10 placeholder:text-slate-400"
 			bind:value
-			color={hasError ? 'red' : undefined}
 			{required}
+			aria-invalid={hasError || undefined}
+			class={[
+				'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm shadow-sm transition-colors',
+				'placeholder:text-slate-400',
+				'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
+				'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
+				'pr-10',
+				hasError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300'
+			].join(' ')}
 		/>
 		<button
 			type="button"
@@ -74,6 +78,6 @@
 		</button>
 	</div>
 	{#if displayError}
-		<Helper color="red">{displayError}</Helper>
+		<p class="mt-1 text-sm text-red-500">{displayError}</p>
 	{/if}
 </div>

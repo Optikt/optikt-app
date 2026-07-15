@@ -19,7 +19,7 @@ Optical stores usually need more than a simple stock tracker. They work with pro
 
 - SvelteKit 2 + Svelte 5
 - TypeScript
-- Tailwind CSS + Flowbite-Svelte
+- Tailwind CSS + shadcn-svelte (bits-ui)
 - Drizzle ORM + PostgreSQL
 - Zod for validation
 - Playwright + Vitest for testing

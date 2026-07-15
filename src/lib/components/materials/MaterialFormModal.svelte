@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button, Spinner } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createMaterialForm, updateMaterialForm } from '$lib/remote/materials.remote';
@@ -117,141 +118,178 @@
 	}
 </script>
 
-<Modal bind:open size="md" {title}>
-	{#if isEditMode && material}
-		<!-- UPDATE FORM -->
-		<form
-			{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleUpdateResult(formEl);
-				} catch (e) {
-					console.error(e);
-					toast.error('Error actualizando material');
-				} finally {
-					isSubmitting = false;
-				}
-			})}
-			class="flex flex-col gap-4"
-		>
-			<input type="hidden" name="id" value={material.id} />
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>{title}</Dialog.Title>
+		</Dialog.Header>
+		{#if isEditMode && material}
+			<!-- UPDATE FORM -->
+			<form
+				{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
+					isSubmitting = true;
+					try {
+						await submit();
+						handleUpdateResult(formEl);
+					} catch (e) {
+						console.error(e);
+						toast.error('Error actualizando material');
+					} finally {
+						isSubmitting = false;
+					}
+				})}
+				class="flex flex-col gap-4"
+			>
+				<input type="hidden" name="id" value={material.id} />
 
-			<FormInput
-				label="Nombre *"
-				name="name"
-				bind:value={formData.name}
-				placeholder="Ej: Titanio"
-				error={currentUpdateForm.fields.name?.issues()}
-			/>
+				<FormInput
+					label="Nombre *"
+					name="name"
+					bind:value={formData.name}
+					placeholder="Ej: Titanio"
+					error={currentUpdateForm.fields.name?.issues()}
+				/>
 
-			<FormInput
-				label="Código *"
-				name="code"
-				bind:value={formData.code}
-				placeholder="Ej: FRM_TITANIUM"
-				error={currentUpdateForm.fields.code?.issues()}
-			/>
+				<FormInput
+					label="Código *"
+					name="code"
+					bind:value={formData.code}
+					placeholder="Ej: FRM_TITANIUM"
+					error={currentUpdateForm.fields.code?.issues()}
+				/>
 
-			<div>
-				<label for="productType" class="mb-2 block text-sm font-medium text-gray-900">
-					Tipo de Producto *
-				</label>
-				<select
-					id="productType"
-					name="productType"
-					bind:value={formData.productType}
-					class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-				>
-					{#each MATERIAL_CATEGORIES as type (type)}
-						<option value={type}>{MATERIAL_CATEGORY_LABELS[type]}</option>
-					{/each}
-				</select>
-			</div>
+				<div>
+					<label for="productType" class="mb-2 block text-sm font-medium text-gray-900">
+						Tipo de Producto *
+					</label>
+					<select
+						id="productType"
+						name="productType"
+						bind:value={formData.productType}
+						class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+					>
+						{#each MATERIAL_CATEGORIES as type (type)}
+							<option value={type}>{MATERIAL_CATEGORY_LABELS[type]}</option>
+						{/each}
+					</select>
+				</div>
 
-			<FormTextarea
-				label="Descripción"
-				name="description"
-				bind:value={formData.description}
-				placeholder="Descripción del material"
-				rows={3}
-			/>
+				<FormTextarea
+					label="Descripción"
+					name="description"
+					bind:value={formData.description}
+					placeholder="Descripción del material"
+					rows={3}
+				/>
 
-			<div class="flex justify-end gap-2 pt-4">
-				<Button color="light" onclick={onClose}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{:else}
-		<!-- CREATE FORM -->
-		<form
-			{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleCreateResult(formEl);
-				} catch (e) {
-					console.error(e);
-					toast.error('Error creando material');
-				} finally {
-					isSubmitting = false;
-				}
-			})}
-			class="flex flex-col gap-4"
-		>
-			<FormInput
-				label="Nombre *"
-				name="name"
-				bind:value={formData.name}
-				placeholder="Ej: Titanio"
-				error={currentCreateForm.fields.name?.issues()}
-			/>
+				<div class="flex justify-end gap-2 pt-4">
+					<Button variant="outline" onclick={onClose}>Cancelar</Button>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}<svg
+								class="mx-auto h-5 w-5 animate-spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>{/if}
+						{submitText}
+					</Button>
+				</div>
+			</form>
+		{:else}
+			<!-- CREATE FORM -->
+			<form
+				{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
+					isSubmitting = true;
+					try {
+						await submit();
+						handleCreateResult(formEl);
+					} catch (e) {
+						console.error(e);
+						toast.error('Error creando material');
+					} finally {
+						isSubmitting = false;
+					}
+				})}
+				class="flex flex-col gap-4"
+			>
+				<FormInput
+					label="Nombre *"
+					name="name"
+					bind:value={formData.name}
+					placeholder="Ej: Titanio"
+					error={currentCreateForm.fields.name?.issues()}
+				/>
 
-			<FormInput
-				label="Código *"
-				name="code"
-				bind:value={formData.code}
-				placeholder="Ej: FRM_TITANIUM"
-				error={currentCreateForm.fields.code?.issues()}
-			/>
+				<FormInput
+					label="Código *"
+					name="code"
+					bind:value={formData.code}
+					placeholder="Ej: FRM_TITANIUM"
+					error={currentCreateForm.fields.code?.issues()}
+				/>
 
-			<div>
-				<label for="productType" class="mb-2 block text-sm font-medium text-gray-900">
-					Tipo de Producto *
-				</label>
-				<select
-					id="productType"
-					name="productType"
-					bind:value={formData.productType}
-					class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-				>
-					{#each MATERIAL_CATEGORIES as type (type)}
-						<option value={type}>{MATERIAL_CATEGORY_LABELS[type]}</option>
-					{/each}
-				</select>
-			</div>
+				<div>
+					<label for="productType" class="mb-2 block text-sm font-medium text-gray-900">
+						Tipo de Producto *
+					</label>
+					<select
+						id="productType"
+						name="productType"
+						bind:value={formData.productType}
+						class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+					>
+						{#each MATERIAL_CATEGORIES as type (type)}
+							<option value={type}>{MATERIAL_CATEGORY_LABELS[type]}</option>
+						{/each}
+					</select>
+				</div>
 
-			<FormTextarea
-				label="Descripción"
-				name="description"
-				bind:value={formData.description}
-				placeholder="Descripción del material"
-				rows={3}
-			/>
+				<FormTextarea
+					label="Descripción"
+					name="description"
+					bind:value={formData.description}
+					placeholder="Descripción del material"
+					rows={3}
+				/>
 
-			<div class="flex justify-end gap-2 pt-4">
-				<Button color="light" onclick={onClose}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{/if}
-</Modal>
+				<div class="flex justify-end gap-2 pt-4">
+					<Button variant="outline" onclick={onClose}>Cancelar</Button>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}<svg
+								class="mx-auto h-5 w-5 animate-spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>{/if}
+						{submitText}
+					</Button>
+				</div>
+			</form>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Reactivate Confirmation Modal -->
 <MaterialReactivateModal

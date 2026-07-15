@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import {
 		Phone,
 		Mail,
@@ -170,218 +171,226 @@
 	});
 </script>
 
-<Modal bind:open size="lg" title="Detalles del Proveedor" outsideclose onclose={handleClose}>
-	{#if supplier}
-		<div class="space-y-6">
-			<!-- Header with name and type -->
-			<div class="flex items-start justify-between border-b border-slate-200 pb-4">
-				<div>
-					<h3 class="text-xl font-semibold text-slate-800">{supplier.name}</h3>
-					{#if supplier.rif}
-						<p class="mt-1 font-mono text-sm text-slate-500">{supplier.rif}</p>
-					{/if}
+<Dialog.Root
+	bind:open
+	onOpenChangeComplete={(o) => {
+		if (!o) handleClose();
+	}}
+>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>Detalles del Proveedor</Dialog.Title>
+		</Dialog.Header>
+		{#if supplier}
+			<div class="space-y-6">
+				<!-- Header with name and type -->
+				<div class="flex items-start justify-between border-b border-slate-200 pb-4">
+					<div>
+						<h3 class="text-xl font-semibold text-slate-800">{supplier.name}</h3>
+						{#if supplier.rif}
+							<p class="mt-1 font-mono text-sm text-slate-500">{supplier.rif}</p>
+						{/if}
+					</div>
+					<SupplierTypeBadge type={supplier.type} class="text-sm" />
 				</div>
-				<SupplierTypeBadge type={supplier.type} class="text-sm" />
-			</div>
 
-			<!-- Contact Information -->
-			<div class="grid grid-cols-2 gap-6">
-				<div class="space-y-4">
-					<h4 class="text-sm font-medium text-slate-600">Información de Contacto</h4>
+				<!-- Contact Information -->
+				<div class="grid grid-cols-2 gap-6">
+					<div class="space-y-4">
+						<h4 class="text-sm font-medium text-slate-600">Información de Contacto</h4>
 
-					<div class="flex items-center gap-3">
-						<Phone class="h-4 w-4 text-slate-400" />
-						<span class="text-sm text-slate-700">{formatPhone(supplier.primaryPhone)}</span>
+						<div class="flex items-center gap-3">
+							<Phone class="h-4 w-4 text-slate-400" />
+							<span class="text-sm text-slate-700">{formatPhone(supplier.primaryPhone)}</span>
+						</div>
+
+						{#if supplier.email}
+							<div class="flex items-center gap-3">
+								<Mail class="h-4 w-4 text-slate-400" />
+								<a href="mailto:{supplier.email}" class="text-sm text-primary-600 hover:underline">
+									{supplier.email}
+								</a>
+							</div>
+						{/if}
+
+						{#if supplier.website}
+							<div class="flex items-center gap-3">
+								<Globe class="h-4 w-4 text-slate-400" />
+								<a
+									href={supplier.website}
+									target="_blank"
+									rel="external noopener"
+									class="text-sm text-primary-600 hover:underline"
+								>
+									{supplier.website}
+								</a>
+							</div>
+						{/if}
+
+						{#if supplier.address}
+							<div class="flex items-start gap-3">
+								<MapPin class="h-4 w-4 shrink-0 text-slate-400" />
+								<span class="text-sm text-slate-700">{supplier.address}</span>
+							</div>
+						{/if}
 					</div>
 
-					{#if supplier.email}
-						<div class="flex items-center gap-3">
-							<Mail class="h-4 w-4 text-slate-400" />
-							<a href="mailto:{supplier.email}" class="text-sm text-primary-600 hover:underline">
-								{supplier.email}
-							</a>
-						</div>
-					{/if}
+					<!-- Social Media -->
+					<div class="space-y-4">
+						<h4 class="text-sm font-medium text-slate-600">Redes Sociales</h4>
 
-					{#if supplier.website}
-						<div class="flex items-center gap-3">
-							<Globe class="h-4 w-4 text-slate-400" />
-							<a
-								href={supplier.website}
-								target="_blank"
-								rel="external noopener"
-								class="text-sm text-primary-600 hover:underline"
-							>
-								{supplier.website}
-							</a>
-						</div>
-					{/if}
+						{#if supplier.instagram}
+							<div class="flex items-center gap-3">
+								<Camera class="h-4 w-4 text-slate-400" />
+								<a
+									href="https://instagram.com/{supplier.instagram.replace('@', '')}"
+									target="_blank"
+									rel="external noopener"
+									class="text-sm text-primary-600 hover:underline"
+								>
+									{supplier.instagram}
+								</a>
+							</div>
+						{/if}
 
-					{#if supplier.address}
-						<div class="flex items-start gap-3">
-							<MapPin class="h-4 w-4 shrink-0 text-slate-400" />
-							<span class="text-sm text-slate-700">{supplier.address}</span>
-						</div>
-					{/if}
-				</div>
+						{#if supplier.whatsapp}
+							<div class="flex items-center gap-3">
+								<MessageCircle class="h-4 w-4 text-slate-400" />
+								<a
+									href="https://wa.me/{supplier.whatsapp.replace(/[^0-9]/g, '')}"
+									target="_blank"
+									rel="external noopener"
+									class="text-sm text-primary-600 hover:underline"
+								>
+									{supplier.whatsapp}
+								</a>
+							</div>
+						{/if}
 
-				<!-- Social Media -->
-				<div class="space-y-4">
-					<h4 class="text-sm font-medium text-slate-600">Redes Sociales</h4>
-
-					{#if supplier.instagram}
-						<div class="flex items-center gap-3">
-							<Camera class="h-4 w-4 text-slate-400" />
-							<a
-								href="https://instagram.com/{supplier.instagram.replace('@', '')}"
-								target="_blank"
-								rel="external noopener"
-								class="text-sm text-primary-600 hover:underline"
-							>
-								{supplier.instagram}
-							</a>
-						</div>
-					{/if}
-
-					{#if supplier.whatsapp}
-						<div class="flex items-center gap-3">
-							<MessageCircle class="h-4 w-4 text-slate-400" />
-							<a
-								href="https://wa.me/{supplier.whatsapp.replace(/[^0-9]/g, '')}"
-								target="_blank"
-								rel="external noopener"
-								class="text-sm text-primary-600 hover:underline"
-							>
-								{supplier.whatsapp}
-							</a>
-						</div>
-					{/if}
-
-					{#if !supplier.instagram && !supplier.whatsapp}
-						<p class="text-sm text-slate-400 italic">Sin redes sociales registradas</p>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Contact Person -->
-			{#if supplier.contactName || supplier.contactPhone || supplier.contactRole}
-				<div class="border-t border-slate-200 pt-4">
-					<h4 class="mb-3 text-sm font-medium text-slate-600">Persona de Contacto</h4>
-					<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-						<div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200">
-							<User class="h-5 w-5 text-slate-500" />
-						</div>
-						<div>
-							<p class="font-medium text-slate-700">{supplier.contactName ?? 'Sin nombre'}</p>
-							<p class="text-sm text-slate-500">
-								{supplier.contactRole ?? 'Sin cargo'}
-								{#if supplier.contactPhone}
-									• {supplier.contactPhone}
-								{/if}
-							</p>
-						</div>
+						{#if !supplier.instagram && !supplier.whatsapp}
+							<p class="text-sm text-slate-400 italic">Sin redes sociales registradas</p>
+						{/if}
 					</div>
 				</div>
-			{/if}
 
-			<!-- Notes -->
-			{#if supplier.notes}
+				<!-- Contact Person -->
+				{#if supplier.contactName || supplier.contactPhone || supplier.contactRole}
+					<div class="border-t border-slate-200 pt-4">
+						<h4 class="mb-3 text-sm font-medium text-slate-600">Persona de Contacto</h4>
+						<div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200">
+								<User class="h-5 w-5 text-slate-500" />
+							</div>
+							<div>
+								<p class="font-medium text-slate-700">{supplier.contactName ?? 'Sin nombre'}</p>
+								<p class="text-sm text-slate-500">
+									{supplier.contactRole ?? 'Sin cargo'}
+									{#if supplier.contactPhone}
+										• {supplier.contactPhone}
+									{/if}
+								</p>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Notes -->
+				{#if supplier.notes}
+					<div class="border-t border-slate-200 pt-4">
+						<h4 class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600">
+							<FileText class="h-4 w-4" />
+							Notas
+						</h4>
+						<p class="text-sm whitespace-pre-wrap text-slate-700">{supplier.notes}</p>
+					</div>
+				{/if}
+
 				<div class="border-t border-slate-200 pt-4">
-					<h4 class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600">
-						<FileText class="h-4 w-4" />
-						Notas
-					</h4>
-					<p class="text-sm whitespace-pre-wrap text-slate-700">{supplier.notes}</p>
-				</div>
-			{/if}
+					<div class="mb-3 flex items-center justify-between gap-3">
+						<h4 class="flex items-center gap-2 text-sm font-medium text-slate-600">
+							<Tag class="h-4 w-4" />
+							Marcas que provee
+						</h4>
+						{#if canManageRelations}
+							<button
+								type="button"
+								onclick={editingRelations ? stopRelationEditing : startRelationEditing}
+								class="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
+							>
+								{editingRelations ? 'Listo' : 'Editar'}
+							</button>
+						{/if}
+					</div>
 
-			<div class="border-t border-slate-200 pt-4">
-				<div class="mb-3 flex items-center justify-between gap-3">
-					<h4 class="flex items-center gap-2 text-sm font-medium text-slate-600">
-						<Tag class="h-4 w-4" />
-						Marcas que provee
-					</h4>
-					{#if canManageRelations}
-						<button
-							type="button"
-							onclick={editingRelations ? stopRelationEditing : startRelationEditing}
-							class="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
-						>
-							{editingRelations ? 'Listo' : 'Editar'}
-						</button>
+					{#if editingRelations}
+						<div class="mb-4 flex flex-col gap-2 sm:flex-row">
+							<select
+								bind:value={selectedBrandId}
+								disabled={loadingBrandOptions || savingRelation || availableBrands.length === 0}
+								class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-blue/40 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								<option value="">
+									{loadingBrandOptions
+										? 'Cargando marcas...'
+										: availableBrands.length === 0
+											? 'No hay marcas disponibles'
+											: 'Agregar marca...'}
+								</option>
+								{#each availableBrands as brandOption (brandOption.id)}
+									<option value={brandOption.id}>{brandOption.name}</option>
+								{/each}
+							</select>
+							<button
+								type="button"
+								onclick={handleAddBrand}
+								disabled={!selectedBrandId || savingRelation}
+								class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								<Plus class="h-4 w-4" />
+								Agregar
+							</button>
+						</div>
 					{/if}
-				</div>
 
-				{#if editingRelations}
-					<div class="mb-4 flex flex-col gap-2 sm:flex-row">
-						<select
-							bind:value={selectedBrandId}
-							disabled={loadingBrandOptions || savingRelation || availableBrands.length === 0}
-							class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-blue/40 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-						>
-							<option value="">
-								{loadingBrandOptions
-									? 'Cargando marcas...'
-									: availableBrands.length === 0
-										? 'No hay marcas disponibles'
-										: 'Agregar marca...'}
-							</option>
-							{#each availableBrands as brandOption (brandOption.id)}
-								<option value={brandOption.id}>{brandOption.name}</option>
+					{#if loadingRelations}
+						<p class="text-sm text-slate-500">Cargando marcas relacionadas...</p>
+					{:else if relationsError}
+						<p class="text-sm text-red-600">{relationsError}</p>
+					{:else if relatedBrands.length > 0}
+						<div class="flex flex-wrap gap-2">
+							{#each relatedBrands as brand (brand.id)}
+								<span
+									class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+								>
+									{brand.name}
+									{#if editingRelations}
+										<button
+											type="button"
+											onclick={() => handleRemoveBrand(brand)}
+											disabled={savingRelation}
+											aria-label={`Quitar marca ${brand.name}`}
+											class="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+										>
+											<X class="h-3 w-3" />
+										</button>
+									{/if}
+								</span>
 							{/each}
-						</select>
-						<button
-							type="button"
-							onclick={handleAddBrand}
-							disabled={!selectedBrandId || savingRelation}
-							class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
-						>
-							<Plus class="h-4 w-4" />
-							Agregar
-						</button>
-					</div>
-				{/if}
-
-				{#if loadingRelations}
-					<p class="text-sm text-slate-500">Cargando marcas relacionadas...</p>
-				{:else if relationsError}
-					<p class="text-sm text-red-600">{relationsError}</p>
-				{:else if relatedBrands.length > 0}
-					<div class="flex flex-wrap gap-2">
-						{#each relatedBrands as brand (brand.id)}
-							<span
-								class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
-							>
-								{brand.name}
-								{#if editingRelations}
-									<button
-										type="button"
-										onclick={() => handleRemoveBrand(brand)}
-										disabled={savingRelation}
-										aria-label={`Quitar marca ${brand.name}`}
-										class="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-									>
-										<X class="h-3 w-3" />
-									</button>
-								{/if}
-							</span>
-						{/each}
-					</div>
-				{:else}
-					<p class="text-sm text-slate-500 italic">
-						Aún no hay marcas registradas para este proveedor.
-					</p>
-				{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-slate-500 italic">
+							Aún no hay marcas registradas para este proveedor.
+						</p>
+					{/if}
+				</div>
 			</div>
-		</div>
-	{/if}
+		{/if}
 
-	{#snippet footer()}
-		<div class="flex w-full justify-end gap-3">
-			<Button color="alternative" onclick={handleClose}>Cerrar</Button>
+		<Dialog.Footer class="flex justify-end gap-3">
+			<Button variant="outline" onclick={handleClose}>Cerrar</Button>
 			{#if onEdit}
-				<Button color="primary" onclick={handleEdit}>Editar</Button>
+				<Button onclick={handleEdit}>Editar</Button>
 			{/if}
-		</div>
-	{/snippet}
-</Modal>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

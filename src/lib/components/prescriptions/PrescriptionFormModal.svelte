@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { Modal, Button, Spinner, Checkbox, Label, Select } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Label } from '$lib/components/ui/label';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createPrescriptionForm, updatePrescriptionForm } from '$lib/remote/prescriptions.remote';
@@ -50,12 +52,6 @@
 		if (!formData.npLeft) missing.push('NP Izquierdo');
 		return missing;
 	});
-
-	// Lens type options for select (no empty option - defaults to MONOFOCAL)
-	const lensTypeOptions = ALL_LENS_TYPES.map((type) => ({
-		value: type,
-		name: getLensTypeLabel(type)
-	}));
 
 	// Form data
 	let formData = $state({
@@ -326,12 +322,16 @@
 			/>
 			<div>
 				<Label for="recommendedLensType" class="mb-2">Tipo de Lente</Label>
-				<Select
+				<select
 					id="recommendedLensType"
 					name="recommendedLensType"
-					items={lensTypeOptions}
 					bind:value={formData.recommendedLensType}
-				/>
+					class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue"
+				>
+					{#each ALL_LENS_TYPES as type (type)}
+						<option value={type}>{getLensTypeLabel(type)}</option>
+					{/each}
+				</select>
 			</div>
 			<FormInput
 				name="doctorName"
@@ -341,7 +341,14 @@
 				error={formInstance.fields.doctorName?.issues()}
 			/>
 			<div class="flex h-[42px] items-center">
-				<Checkbox name="isCurrent" bind:checked={formData.isCurrent}>Fórmula actual</Checkbox>
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="isCurrent"
+						bind:checked={formData.isCurrent}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Fórmula actual</label
+				>
 			</div>
 		</div>
 
@@ -468,22 +475,42 @@
 		<div class="space-y-2">
 			<h4 class="font-semibold text-slate-900">Tratamientos</h4>
 			<div class="flex items-start space-x-8">
-				<Checkbox name="treatmentAntiReflective" bind:checked={formData.treatmentAntiReflective}>
-					Antireflejo
-				</Checkbox>
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="treatmentAntiReflective"
+						bind:checked={formData.treatmentAntiReflective}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Antireflejo
+				</label>
 
-				<Checkbox name="treatmentBlueBlock" bind:checked={formData.treatmentBlueBlock}>
-					Blueblock
-				</Checkbox>
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="treatmentBlueBlock"
+						bind:checked={formData.treatmentBlueBlock}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Blueblock
+				</label>
 
-				<Checkbox name="treatmentPhotochromic" bind:checked={formData.treatmentPhotochromic}>
-					Fotocromático
-				</Checkbox>
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="treatmentPhotochromic"
+						bind:checked={formData.treatmentPhotochromic}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Fotocromático
+				</label>
 
 				<div class="flex w-full items-start gap-3">
-					<Checkbox name="treatmentOtherChecked" bind:checked={formData.hasOtherTreatment}>
-						Otros
-					</Checkbox>
+					<label class="flex items-center gap-2 text-sm"
+						><input
+							type="checkbox"
+							name="treatmentOtherChecked"
+							bind:checked={formData.hasOtherTreatment}
+							class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+						/> Otros
+					</label>
 
 					{#if formData.hasOtherTreatment}
 						<FormInput
@@ -509,54 +536,87 @@
 	</div>
 {/snippet}
 
-<Modal bind:open size="lg" title={`${title} - ${getFullName(customer)}`} permanent>
-	{#if isEditMode && prescription}
-		<!-- UPDATE FORM -->
-		<form
-			{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
-				await handleSubmit(formEl, submit, handleUpdateResult);
-			})}
-		>
-			<input type="hidden" name="id" value={prescription.id} />
-			<input type="hidden" name="customerId" value={customer.id} />
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>{`${title} - ${getFullName(customer)}`}</Dialog.Title>
+		</Dialog.Header>
+		{#if isEditMode && prescription}
+			<!-- UPDATE FORM -->
+			<form
+				{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
+					await handleSubmit(formEl, submit, handleUpdateResult);
+				})}
+			>
+				<input type="hidden" name="id" value={prescription.id} />
+				<input type="hidden" name="customerId" value={customer.id} />
 
-			{@render prescriptionFields(currentUpdateForm)}
+				{@render prescriptionFields(currentUpdateForm)}
 
-			<!-- Form Actions -->
-			<div class="flex justify-end gap-3">
-				<Button color="alternative" onclick={handleClose} disabled={isSubmitting}>Cancelar</Button>
-				<Button type="submit" color="primary" disabled={isSubmitting}>
-					{#if isSubmitting}
-						<Spinner size="4" class="me-2" />
-					{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{:else}
-		<!-- CREATE FORM -->
-		<form
-			{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
-				await handleSubmit(formEl, submit, handleCreateResult);
-			})}
-		>
-			<input type="hidden" name="customerId" value={customer.id} />
+				<!-- Form Actions -->
+				<div class="flex justify-end gap-3">
+					<Button color="alternative" onclick={handleClose} disabled={isSubmitting}>Cancelar</Button
+					>
+					<Button type="submit" color="primary" disabled={isSubmitting}>
+						{#if isSubmitting}
+							<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>
+						{/if}
+						{submitText}
+					</Button>
+				</div>
+			</form>
+		{:else}
+			<!-- CREATE FORM -->
+			<form
+				{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
+					await handleSubmit(formEl, submit, handleCreateResult);
+				})}
+			>
+				<input type="hidden" name="customerId" value={customer.id} />
 
-			{@render prescriptionFields(currentCreateForm)}
+				{@render prescriptionFields(currentCreateForm)}
 
-			<!-- Form Actions -->
-			<div class="flex justify-end gap-3">
-				<Button color="alternative" onclick={handleClose} disabled={isSubmitting}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}
-						<Spinner size="4" class="me-2" />
-					{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{/if}
-</Modal>
+				<!-- Form Actions -->
+				<div class="flex justify-end gap-3">
+					<Button color="alternative" onclick={handleClose} disabled={isSubmitting}>Cancelar</Button
+					>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}
+							<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>
+						{/if}
+						{submitText}
+					</Button>
+				</div>
+			</form>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Close Confirmation Modal -->
 <ConfirmModal

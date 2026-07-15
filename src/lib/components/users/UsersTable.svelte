@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
 	import { SquarePen, Trash2, Power, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteUserById } from '$lib/remote/users.remote';
@@ -68,25 +67,35 @@
 	emptyDescription="Intenta ajustar los filtros de búsqueda"
 >
 	{#snippet header()}
-		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
-		<TableHeadCell class="font-semibold">Email</TableHeadCell>
-		<TableHeadCell class="font-semibold">Usuario</TableHeadCell>
-		<TableHeadCell class="font-semibold">Rol</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Nombre</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Email</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Usuario</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Rol</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Estado</th
+		>
 	{/snippet}
 
 	{#snippet row(user)}
-		<TableBodyCell class="font-medium">{user.fullName}</TableBodyCell>
-		<TableBodyCell>{user.email}</TableBodyCell>
-		<TableBodyCell>
+		<td class="font-medium px-4 py-3 text-sm">{user.fullName}</td>
+		<td class="px-4 py-3 text-sm">{user.email}</td>
+		<td class="px-4 py-3 text-sm">
 			<span class="font-mono text-sm text-slate-600">@{user.username}</span>
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<UserRoleBadge role={user.role} />
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<StatusBadge active={user.isActive} />
-		</TableBodyCell>
+		</td>
 	{/snippet}
 
 	{#snippet actions(user)}

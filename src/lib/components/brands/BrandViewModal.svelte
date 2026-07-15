@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Globe, FileText, MapPin, Plus, Truck, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -154,135 +155,145 @@
 	});
 </script>
 
-<Modal bind:open size="md" title="Detalles de la Marca" outsideclose onclose={handleClose}>
-	{#if brand}
-		<div class="space-y-6">
-			<!-- Header with name -->
-			<div class="border-b border-slate-200 pb-4">
-				<h3 class="text-xl font-semibold text-slate-800">{brand.name}</h3>
-				{#if brand.country}
-					<div class="mt-2 flex items-center gap-2 text-sm text-slate-500">
-						<MapPin class="h-4 w-4" />
-						{brand.country}
-					</div>
-				{/if}
-			</div>
-
-			<!-- Website -->
-			{#if brand.website}
-				<div class="flex items-center gap-3">
-					<Globe class="h-4 w-4 text-slate-400" />
-					<a
-						href={brand.website}
-						target="_blank"
-						rel="external noopener"
-						class="text-sm text-primary-600 hover:underline"
-					>
-						{brand.website}
-					</a>
-				</div>
-			{/if}
-
-			<!-- Description -->
-			{#if brand.description}
-				<div class="border-t border-slate-200 pt-4">
-					<h4 class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600">
-						<FileText class="h-4 w-4" />
-						Descripción
-					</h4>
-					<p class="text-sm whitespace-pre-wrap text-slate-700">{brand.description}</p>
-				</div>
-			{/if}
-
-			<div class="border-t border-slate-200 pt-4">
-				<div class="mb-3 flex items-center justify-between gap-3">
-					<h4 class="flex items-center gap-2 text-sm font-medium text-slate-600">
-						<Truck class="h-4 w-4" />
-						Proveedores que la venden
-					</h4>
-					{#if canManageRelations}
-						<button
-							type="button"
-							onclick={editingRelations ? stopRelationEditing : startRelationEditing}
-							class="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
-						>
-							{editingRelations ? 'Listo' : 'Editar'}
-						</button>
+<Dialog.Root
+	bind:open
+	onOpenChangeComplete={(o) => {
+		if (!o) handleClose();
+	}}
+>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>Detalles de la Marca</Dialog.Title>
+		</Dialog.Header>
+		{#if brand}
+			<div class="space-y-6">
+				<!-- Header with name -->
+				<div class="border-b border-slate-200 pb-4">
+					<h3 class="text-xl font-semibold text-slate-800">{brand.name}</h3>
+					{#if brand.country}
+						<div class="mt-2 flex items-center gap-2 text-sm text-slate-500">
+							<MapPin class="h-4 w-4" />
+							{brand.country}
+						</div>
 					{/if}
 				</div>
 
-				{#if editingRelations}
-					<div class="mb-4 flex flex-col gap-2 sm:flex-row">
-						<select
-							bind:value={selectedSupplierId}
-							disabled={loadingSupplierOptions || savingRelation || availableSuppliers.length === 0}
-							class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-blue/40 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+				<!-- Website -->
+				{#if brand.website}
+					<div class="flex items-center gap-3">
+						<Globe class="h-4 w-4 text-slate-400" />
+						<a
+							href={brand.website}
+							target="_blank"
+							rel="external noopener"
+							class="text-sm text-primary-600 hover:underline"
 						>
-							<option value="">
-								{loadingSupplierOptions
-									? 'Cargando proveedores...'
-									: availableSuppliers.length === 0
-										? 'No hay proveedores disponibles'
-										: 'Agregar proveedor...'}
-							</option>
-							{#each availableSuppliers as supplier (supplier.id)}
-								<option value={supplier.id}>{supplier.name}</option>
-							{/each}
-						</select>
-						<button
-							type="button"
-							onclick={handleAddSupplier}
-							disabled={!selectedSupplierId || savingRelation}
-							class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
-						>
-							<Plus class="h-4 w-4" />
-							Agregar
-						</button>
+							{brand.website}
+						</a>
 					</div>
 				{/if}
 
-				{#if loadingRelations}
-					<p class="text-sm text-slate-500">Cargando proveedores relacionados...</p>
-				{:else if relationsError}
-					<p class="text-sm text-red-600">{relationsError}</p>
-				{:else if relatedSuppliers.length > 0}
-					<div class="flex flex-wrap gap-2">
-						{#each relatedSuppliers as supplier (supplier.id)}
-							<span
-								class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+				<!-- Description -->
+				{#if brand.description}
+					<div class="border-t border-slate-200 pt-4">
+						<h4 class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-600">
+							<FileText class="h-4 w-4" />
+							Descripción
+						</h4>
+						<p class="text-sm whitespace-pre-wrap text-slate-700">{brand.description}</p>
+					</div>
+				{/if}
+
+				<div class="border-t border-slate-200 pt-4">
+					<div class="mb-3 flex items-center justify-between gap-3">
+						<h4 class="flex items-center gap-2 text-sm font-medium text-slate-600">
+							<Truck class="h-4 w-4" />
+							Proveedores que la venden
+						</h4>
+						{#if canManageRelations}
+							<button
+								type="button"
+								onclick={editingRelations ? stopRelationEditing : startRelationEditing}
+								class="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10"
 							>
-								{supplier.name}
-								{#if editingRelations}
-									<button
-										type="button"
-										onclick={() => handleRemoveSupplier(supplier)}
-										disabled={savingRelation}
-										aria-label={`Quitar proveedor ${supplier.name}`}
-										class="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-									>
-										<X class="h-3 w-3" />
-									</button>
-								{/if}
-							</span>
-						{/each}
+								{editingRelations ? 'Listo' : 'Editar'}
+							</button>
+						{/if}
 					</div>
-				{:else}
-					<p class="text-sm text-slate-500 italic">
-						Aún no hay proveedores registrados para esta marca.
-					</p>
-				{/if}
+
+					{#if editingRelations}
+						<div class="mb-4 flex flex-col gap-2 sm:flex-row">
+							<select
+								bind:value={selectedSupplierId}
+								disabled={loadingSupplierOptions ||
+									savingRelation ||
+									availableSuppliers.length === 0}
+								class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand-blue/40 focus:ring-2 focus:ring-brand-blue/15 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								<option value="">
+									{loadingSupplierOptions
+										? 'Cargando proveedores...'
+										: availableSuppliers.length === 0
+											? 'No hay proveedores disponibles'
+											: 'Agregar proveedor...'}
+								</option>
+								{#each availableSuppliers as supplier (supplier.id)}
+									<option value={supplier.id}>{supplier.name}</option>
+								{/each}
+							</select>
+							<button
+								type="button"
+								onclick={handleAddSupplier}
+								disabled={!selectedSupplierId || savingRelation}
+								class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-blue px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								<Plus class="h-4 w-4" />
+								Agregar
+							</button>
+						</div>
+					{/if}
+
+					{#if loadingRelations}
+						<p class="text-sm text-slate-500">Cargando proveedores relacionados...</p>
+					{:else if relationsError}
+						<p class="text-sm text-red-600">{relationsError}</p>
+					{:else if relatedSuppliers.length > 0}
+						<div class="flex flex-wrap gap-2">
+							{#each relatedSuppliers as supplier (supplier.id)}
+								<span
+									class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+								>
+									{supplier.name}
+									{#if editingRelations}
+										<button
+											type="button"
+											onclick={() => handleRemoveSupplier(supplier)}
+											disabled={savingRelation}
+											aria-label={`Quitar proveedor ${supplier.name}`}
+											class="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+										>
+											<X class="h-3 w-3" />
+										</button>
+									{/if}
+								</span>
+							{/each}
+						</div>
+					{:else}
+						<p class="text-sm text-slate-500 italic">
+							Aún no hay proveedores registrados para esta marca.
+						</p>
+					{/if}
+				</div>
+
+				<BrandIncludedAccessoriesSection {brand} canManage={canManageRelations} />
 			</div>
+		{/if}
 
-			<BrandIncludedAccessoriesSection {brand} canManage={canManageRelations} />
-		</div>
-	{/if}
-
-	{#snippet footer()}
-		<div class="flex w-full justify-end gap-3">
-			<Button color="alternative" onclick={handleClose}>Cerrar</Button>
+		<Dialog.Footer class="flex justify-end gap-3">
+			<Button variant="outline" onclick={handleClose}>Cerrar</Button>
 			{#if onEdit}
-				<Button color="primary" onclick={handleEdit}>Editar</Button>
+				<Button onclick={handleEdit}>Editar</Button>
 			{/if}
-		</div>
-	{/snippet}
-</Modal>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>

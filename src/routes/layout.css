@@ -3,7 +3,6 @@
    ============================================================================ */
 
 @import 'tailwindcss';
-@plugin 'flowbite/plugin';
 @plugin 'tailwind-scrollbar';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -14,7 +13,7 @@
 @custom-variant not-last (&:not(:last-child));
 /* ── Optikt Clarity — Design Tokens from Stitch ──────────────────────────── */
 @theme {
-	/* Flowbite primary scale — mapped to sky-blue (tertiary) for focus/interactive */
+	/* Primary scale — mapped to sky-blue (tertiary) for focus/interactive */
 	--color-primary-50: #f0f9fd;
 	--color-primary-100: #d4eef8;
 	--color-primary-200: #a8ddf1;
@@ -26,7 +25,7 @@
 	--color-primary-800: #1e4f5e;
 	--color-primary-900: #19424e;
 
-	/* Flowbite secondary scale — mapped to golden-yellow */
+	/* Secondary scale — mapped to golden-yellow */
 	--color-secondary-50: #fffceb;
 	--color-secondary-100: #fff6c6;
 	--color-secondary-200: #ffe080;
@@ -105,6 +104,26 @@
 	--font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+@theme inline {
+	/* ── shadcn-svelte / bits-ui theme ──────────────────────────────────── */
+	--color-background: #ffffff;
+	--color-foreground: #1b1b1e;
+	--color-primary: var(--color-brand-blue);
+	--color-primary-foreground: var(--color-on-primary);
+	--color-destructive: var(--color-error);
+	--color-destructive-foreground: var(--color-on-error);
+	--color-secondary: var(--color-surface-container-low);
+	--color-secondary-foreground: var(--color-on-surface);
+	--color-muted: var(--color-surface-container);
+	--color-muted-foreground: var(--color-on-surface-variant);
+	--color-popover: #ffffff;
+	--color-popover-foreground: var(--color-on-surface);
+	--color-ring: var(--color-brand-blue);
+	--color-input: var(--color-outline-variant);
+	--color-border: var(--color-outline-variant);
+	--radius-md: 0.5rem;
+}
+
 /* Design System Tokens (per design-ui.md) */
 /* NOTE: Using 'ds-' prefix to avoid conflicting with Tailwind's built-in tokens */
 @theme {
@@ -136,9 +155,6 @@
 	--ds-duration-slow: 250ms;
 }
 
-@source '../../node_modules/flowbite-svelte/dist';
-@source '../../node_modules/flowbite-svelte-icons/dist';
-
 @layer base {
 	/* Prevent overscroll bounce (elastic effect at scroll edges) */
 	html,
@@ -160,7 +176,7 @@
 		cursor: pointer;
 	}
 
-	/* Override Flowbite's orange focus color with brand-blue */
+	/* Brand-blue focus ring */
 	input:focus,
 	select:focus,
 	textarea:focus,
@@ -184,9 +200,10 @@
 }
 
 /* ──────────────────────────────────────────────────────────────────────────────
-   Fix Flowbite Input placeholder color.
-   Flowbite's "default" color variant sets `text-gray-900` but NO light-mode
-   `placeholder-*` class, so placeholders inherit the dark text color.
+   Fix Input placeholder color.
+   The form components use `placeholder:text-slate-400` on individual inputs, but
+   some native inputs (e.g. date inputs) don't always inherit it. This rule
+   catches all stragglers and ensures light-mode placeholders are readable.
    This rule is intentionally OUTSIDE @layer so it beats all layered styles
    (Tailwind v4 cascade: un-layered > any @layer).
    ────────────────────────────────────────────────────────────────────────────── */

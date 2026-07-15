@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { Modal, Button, Spinner } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { createBrandForm, updateBrandForm } from '$lib/remote/brands.remote';
@@ -118,133 +119,170 @@
 	}
 </script>
 
-<Modal bind:open size="md" {title}>
-	{#if isEditMode && brand}
-		<!-- UPDATE FORM -->
-		<form
-			{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleUpdateResult(formEl);
-				} catch (e) {
-					console.error(e);
-					toast.error('Error actualizando marca');
-				} finally {
-					isSubmitting = false;
-				}
-			})}
-			class="flex flex-col gap-4"
-		>
-			<input type="hidden" name="id" value={brand.id} />
+<Dialog.Root bind:open>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>{title}</Dialog.Title>
+		</Dialog.Header>
+		{#if isEditMode && brand}
+			<!-- UPDATE FORM -->
+			<form
+				{...currentUpdateForm.enhance(async ({ element: formEl, submit }) => {
+					isSubmitting = true;
+					try {
+						await submit();
+						handleUpdateResult(formEl);
+					} catch (e) {
+						console.error(e);
+						toast.error('Error actualizando marca');
+					} finally {
+						isSubmitting = false;
+					}
+				})}
+				class="flex flex-col gap-4"
+			>
+				<input type="hidden" name="id" value={brand.id} />
 
-			<FormInput
-				label="Nombre *"
-				name="name"
-				bind:value={formData.name}
-				placeholder="Ej: Ray-Ban"
-				error={currentUpdateForm.fields.name?.issues()}
-			/>
+				<FormInput
+					label="Nombre *"
+					name="name"
+					bind:value={formData.name}
+					placeholder="Ej: Ray-Ban"
+					error={currentUpdateForm.fields.name?.issues()}
+				/>
 
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<FormInput
-						label="País"
-						name="country"
-						bind:value={formData.country}
-						placeholder="Ej: Italia"
-					/>
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<FormInput
+							label="País"
+							name="country"
+							bind:value={formData.country}
+							placeholder="Ej: Italia"
+						/>
+					</div>
+					<div>
+						<FormInput
+							label="Sitio Web"
+							name="website"
+							type="url"
+							bind:value={formData.website}
+							placeholder="https://..."
+						/>
+					</div>
 				</div>
-				<div>
-					<FormInput
-						label="Sitio Web"
-						name="website"
-						type="url"
-						bind:value={formData.website}
-						placeholder="https://..."
-					/>
+
+				<FormTextarea
+					label="Descripción"
+					name="description"
+					bind:value={formData.description}
+					placeholder="Descripción de la marca"
+					rows={3}
+				/>
+
+				<div class="flex justify-end gap-2 pt-4">
+					<Button variant="outline" onclick={onClose}>Cancelar</Button>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}<svg
+								class="mx-auto h-5 w-5 animate-spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>{/if}
+						{submitText}
+					</Button>
 				</div>
-			</div>
+			</form>
+		{:else}
+			<!-- CREATE FORM -->
+			<form
+				{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
+					isSubmitting = true;
+					try {
+						await submit();
+						handleCreateResult(formEl);
+					} catch (e) {
+						console.error(e);
+						toast.error('Error creando marca');
+					} finally {
+						isSubmitting = false;
+					}
+				})}
+				class="flex flex-col gap-4"
+			>
+				<FormInput
+					label="Nombre *"
+					name="name"
+					bind:value={formData.name}
+					placeholder="Ej: Ray-Ban"
+					error={currentCreateForm.fields.name?.issues()}
+				/>
 
-			<FormTextarea
-				label="Descripción"
-				name="description"
-				bind:value={formData.description}
-				placeholder="Descripción de la marca"
-				rows={3}
-			/>
-
-			<div class="flex justify-end gap-2 pt-4">
-				<Button color="light" onclick={onClose}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{:else}
-		<!-- CREATE FORM -->
-		<form
-			{...currentCreateForm.enhance(async ({ element: formEl, submit }) => {
-				isSubmitting = true;
-				try {
-					await submit();
-					handleCreateResult(formEl);
-				} catch (e) {
-					console.error(e);
-					toast.error('Error creando marca');
-				} finally {
-					isSubmitting = false;
-				}
-			})}
-			class="flex flex-col gap-4"
-		>
-			<FormInput
-				label="Nombre *"
-				name="name"
-				bind:value={formData.name}
-				placeholder="Ej: Ray-Ban"
-				error={currentCreateForm.fields.name?.issues()}
-			/>
-
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<FormInput
-						label="País"
-						name="country"
-						bind:value={formData.country}
-						placeholder="Ej: Italia"
-					/>
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<FormInput
+							label="País"
+							name="country"
+							bind:value={formData.country}
+							placeholder="Ej: Italia"
+						/>
+					</div>
+					<div>
+						<FormInput
+							label="Sitio Web"
+							name="website"
+							type="url"
+							bind:value={formData.website}
+							placeholder="https://..."
+						/>
+					</div>
 				</div>
-				<div>
-					<FormInput
-						label="Sitio Web"
-						name="website"
-						type="url"
-						bind:value={formData.website}
-						placeholder="https://..."
-					/>
+
+				<FormTextarea
+					label="Descripción"
+					name="description"
+					bind:value={formData.description}
+					placeholder="Descripción de la marca"
+					rows={3}
+				/>
+
+				<div class="flex justify-end gap-2 pt-4">
+					<Button variant="outline" onclick={onClose}>Cancelar</Button>
+					<Button type="submit" disabled={isSubmitting}>
+						{#if isSubmitting}<svg
+								class="mx-auto h-5 w-5 animate-spin"
+								viewBox="0 0 24 24"
+								fill="none"
+								><circle
+									class="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									stroke-width="4"
+								/><path
+									class="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+								/></svg
+							>{/if}
+						{submitText}
+					</Button>
 				</div>
-			</div>
-
-			<FormTextarea
-				label="Descripción"
-				name="description"
-				bind:value={formData.description}
-				placeholder="Descripción de la marca"
-				rows={3}
-			/>
-
-			<div class="flex justify-end gap-2 pt-4">
-				<Button color="light" onclick={onClose}>Cancelar</Button>
-				<Button type="submit" color="blue" disabled={isSubmitting}>
-					{#if isSubmitting}<Spinner size="4" class="mr-2" />{/if}
-					{submitText}
-				</Button>
-			</div>
-		</form>
-	{/if}
-</Modal>
+			</form>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Reactivate Confirmation Modal -->
 <BrandReactivateModal

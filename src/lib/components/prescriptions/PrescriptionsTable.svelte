@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell, Badge } from 'flowbite-svelte';
 	import { Star, Glasses, Eye, SquarePen } from '@lucide/svelte';
 	import { DataTable } from '$lib/components/ui';
 	import type { Prescription } from '$lib/server/db/schema';
@@ -36,20 +35,34 @@
 	editIcon={SquarePen}
 >
 	{#snippet header()}
-		<TableHeadCell class="font-semibold">Fecha</TableHeadCell>
-		<TableHeadCell class="font-semibold">OD (Esfera/Cil/Eje/Add)</TableHeadCell>
-		<TableHeadCell class="font-semibold">OS (Esfera/Cil/Eje/Add)</TableHeadCell>
-		<TableHeadCell class="font-semibold">DP/NP</TableHeadCell>
-		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
-		<TableHeadCell class="font-semibold">Doctor</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Fecha</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>OD (Esfera/Cil/Eje/Add)</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>OS (Esfera/Cil/Eje/Add)</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>DP/NP</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Tipo</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Doctor</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Estado</th
+		>
 	{/snippet}
 
 	{#snippet row(prescription)}
-		<TableBodyCell class="font-medium whitespace-nowrap">
+		<td class="font-medium whitespace-nowrap px-4 py-3 text-sm">
 			{formatDate(prescription.prescriptionDate, { month: 'short' })}
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<div class="flex flex-wrap gap-1 text-xs">
 				<span class="rounded bg-slate-100 px-1.5 py-0.5">
 					{formatOpticalValue(prescription.odSphere)}
@@ -64,8 +77,8 @@
 					{formatOpticalValue(prescription.odAddition)}
 				</span>
 			</div>
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<div class="flex flex-wrap gap-1 text-xs">
 				<span class="rounded bg-slate-100 px-1.5 py-0.5">
 					{formatOpticalValue(prescription.osSphere)}
@@ -80,25 +93,27 @@
 					{formatOpticalValue(prescription.osAddition)}
 				</span>
 			</div>
-		</TableBodyCell>
-		<TableBodyCell class="whitespace-nowrap text-slate-600">
+		</td>
+		<td class="whitespace-nowrap text-slate-600 px-4 py-3 text-sm">
 			{formatDpNp(prescription)}
-		</TableBodyCell>
-		<TableBodyCell class="whitespace-nowrap text-slate-600">
+		</td>
+		<td class="whitespace-nowrap text-slate-600 px-4 py-3 text-sm">
 			{formatLensType(prescription.recommendedLensType)}
-		</TableBodyCell>
-		<TableBodyCell class="whitespace-nowrap text-slate-600">
+		</td>
+		<td class="whitespace-nowrap text-slate-600 px-4 py-3 text-sm">
 			{prescription.doctorName ?? '-'}
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			{#if prescription.isCurrent}
-				<Badge color="green" class="text-xs">
+				<span
+					class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800"
+				>
 					<Star class="me-1 h-3 w-3" />
 					Actual
-				</Badge>
+				</span>
 			{:else}
 				<span class="text-slate-400">-</span>
 			{/if}
-		</TableBodyCell>
+		</td>
 	{/snippet}
 </DataTable>

@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { ArrowRight, Ban, Check, ChevronLeft } from '@lucide/svelte';
-	import { Spinner } from 'flowbite-svelte';
-
 	interface Props {
 		showBack?: boolean;
 		backLabel?: string;
@@ -87,7 +85,20 @@
 				class="inline-flex items-center gap-1.5 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-navy transition hover:brightness-95 disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-outline"
 			>
 				{#if primaryLoading}
-					<Spinner size="4" />
+					<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+						><circle
+							class="opacity-25"
+							cx="12"
+							cy="12"
+							r="10"
+							stroke="currentColor"
+							stroke-width="4"
+						/><path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+						/></svg
+					>
 				{:else if primaryKind === 'confirm'}
 					<Check class="h-4 w-4" />
 				{:else}

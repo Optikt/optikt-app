@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Spinner } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Building2, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSettingsForm } from '$lib/remote/settings.remote';
@@ -142,7 +142,20 @@
 			<Button color="alternative" onclick={resetForm}>Restablecer</Button>
 			<Button type="submit" color="primary" disabled={loading}>
 				{#if loading}
-					<Spinner size="4" class="mr-2" />
+					<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+						><circle
+							class="opacity-25"
+							cx="12"
+							cy="12"
+							r="10"
+							stroke="currentColor"
+							stroke-width="4"
+						/><path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+						/></svg
+					>
 				{/if}
 				<Save class="mr-2 h-4 w-4" />
 				Guardar Configuración

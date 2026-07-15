@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { Trash2 } from '@lucide/svelte';
-	import { Input, Label } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { formatPrice } from '$lib/utils';
 	import { findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
@@ -71,7 +71,7 @@
 						>Cant</Label
 					>
 
-					<Input
+					<input
 						id="qty-{item.id}"
 						type="number"
 						class="font-mono text-sm"
@@ -89,7 +89,7 @@
 					<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Precio</Label
 					>
-					<Input
+					<input
 						id="price-{item.id}"
 						type="number"
 						bind:value={item.unitPrice}

@@ -1,13 +1,4 @@
 <script lang="ts" generics="T extends { id: string }">
-	import {
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell,
-		Spinner
-	} from 'flowbite-svelte';
 	import type { Snippet, Component } from 'svelte';
 	import RowActions from './RowActions.svelte';
 
@@ -257,35 +248,44 @@
 
 {#if loading}
 	<div class="flex items-center justify-center py-12">
-		<Spinner size="10" />
+		<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+			<path
+				class="opacity-75"
+				fill="currentColor"
+				d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+			/>
+		</svg>
 	</div>
 {:else if items.length > 0}
-	<Table hoverable>
-		<TableHead class="bg-slate-50">
-			{@render header()}
-			{#if actionsSnippet || defaultActions}
-				<TableHeadCell class="text-right font-semibold">Acciones</TableHeadCell>
-			{/if}
-		</TableHead>
-		<TableBody>
+	<table class="w-full text-sm">
+		<thead class="bg-slate-50">
+			<tr>
+				{@render header()}
+				{#if actionsSnippet || defaultActions}
+					<th class="px-4 py-3 text-right font-semibold">Acciones</th>
+				{/if}
+			</tr>
+		</thead>
+		<tbody>
 			{#each items as item (item.id)}
-				<TableBodyRow class={rowClass}>
+				<tr class={['border-b hover:bg-slate-50', rowClass].filter(Boolean).join(' ')}>
 					{@render row(item)}
 					{#if actionsSnippet}
-						<TableBodyCell class="text-right">
+						<td class="px-4 py-3 text-right">
 							<div class="flex justify-end gap-1">
 								{@render actionsSnippet(item)}
 							</div>
-						</TableBodyCell>
+						</td>
 					{:else if defaultActions}
-						<TableBodyCell class="text-right">
+						<td class="px-4 py-3 text-right">
 							<RowActions {item} actions={buildItemActions(item)} />
-						</TableBodyCell>
+						</td>
 					{/if}
-				</TableBodyRow>
+				</tr>
 			{/each}
-		</TableBody>
-	</Table>
+		</tbody>
+	</table>
 {:else}
 	<div
 		class="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/50 py-12 text-center"

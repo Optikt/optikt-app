@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Label } from 'flowbite-svelte';
-	import { Input as FlowbiteInput } from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import { getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 	import type { FreeItemData } from '../newSaleTypes';
@@ -27,7 +26,7 @@
 		</div>
 		<div>
 			<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Descripción *</Label>
-			<FlowbiteInput
+			<input
 				bind:value={freeItem.description}
 				placeholder="LC Novak -2.50 miel, hidrogel..."
 				maxlength={500}
@@ -37,7 +36,7 @@
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div>
 			<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Costo estimado</Label>
-			<FlowbiteInput
+			<input
 				type="number"
 				value={freeItem.unitCost ?? undefined}
 				oninput={(event: Event) => {
@@ -54,7 +53,7 @@
 		</div>
 		<div>
 			<Label class="mb-1 text-[10px] font-semibold text-outline uppercase">Notas ópticas</Label>
-			<FlowbiteInput
+			<input
 				bind:value={freeItem.opticalNotes}
 				placeholder="OD -2.50 sph, color miel..."
 				maxlength={1000}

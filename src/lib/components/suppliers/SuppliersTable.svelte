@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { TableHeadCell, TableBodyCell } from 'flowbite-svelte';
 	import { Truck, Eye, SquarePen, Trash2, RotateCcw, FlaskConical } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
@@ -86,24 +85,36 @@
 	emptyDescription="Agrega un proveedor para comenzar"
 >
 	{#snippet header()}
-		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
-		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
-		<TableHeadCell class="font-semibold">RIF</TableHeadCell>
-		<TableHeadCell class="font-semibold">Teléfono</TableHeadCell>
-		<TableHeadCell class="font-semibold">Contacto</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Nombre</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Tipo</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>RIF</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Teléfono</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Contacto</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Estado</th
+		>
 	{/snippet}
 
 	{#snippet row(supplier)}
-		<TableBodyCell class="font-medium">{supplier.name}</TableBodyCell>
-		<TableBodyCell>
+		<td class="font-medium px-4 py-3 text-sm">{supplier.name}</td>
+		<td class="px-4 py-3 text-sm">
 			<SupplierTypeBadge type={supplier.type} />
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '-'}</span>
-		</TableBodyCell>
-		<TableBodyCell>{supplier.primaryPhone}</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">{supplier.primaryPhone}</td>
+		<td class="px-4 py-3 text-sm">
 			{#if supplier.contactName}
 				<span>{supplier.contactName}</span>
 				{#if supplier.contactRole}
@@ -112,10 +123,10 @@
 			{:else}
 				-
 			{/if}
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<StatusBadge active={!supplier.deletedAt} />
-		</TableBodyCell>
+		</td>
 	{/snippet}
 
 	{#snippet actions(supplier)}

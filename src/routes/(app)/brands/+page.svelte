@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Toggle } from 'flowbite-svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { SearchInput, TablePagination } from '$lib/components/ui';
@@ -86,7 +86,7 @@
 			<p class="text-slate-500">Gestiona el catálogo de marcas</p>
 		</div>
 		{#if isAdmin}
-			<Button color="blue" onclick={openCreate}>
+			<Button onclick={openCreate}>
 				<Plus class="mr-2 h-5 w-5" />
 				Agregar Marca
 			</Button>
@@ -103,13 +103,15 @@
 			oninput={handleSearch}
 			class="min-w-64 flex-1"
 		/>
-		<Toggle
-			bind:checked={includeDeleted}
-			onchange={() => fetchBrands(1)}
-			class="text-sm text-slate-600"
-		>
+		<label class="flex items-center gap-2 text-sm text-slate-600">
+			<input
+				type="checkbox"
+				bind:checked={includeDeleted}
+				onchange={() => fetchBrands(1)}
+				class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+			/>
 			Mostrar eliminados
-		</Toggle>
+		</label>
 	</div>
 
 	<!-- Table -->

@@ -1,13 +1,7 @@
 <script lang="ts">
-	import {
-		TableHeadCell,
-		TableBodyCell,
-		Modal,
-		Button,
-		Input,
-		Label,
-		Spinner
-	} from 'flowbite-svelte';
+	import { Label } from '$lib/components/ui/label';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { SquarePen, Trash2, Tag, TriangleAlert, Eye, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
@@ -113,16 +107,24 @@
 	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
-		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
-		<TableHeadCell class="font-semibold">País</TableHeadCell>
-		<TableHeadCell class="font-semibold">Sitio Web</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Nombre</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>País</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Sitio Web</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Estado</th
+		>
 	{/snippet}
 
 	{#snippet row(brand)}
-		<TableBodyCell class="font-medium">{brand.name}</TableBodyCell>
-		<TableBodyCell>{brand.country ?? '-'}</TableBodyCell>
-		<TableBodyCell>
+		<td class="font-medium px-4 py-3 text-sm">{brand.name}</td>
+		<td class="px-4 py-3 text-sm">{brand.country ?? '-'}</td>
+		<td class="px-4 py-3 text-sm">
 			{#if brand.website}
 				<a
 					href={brand.website}
@@ -135,62 +137,102 @@
 			{:else}
 				-
 			{/if}
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<StatusBadge active={!brand.deletedAt} />
-		</TableBodyCell>
+		</td>
 	{/snippet}
 </DataTable>
 
 <!-- Enhanced Delete Confirm Modal -->
-<Modal bind:open={showDeleteModal} title="Eliminar Marca" size="sm">
-	{#if checkingDelete}
-		<div class="flex items-center justify-center py-8">
-			<Spinner size="8" />
-		</div>
-	{:else}
-		<div class="flex flex-col gap-4">
-			{#if hasProducts}
-				<!-- Warning for brands with products -->
-				<div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
-					<TriangleAlert class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-					<div>
-						<p class="font-medium text-amber-800">¡Atención!</p>
-						<p class="mt-1 text-sm text-amber-700">
-							Esta marca tiene <strong>{productCount} producto{productCount > 1 ? 's' : ''}</strong>
-							asociado{productCount > 1 ? 's' : ''}. Los productos quedarán sin marca asignada.
-						</p>
-					</div>
-				</div>
-			{/if}
-
-			<p class="text-slate-600">
-				¿Está seguro que desea eliminar la marca <strong>{selectedBrand?.name}</strong>?
-			</p>
-
-			<!-- Confirmation input -->
-			<div>
-				<Label for="confirmName" class="mb-2">
-					Escriba <strong class="text-red-600">{selectedBrand?.name}</strong> para confirmar:
-				</Label>
-				<Input
-					id="confirmName"
-					bind:value={confirmInput}
-					placeholder="Escriba el nombre de la marca"
-					class="placeholder:text-slate-400"
-				/>
+<Dialog.Root bind:open={showDeleteModal}>
+	<Dialog.Content class="sm:max-w-sm">
+		<Dialog.Header>
+			<Dialog.Title>Eliminar Marca</Dialog.Title>
+		</Dialog.Header>
+		{#if checkingDelete}
+			<div class="flex items-center justify-center py-8">
+				<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+					><circle
+						class="opacity-25"
+						cx="12"
+						cy="12"
+						r="10"
+						stroke="currentColor"
+						stroke-width="4"
+					/><path
+						class="opacity-75"
+						fill="currentColor"
+						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+					/></svg
+				>
 			</div>
-		</div>
+		{:else}
+			<div class="flex flex-col gap-4">
+				{#if hasProducts}
+					<!-- Warning for brands with products -->
+					<div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+						<TriangleAlert class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+						<div>
+							<p class="font-medium text-amber-800">¡Atención!</p>
+							<p class="mt-1 text-sm text-amber-700">
+								Esta marca tiene <strong
+									>{productCount} producto{productCount > 1 ? 's' : ''}</strong
+								>
+								asociado{productCount > 1 ? 's' : ''}. Los productos quedarán sin marca asignada.
+							</p>
+						</div>
+					</div>
+				{/if}
 
-		<div class="mt-6 flex justify-end gap-2">
-			<Button color="light" onclick={closeModal}>Cancelar</Button>
-			<Button color="red" disabled={!canConfirm || deleteLoading} onclick={handleDelete}>
-				{#if deleteLoading}<Spinner size="4" class="mr-2" />{/if}
-				Eliminar
-			</Button>
-		</div>
-	{/if}
-</Modal>
+				<p class="text-slate-600">
+					¿Está seguro que desea eliminar la marca <strong>{selectedBrand?.name}</strong>?
+				</p>
+
+				<!-- Confirmation input -->
+				<div>
+					<Label for="confirmName" class="mb-2">
+						Escriba <strong class="text-red-600">{selectedBrand?.name}</strong> para confirmar:
+					</Label>
+					<input
+						id="confirmName"
+						bind:value={confirmInput}
+						placeholder="Escriba el nombre de la marca"
+						class="placeholder:text-slate-400"
+					/>
+				</div>
+			</div>
+
+			<Dialog.Footer class="flex justify-end gap-2">
+				<Button variant="outline" onclick={closeModal}>Cancelar</Button>
+				<Button
+					variant="destructive"
+					disabled={!canConfirm || deleteLoading}
+					onclick={handleDelete}
+				>
+					{#if deleteLoading}<svg
+							class="mx-auto h-5 w-5 animate-spin"
+							viewBox="0 0 24 24"
+							fill="none"
+							><circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							/><path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+							/></svg
+						>{/if}
+					Eliminar
+				</Button>
+			</Dialog.Footer>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- View Details Modal -->
 <BrandViewModal

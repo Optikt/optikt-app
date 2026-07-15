@@ -1,6 +1,6 @@
 # Optikt App
 
-Optical store management system built with SvelteKit, Flowbite-Svelte, and Drizzle ORM.
+Optical store management system built with SvelteKit, Shadcn-Svelte, and Drizzle ORM.
 
 ## Tech Stack
 
