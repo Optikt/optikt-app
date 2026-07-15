@@ -107,18 +107,13 @@
 		if (e.key === 'Escape') onClose();
 	}
 
-	function handleBackdropClick(e: MouseEvent) {
-		if (e.target === e.currentTarget) onClose();
-	}
 </script>
 
 {#if open}
 	<div
 		role="presentation"
 		class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
-		onkeydown={handleKeydown}
-		onclick={handleBackdropClick}
-	>
+		onkeydown={handleKeydown}>
 		<div
 			role="dialog"
 			aria-modal="true"
