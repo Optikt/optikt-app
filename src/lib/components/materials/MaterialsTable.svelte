@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
-	import { Button } from '$lib/components/ui/button'
-import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Tag, TriangleAlert, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteMaterialById } from '$lib/remote/materials.remote';
@@ -111,7 +111,10 @@ import * as Dialog from '$lib/components/ui/dialog';
 	{#snippet row(material)}
 		<td class="font-medium px-4 py-3 text-sm">{material.name}</td>
 		<td class="px-4 py-3 text-sm">
-			<span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600">{material.code}</span>
+			<span
+				class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600"
+				>{material.code}</span
+			>
 		</td>
 		<td
 			>{MATERIAL_CATEGORY_LABELS[material.productType as MaterialCategory] ??
@@ -159,7 +162,20 @@ import * as Dialog from '$lib/components/ui/dialog';
 		<Dialog.Footer class="flex justify-end gap-2">
 			<Button variant="outline" onclick={closeModal}>Cancelar</Button>
 			<Button variant="destructive" disabled={!canConfirm || deleteLoading} onclick={handleDelete}>
-				{#if deleteLoading}<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>{/if}
+				{#if deleteLoading}<svg class="mx-auto h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
+						><circle
+							class="opacity-25"
+							cx="12"
+							cy="12"
+							r="10"
+							stroke="currentColor"
+							stroke-width="4"
+						/><path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+						/></svg
+					>{/if}
 				Eliminar
 			</Button>
 		</Dialog.Footer>

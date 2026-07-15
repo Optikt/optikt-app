@@ -93,7 +93,8 @@
 	const rangeHeaderRowWithToggleClass = `${rangeHeaderRowClass} gap-2`;
 	const selectionCardClass =
 		'min-h-[96px] rounded-xl border px-4 py-4 text-left transition-all duration-150 ease-[cubic-bezier(0.25,1,0.5,1)]';
-	const rangeInputBaseClass = 'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue font-mono';
+	const rangeInputBaseClass =
+		'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue font-mono';
 
 	// Form instance
 	let formInstanceId = $state(generateUUID());
@@ -793,12 +794,12 @@
 						<Label for="lc_differentiators" class={fieldLabelClass}
 							>Etiquetas / Diferenciadores</Label
 						>
-            <input
-              id="lc_differentiators"
-              bind:value={differentiatorsText}
-              placeholder="Ej: Cilindro Alto 2, UV400, Extra Delgado"
-              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 placeholder:text-outline"
-            />
+						<input
+							id="lc_differentiators"
+							bind:value={differentiatorsText}
+							placeholder="Ej: Cilindro Alto 2, UV400, Extra Delgado"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 placeholder:text-outline"
+						/>
 						<p class={helperTextClass}>{differentiatorHelperText}</p>
 					</div>
 
@@ -819,15 +820,15 @@
 						{#if autoNameEnabled}
 							<input type="hidden" name="name" value={formData.name} />
 						{/if}
-            <input
-              id="lc_name"
-              name={autoNameEnabled ? undefined : 'name'}
-              bind:value={formData.name}
-              placeholder="Ej: Novak · Policarbonato · Monofocal"
-              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue placeholder:text-outline"
-              required
-              disabled={autoNameEnabled}
-            />
+						<input
+							id="lc_name"
+							name={autoNameEnabled ? undefined : 'name'}
+							bind:value={formData.name}
+							placeholder="Ej: Novak · Policarbonato · Monofocal"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue placeholder:text-outline"
+							required
+							disabled={autoNameEnabled}
+						/>
 						{#if activeForm.fields.name?.issues()}
 							<p class="mt-1 text-xs text-error">
 								{getFormErrorMessage(activeForm.fields.name.issues())}
@@ -861,12 +862,12 @@
 											class="text-[10px] font-semibold tracking-wider text-outline uppercase"
 											>Colores AR</Label
 										>
-                    <input
-                      id="lc_ar_colors"
-                      bind:value={arColorsText}
-                      placeholder="Ej: Verde, Azul"
-                      class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-1 placeholder:text-outline"
-                    />
+										<input
+											id="lc_ar_colors"
+											bind:value={arColorsText}
+											placeholder="Ej: Verde, Azul"
+											class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-1 placeholder:text-outline"
+										/>
 									</div>
 								{/if}
 							</div>
@@ -902,12 +903,12 @@
 											class="text-[10px] font-semibold tracking-wider text-outline uppercase"
 											>Colores Fotocromático</Label
 										>
-                    <input
-                      id="lc_photochromic_colors"
-                      bind:value={photochromicColorsText}
-                      placeholder="Ej: Gris, Café"
-                      class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-1 placeholder:text-outline"
-                    />
+										<input
+											id="lc_photochromic_colors"
+											bind:value={photochromicColorsText}
+											placeholder="Ej: Gris, Café"
+											class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-1 placeholder:text-outline"
+										/>
 									</div>
 								{/if}
 							</div>
@@ -921,17 +922,19 @@
 					<div class="flex items-center gap-2">
 						<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
 						<h3 class={sectionTitleClass}>Rangos opticos</h3>
-            <span class="relative group cursor-help">
-              <Info class="h-4 w-4 text-outline" />
-              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg z-50">
-                <p class="mb-1 font-medium">¿Qué son los rangos?</p>
-                <p>
-                  Definen qué graduaciones puede cubrir este cristal. La esfera puede ser continua
-                  como -4.00 a +4.00, o un duplicado inverso como ±4.00 a ±2.00, que guarda dos rangos
-                  espejo y deja libre el centro.
-                </p>
-              </span>
-            </span>
+						<span class="relative group cursor-help">
+							<Info class="h-4 w-4 text-outline" />
+							<span
+								class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg z-50"
+							>
+								<p class="mb-1 font-medium">¿Qué son los rangos?</p>
+								<p>
+									Definen qué graduaciones puede cubrir este cristal. La esfera puede ser continua
+									como -4.00 a +4.00, o un duplicado inverso como ±4.00 a ±2.00, que guarda dos
+									rangos espejo y deja libre el centro.
+								</p>
+							</span>
+						</span>
 					</div>
 					<button
 						type="button"
@@ -976,31 +979,33 @@
 								<div class={showAddition ? 'lg:col-span-4' : 'lg:col-span-6'}>
 									<div class={rangeHeaderRowWithToggleClass}>
 										<Label class={fieldLabelClass}>Esfera (ESF)</Label>
-                    <span class="relative group">
-                      <button
-                        type="button"
-                        aria-pressed={range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
-                        class="inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs leading-none font-semibold transition-colors {range.sphereMode ===
-                        SPHERE_RANGE_MODE.INVERSE_DUPLICATE
-                          ? 'border-brand-blue/60 bg-brand-navy text-white'
-                          : 'border-outline-variant/40 bg-white text-brand-navy hover:border-brand-blue/40 hover:text-brand-blue'}"
-                        onclick={() => toggleSphereMode(range)}
-                      >
-                        ±
-                      </button>
-                      <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg z-50">
-                        <p class="font-medium text-white">
-                          {range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
-                            ? 'Duplicado inverso activado'
-                            : 'Duplicado inverso desactivado'}
-                        </p>
-                        <p class="mt-1 text-white/80">
-                          {range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
-                            ? 'Los campos pasan a ser ± exterior e ± interior, y al guardar se crean dos rangos espejo.'
-                            : 'Los campos se leen como desde y hasta, y al guardar se crea un solo rango continuo.'}
-                        </p>
-                      </span>
-                    </span>
+										<span class="relative group">
+											<button
+												type="button"
+												aria-pressed={range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
+												class="inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs leading-none font-semibold transition-colors {range.sphereMode ===
+												SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+													? 'border-brand-blue/60 bg-brand-navy text-white'
+													: 'border-outline-variant/40 bg-white text-brand-navy hover:border-brand-blue/40 hover:text-brand-blue'}"
+												onclick={() => toggleSphereMode(range)}
+											>
+												±
+											</button>
+											<span
+												class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg z-50"
+											>
+												<p class="font-medium text-white">
+													{range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+														? 'Duplicado inverso activado'
+														: 'Duplicado inverso desactivado'}
+												</p>
+												<p class="mt-1 text-white/80">
+													{range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
+														? 'Los campos pasan a ser ± exterior e ± interior, y al guardar se crean dos rangos espejo.'
+														: 'Los campos se leen como desde y hasta, y al guardar se crea un solo rango continuo.'}
+												</p>
+											</span>
+										</span>
 									</div>
 									<div class="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
 										{#if range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
@@ -1262,16 +1267,16 @@
 									class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs text-outline"
 									>$</span
 								>
-                <input
-                  id="lc_price"
-                  name="basePrice"
-                  bind:value={formData.basePrice}
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue pl-7 font-mono"
-                  required
-                />
+								<input
+									id="lc_price"
+									name="basePrice"
+									bind:value={formData.basePrice}
+									type="number"
+									step="0.01"
+									min="0"
+									class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue pl-7 font-mono"
+									required
+								/>
 							</div>
 						</div>
 						<div>
@@ -1287,39 +1292,39 @@
 					<div class="grid grid-cols-3 gap-3">
 						<div>
 							<Label for="lc_mounting_price" class={fieldLabelClass}>Montaje</Label>
-              <input
-                id="lc_mounting_price"
-                name="mountingPrice"
-                bind:value={formData.mountingPrice}
-                type="number"
-                step="0.01"
-                min="0"
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
-              />
+							<input
+								id="lc_mounting_price"
+								name="mountingPrice"
+								bind:value={formData.mountingPrice}
+								type="number"
+								step="0.01"
+								min="0"
+								class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
+							/>
 						</div>
 						<div>
 							<Label for="lc_shipping" class={fieldLabelClass}>Envio</Label>
-              <input
-                id="lc_shipping"
-                name="shippingPrice"
-                bind:value={formData.shippingPrice}
-                type="number"
-                step="0.01"
-                min="0"
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
-              />
+							<input
+								id="lc_shipping"
+								name="shippingPrice"
+								bind:value={formData.shippingPrice}
+								type="number"
+								step="0.01"
+								min="0"
+								class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
+							/>
 						</div>
 						<div>
 							<Label for="lc_sale_price" class={fieldLabelClass}>Precio venta</Label>
-              <input
-                id="lc_sale_price"
-                name="salePrice"
-                bind:value={formData.salePrice}
-                type="number"
-                step="0.01"
-                min="0"
-                class="block w-full rounded-lg border border-slate-300 bg-brand-navy px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono font-bold text-white"
-              />
+							<input
+								id="lc_sale_price"
+								name="salePrice"
+								bind:value={formData.salePrice}
+								type="number"
+								step="0.01"
+								min="0"
+								class="block w-full rounded-lg border border-slate-300 bg-brand-navy px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono font-bold text-white"
+							/>
 						</div>
 					</div>
 
@@ -1425,14 +1430,14 @@
 							{#if formData.inventoryMode === LensInventoryMode.STOCK}
 								<div class="mt-4">
 									<Label for="lc_stock" class={fieldLabelClass}>Cantidad en stock</Label>
-                <input
-                  id="lc_stock"
-                  name="stock"
-                  bind:value={formData.stock}
-                  type="number"
-                  min="0"
-                  class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
-                />
+									<input
+										id="lc_stock"
+										name="stock"
+										bind:value={formData.stock}
+										type="number"
+										min="0"
+										class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
+									/>
 								</div>
 							{/if}
 						{:else}
@@ -1447,14 +1452,14 @@
 
 					<div class="rounded-xl bg-surface-container-low px-4 py-4">
 						<p class={fieldLabelClass}>Notas internas</p>
-            <textarea
-              id="lc_notes"
-              name="notes"
-              bind:value={formData.notes}
-              rows={3}
-              placeholder="Acuerdos con proveedor, restricciones o notas operativas..."
-              class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-3"
-            ></textarea>
+						<textarea
+							id="lc_notes"
+							name="notes"
+							bind:value={formData.notes}
+							rows={3}
+							placeholder="Acuerdos con proveedor, restricciones o notas operativas..."
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-3"
+						></textarea>
 					</div>
 				</div>
 			</section>

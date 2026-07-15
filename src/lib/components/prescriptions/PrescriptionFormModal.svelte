@@ -328,16 +328,16 @@
 			/>
 			<div>
 				<Label for="recommendedLensType" class="mb-2">Tipo de Lente</Label>
-			<select
-				id="recommendedLensType"
-				name="recommendedLensType"
-				bind:value={formData.recommendedLensType}
-				class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue"
-			>
-				{#each ALL_LENS_TYPES as type (type)}
-					<option value={type}>{getLensTypeLabel(type)}</option>
-				{/each}
-			</select>
+				<select
+					id="recommendedLensType"
+					name="recommendedLensType"
+					bind:value={formData.recommendedLensType}
+					class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue"
+				>
+					{#each ALL_LENS_TYPES as type (type)}
+						<option value={type}>{getLensTypeLabel(type)}</option>
+					{/each}
+				</select>
 			</div>
 			<FormInput
 				name="doctorName"
@@ -481,17 +481,41 @@
 		<div class="space-y-2">
 			<h4 class="font-semibold text-slate-900">Tratamientos</h4>
 			<div class="flex items-start space-x-8">
-				<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="treatmentAntiReflective" bind:checked={formData.treatmentAntiReflective} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" /> Antireflejo
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="treatmentAntiReflective"
+						bind:checked={formData.treatmentAntiReflective}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Antireflejo
 				</label>
 
-				<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="treatmentBlueBlock" bind:checked={formData.treatmentBlueBlock} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" /> Blueblock
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="treatmentBlueBlock"
+						bind:checked={formData.treatmentBlueBlock}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Blueblock
 				</label>
 
-				<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="treatmentPhotochromic" bind:checked={formData.treatmentPhotochromic} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" /> Fotocromático
+				<label class="flex items-center gap-2 text-sm"
+					><input
+						type="checkbox"
+						name="treatmentPhotochromic"
+						bind:checked={formData.treatmentPhotochromic}
+						class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+					/> Fotocromático
 				</label>
 
 				<div class="flex w-full items-start gap-3">
-					<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="treatmentOtherChecked" bind:checked={formData.hasOtherTreatment} class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue" /> Otros
+					<label class="flex items-center gap-2 text-sm"
+						><input
+							type="checkbox"
+							name="treatmentOtherChecked"
+							bind:checked={formData.hasOtherTreatment}
+							class="h-4 w-4 rounded border-slate-300 text-brand-blue focus:ring-2 focus:ring-brand-blue"
+						/> Otros
 					</label>
 
 					{#if formData.hasOtherTreatment}
