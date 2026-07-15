@@ -50,6 +50,9 @@ importers:
       svelte-sonner:
         specifier: ^1.1.1
         version: 1.1.1(svelte@5.56.4(@typescript-eslint/types@8.63.0))
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -137,7 +140,7 @@ importers:
         version: 4.0.2(react@19.2.4)(tailwindcss@4.3.2)
       tailwind-variants:
         specifier: ^3.2.2
-        version: 3.2.2(tailwindcss@4.3.2)
+        version: 3.2.2(tailwind-merge@3.6.0)(tailwindcss@4.3.2)
       tailwindcss:
         specifier: ^4.3.2
         version: 4.3.2
@@ -3032,6 +3035,9 @@ packages:
   tabbable@6.5.0:
     resolution: {integrity: sha512-wieBHXygIm7OyQOu5hQlkk62/WyCFYGlWg7L6/ZCUZwx0o398Zkn4pVmMyfYhfMG8kGrj/Krt8eIk6UKC6VzwA==}
 
+  tailwind-merge@3.6.0:
+    resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
+
   tailwind-scrollbar@4.0.2:
     resolution: {integrity: sha512-wAQiIxAPqk0MNTPptVe/xoyWi27y+NRGnTwvn4PQnbvB9kp8QUBiGl/wsfoVBHnQxTmhXJSNt9NHTmcz9EivFA==}
     engines: {node: '>=12.13.0'}
@@ -5666,6 +5672,8 @@ snapshots:
 
   tabbable@6.5.0: {}
 
+  tailwind-merge@3.6.0: {}
+
   tailwind-scrollbar@4.0.2(react@19.2.4)(tailwindcss@4.3.2):
     dependencies:
       prism-react-renderer: 2.4.1(react@19.2.4)
@@ -5673,9 +5681,11 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  tailwind-variants@3.2.2(tailwindcss@4.3.2):
+  tailwind-variants@3.2.2(tailwind-merge@3.6.0)(tailwindcss@4.3.2):
     dependencies:
       tailwindcss: 4.3.2
+    optionalDependencies:
+      tailwind-merge: 3.6.0
 
   tailwindcss@4.3.2: {}
 
