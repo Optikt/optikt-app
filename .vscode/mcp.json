@@ -1,10 +1,5 @@
 {
 	"servers": {
-		"svelte-flowbite": {
-			"type": "stdio",
-			"command": "~/.nvm/versions/node/v22.22.2/bin/node",
-			"args": ["~/projects/mcp-servers/flowbite-svelte-mcp/build/server.js"]
-		},
 		"svelte": {
 			"url": "https://mcp.svelte.dev/mcp",
 			"type": "http"

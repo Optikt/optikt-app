@@ -1,7 +1,7 @@
 ---
 plan name: flowbite-migration
 plan description: Migrate flowbite to shadcn-svelte
-plan status: active
+plan status: done
 ---
 
 ## Idea

@@ -3,7 +3,6 @@
    ============================================================================ */
 
 @import 'tailwindcss';
-@plugin 'flowbite/plugin';
 @plugin 'tailwind-scrollbar';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -156,9 +155,6 @@
 	--ds-duration-slow: 250ms;
 }
 
-@source '../../node_modules/flowbite-svelte/dist';
-@source '../../node_modules/flowbite-svelte-icons/dist';
-
 @layer base {
 	/* Prevent overscroll bounce (elastic effect at scroll edges) */
 	html,
@@ -180,7 +176,7 @@
 		cursor: pointer;
 	}
 
-	/* Override Flowbite's orange focus color with brand-blue */
+	/* Brand-blue focus ring */
 	input:focus,
 	select:focus,
 	textarea:focus,

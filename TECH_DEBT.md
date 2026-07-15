@@ -1,22 +1,18 @@
 ## Deuda pendiente
 
-### HIGH
-
-1. **Flowbite sigue presente en rutas activas y shared UI** — Además de páginas legacy, los flujos activos de ventas/presupuestos siguen usando `flowbite-svelte` en piezas compartidas como `PrescriptionInput` y `PrescriptionValidationModal`, además de wrappers UI (`FormInput`, `BaseSelect`, `ConfirmModal`, `DataTable`, etc.). El objetivo de un único sistema visual todavía no se cumple.
-
 ### MEDIUM
 
-2. **Dead code**: `CustomerViewModal`, `SupplierViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable`, `PurchaseCurrencyInput` — exportados pero nunca importados.
+1. **Dead code**: `CustomerViewModal`, `SupplierViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable`, `PurchaseCurrencyInput` — exportados pero nunca importados.
 
-3. **`DataTable` vs `DataGrid` duplicados** — Dos implementaciones de tabla con APIs distintas.
+2. **`DataTable` vs `DataGrid` duplicados** — Dos implementaciones de tabla con APIs distintas.
 
-4. **Sin integration / E2E tests** para remote functions, queries, flujo completo de pagos/cancelaciones, reportes ni el nuevo flujo óptico del Step 2 (confirmación antes del resumen + autosync del tipo de lente).
+3. **Sin integration / E2E tests** para remote functions, queries, flujo completo de pagos/cancelaciones, reportes ni el nuevo flujo óptico del Step 2 (confirmación antes del resumen + autosync del tipo de lente).
 
-5. **Prescripción global para operaciones con múltiples cristales** — El wizard sigue modelando una sola Rx compartida para toda la operación. Hoy se mitiga con advertencias y revisión manual cuando hay múltiples tipos de cristal, pero el soporte real por item/par sigue pendiente.
+4. **Prescripción global para operaciones con múltiples cristales** — El wizard sigue modelando una sola Rx compartida para toda la operación. Hoy se mitiga con advertencias y revisión manual cuando hay múltiples tipos de cristal, pero el soporte real por item/par sigue pendiente.
 
 ### LOW
 
-6. **`build/` en el repo** — Debería estar en `.gitignore`.
+5. **`build/` en el repo** — Debería estar en `.gitignore`.
 
 ---
 
