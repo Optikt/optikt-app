@@ -85,12 +85,24 @@
 	emptyDescription="Agrega un proveedor para comenzar"
 >
 	{#snippet header()}
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Nombre</th>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Tipo</th>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">RIF</th>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Teléfono</th>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Contacto</th>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Estado</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Nombre</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Tipo</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>RIF</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Teléfono</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Contacto</th
+		>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+			>Estado</th
+		>
 	{/snippet}
 
 	{#snippet row(supplier)}
