@@ -101,24 +101,24 @@
 	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
-		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
-		<TableHeadCell class="font-semibold">Código</TableHeadCell>
-		<TableHeadCell class="font-semibold">Tipo</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Nombre</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Código</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Tipo</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Estado</th>
 	{/snippet}
 
 	{#snippet row(material)}
-		<TableBodyCell class="font-medium">{material.name}</TableBodyCell>
-		<TableBodyCell>
+		<td class="font-medium px-4 py-3 text-sm">{material.name}</td>
+		<td class="px-4 py-3 text-sm">
 			<Badge color="gray" class="font-mono text-xs">{material.code}</Badge>
-		</TableBodyCell>
+		</td>
 		<TableBodyCell
 			>{MATERIAL_CATEGORY_LABELS[material.productType as MaterialCategory] ??
 				material.productType}</TableBodyCell
 		>
-		<TableBodyCell>
+		<td class="px-4 py-3 text-sm">
 			<StatusBadge active={!material.deletedAt} />
-		</TableBodyCell>
+		</td>
 	{/snippet}
 </DataTable>
 

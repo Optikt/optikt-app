@@ -1,13 +1,5 @@
 <script lang="ts">
-	import {
-		TableHeadCell,
-		TableBodyCell,
-		Modal,
-		Button,
-		Input,
-		Label,
-		Spinner
-	} from 'flowbite-svelte';
+	import { Modal, Button, Input, Label, Spinner } from 'flowbite-svelte';
 	import { SquarePen, Trash2, Tag, TriangleAlert, Eye, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
@@ -113,16 +105,16 @@
 	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
-		<TableHeadCell class="font-semibold">Nombre</TableHeadCell>
-		<TableHeadCell class="font-semibold">País</TableHeadCell>
-		<TableHeadCell class="font-semibold">Sitio Web</TableHeadCell>
-		<TableHeadCell class="font-semibold">Estado</TableHeadCell>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Nombre</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">País</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Sitio Web</th>
+		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500">Estado</th>
 	{/snippet}
 
 	{#snippet row(brand)}
-		<TableBodyCell class="font-medium">{brand.name}</TableBodyCell>
-		<TableBodyCell>{brand.country ?? '-'}</TableBodyCell>
-		<TableBodyCell>
+		<td class="font-medium px-4 py-3 text-sm">{brand.name}</td>
+		<td class="px-4 py-3 text-sm">{brand.country ?? '-'}</td>
+		<td class="px-4 py-3 text-sm">
 			{#if brand.website}
 				<a
 					href={brand.website}
@@ -135,10 +127,10 @@
 			{:else}
 				-
 			{/if}
-		</TableBodyCell>
-		<TableBodyCell>
+		</td>
+		<td class="px-4 py-3 text-sm">
 			<StatusBadge active={!brand.deletedAt} />
-		</TableBodyCell>
+		</td>
 	{/snippet}
 </DataTable>
 
