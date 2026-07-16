@@ -190,6 +190,7 @@ export function computePurchaseOrderBalance(
 		settlementCurrency?: string | null;
 		settlementGrossAmount?: number | null;
 		settlementDebtAmount?: number | null;
+		settlementDebtAmountUsdBcvAtOrder?: number | null;
 	}
 ): PurchaseOrderBalanceSummary {
 	const activePayments = getActivePayments(payments);

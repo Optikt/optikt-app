@@ -31,10 +31,15 @@ export interface UpcomingPurchaseOrderDue {
 		creditDueDate: string | null;
 		earlyPaymentDiscountPercent: number | null;
 		earlyPaymentDiscountDeadline: string | null;
+		settlementCurrency: string;
+		settlementGrossAmount: number;
+		settlementDebtAmount: number;
+		settlementDebtAmountUsdBcvAtOrder: number;
 	};
 	supplier: { id: string; name: string } | null;
 	balance: PurchaseOrderBalanceSummary;
 	dueStatus: PurchaseOrderDueStatus;
+	sourceCurrency?: string;
 }
 
 export async function getUpcomingPurchaseOrderDues(
@@ -54,7 +59,12 @@ export async function getUpcomingPurchaseOrderDues(
 				settlementDiscountValue: purchaseOrders.settlementDiscountValue,
 				creditDueDate: purchaseOrders.creditDueDate,
 				earlyPaymentDiscountPercent: purchaseOrders.earlyPaymentDiscountPercent,
-				earlyPaymentDiscountDeadline: purchaseOrders.earlyPaymentDiscountDeadline
+				earlyPaymentDiscountDeadline: purchaseOrders.earlyPaymentDiscountDeadline,
+				settlementCurrency: purchaseOrders.settlementCurrency,
+				settlementGrossAmount: purchaseOrders.settlementGrossAmount,
+				settlementDebtAmount: purchaseOrders.settlementDebtAmount,
+				settlementDebtAmountUsdBcvAtOrder: purchaseOrders.settlementDebtAmountUsdBcvAtOrder,
+				sourceCurrency: purchaseOrders.sourceCurrency
 			},
 			supplier: { id: suppliers.id, name: suppliers.name }
 		})
@@ -123,24 +133,30 @@ export async function getUpcomingPurchaseOrderDues(
 				row.purchaseOrder,
 				orderItems,
 				orderPayments,
-				orderBenefits
+				orderBenefits,
+				{
+					settlementCurrency: row.purchaseOrder.settlementCurrency,
+					settlementGrossAmount: row.purchaseOrder.settlementGrossAmount,
+					settlementDebtAmount: row.purchaseOrder.settlementDebtAmount
+				}
 			);
 			const dueStatus = getPurchaseOrderDueStatus({
 				paymentTerms: row.purchaseOrder.paymentTerms,
 				creditDueDate: row.purchaseOrder.creditDueDate,
 				earlyPaymentDiscountDeadline: row.purchaseOrder.earlyPaymentDiscountDeadline,
-				balance: balance.balance
+				balance: balance.settlementBalance
 			});
 
 			return {
 				id: row.purchaseOrder.id,
 				dueDate: row.purchaseOrder.creditDueDate ?? '',
-				expectedAmountUsd: balance.balance,
+				expectedAmountUsd: balance.settlementBalance,
 				purchaseOrder: row.purchaseOrder,
 				supplier: row.supplier?.id ? row.supplier : null,
 				balance,
-				dueStatus
+				dueStatus,
+				sourceCurrency: row.purchaseOrder.sourceCurrency
 			};
 		})
-		.filter((due) => due.balance.balance > 0.01);
+		.filter((due) => due.balance.settlementBalance > 0.01);
 }

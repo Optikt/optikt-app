@@ -36,12 +36,22 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		getPurchaseOrderAuditHistory(params.id)
 	]);
 	const lotsMap = Object.fromEntries(lots.filter(Boolean).map((l) => [l!.id, l!]));
-	const balance = computePurchaseOrderBalance(purchaseOrder, items, payments, earlyPaymentBenefits);
+	const balance = computePurchaseOrderBalance(
+		purchaseOrder,
+		items,
+		payments,
+		earlyPaymentBenefits,
+		{
+			settlementCurrency: purchaseOrder.settlementCurrency,
+			settlementGrossAmount: purchaseOrder.settlementGrossAmount,
+			settlementDebtAmount: purchaseOrder.settlementDebtAmount
+		}
+	);
 	const dueStatus = getPurchaseOrderDueStatus({
 		paymentTerms: purchaseOrder.paymentTerms,
 		creditDueDate: purchaseOrder.creditDueDate,
 		earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
-		balance: balance.balance
+		balance: balance.settlementBalance
 	});
 
 	return {
