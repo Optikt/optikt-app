@@ -293,7 +293,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					altRate: data.altRate ?? null,
+					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,
 					...creditTerms,
 					notes: data.notes,
@@ -393,7 +393,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
 		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
-		if (data.altRate !== undefined) updateData.altRate = data.altRate ?? null;
+		if (data.altRate !== undefined) updateData.sourceRateToVes = data.altRate ?? null;
 		if (data.sourceCurrency !== undefined) updateData.sourceCurrency = data.sourceCurrency;
 		if (
 			data.paymentTerms !== undefined ||
@@ -537,7 +537,7 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					altRate: data.altRate ?? null,
+					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,
 					...creditTerms,
 					notes: data.notes,

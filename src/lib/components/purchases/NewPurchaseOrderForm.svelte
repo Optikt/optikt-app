@@ -16,6 +16,7 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
+		ACTIVE_PURCHASE_SOURCE_CURRENCIES,
 		PURCHASE_SOURCE_CURRENCY_LABELS
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -93,7 +94,7 @@
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
 	let sourceCurrency = $state<string>(initialValues?.sourceCurrency ?? PurchaseSourceCurrency.USD);
-	let altRate = $state<number>(initialValues?.altRate ?? 0);
+	let sourceRateToVes = $state<number>(initialValues?.sourceRateToVes ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -146,7 +147,7 @@
 
 	const canSave = $derived(
 		canPersistPurchaseOrderDraft(
-			{ supplierId, orderDate, bcvRate, notes, sourceCurrency, altRate },
+			{ supplierId, orderDate, bcvRate, notes, sourceCurrency, sourceRateToVes },
 			items,
 			{
 				paymentTerms,
@@ -159,7 +160,7 @@
 
 	$effect(() => {
 		const currentBcvRate = Number(bcvRate || 0);
-		const currentAltRate = Number(altRate || 0);
+		const currentAltRate = Number(sourceRateToVes || 0);
 		const isAlt = sourceCurrency !== PurchaseSourceCurrency.USD;
 		if (!isAlt || currentBcvRate <= 0) return;
 		if (sourceCurrency === PurchaseSourceCurrency.EUR && currentAltRate <= 0) return;
@@ -326,7 +327,7 @@
 					deliveryNoteNumber: deliveryNoteNumber || undefined,
 					orderDate,
 					bcvRate,
-					altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? altRate : undefined,
+					altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? sourceRateToVes : undefined,
 					sourceCurrency,
 					paymentTerms,
 					creditDueDate,
@@ -359,7 +360,7 @@
 				deliveryNoteNumber: deliveryNoteNumber || undefined,
 				orderDate,
 				bcvRate,
-				altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? altRate : undefined,
+				altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? sourceRateToVes : undefined,
 				sourceCurrency,
 				paymentTerms,
 				creditDueDate,
@@ -448,7 +449,7 @@
 			bind:documentType
 			bind:orderDate
 			bind:bcvRate
-			bind:altRate
+			bind:sourceRateToVes
 			{sourceCurrency}
 			bind:invoiceNumber
 			bind:deliveryNoteNumber
@@ -478,7 +479,7 @@
 				</div>
 
 				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
-					{#each Object.values(PurchaseSourceCurrency) as currency (currency)}
+					{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
 						<button
 							type="button"
 							onclick={() => requestPricingModeChange(currency)}
@@ -503,7 +504,7 @@
 			{supplierId}
 			{documentType}
 			{sourceCurrency}
-			{altRate}
+			{sourceRateToVes}
 			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
 		/>
@@ -522,7 +523,7 @@
 			onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
 		/>
 
-		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {altRate} />
+		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {sourceRateToVes} />
 	</div>
 </div>
 

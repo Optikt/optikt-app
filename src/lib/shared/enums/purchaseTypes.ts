@@ -190,28 +190,42 @@ export function getPurchaseDiscountTypeLabel(type: string): string {
  * The currency in which the supplier's prices are expressed on the source document.
  * - USD: prices entered in USD BCV (default, no conversion needed)
  * - VES: prices entered in Bs — divided by bcvRate to normalize to USD
- * - EUR: prices entered in EUR — multiplied by altRate (Bs/EUR) then divided by bcvRate to normalize to USD
+ * - EUR: prices entered in EUR — multiplied by sourceRateToVes then divided by bcvRate to normalize to USD
+ * - USDT / PAYPAL: modeled for the native-debt workflow and enabled in the purchase UI in phase 4A
  */
 export enum PurchaseSourceCurrency {
 	USD = 'USD',
 	VES = 'VES',
-	EUR = 'EUR'
+	EUR = 'EUR',
+	USDT = 'USDT',
+	PAYPAL = 'PAYPAL'
 }
 
 export const ALL_PURCHASE_SOURCE_CURRENCIES = Object.values(
 	PurchaseSourceCurrency
 ) as PurchaseSourceCurrency[];
 
+/** Source currencies currently available in the purchase-order UI. */
+export const ACTIVE_PURCHASE_SOURCE_CURRENCIES = [
+	PurchaseSourceCurrency.USD,
+	PurchaseSourceCurrency.VES,
+	PurchaseSourceCurrency.EUR
+] as const;
+
 export const PURCHASE_SOURCE_CURRENCY_LABELS: Record<PurchaseSourceCurrency, string> = {
 	[PurchaseSourceCurrency.USD]: 'USD BCV',
 	[PurchaseSourceCurrency.VES]: 'Bolívares (Bs)',
-	[PurchaseSourceCurrency.EUR]: 'Euro (€)'
+	[PurchaseSourceCurrency.EUR]: 'Euro (€)',
+	[PurchaseSourceCurrency.USDT]: 'USDT',
+	[PurchaseSourceCurrency.PAYPAL]: 'USD PayPal'
 };
 
 export const PURCHASE_SOURCE_CURRENCY_SYMBOLS: Record<PurchaseSourceCurrency, string> = {
 	[PurchaseSourceCurrency.USD]: '$',
 	[PurchaseSourceCurrency.VES]: 'Bs',
-	[PurchaseSourceCurrency.EUR]: '€'
+	[PurchaseSourceCurrency.EUR]: '€',
+	[PurchaseSourceCurrency.USDT]: 'USDT',
+	[PurchaseSourceCurrency.PAYPAL]: '$'
 };
 
 export function getPurchaseSourceCurrencyLabel(currency: string): string {

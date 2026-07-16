@@ -38,8 +38,8 @@
 		/** Source currency for item prices ('USD' | 'VES' | 'EUR') */
 		sourceCurrency: string;
 		bcvUsdRate: number;
-		/** Alt rate (Bs/EUR) — passed through to each row when sourceCurrency = EUR */
-		altRate?: number;
+		/** Source-to-VES rate (Bs per source-currency unit) — passed through to each row */
+		sourceRateToVes?: number;
 		defaultTaxRate?: number;
 	}
 
@@ -51,7 +51,7 @@
 		documentType,
 		sourceCurrency,
 		bcvUsdRate,
-		altRate = 0,
+		sourceRateToVes = 0,
 		defaultTaxRate = DEFAULT_TAX_RATE
 	}: Props = $props();
 
@@ -275,7 +275,7 @@
 							lensItem={lensItems.find((lens) => lens.id === item.lensCatalogItemId) ?? null}
 							{sourceCurrency}
 							{bcvUsdRate}
-							{altRate}
+							{sourceRateToVes}
 							showRemove={true}
 							onremove={() => removeLine(item.id)}
 						/>

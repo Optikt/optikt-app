@@ -20,9 +20,9 @@
 		documentType: PurchaseDocumentType;
 		orderDate: string;
 		bcvRate: number;
-		/** Alt rate (Bs/EUR) — only shown and used when sourceCurrency = EUR */
-		altRate: number;
-		/** Source currency for item prices — determines whether altRate field is visible */
+		/** Source-to-VES rate (Bs per source-currency unit) — shown when sourceCurrency = EUR */
+		sourceRateToVes: number;
+		/** Source currency for item prices — determines whether sourceRateToVes field is visible */
 		sourceCurrency: string;
 		invoiceNumber: string;
 		deliveryNoteNumber: string;
@@ -36,7 +36,7 @@
 		documentType = $bindable(),
 		orderDate = $bindable(),
 		bcvRate = $bindable(),
-		altRate = $bindable(),
+		sourceRateToVes = $bindable(),
 		sourceCurrency,
 		invoiceNumber = $bindable(),
 		deliveryNoteNumber = $bindable(),
@@ -159,7 +159,7 @@
 						type="number"
 						step="0.01"
 						min="0"
-						bind:value={altRate}
+						bind:value={sourceRateToVes}
 						class={inputClass}
 						placeholder="Ej: 41.30"
 						aria-label="Tasa EUR en bolívares"

@@ -7,8 +7,8 @@ export interface PurchaseOrderDraftHeaderRulesInput {
 	notes: string | null;
 	/** Source currency for item prices. Defaults to USD when not set. */
 	sourceCurrency?: string | null;
-	/** Alt rate (Bs/EUR) — required when sourceCurrency = EUR. */
-	altRate?: number | null;
+	/** Source-to-VES rate (Bs per source-currency unit) — required for EUR, USDT, PayPal. */
+	sourceRateToVes?: number | null;
 }
 
 export interface PurchaseOrderDraftLineRulesInput {
@@ -40,7 +40,7 @@ export function getPurchaseOrderDraftReadinessIssues(
 	}
 	if (
 		header.sourceCurrency === PurchaseSourceCurrency.EUR &&
-		(!Number.isFinite(Number(header.altRate)) || Number(header.altRate) <= 0)
+		(!Number.isFinite(Number(header.sourceRateToVes)) || Number(header.sourceRateToVes) <= 0)
 	) {
 		issues.push('Define la tasa EUR mayor a 0');
 	}

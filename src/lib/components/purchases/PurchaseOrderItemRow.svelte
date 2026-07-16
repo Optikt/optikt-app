@@ -34,8 +34,8 @@
 		/** Source currency for item prices ('USD' | 'VES' | 'EUR') */
 		sourceCurrency: string;
 		bcvUsdRate: number;
-		/** Alt rate (Bs/EUR) — only used when sourceCurrency = EUR */
-		altRate?: number;
+		/** Source-to-VES rate (Bs per source-currency unit) */
+		sourceRateToVes?: number;
 		showRemove?: boolean;
 		onremove?: () => void;
 	}
@@ -46,7 +46,7 @@
 		lensItem = null,
 		sourceCurrency,
 		bcvUsdRate,
-		altRate = 0,
+		sourceRateToVes = 0,
 		showRemove = false,
 		onremove
 	}: Props = $props();
@@ -171,7 +171,7 @@
 				Number(item.unitPurchasePriceAlt ?? 0),
 				item.appliesIva,
 				item.ivaRate,
-				altRate,
+				sourceRateToVes,
 				bcvUsdRate
 			);
 		} else {

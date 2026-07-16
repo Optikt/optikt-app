@@ -927,7 +927,7 @@
 				<div
 					class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4"
 					class:xl:grid-cols-5={purchaseOrder.sourceCurrency === 'EUR' &&
-						purchaseOrder.altRate != null}
+						purchaseOrder.sourceRateToVes != null}
 				>
 					<div class="rounded-2xl bg-surface-container-low p-4">
 						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
@@ -968,14 +968,14 @@
 							{formatBcvRate(purchaseOrder.bcvRate)}
 						</p>
 					</div>
-					{#if purchaseOrder.sourceCurrency === 'EUR' && purchaseOrder.altRate != null}
+					{#if purchaseOrder.sourceCurrency === 'EUR' && purchaseOrder.sourceRateToVes != null}
 						<div class="rounded-2xl bg-surface-container-low p-4">
 							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 								<ScrollText class="h-4 w-4" />
 								Tasa EUR (Bs/€)
 							</div>
 							<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
-								{formatBcvRate(purchaseOrder.altRate)}
+								{formatBcvRate(purchaseOrder.sourceRateToVes)}
 							</p>
 							<p class="mt-1 text-xs text-on-surface-variant">Normalizado a USD vía tasa BCV</p>
 						</div>

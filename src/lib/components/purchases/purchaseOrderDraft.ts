@@ -115,7 +115,7 @@ export interface PurchaseOrderDraftHeader extends PurchaseOrderDraftHeaderRulesI
 export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeader {
 	items: PurchaseOrderDraftItem[];
 	sourceCurrency?: string;
-	altRate?: number | null;
+	sourceRateToVes?: number | null;
 }
 
 export function createEmptyPurchaseOrderDraftItem(
@@ -285,28 +285,28 @@ export function calculateUnitPurchasePriceFromVesPreTax(
 
 /**
  * Derive USD unit price (with IVA) from a EUR pre-tax price.
- * Formula: price_eur_pretax × (1 + ivaRate/100) × altRate (Bs/EUR) ÷ bcvRate (Bs/USD)
+ * Formula: price_eur_pretax × (1 + ivaRate/100) × sourceRateToVes (Bs/EUR) ÷ bcvRate (Bs/USD)
  */
 export function calculateUnitPurchasePriceFromEurPreTax(
 	unitPriceEur: number,
 	appliesIva: boolean,
 	ivaRate: number,
-	altRate: number,
+	sourceRateToVes: number,
 	bcvRate: number
 ): number {
 	const normalizedEurPrice = Number(unitPriceEur ?? 0);
-	const normalizedAltRate = Number(altRate || 0);
+	const normalizedSourceRateToVes = Number(sourceRateToVes || 0);
 	const normalizedBcvRate = Number(bcvRate || 0);
 
 	if (!Number.isFinite(normalizedEurPrice) || normalizedEurPrice < 0) return 0;
-	if (!Number.isFinite(normalizedAltRate) || normalizedAltRate <= 0) return 0;
+	if (!Number.isFinite(normalizedSourceRateToVes) || normalizedSourceRateToVes <= 0) return 0;
 	if (!Number.isFinite(normalizedBcvRate) || normalizedBcvRate <= 0) return 0;
 
 	const priceWithTax = appliesIva
 		? normalizedEurPrice * (1 + Number(ivaRate || 0) / 100)
 		: normalizedEurPrice;
 
-	return (priceWithTax * normalizedAltRate) / normalizedBcvRate;
+	return (priceWithTax * normalizedSourceRateToVes) / normalizedBcvRate;
 }
 
 export function calculateUnitPurchasePriceAltFromLineTotal(

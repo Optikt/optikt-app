@@ -22,6 +22,7 @@ Separar tres conceptos que hoy están acoplados: el costo normalizado de inventa
   $$V = \left(\frac{\text{amountAppliedToDebt}}{\text{settlementDebtAmount}} \times \text{settlementDebtAmountUsdBcvAtOrder}\right) - \text{amountUsdBcv}$$
 
   Es decir, el valor BCV original del abono (prorrateado de la obligación) menos el valor BCV real del dinero entregado. $V>0$ es ganancia financiera (se pagó menos BCV de lo previsto); $V<0$ es pérdida financiera (se pagó más BCV de lo previsto).
+
 - Los beneficios de pronto pago también se guardarán y consumirán en la moneda de obligación, con su equivalencia USD-BCV original. Un pronto pago reduce deuda, no es un pago de caja ni una variación cambiaria.
 
 ## Fases de implementación
@@ -52,9 +53,10 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 2. En `src/lib/server/db/schema/purchaseOrders.ts`, renombrar `altRate` a `sourceRateToVes` (usando `ALTER TABLE RENAME COLUMN alt_rate TO source_rate_to_ves` para preservar datos y dependencias, sin drop+add). Añadir a `purchase_orders`: `settlementCurrency`, `settlementRateToVes`, `settlementGrossAmount`, `settlementDebtAmount` y `settlementDebtAmountUsdBcvAtOrder`. Añadir a `purchase_order_payments`: `amountAppliedToDebt` y `amountAppliedToDebtUsdBcvAtOrder`. Añadir los campos equivalentes de monto nativo y valor original a `purchase_order_early_payment_benefits`.
 3. Generar `drizzle/0031_<generated>_purchase_payable_currency.sql` y actualizar el journal de Drizzle. Revisar y editar el SQL generado para que el cambio de `alt_rate` a `source_rate_to_ves` use `ALTER TABLE ... RENAME COLUMN`, nunca `DROP COLUMN` + `ADD COLUMN`. La migración establece todas las órdenes existentes como `USD_BCV`, calcula su deuda con la misma semántica actual de descuentos y rellena cada pago/beneficio histórico con su actual `amountUsdBcv` para conservar balance y no crear variación retrospectiva.
 4. Mantener los campos USD-BCV de líneas, lotes y pagos para compatibilidad/auditoría; no migrar ni revaluar `inventory_lots.unitPurchasePrice`.
-5. *(Opcional, puede diferirse)* Añadir campo `defaultSettlementCurrency` a la tabla `suppliers` para que nuevas órdenes hereden automáticamente la moneda de obligación preferida del proveedor. Si el proveedor no tiene preferencia, la obligación inicia igual a la moneda de factura como ya especifica el plan.
+5. _(Opcional, puede diferirse)_ Añadir campo `defaultSettlementCurrency` a la tabla `suppliers` para que nuevas órdenes hereden automáticamente la moneda de obligación preferida del proveedor. Si el proveedor no tiene preferencia, la obligación inicia igual a la moneda de factura como ya especifica el plan.
 
 **Checkpoint:**
+
 - `pnpm db:generate` ejecuta sin errores.
 - `pnpm db:migrate` aplica la migración en base de prueba.
 - Una orden EUR histórica conserva exactamente el mismo saldo USD-BCV que antes de migrar.
@@ -74,6 +76,7 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 6. Renombrar los nombres internos de resumen que dicen `Ves` pero representan moneda alternativa en `src/lib/components/purchases/purchaseOrderDraft.ts`, y sustituir conversiones solo-EUR por una conversión fuente genérica.
 
 **Checkpoint:**
+
 - `pnpm check && pnpm lint` pasa en los archivos modificados.
 - `pnpm vitest run src/lib/schemas/purchaseOrders.spec.ts src/lib/shared/purchaseOrderRules.spec.ts src/lib/shared/purchaseOrderCredit.spec.ts src/lib/shared/purchaseOrderPayments.spec.ts src/lib/components/purchases/purchaseOrderDraft.spec.ts` — todos verdes, con nuevos casos para:
   - Pagos parciales, pago en moneda distinta a la deuda, pronto pago nativo, anulación.
@@ -100,6 +103,7 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 5. Adaptar `src/routes/(app)/purchases/[id]/+page.server.ts` y los tipos de detalle para el resumen enriquecido. Las órdenes legacy seguirán devolviendo USD-BCV con saldo idéntico al anterior.
 
 **Checkpoint:**
+
 - `pnpm check && pnpm lint` pasa en todos los archivos.
 - `pnpm vitest run src/lib/server/db/queries/purchaseOrders.spec.ts` — verifica que una orden USDT persiste y lee sus campos de obligación, y que `hasPendingBalance` filtra correctamente por saldo nativo.
 - `pnpm vitest run src/lib/server/db/queries/purchaseOrderPayments.spec.ts src/lib/server/db/queries/purchaseOrderCreditSchedule.spec.ts` — pagos persisten `amountAppliedToDebt`, vencimientos calculan contra deuda nativa.
@@ -118,6 +122,7 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 6. Cambiar en `src/lib/components/purchases/PurchaseStatsCards.svelte` el rótulo ambiguo "Gasto del mes" por un concepto de costo/recepción USD-BCV.
 
 **Checkpoint:**
+
 - `pnpm check && pnpm lint` pasa.
 - Recorrido manual en entorno de prueba: crear orden con factura USD-BCV y deuda USDT, confirmar, pagar parcialmente con Bs, verificar que el saldo sigue siendo USDT, anular pago, verificar saldo restaurado.
 - Las órdenes legacy USD-BCV siguen mostrando y funcionando exactamente igual.
@@ -137,6 +142,7 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 4. Mantener `src/lib/remote/cash.remote.ts` y `src/routes/(app)/cash/+page.server.ts` como transportes de los tipos extendidos, sin crear tablas de cierres mensuales.
 
 **Checkpoint:**
+
 - `pnpm check && pnpm lint` pasa.
 - El dashboard agrupa vencimientos por moneda; no hay un solo número total mezclando USDT + EUR.
 - En Caja/P&L, la variación aparece como línea separada con signo positivo/negativo; el CSV exporta la columna.
@@ -153,6 +159,7 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 3. Documentar el modelo y ejemplos venezolanos en `docs/notifications-and-exchange-rates.md` o un nuevo documento focalizado en compras, incluyendo la distinción entre costo del inventario, deuda al proveedor y variación financiera.
 
 **Checkpoint final:**
+
 - `pnpm vitest run` — suite unitaria completa verde.
 - `pnpm check && pnpm lint` — sin errores.
 - `OPTIKT_RUN_PURCHASE_E2E=true pnpm test:e2e -- purchase-order-credit-flow.test.ts` — verde.

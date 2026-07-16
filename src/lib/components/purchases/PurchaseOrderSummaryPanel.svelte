@@ -17,7 +17,7 @@
 		bcvRate: number;
 		discount?: PurchaseOrderDiscountInput;
 		sourceCurrency?: string;
-		altRate?: number;
+		sourceRateToVes?: number;
 	}
 
 	let {
@@ -25,7 +25,7 @@
 		bcvRate,
 		discount = NO_PURCHASE_ORDER_DISCOUNT,
 		sourceCurrency = PurchaseSourceCurrency.USD,
-		altRate: _altRate = 0
+		sourceRateToVes: _sv = 0
 	}: Props = $props();
 
 	const isEurMode = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);

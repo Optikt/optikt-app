@@ -86,14 +86,28 @@ export const purchaseOrders = pgTable(
 		bcvRate: doublePrecision('bcv_rate').notNull(),
 		/**
 		 * Currency in which the supplier's prices are expressed on the source document.
-		 * USD = USD BCV (default), VES = Bolívares, EUR = Euro.
+		 * USD = USD BCV (default), VES = Bolívares, EUR = Euro, USDT or PayPal.
 		 */
 		sourceCurrency: varchar('source_currency', { length: 10 }).notNull().default('USD'),
 		/**
-		 * Alternative rate in Bs per currency unit (only set when sourceCurrency = EUR).
-		 * EUR formula: price_eur * altRate / bcvRate = price_usd
+		 * Source currency rate in Bs per unit when needed to normalize inventory cost.
+		 * EUR formula: price_eur * sourceRateToVes / bcvRate = price_usd.
 		 */
-		altRate: doublePrecision('alt_rate'),
+		sourceRateToVes: doublePrecision('source_rate_to_ves'),
+		/** Currency the supplier requires to settle this purchase order. */
+		settlementCurrency: purchasePaymentCurrencyEnum('settlement_currency')
+			.notNull()
+			.default(CurrencyCode.USD_BCV),
+		/** Settlement currency rate in Bs per unit, captured when the order is issued. */
+		settlementRateToVes: doublePrecision('settlement_rate_to_ves'),
+		/** Contractual total before the settlement discount, in settlementCurrency. */
+		settlementGrossAmount: doublePrecision('settlement_gross_amount').notNull().default(0),
+		/** Contractual debt after the settlement discount, in settlementCurrency. */
+		settlementDebtAmount: doublePrecision('settlement_debt_amount').notNull().default(0),
+		/** USD-BCV reference of settlementDebtAmount when the order was issued. */
+		settlementDebtAmountUsdBcvAtOrder: doublePrecision('settlement_debt_amount_usd_bcv_at_order')
+			.notNull()
+			.default(0),
 		/** Payment terms for supplier settlement */
 		paymentTerms: purchasePaymentTermsEnum('payment_terms').notNull().default('CONTADO'),
 		/** Final due date for supplier credit settlement (null for cash purchases). */
@@ -180,6 +194,12 @@ export const purchaseOrderPayments = pgTable(
 		amountBs: doublePrecision('amount_bs').notNull(),
 		/** Computed amount normalized to USD BCV */
 		amountUsdBcv: doublePrecision('amount_usd_bcv').notNull(),
+		/** Amount that this payment applies against the contractual supplier debt. */
+		amountAppliedToDebt: doublePrecision('amount_applied_to_debt').notNull().default(0),
+		/** Original USD-BCV reference for the applied contractual amount. */
+		amountAppliedToDebtUsdBcvAtOrder: doublePrecision('amount_applied_to_debt_usd_bcv_at_order')
+			.notNull()
+			.default(0),
 		reference: varchar(),
 		notes: varchar(),
 		voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'string' }),
@@ -241,6 +261,12 @@ export const purchaseOrderEarlyPaymentBenefits = pgTable(
 		paymentId: uuid('payment_id'),
 		benefitDate: date('benefit_date').notNull(),
 		amountUsdBcv: doublePrecision('amount_usd_bcv').notNull(),
+		/** Amount that this benefit applies against the contractual supplier debt. */
+		amountAppliedToDebt: doublePrecision('amount_applied_to_debt').notNull().default(0),
+		/** Original USD-BCV reference for the applied contractual benefit. */
+		amountAppliedToDebtUsdBcvAtOrder: doublePrecision('amount_applied_to_debt_usd_bcv_at_order')
+			.notNull()
+			.default(0),
 		appliedToBalance: boolean('applied_to_balance').notNull().default(true),
 		note: varchar('note'),
 		createdById: uuid('created_by_id').notNull(),
