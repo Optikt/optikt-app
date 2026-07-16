@@ -19,9 +19,9 @@
 		calculateUnitPurchasePriceFromVesPreTax,
 		calculateUnitPurchasePriceFromEurPreTax,
 		calculateUnitPurchasePriceAltFromLineTotal,
-		calculateDraftItemSubtotalVes,
-		calculateDraftItemTaxVes,
-		calculateDraftItemTotalVes,
+		calculateDraftItemSubtotalAlt,
+		calculateDraftItemTaxAlt,
+		calculateDraftItemTotalAlt,
 		getPreTaxUnitPrice,
 		isDraftItemUserEditingLocked,
 		type PurchaseOrderDraftItem
@@ -133,9 +133,9 @@
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
 	const lineTax = $derived(calculateDraftItemTax(item));
 	const lineTotal = $derived(calculateDraftItemTotal(item));
-	const lineSubtotalVes = $derived(calculateDraftItemSubtotalVes(item));
-	const lineTaxVes = $derived(calculateDraftItemTaxVes(item));
-	const lineTotalVes = $derived(calculateDraftItemTotalVes(item));
+	const lineSubtotalAlt = $derived(calculateDraftItemSubtotalAlt(item));
+	const lineTaxAlt = $derived(calculateDraftItemTaxAlt(item));
+	const lineTotalAlt = $derived(calculateDraftItemTotalAlt(item));
 	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
 	const visiblePreTaxUnitCost = $derived(round2(preTaxUnitCost));
 	const visiblePreTaxUnitCostVes = $derived(round2(Number(item.unitPurchasePriceAlt ?? 0)));
@@ -143,7 +143,7 @@
 	const userEditingLocked = $derived(isDraftItemUserEditingLocked(item));
 	let editingLineTotal = $state(false);
 	let lineTotalDraftValue = $state('');
-	const displayedLineTotal = $derived(isAltMode ? lineTotalVes : lineTotal);
+	const displayedLineTotal = $derived(isAltMode ? lineTotalAlt : lineTotal);
 	const lineTotalInputValue = $derived(
 		!userEditingLocked && editingLineTotal
 			? lineTotalDraftValue
@@ -326,13 +326,13 @@
 	function totalTooltip(): string {
 		if (isAltMode) {
 			const sym = altSymbol;
-			const parts = [`Subtotal ${sym} (s/IVA): ${formatVes(lineSubtotalVes)}`];
+			const parts = [`Subtotal ${sym} (s/IVA): ${formatVes(lineSubtotalAlt)}`];
 
-			if (lineTaxVes > 0) {
-				parts.push(`IVA ${item.ivaRate}%: ${formatVes(lineTaxVes)}`);
+			if (lineTaxAlt > 0) {
+				parts.push(`IVA ${item.ivaRate}%: ${formatVes(lineTaxAlt)}`);
 			}
 
-			parts.push(`Total ${sym}: ${formatVes(lineTotalVes)}`);
+			parts.push(`Total ${sym}: ${formatVes(lineTotalAlt)}`);
 			if (bcvUsdRate > 0) {
 				parts.push(`USD c/IVA und.: ${formatPrice(item.unitPurchasePrice)}`);
 			}

@@ -123,7 +123,7 @@
 					terms: purchaseOrder,
 					totalDebt: debtTotalUsd,
 					currentBalance: pendingBalanceUsd,
-					paymentAmountUsdBcv: normalized.amountUsdBcv,
+					paymentAmount: normalized.amountUsdBcv,
 					paymentDate
 				})
 			: null
@@ -274,7 +274,7 @@
 		if (earlyPaymentSuggestion) {
 			pendingAddPayload = payload;
 			pendingBenefitSuggestion = earlyPaymentSuggestion;
-			benefitAmountInput = earlyPaymentSuggestion.amountUsdBcv.toFixed(2);
+			benefitAmountInput = earlyPaymentSuggestion.amount.toFixed(2);
 			benefitNoteInput = '';
 			showEarlyPaymentBenefitModal = true;
 			return;
@@ -348,10 +348,8 @@
 			toast.error('Monto de beneficio inválido');
 			return;
 		}
-		if (amountUsdBcv > pendingBenefitSuggestion.amountUsdBcv + 0.01) {
-			toast.error(
-				`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amountUsdBcv)}`
-			);
+		if (amountUsdBcv > pendingBenefitSuggestion.amount + 0.01) {
+			toast.error(`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amount)}`);
 			return;
 		}
 		if (appliedToBalance && amountUsdBcv >= pendingBenefitSuggestion.currentBalance - 0.01) {
@@ -555,19 +553,17 @@
 					>
 						<p class="font-semibold text-brand-gold">Pronto pago disponible</p>
 						<p class="mt-1 text-white/85">
-							Puedes registrar un beneficio de {formatPrice(
-								liveEarlyPaymentSuggestion.amountUsdBcv
-							)}
+							Puedes registrar un beneficio de {formatPrice(liveEarlyPaymentSuggestion.amount)}
 							antes del {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
 								dateStyle: 'medium'
 							})}.
 						</p>
 						<p class="mt-1 text-white/75">
 							Si lo aplicas al saldo, el pago efectivo quedaría en
-							{formatPrice(liveEarlyPaymentSuggestion.recommendedPaymentUsdBcv)}.
-							{#if liveEarlyPaymentSuggestion.overpaymentUsdBcv > 0.01}
+							{formatPrice(liveEarlyPaymentSuggestion.recommendedPayment)}.
+							{#if liveEarlyPaymentSuggestion.overpayment > 0.01}
 								Con el monto actual se ajustarán {formatPrice(
-									liveEarlyPaymentSuggestion.overpaymentUsdBcv
+									liveEarlyPaymentSuggestion.overpayment
 								)}.
 							{/if}
 						</p>
@@ -775,9 +771,9 @@
 					Si lo aplicas al saldo, el pago se registrará por
 					{formatPrice(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0))}
 					para completar esta orden sin sobrepagarla.
-					{#if pendingBenefitSuggestion.overpaymentUsdBcv > 0.01}
+					{#if pendingBenefitSuggestion.overpayment > 0.01}
 						El monto actual excede ese pago neto por
-						{formatPrice(pendingBenefitSuggestion.overpaymentUsdBcv)}.
+						{formatPrice(pendingBenefitSuggestion.overpayment)}.
 					{/if}
 				</p>
 			{/if}

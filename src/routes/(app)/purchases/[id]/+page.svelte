@@ -48,7 +48,7 @@
 	} from '$lib/server/db/queries/purchaseOrders';
 	import {
 		calculatePurchaseOrderSummary,
-		calculateDraftItemTotalVes,
+		calculateDraftItemTotalAlt,
 		createPurchaseOrderDraftItemFromExisting,
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
@@ -206,10 +206,10 @@
 				: 'Sin descuento'
 	);
 	const totalPurchaseInBs = $derived(
-		purchaseSummary.totalVes ?? totalPurchase * Number(purchaseOrder.bcvRate || 0)
+		purchaseSummary.totalAlt ?? totalPurchase * Number(purchaseOrder.bcvRate || 0)
 	);
 	const netTotalPurchaseInBs = $derived(
-		purchaseSummary.netTotalVes ?? netTotalPurchase * Number(purchaseOrder.bcvRate || 0)
+		purchaseSummary.netTotalAlt ?? netTotalPurchase * Number(purchaseOrder.bcvRate || 0)
 	);
 	const documentLabel = $derived(getPurchaseDocumentTypeLabel(purchaseOrder.documentType));
 	const documentNumber = $derived.by(() => {
@@ -323,7 +323,7 @@
 	}
 
 	function purchaseLineTotalVes(item: PurchaseOrderItemWithProduct): number {
-		return calculateDraftItemTotalVes(createPurchaseOrderDraftItemFromExisting(item));
+		return calculateDraftItemTotalAlt(createPurchaseOrderDraftItemFromExisting(item));
 	}
 
 	function purchaseLineTotalAlt(item: PurchaseOrderItemWithProduct): number {
@@ -1395,7 +1395,7 @@
 						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
 							{formatPrice(totalPurchase)}
 						</p>
-						{#if purchaseSummary.totalVes !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
+						{#if purchaseSummary.totalAlt !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
 							<p class="mt-1 font-mono text-xs text-white/60 tabular-nums">
 								{formatVesAmount(totalPurchaseInBs)}
 							</p>
@@ -1432,7 +1432,7 @@
 										{formatPrice(netTaxPurchase)}
 									</span>
 								</div>
-								{#if purchaseSummary.netTotalVes !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
+								{#if purchaseSummary.netTotalAlt !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
 									<div class="flex items-center justify-between gap-3">
 										<span>Equivalente BCV</span>
 										<span class="font-mono font-semibold text-white tabular-nums">

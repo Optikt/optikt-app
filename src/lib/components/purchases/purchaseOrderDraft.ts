@@ -44,11 +44,11 @@ export interface PurchaseOrderSummary {
 	/** Gross total = subtotal + taxAmount. Matches the delivery note. */
 	total: number;
 	/** Gross pre-tax subtotal in alt currency (VES or EUR) when direct alt prices are available. */
-	subtotalVes?: number;
+	subtotalAlt?: number;
 	/** Gross IVA in alt currency when direct alt prices are available. */
-	taxAmountVes?: number;
+	taxAmountAlt?: number;
 	/** Gross total in alt currency when direct alt prices are available. */
-	totalVes?: number;
+	totalAlt?: number;
 	estimatedSale: number;
 	estimatedProfit: number;
 	/** Settlement discount applied to the gross subtotal (0 when type=NONE). */
@@ -59,12 +59,12 @@ export interface PurchaseOrderSummary {
 	netTaxAmount: number;
 	/** Net total (what the fiscal invoice charges). */
 	netTotal: number;
-	/** Net pre-tax subtotal in VES when direct Bs prices are available. */
-	netSubtotalVes?: number;
-	/** Net IVA in VES when direct Bs prices are available. */
-	netTaxAmountVes?: number;
-	/** Net total in VES when direct Bs prices are available. */
-	netTotalVes?: number;
+	/** Net pre-tax subtotal in alt currency when direct alt prices are available. */
+	netSubtotalAlt?: number;
+	/** Net IVA in alt currency when direct alt prices are available. */
+	netTaxAmountAlt?: number;
+	/** Net total in alt currency when direct alt prices are available. */
+	netTotalAlt?: number;
 	/** Estimated profit using net cost. */
 	netEstimatedProfit: number;
 }
@@ -474,7 +474,7 @@ export function calculateDraftItemTotal(item: PurchaseOrderDraftItem): number {
 	return Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0);
 }
 
-export function calculateDraftItemSubtotalVes(item: PurchaseOrderDraftItem): number {
+export function calculateDraftItemSubtotalAlt(item: PurchaseOrderDraftItem): number {
 	const unitPriceVes = Number(item.unitPurchasePriceAlt ?? 0);
 	const quantity = Number(item.quantity || 0);
 
@@ -484,26 +484,26 @@ export function calculateDraftItemSubtotalVes(item: PurchaseOrderDraftItem): num
 	return round2(unitPriceVes * quantity);
 }
 
-export function calculateDraftItemTaxVes(item: PurchaseOrderDraftItem): number {
+export function calculateDraftItemTaxAlt(item: PurchaseOrderDraftItem): number {
 	if (!item.appliesIva) return 0;
-	return round2(calculateDraftItemSubtotalVes(item) * (Number(item.ivaRate || 0) / 100));
+	return round2(calculateDraftItemSubtotalAlt(item) * (Number(item.ivaRate || 0) / 100));
 }
 
-export function calculateDraftItemTotalVes(item: PurchaseOrderDraftItem): number {
-	return round2(calculateDraftItemSubtotalVes(item) + calculateDraftItemTaxVes(item));
+export function calculateDraftItemTotalAlt(item: PurchaseOrderDraftItem): number {
+	return round2(calculateDraftItemSubtotalAlt(item) + calculateDraftItemTaxAlt(item));
 }
 
-function hasDirectVesPrice(item: PurchaseOrderDraftItem): boolean {
+function hasDirectAltPrice(item: PurchaseOrderDraftItem): boolean {
 	return item.unitPurchasePriceAlt !== undefined && item.unitPurchasePriceAlt !== null;
 }
 
-function calculateNetDraftItemSubtotalVes(item: PurchaseOrderDraftItem, factor: number): number {
-	return round2(calculateDraftItemSubtotalVes(item) * factor);
+function calculateNetDraftItemSubtotalAlt(item: PurchaseOrderDraftItem, factor: number): number {
+	return round2(calculateDraftItemSubtotalAlt(item) * factor);
 }
 
-function calculateNetDraftItemTaxVes(item: PurchaseOrderDraftItem, factor: number): number {
+function calculateNetDraftItemTaxAlt(item: PurchaseOrderDraftItem, factor: number): number {
 	if (!item.appliesIva) return 0;
-	return round2(calculateNetDraftItemSubtotalVes(item, factor) * (Number(item.ivaRate || 0) / 100));
+	return round2(calculateNetDraftItemSubtotalAlt(item, factor) * (Number(item.ivaRate || 0) / 100));
 }
 
 /**
@@ -566,15 +566,15 @@ export function calculatePurchaseOrderSummary(
 	const taxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item), 0);
 	const total = items.reduce((sum, item) => sum + calculateDraftItemTotal(item), 0);
 	void bcvRate;
-	const shouldCalculateVesTotals = items.some(hasDirectVesPrice);
-	const subtotalVes = shouldCalculateVesTotals
-		? round2(items.reduce((sum, item) => sum + calculateDraftItemSubtotalVes(item), 0))
+	const shouldCalculateAltTotals = items.some(hasDirectAltPrice);
+	const subtotalAlt = shouldCalculateAltTotals
+		? round2(items.reduce((sum, item) => sum + calculateDraftItemSubtotalAlt(item), 0))
 		: undefined;
-	const taxAmountVes = shouldCalculateVesTotals
-		? round2(items.reduce((sum, item) => sum + calculateDraftItemTaxVes(item), 0))
+	const taxAmountAlt = shouldCalculateAltTotals
+		? round2(items.reduce((sum, item) => sum + calculateDraftItemTaxAlt(item), 0))
 		: undefined;
-	const totalVes = shouldCalculateVesTotals
-		? round2(items.reduce((sum, item) => sum + calculateDraftItemTotalVes(item), 0))
+	const totalAlt = shouldCalculateAltTotals
+		? round2(items.reduce((sum, item) => sum + calculateDraftItemTotalAlt(item), 0))
 		: undefined;
 	const estimatedSale = items.reduce(
 		(sum, item) => sum + Number(item.unitSalePrice || 0) * Number(item.quantity || 0),
@@ -586,15 +586,15 @@ export function calculatePurchaseOrderSummary(
 	const netSubtotal = round2(subtotal - discountAmount);
 	const netTaxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item) * factor, 0);
 	const netTotal = round2(netSubtotal + netTaxAmount);
-	const netSubtotalVes = shouldCalculateVesTotals
-		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemSubtotalVes(item, factor), 0))
+	const netSubtotalAlt = shouldCalculateAltTotals
+		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemSubtotalAlt(item, factor), 0))
 		: undefined;
-	const netTaxAmountVes = shouldCalculateVesTotals
-		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemTaxVes(item, factor), 0))
+	const netTaxAmountAlt = shouldCalculateAltTotals
+		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemTaxAlt(item, factor), 0))
 		: undefined;
-	const netTotalVes =
-		netSubtotalVes !== undefined && netTaxAmountVes !== undefined
-			? round2(netSubtotalVes + netTaxAmountVes)
+	const netTotalAlt =
+		netSubtotalAlt !== undefined && netTaxAmountAlt !== undefined
+			? round2(netSubtotalAlt + netTaxAmountAlt)
 			: undefined;
 
 	return {
@@ -603,18 +603,18 @@ export function calculatePurchaseOrderSummary(
 		subtotal,
 		taxAmount,
 		total,
-		subtotalVes,
-		taxAmountVes,
-		totalVes,
+		subtotalAlt,
+		taxAmountAlt,
+		totalAlt,
 		estimatedSale,
 		estimatedProfit: estimatedSale - total,
 		discountAmount,
 		netSubtotal,
 		netTaxAmount: round2(netTaxAmount),
 		netTotal,
-		netSubtotalVes,
-		netTaxAmountVes,
-		netTotalVes,
+		netSubtotalAlt,
+		netTaxAmountAlt,
+		netTotalAlt,
 		netEstimatedProfit: estimatedSale - netTotal
 	};
 }

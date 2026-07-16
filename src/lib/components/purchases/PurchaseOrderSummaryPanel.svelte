@@ -31,20 +31,20 @@
 	const isEurMode = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);
 	const hasDiscount = $derived(discount.type !== PurchaseDiscountType.NONE && discount.value > 0);
 
-	// In EUR mode: totalVes holds the EUR total; BCV equivalent comes from USD total × bcvRate
-	// In VES mode: totalVes holds the Bs total directly
+	// In EUR mode: totalAlt holds the EUR total; BCV equivalent comes from USD total × bcvRate
+	// In VES mode: totalAlt holds the Bs total directly
 	const totalInBs = $derived(
 		isEurMode
 			? (hasDiscount ? summary.netTotal : summary.total) * Number(bcvRate || 0)
-			: (summary.totalVes ?? summary.total * Number(bcvRate || 0))
+			: (summary.totalAlt ?? summary.total * Number(bcvRate || 0))
 	);
 	const netTotalInBs = $derived(
 		isEurMode
 			? summary.netTotal * Number(bcvRate || 0)
-			: (summary.netTotalVes ?? summary.netTotal * Number(bcvRate || 0))
+			: (summary.netTotalAlt ?? summary.netTotal * Number(bcvRate || 0))
 	);
 	const canShowBsEquivalent = $derived(
-		summary.totalVes !== undefined || summary.netTotalVes !== undefined || bcvRate > 0
+		summary.totalAlt !== undefined || summary.netTotalAlt !== undefined || bcvRate > 0
 	);
 
 	function formatVes(amount: number): string {
@@ -143,14 +143,14 @@
 					{formatPrice(hasDiscount ? summary.netEstimatedProfit : summary.estimatedProfit)}
 				</span>
 			</div>
-			{#if isEurMode && (summary.totalVes !== undefined || summary.netTotalVes !== undefined)}
+			{#if isEurMode && (summary.totalAlt !== undefined || summary.netTotalAlt !== undefined)}
 				<div class="flex items-center justify-between gap-4">
 					<span>Total €</span>
 					<span class="font-mono text-base font-semibold text-white tabular-nums">
 						€ {new Intl.NumberFormat('es-VE', {
 							minimumFractionDigits: 2,
 							maximumFractionDigits: 2
-						}).format(hasDiscount ? (summary.netTotalVes ?? 0) : (summary.totalVes ?? 0))}
+						}).format(hasDiscount ? (summary.netTotalAlt ?? 0) : (summary.totalAlt ?? 0))}
 					</span>
 				</div>
 			{/if}

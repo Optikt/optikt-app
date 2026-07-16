@@ -9,7 +9,8 @@ import {
 	PurchaseDocumentType,
 	PurchaseDiscountType,
 	PurchasePaymentTerms,
-	PurchaseSourceCurrency
+	PurchaseSourceCurrency,
+	ALL_PURCHASE_PAYMENT_CURRENCY_CODES
 } from '$lib/shared/enums';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import {
@@ -115,6 +116,14 @@ export const CreatePurchaseOrderSchema = z
 		sourceCurrency: z
 			.enum(Object.values(PurchaseSourceCurrency) as [string, ...string[]])
 			.default(PurchaseSourceCurrency.USD),
+		/** Currency the supplier requires to settle this order. Defaults to sourceCurrency mapping. */
+		settlementCurrency: z.enum(ALL_PURCHASE_PAYMENT_CURRENCY_CODES).optional(),
+		/** Settlement-currency rate to VES when the settlement currency needs its own rate. */
+		settlementRateToVes: CoercedNumber.min(0).optional().nullable(),
+		/** Contractual gross amount in settlement currency (before discount). */
+		settlementGrossAmount: CoercedNumber.min(0).optional(),
+		/** Contractual debt amount in settlement currency (after discount). */
+		settlementDebtAmount: CoercedNumber.min(0).optional(),
 		notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
 		discount: SettlementDiscountSchema.optional(),
 		items: z.array(PurchaseOrderReviewableItemSchema).min(1, 'Debe incluir al menos un ítem')
@@ -137,6 +146,14 @@ export const UpdatePurchaseOrderSchema = z.object({
 	/** Alt rate (Bs/EUR) — only meaningful when sourceCurrency = EUR */
 	altRate: CoercedNumber.min(0).optional().nullable(),
 	sourceCurrency: z.enum(Object.values(PurchaseSourceCurrency) as [string, ...string[]]).optional(),
+	/** Currency the supplier requires to settle this order. */
+	settlementCurrency: z.enum(ALL_PURCHASE_PAYMENT_CURRENCY_CODES).optional(),
+	/** Settlement-currency rate to VES. */
+	settlementRateToVes: CoercedNumber.min(0).optional().nullable(),
+	/** Contractual gross amount in settlement currency. */
+	settlementGrossAmount: CoercedNumber.min(0).optional(),
+	/** Contractual debt amount in settlement currency. */
+	settlementDebtAmount: CoercedNumber.min(0).optional(),
 	notes: z.string().min(6).optional(),
 	discount: SettlementDiscountSchema.optional(),
 	paymentTerms: z.enum(PurchasePaymentTerms).optional(),
@@ -159,6 +176,14 @@ export const SavePurchaseOrderDraftSchema = z
 		sourceCurrency: z
 			.enum(Object.values(PurchaseSourceCurrency) as [string, ...string[]])
 			.default(PurchaseSourceCurrency.USD),
+		/** Currency the supplier requires to settle this order. */
+		settlementCurrency: z.enum(ALL_PURCHASE_PAYMENT_CURRENCY_CODES).optional(),
+		/** Settlement-currency rate to VES. */
+		settlementRateToVes: CoercedNumber.min(0).optional().nullable(),
+		/** Contractual gross amount in settlement currency. */
+		settlementGrossAmount: CoercedNumber.min(0).optional(),
+		/** Contractual debt amount in settlement currency. */
+		settlementDebtAmount: CoercedNumber.min(0).optional(),
 		notes: z.string().min(6, 'Las observaciones deben tener al menos 6 caracteres'),
 		discount: SettlementDiscountSchema.optional(),
 		items: z.array(PurchaseOrderDraftItemSchema).min(1, 'Debe incluir al menos un ítem')
