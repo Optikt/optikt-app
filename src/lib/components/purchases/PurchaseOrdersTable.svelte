@@ -2,14 +2,14 @@
 	import { ClipboardList, Eye } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { DataGrid, PurchaseOrderDueBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
-import {
-	getPurchaseDocumentTypeLabel,
-	PurchaseDiscountType,
-	PurchaseDocumentType,
-	CurrencyCode
-} from '$lib/shared/enums';
-import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
-import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
+	import {
+		getPurchaseDocumentTypeLabel,
+		PurchaseDiscountType,
+		PurchaseDocumentType,
+		CurrencyCode
+	} from '$lib/shared/enums';
+	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 
 	type PurchaseViewHref = `/purchases/${string}`;

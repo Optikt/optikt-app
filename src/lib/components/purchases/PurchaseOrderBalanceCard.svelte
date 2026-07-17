@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { CalendarClock, Landmark, PiggyBank, TrendingDown, TrendingUp, Wallet } from '@lucide/svelte';
+	import {
+		CalendarClock,
+		Landmark,
+		PiggyBank,
+		TrendingDown,
+		TrendingUp,
+		Wallet
+	} from '@lucide/svelte';
 	import { AppBadge } from '$lib/components/ui';
 	import { CurrencyCode, getPurchasePaymentTermsLabel } from '$lib/shared/enums';
 	import type {
@@ -80,7 +87,9 @@
 					{/if}
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
-					{isNativeCurrency ? balance.settlementDebtAmount.toFixed(2) : formatPrice(balance.debtTotal)}
+					{isNativeCurrency
+						? balance.settlementDebtAmount.toFixed(2)
+						: formatPrice(balance.debtTotal)}
 					{#if isNativeCurrency}
 						<span class="ml-1 text-base font-normal text-outline">{settlementSymbol}</span>
 					{/if}
@@ -96,7 +105,9 @@
 					{/if}
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
-					{isNativeCurrency ? balance.totalAppliedToDebt.toFixed(2) : formatPrice(balance.totalPaid)}
+					{isNativeCurrency
+						? balance.totalAppliedToDebt.toFixed(2)
+						: formatPrice(balance.totalPaid)}
 					{#if isNativeCurrency}
 						<span class="ml-1 text-base font-normal text-outline">{settlementSymbol}</span>
 					{/if}
@@ -128,11 +139,14 @@
 					{/if}
 				</div>
 				<p
-					class="mt-3 font-mono text-2xl font-semibold tabular-nums {balance.totalExchangeVariance > 0
+					class="mt-3 font-mono text-2xl font-semibold tabular-nums {balance.totalExchangeVariance >
+					0
 						? 'text-success'
 						: 'text-error'}"
 				>
-					{balance.totalExchangeVariance > 0 ? '+' : ''}{formatPrice(Math.abs(balance.totalExchangeVariance))}
+					{balance.totalExchangeVariance > 0 ? '+' : ''}{formatPrice(
+						Math.abs(balance.totalExchangeVariance)
+					)}
 				</p>
 			</div>
 		{/if}

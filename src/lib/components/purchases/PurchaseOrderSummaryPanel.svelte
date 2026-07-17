@@ -11,7 +11,10 @@
 		type PurchaseOrderDiscountInput,
 		type PurchaseOrderSummary
 	} from './purchaseOrderDraft';
-	import { sourceCurrencyRequiresRateToVes, getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import {
+		sourceCurrencyRequiresRateToVes,
+		getSourceCurrencySymbol
+	} from '$lib/shared/purchaseOrderCurrencies';
 
 	interface Props {
 		summary: PurchaseOrderSummary;
@@ -89,7 +92,11 @@
 				</p>
 				{#if needsSourceRate && (summary.totalAlt != null || summary.netTotalAlt != null)}
 					<p class="mt-2 font-mono text-2xl font-semibold text-white tabular-nums">
-						{getSourceCurrencySymbol(sourceCurrency)} {(hasDiscount ? (summary.netTotalAlt ?? 0) : (summary.totalAlt ?? summary.total)).toFixed(2)}
+						{getSourceCurrencySymbol(sourceCurrency)}
+						{(hasDiscount
+							? (summary.netTotalAlt ?? 0)
+							: (summary.totalAlt ?? summary.total)
+						).toFixed(2)}
 					</p>
 					<p class="mt-1 text-xs text-white/60">
 						Costo inventario: {formatPrice(summary.total)}
@@ -124,27 +131,33 @@
 				<div class="flex items-center justify-between gap-4">
 					<span>Subtotal</span>
 					<span class="font-mono text-base font-semibold text-white tabular-nums">
-						{getSourceCurrencySymbol(sourceCurrency)} {(summary.subtotalAlt ?? 0).toFixed(2)}
+						{getSourceCurrencySymbol(sourceCurrency)}
+						{(summary.subtotalAlt ?? 0).toFixed(2)}
 					</span>
 				</div>
 				{#if hasDiscount}
 					<div class="flex items-center justify-between gap-4 text-brand-gold">
 						<span>Descuento ({discountLabel})</span>
 						<span class="font-mono text-base font-semibold tabular-nums">
-							− {getSourceCurrencySymbol(sourceCurrency)} {(summary.discountAmountAlt ?? 0).toFixed(2)}
+							− {getSourceCurrencySymbol(sourceCurrency)}
+							{(summary.discountAmountAlt ?? 0).toFixed(2)}
 						</span>
 					</div>
 				{/if}
 				<div class="flex items-center justify-between gap-4">
 					<span>Subtotal neto</span>
 					<span class="font-mono text-base font-semibold text-white tabular-nums">
-						{getSourceCurrencySymbol(sourceCurrency)} {(summary.netSubtotalAlt ?? summary.subtotalAlt ?? 0).toFixed(2)}
+						{getSourceCurrencySymbol(sourceCurrency)}
+						{(summary.netSubtotalAlt ?? summary.subtotalAlt ?? 0).toFixed(2)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
 					<span>{hasDiscount ? 'IVA neto' : 'IVA estimado'}</span>
 					<span class="font-mono text-base font-semibold text-white tabular-nums">
-						{getSourceCurrencySymbol(sourceCurrency)} {(hasDiscount ? (summary.netTaxAmountAlt ?? 0) : (summary.taxAmountAlt ?? 0)).toFixed(2)}
+						{getSourceCurrencySymbol(sourceCurrency)}
+						{(hasDiscount ? (summary.netTaxAmountAlt ?? 0) : (summary.taxAmountAlt ?? 0)).toFixed(
+							2
+						)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
@@ -163,7 +176,8 @@
 				<div class="flex items-center justify-between gap-4">
 					<span>Total {getSourceCurrencySymbol(sourceCurrency)}</span>
 					<span class="font-mono text-base font-semibold text-white tabular-nums">
-						{getSourceCurrencySymbol(sourceCurrency)} {(hasDiscount ? (summary.netTotalAlt ?? 0) : (summary.totalAlt ?? 0)).toFixed(2)}
+						{getSourceCurrencySymbol(sourceCurrency)}
+						{(hasDiscount ? (summary.netTotalAlt ?? 0) : (summary.totalAlt ?? 0)).toFixed(2)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
