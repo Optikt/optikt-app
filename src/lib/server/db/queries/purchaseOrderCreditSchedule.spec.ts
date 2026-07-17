@@ -45,7 +45,11 @@ describe('getUpcomingPurchaseOrderDues settlement contract', () => {
 				}
 			],
 			[],
-			{ settlementCurrency: 'USDT', settlementDebtAmount: 200, settlementDebtAmountUsdBcvAtOrder: 250 }
+			{
+				settlementCurrency: 'USDT',
+				settlementDebtAmount: 200,
+				settlementDebtAmountUsdBcvAtOrder: 250
+			}
 		);
 
 		// Only the payment contributes variance: 125 - 105 = 20 (gain)

@@ -1,6 +1,8 @@
 ## Deuda pendiente
 
-### MEDIUM
+### HIGH
+
+1. **Payload duplicado en `NewPurchaseOrderForm.svelte`** — Las llamadas a `savePurchaseOrderDraftCmd` (~l.312) y `createPurchaseOrderCmd` (~l.357) construyen el mismo objeto payload manualmente con lógica idéntica. Extraer a una función `buildPurchaseOrderPayload()` compartida.
 
 1. **Dead code**: `CustomerViewModal`, `SupplierViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable`, `PurchaseCurrencyInput` — exportados pero nunca importados.
 

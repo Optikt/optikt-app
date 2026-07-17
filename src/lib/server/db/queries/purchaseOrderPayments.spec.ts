@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentExchangeVariance, computeTotalExchangeVariance } from '$lib/shared/purchaseOrderPayments';
+import {
+	computePaymentExchangeVariance,
+	computeTotalExchangeVariance
+} from '$lib/shared/purchaseOrderPayments';
 
 describe('computePaymentExchangeVariance', () => {
 	it('returns 0 when settlementDebtAmount is 0 (legacy guard)', () => {
-		expect(
-			computePaymentExchangeVariance(100, 0, 100, 90)
-		).toBe(0);
+		expect(computePaymentExchangeVariance(100, 0, 100, 90)).toBe(0);
 	});
 
 	it('returns positive variance when BCV original > actual paid', () => {
