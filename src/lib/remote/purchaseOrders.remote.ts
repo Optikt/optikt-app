@@ -337,24 +337,38 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				await createPurchaseOrderItems(itemsData, tx);
 
 				// Compute and persist settlement amounts from items
+				const isNativeSettlement = settlementCurrency !== 'USD_BCV';
 				const gross = itemsData.reduce(
-					(sum, item) => sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
+					(sum, item) =>
+						sum +
+						(isNativeSettlement
+							? Number(item.unitPurchasePriceAlt ?? item.unitPurchasePrice ?? 0)
+							: Number(item.unitPurchasePrice || 0)) *
+							Number(item.quantity || 0),
+					0
+				);
+				const usdBcvGross = itemsData.reduce(
+					(sum, item) =>
+						sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
 					0
 				);
 				const discountType = data.discount?.type;
 				const discountValue = Number(data.discount?.value ?? 0);
 				let settlementDebtAmount = gross;
+				let discountFactor = 1;
 				if (discountType === 'PERCENT' && discountValue > 0) {
-					settlementDebtAmount = gross * (1 - Math.min(discountValue, 100) / 100);
+					discountFactor = 1 - Math.min(discountValue, 100) / 100;
+					settlementDebtAmount = gross * discountFactor;
 				} else if (discountType === 'AMOUNT' && discountValue > 0) {
 					settlementDebtAmount = Math.max(0, gross - discountValue);
+					discountFactor = gross > 0 ? settlementDebtAmount / gross : 0;
 				}
 				const settlementUpdate = {
 					settlementGrossAmount: data.settlementGrossAmount ?? gross,
 					settlementDebtAmount: data.settlementDebtAmount ?? settlementDebtAmount,
-					settlementDebtAmountUsdBcvAtOrder: data.settlementDebtAmount
-						? settlementDebtAmount
-						: settlementDebtAmount // same value when settlementCurrency = USD_BCV
+					settlementDebtAmountUsdBcvAtOrder: isNativeSettlement
+						? Math.round(usdBcvGross * discountFactor * 100) / 100
+						: settlementDebtAmount
 				};
 				if (
 					settlementUpdate.settlementGrossAmount !== 0 ||
@@ -600,23 +614,38 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 				);
 
 				// Compute and persist settlement amounts from items
+				const isNativeSettlement = settlementCurrency !== 'USD_BCV';
 				const gross = items.reduce(
-					(sum, item) => sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
+					(sum, item) =>
+						sum +
+						(isNativeSettlement
+							? Number(item.unitPurchasePriceAlt ?? item.unitPurchasePrice ?? 0)
+							: Number(item.unitPurchasePrice || 0)) *
+							Number(item.quantity || 0),
+					0
+				);
+				const usdBcvGross = items.reduce(
+					(sum, item) =>
+						sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
 					0
 				);
 				const discountType = data.discount?.type;
 				const discountValue = Number(data.discount?.value ?? 0);
 				let settlementDebtAmount = gross;
+				let discountFactor = 1;
 				if (discountType === 'PERCENT' && discountValue > 0) {
-					settlementDebtAmount = gross * (1 - Math.min(discountValue, 100) / 100);
+					discountFactor = 1 - Math.min(discountValue, 100) / 100;
+					settlementDebtAmount = gross * discountFactor;
 				} else if (discountType === 'AMOUNT' && discountValue > 0) {
 					settlementDebtAmount = Math.max(0, gross - discountValue);
+					discountFactor = gross > 0 ? settlementDebtAmount / gross : 0;
 				}
 				const settlementUpdate = {
 					settlementGrossAmount: data.settlementGrossAmount ?? gross,
 					settlementDebtAmount: data.settlementDebtAmount ?? settlementDebtAmount,
-					settlementDebtAmountUsdBcvAtOrder:
-						data.settlementDebtAmount ?? settlementDebtAmount // when settlementCurrency = USD_BCV
+					settlementDebtAmountUsdBcvAtOrder: isNativeSettlement
+						? Math.round(usdBcvGross * discountFactor * 100) / 100
+						: settlementDebtAmount
 				};
 				if (
 					settlementUpdate.settlementGrossAmount !== 0 ||

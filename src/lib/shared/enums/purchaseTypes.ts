@@ -209,7 +209,9 @@ export const ALL_PURCHASE_SOURCE_CURRENCIES = Object.values(
 export const ACTIVE_PURCHASE_SOURCE_CURRENCIES = [
 	PurchaseSourceCurrency.USD,
 	PurchaseSourceCurrency.VES,
-	PurchaseSourceCurrency.EUR
+	PurchaseSourceCurrency.EUR,
+	PurchaseSourceCurrency.USDT,
+	PurchaseSourceCurrency.PAYPAL
 ] as const;
 
 export const PURCHASE_SOURCE_CURRENCY_LABELS: Record<PurchaseSourceCurrency, string> = {

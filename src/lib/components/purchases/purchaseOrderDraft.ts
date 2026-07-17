@@ -53,6 +53,8 @@ export interface PurchaseOrderSummary {
 	estimatedProfit: number;
 	/** Settlement discount applied to the gross subtotal (0 when type=NONE). */
 	discountAmount: number;
+	/** Settlement discount in the source currency when alt prices are available. */
+	discountAmountAlt?: number;
 	/** Net pre-tax base after discount = subtotal - discountAmount. */
 	netSubtotal: number;
 	/** IVA recomputed on the net base (per-line, respects appliesIva). */
@@ -581,9 +583,21 @@ export function calculatePurchaseOrderSummary(
 		0
 	);
 
-	const discountAmount = applySettlementDiscount(subtotal, discount);
-	const factor = getSettlementDiscountFactor(subtotal, discount);
-	const netSubtotal = round2(subtotal - discountAmount);
+	// Apply discount in source currency when alt prices exist and discount is AMOUNT
+	const discountBase =
+		shouldCalculateAltTotals &&
+		discount?.type === PurchaseDiscountType.AMOUNT &&
+		(subtotalAlt ?? 0) > 0
+			? subtotalAlt!
+			: subtotal;
+	const discountAmount = applySettlementDiscount(discountBase, discount);
+	const factor = getSettlementDiscountFactor(discountBase, discount);
+	// Discount in source currency (for display alongside source-currency amounts)
+	const discountAmountAlt =
+		discountBase !== subtotal
+			? round2(discountBase - discountBase * factor)
+			: discountAmount;
+	const netSubtotal = round2(subtotal - subtotal * (1 - factor));
 	const netTaxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item) * factor, 0);
 	const netTotal = round2(netSubtotal + netTaxAmount);
 	const netSubtotalAlt = shouldCalculateAltTotals
@@ -609,6 +623,7 @@ export function calculatePurchaseOrderSummary(
 		estimatedSale,
 		estimatedProfit: estimatedSale - total,
 		discountAmount,
+		discountAmountAlt: shouldCalculateAltTotals ? discountAmountAlt : undefined,
 		netSubtotal,
 		netTaxAmount: round2(netTaxAmount),
 		netTotal,

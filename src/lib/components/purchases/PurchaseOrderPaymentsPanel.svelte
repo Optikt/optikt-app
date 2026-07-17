@@ -24,7 +24,8 @@
 		denormalizePurchasePaymentAmount,
 		getPurchasePaymentSpecificRateLabel,
 		normalizePurchasePaymentAmounts,
-		requiresPurchasePaymentSpecificRate
+		requiresPurchasePaymentSpecificRate,
+		computePaymentExchangeVariance
 	} from '$lib/shared/purchaseOrderPayments';
 	import type {
 		PurchaseOrder,
@@ -33,6 +34,7 @@
 	} from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
+	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 
 	interface PaymentComposerRequest {
 		token: string;
@@ -54,6 +56,7 @@
 		pendingBalanceUsd?: number;
 		debtTotalUsd?: number;
 		isFullyPaid?: boolean;
+		settlementCurrency?: string;
 		composerRequest?: PaymentComposerRequest | null;
 		onFinanceChanged?: (payload: {
 			payments: PurchaseOrderPaymentWithUsers[];
@@ -73,6 +76,7 @@
 		pendingBalanceUsd,
 		debtTotalUsd,
 		isFullyPaid = false,
+		settlementCurrency,
 		composerRequest = null,
 		onFinanceChanged
 	}: Props = $props();
@@ -103,6 +107,24 @@
 	const bcvUsdRateValue = $derived(Number(bcvUsdRateInput || 0));
 	const specificRateValue = $derived(Number(specificRateInput || 0));
 	const needsSpecificRate = $derived(requiresPurchasePaymentSpecificRate(currencyCode));
+	const isNativeSettlement = $derived(
+		settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
+	);
+	const settlementSymbol = $derived(
+		isNativeSettlement ? getSettlementCurrencySymbol(settlementCurrency!) : ''
+	);
+
+	// Auto-compute how much debt is being amortized
+	const amountAppliedToDebt = $derived(
+		isNativeSettlement
+			? currencyCode === CurrencyCode.VES && specificRateValue > 0
+				? Math.round((amountValue / specificRateValue) * 100) / 100 // Bs / rate = settlement units
+				: currencyCode === settlementCurrency
+					? amountValue // same currency
+					: undefined
+			: undefined
+	);
+
 	const normalized = $derived(
 		normalizePurchasePaymentAmounts({
 			currencyCode,
@@ -110,6 +132,16 @@
 			bcvUsdRate: bcvUsdRateValue,
 			specificRate: needsSpecificRate ? specificRateValue : undefined
 		})
+	);
+	const exchangeVariance = $derived(
+		isNativeSettlement && (amountAppliedToDebt ?? 0) > 0
+			? computePaymentExchangeVariance(
+					amountAppliedToDebt ?? 0,
+					debtTotalUsd ?? 0,
+					(debtTotalUsd ?? 0) > 0 ? (debtTotalUsd ?? 0) : (amountAppliedToDebt ?? 0),
+					normalized.amountUsdBcv
+				)
+			: 0
 	);
 	const sortedPayments = $derived.by(() =>
 		[...payments].sort((left, right) => left.paymentNumber - right.paymentNumber)
@@ -149,6 +181,18 @@
 			) ?? null
 		);
 	}
+
+	// When opening the form for a non-USD_BCV order, default to VES payment
+	// and pre-fill the specific rate from the order's settlement rate.
+	$effect(() => {
+		if (showForm && isNativeSettlement) {
+			currencyCode = CurrencyCode.VES;
+			const orderRate = purchaseOrder.settlementRateToVes;
+			if (orderRate != null && orderRate > 0) {
+				specificRateInput = String(orderRate);
+			}
+		}
+	});
 
 	function resetEarlyPaymentState() {
 		showEarlyPaymentBenefitModal = false;
@@ -265,6 +309,7 @@
 			amount: amountValue,
 			bcvUsdRate: bcvUsdRateValue,
 			specificRate: needsSpecificRate ? specificRateValue : undefined,
+			amountAppliedToDebt: amountAppliedToDebt ?? undefined,
 			reference: referenceInput || undefined,
 			notes: notesInput || undefined
 		};
@@ -547,6 +592,31 @@
 						{formatPrice(normalized.amountUsdBcv)}
 					</p>
 				</div>
+				{#if isNativeSettlement && amountAppliedToDebt != null && amountAppliedToDebt > 0}
+					<div>
+						<p class="text-[11px] font-semibold tracking-[0.18em] text-white/55 uppercase">
+							Abono a deuda ({settlementSymbol})
+						</p>
+						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
+							{amountAppliedToDebt.toFixed(2)}
+							{settlementSymbol}
+						</p>
+					</div>
+					<div>
+						<p class="text-[11px] font-semibold tracking-[0.18em] text-white/55 uppercase">
+							Variación estimada
+						</p>
+						<p
+							class="mt-2 font-mono text-2xl font-semibold tabular-nums {exchangeVariance > 0
+								? 'text-success'
+								: exchangeVariance < 0
+									? 'text-error'
+									: 'text-white'}"
+						>
+							{exchangeVariance > 0 ? '+' : ''}{formatPrice(exchangeVariance)}
+						</p>
+					</div>
+				{/if}
 				{#if liveEarlyPaymentSuggestion}
 					<div
 						class="rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-sm text-white"

@@ -26,6 +26,7 @@
 		isDraftItemUserEditingLocked,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
+	import { sourceCurrencyRequiresRateToVes, getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 
 	interface Props {
 		item: PurchaseOrderDraftItem;
@@ -51,15 +52,11 @@
 		onremove
 	}: Props = $props();
 
-	const isAltMode = $derived(
-		sourceCurrency === PurchaseSourceCurrency.VES || sourceCurrency === PurchaseSourceCurrency.EUR
-	);
-	const isEurMode = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);
-	const altSymbol = $derived(isEurMode ? '€' : 'Bs');
-	const altInputLabel = $derived(isEurMode ? '€ s/IVA' : 'Bs s/IVA');
-	const altAriaLabel = $derived(
-		isEurMode ? 'Costo unitario sin IVA en euros' : 'Costo unitario sin IVA en bolívares'
-	);
+	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
+	const needsSourceRate = $derived(sourceCurrencyRequiresRateToVes(sourceCurrency));
+	const altSymbol = $derived(getSourceCurrencySymbol(sourceCurrency));
+	const altInputLabel = $derived(`${altSymbol} s/IVA`);
+	const altAriaLabel = $derived(`Costo unitario sin IVA en ${altSymbol}`);
 
 	function hasZeroValueFieldsForItem(
 		currentItem: Pick<PurchaseOrderDraftItem, 'unitPurchasePrice' | 'unitSalePrice'>
@@ -166,7 +163,7 @@
 	}
 
 	function syncUsdPriceFromAlt() {
-		if (isEurMode) {
+		if (needsSourceRate) {
 			item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
 				Number(item.unitPurchasePriceAlt ?? 0),
 				item.appliesIva,
@@ -599,7 +596,7 @@
 					disabled={userEditingLocked}
 					class={`${compactInputClass} !pl-11 font-semibold text-brand-navy`}
 					aria-label={isAltMode
-						? `Total costo en ${isEurMode ? 'euros' : 'bolívares'}`
+						? `Total costo en ${altSymbol}`
 						: 'Total costo'}
 					title={totalTooltip()}
 				/>

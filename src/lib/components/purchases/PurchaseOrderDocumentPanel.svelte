@@ -6,6 +6,7 @@
 		PurchaseSourceCurrency,
 		getPurchaseDocumentTypeLabel
 	} from '$lib/shared/enums';
+	import { sourceCurrencyRequiresRateToVes, getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import { autoAnimate } from '@formkit/auto-animate';
 
 	type SupplierOption = {
@@ -50,7 +51,8 @@
 
 	const isInvoice = $derived(documentType === PurchaseDocumentType.INVOICE);
 	const notesTooShort = $derived(notes.length > 0 && notes.length < 6);
-	const showAltRate = $derived(sourceCurrency === PurchaseSourceCurrency.EUR);
+	const showSourceRate = $derived(sourceCurrencyRequiresRateToVes(sourceCurrency));
+	const sourceSymbol = $derived(getSourceCurrencySymbol(sourceCurrency));
 </script>
 
 <section class="glass-card bg-surface-container-lowest p-5 sm:p-6">
@@ -152,9 +154,9 @@
 				/>
 			</div>
 
-			{#if showAltRate}
+			{#if showSourceRate}
 				<div class="space-y-1.5">
-					<p class={fieldLabelClass}>Tasa EUR (Bs/€)</p>
+					<p class={fieldLabelClass}>Tasa {sourceSymbol} (Bs/{sourceSymbol})</p>
 					<input
 						type="number"
 						step="0.01"
@@ -162,16 +164,16 @@
 						bind:value={sourceRateToVes}
 						class={inputClass}
 						placeholder="Ej: 41.30"
-						aria-label="Tasa EUR en bolívares"
+						aria-label={`Tasa ${sourceSymbol} en bolívares`}
 					/>
 					<p class="text-xs leading-5 text-on-surface-variant">
-						Bs por 1 EUR. Se usa para derivar el costo USD.
+						Bs por 1 {sourceSymbol}. Se usa para derivar el costo USD.
 					</p>
 				</div>
 			{/if}
 
 			<div
-				class="space-y-1.5 {showAltRate
+				class="space-y-1.5 {showSourceRate
 					? 'sm:col-span-2 lg:col-span-2'
 					: 'sm:col-span-1 lg:col-span-3'}"
 				use:autoAnimate

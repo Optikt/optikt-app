@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { CalendarClock, Landmark, PiggyBank, Wallet } from '@lucide/svelte';
+	import { CalendarClock, Landmark, PiggyBank, TrendingDown, TrendingUp, Wallet } from '@lucide/svelte';
 	import { AppBadge } from '$lib/components/ui';
-	import { getPurchasePaymentTermsLabel } from '$lib/shared/enums';
+	import { CurrencyCode, getPurchasePaymentTermsLabel } from '$lib/shared/enums';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
 	} from '$lib/shared/purchaseOrderCredit';
+	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import { formatPrice } from '$lib/utils';
 
 	interface Props {
@@ -16,6 +17,13 @@
 	}
 
 	let { balance, dueStatus, paymentTerms, bcvRate }: Props = $props();
+
+	const isNativeCurrency = $derived(balance.settlementCurrency !== CurrencyCode.USD_BCV);
+	const settlementSymbol = $derived(getSettlementCurrencySymbol(balance.settlementCurrency));
+
+	const balanceInBs = $derived(balance.balance * Number(bcvRate || 0));
+	const paidInBs = $derived(balance.totalPaid * Number(bcvRate || 0));
+	const settlementBalanceInBs = $derived(balance.settlementBalance * Number(bcvRate || 0));
 
 	const dueConfig = $derived.by(() => {
 		switch (dueStatus.kind) {
@@ -40,9 +48,6 @@
 				return { variant: 'neutral' as const, label: 'Sin vencimiento' };
 		}
 	});
-
-	const balanceInBs = $derived(balance.balance * Number(bcvRate || 0));
-	const paidInBs = $derived(balance.totalPaid * Number(bcvRate || 0));
 </script>
 
 <section class="glass-card overflow-hidden">
@@ -52,7 +57,12 @@
 				<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
 					Saldo con proveedor
 				</p>
-				<h2 class="mt-2 text-xl font-semibold text-brand-navy">Balance financiero</h2>
+				<h2 class="mt-2 text-xl font-semibold text-brand-navy">
+					Balance financiero
+					{#if isNativeCurrency}
+						<span class="ml-1 text-base font-normal text-outline">({settlementSymbol})</span>
+					{/if}
+				</h2>
 			</div>
 			<AppBadge variant={dueConfig.variant}>{dueConfig.label}</AppBadge>
 		</div>
@@ -63,21 +73,35 @@
 			<div class="rounded-2xl bg-surface-container-low p-4">
 				<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 					<Wallet class="h-4 w-4" />
-					Total compra
+					{#if isNativeCurrency}
+						Deuda {settlementSymbol}
+					{:else}
+						Total compra
+					{/if}
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
-					{formatPrice(balance.debtTotal)}
+					{isNativeCurrency ? balance.settlementDebtAmount.toFixed(2) : formatPrice(balance.debtTotal)}
+					{#if isNativeCurrency}
+						<span class="ml-1 text-base font-normal text-outline">{settlementSymbol}</span>
+					{/if}
 				</p>
 			</div>
 			<div class="rounded-2xl bg-surface-container-low p-4">
 				<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 					<Landmark class="h-4 w-4" />
-					Pagado registrado
+					{#if isNativeCurrency}
+						Abonado {settlementSymbol}
+					{:else}
+						Pagado registrado
+					{/if}
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
-					{formatPrice(balance.totalPaid)}
+					{isNativeCurrency ? balance.totalAppliedToDebt.toFixed(2) : formatPrice(balance.totalPaid)}
+					{#if isNativeCurrency}
+						<span class="ml-1 text-base font-normal text-outline">{settlementSymbol}</span>
+					{/if}
 				</p>
-				{#if paidInBs > 0}
+				{#if !isNativeCurrency && paidInBs > 0}
 					<p class="mt-1 font-mono text-xs text-outline tabular-nums">
 						Bs. {paidInBs.toLocaleString('es-VE', {
 							minimumFractionDigits: 2,
@@ -87,6 +111,31 @@
 				{/if}
 			</div>
 		</div>
+
+		{#if isNativeCurrency && balance.totalExchangeVariance !== 0}
+			<div
+				class="rounded-2xl p-4 {balance.totalExchangeVariance > 0
+					? 'bg-success-container/25'
+					: 'bg-error-container/25'}"
+			>
+				<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+					{#if balance.totalExchangeVariance > 0}
+						<TrendingUp class="h-4 w-4 text-success" />
+						Ganancia cambiaria
+					{:else}
+						<TrendingDown class="h-4 w-4 text-error" />
+						Pérdida cambiaria
+					{/if}
+				</div>
+				<p
+					class="mt-3 font-mono text-2xl font-semibold tabular-nums {balance.totalExchangeVariance > 0
+						? 'text-success'
+						: 'text-error'}"
+				>
+					{balance.totalExchangeVariance > 0 ? '+' : ''}{formatPrice(Math.abs(balance.totalExchangeVariance))}
+				</p>
+			</div>
+		{/if}
 
 		<div class="grid gap-3 sm:grid-cols-2">
 			<div class="rounded-2xl bg-info-container/35 p-4">
@@ -102,13 +151,19 @@
 				<div class="flex items-center gap-2 text-sm text-white/72">
 					<CalendarClock class="h-4 w-4" />
 					Saldo pendiente
+					{#if isNativeCurrency}
+						<span class="font-normal">({settlementSymbol})</span>
+					{/if}
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold tabular-nums">
-					{formatPrice(balance.balance)}
+					{isNativeCurrency ? balance.settlementBalance.toFixed(2) : formatPrice(balance.balance)}
+					{#if isNativeCurrency}
+						<span class="ml-1 text-base font-normal text-white/65">{settlementSymbol}</span>
+					{/if}
 				</p>
-				{#if balanceInBs > 0}
+				{#if settlementBalanceInBs > 0}
 					<p class="mt-1 font-mono text-xs text-white/65 tabular-nums">
-						Bs. {balanceInBs.toLocaleString('es-VE', {
+						Bs. {settlementBalanceInBs.toLocaleString('es-VE', {
 							minimumFractionDigits: 2,
 							maximumFractionDigits: 2
 						})}

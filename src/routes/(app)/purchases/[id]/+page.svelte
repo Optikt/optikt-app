@@ -53,6 +53,7 @@
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
 	} from '$lib/components/purchases/purchaseOrderDraft';
+	import { sourceCurrencyRequiresRateToVes, getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import type {
 		InventoryLot,
 		InventoryMovement,
@@ -335,7 +336,8 @@
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2
 		}).format(amount);
-		return purchaseOrder.sourceCurrency === 'EUR' ? `€ ${formatted}` : `Bs. ${formatted}`;
+		const sym = getSourceCurrencySymbol(purchaseOrder.sourceCurrency);
+		return sym === 'Bs' ? `Bs. ${formatted}` : `${sym} ${formatted}`;
 	}
 
 	/** @deprecated use formatAltAmount */
@@ -926,7 +928,7 @@
 
 				<div
 					class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4"
-					class:xl:grid-cols-5={purchaseOrder.sourceCurrency === 'EUR' &&
+					class:xl:grid-cols-5={sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency) &&
 						purchaseOrder.sourceRateToVes != null}
 				>
 					<div class="rounded-2xl bg-surface-container-low p-4">
@@ -968,11 +970,11 @@
 							{formatBcvRate(purchaseOrder.bcvRate)}
 						</p>
 					</div>
-					{#if purchaseOrder.sourceCurrency === 'EUR' && purchaseOrder.sourceRateToVes != null}
+					{#if sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency) && purchaseOrder.sourceRateToVes != null}
 						<div class="rounded-2xl bg-surface-container-low p-4">
 							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 								<ScrollText class="h-4 w-4" />
-								Tasa EUR (Bs/€)
+								Tasa {getSourceCurrencySymbol(purchaseOrder.sourceCurrency)} (Bs/{getSourceCurrencySymbol(purchaseOrder.sourceCurrency)})
 							</div>
 							<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
 								{formatBcvRate(purchaseOrder.sourceRateToVes)}
@@ -1107,16 +1109,12 @@
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
 								<th class="px-4 py-3.5 text-right">
 									{purchaseOrder.sourceCurrency !== 'USD'
-										? purchaseOrder.sourceCurrency === 'EUR'
-											? 'Costo unitario €'
-											: 'Costo unitario Bs'
+										? `Costo unitario ${getSourceCurrencySymbol(purchaseOrder.sourceCurrency)}`
 										: 'Costo unitario'}
 								</th>
 								<th class="px-4 py-3.5 text-right">
 									{purchaseOrder.sourceCurrency !== 'USD'
-										? purchaseOrder.sourceCurrency === 'EUR'
-											? 'Total compra €'
-											: 'Total compra Bs'
+										? `Total compra ${getSourceCurrencySymbol(purchaseOrder.sourceCurrency)}`
 										: 'Total compra'}
 								</th>
 								<th class="px-4 py-3.5 text-right">Venta sugerida</th>
@@ -1302,9 +1300,10 @@
 				{payments}
 				purchaseOrder={purchaseOrder as PurchaseOrder}
 				{earlyPaymentBenefits}
-				pendingBalanceUsd={balance.balance}
-				debtTotalUsd={balance.debtTotal}
-				isFullyPaid={balance.isFullyPaid}
+				pendingBalanceUsd={balance.settlementBalance}
+				debtTotalUsd={balance.settlementDebtAmount}
+				isFullyPaid={balance.isSettlementFullyPaid}
+				settlementCurrency={balance.settlementCurrency}
 				composerRequest={paymentComposerRequest}
 				onFinanceChanged={handleFinanceChanged}
 			/>

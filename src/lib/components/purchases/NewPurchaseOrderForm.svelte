@@ -39,6 +39,7 @@
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
+	import { sourceCurrencyRequiresRateToVes } from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SupplierOption = {
@@ -163,7 +164,7 @@
 		const currentAltRate = Number(sourceRateToVes || 0);
 		const isAlt = sourceCurrency !== PurchaseSourceCurrency.USD;
 		if (!isAlt || currentBcvRate <= 0) return;
-		if (sourceCurrency === PurchaseSourceCurrency.EUR && currentAltRate <= 0) return;
+		if (sourceCurrencyRequiresRateToVes(sourceCurrency) && currentAltRate <= 0) return;
 
 		untrack(() => {
 			for (const item of items) {
@@ -171,7 +172,7 @@
 					continue;
 				}
 
-				if (sourceCurrency === PurchaseSourceCurrency.EUR) {
+				if (sourceCurrencyRequiresRateToVes(sourceCurrency)) {
 					item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
 						item.unitPurchasePriceAlt,
 						item.appliesIva,
@@ -327,7 +328,7 @@
 					deliveryNoteNumber: deliveryNoteNumber || undefined,
 					orderDate,
 					bcvRate,
-					altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? sourceRateToVes : undefined,
+					altRate: sourceCurrencyRequiresRateToVes(sourceCurrency)	? sourceRateToVes : undefined,
 					sourceCurrency,
 					paymentTerms,
 					creditDueDate,
@@ -471,6 +472,12 @@
 						{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
 							Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
 							EUR y la tasa BCV.
+						{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
+							Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la tasa
+							USDT y la tasa BCV.
+						{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
+							Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando la
+							tasa PayPal y la tasa BCV.
 						{:else}
 							Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
 							desde la tasa BCV.
@@ -517,6 +524,8 @@
 			{earlyPaymentDiscountPercent}
 			{earlyPaymentDiscountDeadline}
 			totalNetAmount={summary.netTotal}
+			totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
+			{sourceCurrency}
 			onPaymentTermsChange={handlePaymentTermsChange}
 			onCreditDueDateChange={(value) => (creditDueDate = value)}
 			onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
