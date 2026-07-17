@@ -16,6 +16,7 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
+		CurrencyCode,
 		ACTIVE_PURCHASE_SOURCE_CURRENCIES,
 		PURCHASE_SOURCE_CURRENCY_LABELS
 	} from '$lib/shared/enums';
@@ -39,7 +40,7 @@
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
-	import { sourceCurrencyRequiresRateToVes } from '$lib/shared/purchaseOrderCurrencies';
+	import { sourceCurrencyRequiresRateToVes, SOURCE_TO_CURRENCY_CODE } from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SupplierOption = {
@@ -96,6 +97,12 @@
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
 	let sourceCurrency = $state<string>(initialValues?.sourceCurrency ?? PurchaseSourceCurrency.USD);
 	let sourceRateToVes = $state<number>(initialValues?.sourceRateToVes ?? 0);
+	let settlementCurrency = $state<string>(
+		initialValues?.settlementCurrency ??
+			SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+			'USD_BCV'
+	);
+	let settlementRateToVes = $state<number>(initialValues?.settlementRateToVes ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -195,6 +202,14 @@
 	function handlePaymentTermsChange(nextTerms: PurchasePaymentTerms) {
 		paymentTerms = nextTerms;
 	}
+
+	let settlementManuallyChanged = $state(false);
+	$effect(() => {
+		if (!settlementManuallyChanged) {
+			settlementCurrency =
+				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ?? 'USD_BCV';
+		}
+	});
 
 	function goBack() {
 		if (isEdit && purchaseOrderId) {
@@ -330,6 +345,11 @@
 					bcvRate,
 					altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
 					sourceCurrency,
+					settlementCurrency: settlementCurrency as CurrencyCode,
+					settlementRateToVes:
+						settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
+							? settlementRateToVes
+							: undefined,
 					paymentTerms,
 					creditDueDate,
 					earlyPaymentDiscountPercent,
@@ -363,6 +383,11 @@
 				bcvRate,
 				altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
 				sourceCurrency,
+				settlementCurrency: settlementCurrency as CurrencyCode,
+				settlementRateToVes:
+					settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
+						? settlementRateToVes
+						: undefined,
 				paymentTerms,
 				creditDueDate,
 				earlyPaymentDiscountPercent,
@@ -500,6 +525,34 @@
 							{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
 						</button>
 					{/each}
+				</div>
+
+				<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+					<label class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+						Moneda de obligación
+					</label>
+					<select
+						class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+						bind:value={settlementCurrency}
+						onchange={() => (settlementManuallyChanged = true)}
+					>
+						<option value="USD_BCV">USD (BCV)</option>
+						<option value="EUR_BCV">EUR (BCV)</option>
+						<option value="USDT">USDT</option>
+						<option value="USD_PAYPAL">USD PayPal</option>
+						<option value="VES">Bs. (Bolívares)</option>
+					</select>
+					{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
+						<label class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+							Tasa {settlementCurrency}
+						</label>
+						<input
+							type="number"
+							bind:value={settlementRateToVes}
+							class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+							placeholder="Bs/unidad"
+						/>
+					{/if}
 				</div>
 			</div>
 		</section>
