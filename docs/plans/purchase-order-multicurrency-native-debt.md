@@ -8,7 +8,7 @@ Separar tres conceptos que hoy están acoplados: el costo normalizado de inventa
 - Los pagos aceptan cualquier medio ya soportado y exigen un abono explícito en la moneda de obligación; tasas y equivalente USD-BCV son evidencia del pago, no la unidad que cierra la deuda.
 - USDT y PayPal entran como monedas de factura y de obligación, además de seguir disponibles como medios de pago.
 - Las órdenes existentes conservan su saldo y pagos como obligaciones legacy USD-BCV. No se reconstruirá deuda EUR/USDT desde historial ya normalizado.
-- Un descuento fijo se introduce en la moneda de la obligación; los porcentajes se aplican sobre el monto bruto de esa obligación.
+- Un descuento fijo se introduce en la moneda de la factura (no en la moneda de obligación); los porcentajes se aplican sobre el monto bruto de la factura.
 - La diferencia de moneda se mostrará por orden y en Caja/P&L mensual. Nunca revaluará lotes FIFO ni ventas ya realizadas.
 
 ## Modelo y fórmulas
