@@ -165,6 +165,14 @@
 		}).format(amount)}`;
 	}
 
+	function formatAlt(amount: number): string {
+		const formatted = new Intl.NumberFormat('es-VE', {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2
+		}).format(amount);
+		return `${altSymbol} ${formatted}`;
+	}
+
 	function syncUsdPriceFromAlt() {
 		if (needsSourceRate) {
 			item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
@@ -326,13 +334,13 @@
 	function totalTooltip(): string {
 		if (isAltMode) {
 			const sym = altSymbol;
-			const parts = [`Subtotal ${sym} (s/IVA): ${formatVes(lineSubtotalAlt)}`];
+			const parts = [`Subtotal ${sym} (s/IVA): ${formatAlt(lineSubtotalAlt)}`];
 
 			if (lineTaxAlt > 0) {
-				parts.push(`IVA ${item.ivaRate}%: ${formatVes(lineTaxAlt)}`);
+				parts.push(`IVA ${item.ivaRate}%: ${formatAlt(lineTaxAlt)}`);
 			}
 
-			parts.push(`Total ${sym}: ${formatVes(lineTotalAlt)}`);
+			parts.push(`Total ${sym}: ${formatAlt(lineTotalAlt)}`);
 			if (bcvUsdRate > 0) {
 				parts.push(`USD c/IVA und.: ${formatPrice(item.unitPurchasePrice)}`);
 			}

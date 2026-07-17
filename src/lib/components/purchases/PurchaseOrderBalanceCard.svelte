@@ -158,7 +158,7 @@
 					Descuento obtenido
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
-					{formatPrice(balance.earlyPaymentDiscountEarned)}
+					{isNativeCurrency ? `${balance.settlementBenefitsApplied.toFixed(2)} ${settlementSymbol}` : formatPrice(balance.earlyPaymentDiscountEarned)}
 				</p>
 			</div>
 			<div class="rounded-2xl bg-brand-navy p-4 text-white">
