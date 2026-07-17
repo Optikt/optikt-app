@@ -594,17 +594,15 @@ export function calculatePurchaseOrderSummary(
 	const factor = getSettlementDiscountFactor(discountBase, discount);
 	// Discount in source currency (for display alongside source-currency amounts)
 	const discountAmountAlt =
-		discountBase !== subtotal
-			? round2(discountBase - discountBase * factor)
-			: discountAmount;
+		discountBase !== subtotal ? round2(discountBase - discountBase * factor) : discountAmount;
 	const netSubtotal = round2(subtotal - subtotal * (1 - factor));
 	const netTaxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item) * factor, 0);
 	const netTotal = round2(netSubtotal + netTaxAmount);
-	const netSubtotalAlt = shouldCalculateAltTotals
-		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemSubtotalAlt(item, factor), 0))
+	const netSubtotalAlt = shouldCalculateAltTotals && subtotalAlt != null
+		? round2(subtotalAlt * factor)
 		: undefined;
-	const netTaxAmountAlt = shouldCalculateAltTotals
-		? round2(items.reduce((sum, item) => sum + calculateNetDraftItemTaxAlt(item, factor), 0))
+	const netTaxAmountAlt = shouldCalculateAltTotals && taxAmountAlt != null
+		? round2(taxAmountAlt * factor)
 		: undefined;
 	const netTotalAlt =
 		netSubtotalAlt !== undefined && netTaxAmountAlt !== undefined
