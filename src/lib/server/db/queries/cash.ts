@@ -18,6 +18,7 @@ import { db } from '../index';
 import {
 	cashExpenses,
 	purchaseOrderEarlyPaymentBenefits,
+	purchaseOrderPayments,
 	purchaseOrders,
 	sales,
 	saleItems,
@@ -31,6 +32,11 @@ import { nowISO } from '$lib/dates';
 import { PurchaseOrderStatus, type ExpenseCategory } from '$lib/shared/enums';
 
 interface PurchaseDiscountEarnedRow {
+	date: string;
+	total: number;
+}
+
+interface ExchangeVarianceRow {
 	date: string;
 	total: number;
 }
@@ -134,6 +140,8 @@ export interface CashReport {
 	expensesByCategory: Array<{ category: ExpenseCategory; total: number }>;
 	// Ingreso financiero independiente del inventario / margen bruto
 	purchaseDiscountsEarned: number;
+	// Resultado cambiario por liquidaciones en distinta moneda
+	exchangeSettlementVariance: number;
 	// Resultados
 	grossProfit: number;
 	grossMarginPct: number;
@@ -170,6 +178,34 @@ async function getPurchaseDiscountEarnedRows(
 	return rows.map((row) => ({ date: row.date, total: Number(row.total ?? 0) }));
 }
 
+async function getExchangeVarianceRows(
+	args: { from: string; to: string },
+	executor: DbOrTx = db
+): Promise<ExchangeVarianceRow[]> {
+	const { from, to } = args;
+	const rows = await executor
+		.select({
+			date: sql<string>`to_char(${purchaseOrderPayments.paymentDate}, 'YYYY-MM-DD')`,
+			total: sum(
+				sql`${purchaseOrderPayments.amountAppliedToDebtUsdBcvAtOrder} - ${purchaseOrderPayments.amountUsdBcv}`
+			)
+		})
+		.from(purchaseOrderPayments)
+		.innerJoin(purchaseOrders, eq(purchaseOrderPayments.purchaseOrderId, purchaseOrders.id))
+		.where(
+			and(
+				isNull(purchaseOrderPayments.voidedAt),
+				isNull(purchaseOrders.deletedAt),
+				eq(purchaseOrders.status, PurchaseOrderStatus.CONFIRMED),
+				gte(purchaseOrderPayments.paymentDate, from),
+				lte(purchaseOrderPayments.paymentDate, to)
+			)
+		)
+		.groupBy(sql`to_char(${purchaseOrderPayments.paymentDate}, 'YYYY-MM-DD')`);
+
+	return rows.map((row) => ({ date: row.date, total: Number(row.total ?? 0) }));
+}
+
 /**
  * Compute the P&L for a date range based on **delivered** sales.
  *
@@ -195,7 +231,8 @@ export async function getCashReport(
 		incompleteCogsRow,
 		expensesRow,
 		expensesByCategoryRows,
-		purchaseDiscountRows
+		purchaseDiscountRows,
+		exchangeVarianceRows
 	] = await Promise.all([
 		// Revenue (delivery-based) — COMPLETED sales whose completedAt falls in range
 		executor
@@ -325,7 +362,8 @@ export async function getCashReport(
 			.groupBy(cashExpenses.category)
 			.orderBy(desc(sum(cashExpenses.amountUsd))),
 
-		getPurchaseDiscountEarnedRows(args, executor)
+		getPurchaseDiscountEarnedRows(args, executor),
+		getExchangeVarianceRows(args, executor)
 	]);
 
 	const grossRevenue = revenueRow.total;
@@ -334,6 +372,7 @@ export async function getCashReport(
 	const totalCogs = cogsRow;
 	const totalExpenses = expensesRow.total;
 	const purchaseDiscountsEarned = purchaseDiscountRows.reduce((sum, row) => sum + row.total, 0);
+	const exchangeSettlementVariance = exchangeVarianceRows.reduce((sum, row) => sum + row.total, 0);
 	const grossProfit = totalIncome - totalCogs;
 	const grossMarginPct = totalIncome > 0 ? (grossProfit / totalIncome) * 100 : 0;
 
@@ -353,9 +392,10 @@ export async function getCashReport(
 			total: Number(r.total ?? 0)
 		})),
 		purchaseDiscountsEarned,
+		exchangeSettlementVariance,
 		grossProfit,
 		grossMarginPct,
-		netProfit: grossProfit - totalExpenses + purchaseDiscountsEarned
+		netProfit: grossProfit - totalExpenses + purchaseDiscountsEarned + exchangeSettlementVariance
 	};
 }
 
@@ -371,6 +411,7 @@ export interface DailyBreakdownRow {
 	cogs: number;
 	expenses: number;
 	purchaseDiscountsEarned: number;
+	exchangeSettlementVariance: number;
 	grossProfit: number;
 	netProfit: number;
 	salesCount: number;
@@ -388,7 +429,7 @@ export async function getDailyBreakdown(
 	const { from, to } = args;
 	const dayKey = (d: unknown) => sql<string>`to_char(${d}, 'YYYY-MM-DD')`;
 
-	const [revenueRows, retainedRows, collectedRows, cogsRows, expensesRows, purchaseDiscountRows] =
+	const [revenueRows, retainedRows, collectedRows, cogsRows, expensesRows, purchaseDiscountRows, exchangeVarianceRows] =
 		await Promise.all([
 			executor
 				.select({
@@ -478,7 +519,8 @@ export async function getDailyBreakdown(
 				)
 				.groupBy(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
 
-			getPurchaseDiscountEarnedRows(args, executor)
+			getPurchaseDiscountEarnedRows(args, executor),
+			getExchangeVarianceRows(args, executor)
 		]);
 
 	type Bucket = {
@@ -489,6 +531,7 @@ export async function getDailyBreakdown(
 		cogs: number;
 		expenses: number;
 		purchaseDiscountsEarned: number;
+		exchangeSettlementVariance: number;
 		salesCount: number;
 	};
 	const buckets = new Map<string, Bucket>();
@@ -503,6 +546,7 @@ export async function getDailyBreakdown(
 				cogs: 0,
 				expenses: 0,
 				purchaseDiscountsEarned: 0,
+				exchangeSettlementVariance: 0,
 				salesCount: 0
 			};
 			buckets.set(date, b);
@@ -520,12 +564,19 @@ export async function getDailyBreakdown(
 	for (const r of cogsRows) ensure(r.day).cogs = Number(r.total ?? 0);
 	for (const r of expensesRows) ensure(r.day).expenses = Number(r.total ?? 0);
 	for (const r of purchaseDiscountRows) ensure(r.date).purchaseDiscountsEarned = r.total;
+	for (const r of exchangeVarianceRows) ensure(r.date).exchangeSettlementVariance = r.total;
 
 	return Array.from(buckets.values())
 		.map((b) => ({
 			...b,
 			grossProfit: b.revenue + b.otherIncome - b.cogs,
-			netProfit: b.revenue + b.otherIncome + b.purchaseDiscountsEarned - b.cogs - b.expenses
+			netProfit:
+				b.revenue +
+				b.otherIncome +
+				b.purchaseDiscountsEarned +
+				b.exchangeSettlementVariance -
+				b.cogs -
+				b.expenses
 		}))
 		.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
