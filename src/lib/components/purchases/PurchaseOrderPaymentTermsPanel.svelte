@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { CalendarDays, CreditCard, Info } from '@lucide/svelte';
-	import { PurchasePaymentTerms, getPurchasePaymentTermsLabel, PurchaseSourceCurrency } from '$lib/shared/enums';
+	import {
+		PurchasePaymentTerms,
+		getPurchasePaymentTermsLabel,
+		PurchaseSourceCurrency
+	} from '$lib/shared/enums';
 	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import { formatPrice } from '$lib/utils';
 	import { validateCreditTerms } from './purchaseOrderDraft';

@@ -26,7 +26,10 @@
 		isDraftItemUserEditingLocked,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
-	import { sourceCurrencyRequiresRateToVes, getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import {
+		sourceCurrencyRequiresRateToVes,
+		getSourceCurrencySymbol
+	} from '$lib/shared/purchaseOrderCurrencies';
 
 	interface Props {
 		item: PurchaseOrderDraftItem;
@@ -595,9 +598,7 @@
 					onblur={handleLineTotalBlur}
 					disabled={userEditingLocked}
 					class={`${compactInputClass} !pl-11 font-semibold text-brand-navy`}
-					aria-label={isAltMode
-						? `Total costo en ${altSymbol}`
-						: 'Total costo'}
+					aria-label={isAltMode ? `Total costo en ${altSymbol}` : 'Total costo'}
 					title={totalTooltip()}
 				/>
 			</div>

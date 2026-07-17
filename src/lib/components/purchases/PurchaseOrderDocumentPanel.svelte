@@ -6,7 +6,10 @@
 		PurchaseSourceCurrency,
 		getPurchaseDocumentTypeLabel
 	} from '$lib/shared/enums';
-	import { sourceCurrencyRequiresRateToVes, getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import {
+		sourceCurrencyRequiresRateToVes,
+		getSourceCurrencySymbol
+	} from '$lib/shared/purchaseOrderCurrencies';
 	import { autoAnimate } from '@formkit/auto-animate';
 
 	type SupplierOption = {
