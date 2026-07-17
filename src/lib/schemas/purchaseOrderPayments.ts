@@ -23,6 +23,8 @@ export const CreatePurchaseOrderPaymentSchema = z
 		earlyPaymentBenefit: z
 			.object({
 				amountUsdBcv: CoercedNumber.positive('El beneficio debe ser positivo'),
+				amountAppliedToDebt: CoercedNumber.positive().optional(),
+				amountAppliedToDebtUsdBcvAtOrder: CoercedNumber.positive().optional(),
 				appliedToBalance: z.boolean().default(true),
 				note: z.string().trim().max(500).optional()
 			})

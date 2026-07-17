@@ -212,6 +212,17 @@
 		}).amountUsdBcv;
 	}
 
+	function paymentVariance(payment: {
+		amountAppliedToDebt?: number | null;
+		amountAppliedToDebtUsdBcvAtOrder?: number | null;
+		amountUsdBcv: number;
+	}): number {
+		if (!isNativeSettlement) return 0;
+		const appliedBcv = Number(payment.amountAppliedToDebtUsdBcvAtOrder ?? payment.amountUsdBcv ?? 0);
+		const actualBcv = Number(payment.amountUsdBcv ?? 0);
+		return Math.round((appliedBcv - actualBcv) * 100) / 100;
+	}
+
 	async function maybeSubmitPayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
 		const payloadUsdBcv = getNormalizedUsdBcvForPayload(payload);
 		if (pendingBalanceUsd != null && payloadUsdBcv > pendingBalanceUsd + 0.01) {
@@ -406,6 +417,8 @@
 			...pendingAddPayload,
 			earlyPaymentBenefit: {
 				amountUsdBcv,
+				amountAppliedToDebt: isNativeSettlement ? amountUsdBcv : undefined,
+				amountAppliedToDebtUsdBcvAtOrder: isNativeSettlement ? amountUsdBcv : undefined,
 				appliedToBalance,
 				note: benefitNoteInput || undefined
 			}
@@ -673,6 +686,10 @@
 						<th class="px-5 py-3.5 text-right">Monto original</th>
 						<th class="px-5 py-3.5 text-right">Tasas</th>
 						<th class="px-5 py-3.5 text-right">USD BCV</th>
+						{#if isNativeSettlement}
+							<th class="px-5 py-3.5 text-right">Abono {settlementSymbol}</th>
+							<th class="px-5 py-3.5 text-right">Variación</th>
+						{/if}
 						<th class="px-5 py-3.5">Detalle</th>
 						<th class="w-16 px-5 py-3.5"></th>
 					</tr>
@@ -729,6 +746,31 @@
 									>{formatPrice(payment.amountUsdBcv)}</span
 								>
 							</td>
+							{#if isNativeSettlement}
+								{@const pvar = paymentVariance(payment)}
+								<td
+									class="px-5 py-4 text-right align-top font-mono tabular-nums {pvar > 0
+										? 'text-success'
+										: pvar < 0
+											? 'text-error'
+											: 'text-on-surface-variant'}"
+								>
+									<span class:line-through={payment.voidedAt}>
+										{(payment.amountAppliedToDebt ?? payment.amountUsdBcv ?? 0).toFixed(2)}
+									</span>
+								</td>
+								<td
+									class="px-5 py-4 text-right align-top font-mono tabular-nums {pvar > 0
+										? 'text-success'
+										: pvar < 0
+											? 'text-error'
+											: 'text-on-surface-variant'}"
+								>
+									<span class:line-through={payment.voidedAt}>
+										{pvar > 0 ? '+' : ''}{pvar.toFixed(2)}
+									</span>
+								</td>
+							{/if}
 							<td class="px-5 py-4 align-top text-sm text-on-surface-variant">
 								<p class="whitespace-pre-wrap">
 									{payment.reference || payment.notes || 'Sin detalle adicional'}

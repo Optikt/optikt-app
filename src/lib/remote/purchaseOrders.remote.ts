@@ -936,6 +936,8 @@ export const addPurchaseOrderPaymentCmd = command(
 								paymentId: payment.id,
 								benefitDate: data.paymentDate,
 								amountUsdBcv: data.earlyPaymentBenefit.amountUsdBcv,
+								amountAppliedToDebt: data.earlyPaymentBenefit.amountAppliedToDebt ?? data.earlyPaymentBenefit.amountUsdBcv,
+								amountAppliedToDebtUsdBcvAtOrder: data.earlyPaymentBenefit.amountAppliedToDebtUsdBcvAtOrder ?? data.earlyPaymentBenefit.amountUsdBcv,
 								appliedToBalance: data.earlyPaymentBenefit.appliedToBalance,
 								note: data.earlyPaymentBenefit.note ?? null,
 								createdById: context.userId!
