@@ -218,20 +218,31 @@
 		<div class="min-w-0">
 			<h1 class="text-xl font-bold text-brand-navy">Órdenes de Compra</h1>
 			{#if stats}
-				<div
-					class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant"
-				>
-					<span class="font-semibold text-brand-navy">{stats.confirmed}</span>
-					<span>confirmadas</span>
-					<span class="text-outline">·</span>
-					<span class="font-semibold text-brand-navy">{stats.draftInProgress}</span>
-					<span>en prep.</span>
-					<span class="text-outline">·</span>
-					<span class="font-semibold text-brand-navy">{stats.draftReady}</span>
-					<span>listas</span>
-					<span class="text-outline">·</span>
-					<span class="font-semibold text-brand-navy">{formatPrice(stats.monthlySpend)}</span>
-					<span class="text-outline hidden xl:inline">recibido este mes</span>
+				<div class="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+					<span
+						class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700"
+					>
+						{stats.confirmed}
+						<span class="font-normal text-emerald-600">confirmadas</span>
+					</span>
+					<span
+						class="inline-flex items-center gap-1 rounded-md bg-orange-100 px-1.5 py-0.5 text-[11px] font-semibold text-orange-700"
+					>
+						{stats.draftInProgress}
+						<span class="font-normal text-orange-600">en prep.</span>
+					</span>
+					<span
+						class="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700"
+					>
+						{stats.draftReady}
+						<span class="font-normal text-amber-600">listas</span>
+					</span>
+					<span
+						class="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700"
+					>
+						{formatPrice(stats.monthlySpend)}
+						<span class="font-normal text-blue-600 hidden xl:inline">recibido</span>
+					</span>
 				</div>
 			{/if}
 		</div>

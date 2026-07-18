@@ -42,11 +42,11 @@
 		{ key: 'order', label: 'N° orden' },
 		{ key: 'supplier', label: 'Proveedor' },
 		{ key: 'date', label: 'Fecha' },
-		{ key: 'document', label: 'Documento', hiddenClass: 'hidden lg:table-cell' },
+		{ key: 'document', label: 'Documento', hiddenClass: 'hidden xl:table-cell' },
 		{ key: 'rate', label: 'Tasa BCV', hiddenClass: 'hidden 2xl:table-cell' },
 		{ key: 'status', label: 'Estado' },
 		{ key: 'balance', label: 'Saldo', align: 'right' as const },
-		{ key: 'createdBy', label: 'Creado por', hiddenClass: 'hidden lg:table-cell' },
+		{ key: 'createdBy', label: 'Creado por', hiddenClass: 'hidden xl:table-cell' },
 		{ key: 'actions', label: 'Acciones', align: 'right' as const }
 	];
 
@@ -126,7 +126,7 @@
 				: ''}"
 			onclick={() => onView?.(purchaseOrder)}
 		>
-			<td class="px-3 py-3">
+			<td class="px-3 py-3 whitespace-nowrap">
 				<span class="font-mono text-sm font-semibold text-brand-navy">
 					{formatOrderNumber(purchaseOrder.orderNumber)}
 				</span>
@@ -146,7 +146,7 @@
 			<td class="px-3 py-3 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
 				{shortDate(purchaseOrder.orderDate)}
 			</td>
-			<td class="px-3 py-3">
+			<td class="px-3 py-3 hidden xl:table-cell">
 				<div
 					class="max-w-[7rem] truncate text-sm"
 					title="{documentLabel(purchaseOrder)}: {documentNumber(purchaseOrder)}"
@@ -189,7 +189,7 @@
 					{pendingBalanceLabel(purchaseOrder)}
 				</span>
 			</td>
-			<td class="px-3 py-3">
+			<td class="px-3 py-3 hidden xl:table-cell">
 				<div class="flex items-center gap-2" title={creatorName}>
 					<div
 						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
@@ -206,11 +206,11 @@
 					<a
 						href={resolve(viewHref)}
 						onclick={(event) => event.stopPropagation()}
-						class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-info-container px-3 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 xl:w-auto xl:px-3 xl:gap-1.5"
 						title="Ver detalle"
 					>
 						<Eye class="h-3.5 w-3.5" />
-						Ver
+						<span class="hidden xl:inline">Ver</span>
 					</a>
 				{:else}
 					<button
@@ -219,11 +219,11 @@
 							event.stopPropagation();
 							onView?.(purchaseOrder);
 						}}
-						class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-info-container px-3 text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40"
+						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 xl:w-auto xl:px-3 xl:gap-1.5"
 						title="Ver detalle"
 					>
 						<Eye class="h-3.5 w-3.5" />
-						Ver
+						<span class="hidden xl:inline">Ver</span>
 					</button>
 				{/if}
 			</td>
