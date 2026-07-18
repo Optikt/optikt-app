@@ -48,11 +48,15 @@
 	} from '$lib/server/db/queries/purchaseOrders';
 	import {
 		calculatePurchaseOrderSummary,
-		calculateDraftItemTotalVes,
+		calculateDraftItemTotalAlt,
 		createPurchaseOrderDraftItemFromExisting,
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
 	} from '$lib/components/purchases/purchaseOrderDraft';
+	import {
+		sourceCurrencyRequiresRateToVes,
+		getSourceCurrencySymbol
+	} from '$lib/shared/purchaseOrderCurrencies';
 	import type {
 		InventoryLot,
 		InventoryMovement,
@@ -198,18 +202,24 @@
 	const netTaxPurchase = $derived(purchaseSummary.netTaxAmount);
 	const netTotalPurchase = $derived(purchaseSummary.netTotal);
 	const netTotalProfit = $derived(purchaseSummary.netEstimatedProfit);
+	const needsSourceRate = $derived(sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency));
+	const srcSymbol = $derived(
+		needsSourceRate ? getSourceCurrencySymbol(purchaseOrder.sourceCurrency) : ''
+	);
 	const settlementDiscountLabel = $derived(
 		settlementDiscount.type === PurchaseDiscountType.PERCENT
 			? `${settlementDiscount.value}%`
 			: settlementDiscount.type === PurchaseDiscountType.AMOUNT
-				? formatPrice(settlementDiscount.value)
+				? needsSourceRate
+					? `${srcSymbol} ${settlementDiscount.value.toFixed(2)}`
+					: formatPrice(settlementDiscount.value)
 				: 'Sin descuento'
 	);
 	const totalPurchaseInBs = $derived(
-		purchaseSummary.totalVes ?? totalPurchase * Number(purchaseOrder.bcvRate || 0)
+		purchaseSummary.totalAlt ?? totalPurchase * Number(purchaseOrder.bcvRate || 0)
 	);
 	const netTotalPurchaseInBs = $derived(
-		purchaseSummary.netTotalVes ?? netTotalPurchase * Number(purchaseOrder.bcvRate || 0)
+		purchaseSummary.netTotalAlt ?? netTotalPurchase * Number(purchaseOrder.bcvRate || 0)
 	);
 	const documentLabel = $derived(getPurchaseDocumentTypeLabel(purchaseOrder.documentType));
 	const documentNumber = $derived.by(() => {
@@ -323,7 +333,7 @@
 	}
 
 	function purchaseLineTotalVes(item: PurchaseOrderItemWithProduct): number {
-		return calculateDraftItemTotalVes(createPurchaseOrderDraftItemFromExisting(item));
+		return calculateDraftItemTotalAlt(createPurchaseOrderDraftItemFromExisting(item));
 	}
 
 	function purchaseLineTotalAlt(item: PurchaseOrderItemWithProduct): number {
@@ -335,7 +345,8 @@
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2
 		}).format(amount);
-		return purchaseOrder.sourceCurrency === 'EUR' ? `€ ${formatted}` : `Bs. ${formatted}`;
+		const sym = getSourceCurrencySymbol(purchaseOrder.sourceCurrency);
+		return sym === 'Bs' ? `Bs. ${formatted}` : `${sym} ${formatted}`;
 	}
 
 	/** @deprecated use formatAltAmount */
@@ -926,8 +937,8 @@
 
 				<div
 					class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4"
-					class:xl:grid-cols-5={purchaseOrder.sourceCurrency === 'EUR' &&
-						purchaseOrder.altRate != null}
+					class:xl:grid-cols-5={sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency) &&
+						purchaseOrder.sourceRateToVes != null}
 				>
 					<div class="rounded-2xl bg-surface-container-low p-4">
 						<div class="flex items-center gap-2 text-sm text-on-surface-variant">
@@ -968,14 +979,16 @@
 							{formatBcvRate(purchaseOrder.bcvRate)}
 						</p>
 					</div>
-					{#if purchaseOrder.sourceCurrency === 'EUR' && purchaseOrder.altRate != null}
+					{#if sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency) && purchaseOrder.sourceRateToVes != null}
 						<div class="rounded-2xl bg-surface-container-low p-4">
 							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
 								<ScrollText class="h-4 w-4" />
-								Tasa EUR (Bs/€)
+								Tasa {getSourceCurrencySymbol(purchaseOrder.sourceCurrency)} (Bs/{getSourceCurrencySymbol(
+									purchaseOrder.sourceCurrency
+								)})
 							</div>
 							<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
-								{formatBcvRate(purchaseOrder.altRate)}
+								{formatBcvRate(purchaseOrder.sourceRateToVes)}
 							</p>
 							<p class="mt-1 text-xs text-on-surface-variant">Normalizado a USD vía tasa BCV</p>
 						</div>
@@ -1107,16 +1120,12 @@
 								<th class="px-4 py-3.5 text-right">Cantidad</th>
 								<th class="px-4 py-3.5 text-right">
 									{purchaseOrder.sourceCurrency !== 'USD'
-										? purchaseOrder.sourceCurrency === 'EUR'
-											? 'Costo unitario €'
-											: 'Costo unitario Bs'
+										? `Costo unitario ${getSourceCurrencySymbol(purchaseOrder.sourceCurrency)}`
 										: 'Costo unitario'}
 								</th>
 								<th class="px-4 py-3.5 text-right">
 									{purchaseOrder.sourceCurrency !== 'USD'
-										? purchaseOrder.sourceCurrency === 'EUR'
-											? 'Total compra €'
-											: 'Total compra Bs'
+										? `Total compra ${getSourceCurrencySymbol(purchaseOrder.sourceCurrency)}`
 										: 'Total compra'}
 								</th>
 								<th class="px-4 py-3.5 text-right">Venta sugerida</th>
@@ -1302,9 +1311,10 @@
 				{payments}
 				purchaseOrder={purchaseOrder as PurchaseOrder}
 				{earlyPaymentBenefits}
-				pendingBalanceUsd={balance.balance}
-				debtTotalUsd={balance.debtTotal}
-				isFullyPaid={balance.isFullyPaid}
+				pendingBalanceUsd={balance.settlementBalance}
+				debtTotalUsd={balance.settlementDebtAmount}
+				isFullyPaid={balance.isSettlementFullyPaid}
+				settlementCurrency={balance.settlementCurrency}
 				composerRequest={paymentComposerRequest}
 				onFinanceChanged={handleFinanceChanged}
 			/>
@@ -1388,57 +1398,118 @@
 						<p class="text-sm text-white/70">Unidades totales</p>
 						<p class="mt-2 font-mono text-3xl font-semibold tabular-nums">{totalUnits}</p>
 					</div>
-					<div class="rounded-2xl bg-white/8 p-4">
-						<p class="text-sm text-white/70">
-							{hasSettlementDiscount ? 'Costo bruto (nota de entrega)' : 'Costo de compra'}
-						</p>
-						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
-							{formatPrice(totalPurchase)}
-						</p>
-						{#if purchaseSummary.totalVes !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
-							<p class="mt-1 font-mono text-xs text-white/60 tabular-nums">
-								{formatVesAmount(totalPurchaseInBs)}
+
+					{#if needsSourceRate && (purchaseSummary.totalAlt != null || purchaseSummary.totalAlt != null)}
+						<div class="rounded-2xl bg-white/8 p-4">
+							<p class="text-sm text-white/70">
+								{hasSettlementDiscount ? 'Costo bruto (nota de entrega)' : 'Costo de compra'}
 							</p>
-						{/if}
-					</div>
+							<p class="mt-2 font-mono text-2xl font-semibold text-white tabular-nums">
+								{srcSymbol}
+								{(purchaseSummary.totalAlt ?? 0).toFixed(2)}
+							</p>
+							<p class="mt-1 text-xs text-white/60">
+								Costo inventario: {formatPrice(totalPurchase)}
+							</p>
+						</div>
+					{:else}
+						<div class="rounded-2xl bg-white/8 p-4">
+							<p class="text-sm text-white/70">
+								{hasSettlementDiscount ? 'Costo bruto (nota de entrega)' : 'Costo de compra'}
+							</p>
+							<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
+								{formatPrice(totalPurchase)}
+							</p>
+							{#if purchaseSummary.totalAlt !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
+								<p class="mt-1 font-mono text-xs text-white/60 tabular-nums">
+									{formatVesAmount(totalPurchaseInBs)}
+								</p>
+							{/if}
+						</div>
+					{/if}
+
 					{#if hasSettlementDiscount}
 						<div class="rounded-2xl bg-white/8 p-4 ring-1 ring-brand-gold/40">
 							<p class="text-sm text-white/70">Costo neto (factura)</p>
-							<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
-								{formatPrice(netTotalPurchase)}
-							</p>
+							{#if needsSourceRate && purchaseSummary.netTotalAlt != null}
+								<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
+									{srcSymbol}
+									{purchaseSummary.netTotalAlt.toFixed(2)}
+								</p>
+							{:else}
+								<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
+									{formatPrice(netTotalPurchase)}
+								</p>
+							{/if}
 							<div class="mt-3 space-y-1 text-xs text-white/70">
-								<div class="flex items-center justify-between gap-3">
-									<span>Subtotal</span>
-									<span class="font-mono font-semibold text-white tabular-nums">
-										{formatPrice(purchaseSummary.subtotal)}
-									</span>
-								</div>
-								<div class="flex items-center justify-between gap-3">
-									<span class="text-brand-gold">Descuento ({settlementDiscountLabel})</span>
-									<span class="font-mono font-semibold text-brand-gold tabular-nums">
-										− {formatPrice(settlementDiscountAmount)}
-									</span>
-								</div>
-								<div class="flex items-center justify-between gap-3">
-									<span>Subtotal neto</span>
-									<span class="font-mono font-semibold text-white tabular-nums">
-										{formatPrice(netSubtotalPurchase)}
-									</span>
-								</div>
-								<div class="flex items-center justify-between gap-3">
-									<span>IVA neto</span>
-									<span class="font-mono font-semibold text-white tabular-nums">
-										{formatPrice(netTaxPurchase)}
-									</span>
-								</div>
-								{#if purchaseSummary.netTotalVes !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
+								{#if needsSourceRate && purchaseSummary.subtotalAlt != null}
 									<div class="flex items-center justify-between gap-3">
-										<span>Equivalente BCV</span>
+										<span>Subtotal</span>
 										<span class="font-mono font-semibold text-white tabular-nums">
-											{formatVesAmount(netTotalPurchaseInBs)}
+											{srcSymbol}
+											{purchaseSummary.subtotalAlt.toFixed(2)}
 										</span>
 									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span class="text-brand-gold">Descuento ({settlementDiscountLabel})</span>
+										<span class="font-mono font-semibold text-brand-gold tabular-nums">
+											− {srcSymbol}
+											{(purchaseSummary.discountAmountAlt ?? 0).toFixed(2)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span>Subtotal neto</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											{srcSymbol}
+											{(purchaseSummary.netSubtotalAlt ?? 0).toFixed(2)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span>IVA neto</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											{srcSymbol}
+											{(purchaseSummary.netTaxAmountAlt ?? 0).toFixed(2)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span>Equiv. inventario</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											{formatPrice(netSubtotalPurchase)}
+										</span>
+									</div>
+								{:else}
+									<div class="flex items-center justify-between gap-3">
+										<span>Subtotal</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											{formatPrice(purchaseSummary.subtotal)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span class="text-brand-gold">Descuento ({settlementDiscountLabel})</span>
+										<span class="font-mono font-semibold text-brand-gold tabular-nums">
+											− {formatPrice(settlementDiscountAmount)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span>Subtotal neto</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											{formatPrice(netSubtotalPurchase)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between gap-3">
+										<span>IVA neto</span>
+										<span class="font-mono font-semibold text-white tabular-nums">
+											{formatPrice(netTaxPurchase)}
+										</span>
+									</div>
+									{#if purchaseSummary.netTotalAlt !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
+										<div class="flex items-center justify-between gap-3">
+											<span>Equivalente BCV</span>
+											<span class="font-mono font-semibold text-white tabular-nums">
+												{formatVesAmount(netTotalPurchaseInBs)}
+											</span>
+										</div>
+									{/if}
 								{/if}
 								{#if purchaseOrder.settlementDiscountNotes}
 									<p class="pt-1 whitespace-pre-wrap text-white/60">
@@ -1448,12 +1519,14 @@
 							</div>
 						</div>
 					{/if}
+
 					<div class="rounded-2xl bg-white/8 p-4">
 						<p class="text-sm text-white/70">Valor estimado de venta</p>
 						<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
 							{formatPrice(totalSale)}
 						</p>
 					</div>
+
 					<div class="rounded-2xl bg-white/8 p-4">
 						<p class="text-sm text-white/70">
 							{hasSettlementDiscount ? 'Diferencial neto (factura)' : 'Diferencial estimado'}

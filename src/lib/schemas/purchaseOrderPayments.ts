@@ -16,11 +16,15 @@ export const CreatePurchaseOrderPaymentSchema = z
 		amount: CoercedNumber.positive('El monto debe ser positivo'),
 		bcvUsdRate: CoercedNumber.positive('La tasa BCV es requerida'),
 		specificRate: CoercedNumber.positive('La tasa usada debe ser positiva').optional(),
+		/** Amount this payment applies against the contractual supplier debt (in the order's settlement currency). */
+		amountAppliedToDebt: CoercedNumber.positive('El abono a la deuda debe ser positivo').optional(),
 		reference: z.string().trim().max(120).optional(),
 		notes: z.string().trim().max(500).optional(),
 		earlyPaymentBenefit: z
 			.object({
 				amountUsdBcv: CoercedNumber.positive('El beneficio debe ser positivo'),
+				amountAppliedToDebt: CoercedNumber.positive().optional(),
+				amountAppliedToDebtUsdBcvAtOrder: CoercedNumber.positive().optional(),
 				appliedToBalance: z.boolean().default(true),
 				note: z.string().trim().max(500).optional()
 			})

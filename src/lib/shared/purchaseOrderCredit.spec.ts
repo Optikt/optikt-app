@@ -51,14 +51,14 @@ describe('getEarlyPaymentDiscountSuggestion', () => {
 				},
 				totalDebt: 1000,
 				currentBalance: 1000,
-				paymentAmountUsdBcv: 950,
+				paymentAmount: 950,
 				paymentDate: '2026-05-18'
 			})
 		).toMatchObject({
-			amountUsdBcv: 50,
+			amount: 50,
 			residualAfterPayment: 50,
-			recommendedPaymentUsdBcv: 950,
-			overpaymentUsdBcv: 0,
+			recommendedPayment: 950,
+			overpayment: 0,
 			percent: 5
 		});
 	});
@@ -73,14 +73,14 @@ describe('getEarlyPaymentDiscountSuggestion', () => {
 				},
 				totalDebt: 1000,
 				currentBalance: 400,
-				paymentAmountUsdBcv: 400,
+				paymentAmount: 400,
 				paymentDate: '2026-05-18'
 			})
 		).toMatchObject({
-			amountUsdBcv: 50,
+			amount: 50,
 			residualAfterPayment: 0,
-			recommendedPaymentUsdBcv: 350,
-			overpaymentUsdBcv: 50,
+			recommendedPayment: 350,
+			overpayment: 50,
 			percent: 5
 		});
 	});

@@ -121,44 +121,21 @@ const ORDER_COLUMNS: Record<PurchaseOrderOrderBy, AnyColumn> = {
 
 function buildPendingBalanceCondition(): SQL {
 	return sql`
-		COALESCE((
-			SELECT SUM(pop.amount_usd_bcv)
+		${purchaseOrders.settlementDebtAmount}
+		- COALESCE((
+			SELECT SUM(pop.amount_applied_to_debt)
 			FROM ${purchaseOrderPayments} pop
 			WHERE pop.purchase_order_id = ${purchaseOrders.id}
 			  AND pop.voided_at IS NULL
 		), 0)
-		+
-		COALESCE((
-			SELECT SUM(poepb.amount_usd_bcv)
+		- COALESCE((
+			SELECT SUM(poepb.amount_applied_to_debt)
 			FROM ${purchaseOrderEarlyPaymentBenefits} poepb
 			WHERE poepb.purchase_order_id = ${purchaseOrders.id}
 			  AND poepb.applied_to_balance = true
 			  AND poepb.voided_at IS NULL
 		), 0)
-		<
-		ROUND(CAST(
-			COALESCE((
-				SELECT SUM(poi.quantity * poi.unit_purchase_price)
-				FROM ${purchaseOrderItems} poi
-				WHERE poi.purchase_order_id = ${purchaseOrders.id}
-			), 0)
-			*
-			CASE
-				WHEN ${purchaseOrders.settlementDiscountType} = 'NONE'
-				  OR ${purchaseOrders.settlementDiscountValue} <= 0
-				  THEN 1.0
-				WHEN ${purchaseOrders.settlementDiscountType} = 'PERCENT'
-				  THEN 1.0 - LEAST(${purchaseOrders.settlementDiscountValue}, 100.0) / 100.0
-				ELSE
-				  GREATEST(0.0, 1.0 - ${purchaseOrders.settlementDiscountValue} / NULLIF(
-					COALESCE((
-						SELECT SUM(poi2.quantity * poi2.unit_purchase_price)
-						FROM ${purchaseOrderItems} poi2
-						WHERE poi2.purchase_order_id = ${purchaseOrders.id}
-					), 0), 0
-				  ))
-			END
-		AS NUMERIC), 2) - 0.01
+		> 0.01
 	`;
 }
 
@@ -261,12 +238,16 @@ async function addFinancialMetadata(
 		const orderItems = itemsByOrderId.get(row.id) ?? [];
 		const orderPayments = paymentsByOrderId.get(row.id) ?? [];
 		const orderBenefits = benefitsByOrderId.get(row.id) ?? [];
-		const balance = computePurchaseOrderBalance(row, orderItems, orderPayments, orderBenefits);
+		const balance = computePurchaseOrderBalance(row, orderItems, orderPayments, orderBenefits, {
+			settlementCurrency: row.settlementCurrency,
+			settlementGrossAmount: row.settlementGrossAmount,
+			settlementDebtAmount: row.settlementDebtAmount
+		});
 		const dueStatus = getPurchaseOrderDueStatus({
 			paymentTerms: row.paymentTerms,
 			creditDueDate: row.creditDueDate,
 			earlyPaymentDiscountDeadline: row.earlyPaymentDiscountDeadline,
-			balance: balance.balance
+			balance: balance.settlementBalance
 		});
 
 		return { ...row, balance, dueStatus };

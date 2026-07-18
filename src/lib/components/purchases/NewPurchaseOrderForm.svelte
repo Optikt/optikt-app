@@ -16,6 +16,8 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
+		CurrencyCode,
+		ACTIVE_PURCHASE_SOURCE_CURRENCIES,
 		PURCHASE_SOURCE_CURRENCY_LABELS
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -28,8 +30,6 @@
 	import PurchaseOrderPaymentTermsPanel from './PurchaseOrderPaymentTermsPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
-		calculateUnitPurchasePriceFromVesPreTax,
-		calculateUnitPurchasePriceFromEurPreTax,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
@@ -38,6 +38,11 @@
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
+	import {
+		sourceCurrencyRequiresRateToVes,
+		SOURCE_TO_CURRENCY_CODE,
+		sourcePriceToUsdBcv
+	} from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SupplierOption = {
@@ -93,7 +98,15 @@
 	let orderDate = $state(initialValues?.orderDate ?? toISODate(nowUTC()));
 	let bcvRate = $state<number>(initialValues?.bcvRate ?? 0);
 	let sourceCurrency = $state<string>(initialValues?.sourceCurrency ?? PurchaseSourceCurrency.USD);
-	let altRate = $state<number>(initialValues?.altRate ?? 0);
+	let sourceRateToVes = $state<number>(initialValues?.sourceRateToVes ?? 0);
+	let settlementCurrency = $state<string>(
+		initialValues?.settlementCurrency ??
+			untrack(
+				() => SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE]
+			) ??
+			'USD_BCV'
+	);
+	let settlementRateToVes = $state<number>(initialValues?.settlementRateToVes ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -146,7 +159,7 @@
 
 	const canSave = $derived(
 		canPersistPurchaseOrderDraft(
-			{ supplierId, orderDate, bcvRate, notes, sourceCurrency, altRate },
+			{ supplierId, orderDate, bcvRate, notes, sourceCurrency, sourceRateToVes },
 			items,
 			{
 				paymentTerms,
@@ -159,10 +172,10 @@
 
 	$effect(() => {
 		const currentBcvRate = Number(bcvRate || 0);
-		const currentAltRate = Number(altRate || 0);
+		const currentAltRate = Number(sourceRateToVes || 0);
 		const isAlt = sourceCurrency !== PurchaseSourceCurrency.USD;
 		if (!isAlt || currentBcvRate <= 0) return;
-		if (sourceCurrency === PurchaseSourceCurrency.EUR && currentAltRate <= 0) return;
+		if (sourceCurrencyRequiresRateToVes(sourceCurrency) && currentAltRate <= 0) return;
 
 		untrack(() => {
 			for (const item of items) {
@@ -170,22 +183,14 @@
 					continue;
 				}
 
-				if (sourceCurrency === PurchaseSourceCurrency.EUR) {
-					item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
-						item.unitPurchasePriceAlt,
-						item.appliesIva,
-						item.ivaRate,
-						currentAltRate,
-						currentBcvRate
-					);
-				} else {
-					item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
-						item.unitPurchasePriceAlt,
-						item.appliesIva,
-						item.ivaRate,
-						currentBcvRate
-					);
-				}
+				item.unitPurchasePrice = sourcePriceToUsdBcv({
+					sourceCurrency,
+					unitPriceAlt: item.unitPurchasePriceAlt,
+					appliesIva: item.appliesIva,
+					ivaRate: item.ivaRate,
+					sourceRateToVes: currentAltRate,
+					bcvRate: currentBcvRate
+				});
 			}
 		});
 	});
@@ -193,6 +198,15 @@
 	function handlePaymentTermsChange(nextTerms: PurchasePaymentTerms) {
 		paymentTerms = nextTerms;
 	}
+
+	let settlementManuallyChanged = $state(false);
+	$effect(() => {
+		if (!settlementManuallyChanged) {
+			settlementCurrency =
+				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+				'USD_BCV';
+		}
+	});
 
 	function goBack() {
 		if (isEdit && purchaseOrderId) {
@@ -307,6 +321,35 @@
 		}));
 	}
 
+	function buildPurchaseOrderPayload() {
+		return {
+			supplierId,
+			documentType,
+			invoiceNumber: invoiceNumber || undefined,
+			deliveryNoteNumber: deliveryNoteNumber || undefined,
+			orderDate,
+			bcvRate,
+			altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
+			sourceCurrency,
+			settlementCurrency: settlementCurrency as CurrencyCode,
+			settlementRateToVes:
+				settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
+					? settlementRateToVes
+					: undefined,
+			paymentTerms,
+			creditDueDate,
+			earlyPaymentDiscountPercent,
+			earlyPaymentDiscountDeadline,
+			notes,
+			discount: {
+				type: discount.type,
+				value: discount.value,
+				notes: discountNotes ? discountNotes : undefined
+			},
+			items: buildItemsPayload()
+		} as const;
+	}
+
 	async function savePurchaseOrder() {
 		if (!canSave || saving) return;
 		savingAction = 'draft';
@@ -320,25 +363,7 @@
 
 				const result = await savePurchaseOrderDraftCmd({
 					id: purchaseOrderId,
-					supplierId,
-					documentType,
-					invoiceNumber: invoiceNumber || undefined,
-					deliveryNoteNumber: deliveryNoteNumber || undefined,
-					orderDate,
-					bcvRate,
-					altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? altRate : undefined,
-					sourceCurrency,
-					paymentTerms,
-					creditDueDate,
-					earlyPaymentDiscountPercent,
-					earlyPaymentDiscountDeadline,
-					notes,
-					discount: {
-						type: discount.type,
-						value: discount.value,
-						notes: discountNotes ? discountNotes : undefined
-					},
-					items: buildItemsPayload()
+					...buildPurchaseOrderPayload()
 				});
 
 				if (!result.success) {
@@ -352,27 +377,7 @@
 				return;
 			}
 
-			const result = await createPurchaseOrderCmd({
-				supplierId,
-				documentType,
-				invoiceNumber: invoiceNumber || undefined,
-				deliveryNoteNumber: deliveryNoteNumber || undefined,
-				orderDate,
-				bcvRate,
-				altRate: sourceCurrency === PurchaseSourceCurrency.EUR ? altRate : undefined,
-				sourceCurrency,
-				paymentTerms,
-				creditDueDate,
-				earlyPaymentDiscountPercent,
-				earlyPaymentDiscountDeadline,
-				notes,
-				discount: {
-					type: discount.type,
-					value: discount.value,
-					notes: discountNotes ? discountNotes : undefined
-				},
-				items: buildItemsPayload()
-			});
+			const result = await createPurchaseOrderCmd(buildPurchaseOrderPayload());
 
 			if (result.success) {
 				toast.success('Orden de compra creada exitosamente');
@@ -448,7 +453,7 @@
 			bind:documentType
 			bind:orderDate
 			bind:bcvRate
-			bind:altRate
+			bind:sourceRateToVes
 			{sourceCurrency}
 			bind:invoiceNumber
 			bind:deliveryNoteNumber
@@ -470,6 +475,12 @@
 						{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
 							Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
 							EUR y la tasa BCV.
+						{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
+							Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la tasa
+							USDT y la tasa BCV.
+						{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
+							Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando la
+							tasa PayPal y la tasa BCV.
 						{:else}
 							Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
 							desde la tasa BCV.
@@ -478,7 +489,7 @@
 				</div>
 
 				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
-					{#each Object.values(PurchaseSourceCurrency) as currency (currency)}
+					{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
 						<button
 							type="button"
 							onclick={() => requestPricingModeChange(currency)}
@@ -493,6 +504,42 @@
 						</button>
 					{/each}
 				</div>
+
+				<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+					<label
+						for="settlement-currency"
+						class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+					>
+						Moneda de obligación
+					</label>
+					<select
+						id="settlement-currency"
+						class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+						bind:value={settlementCurrency}
+						onchange={() => (settlementManuallyChanged = true)}
+					>
+						<option value="USD_BCV">USD (BCV)</option>
+						<option value="EUR_BCV">EUR (BCV)</option>
+						<option value="USDT">USDT</option>
+						<option value="USD_PAYPAL">USD PayPal</option>
+						<option value="VES">Bs. (Bolívares)</option>
+					</select>
+					{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
+						<label
+							for="settlement-rate"
+							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
+							Tasa {settlementCurrency}
+						</label>
+						<input
+							id="settlement-rate"
+							type="number"
+							bind:value={settlementRateToVes}
+							class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+							placeholder="Bs/unidad"
+						/>
+					{/if}
+				</div>
 			</div>
 		</section>
 
@@ -503,7 +550,7 @@
 			{supplierId}
 			{documentType}
 			{sourceCurrency}
-			{altRate}
+			{sourceRateToVes}
 			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
 		/>
@@ -516,13 +563,15 @@
 			{earlyPaymentDiscountPercent}
 			{earlyPaymentDiscountDeadline}
 			totalNetAmount={summary.netTotal}
+			totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
+			{sourceCurrency}
 			onPaymentTermsChange={handlePaymentTermsChange}
 			onCreditDueDateChange={(value) => (creditDueDate = value)}
 			onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
 			onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
 		/>
 
-		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {altRate} />
+		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {sourceRateToVes} />
 	</div>
 </div>
 

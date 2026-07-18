@@ -1,6 +1,6 @@
 ## Deuda pendiente
 
-### MEDIUM
+### HIGH
 
 1. **Dead code**: `CustomerViewModal`, `SupplierViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable`, `PurchaseCurrencyInput` — exportados pero nunca importados.
 

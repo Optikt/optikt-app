@@ -104,3 +104,61 @@ export function denormalizePurchasePaymentAmount({
 
 	return roundCurrency((amountUsdBcv * bcvUsdRate) / specificRate);
 }
+
+// ============================================================================
+// EXCHANGE VARIANCE (per-payment & cumulative)
+// ============================================================================
+
+/**
+ * Compute the realized exchange variance for a single payment.
+ *
+ * Formula:
+ *   V = (amountAppliedToDebt / settlementDebtAmount) × settlementDebtAmountUsdBcvAtOrder
+ *     - amountUsdBcv
+ *
+ * V > 0 → financial gain (paid fewer BCV than originally valued)
+ * V < 0 → financial loss (paid more BCV than originally valued)
+ */
+export function computePaymentExchangeVariance(
+	amountAppliedToDebt: number,
+	settlementDebtAmount: number,
+	settlementDebtAmountUsdBcvAtOrder: number,
+	amountUsdBcv: number
+): number {
+	if (!Number.isFinite(amountAppliedToDebt) || amountAppliedToDebt <= 0) return 0;
+	if (!Number.isFinite(settlementDebtAmount) || settlementDebtAmount <= 0) return 0;
+
+	const originalBcvValue =
+		(amountAppliedToDebt / settlementDebtAmount) * settlementDebtAmountUsdBcvAtOrder;
+	return roundCurrency(originalBcvValue - amountUsdBcv);
+}
+
+/** Convenience: aggregate variance over active payments. */
+export function computeTotalExchangeVariance(parameters: {
+	settlementDebtAmount: number;
+	settlementDebtAmountUsdBcvAtOrder: number;
+	payments: Array<{
+		amountAppliedToDebt?: number | null;
+		amountUsdBcv: number;
+		voidedAt?: string | null;
+	}>;
+}): number {
+	if (parameters.settlementDebtAmount <= 0) return 0;
+	return roundCurrency(
+		parameters.payments
+			.filter((p) => !p.voidedAt)
+			.reduce((sum, p) => {
+				const applied = Number(p.amountAppliedToDebt ?? p.amountUsdBcv ?? 0);
+				if (applied <= 0) return sum;
+				return (
+					sum +
+					computePaymentExchangeVariance(
+						applied,
+						parameters.settlementDebtAmount,
+						parameters.settlementDebtAmountUsdBcvAtOrder,
+						Number(p.amountUsdBcv ?? 0)
+					)
+				);
+			}, 0)
+	);
+}

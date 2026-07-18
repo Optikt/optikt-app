@@ -38,8 +38,8 @@
 		/** Source currency for item prices ('USD' | 'VES' | 'EUR') */
 		sourceCurrency: string;
 		bcvUsdRate: number;
-		/** Alt rate (Bs/EUR) — passed through to each row when sourceCurrency = EUR */
-		altRate?: number;
+		/** Source-to-VES rate (Bs per source-currency unit) — passed through to each row */
+		sourceRateToVes?: number;
 		defaultTaxRate?: number;
 	}
 
@@ -51,13 +51,11 @@
 		documentType,
 		sourceCurrency,
 		bcvUsdRate,
-		altRate = 0,
+		sourceRateToVes = 0,
 		defaultTaxRate = DEFAULT_TAX_RATE
 	}: Props = $props();
 
-	const isAltMode = $derived(
-		sourceCurrency === PurchaseSourceCurrency.VES || sourceCurrency === PurchaseSourceCurrency.EUR
-	);
+	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
 
 	let pendingItemType = $state(PurchaseOrderItemType.PRODUCT);
 	let pendingProductId = $state('');
@@ -259,7 +257,7 @@
 					<div
 						class="hidden xl:grid xl:grid-cols-[52px_minmax(180px,0.92fr)_80px_276px_104px_136px_148px_148px] xl:gap-4"
 					>
-						{#each ['Tipo', 'Artículo', 'Cant.', isAltMode ? `Costo ${sourceCurrency === 'EUR' ? '€' : 'Bs'} base` : 'Costo und.', 'Venta und.', 'IVA', isAltMode ? `Total ${sourceCurrency === 'EUR' ? '€' : 'Bs'}` : 'Total costo', 'Checks'] as label, index (label + index)}
+						{#each ['Tipo', 'Artículo', 'Cant.', isAltMode ? `Costo ${sourceCurrency === 'EUR' ? '€' : sourceCurrency === 'VES' ? 'Bs' : '$'} base` : 'Costo und.', 'Venta und.', 'IVA', isAltMode ? `Total ${sourceCurrency === 'EUR' ? '€' : sourceCurrency === 'VES' ? 'Bs' : '$'}` : 'Total costo', 'Checks'] as label, index (label + index)}
 							<div
 								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 							>
@@ -275,7 +273,7 @@
 							lensItem={lensItems.find((lens) => lens.id === item.lensCatalogItemId) ?? null}
 							{sourceCurrency}
 							{bcvUsdRate}
-							{altRate}
+							{sourceRateToVes}
 							showRemove={true}
 							onremove={() => removeLine(item.id)}
 						/>

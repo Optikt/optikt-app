@@ -77,6 +77,7 @@ import {
 	type PurchaseOrderDueStatus
 } from '$lib/shared/purchaseOrderCredit';
 import { normalizePurchasePaymentAmounts } from '$lib/shared/purchaseOrderPayments';
+import { SOURCE_TO_CURRENCY_CODE } from '$lib/shared/purchaseOrderCurrencies';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import type { PaginatedResult } from '$lib/types';
 import type {
@@ -284,6 +285,12 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 				earlyPaymentDiscountDeadline: data.earlyPaymentDiscountDeadline
 			});
 
+			const sourceCurrency = data.sourceCurrency ?? 'USD';
+			const settlementCurrency =
+				data.settlementCurrency ??
+				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+				'USD_BCV';
+
 			const po = await createPurchaseOrder(
 				{
 					orderNumber,
@@ -293,8 +300,10 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					altRate: data.altRate ?? null,
+					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,
+					settlementCurrency,
+					settlementRateToVes: data.settlementRateToVes ?? null,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
@@ -325,6 +334,46 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 			);
 
 			await createPurchaseOrderItems(itemsData, tx);
+
+			// Compute and persist settlement amounts from items
+			const isNativeSettlement = settlementCurrency !== 'USD_BCV';
+			const gross = itemsData.reduce(
+				(sum, item) =>
+					sum +
+					(isNativeSettlement
+						? Number(item.unitPurchasePriceAlt ?? item.unitPurchasePrice ?? 0)
+						: Number(item.unitPurchasePrice || 0)) *
+						Number(item.quantity || 0),
+				0
+			);
+			const usdBcvGross = itemsData.reduce(
+				(sum, item) => sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
+				0
+			);
+			const discountType = data.discount?.type;
+			const discountValue = Number(data.discount?.value ?? 0);
+			let settlementDebtAmount = gross;
+			let discountFactor = 1;
+			if (discountType === 'PERCENT' && discountValue > 0) {
+				discountFactor = 1 - Math.min(discountValue, 100) / 100;
+				settlementDebtAmount = gross * discountFactor;
+			} else if (discountType === 'AMOUNT' && discountValue > 0) {
+				settlementDebtAmount = Math.max(0, gross - discountValue);
+				discountFactor = gross > 0 ? settlementDebtAmount / gross : 0;
+			}
+			const settlementUpdate = {
+				settlementGrossAmount: data.settlementGrossAmount ?? gross,
+				settlementDebtAmount: data.settlementDebtAmount ?? settlementDebtAmount,
+				settlementDebtAmountUsdBcvAtOrder: isNativeSettlement
+					? Math.round(usdBcvGross * discountFactor * 100) / 100
+					: settlementDebtAmount
+			};
+			if (
+				settlementUpdate.settlementGrossAmount !== 0 ||
+				settlementUpdate.settlementDebtAmount !== 0
+			) {
+				await updatePurchaseOrder(po.id, settlementUpdate, tx);
+			}
 
 			return po;
 		});
@@ -393,7 +442,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
 		if (data.orderDate) updateData.orderDate = data.orderDate;
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
-		if (data.altRate !== undefined) updateData.altRate = data.altRate ?? null;
+		if (data.altRate !== undefined) updateData.sourceRateToVes = data.altRate ?? null;
 		if (data.sourceCurrency !== undefined) updateData.sourceCurrency = data.sourceCurrency;
 		if (
 			data.paymentTerms !== undefined ||
@@ -528,6 +577,13 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 				earlyPaymentDiscountPercent: data.earlyPaymentDiscountPercent,
 				earlyPaymentDiscountDeadline: data.earlyPaymentDiscountDeadline
 			});
+
+			const sourceCurrency = data.sourceCurrency ?? 'USD';
+			const settlementCurrency =
+				data.settlementCurrency ??
+				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+				'USD_BCV';
+
 			const updated = await updatePurchaseOrder(
 				data.id,
 				{
@@ -537,8 +593,10 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
 					orderDate: data.orderDate,
 					bcvRate: data.bcvRate,
-					altRate: data.altRate ?? null,
+					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,
+					settlementCurrency,
+					settlementRateToVes: data.settlementRateToVes ?? null,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
@@ -555,7 +613,47 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 				tx
 			);
 
-			return { purchaseOrder: updated, items };
+			// Compute and persist settlement amounts from items
+			const isNativeSettlement = settlementCurrency !== 'USD_BCV';
+			const gross = items.reduce(
+				(sum, item) =>
+					sum +
+					(isNativeSettlement
+						? Number(item.unitPurchasePriceAlt ?? item.unitPurchasePrice ?? 0)
+						: Number(item.unitPurchasePrice || 0)) *
+						Number(item.quantity || 0),
+				0
+			);
+			const usdBcvGross = items.reduce(
+				(sum, item) => sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
+				0
+			);
+			const discountType = data.discount?.type;
+			const discountValue = Number(data.discount?.value ?? 0);
+			let settlementDebtAmount = gross;
+			let discountFactor = 1;
+			if (discountType === 'PERCENT' && discountValue > 0) {
+				discountFactor = 1 - Math.min(discountValue, 100) / 100;
+				settlementDebtAmount = gross * discountFactor;
+			} else if (discountType === 'AMOUNT' && discountValue > 0) {
+				settlementDebtAmount = Math.max(0, gross - discountValue);
+				discountFactor = gross > 0 ? settlementDebtAmount / gross : 0;
+			}
+			const settlementUpdate = {
+				settlementGrossAmount: data.settlementGrossAmount ?? gross,
+				settlementDebtAmount: data.settlementDebtAmount ?? settlementDebtAmount,
+				settlementDebtAmountUsdBcvAtOrder: isNativeSettlement
+					? Math.round(usdBcvGross * discountFactor * 100) / 100
+					: settlementDebtAmount
+			};
+			if (
+				settlementUpdate.settlementGrossAmount !== 0 ||
+				settlementUpdate.settlementDebtAmount !== 0
+			) {
+				await updatePurchaseOrder(data.id, settlementUpdate, tx);
+			}
+
+			return { purchaseOrder: { ...updated, ...settlementUpdate }, items };
 		});
 
 		await auditService.logUpdate(
@@ -793,6 +891,25 @@ export const addPurchaseOrderPaymentCmd = command(
 		try {
 			const result = await db.transaction(async (tx) => {
 				const paymentNumber = await getNextPurchaseOrderPaymentNumber(data.purchaseOrderId, tx);
+
+				// Compute native debt amortization
+				const amountAppliedToDebt =
+					data.amountAppliedToDebt ??
+					// Default: assume currency = settlementCurrency (USD_BCV legacy orders)
+					normalized.amountUsdBcv;
+				const settlementDebtAmount = Number(purchaseOrder.settlementDebtAmount ?? 0);
+				const settlementDebtAmountUsdBcvAtOrder = Number(
+					purchaseOrder.settlementDebtAmountUsdBcvAtOrder ?? 0
+				);
+				const amountAppliedToDebtUsdBcvAtOrder =
+					settlementDebtAmount > 0
+						? Math.round(
+								(amountAppliedToDebt / settlementDebtAmount) *
+									settlementDebtAmountUsdBcvAtOrder *
+									100
+							) / 100
+						: amountAppliedToDebt; // fallback: same value when denominator is 0
+
 				const payment = await createPurchaseOrderPayment(
 					{
 						purchaseOrderId: data.purchaseOrderId,
@@ -804,6 +921,8 @@ export const addPurchaseOrderPaymentCmd = command(
 						specificRate: data.specificRate ?? null,
 						amountBs: normalized.amountBs,
 						amountUsdBcv: normalized.amountUsdBcv,
+						amountAppliedToDebt,
+						amountAppliedToDebtUsdBcvAtOrder,
 						reference: data.reference ?? null,
 						notes: data.notes ?? null,
 						createdById: context.userId!
@@ -817,6 +936,12 @@ export const addPurchaseOrderPaymentCmd = command(
 								paymentId: payment.id,
 								benefitDate: data.paymentDate,
 								amountUsdBcv: data.earlyPaymentBenefit.amountUsdBcv,
+								amountAppliedToDebt:
+									data.earlyPaymentBenefit.amountAppliedToDebt ??
+									data.earlyPaymentBenefit.amountUsdBcv,
+								amountAppliedToDebtUsdBcvAtOrder:
+									data.earlyPaymentBenefit.amountAppliedToDebtUsdBcvAtOrder ??
+									data.earlyPaymentBenefit.amountUsdBcv,
 								appliedToBalance: data.earlyPaymentBenefit.appliedToBalance,
 								note: data.earlyPaymentBenefit.note ?? null,
 								createdById: context.userId!
@@ -835,13 +960,18 @@ export const addPurchaseOrderPaymentCmd = command(
 					purchaseOrder,
 					items,
 					payments,
-					earlyPaymentBenefits
+					earlyPaymentBenefits,
+					{
+						settlementCurrency: purchaseOrder.settlementCurrency,
+						settlementGrossAmount: purchaseOrder.settlementGrossAmount,
+						settlementDebtAmount: purchaseOrder.settlementDebtAmount
+					}
 				);
 				const dueStatus = getPurchaseOrderDueStatus({
 					paymentTerms: purchaseOrder.paymentTerms,
 					creditDueDate: purchaseOrder.creditDueDate,
 					earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
-					balance: balance.balance
+					balance: balance.settlementBalance
 				});
 
 				return { payment, benefit, earlyPaymentBenefits, balance, dueStatus };
@@ -918,13 +1048,18 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 				purchaseOrder,
 				items,
 				payments,
-				earlyPaymentBenefits
+				earlyPaymentBenefits,
+				{
+					settlementCurrency: purchaseOrder.settlementCurrency,
+					settlementGrossAmount: purchaseOrder.settlementGrossAmount,
+					settlementDebtAmount: purchaseOrder.settlementDebtAmount
+				}
 			);
 			const dueStatus = getPurchaseOrderDueStatus({
 				paymentTerms: purchaseOrder.paymentTerms,
 				creditDueDate: purchaseOrder.creditDueDate,
 				earlyPaymentDiscountDeadline: purchaseOrder.earlyPaymentDiscountDeadline,
-				balance: balance.balance
+				balance: balance.settlementBalance
 			});
 
 			return { voided, earlyPaymentBenefits, balance, dueStatus };
@@ -1001,13 +1136,18 @@ export const setPurchaseOrderCreditTermsCmd = command(
 					updatedPurchaseOrder,
 					items,
 					payments,
-					earlyPaymentBenefits
+					earlyPaymentBenefits,
+					{
+						settlementCurrency: updatedPurchaseOrder.settlementCurrency,
+						settlementGrossAmount: updatedPurchaseOrder.settlementGrossAmount,
+						settlementDebtAmount: updatedPurchaseOrder.settlementDebtAmount
+					}
 				);
 				const dueStatus = getPurchaseOrderDueStatus({
 					paymentTerms: updatedPurchaseOrder.paymentTerms,
 					creditDueDate: updatedPurchaseOrder.creditDueDate,
 					earlyPaymentDiscountDeadline: updatedPurchaseOrder.earlyPaymentDiscountDeadline,
-					balance: balance.balance
+					balance: balance.settlementBalance
 				});
 
 				return { updatedPurchaseOrder, earlyPaymentBenefits, balance, dueStatus };

@@ -53,6 +53,7 @@
 			'Ingresos',
 			'Otros ingresos',
 			'Desc. compras',
+			'Var. cambiaria',
 			'Cobrado',
 			'Costo',
 			'Utilidad Bruta',
@@ -65,6 +66,7 @@
 			d.revenue.toFixed(2),
 			d.otherIncome.toFixed(2),
 			d.purchaseDiscountsEarned.toFixed(2),
+			d.exchangeSettlementVariance.toFixed(2),
 			d.collected.toFixed(2),
 			d.cogs.toFixed(2),
 			d.grossProfit.toFixed(2),
@@ -276,6 +278,24 @@
 					</p>
 					<p class={mobileMetaClass}>Ingreso financiero</p>
 				</div>
+				{#if report.exchangeSettlementVariance !== 0}
+					<div class={mobileInsetClass}>
+						<p class={mobileLabelClass}>Variación cambiaria</p>
+						<p
+							class="mt-1 font-mono text-[15px] font-semibold tabular-nums {report.exchangeSettlementVariance >
+							0
+								? 'text-emerald-700'
+								: 'text-red-700'}"
+						>
+							{report.exchangeSettlementVariance > 0 ? '+' : ''}{formatPrice(
+								report.exchangeSettlementVariance
+							)}
+						</p>
+						<p class={mobileMetaClass}>
+							{report.exchangeSettlementVariance > 0 ? 'Ganancia' : 'Pérdida'} tasa
+						</p>
+					</div>
+				{/if}
 				<div class={mobileInsetClass}>
 					<p class={mobileLabelClass}>Cobrado (caja)</p>
 					<p class={mobileValueClass}>
@@ -378,6 +398,24 @@
 					</p>
 					<p class="mt-2 text-xs text-slate-500">Ingreso financiero</p>
 				</div>
+				{#if report.exchangeSettlementVariance !== 0}
+					<div class="flex h-full flex-col bg-white px-4 py-4">
+						<p class={desktopLabelClass}>Variación cambiaria</p>
+						<p
+							class="mt-2 font-mono text-[1.6rem] leading-none font-semibold tabular-nums {report.exchangeSettlementVariance >
+							0
+								? 'text-emerald-700'
+								: 'text-red-700'}"
+						>
+							{report.exchangeSettlementVariance > 0 ? '+' : ''}{formatPrice(
+								report.exchangeSettlementVariance
+							)}
+						</p>
+						<p class="mt-2 text-xs text-slate-500">
+							{report.exchangeSettlementVariance > 0 ? 'Ganancia' : 'Pérdida'} por diferencia de tasa
+						</p>
+					</div>
+				{/if}
 				<div class="flex h-full flex-col bg-white px-4 py-4">
 					<p class={desktopLabelClass}>Costo (COGS)</p>
 					<p class={desktopValueClass}>{formatPrice(report.totalCogs)}</p>
@@ -737,6 +775,7 @@
 						<th class="px-4 py-3 text-right">Ingresos</th>
 						<th class="px-4 py-3 text-right">Otros</th>
 						<th class="px-4 py-3 text-right">Desc. compras</th>
+						<th class="px-4 py-3 text-right">Var. cambiaria</th>
 						<th class="px-4 py-3 text-right">Cobrado</th>
 						<th class="px-4 py-3 text-right">Costo</th>
 						<th class="px-4 py-3 text-right">Util. Bruta</th>
@@ -766,6 +805,18 @@
 									: 'text-slate-300'}"
 							>
 								{formatPrice(row.purchaseDiscountsEarned)}
+							</td>
+							<td
+								class="px-4 py-3 text-right font-mono tabular-nums {row.exchangeSettlementVariance >
+								0
+									? 'text-emerald-700'
+									: row.exchangeSettlementVariance < 0
+										? 'text-red-700'
+										: 'text-slate-300'}"
+							>
+								{row.exchangeSettlementVariance > 0 ? '+' : ''}{formatPrice(
+									row.exchangeSettlementVariance
+								)}
 							</td>
 							<td class="px-4 py-3 text-right font-mono tabular-nums"
 								>{formatPrice(row.collected)}</td

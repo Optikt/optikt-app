@@ -24,12 +24,20 @@ export interface PurchaseOrderPaymentLike {
 	paymentDate: string;
 	voidedAt?: string | null;
 	currencyCode?: CurrencyCode | string;
+	/** Debt amortized by this payment, in the order's settlement currency. Falls back to amountUsdBcv when absent (legacy). */
+	amountAppliedToDebt?: number | null;
+	/** USD-BCV reference of amountAppliedToDebt at order-issuance time. */
+	amountAppliedToDebtUsdBcvAtOrder?: number | null;
 }
 
 export interface PurchaseOrderEarlyPaymentBenefitLike {
 	amountUsdBcv: number;
 	appliedToBalance: boolean;
 	voidedAt?: string | null;
+	/** Debt relief applied by this benefit, in the order's settlement currency. */
+	amountAppliedToDebt?: number | null;
+	/** USD-BCV reference at order-issuance time. */
+	amountAppliedToDebtUsdBcvAtOrder?: number | null;
 }
 
 export interface PurchaseOrderBalanceSummary {
@@ -40,6 +48,23 @@ export interface PurchaseOrderBalanceSummary {
 	balance: number;
 	isFullyPaid: boolean;
 	lastPaymentDate: string | null;
+
+	/** Currency the supplier requires for settlement. */
+	settlementCurrency: string;
+	/** Gross contractual debt before discount, in settlement currency. */
+	settlementGrossAmount: number;
+	/** Net contractual debt after discount, in settlement currency. */
+	settlementDebtAmount: number;
+	/** Total amortized (sum of amountAppliedToDebt) in settlement currency. */
+	totalAppliedToDebt: number;
+	/** Early-payment benefits consumed, in settlement currency. */
+	settlementBenefitsApplied: number;
+	/** Remaining settlement balance (native). */
+	settlementBalance: number;
+	/** Whether the settlement balance is fully paid in native terms. */
+	isSettlementFullyPaid: boolean;
+	/** Cumulative exchange variance (sum across all payments). */
+	totalExchangeVariance: number;
 }
 
 export type PurchaseOrderDueState =
@@ -52,13 +77,14 @@ export interface PurchaseOrderDueStatus {
 }
 
 export interface EarlyPaymentDiscountSuggestion {
-	amountUsdBcv: number;
+	/** Discount amount (in the same currency as the debt). */
+	amount: number;
 	percent: number;
 	deadline: string;
 	currentBalance: number;
-	enteredPaymentUsdBcv: number;
-	recommendedPaymentUsdBcv: number;
-	overpaymentUsdBcv: number;
+	enteredPayment: number;
+	recommendedPayment: number;
+	overpayment: number;
 	residualAfterPayment: number;
 }
 
@@ -142,11 +168,30 @@ export function getEarlyPaymentDiscountEarned(
 	);
 }
 
+/** Sum of active applied settlement-currency benefit amounts (native). */
+export function getEarlyPaymentDiscountEarnedNative(
+	benefits: PurchaseOrderEarlyPaymentBenefitLike[]
+): number {
+	return roundCurrency(
+		getActiveAppliedBenefits(benefits).reduce(
+			(sum, benefit) => sum + Number(benefit.amountAppliedToDebt ?? benefit.amountUsdBcv ?? 0),
+			0
+		)
+	);
+}
+
 export function computePurchaseOrderBalance(
 	po: PurchaseOrderSettlementDiscountLike,
 	items: PurchaseOrderFinancialItem[],
 	payments: PurchaseOrderPaymentLike[],
-	earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefitLike[] = []
+	earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefitLike[] = [],
+	/** Optional settlement header — when absent, native = USD-BCV (legacy backward compat). */
+	settlement?: {
+		settlementCurrency?: string | null;
+		settlementGrossAmount?: number | null;
+		settlementDebtAmount?: number | null;
+		settlementDebtAmountUsdBcvAtOrder?: number | null;
+	}
 ): PurchaseOrderBalanceSummary {
 	const activePayments = getActivePayments(payments);
 	const grossTotal = calculatePurchaseOrderGrossTotal(items);
@@ -163,6 +208,43 @@ export function computePurchaseOrderBalance(
 					.map((payment) => payment.paymentDate)
 					.sort((left, right) => right.localeCompare(left))[0];
 
+	// --- Native settlement balance ---
+	const settlementCurrency = settlement?.settlementCurrency || CurrencyCode.USD_BCV;
+	const settlementGrossAmount = Number(settlement?.settlementGrossAmount ?? grossTotal);
+	const settlementDebtAmount = Number(settlement?.settlementDebtAmount ?? debtTotal);
+
+	const totalAppliedToDebt = roundCurrency(
+		activePayments.reduce(
+			(sum, payment) => sum + Number(payment.amountAppliedToDebt ?? payment.amountUsdBcv ?? 0),
+			0
+		)
+	);
+	const settlementBenefitsApplied = getEarlyPaymentDiscountEarnedNative(earlyPaymentBenefits);
+	const settlementBalance = roundCurrency(
+		Math.max(settlementDebtAmount - totalAppliedToDebt - settlementBenefitsApplied, 0)
+	);
+
+	// Exchange variance per payment: original BCV value of the amortized portion - actual BCV paid
+	let totalExchangeVariance = 0;
+	if (settlementDebtAmount > 0) {
+		for (const payment of activePayments) {
+			const appliedBcv = Number(
+				payment.amountAppliedToDebtUsdBcvAtOrder ?? payment.amountUsdBcv ?? 0
+			);
+			const actualBcv = Number(payment.amountUsdBcv ?? 0);
+			totalExchangeVariance += appliedBcv - actualBcv;
+		}
+	}
+	// Also add benefit variance
+	for (const benefit of getActiveAppliedBenefits(earlyPaymentBenefits)) {
+		const appliedBcv = Number(
+			benefit.amountAppliedToDebtUsdBcvAtOrder ?? benefit.amountUsdBcv ?? 0
+		);
+		const benefitBcv = Number(benefit.amountUsdBcv ?? 0);
+		totalExchangeVariance += appliedBcv - benefitBcv;
+	}
+	totalExchangeVariance = roundCurrency(totalExchangeVariance);
+
 	return {
 		grossTotal,
 		debtTotal,
@@ -170,7 +252,16 @@ export function computePurchaseOrderBalance(
 		earlyPaymentDiscountEarned,
 		balance,
 		isFullyPaid: balance <= 0.01,
-		lastPaymentDate
+		lastPaymentDate,
+
+		settlementCurrency,
+		settlementGrossAmount,
+		settlementDebtAmount,
+		totalAppliedToDebt,
+		settlementBenefitsApplied,
+		settlementBalance,
+		isSettlementFullyPaid: settlementBalance <= 0.01,
+		totalExchangeVariance
 	};
 }
 
@@ -178,13 +269,13 @@ export function getEarlyPaymentDiscountSuggestion({
 	terms,
 	totalDebt,
 	currentBalance,
-	paymentAmountUsdBcv,
+	paymentAmount,
 	paymentDate
 }: {
 	terms: PurchaseOrderCreditTermsLike;
 	totalDebt: number;
 	currentBalance: number;
-	paymentAmountUsdBcv: number;
+	paymentAmount: number;
 	paymentDate: string;
 }): EarlyPaymentDiscountSuggestion | null {
 	if (terms.paymentTerms !== PurchasePaymentTerms.CREDIT) return null;
@@ -194,32 +285,28 @@ export function getEarlyPaymentDiscountSuggestion({
 	if (!deadline || !paymentDateKey || percent <= 0 || paymentDateKey > deadline) return null;
 
 	const normalizedCurrentBalance = roundCurrency(Math.max(Number(currentBalance || 0), 0));
-	const normalizedPaymentAmount = roundCurrency(Math.max(Number(paymentAmountUsdBcv || 0), 0));
-	const amountUsdBcv = roundCurrency(
+	const normalizedPaymentAmount = roundCurrency(Math.max(Number(paymentAmount || 0), 0));
+	const discountAmount = roundCurrency(
 		Math.min((Number(totalDebt || 0) * Math.min(percent, 100)) / 100, normalizedCurrentBalance)
 	);
-	if (amountUsdBcv <= 0) return null;
+	if (discountAmount <= 0) return null;
 
-	const recommendedPaymentUsdBcv = roundCurrency(
-		Math.max(normalizedCurrentBalance - amountUsdBcv, 0)
-	);
-	if (normalizedPaymentAmount + 0.01 < recommendedPaymentUsdBcv) return null;
+	const recommendedPayment = roundCurrency(Math.max(normalizedCurrentBalance - discountAmount, 0));
+	if (normalizedPaymentAmount + 0.01 < recommendedPayment) return null;
 
 	const residualAfterPayment = roundCurrency(
 		Math.max(normalizedCurrentBalance - normalizedPaymentAmount, 0)
 	);
-	const overpaymentUsdBcv = roundCurrency(
-		Math.max(normalizedPaymentAmount - recommendedPaymentUsdBcv, 0)
-	);
+	const overpayment = roundCurrency(Math.max(normalizedPaymentAmount - recommendedPayment, 0));
 
 	return {
-		amountUsdBcv,
+		amount: discountAmount,
 		percent: Math.min(percent, 100),
 		deadline,
 		currentBalance: normalizedCurrentBalance,
-		enteredPaymentUsdBcv: normalizedPaymentAmount,
-		recommendedPaymentUsdBcv,
-		overpaymentUsdBcv,
+		enteredPayment: normalizedPaymentAmount,
+		recommendedPayment,
+		overpayment,
 		residualAfterPayment
 	};
 }

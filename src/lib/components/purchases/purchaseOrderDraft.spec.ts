@@ -15,10 +15,10 @@ import {
 	applyLensDefaults,
 	applyProductDefaults,
 	applySettlementDiscount,
-	calculateDraftItemSubtotalVes,
-	calculateDraftItemTaxVes,
+	calculateDraftItemSubtotalAlt,
+	calculateDraftItemTaxAlt,
 	calculateDraftItemTotal,
-	calculateDraftItemTotalVes,
+	calculateDraftItemTotalAlt,
 	calculateUnitPurchasePriceFromLineTotal,
 	calculatePurchaseOrderSummary,
 	canPersistPurchaseOrderDraft,
@@ -222,9 +222,9 @@ describe('purchaseOrderDraft helpers', () => {
 		item.unitPurchasePriceAlt = 3.14;
 		item.unitPurchasePrice = (item.unitPurchasePriceAlt * 1.16) / 100;
 
-		expect(calculateDraftItemSubtotalVes(item)).toBe(6.28);
-		expect(calculateDraftItemTaxVes(item)).toBe(1);
-		expect(calculateDraftItemTotalVes(item)).toBe(7.28);
+		expect(calculateDraftItemSubtotalAlt(item)).toBe(6.28);
+		expect(calculateDraftItemTaxAlt(item)).toBe(1);
+		expect(calculateDraftItemTotalAlt(item)).toBe(7.28);
 	});
 
 	it('returns direct Bs summary totals when rows store per-line Bs prices', () => {
@@ -251,12 +251,12 @@ describe('purchaseOrderDraft helpers', () => {
 
 		const summary = calculatePurchaseOrderSummary([first, second, third], undefined, 100);
 
-		expect(summary.subtotalVes).toBe(21.98);
-		expect(summary.taxAmountVes).toBe(3.51);
-		expect(summary.totalVes).toBe(25.49);
-		expect(summary.netTotalVes).toBe(25.49);
+		expect(summary.subtotalAlt).toBe(21.98);
+		expect(summary.taxAmountAlt).toBe(3.51);
+		expect(summary.totalAlt).toBe(25.49);
+		expect(summary.netTotalAlt).toBe(25.49);
 		expect(Number((summary.total * 100).toFixed(2))).toBe(25.5);
-		expect(summary.totalVes).not.toBe(Number((summary.total * 100).toFixed(2)));
+		expect(summary.totalAlt).not.toBe(Number((summary.total * 100).toFixed(2)));
 	});
 
 	it('starts new draft items as not reviewed', () => {

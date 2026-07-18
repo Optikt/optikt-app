@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { CalendarDays, CreditCard, Info } from '@lucide/svelte';
-	import { PurchasePaymentTerms, getPurchasePaymentTermsLabel } from '$lib/shared/enums';
+	import {
+		PurchasePaymentTerms,
+		getPurchasePaymentTermsLabel,
+		PurchaseSourceCurrency
+	} from '$lib/shared/enums';
+	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import { formatPrice } from '$lib/utils';
 	import { validateCreditTerms } from './purchaseOrderDraft';
 
@@ -10,6 +15,8 @@
 		earlyPaymentDiscountPercent: number | null;
 		earlyPaymentDiscountDeadline: string | null;
 		totalNetAmount: number;
+		totalNetAmountAlt?: number;
+		sourceCurrency?: string;
 		disabled?: boolean;
 		onPaymentTermsChange?: (value: PurchasePaymentTerms) => void;
 		onCreditDueDateChange?: (value: string | null) => void;
@@ -23,6 +30,8 @@
 		earlyPaymentDiscountPercent,
 		earlyPaymentDiscountDeadline,
 		totalNetAmount,
+		totalNetAmountAlt,
+		sourceCurrency = PurchaseSourceCurrency.USD,
 		disabled = false,
 		onPaymentTermsChange,
 		onCreditDueDateChange,
@@ -90,7 +99,11 @@
 			<span
 				class="rounded-full border border-outline-variant/25 bg-surface-container-low px-3 py-1.5"
 			>
-				{formatPrice(totalNetAmount)} neto
+				{#if sourceCurrency !== PurchaseSourceCurrency.USD && totalNetAmountAlt != null}
+					{totalNetAmountAlt.toFixed(2)} {getSourceCurrencySymbol(sourceCurrency)} neto
+				{:else}
+					{formatPrice(totalNetAmount)} neto
+				{/if}
 			</span>
 		</div>
 	</div>

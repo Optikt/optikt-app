@@ -24,7 +24,8 @@
 		denormalizePurchasePaymentAmount,
 		getPurchasePaymentSpecificRateLabel,
 		normalizePurchasePaymentAmounts,
-		requiresPurchasePaymentSpecificRate
+		requiresPurchasePaymentSpecificRate,
+		computePaymentExchangeVariance
 	} from '$lib/shared/purchaseOrderPayments';
 	import type {
 		PurchaseOrder,
@@ -33,6 +34,7 @@
 	} from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
+	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 
 	interface PaymentComposerRequest {
 		token: string;
@@ -54,6 +56,7 @@
 		pendingBalanceUsd?: number;
 		debtTotalUsd?: number;
 		isFullyPaid?: boolean;
+		settlementCurrency?: string;
 		composerRequest?: PaymentComposerRequest | null;
 		onFinanceChanged?: (payload: {
 			payments: PurchaseOrderPaymentWithUsers[];
@@ -73,6 +76,7 @@
 		pendingBalanceUsd,
 		debtTotalUsd,
 		isFullyPaid = false,
+		settlementCurrency,
 		composerRequest = null,
 		onFinanceChanged
 	}: Props = $props();
@@ -103,6 +107,24 @@
 	const bcvUsdRateValue = $derived(Number(bcvUsdRateInput || 0));
 	const specificRateValue = $derived(Number(specificRateInput || 0));
 	const needsSpecificRate = $derived(requiresPurchasePaymentSpecificRate(currencyCode));
+	const isNativeSettlement = $derived(
+		settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
+	);
+	const settlementSymbol = $derived(
+		isNativeSettlement ? getSettlementCurrencySymbol(settlementCurrency!) : ''
+	);
+
+	// Auto-compute how much debt is being amortized
+	const amountAppliedToDebt = $derived(
+		isNativeSettlement
+			? currencyCode === CurrencyCode.VES && specificRateValue > 0
+				? Math.round((amountValue / specificRateValue) * 100) / 100 // Bs / rate = settlement units
+				: currencyCode === settlementCurrency
+					? amountValue // same currency
+					: undefined
+			: undefined
+	);
+
 	const normalized = $derived(
 		normalizePurchasePaymentAmounts({
 			currencyCode,
@@ -110,6 +132,16 @@
 			bcvUsdRate: bcvUsdRateValue,
 			specificRate: needsSpecificRate ? specificRateValue : undefined
 		})
+	);
+	const exchangeVariance = $derived(
+		isNativeSettlement && (amountAppliedToDebt ?? 0) > 0
+			? computePaymentExchangeVariance(
+					amountAppliedToDebt ?? 0,
+					debtTotalUsd ?? 0,
+					(debtTotalUsd ?? 0) > 0 ? (debtTotalUsd ?? 0) : (amountAppliedToDebt ?? 0),
+					normalized.amountUsdBcv
+				)
+			: 0
 	);
 	const sortedPayments = $derived.by(() =>
 		[...payments].sort((left, right) => left.paymentNumber - right.paymentNumber)
@@ -123,7 +155,7 @@
 					terms: purchaseOrder,
 					totalDebt: debtTotalUsd,
 					currentBalance: pendingBalanceUsd,
-					paymentAmountUsdBcv: normalized.amountUsdBcv,
+					paymentAmount: normalized.amountUsdBcv,
 					paymentDate
 				})
 			: null
@@ -150,6 +182,18 @@
 		);
 	}
 
+	// When opening the form for a non-USD_BCV order, default to VES payment
+	// and pre-fill the specific rate from the order's settlement rate.
+	$effect(() => {
+		if (showForm && isNativeSettlement) {
+			currencyCode = CurrencyCode.VES;
+			const orderRate = purchaseOrder.settlementRateToVes ?? purchaseOrder.sourceRateToVes;
+			if (orderRate != null && orderRate > 0) {
+				specificRateInput = String(orderRate);
+			}
+		}
+	});
+
 	function resetEarlyPaymentState() {
 		showEarlyPaymentBenefitModal = false;
 		pendingBenefitSuggestion = null;
@@ -166,6 +210,19 @@
 			bcvUsdRate: Number(payload.bcvUsdRate),
 			specificRate: payload.specificRate == null ? undefined : Number(payload.specificRate)
 		}).amountUsdBcv;
+	}
+
+	function paymentVariance(payment: {
+		amountAppliedToDebt?: number | null;
+		amountAppliedToDebtUsdBcvAtOrder?: number | null;
+		amountUsdBcv: number;
+	}): number {
+		if (!isNativeSettlement) return 0;
+		const appliedBcv = Number(
+			payment.amountAppliedToDebtUsdBcvAtOrder ?? payment.amountUsdBcv ?? 0
+		);
+		const actualBcv = Number(payment.amountUsdBcv ?? 0);
+		return Math.round((appliedBcv - actualBcv) * 100) / 100;
 	}
 
 	async function maybeSubmitPayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
@@ -265,6 +322,7 @@
 			amount: amountValue,
 			bcvUsdRate: bcvUsdRateValue,
 			specificRate: needsSpecificRate ? specificRateValue : undefined,
+			amountAppliedToDebt: amountAppliedToDebt ?? undefined,
 			reference: referenceInput || undefined,
 			notes: notesInput || undefined
 		};
@@ -274,7 +332,7 @@
 		if (earlyPaymentSuggestion) {
 			pendingAddPayload = payload;
 			pendingBenefitSuggestion = earlyPaymentSuggestion;
-			benefitAmountInput = earlyPaymentSuggestion.amountUsdBcv.toFixed(2);
+			benefitAmountInput = earlyPaymentSuggestion.amount.toFixed(2);
 			benefitNoteInput = '';
 			showEarlyPaymentBenefitModal = true;
 			return;
@@ -348,10 +406,8 @@
 			toast.error('Monto de beneficio inválido');
 			return;
 		}
-		if (amountUsdBcv > pendingBenefitSuggestion.amountUsdBcv + 0.01) {
-			toast.error(
-				`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amountUsdBcv)}`
-			);
+		if (amountUsdBcv > pendingBenefitSuggestion.amount + 0.01) {
+			toast.error(`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amount)}`);
 			return;
 		}
 		if (appliedToBalance && amountUsdBcv >= pendingBenefitSuggestion.currentBalance - 0.01) {
@@ -363,6 +419,8 @@
 			...pendingAddPayload,
 			earlyPaymentBenefit: {
 				amountUsdBcv,
+				amountAppliedToDebt: isNativeSettlement ? amountUsdBcv : undefined,
+				amountAppliedToDebtUsdBcvAtOrder: isNativeSettlement ? amountUsdBcv : undefined,
 				appliedToBalance,
 				note: benefitNoteInput || undefined
 			}
@@ -549,25 +607,48 @@
 						{formatPrice(normalized.amountUsdBcv)}
 					</p>
 				</div>
+				{#if isNativeSettlement && amountAppliedToDebt != null && amountAppliedToDebt > 0}
+					<div>
+						<p class="text-[11px] font-semibold tracking-[0.18em] text-white/55 uppercase">
+							Abono a deuda ({settlementSymbol})
+						</p>
+						<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
+							{amountAppliedToDebt.toFixed(2)}
+							{settlementSymbol}
+						</p>
+					</div>
+					<div>
+						<p class="text-[11px] font-semibold tracking-[0.18em] text-white/55 uppercase">
+							Variación estimada
+						</p>
+						<p
+							class="mt-2 font-mono text-2xl font-semibold tabular-nums {exchangeVariance > 0
+								? 'text-success'
+								: exchangeVariance < 0
+									? 'text-error'
+									: 'text-white'}"
+						>
+							{exchangeVariance > 0 ? '+' : ''}{formatPrice(exchangeVariance)}
+						</p>
+					</div>
+				{/if}
 				{#if liveEarlyPaymentSuggestion}
 					<div
 						class="rounded-xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-3 text-sm text-white"
 					>
 						<p class="font-semibold text-brand-gold">Pronto pago disponible</p>
 						<p class="mt-1 text-white/85">
-							Puedes registrar un beneficio de {formatPrice(
-								liveEarlyPaymentSuggestion.amountUsdBcv
-							)}
+							Puedes registrar un beneficio de {formatPrice(liveEarlyPaymentSuggestion.amount)}
 							antes del {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
 								dateStyle: 'medium'
 							})}.
 						</p>
 						<p class="mt-1 text-white/75">
 							Si lo aplicas al saldo, el pago efectivo quedaría en
-							{formatPrice(liveEarlyPaymentSuggestion.recommendedPaymentUsdBcv)}.
-							{#if liveEarlyPaymentSuggestion.overpaymentUsdBcv > 0.01}
+							{formatPrice(liveEarlyPaymentSuggestion.recommendedPayment)}.
+							{#if liveEarlyPaymentSuggestion.overpayment > 0.01}
 								Con el monto actual se ajustarán {formatPrice(
-									liveEarlyPaymentSuggestion.overpaymentUsdBcv
+									liveEarlyPaymentSuggestion.overpayment
 								)}.
 							{/if}
 						</p>
@@ -607,6 +688,10 @@
 						<th class="px-5 py-3.5 text-right">Monto original</th>
 						<th class="px-5 py-3.5 text-right">Tasas</th>
 						<th class="px-5 py-3.5 text-right">USD BCV</th>
+						{#if isNativeSettlement}
+							<th class="px-5 py-3.5 text-right">Abono {settlementSymbol}</th>
+							<th class="px-5 py-3.5 text-right">Variación</th>
+						{/if}
 						<th class="px-5 py-3.5">Detalle</th>
 						<th class="w-16 px-5 py-3.5"></th>
 					</tr>
@@ -663,6 +748,31 @@
 									>{formatPrice(payment.amountUsdBcv)}</span
 								>
 							</td>
+							{#if isNativeSettlement}
+								{@const pvar = paymentVariance(payment)}
+								<td
+									class="px-5 py-4 text-right align-top font-mono tabular-nums {pvar > 0
+										? 'text-success'
+										: pvar < 0
+											? 'text-error'
+											: 'text-on-surface-variant'}"
+								>
+									<span class:line-through={payment.voidedAt}>
+										{(payment.amountAppliedToDebt ?? payment.amountUsdBcv ?? 0).toFixed(2)}
+									</span>
+								</td>
+								<td
+									class="px-5 py-4 text-right align-top font-mono tabular-nums {pvar > 0
+										? 'text-success'
+										: pvar < 0
+											? 'text-error'
+											: 'text-on-surface-variant'}"
+								>
+									<span class:line-through={payment.voidedAt}>
+										{pvar > 0 ? '+' : ''}{pvar.toFixed(2)}
+									</span>
+								</td>
+							{/if}
 							<td class="px-5 py-4 align-top text-sm text-on-surface-variant">
 								<p class="whitespace-pre-wrap">
 									{payment.reference || payment.notes || 'Sin detalle adicional'}
@@ -775,9 +885,9 @@
 					Si lo aplicas al saldo, el pago se registrará por
 					{formatPrice(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0))}
 					para completar esta orden sin sobrepagarla.
-					{#if pendingBenefitSuggestion.overpaymentUsdBcv > 0.01}
+					{#if pendingBenefitSuggestion.overpayment > 0.01}
 						El monto actual excede ese pago neto por
-						{formatPrice(pendingBenefitSuggestion.overpaymentUsdBcv)}.
+						{formatPrice(pendingBenefitSuggestion.overpayment)}.
 					{/if}
 				</p>
 			{/if}

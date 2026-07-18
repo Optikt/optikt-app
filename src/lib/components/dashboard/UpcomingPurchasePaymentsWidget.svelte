@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { ArrowRight, CalendarClock, CircleDollarSign } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { PurchaseOrderDueBadge } from '$lib/components/ui';
+	import { CurrencyCode } from '$lib/shared/enums';
+	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import type { UpcomingPurchaseOrderDue } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
-	import { formatDateOnly, formatPrice } from '$lib/utils';
+	import { formatDateOnly } from '$lib/utils';
 
 	interface Props {
 		dues: UpcomingPurchaseOrderDue[];
@@ -12,14 +15,28 @@
 	let { dues }: Props = $props();
 
 	const overdueCount = $derived(dues.filter((due) => due.dueStatus.kind === 'OVERDUE').length);
-	const totalPending = $derived(dues.reduce((sum, due) => sum + due.balance.balance, 0));
+
+	const groups = $derived.by(() => {
+		const map = new SvelteMap<string, { dues: UpcomingPurchaseOrderDue[]; total: number }>();
+		for (const due of dues) {
+			const currency = due.balance.settlementCurrency ?? CurrencyCode.USD_BCV;
+			let group = map.get(currency);
+			if (!group) {
+				group = { dues: [], total: 0 };
+				map.set(currency, group);
+			}
+			group.dues.push(due);
+			group.total += due.balance.settlementBalance;
+		}
+		return Array.from(map.entries());
+	});
 
 	function formatOrderNumber(orderNumber: number): string {
 		return `PO-${String(orderNumber).padStart(4, '0')}`;
 	}
 
 	function dueAmount(due: UpcomingPurchaseOrderDue): number {
-		return Number(due.expectedAmountUsd ?? due.balance.balance ?? 0);
+		return Number(due.balance.settlementBalance ?? due.balance.balance ?? 0);
 	}
 </script>
 
@@ -56,19 +73,26 @@
 			<p class="mt-1 text-xs text-outline">Las compras a crédito con saldo aparecerán aquí.</p>
 		</div>
 	{:else}
-		<div class="mb-4 rounded-xl bg-surface-container-low px-4 py-3">
-			<div class="flex items-center justify-between gap-3">
-				<span
-					class="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-on-surface-variant uppercase"
-				>
-					<CircleDollarSign size={14} />
-					Saldo observado
-				</span>
-				<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-					{formatPrice(totalPending)}
-				</span>
+		{#if groups.length > 1}
+			<div class="mb-4 space-y-2">
+				{#each groups as [currency, group] (currency)}
+					<div
+						class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-2"
+					>
+						<span
+							class="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-on-surface-variant uppercase"
+						>
+							<CircleDollarSign size={14} />
+							{currency === CurrencyCode.USD_BCV ? 'USD BCV' : currency}
+						</span>
+						<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
+							{getSettlementCurrencySymbol(currency)}
+							{group.total.toFixed(2)}
+						</span>
+					</div>
+				{/each}
 			</div>
-		</div>
+		{/if}
 
 		<ul class="space-y-2">
 			{#each dues.slice(0, 6) as due (due.id)}
@@ -91,7 +115,8 @@
 						<div class="flex items-center justify-between gap-3 sm:justify-end">
 							<div class="text-right">
 								<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-									{formatPrice(dueAmount(due))}
+									{getSettlementCurrencySymbol(due.balance.settlementCurrency)}
+									{Number(dueAmount(due)).toFixed(2)}
 								</p>
 								<p class="text-xs text-on-surface-variant">
 									{formatDateOnly(due.dueDate, { day: '2-digit', month: 'short' })}

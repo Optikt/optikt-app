@@ -74,7 +74,7 @@
 				{formatPrice(stats.monthlySpend)}
 			</dd>
 			<dt class="text-[10px] font-medium tracking-wide text-white/60 uppercase lg:text-[11px]">
-				Gasto del mes
+				Recepción del mes (USD BCV)
 			</dt>
 		</div>
 	</div>
