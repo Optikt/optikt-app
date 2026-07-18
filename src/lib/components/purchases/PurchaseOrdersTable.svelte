@@ -42,11 +42,11 @@
 		{ key: 'order', label: 'N° orden' },
 		{ key: 'supplier', label: 'Proveedor' },
 		{ key: 'date', label: 'Fecha' },
-		{ key: 'document', label: 'Documento' },
+		{ key: 'document', label: 'Documento', hiddenClass: 'hidden lg:table-cell' },
 		{ key: 'rate', label: 'Tasa BCV', hiddenClass: 'hidden 2xl:table-cell' },
 		{ key: 'status', label: 'Estado' },
 		{ key: 'balance', label: 'Saldo', align: 'right' as const },
-		{ key: 'createdBy', label: 'Creado por' },
+		{ key: 'createdBy', label: 'Creado por', hiddenClass: 'hidden lg:table-cell' },
 		{ key: 'actions', label: 'Acciones', align: 'right' as const }
 	];
 

@@ -4,12 +4,7 @@
 	import { page } from '$app/state';
 	import { ArrowRightLeft, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import {
-		PurchaseFilterBar,
-		PurchaseOrdersTable,
-		PurchaseStatsCards
-	} from '$lib/components/purchases';
-	import { PageHeader } from '$lib/components/ui';
+	import { PurchaseFilterBar, PurchaseOrdersTable } from '$lib/components/purchases';
 	import { listPurchaseOrders } from '$lib/remote/purchaseOrders.remote';
 	import { PurchaseOrderStatus, PurchaseOrderUiState } from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
@@ -19,7 +14,8 @@
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
-		setQueryParam
+		setQueryParam,
+		formatPrice
 	} from '$lib/utils';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
@@ -217,9 +213,29 @@
 	<title>Órdenes de Compra - Optikt</title>
 </svelte:head>
 
-<div class="space-y-4 p-4">
-	<PageHeader title="Órdenes de Compra">
-		{#snippet actions()}
+<div class="space-y-3 p-3">
+	<header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+		<div class="min-w-0">
+			<h1 class="text-xl font-bold text-brand-navy">Órdenes de Compra</h1>
+			{#if stats}
+				<div
+					class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant"
+				>
+					<span class="font-semibold text-brand-navy">{stats.confirmed}</span>
+					<span>confirmadas</span>
+					<span class="text-outline">·</span>
+					<span class="font-semibold text-brand-navy">{stats.draftInProgress}</span>
+					<span>en prep.</span>
+					<span class="text-outline">·</span>
+					<span class="font-semibold text-brand-navy">{stats.draftReady}</span>
+					<span>listas</span>
+					<span class="text-outline">·</span>
+					<span class="font-semibold text-brand-navy">{formatPrice(stats.monthlySpend)}</span>
+					<span class="text-outline hidden xl:inline">recibido este mes</span>
+				</div>
+			{/if}
+		</div>
+		<div class="flex shrink-0 items-center gap-2">
 			<button
 				type="button"
 				onclick={openMovements}
@@ -236,10 +252,8 @@
 				<Plus class="h-4 w-4" />
 				Nueva orden
 			</button>
-		{/snippet}
-	</PageHeader>
-
-	<PurchaseStatsCards {stats} />
+		</div>
+	</header>
 
 	<PurchaseFilterBar
 		{search}
