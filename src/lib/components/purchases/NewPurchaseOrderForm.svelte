@@ -30,8 +30,6 @@
 	import PurchaseOrderPaymentTermsPanel from './PurchaseOrderPaymentTermsPanel.svelte';
 	import {
 		calculatePurchaseOrderSummary,
-		calculateUnitPurchasePriceFromVesPreTax,
-		calculateUnitPurchasePriceFromEurPreTax,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
 		getPurchaseOrderReviewStatus,
@@ -40,7 +38,7 @@
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
-	import { sourceCurrencyRequiresRateToVes, SOURCE_TO_CURRENCY_CODE } from '$lib/shared/purchaseOrderCurrencies';
+	import { sourceCurrencyRequiresRateToVes, SOURCE_TO_CURRENCY_CODE, sourcePriceToUsdBcv } from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SupplierOption = {
@@ -179,22 +177,14 @@
 					continue;
 				}
 
-				if (sourceCurrencyRequiresRateToVes(sourceCurrency)) {
-					item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
-						item.unitPurchasePriceAlt,
-						item.appliesIva,
-						item.ivaRate,
-						currentAltRate,
-						currentBcvRate
-					);
-				} else {
-					item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
-						item.unitPurchasePriceAlt,
-						item.appliesIva,
-						item.ivaRate,
-						currentBcvRate
-					);
-				}
+				item.unitPurchasePrice = sourcePriceToUsdBcv({
+					sourceCurrency,
+					unitPriceAlt: item.unitPurchasePriceAlt,
+					appliesIva: item.appliesIva,
+					ivaRate: item.ivaRate,
+					sourceRateToVes: currentAltRate,
+					bcvRate: currentBcvRate
+				});
 			}
 		});
 	});

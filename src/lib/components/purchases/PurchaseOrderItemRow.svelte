@@ -16,8 +16,6 @@
 		calculateDraftItemTax,
 		calculateDraftItemTotal,
 		calculateUnitPurchasePriceFromLineTotal,
-		calculateUnitPurchasePriceFromVesPreTax,
-		calculateUnitPurchasePriceFromEurPreTax,
 		calculateUnitPurchasePriceAltFromLineTotal,
 		calculateDraftItemSubtotalAlt,
 		calculateDraftItemTaxAlt,
@@ -28,7 +26,8 @@
 	} from './purchaseOrderDraft';
 	import {
 		sourceCurrencyRequiresRateToVes,
-		getSourceCurrencySymbol
+		getSourceCurrencySymbol,
+		sourcePriceToUsdBcv
 	} from '$lib/shared/purchaseOrderCurrencies';
 
 	interface Props {
@@ -174,22 +173,14 @@
 	}
 
 	function syncUsdPriceFromAlt() {
-		if (needsSourceRate) {
-			item.unitPurchasePrice = calculateUnitPurchasePriceFromEurPreTax(
-				Number(item.unitPurchasePriceAlt ?? 0),
-				item.appliesIva,
-				item.ivaRate,
-				sourceRateToVes,
-				bcvUsdRate
-			);
-		} else {
-			item.unitPurchasePrice = calculateUnitPurchasePriceFromVesPreTax(
-				Number(item.unitPurchasePriceAlt ?? 0),
-				item.appliesIva,
-				item.ivaRate,
-				bcvUsdRate
-			);
-		}
+		item.unitPurchasePrice = sourcePriceToUsdBcv({
+			sourceCurrency,
+			unitPriceAlt: Number(item.unitPurchasePriceAlt ?? 0),
+			appliesIva: item.appliesIva,
+			ivaRate: item.ivaRate,
+			sourceRateToVes,
+			bcvRate: bcvUsdRate
+		});
 	}
 
 	function getNumberInputValue(e: Event): number | null {

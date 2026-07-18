@@ -268,50 +268,7 @@ export function calculateUnitPurchasePriceFromLineTotal(
 	return normalizedTotal / normalizedQuantity;
 }
 
-export function calculateUnitPurchasePriceFromVesPreTax(
-	unitPriceAlt: number,
-	appliesIva: boolean,
-	ivaRate: number,
-	bcvRate: number
-): number {
-	const normalizedUnitPrice = Number(unitPriceAlt ?? 0);
-	const normalizedBcvRate = Number(bcvRate || 0);
 
-	if (!Number.isFinite(normalizedUnitPrice) || normalizedUnitPrice < 0) return 0;
-	if (!Number.isFinite(normalizedBcvRate) || normalizedBcvRate <= 0) return 0;
-
-	const priceWithTax = appliesIva
-		? normalizedUnitPrice * (1 + Number(ivaRate || 0) / 100)
-		: normalizedUnitPrice;
-
-	return priceWithTax / normalizedBcvRate;
-}
-
-/**
- * Derive USD unit price (with IVA) from a EUR pre-tax price.
- * Formula: price_eur_pretax × (1 + ivaRate/100) × sourceRateToVes (Bs/EUR) ÷ bcvRate (Bs/USD)
- */
-export function calculateUnitPurchasePriceFromEurPreTax(
-	unitPriceEur: number,
-	appliesIva: boolean,
-	ivaRate: number,
-	sourceRateToVes: number,
-	bcvRate: number
-): number {
-	const normalizedEurPrice = Number(unitPriceEur ?? 0);
-	const normalizedSourceRateToVes = Number(sourceRateToVes || 0);
-	const normalizedBcvRate = Number(bcvRate || 0);
-
-	if (!Number.isFinite(normalizedEurPrice) || normalizedEurPrice < 0) return 0;
-	if (!Number.isFinite(normalizedSourceRateToVes) || normalizedSourceRateToVes <= 0) return 0;
-	if (!Number.isFinite(normalizedBcvRate) || normalizedBcvRate <= 0) return 0;
-
-	const priceWithTax = appliesIva
-		? normalizedEurPrice * (1 + Number(ivaRate || 0) / 100)
-		: normalizedEurPrice;
-
-	return (priceWithTax * normalizedSourceRateToVes) / normalizedBcvRate;
-}
 
 export function calculateUnitPurchasePriceAltFromLineTotal(
 	lineTotalAlt: number,
