@@ -324,6 +324,35 @@
 		}));
 	}
 
+	function buildPurchaseOrderPayload() {
+		return {
+			supplierId,
+			documentType,
+			invoiceNumber: invoiceNumber || undefined,
+			deliveryNoteNumber: deliveryNoteNumber || undefined,
+			orderDate,
+			bcvRate,
+			altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
+			sourceCurrency,
+			settlementCurrency: settlementCurrency as CurrencyCode,
+			settlementRateToVes:
+				settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
+					? settlementRateToVes
+					: undefined,
+			paymentTerms,
+			creditDueDate,
+			earlyPaymentDiscountPercent,
+			earlyPaymentDiscountDeadline,
+			notes,
+			discount: {
+				type: discount.type,
+				value: discount.value,
+				notes: discountNotes ? discountNotes : undefined
+			},
+			items: buildItemsPayload()
+		} as const;
+	}
+
 	async function savePurchaseOrder() {
 		if (!canSave || saving) return;
 		savingAction = 'draft';
@@ -337,30 +366,7 @@
 
 				const result = await savePurchaseOrderDraftCmd({
 					id: purchaseOrderId,
-					supplierId,
-					documentType,
-					invoiceNumber: invoiceNumber || undefined,
-					deliveryNoteNumber: deliveryNoteNumber || undefined,
-					orderDate,
-					bcvRate,
-					altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
-					sourceCurrency,
-					settlementCurrency: settlementCurrency as CurrencyCode,
-					settlementRateToVes:
-						settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
-							? settlementRateToVes
-							: undefined,
-					paymentTerms,
-					creditDueDate,
-					earlyPaymentDiscountPercent,
-					earlyPaymentDiscountDeadline,
-					notes,
-					discount: {
-						type: discount.type,
-						value: discount.value,
-						notes: discountNotes ? discountNotes : undefined
-					},
-					items: buildItemsPayload()
+					...buildPurchaseOrderPayload()
 				});
 
 				if (!result.success) {
@@ -374,32 +380,7 @@
 				return;
 			}
 
-			const result = await createPurchaseOrderCmd({
-				supplierId,
-				documentType,
-				invoiceNumber: invoiceNumber || undefined,
-				deliveryNoteNumber: deliveryNoteNumber || undefined,
-				orderDate,
-				bcvRate,
-				altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
-				sourceCurrency,
-				settlementCurrency: settlementCurrency as CurrencyCode,
-				settlementRateToVes:
-					settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
-						? settlementRateToVes
-						: undefined,
-				paymentTerms,
-				creditDueDate,
-				earlyPaymentDiscountPercent,
-				earlyPaymentDiscountDeadline,
-				notes,
-				discount: {
-					type: discount.type,
-					value: discount.value,
-					notes: discountNotes ? discountNotes : undefined
-				},
-				items: buildItemsPayload()
-			});
+			const result = await createPurchaseOrderCmd(buildPurchaseOrderPayload());
 
 			if (result.success) {
 				toast.success('Orden de compra creada exitosamente');
