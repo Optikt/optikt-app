@@ -28,7 +28,6 @@
 	const isNativeCurrency = $derived(balance.settlementCurrency !== CurrencyCode.USD_BCV);
 	const settlementSymbol = $derived(getSettlementCurrencySymbol(balance.settlementCurrency));
 
-	const balanceInBs = $derived(balance.balance * Number(bcvRate || 0));
 	const paidInBs = $derived(balance.totalPaid * Number(bcvRate || 0));
 	const settlementBalanceInBs = $derived(balance.settlementBalance * Number(bcvRate || 0));
 
@@ -158,7 +157,9 @@
 					Descuento obtenido
 				</div>
 				<p class="mt-3 font-mono text-2xl font-semibold text-brand-navy tabular-nums">
-					{isNativeCurrency ? `${balance.settlementBenefitsApplied.toFixed(2)} ${settlementSymbol}` : formatPrice(balance.earlyPaymentDiscountEarned)}
+					{isNativeCurrency
+						? `${balance.settlementBenefitsApplied.toFixed(2)} ${settlementSymbol}`
+						: formatPrice(balance.earlyPaymentDiscountEarned)}
 				</p>
 			</div>
 			<div class="rounded-2xl bg-brand-navy p-4 text-white">

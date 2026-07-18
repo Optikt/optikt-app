@@ -268,8 +268,6 @@ export function calculateUnitPurchasePriceFromLineTotal(
 	return normalizedTotal / normalizedQuantity;
 }
 
-
-
 export function calculateUnitPurchasePriceAltFromLineTotal(
 	lineTotalAlt: number,
 	quantity: number,
@@ -462,7 +460,7 @@ function calculateNetDraftItemSubtotalAlt(item: PurchaseOrderDraftItem, factor: 
 	return round2(calculateDraftItemSubtotalAlt(item) * factor);
 }
 
-function calculateNetDraftItemTaxAlt(item: PurchaseOrderDraftItem, factor: number): number {
+function _calculateNetDraftItemTaxAlt(item: PurchaseOrderDraftItem, factor: number): number {
 	if (!item.appliesIva) return 0;
 	return round2(calculateNetDraftItemSubtotalAlt(item, factor) * (Number(item.ivaRate || 0) / 100));
 }
@@ -557,12 +555,10 @@ export function calculatePurchaseOrderSummary(
 	const netSubtotal = round2(subtotal - subtotal * (1 - factor));
 	const netTaxAmount = items.reduce((sum, item) => sum + calculateDraftItemTax(item) * factor, 0);
 	const netTotal = round2(netSubtotal + netTaxAmount);
-	const netSubtotalAlt = shouldCalculateAltTotals && subtotalAlt != null
-		? round2(subtotalAlt * factor)
-		: undefined;
-	const netTaxAmountAlt = shouldCalculateAltTotals && taxAmountAlt != null
-		? round2(taxAmountAlt * factor)
-		: undefined;
+	const netSubtotalAlt =
+		shouldCalculateAltTotals && subtotalAlt != null ? round2(subtotalAlt * factor) : undefined;
+	const netTaxAmountAlt =
+		shouldCalculateAltTotals && taxAmountAlt != null ? round2(taxAmountAlt * factor) : undefined;
 	const netTotalAlt =
 		netSubtotalAlt !== undefined && netTaxAmountAlt !== undefined
 			? round2(netSubtotalAlt + netTaxAmountAlt)

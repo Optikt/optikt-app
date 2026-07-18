@@ -218,7 +218,9 @@
 		amountUsdBcv: number;
 	}): number {
 		if (!isNativeSettlement) return 0;
-		const appliedBcv = Number(payment.amountAppliedToDebtUsdBcvAtOrder ?? payment.amountUsdBcv ?? 0);
+		const appliedBcv = Number(
+			payment.amountAppliedToDebtUsdBcvAtOrder ?? payment.amountUsdBcv ?? 0
+		);
 		const actualBcv = Number(payment.amountUsdBcv ?? 0);
 		return Math.round((appliedBcv - actualBcv) * 100) / 100;
 	}

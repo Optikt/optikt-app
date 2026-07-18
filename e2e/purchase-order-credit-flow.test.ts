@@ -208,7 +208,6 @@ async function seedCreditPurchaseOrder(sql: Sql): Promise<string> {
 async function seedUsdtPurchaseOrder(sql: Sql): Promise<string> {
 	const runId = crypto.randomUUID().slice(0, 8);
 	const now = new Date();
-	const today = now.toISOString().slice(0, 10);
 	const dueDate = new Date(now.getTime() + 7 * 86_400_000).toISOString().slice(0, 10);
 	const hashedPassword = await hash(adminPassword, argonOptions);
 

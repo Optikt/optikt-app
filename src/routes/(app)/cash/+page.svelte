@@ -402,7 +402,8 @@
 					<div class="flex h-full flex-col bg-white px-4 py-4">
 						<p class={desktopLabelClass}>Variación cambiaria</p>
 						<p
-							class="mt-2 font-mono text-[1.6rem] leading-none font-semibold tabular-nums {report.exchangeSettlementVariance > 0
+							class="mt-2 font-mono text-[1.6rem] leading-none font-semibold tabular-nums {report.exchangeSettlementVariance >
+							0
 								? 'text-emerald-700'
 								: 'text-red-700'}"
 						>
@@ -806,7 +807,8 @@
 								{formatPrice(row.purchaseDiscountsEarned)}
 							</td>
 							<td
-								class="px-4 py-3 text-right font-mono tabular-nums {row.exchangeSettlementVariance > 0
+								class="px-4 py-3 text-right font-mono tabular-nums {row.exchangeSettlementVariance >
+								0
 									? 'text-emerald-700'
 									: row.exchangeSettlementVariance < 0
 										? 'text-red-700'

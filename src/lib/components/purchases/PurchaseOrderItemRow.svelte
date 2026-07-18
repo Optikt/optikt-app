@@ -25,7 +25,6 @@
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
 	import {
-		sourceCurrencyRequiresRateToVes,
 		getSourceCurrencySymbol,
 		sourcePriceToUsdBcv
 	} from '$lib/shared/purchaseOrderCurrencies';
@@ -55,7 +54,6 @@
 	}: Props = $props();
 
 	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
-	const needsSourceRate = $derived(sourceCurrencyRequiresRateToVes(sourceCurrency));
 	const altSymbol = $derived(getSourceCurrencySymbol(sourceCurrency));
 	const altInputLabel = $derived(`${altSymbol} s/IVA`);
 	const altAriaLabel = $derived(`Costo unitario sin IVA en ${altSymbol}`);
@@ -155,13 +153,6 @@
 
 	function formatDecimalInput(value: number): string {
 		return Number.isFinite(value) ? value.toFixed(2) : '0.00';
-	}
-
-	function formatVes(amount: number): string {
-		return `Bs. ${new Intl.NumberFormat('es-VE', {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		}).format(amount)}`;
 	}
 
 	function formatAlt(amount: number): string {

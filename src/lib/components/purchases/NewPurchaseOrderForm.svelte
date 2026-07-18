@@ -38,7 +38,11 @@
 		type PurchaseOrderDraftZeroValueField,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
-	import { sourceCurrencyRequiresRateToVes, SOURCE_TO_CURRENCY_CODE, sourcePriceToUsdBcv } from '$lib/shared/purchaseOrderCurrencies';
+	import {
+		sourceCurrencyRequiresRateToVes,
+		SOURCE_TO_CURRENCY_CODE,
+		sourcePriceToUsdBcv
+	} from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	type SupplierOption = {
@@ -97,7 +101,9 @@
 	let sourceRateToVes = $state<number>(initialValues?.sourceRateToVes ?? 0);
 	let settlementCurrency = $state<string>(
 		initialValues?.settlementCurrency ??
-			SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+			untrack(
+				() => SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE]
+			) ??
 			'USD_BCV'
 	);
 	let settlementRateToVes = $state<number>(initialValues?.settlementRateToVes ?? 0);
@@ -197,7 +203,8 @@
 	$effect(() => {
 		if (!settlementManuallyChanged) {
 			settlementCurrency =
-				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ?? 'USD_BCV';
+				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+				'USD_BCV';
 		}
 	});
 
@@ -499,10 +506,14 @@
 				</div>
 
 				<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-					<label class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+					<label
+						for="settlement-currency"
+						class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+					>
 						Moneda de obligación
 					</label>
 					<select
+						id="settlement-currency"
 						class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
 						bind:value={settlementCurrency}
 						onchange={() => (settlementManuallyChanged = true)}
@@ -514,10 +525,14 @@
 						<option value="VES">Bs. (Bolívares)</option>
 					</select>
 					{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
-						<label class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+						<label
+							for="settlement-rate"
+							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+						>
 							Tasa {settlementCurrency}
 						</label>
 						<input
+							id="settlement-rate"
 							type="number"
 							bind:value={settlementRateToVes}
 							class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"

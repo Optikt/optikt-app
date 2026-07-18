@@ -429,99 +429,106 @@ export async function getDailyBreakdown(
 	const { from, to } = args;
 	const dayKey = (d: unknown) => sql<string>`to_char(${d}, 'YYYY-MM-DD')`;
 
-	const [revenueRows, retainedRows, collectedRows, cogsRows, expensesRows, purchaseDiscountRows, exchangeVarianceRows] =
-		await Promise.all([
-			executor
-				.select({
-					day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
-					total: sum(sales.total),
-					cnt: count()
-				})
-				.from(sales)
-				.where(
-					and(
-						isNull(sales.deletedAt),
-						sql`${sales.status} = 'COMPLETED'`,
-						isNotNull(sales.completedAt),
-						gte(sales.completedAt, from),
-						lte(sales.completedAt, to)
-					)
+	const [
+		revenueRows,
+		retainedRows,
+		collectedRows,
+		cogsRows,
+		expensesRows,
+		purchaseDiscountRows,
+		exchangeVarianceRows
+	] = await Promise.all([
+		executor
+			.select({
+				day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
+				total: sum(sales.total),
+				cnt: count()
+			})
+			.from(sales)
+			.where(
+				and(
+					isNull(sales.deletedAt),
+					sql`${sales.status} = 'COMPLETED'`,
+					isNotNull(sales.completedAt),
+					gte(sales.completedAt, from),
+					lte(sales.completedAt, to)
 				)
-				.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
+			)
+			.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
 
-			executor
-				.select({
-					day: dayKey(sql`date_trunc('day', ${sales.cancelledAt})`),
-					total: sum(sales.refundAmount)
-				})
-				.from(sales)
-				.where(
-					and(
-						isNull(sales.deletedAt),
-						sql`${sales.status} = 'CANCELLED'`,
-						sql`${sales.refundStatus} = 'RETAINED'`,
-						isNotNull(sales.cancelledAt),
-						gte(sales.cancelledAt, from),
-						lte(sales.cancelledAt, to)
-					)
+		executor
+			.select({
+				day: dayKey(sql`date_trunc('day', ${sales.cancelledAt})`),
+				total: sum(sales.refundAmount)
+			})
+			.from(sales)
+			.where(
+				and(
+					isNull(sales.deletedAt),
+					sql`${sales.status} = 'CANCELLED'`,
+					sql`${sales.refundStatus} = 'RETAINED'`,
+					isNotNull(sales.cancelledAt),
+					gte(sales.cancelledAt, from),
+					lte(sales.cancelledAt, to)
 				)
-				.groupBy(sql`date_trunc('day', ${sales.cancelledAt})`),
+			)
+			.groupBy(sql`date_trunc('day', ${sales.cancelledAt})`),
 
-			executor
-				.select({
-					day: dayKey(sql`date_trunc('day', ${salePayments.paymentDate})`),
-					total: sum(salePayments.amountBcvUsd)
-				})
-				.from(salePayments)
-				.innerJoin(sales, eq(salePayments.saleId, sales.id))
-				.where(
-					and(
-						isNull(salePayments.voidedAt),
-						isNull(sales.deletedAt),
-						gte(salePayments.paymentDate, from),
-						lte(salePayments.paymentDate, to)
-					)
+		executor
+			.select({
+				day: dayKey(sql`date_trunc('day', ${salePayments.paymentDate})`),
+				total: sum(salePayments.amountBcvUsd)
+			})
+			.from(salePayments)
+			.innerJoin(sales, eq(salePayments.saleId, sales.id))
+			.where(
+				and(
+					isNull(salePayments.voidedAt),
+					isNull(sales.deletedAt),
+					gte(salePayments.paymentDate, from),
+					lte(salePayments.paymentDate, to)
 				)
-				.groupBy(sql`date_trunc('day', ${salePayments.paymentDate})`),
+			)
+			.groupBy(sql`date_trunc('day', ${salePayments.paymentDate})`),
 
-			executor
-				.select({
-					day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
-					total: sum(saleItems.snapshotCostTotal)
-				})
-				.from(saleItems)
-				.innerJoin(sales, eq(saleItems.saleId, sales.id))
-				.where(
-					and(
-						isNull(sales.deletedAt),
-						isNull(saleItems.deletedAt),
-						sql`${sales.status} = 'COMPLETED'`,
-						isNotNull(sales.completedAt),
-						gte(sales.completedAt, from),
-						lte(sales.completedAt, to),
-						isNotNull(saleItems.snapshotCostTotal)
-					)
+		executor
+			.select({
+				day: dayKey(sql`date_trunc('day', ${sales.completedAt})`),
+				total: sum(saleItems.snapshotCostTotal)
+			})
+			.from(saleItems)
+			.innerJoin(sales, eq(saleItems.saleId, sales.id))
+			.where(
+				and(
+					isNull(sales.deletedAt),
+					isNull(saleItems.deletedAt),
+					sql`${sales.status} = 'COMPLETED'`,
+					isNotNull(sales.completedAt),
+					gte(sales.completedAt, from),
+					lte(sales.completedAt, to),
+					isNotNull(saleItems.snapshotCostTotal)
 				)
-				.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
+			)
+			.groupBy(sql`date_trunc('day', ${sales.completedAt})`),
 
-			executor
-				.select({
-					day: dayKey(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
-					total: sum(cashExpenses.amountUsd)
-				})
-				.from(cashExpenses)
-				.where(
-					and(
-						isNull(cashExpenses.voidedAt),
-						gte(cashExpenses.expenseDate, from),
-						lte(cashExpenses.expenseDate, to)
-					)
+		executor
+			.select({
+				day: dayKey(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
+				total: sum(cashExpenses.amountUsd)
+			})
+			.from(cashExpenses)
+			.where(
+				and(
+					isNull(cashExpenses.voidedAt),
+					gte(cashExpenses.expenseDate, from),
+					lte(cashExpenses.expenseDate, to)
 				)
-				.groupBy(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
+			)
+			.groupBy(sql`date_trunc('day', ${cashExpenses.expenseDate})`),
 
-			getPurchaseDiscountEarnedRows(args, executor),
-			getExchangeVarianceRows(args, executor)
-		]);
+		getPurchaseDiscountEarnedRows(args, executor),
+		getExchangeVarianceRows(args, executor)
+	]);
 
 	type Bucket = {
 		date: string;

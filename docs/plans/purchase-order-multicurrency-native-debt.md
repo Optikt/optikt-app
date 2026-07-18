@@ -175,15 +175,15 @@ USDT y PayPal se habilitan al usuario solo cuando la fase 4A esté completa (pag
 
 ## Estado de implementación
 
-| Fase | Estado | Notas |
-|------|--------|-------|
-| 0. Contrato de negocio | ✅ | Ejemplos operativos y reglas definidas |
-| 1. Modelo de datos | ✅ | Migración 0031 aplicada, campos en purchase_orders, payments y benefits |
-| 2. Motor de dominio | ✅ | purchaseOrderCurrencies, balance nativo, variación, Zod schemas |
-| 3. Persistencia | ✅ | Queries, remote functions, +page.server.ts |
-| 4A. UI de compras | ✅ | Formulario, balance card, payments panel, detail page |
-| 4B. Dashboard y Caja | ✅ | Widget agrupa por moneda, variación en CashReport |
-| 5. E2E y docs | ✅ | E2E test USDT, docs/purchase-multicurrency.md |
+| Fase                   | Estado | Notas                                                                   |
+| ---------------------- | ------ | ----------------------------------------------------------------------- |
+| 0. Contrato de negocio | ✅     | Ejemplos operativos y reglas definidas                                  |
+| 1. Modelo de datos     | ✅     | Migración 0031 aplicada, campos en purchase_orders, payments y benefits |
+| 2. Motor de dominio    | ✅     | purchaseOrderCurrencies, balance nativo, variación, Zod schemas         |
+| 3. Persistencia        | ✅     | Queries, remote functions, +page.server.ts                              |
+| 4A. UI de compras      | ✅     | Formulario, balance card, payments panel, detail page                   |
+| 4B. Dashboard y Caja   | ✅     | Widget agrupa por moneda, variación en CashReport                       |
+| 5. E2E y docs          | ✅     | E2E test USDT, docs/purchase-multicurrency.md                           |
 
 ### Diferido
 

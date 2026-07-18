@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { FileText } from '@lucide/svelte';
 	import SelectInput from '$lib/components/ui/SelectInput.svelte';
-	import {
-		PurchaseDocumentType,
-		PurchaseSourceCurrency,
-		getPurchaseDocumentTypeLabel
-	} from '$lib/shared/enums';
+	import { PurchaseDocumentType, getPurchaseDocumentTypeLabel } from '$lib/shared/enums';
 	import {
 		sourceCurrencyRequiresRateToVes,
 		getSourceCurrencySymbol

@@ -4,15 +4,16 @@
 
 Una orden de compra tiene **tres conceptos separados**:
 
-| Concepto | Campo | Ejemplo |
-|----------|-------|---------|
-| **Costo de inventario** (FIFO) | `purchase_order_items.unitPurchasePrice` | `$86,90` USD-BCV |
-| **Moneda de la factura** | `purchase_orders.sourceCurrency` | USDT |
-| **Deuda contractual** (lo que se le debe al proveedor) | `purchase_orders.settlementCurrency` | USDT |
+| Concepto                                               | Campo                                    | Ejemplo          |
+| ------------------------------------------------------ | ---------------------------------------- | ---------------- |
+| **Costo de inventario** (FIFO)                         | `purchase_order_items.unitPurchasePrice` | `$86,90` USD-BCV |
+| **Moneda de la factura**                               | `purchase_orders.sourceCurrency`         | USDT             |
+| **Deuda contractual** (lo que se le debe al proveedor) | `purchase_orders.settlementCurrency`     | USDT             |
 
 ### Por qué separarlos
 
 En Venezuela los productos se venden a tasa BCV por ley (USD-BCV), pero los proveedores pueden cobrar en:
+
 - USD BCV
 - Bolívares (VES)
 - EUR
@@ -25,6 +26,7 @@ La deuda se conserva en su moneda original.
 ### Campos principales
 
 **`purchase_orders`:**
+
 - `sourceCurrency` — moneda en que está expresada la factura
 - `sourceRateToVes` — tasa Bs/unidad para convertir la moneda fuente a Bs
 - `settlementCurrency` — moneda que exige el proveedor (default = source)
@@ -34,10 +36,12 @@ La deuda se conserva en su moneda original.
 - `settlementDebtAmountUsdBcvAtOrder` — referencia BCV de la deuda al emitir la orden
 
 **`purchase_order_items`:**
+
 - `unitPurchasePrice` — precio unitario en USD-BCV (costo inventario)
 - `unitPurchasePriceAlt` — precio unitario en la moneda de la factura
 
 **`purchase_order_payments`:**
+
 - `amount` — monto ingresado en la moneda de pago
 - `amountBs` — equivalente en Bs
 - `amountUsdBcv` — equivalente en USD BCV
@@ -72,6 +76,7 @@ $$V = \text{valor BCV original del abono} - \text{valor BCV real pagado}$$
 - `V < 0` → **pérdida** (se pagó más BCV de lo previsto)
 
 La variación se muestra:
+
 - Por pago individual en la pantalla de detalle
 - Agregada mensualmente en Caja/P&L como "Variación cambiaria"
 

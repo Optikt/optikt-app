@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ArrowRight, CalendarClock, CircleDollarSign } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { PurchaseOrderDueBadge } from '$lib/components/ui';
 	import { CurrencyCode } from '$lib/shared/enums';
 	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
@@ -16,7 +17,7 @@
 	const overdueCount = $derived(dues.filter((due) => due.dueStatus.kind === 'OVERDUE').length);
 
 	const groups = $derived.by(() => {
-		const map = new Map<string, { dues: UpcomingPurchaseOrderDue[]; total: number }>();
+		const map = new SvelteMap<string, { dues: UpcomingPurchaseOrderDue[]; total: number }>();
 		for (const due of dues) {
 			const currency = due.balance.settlementCurrency ?? CurrencyCode.USD_BCV;
 			let group = map.get(currency);
@@ -74,7 +75,7 @@
 	{:else}
 		{#if groups.length > 1}
 			<div class="mb-4 space-y-2">
-				{#each groups as [currency, group]}
+				{#each groups as [currency, group] (currency)}
 					<div
 						class="flex items-center justify-between rounded-xl bg-surface-container-low px-4 py-2"
 					>
@@ -85,7 +86,8 @@
 							{currency === CurrencyCode.USD_BCV ? 'USD BCV' : currency}
 						</span>
 						<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-							{getSettlementCurrencySymbol(currency)} {group.total.toFixed(2)}
+							{getSettlementCurrencySymbol(currency)}
+							{group.total.toFixed(2)}
 						</span>
 					</div>
 				{/each}
