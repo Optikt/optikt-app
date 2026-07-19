@@ -42,11 +42,11 @@
 		{ key: 'order', label: 'N° orden' },
 		{ key: 'supplier', label: 'Proveedor' },
 		{ key: 'date', label: 'Fecha' },
-		{ key: 'document', label: 'Documento', hiddenClass: 'hidden xl:table-cell' },
+		{ key: 'document', label: 'Documento', hiddenClass: 'hidden 2xl:table-cell' },
 		{ key: 'rate', label: 'Tasa BCV', hiddenClass: 'hidden 2xl:table-cell' },
 		{ key: 'status', label: 'Estado' },
 		{ key: 'balance', label: 'Saldo', align: 'right' as const },
-		{ key: 'createdBy', label: 'Creado por', hiddenClass: 'hidden xl:table-cell' },
+		{ key: 'createdBy', label: 'Creado por', hiddenClass: 'hidden 2xl:table-cell' },
 		{ key: 'actions', label: 'Acciones', align: 'right' as const }
 	];
 
@@ -126,27 +126,22 @@
 				: ''}"
 			onclick={() => onView?.(purchaseOrder)}
 		>
-			<td class="px-3 py-3 whitespace-nowrap">
+			<td class="px-2 py-2.5 whitespace-nowrap">
 				<span class="font-mono text-sm font-semibold text-brand-navy">
 					{formatOrderNumber(purchaseOrder.orderNumber)}
 				</span>
 			</td>
-			<td class="px-3 py-3">
-				<div class="flex items-center gap-2">
-					<div
-						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-info-container text-[10px] font-bold text-on-info-container"
-					>
-						{getInitials(purchaseOrder.supplier?.name)}
-					</div>
-					<span class="min-w-0 truncate text-sm font-medium text-on-surface">
+			<td class="max-w-[180px] px-2 py-2.5">
+				<div class="min-w-0">
+					<span class="block truncate text-sm font-medium text-on-surface">
 						{purchaseOrder.supplier?.name ?? 'Sin proveedor'}
 					</span>
 				</div>
 			</td>
-			<td class="px-3 py-3 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
+			<td class="px-2 py-2.5 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
 				{shortDate(purchaseOrder.orderDate)}
 			</td>
-			<td class="px-3 py-3 hidden xl:table-cell">
+			<td class="px-2 py-2.5 hidden 2xl:table-cell">
 				<div
 					class="max-w-[7rem] truncate text-sm"
 					title="{documentLabel(purchaseOrder)}: {documentNumber(purchaseOrder)}"
@@ -170,12 +165,12 @@
 					{/if}
 				</div>
 			</td>
-			<td class="hidden px-3 py-3 2xl:table-cell">
+			<td class="hidden px-2 py-2.5 2xl:table-cell">
 				<span class="font-mono text-sm text-on-surface-variant tabular-nums">
 					{formatCurrency(purchaseOrder.bcvRate)} Bs
 				</span>
 			</td>
-			<td class="px-3 py-3">
+			<td class="px-2 py-2.5">
 				<div class="flex flex-col items-start gap-1">
 					<PurchaseOrderStatusBadge
 						status={purchaseOrder.status}
@@ -184,12 +179,12 @@
 					<PurchaseOrderDueBadge dueStatus={purchaseOrder.dueStatus} />
 				</div>
 			</td>
-			<td class="px-3 py-3 text-right">
+			<td class="px-2 py-2.5 text-right">
 				<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
 					{pendingBalanceLabel(purchaseOrder)}
 				</span>
 			</td>
-			<td class="px-3 py-3 hidden xl:table-cell">
+			<td class="hidden px-2 py-2.5 2xl:table-cell">
 				<div class="flex items-center gap-2" title={creatorName}>
 					<div
 						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-navy text-[10px] font-bold text-white"
@@ -201,16 +196,16 @@
 					</span>
 				</div>
 			</td>
-			<td class="px-3 py-3 text-right">
+			<td class="px-2 py-2.5 text-right">
 				{#if viewHref}
 					<a
 						href={resolve(viewHref)}
 						onclick={(event) => event.stopPropagation()}
-						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 xl:w-auto xl:px-3 xl:gap-1.5"
+						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 2xl:w-auto 2xl:gap-1.5 2xl:px-3"
 						title="Ver detalle"
 					>
 						<Eye class="h-3.5 w-3.5" />
-						<span class="hidden xl:inline">Ver</span>
+						<span class="hidden 2xl:inline">Ver</span>
 					</a>
 				{:else}
 					<button
@@ -219,11 +214,11 @@
 							event.stopPropagation();
 							onView?.(purchaseOrder);
 						}}
-						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 xl:w-auto xl:px-3 xl:gap-1.5"
+						class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-info-container text-xs font-semibold text-on-info-container transition-colors hover:bg-brand-blue-light/40 2xl:w-auto 2xl:gap-1.5 2xl:px-3"
 						title="Ver detalle"
 					>
 						<Eye class="h-3.5 w-3.5" />
-						<span class="hidden xl:inline">Ver</span>
+						<span class="hidden 2xl:inline">Ver</span>
 					</button>
 				{/if}
 			</td>

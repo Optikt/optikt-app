@@ -4,7 +4,12 @@
 	import { page } from '$app/state';
 	import { ArrowRightLeft, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { PurchaseFilterBar, PurchaseOrdersTable } from '$lib/components/purchases';
+	import {
+		PurchaseFilterBar,
+		PurchaseOrdersTable,
+		PurchaseStatsCards
+	} from '$lib/components/purchases';
+	import { PageHeader } from '$lib/components/ui';
 	import { listPurchaseOrders } from '$lib/remote/purchaseOrders.remote';
 	import { PurchaseOrderStatus, PurchaseOrderUiState } from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
@@ -213,58 +218,33 @@
 	<title>Órdenes de Compra - Optikt</title>
 </svelte:head>
 
-<div class="space-y-3 p-3">
-	<header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-		<div class="min-w-0">
-			<h1 class="text-xl font-bold text-brand-navy">Órdenes de Compra</h1>
+<div class="flex flex-col gap-3 p-4">
+	<div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+		<div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
+			<PageHeader title="Órdenes de Compra" />
 			{#if stats}
-				<div class="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-					<span
-						class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700"
-					>
-						{stats.confirmed}
-						<span class="font-normal text-emerald-600">confirmadas</span>
-					</span>
-					<span
-						class="inline-flex items-center gap-1 rounded-md bg-orange-100 px-1.5 py-0.5 text-[11px] font-semibold text-orange-700"
-					>
-						{stats.draftInProgress}
-						<span class="font-normal text-orange-600">en prep.</span>
-					</span>
-					<span
-						class="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700"
-					>
-						{stats.draftReady}
-						<span class="font-normal text-amber-600">listas</span>
-					</span>
-					<span
-						class="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-700"
-					>
-						{formatPrice(stats.monthlySpend)}
-						<span class="font-normal text-blue-600 hidden xl:inline">recibido</span>
-					</span>
-				</div>
+				<PurchaseStatsCards {stats} />
 			{/if}
 		</div>
 		<div class="flex shrink-0 items-center gap-2">
 			<button
 				type="button"
 				onclick={openMovements}
-				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-brand-navy shadow-sm ring-1 ring-outline-variant/30 transition-colors hover:bg-surface-container-high"
+				class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-1.5 text-xs font-bold text-brand-navy shadow-sm ring-1 ring-outline-variant/30 transition-all hover:bg-surface-container-high sm:gap-2 sm:px-4 sm:text-sm"
 			>
-				<ArrowRightLeft class="h-4 w-4" />
-				Movimientos
+				<ArrowRightLeft size={16} />
+				MOVIMIENTOS
 			</button>
 			<button
 				type="button"
 				onclick={openCreate}
-				class="inline-flex shrink-0 items-center gap-2 rounded-lg bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark"
+				class="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-gold px-3 py-1.5 text-xs font-bold text-brand-navy shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md sm:gap-2 sm:px-4 sm:text-sm"
 			>
-				<Plus class="h-4 w-4" />
-				Nueva orden
+				<Plus size={16} />
+				NUEVA ORDEN
 			</button>
 		</div>
-	</header>
+	</div>
 
 	<PurchaseFilterBar
 		{search}

@@ -95,12 +95,15 @@
 			(orderBy !== 'orderNumber' ? 1 : 0) +
 			(orderSort !== 'desc' ? 1 : 0)
 	);
+
+	const selectClass =
+		'rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 </script>
 
 <section class="glass-card min-w-0 bg-surface-container-low p-2 lg:p-3">
-	<!-- Single row: search + filters compact -->
-	<div class="flex flex-wrap items-center gap-2">
-		<div class="relative min-w-0 flex-1">
+	<!-- Row 1: Search + quick filters -->
+	<div class="flex items-center gap-2">
+		<div class="relative min-w-0 flex-[3]">
 			<Search class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
 			<input
 				id="purchase-orders-search"
@@ -113,61 +116,87 @@
 			/>
 		</div>
 
-		<!-- Desktop filters: visible on sm+ -->
-		<select
-			id="purchase-status-filter"
-			name="purchase-status-filter"
-			value={statusFilter}
-			onchange={(e) => onStatusChange(e.currentTarget.value as PurchaseOrderStatusFilter)}
-			class="hidden rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:inline-block"
-		>
-			<option value="">Estado</option>
-			{#each statusFilterOptions as option (option.value)}
-				<option value={option.value}>{option.label}</option>
-			{/each}
-		</select>
+		<!-- Desktop inline filters (hidden on mobile) -->
+		<div class="hidden lg:flex items-center gap-2">
+			<select
+				id="purchase-status-filter"
+				name="purchase-status-filter"
+				value={statusFilter}
+				onchange={(e) => onStatusChange(e.currentTarget.value as PurchaseOrderStatusFilter)}
+				class="{selectClass} w-32"
+			>
+				<option value="">Estado</option>
+				{#each statusFilterOptions as option (option.value)}
+					<option value={option.value}>{option.label}</option>
+				{/each}
+			</select>
 
-		<select
-			id="purchase-supplier-filter"
-			name="purchase-supplier-filter"
-			value={supplierFilter}
-			onchange={(e) => onSupplierChange(e.currentTarget.value)}
-			class="hidden rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:inline-block"
-		>
-			<option value="">Proveedor</option>
-			{#each suppliers as supplier (supplier.id)}
-				<option value={supplier.id}>{supplier.name}</option>
-			{/each}
-		</select>
+			<select
+				id="purchase-supplier-filter"
+				name="purchase-supplier-filter"
+				value={supplierFilter}
+				onchange={(e) => onSupplierChange(e.currentTarget.value)}
+				class="{selectClass} w-36"
+			>
+				<option value="">Proveedor</option>
+				{#each suppliers as supplier (supplier.id)}
+					<option value={supplier.id}>{supplier.name}</option>
+				{/each}
+			</select>
 
+			<button
+				type="button"
+				onclick={onTogglePending}
+				class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors {pendingBalanceFilter
+					? 'bg-brand-navy text-white'
+					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
+				title="Filtrar por saldo pendiente"
+			>
+				<Wallet class="h-3.5 w-3.5" />
+			</button>
+
+			<button
+				type="button"
+				onclick={onToggleOverdue}
+				class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors {overdueBalanceFilter
+					? 'bg-error-container text-on-error-container'
+					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
+				title="Filtrar por vencidas"
+			>
+				<TriangleAlert class="h-3.5 w-3.5" />
+			</button>
+		</div>
+
+		<!-- Mobile filter toggle (icon only) -->
 		<button
 			type="button"
-			onclick={onTogglePending}
-			class="h-9 w-9 items-center justify-center rounded-lg transition-colors inline-flex {pendingBalanceFilter
-				? 'bg-brand-navy text-white'
+			onclick={() => (mobileFiltersOpen = !mobileFiltersOpen)}
+			class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors lg:hidden {activeFilterCount >
+			0
+				? 'bg-brand-blue text-white'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-			title="Filtrar por saldo pendiente"
+			aria-expanded={mobileFiltersOpen}
+			aria-label="Mostrar filtros"
 		>
-			<Wallet class="h-3.5 w-3.5" />
+			<SlidersHorizontal class="h-3.5 w-3.5" />
+			{#if activeFilterCount > 0}
+				<span
+					class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-gold px-1 text-[9px] font-bold text-brand-navy"
+				>
+					{activeFilterCount}
+				</span>
+			{/if}
 		</button>
+	</div>
 
-		<button
-			type="button"
-			onclick={onToggleOverdue}
-			class="h-9 w-9 items-center justify-center rounded-lg transition-colors inline-flex {overdueBalanceFilter
-				? 'bg-error-container text-on-error-container'
-				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-			title="Filtrar por vencidas"
-		>
-			<TriangleAlert class="h-3.5 w-3.5" />
-		</button>
-
+	<!-- Row 2: Sort + clear (desktop only) -->
+	<div class="mt-2 hidden lg:flex items-center gap-2">
 		<select
 			id="purchase-order-sort-field"
 			name="purchase-order-sort-field"
 			value={orderBy}
 			onchange={(e) => onSortFieldChange(e.currentTarget.value as PurchaseOrderSortField)}
-			class="hidden rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 sm:inline-block"
+			class="{selectClass} w-32"
 			aria-label="Ordenar por"
 		>
 			{#each sortFieldOptions as option (option.value)}
@@ -178,7 +207,7 @@
 		<button
 			type="button"
 			onclick={onToggleSortDirection}
-			class="hidden h-9 w-9 items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest sm:inline-flex"
+			class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest"
 			aria-label={orderSort === 'desc' ? 'Orden descendente' : 'Orden ascendente'}
 		>
 			{#if orderSort === 'desc'}
@@ -192,44 +221,23 @@
 			type="button"
 			onclick={onClearFilters}
 			disabled={!hasActiveFilters}
-			class="h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 inline-flex {hasActiveFilters
+			class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
 				? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
 				: 'bg-surface-container-high text-outline'}"
 			aria-label="Limpiar filtros"
 		>
 			<RotateCcw class="h-3.5 w-3.5" />
 		</button>
-
-		<!-- Mobile filter toggle -->
-		<button
-			type="button"
-			onclick={() => (mobileFiltersOpen = !mobileFiltersOpen)}
-			class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:hidden {activeFilterCount >
-			0
-				? 'bg-brand-blue text-white'
-				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-			aria-expanded={mobileFiltersOpen}
-		>
-			<SlidersHorizontal class="h-3.5 w-3.5" />
-			Filtros
-			{#if activeFilterCount > 0}
-				<span
-					class="flex h-4 min-w-4 items-center justify-center rounded-full bg-white/25 px-1 text-[10px] font-bold"
-				>
-					{activeFilterCount}
-				</span>
-			{/if}
-		</button>
 	</div>
 
 	<!-- Mobile collapsible filters -->
 	{#if mobileFiltersOpen}
-		<div class="mt-2 grid grid-cols-2 gap-2 sm:hidden">
+		<div class="mt-2 grid grid-cols-2 gap-2 lg:hidden">
 			<select
 				id="purchase-status-filter-m"
 				value={statusFilter}
 				onchange={(e) => onStatusChange(e.currentTarget.value as PurchaseOrderStatusFilter)}
-				class="rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm font-medium text-on-surface focus:border-l-2 focus:border-l-brand-blue focus:ring-0"
+				class={selectClass}
 			>
 				<option value="">Estado</option>
 				{#each statusFilterOptions as option (option.value)}
@@ -241,7 +249,7 @@
 				id="purchase-supplier-filter-m"
 				value={supplierFilter}
 				onchange={(e) => onSupplierChange(e.currentTarget.value)}
-				class="rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm font-medium text-on-surface focus:border-l-2 focus:border-l-brand-blue focus:ring-0"
+				class={selectClass}
 			>
 				<option value="">Proveedor</option>
 				{#each suppliers as supplier (supplier.id)}
@@ -252,29 +260,29 @@
 			<button
 				type="button"
 				onclick={onTogglePending}
-				class="flex h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors {pendingBalanceFilter
+				class="flex h-9 items-center justify-center rounded-lg transition-colors {pendingBalanceFilter
 					? 'bg-brand-navy text-white'
 					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
 			>
 				<Wallet class="h-3.5 w-3.5" />
-				Pendiente
+				<span class="ml-1 text-sm">Pendiente</span>
 			</button>
 
 			<button
 				type="button"
 				onclick={onToggleOverdue}
-				class="flex h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors {overdueBalanceFilter
+				class="flex h-9 items-center justify-center rounded-lg transition-colors {overdueBalanceFilter
 					? 'bg-error-container text-on-error-container'
 					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
 			>
 				<TriangleAlert class="h-3.5 w-3.5" />
-				Vencidas
+				<span class="ml-1 text-sm">Vencidas</span>
 			</button>
 
 			<select
 				value={orderBy}
 				onchange={(e) => onSortFieldChange(e.currentTarget.value as PurchaseOrderSortField)}
-				class="rounded-lg border-none bg-surface-container-high px-2.5 py-2 text-sm font-medium text-on-surface focus:border-l-2 focus:border-l-brand-blue focus:ring-0"
+				class={selectClass}
 				aria-label="Ordenar por"
 			>
 				{#each sortFieldOptions as option (option.value)}

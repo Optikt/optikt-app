@@ -12,70 +12,25 @@
 	let { stats }: { stats: PurchaseStats } = $props();
 </script>
 
-<dl class="grid grid-cols-2 gap-2 text-sm lg:grid-cols-4 lg:gap-4">
-	<!-- Confirmed -->
-	<div
-		class="flex flex-col items-start gap-1 rounded-lg bg-surface-container-low px-3 py-2 lg:flex-row lg:items-center lg:gap-2 lg:px-3.5 lg:py-2.5"
-	>
-		<CheckCircle2 class="h-4 w-4 shrink-0 text-success lg:h-5 lg:w-5" />
-		<div class="min-w-0">
-			<dd class="font-heading text-xl leading-tight font-bold text-brand-navy lg:text-xl">
-				{stats.confirmed.toLocaleString('es-VE')}
-			</dd>
-			<dt
-				class="text-[10px] font-medium tracking-wide text-on-surface-variant uppercase lg:text-[11px]"
-			>
-				Confirmadas
-			</dt>
-		</div>
+<dl class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+	<div class="inline-flex items-center gap-1 whitespace-nowrap">
+		<CheckCircle2 class="h-3 w-3 text-success" />
+		<dt class="text-on-surface-variant">Confirmadas:</dt>
+		<dd class="font-semibold text-brand-navy">{stats.confirmed}</dd>
 	</div>
-
-	<!-- In Preparation -->
-	<div
-		class="flex flex-col items-start gap-1 rounded-lg bg-surface-container-low px-3 py-2 lg:flex-row lg:items-center lg:gap-2 lg:px-3.5 lg:py-2.5"
-	>
-		<FileClock class="h-4 w-4 shrink-0 text-on-surface-variant lg:h-5 lg:w-5" />
-		<div class="min-w-0">
-			<dd class="font-heading text-xl leading-tight font-bold text-brand-navy lg:text-xl">
-				{stats.draftInProgress.toLocaleString('es-VE')}
-			</dd>
-			<dt
-				class="text-[10px] font-medium tracking-wide text-on-surface-variant uppercase lg:text-[11px]"
-			>
-				En preparación
-			</dt>
-		</div>
+	<div class="inline-flex items-center gap-1 whitespace-nowrap">
+		<FileClock class="h-3 w-3 text-on-surface-variant" />
+		<dt class="text-on-surface-variant">En prep.:</dt>
+		<dd class="font-semibold text-brand-navy">{stats.draftInProgress}</dd>
 	</div>
-
-	<!-- Ready -->
-	<div
-		class="flex flex-col items-start gap-1 rounded-lg bg-surface-container-low px-3 py-2 lg:flex-row lg:items-center lg:gap-2 lg:px-3.5 lg:py-2.5"
-	>
-		<ClipboardCheck class="h-4 w-4 shrink-0 text-warning lg:h-5 lg:w-5" />
-		<div class="min-w-0">
-			<dd class="font-heading text-xl leading-tight font-bold text-brand-navy lg:text-xl">
-				{stats.draftReady.toLocaleString('es-VE')}
-			</dd>
-			<dt
-				class="text-[10px] font-medium tracking-wide text-on-surface-variant uppercase lg:text-[11px]"
-			>
-				Listas
-			</dt>
-		</div>
+	<div class="inline-flex items-center gap-1 whitespace-nowrap">
+		<ClipboardCheck class="h-3 w-3 text-warning" />
+		<dt class="text-on-surface-variant">Listas:</dt>
+		<dd class="font-semibold text-brand-navy">{stats.draftReady}</dd>
 	</div>
-
-	<!-- Monthly Spend (dark accent) -->
-	<div
-		class="flex flex-col items-start gap-1 rounded-lg bg-brand-navy px-3 py-2 text-white lg:flex-row lg:items-center lg:gap-2 lg:px-3.5 lg:py-2.5"
-	>
-		<Coins class="h-4 w-4 shrink-0 text-brand-gold lg:h-5 lg:w-5" />
-		<div class="min-w-0">
-			<dd class="font-heading text-xl leading-tight font-bold lg:text-xl">
-				{formatPrice(stats.monthlySpend)}
-			</dd>
-			<dt class="text-[10px] font-medium tracking-wide text-white/60 uppercase lg:text-[11px]">
-				Recepción del mes (USD BCV)
-			</dt>
-		</div>
+	<div class="inline-flex items-center gap-1 whitespace-nowrap">
+		<Coins class="h-3 w-3 text-info" />
+		<dt class="text-on-surface-variant">Recibido:</dt>
+		<dd class="font-semibold text-brand-navy">{formatPrice(stats.monthlySpend)}</dd>
 	</div>
 </dl>
