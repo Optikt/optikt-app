@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
-	import { ConfirmModal, PageHeader } from '$lib/components/ui';
+	import { WizardHeader, ConfirmModal } from '$lib/components/ui';
 	import {
 		createPurchaseOrderCmd,
 		savePurchaseOrderDraftCmd
@@ -101,10 +101,12 @@
 	let sourceRateToVes = $state<number>(initialValues?.sourceRateToVes ?? 0);
 	let settlementCurrency = $state<string>(
 		initialValues?.settlementCurrency ??
-			untrack(
-				() => SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE]
-			) ??
-			'USD_BCV'
+			untrack(() =>
+				mode === 'edit'
+					? (SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+						'USD_BCV')
+					: ''
+			)
 	);
 	let settlementRateToVes = $state<number>(initialValues?.settlementRateToVes ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
@@ -137,7 +139,7 @@
 		{ num: 2, label: 'Artículos' },
 		{ num: 3, label: 'Pago' },
 		{ num: 4, label: 'Revisar' }
-	] as const;
+	];
 
 	const stepValid = $derived.by(() => {
 		switch (currentStep) {
@@ -146,7 +148,8 @@
 					Boolean(supplierId) &&
 					Boolean(orderDate) &&
 					Number(bcvRate) > 0 &&
-					String(notes ?? '').trim().length >= 6
+					String(notes ?? '').trim().length >= 6 &&
+					Boolean(settlementCurrency)
 				);
 			case 1:
 				return items.length > 0;
@@ -234,7 +237,7 @@
 
 	let settlementManuallyChanged = $state(false);
 	$effect(() => {
-		if (!settlementManuallyChanged) {
+		if (!settlementManuallyChanged && settlementCurrency !== '') {
 			settlementCurrency =
 				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
 				'USD_BCV';
@@ -441,60 +444,31 @@
 	}
 </script>
 
-<div class="space-y-6 p-6">
-	<PageHeader
+<div class="space-y-3 p-4">
+	<WizardHeader
 		title={isEdit ? 'Editar Orden de Compra' : 'Crear Orden de Compra'}
-		backLabel={isEdit ? 'Volver al detalle' : 'Volver a órdenes'}
-		backOnClick={goBack}
-	/>
-
-	<div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-		<div
-			class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-		>
-			{isEdit ? 'Los cambios se guardan como borrador' : 'Se guarda primero como borrador'}
-		</div>
-		{#if items.length > 0}
-			<div
-				class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-			>
-				{reviewStatus.reviewedCount} / {reviewStatus.totalCount} líneas marcadas
-			</div>
-		{/if}
-	</div>
-
-	<!-- Wizard step indicators -->
-	<div class="flex items-center gap-1 text-xs font-medium">
-		{#each steps as step, i}
-			{#if i > 0}
-				<div class="h-px flex-1 bg-outline-variant/30 {i <= currentStep ? 'bg-brand-gold' : ''}" />
-			{/if}
+		subtitle={currentStep > 0 && supplierId
+			? `Proveedor: ${suppliers.find((s) => s.id === supplierId)?.name ?? '—'} · Moneda: ${settlementCurrency || sourceCurrency} · BCV: ${bcvRate || '—'}${sourceRateToVes > 0 ? ` · ${sourceCurrency}: ${sourceRateToVes}` : ''}`
+			: isEdit
+				? 'Los cambios se guardan como borrador'
+				: undefined}
+		{steps}
+		currentStep={currentStep + 1}
+		canNavigateToStep={(stepNum) => stepNum - 1 < currentStep || stepValid}
+		onStepSelect={(stepNum) => {
+			currentStep = stepNum - 1;
+		}}
+	>
+		{#snippet breadcrumbs()}
 			<button
 				type="button"
-				onclick={() => {
-					if (i <= currentStep || stepValid) currentStep = i;
-				}}
-				class="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors {i ===
-				currentStep
-					? 'bg-brand-navy text-white'
-					: i < currentStep
-						? 'text-brand-gold'
-						: 'text-on-surface-variant'}"
+				onclick={goBack}
+				class="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-brand-blue"
 			>
-				<span
-					class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold {i ===
-					currentStep
-						? 'bg-white/20 text-white'
-						: i < currentStep
-							? 'bg-brand-gold/15 text-brand-gold-dark'
-							: 'bg-surface-container-high text-on-surface-variant'}"
-				>
-					{step.num}
-				</span>
-				<span class="hidden sm:inline">{step.label}</span>
+				← {isEdit ? 'Volver al detalle' : 'Volver a órdenes'}
 			</button>
-		{/each}
-	</div>
+		{/snippet}
+	</WizardHeader>
 
 	<!-- Step content -->
 	{#if currentStep === 0}
@@ -570,6 +544,7 @@
 							bind:value={settlementCurrency}
 							onchange={() => (settlementManuallyChanged = true)}
 						>
+							<option value="" disabled>Seleccionar moneda...</option>
 							<option value="USD_BCV">USD (BCV)</option>
 							<option value="EUR_BCV">EUR (BCV)</option>
 							<option value="USDT">USDT</option>
