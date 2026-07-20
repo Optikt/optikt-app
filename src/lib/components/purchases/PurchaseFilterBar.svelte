@@ -149,7 +149,7 @@
 			title="Filtrar por saldo pendiente"
 		>
 			<Wallet class="h-3.5 w-3.5" />
-			<span class="hidden xl:inline text-[13px]">Pendiente</span>
+			<span class="hidden xl:inline text-sm">Pendiente</span>
 		</button>
 
 		<button
