@@ -102,8 +102,8 @@
 
 <section class="glass-card min-w-0 bg-surface-container-low p-2 lg:p-3">
 	<!-- Row 1: Search + quick filters -->
-	<div class="flex items-center gap-2">
-		<div class="relative min-w-0 flex-[3]">
+	<div class="flex flex-wrap items-center gap-2">
+		<div class="relative min-w-0 flex-[3] basis-48">
 			<Search class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-outline" />
 			<input
 				id="purchase-orders-search"
@@ -116,62 +116,93 @@
 			/>
 		</div>
 
-		<!-- Desktop inline filters (hidden on mobile) -->
-		<div class="hidden lg:flex items-center gap-2">
-			<select
-				id="purchase-status-filter"
-				name="purchase-status-filter"
-				value={statusFilter}
-				onchange={(e) => onStatusChange(e.currentTarget.value as PurchaseOrderStatusFilter)}
-				class="{selectClass} w-32"
-			>
-				<option value="">Estado</option>
-				{#each statusFilterOptions as option (option.value)}
-					<option value={option.value}>{option.label}</option>
-				{/each}
-			</select>
+		<select
+			id="purchase-status-filter"
+			value={statusFilter}
+			onchange={(e) => onStatusChange(e.currentTarget.value as PurchaseOrderStatusFilter)}
+			class="{selectClass} w-32 hidden lg:inline-block"
+		>
+			<option value="">Estado</option>
+			{#each statusFilterOptions as option (option.value)}
+				<option value={option.value}>{option.label}</option>
+			{/each}
+		</select>
 
-			<select
-				id="purchase-supplier-filter"
-				name="purchase-supplier-filter"
-				value={supplierFilter}
-				onchange={(e) => onSupplierChange(e.currentTarget.value)}
-				class="{selectClass} w-36"
-			>
-				<option value="">Proveedor</option>
-				{#each suppliers as supplier (supplier.id)}
-					<option value={supplier.id}>{supplier.name}</option>
-				{/each}
-			</select>
+		<select
+			id="purchase-supplier-filter"
+			value={supplierFilter}
+			onchange={(e) => onSupplierChange(e.currentTarget.value)}
+			class="{selectClass} w-36 hidden lg:inline-block"
+		>
+			<option value="">Proveedor</option>
+			{#each suppliers as supplier (supplier.id)}
+				<option value={supplier.id}>{supplier.name}</option>
+			{/each}
+		</select>
 
-			<button
-				type="button"
-				onclick={onTogglePending}
-				class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors {pendingBalanceFilter
-					? 'bg-brand-navy text-white'
-					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-				title="Filtrar por saldo pendiente"
-			>
-				<Wallet class="h-3.5 w-3.5" />
-			</button>
+		<button
+			type="button"
+			onclick={onTogglePending}
+			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg transition-colors {pendingBalanceFilter
+				? 'bg-brand-navy text-white'
+				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
+			title="Filtrar por saldo pendiente"
+		>
+			<Wallet class="h-3.5 w-3.5" />
+		</button>
 
-			<button
-				type="button"
-				onclick={onToggleOverdue}
-				class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors {overdueBalanceFilter
-					? 'bg-error-container text-on-error-container'
-					: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
-				title="Filtrar por vencidas"
-			>
-				<TriangleAlert class="h-3.5 w-3.5" />
-			</button>
-		</div>
+		<button
+			type="button"
+			onclick={onToggleOverdue}
+			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg transition-colors {overdueBalanceFilter
+				? 'bg-error-container text-on-error-container'
+				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
+			title="Filtrar por vencidas"
+		>
+			<TriangleAlert class="h-3.5 w-3.5" />
+		</button>
 
-		<!-- Mobile filter toggle (icon only) -->
+		<select
+			id="purchase-order-sort-field"
+			value={orderBy}
+			onchange={(e) => onSortFieldChange(e.currentTarget.value as PurchaseOrderSortField)}
+			class="{selectClass} w-32 hidden lg:inline-block"
+			aria-label="Ordenar por"
+		>
+			{#each sortFieldOptions as option (option.value)}
+				<option value={option.value}>{option.label}</option>
+			{/each}
+		</select>
+
+		<button
+			type="button"
+			onclick={onToggleSortDirection}
+			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest"
+			aria-label={orderSort === 'desc' ? 'Orden descendente' : 'Orden ascendente'}
+		>
+			{#if orderSort === 'desc'}
+				<ArrowDownWideNarrow class="h-3.5 w-3.5" />
+			{:else}
+				<ArrowUpWideNarrow class="h-3.5 w-3.5" />
+			{/if}
+		</button>
+
+		<button
+			type="button"
+			onclick={onClearFilters}
+			disabled={!hasActiveFilters}
+			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
+				? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
+				: 'bg-surface-container-high text-outline'}"
+			aria-label="Limpiar filtros"
+		>
+			<RotateCcw class="h-3.5 w-3.5" />
+		</button>
+
 		<button
 			type="button"
 			onclick={() => (mobileFiltersOpen = !mobileFiltersOpen)}
-			class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors lg:hidden {activeFilterCount >
+			class="relative inline-flex lg:hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors {activeFilterCount >
 			0
 				? 'bg-brand-blue text-white'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
@@ -186,47 +217,6 @@
 					{activeFilterCount}
 				</span>
 			{/if}
-		</button>
-	</div>
-
-	<!-- Row 2: Sort + clear (desktop only) -->
-	<div class="mt-2 hidden lg:flex items-center gap-2">
-		<select
-			id="purchase-order-sort-field"
-			name="purchase-order-sort-field"
-			value={orderBy}
-			onchange={(e) => onSortFieldChange(e.currentTarget.value as PurchaseOrderSortField)}
-			class="{selectClass} w-32"
-			aria-label="Ordenar por"
-		>
-			{#each sortFieldOptions as option (option.value)}
-				<option value={option.value}>{option.label}</option>
-			{/each}
-		</select>
-
-		<button
-			type="button"
-			onclick={onToggleSortDirection}
-			class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest"
-			aria-label={orderSort === 'desc' ? 'Orden descendente' : 'Orden ascendente'}
-		>
-			{#if orderSort === 'desc'}
-				<ArrowDownWideNarrow class="h-3.5 w-3.5" />
-			{:else}
-				<ArrowUpWideNarrow class="h-3.5 w-3.5" />
-			{/if}
-		</button>
-
-		<button
-			type="button"
-			onclick={onClearFilters}
-			disabled={!hasActiveFilters}
-			class="flex h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
-				? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
-				: 'bg-surface-container-high text-outline'}"
-			aria-label="Limpiar filtros"
-		>
-			<RotateCcw class="h-3.5 w-3.5" />
 		</button>
 	</div>
 
