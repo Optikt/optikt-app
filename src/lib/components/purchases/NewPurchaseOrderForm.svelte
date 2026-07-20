@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AlertTriangle, Save, X } from '@lucide/svelte';
+	import { AlertTriangle, Save } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
@@ -128,6 +128,40 @@
 	let showPricingModeConfirmModal = $state(false);
 	let pendingSourceCurrency = $state<string | null>(null);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
+	let currentStep = $state(0);
+
+	const saving = $derived(savingAction !== null);
+
+	const steps = [
+		{ num: 1, label: 'Documento' },
+		{ num: 2, label: 'Artículos' },
+		{ num: 3, label: 'Pago' },
+		{ num: 4, label: 'Revisar' }
+	] as const;
+
+	const stepValid = $derived.by(() => {
+		switch (currentStep) {
+			case 0:
+				return (
+					Boolean(supplierId) &&
+					Boolean(orderDate) &&
+					Number(bcvRate) > 0 &&
+					String(notes ?? '').trim().length >= 6
+				);
+			case 1:
+				return items.length > 0;
+			case 2:
+				return true;
+			case 3:
+				return true;
+			default:
+				return false;
+		}
+	});
+
+	const canNext = $derived(currentStep < 3 && stepValid && !saving);
+	const canBack = $derived(currentStep > 0);
+	const isLastStep = $derived(currentStep === 3);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
 		type: discountType,
@@ -137,7 +171,6 @@
 	const summary = $derived(calculatePurchaseOrderSummary(items, discount, bcvRate));
 	const supplierLocked = $derived(items.length > 0);
 	const isEdit = $derived(mode === 'edit');
-	const saving = $derived(savingAction !== null);
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
 	const unreviewedWarningLines = $derived(
 		items
@@ -256,6 +289,14 @@
 	function handleDraftWarningConfirm() {
 		showDraftWarningModal = false;
 		void savePurchaseOrder();
+	}
+
+	function handleNext() {
+		if (canNext) currentStep++;
+	}
+
+	function handleBack() {
+		if (canBack) currentStep--;
 	}
 
 	function clearItemPricing(item: PurchaseOrderDraftItem) {
@@ -405,31 +446,7 @@
 		title={isEdit ? 'Editar Orden de Compra' : 'Crear Orden de Compra'}
 		backLabel={isEdit ? 'Volver al detalle' : 'Volver a órdenes'}
 		backOnClick={goBack}
-	>
-		{#snippet actions()}
-			<button
-				type="button"
-				onclick={goBack}
-				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-brand-navy ring-1 ring-outline-variant/30 transition-colors hover:bg-surface-container-high"
-			>
-				<X class="h-4 w-4" />
-				Cancelar
-			</button>
-			<button
-				type="button"
-				onclick={handleSaveClick}
-				disabled={!canSave || saving}
-				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
-			>
-				<Save class="h-4 w-4" />
-				{savingAction === 'draft'
-					? 'Guardando...'
-					: isEdit
-						? 'Guardar cambios'
-						: 'Guardar orden (borrador)'}
-			</button>
-		{/snippet}
-	</PageHeader>
+	/>
 
 	<div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
 		<div
@@ -446,8 +463,42 @@
 		{/if}
 	</div>
 
-	<div class="flex flex-col gap-5 lg:flex-row">
-		<div class="flex-1 space-y-5">
+	<!-- Wizard step indicators -->
+	<div class="flex items-center gap-1 text-xs font-medium">
+		{#each steps as step, i}
+			{#if i > 0}
+				<div class="h-px flex-1 bg-outline-variant/30 {i <= currentStep ? 'bg-brand-gold' : ''}" />
+			{/if}
+			<button
+				type="button"
+				onclick={() => {
+					if (i <= currentStep || stepValid) currentStep = i;
+				}}
+				class="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors {i ===
+				currentStep
+					? 'bg-brand-navy text-white'
+					: i < currentStep
+						? 'text-brand-gold'
+						: 'text-on-surface-variant'}"
+			>
+				<span
+					class="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold {i ===
+					currentStep
+						? 'bg-white/20 text-white'
+						: i < currentStep
+							? 'bg-brand-gold/15 text-brand-gold-dark'
+							: 'bg-surface-container-high text-on-surface-variant'}"
+				>
+					{step.num}
+				</span>
+				<span class="hidden sm:inline">{step.label}</span>
+			</button>
+		{/each}
+	</div>
+
+	<!-- Step content -->
+	{#if currentStep === 0}
+		<div class="space-y-5">
 			<PurchaseOrderDocumentPanel
 				{suppliers}
 				bind:supplierId
@@ -462,38 +513,8 @@
 				{supplierLocked}
 			/>
 
-			<PurchaseOrderItemsPanel
-				bind:items
-				{products}
-				{lensItems}
-				{supplierId}
-				{documentType}
-				{sourceCurrency}
-				{sourceRateToVes}
-				bcvUsdRate={bcvRate}
-				{defaultTaxRate}
-			/>
-
-			<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
-
-			<PurchaseOrderPaymentTermsPanel
-				{paymentTerms}
-				{creditDueDate}
-				{earlyPaymentDiscountPercent}
-				{earlyPaymentDiscountDeadline}
-				totalNetAmount={summary.netTotal}
-				totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
-				{sourceCurrency}
-				onPaymentTermsChange={handlePaymentTermsChange}
-				onCreditDueDateChange={(value) => (creditDueDate = value)}
-				onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
-				onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
-			/>
-		</div>
-
-		<div class="space-y-5 lg:w-[22rem] lg:shrink-0 lg:sticky lg:top-4 lg:self-start">
 			<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
-				<div class="flex flex-col gap-4 lg:flex-col">
+				<div class="space-y-4">
 					<div class="space-y-1">
 						<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 							Modo de captura
@@ -504,17 +525,17 @@
 								Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para
 								inventario usando la tasa BCV.
 							{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
-								Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
-								EUR y la tasa BCV.
+								Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la
+								tasa EUR y la tasa BCV.
 							{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
-								Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la tasa
-								USDT y la tasa BCV.
+								Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la
+								tasa USDT y la tasa BCV.
 							{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
-								Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando la
-								tasa PayPal y la tasa BCV.
+								Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando
+								la tasa PayPal y la tasa BCV.
 							{:else}
-								Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
-								desde la tasa BCV.
+								Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se
+								calcula desde la tasa BCV.
 							{/if}
 						</p>
 					</div>
@@ -573,8 +594,112 @@
 					</div>
 				</div>
 			</section>
+		</div>
+	{:else if currentStep === 1}
+		<PurchaseOrderItemsPanel
+			bind:items
+			{products}
+			{lensItems}
+			{supplierId}
+			{documentType}
+			{sourceCurrency}
+			{sourceRateToVes}
+			bcvUsdRate={bcvRate}
+			{defaultTaxRate}
+		/>
+	{:else if currentStep === 2}
+		<div class="space-y-5">
+			<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
+			<PurchaseOrderPaymentTermsPanel
+				{paymentTerms}
+				{creditDueDate}
+				{earlyPaymentDiscountPercent}
+				{earlyPaymentDiscountDeadline}
+				totalNetAmount={summary.netTotal}
+				totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
+				{sourceCurrency}
+				onPaymentTermsChange={handlePaymentTermsChange}
+				onCreditDueDateChange={(value) => (creditDueDate = value)}
+				onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
+				onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
+			/>
+		</div>
+	{:else if currentStep === 3}
+		<div class="space-y-5">
+			<PurchaseOrderSummaryPanel
+				{summary}
+				{bcvRate}
+				{discount}
+				{sourceCurrency}
+				{sourceRateToVes}
+			/>
+			<div class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
+				<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+					Artículos incluidos
+				</p>
+				<ul class="mt-3 space-y-2">
+					{#each items as item (item.id)}
+						<li
+							class="flex items-center justify-between gap-3 rounded-lg bg-surface-container-high px-3 py-2 text-sm"
+						>
+							<div class="min-w-0 truncate">
+								<span class="font-mono font-semibold text-brand-navy"
+									>{getDraftItemTitle(item)}</span
+								>
+								<span class="ml-2 text-on-surface-variant">×{item.quantity}</span>
+							</div>
+							<span class="shrink-0 font-mono text-sm tabular-nums"
+								>{formatPrice(item.unitPurchasePrice)}</span
+							>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		</div>
+	{/if}
 
-			<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {sourceRateToVes} />
+	<!-- Navigation footer -->
+	<div class="flex items-center justify-between gap-3 pt-2">
+		<div>
+			{#if canBack}
+				<button
+					type="button"
+					onclick={handleBack}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				>
+					← Atrás
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={goBack}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				>
+					Cancelar
+				</button>
+			{/if}
+		</div>
+		<div class="flex items-center gap-2">
+			{#if currentStep === 3}
+				<button
+					type="button"
+					onclick={handleSaveClick}
+					disabled={!canSave || saving}
+					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					<Save class="h-4 w-4" />
+					{saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear orden'}
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={handleNext}
+					disabled={!canNext}
+					class="inline-flex items-center gap-1.5 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					Siguiente →
+				</button>
+			{/if}
 		</div>
 	</div>
 </div>
