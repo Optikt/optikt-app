@@ -161,7 +161,7 @@
 			title="Filtrar por vencidas"
 		>
 			<TriangleAlert class="h-3.5 w-3.5" />
-			<span class="hidden xl:inline text-[13px]">Vencidas</span>
+			<span class="hidden xl:inline text-sm">Vencidas</span>
 		</button>
 
 		<select
