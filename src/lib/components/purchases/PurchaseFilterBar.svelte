@@ -143,23 +143,25 @@
 		<button
 			type="button"
 			onclick={onTogglePending}
-			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg transition-colors {pendingBalanceFilter
+			class="h-9 hidden lg:inline-flex items-center justify-center rounded-lg xl:px-2.5 xl:gap-1.5 transition-colors {pendingBalanceFilter
 				? 'bg-brand-navy text-white'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
 			title="Filtrar por saldo pendiente"
 		>
 			<Wallet class="h-3.5 w-3.5" />
+			<span class="hidden xl:inline text-[13px]">Pendiente</span>
 		</button>
 
 		<button
 			type="button"
 			onclick={onToggleOverdue}
-			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg transition-colors {overdueBalanceFilter
+			class="h-9 hidden lg:inline-flex items-center justify-center rounded-lg xl:px-2.5 xl:gap-1.5 transition-colors {overdueBalanceFilter
 				? 'bg-error-container text-on-error-container'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
 			title="Filtrar por vencidas"
 		>
 			<TriangleAlert class="h-3.5 w-3.5" />
+			<span class="hidden xl:inline text-[13px]">Vencidas</span>
 		</button>
 
 		<select
