@@ -514,6 +514,43 @@
 						</div>
 					</div>
 
+					<div class="grid gap-4 sm:grid-cols-2">
+						<div class="space-y-1.5">
+							<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+								Tasa BCV
+							</p>
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								bind:value={bcvRate}
+								class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								placeholder="Ej: 38.25"
+								aria-label="Tasa BCV"
+							/>
+						</div>
+
+						{#if sourceCurrencyRequiresRateToVes(sourceCurrency)}
+							<div class="space-y-1.5">
+								<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+									Tasa {sourceCurrency}
+								</p>
+								<input
+									type="number"
+									step="0.01"
+									min="0"
+									bind:value={sourceRateToVes}
+									class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+									placeholder="Bs/unidad"
+									aria-label={`Tasa ${sourceCurrency} en bolívares`}
+								/>
+								<p class="text-xs leading-5 text-on-surface-variant">
+									Bs por 1 {getSourceCurrencySymbol(sourceCurrency)}. Se usa para derivar el costo USD.
+								</p>
+							</div>
+						{/if}
+					</div>
+
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 						<label
 							for="settlement-currency"

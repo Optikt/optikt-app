@@ -131,59 +131,24 @@
 			</div>
 		</div>
 
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-			<div class="space-y-1.5">
-				<p class={fieldLabelClass}>Tasa BCV</p>
-				<input
-					type="number"
-					step="0.01"
-					min="0"
-					bind:value={bcvRate}
-					class={inputClass}
-					placeholder="Ej: 38.25"
-					aria-label="Tasa BCV"
-				/>
-			</div>
-
-			{#if showSourceRate}
-				<div class="space-y-1.5">
-					<p class={fieldLabelClass}>Tasa {sourceSymbol} (Bs/{sourceSymbol})</p>
-					<input
-						type="number"
-						step="0.01"
-						min="0"
-						bind:value={sourceRateToVes}
-						class={inputClass}
-						placeholder="Ej: 41.30"
-						aria-label={`Tasa ${sourceSymbol} en bolívares`}
-					/>
-					<p class="text-xs leading-5 text-on-surface-variant">
-						Bs por 1 {sourceSymbol}. Se usa para derivar el costo USD.
-					</p>
-				</div>
+		<div
+			class="space-y-1.5"
+			use:autoAnimate
+		>
+			<p class={fieldLabelClass}>
+				Observaciones <span class="text-error">*</span>
+			</p>
+			<textarea
+				bind:value={notes}
+				rows="3"
+				class={`${inputClass} min-h-[5rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
+				placeholder="Observaciones internas o acuerdos con proveedor..."
+				aria-label="Observaciones"
+				required
+				minlength={6}></textarea>
+			{#if notesTooShort}
+				<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
 			{/if}
-
-			<div
-				class="space-y-1.5 {showSourceRate
-					? 'sm:col-span-2 lg:col-span-2'
-					: 'sm:col-span-1 lg:col-span-3'}"
-				use:autoAnimate
-			>
-				<p class={fieldLabelClass}>
-					Observaciones <span class="text-error">*</span>
-				</p>
-				<textarea
-					bind:value={notes}
-					rows="3"
-					class={`${inputClass} min-h-[5rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
-					placeholder="Observaciones internas o acuerdos con proveedor..."
-					aria-label="Observaciones"
-					required
-					minlength={6}></textarea>
-				{#if notesTooShort}
-					<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
-				{/if}
-			</div>
 		</div>
 	</div>
 {:else}
