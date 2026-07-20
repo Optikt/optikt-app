@@ -148,7 +148,7 @@
 	<title>Ventas - Optikt</title>
 </svelte:head>
 
-<div class="flex flex-col gap-3 p-4">
+<div class="flex flex-col gap-1 p-4">
 	<div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
 		<div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
 			<PageHeader title="Ventas" />
