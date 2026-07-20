@@ -54,7 +54,7 @@
 
 <PageHeader {title} {subtitle}>
 	{#snippet actions()}
-		<div class="flex items-start justify-between gap-4">
+		<div class="flex items-center justify-between gap-4">
 			<div class="flex min-w-0 flex-col gap-1">
 				{#if breadcrumbs}
 					{@render breadcrumbs()}
