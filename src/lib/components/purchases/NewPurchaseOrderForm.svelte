@@ -459,11 +459,11 @@
 		}}
 	>
 		{#snippet breadcrumbs()}
-				<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
-					<a href={resolve('/purchases')} class="transition-colors hover:text-brand-blue">Compras</a>
-					<span class="mx-2 text-outline">›</span>
-					<span class="text-brand-navy">{isEdit ? 'Editar compra' : 'Nueva compra'}</span>
-				</p>
+			<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				<a href={resolve('/purchases')} class="transition-colors hover:text-brand-blue">Compras</a>
+				<span class="mx-2 text-outline">›</span>
+				<span class="text-brand-navy">{isEdit ? 'Editar compra' : 'Nueva compra'}</span>
+			</p>
 		{/snippet}
 	</WizardHeader>
 
