@@ -19,7 +19,7 @@
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
-		setQueryParam,
+		setQueryParam
 	} from '$lib/utils';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
