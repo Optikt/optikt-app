@@ -41,7 +41,8 @@
 	import {
 		sourceCurrencyRequiresRateToVes,
 		SOURCE_TO_CURRENCY_CODE,
-		sourcePriceToUsdBcv
+		sourcePriceToUsdBcv,
+		getSourceCurrencySymbol
 	} from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -101,14 +102,12 @@
 	let sourceRateToVes = $state<number>(initialValues?.sourceRateToVes ?? 0);
 	let settlementCurrency = $state<string>(
 		initialValues?.settlementCurrency ??
-			untrack(() =>
-				mode === 'edit'
-					? (SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
-						'USD_BCV')
-					: ''
+			untrack(
+				() =>
+					SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+					'USD_BCV'
 			)
 	);
-	let settlementRateToVes = $state<number>(initialValues?.settlementRateToVes ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -236,8 +235,15 @@
 	}
 
 	let settlementManuallyChanged = $state(false);
+	const settlementCurrencyConflict = $derived(
+		settlementManuallyChanged &&
+			settlementCurrency !==
+				(SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+					'USD_BCV')
+	);
+
 	$effect(() => {
-		if (!settlementManuallyChanged && settlementCurrency !== '') {
+		if (!settlementManuallyChanged) {
 			settlementCurrency =
 				SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
 				'USD_BCV';
@@ -376,10 +382,6 @@
 			altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
 			sourceCurrency,
 			settlementCurrency: settlementCurrency as CurrencyCode,
-			settlementRateToVes:
-				settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
-					? settlementRateToVes
-					: undefined,
 			paymentTerms,
 			creditDueDate,
 			earlyPaymentDiscountPercent,
@@ -525,29 +527,22 @@
 							bind:value={settlementCurrency}
 							onchange={() => (settlementManuallyChanged = true)}
 						>
-							<option value="" disabled>Seleccionar moneda...</option>
 							<option value="USD_BCV">USD (BCV)</option>
 							<option value="EUR_BCV">EUR (BCV)</option>
 							<option value="USDT">USDT</option>
 							<option value="USD_PAYPAL">USD PayPal</option>
 							<option value="VES">Bs. (Bolívares)</option>
 						</select>
-						{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
-							<label
-								for="settlement-rate"
-								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-							>
-								Tasa {settlementCurrency}
-							</label>
-							<input
-								id="settlement-rate"
-								type="number"
-								bind:value={settlementRateToVes}
-								class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-								placeholder="Bs/unidad"
-							/>
-						{/if}
 					</div>
+					{#if settlementCurrencyConflict}
+						<div
+							class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+						>
+							La moneda de obligación es distinta a la moneda de factura.
+							{getSourceCurrencySymbol(sourceCurrency)}
+							Revisá que el proveedor realmente exija otra moneda.
+						</div>
+					{/if}
 				</div>
 			</div>
 		</section>

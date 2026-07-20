@@ -187,7 +187,7 @@
 	$effect(() => {
 		if (showForm && isNativeSettlement) {
 			currencyCode = CurrencyCode.VES;
-			const orderRate = purchaseOrder.settlementRateToVes ?? purchaseOrder.sourceRateToVes;
+			const orderRate = purchaseOrder.sourceRateToVes;
 			if (orderRate != null && orderRate > 0) {
 				specificRateInput = String(orderRate);
 			}

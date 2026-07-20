@@ -98,8 +98,6 @@ export const purchaseOrders = pgTable(
 		settlementCurrency: purchasePaymentCurrencyEnum('settlement_currency')
 			.notNull()
 			.default(CurrencyCode.USD_BCV),
-		/** Settlement currency rate in Bs per unit, captured when the order is issued. */
-		settlementRateToVes: doublePrecision('settlement_rate_to_ves'),
 		/** Contractual total before the settlement discount, in settlementCurrency. */
 		settlementGrossAmount: doublePrecision('settlement_gross_amount').notNull().default(0),
 		/** Contractual debt after the settlement discount, in settlementCurrency. */

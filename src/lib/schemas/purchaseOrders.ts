@@ -118,8 +118,6 @@ export const CreatePurchaseOrderSchema = z
 			.default(PurchaseSourceCurrency.USD),
 		/** Currency the supplier requires to settle this order. Defaults to sourceCurrency mapping. */
 		settlementCurrency: z.enum(ALL_PURCHASE_PAYMENT_CURRENCY_CODES).optional(),
-		/** Settlement-currency rate to VES when the settlement currency needs its own rate. */
-		settlementRateToVes: CoercedNumber.min(0).optional().nullable(),
 		/** Contractual gross amount in settlement currency (before discount). */
 		settlementGrossAmount: CoercedNumber.min(0).optional(),
 		/** Contractual debt amount in settlement currency (after discount). */
@@ -148,8 +146,6 @@ export const UpdatePurchaseOrderSchema = z.object({
 	sourceCurrency: z.enum(Object.values(PurchaseSourceCurrency) as [string, ...string[]]).optional(),
 	/** Currency the supplier requires to settle this order. */
 	settlementCurrency: z.enum(ALL_PURCHASE_PAYMENT_CURRENCY_CODES).optional(),
-	/** Settlement-currency rate to VES. */
-	settlementRateToVes: CoercedNumber.min(0).optional().nullable(),
 	/** Contractual gross amount in settlement currency. */
 	settlementGrossAmount: CoercedNumber.min(0).optional(),
 	/** Contractual debt amount in settlement currency. */

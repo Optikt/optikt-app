@@ -119,7 +119,6 @@ export interface PurchaseOrderDraftInitialValues extends PurchaseOrderDraftHeade
 	sourceCurrency?: string;
 	sourceRateToVes?: number | null;
 	settlementCurrency?: string;
-	settlementRateToVes?: number | null;
 }
 
 export function createEmptyPurchaseOrderDraftItem(

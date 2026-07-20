@@ -225,6 +225,13 @@
       "when": 1784159252000,
       "tag": "0031_purchase_payable_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1784571208000,
+      "tag": "0032_drop_settlement_rate_to_ves",
+      "breakpoints": true
     }
   ]
 }
