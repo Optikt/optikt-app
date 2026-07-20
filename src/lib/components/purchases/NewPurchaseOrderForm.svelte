@@ -469,63 +469,47 @@
 
 	<!-- Step content -->
 	{#if currentStep === 0}
-		<div class="space-y-5">
-			<PurchaseOrderDocumentPanel
-				{suppliers}
-				bind:supplierId
-				bind:documentType
-				bind:orderDate
-				bind:bcvRate
-				bind:sourceRateToVes
-				{sourceCurrency}
-				bind:invoiceNumber
-				bind:deliveryNoteNumber
-				bind:notes
-				{supplierLocked}
-			/>
+		<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
+			<h2 class="text-lg font-semibold text-brand-navy">Información de la compra</h2>
+			<div class="mt-4 space-y-5">
+				<PurchaseOrderDocumentPanel
+					{suppliers}
+					bind:supplierId
+					bind:documentType
+					bind:orderDate
+					bind:bcvRate
+					bind:sourceRateToVes
+					{sourceCurrency}
+					bind:invoiceNumber
+					bind:deliveryNoteNumber
+					bind:notes
+					{supplierLocked}
+					bare
+				/>
 
-			<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
+				<hr class="border-outline-variant/30" />
+
 				<div class="space-y-4">
-					<div class="space-y-1">
+					<div>
 						<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-							Modo de captura
+							Base de precios
 						</p>
-						<h2 class="text-lg font-semibold text-brand-navy">Base de precios de la factura</h2>
-						<p class="text-sm text-on-surface-variant">
-							{#if sourceCurrency === PurchaseSourceCurrency.VES}
-								Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para
-								inventario usando la tasa BCV.
-							{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
-								Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la
-								tasa EUR y la tasa BCV.
-							{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
-								Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la
-								tasa USDT y la tasa BCV.
-							{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
-								Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando
-								la tasa PayPal y la tasa BCV.
-							{:else}
-								Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se
-								calcula desde la tasa BCV.
-							{/if}
-						</p>
-					</div>
-
-					<div class="inline-flex flex-wrap gap-1 rounded-xl bg-surface-container-high p-1">
-						{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
-							<button
-								type="button"
-								onclick={() => requestPricingModeChange(currency)}
-								class={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-									sourceCurrency === currency
-										? 'bg-brand-navy text-white'
-										: 'text-on-surface-variant hover:text-brand-navy'
-								}`}
-								aria-pressed={sourceCurrency === currency}
-							>
-								{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
-							</button>
-						{/each}
+						<div class="mt-2 inline-flex flex-wrap gap-1 rounded-xl bg-surface-container-high p-1">
+							{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
+								<button
+									type="button"
+									onclick={() => requestPricingModeChange(currency)}
+									class={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
+										sourceCurrency === currency
+											? 'bg-brand-navy text-white'
+											: 'text-on-surface-variant hover:text-brand-navy'
+									}`}
+									aria-pressed={sourceCurrency === currency}
+								>
+									{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
+								</button>
+							{/each}
+						</div>
 					</div>
 
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -565,8 +549,8 @@
 						{/if}
 					</div>
 				</div>
-			</section>
-		</div>
+			</div>
+		</section>
 	{:else if currentStep === 1}
 		<PurchaseOrderItemsPanel
 			bind:items
