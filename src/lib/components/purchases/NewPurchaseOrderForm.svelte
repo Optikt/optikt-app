@@ -446,7 +446,6 @@
 
 <div class="space-y-3 p-4">
 	<WizardHeader
-		title={isEdit ? 'Editar Orden de Compra' : 'Crear Orden de Compra'}
 		subtitle={currentStep > 0 && supplierId
 			? `Proveedor: ${suppliers.find((s) => s.id === supplierId)?.name ?? '—'} · Moneda: ${settlementCurrency || sourceCurrency} · BCV: ${bcvRate || '—'}${sourceRateToVes > 0 ? ` · ${sourceCurrency}: ${sourceRateToVes}` : ''}`
 			: isEdit
@@ -460,13 +459,16 @@
 		}}
 	>
 		{#snippet breadcrumbs()}
-			<button
-				type="button"
-				onclick={goBack}
-				class="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-brand-blue"
+			<a
+				href={resolve('/purchases')}
+				class="text-xs font-semibold tracking-[0.18em] text-on-surface-variant uppercase transition-colors hover:text-brand-blue"
 			>
-				← {isEdit ? 'Volver al detalle' : 'Volver a órdenes'}
-			</button>
+				Compras
+			</a>
+			<span class="mx-2 text-outline">›</span>
+			<span class="text-xs font-semibold tracking-[0.18em] text-brand-navy uppercase">
+				{isEdit ? 'Editar compra' : 'Nueva compra'}
+			</span>
 		{/snippet}
 	</WizardHeader>
 
