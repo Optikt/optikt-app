@@ -446,132 +446,136 @@
 		{/if}
 	</div>
 
-	<div class="space-y-5">
-		<PurchaseOrderDocumentPanel
-			{suppliers}
-			bind:supplierId
-			bind:documentType
-			bind:orderDate
-			bind:bcvRate
-			bind:sourceRateToVes
-			{sourceCurrency}
-			bind:invoiceNumber
-			bind:deliveryNoteNumber
-			bind:notes
-			{supplierLocked}
-		/>
+	<div class="flex flex-col gap-5 lg:flex-row">
+		<div class="flex-1 space-y-5">
+			<PurchaseOrderDocumentPanel
+				{suppliers}
+				bind:supplierId
+				bind:documentType
+				bind:orderDate
+				bind:bcvRate
+				bind:sourceRateToVes
+				{sourceCurrency}
+				bind:invoiceNumber
+				bind:deliveryNoteNumber
+				bind:notes
+				{supplierLocked}
+			/>
 
-		<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
-			<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-				<div class="space-y-1">
-					<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-						Modo de captura
-					</p>
-					<h2 class="text-lg font-semibold text-brand-navy">Base de precios de la factura</h2>
-					<p class="max-w-2xl text-sm text-on-surface-variant">
-						{#if sourceCurrency === PurchaseSourceCurrency.VES}
-							Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para
-							inventario usando la tasa BCV.
-						{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
-							Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
-							EUR y la tasa BCV.
-						{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
-							Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la tasa
-							USDT y la tasa BCV.
-						{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
-							Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando la
-							tasa PayPal y la tasa BCV.
-						{:else}
-							Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
-							desde la tasa BCV.
-						{/if}
-					</p>
-				</div>
+			<PurchaseOrderItemsPanel
+				bind:items
+				{products}
+				{lensItems}
+				{supplierId}
+				{documentType}
+				{sourceCurrency}
+				{sourceRateToVes}
+				bcvUsdRate={bcvRate}
+				{defaultTaxRate}
+			/>
 
-				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
-					{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
-						<button
-							type="button"
-							onclick={() => requestPricingModeChange(currency)}
-							class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-								sourceCurrency === currency
-									? 'bg-brand-navy text-white'
-									: 'text-on-surface-variant hover:text-brand-navy'
-							}`}
-							aria-pressed={sourceCurrency === currency}
-						>
-							{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
-						</button>
-					{/each}
-				</div>
+			<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
 
-				<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-					<label
-						for="settlement-currency"
-						class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-					>
-						Moneda de obligación
-					</label>
-					<select
-						id="settlement-currency"
-						class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-						bind:value={settlementCurrency}
-						onchange={() => (settlementManuallyChanged = true)}
-					>
-						<option value="USD_BCV">USD (BCV)</option>
-						<option value="EUR_BCV">EUR (BCV)</option>
-						<option value="USDT">USDT</option>
-						<option value="USD_PAYPAL">USD PayPal</option>
-						<option value="VES">Bs. (Bolívares)</option>
-					</select>
-					{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
+			<PurchaseOrderPaymentTermsPanel
+				{paymentTerms}
+				{creditDueDate}
+				{earlyPaymentDiscountPercent}
+				{earlyPaymentDiscountDeadline}
+				totalNetAmount={summary.netTotal}
+				totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
+				{sourceCurrency}
+				onPaymentTermsChange={handlePaymentTermsChange}
+				onCreditDueDateChange={(value) => (creditDueDate = value)}
+				onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
+				onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
+			/>
+		</div>
+
+		<div class="space-y-5 lg:w-[22rem] lg:shrink-0 lg:sticky lg:top-4 lg:self-start">
+			<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
+				<div class="flex flex-col gap-4 lg:flex-col">
+					<div class="space-y-1">
+						<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+							Modo de captura
+						</p>
+						<h2 class="text-lg font-semibold text-brand-navy">Base de precios de la factura</h2>
+						<p class="text-sm text-on-surface-variant">
+							{#if sourceCurrency === PurchaseSourceCurrency.VES}
+								Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para
+								inventario usando la tasa BCV.
+							{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
+								Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
+								EUR y la tasa BCV.
+							{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
+								Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la tasa
+								USDT y la tasa BCV.
+							{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
+								Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando la
+								tasa PayPal y la tasa BCV.
+							{:else}
+								Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
+								desde la tasa BCV.
+							{/if}
+						</p>
+					</div>
+
+					<div class="inline-flex flex-wrap gap-1 rounded-xl bg-surface-container-high p-1">
+						{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
+							<button
+								type="button"
+								onclick={() => requestPricingModeChange(currency)}
+								class={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
+									sourceCurrency === currency
+										? 'bg-brand-navy text-white'
+										: 'text-on-surface-variant hover:text-brand-navy'
+								}`}
+								aria-pressed={sourceCurrency === currency}
+							>
+								{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
+							</button>
+						{/each}
+					</div>
+
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 						<label
-							for="settlement-rate"
+							for="settlement-currency"
 							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 						>
-							Tasa {settlementCurrency}
+							Moneda de obligación
 						</label>
-						<input
-							id="settlement-rate"
-							type="number"
-							bind:value={settlementRateToVes}
-							class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-							placeholder="Bs/unidad"
-						/>
-					{/if}
+						<select
+							id="settlement-currency"
+							class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+							bind:value={settlementCurrency}
+							onchange={() => (settlementManuallyChanged = true)}
+						>
+							<option value="USD_BCV">USD (BCV)</option>
+							<option value="EUR_BCV">EUR (BCV)</option>
+							<option value="USDT">USDT</option>
+							<option value="USD_PAYPAL">USD PayPal</option>
+							<option value="VES">Bs. (Bolívares)</option>
+						</select>
+						{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
+							<label
+								for="settlement-rate"
+								class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+							>
+								Tasa {settlementCurrency}
+							</label>
+							<input
+								id="settlement-rate"
+								type="number"
+								bind:value={settlementRateToVes}
+								class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+								placeholder="Bs/unidad"
+							/>
+						{/if}
+					</div>
 				</div>
-			</div>
-		</section>
+			</section>
 
-		<PurchaseOrderItemsPanel
-			bind:items
-			{products}
-			{lensItems}
-			{supplierId}
-			{documentType}
-			{sourceCurrency}
-			{sourceRateToVes}
-			bcvUsdRate={bcvRate}
-			{defaultTaxRate}
-		/>
-
-		<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
-
-		<PurchaseOrderPaymentTermsPanel
-			{paymentTerms}
-			{creditDueDate}
-			{earlyPaymentDiscountPercent}
-			{earlyPaymentDiscountDeadline}
-			totalNetAmount={summary.netTotal}
-			totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
-			{sourceCurrency}
-			onPaymentTermsChange={handlePaymentTermsChange}
-			onCreditDueDateChange={(value) => (creditDueDate = value)}
-			onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
-			onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
-		/>
-
-		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {sourceRateToVes} />
+			<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {sourceRateToVes} />
+		</div>
 	</div>
 </div>
 
