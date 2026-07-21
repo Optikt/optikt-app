@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 		error(404, 'Presupuesto no encontrado');
 	}
 
-	const printUrl = new URL(`/print/quote/${params.id}`, url).toString();
+	const { PORT = '' } = process.env;
+	const origin = PORT ? `http://localhost:${PORT}` : url.origin;
+	const printUrl = new URL(`/print/quote/${params.id}`, origin).toString();
 	const cookieHeader = request.headers.get('cookie');
 	const pdf = await generatePdf(printUrl, cookieHeader);
 	const fileName = `presupuesto-${String(quote.quoteNumber).padStart(4, '0')}.pdf`;

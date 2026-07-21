@@ -18,7 +18,9 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
-	const printUrl = new URL(`/print/sale/${params.id}`, url).toString();
+	const { PORT = '' } = process.env;
+	const origin = PORT ? `http://localhost:${PORT}` : url.origin;
+	const printUrl = new URL(`/print/sale/${params.id}`, origin).toString();
 	const cookieHeader = request.headers.get('cookie');
 	const pdf = await generatePdf(printUrl, cookieHeader);
 	const fileName = `recibo-venta-${String(sale.orderNumber).padStart(4, '0')}.pdf`;
