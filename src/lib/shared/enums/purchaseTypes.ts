@@ -119,7 +119,7 @@ export enum PurchaseDocumentType {
 
 export const PURCHASE_DOCUMENT_TYPE_LABELS: Record<PurchaseDocumentType, string> = {
 	[PurchaseDocumentType.INVOICE]: 'Factura',
-	[PurchaseDocumentType.DELIVERY_NOTE]: 'Nota de Entrega'
+	[PurchaseDocumentType.DELIVERY_NOTE]: 'Nota'
 };
 
 export function getPurchaseDocumentTypeLabel(type: string): string {

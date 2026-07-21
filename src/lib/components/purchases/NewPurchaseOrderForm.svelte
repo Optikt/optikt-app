@@ -524,7 +524,7 @@
 								step="0.01"
 								min="0"
 								bind:value={bcvRate}
-								class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+								class="w-full max-w-40 rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 								placeholder="Ej: 38.25"
 								aria-label="Tasa BCV"
 							/>
@@ -542,7 +542,7 @@
 									step="0.01"
 									min="0"
 									bind:value={sourceRateToVes}
-									class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+									class="w-full max-w-40 rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 									placeholder="Bs/unidad"
 									aria-label={`Tasa ${sourceCurrency} en bolívares`}
 								/>
