@@ -532,7 +532,9 @@
 
 						{#if sourceCurrencyRequiresRateToVes(sourceCurrency)}
 							<div class="space-y-1.5">
-								<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+								<p
+									class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+								>
 									Tasa {sourceCurrency}
 								</p>
 								<input

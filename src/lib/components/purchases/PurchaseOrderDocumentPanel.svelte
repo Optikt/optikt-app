@@ -131,10 +131,7 @@
 			</div>
 		</div>
 
-		<div
-			class="space-y-1.5"
-			use:autoAnimate
-		>
+		<div class="space-y-1.5" use:autoAnimate>
 			<p class={fieldLabelClass}>
 				Observaciones <span class="text-error">*</span>
 			</p>
