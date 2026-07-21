@@ -503,11 +503,13 @@
 						<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 							Base de precios
 						</p>
-						<SegmentedToggle
-							value={sourceCurrency}
-							options={pricingModeOptions}
-							onchange={(val) => requestPricingModeChange(val)}
-						/>
+						<div class="max-w-lg">
+							<SegmentedToggle
+								value={sourceCurrency}
+								options={pricingModeOptions}
+								onchange={(val) => requestPricingModeChange(val)}
+							/>
+						</div>
 					</div>
 
 					<div class="flex gap-4">
