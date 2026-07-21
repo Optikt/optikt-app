@@ -43,7 +43,9 @@
 	<div class="w-full min-w-0">
 		<div class="flex w-full flex-col flex-wrap items-start gap-y-1">
 			<span class="truncate text-sm font-semibold text-brand-navy">
-				{item.kind === 'treatment' ? item.treatmentName : lens?.name ?? product?.name ?? 'Ítem libre'}
+				{item.kind === 'treatment'
+					? item.treatmentName
+					: (lens?.name ?? product?.name ?? 'Ítem libre')}
 			</span>
 			<div class="flex items-center gap-2">
 				{#if item.kind === 'treatment'}

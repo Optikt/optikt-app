@@ -20,7 +20,12 @@
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData, LensSaleItemRow, TreatmentSaleItemRow } from '../newSaleTypes';
+	import type {
+		SaleItemRow,
+		NewCustomerData,
+		LensSaleItemRow,
+		TreatmentSaleItemRow
+	} from '../newSaleTypes';
 	import {
 		createEmptyProductItem,
 		createEmptyLensItem,
@@ -300,8 +305,7 @@
 		for (const item of items) {
 			if (item.kind !== 'lens') continue;
 			const tItem = items.find(
-				(i): i is TreatmentSaleItemRow =>
-					i.kind === 'treatment' && i.parentLensItemId === item.id
+				(i): i is TreatmentSaleItemRow => i.kind === 'treatment' && i.parentLensItemId === item.id
 			);
 			map[item.id] = tItem
 				? { name: tItem.treatmentName, total: tItem.unitPrice * tItem.quantity }
@@ -313,15 +317,15 @@
 	let activeTreatmentLensId = $state<string | null>(null);
 
 	const activeTreatmentAvail = $derived(
-		activeTreatmentLensId ? itemTreatmentsMap[activeTreatmentLensId] ?? [] : []
+		activeTreatmentLensId ? (itemTreatmentsMap[activeTreatmentLensId] ?? []) : []
 	);
 
 	const activeTreatmentItem = $derived(
 		activeTreatmentLensId
-			? items.find(
+			? (items.find(
 					(item): item is TreatmentSaleItemRow =>
 						item.kind === 'treatment' && item.parentLensItemId === activeTreatmentLensId
-				) ?? null
+				) ?? null)
 			: null
 	);
 
@@ -580,15 +584,13 @@
 								availableTreatments={[]}
 								currentTreatmentName={item.treatmentName}
 								currentTreatmentTotal={item.unitPrice * item.quantity}
-								onopenTreatment={
-									itemTreatmentsMap[item.parentLensItemId]?.length > 0
-										? () => handleOpenTreatmentSelector(item.parentLensItemId)
-										: undefined
-								}
+								onopenTreatment={itemTreatmentsMap[item.parentLensItemId]?.length > 0
+									? () => handleOpenTreatmentSelector(item.parentLensItemId)
+									: undefined}
 							/>
 						</div>
 					{:else}
-						{@const ti = item.kind === 'lens' ? lensTreatmentInfo[item.id] ?? null : null}
+						{@const ti = item.kind === 'lens' ? (lensTreatmentInfo[item.id] ?? null) : null}
 						<SaleStep2ItemCard
 							{item}
 							rxErrs={item.kind === 'lens' ? (rxErrorsPerLens[item.id] ?? {}) : {}}
@@ -598,11 +600,9 @@
 							availableTreatments={itemTreatmentsMap[item.id] ?? []}
 							currentTreatmentName={ti?.name ?? null}
 							currentTreatmentTotal={ti?.total ?? 0}
-							onopenTreatment={
-								item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
-									? () => handleOpenTreatmentSelector(item.id)
-									: undefined
-							}
+							onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
+								? () => handleOpenTreatmentSelector(item.id)
+								: undefined}
 						/>
 					{/if}
 				{/each}

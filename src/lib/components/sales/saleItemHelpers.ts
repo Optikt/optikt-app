@@ -97,16 +97,18 @@ export function itemLineTotal(item: SaleItemRow): number {
 }
 
 export function step2ItemLineTotal(item: SaleItemRow): number {
-	const qty = item.kind === 'product' || item.kind === 'free' || item.kind === 'treatment'
-		? item.quantity
-		: 1;
+	const qty =
+		item.kind === 'product' || item.kind === 'free' || item.kind === 'treatment'
+			? item.quantity
+			: 1;
 	return item.unitPrice * qty;
 }
 
 export function getItemDiscountBase(item: SaleItemRow): number {
-	const qty = item.kind === 'product' || item.kind === 'free' || item.kind === 'treatment'
-		? item.quantity
-		: 1;
+	const qty =
+		item.kind === 'product' || item.kind === 'free' || item.kind === 'treatment'
+			? item.quantity
+			: 1;
 	return item.unitPrice * qty;
 }
 

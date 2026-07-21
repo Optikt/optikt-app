@@ -147,7 +147,6 @@ export function buildSaleItemsFromWizard(
 			snapshotIsTaxable: lensPairItem.snapshotIsTaxable,
 			shippingCostPending: item.shippingCostPending || undefined
 		});
-
 	}
 
 	return saleItems;
@@ -264,7 +263,6 @@ export function buildQuoteItemsFromWizard(
 			snapshotPriceType: lensPairItem.snapshotPriceType,
 			snapshotIsTaxable: lensPairItem.snapshotIsTaxable
 		});
-
 	}
 
 	return quoteItems;

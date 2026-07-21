@@ -89,7 +89,8 @@ export interface TreatmentSaleItemRow extends BaseSaleItemRow {
 	snapshotBrand: string;
 }
 
-export type SaleItemRow = ProductSaleItemRow | LensSaleItemRow | FreeSaleItemRow | TreatmentSaleItemRow;
+export type SaleItemRow =
+	ProductSaleItemRow | LensSaleItemRow | FreeSaleItemRow | TreatmentSaleItemRow;
 
 export function createEmptyProductItem(productId = ''): ProductSaleItemRow {
 	return {
@@ -127,7 +128,14 @@ export function createEmptyLensItem(): LensSaleItemRow {
 
 export function createEmptyTreatmentItem(
 	parentLensItemId: string,
-	treatment: { id: string; name: string; category: string; price: number; salePrice?: number | null; isTaxable: boolean },
+	treatment: {
+		id: string;
+		name: string;
+		category: string;
+		price: number;
+		salePrice?: number | null;
+		isTaxable: boolean;
+	},
 	brand: string
 ): TreatmentSaleItemRow {
 	return {

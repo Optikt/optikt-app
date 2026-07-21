@@ -77,13 +77,17 @@
 			{#if isTreatmentKind}
 				{@const t = item as TreatmentSaleItemRow}
 				<div class="flex min-w-0 items-center gap-3">
-					<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-purple-100 bg-purple-50">
+					<div
+						class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-purple-100 bg-purple-50"
+					>
 						<FlaskConical class="h-4 w-4 text-purple-600" />
 					</div>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-semibold text-brand-navy">{t.treatmentName}</p>
 						<div class="flex flex-wrap items-center gap-1.5">
-							<span class="rounded-full border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 uppercase">
+							<span
+								class="rounded-full border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 uppercase"
+							>
 								Tratamiento
 							</span>
 							<span

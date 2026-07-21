@@ -26,7 +26,7 @@
 
 	function handleApply() {
 		const treatment = selectedId
-			? availableTreatments.find((t) => t.id === selectedId) ?? null
+			? (availableTreatments.find((t) => t.id === selectedId) ?? null)
 			: null;
 		onselect(treatment);
 		onclose?.();
