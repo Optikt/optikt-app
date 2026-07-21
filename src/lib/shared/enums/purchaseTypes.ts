@@ -216,7 +216,7 @@ export const ACTIVE_PURCHASE_SOURCE_CURRENCIES = [
 
 export const PURCHASE_SOURCE_CURRENCY_LABELS: Record<PurchaseSourceCurrency, string> = {
 	[PurchaseSourceCurrency.USD]: 'USD BCV',
-	[PurchaseSourceCurrency.VES]: 'Bolívares (Bs)',
+	[PurchaseSourceCurrency.VES]: 'Bolívares',
 	[PurchaseSourceCurrency.EUR]: 'Euro (€)',
 	[PurchaseSourceCurrency.USDT]: 'USDT',
 	[PurchaseSourceCurrency.PAYPAL]: 'USD PayPal'
