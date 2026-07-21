@@ -96,11 +96,6 @@
 						</button>
 					{/each}
 				</div>
-				<p class="text-xs leading-5 text-on-surface-variant">
-					{isInvoice
-						? 'Los ítems se marcan con IVA 16% por defecto.'
-						: 'Los ítems se marcan como exentos por defecto.'}
-				</p>
 			</div>
 
 			<div class="col-span-2 space-y-1.5">
@@ -199,11 +194,6 @@
 							</button>
 						{/each}
 					</div>
-					<p class="text-xs leading-5 text-on-surface-variant">
-						{isInvoice
-							? 'Los ítems se marcan con IVA 16% por defecto.'
-							: 'Los ítems se marcan como exentos por defecto.'}
-					</p>
 				</div>
 
 				<div class="col-span-2 space-y-1.5">
