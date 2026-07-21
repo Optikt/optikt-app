@@ -86,10 +86,10 @@
 							type="button"
 							onclick={() => (documentType = docType)}
 							class={[
-								'flex-1 rounded-lg px-3.5 py-2 text-xs font-semibold uppercase transition-colors',
+								'flex-1 rounded-lg px-3.5 py-2 text-xs font-semibold uppercase transition-all duration-200',
 								isDocType
-									? 'bg-brand-navy text-white'
-									: 'text-on-surface-variant hover:text-brand-navy'
+									? 'bg-brand-navy text-white shadow-sm'
+									: 'text-on-surface-variant hover:text-brand-navy hover:bg-surface-container-higher'
 							]}
 						>
 							{getPurchaseDocumentTypeLabel(docType)}
@@ -184,7 +184,7 @@
 								type="button"
 								onclick={() => (documentType = docType)}
 								class={[
-									'flex-1 rounded-lg px-3.5 py-2 text-xs font-semibold uppercase transition-colors',
+									'flex-1 rounded-lg px-3.5 py-2 text-xs font-semibold uppercase transition-all duration-200',
 									isDocType
 										? 'bg-brand-navy text-white'
 										: 'text-on-surface-variant hover:text-brand-navy'
