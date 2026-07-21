@@ -268,9 +268,6 @@
 							placeholder="Ej: 41.30"
 							aria-label={`Tasa ${sourceSymbol} en bolívares`}
 						/>
-						<p class="text-xs leading-5 text-on-surface-variant">
-							Bs por 1 {sourceSymbol}. Se usa para derivar el costo USD.
-						</p>
 					</div>
 				{/if}
 
