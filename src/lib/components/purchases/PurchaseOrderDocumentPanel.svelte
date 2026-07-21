@@ -86,10 +86,10 @@
 							type="button"
 							onclick={() => (documentType = docType)}
 							class={[
-								'flex-1 rounded-lg px-3.5 py-2 text-xs font-semibold uppercase transition-all duration-200',
+								'flex-1 rounded-lg px-3.5 py-2 text-xs font-semibold uppercase transition-all duration-200 ease-out',
 								isDocType
 									? 'bg-brand-navy text-white shadow-sm'
-									: 'text-on-surface-variant hover:text-brand-navy hover:bg-surface-container-higher'
+									: 'bg-surface-container-higher/40 text-on-surface-variant hover:bg-surface-container-higher hover:text-brand-navy'
 							]}
 						>
 							{getPurchaseDocumentTypeLabel(docType)}
