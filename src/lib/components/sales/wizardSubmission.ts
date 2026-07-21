@@ -3,11 +3,10 @@ import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import type { SaleItemInput } from '$lib/schemas/sales';
-import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { z } from 'zod';
 
-import type { LensSaleItemRow, SaleItemRow, TreatmentSaleItemRow } from './newSaleTypes';
+import type { LensSaleItemRow, SaleItemRow } from './newSaleTypes';
 import { getEnabledEyeCount } from './saleItemHelpers';
 
 type PrescriptionFieldsPayload = z.input<typeof PrescriptionFieldsSchema>;

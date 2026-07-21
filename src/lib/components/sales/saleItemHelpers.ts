@@ -5,13 +5,7 @@
 
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import type {
-	SaleItemRow,
-	LensSaleItemRow,
-	FreeSaleItemRow,
-	TreatmentSaleItemRow,
-	LensPairEntry
-} from './newSaleTypes';
+import type { SaleItemRow, LensSaleItemRow, FreeSaleItemRow, LensPairEntry } from './newSaleTypes';
 import { LensType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
