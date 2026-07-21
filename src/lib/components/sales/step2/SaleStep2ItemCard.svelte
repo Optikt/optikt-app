@@ -111,8 +111,8 @@
 			{/if}
 
 			<!-- Inline controls row -->
-			<div class="flex w-1/3 shrink-0 items-start gap-3">
-				<div class="w-1/2">
+			<div class="flex shrink items-start gap-3">
+				<div class="w-16">
 					<Label for="qty-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Cant</Label
 					>
@@ -120,7 +120,7 @@
 					<input
 						id="qty-{item.id}"
 						type="number"
-						class="font-mono text-sm"
+						class="w-full rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue/30"
 						disabled={isLensKind || isTreatmentKind}
 						min="1"
 						max={isProductKind ? (maxStock ?? undefined) : undefined}
@@ -131,7 +131,7 @@
 					{/if}
 				</div>
 
-				<div class="w-1/2">
+				<div class="w-20">
 					<Label for="price-{item.id}" class="mb-1 text-[10px] font-semibold text-outline uppercase"
 						>Precio</Label
 					>
@@ -141,18 +141,18 @@
 						bind:value={item.unitPrice}
 						step="0.01"
 						min="0"
-						class="font-mono text-sm"
+						class="w-full rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue/30"
 					/>
 				</div>
-				<div>
+				<div class="shrink-0">
 					<p class="mb-1 text-[10px] font-semibold text-outline uppercase">Total</p>
-					<div class="rounded-lg bg-surface-container-low px-2.5 py-2">
+					<div class="rounded-lg bg-surface-container-low px-2.5 py-1.5">
 						<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
 							{formatPrice(step2ItemLineTotal(item))}
 						</p>
 					</div>
 				</div>
-				<div class="flex items-end justify-end">
+				<div class="flex shrink-0 items-end justify-end">
 					<button
 						type="button"
 						onclick={onremove}
