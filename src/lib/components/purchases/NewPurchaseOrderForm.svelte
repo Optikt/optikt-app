@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
-	import { WizardHeader, ConfirmModal } from '$lib/components/ui';
+	import { WizardHeader, ConfirmModal, SegmentedToggle } from '$lib/components/ui';
 	import {
 		createPurchaseOrderCmd,
 		savePurchaseOrderDraftCmd
@@ -132,6 +132,13 @@
 	let currentStep = $state(0);
 
 	const saving = $derived(savingAction !== null);
+
+	const pricingModeOptions = $derived(
+		ACTIVE_PURCHASE_SOURCE_CURRENCIES.map((c) => ({
+			value: c,
+			label: PURCHASE_SOURCE_CURRENCY_LABELS[c]
+		}))
+	);
 
 	const steps = [
 		{ num: 1, label: 'Documento' },
@@ -496,22 +503,11 @@
 						<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 							Base de precios
 						</p>
-						<div class="mt-2 inline-flex flex-wrap gap-1 rounded-xl bg-surface-container-high p-1">
-							{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
-								<button
-									type="button"
-									onclick={() => requestPricingModeChange(currency)}
-									class={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-										sourceCurrency === currency
-											? 'bg-brand-navy text-white'
-											: 'text-on-surface-variant hover:text-brand-navy'
-									}`}
-									aria-pressed={sourceCurrency === currency}
-								>
-									{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
-								</button>
-							{/each}
-						</div>
+						<SegmentedToggle
+							value={sourceCurrency}
+							options={pricingModeOptions}
+							onchange={(val) => requestPricingModeChange(val)}
+						/>
 					</div>
 
 					<div class="flex gap-4">
