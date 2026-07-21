@@ -11,7 +11,7 @@
 </script>
 
 <div
-	class="relative inline-grid overflow-hidden rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm"
+	class="relative w-full inline-grid overflow-hidden rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm"
 	style="grid-template-columns: repeat({options.length}, 1fr)"
 >
 	<div
