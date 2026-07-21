@@ -198,6 +198,10 @@
 			return getTaxMeta(product?.isTaxable ?? true, defaultTaxRate);
 		}
 
+		if (item.kind === 'treatment') {
+			return getTaxMeta(item.isTaxable, defaultTaxRate);
+		}
+
 		const lens = getLens(item);
 		return getTaxMeta(lens?.isTaxable ?? false, defaultTaxRate);
 	}
@@ -283,7 +287,7 @@
 		<div class="min-w-0 flex-1 space-y-1 overflow-y-auto">
 			{#each items as item (item.id)}
 				{@const itemTaxMeta = getItemTaxMeta(item)}
-				<div class="rounded-lg border border-slate-300 bg-white p-1">
+				<div class="rounded-lg border border-slate-300 bg-white p-1 {item.kind === 'treatment' ? 'ml-4 border-l-2 border-slate-200 pl-3' : ''}">
 					<div class="space-y-1">
 						<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
 							<SaleItemInfo {item} />

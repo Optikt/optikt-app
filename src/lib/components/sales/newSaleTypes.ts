@@ -2,7 +2,7 @@ import { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 import { LensType } from '$lib/shared/enums';
 import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
-export type ItemKind = 'product' | 'lens' | 'free';
+export type ItemKind = 'product' | 'lens' | 'free' | 'treatment';
 
 /** A treatment selected for a lens item in the wizard */
 export interface SelectedTreatment {
@@ -79,7 +79,17 @@ export interface FreeSaleItemRow extends BaseSaleItemRow {
 	freeItem: FreeItemData;
 }
 
-export type SaleItemRow = ProductSaleItemRow | LensSaleItemRow | FreeSaleItemRow;
+export interface TreatmentSaleItemRow extends BaseSaleItemRow {
+	kind: 'treatment';
+	parentLensItemId: string;
+	supplierTreatmentId: string;
+	treatmentName: string;
+	treatmentCategory: string;
+	isTaxable: boolean;
+	snapshotBrand: string;
+}
+
+export type SaleItemRow = ProductSaleItemRow | LensSaleItemRow | FreeSaleItemRow | TreatmentSaleItemRow;
 
 export function createEmptyProductItem(productId = ''): ProductSaleItemRow {
 	return {
@@ -112,6 +122,30 @@ export function createEmptyLensItem(): LensSaleItemRow {
 		discount: 0,
 		discountType: DiscountTypeEnum.FIXED,
 		notes: ''
+	};
+}
+
+export function createEmptyTreatmentItem(
+	parentLensItemId: string,
+	treatment: { id: string; name: string; category: string; price: number; salePrice?: number | null; isTaxable: boolean },
+	brand: string
+): TreatmentSaleItemRow {
+	return {
+		id: crypto.randomUUID(),
+		kind: 'treatment',
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		quantity: 1,
+		unitPrice: treatment.salePrice ?? treatment.price,
+		discount: 0,
+		discountType: DiscountTypeEnum.FIXED,
+		notes: '',
+		parentLensItemId,
+		supplierTreatmentId: treatment.id,
+		treatmentName: treatment.name,
+		treatmentCategory: treatment.category,
+		isTaxable: treatment.isTaxable,
+		snapshotBrand: brand
 	};
 }
 

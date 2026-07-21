@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { Package, Eye } from '@lucide/svelte';
+	import { Package, Eye, Sparkles } from '@lucide/svelte';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { findProduct, findLensItem } from './saleItemHelpers';
 	import type { SaleItemRow } from './newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from './wizardContext';
 	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
+	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
 
 	interface Props {
 		item: SaleItemRow;
@@ -27,10 +28,14 @@
 	<div
 		class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {isLensKind
 			? 'bg-brand-blue/15 text-brand-blue'
-			: 'bg-surface-container-high text-brand-navy'}"
+			: item.kind === 'treatment'
+				? 'bg-purple-100 text-purple-600'
+				: 'bg-surface-container-high text-brand-navy'}"
 	>
 		{#if isLensKind}
 			<Eye class="h-3.5 w-3.5" />
+		{:else if item.kind === 'treatment'}
+			<Sparkles class="h-3.5 w-3.5" />
 		{:else}
 			<Package class="h-3.5 w-3.5" />
 		{/if}
@@ -38,10 +43,30 @@
 	<div class="w-full min-w-0">
 		<div class="flex w-full flex-col flex-wrap items-start gap-y-1">
 			<span class="truncate text-sm font-semibold text-brand-navy">
-				{lens?.name ?? product?.name ?? 'Ítem libre'}
+				{item.kind === 'treatment' ? item.treatmentName : lens?.name ?? product?.name ?? 'Ítem libre'}
 			</span>
 			<div class="flex items-center gap-2">
-				{#if isProductKind && product}
+				{#if item.kind === 'treatment'}
+					<span
+						class="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 uppercase"
+					>
+						Tratamiento
+					</span>
+					{#if item.treatmentCategory}
+						<span
+							class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[10px] font-semibold text-brand-blue uppercase"
+						>
+							{getTreatmentCategoryLabel(item.treatmentCategory)}
+						</span>
+					{/if}
+					{#if item.snapshotBrand}
+						<span
+							class="rounded-full bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-on-surface-variant uppercase"
+						>
+							{item.snapshotBrand}
+						</span>
+					{/if}
+				{:else if isProductKind && product}
 					{#if product.description}
 						<p class="mt0.5 truncate text-[11px] text-on-surface-variant">
 							{product.description}
@@ -54,9 +79,7 @@
 							{product.brand.name}
 						</span>
 					{/if}
-				{/if}
-
-				{#if isLensKind && lens}
+				{:else if isLensKind && lens}
 					{#if lens.supplier?.name}
 						<p class="truncate text-[12px] font-semibold text-on-surface-variant">
 							{lens.supplier.name}
