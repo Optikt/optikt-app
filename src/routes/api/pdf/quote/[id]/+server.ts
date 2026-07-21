@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { findQuoteByIdWithRelations } from '$lib/server/db/queries/quotes';
-import { generatePdf } from '$lib/server/pdf';
+import { buildPrintUrl, generatePdf } from '$lib/server/pdf';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 	if (!locals.user) {
@@ -13,9 +13,7 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 		error(404, 'Presupuesto no encontrado');
 	}
 
-	const { PORT = '' } = process.env;
-	const origin = PORT ? `http://localhost:${PORT}` : url.origin;
-	const printUrl = new URL(`/print/quote/${params.id}`, origin).toString();
+	const printUrl = buildPrintUrl(`/print/quote/${params.id}`, url.origin);
 	const cookieHeader = request.headers.get('cookie');
 	const pdf = await generatePdf(printUrl, cookieHeader);
 	const fileName = `presupuesto-${String(quote.quoteNumber).padStart(4, '0')}.pdf`;
