@@ -7,6 +7,7 @@ export { default as PageHeader } from './PageHeader.svelte';
 export { default as WizardHeader } from './WizardHeader.svelte';
 export { default as ActionButton } from './ActionButton.svelte';
 export { default as RowActions } from './RowActions.svelte';
+export { default as SegmentedToggle } from './SegmentedToggle.svelte';
 export { default as FormInput } from './FormInput.svelte';
 export { default as FormTextarea } from './FormTextarea.svelte';
 export { default as FormDatepicker } from './FormDatepicker.svelte';
