@@ -22,10 +22,36 @@ export function normalizePdfUrl(url: string): string {
 	}
 }
 
+function getExecutablePath(): string | Promise<string> {
+	const envPath = process.env.CHROMIUM_PATH;
+	if (envPath) {
+		return envPath;
+	}
+	return chromium.executablePath();
+}
+
+function getBrowserArgs(): string[] {
+	if (process.env.CHROMIUM_PATH) {
+		return [
+			'--no-sandbox',
+			'--disable-setuid-sandbox',
+			'--headless=new',
+			'--disable-gpu',
+			'--hide-scrollbars'
+		];
+	}
+	return [...chromium.args, '--hide-scrollbars'];
+}
+
 async function launchBrowser(): Promise<Browser> {
+	const [executablePath, args] = await Promise.all([
+		getExecutablePath(),
+		Promise.resolve(getBrowserArgs())
+	]);
+
 	const browser = await puppeteer.launch({
-		args: [...chromium.args, '--hide-scrollbars'],
-		executablePath: await chromium.executablePath(),
+		args,
+		executablePath,
 		headless: true
 	});
 

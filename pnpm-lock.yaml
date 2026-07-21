@@ -17,9 +17,6 @@ importers:
       '@pdfslick/core':
         specifier: ^4.0.0
         version: 4.0.0(react@19.2.4)
-      '@sparticuz/chromium':
-        specifier: ^149.0.0
-        version: 149.0.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -78,6 +75,9 @@ importers:
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
+      '@sparticuz/chromium':
+        specifier: ^149.0.0
+        version: 149.0.0
       '@sveltejs/adapter-node':
         specifier: ^5.5.7
         version: 5.5.7(@sveltejs/kit@2.69.2(@sveltejs/vite-plugin-svelte@7.2.0(svelte@5.56.4(@typescript-eslint/types@8.63.0))(vite@8.1.4(@types/node@22.19.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)))(svelte@5.56.4(@typescript-eslint/types@8.63.0))(typescript@6.0.3)(vite@8.1.4(@types/node@22.19.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.0)(yaml@2.9.0)))
