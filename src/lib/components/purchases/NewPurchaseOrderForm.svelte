@@ -514,7 +514,7 @@
 						</div>
 					</div>
 
-					<div class="grid gap-4 sm:grid-cols-2">
+					<div class="flex gap-4">
 						<div class="space-y-1.5">
 							<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 								Tasa BCV
