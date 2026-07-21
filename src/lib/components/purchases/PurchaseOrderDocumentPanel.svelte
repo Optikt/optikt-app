@@ -61,7 +61,7 @@
 {#if bare}
 	<div class="mt-5 space-y-4">
 		<div class="grid gap-4 lg:grid-cols-8">
-			<div class="col-span-2 space-y-1.5">
+			<div class="col-span-2 space-y-1.5 z-15">
 				<p class={fieldLabelClass}>Proveedor</p>
 				<SelectInput
 					bind:value={supplierId}
