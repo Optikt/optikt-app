@@ -182,16 +182,15 @@
 			</div>
 		{:else}
 			<div
-				class="sticky top-0 z-10 hidden bg-surface-container-lowest text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:grid"
-				style="grid-template-columns: minmax(120px,1fr) 60px 200px 75px 100px 95px 80px; gap: 1rem;"
+				class="sticky top-0 z-10 hidden bg-surface-container-lowest text-[10px] font-bold tracking-[0.16em] text-on-surface-variant uppercase xl:grid"
+				style="grid-template-columns: minmax(120px,1fr) 60px 100px 75px 95px 80px; gap: 0.75rem; padding: 0 0.75rem 0.5rem;"
 			>
 				<span>Artículo</span>
 				<span class="text-center">Cant.</span>
-				<span>{isAltMode ? `Costo ${currencySymbol} base` : 'Costo und.'}</span>
-				<span>Venta und.</span>
-				<span>IVA</span>
+				<span class="text-right">{isAltMode ? `Costo ${currencySymbol}` : 'Costo und.'}</span>
+				<span class="text-right">Venta und.</span>
 				<span class="text-right">{isAltMode ? `Total ${currencySymbol}` : 'Total'}</span>
-				<span class="text-center">Checks</span>
+				<span class="text-center"></span>
 			</div>
 
 			{#each items as item, index (item.id)}
