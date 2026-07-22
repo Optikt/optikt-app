@@ -20,7 +20,8 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:bootstrap": "node scripts/bootstrap.js",
-		"svelte:doctor": "svelte-doctor check"
+		"svelte:doctor": "svelte-doctor check",
+		"check:unused": "lilmolly"
 	},
 	"devDependencies": {
 		"@eslint/compat": "latest",
@@ -43,6 +44,7 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.20.0",
 		"globals": "^17.7.0",
+		"lilmolly": "^1.3.7",
 		"playwright": "^1.61.1",
 		"prettier": "^3.9.5",
 		"prettier-plugin-svelte": "^4.1.1",
