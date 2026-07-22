@@ -24,7 +24,6 @@
 		isIncludedAccessory: boolean;
 		availableTreatments?: SupplierTreatment[];
 		currentTreatmentName?: string | null;
-		currentTreatmentTotal?: number;
 		onopenTreatment?: (() => void) | undefined;
 	}
 
@@ -36,7 +35,6 @@
 		isIncludedAccessory = false,
 		availableTreatments = [],
 		currentTreatmentName = null,
-		currentTreatmentTotal = 0,
 		onopenTreatment = undefined
 	}: Props = $props();
 
@@ -61,12 +59,6 @@
 		if (item.kind !== 'lens' || !lens) return 0;
 		const effectiveShipping = item.shippingCostPending ? 0 : item.costOverrides.shippingPrice;
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
-	});
-
-	const treatmentCostPerUnit = $derived.by(() => {
-		if (item.kind !== 'treatment') return 0;
-		const t = item as TreatmentSaleItemRow;
-		return t.costOverride ?? t.purchasePrice;
 	});
 
 	const outOfStock = $derived(

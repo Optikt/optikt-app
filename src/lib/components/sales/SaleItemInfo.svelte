@@ -51,7 +51,7 @@
 		{:else if item.kind === 'treatment'}
 			<Sparkles class="h-3.5 w-3.5" />
 		{:else if isProductKind && productTypeIcon}
-			<svelte:component this={productTypeIcon} class="h-3.5 w-3.5" />
+			<productTypeIcon class="h-3.5 w-3.5"></productTypeIcon>
 		{:else}
 			<Package class="h-3.5 w-3.5" />
 		{/if}

@@ -584,7 +584,6 @@
 								isIncludedAccessory={false}
 								availableTreatments={[]}
 								currentTreatmentName={item.treatmentName}
-								currentTreatmentTotal={item.unitPrice * item.quantity}
 								onopenTreatment={itemTreatmentsMap[item.parentLensItemId]?.length > 0
 									? () => handleOpenTreatmentSelector(item.parentLensItemId)
 									: undefined}
@@ -600,7 +599,6 @@
 							isIncludedAccessory={item.isIncludedAccessory}
 							availableTreatments={itemTreatmentsMap[item.id] ?? []}
 							currentTreatmentName={ti?.name ?? null}
-							currentTreatmentTotal={ti?.total ?? 0}
 							onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
 								? () => handleOpenTreatmentSelector(item.id)
 								: undefined}
