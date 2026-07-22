@@ -6,13 +6,12 @@
 
 	interface Props {
 		open: boolean;
-		onclose?: () => void;
 		initialCost: number;
 		ineyeCount: number;
 		onapply: (newCost: number) => void;
 	}
 
-	let { open = $bindable(), onclose, initialCost, ineyeCount, onapply }: Props = $props();
+	let { open = $bindable(), initialCost, ineyeCount, onapply }: Props = $props();
 
 	let draftCost = $state(initialCost);
 
@@ -24,15 +23,15 @@
 
 	function handleApply() {
 		onapply(draftCost);
-		onclose?.();
+		open = false;
 	}
 
 	function handleCancel() {
-		onclose?.();
+		open = false;
 	}
 </script>
 
-<SlideOver {open} {onclose} size="md">
+<SlideOver bind:open size="md">
 	{#snippet header({ onclose: hclose })}
 		<div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
 			<p class="text-sm font-semibold text-brand-navy">Costo del filtro</p>
