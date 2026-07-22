@@ -3,7 +3,6 @@ import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import type { SaleItemInput } from '$lib/schemas/sales';
-import { DiscountType } from '$lib/shared/enums';
 import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { z } from 'zod';
 
@@ -79,9 +78,28 @@ export function buildSaleItemsFromWizard(
 			continue;
 		}
 
+		if (item.kind === 'treatment') {
+			const lensParent = items.find((i) => i.id === item.parentLensItemId);
+			saleItems.push({
+				itemType: SaleItemType.TREATMENT,
+				parentSaleItemId: lensParent?.id ?? item.parentLensItemId,
+				supplierTreatmentId: item.supplierTreatmentId,
+				quantity: 1,
+				unitPrice: item.unitPrice,
+				discount: item.discount,
+				discountType: item.discountType,
+				snapshotName: item.treatmentName,
+				snapshotBrand: item.snapshotBrand,
+				snapshotTreatmentCategory: item.treatmentCategory,
+				snapshotIsTaxable: item.isTaxable,
+				notes: item.notes || undefined
+			});
+			continue;
+		}
+
 		if (!item.lensPair) continue;
 
-		const parentSaleItemId = crypto.randomUUID();
+		const parentSaleItemId = item.id;
 		const lensPairItem = buildLensPairItemBase(item, lensItems);
 		if (!lensPairItem) continue;
 
@@ -128,22 +146,6 @@ export function buildSaleItemsFromWizard(
 			snapshotIsTaxable: lensPairItem.snapshotIsTaxable,
 			shippingCostPending: item.shippingCostPending || undefined
 		});
-
-		for (const treatment of item.treatments) {
-			saleItems.push({
-				itemType: SaleItemType.TREATMENT,
-				parentSaleItemId,
-				supplierTreatmentId: treatment.supplierTreatmentId,
-				quantity: lensPairItem.eyeCount,
-				unitPrice: treatment.price,
-				discount: 0,
-				discountType: DiscountType.FIXED,
-				snapshotName: treatment.name,
-				snapshotBrand: lensPairItem.snapshotBrand,
-				snapshotTreatmentCategory: treatment.category,
-				snapshotIsTaxable: treatment.isTaxable
-			});
-		}
 	}
 
 	return saleItems;
@@ -193,9 +195,28 @@ export function buildQuoteItemsFromWizard(
 			continue;
 		}
 
+		if (item.kind === 'treatment') {
+			const lensParent = items.find((i) => i.id === item.parentLensItemId);
+			quoteItems.push({
+				itemType: SaleItemType.TREATMENT,
+				parentQuoteItemId: lensParent?.id ?? item.parentLensItemId,
+				supplierTreatmentId: item.supplierTreatmentId,
+				quantity: 1,
+				unitPrice: item.unitPrice,
+				discount: item.discount,
+				discountType: item.discountType,
+				snapshotName: item.treatmentName,
+				snapshotBrand: item.snapshotBrand,
+				snapshotTreatmentCategory: item.treatmentCategory,
+				snapshotIsTaxable: item.isTaxable,
+				notes: item.notes || undefined
+			});
+			continue;
+		}
+
 		if (!item.lensPair) continue;
 
-		const parentQuoteItemId = crypto.randomUUID();
+		const parentQuoteItemId = item.id;
 		const lensPairItem = buildLensPairItemBase(item, lensItems);
 		if (!lensPairItem) continue;
 
@@ -241,22 +262,6 @@ export function buildQuoteItemsFromWizard(
 			snapshotPriceType: lensPairItem.snapshotPriceType,
 			snapshotIsTaxable: lensPairItem.snapshotIsTaxable
 		});
-
-		for (const treatment of item.treatments) {
-			quoteItems.push({
-				itemType: SaleItemType.TREATMENT,
-				parentQuoteItemId,
-				supplierTreatmentId: treatment.supplierTreatmentId,
-				quantity: lensPairItem.eyeCount,
-				unitPrice: treatment.price,
-				discount: 0,
-				discountType: DiscountType.FIXED,
-				snapshotName: treatment.name,
-				snapshotBrand: lensPairItem.snapshotBrand,
-				snapshotTreatmentCategory: treatment.category,
-				snapshotIsTaxable: treatment.isTaxable
-			});
-		}
 	}
 
 	return quoteItems;

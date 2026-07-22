@@ -1,7 +1,7 @@
 {
 	"name": "optikt-app",
 	"private": true,
-	"version": "0.15.2",
+	"version": "0.16.1",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
@@ -36,6 +36,7 @@
 		"@tailwindcss/vite": "^4.3.2",
 		"@types/node": "^22",
 		"@vitest/browser-playwright": "^4.1.10",
+		"@sparticuz/chromium": "^149.0.0",
 		"bits-ui": "^2.18.1",
 		"drizzle-kit": "^0.31.10",
 		"eslint": "^10.7.0",
@@ -63,7 +64,6 @@
 		"@formkit/auto-animate": "^0.10.0",
 		"@node-rs/argon2": "^2.0.2",
 		"@pdfslick/core": "^4.0.0",
-		"@sparticuz/chromium": "^149.0.0",
 		"clsx": "^2.1.1",
 		"date-fns": "^4.4.0",
 		"drizzle-orm": "^0.45.2",

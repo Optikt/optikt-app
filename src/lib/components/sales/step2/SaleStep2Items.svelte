@@ -20,11 +20,17 @@
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { Customer, Prescription } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData, LensSaleItemRow } from '../newSaleTypes';
+	import type {
+		SaleItemRow,
+		NewCustomerData,
+		LensSaleItemRow,
+		TreatmentSaleItemRow
+	} from '../newSaleTypes';
 	import {
 		createEmptyProductItem,
 		createEmptyLensItem,
-		createEmptyFreeItem
+		createEmptyFreeItem,
+		createEmptyTreatmentItem
 	} from '../newSaleTypes';
 	import {
 		allowsDuplicateProductLines,
@@ -38,6 +44,7 @@
 	import SaleCustomerBanner from '../SaleCustomerBanner.svelte';
 	import SaleStep2Toolbar from './SaleStep2Toolbar.svelte';
 	import SaleStep2SearchBar from './SaleStep2SearchBar.svelte';
+	import SaleTreatmentSlideOver from './SaleTreatmentSlideOver.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -236,6 +243,15 @@
 		const nextState = removeItemWithIncludedAccessories(items, includedAccessoryMap, id);
 		items = nextState.items;
 		includedAccessoryMap = nextState.includedAccessoryMap;
+		const childIds = items
+			.filter(
+				(item): item is TreatmentSaleItemRow =>
+					item.kind === 'treatment' && item.parentLensItemId === id
+			)
+			.map((item) => item.id);
+		if (childIds.length > 0) {
+			items = items.filter((item) => !childIds.includes(item.id));
+		}
 	}
 
 	function addFreeItem() {
@@ -247,7 +263,6 @@
 	// TREATMENTS
 	// ============================================================================
 
-	/** Cache of treatments per supplier to avoid re-fetching */
 	type QuickAddFilter = 'all' | 'product' | 'lens';
 
 	let quickAddFilter = $state<QuickAddFilter>('all');
@@ -261,7 +276,6 @@
 		return treatmentCache[supplierId];
 	}
 
-	// Load treatments when a lens item's supplier changes
 	$effect(() => {
 		const lensItemsInCart = items.filter((i): i is LensSaleItemRow => i.kind === 'lens');
 		untrack(() => {
@@ -273,6 +287,86 @@
 			}
 		});
 	});
+
+	const itemTreatmentsMap = $derived.by(() => {
+		const map: Record<string, SupplierTreatment[]> = {};
+		for (const item of items) {
+			if (item.kind !== 'lens') continue;
+			const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
+			if (lens?.supplier?.id && treatmentCache[lens.supplier.id]) {
+				map[item.id] = treatmentCache[lens.supplier.id];
+			}
+		}
+		return map;
+	});
+
+	const lensTreatmentInfo = $derived.by(() => {
+		const map: Record<string, { name: string; total: number } | null> = {};
+		for (const item of items) {
+			if (item.kind !== 'lens') continue;
+			const tItem = items.find(
+				(i): i is TreatmentSaleItemRow => i.kind === 'treatment' && i.parentLensItemId === item.id
+			);
+			map[item.id] = tItem
+				? { name: tItem.treatmentName, total: tItem.unitPrice * tItem.quantity }
+				: null;
+		}
+		return map;
+	});
+
+	let activeTreatmentLensId = $state<string | null>(null);
+
+	const activeTreatmentAvail = $derived(
+		activeTreatmentLensId ? (itemTreatmentsMap[activeTreatmentLensId] ?? []) : []
+	);
+
+	const activeTreatmentItem = $derived(
+		activeTreatmentLensId
+			? (items.find(
+					(item): item is TreatmentSaleItemRow =>
+						item.kind === 'treatment' && item.parentLensItemId === activeTreatmentLensId
+				) ?? null)
+			: null
+	);
+
+	function handleOpenTreatmentSelector(lensItemId: string) {
+		activeTreatmentLensId = lensItemId;
+	}
+
+	function handleCloseTreatmentSelector() {
+		activeTreatmentLensId = null;
+	}
+
+	function handleSelectTreatment(treatment: SupplierTreatment | null) {
+		if (!activeTreatmentLensId) return;
+		const lensItem = items.find((i) => i.id === activeTreatmentLensId);
+		if (!lensItem || lensItem.kind !== 'lens') return;
+		const lens = lensItems.find((l) => l.id === lensItem.lensPair.catalogItemId);
+		const brand = lens?.supplier?.name ?? '';
+
+		if (treatment) {
+			const existing = items.findIndex(
+				(i): i is TreatmentSaleItemRow =>
+					i.kind === 'treatment' && i.parentLensItemId === activeTreatmentLensId
+			);
+			const newItem = createEmptyTreatmentItem(activeTreatmentLensId, treatment, brand);
+			if (existing >= 0) {
+				items = [...items.slice(0, existing), newItem, ...items.slice(existing + 1)];
+			} else {
+				const lensIdx = items.findIndex((i) => i.id === activeTreatmentLensId);
+				items = [...items.slice(0, lensIdx + 1), newItem, ...items.slice(lensIdx + 1)];
+			}
+		} else {
+			items = items.filter(
+				(i) => !(i.kind === 'treatment' && i.parentLensItemId === activeTreatmentLensId)
+			);
+		}
+		activeTreatmentLensId = null;
+	}
+
+	function handleRemoveTreatment(treatmentItemId: string) {
+		items = items.filter((i) => i.id !== treatmentItemId);
+	}
 
 	// ============================================================================
 	// PRESCRIPTION VALIDATION
@@ -480,13 +574,37 @@
 				</div>
 			{:else}
 				{#each items as item, _index (item.id)}
-					<SaleStep2ItemCard
-						{item}
-						rxErrs={rxErrorsPerLens[item.id] ?? {}}
-						onremove={() => removeItem(item.id)}
-						eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
-						isIncludedAccessory={item.isIncludedAccessory}
-					/>
+					{#if item.kind === 'treatment'}
+						<div class="border-l-2 border-slate-200 pl-3 ml-4">
+							<SaleStep2ItemCard
+								{item}
+								onremove={() => handleRemoveTreatment(item.id)}
+								eyeCount={0}
+								isIncludedAccessory={false}
+								availableTreatments={[]}
+								currentTreatmentName={item.treatmentName}
+								currentTreatmentTotal={item.unitPrice * item.quantity}
+								onopenTreatment={itemTreatmentsMap[item.parentLensItemId]?.length > 0
+									? () => handleOpenTreatmentSelector(item.parentLensItemId)
+									: undefined}
+							/>
+						</div>
+					{:else}
+						{@const ti = item.kind === 'lens' ? (lensTreatmentInfo[item.id] ?? null) : null}
+						<SaleStep2ItemCard
+							{item}
+							rxErrs={item.kind === 'lens' ? (rxErrorsPerLens[item.id] ?? {}) : {}}
+							onremove={() => removeItem(item.id)}
+							eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
+							isIncludedAccessory={item.isIncludedAccessory}
+							availableTreatments={itemTreatmentsMap[item.id] ?? []}
+							currentTreatmentName={ti?.name ?? null}
+							currentTreatmentTotal={ti?.total ?? 0}
+							onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
+								? () => handleOpenTreatmentSelector(item.id)
+								: undefined}
+						/>
+					{/if}
 				{/each}
 			{/if}
 		</div>
@@ -516,3 +634,11 @@
 		onPrimary={onnext}
 	/>
 </div>
+
+<SaleTreatmentSlideOver
+	open={activeTreatmentLensId !== null}
+	onclose={handleCloseTreatmentSelector}
+	availableTreatments={activeTreatmentAvail}
+	currentTreatmentId={activeTreatmentItem?.supplierTreatmentId ?? null}
+	onselect={handleSelectTreatment}
+/>

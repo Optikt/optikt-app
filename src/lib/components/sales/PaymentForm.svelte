@@ -625,21 +625,6 @@
 							</button>
 						</div>
 					</div>
-					<div class="flex-[0.7]">
-						<label
-							for="pay-date"
-							class="mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
-						>
-							Fecha
-						</label>
-						<input
-							id="pay-date"
-							type="date"
-							bind:value={paymentDate}
-							max="9999-12-31"
-							class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none"
-						/>
-					</div>
 				</div>
 
 				{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
@@ -689,6 +674,26 @@
 					</div>
 				{/if}
 			{/if}
+
+			<div>
+				<label
+					for="pay-date"
+					class={variant === 'drawer'
+						? 'mb-1 block text-sm font-semibold text-slate-700'
+						: 'mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase'}
+				>
+					Fecha
+				</label>
+				<input
+					id="pay-date"
+					type="date"
+					bind:value={paymentDate}
+					max="9999-12-31"
+					class={variant === 'drawer'
+						? 'w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none'
+						: 'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none'}
+				/>
+			</div>
 
 			{#if showExtraFields}
 				<label class="block space-y-1">

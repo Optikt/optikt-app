@@ -41,6 +41,9 @@ export function getItemName(
 	if (item.kind === 'product') {
 		return findProduct(item, products)?.name ?? '-';
 	}
+	if (item.kind === 'treatment') {
+		return item.treatmentName;
+	}
 	return findLensItem(item, lensItems)?.name ?? '-';
 }
 
@@ -88,12 +91,18 @@ export function itemLineTotal(item: SaleItemRow): number {
 }
 
 export function step2ItemLineTotal(item: SaleItemRow): number {
-	const qty = item.kind === 'product' || item.kind === 'free' ? item.quantity : 1;
+	const qty =
+		item.kind === 'product' || item.kind === 'free' || item.kind === 'treatment'
+			? item.quantity
+			: 1;
 	return item.unitPrice * qty;
 }
 
 export function getItemDiscountBase(item: SaleItemRow): number {
-	const qty = item.kind === 'product' || item.kind === 'free' ? item.quantity : 1;
+	const qty =
+		item.kind === 'product' || item.kind === 'free' || item.kind === 'treatment'
+			? item.quantity
+			: 1;
 	return item.unitPrice * qty;
 }
 
@@ -781,17 +790,15 @@ export function buildTaxItemsFromWizard(
 				isTaxable: lens?.isTaxable ?? false,
 				taxRate: defaultTaxRate
 			});
-			const eyeCount = getEnabledEyeCount(item);
-			for (const t of item.treatments) {
-				result.push({
-					unitPrice: t.price,
-					quantity: eyeCount,
-					discount: 0,
-					discountType: 'FIXED',
-					isTaxable: t.isTaxable,
-					taxRate: defaultTaxRate
-				});
-			}
+		} else if (item.kind === 'treatment') {
+			result.push({
+				unitPrice: item.unitPrice,
+				quantity: 1,
+				discount: item.discount,
+				discountType: item.discountType,
+				isTaxable: item.isTaxable,
+				taxRate: defaultTaxRate
+			});
 		}
 	}
 	return result;

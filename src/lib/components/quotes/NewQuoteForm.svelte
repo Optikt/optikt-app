@@ -177,6 +177,9 @@
 						i.unitPrice > 0
 					);
 				}
+				if (i.kind === 'treatment') {
+					return i.supplierTreatmentId !== '' && i.unitPrice >= 0;
+				}
 				// lens
 				return (
 					(i.lensPair?.catalogItemId ?? '') !== '' &&

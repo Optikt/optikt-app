@@ -67,11 +67,30 @@ const lensRow: SaleItemRow = {
 
 describe('buildSaleItemsFromWizard', () => {
 	it('serializes one lens pair row plus treatment children', () => {
-		const result = buildSaleItemsFromWizard([lensRow], [], [...lensItems] as never);
+		const treatmentRow: SaleItemRow = {
+			id: 'row-t1',
+			kind: 'treatment' as const,
+			parentLensItemId: 'row-1',
+			supplierTreatmentId: 'treatment-1',
+			treatmentName: 'Antirreflejo',
+			treatmentCategory: 'AR',
+			isTaxable: true,
+			snapshotBrand: 'Novak',
+			quantity: 1,
+			unitPrice: 5,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: '',
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null
+		};
+
+		const result = buildSaleItemsFromWizard([lensRow, treatmentRow], [], [...lensItems] as never);
 
 		expect(result).toHaveLength(2);
 		expect(result[0]).toMatchObject({
 			itemType: SaleItemType.LENS_PAIR,
+			id: 'row-1',
 			quantity: 1,
 			unitPrice: 25,
 			odSphere: 2,
@@ -83,20 +102,44 @@ describe('buildSaleItemsFromWizard', () => {
 		});
 		expect(result[1]).toMatchObject({
 			itemType: SaleItemType.TREATMENT,
-			parentSaleItemId: result[0].id,
-			quantity: 2,
-			unitPrice: 5
+			parentSaleItemId: 'row-1',
+			quantity: 1,
+			unitPrice: 5,
+			supplierTreatmentId: 'treatment-1',
+			snapshotName: 'Antirreflejo',
+			snapshotTreatmentCategory: 'AR',
+			snapshotIsTaxable: true,
+			snapshotBrand: 'Novak'
 		});
 	});
 });
 
 describe('buildQuoteItemsFromWizard', () => {
 	it('serializes one quote lens row with both eyes on the same item', () => {
-		const result = buildQuoteItemsFromWizard([lensRow], [], [...lensItems] as never);
+		const treatmentRow: SaleItemRow = {
+			id: 'row-t1',
+			kind: 'treatment' as const,
+			parentLensItemId: 'row-1',
+			supplierTreatmentId: 'treatment-1',
+			treatmentName: 'Antirreflejo',
+			treatmentCategory: 'AR',
+			isTaxable: true,
+			snapshotBrand: 'Novak',
+			quantity: 1,
+			unitPrice: 5,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: '',
+			isIncludedAccessory: false,
+			includedAccessoryParentItemId: null
+		};
+
+		const result = buildQuoteItemsFromWizard([lensRow, treatmentRow], [], [...lensItems] as never);
 
 		expect(result).toHaveLength(2);
 		expect(result[0]).toMatchObject({
 			itemType: SaleItemType.LENS_PAIR,
+			id: 'row-1',
 			odSphere: 2,
 			osSphere: 1.75,
 			quantity: 1,
@@ -104,8 +147,14 @@ describe('buildQuoteItemsFromWizard', () => {
 		});
 		expect(result[1]).toMatchObject({
 			itemType: SaleItemType.TREATMENT,
-			parentQuoteItemId: result[0].id,
-			quantity: 2
+			parentQuoteItemId: 'row-1',
+			quantity: 1,
+			unitPrice: 5,
+			supplierTreatmentId: 'treatment-1',
+			snapshotName: 'Antirreflejo',
+			snapshotTreatmentCategory: 'AR',
+			snapshotIsTaxable: true,
+			snapshotBrand: 'Novak'
 		});
 	});
 });

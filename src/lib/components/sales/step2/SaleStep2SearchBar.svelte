@@ -23,7 +23,7 @@
 
 	interface Props {
 		filter: 'all' | 'product' | 'lens';
-		items: { productId: string; kind: string }[];
+		items: { productId?: string; kind: string }[];
 		onselect: (option: QuickAddOption) => void;
 	}
 
