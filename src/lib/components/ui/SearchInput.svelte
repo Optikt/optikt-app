@@ -17,7 +17,7 @@
 </script>
 
 <div class={['relative', className]}>
-	<Search class="absolute top-1/2 left-3 z-9999 h-4 w-4 -translate-y-1/2 text-gray-400" />
+	<Search class="absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
 	<input
 		type="search"
 		{placeholder}
