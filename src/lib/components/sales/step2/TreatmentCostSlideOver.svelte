@@ -13,7 +13,7 @@
 
 	let { open = $bindable(), initialCost, ineyeCount, onapply }: Props = $props();
 
-	let draftCost = $state(initialCost);
+	let draftCost = $state(untrack(() => initialCost));
 
 	$effect(() => {
 		if (open) {

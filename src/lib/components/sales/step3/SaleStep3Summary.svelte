@@ -93,7 +93,9 @@
 		discountType === DiscountType.PERCENTAGE ? (discount / 100) * grossSubtotal : discount
 	);
 
-	const appliedGlobalDiscount = $derived(Math.min(Math.max(rawGlobalDiscountAmount, 0), grossSubtotal));
+	const appliedGlobalDiscount = $derived(
+		Math.min(Math.max(rawGlobalDiscountAmount, 0), grossSubtotal)
+	);
 
 	const globalDiscountMax = $derived(getDiscountValueMax(discountType, grossSubtotal));
 
