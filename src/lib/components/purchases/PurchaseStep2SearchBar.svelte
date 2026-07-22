@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Search, X, Package, Eye } from '@lucide/svelte';
+	import { Search, X, Package, Eye, PlusCircle } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
 	import { matchesAllTokens } from '$lib/utils/search';
 	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
@@ -84,7 +84,7 @@
 
 	const visibleOptions = $derived.by(() => {
 		const q = query.trim();
-		if (q.length < 2) return [];
+		if (q.length === 0) return [];
 		return allOptions.filter((opt) => {
 			const searchable = `${opt.name} ${opt.secondaryText}`;
 			return matchesAllTokens(q, searchable);
@@ -108,7 +108,7 @@
 		inputEl?.focus();
 	}
 	function handleInput() {
-		open = query.trim().length >= 2;
+		open = query.trim().length > 0;
 	}
 	function handleBlur() {
 		setTimeout(() => {
@@ -137,7 +137,7 @@
 		onkeydown={handleKeydown}
 		onblur={handleBlur}
 		onfocus={() => {
-			if (query.trim().length >= 2) open = true;
+			if (query.trim().length > 0) open = true;
 		}}
 		{placeholder}
 		disabled={disabled || supplierId === ''}
@@ -190,9 +190,14 @@
 								{formatPrice(opt.price)}
 							</p>
 						</div>
+						<div
+							class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-blue/10 text-brand-blue"
+						>
+							<PlusCircle class="h-3.5 w-3.5" />
+						</div>
 					</button>
 				{/each}
-			{:else if query.trim().length >= 2}
+			{:else if query.trim().length > 0}
 				<div class="py-6 text-center">
 					<p class="text-sm text-on-surface-variant">
 						Sin resultados para &quot;{query.trim()}&quot;

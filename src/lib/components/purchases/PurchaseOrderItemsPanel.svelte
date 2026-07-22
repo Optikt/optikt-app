@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Glasses, Package } from '@lucide/svelte';
-	import { AppBadge } from '$lib/components/ui';
 	import {
 		PurchaseDocumentType,
 		PurchaseOrderItemType,
@@ -113,20 +112,22 @@
 </script>
 
 <section class="rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-outline-variant/20 sm:p-5">
-	<div class="flex items-center justify-between">
-		<div class="flex items-center gap-3">
-			<h2 class="text-lg font-semibold text-brand-navy">Artículos</h2>
-			<AppBadge variant="neutral">{items.length} líneas</AppBadge>
-		</div>
-		{#if items.length > 0}
-			<p class="text-xs text-on-surface-variant">
-				Total:
-				<span class="ml-1 font-mono text-sm font-semibold text-brand-navy tabular-nums"
-					>{isAltMode ? currencySymbol : 'USD'}
-					{itemsTotalCost.toFixed(2)}</span
+	<div class="flex items-center justify-end border-b border-outline-variant/20 pb-2">
+		<div class="flex items-center gap-4 text-xs font-medium text-on-surface-variant">
+			{#if items.length > 0}
+				<span>{items.length} {items.length === 1 ? 'línea' : 'líneas'}</span>
+				<div class="h-3 w-px bg-outline-variant/30"></div>
+				<span
+					>Total:
+					<span class="font-mono font-semibold text-brand-navy tabular-nums"
+						>{isAltMode ? currencySymbol : 'USD'}
+						{itemsTotalCost.toFixed(2)}</span
+					></span
 				>
-			</p>
-		{/if}
+			{:else}
+				<span class="text-on-surface-variant">0 líneas</span>
+			{/if}
+		</div>
 	</div>
 
 	<div

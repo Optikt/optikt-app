@@ -18,7 +18,8 @@
 		PurchaseSourceCurrency,
 		CurrencyCode,
 		ACTIVE_PURCHASE_SOURCE_CURRENCIES,
-		PURCHASE_SOURCE_CURRENCY_LABELS
+		PURCHASE_SOURCE_CURRENCY_LABELS,
+		getCurrencyLabel
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -455,11 +456,6 @@
 
 <div class="space-y-3 p-4">
 	<WizardHeader
-		subtitle={currentStep > 0 && supplierId
-			? `Proveedor: ${suppliers.find((s) => s.id === supplierId)?.name ?? '—'} · Moneda: ${settlementCurrency || sourceCurrency} · BCV: ${bcvRate || '—'}${sourceRateToVes > 0 ? ` · ${sourceCurrency}: ${sourceRateToVes}` : ''}`
-			: isEdit
-				? 'Los cambios se guardan como borrador'
-				: undefined}
 		{steps}
 		currentStep={currentStep + 1}
 		canNavigateToStep={(stepNum) => stepNum - 1 < currentStep || stepValid}
@@ -475,6 +471,28 @@
 			</p>
 		{/snippet}
 	</WizardHeader>
+
+	{#if isEdit}
+		<p class="text-xs text-on-surface-variant">Los cambios se guardan como borrador</p>
+	{:else if currentStep > 0 && supplierId}
+		<p class="text-xs text-on-surface-variant">
+			Proveedor:
+			<span class="font-semibold text-brand-navy"
+				>{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}</span
+			>
+			<span class="mx-1.5 text-outline">·</span>
+			Moneda:
+			<span class="font-semibold text-brand-navy"
+				>{getCurrencyLabel(settlementCurrency || sourceCurrency)}</span
+			>
+			<span class="mx-1.5 text-outline">·</span>
+			BCV: <span class="font-semibold text-brand-navy">{bcvRate || '—'}</span>
+			{#if sourceRateToVes > 0}
+				<span class="mx-1.5 text-outline">·</span>
+				{sourceCurrency}: <span class="font-semibold text-brand-navy">{sourceRateToVes}</span>
+			{/if}
+		</p>
+	{/if}
 
 	<!-- Step content -->
 	{#if currentStep === 0}
