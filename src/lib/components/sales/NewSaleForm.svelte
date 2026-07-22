@@ -118,17 +118,22 @@
 	let orderDateIso = $state(dateToISODateString(initialDate));
 
 	// Sync: user edits date in WizardHeader → update saleDate
+	// Guard: only accept full "YYYY-MM-DD" to prevent partial typing corruption
 	$effect(() => {
-		const parsed = fromISODate(orderDateIso);
-		if (parsed && parsed.getTime() !== saleDate.getTime()) {
-			saleDate = parsed;
+		if (/^\d{4}-\d{2}-\d{2}$/.test(orderDateIso)) {
+			const parsed = fromISODate(orderDateIso);
+			if (parsed && parsed.getTime() !== saleDate.getTime()) {
+				saleDate = parsed;
+			}
 		}
 	});
 	// Sync: saleDate changes externally → update WizardHeader input
 	$effect(() => {
-		const iso = dateToISODateString(saleDate);
-		if (iso !== orderDateIso) {
-			orderDateIso = iso;
+		if (saleDate instanceof Date && !isNaN(saleDate.getTime())) {
+			const iso = dateToISODateString(saleDate);
+			if (iso !== orderDateIso) {
+				orderDateIso = iso;
+			}
 		}
 	});
 

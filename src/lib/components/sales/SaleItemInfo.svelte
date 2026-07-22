@@ -7,6 +7,8 @@
 	import { CATALOG_KEY, type CatalogData } from './wizardContext';
 	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
 	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
+	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
+	import { ProductType } from '$lib/shared/enums/productTypes';
 
 	interface Props {
 		item: SaleItemRow;
@@ -22,6 +24,10 @@
 
 	const product = $derived(item.kind === 'product' ? findProduct(item, products) : undefined);
 	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);
+
+	const productTypeIcon = $derived(
+		item.kind === 'product' && product?.type ? getProductTypeIcon(product.type) : undefined
+	);
 </script>
 
 <div class="flex w-2/3 min-w-0 flex-1 items-start gap-2.5">
@@ -30,12 +36,22 @@
 			? 'bg-brand-blue/15 text-brand-blue'
 			: item.kind === 'treatment'
 				? 'bg-purple-100 text-purple-600'
-				: 'bg-surface-container-high text-brand-navy'}"
+				: product?.type === ProductType.FRAME
+					? 'bg-blue-100 text-blue-600'
+					: product?.type === ProductType.SUNGLASSES
+						? 'bg-green-100 text-green-600'
+						: product?.type === ProductType.CONTACT_LENS
+							? 'bg-purple-100 text-purple-600'
+							: product?.type === ProductType.ACCESSORY
+								? 'bg-yellow-100 text-yellow-600'
+								: 'bg-surface-container-high text-brand-navy'}"
 	>
 		{#if isLensKind}
 			<Eye class="h-3.5 w-3.5" />
 		{:else if item.kind === 'treatment'}
 			<Sparkles class="h-3.5 w-3.5" />
+		{:else if isProductKind && productTypeIcon}
+			<svelte:component this={productTypeIcon} class="h-3.5 w-3.5" />
 		{:else}
 			<Package class="h-3.5 w-3.5" />
 		{/if}

@@ -87,20 +87,18 @@
 
 	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
-	const subtotal = $derived(calculateSaleSummarySubtotal(items));
+	const grossSubtotal = $derived(calculateSaleSummarySubtotal(items));
 
 	const rawGlobalDiscountAmount = $derived(
-		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
+		discountType === DiscountType.PERCENTAGE ? (discount / 100) * grossSubtotal : discount
 	);
 
-	const appliedGlobalDiscount = $derived(Math.min(Math.max(rawGlobalDiscountAmount, 0), subtotal));
+	const appliedGlobalDiscount = $derived(Math.min(Math.max(rawGlobalDiscountAmount, 0), grossSubtotal));
 
-	const total = $derived(Math.max(0, subtotal - appliedGlobalDiscount));
-
-	const globalDiscountMax = $derived(getDiscountValueMax(discountType, subtotal));
+	const globalDiscountMax = $derived(getDiscountValueMax(discountType, grossSubtotal));
 
 	const hasInvalidGlobalDiscount = $derived(
-		!isDiscountValueValid(discount, discountType, subtotal)
+		!isDiscountValueValid(discount, discountType, grossSubtotal)
 	);
 
 	const canSubmitFinal = $derived(canSubmit && !hasInvalidGlobalDiscount);
@@ -110,6 +108,9 @@
 	const adjustedTaxBreakdown = $derived.by(() =>
 		computeAdjustedTaxBreakdown(taxItems, appliedGlobalDiscount)
 	);
+
+	const total = $derived(adjustedTaxBreakdown.total);
+	const subtotal = $derived(adjustedTaxBreakdown.taxableBase + adjustedTaxBreakdown.exemptTotal);
 
 	const taxableRates = $derived.by(() =>
 		Array.from(
@@ -474,7 +475,7 @@
 				</div>
 				{#if hasInvalidGlobalDiscount}
 					<p class="mt-1 text-[9px] font-semibold text-error">
-						Max: {discountType === DiscountType.PERCENTAGE ? '100%' : formatPrice(subtotal)}
+						Max: {discountType === DiscountType.PERCENTAGE ? '100%' : formatPrice(grossSubtotal)}
 					</p>
 				{/if}
 			</div>
