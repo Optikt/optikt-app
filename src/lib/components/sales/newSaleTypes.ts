@@ -136,14 +136,15 @@ export function createEmptyTreatmentItem(
 		salePrice?: number | null;
 		isTaxable: boolean;
 	},
-	brand: string
+	brand: string,
+	eyeCount: number = 1
 ): TreatmentSaleItemRow {
 	return {
 		id: crypto.randomUUID(),
 		kind: 'treatment',
 		isIncludedAccessory: false,
 		includedAccessoryParentItemId: null,
-		quantity: 1,
+		quantity: eyeCount,
 		unitPrice: treatment.salePrice ?? treatment.price,
 		discount: 0,
 		discountType: DiscountTypeEnum.FIXED,

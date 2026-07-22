@@ -349,7 +349,8 @@
 				(i): i is TreatmentSaleItemRow =>
 					i.kind === 'treatment' && i.parentLensItemId === activeTreatmentLensId
 			);
-			const newItem = createEmptyTreatmentItem(activeTreatmentLensId, treatment, brand);
+			const eyeCount = getEnabledEyeCount(lensItem);
+			const newItem = createEmptyTreatmentItem(activeTreatmentLensId, treatment, brand, eyeCount);
 			if (existing >= 0) {
 				items = [...items.slice(0, existing), newItem, ...items.slice(existing + 1)];
 			} else {
