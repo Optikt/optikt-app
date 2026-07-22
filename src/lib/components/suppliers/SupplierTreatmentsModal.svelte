@@ -16,7 +16,13 @@
 		TREATMENT_CATEGORY_LABELS,
 		getTreatmentCategoryLabel
 	} from '$lib/shared/enums';
-	import { getErrorMessage, formatPrice, generateUUID, toastUnboundErrors, getFormErrorMessage } from '$lib/utils';
+	import {
+		getErrorMessage,
+		formatPrice,
+		generateUUID,
+		toastUnboundErrors,
+		getFormErrorMessage
+	} from '$lib/utils';
 	import { ConfirmModal } from '$lib/components/ui';
 	import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 
@@ -214,15 +220,18 @@
 								>
 									<input type="hidden" name="id" value={treatment.id} />
 									<div>
-										<label for="edit-name-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500">Nombre</label>
-											<input
-												id="edit-name-{treatment.id}"
-												name="name"
-												type="text"
-												value={treatment.name}
-												class="w-full rounded-md border border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-												placeholder="Nombre del tratamiento"
-											/>
+										<label
+											for="edit-name-{treatment.id}"
+											class="mb-1 block text-[11px] font-medium text-slate-500">Nombre</label
+										>
+										<input
+											id="edit-name-{treatment.id}"
+											name="name"
+											type="text"
+											value={treatment.name}
+											class="w-full rounded-md border border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+											placeholder="Nombre del tratamiento"
+										/>
 										{#if currentEditForm.fields.name?.issues()}
 											<p class="mt-1 text-xs text-red-500">
 												{getFormErrorMessage(currentEditForm.fields.name.issues())}
@@ -231,7 +240,10 @@
 									</div>
 									<div class="flex items-center gap-3">
 										<div class="flex-1">
-											<label for="edit-category-{treatment.id}" class="mb-1 block text-[11px] font-medium text-slate-500">Categoría</label>
+											<label
+												for="edit-category-{treatment.id}"
+												class="mb-1 block text-[11px] font-medium text-slate-500">Categoría</label
+											>
 											<select
 												id="edit-category-{treatment.id}"
 												name="category"
@@ -396,7 +408,9 @@
 								placeholder="Nombre del tratamiento"
 							/>
 							{#if currentCreateForm.fields.name?.issues()}
-								<p class="mt-1 text-xs text-red-500">{getFormErrorMessage(currentCreateForm.fields.name.issues())}</p>
+								<p class="mt-1 text-xs text-red-500">
+									{getFormErrorMessage(currentCreateForm.fields.name.issues())}
+								</p>
 							{/if}
 						</div>
 						<div class="flex items-center gap-3">
@@ -430,7 +444,9 @@
 									placeholder="0.00"
 								/>
 								{#if currentCreateForm.fields.price?.issues()}
-									<p class="mt-1 text-xs text-red-500">{getFormErrorMessage(currentCreateForm.fields.price.issues())}</p>
+									<p class="mt-1 text-xs text-red-500">
+										{getFormErrorMessage(currentCreateForm.fields.price.issues())}
+									</p>
 								{/if}
 							</div>
 							<div class="w-28">
