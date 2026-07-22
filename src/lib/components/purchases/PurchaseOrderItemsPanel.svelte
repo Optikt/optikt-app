@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Plus } from '@lucide/svelte';
-	import { AppBadge, SegmentedToggle } from '$lib/components/ui';
+	import { Glasses, Package } from '@lucide/svelte';
+	import { AppBadge } from '$lib/components/ui';
 	import {
 		PurchaseDocumentType,
 		PurchaseOrderItemType,
@@ -45,8 +45,6 @@
 	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
 
 	let pendingItemType = $state(PurchaseOrderItemType.PRODUCT);
-	let pendingProductId = $state('');
-	let pendingLensCatalogItemId = $state('');
 
 	const supplierProducts = $derived(
 		supplierId === '' ? [] : products.filter((product) => product.supplierId === supplierId)
@@ -58,52 +56,46 @@
 	const addedProductIds = $derived(new Set(items.map((i) => i.productId).filter(Boolean)));
 	const addedLensIds = $derived(new Set(items.map((i) => i.lensCatalogItemId).filter(Boolean)));
 
-	const canAddLine = $derived(
-		supplierId !== '' &&
-			(pendingItemType === PurchaseOrderItemType.PRODUCT
-				? pendingProductId !== ''
-				: pendingLensCatalogItemId !== '')
-	);
-
 	const currencySymbol = $derived(
 		sourceCurrency === 'EUR' ? '€' : sourceCurrency === 'VES' ? 'Bs' : '$'
+	);
+
+	const itemsTotalCost = $derived(
+		isAltMode
+			? items.reduce(
+					(sum, item) => sum + Number(item.unitPurchasePriceAlt ?? 0) * Number(item.quantity),
+					0
+				)
+			: items.reduce((sum, item) => sum + Number(item.unitPurchasePrice) * Number(item.quantity), 0)
 	);
 
 	function setPendingType(itemType: PurchaseOrderItemType) {
 		if (pendingItemType === itemType) return;
 		pendingItemType = itemType;
-		pendingProductId = '';
-		pendingLensCatalogItemId = '';
 	}
 
-	function handleSearchSelect(id: string, _kind: 'product' | 'lens') {
-		if (_kind === 'product') {
-			pendingProductId = id;
+	function handleSearchSelect(id: string, kind: 'product' | 'lens') {
+		if (kind === 'product') {
+			if (items.some((i) => i.productId === id)) return;
 		} else {
-			pendingLensCatalogItemId = id;
+			if (items.some((i) => i.lensCatalogItemId === id)) return;
 		}
-	}
-
-	function addLine() {
-		if (!canAddLine) return;
 
 		const nextItem = createEmptyPurchaseOrderDraftItem(
-			pendingItemType,
+			kind === 'product' ? PurchaseOrderItemType.PRODUCT : PurchaseOrderItemType.LENS,
 			documentType,
 			defaultTaxRate
 		);
 
-		if (pendingItemType === PurchaseOrderItemType.PRODUCT) {
-			const product = supplierProducts.find((p) => p.id === pendingProductId);
+		if (kind === 'product') {
+			const product = supplierProducts.find((p) => p.id === id);
 			if (product) {
 				applyProductDefaults(nextItem, product, documentType, defaultTaxRate);
-				pendingProductId = '';
 			}
 		} else {
-			const lens = supplierLensItems.find((l) => l.id === pendingLensCatalogItemId);
+			const lens = supplierLensItems.find((l) => l.id === id);
 			if (lens) {
 				applyLensDefaults(nextItem, lens, documentType, defaultTaxRate);
-				pendingLensCatalogItemId = '';
 			}
 		}
 
@@ -121,20 +113,53 @@
 </script>
 
 <section class="rounded-2xl bg-surface-container-lowest p-4 ring-1 ring-outline-variant/20 sm:p-5">
-	<div class="flex items-center gap-3">
-		<h2 class="text-lg font-semibold text-brand-navy">Artículos</h2>
-		<AppBadge variant="neutral">{items.length} líneas</AppBadge>
+	<div class="flex items-center justify-between">
+		<div class="flex items-center gap-3">
+			<h2 class="text-lg font-semibold text-brand-navy">Artículos</h2>
+			<AppBadge variant="neutral">{items.length} líneas</AppBadge>
+		</div>
+		{#if items.length > 0}
+			<p class="text-xs text-on-surface-variant">
+				Total:
+				<span class="ml-1 font-mono text-sm font-semibold text-brand-navy tabular-nums"
+					>{isAltMode ? currencySymbol : 'USD'}
+					{itemsTotalCost.toFixed(2)}</span
+				>
+			</p>
+		{/if}
 	</div>
 
-	<div class="mt-4 flex flex-wrap items-center gap-3">
-		<SegmentedToggle
-			value={pendingItemType}
-			options={[
-				{ value: PurchaseOrderItemType.PRODUCT, label: 'Producto' },
-				{ value: PurchaseOrderItemType.LENS, label: 'Lente' }
-			]}
-			onchange={(val) => setPendingType(val as PurchaseOrderItemType)}
-		/>
+	<div
+		class="mt-4 flex items-center gap-2 rounded-xl bg-surface-container-low p-1.5 ring-1 ring-outline-variant/20"
+	>
+		<div class="flex shrink-0 rounded-lg border border-outline-variant/30 bg-white p-0.5 shadow-sm">
+			<button
+				type="button"
+				onclick={() => setPendingType(PurchaseOrderItemType.LENS)}
+				class={[
+					'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors',
+					pendingItemType === PurchaseOrderItemType.LENS
+						? 'bg-brand-navy text-white shadow-sm'
+						: 'text-on-surface-variant hover:text-brand-navy'
+				]}
+			>
+				<Glasses class="h-3.5 w-3.5" />
+				Lentes
+			</button>
+			<button
+				type="button"
+				onclick={() => setPendingType(PurchaseOrderItemType.PRODUCT)}
+				class={[
+					'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors',
+					pendingItemType === PurchaseOrderItemType.PRODUCT
+						? 'bg-brand-navy text-white shadow-sm'
+						: 'text-on-surface-variant hover:text-brand-navy'
+				]}
+			>
+				<Package class="h-3.5 w-3.5" />
+				Productos
+			</button>
+		</div>
 
 		<PurchaseStep2SearchBar
 			{products}
@@ -145,16 +170,6 @@
 			{addedLensIds}
 			onselect={handleSearchSelect}
 		/>
-
-		<button
-			type="button"
-			onclick={addLine}
-			disabled={!canAddLine}
-			class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-gold px-4 py-2.5 text-sm font-bold text-brand-navy transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
-		>
-			<Plus class="h-4 w-4" />
-			Agregar línea
-		</button>
 	</div>
 
 	<div class="mt-5 space-y-3">
@@ -166,7 +181,7 @@
 			</div>
 		{:else}
 			<div
-				class="hidden text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:grid"
+				class="sticky top-0 z-10 hidden bg-surface-container-lowest text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:grid"
 				style="grid-template-columns: minmax(120px,1fr) 60px 200px 75px 100px 95px 80px; gap: 1rem;"
 			>
 				<span>Artículo</span>

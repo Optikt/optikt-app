@@ -41,6 +41,7 @@
 
 	let query = $state('');
 	let open = $state(false);
+	let inputEl: HTMLInputElement | null = $state(null);
 
 	const supplierProducts = $derived(
 		supplierId === '' ? [] : products.filter((p) => p.supplierId === supplierId)
@@ -104,6 +105,7 @@
 	function reset() {
 		query = '';
 		open = false;
+		inputEl?.focus();
 	}
 	function handleInput() {
 		open = query.trim().length >= 2;
@@ -129,6 +131,7 @@
 <div class="relative min-w-0 flex-1">
 	<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline" />
 	<input
+		bind:this={inputEl}
 		bind:value={query}
 		oninput={handleInput}
 		onkeydown={handleKeydown}
