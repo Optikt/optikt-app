@@ -87,6 +87,8 @@ export interface TreatmentSaleItemRow extends BaseSaleItemRow {
 	treatmentCategory: string;
 	isTaxable: boolean;
 	snapshotBrand: string;
+	purchasePrice: number;
+	costOverride?: number;
 }
 
 export type SaleItemRow =
@@ -137,7 +139,8 @@ export function createEmptyTreatmentItem(
 		isTaxable: boolean;
 	},
 	brand: string,
-	eyeCount: number = 1
+	eyeCount: number = 1,
+	costOverride?: number
 ): TreatmentSaleItemRow {
 	return {
 		id: crypto.randomUUID(),
@@ -154,7 +157,9 @@ export function createEmptyTreatmentItem(
 		treatmentName: treatment.name,
 		treatmentCategory: treatment.category,
 		isTaxable: treatment.isTaxable,
-		snapshotBrand: brand
+		snapshotBrand: brand,
+		purchasePrice: treatment.price,
+		costOverride
 	};
 }
 

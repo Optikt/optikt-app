@@ -25,6 +25,7 @@ export interface FifoSaleItem {
 	supplierTreatmentId?: string | null;
 	itemType: string;
 	quantity: number;
+	snapshotBaseCost?: number | null;
 }
 
 export interface FifoConsumptionResult {
@@ -178,15 +179,21 @@ export async function consumeFifoForSaleItem(
 	// Treatments don't have lots/stock, but they DO have a cost (`supplier_treatments.price`)
 	// which must be captured for COGS / P&L. Without this the line shows up as
 	// "item without cost" in the cash report.
+	// If the user overrode the cost at sale time, use `snapshotBaseCost` instead.
 	if (item.itemType === SaleItemType.TREATMENT && item.supplierTreatmentId) {
-		const [treatment] = await tx
-			.select({ price: supplierTreatments.price })
-			.from(supplierTreatments)
-			.where(eq(supplierTreatments.id, item.supplierTreatmentId));
+		if (item.snapshotBaseCost != null) {
+			result.snapshotCostUnit = item.snapshotBaseCost;
+			result.snapshotCostTotal = item.snapshotBaseCost * item.quantity;
+		} else {
+			const [treatment] = await tx
+				.select({ price: supplierTreatments.price })
+				.from(supplierTreatments)
+				.where(eq(supplierTreatments.id, item.supplierTreatmentId));
 
-		if (treatment) {
-			result.snapshotCostUnit = treatment.price;
-			result.snapshotCostTotal = treatment.price * item.quantity;
+			if (treatment) {
+				result.snapshotCostUnit = treatment.price;
+				result.snapshotCostTotal = treatment.price * item.quantity;
+			}
 		}
 	}
 

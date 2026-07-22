@@ -76,6 +76,7 @@ describe('buildSaleItemsFromWizard', () => {
 			treatmentCategory: 'AR',
 			isTaxable: true,
 			snapshotBrand: 'Novak',
+			purchasePrice: 3,
 			quantity: 2,
 			unitPrice: 5,
 			discount: 0,
@@ -109,7 +110,8 @@ describe('buildSaleItemsFromWizard', () => {
 			snapshotName: 'Antirreflejo',
 			snapshotTreatmentCategory: 'AR',
 			snapshotIsTaxable: true,
-			snapshotBrand: 'Novak'
+			snapshotBrand: 'Novak',
+			snapshotBaseCost: 3
 		});
 	});
 });
@@ -125,6 +127,7 @@ describe('buildQuoteItemsFromWizard', () => {
 			treatmentCategory: 'AR',
 			isTaxable: true,
 			snapshotBrand: 'Novak',
+			purchasePrice: 3,
 			quantity: 2,
 			unitPrice: 5,
 			discount: 0,
@@ -154,7 +157,8 @@ describe('buildQuoteItemsFromWizard', () => {
 			snapshotName: 'Antirreflejo',
 			snapshotTreatmentCategory: 'AR',
 			snapshotIsTaxable: true,
-			snapshotBrand: 'Novak'
+			snapshotBrand: 'Novak',
+			snapshotBaseCost: 3
 		});
 	});
 });

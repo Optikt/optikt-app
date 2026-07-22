@@ -13,6 +13,7 @@
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';
 	import SaleCostSlideOver from './SaleCostSlideOver.svelte';
+	import TreatmentCostSlideOver from './TreatmentCostSlideOver.svelte';
 	import FreeItemFields from './FreeItemFields.svelte';
 
 	interface Props {
@@ -54,11 +55,18 @@
 
 	let formulaOpen = $state(false);
 	let costOpen = $state(false);
+	let treatmentCostOpen = $state(false);
 
 	const internalCostTotal = $derived.by(() => {
 		if (item.kind !== 'lens' || !lens) return 0;
 		const effectiveShipping = item.shippingCostPending ? 0 : item.costOverrides.shippingPrice;
 		return item.costOverrides.baseCost + item.costOverrides.mountingPrice + effectiveShipping;
+	});
+
+	const treatmentCostPerUnit = $derived.by(() => {
+		if (item.kind !== 'treatment') return 0;
+		const t = item as TreatmentSaleItemRow;
+		return t.costOverride ?? t.purchasePrice;
 	});
 
 	const outOfStock = $derived(
@@ -174,6 +182,29 @@
 			<FreeItemFields freeItem={item.freeItem} />
 		{/if}
 
+		<!-- Treatment cost section -->
+		{#if isTreatmentKind}
+			{@const t = item as TreatmentSaleItemRow}
+			<div
+				class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-200 px-2 pt-2 text-xs"
+			>
+				<div class="flex items-center gap-1.5">
+					<span class="text-on-surface-variant">Costo: </span>
+					<span class="font-mono font-semibold text-brand-navy"
+						>{formatPrice(t.costOverride ?? t.purchasePrice)}</span
+					>
+					<span class="text-[10px] text-on-surface-variant">× {t.quantity}</span>
+					<button
+						type="button"
+						onclick={() => (treatmentCostOpen = true)}
+						class="inline-flex items-center rounded-lg px-1 py-0.5 text-[10px] font-semibold text-brand-blue underline transition-colors hover:bg-brand-blue/10"
+					>
+						Editar
+					</button>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Lens-specific section -->
 		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 			<div
@@ -249,6 +280,16 @@
 			costOverrides={item.costOverrides}
 			shippingCostPending={item.shippingCostPending}
 			{eyeCount}
+		/>
+	{/if}
+
+	{#if isTreatmentKind}
+		{@const t = item as TreatmentSaleItemRow}
+		<TreatmentCostSlideOver
+			bind:open={treatmentCostOpen}
+			initialCost={t.costOverride ?? t.purchasePrice}
+			ineyeCount={t.quantity}
+			onapply={(newCost) => (t.costOverride = newCost)}
 		/>
 	{/if}
 </div>

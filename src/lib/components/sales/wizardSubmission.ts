@@ -92,6 +92,7 @@ export function buildSaleItemsFromWizard(
 				snapshotBrand: item.snapshotBrand,
 				snapshotTreatmentCategory: item.treatmentCategory,
 				snapshotIsTaxable: item.isTaxable,
+				snapshotBaseCost: item.costOverride ?? item.purchasePrice,
 				notes: item.notes || undefined
 			});
 			continue;
@@ -209,6 +210,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotBrand: item.snapshotBrand,
 				snapshotTreatmentCategory: item.treatmentCategory,
 				snapshotIsTaxable: item.isTaxable,
+				snapshotBaseCost: item.costOverride ?? item.purchasePrice,
 				notes: item.notes || undefined
 			});
 			continue;
