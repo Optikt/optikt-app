@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Calendar as CalendarPrimitive } from "bits-ui";
-	import { cn, type WithoutChildrenOrChild } from "$lib/utils";
+	import { Calendar as CalendarPrimitive } from 'bits-ui';
+	import { cn, type WithoutChildrenOrChild } from '$lib/utils';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 
 	let {
@@ -13,7 +13,7 @@
 
 <span
 	class={cn(
-		"has-focus:border-ring border-input has-focus:ring-ring/50 relative flex rounded-md border shadow-xs has-focus:ring-[3px]",
+		'has-focus:border-ring border-input has-focus:ring-ring/50 relative flex rounded-md border shadow-xs has-focus:ring-[3px]',
 		className
 	)}
 >
@@ -40,7 +40,7 @@
 				aria-hidden="true"
 			>
 				{yearItems.find((item) => item.value === value)?.label || selectedYearItem.label}
-				<ChevronDownIcon class={cn("size-4", className)} />
+				<ChevronDownIcon class={cn('size-4', className)} />
 			</span>
 		{/snippet}
 	</CalendarPrimitive.YearSelect>

@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { Calendar as CalendarPrimitive } from "bits-ui";
-	import * as Calendar from "./index";
-	import { cn, type WithoutChildrenOrChild } from "$lib/utils";
-	import type { ButtonVariant } from "../button/button.svelte";
-	import { isEqualMonth, type DateValue } from "@internationalized/date";
-	import type { Snippet } from "svelte";
+	import { Calendar as CalendarPrimitive } from 'bits-ui';
+	import * as Calendar from './index';
+	import { cn, type WithoutChildrenOrChild } from '$lib/utils';
+	import type { ButtonVariant } from '../button/button.svelte';
+	import { isEqualMonth, type DateValue } from '@internationalized/date';
+	import type { Snippet } from 'svelte';
 
 	let {
 		ref = $bindable(null),
 		placeholder = $bindable(),
 		class: className,
-		weekdayFormat = "short",
-		buttonVariant = "ghost",
-		captionLayout = "label",
-		locale = "en-US",
+		weekdayFormat = 'short',
+		buttonVariant = 'ghost',
+		captionLayout = 'label',
+		locale = 'en-US',
 		months: monthsProp,
 		years,
 		monthFormat: monthFormatProp,
-		yearFormat = "numeric",
+		yearFormat = 'numeric',
 		day,
 		disableDaysOutsideMonth = false,
 		value = $bindable(),
@@ -26,18 +26,18 @@
 		...restProps
 	}: WithoutChildrenOrChild<CalendarPrimitive.RootProps> & {
 		buttonVariant?: ButtonVariant;
-		captionLayout?: "dropdown" | "dropdown-months" | "dropdown-years" | "label";
-		months?: CalendarPrimitive.MonthSelectProps["months"];
-		years?: CalendarPrimitive.YearSelectProps["years"];
-		monthFormat?: CalendarPrimitive.MonthSelectProps["monthFormat"];
-		yearFormat?: CalendarPrimitive.YearSelectProps["yearFormat"];
+		captionLayout?: 'dropdown' | 'dropdown-months' | 'dropdown-years' | 'label';
+		months?: CalendarPrimitive.MonthSelectProps['months'];
+		years?: CalendarPrimitive.YearSelectProps['years'];
+		monthFormat?: CalendarPrimitive.MonthSelectProps['monthFormat'];
+		yearFormat?: CalendarPrimitive.YearSelectProps['yearFormat'];
 		day?: Snippet<[{ day: DateValue; outsideMonth: boolean }]>;
 	} = $props();
 
 	const monthFormat = $derived.by(() => {
 		if (monthFormatProp) return monthFormatProp;
-		if (captionLayout.startsWith("dropdown")) return "short";
-		return "long";
+		if (captionLayout.startsWith('dropdown')) return 'short';
+		return 'long';
 	});
 </script>
 
@@ -47,7 +47,7 @@
 	{weekdayFormat}
 	{disableDaysOutsideMonth}
 	class={cn(
-		"p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] bg-background group/calendar in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
+		'p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] bg-background group/calendar in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent',
 		className
 	)}
 	{locale}
@@ -97,7 +97,7 @@
 											{#if day}
 												{@render day({
 													day: date,
-													outsideMonth: !isEqualMonth(date, month.value),
+													outsideMonth: !isEqualMonth(date, month.value)
 												})}
 											{:else}
 												<Calendar.Day />
