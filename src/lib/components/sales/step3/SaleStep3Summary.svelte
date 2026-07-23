@@ -401,9 +401,7 @@
 												</div>
 												<div class="flex shrink-0 items-center gap-2">
 													<span class="text-[10px] text-slate-400">×{tQty}</span>
-													<span class="text-[10px] text-slate-500"
-														>{formatPrice(t.unitPrice)}</span
-													>
+													<span class="text-[10px] text-slate-500">{formatPrice(t.unitPrice)}</span>
 													<span
 														class="w-14 text-right font-mono text-xs font-semibold text-brand-navy"
 													>
