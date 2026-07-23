@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "ae44f0c692836f41e7492eefdf61b5739351fbf0",
-    "indexed_at": "2026-07-22T15:25:13Z",
+    "commit": "178c6ceb3a9a9091dcfe27408625e90549033112",
+    "indexed_at": "2026-07-23T17:42:16Z",
     "project": "home-hypercycle-projects-optikt-app",
-    "nodes": 16334,
-    "edges": 24588,
-    "original_size": 15597568,
-    "compressed_size": 2195748,
-    "compression_level": 9
+    "nodes": 16422,
+    "edges": 24492,
+    "original_size": 25755648,
+    "compressed_size": 3098720,
+    "compression_level": 3
 }
