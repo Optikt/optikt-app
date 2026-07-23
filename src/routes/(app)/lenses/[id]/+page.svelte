@@ -385,23 +385,36 @@
 								Costo de cristales
 							</p>
 							<div class="flex items-center justify-between gap-4">
-								<span>{item.priceType === 'UNIT' ? 'Precio por unidad' : 'Precio informado por par'}</span>
-								<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
+								<span
+									>{item.priceType === 'UNIT'
+										? 'Precio por unidad'
+										: 'Precio informado por par'}</span
+								>
+								<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span
+								>
 							</div>
 							<div class="flex items-center justify-between gap-4">
-								<span>{item.priceType === 'UNIT' ? 'Costo de cristales (2 unidades)' : 'Costo de cristales por par'}</span>
+								<span
+									>{item.priceType === 'UNIT'
+										? 'Costo de cristales (2 unidades)'
+										: 'Costo de cristales por par'}</span
+								>
 								<span class="font-mono font-semibold text-white"
 									>{formatPrice(item.pairPurchasePrice)}</span
 								>
 							</div>
 							<p class="mt-1 text-[10px] text-white/50">
-								{item.priceType === 'UNIT' ? `${formatPrice(item.basePrice)} x 2` : 'El proveedor cotiza directamente el par'}
+								{item.priceType === 'UNIT'
+									? `${formatPrice(item.basePrice)} x 2`
+									: 'El proveedor cotiza directamente el par'}
 							</p>
 						</div>
 
 						{#if item.mountingPrice > 0 || item.shippingPrice > 0}
 							<div class="rounded-lg bg-white/5 p-3">
-								<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-gold uppercase">
+								<p
+									class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-gold uppercase"
+								>
 									Costos adicionales
 								</p>
 								{#if item.mountingPrice > 0}
@@ -518,9 +531,7 @@
 				<div class="relative space-y-2">
 					<div>
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-xs font-bold text-brand-gold uppercase">
-								Resumen comercial
-							</p>
+							<p class="text-xs font-bold text-brand-gold uppercase">Resumen comercial</p>
 							{#if marginPercent != null}
 								<span
 									class="shrink-0 rounded-full bg-brand-gold px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-navy uppercase"
@@ -538,8 +549,13 @@
 								Costo de cristales
 							</p>
 							<div class="flex items-center justify-between gap-4">
-								<span>{item.priceType === 'UNIT' ? 'Costo por unidad' : 'Costo informado por par'}</span>
-								<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
+								<span
+									>{item.priceType === 'UNIT'
+										? 'Costo por unidad'
+										: 'Costo informado por par'}</span
+								>
+								<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span
+								>
 							</div>
 							<div class="flex items-center justify-between gap-4">
 								<span>Costo por par</span>
@@ -551,7 +567,9 @@
 
 						{#if item.mountingPrice > 0 || item.shippingPrice > 0}
 							<div>
-								<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-gold uppercase">
+								<p
+									class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-gold uppercase"
+								>
 									Costos adicionales
 								</p>
 								{#if item.mountingPrice > 0}

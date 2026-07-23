@@ -49,17 +49,25 @@
 						Costo de cristales
 					</p>
 					<div class="flex items-center justify-between gap-4">
-						<span>{item.priceType === 'UNIT' ? 'Precio por unidad' : 'Precio informado por par'}</span>
+						<span
+							>{item.priceType === 'UNIT' ? 'Precio por unidad' : 'Precio informado por par'}</span
+						>
 						<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
 					</div>
 					<div class="flex items-center justify-between gap-4">
-						<span>{item.priceType === 'UNIT' ? 'Costo de cristales (2 unidades)' : 'Costo de cristales por par'}</span>
+						<span
+							>{item.priceType === 'UNIT'
+								? 'Costo de cristales (2 unidades)'
+								: 'Costo de cristales por par'}</span
+						>
 						<span class="font-mono font-semibold text-white">
 							{formatPrice(item.pairPurchasePrice)}
 						</span>
 					</div>
 					<p class="mt-1 text-[10px] text-white/50">
-						{item.priceType === 'UNIT' ? `${formatPrice(item.basePrice)} x 2` : 'El proveedor cotiza directamente el par'}
+						{item.priceType === 'UNIT'
+							? `${formatPrice(item.basePrice)} x 2`
+							: 'El proveedor cotiza directamente el par'}
 					</p>
 				</div>
 

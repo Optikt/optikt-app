@@ -637,10 +637,7 @@ export const updateLensCatalogItemForm = form(
 				// Recompute pairPurchasePrice from the effective basePrice and priceType
 				const effectiveBasePrice = basePrice ?? existing.basePrice;
 				const effectivePriceType = priceType ?? existing.priceType;
-				const pairPurchasePrice = computePairPurchasePrice(
-					effectiveBasePrice,
-					effectivePriceType
-				);
+				const pairPurchasePrice = computePairPurchasePrice(effectiveBasePrice, effectivePriceType);
 
 				const updateValues: Partial<NewLensCatalogItem> = {
 					...(source !== undefined && { source }),
