@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileText } from '@lucide/svelte';
+	import { FileText, FlaskConical } from '@lucide/svelte';
 	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
 	import {
 		calculateSaleSummarySubtotal,
@@ -13,6 +13,7 @@
 	} from '../saleItemHelpers';
 	import {
 		DiscountType,
+		TreatmentCategory,
 		getTreatmentCategoryLabel,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
@@ -362,33 +363,56 @@
 							</div>
 						</div>
 
-						<!-- Treatments -->
+						<!-- Treatments panel -->
 						{#if item.kind === 'lens'}
 							{@const treatmentItems = items.filter(
 								(i): i is TreatmentSaleItemRow =>
 									i.kind === 'treatment' && i.parentLensItemId === item.id
 							)}
 							{#if treatmentItems.length > 0}
-								<div class="space-y-0.5">
-									{#each treatmentItems as t (t.id)}
-										{@const tQty = t.quantity}
-										<div
-											class="ml-5 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-1.5"
+								<div class="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
+									<div class="mb-1.5 flex items-center gap-1.5">
+										<FlaskConical class="h-3 w-3 text-purple-600" />
+										<span
+											class="text-[10px] font-semibold uppercase tracking-wider text-purple-700"
 										>
-											<div class="flex items-center gap-1.5">
-												<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-blue"></span>
-												<span class="text-[11px] text-slate-600">{t.treatmentName}</span>
-												<span
-													class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[9px] font-semibold text-brand-blue"
-												>
-													{getTreatmentCategoryLabel(t.treatmentCategory)}
-												</span>
-											</div>
-											<span class="font-mono text-[11px] text-slate-700"
-												>{formatPrice(t.unitPrice * tQty)}</span
+											Tratamientos / Filtros
+										</span>
+									</div>
+									<div class="space-y-1">
+										{#each treatmentItems as t (t.id)}
+											{@const tQty = t.quantity}
+											<div
+												class="flex items-center justify-between rounded-md bg-white px-2.5 py-1.5"
 											>
-										</div>
-									{/each}
+												<div class="flex min-w-0 items-center gap-2">
+													<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400"></span>
+													<span class="truncate text-xs font-medium text-slate-700"
+														>{t.treatmentName}</span
+													>
+													<span
+														class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] shrink-0 {t.treatmentCategory ===
+														TreatmentCategory.AR
+															? 'bg-brand-blue/10 text-brand-blue'
+															: 'bg-surface-container-high text-on-surface-variant'}"
+													>
+														{getTreatmentCategoryLabel(t.treatmentCategory)}
+													</span>
+												</div>
+												<div class="flex shrink-0 items-center gap-2">
+													<span class="text-[10px] text-slate-400">×{tQty}</span>
+													<span class="text-[10px] text-slate-500"
+														>{formatPrice(t.unitPrice)}</span
+													>
+													<span
+														class="w-14 text-right font-mono text-xs font-semibold text-brand-navy"
+													>
+														{formatPrice(t.unitPrice * tQty)}
+													</span>
+												</div>
+											</div>
+										{/each}
+									</div>
 								</div>
 							{/if}
 						{/if}
