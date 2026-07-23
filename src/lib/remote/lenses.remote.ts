@@ -74,7 +74,6 @@ import {
 	ADJUSTMENT_REPORT_CATEGORIES,
 	AdjustmentReason,
 	InventoryMovementType,
-	LensPriceType,
 	MovementReferenceType,
 	PurchaseDocumentType,
 	PurchaseOrderItemType,
@@ -83,16 +82,7 @@ import {
 } from '$lib/shared/enums';
 import { getErrorMessage } from '$lib/utils';
 
-/** Compute the always-per-pair purchase price from the raw basePrice, mountingPrice, shippingPrice and priceType. */
-function computePairPurchasePrice(
-	basePrice: number,
-	mountingPrice: number,
-	shippingPrice: number,
-	priceType: string
-): number {
-	const totalPerUnit = basePrice + mountingPrice + shippingPrice;
-	return priceType === LensPriceType.UNIT ? totalPerUnit * 2 : totalPerUnit;
-}
+import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
 
 // ============================================================================
 // OPTICAL RANGE COMPARISON HELPERS
@@ -473,12 +463,7 @@ export const createLensCatalogItemForm = form(
 			// inventoryMode drives stock: ON_DEMAND → null, STOCK → provided value
 			const stockValue = inventoryMode === 'ON_DEMAND' ? null : (stock ?? 0);
 
-			const pairPurchasePrice = computePairPurchasePrice(
-				basePrice,
-				mountingPrice,
-				shippingPrice,
-				priceType
-			);
+			const pairPurchasePrice = computePairPurchasePrice(basePrice, priceType);
 
 			const insertValues: NewLensCatalogItem = {
 				id: crypto.randomUUID(),
@@ -651,13 +636,9 @@ export const updateLensCatalogItemForm = form(
 
 				// Recompute pairPurchasePrice from the effective basePrice and priceType
 				const effectiveBasePrice = basePrice ?? existing.basePrice;
-				const effectiveMountingPrice = mountingPrice ?? existing.mountingPrice;
-				const effectiveShippingPrice = shippingPrice ?? existing.shippingPrice;
 				const effectivePriceType = priceType ?? existing.priceType;
 				const pairPurchasePrice = computePairPurchasePrice(
 					effectiveBasePrice,
-					effectiveMountingPrice,
-					effectiveShippingPrice,
 					effectivePriceType
 				);
 
