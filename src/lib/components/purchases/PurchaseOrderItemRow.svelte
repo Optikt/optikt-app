@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CircleCheck, Eye, Glasses, Package, Percent, Sun, Trash2 } from '@lucide/svelte';
+	import { CircleCheck, Eye, Glasses, Package, Sun, Trash2 } from '@lucide/svelte';
 	import {
 		ProductType,
 		PurchaseOrderItemType,
@@ -20,6 +20,7 @@
 		calculateDraftItemSubtotalAlt,
 		calculateDraftItemTaxAlt,
 		calculateDraftItemTotalAlt,
+		getPreTaxUnitPrice,
 		isDraftItemUserEditingLocked,
 		type PurchaseOrderDraftItem
 	} from './purchaseOrderDraft';
@@ -52,6 +53,7 @@
 
 	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
 	const altSymbol = $derived(getSourceCurrencySymbol(sourceCurrency));
+	const preTaxUnitCost = $derived(getPreTaxUnitPrice(item));
 
 	function hasZeroValueFieldsForItem(
 		currentItem: Pick<PurchaseOrderDraftItem, 'unitPurchasePrice' | 'unitSalePrice'>
@@ -118,7 +120,6 @@
 	const inputClass =
 		'w-full rounded-lg border-none bg-surface-container-high px-2 py-1.5 text-xs text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 disabled:cursor-not-allowed disabled:opacity-65 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
 	const compactInputClass = `${inputClass} h-8 text-right font-mono text-xs tabular-nums`;
-	const hasRightPadding = `${compactInputClass} pr-6`;
 
 	const lineSubtotal = $derived(calculateDraftItemSubtotal(item));
 	const lineTax = $derived(calculateDraftItemTax(item));
@@ -135,6 +136,11 @@
 		!userEditingLocked && editingLineTotal
 			? lineTotalDraftValue
 			: formatDecimalInput(displayedLineTotal)
+	);
+	const margen = $derived(
+		item.unitSalePrice > 0 && item.unitPurchasePrice > 0
+			? ((item.unitSalePrice - item.unitPurchasePrice) / item.unitPurchasePrice) * 100
+			: null
 	);
 
 	function round2(n: number): number {
@@ -184,22 +190,6 @@
 		} else {
 			item.appliesIva = true;
 			item.unitPurchasePrice = round2(item.unitPurchasePrice * (1 + item.ivaRate / 100));
-		}
-	}
-
-	function handleReverseIva() {
-		if (userEditingLocked || !item.appliesIva) return;
-		const multiplier = 1 + item.ivaRate / 100;
-		if (isAltMode) {
-			const val = Number(item.unitPurchasePriceAlt ?? 0);
-			if (val > 0) {
-				item.unitPurchasePriceAlt = round2(val * multiplier);
-				syncUsdPriceFromAlt();
-			}
-		} else {
-			if (item.unitPurchasePrice > 0) {
-				item.unitPurchasePrice = round2(item.unitPurchasePrice * multiplier);
-			}
 		}
 	}
 
@@ -393,7 +383,7 @@
 						type="button"
 						onclick={toggleTaxable}
 						disabled={userEditingLocked}
-						class={`shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-65 ${
+						class={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-65 ${
 							item.appliesIva
 								? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
 								: 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
@@ -402,7 +392,7 @@
 							? 'Gravable — click para exentar'
 							: 'Exento — click para hacer gravable'}
 					>
-						{item.appliesIva ? `${item.ivaRate}%` : 'EX'}
+						{item.appliesIva ? `IVA ${item.ivaRate}%` : 'EXENTO'}
 					</button>
 				</div>
 				<p class="truncate text-[10px] text-on-surface-variant" title={selectionMeta()}>
@@ -412,18 +402,21 @@
 		</div>
 
 		<!-- Cant. -->
-		<input
-			type="number"
-			min="1"
-			bind:value={item.quantity}
-			disabled={userEditingLocked}
-			class={compactInputClass}
-			aria-label="Cantidad"
-		/>
+		<div class="flex flex-col gap-0.5">
+			<input
+				type="number"
+				min="1"
+				bind:value={item.quantity}
+				disabled={userEditingLocked}
+				class={compactInputClass}
+				aria-label="Cantidad"
+			/>
+			<span class="block h-[9px] leading-none"></span>
+		</div>
 
 		<!-- Costo und. -->
 		{#if isAltMode}
-			<div class="relative">
+			<div class="flex flex-col gap-0.5">
 				<input
 					type="number"
 					min="0"
@@ -431,128 +424,141 @@
 					value={Number(item.unitPurchasePriceAlt ?? 0)}
 					onchange={handleAltCostInput}
 					disabled={userEditingLocked}
-					class={hasRightPadding}
+					class={compactInputClass}
 					aria-label={`Costo unitario en ${altSymbol}`}
 				/>
 				{#if item.appliesIva}
-					<button
-						type="button"
-						onclick={handleReverseIva}
-						disabled={userEditingLocked || Number(item.unitPurchasePriceAlt ?? 0) <= 0}
-						class="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-outline transition-colors hover:text-brand-blue disabled:opacity-40"
-						title="Calcular con IVA incluido desde este valor base"
-					>
-						<Percent class="h-3 w-3" />
-					</button>
+					<p class="text-right text-[9px] font-mono leading-none text-outline">
+						c/IVA: {formatAlt(
+							round2(Number(item.unitPurchasePriceAlt ?? 0) * (1 + item.ivaRate / 100))
+						)}
+					</p>
+				{:else}
+					<span class="block h-[9px] leading-none"></span>
 				{/if}
 			</div>
 		{:else}
-			<div class="relative">
+			<div class="flex flex-col gap-0.5">
 				<input
 					type="number"
 					min="0"
 					step="any"
 					bind:value={item.unitPurchasePrice}
 					disabled={userEditingLocked}
-					class={hasRightPadding}
+					class={compactInputClass}
 					aria-label="Costo unitario"
 				/>
 				{#if item.appliesIva}
-					<button
-						type="button"
-						onclick={handleReverseIva}
-						disabled={userEditingLocked || item.unitPurchasePrice <= 0}
-						class="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 text-outline transition-colors hover:text-brand-blue disabled:opacity-40"
-						title="Calcular con IVA incluido desde este valor base"
-					>
-						<Percent class="h-3 w-3" />
-					</button>
+					<p class="text-right text-[9px] font-mono leading-none text-outline">
+						Base: {formatPrice(preTaxUnitCost)}
+					</p>
+				{:else}
+					<span class="block h-[9px] leading-none"></span>
 				{/if}
 			</div>
 		{/if}
 
 		<!-- Venta und. -->
-		<input
-			type="number"
-			min="0"
-			step="0.01"
-			bind:value={item.unitSalePrice}
-			disabled={userEditingLocked}
-			class={compactInputClass}
-			aria-label="Venta unitaria sugerida"
-		/>
-
-		<!-- Total -->
-		<div class="relative">
-			<span
-				class="pointer-events-none absolute top-1/2 left-2 z-10 -translate-y-1/2 font-mono text-[10px] font-bold tracking-[0.12em] text-outline uppercase"
-			>
-				{isAltMode ? altSymbol.toUpperCase() : 'USD'}
-			</span>
+		<div class="flex flex-col gap-0.5">
 			<input
 				type="number"
 				min="0"
 				step="0.01"
-				value={lineTotalInputValue}
-				onfocus={handleLineTotalFocus}
-				oninput={handleLineTotalInput}
-				onblur={handleLineTotalBlur}
+				bind:value={item.unitSalePrice}
 				disabled={userEditingLocked}
-				class={`${compactInputClass} !pl-7 font-semibold text-brand-navy`}
-				aria-label={isAltMode ? `Total costo en ${altSymbol}` : 'Total costo'}
-				title={totalTooltip()}
+				class={compactInputClass}
+				aria-label="Venta unitaria sugerida"
 			/>
+			{#if margen !== null}
+				<p
+					class="text-right text-[9px] font-mono font-medium leading-none {margen >= 0
+						? 'text-success'
+						: 'text-error'}"
+				>
+					Marg: {margen.toFixed(0)}%
+				</p>
+			{:else}
+				<span class="block h-[9px] leading-none"></span>
+			{/if}
+		</div>
+
+		<!-- Total -->
+		<div class="flex flex-col gap-0.5">
+			<div class="relative">
+				<span
+					class="pointer-events-none absolute top-1/2 left-2 z-10 -translate-y-1/2 font-mono text-[10px] font-bold tracking-[0.12em] text-outline uppercase"
+				>
+					{isAltMode ? altSymbol.toUpperCase() : 'USD'}
+				</span>
+				<input
+					type="number"
+					min="0"
+					step="0.01"
+					value={lineTotalInputValue}
+					onfocus={handleLineTotalFocus}
+					oninput={handleLineTotalInput}
+					onblur={handleLineTotalBlur}
+					disabled={userEditingLocked}
+					class={`${compactInputClass} !pl-7 font-semibold text-brand-navy`}
+					aria-label={isAltMode ? `Total costo en ${altSymbol}` : 'Total costo'}
+					title={totalTooltip()}
+				/>
+			</div>
+			<span class="block h-[9px] leading-none"></span>
 		</div>
 
 		<!-- Checks -->
-		<div class="flex h-8 items-center justify-end gap-0.5">
-			{#if hasZeroValueFields}
+		<div class="flex flex-col gap-0.5">
+			<div class="flex h-8 items-center justify-end gap-0.5">
+				{#if hasZeroValueFields}
+					<button
+						type="button"
+						onclick={toggleZeroPriceIntentional}
+						aria-pressed={item.isZeroPriceIntentional}
+						class={[
+							'inline-flex h-6 shrink-0 items-center justify-center rounded-md px-1 text-[9px] font-bold tracking-[0.08em] uppercase transition-colors',
+							item.isZeroPriceIntentional
+								? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
+								: 'bg-warning-container/50 text-on-warning-container hover:bg-warning-container'
+						]}
+						aria-label={item.isZeroPriceIntentional
+							? 'Precio en cero marcado como intencional'
+							: 'Marcar precio en cero como intencional'}
+						title={item.isZeroPriceIntentional
+							? 'Precio en 0 intencional'
+							: 'Marcar precio en cero como intencional'}
+					>
+						0!
+					</button>
+				{/if}
 				<button
 					type="button"
-					onclick={toggleZeroPriceIntentional}
-					aria-pressed={item.isZeroPriceIntentional}
+					onclick={toggleReviewed}
+					aria-pressed={item.isReviewed}
 					class={[
-						'inline-flex h-6 shrink-0 items-center justify-center rounded-md px-1 text-[9px] font-bold tracking-[0.08em] uppercase transition-colors',
-						item.isZeroPriceIntentional
-							? 'bg-brand-blue/12 text-brand-blue hover:bg-brand-blue/18'
-							: 'bg-warning-container/50 text-on-warning-container hover:bg-warning-container'
+						'inline-flex h-6 w-6 items-center justify-center rounded-lg transition-colors',
+						item.isReviewed
+							? 'bg-success-container text-on-success-container hover:bg-success/30'
+							: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
 					]}
-					aria-label={item.isZeroPriceIntentional
-						? 'Precio en cero marcado como intencional'
-						: 'Marcar precio en cero como intencional'}
-					title={item.isZeroPriceIntentional
-						? 'Precio en 0 intencional'
-						: 'Marcar precio en cero como intencional'}
+					aria-label={item.isReviewed ? 'Marcar como no revisada' : 'Marcar como revisada'}
+					title={item.isReviewed ? 'Línea revisada' : 'Marcar línea como revisada'}
 				>
-					0!
+					<CircleCheck class="h-3.5 w-3.5" />
 				</button>
-			{/if}
-			<button
-				type="button"
-				onclick={toggleReviewed}
-				aria-pressed={item.isReviewed}
-				class={[
-					'inline-flex h-6 w-6 items-center justify-center rounded-lg transition-colors',
-					item.isReviewed
-						? 'bg-success-container text-on-success-container hover:bg-success/30'
-						: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
-				]}
-				aria-label={item.isReviewed ? 'Marcar como no revisada' : 'Marcar como revisada'}
-				title={item.isReviewed ? 'Línea revisada' : 'Marcar línea como revisada'}
-			>
-				<CircleCheck class="h-3.5 w-3.5" />
-			</button>
-			{#if showRemove}
-				<button
-					type="button"
-					onclick={onremove}
-					class="inline-flex h-6 w-6 items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
-					aria-label="Eliminar línea"
-					title="Eliminar línea"
-				>
-					<Trash2 class="h-3.5 w-3.5" />
-				</button>
-			{/if}
+				{#if showRemove}
+					<button
+						type="button"
+						onclick={onremove}
+						class="inline-flex h-6 w-6 items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container hover:text-on-error-container"
+						aria-label="Eliminar línea"
+						title="Eliminar línea"
+					>
+						<Trash2 class="h-3.5 w-3.5" />
+					</button>
+				{/if}
+			</div>
+			<span class="block h-[9px] leading-none"></span>
 		</div>
 	</div>
 </div>
