@@ -628,72 +628,84 @@
 			/>
 		</div>
 	{:else if currentStep === 3}
-		<div class="space-y-5">
+		<div class="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-4">
 			<PurchaseOrderSummaryPanel
 				{summary}
 				{bcvRate}
 				{discount}
 				{sourceCurrency}
 				{sourceRateToVes}
+				compact
 			/>
-			<div class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
-				<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
+			<div
+				class="flex flex-col rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20"
+			>
+				<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase shrink-0">
 					Artículos incluidos
 				</p>
-				<ul class="mt-3 space-y-2">
-					{#each items as item (item.id)}
-						<li
-							class="flex items-center justify-between gap-3 rounded-lg bg-surface-container-high px-3 py-2 text-sm"
-						>
-							<div class="min-w-0 truncate">
-								<span class="font-mono font-semibold text-brand-navy"
-									>{getDraftItemTitle(item)}</span
-								>
-								<span class="ml-2 text-on-surface-variant">×{item.quantity}</span>
-							</div>
-							<span class="shrink-0 font-mono text-sm tabular-nums"
-								>{formatPrice(item.unitPurchasePrice)}</span
+				<div class="flex-1 overflow-y-auto min-h-0 py-2">
+					<ul class="space-y-1">
+						{#each items as item (item.id)}
+							<li
+								class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs"
 							>
-						</li>
-					{/each}
-				</ul>
+								<div class="min-w-0 truncate">
+									<span class="font-mono font-semibold text-brand-navy"
+										>{getDraftItemTitle(item)}</span
+									>
+									<span class="ml-1.5 text-on-surface-variant">×{item.quantity}</span>
+								</div>
+								<span class="shrink-0 font-mono tabular-nums"
+									>{formatPrice(item.unitPurchasePrice)}</span
+								>
+							</li>
+						{/each}
+					</ul>
+				</div>
+				<div class="flex flex-col gap-2 pt-3 border-t border-outline-variant/20 shrink-0">
+					<button
+						type="button"
+						onclick={handleSaveClick}
+						disabled={!canSave || saving}
+						class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						<Save class="h-4 w-4" />
+						{saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear orden'}
+					</button>
+					<button
+						type="button"
+						onclick={handleBack}
+						class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>
+						← Atrás
+					</button>
+				</div>
 			</div>
 		</div>
 	{/if}
 
-	<!-- Navigation footer -->
-	<div class="flex items-center justify-between gap-3 pt-2">
-		<div>
-			{#if canBack}
-				<button
-					type="button"
-					onclick={handleBack}
-					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-				>
-					← Atrás
-				</button>
-			{:else}
-				<button
-					type="button"
-					onclick={goBack}
-					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-				>
-					Cancelar
-				</button>
-			{/if}
-		</div>
-		<div class="flex items-center gap-2">
-			{#if currentStep === 3}
-				<button
-					type="button"
-					onclick={handleSaveClick}
-					disabled={!canSave || saving}
-					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
-				>
-					<Save class="h-4 w-4" />
-					{saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear orden'}
-				</button>
-			{:else}
+	{#if currentStep !== 3}
+		<div class="flex items-center justify-between gap-3 pt-2">
+			<div>
+				{#if canBack}
+					<button
+						type="button"
+						onclick={handleBack}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>
+						← Atrás
+					</button>
+				{:else}
+					<button
+						type="button"
+						onclick={goBack}
+						class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					>
+						Cancelar
+					</button>
+				{/if}
+			</div>
+			<div class="flex items-center gap-2">
 				<button
 					type="button"
 					onclick={handleNext}
@@ -702,9 +714,9 @@
 				>
 					Siguiente →
 				</button>
-			{/if}
+			</div>
 		</div>
-	</div>
+	{/if}
 </div>
 
 <ConfirmModal
