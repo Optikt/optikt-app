@@ -121,7 +121,7 @@ export function getLensTreatmentsTotal(item: SaleItemRow): number {
 }
 
 export function calculateSaleSummarySubtotal(items: SaleItemRow[]): number {
-	return items.reduce((acc, item) => acc + itemLineTotal(item) + getLensTreatmentsTotal(item), 0);
+	return items.reduce((acc, item) => acc + itemLineTotal(item), 0);
 }
 
 // ============================================================================
@@ -793,7 +793,7 @@ export function buildTaxItemsFromWizard(
 		} else if (item.kind === 'treatment') {
 			result.push({
 				unitPrice: item.unitPrice,
-				quantity: 1,
+				quantity: item.quantity,
 				discount: item.discount,
 				discountType: item.discountType,
 				isTaxable: item.isTaxable,

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { FileText } from '@lucide/svelte';
+	import { FileText, FlaskConical } from '@lucide/svelte';
 	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
 	import {
 		calculateSaleSummarySubtotal,
 		buildTaxItemsFromWizard,
 		findLensItem,
 		findProduct,
-		getEnabledEyeCount,
 		getItemDiscountBase,
 		getItemDiscountMax,
 		isItemDiscountValid,
@@ -14,6 +13,7 @@
 	} from '../saleItemHelpers';
 	import {
 		DiscountType,
+		TreatmentCategory,
 		getTreatmentCategoryLabel,
 		type DiscountType as DiscountTypeEnum
 	} from '$lib/shared/enums';
@@ -21,7 +21,7 @@
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { Customer } from '$lib/server/db/schema';
-	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
+	import type { SaleItemRow, NewCustomerData, TreatmentSaleItemRow } from '../newSaleTypes';
 	import SaleCustomerBanner from '../SaleCustomerBanner.svelte';
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
@@ -87,20 +87,20 @@
 
 	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
 
-	const subtotal = $derived(calculateSaleSummarySubtotal(items));
+	const grossSubtotal = $derived(calculateSaleSummarySubtotal(items));
 
 	const rawGlobalDiscountAmount = $derived(
-		discountType === DiscountType.PERCENTAGE ? (discount / 100) * subtotal : discount
+		discountType === DiscountType.PERCENTAGE ? (discount / 100) * grossSubtotal : discount
 	);
 
-	const appliedGlobalDiscount = $derived(Math.min(Math.max(rawGlobalDiscountAmount, 0), subtotal));
+	const appliedGlobalDiscount = $derived(
+		Math.min(Math.max(rawGlobalDiscountAmount, 0), grossSubtotal)
+	);
 
-	const total = $derived(Math.max(0, subtotal - appliedGlobalDiscount));
-
-	const globalDiscountMax = $derived(getDiscountValueMax(discountType, subtotal));
+	const globalDiscountMax = $derived(getDiscountValueMax(discountType, grossSubtotal));
 
 	const hasInvalidGlobalDiscount = $derived(
-		!isDiscountValueValid(discount, discountType, subtotal)
+		!isDiscountValueValid(discount, discountType, grossSubtotal)
 	);
 
 	const canSubmitFinal = $derived(canSubmit && !hasInvalidGlobalDiscount);
@@ -110,6 +110,9 @@
 	const adjustedTaxBreakdown = $derived.by(() =>
 		computeAdjustedTaxBreakdown(taxItems, appliedGlobalDiscount)
 	);
+
+	const total = $derived(adjustedTaxBreakdown.total);
+	const subtotal = $derived(adjustedTaxBreakdown.taxableBase + adjustedTaxBreakdown.exemptTotal);
 
 	const taxableRates = $derived.by(() =>
 		Array.from(
@@ -286,108 +289,133 @@
 		<!-- Items -->
 		<div class="min-w-0 flex-1 space-y-1 overflow-y-auto">
 			{#each items as item (item.id)}
-				{@const itemTaxMeta = getItemTaxMeta(item)}
-				<div
-					class="rounded-lg border border-slate-300 bg-white p-1 {item.kind === 'treatment'
-						? 'ml-4 border-l-2 border-slate-200 pl-3'
-						: ''}"
-				>
-					<div class="space-y-1">
-						<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-							<SaleItemInfo {item} />
+				{#if item.kind !== 'treatment'}
+					{@const itemTaxMeta = getItemTaxMeta(item)}
+					<div class="rounded-lg border border-slate-300 bg-white p-1">
+						<div class="space-y-1">
+							<div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+								<SaleItemInfo {item} />
 
-							<!-- Step 3 controls: qty · price · tax · discount · total -->
-							<div class="flex w-1/3 shrink-0 flex-col items-end gap-1">
-								<div class="flex items-center gap-1 text-[10px] text-slate-500">
-									<span>CANT {item.kind === 'product' ? item.quantity : 1}</span>
-									<span class="text-slate-300">·</span>
-									<span>{formatPrice(item.unitPrice)}</span>
-									<span class="text-slate-300">·</span>
-									<span
-										class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold {itemTaxMeta.className}"
-									>
-										{itemTaxMeta.label}
-									</span>
-								</div>
-								<div class="flex items-center gap-1">
-									<div class="inline-flex rounded-md bg-slate-100 p-0.5">
-										<button
-											type="button"
-											onclick={() => {
-												item.discountType = DiscountType.FIXED;
-											}}
-											class="flex h-5 w-5 items-center justify-center rounded text-[10px] font-semibold transition-colors {getDiscountToggleButtonClass(
-												item.discountType === DiscountType.FIXED
-											)}"
+								<!-- Step 3 controls: qty · price · tax · discount · total -->
+								<div class="flex w-1/3 shrink-0 flex-col items-end gap-1">
+									<div class="flex items-center gap-1 text-[10px] text-slate-500">
+										<span>CANT {item.kind === 'product' ? item.quantity : 1}</span>
+										<span class="text-slate-300">·</span>
+										<span>{formatPrice(item.unitPrice)}</span>
+										<span class="text-slate-300">·</span>
+										<span
+											class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold {itemTaxMeta.className}"
 										>
-											$
-										</button>
-										<button
-											type="button"
-											onclick={() => {
-												item.discountType = DiscountType.PERCENTAGE;
-											}}
-											class="flex h-5 w-5 items-center justify-center rounded text-[10px] font-semibold transition-colors {getDiscountToggleButtonClass(
-												item.discountType === DiscountType.PERCENTAGE
-											)}"
-										>
-											%
-										</button>
-									</div>
-									<input
-										type="number"
-										bind:value={item.discount}
-										step="0.01"
-										min="0"
-										max={getItemDiscountMax(item)}
-										class="w-14 rounded border px-1 py-0.5 text-right font-mono text-[10px] focus:outline-none {isItemDiscountValid(
-											item
-										)
-											? 'border-slate-200 bg-white text-slate-700'
-											: 'border-red-300 bg-red-50 text-red-600'}"
-									/>
-									<div class="rounded-lg bg-surface-container-low px-2 py-1">
-										<span class="font-mono text-xs font-semibold text-brand-navy">
-											{formatPrice(itemLineTotal(item))}
+											{itemTaxMeta.label}
 										</span>
 									</div>
+									<div class="flex items-center gap-1">
+										<div class="inline-flex rounded-md bg-slate-100 p-0.5">
+											<button
+												type="button"
+												onclick={() => {
+													item.discountType = DiscountType.FIXED;
+												}}
+												class="flex h-5 w-5 items-center justify-center rounded text-[10px] font-semibold transition-colors {getDiscountToggleButtonClass(
+													item.discountType === DiscountType.FIXED
+												)}"
+											>
+												$
+											</button>
+											<button
+												type="button"
+												onclick={() => {
+													item.discountType = DiscountType.PERCENTAGE;
+												}}
+												class="flex h-5 w-5 items-center justify-center rounded text-[10px] font-semibold transition-colors {getDiscountToggleButtonClass(
+													item.discountType === DiscountType.PERCENTAGE
+												)}"
+											>
+												%
+											</button>
+										</div>
+										<input
+											type="number"
+											bind:value={item.discount}
+											step="0.01"
+											min="0"
+											max={getItemDiscountMax(item)}
+											class="w-14 rounded border px-1 py-0.5 text-right font-mono text-[10px] focus:outline-none {isItemDiscountValid(
+												item
+											)
+												? 'border-slate-200 bg-white text-slate-700'
+												: 'border-red-300 bg-red-50 text-red-600'}"
+										/>
+										<div class="rounded-lg bg-surface-container-low px-2 py-1">
+											<span class="font-mono text-xs font-semibold text-brand-navy">
+												{formatPrice(itemLineTotal(item))}
+											</span>
+										</div>
+									</div>
+									{#if !isItemDiscountValid(item)}
+										<p class="text-[9px] font-semibold text-error">
+											Max: {item.discountType === DiscountType.PERCENTAGE
+												? '100%'
+												: formatPrice(getItemDiscountBase(item))}
+										</p>
+									{/if}
 								</div>
-								{#if !isItemDiscountValid(item)}
-									<p class="text-[9px] font-semibold text-error">
-										Max: {item.discountType === DiscountType.PERCENTAGE
-											? '100%'
-											: formatPrice(getItemDiscountBase(item))}
-									</p>
-								{/if}
 							</div>
 						</div>
-					</div>
 
-					<!-- Treatments -->
-					{#if item.kind === 'lens' && item.treatments.length > 0}
-						{@const treatmentEyeCount = getEnabledEyeCount(item)}
-						<div class="space-y-0.5">
-							{#each item.treatments as treatment (treatment.supplierTreatmentId)}
-								<div
-									class="ml-5 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-1.5"
-								>
-									<div class="flex items-center gap-1.5">
-										<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-blue"></span>
-										<span class="text-[11px] text-slate-600">{treatment.name}</span>
+						<!-- Treatments panel -->
+						{#if item.kind === 'lens'}
+							{@const treatmentItems = items.filter(
+								(i): i is TreatmentSaleItemRow =>
+									i.kind === 'treatment' && i.parentLensItemId === item.id
+							)}
+							{#if treatmentItems.length > 0}
+								<div class="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
+									<div class="mb-1.5 flex items-center gap-1.5">
+										<FlaskConical class="h-3 w-3 text-purple-600" />
 										<span
-											class="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[9px] font-semibold text-brand-blue"
+											class="text-[10px] font-semibold uppercase tracking-wider text-purple-700"
 										>
-											{getTreatmentCategoryLabel(treatment.category)}
+											Tratamientos / Filtros
 										</span>
 									</div>
-									<span class="font-mono text-[11px] text-slate-700"
-										>{formatPrice(treatment.price * treatmentEyeCount)}</span
-									>
+									<div class="space-y-1">
+										{#each treatmentItems as t (t.id)}
+											{@const tQty = t.quantity}
+											<div
+												class="flex items-center justify-between rounded-md bg-white px-2.5 py-1.5"
+											>
+												<div class="flex min-w-0 items-center gap-2">
+													<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-purple-400"></span>
+													<span class="truncate text-xs font-medium text-slate-700"
+														>{t.treatmentName}</span
+													>
+													<span
+														class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] shrink-0 {t.treatmentCategory ===
+														TreatmentCategory.AR
+															? 'bg-brand-blue/10 text-brand-blue'
+															: 'bg-surface-container-high text-on-surface-variant'}"
+													>
+														{getTreatmentCategoryLabel(t.treatmentCategory)}
+													</span>
+												</div>
+												<div class="flex shrink-0 items-center gap-2">
+													<span class="text-[10px] text-slate-400">×{tQty}</span>
+													<span class="text-[10px] text-slate-500">{formatPrice(t.unitPrice)}</span>
+													<span
+														class="w-14 text-right font-mono text-xs font-semibold text-brand-navy"
+													>
+														{formatPrice(t.unitPrice * tQty)}
+													</span>
+												</div>
+											</div>
+										{/each}
+									</div>
 								</div>
-							{/each}
-						</div>
-					{/if}
-				</div>
+							{/if}
+						{/if}
+					</div>
+				{/if}
 			{/each}
 		</div>
 
@@ -474,7 +502,7 @@
 				</div>
 				{#if hasInvalidGlobalDiscount}
 					<p class="mt-1 text-[9px] font-semibold text-error">
-						Max: {discountType === DiscountType.PERCENTAGE ? '100%' : formatPrice(subtotal)}
+						Max: {discountType === DiscountType.PERCENTAGE ? '100%' : formatPrice(grossSubtotal)}
 					</p>
 				{/if}
 			</div>

@@ -15,7 +15,6 @@
 		step2ItemLineTotal,
 		validateLensPrescription,
 		hasLensPrescriptionErrors,
-		getLensTreatmentsTotal,
 		getEnabledEyeCount
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
@@ -349,7 +348,8 @@
 				(i): i is TreatmentSaleItemRow =>
 					i.kind === 'treatment' && i.parentLensItemId === activeTreatmentLensId
 			);
-			const newItem = createEmptyTreatmentItem(activeTreatmentLensId, treatment, brand);
+			const eyeCount = getEnabledEyeCount(lensItem);
+			const newItem = createEmptyTreatmentItem(activeTreatmentLensId, treatment, brand, eyeCount);
 			if (existing >= 0) {
 				items = [...items.slice(0, existing), newItem, ...items.slice(existing + 1)];
 			} else {
@@ -451,15 +451,7 @@
 			.length
 	);
 
-	const coreItemsSubtotal = $derived(
-		items.reduce((sum, item) => sum + step2ItemLineTotal(item), 0)
-	);
-
-	const treatmentsSubtotal = $derived(
-		items.reduce((sum, item) => sum + getLensTreatmentsTotal(item), 0)
-	);
-
-	const partialTotal = $derived(coreItemsSubtotal + treatmentsSubtotal);
+	const partialTotal = $derived(items.reduce((sum, item) => sum + step2ItemLineTotal(item), 0));
 
 	const displayCustomerName = $derived.by(() => {
 		if (newCustomer) return `${newCustomer.firstName} ${newCustomer.lastName}`.trim();
@@ -583,7 +575,6 @@
 								isIncludedAccessory={false}
 								availableTreatments={[]}
 								currentTreatmentName={item.treatmentName}
-								currentTreatmentTotal={item.unitPrice * item.quantity}
 								onopenTreatment={itemTreatmentsMap[item.parentLensItemId]?.length > 0
 									? () => handleOpenTreatmentSelector(item.parentLensItemId)
 									: undefined}
@@ -599,7 +590,6 @@
 							isIncludedAccessory={item.isIncludedAccessory}
 							availableTreatments={itemTreatmentsMap[item.id] ?? []}
 							currentTreatmentName={ti?.name ?? null}
-							currentTreatmentTotal={ti?.total ?? 0}
 							onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
 								? () => handleOpenTreatmentSelector(item.id)
 								: undefined}

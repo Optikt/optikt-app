@@ -76,7 +76,8 @@ describe('buildSaleItemsFromWizard', () => {
 			treatmentCategory: 'AR',
 			isTaxable: true,
 			snapshotBrand: 'Novak',
-			quantity: 1,
+			purchasePrice: 3,
+			quantity: 2,
 			unitPrice: 5,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -103,13 +104,14 @@ describe('buildSaleItemsFromWizard', () => {
 		expect(result[1]).toMatchObject({
 			itemType: SaleItemType.TREATMENT,
 			parentSaleItemId: 'row-1',
-			quantity: 1,
+			quantity: 2,
 			unitPrice: 5,
 			supplierTreatmentId: 'treatment-1',
 			snapshotName: 'Antirreflejo',
 			snapshotTreatmentCategory: 'AR',
 			snapshotIsTaxable: true,
-			snapshotBrand: 'Novak'
+			snapshotBrand: 'Novak',
+			snapshotBaseCost: 3
 		});
 	});
 });
@@ -125,7 +127,8 @@ describe('buildQuoteItemsFromWizard', () => {
 			treatmentCategory: 'AR',
 			isTaxable: true,
 			snapshotBrand: 'Novak',
-			quantity: 1,
+			purchasePrice: 3,
+			quantity: 2,
 			unitPrice: 5,
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -148,13 +151,14 @@ describe('buildQuoteItemsFromWizard', () => {
 		expect(result[1]).toMatchObject({
 			itemType: SaleItemType.TREATMENT,
 			parentQuoteItemId: 'row-1',
-			quantity: 1,
+			quantity: 2,
 			unitPrice: 5,
 			supplierTreatmentId: 'treatment-1',
 			snapshotName: 'Antirreflejo',
 			snapshotTreatmentCategory: 'AR',
 			snapshotIsTaxable: true,
-			snapshotBrand: 'Novak'
+			snapshotBrand: 'Novak',
+			snapshotBaseCost: 3
 		});
 	});
 });

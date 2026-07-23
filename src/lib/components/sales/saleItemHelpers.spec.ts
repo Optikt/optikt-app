@@ -31,7 +31,8 @@ import {
 	type LensSaleItemRow,
 	type ProductSaleItemRow,
 	type SaleItemRow,
-	type SelectedTreatment
+	type SelectedTreatment,
+	type TreatmentSaleItemRow
 } from './newSaleTypes';
 
 function makeLensItem(
@@ -422,6 +423,31 @@ function makeTreatment(price: number, name = 'AR Angel'): SelectedTreatment {
 	};
 }
 
+function makeTreatmentRow(
+	parentLensItemId: string,
+	price: number,
+	eyeCount: number
+): TreatmentSaleItemRow {
+	return {
+		id: crypto.randomUUID(),
+		kind: 'treatment',
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		parentLensItemId,
+		supplierTreatmentId: crypto.randomUUID(),
+		treatmentName: 'AR Angel',
+		treatmentCategory: 'AR',
+		isTaxable: true,
+		snapshotBrand: 'Test',
+		purchasePrice: price * 0.5,
+		quantity: eyeCount,
+		unitPrice: price,
+		discount: 0,
+		discountType: DiscountType.FIXED,
+		notes: ''
+	};
+}
+
 function makeStockProduct(id: string, stock: number | null): ProductWithRelations {
 	return {
 		id,
@@ -606,12 +632,13 @@ describe('computeItemDiscount', () => {
 });
 
 describe('calculateSaleSummarySubtotal', () => {
-	it('includes treatments and clamps invalid row discounts', () => {
+	it('sums itemLineTotal across all items including treatments', () => {
 		const product = makeProductRow({ unitPrice: 30, discount: 50 });
 		const lens = makeLensRow([makeTreatment(15)]);
 		lens.unitPrice = 25;
+		const treatment = makeTreatmentRow(lens.id, 15, 2);
 
-		expect(calculateSaleSummarySubtotal([product, lens])).toBe(55);
+		expect(calculateSaleSummarySubtotal([product, lens, treatment])).toBe(55);
 	});
 });
 

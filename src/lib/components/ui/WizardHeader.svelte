@@ -1,8 +1,12 @@
 <script lang="ts">
-	import { Hash } from '@lucide/svelte';
-	import { Check } from '@lucide/svelte';
+	import { Hash, Check } from '@lucide/svelte';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 	import type { Snippet } from 'svelte';
 	import PageHeader from './PageHeader.svelte';
+	import Calendar from '$lib/components/ui/calendar/calendar.svelte';
+	import * as Popover from '$lib/components/ui/popover/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	interface WizardStepMeta {
 		num: number;
@@ -32,6 +36,26 @@
 		orderDate = $bindable(),
 		breadcrumbs
 	}: Props = $props();
+
+	let open = $state(false);
+	let value = $state<DateValue | undefined>();
+
+	$effect(() => {
+		if (value) {
+			const d = value.toDate(getLocalTimeZone());
+			orderDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+		}
+	});
+
+	$effect(() => {
+		if (orderDate && /^\d{4}-\d{2}-\d{2}$/.test(orderDate)) {
+			const [y, m, d] = orderDate.split('-').map(Number);
+			const parsed = new CalendarDate(y, m, d);
+			if (!value || value.compare(parsed) !== 0) {
+				value = parsed;
+			}
+		}
+	});
 
 	function stepBadgeClass(stepNum: number): string {
 		const isActive = currentStep === stepNum;
@@ -69,13 +93,40 @@
 								<span class="font-mono font-semibold">{orderNumber}</span>
 							</div>
 						{/if}
-						{#if orderDate}
-							<input
-								type="date"
-								bind:value={orderDate}
-								class="cursor-pointer rounded-lg border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs text-on-surface hover:border-brand-blue hover:bg-surface-container-high focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
-							/>
-						{/if}
+						<Popover.Root bind:open>
+							<Popover.Trigger>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										class="h-7 gap-1.5 rounded-lg border !border-outline-variant/30 bg-surface-container text-on-surface px-2.5 py-1 text-xs font-normal !text-black hover:border-brand-blue hover:bg-surface-container-high"
+									>
+										<!-- class="hover:border-brand-blue hover:bg-surface-container-high focus:border-brand-blue focus:ring-1 focus:ring-brand-blue" -->
+										{value
+											? value.toDate(getLocalTimeZone()).toLocaleDateString('es-ES', {
+													day: '2-digit',
+													month: '2-digit',
+													year: 'numeric'
+												})
+											: 'Seleccionar fecha'}
+										<ChevronDownIcon class="size-3" />
+									</Button>
+								{/snippet}
+							</Popover.Trigger>
+							<Popover.Content
+								class="w-auto overflow-hidden border border-border bg-white p-0 text-black shadow-lg"
+								align="start"
+							>
+								<Calendar
+									type="single"
+									bind:value
+									captionLayout="dropdown"
+									class="bg-white"
+									onValueChange={() => {
+										open = false;
+									}}
+								/>
+							</Popover.Content>
+						</Popover.Root>
 					</div>
 				{/if}
 			</div>

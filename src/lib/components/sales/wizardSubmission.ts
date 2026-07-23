@@ -84,7 +84,7 @@ export function buildSaleItemsFromWizard(
 				itemType: SaleItemType.TREATMENT,
 				parentSaleItemId: lensParent?.id ?? item.parentLensItemId,
 				supplierTreatmentId: item.supplierTreatmentId,
-				quantity: 1,
+				quantity: item.quantity,
 				unitPrice: item.unitPrice,
 				discount: item.discount,
 				discountType: item.discountType,
@@ -92,6 +92,7 @@ export function buildSaleItemsFromWizard(
 				snapshotBrand: item.snapshotBrand,
 				snapshotTreatmentCategory: item.treatmentCategory,
 				snapshotIsTaxable: item.isTaxable,
+				snapshotBaseCost: item.costOverride ?? item.purchasePrice,
 				notes: item.notes || undefined
 			});
 			continue;
@@ -201,7 +202,7 @@ export function buildQuoteItemsFromWizard(
 				itemType: SaleItemType.TREATMENT,
 				parentQuoteItemId: lensParent?.id ?? item.parentLensItemId,
 				supplierTreatmentId: item.supplierTreatmentId,
-				quantity: 1,
+				quantity: item.quantity,
 				unitPrice: item.unitPrice,
 				discount: item.discount,
 				discountType: item.discountType,
@@ -209,6 +210,7 @@ export function buildQuoteItemsFromWizard(
 				snapshotBrand: item.snapshotBrand,
 				snapshotTreatmentCategory: item.treatmentCategory,
 				snapshotIsTaxable: item.isTaxable,
+				snapshotBaseCost: item.costOverride ?? item.purchasePrice,
 				notes: item.notes || undefined
 			});
 			continue;

@@ -13,6 +13,7 @@
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';
 	import SaleCostSlideOver from './SaleCostSlideOver.svelte';
+	import TreatmentCostSlideOver from './TreatmentCostSlideOver.svelte';
 	import FreeItemFields from './FreeItemFields.svelte';
 
 	interface Props {
@@ -23,7 +24,6 @@
 		isIncludedAccessory: boolean;
 		availableTreatments?: SupplierTreatment[];
 		currentTreatmentName?: string | null;
-		currentTreatmentTotal?: number;
 		onopenTreatment?: (() => void) | undefined;
 	}
 
@@ -35,7 +35,6 @@
 		isIncludedAccessory = false,
 		availableTreatments = [],
 		currentTreatmentName = null,
-		currentTreatmentTotal = 0,
 		onopenTreatment = undefined
 	}: Props = $props();
 
@@ -54,6 +53,7 @@
 
 	let formulaOpen = $state(false);
 	let costOpen = $state(false);
+	let treatmentCostOpen = $state(false);
 
 	const internalCostTotal = $derived.by(() => {
 		if (item.kind !== 'lens' || !lens) return 0;
@@ -174,10 +174,33 @@
 			<FreeItemFields freeItem={item.freeItem} />
 		{/if}
 
+		<!-- Treatment cost section -->
+		{#if isTreatmentKind}
+			{@const t = item as TreatmentSaleItemRow}
+			<div
+				class="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-200 px-2 pt-2 text-xs"
+			>
+				<div class="flex items-center gap-1.5">
+					<span class="text-on-surface-variant">Costo: </span>
+					<span class="font-mono font-semibold text-brand-navy"
+						>{formatPrice(t.costOverride ?? t.purchasePrice)}</span
+					>
+					<span class="text-[10px] text-on-surface-variant">× {t.quantity}</span>
+					<button
+						type="button"
+						onclick={() => (treatmentCostOpen = true)}
+						class="inline-flex items-center rounded-lg px-1 py-0.5 text-[10px] font-semibold text-brand-blue underline transition-colors hover:bg-brand-blue/10"
+					>
+						Editar
+					</button>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Lens-specific section -->
 		{#if item.kind === 'lens' && item.lensPair?.catalogItemId}
 			<div
-				class="flex w-2/3 flex-wrap items-center gap-x-4 gap-y-1 divide-x divide-slate-300 border-t border-slate-200 px-2 pt-2 text-xs"
+				class="flex w-full flex-wrap items-center gap-x-4 gap-y-1 divide-x divide-slate-300 border-t border-slate-200 px-2 pt-2 text-xs"
 			>
 				<div class="flex items-center gap-1.5">
 					<span class="font-semibold text-brand-navy">Fórmula</span>
@@ -222,9 +245,6 @@
 						<span class="text-on-surface-variant">Filtros: </span>
 						{#if currentTreatmentName}
 							<span class="text-xs font-medium text-brand-navy">{currentTreatmentName}</span>
-							<span class="font-mono font-semibold text-brand-navy"
-								>{formatPrice(currentTreatmentTotal)}</span
-							>
 						{:else}
 							<span class="text-on-surface-variant">—</span>
 						{/if}
@@ -249,6 +269,16 @@
 			costOverrides={item.costOverrides}
 			shippingCostPending={item.shippingCostPending}
 			{eyeCount}
+		/>
+	{/if}
+
+	{#if isTreatmentKind}
+		{@const t = item as TreatmentSaleItemRow}
+		<TreatmentCostSlideOver
+			bind:open={treatmentCostOpen}
+			initialCost={t.costOverride ?? t.purchasePrice}
+			ineyeCount={t.quantity}
+			onapply={(newCost) => (t.costOverride = newCost)}
 		/>
 	{/if}
 </div>
