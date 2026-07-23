@@ -15,7 +15,6 @@
 		step2ItemLineTotal,
 		validateLensPrescription,
 		hasLensPrescriptionErrors,
-		getLensTreatmentsTotal,
 		getEnabledEyeCount
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
@@ -452,15 +451,7 @@
 			.length
 	);
 
-	const coreItemsSubtotal = $derived(
-		items.reduce((sum, item) => sum + step2ItemLineTotal(item), 0)
-	);
-
-	const treatmentsSubtotal = $derived(
-		items.reduce((sum, item) => sum + getLensTreatmentsTotal(item), 0)
-	);
-
-	const partialTotal = $derived(coreItemsSubtotal + treatmentsSubtotal);
+	const partialTotal = $derived(items.reduce((sum, item) => sum + step2ItemLineTotal(item), 0));
 
 	const displayCustomerName = $derived.by(() => {
 		if (newCustomer) return `${newCustomer.firstName} ${newCustomer.lastName}`.trim();
