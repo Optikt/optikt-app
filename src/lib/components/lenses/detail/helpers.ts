@@ -25,12 +25,20 @@ export function getLensInventorySummary(
 	return `${stock} en stock`;
 }
 
-export function getLensMarginPercent(
+export function getLensTotalCost(
 	pairPurchasePrice: number,
+	mountingPrice: number,
+	shippingPrice: number
+): number {
+	return pairPurchasePrice + mountingPrice + shippingPrice;
+}
+
+export function getLensMarginPercent(
+	totalCost: number,
 	salePrice: number | null | undefined
 ): number | null {
-	if (!salePrice || pairPurchasePrice <= 0) return null;
-	return ((salePrice - pairPurchasePrice) / pairPurchasePrice) * 100;
+	if (!salePrice || totalCost <= 0) return null;
+	return ((salePrice - totalCost) / salePrice) * 100;
 }
 
 export function getLensTaxSummary(isTaxable: boolean): string {

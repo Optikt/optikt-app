@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LensPriceType } from '$lib/shared/enums';
-
-// ── Replicate the server-side computation logic for testing ──────────────
-
-/** Same formula used in lenses.remote.ts */
-function computePairPurchasePrice(basePrice: number, priceType: string): number {
-	return priceType === LensPriceType.UNIT ? basePrice * 2 : basePrice;
-}
+import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
 
 // ── Tests ────────────────────────────────────────────────────────────────
 

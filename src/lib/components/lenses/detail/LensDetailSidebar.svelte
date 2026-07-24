@@ -3,7 +3,7 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import { getPriceTypeLabel } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
-	import { getLensMarginPercent } from './helpers';
+	import { getLensMarginPercent, getLensTotalCost } from './helpers';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;
@@ -12,7 +12,10 @@
 
 	let { item, onOpenHistory }: Props = $props();
 
-	const marginPercent = $derived(getLensMarginPercent(item.pairPurchasePrice, item.salePrice));
+	const totalCost = $derived(
+		getLensTotalCost(item.pairPurchasePrice, item.mountingPrice, item.shippingPrice)
+	);
+	const marginPercent = $derived(getLensMarginPercent(totalCost, item.salePrice));
 </script>
 
 <div class="space-y-6">
@@ -35,40 +38,69 @@
 					<span
 						class="rounded-full bg-brand-gold px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-navy uppercase"
 					>
-						Margen {marginPercent >= 0 ? '+' : ''}{marginPercent.toFixed(0)}%
+						Margen {marginPercent.toFixed(0)}%
 					</span>
 				{/if}
 			</div>
 
 			<div class="mt-6 space-y-3 text-sm text-white/78">
-				<div class="flex items-center justify-between gap-4">
-					<span>Costo base {getPriceTypeLabel(item.priceType).toLowerCase()}</span>
-					<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
-				</div>
-				<div class="flex items-center justify-between gap-4">
-					<span>Costo por par</span>
-					<span class="font-mono font-semibold text-white">
-						{formatPrice(item.pairPurchasePrice)}
-					</span>
+				<div class="rounded-lg bg-white/5 p-3">
+					<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-gold uppercase">
+						Costo de cristales
+					</p>
+					<div class="flex items-center justify-between gap-4">
+						<span
+							>{item.priceType === 'UNIT' ? 'Precio por unidad' : 'Precio informado por par'}</span
+						>
+						<span class="font-mono font-semibold text-white">{formatPrice(item.basePrice)}</span>
+					</div>
+					<div class="flex items-center justify-between gap-4">
+						<span
+							>{item.priceType === 'UNIT'
+								? 'Costo de cristales (2 unidades)'
+								: 'Costo de cristales por par'}</span
+						>
+						<span class="font-mono font-semibold text-white">
+							{formatPrice(item.pairPurchasePrice)}
+						</span>
+					</div>
+					<p class="mt-1 text-[10px] text-white/50">
+						{item.priceType === 'UNIT'
+							? `${formatPrice(item.basePrice)} x 2`
+							: 'El proveedor cotiza directamente el par'}
+					</p>
 				</div>
 
-				{#if item.mountingPrice > 0}
-					<div class="flex items-center justify-between gap-4">
-						<span>Montaje</span>
-						<span class="font-mono font-semibold text-white">
-							{formatPrice(item.mountingPrice)}
-						</span>
+				{#if item.mountingPrice > 0 || item.shippingPrice > 0}
+					<div class="rounded-lg bg-white/5 p-3">
+						<p class="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-gold uppercase">
+							Costos adicionales
+						</p>
+						{#if item.mountingPrice > 0}
+							<div class="flex items-center justify-between gap-4">
+								<span>Montaje (por par)</span>
+								<span class="font-mono font-semibold text-white">
+									{formatPrice(item.mountingPrice)}
+								</span>
+							</div>
+						{/if}
+						{#if item.shippingPrice > 0}
+							<div class="flex items-center justify-between gap-4">
+								<span>Envío (por par)</span>
+								<span class="font-mono font-semibold text-white">
+									{formatPrice(item.shippingPrice)}
+								</span>
+							</div>
+						{/if}
 					</div>
 				{/if}
 
-				{#if item.shippingPrice > 0}
+				<div class="mt-1 border-t border-white/15 pt-3">
 					<div class="flex items-center justify-between gap-4">
-						<span>Envío</span>
-						<span class="font-mono font-semibold text-white">
-							{formatPrice(item.shippingPrice)}
-						</span>
+						<span class="font-semibold text-white">Costo total por par</span>
+						<span class="font-mono font-bold text-brand-gold">{formatPrice(totalCost)}</span>
 					</div>
-				{/if}
+				</div>
 			</div>
 
 			<div class="mt-6 rounded-[1.25rem] bg-white/10 px-4 py-4 backdrop-blur-sm">
