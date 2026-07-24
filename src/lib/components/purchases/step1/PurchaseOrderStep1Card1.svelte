@@ -67,7 +67,7 @@
 </script>
 
 <div class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20">
-	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-6">
+	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-4">
 		<FileText class="mr-2 inline-block h-4 w-4 text-brand-blue" />
 		Documento y condición de pago
 	</h2>
@@ -116,7 +116,7 @@
 		<textarea
 			bind:value={notes}
 			rows="3"
-			class={`${inputClass} min-h-[5rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
+			class={`${inputClass} min-h-[3rem] h-[3rem] max-h-[5rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
 			placeholder="Observaciones internas o acuerdos con proveedor..."></textarea>
 		{#if notesTooShort}
 			<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
@@ -124,7 +124,7 @@
 	</FieldWrapper>
 
 	<!-- Divider -->
-	<hr class="border-outline-variant/20 my-6" />
+	<hr class="border-outline-variant/40 my-2" />
 
 	<!-- Condición de pago -->
 	<p class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2">

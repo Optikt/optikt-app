@@ -109,7 +109,7 @@
 </script>
 
 <div class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20">
-	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-6">
+	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-4">
 		<DollarSign class="mr-2 inline-block h-4 w-4 text-brand-gold-dark" />
 		Datos financieros
 	</h2>
@@ -198,7 +198,7 @@
 		{/if}
 
 		<!-- Divider -->
-		<hr class="border-outline-variant/20 my-6" />
+		<hr class="border-outline-variant/50 my-4" />
 
 		<!-- Descuento -->
 		<FieldWrapper label="Tipo de descuento">
