@@ -18,10 +18,11 @@
 	let inputValue = $state('');
 	let open = $state(false);
 
-	const selectedLabel = $derived(suppliers.find((s) => s.id === value)?.name ?? '');
+	const sorted = $derived([...suppliers].sort((a, b) => a.name.localeCompare(b.name)));
+	const selectedLabel = $derived(sorted.find((s) => s.id === value)?.name ?? '');
 
 	const filtered = $derived(
-		suppliers.filter((s) => s.name.toLowerCase().includes(inputValue.toLowerCase()))
+		sorted.filter((s) => s.name.toLowerCase().includes(inputValue.toLowerCase()))
 	);
 
 	function handleInput(e: Event) {
@@ -31,7 +32,7 @@
 
 	function handleSelect(supplierId: string) {
 		value = supplierId;
-		const selected = suppliers.find((s) => s.id === supplierId);
+		const selected = sorted.find((s) => s.id === supplierId);
 		inputValue = selected?.name ?? '';
 		open = false;
 	}

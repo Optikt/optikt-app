@@ -154,7 +154,13 @@
 					Boolean(orderDate) &&
 					Number(bcvRate) > 0 &&
 					String(notes ?? '').trim().length >= 6 &&
-					Boolean(settlementCurrency)
+					Boolean(settlementCurrency) &&
+					(documentType === PurchaseDocumentType.INVOICE
+						? (invoiceNumber ?? '').length >= 2
+						: (deliveryNoteNumber ?? '').length >= 2) &&
+					(paymentTerms === PurchasePaymentTerms.CONTADO || Boolean(creditDueDate)) &&
+					(discountType === PurchaseDiscountType.NONE || Number(discountValue) > 0) &&
+					(!sourceCurrencyRequiresRateToVes(sourceCurrency) || Number(sourceRateToVes) > 0)
 				);
 			case 2:
 				return items.length > 0;
