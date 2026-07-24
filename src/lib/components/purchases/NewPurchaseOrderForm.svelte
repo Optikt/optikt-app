@@ -492,47 +492,45 @@
 
 	<!-- Step content -->
 	{#if currentStep === 1}
-		<div class="max-w-[1400px] mx-auto">
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-				<PurchaseOrderStep1Card1
-					{suppliers}
-					bind:supplierId
-					{supplierLocked}
-					bind:documentType
-					bind:orderDate
-					bind:invoiceNumber
-					bind:deliveryNoteNumber
-					bind:notes
-					{paymentTerms}
-					{creditDueDate}
-					{earlyPaymentDiscountPercent}
-					{earlyPaymentDiscountDeadline}
-					onPaymentTermsChange={handlePaymentTermsChange}
-					onCreditDueDateChange={(value) => (creditDueDate = value)}
-					onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
-					onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
-				/>
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+			<PurchaseOrderStep1Card1
+				{suppliers}
+				bind:supplierId
+				{supplierLocked}
+				bind:documentType
+				bind:orderDate
+				bind:invoiceNumber
+				bind:deliveryNoteNumber
+				bind:notes
+				{paymentTerms}
+				{creditDueDate}
+				{earlyPaymentDiscountPercent}
+				{earlyPaymentDiscountDeadline}
+				onPaymentTermsChange={handlePaymentTermsChange}
+				onCreditDueDateChange={(value) => (creditDueDate = value)}
+				onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
+				onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
+			/>
 
-				<PurchaseOrderStep1Card2
-					bind:sourceCurrency
-					bind:bcvRate
-					bind:sourceRateToVes
-					{settlementCurrency}
-					{settlementManuallyChanged}
-					bind:discountType
-					bind:discountValue
-					bind:discountNotes
-					onSourceCurrencyChange={(val) => requestPricingModeChange(val)}
-					onBcvRateChange={(val) => (bcvRate = val)}
-					onSourceRateToVesChange={(val) => (sourceRateToVes = val)}
-					onSettlementManuallyChangedChange={(val) => (settlementManuallyChanged = val)}
-					onSettlementCurrencyChange={(val) => (settlementCurrency = val)}
-					onDiscountTypeChange={(val) => (discountType = val)}
-					onDiscountValueChange={(val) => (discountValue = val)}
-					onDiscountNotesChange={(val) => (discountNotes = val)}
-					{settlementCurrencyConflict}
-				/>
-			</div>
+			<PurchaseOrderStep1Card2
+				bind:sourceCurrency
+				bind:bcvRate
+				bind:sourceRateToVes
+				{settlementCurrency}
+				{settlementManuallyChanged}
+				bind:discountType
+				bind:discountValue
+				bind:discountNotes
+				onSourceCurrencyChange={(val) => requestPricingModeChange(val)}
+				onBcvRateChange={(val) => (bcvRate = val)}
+				onSourceRateToVesChange={(val) => (sourceRateToVes = val)}
+				onSettlementManuallyChangedChange={(val) => (settlementManuallyChanged = val)}
+				onSettlementCurrencyChange={(val) => (settlementCurrency = val)}
+				onDiscountTypeChange={(val) => (discountType = val)}
+				onDiscountValueChange={(val) => (discountValue = val)}
+				onDiscountNotesChange={(val) => (discountNotes = val)}
+				{settlementCurrencyConflict}
+			/>
 		</div>
 	{:else if currentStep === 2}
 		<PurchaseOrderItemsPanel

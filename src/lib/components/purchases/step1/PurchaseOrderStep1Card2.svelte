@@ -120,7 +120,7 @@
 			<select
 				value={sourceCurrency}
 				onchange={handleSourceCurrencyChange}
-				class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="max-w-xs w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 			>
 				{#each CURRENCY_OPTIONS as opt}
 					<option value={opt.value}>{opt.label}</option>
@@ -181,7 +181,7 @@
 					settlementCurrency = (e.target as HTMLSelectElement).value;
 					onSettlementCurrencyChange?.(settlementCurrency);
 				}}
-				class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+				class="max-w-xs w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 			>
 				{#each SETTLEMENT_OPTIONS as opt}
 					<option value={opt.value}>{opt.label}</option>
@@ -250,6 +250,8 @@
 					/>
 				</FieldWrapper>
 			</div>
+		{:else}
+			<p class="text-xs text-on-surface-variant/60 italic">Sin descuento aplicado a esta compra</p>
 		{/if}
 	</div>
 </div>

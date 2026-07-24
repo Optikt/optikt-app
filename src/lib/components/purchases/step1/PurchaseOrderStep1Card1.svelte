@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { FileText, CreditCard, Settings } from '@lucide/svelte';
-	import SelectInput from '$lib/components/ui/SelectInput.svelte';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import { PurchaseDocumentType, PurchasePaymentTerms } from '$lib/shared/enums';
 	import { inputClass } from '../purchaseFieldStyles';
 	import FieldWrapper from './FieldWrapper.svelte';
 	import PurchaseOrderCreditDrawer from './PurchaseOrderCreditDrawer.svelte';
+	import SupplierCombobox from './SupplierCombobox.svelte';
 
 	type SupplierOption = {
 		id: string;
@@ -74,14 +74,7 @@
 
 	<!-- Proveedor (full width) -->
 	<FieldWrapper label="Proveedor" required>
-		<SelectInput
-			bind:value={supplierId}
-			options={suppliers}
-			placeholder="Buscar proveedor..."
-			disabled={supplierLocked}
-			valueField="id"
-			labelField="name"
-		/>
+		<SupplierCombobox {suppliers} bind:value={supplierId} disabled={supplierLocked} />
 		{#if supplierLocked}
 			<p class="text-xs leading-5 text-on-surface-variant">
 				El proveedor queda bloqueado mientras existan líneas agregadas.
@@ -91,17 +84,17 @@
 
 	<!-- Secondary fields (container query grid) -->
 	<div class="grid grid-cols-1 @sm:grid-cols-3 gap-4 mt-4">
-		<FieldWrapper label="Tipo de documento">
+		<FieldWrapper label="Documento">
 			<SegmentedToggle
 				value={documentType}
 				options={[
 					{ value: PurchaseDocumentType.INVOICE, label: 'Factura' },
-					{ value: PurchaseDocumentType.DELIVERY_NOTE, label: 'Nota de entrega' }
+					{ value: PurchaseDocumentType.DELIVERY_NOTE, label: 'Nota' }
 				]}
 				onchange={(val) => (documentType = val as PurchaseDocumentType)}
 			/>
 		</FieldWrapper>
-		<FieldWrapper label={isInvoice ? 'N° factura' : 'Nota de entrega'}>
+		<FieldWrapper label={isInvoice ? 'N° factura' : 'Nota'}>
 			{#if isInvoice}
 				<input type="text" bind:value={invoiceNumber} class={inputClass} placeholder="Opcional" />
 			{:else}
@@ -134,6 +127,9 @@
 	<hr class="border-outline-variant/20 my-6" />
 
 	<!-- Condición de pago -->
+	<p class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2">
+		Condición de pago
+	</p>
 	<div class="flex items-center gap-3">
 		<div class="flex-1">
 			<SegmentedToggle
@@ -166,7 +162,7 @@
 				{/if}
 			</p>
 		{:else}
-			<p class="text-sm text-on-surface-variant/60 mt-2 italic">
+			<p class="text-sm text-on-surface-variant/80 mt-2 italic">
 				Configura las condiciones del crédito usando el botón de ajustes
 			</p>
 		{/if}

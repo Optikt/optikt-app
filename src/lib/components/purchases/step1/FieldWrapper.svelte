@@ -26,12 +26,12 @@
 <div class="space-y-1.5 {className}">
 	{#if label}
 		{#if id}
-			<label for={id} class={fieldLabelClass}>
+			<label for={id} class="block {fieldLabelClass}">
 				{label}
 				{#if required}<span class="text-error"> *</span>{/if}
 			</label>
 		{:else}
-			<span class={fieldLabelClass}>
+			<span class="block {fieldLabelClass}">
 				{label}
 				{#if required}<span class="text-error"> *</span>{/if}
 			</span>
