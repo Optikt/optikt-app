@@ -120,7 +120,7 @@
 			<select
 				value={sourceCurrency}
 				onchange={handleSourceCurrencyChange}
-				class="max-w-xs w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="max-w-xs w-1/3 rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 			>
 				{#each CURRENCY_OPTIONS as opt}
 					<option value={opt.value}>{opt.label}</option>
