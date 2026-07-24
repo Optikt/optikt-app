@@ -66,7 +66,7 @@
 	}
 </script>
 
-<div class="@container rounded-2xl bg-surface-container-low p-6 ring-1 ring-outline-variant/20">
+<div class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20">
 	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-6">
 		<FileText class="mr-2 inline-block h-4 w-4 text-brand-blue" />
 		Documento y condición de pago
