@@ -51,17 +51,32 @@
 	}: Props = $props();
 
 	let creditDrawerOpen = $state(false);
+	let prevDocumentType: PurchaseDocumentType | null = $state(null);
 
 	const isInvoice = $derived(documentType === PurchaseDocumentType.INVOICE);
 	const notesTooShort = $derived(notes.length > 0 && notes.length < 6);
 	const isCredit = $derived(paymentTerms === PurchasePaymentTerms.CREDIT);
 	const creditConfigured = $derived(isCredit && !!creditDueDate);
 
+	$effect(() => {
+		if (prevDocumentType !== null && prevDocumentType !== documentType) {
+			if (documentType === PurchaseDocumentType.INVOICE) {
+				deliveryNoteNumber = '';
+			} else {
+				invoiceNumber = '';
+			}
+		}
+		prevDocumentType = documentType;
+	});
+
 	function handlePaymentTermsChange(val: string) {
 		const next = val as PurchasePaymentTerms;
 		onPaymentTermsChange?.(next);
 		if (next === PurchasePaymentTerms.CONTADO) {
 			creditDrawerOpen = false;
+			onCreditDueDateChange?.(null);
+			onEarlyPaymentDiscountPercentChange?.(null);
+			onEarlyPaymentDiscountDeadlineChange?.(null);
 		}
 	}
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { DollarSign } from '@lucide/svelte';
+	import { AlertTriangle, DollarSign } from '@lucide/svelte';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import { PurchaseDiscountType, PurchaseSourceCurrency } from '$lib/shared/enums';
 	import {
@@ -189,10 +189,13 @@
 			</select>
 			{#if settlementCurrencyConflict}
 				<div
-					class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+					class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
 				>
-					La moneda de obligación es distinta a la moneda de factura. Revisá que el proveedor
-					realmente exija otra moneda.
+					<AlertTriangle class="h-4 w-4 shrink-0 mt-px" />
+					<span>
+						La moneda de obligación es distinta a la moneda de factura. Revisá que el proveedor
+						realmente exija otra moneda.
+					</span>
 				</div>
 			{/if}
 		{/if}

@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { ChevronDown, Search } from '@lucide/svelte';
-	import { Combobox } from 'bits-ui';
+	import { ChevronDown, Search, X } from '@lucide/svelte';
 	import { inputClass } from '../purchaseFieldStyles';
 
 	type SupplierOption = {
@@ -45,6 +44,11 @@
 	function handleBlur() {
 		setTimeout(() => (open = false), 150);
 	}
+
+	function handleClear() {
+		value = '';
+		inputValue = '';
+	}
 </script>
 
 <div class="relative">
@@ -63,7 +67,7 @@
 			role="combobox"
 			aria-expanded={open}
 			aria-controls="supplier-listbox"
-			class={[inputClass, 'pl-9', open ? 'rounded-b-none' : '']}
+			class={[inputClass, 'pl-9 pr-14', open ? 'rounded-b-none' : '']}
 		/>
 		<button
 			type="button"
@@ -73,6 +77,17 @@
 		>
 			<ChevronDown class="h-4 w-4 transition-transform duration-150 {open ? 'rotate-180' : ''}" />
 		</button>
+		{#if value && !disabled}
+			<button
+				type="button"
+				onclick={handleClear}
+				class="absolute right-8 top-1/2 -translate-y-1/2 rounded p-1 text-outline hover:text-error"
+				tabindex="-1"
+				aria-label="Deseleccionar proveedor"
+			>
+				<X class="h-4 w-4" />
+			</button>
+		{/if}
 	</div>
 
 	{#if open && filtered.length > 0}
