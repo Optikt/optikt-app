@@ -86,13 +86,39 @@
 			? 'mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(15rem,0.9fr)] lg:items-start'
 			: 'mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(18rem,0.9fr)] lg:items-start'
 	);
-	const innerCardClass = $derived(compact ? 'rounded-2xl bg-white/8 p-2.5' : 'rounded-2xl bg-white/8 p-4');
-	const amountClass = $derived(compact ? 'mt-1 font-mono text-xl font-semibold text-white tabular-nums' : 'mt-2 font-mono text-2xl font-semibold text-white tabular-nums');
-	const amountClassGold = $derived(compact ? 'mt-1 font-mono text-xl font-semibold text-brand-gold tabular-nums' : 'mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums');
-	const sideColumnClass = $derived(compact ? 'space-y-1.5 rounded-2xl bg-white/6 p-2.5 text-xs text-white/70' : 'space-y-3 rounded-2xl bg-white/6 p-4 text-sm text-white/70');
-	const sideAmountClass = $derived(compact ? 'font-mono text-sm font-semibold text-white tabular-nums' : 'font-mono text-base font-semibold text-white tabular-nums');
-	const sideAmountClassGold = $derived(compact ? 'font-mono text-sm font-semibold text-brand-gold tabular-nums' : 'font-mono text-base font-semibold text-brand-gold tabular-nums');
-	const sideAmountPlainClass = $derived(compact ? 'font-mono text-sm font-semibold tabular-nums' : 'font-mono text-base font-semibold tabular-nums');
+	const innerCardClass = $derived(
+		compact ? 'rounded-2xl bg-white/8 p-2.5' : 'rounded-2xl bg-white/8 p-4'
+	);
+	const amountClass = $derived(
+		compact
+			? 'mt-1 font-mono text-xl font-semibold text-white tabular-nums'
+			: 'mt-2 font-mono text-2xl font-semibold text-white tabular-nums'
+	);
+	const amountClassGold = $derived(
+		compact
+			? 'mt-1 font-mono text-xl font-semibold text-brand-gold tabular-nums'
+			: 'mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums'
+	);
+	const sideColumnClass = $derived(
+		compact
+			? 'space-y-1.5 rounded-2xl bg-white/6 p-2.5 text-xs text-white/70'
+			: 'space-y-3 rounded-2xl bg-white/6 p-4 text-sm text-white/70'
+	);
+	const sideAmountClass = $derived(
+		compact
+			? 'font-mono text-sm font-semibold text-white tabular-nums'
+			: 'font-mono text-base font-semibold text-white tabular-nums'
+	);
+	const sideAmountClassGold = $derived(
+		compact
+			? 'font-mono text-sm font-semibold text-brand-gold tabular-nums'
+			: 'font-mono text-base font-semibold text-brand-gold tabular-nums'
+	);
+	const sideAmountPlainClass = $derived(
+		compact
+			? 'font-mono text-sm font-semibold tabular-nums'
+			: 'font-mono text-base font-semibold tabular-nums'
+	);
 </script>
 
 <section class={sectionClass}>
@@ -156,7 +182,7 @@
 			{#if needsSourceRate}
 				<div class="flex items-center justify-between gap-4">
 					<span>Subtotal</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{getSourceCurrencySymbol(sourceCurrency)}
 						{(summary.subtotalAlt ?? 0).toFixed(2)}
 					</span>
@@ -172,14 +198,14 @@
 				{/if}
 				<div class="flex items-center justify-between gap-4">
 					<span>Subtotal neto</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{getSourceCurrencySymbol(sourceCurrency)}
 						{(summary.netSubtotalAlt ?? summary.subtotalAlt ?? 0).toFixed(2)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
 					<span>{hasDiscount ? 'IVA neto' : 'IVA estimado'}</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{getSourceCurrencySymbol(sourceCurrency)}
 						{(hasDiscount ? (summary.netTaxAmountAlt ?? 0) : (summary.taxAmountAlt ?? 0)).toFixed(
 							2
@@ -188,7 +214,7 @@
 				</div>
 				<div class="flex items-center justify-between gap-4">
 					<span>Líneas / Unidades</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{summary.lineCount} / {summary.totalUnits}
 					</span>
 				</div>
@@ -201,20 +227,20 @@
 				<hr class="border-white/10" />
 				<div class="flex items-center justify-between gap-4">
 					<span>Total {getSourceCurrencySymbol(sourceCurrency)}</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{getSourceCurrencySymbol(sourceCurrency)}
 						{(hasDiscount ? (summary.netTotalAlt ?? 0) : (summary.totalAlt ?? 0)).toFixed(2)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
 					<span>Equiv. USD</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{formatPrice(hasDiscount ? summary.netTotal : summary.total)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
 					<span>Equivalente BCV</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{bcvRate > 0 ? formatVes(hasDiscount ? netTotalInBs : totalInBs) : 'Define una tasa'}
 					</span>
 				</div>
@@ -228,7 +254,7 @@
 			{:else}
 				<div class="flex items-center justify-between gap-4">
 					<span>Subtotal</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{formatPrice(summary.subtotal)}
 					</span>
 				</div>
@@ -241,20 +267,20 @@
 					</div>
 					<div class="flex items-center justify-between gap-4">
 						<span>Subtotal neto</span>
-						<span class="{sideAmountClass}">
+						<span class={sideAmountClass}>
 							{formatPrice(summary.netSubtotal)}
 						</span>
 					</div>
 				{/if}
 				<div class="flex items-center justify-between gap-4">
 					<span>{hasDiscount ? 'IVA neto' : 'IVA estimado'}</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{formatPrice(hasDiscount ? summary.netTaxAmount : summary.taxAmount)}
 					</span>
 				</div>
 				<div class="flex items-center justify-between gap-4">
 					<span>Líneas / Unidades</span>
-					<span class="{sideAmountClass}">
+					<span class={sideAmountClass}>
 						{summary.lineCount} / {summary.totalUnits}
 					</span>
 				</div>
@@ -267,7 +293,7 @@
 				{#if canShowBsEquivalent}
 					<div class="flex items-center justify-between gap-4">
 						<span>Equivalente BCV</span>
-						<span class="{sideAmountClass}">
+						<span class={sideAmountClass}>
 							{bcvRate > 0 ? formatVes(hasDiscount ? netTotalInBs : totalInBs) : 'Define una tasa'}
 						</span>
 					</div>

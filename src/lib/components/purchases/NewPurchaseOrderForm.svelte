@@ -24,11 +24,10 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import PurchaseOrderDocumentPanel from './PurchaseOrderDocumentPanel.svelte';
 	import PurchaseOrderItemsPanel from './PurchaseOrderItemsPanel.svelte';
 	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
-	import PurchaseOrderDiscountPanel from './PurchaseOrderDiscountPanel.svelte';
-	import PurchaseOrderPaymentTermsPanel from './PurchaseOrderPaymentTermsPanel.svelte';
+	import PurchaseOrderStep1Card1 from './step1/PurchaseOrderStep1Card1.svelte';
+	import PurchaseOrderStep1Card2 from './step1/PurchaseOrderStep1Card2.svelte';
 	import {
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
@@ -130,7 +129,7 @@
 	let showPricingModeConfirmModal = $state(false);
 	let pendingSourceCurrency = $state<string | null>(null);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
-	let currentStep = $state(0);
+	let currentStep = $state(1);
 
 	const saving = $derived(savingAction !== null);
 
@@ -142,15 +141,14 @@
 	);
 
 	const steps = [
-		{ num: 1, label: 'Documento' },
+		{ num: 1, label: 'Información' },
 		{ num: 2, label: 'Artículos' },
-		{ num: 3, label: 'Pago' },
-		{ num: 4, label: 'Revisar' }
+		{ num: 3, label: 'Revisar' }
 	];
 
 	const stepValid = $derived.by(() => {
 		switch (currentStep) {
-			case 0:
+			case 1:
 				return (
 					Boolean(supplierId) &&
 					Boolean(orderDate) &&
@@ -158,10 +156,8 @@
 					String(notes ?? '').trim().length >= 6 &&
 					Boolean(settlementCurrency)
 				);
-			case 1:
-				return items.length > 0;
 			case 2:
-				return true;
+				return items.length > 0;
 			case 3:
 				return true;
 			default:
@@ -170,7 +166,7 @@
 	});
 
 	const canNext = $derived(currentStep < 3 && stepValid && !saving);
-	const canBack = $derived(currentStep > 0);
+	const canBack = $derived(currentStep > 1);
 	const isLastStep = $derived(currentStep === 3);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
@@ -457,10 +453,10 @@
 <div class="space-y-3 p-4">
 	<WizardHeader
 		{steps}
-		currentStep={currentStep + 1}
-		canNavigateToStep={(stepNum) => stepNum - 1 < currentStep || stepValid}
+		{currentStep}
+		canNavigateToStep={(stepNum) => stepNum <= currentStep || stepValid}
 		onStepSelect={(stepNum) => {
-			currentStep = stepNum - 1;
+			currentStep = stepNum;
 		}}
 	>
 		{#snippet breadcrumbs()}
@@ -474,7 +470,7 @@
 
 	{#if isEdit}
 		<p class="text-xs text-on-surface-variant">Los cambios se guardan como borrador</p>
-	{:else if currentStep > 0 && supplierId}
+	{:else if currentStep > 1 && supplierId}
 		<p class="text-xs text-on-surface-variant">
 			Proveedor:
 			<span class="font-semibold text-brand-navy"
@@ -495,110 +491,50 @@
 	{/if}
 
 	<!-- Step content -->
-	{#if currentStep === 0}
-		<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
-			<h2 class="text-lg font-semibold text-brand-navy">Información de la compra</h2>
-			<div class="mt-4 space-y-5">
-				<PurchaseOrderDocumentPanel
+	{#if currentStep === 1}
+		<div class="max-w-[1400px] mx-auto">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+				<PurchaseOrderStep1Card1
 					{suppliers}
 					bind:supplierId
+					{supplierLocked}
 					bind:documentType
 					bind:orderDate
-					bind:bcvRate
-					bind:sourceRateToVes
-					{sourceCurrency}
 					bind:invoiceNumber
 					bind:deliveryNoteNumber
 					bind:notes
-					{supplierLocked}
-					bare
+					{paymentTerms}
+					{creditDueDate}
+					{earlyPaymentDiscountPercent}
+					{earlyPaymentDiscountDeadline}
+					onPaymentTermsChange={handlePaymentTermsChange}
+					onCreditDueDateChange={(value) => (creditDueDate = value)}
+					onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
+					onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
 				/>
 
-				<hr class="border-outline-variant/30" />
-
-				<div class="space-y-4">
-					<div>
-						<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-							Base de precios
-						</p>
-						<div class="max-w-lg">
-							<SegmentedToggle
-								value={sourceCurrency}
-								options={pricingModeOptions}
-								onchange={(val) => requestPricingModeChange(val)}
-							/>
-						</div>
-					</div>
-
-					<div class="flex gap-4">
-						<div class="space-y-1.5">
-							<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-								Tasa BCV
-							</p>
-							<input
-								type="number"
-								step="0.01"
-								min="0"
-								bind:value={bcvRate}
-								class="w-full max-w-40 rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-								placeholder="Ej: 38.25"
-								aria-label="Tasa BCV"
-							/>
-						</div>
-
-						{#if sourceCurrencyRequiresRateToVes(sourceCurrency)}
-							<div class="space-y-1.5">
-								<p
-									class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-								>
-									Tasa {sourceCurrency}
-								</p>
-								<input
-									type="number"
-									step="0.01"
-									min="0"
-									bind:value={sourceRateToVes}
-									class="w-full max-w-40 rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-									placeholder="Bs/unidad"
-									aria-label={`Tasa ${sourceCurrency} en bolívares`}
-								/>
-							</div>
-						{/if}
-					</div>
-
-					<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-						<label
-							for="settlement-currency"
-							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-						>
-							Moneda de obligación
-						</label>
-						<select
-							id="settlement-currency"
-							class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-							bind:value={settlementCurrency}
-							onchange={() => (settlementManuallyChanged = true)}
-						>
-							<option value="USD_BCV">USD (BCV)</option>
-							<option value="EUR_BCV">EUR (BCV)</option>
-							<option value="USDT">USDT</option>
-							<option value="USD_PAYPAL">USD PayPal</option>
-							<option value="VES">Bs. (Bolívares)</option>
-						</select>
-					</div>
-					{#if settlementCurrencyConflict}
-						<div
-							class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
-						>
-							La moneda de obligación es distinta a la moneda de factura.
-							{getSourceCurrencySymbol(sourceCurrency)}
-							Revisá que el proveedor realmente exija otra moneda.
-						</div>
-					{/if}
-				</div>
+				<PurchaseOrderStep1Card2
+					bind:sourceCurrency
+					bind:bcvRate
+					bind:sourceRateToVes
+					{settlementCurrency}
+					{settlementManuallyChanged}
+					bind:discountType
+					bind:discountValue
+					bind:discountNotes
+					onSourceCurrencyChange={(val) => requestPricingModeChange(val)}
+					onBcvRateChange={(val) => (bcvRate = val)}
+					onSourceRateToVesChange={(val) => (sourceRateToVes = val)}
+					onSettlementManuallyChangedChange={(val) => (settlementManuallyChanged = val)}
+					onSettlementCurrencyChange={(val) => (settlementCurrency = val)}
+					onDiscountTypeChange={(val) => (discountType = val)}
+					onDiscountValueChange={(val) => (discountValue = val)}
+					onDiscountNotesChange={(val) => (discountNotes = val)}
+					{settlementCurrencyConflict}
+				/>
 			</div>
-		</section>
-	{:else if currentStep === 1}
+		</div>
+	{:else if currentStep === 2}
 		<PurchaseOrderItemsPanel
 			bind:items
 			{products}
@@ -610,23 +546,6 @@
 			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
 		/>
-	{:else if currentStep === 2}
-		<div class="space-y-5">
-			<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
-			<PurchaseOrderPaymentTermsPanel
-				{paymentTerms}
-				{creditDueDate}
-				{earlyPaymentDiscountPercent}
-				{earlyPaymentDiscountDeadline}
-				totalNetAmount={summary.netTotal}
-				totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
-				{sourceCurrency}
-				onPaymentTermsChange={handlePaymentTermsChange}
-				onCreditDueDateChange={(value) => (creditDueDate = value)}
-				onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
-				onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
-			/>
-		</div>
 	{:else if currentStep === 3}
 		<div class="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-4">
 			<PurchaseOrderSummaryPanel
@@ -640,7 +559,9 @@
 			<div
 				class="flex flex-col rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20"
 			>
-				<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase shrink-0">
+				<p
+					class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase shrink-0"
+				>
 					Artículos incluidos
 				</p>
 				<div class="flex-1 overflow-y-auto min-h-0 py-2">

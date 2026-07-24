@@ -3,15 +3,18 @@
 		value: string;
 		options: { value: string; label: string }[];
 		onchange?: (value: string) => void;
+		disabled?: boolean;
 	}
 
-	let { value, options, onchange = undefined }: Props = $props();
+	let { value, options, onchange = undefined, disabled = false }: Props = $props();
 
 	const activeIdx = $derived(options.findIndex((o) => o.value === value));
 </script>
 
 <div
-	class="relative w-full inline-grid overflow-hidden rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm"
+	class="relative w-full inline-grid overflow-hidden rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm {disabled
+		? 'opacity-60'
+		: ''}"
 	style="grid-template-columns: repeat({options.length}, 1fr)"
 >
 	<div
@@ -22,6 +25,7 @@
 		<button
 			type="button"
 			onclick={() => onchange?.(opt.value)}
+			{disabled}
 			class="relative z-10 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 {value ===
 			opt.value
 				? 'text-white'

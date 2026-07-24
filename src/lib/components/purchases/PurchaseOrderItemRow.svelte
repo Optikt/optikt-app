@@ -139,7 +139,7 @@
 	);
 	const margen = $derived(
 		item.unitSalePrice > 0 && item.unitPurchasePrice > 0
-			? ((item.unitSalePrice - item.unitPurchasePrice) / item.unitPurchasePrice) * 100
+			? ((item.unitSalePrice - item.unitPurchasePrice) / item.unitSalePrice) * 100
 			: null
 	);
 
