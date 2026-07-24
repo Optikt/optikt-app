@@ -15,7 +15,7 @@
 	let { title, subtitle, backLabel, backHref, backOnClick, actions }: Props = $props();
 </script>
 
-<div class="mb-2">
+<div>
 	{#if backLabel && backOnClick}
 		<button
 			type="button"

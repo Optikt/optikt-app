@@ -307,7 +307,7 @@
 	}
 </script>
 
-<div class="w-full">
+<div class="w-full space-y-2">
 	<WizardHeader
 		steps={STEPS}
 		{currentStep}

@@ -450,7 +450,7 @@
 	}
 </script>
 
-<div class="space-y-3 p-4">
+<div class="space-y-2 p-4">
 	<WizardHeader
 		{steps}
 		{currentStep}
