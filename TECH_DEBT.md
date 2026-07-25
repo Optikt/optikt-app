@@ -22,4 +22,19 @@
 
 ---
 
+7. **Carga anticipada de todos los productos y lentes en SSR para wizard de compras** (`/purchases/new`)
+   - **Problema**: La función `load` de la página trae TODOS los productos y cristales disponibles en la base de datos sin filtrar por proveedor. Esto es ineficiente: el proveedor se selecciona en Step 1 pero los datos se cargan antes de saber cuál es. Con cientos/miles de productos, el payload SSR crece innecesariamente y la búsqueda cliente-side escanea registros que nunca se usarán.
+   - **Impacto**: Memoria y tiempo de fetch SSR innecesarios. La búsqueda cliente-side filtra localmente, lo cual escala mal con muchos productos.
+   - **Solución propuesta**:
+     - Opción A (simple): Al validar Step 1 y pasar a Step 2, fetchear productos del proveedor vía endpoint `/api/products?supplierId=X` usando SvelteKit `fetch` en el cliente. El `load` SSR dejaría de traer productos/lentes.
+     - Opción B (ideal): Endpoint de búsqueda server-side (`/api/products/search?supplierId=X&q=texto`) que el combobox consulta en tiempo real al escribir, eliminando la carga completa.
+     - Recomendación: implementar Opción A primero (menos cambios), luego migrar a Opción B si se necesita búsqueda más eficiente.
+   - **Archivos afectados**: `src/routes/(app)/purchases/new/+page.server.ts`, `src/routes/(app)/purchases/new/+page.svelte`, `src/lib/components/purchases/step2/PurchaseOrderStep2.svelte`
+
+8. **Slide-over de pagos en ventas no soporta conversión dual de moneda**
+   - **Problema**: En el módulo de ventas, al registrar un pago en una moneda distinta a USD BCV (ej. bolívares, USDT), el slide-over no permite ver la equivalencia entre la moneda de pago y USD BCV en tiempo real. El usuario debe calcular la conversión manualmente.
+   - **Solución propuesta**: Modificar el slide-over de pagos para mostrar dos inputs vinculados cuando se usa moneda distinta: monto en moneda de pago y su equivalente en USD BCV calculado con la tasa del día (o la tasa ingresada en la orden). Esto reduce errores de cálculo y acelera el registro de pagos.
+   - **Archivos afectados**: Componentes de slide-over de pagos en `src/lib/components/sales/`, lógica de tasas en `src/lib/shared/purchaseOrderCurrencies.ts`.
+   - **Nota**: Totalmente fuera del scope del módulo de compras. Abordar en una sesión dedicada a ventas.
+
 **Prioridad sugerida**: 1) cubrir con E2E el wizard óptico de ventas/presupuestos, y 2) decidir si las operaciones con múltiples cristales se van a soportar de verdad con Rx por item o si se van a restringir.
