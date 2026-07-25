@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import { PurchasePaymentTerms } from '$lib/shared/enums';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
 	import FieldWrapper from './FieldWrapper.svelte';
 

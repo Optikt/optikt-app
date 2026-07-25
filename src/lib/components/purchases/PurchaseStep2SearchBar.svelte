@@ -7,16 +7,6 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 
-	interface QuickAddOption {
-		key: string;
-		id: string;
-		kind: 'product' | 'lens';
-		name: string;
-		label: string;
-		secondaryText: string;
-		price: number;
-	}
-
 	interface Props {
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];

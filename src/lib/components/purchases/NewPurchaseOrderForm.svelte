@@ -5,7 +5,7 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
-	import { WizardHeader, ConfirmModal, SegmentedToggle } from '$lib/components/ui';
+	import { WizardHeader, ConfirmModal } from '$lib/components/ui';
 	import {
 		createPurchaseOrderCmd,
 		savePurchaseOrderDraftCmd
@@ -17,8 +17,6 @@
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
 		CurrencyCode,
-		ACTIVE_PURCHASE_SOURCE_CURRENCIES,
-		PURCHASE_SOURCE_CURRENCY_LABELS,
 		getCurrencyLabel
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -41,8 +39,7 @@
 	import {
 		sourceCurrencyRequiresRateToVes,
 		SOURCE_TO_CURRENCY_CODE,
-		sourcePriceToUsdBcv,
-		getSourceCurrencySymbol
+		sourcePriceToUsdBcv
 	} from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -133,13 +130,6 @@
 
 	const saving = $derived(savingAction !== null);
 
-	const pricingModeOptions = $derived(
-		ACTIVE_PURCHASE_SOURCE_CURRENCIES.map((c) => ({
-			value: c,
-			label: PURCHASE_SOURCE_CURRENCY_LABELS[c]
-		}))
-	);
-
 	const steps = [
 		{ num: 1, label: 'Información' },
 		{ num: 2, label: 'Artículos' },
@@ -173,7 +163,6 @@
 
 	const canNext = $derived(currentStep < 3 && stepValid && !saving);
 	const canBack = $derived(currentStep > 1);
-	const isLastStep = $derived(currentStep === 3);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
 		type: discountType,

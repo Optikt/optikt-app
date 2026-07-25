@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FileText, CreditCard, Settings } from '@lucide/svelte';
+	import { FileText, Settings } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import { PurchaseDocumentType, PurchasePaymentTerms } from '$lib/shared/enums';

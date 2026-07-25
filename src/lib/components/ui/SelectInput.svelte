@@ -104,7 +104,7 @@
 {#snippet selection(selectedOptions: unknown, _: unknown)}
 	{#each selectedOptions as Options as option, i (`select-input-${i}`)}
 		<div
-			title={option.name ?? option.label}
+			title={'id' in option ? option.name : option.label}
 			class={[
 				'max-w-full truncate bg-primary-blue rounded-lg px-1 py-0.5',
 				{ ' text-gray-600': disabled }
