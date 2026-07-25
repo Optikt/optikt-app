@@ -432,6 +432,26 @@ export function calculateDraftItemTotal(item: PurchaseOrderDraftItem): number {
 	return Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0);
 }
 
+export function calculateOrderSubtotal(items: PurchaseOrderDraftItem[]): number {
+	return items.reduce(
+		(sum, item) => sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
+		0
+	);
+}
+
+export function calculateOrderIva(items: PurchaseOrderDraftItem[], isInvoice: boolean): number {
+	if (!isInvoice) return 0;
+	return items.reduce((total, item) => {
+		if (!item.appliesIva) return total;
+		const lineSubtotal = Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0);
+		return total + lineSubtotal * (Number(item.ivaRate || 0) / 100);
+	}, 0);
+}
+
+export function calculateOrderTotal(items: PurchaseOrderDraftItem[], isInvoice: boolean): number {
+	return calculateOrderSubtotal(items) + calculateOrderIva(items, isInvoice);
+}
+
 export function calculateDraftItemSubtotalAlt(item: PurchaseOrderDraftItem): number {
 	const unitPriceVes = Number(item.unitPurchasePriceAlt ?? 0);
 	const quantity = Number(item.quantity || 0);

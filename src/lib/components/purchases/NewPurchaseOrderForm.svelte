@@ -16,13 +16,12 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
-		CurrencyCode,
-		getCurrencyLabel
+		CurrencyCode
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import PurchaseOrderItemsPanel from './PurchaseOrderItemsPanel.svelte';
+	import PurchaseOrderStep2 from './step2/PurchaseOrderStep2.svelte';
 	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
 	import PurchaseOrderStep1Card1 from './step1/PurchaseOrderStep1Card1.svelte';
 	import PurchaseOrderStep1Card2 from './step1/PurchaseOrderStep1Card2.svelte';
@@ -153,7 +152,7 @@
 					(!sourceCurrencyRequiresRateToVes(sourceCurrency) || Number(sourceRateToVes) > 0)
 				);
 			case 2:
-				return items.length > 0;
+				return items.length > 0 && reviewStatus.allReviewed;
 			case 3:
 				return true;
 			default:
@@ -190,6 +189,40 @@
 	const hasDraftWarnings = $derived(
 		unreviewedWarningLines.length > 0 || zeroValueWarningLines.length > 0
 	);
+
+	let showDocumentTypeConfirm = $state(false);
+	let docTypeGuard = false;
+
+	let showSupplierConfirm = $state(false);
+	let supplierGuard = false;
+	let prevSupplierId = $state(untrack(() => supplierId));
+	let prevDocumentType = $state(untrack(() => documentType));
+
+	$effect(() => {
+		if (supplierGuard) {
+			supplierGuard = false;
+			prevSupplierId = supplierId;
+			return;
+		}
+		if (items.length > 0 && supplierId !== prevSupplierId && supplierId !== '') {
+			showSupplierConfirm = true;
+		} else {
+			prevSupplierId = supplierId;
+		}
+	});
+
+	$effect(() => {
+		if (docTypeGuard) {
+			docTypeGuard = false;
+			prevDocumentType = documentType;
+			return;
+		}
+		if (items.length > 0 && documentType !== prevDocumentType) {
+			showDocumentTypeConfirm = true;
+		} else {
+			prevDocumentType = documentType;
+		}
+	});
 
 	const canSave = $derived(
 		canPersistPurchaseOrderDraft(
@@ -256,6 +289,30 @@
 		}
 
 		void goto(resolve('/purchases'));
+	}
+
+	function cancelDocumentTypeChange() {
+		docTypeGuard = true;
+		documentType = prevDocumentType;
+		showDocumentTypeConfirm = false;
+	}
+
+	function confirmDocumentTypeChange(clearItems: boolean) {
+		if (clearItems) items = [];
+		prevDocumentType = documentType;
+		showDocumentTypeConfirm = false;
+	}
+
+	function cancelSupplierChange() {
+		supplierGuard = true;
+		supplierId = prevSupplierId;
+		showSupplierConfirm = false;
+	}
+
+	function confirmSupplierChange() {
+		items = [];
+		prevSupplierId = supplierId;
+		showSupplierConfirm = false;
 	}
 
 	function getDraftItemTitle(item: PurchaseOrderDraftItem): string {
@@ -465,24 +522,6 @@
 
 	{#if isEdit}
 		<p class="text-xs text-on-surface-variant">Los cambios se guardan como borrador</p>
-	{:else if currentStep > 1 && supplierId}
-		<p class="text-xs text-on-surface-variant">
-			Proveedor:
-			<span class="font-semibold text-brand-navy"
-				>{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}</span
-			>
-			<span class="mx-1.5 text-outline">·</span>
-			Moneda:
-			<span class="font-semibold text-brand-navy"
-				>{getCurrencyLabel(settlementCurrency || sourceCurrency)}</span
-			>
-			<span class="mx-1.5 text-outline">·</span>
-			BCV: <span class="font-semibold text-brand-navy">{bcvRate || '—'}</span>
-			{#if sourceRateToVes > 0}
-				<span class="mx-1.5 text-outline">·</span>
-				{sourceCurrency}: <span class="font-semibold text-brand-navy">{sourceRateToVes}</span>
-			{/if}
-		</p>
 	{/if}
 
 	<!-- Step content -->
@@ -528,13 +567,15 @@
 			/>
 		</div>
 	{:else if currentStep === 2}
-		<PurchaseOrderItemsPanel
+		<PurchaseOrderStep2
 			bind:items
 			{products}
 			{lensItems}
 			{supplierId}
+			supplierName={suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
 			{documentType}
 			{sourceCurrency}
+			{settlementCurrency}
 			{sourceRateToVes}
 			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
@@ -737,3 +778,41 @@
 	onConfirm={confirmPricingModeChange}
 	onCancel={cancelPricingModeChange}
 />
+
+<ConfirmModal
+	bind:open={showDocumentTypeConfirm}
+	title="¿Cambiar tipo de documento?"
+	size="md"
+	confirmLabel="Cambiar y eliminar artículos"
+	secondaryLabel="Cambiar y mantener artículos"
+	cancelLabel="Cancelar"
+	confirmColor="red"
+	onConfirm={() => confirmDocumentTypeChange(true)}
+	onSecondary={() => confirmDocumentTypeChange(false)}
+	onCancel={cancelDocumentTypeChange}
+>
+	{#snippet body()}
+		<p class="text-sm text-on-surface">
+			Ya tienes artículos agregados en el Paso 2. Cambiar de Factura a Nota de entrega (o viceversa)
+			afectará el cálculo de IVA en los costos ingresados.
+		</p>
+	{/snippet}
+</ConfirmModal>
+
+<ConfirmModal
+	bind:open={showSupplierConfirm}
+	title="¿Cambiar proveedor?"
+	size="md"
+	confirmLabel="Cambiar y eliminar artículos"
+	cancelLabel="Cancelar"
+	confirmColor="red"
+	onConfirm={confirmSupplierChange}
+	onCancel={cancelSupplierChange}
+>
+	{#snippet body()}
+		<p class="text-sm text-on-surface">
+			Ya tienes artículos agregados para el proveedor actual en el Paso 2. Cambiar de proveedor
+			eliminará todos los artículos seleccionados.
+		</p>
+	{/snippet}
+</ConfirmModal>

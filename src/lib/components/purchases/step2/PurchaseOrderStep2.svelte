@@ -3,7 +3,8 @@
 	import {
 		createEmptyPurchaseOrderDraftItem,
 		applyProductDefaults,
-		applyLensDefaults
+		applyLensDefaults,
+		calculateOrderSubtotal
 	} from '../purchaseOrderDraft';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 	import {
@@ -15,7 +16,7 @@
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import PurchaseContextHeader from '../PurchaseContextHeader.svelte';
+	import ItemsContextHeader from './ItemsContextHeader.svelte';
 	import ProductSearchCombobox from './ProductSearchCombobox.svelte';
 	import ItemsList from './ItemsList.svelte';
 
@@ -50,6 +51,13 @@
 	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
 	const currencySymbol = $derived(isAltMode ? getSourceCurrencySymbol(sourceCurrency) : '$');
 
+	const supplierProducts = $derived(products.filter((p) => p.supplierId === supplierId));
+	const supplierLenses = $derived(lensItems.filter((l) => l.supplierId === supplierId));
+
+	const lineCount = $derived(items.length);
+	const totalItems = $derived(items.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
+	const totalCost = $derived(calculateOrderSubtotal(items));
+
 	const addedProductIds = $derived(
 		new Set(items.filter((i) => i.productId).map((i) => i.productId))
 	);
@@ -65,14 +73,12 @@
 
 		const nextItem = untrack(() => {
 			const item = createEmptyPurchaseOrderDraftItem();
-			const filterProducts = products.filter((p) => p.supplierId === supplierId);
-			const filterLenses = lensItems.filter((l) => l.supplierId === supplierId);
 
 			if (kind === 'product') {
-				const product = filterProducts.find((p) => p.id === id);
+				const product = supplierProducts.find((p) => p.id === id);
 				if (product) applyProductDefaults(item, product, documentType, defaultTaxRate);
 			} else {
-				const lens = filterLenses.find((l) => l.id === id);
+				const lens = supplierLenses.find((l) => l.id === id);
 				if (lens) applyLensDefaults(item, lens, documentType, defaultTaxRate);
 			}
 
@@ -94,24 +100,33 @@
 </script>
 
 <div class="space-y-4">
-	<PurchaseContextHeader
+	<ItemsContextHeader
 		{supplierName}
 		{sourceCurrency}
 		currencyLabel={getCurrencyLabel(settlementCurrency || sourceCurrency)}
 		bcvRate={bcvUsdRate}
 		{sourceRateToVes}
+		{lineCount}
+		{totalItems}
+		{totalCost}
 	/>
 
-	<div class="px-4 sm:px-6">
+	<div class="px-4 sm:px-6 space-y-6">
 		<ProductSearchCombobox
-			{products}
-			{lensItems}
+			products={supplierProducts}
+			lensItems={supplierLenses}
 			{addedProductIds}
 			{addedLensIds}
 			{currencySymbol}
 			onselect={handleSearchSelect}
 		/>
 
-		<ItemsList bind:items {products} {lensItems} {currencySymbol} onremove={removeItem} />
+		<ItemsList
+			bind:items
+			products={supplierProducts}
+			lensItems={supplierLenses}
+			{currencySymbol}
+			onremove={removeItem}
+		/>
 	</div>
 </div>
