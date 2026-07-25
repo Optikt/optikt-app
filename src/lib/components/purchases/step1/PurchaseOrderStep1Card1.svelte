@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { FileText, CreditCard, Settings } from '@lucide/svelte';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import { PurchaseDocumentType, PurchasePaymentTerms } from '$lib/shared/enums';
 	import { inputClass } from '../purchaseFieldStyles';
@@ -117,7 +118,7 @@
 					type="text"
 					bind:value={deliveryNoteNumber}
 					class={inputClass}
-					placeholder="Opcional"
+					placeholder="Número"
 				/>
 			{/if}
 		</FieldWrapper>
@@ -133,9 +134,11 @@
 			rows="3"
 			class={`${inputClass} min-h-[3rem] h-[3rem] max-h-[5rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
 			placeholder="Observaciones internas o acuerdos con proveedor..."></textarea>
-		{#if notesTooShort}
-			<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
-		{/if}
+		<div use:autoAnimate>
+			{#if notesTooShort}
+				<p class="text-xs text-error">Mínimo 6 caracteres ({notes.length}/6)</p>
+			{/if}
+		</div>
 	</FieldWrapper>
 
 	<!-- Divider -->
@@ -167,21 +170,23 @@
 		</button>
 	</div>
 
-	<!-- Crédito summary or hint -->
-	{#if isCredit}
-		{#if creditConfigured}
-			<p class="text-sm text-on-surface-variant mt-2">
-				Vence el {creditDueDate}
-				{#if earlyPaymentDiscountPercent && earlyPaymentDiscountDeadline}
-					· Pronto pago {earlyPaymentDiscountPercent}% antes del {earlyPaymentDiscountDeadline}
-				{/if}
-			</p>
-		{:else}
-			<p class="text-sm text-on-surface-variant/80 mt-2 italic">
-				Configura las condiciones del crédito usando el botón de ajustes
-			</p>
+	<div use:autoAnimate>
+		<!-- Crédito summary or hint -->
+		{#if isCredit}
+			{#if creditConfigured}
+				<p class="text-sm text-on-surface-variant mt-2">
+					Vence el {creditDueDate}
+					{#if earlyPaymentDiscountPercent && earlyPaymentDiscountDeadline}
+						· Pronto pago {earlyPaymentDiscountPercent}% antes del {earlyPaymentDiscountDeadline}
+					{/if}
+				</p>
+			{:else}
+				<p class="text-sm text-on-surface-variant/80 mt-2 italic">
+					Configura las condiciones del crédito usando el botón de ajustes
+				</p>
+			{/if}
 		{/if}
-	{/if}
+	</div>
 </div>
 
 <PurchaseOrderCreditDrawer

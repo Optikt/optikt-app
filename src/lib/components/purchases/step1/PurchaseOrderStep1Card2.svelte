@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { AlertTriangle, DollarSign } from '@lucide/svelte';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import { PurchaseDiscountType, PurchaseSourceCurrency } from '$lib/shared/enums';
 	import {
@@ -143,22 +144,24 @@
 					placeholder="0"
 				/>
 			</FieldWrapper>
-			{#if showSecondRate}
-				<FieldWrapper label={secondRateLabelText} required>
-					<input
-						type="number"
-						step="0.01"
-						min="0"
-						value={sourceRateToVes}
-						oninput={(e) => {
-							sourceRateToVes = Number((e.target as HTMLInputElement).value);
-							onSourceRateToVesChange?.(sourceRateToVes);
-						}}
-						class={inputClass}
-						placeholder="0"
-					/>
-				</FieldWrapper>
-			{/if}
+			<div use:autoAnimate>
+				{#if showSecondRate}
+					<FieldWrapper label={secondRateLabelText} required>
+						<input
+							type="number"
+							step="0.01"
+							min="0"
+							value={sourceRateToVes}
+							oninput={(e) => {
+								sourceRateToVes = Number((e.target as HTMLInputElement).value);
+								onSourceRateToVesChange?.(sourceRateToVes);
+							}}
+							class={inputClass}
+							placeholder="0"
+						/>
+					</FieldWrapper>
+				{/if}
+			</div>
 		</div>
 
 		<!-- Moneda de obligación (hidden by default) -->
@@ -174,31 +177,33 @@
 			</span>
 		</label>
 
-		{#if settlementManuallyChanged}
-			<select
-				value={settlementCurrency}
-				onchange={(e) => {
-					settlementCurrency = (e.target as HTMLSelectElement).value;
-					onSettlementCurrencyChange?.(settlementCurrency);
-				}}
-				class="max-w-xs w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-			>
-				{#each SETTLEMENT_OPTIONS as opt}
-					<option value={opt.value}>{opt.label}</option>
-				{/each}
-			</select>
-			{#if settlementCurrencyConflict}
-				<div
-					class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+		<div use:autoAnimate>
+			{#if settlementManuallyChanged}
+				<select
+					value={settlementCurrency}
+					onchange={(e) => {
+						settlementCurrency = (e.target as HTMLSelectElement).value;
+						onSettlementCurrencyChange?.(settlementCurrency);
+					}}
+					class="max-w-xs w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				>
-					<AlertTriangle class="h-4 w-4 shrink-0 mt-px" />
-					<span>
-						La moneda de obligación es distinta a la moneda de factura. Revisá que el proveedor
-						realmente exija otra moneda.
-					</span>
-				</div>
+					{#each SETTLEMENT_OPTIONS as opt}
+						<option value={opt.value}>{opt.label}</option>
+					{/each}
+				</select>
+				{#if settlementCurrencyConflict}
+					<div
+						class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+					>
+						<AlertTriangle class="h-4 w-4 shrink-0 mt-px" />
+						<span>
+							La moneda de obligación es distinta a la moneda de factura. Revisá que el proveedor
+							realmente exija otra moneda.
+						</span>
+					</div>
+				{/if}
 			{/if}
-		{/if}
+		</div>
 
 		<!-- Divider -->
 		<hr class="border-outline-variant/50 my-4" />
@@ -216,45 +221,49 @@
 			/>
 		</FieldWrapper>
 
-		{#if discountIsActive}
-			<div class="grid grid-cols-1 @sm:grid-cols-2 gap-4 transition-all duration-200">
-				<FieldWrapper label="Valor del descuento">
-					<div class="relative">
+		<div use:autoAnimate>
+			{#if discountIsActive}
+				<div class="grid grid-cols-1 @sm:grid-cols-2 gap-4">
+					<FieldWrapper label="Valor del descuento">
+						<div class="relative">
+							<input
+								type="number"
+								min="0"
+								step="0.01"
+								max={discountType === PurchaseDiscountType.PERCENT ? 100 : undefined}
+								value={discountValue}
+								oninput={(e) => {
+									discountValue = Number((e.target as HTMLInputElement).value);
+									onDiscountValueChange?.(discountValue);
+								}}
+								class={`${inputClass} pr-10`}
+								placeholder="0"
+							/>
+							<span
+								class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-on-surface-variant"
+							>
+								{valueSuffix}
+							</span>
+						</div>
+					</FieldWrapper>
+					<FieldWrapper label="Nota del descuento">
 						<input
-							type="number"
-							min="0"
-							step="0.01"
-							max={discountType === PurchaseDiscountType.PERCENT ? 100 : undefined}
-							value={discountValue}
+							type="text"
+							value={discountNotes}
 							oninput={(e) => {
-								discountValue = Number((e.target as HTMLInputElement).value);
-								onDiscountValueChange?.(discountValue);
+								discountNotes = (e.target as HTMLInputElement).value;
+								onDiscountNotesChange?.(discountNotes);
 							}}
-							class={`${inputClass} pr-10`}
-							placeholder="0"
+							class={inputClass}
+							placeholder="Motivo o referencia (opcional)"
 						/>
-						<span
-							class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-on-surface-variant"
-						>
-							{valueSuffix}
-						</span>
-					</div>
-				</FieldWrapper>
-				<FieldWrapper label="Nota del descuento">
-					<input
-						type="text"
-						value={discountNotes}
-						oninput={(e) => {
-							discountNotes = (e.target as HTMLInputElement).value;
-							onDiscountNotesChange?.(discountNotes);
-						}}
-						class={inputClass}
-						placeholder="Motivo o referencia (opcional)"
-					/>
-				</FieldWrapper>
-			</div>
-		{:else}
-			<p class="text-xs text-on-surface-variant/60 italic">Sin descuento aplicado a esta compra</p>
-		{/if}
+					</FieldWrapper>
+				</div>
+			{:else}
+				<p class="text-xs text-on-surface-variant/60 italic">
+					Sin descuento aplicado a esta compra
+				</p>
+			{/if}
+		</div>
 	</div>
 </div>

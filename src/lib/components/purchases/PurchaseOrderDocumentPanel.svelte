@@ -74,7 +74,7 @@
 					type="text"
 					bind:value={invoiceNumber}
 					class={inputClass}
-					placeholder="Opcional"
+					placeholder="Número"
 					aria-label="Número de factura"
 				/>
 			{:else}
@@ -83,7 +83,7 @@
 					type="text"
 					bind:value={deliveryNoteNumber}
 					class={inputClass}
-					placeholder="Opcional"
+					placeholder="Número"
 					aria-label="Nota de entrega"
 				/>
 			{/if}

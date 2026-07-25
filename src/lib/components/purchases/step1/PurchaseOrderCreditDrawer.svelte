@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import { PurchasePaymentTerms } from '$lib/shared/enums';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
 	import FieldWrapper from './FieldWrapper.svelte';
@@ -107,37 +108,39 @@
 			<span class="text-sm font-medium text-brand-navy">Beneficio de pronto pago</span>
 		</label>
 
-		{#if hasEarlyPayment}
-			<div class="grid grid-cols-2 gap-4 transition-all duration-200">
-				<FieldWrapper label="Fecha máxima para pronto pago">
-					<input
-						type="date"
-						bind:value={tempEarlyDeadline}
-						class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-					/>
-				</FieldWrapper>
-				<FieldWrapper label="% de beneficio">
-					<div class="relative">
+		<div use:autoAnimate>
+			{#if hasEarlyPayment}
+				<div class="grid grid-cols-2 gap-4">
+					<FieldWrapper label="Fecha máxima para pronto pago">
 						<input
-							type="number"
-							min="0"
-							max="100"
-							step="0.01"
-							bind:value={tempEarlyPercent}
-							placeholder="0"
-							class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-8 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 font-mono"
+							type="date"
+							bind:value={tempEarlyDeadline}
+							class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 						/>
-						<span
-							class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-on-surface-variant"
-							>%</span
-						>
-					</div>
-				</FieldWrapper>
-			</div>
-			<p class="text-xs text-on-surface-variant">
-				Pagar antes de la fecha máxima aplica el % de descuento sobre el total de la compra.
-			</p>
-		{/if}
+					</FieldWrapper>
+					<FieldWrapper label="% de beneficio">
+						<div class="relative">
+							<input
+								type="number"
+								min="0"
+								max="100"
+								step="0.01"
+								bind:value={tempEarlyPercent}
+								placeholder="0"
+								class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-8 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 font-mono"
+							/>
+							<span
+								class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-on-surface-variant"
+								>%</span
+							>
+						</div>
+					</FieldWrapper>
+				</div>
+				<p class="text-xs text-on-surface-variant">
+					Pagar antes de la fecha máxima aplica el % de descuento sobre el total de la compra.
+				</p>
+			{/if}
+		</div>
 	</div>
 
 	{#snippet footer()}
