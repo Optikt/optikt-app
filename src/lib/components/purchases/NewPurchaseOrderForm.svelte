@@ -16,8 +16,7 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
-		CurrencyCode,
-		getCurrencyLabel
+		CurrencyCode
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -595,51 +594,78 @@
 		/>
 	{:else if currentStep === 3}
 		<div class="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-4">
-			<!-- LEFT: Items list card -->
+			<!-- LEFT: Items list card with table layout -->
 			<div
-				class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20 flex flex-col min-h-0"
+				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
 			>
-				<div class="flex items-center gap-2 pb-3 border-b border-outline-variant/30 shrink-0">
-					<PackageCheck class="h-5 w-5 text-brand-navy" />
+				<div
+					class="flex items-center gap-2 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+				>
+					<PackageCheck class="h-5 w-5 text-brand-blue" />
 					<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
 						Artículos incluidos
 					</h2>
 					<span
-						class="ml-auto text-xs font-medium text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-full"
+						class="ml-auto text-xs font-medium text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-full"
 					>
 						{items.length}
 						{items.length === 1 ? 'ítem' : 'ítems'}
 					</span>
 				</div>
-				<div class="flex-1 overflow-y-auto min-h-0 py-2">
-					<div class="flex flex-col gap-1">
+
+				<!-- Column headers -->
+				<div
+					class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 px-4 py-2 border-b border-outline-variant/20 bg-surface-container-lowest text-[10px] font-medium uppercase tracking-wide text-on-surface-variant shrink-0"
+				>
+					<span>Cant.</span>
+					<span>Artículo</span>
+					<span class="text-right">C. Unit</span>
+					<span class="text-right">Total</span>
+				</div>
+
+				<!-- Items list -->
+				<div class="flex-1 overflow-y-auto min-h-0 p-2">
+					<div class="flex flex-col">
 						{#each items as item (item.id)}
 							<div
-								class="@sm:grid @sm:grid-cols-[2.5rem_1fr_auto] @sm:items-center @sm:gap-3 px-2 py-2 rounded-lg hover:bg-surface-container-high transition-colors duration-150"
+								class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 items-center px-2 py-2.5 border-b border-outline-variant/10 last:border-none rounded-md hover:bg-surface-container-high transition-colors duration-150"
 							>
-								<div
-									class="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-navy/5 text-brand-navy text-xs font-bold mb-2 @sm:mb-0"
+								<!-- Quantity badge -->
+								<span
+									class="font-mono text-sm text-brand-navy font-bold bg-surface-container-high w-8 h-8 flex items-center justify-center rounded-md shrink-0"
 								>
 									{item.quantity}x
-								</div>
-								<div class="flex flex-col min-w-0 mb-2 @sm:mb-0">
+								</span>
+								<!-- Name + SKU + IVA badge -->
+								<div class="flex flex-col min-w-0">
 									<span
 										class="text-sm font-medium text-brand-navy truncate"
 										title={getDraftItemTitle(item)}
 									>
 										{getDraftItemTitle(item)}
 									</span>
-									<span class="text-[10px] font-mono text-on-surface-variant truncate">
-										{getItemSku(item)}
+									<span class="text-[10px] font-mono truncate flex items-center gap-1.5">
+										<span class="text-on-surface-variant">{getItemSku(item)}</span>
+										<span
+											class="inline-block px-1 py-0.5 rounded text-[9px] font-bold {item.appliesIva
+												? 'bg-brand-blue/10 text-brand-blue'
+												: 'bg-surface-container-high text-on-surface-variant'}"
+										>
+											{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
+										</span>
 									</span>
 								</div>
+								<!-- Unit cost -->
 								<div class="text-right">
-									<div class="text-sm font-mono font-semibold text-brand-navy">
+									<span class="font-mono text-xs text-on-surface-variant tabular-nums">
+										{formatPrice(Number(item.unitPurchasePrice || 0))}
+									</span>
+								</div>
+								<!-- Total -->
+								<div class="text-right">
+									<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
 										{formatPrice(Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0))}
-									</div>
-									<div class="text-[10px] text-on-surface-variant font-mono">
-										{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
-									</div>
+									</span>
 								</div>
 							</div>
 						{/each}
@@ -647,150 +673,123 @@
 				</div>
 			</div>
 
-			<!-- RIGHT: Summary review card -->
+			<!-- RIGHT: Summary card with color contrast -->
 			<div
-				class="flex flex-col rounded-2xl bg-surface-container-low px-4 pt-4 ring-1 ring-outline-variant/20 min-h-0"
+				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
 			>
-				<div class="flex-1 overflow-y-auto min-h-0 space-y-4">
-					<!-- Document info summary -->
-					<div>
-						<p
-							class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2"
-						>
-							Documento
-						</p>
-						<div class="space-y-1 text-xs">
-							<div class="flex items-center justify-between gap-2">
-								<span class="text-on-surface-variant">Proveedor</span>
-								<span class="font-medium text-brand-navy text-right truncate max-w-[12rem]">
-									{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
-								</span>
-							</div>
-							<div class="flex items-center justify-between gap-2">
-								<span class="text-on-surface-variant shrink-0">
-									{documentType === PurchaseDocumentType.INVOICE ? 'Factura' : 'Nota'}
-								</span>
-								<span class="font-medium text-brand-navy truncate max-w-[10rem] text-right">
-									{documentType === PurchaseDocumentType.INVOICE
-										? invoiceNumber
-										: deliveryNoteNumber}
-								</span>
-							</div>
-							<div class="flex items-center justify-between gap-2">
-								<span class="text-on-surface-variant">Fecha</span>
-								<span class="font-medium text-brand-navy">{orderDate}</span>
-							</div>
+				<div class="flex flex-col gap-3 px-4 pt-4 pb-3 flex-1">
+					<h2
+						class="text-sm font-semibold uppercase tracking-wide text-brand-navy border-b border-outline-variant/30 pb-2 shrink-0"
+					>
+						Resumen de compra
+					</h2>
+
+					<!-- Metadata: supplier · date · BCV -->
+					<div class="space-y-1 text-xs shrink-0">
+						<div class="flex items-center gap-2">
+							<span class="text-on-surface-variant">Proveedor:</span>
+							<span class="font-medium text-brand-navy truncate">
+								{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
+							</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<span class="text-on-surface-variant">
+								{documentType === PurchaseDocumentType.INVOICE ? 'Factura' : 'Nota'}:
+							</span>
+							<span class="font-medium text-brand-navy truncate">
+								{documentType === PurchaseDocumentType.INVOICE ? invoiceNumber : deliveryNoteNumber}
+							</span>
+							<span class="ml-auto text-on-surface-variant">
+								BCV:
+								<span class="font-medium text-brand-navy tabular-nums"
+									>{Number(bcvRate || 0).toFixed(2)}</span
+								>
+							</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<span class="text-on-surface-variant">Fecha:</span>
+							<span class="font-medium text-brand-navy">{orderDate}</span>
 						</div>
 					</div>
 
-					<hr class="border-outline-variant/30" />
-
-					<!-- Payment conditions summary -->
-					<div>
-						<p
-							class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2"
-						>
-							Condiciones
-						</p>
-						<div class="space-y-1 text-xs">
-							<div class="flex items-center justify-between gap-2">
-								<span class="text-on-surface-variant">Pago</span>
-								<span class="font-medium text-brand-navy">
-									{paymentTerms === PurchasePaymentTerms.CONTADO ? 'Contado' : 'Crédito'}
-								</span>
-							</div>
-							<div class="flex items-center justify-between gap-2">
-								<span class="text-on-surface-variant">Moneda</span>
-								<span class="font-medium text-brand-navy">
-									{getCurrencyLabel(settlementCurrency || sourceCurrency)}
-								</span>
-							</div>
-							<div class="flex items-center justify-between gap-2">
-								<span class="text-on-surface-variant">Tasa BCV</span>
-								<span class="font-medium text-brand-navy tabular-nums">{bcvRate}</span>
-							</div>
-							{#if sourceRateToVes > 0}
-								<div class="flex items-center justify-between gap-2">
-									<span class="text-on-surface-variant">Tasa {sourceCurrency}</span>
-									<span class="font-medium text-brand-navy tabular-nums">{sourceRateToVes}</span>
-								</div>
-							{/if}
-							{#if paymentTerms === PurchasePaymentTerms.CREDIT && creditDueDate}
-								<div class="flex items-center justify-between gap-2">
-									<span class="text-on-surface-variant">Vence</span>
-									<span class="font-medium text-brand-navy">{creditDueDate}</span>
-								</div>
-							{/if}
-						</div>
-					</div>
-
-					<hr class="border-outline-variant/30" />
-
-					<!-- Compact economic summary -->
-					<div class="space-y-2 text-xs">
-						<div class="flex justify-between gap-2">
-							<span class="text-on-surface-variant shrink-0">Subtotal</span>
+					<!-- Cost breakdown -->
+					<div class="space-y-1.5 text-xs pt-2 border-t border-outline-variant/30 shrink-0">
+						<div class="flex justify-between">
+							<span class="text-on-surface-variant">Subtotal</span>
 							<span class="font-mono font-semibold text-brand-navy tabular-nums">
 								{formatPrice(summary.subtotal)}
 							</span>
 						</div>
 						{#if discount.type !== PurchaseDiscountType.NONE && discount.value > 0}
-							<div class="flex justify-between gap-2 text-success">
-								<span class="shrink-0">Descuento</span>
+							<div class="flex justify-between text-success">
+								<span>Descuento</span>
 								<span class="font-mono tabular-nums">−{formatPrice(summary.discountAmount)}</span>
 							</div>
 						{/if}
-						<div class="flex justify-between gap-2">
-							<span class="text-on-surface-variant shrink-0">
-								{discount.type !== PurchaseDiscountType.NONE && discount.value > 0
-									? 'IVA neto'
-									: 'IVA estimado'}
-							</span>
+						<div class="flex justify-between">
+							<span class="text-on-surface-variant"
+								>IVA ({discount.type !== PurchaseDiscountType.NONE && discount.value > 0
+									? 'neto'
+									: 'estimado'})</span
+							>
 							<span class="font-mono font-semibold text-brand-navy tabular-nums">
 								{discount.type !== PurchaseDiscountType.NONE && discount.value > 0
 									? formatPrice(summary.netTaxAmount)
 									: formatPrice(summary.taxAmount)}
 							</span>
 						</div>
-						<hr class="border-outline-variant/30" />
-						<div class="flex justify-between gap-2 font-semibold text-brand-navy">
-							<span>Total neto</span>
-							<span class="font-mono tabular-nums">{formatPrice(summary.netTotal)}</span>
-						</div>
-						<div class="flex justify-between gap-2 text-on-surface-variant">
+						<div class="flex justify-between text-on-surface-variant">
 							<span>Venta estimada</span>
 							<span class="font-mono tabular-nums">{formatPrice(summary.estimatedSale)}</span>
 						</div>
-						<div class="flex justify-between gap-2 text-on-surface-variant">
-							<span>Líneas / Unidades</span>
-							<span class="font-mono tabular-nums">{summary.lineCount} / {summary.totalUnits}</span>
+					</div>
+
+					<!-- Net total - Navy box -->
+					<div class="rounded-lg bg-brand-navy p-3 shadow-md shrink-0">
+						<p class="text-[10px] font-medium uppercase tracking-wide text-brand-blue-light/80">
+							Total neto a pagar
+						</p>
+						<p class="mt-1 font-mono text-xl font-bold text-white">
+							{formatPrice(summary.netTotal)}
+							<span class="text-sm font-medium text-white/60">USD</span>
+						</p>
+						<div class="mt-1 flex items-center gap-3 text-[10px] text-white/60">
+							<span>
+								{summary.lineCount}
+								{summary.lineCount === 1 ? 'línea' : 'líneas'}
+							</span>
+							<span>·</span>
+							<span>{summary.totalUnits} unds</span>
 						</div>
 					</div>
-				</div>
 
-				<!-- Margin highlight -->
-				<div
-					class="mt-3 rounded-lg bg-success-container/50 border border-success-container p-3 flex flex-col gap-1 shrink-0"
-				>
-					<div class="flex items-center gap-1.5">
-						<TrendingUp class="h-4 w-4 text-on-success-container" />
-						<span
-							class="text-[10px] font-semibold uppercase tracking-wide text-on-success-container"
-						>
-							Margen proyectado
-						</span>
-					</div>
-					<div class="flex items-baseline justify-between">
-						<span class="text-lg font-bold font-mono text-on-success-container tabular-nums">
-							{formatPrice(summary.estimatedProfit)} USD
-						</span>
-						<span class="text-xs font-medium text-on-success-container/80">
-							({marginPercentage.toFixed(0)}%)
-						</span>
-					</div>
-					<div class="text-[10px] text-on-surface-variant">
-						Venta estimada:
-						<span class="font-medium tabular-nums">{formatPrice(summary.estimatedSale)}</span>
+					<!-- Margin highlight - Green box -->
+					<div
+						class="rounded-lg bg-success-container/50 border border-success-container p-3 flex items-center justify-between gap-2 shrink-0"
+					>
+						<div class="flex items-center gap-2 min-w-0">
+							<TrendingUp class="h-4 w-4 shrink-0 text-on-success-container" />
+							<div class="min-w-0">
+								<p
+									class="text-[10px] font-semibold uppercase tracking-wide text-on-success-container"
+								>
+									Margen proyectado
+								</p>
+								<p class="text-[9px] text-on-surface-variant truncate">
+									Venta: {formatPrice(summary.estimatedSale)}
+								</p>
+							</div>
+						</div>
+						<div class="text-right shrink-0">
+							<p
+								class="text-lg font-bold font-mono text-on-success-container tabular-nums leading-none"
+							>
+								{formatPrice(summary.estimatedProfit)}
+							</p>
+							<p class="text-[10px] font-medium text-on-success-container/80">
+								({marginPercentage.toFixed(0)}%)
+							</p>
+						</div>
 					</div>
 				</div>
 			</div>
