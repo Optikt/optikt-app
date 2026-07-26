@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AlertTriangle, Save } from '@lucide/svelte';
+	import { AlertTriangle, Save, PackageCheck, TrendingUp } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
@@ -16,13 +16,13 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
-		CurrencyCode
+		CurrencyCode,
+		getCurrencyLabel
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import PurchaseOrderStep2 from './step2/PurchaseOrderStep2.svelte';
-	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
 	import PurchaseOrderStep1Card1 from './step1/PurchaseOrderStep1Card1.svelte';
 	import PurchaseOrderStep1Card2 from './step1/PurchaseOrderStep1Card2.svelte';
 	import {
@@ -325,6 +325,19 @@
 		return lensItem ? lensItem.name : 'Lente seleccionado';
 	}
 
+	function getItemSku(item: PurchaseOrderDraftItem): string {
+		if (item.itemType === PurchaseOrderItemType.PRODUCT) {
+			const product = products.find((candidate) => candidate.id === item.productId);
+			return product?.sku ?? '';
+		}
+		const lensItem = lensItems.find((candidate) => candidate.id === item.lensCatalogItemId);
+		return lensItem?.material?.name ?? '';
+	}
+
+	const marginPercentage = $derived(
+		summary.subtotal > 0 ? (summary.estimatedProfit / summary.subtotal) * 100 : 0
+	);
+
 	function buildZeroValueWarningLine(item: PurchaseOrderDraftItem): ZeroValueWarningLine | null {
 		const fields = getDraftItemZeroValueFields(item);
 
@@ -581,86 +594,231 @@
 			{defaultTaxRate}
 		/>
 	{:else if currentStep === 3}
-		<div class="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-4">
-			<PurchaseOrderSummaryPanel
-				{summary}
-				{bcvRate}
-				{discount}
-				{sourceCurrency}
-				{sourceRateToVes}
-				compact
-			/>
+		<div class="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-4">
+			<!-- LEFT: Items list card -->
 			<div
-				class="flex flex-col rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20"
+				class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20 flex flex-col min-h-0"
 			>
-				<p
-					class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase shrink-0"
-				>
-					Artículos incluidos
-				</p>
-				<div class="flex-1 overflow-y-auto min-h-0 py-2">
-					<ul class="space-y-1">
-						{#each items as item (item.id)}
-							<li
-								class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs"
-							>
-								<div class="min-w-0 truncate">
-									<span class="font-mono font-semibold text-brand-navy"
-										>{getDraftItemTitle(item)}</span
-									>
-									<span class="ml-1.5 text-on-surface-variant">×{item.quantity}</span>
-								</div>
-								<span class="shrink-0 font-mono tabular-nums"
-									>{formatPrice(item.unitPurchasePrice)}</span
-								>
-							</li>
-						{/each}
-					</ul>
+				<div class="flex items-center gap-2 pb-3 border-b border-outline-variant/30 shrink-0">
+					<PackageCheck class="h-5 w-5 text-brand-navy" />
+					<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
+						Artículos incluidos
+					</h2>
+					<span
+						class="ml-auto text-xs font-medium text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-full"
+					>
+						{items.length}
+						{items.length === 1 ? 'ítem' : 'ítems'}
+					</span>
 				</div>
-				<div class="flex flex-col gap-2 pt-3 border-t border-outline-variant/20 shrink-0">
-					<button
-						type="button"
-						onclick={handleSaveClick}
-						disabled={!canSave || saving}
-						class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
-					>
-						<Save class="h-4 w-4" />
-						{saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear orden'}
-					</button>
-					<button
-						type="button"
-						onclick={handleBack}
-						class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>
-						← Atrás
-					</button>
+				<div class="flex-1 overflow-y-auto min-h-0 py-2">
+					<div class="flex flex-col gap-1">
+						{#each items as item (item.id)}
+							<div
+								class="@sm:grid @sm:grid-cols-[2.5rem_1fr_auto] @sm:items-center @sm:gap-3 px-2 py-2 rounded-lg hover:bg-surface-container-high transition-colors duration-150"
+							>
+								<div
+									class="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-navy/5 text-brand-navy text-xs font-bold mb-2 @sm:mb-0"
+								>
+									{item.quantity}x
+								</div>
+								<div class="flex flex-col min-w-0 mb-2 @sm:mb-0">
+									<span
+										class="text-sm font-medium text-brand-navy truncate"
+										title={getDraftItemTitle(item)}
+									>
+										{getDraftItemTitle(item)}
+									</span>
+									<span class="text-[10px] font-mono text-on-surface-variant truncate">
+										{getItemSku(item)}
+									</span>
+								</div>
+								<div class="text-right">
+									<div class="text-sm font-mono font-semibold text-brand-navy">
+										{formatPrice(Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0))}
+									</div>
+									<div class="text-[10px] text-on-surface-variant font-mono">
+										{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
+									</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
+
+			<!-- RIGHT: Summary review card -->
+			<div
+				class="flex flex-col rounded-2xl bg-surface-container-low px-4 pt-4 ring-1 ring-outline-variant/20 min-h-0"
+			>
+				<div class="flex-1 overflow-y-auto min-h-0 space-y-4">
+					<!-- Document info summary -->
+					<div>
+						<p
+							class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2"
+						>
+							Documento
+						</p>
+						<div class="space-y-1 text-xs">
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-on-surface-variant">Proveedor</span>
+								<span class="font-medium text-brand-navy text-right truncate max-w-[12rem]">
+									{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
+								</span>
+							</div>
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-on-surface-variant shrink-0">
+									{documentType === PurchaseDocumentType.INVOICE ? 'Factura' : 'Nota'}
+								</span>
+								<span class="font-medium text-brand-navy truncate max-w-[10rem] text-right">
+									{documentType === PurchaseDocumentType.INVOICE
+										? invoiceNumber
+										: deliveryNoteNumber}
+								</span>
+							</div>
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-on-surface-variant">Fecha</span>
+								<span class="font-medium text-brand-navy">{orderDate}</span>
+							</div>
+						</div>
+					</div>
+
+					<hr class="border-outline-variant/30" />
+
+					<!-- Payment conditions summary -->
+					<div>
+						<p
+							class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2"
+						>
+							Condiciones
+						</p>
+						<div class="space-y-1 text-xs">
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-on-surface-variant">Pago</span>
+								<span class="font-medium text-brand-navy">
+									{paymentTerms === PurchasePaymentTerms.CONTADO ? 'Contado' : 'Crédito'}
+								</span>
+							</div>
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-on-surface-variant">Moneda</span>
+								<span class="font-medium text-brand-navy">
+									{getCurrencyLabel(settlementCurrency || sourceCurrency)}
+								</span>
+							</div>
+							<div class="flex items-center justify-between gap-2">
+								<span class="text-on-surface-variant">Tasa BCV</span>
+								<span class="font-medium text-brand-navy tabular-nums">{bcvRate}</span>
+							</div>
+							{#if sourceRateToVes > 0}
+								<div class="flex items-center justify-between gap-2">
+									<span class="text-on-surface-variant">Tasa {sourceCurrency}</span>
+									<span class="font-medium text-brand-navy tabular-nums">{sourceRateToVes}</span>
+								</div>
+							{/if}
+							{#if paymentTerms === PurchasePaymentTerms.CREDIT && creditDueDate}
+								<div class="flex items-center justify-between gap-2">
+									<span class="text-on-surface-variant">Vence</span>
+									<span class="font-medium text-brand-navy">{creditDueDate}</span>
+								</div>
+							{/if}
+						</div>
+					</div>
+
+					<hr class="border-outline-variant/30" />
+
+					<!-- Compact economic summary -->
+					<div class="space-y-2 text-xs">
+						<div class="flex justify-between gap-2">
+							<span class="text-on-surface-variant shrink-0">Subtotal</span>
+							<span class="font-mono font-semibold text-brand-navy tabular-nums">
+								{formatPrice(summary.subtotal)}
+							</span>
+						</div>
+						{#if discount.type !== PurchaseDiscountType.NONE && discount.value > 0}
+							<div class="flex justify-between gap-2 text-success">
+								<span class="shrink-0">Descuento</span>
+								<span class="font-mono tabular-nums">−{formatPrice(summary.discountAmount)}</span>
+							</div>
+						{/if}
+						<div class="flex justify-between gap-2">
+							<span class="text-on-surface-variant shrink-0">
+								{discount.type !== PurchaseDiscountType.NONE && discount.value > 0
+									? 'IVA neto'
+									: 'IVA estimado'}
+							</span>
+							<span class="font-mono font-semibold text-brand-navy tabular-nums">
+								{discount.type !== PurchaseDiscountType.NONE && discount.value > 0
+									? formatPrice(summary.netTaxAmount)
+									: formatPrice(summary.taxAmount)}
+							</span>
+						</div>
+						<hr class="border-outline-variant/30" />
+						<div class="flex justify-between gap-2 font-semibold text-brand-navy">
+							<span>Total neto</span>
+							<span class="font-mono tabular-nums">{formatPrice(summary.netTotal)}</span>
+						</div>
+						<div class="flex justify-between gap-2 text-on-surface-variant">
+							<span>Venta estimada</span>
+							<span class="font-mono tabular-nums">{formatPrice(summary.estimatedSale)}</span>
+						</div>
+						<div class="flex justify-between gap-2 text-on-surface-variant">
+							<span>Líneas / Unidades</span>
+							<span class="font-mono tabular-nums">{summary.lineCount} / {summary.totalUnits}</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Margin highlight -->
+				<div
+					class="mt-3 rounded-lg bg-success-container/50 border border-success-container p-3 flex flex-col gap-1 shrink-0"
+				>
+					<div class="flex items-center gap-1.5">
+						<TrendingUp class="h-4 w-4 text-on-success-container" />
+						<span
+							class="text-[10px] font-semibold uppercase tracking-wide text-on-success-container"
+						>
+							Margen proyectado
+						</span>
+					</div>
+					<div class="flex items-baseline justify-between">
+						<span class="text-lg font-bold font-mono text-on-success-container tabular-nums">
+							{formatPrice(summary.estimatedProfit)} USD
+						</span>
+						<span class="text-xs font-medium text-on-success-container/80">
+							({marginPercentage.toFixed(0)}%)
+						</span>
+					</div>
+					<div class="text-[10px] text-on-surface-variant">
+						Venta estimada:
+						<span class="font-medium tabular-nums">{formatPrice(summary.estimatedSale)}</span>
+					</div>
 				</div>
 			</div>
 		</div>
 	{/if}
 
-	{#if currentStep !== 3}
-		<div class="flex items-center justify-between gap-3 pt-2">
-			<div>
-				{#if canBack}
-					<button
-						type="button"
-						onclick={handleBack}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>
-						← Atrás
-					</button>
-				{:else}
-					<button
-						type="button"
-						onclick={goBack}
-						class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>
-						Cancelar
-					</button>
-				{/if}
-			</div>
-			<div class="flex items-center gap-2">
+	<div class="flex items-center justify-between gap-3 pt-2">
+		<div>
+			{#if canBack}
+				<button
+					type="button"
+					onclick={handleBack}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				>
+					← Atrás
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={goBack}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				>
+					Cancelar
+				</button>
+			{/if}
+		</div>
+		<div class="flex items-center gap-2">
+			{#if currentStep < 3}
 				<button
 					type="button"
 					onclick={handleNext}
@@ -669,9 +827,19 @@
 				>
 					Siguiente →
 				</button>
-			</div>
+			{:else}
+				<button
+					type="button"
+					onclick={handleSaveClick}
+					disabled={!canSave || saving}
+					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					<Save class="h-4 w-4" />
+					{saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear orden'}
+				</button>
+			{/if}
 		</div>
-	{/if}
+	</div>
 </div>
 
 <ConfirmModal
@@ -782,9 +950,9 @@
 <ConfirmModal
 	bind:open={showDocumentTypeConfirm}
 	title="¿Cambiar tipo de documento?"
-	size="md"
-	confirmLabel="Cambiar y eliminar artículos"
-	secondaryLabel="Cambiar y mantener artículos"
+	size="lg"
+	confirmLabel="Limpiar"
+	secondaryLabel="Mantener"
 	cancelLabel="Cancelar"
 	confirmColor="red"
 	onConfirm={() => confirmDocumentTypeChange(true)}
@@ -803,7 +971,7 @@
 	bind:open={showSupplierConfirm}
 	title="¿Cambiar proveedor?"
 	size="md"
-	confirmLabel="Cambiar y eliminar artículos"
+	confirmLabel="Cambiar"
 	cancelLabel="Cancelar"
 	confirmColor="red"
 	onConfirm={confirmSupplierChange}
