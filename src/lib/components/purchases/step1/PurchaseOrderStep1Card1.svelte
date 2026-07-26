@@ -90,7 +90,7 @@
 
 	<!-- Proveedor (full width) -->
 	<FieldWrapper label="Proveedor" required>
-		<SupplierCombobox {suppliers} bind:value={supplierId} disabled={supplierLocked} />
+		<SupplierCombobox {suppliers} bind:value={supplierId} />
 		{#if supplierLocked}
 			<p class="text-xs leading-5 text-on-surface-variant">
 				El proveedor queda bloqueado mientras existan líneas agregadas.
