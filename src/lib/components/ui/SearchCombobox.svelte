@@ -35,7 +35,6 @@
 	let highlightedIdx = $state(0);
 	let inputEl: HTMLInputElement | undefined = $state();
 	let skipNextSync = false;
-	let prevValue = $state(untrack(() => value));
 
 	const filtered = $derived(
 		query && filterFn ? options.filter((opt) => filterFn(query, opt)) : options
@@ -44,17 +43,16 @@
 	$effect(() => {
 		if (skipNextSync) {
 			skipNextSync = false;
-			prevValue = value;
 			return;
 		}
-		if (value !== prevValue) {
-			if (value) {
-				const selected = options.find((opt) => getId(opt) === value);
-				if (selected) {
-					query = getLabel(selected);
+		if (value) {
+			const selected = options.find((opt) => getId(opt) === value);
+			if (selected) {
+				const label = getLabel(selected);
+				if (untrack(() => query) !== label) {
+					query = label;
 				}
 			}
-			prevValue = value;
 		}
 	});
 
