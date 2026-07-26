@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { History } from '@lucide/svelte';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { getPriceTypeLabel } from '$lib/shared/enums';
 	import { formatDate, formatPrice } from '$lib/utils';
 	import { getLensMarginPercent, getLensTotalCost } from './helpers';
 
