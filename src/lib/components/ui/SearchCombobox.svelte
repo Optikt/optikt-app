@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { Search, ChevronDown, X } from '@lucide/svelte';
-	import type { Snippet } from 'svelte';
+	import { type Snippet, untrack } from 'svelte';
 
 	type Props<T> = {
 		options: T[];
 		placeholder: string;
 		disabled?: boolean;
 		clearOnSelect?: boolean;
+		value?: string;
 		getId: (option: T) => string;
 		getLabel: (option: T) => string;
 		filterFn?: (query: string, option: T) => boolean;
@@ -20,6 +21,7 @@
 		placeholder,
 		disabled = false,
 		clearOnSelect = false,
+		value = '',
 		getId,
 		getLabel,
 		filterFn,
@@ -32,10 +34,29 @@
 	let open = $state(false);
 	let highlightedIdx = $state(0);
 	let inputEl: HTMLInputElement | undefined = $state();
+	let skipNextSync = false;
+	let prevValue = $state(untrack(() => value));
 
 	const filtered = $derived(
 		query && filterFn ? options.filter((opt) => filterFn(query, opt)) : options
 	);
+
+	$effect(() => {
+		if (skipNextSync) {
+			skipNextSync = false;
+			prevValue = value;
+			return;
+		}
+		if (value !== prevValue) {
+			if (value) {
+				const selected = options.find((opt) => getId(opt) === value);
+				if (selected) {
+					query = getLabel(selected);
+				}
+			}
+			prevValue = value;
+		}
+	});
 
 	function handleInput() {
 		open = true;
@@ -44,8 +65,13 @@
 
 	function handleSelect(option: unknown) {
 		onselect(option);
-		query = clearOnSelect ? '' : getLabel(option);
 		open = false;
+		if (clearOnSelect) {
+			skipNextSync = true;
+			query = '';
+		} else {
+			query = getLabel(option);
+		}
 	}
 
 	function handleClear() {
@@ -57,6 +83,13 @@
 	function handleFocus() {
 		open = filtered.length > 0;
 		highlightedIdx = 0;
+	}
+
+	function handleClick() {
+		if (!open) {
+			open = true;
+			highlightedIdx = 0;
+		}
 	}
 
 	function handleBlur() {
@@ -103,6 +136,7 @@
 			aria-controls="searchcombobox-list"
 			oninput={handleInput}
 			onfocus={handleFocus}
+			onclick={handleClick}
 			onblur={handleBlur}
 			onkeydown={handleKeyDown}
 			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pl-9 pr-14 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open

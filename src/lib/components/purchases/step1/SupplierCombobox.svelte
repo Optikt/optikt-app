@@ -21,6 +21,7 @@
 	options={sorted}
 	placeholder="Buscar proveedor..."
 	{disabled}
+	{value}
 	getId={(s: unknown) => (s as SupplierOption).id}
 	getLabel={(s: unknown) => (s as SupplierOption).name}
 	filterFn={(query: string, s: unknown) =>
