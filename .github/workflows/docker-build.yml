@@ -100,6 +100,15 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:server
 
+      - name: Debug Tailscale DNS
+        run: |
+          echo "=== Tailscale status ==="
+          tailscale status
+          echo "=== Dig de prueba ==="
+          dig @100.100.100.100 optikt.taild8f0b9.ts.net
+          echo "=== Ping de prueba ==="
+          timeout 10 tailscale ping optikt.taild8f0b9.ts.net
+
       - name: Trigger Dokploy Deployment
         run: |
           echo "Triggering deployment in Dokploy..."
