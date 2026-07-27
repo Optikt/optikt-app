@@ -99,6 +99,7 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:server
+          ping: optikt.taild8f0b9.ts.net 
 
       - name: Debug Tailscale DNS
         run: |
