@@ -69,19 +69,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          build-args: |
-            DATABASE_URL=postgresql://build:build@localhost:5432/build
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/optikt-app:v${{ steps.version.outputs.version }}
-            ${{ secrets.DOCKER_USERNAME }}/optikt-app:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # - name: Build and push image
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: .
+      #     file: ./Dockerfile
+      #     push: true
+      #     build-args: |
+      #       DATABASE_URL=postgresql://build:build@localhost:5432/build
+      #     tags: |
+      #       ${{ secrets.DOCKER_USERNAME }}/optikt-app:v${{ steps.version.outputs.version }}
+      #       ${{ secrets.DOCKER_USERNAME }}/optikt-app:latest
+      #     cache-from: type=gha
+      #     cache-to: type=gha,mode=max
 
       - name: Push release commit and tag
         run: git push origin HEAD:${GITHUB_REF_NAME} --follow-tags
