@@ -69,29 +69,24 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # - name: Build and push image
-      #   uses: docker/build-push-action@v6
-      #   with:
-      #     context: .
-      #     file: ./Dockerfile
-      #     push: true
-      #     build-args: |
-      #       DATABASE_URL=postgresql://build:build@localhost:5432/build
-      #     tags: |
-      #       ${{ secrets.DOCKER_USERNAME }}/optikt-app:v${{ steps.version.outputs.version }}
-      #       ${{ secrets.DOCKER_USERNAME }}/optikt-app:latest
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            DATABASE_URL=postgresql://build:build@localhost:5432/build
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/optikt-app:v${{ steps.version.outputs.version }}
+            ${{ secrets.DOCKER_USERNAME }}/optikt-app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Push release commit and tag
         run: git push origin HEAD:${GITHUB_REF_NAME} --follow-tags
 
       # STEPS FOR DOKPLOY VÍA TAILSCALE
-
-      # - name: Connect to Tailscale
-      #   uses: tailscale/github-action@v4
-      #   with:
-      #     authkey: ${{ secrets.TAILSCALE_AUTHKEY }} # Opcional, puedes fijar versión o quitarlo para la latest
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4
@@ -99,16 +94,7 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
           tags: tag:server
-          ping: optikt.taild8f0b9.ts.net 
-
-      - name: Debug Tailscale DNS
-        run: |
-          echo "=== Tailscale status ==="
-          tailscale status
-          echo "=== Dig de prueba ==="
-          dig @100.100.100.100 optikt.taild8f0b9.ts.net
-          echo "=== Ping de prueba ==="
-          timeout 10 tailscale ping optikt.taild8f0b9.ts.net
+          # ping: optikt.taild8f0b9.ts.net 
 
       - name: Trigger Dokploy Deployment
         run: |
