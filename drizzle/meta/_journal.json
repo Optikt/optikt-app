@@ -232,6 +232,13 @@
       "when": 1784571208000,
       "tag": "0032_drop_settlement_rate_to_ves",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785364800000,
+      "tag": "0033_purchase_order_payment_method",
+      "breakpoints": true
     }
   ]
 }
