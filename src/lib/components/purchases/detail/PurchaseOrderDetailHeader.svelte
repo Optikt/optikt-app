@@ -1,16 +1,15 @@
 <script lang="ts">
 	import {
-		CheckCircle,
 		ChevronDown,
 		ClipboardCheck,
 		Pencil,
 		RotateCcw,
-		XCircle
+		CircleCheck,
+		CircleX
 	} from '@lucide/svelte';
 	import { AppBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
-	import { formatDateOnly } from '$lib/utils';
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;
@@ -51,7 +50,6 @@
 	let showConfirmDropdown = $state(false);
 </script>
 
-<!-- class="rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 p-4 animate-slide-up d1" -->
 <div class="px-2 pt-2 flex flex-wrap items-center justify-between gap-4">
 	<div class="flex flex-wrap gap-2 items-center">
 		<h1
@@ -73,12 +71,6 @@
 				{purchaseOrder.paymentTerms === 'CONTADO' ? 'Contado' : 'Crédito'}
 			</AppBadge>
 		</div>
-
-		<!-- <p class="mt-2 text-[13px] text-on-surface-variant">
-					Orden de compra creada el {formatDateOnly(purchaseOrder.orderDate, {
-						dateStyle: 'long'
-					})} · Tasa BCV {Number(purchaseOrder.bcvRate || 0).toFixed(2)}
-				</p> -->
 	</div>
 	<div class="flex flex-wrap gap-2 items-center shrink-0">
 		{#if isDraft && !isReadyForReview}
@@ -121,7 +113,7 @@
 						: `Marca todas las líneas como revisadas (${reviewedCount}/${totalItems})`}
 					class="inline-flex items-center gap-2 rounded-l-xl bg-brand-gold px-5 py-2 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
 				>
-					<CheckCircle class="h-4 w-4" />
+					<CircleCheck class="h-4 w-4" />
 					Confirmar orden
 				</button>
 				{#if isCashPurchase}
@@ -149,7 +141,7 @@
 							}}
 							class="flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container-high"
 						>
-							<CheckCircle class="h-4 w-4 text-success" />
+							<CircleCheck class="h-4 w-4 text-success" />
 							Confirmar y registrar pago
 						</button>
 					</div>
@@ -163,7 +155,7 @@
 				disabled={actionLoading}
 				class="inline-flex items-center gap-2 rounded-xl border border-error/30 px-4 py-2 text-xs font-semibold text-error transition-colors hover:bg-error-container/20"
 			>
-				<XCircle class="h-4 w-4" />
+				<CircleX class="h-4 w-4" />
 				Cancelar
 			</button>
 		{/if}
