@@ -2,7 +2,7 @@
 	import {
 		ChevronDown,
 		ClipboardCheck,
-		MoreVertical,
+		EllipsisVertical,
 		Pencil,
 		RotateCcw,
 		CircleCheck,
@@ -236,7 +236,7 @@
 					class="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high"
 					aria-label="Más opciones"
 				>
-					<MoreVertical class="h-5 w-5" />
+					<EllipsisVertical class="h-5 w-5" />
 				</button>
 				{#if showOverflowMenu}
 					<div
