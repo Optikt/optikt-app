@@ -91,26 +91,24 @@
 	>
 		<ArrowLeft size={24} />
 	</a>
-	<div class="flex flex-wrap gap-2 items-center">
-		<h1
-			class="font-heading text-[30px] font-bold text-brand-navy tracking-tight leading-none whitespace-nowrap"
-		>
-			{formattedOrderNumber}
-		</h1>
-		<div class="flex items-center gap-2 flex-wrap shrink-0">
-			<PurchaseOrderStatusBadge
-				status={purchaseOrder.status}
-				isReadyForReview={purchaseOrder.isReadyForReview}
-			/>
-			<AppBadge variant="neutral">
-				{purchaseOrder.paymentTerms === 'CONTADO' ? 'Contado' : 'Crédito'}
+	<h1
+		class="font-heading text-[30px] font-bold text-brand-navy tracking-tight leading-none whitespace-nowrap"
+	>
+		{formattedOrderNumber}
+	</h1>
+	<div class="flex items-center gap-2 flex-wrap shrink-0">
+		<PurchaseOrderStatusBadge
+			status={purchaseOrder.status}
+			isReadyForReview={purchaseOrder.isReadyForReview}
+		/>
+		<AppBadge variant="neutral">
+			{purchaseOrder.paymentTerms === 'CONTADO' ? 'Contado' : 'Crédito'}
+		</AppBadge>
+		{#if !allItemsReviewed}
+			<AppBadge variant="info">
+				{reviewedCount}/{totalItems} revisadas
 			</AppBadge>
-			{#if !allItemsReviewed}
-				<AppBadge variant="info">
-					{reviewedCount}/{totalItems} revisadas
-				</AppBadge>
-			{/if}
-		</div>
+		{/if}
 	</div>
 
 	<!-- ─── DESKTOP (sm+) ──────────────────────────────────────────────── -->
