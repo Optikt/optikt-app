@@ -83,20 +83,8 @@
 
 <svelte:document onclick={handleOverflowOutsideClick} />
 
-<div class="px-2 pt-2 flex flex-wrap items-center gap-2">
-	<a
-		title="Volver a la lista de compras"
-		href={resolve('/purchases')}
-		class="text-on-surface-variant transition-colors hover:text-brand-blue"
-	>
-		<ArrowLeft size={24} />
-	</a>
-	<h1
-		class="font-heading text-[30px] font-bold text-brand-navy tracking-tight leading-none whitespace-nowrap"
-	>
-		{formattedOrderNumber}
-	</h1>
-	<div class="flex items-center gap-2 flex-wrap shrink-0">
+{#snippet statusBadges(wrapperClass: string)}
+	<div class={wrapperClass}>
 		<PurchaseOrderStatusBadge
 			status={purchaseOrder.status}
 			isReadyForReview={purchaseOrder.isReadyForReview}
@@ -110,8 +98,26 @@
 			</AppBadge>
 		{/if}
 	</div>
+{/snippet}
 
-	<!-- ─── DESKTOP (sm+) ──────────────────────────────────────────────── -->
+<div class="sm:px-2 sm:pt-2 flex flex-wrap items-center gap-2 justify-between">
+	<div class="inline-flex gap-2 items-center">
+		<a
+			title="Volver a la lista de compras"
+			href={resolve('/purchases')}
+			class="text-on-surface-variant transition-colors hover:text-brand-blue"
+		>
+			<ArrowLeft size={24} />
+		</a>
+		<h1
+			class="font-heading text-[30px] font-bold text-brand-navy tracking-tight leading-none whitespace-nowrap"
+		>
+			{formattedOrderNumber}
+		</h1>
+	</div>
+	{@render statusBadges('hidden sm:flex items-center gap-2 flex-wrap shrink-0')}
+
+	<!-- DESKTOP (sm+) -->
 	<div class="hidden sm:flex flex-wrap gap-2 items-center shrink-0">
 		{#if isDraft && !isReadyForReview}
 			<button
@@ -201,8 +207,8 @@
 		{/if}
 	</div>
 
-	<!-- ─── MOBILE (< sm) ──────────────────────────────────────────────── -->
-	<div class="flex sm:hidden items-center gap-2 shrink-0">
+	<!-- MOBILE (< sm) -->
+	<div class="flex sm:hidden items-center gap-1 shrink-0">
 		{#if isDraft && !isReadyForReview}
 			<button
 				type="button"
@@ -227,14 +233,14 @@
 		{/if}
 		{#if isDraft}
 			<div class="relative" data-overflow-menu>
+					<!-- class="flex items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high" -->
 				<button
 					type="button"
 					onclick={() => (showOverflowMenu = !showOverflowMenu)}
 					disabled={actionLoading}
-					class="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high"
 					aria-label="Más opciones"
 				>
-					<EllipsisVertical class="h-5 w-5" />
+					<EllipsisVertical class="h-5 w-5 text-on-surface-variant transition-colors hover:text-brand-blue" />
 				</button>
 				{#if showOverflowMenu}
 					<div
@@ -283,4 +289,6 @@
 			</div>
 		{/if}
 	</div>
+
+	{@render statusBadges('flex sm:hidden items-center gap-2 flex-wrap shrink-0')}
 </div>
