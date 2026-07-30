@@ -2,14 +2,17 @@
 	import {
 		ChevronDown,
 		ClipboardCheck,
+		MoreVertical,
 		Pencil,
 		RotateCcw,
 		CircleCheck,
-		CircleX
+		CircleX,
+		ArrowLeft
 	} from '@lucide/svelte';
 	import { AppBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;
@@ -48,9 +51,46 @@
 	);
 
 	let showConfirmDropdown = $state(false);
+	let showOverflowMenu = $state(false);
+
+	function handleOverflowOutsideClick(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('[data-overflow-menu]')) {
+			showOverflowMenu = false;
+		}
+	}
+
+	function overflowEdit() {
+		showOverflowMenu = false;
+		onEdit();
+	}
+
+	function overflowUnmark() {
+		showOverflowMenu = false;
+		onUnmarkReady();
+	}
+
+	function overflowConfirmAndPay() {
+		showOverflowMenu = false;
+		onConfirmAndPay();
+	}
+
+	function overflowCancel() {
+		showOverflowMenu = false;
+		onCancel();
+	}
 </script>
 
-<div class="px-2 pt-2 flex flex-wrap items-center justify-between gap-4">
+<svelte:document onclick={handleOverflowOutsideClick} />
+
+<div class="px-2 pt-2 flex flex-wrap items-center gap-2">
+	<a
+		title="Volver a la lista de compras"
+		href={resolve('/purchases')}
+		class="text-on-surface-variant transition-colors hover:text-brand-blue"
+	>
+		<ArrowLeft size={24} />
+	</a>
 	<div class="flex flex-wrap gap-2 items-center">
 		<h1
 			class="font-heading text-[30px] font-bold text-brand-navy tracking-tight leading-none whitespace-nowrap"
@@ -62,23 +102,25 @@
 				status={purchaseOrder.status}
 				isReadyForReview={purchaseOrder.isReadyForReview}
 			/>
+			<AppBadge variant="neutral">
+				{purchaseOrder.paymentTerms === 'CONTADO' ? 'Contado' : 'Crédito'}
+			</AppBadge>
 			{#if !allItemsReviewed}
 				<AppBadge variant="info">
 					{reviewedCount}/{totalItems} revisadas
 				</AppBadge>
 			{/if}
-			<AppBadge variant="neutral">
-				{purchaseOrder.paymentTerms === 'CONTADO' ? 'Contado' : 'Crédito'}
-			</AppBadge>
 		</div>
 	</div>
-	<div class="flex flex-wrap gap-2 items-center shrink-0">
+
+	<!-- ─── DESKTOP (sm+) ──────────────────────────────────────────────── -->
+	<div class="hidden sm:flex flex-wrap gap-2 items-center shrink-0">
 		{#if isDraft && !isReadyForReview}
 			<button
 				type="button"
 				onclick={onEdit}
 				disabled={actionLoading}
-				class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/30 px-4 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				class="inline-flex items-center gap-2 rounded-xl border border-brand-blue/30 px-4 py-2 text-xs font-semibold text-brand-blue transition-colors hover:bg-info-container/40"
 			>
 				<Pencil class="h-4 w-4" />
 				Editar
@@ -87,7 +129,7 @@
 				type="button"
 				onclick={onMarkReady}
 				disabled={actionLoading}
-				class="inline-flex items-center gap-2 rounded-xl bg-brand-navy px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-brand-navy/90"
+				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-xs font-semibold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark"
 			>
 				<ClipboardCheck class="h-4 w-4" />
 				Marcar listo
@@ -98,10 +140,10 @@
 				type="button"
 				onclick={onUnmarkReady}
 				disabled={actionLoading}
-				class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/30 px-4 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				class="inline-flex items-center gap-2 rounded-xl border border-brand-blue/30 px-4 py-2 text-xs font-semibold text-brand-blue transition-colors hover:bg-info-container/40"
 			>
 				<RotateCcw class="h-4 w-4" />
-				Volver a edición
+				Editar
 			</button>
 			<div class="relative flex items-center gap-0">
 				<button
@@ -114,7 +156,7 @@
 					class="inline-flex items-center gap-2 rounded-l-xl bg-brand-gold px-5 py-2 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
 				>
 					<CircleCheck class="h-4 w-4" />
-					Confirmar orden
+					Confirmar
 				</button>
 				{#if isCashPurchase}
 					<button
@@ -158,6 +200,89 @@
 				<CircleX class="h-4 w-4" />
 				Cancelar
 			</button>
+		{/if}
+	</div>
+
+	<!-- ─── MOBILE (< sm) ──────────────────────────────────────────────── -->
+	<div class="flex sm:hidden items-center gap-2 shrink-0">
+		{#if isDraft && !isReadyForReview}
+			<button
+				type="button"
+				onclick={onMarkReady}
+				disabled={actionLoading}
+				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-2 text-xs font-semibold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark"
+			>
+				<ClipboardCheck class="h-4 w-4" />
+				Marcar listo
+			</button>
+		{/if}
+		{#if isDraft && isReadyForReview}
+			<button
+				type="button"
+				onclick={onConfirm}
+				disabled={actionLoading || !allItemsReviewed}
+				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2 text-xs font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+			>
+				<CircleCheck class="h-4 w-4" />
+				Confirmar
+			</button>
+		{/if}
+		{#if isDraft}
+			<div class="relative" data-overflow-menu>
+				<button
+					type="button"
+					onclick={() => (showOverflowMenu = !showOverflowMenu)}
+					disabled={actionLoading}
+					class="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high"
+					aria-label="Más opciones"
+				>
+					<MoreVertical class="h-5 w-5" />
+				</button>
+				{#if showOverflowMenu}
+					<div
+						class="absolute top-full right-0 z-50 mt-1 min-w-44 rounded-xl bg-surface-container-lowest shadow-lg ring-1 ring-outline-variant/20 overflow-hidden"
+					>
+						{#if isDraft && !isReadyForReview}
+							<button
+								type="button"
+								onclick={overflowEdit}
+								class="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+							>
+								<Pencil class="h-4 w-4" />
+								Editar
+							</button>
+						{/if}
+						{#if isDraft && isReadyForReview}
+							<button
+								type="button"
+								onclick={overflowUnmark}
+								class="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+							>
+								<RotateCcw class="h-4 w-4" />
+								Editar
+							</button>
+							{#if isCashPurchase}
+								<button
+									type="button"
+									onclick={overflowConfirmAndPay}
+									class="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold text-brand-navy transition-colors hover:bg-surface-container"
+								>
+									<CircleCheck class="h-4 w-4 text-success" />
+									Confirmar y pagar
+								</button>
+							{/if}
+						{/if}
+						<button
+							type="button"
+							onclick={overflowCancel}
+							class="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-semibold text-error transition-colors hover:bg-error-container/30"
+						>
+							<CircleX class="h-4 w-4" />
+							Cancelar
+						</button>
+					</div>
+				{/if}
+			</div>
 		{/if}
 	</div>
 </div>
