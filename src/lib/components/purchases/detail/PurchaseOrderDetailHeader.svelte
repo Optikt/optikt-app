@@ -233,14 +233,15 @@
 		{/if}
 		{#if isDraft}
 			<div class="relative" data-overflow-menu>
-					<!-- class="flex items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-surface-container-high" -->
 				<button
 					type="button"
 					onclick={() => (showOverflowMenu = !showOverflowMenu)}
 					disabled={actionLoading}
 					aria-label="Más opciones"
 				>
-					<EllipsisVertical class="h-5 w-5 text-on-surface-variant transition-colors hover:text-brand-blue" />
+					<EllipsisVertical
+						class="h-5 w-5 text-on-surface-variant transition-colors hover:text-brand-blue"
+					/>
 				</button>
 				{#if showOverflowMenu}
 					<div
