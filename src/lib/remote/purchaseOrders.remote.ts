@@ -66,7 +66,8 @@ import { db } from '$lib/server/db';
 import {
 	PurchaseOrderItemType,
 	PurchaseOrderStatus,
-	PurchasePaymentTerms
+	PurchasePaymentTerms,
+	currencyForPurchasePaymentMethod
 } from '$lib/shared/enums';
 import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
 import { validatePurchaseOrderDraftReadiness } from '$lib/shared/purchaseOrderRules';
@@ -872,8 +873,10 @@ export const addPurchaseOrderPaymentCmd = command(
 			};
 		}
 
+		const currencyCode = currencyForPurchasePaymentMethod(data.paymentMethod);
+
 		const normalized = normalizePurchasePaymentAmounts({
-			currencyCode: data.currencyCode,
+			currencyCode,
 			amount: data.amount,
 			bcvUsdRate: data.bcvUsdRate,
 			specificRate: data.specificRate
@@ -912,7 +915,8 @@ export const addPurchaseOrderPaymentCmd = command(
 					{
 						purchaseOrderId: data.purchaseOrderId,
 						paymentNumber,
-						currencyCode: data.currencyCode,
+						paymentMethod: data.paymentMethod,
+						currencyCode,
 						paymentDate: data.paymentDate,
 						amount: data.amount,
 						bcvUsdRate: data.bcvUsdRate,
