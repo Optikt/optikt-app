@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ALL_PURCHASE_PAYMENT_CURRENCY_CODES, CurrencyCode } from '$lib/shared/enums';
+import { ALL_PURCHASE_PAYMENT_METHODS, currencyForPurchasePaymentMethod } from '$lib/shared/enums';
 import { CoercedNumber } from './common';
 import { requiresPurchasePaymentSpecificRate } from '$lib/shared/purchaseOrderPayments';
 
@@ -11,7 +11,7 @@ export const ListPurchaseOrderPaymentsSchema = z.object({
 export const CreatePurchaseOrderPaymentSchema = z
 	.object({
 		purchaseOrderId: z.uuid('ID de orden de compra requerido'),
-		currencyCode: z.enum(ALL_PURCHASE_PAYMENT_CURRENCY_CODES, 'Moneda requerida'),
+		paymentMethod: z.enum(ALL_PURCHASE_PAYMENT_METHODS, 'Método de pago requerido'),
 		paymentDate: z.iso.date('La fecha del pago es requerida'),
 		amount: CoercedNumber.positive('El monto debe ser positivo'),
 		bcvUsdRate: CoercedNumber.positive('La tasa BCV es requerida'),
@@ -31,14 +31,15 @@ export const CreatePurchaseOrderPaymentSchema = z
 			.optional()
 	})
 	.superRefine((data, ctx) => {
+		const currencyCode = currencyForPurchasePaymentMethod(data.paymentMethod);
 		if (
-			requiresPurchasePaymentSpecificRate(data.currencyCode as CurrencyCode) &&
+			requiresPurchasePaymentSpecificRate(currencyCode) &&
 			(!data.specificRate || data.specificRate <= 0)
 		) {
 			ctx.addIssue({
 				code: z.ZodIssueCode.custom,
 				path: ['specificRate'],
-				message: 'La tasa usada es obligatoria para esta moneda'
+				message: 'La tasa usada es obligatoria para este método de pago'
 			});
 		}
 	});
