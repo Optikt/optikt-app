@@ -32,3 +32,4 @@ vite.config.ts.timestamp-*
 /stitch-prompts
 
 .codebase-memory/
+.opencode/
