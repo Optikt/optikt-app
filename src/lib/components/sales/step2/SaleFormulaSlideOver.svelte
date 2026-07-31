@@ -60,15 +60,15 @@
 
 		const groups: { label: string; errors: string[] }[] = [];
 		if (general.size > 0) groups.push({ label: '', errors: [...general] });
-		if (oi.size > 0) groups.push({ label: 'OI', errors: [...oi] });
 		if (od.size > 0) groups.push({ label: 'OD', errors: [...od] });
+		if (oi.size > 0) groups.push({ label: 'OI', errors: [...oi] });
 		return groups;
 	});
 
-	function handleCopyOiToOd() {
-		draft.od.prescription = { ...draft.oi.prescription };
-		draft.od.dp = draft.oi.dp;
-		draft.od.np = draft.oi.np;
+	function handleCopyOdToOi() {
+		draft.oi.prescription = { ...draft.od.prescription };
+		draft.oi.dp = draft.od.dp;
+		draft.oi.np = draft.od.np;
 	}
 
 	function clearPrescription() {
@@ -145,18 +145,6 @@
 			<div class="flex flex-wrap items-center gap-2">
 				<span class="text-[10px] font-semibold text-outline uppercase">Ojos</span>
 
-				<!-- OI -->
-				<label
-					class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm hover:bg-surface-container-low"
-				>
-					<input
-						type="checkbox"
-						bind:checked={draft.oi.enabled}
-						class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
-					/>
-					<span>OI</span>
-				</label>
-
 				<!-- OD -->
 				<label
 					class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm hover:bg-surface-container-low"
@@ -169,14 +157,26 @@
 					<span>OD</span>
 				</label>
 
-				<!-- Copy OI -> OD -->
+				<!-- OI -->
+				<label
+					class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-surface-container-lowest px-2.5 py-1 text-xs font-semibold text-brand-navy shadow-sm hover:bg-surface-container-low"
+				>
+					<input
+						type="checkbox"
+						bind:checked={draft.oi.enabled}
+						class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+					/>
+					<span>OI</span>
+				</label>
+
+				<!-- Copy OD -> OI -->
 				<button
 					type="button"
-					onclick={handleCopyOiToOd}
+					onclick={handleCopyOdToOi}
 					class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-100"
 				>
 					<Copy class="h-3 w-3" />
-					Copiar OI → OD
+					Copiar OD → OI
 				</button>
 			</div>
 		</div>
@@ -196,108 +196,6 @@
 			{/if}
 			<div class="text-center text-[10px] font-semibold text-outline uppercase">DP</div>
 			<div class="text-center text-[10px] font-semibold text-outline uppercase">DNP</div>
-
-			<div
-				class="flex items-center rounded-lg bg-rose-50/30 px-2 py-1.5 text-xs font-semibold text-rose-700"
-			>
-				OI
-			</div>
-			<div
-				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiSphere
-					? 'border-red-300'
-					: 'border-rose-200/60'}"
-			>
-				<input
-					type="number"
-					step="0.25"
-					placeholder="-2.00"
-					bind:value={draft.oi.prescription.sphere}
-					disabled={!draft.oi.enabled}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
-				/>
-			</div>
-			<div
-				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiCylinder
-					? 'border-red-300'
-					: 'border-rose-200/60'}"
-			>
-				<input
-					type="number"
-					step="0.25"
-					min={-10}
-					max={0}
-					placeholder="-0.50"
-					bind:value={draft.oi.prescription.cylinder}
-					disabled={!draft.oi.enabled}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
-				/>
-			</div>
-			<div
-				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAxis
-					? 'border-red-300'
-					: 'border-rose-200/60'}"
-			>
-				<input
-					type="number"
-					step="1"
-					min={0}
-					max={180}
-					placeholder="180"
-					bind:value={draft.oi.prescription.axis}
-					disabled={!draft.oi.enabled}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
-				/>
-			</div>
-			{#if requiresAddition}
-				<div
-					class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAddition
-						? 'border-red-300'
-						: 'border-rose-200/60'}"
-				>
-					<input
-						type="number"
-						step="0.25"
-						min={0}
-						max={5}
-						placeholder="+1.50"
-						bind:value={draft.oi.prescription.addition}
-						disabled={!draft.oi.enabled}
-						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
-					/>
-				</div>
-			{/if}
-			<div
-				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiDp
-					? 'border-red-300'
-					: 'border-rose-200/60'}"
-			>
-				<input
-					type="number"
-					step="1"
-					min={10}
-					max={80}
-					placeholder="62"
-					bind:value={draft.oi.dp}
-					disabled={!draft.oi.enabled}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
-				/>
-			</div>
-			<div
-				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiNp
-					? 'border-red-300'
-					: 'border-rose-200/60'}"
-			>
-				<input
-					type="number"
-					step="1"
-					min={10}
-					max={80}
-					placeholder="30"
-					bind:value={draft.oi.np}
-					disabled={!draft.oi.enabled}
-					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
-				/>
-			</div>
 
 			<div
 				class="flex items-center rounded-lg bg-blue-50/30 px-2 py-1.5 text-xs font-semibold text-blue-700"
@@ -397,6 +295,108 @@
 					placeholder="30"
 					bind:value={draft.od.np}
 					disabled={!draft.od.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+				/>
+			</div>
+
+			<div
+				class="flex items-center rounded-lg bg-rose-50/30 px-2 py-1.5 text-xs font-semibold text-rose-700"
+			>
+				OI
+			</div>
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiSphere
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
+				<input
+					type="number"
+					step="0.25"
+					placeholder="-2.00"
+					bind:value={draft.oi.prescription.sphere}
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+				/>
+			</div>
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiCylinder
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
+				<input
+					type="number"
+					step="0.25"
+					min={-10}
+					max={0}
+					placeholder="-0.50"
+					bind:value={draft.oi.prescription.cylinder}
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+				/>
+			</div>
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAxis
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
+				<input
+					type="number"
+					step="1"
+					min={0}
+					max={180}
+					placeholder="180"
+					bind:value={draft.oi.prescription.axis}
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+				/>
+			</div>
+			{#if requiresAddition}
+				<div
+					class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAddition
+						? 'border-red-300'
+						: 'border-rose-200/60'}"
+				>
+					<input
+						type="number"
+						step="0.25"
+						min={0}
+						max={5}
+						placeholder="+1.50"
+						bind:value={draft.oi.prescription.addition}
+						disabled={!draft.oi.enabled}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+					/>
+				</div>
+			{/if}
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiDp
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
+				<input
+					type="number"
+					step="1"
+					min={10}
+					max={80}
+					placeholder="62"
+					bind:value={draft.oi.dp}
+					disabled={!draft.oi.enabled}
+					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+				/>
+			</div>
+			<div
+				class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiNp
+					? 'border-red-300'
+					: 'border-rose-200/60'}"
+			>
+				<input
+					type="number"
+					step="1"
+					min={10}
+					max={80}
+					placeholder="30"
+					bind:value={draft.oi.np}
+					disabled={!draft.oi.enabled}
 					class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 				/>
 			</div>
