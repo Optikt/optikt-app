@@ -20,7 +20,8 @@ import {
 	PurchaseOrderItemType,
 	PurchaseDocumentType,
 	PurchaseDiscountType,
-	PurchasePaymentTerms
+	PurchasePaymentTerms,
+	PurchasePaymentMethod
 } from '../../../shared/enums/purchaseTypes';
 import { CurrencyCode } from '../../../shared/enums/currencyTypes';
 import { products } from './products';
@@ -58,6 +59,11 @@ export const purchasePaymentTermsEnum = pgEnum(
 export const purchasePaymentCurrencyEnum = pgEnum(
 	'purchase_payment_currency',
 	enumValues(CurrencyCode)
+);
+
+export const purchasePaymentMethodEnum = pgEnum(
+	'purchase_payment_method',
+	enumValues(PurchasePaymentMethod)
 );
 
 // ============================================================================
@@ -180,6 +186,8 @@ export const purchaseOrderPayments = pgTable(
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		purchaseOrderId: uuid('purchase_order_id').notNull(),
 		paymentNumber: integer('payment_number').notNull(),
+		/** Payment rail used (Pago Móvil, Transferencia, etc.) — determines currencyCode */
+		paymentMethod: purchasePaymentMethodEnum('payment_method').notNull().default('OTRO'),
 		currencyCode: purchasePaymentCurrencyEnum('currency_code').notNull(),
 		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** Amount entered in the payment's native currency */
