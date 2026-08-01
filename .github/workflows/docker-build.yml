@@ -85,3 +85,17 @@ jobs:
 
       - name: Push release commit and tag
         run: git push origin HEAD:${GITHUB_REF_NAME} --follow-tags
+
+      # STEPS FOR DOKPLOY VÍA TAILSCALE
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Trigger Dokploy Deployment
+        run: |
+          echo "Triggering deployment in Dokploy..."
+          curl -X GET "${{ secrets.DOKPLOY_WEBHOOK_URL }}"
