@@ -111,9 +111,9 @@
 				Pago
 			</p>
 			{#if isCredit}
-				<AppBadge variant="info">Crédito</AppBadge>
+				<AppBadge variant="neutral">Crédito</AppBadge>
 			{:else}
-				<AppBadge variant="success">Contado</AppBadge>
+				<AppBadge variant="neutral">Contado</AppBadge>
 			{/if}
 		</div>
 		{#if isCredit}
