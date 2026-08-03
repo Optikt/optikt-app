@@ -239,6 +239,13 @@
       "when": 1785364800000,
       "tag": "0033_purchase_order_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785960000000,
+      "tag": "0034_payment_method_enum",
+      "breakpoints": true
     }
   ]
 }
