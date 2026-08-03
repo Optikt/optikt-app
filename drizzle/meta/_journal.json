@@ -246,6 +246,13 @@
       "when": 1785960000000,
       "tag": "0034_payment_method_enum",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786572000000,
+      "tag": "0035_payment_method_eur_paypal",
+      "breakpoints": true
     }
   ]
 }
