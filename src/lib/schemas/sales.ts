@@ -217,7 +217,9 @@ export const AddPaymentSchema = z
 		/** BCV official Bs/$ rate (always required) */
 		bcvRate: CoercedNumber.positive('La tasa BCV es requerida'),
 		reference: z.string().optional(),
-		notes: z.string().optional()
+		notes: z.string().optional(),
+		rateType: z.string().optional(),
+		isCasheaPayment: z.boolean().optional()
 	})
 	.superRefine((data, ctx) => {
 		const isCashMethod =
