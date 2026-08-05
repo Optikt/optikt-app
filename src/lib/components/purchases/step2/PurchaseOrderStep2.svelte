@@ -50,6 +50,7 @@
 
 	const isAltMode = $derived(sourceCurrency !== PurchaseSourceCurrency.USD);
 	const currencySymbol = $derived(isAltMode ? getSourceCurrencySymbol(sourceCurrency) : '$');
+	const saleSymbol = '$';
 
 	const supplierProducts = $derived(products.filter((p) => p.supplierId === supplierId));
 	const supplierLenses = $derived(lensItems.filter((l) => l.supplierId === supplierId));
@@ -126,6 +127,7 @@
 			products={supplierProducts}
 			lensItems={supplierLenses}
 			{currencySymbol}
+			{saleSymbol}
 			onremove={removeItem}
 		/>
 	</div>
