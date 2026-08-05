@@ -12,3 +12,11 @@ bun.lockb
 Dockerfile
 .dockerignore
 
+
+.agents/
+.github/
+.opencode/
+plans/
+AGENTS.md
+opencode.json
+skills-lock.json
