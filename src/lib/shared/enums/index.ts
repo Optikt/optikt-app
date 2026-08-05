@@ -3,6 +3,7 @@ export * from './supplierTypes';
 export * from './productStockFilters';
 export * from './productTypes';
 export * from './currencyTypes';
+export * from './paymentMethods';
 export * from './lensTypes';
 export * from './salesTypes';
 export * from './purchaseTypes';
