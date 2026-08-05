@@ -12,10 +12,18 @@
 		products: ProductWithRelations[];
 		lensItems: LensCatalogItemWithRelations[];
 		currencySymbol: string;
+		saleSymbol: string;
 		onremove: (itemId: string) => void;
 	}
 
-	let { items = $bindable(), products, lensItems, currencySymbol, onremove }: Props = $props();
+	let {
+		items = $bindable(),
+		products,
+		lensItems,
+		currencySymbol,
+		saleSymbol,
+		onremove
+	}: Props = $props();
 
 	function getItemName(item: PurchaseOrderDraftItem): string {
 		if (item.itemType === 'PRODUCT') {
@@ -61,6 +69,7 @@
 						productName={getItemName(item)}
 						sku={getItemSku(item)}
 						{currencySymbol}
+						{saleSymbol}
 						onremove={() => onremove(item.id)}
 					/>
 				</div>
@@ -70,6 +79,7 @@
 						productName={getItemName(item)}
 						sku={getItemSku(item)}
 						{currencySymbol}
+						{saleSymbol}
 						onremove={() => onremove(item.id)}
 					/>
 				</div>

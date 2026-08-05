@@ -10,10 +10,18 @@
 		productName: string;
 		sku: string;
 		currencySymbol: string;
+		saleSymbol: string;
 		onremove?: () => void;
 	}
 
-	let { item = $bindable(), productName, sku, currencySymbol, onremove }: Props = $props();
+	let {
+		item = $bindable(),
+		productName,
+		sku,
+		currencySymbol,
+		saleSymbol,
+		onremove
+	}: Props = $props();
 
 	let showDeleteConfirm = $state(false);
 	const initialValues = {
@@ -145,7 +153,10 @@
 					step="0.01"
 					disabled={item.isReviewed}
 					bind:value={item.unitPurchasePrice}
-					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 pr-6 text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
+					2
+						? 'pr-10'
+						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 					aria-label="Costo unitario"
 				/>
 				<span
@@ -166,12 +177,15 @@
 					step="0.01"
 					disabled={item.isReviewed}
 					bind:value={item.unitSalePrice}
-					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 pr-6 text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
+					2
+						? 'pr-10'
+						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 					aria-label="Precio de venta"
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
-					>{currencySymbol}</span
+					>{saleSymbol}</span
 				>
 			</div>
 		</div>

@@ -1,41 +1,60 @@
 <script lang="ts">
-	import {
-		BadgeDollarSign,
-		Building2,
-		ChevronDown,
-		ChevronUp,
-		CreditCard,
-		FileText,
-		Pencil,
-		Smartphone,
-		WalletCards
-	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
-	import { addPayment } from '$lib/remote/sales.remote';
 	import {
-		getExchangeRateLabel,
-		isBsPaymentMethod,
+		ConfirmModal,
+		PaymentMethodPills,
+		PaymentRateInput,
+		PaymentReferenceField
+	} from '$lib/components/ui';
+	import { addPayment } from '$lib/remote/sales.remote';
+	import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders.remote';
+	import {
+		CurrencyCode,
+		PAYMENT_CURRENCY_GROUPS,
+		PAYMENT_METHOD_ICONS,
 		PAYMENT_METHOD_LABELS,
-		PaymentMethod
+		PAYMENT_RAILS_BY_CURRENCY,
+		SALES_RAILS_BY_CURRENCY,
+		PaymentMethod,
+		currencyForPurchasePaymentMethod,
+		getExchangeRateLabel,
+		getPaymentMethodCurrency,
+		isBsPaymentMethod,
+		rateTypeForCurrency,
+		rateTypeForRail
 	} from '$lib/shared/enums';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import {
+		computePaymentExchangeVariance,
+		denormalizePurchasePaymentAmount,
+		normalizePurchasePaymentAmounts
+	} from '$lib/shared/purchaseOrderPayments';
+	import { getEarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+	import type {
+		EarlyPaymentDiscountSuggestion,
+		PurchaseOrderBalanceSummary,
+		PurchaseOrderDueStatus
+	} from '$lib/shared/purchaseOrderCredit';
+	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
+	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
+	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
+	import { formatCurrency, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
 	import {
 		calculatePaymentAmountFromUsdBcv,
 		calculateUsdBcvFromPaymentAmount,
 		getDefaultPaymentCalculationMode,
-		roundCurrency,
-		type PaymentCalculationMode
+		roundCurrency
 	} from './paymentFormCalculations';
-	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 
-	interface Props {
-		saleId: string;
-		remainingBcvUsd: number;
-		bcvRate?: number;
-		onPaymentAdded?: (paidAmount: number) => void;
-		drawerResetKey?: number;
-		variant?: 'default' | 'drawer';
+	export interface PaymentComposerRequest {
+		token: string;
+		amount?: number;
+		paymentDate?: string;
+		reference?: string;
+		notes?: string;
+		paymentMethod?: PaymentMethod;
 	}
 
 	interface ReferenceConfig {
@@ -46,59 +65,140 @@
 		fallbackValue?: string;
 	}
 
-	const BOLIVAR_METHODS: PaymentMethod[] = [
-		PaymentMethod.PAGO_MOVIL_BS,
-		PaymentMethod.TRANSFERENCIA_BS,
-		PaymentMethod.PUNTO_VENTA_BS,
-		PaymentMethod.EFECTIVO_BS
-	];
-
-	const FOREIGN_METHODS: PaymentMethod[] = [PaymentMethod.EFECTIVO_USD, PaymentMethod.BINANCE_USDT];
+	interface Props {
+		kind: 'sale' | 'purchase';
+		// --- sale ---
+		saleId?: string;
+		remainingBcvUsd?: number;
+		onPaymentAdded?: (paidAmount: number) => void;
+		// --- purchase ---
+		purchaseOrderId?: string;
+		status?: string;
+		defaultBcvRate?: number;
+		purchaseOrder?: PurchaseOrder;
+		payments?: PurchaseOrderPaymentWithUsers[];
+		earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
+		pendingBalanceUsd?: number;
+		debtTotalUsd?: number;
+		isFullyPaid?: boolean;
+		settlementCurrency?: string;
+		composerRequest?: PaymentComposerRequest | null;
+		onFinanceChanged?: (payload: {
+			payments: PurchaseOrderPaymentWithUsers[];
+			earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
+			balance: PurchaseOrderBalanceSummary;
+			dueStatus: PurchaseOrderDueStatus;
+		}) => void;
+		// --- shared ---
+		bcvRate?: number;
+		drawerResetKey?: number;
+		variant?: 'default' | 'drawer';
+	}
 
 	let {
+		kind,
 		saleId,
-		remainingBcvUsd,
-		bcvRate = 0,
+		remainingBcvUsd = 0,
 		onPaymentAdded,
+		purchaseOrderId,
+		status,
+		defaultBcvRate = 0,
+		purchaseOrder,
+		payments = [],
+		earlyPaymentBenefits = [],
+		pendingBalanceUsd,
+		debtTotalUsd,
+		isFullyPaid = false,
+		settlementCurrency,
+		composerRequest = null,
+		onFinanceChanged,
+		bcvRate = 0,
 		drawerResetKey = 0,
 		variant = 'default'
 	}: Props = $props();
+
 	const store = getExchangeRatesStore();
 	const storeBcvRate = $derived(store.bcvRate);
-	const effectiveBcvRate = $derived(bcvRate > 0 ? bcvRate : storeBcvRate);
+	const eurRate = $derived(store.rates.find((r) => r.code === 'EUR')?.value ?? 0);
+	const usdtRate = $derived(store.rates.find((r) => r.sourceKey === 'usdt')?.value ?? 0);
+	const paypalRate = $derived(store.rates.find((r) => r.code === 'PAYPAL')?.value ?? 0);
+	const effectiveBcvRate = $derived(
+		(kind === 'purchase' ? defaultBcvRate : bcvRate) > 0
+			? kind === 'purchase'
+				? defaultBcvRate
+				: bcvRate
+			: storeBcvRate
+	);
 	const defaultBcvRateInput = $derived(effectiveBcvRate > 0 ? effectiveBcvRate.toFixed(2) : '');
-	const binanceRate = $derived(store.rates.find((r) => r.sourceKey === 'usdt')?.value ?? 0);
 
-	let paymentMethod = $state<PaymentMethod | ''>('');
-	let lastEditedField = $state<PaymentCalculationMode>('target');
-	let targetAmountInput = $state('');
+	let currencyKey = $state<string | null>(null);
+	let rail = $state<PaymentMethod | null>(null);
+	let lastEditedAmount = $state<'native' | 'usd'>('native');
 	let nativeAmountInput = $state('');
-	let exchangeRateInput = $state('');
-	let currentBcvRateInput = $state('');
-	let bcvRateEditable = $state(false);
-	let drawerBcvRateInput = $state('');
-	let drawerForeignRateInput = $state('');
+	let usdBcvAmountInput = $state('');
+	let bcvRateInput = $state('');
+	let specificRateInput = $state('');
 	let paymentDate = $state(toISODate(nowUTC()));
 	let reference = $state('');
 	let notes = $state('');
-	let showNotes = $state(false);
-	let showExtraFields = $state(false);
 	let submitting = $state(false);
 	let amountInputEl = $state<HTMLInputElement | null>(null);
+	let isCashea = $state(false);
+	let showOverpaymentModal = $state(false);
+	let pendingAddPayload = $state<Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null>(null);
+	let showEarlyPaymentBenefitModal = $state(false);
+	let pendingBenefitSuggestion = $state<EarlyPaymentDiscountSuggestion | null>(null);
+	let benefitAmountInput = $state('');
+	let benefitNoteInput = $state('');
 
-	$effect(() => {
-		if (variant !== 'drawer') return;
-		if (paymentMethod && amountInputEl) {
-			amountInputEl.focus();
-		}
+	const canManagePurchasePayments = $derived(
+		kind === 'purchase' && status === 'CONFIRMED' && !isFullyPaid
+	);
+	const isNativeSettlement = $derived(
+		kind === 'purchase' && settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
+	);
+	const settlementSymbol = $derived(
+		isNativeSettlement ? getSettlementCurrencySymbol(settlementCurrency!) : ''
+	);
+	const railsByCurrency = $derived(
+		kind === 'purchase' ? PAYMENT_RAILS_BY_CURRENCY : SALES_RAILS_BY_CURRENCY
+	);
+	const selectedCurrency = $derived(
+		PAYMENT_CURRENCY_GROUPS.find((g) => g.key === currencyKey) ?? null
+	);
+	const rateType = $derived.by(() => {
+		if (rail && !isBsPaymentMethod(rail)) return rateTypeForRail(rail);
+		return currencyKey ? rateTypeForCurrency(currencyKey) : null;
 	});
-
-	let prevDrawerResetKey = 0;
-	$effect(() => {
-		const key = drawerResetKey;
-		if (key !== prevDrawerResetKey) {
-			prevDrawerResetKey = key;
-			reset();
+	const purchaseCurrencyCode = $derived(rail ? getPaymentMethodCurrency(rail) : CurrencyCode.OTHER);
+	const needsSpecificRate = $derived.by(() => {
+		if (!rail || !currencyKey) return false;
+		if (!isBsPaymentMethod(rail)) return true;
+		return (
+			currencyKey === 'EUR_BCV' ||
+			currencyKey === 'USDT' ||
+			currencyKey === 'PAYPAL' ||
+			currencyKey === 'OTHER'
+		);
+	});
+	const specificRateLabel = $derived.by(() => {
+		if (rail && !isBsPaymentMethod(rail)) {
+			const l = getExchangeRateLabel(rail);
+			if (l) return l;
+		}
+		return selectedCurrency?.rateLabel ?? 'Tasa usada (Bs/unidad)';
+	});
+	const autoSpecificRate = $derived.by(() => {
+		if (rail === PaymentMethod.EFECTIVO_USD || rail === PaymentMethod.EFECTIVO_EUR) return 0;
+		switch (currencyKey) {
+			case 'EUR_BCV':
+				return eurRate;
+			case 'USDT':
+				return usdtRate;
+			case 'PAYPAL':
+				return paypalRate;
+			default:
+				return 0;
 		}
 	});
 
@@ -111,94 +211,123 @@
 		return value > 0 ? value.toFixed(2) : '';
 	}
 
-	function pillClasses(method: PaymentMethod): string {
-		const isActive = paymentMethod === method;
+	const activeBcvRate = $derived(inputToNumber(bcvRateInput || defaultBcvRateInput));
+	const specificRateValue = $derived(inputToNumber(specificRateInput));
+	const typedNativeAmount = $derived(inputToNumber(nativeAmountInput));
+	const typedUsdBcvAmount = $derived(inputToNumber(usdBcvAmountInput));
 
-		if (variant === 'drawer') {
-			return isActive
-				? 'bg-blue-600 border border-blue-600 text-white font-bold shadow-sm'
-				: 'bg-white border-2 border-slate-300 text-slate-800 font-semibold hover:border-slate-400';
-		}
-
-		const isBs = isBsPaymentMethod(method);
-		return isActive
-			? isBs
-				? 'bg-brand-navy text-white ring-2 ring-brand-navy/20'
-				: 'bg-amber-600 text-white ring-2 ring-amber-600/20'
-			: 'bg-white text-brand-navy border border-slate-200 hover:border-slate-300 hover:bg-slate-50';
-	}
-
-	function formatBsAmount(value: number): string {
-		if (value <= 0) return '-';
-		return `${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs`;
-	}
-
-	function formatForeignAmount(value: number, currency: string): string {
-		if (value <= 0) return '-';
-		return `${value.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
-	}
-
-	const activeBcvRate = $derived(inputToNumber(currentBcvRateInput || defaultBcvRateInput));
-	const exchangeRateValue = $derived(inputToNumber(exchangeRateInput));
-	const drawerBcvRateValue = $derived(inputToNumber(drawerBcvRateInput));
-	const drawerForeignRateValue = $derived(inputToNumber(drawerForeignRateInput));
-	const manualTargetAmount = $derived(inputToNumber(targetAmountInput));
-	const manualNativeAmount = $derived(inputToNumber(nativeAmountInput));
-	const needsExchangeRate = $derived(
-		paymentMethod !== '' && !isBsPaymentMethod(paymentMethod as PaymentMethod)
-	);
-	const exchangeRateLabel = $derived(
-		paymentMethod ? getExchangeRateLabel(paymentMethod as PaymentMethod) : ''
-	);
-	const calcBcvRate = $derived(variant === 'drawer' ? drawerBcvRateValue : activeBcvRate);
-	const calcExchangeRate = $derived(
-		variant === 'drawer' && !isBsPaymentMethod(paymentMethod as PaymentMethod)
-			? drawerForeignRateValue
-			: exchangeRateValue
-	);
-
-	const targetToNativeAmount = $derived.by(() => {
-		if (!paymentMethod) return 0;
-
-		return calculatePaymentAmountFromUsdBcv({
-			method: paymentMethod as PaymentMethod,
-			usdBcvAmount: manualTargetAmount,
-			bcvRate: calcBcvRate,
-			exchangeRate: calcExchangeRate
-		});
-	});
-	const nativeToTargetAmount = $derived.by(() => {
-		if (!paymentMethod) return 0;
-
+	// ----- Amount conversions (kind-specific) -----
+	const saleForwardUsd = $derived.by(() => {
+		if (kind !== 'sale' || !rail) return 0;
 		return calculateUsdBcvFromPaymentAmount({
-			method: paymentMethod as PaymentMethod,
-			paymentAmount: manualNativeAmount,
-			bcvRate: calcBcvRate,
-			exchangeRate: calcExchangeRate
+			method: rail,
+			paymentAmount: typedNativeAmount,
+			bcvRate: activeBcvRate,
+			exchangeRate: specificRateValue
 		});
 	});
-	const resolvedAmountUsd = $derived(
-		lastEditedField === 'target' ? manualTargetAmount : nativeToTargetAmount
+	const saleReverseNative = $derived.by(() => {
+		if (kind !== 'sale' || !rail) return 0;
+		return calculatePaymentAmountFromUsdBcv({
+			method: rail,
+			usdBcvAmount: typedUsdBcvAmount,
+			bcvRate: activeBcvRate,
+			exchangeRate: specificRateValue
+		});
+	});
+	const purchaseNormalized = $derived(
+		normalizePurchasePaymentAmounts({
+			currencyCode: purchaseCurrencyCode,
+			amount: typedNativeAmount,
+			bcvUsdRate: activeBcvRate,
+			specificRate: needsSpecificRate ? specificRateValue : undefined
+		})
 	);
+	const purchaseReverseNative = $derived(
+		denormalizePurchasePaymentAmount({
+			currencyCode: purchaseCurrencyCode,
+			amountUsdBcv: typedUsdBcvAmount,
+			bcvUsdRate: activeBcvRate,
+			specificRate: needsSpecificRate ? specificRateValue : undefined
+		})
+	);
+
+	const forwardUsd = $derived(kind === 'sale' ? saleForwardUsd : purchaseNormalized.amountUsdBcv);
+	const reverseNative = $derived(kind === 'sale' ? saleReverseNative : purchaseReverseNative);
+	const resolvedAmountUsd = $derived(lastEditedAmount === 'usd' ? typedUsdBcvAmount : forwardUsd);
 	const resolvedNativeAmount = $derived(
-		lastEditedField === 'native' ? manualNativeAmount : targetToNativeAmount
+		lastEditedAmount === 'native' ? typedNativeAmount : reverseNative
 	);
-	const targetFieldValue = $derived(
-		lastEditedField === 'target' ? targetAmountInput : formatInputValue(nativeToTargetAmount)
+	const usdFieldValue = $derived(
+		lastEditedAmount === 'usd' ? usdBcvAmountInput : formatInputValue(forwardUsd)
 	);
 	const nativeFieldValue = $derived(
-		lastEditedField === 'native' ? nativeAmountInput : formatInputValue(targetToNativeAmount)
+		lastEditedAmount === 'native' ? nativeAmountInput : formatInputValue(reverseNative)
 	);
-	const pendingAfterPaymentRaw = $derived(remainingBcvUsd - resolvedAmountUsd);
-	const pendingAfterPayment = $derived(Math.max(0, pendingAfterPaymentRaw));
-	const overpaymentAmount = $derived(Math.max(0, resolvedAmountUsd - remainingBcvUsd));
-	const restLabelClass = $derived.by(() => {
-		if (overpaymentAmount > 0.01) return 'text-red-600';
-		if (pendingAfterPayment > 0.01) return 'text-amber-600';
-		return 'text-emerald-600';
+
+	// ----- Settlement (purchase) -----
+	const amountAppliedToDebt = $derived.by(() => {
+		if (!isNativeSettlement) return undefined;
+		if (purchaseCurrencyCode === CurrencyCode.VES && specificRateValue > 0) {
+			return Math.round((resolvedNativeAmount / specificRateValue) * 100) / 100;
+		}
+		if (purchaseCurrencyCode === settlementCurrency) return resolvedNativeAmount;
+		return undefined;
 	});
+	const exchangeVariance = $derived(
+		isNativeSettlement && (amountAppliedToDebt ?? 0) > 0
+			? computePaymentExchangeVariance(
+					amountAppliedToDebt ?? 0,
+					debtTotalUsd ?? 0,
+					(debtTotalUsd ?? 0) > 0 ? (debtTotalUsd ?? 0) : (amountAppliedToDebt ?? 0),
+					resolvedAmountUsd
+				)
+			: 0
+	);
+
+	// ----- Remaining / overpayment -----
+	const debtBalanceUsd = $derived(kind === 'sale' ? remainingBcvUsd : (pendingBalanceUsd ?? 0));
+
+	const overpaymentAmount = $derived(Math.max(0, resolvedAmountUsd - debtBalanceUsd));
+	const restLabelClass = $derived.by(() => {
+		if (overpaymentAmount > 0.01) return 'text-error';
+		if (pendingAfterPayment > 0.01) return 'text-warning';
+		return 'text-success';
+	});
+
+	// ----- Early payment suggestion (purchase) -----
+	const hasActiveEarlyPaymentBenefit = $derived(
+		earlyPaymentBenefits.some((benefit) => !benefit.voidedAt)
+	);
+	const liveEarlyPaymentSuggestion = $derived(
+		kind === 'purchase' &&
+			!hasActiveEarlyPaymentBenefit &&
+			pendingBalanceUsd != null &&
+			debtTotalUsd != null &&
+			purchaseOrder
+			? getEarlyPaymentDiscountSuggestion({
+					terms: purchaseOrder,
+					totalDebt: debtTotalUsd,
+					currentBalance: pendingBalanceUsd,
+					paymentAmount: resolvedAmountUsd,
+					paymentDate
+				})
+			: null
+	);
+	const showPurchasePreview = $derived(
+		purchaseNormalized.amountBs > 0 ||
+			resolvedAmountUsd > 0 ||
+			(isNativeSettlement && (amountAppliedToDebt ?? 0) > 0) ||
+			!!liveEarlyPaymentSuggestion
+	);
+
+	const resolvedUsdDisplay = $derived(formatPrice(resolvedAmountUsd));
+	const overpaymentDisplay = $derived(formatPrice(overpaymentAmount));
+	const pendingAfterPayment = $derived(Math.max(0, debtBalanceUsd - resolvedAmountUsd));
+
+	// ----- Reference config -----
 	const referenceConfig = $derived.by((): ReferenceConfig => {
-		switch (paymentMethod) {
+		switch (rail) {
 			case PaymentMethod.PAGO_MOVIL_BS:
 				return {
 					label: 'Número de confirmación',
@@ -230,6 +359,8 @@
 				};
 			case PaymentMethod.EFECTIVO_BS:
 			case PaymentMethod.EFECTIVO_USD:
+			case PaymentMethod.EFECTIVO_EUR:
+			case PaymentMethod.PAYPAL:
 				return {
 					label: 'Referencia',
 					required: false,
@@ -252,115 +383,188 @@
 	});
 	const hasRequiredReference = $derived(!referenceConfig.required || reference.trim().length > 0);
 
+	// ----- Native display -----
+	const nativeLabel = $derived.by(() => {
+		switch (rail) {
+			case PaymentMethod.BINANCE_USDT:
+				return 'Monto (USDT)';
+			case PaymentMethod.EFECTIVO_USD:
+				return 'Monto (Efectivo $)';
+			case PaymentMethod.EFECTIVO_EUR:
+				return 'Monto (Efectivo €)';
+			case PaymentMethod.PAYPAL:
+				return 'Monto (PayPal $)';
+			default:
+				return 'Monto (Bs)';
+		}
+	});
+	const nativePrefix = $derived.by(() => {
+		switch (rail) {
+			case PaymentMethod.BINANCE_USDT:
+				return 'USDT';
+			case PaymentMethod.EFECTIVO_EUR:
+				return '€';
+			case PaymentMethod.EFECTIVO_USD:
+			case PaymentMethod.PAYPAL:
+				return '$';
+			default:
+				return 'Bs';
+		}
+	});
+	const rateContextLine = $derived.by(() => {
+		if (resolvedAmountUsd <= 0 || activeBcvRate <= 0) return '';
+		if (kind === 'purchase' && purchaseCurrencyCode === CurrencyCode.VES) {
+			return `${activeBcvRate.toFixed(2)} × ${formatPrice(resolvedAmountUsd)}`;
+		}
+		if (kind === 'sale' && rail && isBsPaymentMethod(rail)) {
+			return `${activeBcvRate.toFixed(2)} × ${formatPrice(resolvedAmountUsd)}`;
+		}
+		if (specificRateValue <= 0) return '';
+		return `${formatPrice(resolvedAmountUsd)} × ${activeBcvRate.toFixed(2)} ÷ ${specificRateValue.toFixed(2)}`;
+	});
+
+	// ----- Reset -----
 	function reset() {
-		paymentMethod = '';
-		lastEditedField = 'target';
-		targetAmountInput = '';
+		currencyKey = null;
+		rail = null;
+		lastEditedAmount = 'native';
 		nativeAmountInput = '';
-		exchangeRateInput = '';
-		currentBcvRateInput = '';
-		bcvRateEditable = false;
-		drawerBcvRateInput = '';
-		drawerForeignRateInput = '';
+		usdBcvAmountInput = '';
+		bcvRateInput = '';
+		specificRateInput = '';
 		paymentDate = toISODate(nowUTC());
 		reference = '';
 		notes = '';
-		showNotes = false;
-		showExtraFields = false;
+		isCashea = false;
 	}
 
 	function partialReset() {
-		targetAmountInput = '';
 		nativeAmountInput = '';
-		exchangeRateInput = '';
-		drawerBcvRateInput = '';
-		drawerForeignRateInput = '';
+		usdBcvAmountInput = '';
+		bcvRateInput = '';
+		specificRateInput = '';
 		reference = '';
 		notes = '';
-		showNotes = false;
 	}
 
-	function selectPaymentMethod(method: PaymentMethod) {
-		paymentMethod = method;
-		lastEditedField = getDefaultPaymentCalculationMode(method);
-		targetAmountInput = '';
+	function resetForm(request: PaymentComposerRequest | null = null) {
+		rail = request?.paymentMethod ?? null;
+		currencyKey = rail
+			? currencyForPurchasePaymentMethod(rail) === CurrencyCode.EUR_BCV
+				? 'EUR_BCV'
+				: currencyForPurchasePaymentMethod(rail) === CurrencyCode.USDT
+					? 'USDT'
+					: currencyForPurchasePaymentMethod(rail) === CurrencyCode.USD_PAYPAL
+						? 'PAYPAL'
+						: 'VES'
+			: null;
+		paymentDate = request?.paymentDate ?? toISODate(nowUTC());
+		nativeAmountInput = request?.amount != null ? request.amount.toFixed(2) : '';
+		usdBcvAmountInput = '';
+		lastEditedAmount = 'native';
+		bcvRateInput = '';
+		specificRateInput = '';
+		reference = request?.reference ?? '';
+		notes = request?.notes ?? '';
+		isCashea = false;
+	}
+
+	let prevDrawerResetKey = 0;
+	$effect(() => {
+		const key = drawerResetKey;
+		if (key !== prevDrawerResetKey) {
+			prevDrawerResetKey = key;
+			reset();
+		}
+	});
+
+	let lastComposerToken = '';
+	$effect(() => {
+		if (kind !== 'purchase' || !composerRequest || !canManagePurchasePayments) return;
+		if (composerRequest.token === lastComposerToken) return;
+		untrack(() => {
+			lastComposerToken = composerRequest.token;
+			resetForm(composerRequest);
+		});
+	});
+
+	// Pre-select settlement rate context for native settlements (purchase)
+	$effect(() => {
+		if (kind !== 'purchase' || !isNativeSettlement || currencyKey) return;
+		const map: Record<string, string> = {
+			EUR_BCV: 'EUR_BCV',
+			USDT: 'USDT',
+			USD_PAYPAL: 'PAYPAL'
+		};
+		const key = map[settlementCurrency!];
+		if (!key) return;
+		currencyKey = key;
+		rail = PaymentMethod.TRANSFERENCIA_BS;
+		const orderRate = purchaseOrder?.sourceRateToVes;
+		if (orderRate != null && orderRate > 0) specificRateInput = String(orderRate);
+	});
+
+	// Focus amount input on drawer open (drawer variant)
+	$effect(() => {
+		if (variant !== 'drawer') return;
+		if (rail && amountInputEl) amountInputEl.focus();
+	});
+
+	// ----- Selection handlers -----
+	function selectCurrency(key: string) {
+		if (currencyKey === key) return;
+		currencyKey = key;
+		rail = null;
+		lastEditedAmount = 'native';
 		nativeAmountInput = '';
-		exchangeRateInput = '';
-		drawerBcvRateInput = defaultBcvRateInput;
-		drawerForeignRateInput =
-			method === PaymentMethod.BINANCE_USDT ? (binanceRate > 0 ? binanceRate.toFixed(2) : '') : '';
+		usdBcvAmountInput = '';
+		specificRateInput = '';
+	}
+
+	function selectRail(method: PaymentMethod) {
+		rail = method;
+		lastEditedAmount = getDefaultPaymentCalculationMode(method) === 'target' ? 'usd' : 'native';
+		nativeAmountInput = '';
+		usdBcvAmountInput = '';
+		bcvRateInput = '';
+		const auto = autoSpecificRate;
+		specificRateInput = auto > 0 ? auto.toFixed(2) : '';
 		reference = '';
 		notes = '';
-		showNotes = false;
-		showExtraFields = true;
+		isCashea = false;
 	}
 
-	function handleTargetInput(event: Event) {
-		lastEditedField = 'target';
-		targetAmountInput = (event.currentTarget as HTMLInputElement).value;
+	function handleNativeInput(event: Event) {
+		lastEditedAmount = 'native';
+		nativeAmountInput = (event.currentTarget as HTMLInputElement).value;
+	}
+
+	function handleUsdInput(event: Event) {
+		lastEditedAmount = 'usd';
+		usdBcvAmountInput = (event.currentTarget as HTMLInputElement).value;
 	}
 
 	function useRemainingBalance() {
-		if (!paymentMethod) return;
-		lastEditedField = 'target';
-		targetAmountInput = formatInputValue(remainingBcvUsd);
+		if (kind !== 'sale' || !rail) return;
+		lastEditedAmount = 'usd';
+		usdBcvAmountInput = formatInputValue(debtBalanceUsd);
 	}
 
-	async function handleSubmit() {
-		const method = paymentMethod as PaymentMethod;
-
-		if (
-			!paymentMethod ||
-			resolvedAmountUsd <= 0 ||
-			activeBcvRate <= 0 ||
-			!paymentDate ||
-			!hasRequiredReference
-		) {
-			return;
-		}
-
-		if (variant === 'drawer') {
-			if (drawerBcvRateValue <= 0) return;
-			if (!isBsPaymentMethod(method) && drawerForeignRateValue <= 0) return;
-		} else {
-			if (resolvedNativeAmount <= 0) return;
-			if (needsExchangeRate && exchangeRateValue <= 0) return;
-		}
-
-		const isFinalPayment = pendingAfterPayment <= 0.01;
-
-		let submitBcvRate: number;
-		let submitExchangeRate: number | undefined;
-		let submitAmount: number;
-
-		if (variant === 'drawer') {
-			if (isBsPaymentMethod(method)) {
-				submitAmount = roundCurrency(resolvedAmountUsd * drawerBcvRateValue);
-				submitBcvRate = drawerBcvRateValue;
-				submitExchangeRate = undefined;
-			} else {
-				submitAmount = roundCurrency(
-					(resolvedAmountUsd * drawerBcvRateValue) / drawerForeignRateValue
-				);
-				submitBcvRate = drawerBcvRateValue;
-				submitExchangeRate = drawerForeignRateValue;
-			}
-		} else {
-			submitAmount = resolvedNativeAmount;
-			submitBcvRate = activeBcvRate;
-			submitExchangeRate = needsExchangeRate ? exchangeRateValue : undefined;
-		}
-
+	// ----- Submit -----
+	async function submitSalePayment() {
+		if (!saleId || !rail) return;
 		submitting = true;
 		try {
 			const result = await addPayment({
 				saleId,
-				paymentMethod: method,
+				paymentMethod: rail,
 				paymentDate,
-				amount: submitAmount,
+				amount: roundCurrency(resolvedNativeAmount),
 				usdBcvAmount: resolvedAmountUsd,
-				exchangeRate: submitExchangeRate,
-				bcvRate: submitBcvRate,
+				exchangeRate: needsSpecificRate ? specificRateValue : undefined,
+				bcvRate: activeBcvRate,
+				rateType: rateType ?? undefined,
+				isCasheaPayment: isCashea || undefined,
 				reference: referenceToSubmit,
 				notes: notes.trim() || undefined
 			});
@@ -377,11 +581,8 @@
 					: `Pago registrado. Quedan ${formatPrice(remainingAfterSave)} pendientes.`
 			);
 
-			if (isFinalPayment) {
-				reset();
-			} else {
-				partialReset();
-			}
+			if (pendingAfterPayment <= 0.01) reset();
+			else partialReset();
 			onPaymentAdded?.(result.paidAmount);
 		} catch (error) {
 			console.error(error);
@@ -391,23 +592,145 @@
 		}
 	}
 
+	async function submitPurchasePayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
+		if (!purchaseOrderId || !rail) return;
+		submitting = true;
+		try {
+			const result = await addPurchaseOrderPaymentCmd(payload);
+			if (!result.success) {
+				toast.error(result.error ?? 'Error registrando pago');
+				return;
+			}
+			onFinanceChanged?.({
+				payments: result.payments,
+				earlyPaymentBenefits: result.earlyPaymentBenefits,
+				balance: result.balance,
+				dueStatus: result.dueStatus
+			});
+			toast.success('Pago registrado');
+			partialReset();
+		} catch (error) {
+			console.error(error);
+			toast.error(getErrorMessage(error, 'Error registrando pago'));
+		} finally {
+			submitting = false;
+		}
+	}
+
+	function buildPurchasePayload(): Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null {
+		if (!purchaseOrderId || !rail) return null;
+		return {
+			purchaseOrderId,
+			paymentMethod: rail,
+			paymentDate,
+			amount: resolvedNativeAmount,
+			bcvUsdRate: activeBcvRate,
+			specificRate: needsSpecificRate ? specificRateValue : undefined,
+			amountAppliedToDebt: amountAppliedToDebt ?? undefined,
+			rateType: rateType ?? undefined,
+			reference: referenceToSubmit,
+			notes: notes.trim() || undefined
+		};
+	}
+
+	async function maybeSubmitPurchase() {
+		const payload = buildPurchasePayload();
+		if (!payload) return;
+
+		if (pendingBalanceUsd != null && resolvedAmountUsd > pendingBalanceUsd + 0.01) {
+			pendingAddPayload = payload;
+			showOverpaymentModal = true;
+			return;
+		}
+		if (liveEarlyPaymentSuggestion) {
+			pendingAddPayload = payload;
+			pendingBenefitSuggestion = liveEarlyPaymentSuggestion;
+			benefitAmountInput = liveEarlyPaymentSuggestion.amount.toFixed(2);
+			benefitNoteInput = '';
+			showEarlyPaymentBenefitModal = true;
+			return;
+		}
+		await submitPurchasePayment(payload);
+	}
+
+	async function submitPaymentWithBenefit(appliedToBalance: boolean) {
+		if (!pendingAddPayload || !pendingBenefitSuggestion) return;
+		const amountUsdBcv = Number(benefitAmountInput || 0);
+		if (!Number.isFinite(amountUsdBcv) || amountUsdBcv <= 0) {
+			toast.error('Monto de beneficio inválido');
+			return;
+		}
+		if (amountUsdBcv > pendingBenefitSuggestion.amount + 0.01) {
+			toast.error(`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amount)}`);
+			return;
+		}
+		if (appliedToBalance && amountUsdBcv >= pendingBenefitSuggestion.currentBalance - 0.01) {
+			toast.error('El beneficio aplicado no puede igualar o superar el saldo pendiente');
+			return;
+		}
+
+		let payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0] = {
+			...pendingAddPayload,
+			earlyPaymentBenefit: {
+				amountUsdBcv,
+				amountAppliedToDebt: isNativeSettlement ? amountUsdBcv : undefined,
+				amountAppliedToDebtUsdBcvAtOrder: isNativeSettlement ? amountUsdBcv : undefined,
+				appliedToBalance,
+				note: benefitNoteInput || undefined
+			}
+		};
+
+		if (appliedToBalance) {
+			const adjustedPaymentUsdBcv = Math.max(
+				pendingBenefitSuggestion.currentBalance - amountUsdBcv,
+				0
+			);
+			const adjustedAmount = denormalizePurchasePaymentAmount({
+				currencyCode: purchaseCurrencyCode,
+				amountUsdBcv: adjustedPaymentUsdBcv,
+				bcvUsdRate: activeBcvRate,
+				specificRate: needsSpecificRate ? specificRateValue : undefined
+			});
+			if (!Number.isFinite(adjustedAmount) || adjustedAmount <= 0) {
+				toast.error('No se pudo ajustar el monto del pago con el pronto pago');
+				return;
+			}
+			payload = { ...payload, amount: adjustedAmount };
+		}
+
+		pendingAddPayload = null;
+		resetEarlyPaymentState();
+		await submitPurchasePayment(payload);
+	}
+
+	function resetEarlyPaymentState() {
+		showEarlyPaymentBenefitModal = false;
+		pendingBenefitSuggestion = null;
+		benefitAmountInput = '';
+		benefitNoteInput = '';
+	}
+
+	function handleSubmit() {
+		if (kind === 'sale') {
+			void submitSalePayment();
+		} else {
+			void maybeSubmitPurchase();
+		}
+	}
+
 	const hasValidAmounts = $derived(resolvedAmountUsd > 0 && resolvedNativeAmount > 0);
-	const hasValidRate = $derived(
-		variant !== 'drawer' ||
-			(drawerBcvRateValue > 0 &&
-				(isBsPaymentMethod(paymentMethod as PaymentMethod) || drawerForeignRateValue > 0))
-	);
+	const hasValidRate = $derived(activeBcvRate > 0 && (!needsSpecificRate || specificRateValue > 0));
 	const canSubmit = $derived(
-		!!paymentMethod &&
+		!!rail &&
+			!!currencyKey &&
 			hasValidAmounts &&
 			hasValidRate &&
 			!!paymentDate &&
 			hasRequiredReference &&
-			activeBcvRate > 0 &&
 			!submitting
 	);
 	const drawerSubmitLabel = $derived(
-		pendingAfterPayment <= 0.01 ? 'Finalizar Venta' : 'Aplicar Pago'
+		kind === 'sale' && pendingAfterPayment <= 0.01 ? 'Finalizar Venta' : 'Aplicar Pago'
 	);
 	const submitLabel = $derived(
 		hasValidAmounts ? `Registrar abono de ${formatPrice(resolvedAmountUsd)}` : 'Registrar pago'
@@ -415,272 +738,42 @@
 </script>
 
 <div class="space-y-4">
+	<!-- Paso 1: moneda / tasa -->
 	<div>
-		<p
-			class="mb-2.5 {variant === 'drawer'
-				? 'text-sm font-semibold text-slate-700'
-				: 'text-xs font-semibold tracking-wider text-gray-400 uppercase'}"
-		>
-			Método de pago
+		<p class="mb-2.5 text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+			Moneda / tasa
 		</p>
-		<div class="grid grid-cols-2 gap-2">
-			{#each [...BOLIVAR_METHODS, ...FOREIGN_METHODS] as method (method)}
-				<button
-					type="button"
-					onclick={() => selectPaymentMethod(method)}
-					class={`inline-flex cursor-pointer items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-all duration-200 ${variant === 'drawer' ? 'rounded-full border-2 px-4 py-2 text-sm' : 'rounded-lg'} ${pillClasses(method)}`}
-				>
-					{#if method === PaymentMethod.PAGO_MOVIL_BS}
-						<Smartphone class="h-3.5 w-3.5 shrink-0" />
-					{:else if method === PaymentMethod.TRANSFERENCIA_BS}
-						<Building2 class="h-3.5 w-3.5 shrink-0" />
-					{:else if method === PaymentMethod.PUNTO_VENTA_BS}
-						<CreditCard class="h-3.5 w-3.5 shrink-0" />
-					{:else if method === PaymentMethod.EFECTIVO_BS || method === PaymentMethod.EFECTIVO_USD}
-						<WalletCards class="h-3.5 w-3.5 shrink-0" />
-					{:else}
-						<BadgeDollarSign class="h-3.5 w-3.5 shrink-0" />
-					{/if}
-					<span class="truncate">{PAYMENT_METHOD_LABELS[method]}</span>
-				</button>
-			{/each}
-		</div>
+		<PaymentMethodPills
+			methods={PAYMENT_CURRENCY_GROUPS.map((g) => g.key)}
+			labels={Object.fromEntries(PAYMENT_CURRENCY_GROUPS.map((g) => [g.key, g.label]))}
+			selected={currencyKey}
+			onSelect={(key) => selectCurrency(key as string)}
+		/>
 	</div>
 
-	{#if paymentMethod}
+	<!-- Paso 2: riel -->
+	{#if currencyKey}
+		<div>
+			<p class="mb-2.5 text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+				Método
+			</p>
+			<PaymentMethodPills
+				methods={railsByCurrency[currencyKey]}
+				labels={PAYMENT_METHOD_LABELS}
+				selected={rail}
+				onSelect={(m) => selectRail(m as PaymentMethod)}
+				icons={PAYMENT_METHOD_ICONS}
+			/>
+		</div>
+	{/if}
+
+	{#if rail}
 		<div class="space-y-3">
-			<div class="space-y-1.5">
-				<div class="flex items-center justify-between">
-					<label
-						for="pay-amount"
-						class={variant === 'drawer'
-							? 'text-sm font-semibold text-slate-700'
-							: 'text-xs font-semibold tracking-wider text-gray-400 uppercase'}
-					>
-						Monto a abonar <span class="font-normal tracking-normal text-gray-300 normal-case"
-							>(USD BCV)</span
-						>
-					</label>
-					<button
-						type="button"
-						onclick={useRemainingBalance}
-						class="text-[10px] font-semibold text-amber-600 transition-colors hover:text-amber-700"
-					>
-						Usar saldo
-					</button>
-				</div>
-				<div class="relative">
-					<span class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-gray-400"
-						>$</span
-					>
-					<input
-						id="pay-amount"
-						type="number"
-						value={targetFieldValue}
-						oninput={handleTargetInput}
-						placeholder={remainingBcvUsd.toFixed(2)}
-						step="0.01"
-						min="0"
-						bind:this={amountInputEl}
-						class="w-full rounded-lg bg-white py-3 pr-3.5 pl-7 font-mono text-lg font-bold text-slate-900 placeholder-slate-400 focus:outline-none {variant ===
-						'drawer'
-							? 'border-2 border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-							: 'border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15'}"
-					/>
-				</div>
-			</div>
-
-			{#if variant === 'drawer'}
-				{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
-					<label class="block space-y-1">
-						<span class="text-sm font-bold text-slate-700">Tasa de Cambio</span>
-						<input
-							type="number"
-							value={drawerBcvRateInput}
-							oninput={(event) => {
-								drawerBcvRateInput = (event.currentTarget as HTMLInputElement).value;
-							}}
-							step="0.01"
-							min="0"
-							placeholder={defaultBcvRateInput || '0.00'}
-							class="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-center font-mono text-lg font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-						/>
-					</label>
-				{:else}
-					<div class="mt-4 grid grid-cols-2 gap-3">
-						<label class="block space-y-1">
-							<span class="text-sm font-bold text-slate-700">Tasa BCV</span>
-							<input
-								type="number"
-								value={drawerBcvRateInput}
-								oninput={(event) => {
-									drawerBcvRateInput = (event.currentTarget as HTMLInputElement).value;
-								}}
-								step="0.01"
-								min="0"
-								placeholder={defaultBcvRateInput || '0.00'}
-								class="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-center font-mono text-base font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-						</label>
-						<label class="block space-y-1">
-							<span class="text-sm font-bold text-slate-700"
-								>Tasa {paymentMethod === PaymentMethod.BINANCE_USDT ? 'USDT' : 'Efectivo'}</span
-							>
-							<input
-								type="number"
-								value={drawerForeignRateInput}
-								oninput={(event) => {
-									drawerForeignRateInput = (event.currentTarget as HTMLInputElement).value;
-								}}
-								step="0.01"
-								min="0"
-								placeholder={paymentMethod === PaymentMethod.BINANCE_USDT
-									? binanceRate > 0
-										? binanceRate.toFixed(2)
-										: '0.00'
-									: 'Ej: 55.50'}
-								class="w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-center font-mono text-base font-bold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-						</label>
-					</div>
-				{/if}
-
-				{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
-					<div class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-						<p class="mb-1 text-xs font-bold tracking-wider text-indigo-600 uppercase">
-							Equivalente en Bs
-						</p>
-						<p class="font-mono text-3xl font-extrabold text-indigo-900">
-							{formatBsAmount(resolvedNativeAmount)}
-						</p>
-						{#if resolvedAmountUsd > 0 && drawerBcvRateValue > 0}
-							<p class="mt-1 text-xs font-medium text-indigo-500">
-								{drawerBcvRateValue.toFixed(2)} × {formatPrice(resolvedAmountUsd)}
-							</p>
-						{/if}
-					</div>
-				{:else if paymentMethod === PaymentMethod.BINANCE_USDT}
-					<div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-						<p class="mb-1 text-xs font-bold tracking-wider text-amber-700 uppercase">
-							Cobrar en USDT
-						</p>
-						<p class="font-mono text-3xl font-extrabold text-amber-900">
-							{formatForeignAmount(resolvedNativeAmount, 'USDT')}
-						</p>
-						{#if resolvedAmountUsd > 0 && drawerBcvRateValue > 0 && drawerForeignRateValue > 0}
-							<p class="mt-1 text-xs font-medium text-amber-600">
-								{formatPrice(resolvedAmountUsd)} × {drawerBcvRateValue.toFixed(2)} ÷
-								{drawerForeignRateValue.toFixed(2)}
-							</p>
-						{/if}
-					</div>
-				{:else}
-					<div class="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
-						<p class="mb-1 text-xs font-bold tracking-wider text-green-700 uppercase">
-							Cobrar en Efectivo $
-						</p>
-						<p class="font-mono text-3xl font-extrabold text-green-900">
-							{formatForeignAmount(resolvedNativeAmount, 'USD')}
-						</p>
-						{#if resolvedAmountUsd > 0 && drawerBcvRateValue > 0 && drawerForeignRateValue > 0}
-							<p class="mt-1 text-xs font-medium text-green-600">
-								{formatPrice(resolvedAmountUsd)} × {drawerBcvRateValue.toFixed(2)} ÷
-								{drawerForeignRateValue.toFixed(2)}
-							</p>
-						{/if}
-					</div>
-				{/if}
-			{:else}
-				<div class="flex items-center gap-2">
-					<div class="flex-1">
-						<label
-							for="pay-bcv"
-							class="mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
-						>
-							Tasa BCV
-						</label>
-						<div class="relative">
-							<input
-								id="pay-bcv"
-								type="number"
-								value={bcvRateEditable
-									? currentBcvRateInput
-									: currentBcvRateInput || defaultBcvRateInput}
-								oninput={(event) => {
-									currentBcvRateInput = (event.currentTarget as HTMLInputElement).value;
-								}}
-								readonly={!bcvRateEditable}
-								step="0.01"
-								min="0"
-								class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-xs text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none {bcvRateEditable
-									? ''
-									: 'opacity-60'}"
-							/>
-							<button
-								type="button"
-								onclick={() => (bcvRateEditable = !bcvRateEditable)}
-								class="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-							>
-								<Pencil class="h-3 w-3" />
-							</button>
-						</div>
-					</div>
-				</div>
-
-				{#if isBsPaymentMethod(paymentMethod as PaymentMethod)}
-					<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
-						<p class="mb-1 text-xs font-bold tracking-wider text-indigo-600 uppercase">
-							Recibirás en Bs
-						</p>
-						<p class="font-mono text-3xl font-extrabold text-indigo-900">
-							{formatBsAmount(resolvedNativeAmount)}
-						</p>
-						{#if resolvedAmountUsd > 0}
-							<p class="mt-1 text-xs font-medium text-indigo-500">
-								{activeBcvRate.toFixed(2)} × {formatPrice(resolvedAmountUsd)}
-							</p>
-						{/if}
-					</div>
-				{:else}
-					<label class="block space-y-1">
-						<span class="mb-1 block text-xs font-semibold text-slate-700">
-							{exchangeRateLabel}
-						</span>
-						<div class="relative">
-							<span class="absolute top-1/2 left-3 -translate-y-1/2 font-mono text-xs text-gray-400"
-								>Bs</span
-							>
-							<input
-								type="number"
-								value={exchangeRateInput}
-								oninput={(event) => {
-									exchangeRateInput = (event.currentTarget as HTMLInputElement).value;
-								}}
-								step="0.01"
-								min="0"
-								placeholder="0.00"
-								class="w-full rounded-lg border-2 border-slate-300 bg-white py-2 pr-3 pl-7 font-mono text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-							/>
-						</div>
-					</label>
-
-					<div class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
-						<p class="text-xs font-bold tracking-wider text-amber-700 uppercase">Recibes</p>
-						<p class="mt-0.5 font-mono text-2xl font-extrabold text-amber-900">
-							{nativeFieldValue && inputToNumber(nativeFieldValue) > 0
-								? `${inputToNumber(nativeFieldValue).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${paymentMethod === PaymentMethod.EFECTIVO_USD ? 'USD' : 'USDT'}`
-								: '-'}
-						</p>
-					</div>
-				{/if}
-			{/if}
-
+			<!-- Fecha -->
 			<div>
 				<label
 					for="pay-date"
-					class={variant === 'drawer'
-						? 'mb-1 block text-sm font-semibold text-slate-700'
-						: 'mb-1 block text-[10px] font-semibold tracking-wider text-gray-400 uppercase'}
+					class="mb-1.5 block text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
 				>
 					Fecha
 				</label>
@@ -689,99 +782,301 @@
 					type="date"
 					bind:value={paymentDate}
 					max="9999-12-31"
-					class={variant === 'drawer'
-						? 'w-full rounded-lg border-2 border-slate-300 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none'
-						: 'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 focus:outline-none'}
+					class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-2.5 text-sm font-medium text-on-surface focus:border-brand-blue focus:outline-none"
 				/>
 			</div>
 
-			{#if showExtraFields}
-				<label class="block space-y-1">
-					<span
-						class={variant === 'drawer'
-							? 'mb-1 block text-xs font-semibold text-slate-700'
-							: 'text-[10px] font-semibold tracking-wider text-gray-400 uppercase'}
-					>
-						{referenceConfig.label}
-						{#if !referenceConfig.required}
-							<span class="font-normal tracking-normal text-gray-300 normal-case">(opcional)</span>
+			<!-- Amounts 2 cols -->
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div class="space-y-1.5">
+					<div class="flex items-center justify-between gap-2">
+						<label
+							for="pay-usd"
+							class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+						>
+							USD BCV
+						</label>
+						{#if kind === 'sale'}
+							<button
+								type="button"
+								onclick={useRemainingBalance}
+								class="shrink-0 text-[10px] font-semibold text-warning transition-colors hover:text-warning"
+							>
+								Usar saldo
+							</button>
 						{/if}
-					</span>
-					<input
-						type="text"
-						bind:value={reference}
-						placeholder={referenceConfig.placeholder}
-						class="w-full rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none {variant ===
-						'drawer'
-							? 'border-2 border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-							: 'border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15'}"
-					/>
-					{#if referenceConfig.helper}
-						<p class="text-[10px] text-gray-400">{referenceConfig.helper}</p>
-					{/if}
-				</label>
-
-				<button
-					type="button"
-					onclick={() => (showNotes = !showNotes)}
-					class="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase transition-colors hover:text-gray-700"
-				>
-					<FileText class="h-3 w-3" />
-					{showNotes ? 'Ocultar nota' : 'Agregar nota'}
-					{#if showNotes}
-						<ChevronUp class="h-3 w-3" />
-					{:else}
-						<ChevronDown class="h-3 w-3" />
-					{/if}
-				</button>
-				{#if showNotes}
-					<input
-						type="text"
-						bind:value={notes}
-						placeholder="Observaciones"
-						class="w-full rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none {variant ===
-						'drawer'
-							? 'border-2 border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-							: 'border border-gray-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15'}"
-					/>
-				{/if}
-			{/if}
-
-			{#if overpaymentAmount > 0.01}
-				<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-					<p class="font-semibold">El monto supera la deuda.</p>
-					<p>Excedente: {formatPrice(overpaymentAmount)}</p>
+					</div>
+					<div class="relative">
+						<span
+							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
+							>$</span
+						>
+						<input
+							id="pay-usd"
+							type="number"
+							value={usdFieldValue}
+							oninput={handleUsdInput}
+							placeholder={debtBalanceUsd > 0 ? debtBalanceUsd.toFixed(2) : '0.00'}
+							step="0.01"
+							min="0"
+							class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-2.5 pr-3.5 pl-8 font-mono text-sm font-semibold text-on-surface placeholder:text-outline focus:border-brand-blue focus:outline-none transition-all duration-200"
+						/>
+					</div>
 				</div>
-			{/if}
 
-			<div class="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
-				<div>
-					<p class="text-[10px] text-gray-400">Restará luego</p>
-					<p class="font-mono text-sm font-bold {restLabelClass}">
-						{formatPrice(pendingAfterPayment)}
-					</p>
-				</div>
-				<div class="text-right">
-					<p class="text-[10px] text-gray-400">Método</p>
-					<p class="text-xs font-semibold text-gray-900">
-						{PAYMENT_METHOD_LABELS[paymentMethod as PaymentMethod]}
-					</p>
+				<div class="space-y-1.5 flex flex-col">
+					<label
+						for="pay-native"
+						class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+					>
+						{nativeLabel}
+					</label>
+					<div class="relative">
+						<span
+							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
+							>{nativePrefix}</span
+						>
+						<input
+							id="pay-native"
+							type="number"
+							value={nativeFieldValue}
+							oninput={handleNativeInput}
+							placeholder="0.00"
+							step="0.01"
+							min="0"
+							bind:this={amountInputEl}
+							class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface placeholder:text-outline focus:border-brand-blue focus:outline-none transition-all duration-200 ring-1 ring-brand-navy/10"
+						/>
+					</div>
 				</div>
 			</div>
+
+			{#if resolvedAmountUsd > 0}
+				<p class="text-xs text-on-surface-variant tabular-nums">
+					≈ {resolvedUsdDisplay} USD BCV{#if rateContextLine}
+						<span class="text-on-surface-variant/70"> · {rateContextLine}</span>
+					{/if}
+				</p>
+			{/if}
+
+			<!-- Rates 2 cols -->
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<PaymentRateInput
+					label="Tasa BCV"
+					value={bcvRateInput}
+					oninput={(value) => (bcvRateInput = value)}
+					placeholder={defaultBcvRateInput || '0.00'}
+					class={needsSpecificRate ? '' : 'sm:col-span-2'}
+				/>
+				{#if needsSpecificRate}
+					<PaymentRateInput
+						label={specificRateLabel}
+						value={specificRateInput}
+						oninput={(value) => (specificRateInput = value)}
+						placeholder={autoSpecificRate > 0 ? autoSpecificRate.toFixed(2) : '0.00'}
+					/>
+				{/if}
+			</div>
+
+			<!-- Cashea (sale, Bs rails) -->
+			{#if kind === 'sale' && isBsPaymentMethod(rail)}
+				<label class="flex items-center gap-2 text-xs text-on-surface-variant">
+					<input
+						type="checkbox"
+						bind:checked={isCashea}
+						class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
+					/>
+					<span class="font-medium text-on-surface">Pago vía Cashea</span>
+					<span class="text-on-surface-variant">— venta financiada por Cashea</span>
+				</label>
+			{/if}
+
+			<!-- Referencia + notas -->
+			<PaymentReferenceField
+				{reference}
+				{notes}
+				label={referenceConfig.label}
+				placeholder={referenceConfig.placeholder}
+				required={referenceConfig.required}
+				helper={referenceConfig.helper}
+				onReference={(value) => (reference = value)}
+				onNotes={(value) => (notes = value)}
+			/>
+
+			<!-- Sale: overpayment warning -->
+			{#if kind === 'sale' && overpaymentAmount > 0.01}
+				<div class="rounded-lg bg-error-container/50 px-3 py-2 text-xs text-on-error-container">
+					<p class="font-semibold">El monto supera la deuda.</p>
+					<p>Excedente: {overpaymentDisplay}</p>
+				</div>
+			{/if}
+
+			<!-- Preview -->
+			{#if kind === 'sale'}
+				<div
+					class="flex items-center justify-between rounded-lg bg-surface-container-high/70 px-3 py-2"
+				>
+					<div>
+						<p class="text-[10px] text-on-surface-variant">Restará luego</p>
+						<p class="font-mono text-sm font-bold tabular-nums {restLabelClass}">
+							{formatPrice(pendingAfterPayment)}
+						</p>
+					</div>
+					<div class="text-right">
+						<p class="text-[10px] text-on-surface-variant">Método</p>
+						<p class="text-xs font-semibold text-on-surface">
+							{PAYMENT_METHOD_LABELS[rail as PaymentMethod]}
+						</p>
+					</div>
+				</div>
+			{:else if showPurchasePreview}
+				<div
+					class="rounded-lg bg-surface-container-high px-3 py-2.5 text-xs font-mono {isNativeSettlement &&
+					amountAppliedToDebt != null &&
+					amountAppliedToDebt > 0
+						? 'space-y-1'
+						: ''}"
+				>
+					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+						{#if purchaseNormalized.amountBs > 0}
+							<span class="text-on-surface-variant"
+								>Bs {formatCurrency(purchaseNormalized.amountBs)}</span
+							>
+						{/if}
+						{#if resolvedAmountUsd > 0}
+							<span class="text-outline">·</span>
+							<span class="font-semibold text-brand-navy">{resolvedUsdDisplay}</span>
+						{/if}
+						{#if isNativeSettlement && amountAppliedToDebt != null && amountAppliedToDebt > 0}
+							<span class="text-outline">·</span>
+							<span class="text-on-surface-variant"
+								>Abono {formatCurrency(amountAppliedToDebt)} {settlementSymbol}</span
+							>
+							<span
+								class={exchangeVariance > 0
+									? 'text-success'
+									: exchangeVariance < 0
+										? 'text-error'
+										: 'text-on-surface-variant'}
+							>
+								· {exchangeVariance > 0 ? '+' : ''}{formatPrice(exchangeVariance)}
+							</span>
+						{/if}
+					</div>
+					{#if liveEarlyPaymentSuggestion}
+						<div class="mt-1 flex items-center gap-1.5 text-[10px] text-brand-gold">
+							<span class="font-semibold">Pronto pago</span>
+							<span
+								>· {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
+									dateStyle: 'short'
+								})} · {formatPrice(liveEarlyPaymentSuggestion.amount)}</span
+							>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<button
 				type="button"
 				onclick={handleSubmit}
 				disabled={!canSubmit}
-				class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 {variant ===
-				'drawer'
-					? pendingAfterPayment <= 0.01
-						? 'bg-green-600 hover:bg-green-700'
-						: 'bg-blue-600 hover:bg-blue-700'
-					: 'bg-emerald-600 hover:bg-emerald-700'}"
+				class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-brand-navy/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
 			>
 				{variant === 'drawer' ? drawerSubmitLabel : submitLabel}
 			</button>
 		</div>
 	{/if}
 </div>
+
+{#if kind === 'purchase'}
+	<ConfirmModal
+		bind:open={showOverpaymentModal}
+		title="Pago supera el saldo"
+		message={pendingAddPayload != null
+			? `Este pago de ${resolvedUsdDisplay} supera el saldo pendiente de ${formatPrice(pendingBalanceUsd ?? 0)} en ${overpaymentDisplay}. ¿Registrar de todas formas?`
+			: ''}
+		confirmLabel="Registrar igual"
+		confirmColor="yellow"
+		loading={submitting}
+		onConfirm={async () => {
+			showOverpaymentModal = false;
+			if (pendingAddPayload) await submitPurchasePayment(pendingAddPayload);
+			pendingAddPayload = null;
+		}}
+		onCancel={() => {
+			showOverpaymentModal = false;
+			pendingAddPayload = null;
+		}}
+	/>
+
+	<ConfirmModal
+		bind:open={showEarlyPaymentBenefitModal}
+		title="Pronto pago disponible"
+		size="lg"
+		confirmLabel="Aplicar a esta PO"
+		secondaryLabel="Solo anotarlo"
+		cancelLabel="No registrar todavía"
+		confirmColor="green"
+		secondaryColor="alternative"
+		loading={submitting}
+		onConfirm={() => void submitPaymentWithBenefit(true)}
+		onSecondary={() => void submitPaymentWithBenefit(false)}
+		onCancel={() => {
+			showEarlyPaymentBenefitModal = false;
+			pendingAddPayload = null;
+			resetEarlyPaymentState();
+		}}
+		permanent
+	>
+		{#snippet body()}
+			<div class="space-y-4 text-sm text-on-surface">
+				<p>
+					El pago califica para pronto pago de {pendingBenefitSuggestion?.percent ?? 0}% antes de {pendingBenefitSuggestion?.deadline ??
+						'la fecha límite'}.
+				</p>
+				{#if pendingBenefitSuggestion}
+					<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
+						Si lo aplicas al saldo, el pago se registrará por
+						{formatPrice(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0))}
+						para completar esta orden sin sobrepagarla.
+						{#if pendingBenefitSuggestion.overpayment > 0.01}
+							El monto actual excede ese pago neto por
+							{formatPrice(pendingBenefitSuggestion.overpayment)}.
+						{/if}
+					</p>
+				{/if}
+				<label class="block space-y-2">
+					<span
+						class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
+					>
+						Monto del beneficio USD
+					</span>
+					<input
+						bind:value={benefitAmountInput}
+						type="number"
+						min="0"
+						step="0.01"
+						class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 font-mono text-sm text-on-surface focus:border-brand-blue focus:outline-none"
+					/>
+				</label>
+				<label class="block space-y-2">
+					<span
+						class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
+					>
+						Nota opcional
+					</span>
+					<textarea
+						bind:value={benefitNoteInput}
+						rows="3"
+						class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface focus:border-brand-blue focus:outline-none"
+						placeholder="Ej. Proveedor aplicó redondeo o dejó crédito para próxima compra"
+					></textarea>
+				</label>
+				<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
+					Aplicar a esta PO reduce el saldo y entra en reportes. Solo anotarlo guarda la decisión
+					sin impacto financiero.
+				</p>
+			</div>
+		{/snippet}
+	</ConfirmModal>
+{/if}
