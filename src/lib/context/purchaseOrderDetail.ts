@@ -1,6 +1,7 @@
 import { getContext, setContext } from 'svelte';
 import type { PurchaseOrderSummary } from '$lib/components/purchases/purchaseOrderDraft';
 import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
+import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 import type {
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderWithRelations
@@ -13,6 +14,7 @@ import type {
 export type PurchaseOrderDetailContext = {
 	purchaseOrder: () => PurchaseOrderWithRelations;
 	items: () => PurchaseOrderItemWithProduct[];
+	payments: () => PurchaseOrderPaymentWithUsers[];
 	balance: () => PurchaseOrderBalanceSummary;
 	dueStatus: () => PurchaseOrderDueStatus;
 	auditHistory: () => ChangeHistoryWithUser[];
@@ -31,11 +33,7 @@ export type PurchaseOrderDetailContext = {
 	netTotalProfit: () => number;
 	settlementDiscountAmount: () => number;
 	hasSettlementDiscount: () => boolean;
-	needsSourceRate: () => boolean;
-	srcSymbol: () => string;
 	settlementDiscountLabel: () => string;
-	totalPurchaseInBs: () => number;
-	netTotalPurchaseInBs: () => number;
 };
 
 const PURCHASE_ORDER_DETAIL_CONTEXT_KEY = Symbol('purchaseOrderDetail');
