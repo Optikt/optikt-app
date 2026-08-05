@@ -54,7 +54,7 @@
 	let {
 		open = $bindable(),
 		title,
-		size = 'sm',
+		size = 'md',
 		message,
 		body,
 		confirmLabel = 'Confirmar',
@@ -79,7 +79,13 @@
 	let isChecking = $state(false);
 	const hasSecondaryAction = $derived(!!(onSecondary && secondaryLabel));
 	const footerClass = $derived(
-		['mt-6', 'flex', 'gap-2', hasSecondaryAction ? 'justify-between' : 'justify-end'].join(' ')
+		[
+			'mt-6',
+			'flex',
+			'flex-wrap',
+			'gap-2',
+			hasSecondaryAction ? 'justify-between' : 'justify-end'
+		].join(' ')
 	);
 	const isBusy = $derived(loading || secondaryLoading || isChecking);
 
@@ -120,7 +126,7 @@
 			{/if}
 			<div>
 				{#if message}
-					<p class="text-gray-700">{message}</p>
+					<p class="text-on-surface">{message}</p>
 				{/if}
 				{#if body}
 					{@render body()}
