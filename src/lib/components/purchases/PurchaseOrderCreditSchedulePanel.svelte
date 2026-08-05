@@ -108,7 +108,9 @@
 	}
 </script>
 
-<section class="glass-card overflow-hidden">
+<section
+	class="rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
+>
 	<div
 		class="flex flex-col gap-4 border-b border-outline-variant/15 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
 	>
