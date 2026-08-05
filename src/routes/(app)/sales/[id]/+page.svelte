@@ -702,6 +702,7 @@
 			saleId={sale.id}
 			{remainingBcvUsd}
 			{bcvRate}
+			isCasheaSale={sale.isCashea}
 			variant="drawer"
 			drawerResetKey={drawerResetCount}
 			onPaymentAdded={handlePaymentAdded}

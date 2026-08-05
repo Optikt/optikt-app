@@ -65,6 +65,8 @@ export const sales = pgTable(
 		total: doublePrecision().notNull(),
 		/** Sum of all payments converted to BCV USD */
 		paidAmountBcvUsd: doublePrecision('paid_amount_bcv_usd').notNull().default(0),
+		/** True when the sale was financed through Cashea (buy-now-pay-later). */
+		isCashea: boolean('is_cashea').notNull().default(false),
 		notes: varchar(),
 		/** Reason for cancellation (required when cancelling) */
 		cancellationReason: varchar('cancellation_reason', { length: 500 }),

@@ -476,6 +476,7 @@
 					kind="sale"
 					saleId={row.saleId}
 					remainingBcvUsd={row.balance}
+					isCasheaSale={row.isCashea}
 					{bcvRate}
 					onPaymentAdded={handlePaymentAdded}
 				/>

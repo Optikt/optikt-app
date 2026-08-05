@@ -190,6 +190,7 @@ export const CreateSaleSchema = z
 		discount: CoercedNumber.min(0).default(0),
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 		notes: z.string().optional(),
+		isCashea: z.boolean().optional(),
 		prescription: PrescriptionFieldsSchema.optional(),
 		snapshotTaxRate: CoercedNumber.min(0).default(DEFAULT_TAX_RATE),
 		items: z.array(SaleItemSchema).min(1, 'La venta debe tener al menos un producto')
@@ -327,6 +328,7 @@ export const UpdateSaleSchema = z.object({
 	customerId: z.uuid().optional(),
 	saleDate: z.iso.date().optional(),
 	notes: z.string().optional(),
+	isCashea: z.boolean().optional(),
 	discount: CoercedNumber.min(0).optional(),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
 	snapshotTaxRate: CoercedNumber.min(0).optional(),
