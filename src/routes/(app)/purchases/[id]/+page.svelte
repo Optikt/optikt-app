@@ -1,31 +1,22 @@
 <script lang="ts">
-	import {
-		ArrowRightLeft,
-		Calendar,
-		CheckCircle,
-		CircleCheck,
-		ClipboardCheck,
-		Pencil,
-		FileText,
-		Hash,
-		Package,
-		PackageCheck,
-		RotateCcw,
-		ScrollText,
-		Search,
-		TrendingUp,
-		Truck,
-		XCircle
-	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { autoAnimate } from '@formkit/auto-animate';
 	import { PriceSuggestionModal } from '$lib/components/purchases';
-	import PurchaseOrderBalanceCard from '$lib/components/purchases/PurchaseOrderBalanceCard.svelte';
-	import PurchaseOrderCreditSchedulePanel from '$lib/components/purchases/PurchaseOrderCreditSchedulePanel.svelte';
-	import PurchaseOrderPaymentsPanel from '$lib/components/purchases/PurchaseOrderPaymentsPanel.svelte';
-	import { AppBadge, ConfirmModal, PageHeader, PurchaseOrderStatusBadge } from '$lib/components/ui';
-	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
+	import { ConfirmModal } from '$lib/components/ui';
+	import {
+		PurchaseOrderAsidePanel,
+		PurchaseOrderAuditHistoryDrawer,
+		PurchaseOrderDetailHeader,
+		PurchaseOrderDraftBanner,
+		PurchaseOrderItemsList,
+		PurchaseOrderMovementsSection,
+		PurchaseOrderOverviewCard,
+		PurchaseOrderPaymentsDrawer,
+		PurchaseOrderPaymentsHistoryDrawer
+	} from '$lib/components/purchases/detail';
+	import { setPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
 	import {
 		applyPriceSuggestionsCmd,
 		cancelPurchaseOrderCmd,
@@ -35,22 +26,26 @@
 		unmarkPurchaseOrderReadyCmd,
 		type PriceSuggestion
 	} from '$lib/remote/purchaseOrders.remote';
-	import {
-		getInventoryMovementTypeLabel,
-		getPurchaseDocumentTypeLabel,
-		getPurchaseOrderItemTypeLabel,
-		PurchaseDiscountType,
-		PurchaseDocumentType,
-		PurchasePaymentTerms,
-		PurchaseOrderStatus
-	} from '$lib/shared/enums';
+	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
+	import { PurchaseDiscountType, PurchaseOrderStatus } from '$lib/shared/enums';
 	import type {
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
 	} from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
+	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
+	import type {
+		InventoryLot,
+		InventoryMovement,
+		PurchaseOrder,
+		PurchaseOrderEarlyPaymentBenefit
+	} from '$lib/server/db/schema';
+	import type {
+		PurchaseOrderBalanceSummary,
+		PurchaseOrderDueStatus
+	} from '$lib/shared/purchaseOrderCredit';
 	import {
 		calculatePurchaseOrderSummary,
-		calculateDraftItemTotalAlt,
 		createPurchaseOrderDraftItemFromExisting,
 		getPurchaseOrderReviewStatus,
 		type PurchaseOrderDiscountInput
@@ -59,19 +54,8 @@
 		sourceCurrencyRequiresRateToVes,
 		getSourceCurrencySymbol
 	} from '$lib/shared/purchaseOrderCurrencies';
-	import type {
-		InventoryLot,
-		InventoryMovement,
-		PurchaseOrder,
-		PurchaseOrderEarlyPaymentBenefit
-	} from '$lib/server/db/schema';
-	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-	import type {
-		PurchaseOrderBalanceSummary,
-		PurchaseOrderDueStatus
-	} from '$lib/shared/purchaseOrderCredit';
-	import { formatDate, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { itemDisplayName } from '$lib/utils/purchaseOrderDetail';
 	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
@@ -96,22 +80,14 @@
 	let showPriceSuggestionModal = $state(false);
 	let priceSuggestions = $state<PriceSuggestion[]>([]);
 	let priceLoading = $state(false);
-	let readyStateAction = $state<'preserve' | 'clear' | null>(null);
 	let pendingPaymentComposerAmount = $state<number | null>(null);
 	let paymentComposerRequest = $state<{ token: string; amount: number } | null>(null);
 	let revertLoading = $state(false);
 	let showRevertModal = $state(false);
 	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
-
-	type ItemReviewFilter = 'all' | 'reviewed' | 'pending';
-	let itemSearch = $state('');
-	let itemReviewFilter = $state<ItemReviewFilter>('all');
-
-	const itemReviewFilterOptions: { value: ItemReviewFilter; label: string }[] = [
-		{ value: 'all', label: 'Todas' },
-		{ value: 'pending', label: 'Sin revisar' },
-		{ value: 'reviewed', label: 'Revisadas' }
-	];
+	let showPaymentsDrawer = $state(false);
+	let showPaymentsHistoryDrawer = $state(false);
+	let showAuditHistoryDrawer = $state(false);
 
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
@@ -122,65 +98,18 @@
 		dueStatus = data.dueStatus;
 		movements = data.movements;
 		lotsMap = data.lotsMap;
+		auditHistory = data.auditHistory;
 	}
 
 	const formattedOrderNumber = $derived(`PO-${String(purchaseOrder.orderNumber).padStart(4, '0')}`);
 	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
 	const isReadyForReview = $derived(Boolean(purchaseOrder.isReadyForReview));
-	const isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
-	const isCashPurchase = $derived(
-		(purchaseOrder.paymentTerms as PurchasePaymentTerms) === PurchasePaymentTerms.CONTADO
-	);
-	const detailSubtitle = $derived.by(() => {
-		if (purchaseOrder.status === PurchaseOrderStatus.DRAFT) {
-			return purchaseOrder.isReadyForReview
-				? 'Listo para revisar y confirmar inventario'
-				: 'Borrador en preparación, sin impacto en inventario';
-		}
-
-		if (purchaseOrder.status === PurchaseOrderStatus.CANCELLED) {
-			return 'Orden cancelada y cerrada para nuevas acciones';
-		}
-
-		return 'Revisión de detalles y movimientos de inventario';
-	});
 	const totalUnits = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
 	const reviewedCount = $derived(reviewStatus.reviewedCount);
 	const allItemsReviewed = $derived(reviewStatus.allReviewed);
-	const hasReviewedChecks = $derived(reviewedCount > 0);
 	const showReviewColumn = $derived(isDraft && isReadyForReview);
-	const filteredItems = $derived.by(() => {
-		const term = itemSearch.trim().toLowerCase();
-		const matches = items.filter((item) => {
-			if (itemReviewFilter === 'reviewed' && !item.isReviewed) return false;
-			if (itemReviewFilter === 'pending' && item.isReviewed) return false;
-			if (!term) return true;
-			const haystack = [
-				item.product?.name,
-				item.product?.sku,
-				item.product?.personalCode,
-				item.lensCatalogItem?.name,
-				item.lensCatalogItem?.type
-			]
-				.filter(Boolean)
-				.join(' ')
-				.toLowerCase();
-			return haystack.includes(term);
-		});
-		return matches.slice().sort((a, b) => {
-			const codeA = a.product?.personalCode?.trim() ?? '';
-			const codeB = b.product?.personalCode?.trim() ?? '';
-			if (codeA && !codeB) return -1;
-			if (!codeA && codeB) return 1;
-			if (codeA && codeB) {
-				const diff = codeA.localeCompare(codeB, 'es', { numeric: true, sensitivity: 'base' });
-				if (diff !== 0) return diff;
-			}
-			return itemDisplayName(a).localeCompare(itemDisplayName(b), 'es', { sensitivity: 'base' });
-		});
-	});
-	const hasItemFilters = $derived(itemSearch.trim().length > 0 || itemReviewFilter !== 'all');
+
 	const settlementDiscount = $derived<PurchaseOrderDiscountInput>({
 		type: (purchaseOrder.settlementDiscountType ??
 			PurchaseDiscountType.NONE) as PurchaseDiscountType,
@@ -200,8 +129,6 @@
 	const totalSale = $derived(purchaseSummary.estimatedSale);
 	const totalProfit = $derived(purchaseSummary.estimatedProfit);
 	const settlementDiscountAmount = $derived(purchaseSummary.discountAmount);
-	const netSubtotalPurchase = $derived(purchaseSummary.netSubtotal);
-	const netTaxPurchase = $derived(purchaseSummary.netTaxAmount);
 	const netTotalPurchase = $derived(purchaseSummary.netTotal);
 	const netTotalProfit = $derived(purchaseSummary.netEstimatedProfit);
 	const needsSourceRate = $derived(sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency));
@@ -217,167 +144,44 @@
 					: formatPrice(settlementDiscount.value)
 				: 'Sin descuento'
 	);
-	const totalPurchaseInBs = $derived(
-		purchaseSummary.totalAlt ?? totalPurchase * Number(purchaseOrder.bcvRate || 0)
-	);
-	const netTotalPurchaseInBs = $derived(
-		purchaseSummary.netTotalAlt ?? netTotalPurchase * Number(purchaseOrder.bcvRate || 0)
-	);
-	const reviewMarginPercentage = $derived(
-		purchaseSummary.subtotal > 0
-			? (purchaseSummary.estimatedProfit / purchaseSummary.subtotal) * 100
-			: 0
-	);
-	const documentLabel = $derived(getPurchaseDocumentTypeLabel(purchaseOrder.documentType));
-	const documentNumber = $derived.by(() => {
-		if (purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE) {
-			return purchaseOrder.deliveryNoteNumber || '--';
-		}
 
-		return purchaseOrder.invoiceNumber || '--';
+	setPurchaseOrderDetailContext({
+		purchaseOrder: () => purchaseOrder,
+		items: () => items,
+		payments: () => payments,
+		balance: () => balance,
+		dueStatus: () => dueStatus,
+		auditHistory: () => auditHistory,
+		isDraft: () => isDraft,
+		isReadyForReview: () => isReadyForReview,
+		isConfirmed: () => isConfirmed,
+		isCancelled: () => isCancelled,
+		canManagePayments: () => canManagePayments,
+		zeroPriceCount: () => zeroPriceCount,
+		purchaseSummary: () => purchaseSummary,
+		totalUnits: () => totalUnits,
+		totalPurchase: () => totalPurchase,
+		totalSale: () => totalSale,
+		totalProfit: () => totalProfit,
+		netTotalPurchase: () => netTotalPurchase,
+		netTotalProfit: () => netTotalProfit,
+		settlementDiscountAmount: () => settlementDiscountAmount,
+		hasSettlementDiscount: () => hasSettlementDiscount,
+		settlementDiscountLabel: () => settlementDiscountLabel
 	});
-	const supplementalDeliveryNoteNumber = $derived(
-		purchaseOrder.documentType === PurchaseDocumentType.DELIVERY_NOTE
-			? null
-			: purchaseOrder.deliveryNoteNumber || null
-	);
-	const checkPreservationHint =
-		'Puedes conservar esos checks para mantener el avance revisado o limpiarlos para comenzar desde cero.';
-	const reviewedLinesText = $derived(
-		reviewedCount === 1
-			? '1 línea marcada como revisada'
-			: `${reviewedCount} líneas marcadas como revisadas`
-	);
-	const reviewedChecksText = $derived(
-		reviewedCount === 1
-			? '1 línea con check de revisión'
-			: `${reviewedCount} líneas con checks de revisión`
-	);
-	const markReadyMessage = $derived(
-		hasReviewedChecks
-			? `${reviewedCount === 1 ? 'Existe' : 'Existen'} ${reviewedLinesText}. ${checkPreservationHint}`
-			: 'La orden pasará al flujo de revisión y se bloqueará la edición directa.'
-	);
+
+	const markReadyMessage =
+		'La orden pasará al flujo de revisión y se bloqueará la edición directa.';
 	const unmarkReadyMessage = $derived(
-		hasReviewedChecks
-			? `La orden volverá a preparación para poder editarla. ${reviewedCount === 1 ? 'Existe' : 'Existen'} ${reviewedChecksText}. ${checkPreservationHint}`
+		reviewedCount > 0
+			? reviewedCount === 1
+				? 'Al volver a borrador se perderá 1 check de revisión. ¿Estás seguro?'
+				: `Al volver a borrador se perderán los ${reviewedCount} checks de revisión. ¿Estás seguro?`
 			: 'La orden volverá a preparación para poder editarla.'
 	);
-	const markReadyConfirmLabel = $derived(
-		hasReviewedChecks ? 'Conservar checks y marcar lista' : 'Marcar lista'
-	);
-	const unmarkReadyConfirmLabel = $derived(
-		hasReviewedChecks ? 'Conservar checks y volver' : 'Volver a borrador'
-	);
-	const markReadySecondaryLabel = $derived(
-		hasReviewedChecks ? 'Quitar checks y marcar lista' : undefined
-	);
-	const unmarkReadySecondaryLabel = $derived(
-		hasReviewedChecks ? 'Quitar checks y volver' : undefined
-	);
-
-	function goBack() {
-		goto(resolve('/purchases'));
-	}
-
-	function scrollToMovements() {
-		document.getElementById('purchase-movements')?.scrollIntoView({
-			behavior: 'smooth',
-			block: 'start'
-		});
-	}
 
 	function openEdit() {
 		void goto(resolve(`/purchases/${purchaseOrder.id}/edit`));
-	}
-
-	function formatBcvRate(rate: number): string {
-		return `${new Intl.NumberFormat('es-VE', {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		}).format(rate)} VES`;
-	}
-
-	function actionButtonClasses(variant: 'neutral' | 'success' | 'danger'): string {
-		if (variant === 'success') {
-			return 'bg-success-container text-on-success-container hover:bg-success-container/80';
-		}
-
-		if (variant === 'danger') {
-			return 'bg-error-container text-on-error-container hover:bg-error-container/80';
-		}
-
-		return 'bg-surface-container-low text-brand-navy hover:bg-surface-container-high';
-	}
-
-	function itemDisplayName(item: PurchaseOrderItemWithProduct): string {
-		return item.product?.name ?? item.lensCatalogItem?.name ?? 'Ítem no disponible';
-	}
-
-	function itemDisplayMeta(item: PurchaseOrderItemWithProduct): string {
-		if (item.product?.sku) return item.product.sku;
-		if (item.lensCatalogItem?.type) return item.lensCatalogItem.type;
-		return getPurchaseOrderItemTypeLabel(item.itemType);
-	}
-
-	function itemBadgeVariant(item: PurchaseOrderItemWithProduct): 'neutral' | 'info' {
-		return item.lensCatalogItem ? 'info' : 'neutral';
-	}
-
-	function lotForItem(item: PurchaseOrderItemWithProduct): InventoryLot | null {
-		return item.lotId ? (lotsMap[item.lotId] ?? null) : null;
-	}
-
-	function formatLotCode(lotId: string | null): string {
-		if (!lotId) return 'Sin lote';
-		const lot = lotsMap[lotId];
-		if (!lot) return 'Sin lote';
-		return `L-${String(lot.lotNumber).padStart(4, '0')}`;
-	}
-
-	function purchaseLineTotal(item: PurchaseOrderItemWithProduct): number {
-		return item.unitPurchasePrice * item.quantity;
-	}
-
-	function purchaseLineTotalVes(item: PurchaseOrderItemWithProduct): number {
-		return calculateDraftItemTotalAlt(createPurchaseOrderDraftItemFromExisting(item));
-	}
-
-	function purchaseLineTotalAlt(item: PurchaseOrderItemWithProduct): number {
-		return purchaseLineTotalVes(item);
-	}
-
-	function formatAltAmount(amount: number): string {
-		const formatted = new Intl.NumberFormat('es-VE', {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2
-		}).format(amount);
-		const sym = getSourceCurrencySymbol(purchaseOrder.sourceCurrency);
-		return sym === 'Bs' ? `Bs. ${formatted}` : `${sym} ${formatted}`;
-	}
-
-	/** @deprecated use formatAltAmount */
-	function formatVesAmount(amount: number): string {
-		return formatAltAmount(amount);
-	}
-
-	function movementItemName(movement: InventoryMovement): string {
-		const item = items.find((entry) => entry.lotId === movement.lotId);
-		return item ? itemDisplayName(item) : 'Ítem relacionado';
-	}
-
-	function movementDescription(movement: InventoryMovement): string {
-		if (movement.notes) return movement.notes;
-
-		const lotLabel = formatLotCode(movement.lotId);
-		const itemName = movementItemName(movement);
-		const prefix = movement.quantityDelta > 0 ? 'Entrada registrada' : 'Ajuste registrado';
-		return `${prefix} para ${itemName} (${lotLabel}).`;
-	}
-
-	function canRevertLot(item: PurchaseOrderItemWithProduct): boolean {
-		const lot = lotForItem(item);
-		return lot ? lot.quantityAvailable === lot.quantityInitial : false;
 	}
 
 	function openRevertModal(item: PurchaseOrderItemWithProduct) {
@@ -478,11 +282,15 @@
 			amount
 		};
 		await tick();
-		document.getElementById('purchase-payments')?.scrollIntoView({
-			behavior: 'smooth',
-			block: 'start'
-		});
+		showPaymentsDrawer = true;
 	}
+
+	const isConfirmed = $derived(purchaseOrder.status === PurchaseOrderStatus.CONFIRMED);
+	const isCancelled = $derived(purchaseOrder.status === PurchaseOrderStatus.CANCELLED);
+	const canManagePayments = $derived(isConfirmed && !balance.isSettlementFullyPaid);
+	const zeroPriceCount = $derived(
+		items.filter((item) => Number(item.unitPurchasePrice || 0) === 0).length
+	);
 
 	async function maybeOpenPendingPaymentComposer() {
 		if (pendingPaymentComposerAmount == null) return;
@@ -529,12 +337,11 @@
 		}
 	}
 
-	async function handleMarkReady(clearReviewed: boolean = false) {
-		readyStateAction = clearReviewed ? 'clear' : 'preserve';
+	async function handleMarkReady() {
 		actionLoading = true;
 
 		try {
-			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed });
+			const result = await markPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed: true });
 			if (result.success) {
 				showMarkReadyModal = false;
 				purchaseOrder = {
@@ -542,11 +349,7 @@
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
 					updatedAt: result.purchaseOrder.updatedAt
 				};
-				toast.success(
-					clearReviewed
-						? 'Orden marcada como lista para revisar. Checks limpiados.'
-						: 'Orden marcada como lista para revisar'
-				);
+				toast.success('Orden marcada como lista para revisar');
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -557,16 +360,14 @@
 			toast.error(getErrorMessage(error, 'Error marcando orden como lista'));
 		} finally {
 			actionLoading = false;
-			readyStateAction = null;
 		}
 	}
 
-	async function handleUnmarkReady(clearReviewed: boolean = false) {
-		readyStateAction = clearReviewed ? 'clear' : 'preserve';
+	async function handleUnmarkReady() {
 		actionLoading = true;
 
 		try {
-			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id, clearReviewed });
+			const result = await unmarkPurchaseOrderReadyCmd({ id: purchaseOrder.id });
 			if (result.success) {
 				showUnmarkReadyModal = false;
 				purchaseOrder = {
@@ -574,11 +375,7 @@
 					isReadyForReview: result.purchaseOrder.isReadyForReview,
 					updatedAt: result.purchaseOrder.updatedAt
 				};
-				toast.success(
-					clearReviewed
-						? 'Orden devuelta a preparación. Checks limpiados.'
-						: 'Orden devuelta a preparación'
-				);
+				toast.success('Orden devuelta a preparación');
 				await invalidateAll();
 				syncFromData();
 			} else {
@@ -589,7 +386,6 @@
 			toast.error(getErrorMessage(error, 'Error devolviendo orden a preparación'));
 		} finally {
 			actionLoading = false;
-			readyStateAction = null;
 		}
 	}
 
@@ -661,1279 +457,97 @@
 		balance = payload.balance;
 		dueStatus = payload.dueStatus;
 	}
-
-	function handleCreditUpdated(payload: {
-		purchaseOrder: PurchaseOrder;
-		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
-		balance: PurchaseOrderBalanceSummary;
-		dueStatus: PurchaseOrderDueStatus;
-	}) {
-		purchaseOrder = { ...purchaseOrder, ...payload.purchaseOrder };
-		earlyPaymentBenefits = payload.earlyPaymentBenefits;
-		balance = payload.balance;
-		dueStatus = payload.dueStatus;
-	}
-
-	interface AuditEvent {
-		id: string;
-		label: string;
-		changedByName: string | null;
-		changedAt: string;
-		entityType: string;
-		action: string;
-	}
-
-	const PO_STATUS_LABELS: Record<string, string> = {
-		CONFIRMED: 'Orden confirmada',
-		CANCELLED: 'Orden cancelada',
-		DRAFT: 'Orden devuelta a borrador'
-	};
-
-	function classifyAuditEntry(entry: ChangeHistoryWithUser): AuditEvent | null {
-		const { entityType, action, changes } = entry;
-
-		if (entityType === 'purchase_order') {
-			if (action === 'create') {
-				return {
-					id: entry.id,
-					label: 'Orden creada',
-					changedByName: entry.changedByName,
-					changedAt: entry.changedAt,
-					entityType,
-					action
-				};
-			}
-			if (action === 'update') {
-				if (changes.status) {
-					const newStatus = changes.status.new as string | null;
-					const label = newStatus ? (PO_STATUS_LABELS[newStatus] ?? `Estado: ${newStatus}`) : null;
-					if (!label) return null;
-					return {
-						id: entry.id,
-						label,
-						changedByName: entry.changedByName,
-						changedAt: entry.changedAt,
-						entityType,
-						action
-					};
-				}
-				if ('readyForReviewAt' in changes) {
-					const label = changes.readyForReviewAt?.new
-						? 'Enviada a revisión'
-						: 'Devuelta a borrador';
-					return {
-						id: entry.id,
-						label,
-						changedByName: entry.changedByName,
-						changedAt: entry.changedAt,
-						entityType,
-						action
-					};
-				}
-				if (changes.paymentTerms) {
-					return {
-						id: entry.id,
-						label: 'Términos de pago actualizados',
-						changedByName: entry.changedByName,
-						changedAt: entry.changedAt,
-						entityType,
-						action
-					};
-				}
-				// Generic PO updates (draft edits) — skip to avoid noise
-				return null;
-			}
-		}
-
-		if (entityType === 'purchase_order_payment') {
-			if (action === 'create') {
-				return {
-					id: entry.id,
-					label: 'Pago registrado',
-					changedByName: entry.changedByName,
-					changedAt: entry.changedAt,
-					entityType,
-					action
-				};
-			}
-			if (action === 'update' && changes.voidedAt) {
-				return {
-					id: entry.id,
-					label: 'Pago anulado',
-					changedByName: entry.changedByName,
-					changedAt: entry.changedAt,
-					entityType,
-					action
-				};
-			}
-		}
-
-		return null;
-	}
-
-	const auditTimeline = $derived(
-		auditHistory.map(classifyAuditEntry).filter((e): e is AuditEvent => e !== null)
-	);
 </script>
 
 <svelte:head>
 	<title>{formattedOrderNumber} - Optikt</title>
 </svelte:head>
 
-<div class="space-y-6 p-6">
-	<PageHeader
-		title={formattedOrderNumber}
-		subtitle={detailSubtitle}
-		backLabel="Volver a órdenes"
-		backOnClick={goBack}
-	>
-		{#snippet actions()}
-			{#if isConfirmed && movements.length > 0}
-				<button
-					type="button"
-					onclick={scrollToMovements}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors {actionButtonClasses(
-						'neutral'
-					)}"
-				>
-					<ArrowRightLeft class="h-4 w-4" />
-					Ver movimientos
-				</button>
-			{/if}
+<div class="space-y-2 p-2" use:autoAnimate>
+	<!-- TODO: See if it's necessary pass all these props. Can they live inside the componente? Can they live as context? Or is needed this way? -->
+	<PurchaseOrderDetailHeader
+		{purchaseOrder}
+		{formattedOrderNumber}
+		{reviewedCount}
+		totalItems={items.length}
+		{allItemsReviewed}
+		{actionLoading}
+		onEdit={openEdit}
+		onMarkReady={() => (showMarkReadyModal = true)}
+		onUnmarkReady={() => (showUnmarkReadyModal = true)}
+		onConfirm={() => (showConfirmModal = true)}
+		onConfirmAndPay={() => (showConfirmAndPayModal = true)}
+		onCancel={() => (showCancelModal = true)}
+	/>
 
-			{#if isDraft}
-				{#if !isReadyForReview}
-					<button
-						type="button"
-						onclick={openEdit}
-						disabled={actionLoading}
-						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-							'neutral'
-						)}"
-					>
-						<Pencil class="h-4 w-4" />
-						Editar
-					</button>
-				{/if}
-				{#if isReadyForReview}
-					<button
-						type="button"
-						onclick={() => (showUnmarkReadyModal = true)}
-						disabled={actionLoading}
-						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-							'neutral'
-						)}"
-					>
-						<RotateCcw class="h-4 w-4" />
-						Volver a edición
-					</button>
-				{:else}
-					<button
-						type="button"
-						onclick={() => (showMarkReadyModal = true)}
-						disabled={actionLoading}
-						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-							'neutral'
-						)}"
-					>
-						<ClipboardCheck class="h-4 w-4" />
-						Marcar listo
-					</button>
-				{/if}
-				{#if isReadyForReview}
-					<button
-						type="button"
-						onclick={() => (showConfirmModal = true)}
-						disabled={actionLoading || !allItemsReviewed}
-						title={allItemsReviewed
-							? 'Confirmar orden y generar inventario'
-							: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
-						class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-							'success'
-						)}"
-					>
-						<CheckCircle class="h-4 w-4" />
-						Confirmar orden
-					</button>
-					{#if isCashPurchase}
-						<button
-							type="button"
-							onclick={() => (showConfirmAndPayModal = true)}
-							disabled={actionLoading || !allItemsReviewed}
-							title={allItemsReviewed
-								? 'Confirmar orden y abrir el registro de pago'
-								: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
-							class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-								'success'
-							)}"
-						>
-							<CheckCircle class="h-4 w-4" />
-							Confirmar y registrar pago
-						</button>
-					{/if}
-				{/if}
-				<button
-					type="button"
-					onclick={() => (showCancelModal = true)}
-					disabled={actionLoading}
-					class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-60 {actionButtonClasses(
-						'danger'
-					)}"
-				>
-					<XCircle class="h-4 w-4" />
-					Cancelar orden
-				</button>
-			{/if}
-		{/snippet}
-	</PageHeader>
-
-	<div class="-mt-2 flex flex-wrap items-center gap-3 text-on-surface-variant">
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Orden</span>
-			<span class="font-mono text-sm font-semibold text-brand-navy">{formattedOrderNumber}</span>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Proveedor</span
-			>
-			<span class="font-semibold text-brand-navy"
-				>{purchaseOrder.supplier?.name ?? 'Sin proveedor'}</span
-			>
-		</div>
-		<div
-			class="inline-flex items-center gap-2 rounded-xl bg-surface-container-low px-3.5 py-2.5 text-sm shadow-sm"
-		>
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Documento</span
-			>
-			<span class="font-semibold text-brand-navy">{documentLabel}</span>
-			<span class="font-mono text-sm font-semibold text-brand-navy">
-				{documentNumber}
-			</span>
-		</div>
-		<div class="inline-flex items-center rounded-xl bg-surface-container-low px-3 py-2 shadow-sm">
-			<PurchaseOrderStatusBadge
-				status={purchaseOrder.status}
-				isReadyForReview={purchaseOrder.isReadyForReview}
-			/>
-		</div>
-	</div>
-
-	{#if isDraft && isReadyForReview}
-		<!-- Review Layout: 2-column executive summary -->
-		<div class="grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-4">
-			<!-- LEFT: Items audit table -->
-			<div
-				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
-			>
-				<div
-					class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
-				>
-					<PackageCheck class="h-5 w-5 text-brand-blue" />
-					<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
-						Artículos de la orden
-					</h2>
-					<span
-						class="ml-auto text-xs font-medium text-brand-navy bg-brand-blue/10 px-2 py-1 rounded-md"
-					>
-						{items.length} ítems
-					</span>
-				</div>
-
-				<!-- Grid header -->
-				<div
-					class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 px-4 py-2 border-b border-outline-variant/20 bg-surface-container-lowest text-[10px] font-medium uppercase tracking-wide text-on-surface-variant shrink-0"
-				>
-					<span>Cant.</span>
-					<span>Artículo</span>
-					<span class="text-right">C. Unit</span>
-					<span class="text-right">Total</span>
-				</div>
-
-				<!-- Items list -->
-				<div class="flex-1 overflow-y-auto min-h-0 p-2">
-					<div class="flex flex-col">
-						{#each filteredItems as item (item.id)}
-							<div
-								class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 items-center px-2 py-2.5 border-b border-outline-variant/10 last:border-none rounded-md hover:bg-surface-container-high transition-colors duration-150"
-							>
-								<!-- Quantity badge -->
-								<span
-									class="font-mono text-sm text-brand-navy font-bold bg-surface-container-high w-8 h-8 flex items-center justify-center rounded-md shrink-0"
-								>
-									{item.quantity}x
-								</span>
-								<!-- Name + SKU + IVA badge -->
-								<div class="flex flex-col min-w-0">
-									<span
-										class="text-sm font-medium text-brand-navy truncate"
-										title={itemDisplayName(item)}
-									>
-										{itemDisplayName(item)}
-									</span>
-									<span class="text-[10px] font-mono truncate flex items-center gap-1.5">
-										<span class="text-on-surface-variant">{itemDisplayMeta(item)}</span>
-										<span
-											class="inline-block px-1 py-0.5 rounded text-[9px] font-bold {item.appliesIva
-												? 'bg-brand-blue/10 text-brand-blue'
-												: 'bg-surface-container-high text-on-surface-variant'}"
-										>
-											{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
-										</span>
-									</span>
-								</div>
-								<!-- Unit cost -->
-								<div class="text-right">
-									<span class="font-mono text-xs text-on-surface-variant tabular-nums">
-										{formatPrice(Number(item.unitPurchasePrice || 0))}
-									</span>
-								</div>
-								<!-- Total -->
-								<div class="text-right">
-									<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-										{formatPrice(Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0))}
-									</span>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
-			</div>
-
-			<!-- RIGHT: Financial summary + actions -->
-			<div
-				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
-			>
-				<div class="flex flex-col gap-3 px-4 pt-4 pb-3 flex-1">
-					<h2
-						class="text-sm font-semibold uppercase tracking-wide text-brand-navy border-b border-outline-variant/30 pb-2 shrink-0"
-					>
-						Resumen de compra
-					</h2>
-
-					<!-- Metadata -->
-					<div class="space-y-1 text-xs shrink-0">
-						<div class="flex items-center gap-2">
-							<span class="text-on-surface-variant">Orden:</span>
-							<span class="font-mono font-bold text-brand-navy">{formattedOrderNumber}</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="text-on-surface-variant">Proveedor:</span>
-							<span class="font-medium text-brand-navy truncate"
-								>{purchaseOrder.supplier?.name ?? '—'}</span
-							>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="text-on-surface-variant">{documentLabel}:</span>
-							<span class="font-medium text-brand-navy">{documentNumber}</span>
-							<span class="ml-auto text-on-surface-variant">
-								BCV: <span class="font-medium text-brand-navy tabular-nums"
-									>{Number(purchaseOrder.bcvRate || 0).toFixed(2)}</span
-								>
-							</span>
-						</div>
-						<div class="flex items-center gap-2">
-							<span class="text-on-surface-variant">Fecha:</span>
-							<span class="font-medium text-brand-navy"
-								>{formatDateOnly(purchaseOrder.orderDate, { dateStyle: 'medium' })}</span
-							>
-						</div>
-					</div>
-
-					<!-- Cost breakdown -->
-					<div class="space-y-1.5 text-xs pt-2 border-t border-outline-variant/30 shrink-0">
-						<div class="flex justify-between">
-							<span class="text-on-surface-variant">Subtotal</span>
-							<span class="font-mono font-semibold text-brand-navy tabular-nums"
-								>{formatPrice(purchaseSummary.subtotal)}</span
-							>
-						</div>
-						{#if hasSettlementDiscount}
-							<div class="flex justify-between text-success">
-								<span>Descuento ({settlementDiscountLabel})</span>
-								<span class="font-mono tabular-nums">−{formatPrice(settlementDiscountAmount)}</span>
-							</div>
-						{/if}
-						<div class="flex justify-between">
-							<span class="text-on-surface-variant"
-								>IVA ({hasSettlementDiscount ? 'neto' : 'estimado'})</span
-							>
-							<span class="font-mono font-semibold text-brand-navy tabular-nums">
-								{formatPrice(
-									hasSettlementDiscount ? purchaseSummary.netTaxAmount : purchaseSummary.taxAmount
-								)}
-							</span>
-						</div>
-						<div class="flex justify-between text-on-surface-variant">
-							<span>Venta estimada</span>
-							<span class="font-mono tabular-nums">{formatPrice(totalSale)}</span>
-						</div>
-					</div>
-
-					<!-- Net total - Navy box -->
-					<div class="rounded-lg bg-brand-navy p-3 shadow-md shrink-0">
-						<p class="text-[10px] font-medium uppercase tracking-wide text-brand-blue-light/80">
-							Total neto a pagar
-						</p>
-						<p class="mt-1 font-mono text-2xl font-bold text-white">
-							{formatPrice(netTotalPurchase)}
-							<span class="text-sm font-medium text-white/60">USD</span>
-						</p>
-						<div class="mt-1 flex items-center gap-3 text-[10px] text-white/60">
-							<span>{items.length} {items.length === 1 ? 'línea' : 'líneas'}</span>
-							<span>·</span>
-							<span>{totalUnits} unds</span>
-						</div>
-					</div>
-
-					<!-- Payment condition -->
-					<div
-						class="flex items-center gap-2 text-xs bg-surface-container-high border border-outline-variant/20 rounded-lg px-3 py-2 shrink-0"
-					>
-						<span class="text-on-surface-variant">Pago:</span>
-						<span class="font-medium text-brand-navy">
-							{purchaseOrder.paymentTerms === PurchasePaymentTerms.CONTADO ? 'Contado' : 'Crédito'}
-						</span>
-						{#if purchaseOrder.paymentTerms === PurchasePaymentTerms.CREDIT && purchaseOrder.creditDueDate}
-							<span class="ml-auto text-on-surface-variant">
-								Vence: <span class="font-medium text-brand-navy"
-									>{formatDateOnly(purchaseOrder.creditDueDate)}</span
-								>
-							</span>
-						{/if}
-					</div>
-
-					<!-- Margin highlight - Green box -->
-					<div
-						class="rounded-lg bg-success-container/50 border border-success-container p-3 flex items-center justify-between gap-2 shrink-0"
-					>
-						<div class="flex items-center gap-2 min-w-0">
-							<TrendingUp class="h-4 w-4 shrink-0 text-on-success-container" />
-							<div class="min-w-0">
-								<p
-									class="text-[10px] font-semibold uppercase tracking-wide text-on-success-container"
-								>
-									Margen proyectado
-								</p>
-								<p class="text-[9px] text-on-surface-variant truncate">
-									Venta: {formatPrice(totalSale)}
-								</p>
-							</div>
-						</div>
-						<div class="text-right shrink-0">
-							<p
-								class="text-lg font-bold font-mono text-on-success-container tabular-nums leading-none"
-							>
-								{formatPrice(totalProfit)}
-							</p>
-							<p class="text-[10px] font-medium text-on-success-container/80">
-								({reviewMarginPercentage.toFixed(0)}%)
-							</p>
-						</div>
-					</div>
-				</div>
-
-				<!-- Action buttons -->
-				<div
-					class="border-t border-outline-variant/30 p-4 bg-surface-container-lowest flex flex-col gap-2 shrink-0"
-				>
-					<button
-						type="button"
-						onclick={() => (showConfirmModal = true)}
-						disabled={actionLoading || !allItemsReviewed}
-						title={allItemsReviewed
-							? 'Confirmar orden y generar inventario'
-							: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
-						class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-brand-gold px-4 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
-					>
-						<CheckCircle class="h-4 w-4" />
-						Confirmar orden
-					</button>
-					{#if isCashPurchase}
-						<button
-							type="button"
-							onclick={() => (showConfirmAndPayModal = true)}
-							disabled={actionLoading || !allItemsReviewed}
-							title={allItemsReviewed
-								? 'Confirmar orden y abrir el registro de pago'
-								: `Marca todas las líneas como revisadas (${reviewedCount}/${items.length})`}
-							class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-success-container text-on-success-container px-4 py-2 text-xs font-semibold transition-colors hover:bg-success-container/80 disabled:cursor-not-allowed disabled:opacity-60"
-						>
-							<CheckCircle class="h-4 w-4" />
-							Confirmar y registrar pago
-						</button>
-					{/if}
-					<button
-						type="button"
-						onclick={() => (showUnmarkReadyModal = true)}
-						disabled={actionLoading}
-						class="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high"
-					>
-						<RotateCcw class="h-3.5 w-3.5" />
-						Volver a edición
-					</button>
-					<button
-						type="button"
-						onclick={() => (showCancelModal = true)}
-						disabled={actionLoading}
-						class="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-error/30 px-4 py-2 text-xs font-medium text-error transition-colors hover:bg-error-container/20"
-					>
-						<XCircle class="h-3.5 w-3.5" />
-						Cancelar orden
-					</button>
-				</div>
-			</div>
-		</div>
-	{:else}
-		<div class="grid gap-6 xl:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)]">
-			<div class="space-y-6">
-				<section class="glass-card overflow-hidden">
-					<div
-						class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-					>
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-							>
-								<FileText class="h-5 w-5" />
-							</div>
-							<div>
-								<h2 class="text-xl font-semibold text-brand-navy">Detalles de la orden</h2>
-								<p class="text-sm text-on-surface-variant">
-									Contexto documental y condiciones financieras de la compra.
-								</p>
-							</div>
-						</div>
-					</div>
-
-					<div
-						class="grid gap-4 px-6 py-6 md:grid-cols-2 xl:grid-cols-4"
-						class:xl:grid-cols-5={sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency) &&
-							purchaseOrder.sourceRateToVes != null}
-					>
-						<div class="rounded-2xl bg-surface-container-low p-4">
-							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
-								<Truck class="h-4 w-4" />
-								Proveedor
-							</div>
-							<p class="mt-3 text-base font-semibold text-brand-navy">
-								{purchaseOrder.supplier?.name ?? 'Sin proveedor asignado'}
-							</p>
-						</div>
-						<div class="rounded-2xl bg-surface-container-low p-4">
-							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
-								<Calendar class="h-4 w-4" />
-								Fecha de orden
-							</div>
-							<p class="mt-3 text-base font-semibold text-brand-navy">
-								{formatDateOnly(purchaseOrder.orderDate, { dateStyle: 'medium' })}
-							</p>
-						</div>
-						<div class="rounded-2xl bg-surface-container-low p-4">
-							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
-								<Hash class="h-4 w-4" />
-								Documento
-							</div>
-							<p class="mt-3 text-sm font-semibold text-on-surface-variant">
-								{documentLabel}
-							</p>
-							<p class="mt-1 font-mono text-base font-semibold text-brand-navy">
-								{documentNumber}
-							</p>
-						</div>
-						<div class="rounded-2xl bg-surface-container-low p-4">
-							<div class="flex items-center gap-2 text-sm text-on-surface-variant">
-								<ScrollText class="h-4 w-4" />
-								Tasa BCV
-							</div>
-							<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
-								{formatBcvRate(purchaseOrder.bcvRate)}
-							</p>
-						</div>
-						{#if sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency) && purchaseOrder.sourceRateToVes != null}
-							<div class="rounded-2xl bg-surface-container-low p-4">
-								<div class="flex items-center gap-2 text-sm text-on-surface-variant">
-									<ScrollText class="h-4 w-4" />
-									Tasa {getSourceCurrencySymbol(purchaseOrder.sourceCurrency)} (Bs/{getSourceCurrencySymbol(
-										purchaseOrder.sourceCurrency
-									)})
-								</div>
-								<p class="mt-3 font-mono text-base font-semibold text-brand-navy">
-									{formatBcvRate(purchaseOrder.sourceRateToVes)}
-								</p>
-								<p class="mt-1 text-xs text-on-surface-variant">Normalizado a USD vía tasa BCV</p>
-							</div>
-						{/if}
-					</div>
-
-					{#if supplementalDeliveryNoteNumber || purchaseOrder.notes}
-						<div class="grid gap-4 border-t border-outline-variant/15 px-6 py-6 md:grid-cols-2">
-							{#if supplementalDeliveryNoteNumber}
-								<div class="rounded-2xl bg-surface-container-low p-4">
-									<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-										Nota de entrega
-									</p>
-									<p class="mt-2 font-mono text-sm font-semibold text-brand-navy">
-										{supplementalDeliveryNoteNumber}
-									</p>
-								</div>
-							{/if}
-							{#if purchaseOrder.notes}
-								<div class="rounded-2xl bg-surface-container-low p-4">
-									<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-										Notas internas
-									</p>
-									<p class="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-on-surface">
-										{purchaseOrder.notes}
-									</p>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</section>
-
-				<PurchaseOrderCreditSchedulePanel
-					purchaseOrder={purchaseOrder as PurchaseOrder}
-					readonly={true}
-					onCreditUpdated={handleCreditUpdated}
-				/>
-
-				<section class="glass-card overflow-hidden">
-					<div
-						class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-					>
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-							>
-								<Package class="h-5 w-5" />
-							</div>
-							<div>
-								<h2 class="text-xl font-semibold text-brand-navy">Artículos recibidos</h2>
-							</div>
-						</div>
-						<div class="flex items-center gap-3">
-							{#if showReviewColumn}
-								<AppBadge variant={allItemsReviewed ? 'success' : 'warning'}>
-									{reviewedCount} / {items.length} revisadas
-								</AppBadge>
-							{/if}
-							<AppBadge variant="neutral">{items.length} ítems</AppBadge>
-						</div>
-					</div>
-
-					{#if items.length > 0}
-						<div
-							class="flex flex-col gap-3 border-t border-outline-variant/20 bg-surface-container-low/40 px-6 py-3 md:flex-row md:items-center md:justify-between"
-						>
-							<div class="relative md:max-w-sm md:flex-1">
-								<Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-outline" />
-								<input
-									type="search"
-									bind:value={itemSearch}
-									placeholder="Buscar por nombre o SKU..."
-									class="w-full rounded-lg border-none bg-surface-container-high py-2.5 pr-3 pl-10 text-sm text-on-surface placeholder:text-outline focus:bg-surface-container-highest focus:ring-0"
-									aria-label="Buscar ítems en la orden"
-								/>
-							</div>
-
-							{#if showReviewColumn}
-								<div
-									class="inline-flex rounded-lg bg-surface-container-high p-1 text-xs font-semibold"
-								>
-									{#each itemReviewFilterOptions as option (option.value)}
-										<button
-											type="button"
-											onclick={() => (itemReviewFilter = option.value)}
-											class={[
-												'rounded-md px-3 py-1.5 transition-colors',
-												itemReviewFilter === option.value
-													? 'bg-surface-container-lowest text-brand-navy shadow-sm'
-													: 'text-on-surface-variant hover:text-brand-navy'
-											]}
-											aria-pressed={itemReviewFilter === option.value}
-										>
-											{option.label}
-										</button>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					{/if}
-
-					<div class="overflow-x-auto xl:overflow-visible">
-						<table class="min-w-full table-fixed text-left text-sm xl:w-full">
-							<colgroup>
-								{#if showReviewColumn}
-									<col class="w-[5%]" />
-								{/if}
-								<col class="w-[10%]" />
-								<col class="w-[10%]" />
-								<col class="w-[19%]" />
-								<col class="w-[8%]" />
-								<col class="w-[12%]" />
-								<col class="w-[13%]" />
-								<col class="w-[13%]" />
-								{#if isConfirmed}
-									<col class="w-[15%]" />
-								{/if}
-							</colgroup>
-							<thead
-								class="bg-surface-container-high/70 text-[11px] tracking-[0.18em] text-slate-500 uppercase"
-							>
-								<tr>
-									{#if showReviewColumn}
-										<th class="px-2 py-3.5 text-center" aria-label="Revisada"></th>
-									{/if}
-									<th class="px-4 py-3.5">Tipo</th>
-									<th class="px-4 py-3.5">Código</th>
-									<th class="px-4 py-3.5">Artículo</th>
-									<th class="px-4 py-3.5 text-right">Cantidad</th>
-									<th class="px-4 py-3.5 text-right">
-										{purchaseOrder.sourceCurrency !== 'USD'
-											? `Costo unitario ${getSourceCurrencySymbol(purchaseOrder.sourceCurrency)}`
-											: 'Costo unitario'}
-									</th>
-									<th class="px-4 py-3.5 text-right">
-										{purchaseOrder.sourceCurrency !== 'USD'
-											? `Total compra ${getSourceCurrencySymbol(purchaseOrder.sourceCurrency)}`
-											: 'Total compra'}
-									</th>
-									<th class="px-4 py-3.5 text-right">Venta sugerida</th>
-									{#if isConfirmed}
-										<th class="px-4 py-3.5 text-right">Lote</th>
-									{/if}
-								</tr>
-							</thead>
-							<tbody class="divide-y divide-outline-variant/15">
-								{#each filteredItems as item (item.id)}
-									{@const lot = lotForItem(item)}
-									<tr
-										class={[
-											'align-top transition-colors',
-											showReviewColumn && item.isReviewed
-												? 'bg-success-container/45 ring-1 ring-success/25 ring-inset hover:bg-success-container/55'
-												: 'hover:bg-surface-container-low/60'
-										]}
-									>
-										{#if showReviewColumn}
-											<td
-												class={[
-													'border-l-4 px-2 py-3.5 text-center align-middle',
-													item.isReviewed
-														? 'border-success bg-success-container/45'
-														: 'border-transparent'
-												]}
-											>
-												<button
-													type="button"
-													onclick={() => handleToggleItemReviewed(item)}
-													aria-pressed={item.isReviewed}
-													class={[
-														'inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-														item.isReviewed
-															? 'bg-success text-white shadow-sm shadow-success/20 hover:bg-success/85'
-															: 'text-outline hover:bg-surface-container-high hover:text-on-surface'
-													]}
-													aria-label={item.isReviewed
-														? 'Marcar como no revisada'
-														: 'Marcar como revisada'}
-													title={item.isReviewed
-														? 'Línea revisada — click para desmarcar'
-														: 'Marcar línea como revisada'}
-												>
-													<CircleCheck class="h-4 w-4" />
-												</button>
-											</td>
-										{/if}
-										<td class="px-4 py-3.5">
-											<AppBadge variant={itemBadgeVariant(item)}>
-												{getPurchaseOrderItemTypeLabel(item.itemType)}
-											</AppBadge>
-										</td>
-										<td class="px-4 py-3.5">
-											{#if item.product?.personalCode}
-												<span class="font-mono text-sm font-semibold text-brand-navy">
-													{item.product.personalCode}
-												</span>
-											{:else}
-												<span class="text-sm text-outline">--</span>
-											{/if}
-										</td>
-										<td class="px-4 py-3.5">
-											<p class="max-w-[13rem] text-[15px] leading-5 font-semibold text-brand-navy">
-												{itemDisplayName(item)}
-											</p>
-											<p
-												class="mt-1 font-mono text-[11px] leading-4 tracking-[0.12em] break-words text-outline uppercase"
-											>
-												{itemDisplayMeta(item)}
-											</p>
-										</td>
-										<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
-											{item.quantity}
-										</td>
-										<td class="px-4 py-3.5 text-right font-mono text-brand-navy tabular-nums">
-											{#if purchaseOrder.sourceCurrency !== 'USD' && item.unitPurchasePriceAlt !== null}
-												<div>{formatAltAmount(item.unitPurchasePriceAlt)}</div>
-												<p
-													class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
-												>
-													{formatPrice(item.unitPurchasePrice)}
-												</p>
-											{:else}
-												{formatPrice(item.unitPurchasePrice)}
-											{/if}
-										</td>
-										<td
-											class="px-4 py-3.5 text-right font-mono font-semibold text-brand-navy tabular-nums"
-										>
-											{#if purchaseOrder.sourceCurrency !== 'USD' && item.unitPurchasePriceAlt !== null}
-												<div>{formatAltAmount(purchaseLineTotalAlt(item))}</div>
-												<p
-													class="mt-1 text-[10px] font-semibold tracking-[0.12em] text-outline uppercase"
-												>
-													{formatPrice(purchaseLineTotal(item))}
-												</p>
-											{:else}
-												{formatPrice(purchaseLineTotal(item))}
-											{/if}
-										</td>
-										<td class="px-4 py-3.5 text-right">
-											<div class="font-mono text-brand-blue tabular-nums">
-												{formatPrice(item.unitSalePrice)}
-											</div>
-											{#if item.appliesIva}
-												<p
-													class="mt-1 text-[10px] font-semibold tracking-[0.14em] text-success uppercase"
-												>
-													IVA {item.ivaRate}%
-												</p>
-											{/if}
-										</td>
-										{#if isConfirmed}
-											<td class="px-4 py-3.5 text-right">
-												{#if lot}
-													<div class="flex items-start justify-end gap-2">
-														<p class="font-mono text-sm font-semibold text-brand-navy">
-															{formatLotCode(item.lotId)}
-														</p>
-														{#if canRevertLot(item)}
-															<button
-																type="button"
-																onclick={() => openRevertModal(item)}
-																title="Deshacer recepción completa del lote"
-																aria-label="Deshacer recepción completa del lote"
-																class="inline-flex h-7 w-7 items-center justify-center rounded-md text-error transition-colors hover:bg-error-container/60 hover:text-on-error-container"
-															>
-																<RotateCcw class="h-3.5 w-3.5" />
-															</button>
-														{/if}
-													</div>
-													<p class="mt-1 text-xs text-on-surface-variant">
-														Disponible {lot.quantityAvailable}/{lot.quantityInitial}
-													</p>
-												{:else}
-													<span class="text-sm text-outline">Sin lote</span>
-												{/if}
-											</td>
-										{/if}
-									</tr>
-								{:else}
-									<tr>
-										<td
-											colspan={(isConfirmed ? 8 : 7) + (showReviewColumn ? 1 : 0)}
-											class="px-4 py-12 text-center"
-										>
-											{#if hasItemFilters}
-												<p class="text-sm font-semibold text-on-surface-variant">
-													Ningún ítem coincide con el filtro.
-												</p>
-												<button
-													type="button"
-													onclick={() => {
-														itemSearch = '';
-														itemReviewFilter = 'all';
-													}}
-													class="mt-2 text-sm font-semibold text-brand-blue hover:underline"
-												>
-													Limpiar filtros
-												</button>
-											{:else}
-												<p class="text-sm font-semibold text-on-surface-variant">
-													No hay ítems en esta orden.
-												</p>
-												<p class="mt-1 text-sm text-outline">
-													La cabecera está creada, pero aún no tiene líneas registradas.
-												</p>
-											{/if}
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</section>
-
-				<PurchaseOrderPaymentsPanel
-					purchaseOrderId={purchaseOrder.id}
-					status={purchaseOrder.status}
-					defaultBcvRate={purchaseOrder.bcvRate}
-					{payments}
-					purchaseOrder={purchaseOrder as PurchaseOrder}
-					{earlyPaymentBenefits}
-					pendingBalanceUsd={balance.settlementBalance}
-					debtTotalUsd={balance.settlementDebtAmount}
-					isFullyPaid={balance.isSettlementFullyPaid}
-					settlementCurrency={balance.settlementCurrency}
-					composerRequest={paymentComposerRequest}
-					onFinanceChanged={handleFinanceChanged}
-				/>
-
-				<section id="purchase-movements" class="glass-card overflow-hidden">
-					<div
-						class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-					>
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-							>
-								<ArrowRightLeft class="h-5 w-5" />
-							</div>
-							<h2 class="text-xl font-semibold text-brand-navy">Movimientos generados</h2>
-						</div>
-						<AppBadge variant="neutral">{movements.length} movimientos</AppBadge>
-					</div>
-
-					{#if movements.length > 0}
-						<div class="divide-y divide-outline-variant/15">
-							{#each movements as movement (movement.id)}
-								{@const isInflow = movement.quantityDelta > 0}
-								<article class="space-y-3 px-6 py-5">
-									<div class="flex flex-wrap items-start justify-between gap-3">
-										<div class="space-y-2">
-											<AppBadge variant={isInflow ? 'success' : 'error'}>
-												{getInventoryMovementTypeLabel(movement.movementType)}
-											</AppBadge>
-											<p class="text-sm font-semibold text-brand-navy">
-												{movementItemName(movement)}
-											</p>
-										</div>
-										<p class="text-xs font-semibold tracking-[0.14em] text-outline uppercase">
-											{formatDate(movement.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
-										</p>
-									</div>
-
-									<p class="text-sm leading-relaxed text-on-surface-variant">
-										{movementDescription(movement)}
-									</p>
-
-									<div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
-										<span class="rounded-full bg-surface-container-low px-3 py-1.5 font-mono">
-											{formatLotCode(movement.lotId)}
-										</span>
-										<span class="font-mono tabular-nums {isInflow ? 'text-success' : 'text-error'}">
-											{isInflow ? '+' : ''}{movement.quantityDelta} unidades
-										</span>
-										<span class="font-mono tabular-nums">
-											{movement.quantityBefore} → {movement.quantityAfter}
-										</span>
-									</div>
-								</article>
-							{/each}
-						</div>
-					{:else}
-						<div class="px-6 py-10 text-center">
-							<p class="text-sm font-semibold text-on-surface-variant">Sin movimientos todavía.</p>
-						</div>
-					{/if}
-				</section>
-			</div>
-
-			<aside class="space-y-6">
-				<PurchaseOrderBalanceCard
-					{balance}
-					{dueStatus}
-					paymentTerms={purchaseOrder.paymentTerms}
-					bcvRate={purchaseOrder.bcvRate}
-				/>
-
-				<section
-					class="rounded-[1.75rem] bg-brand-navy p-6 text-white shadow-[0_28px_60px_-32px_rgba(15,23,42,0.8)]"
-				>
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-brand-gold uppercase">
-						Resumen de valores
-					</p>
-					<div class="mt-6 space-y-5">
-						<div class="rounded-2xl bg-white/8 p-4">
-							<p class="text-sm text-white/70">Unidades totales</p>
-							<p class="mt-2 font-mono text-3xl font-semibold tabular-nums">{totalUnits}</p>
-						</div>
-
-						{#if needsSourceRate && (purchaseSummary.totalAlt != null || purchaseSummary.totalAlt != null)}
-							<div class="rounded-2xl bg-white/8 p-4">
-								<p class="text-sm text-white/70">
-									{hasSettlementDiscount ? 'Costo bruto (nota de entrega)' : 'Costo de compra'}
-								</p>
-								<p class="mt-2 font-mono text-2xl font-semibold text-white tabular-nums">
-									{srcSymbol}
-									{(purchaseSummary.totalAlt ?? 0).toFixed(2)}
-								</p>
-								<p class="mt-1 text-xs text-white/60">
-									Costo inventario: {formatPrice(totalPurchase)}
-								</p>
-							</div>
-						{:else}
-							<div class="rounded-2xl bg-white/8 p-4">
-								<p class="text-sm text-white/70">
-									{hasSettlementDiscount ? 'Costo bruto (nota de entrega)' : 'Costo de compra'}
-								</p>
-								<p class="mt-2 font-mono text-2xl font-semibold tabular-nums">
-									{formatPrice(totalPurchase)}
-								</p>
-								{#if purchaseSummary.totalAlt !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
-									<p class="mt-1 font-mono text-xs text-white/60 tabular-nums">
-										{formatVesAmount(totalPurchaseInBs)}
-									</p>
-								{/if}
-							</div>
-						{/if}
-
-						{#if hasSettlementDiscount}
-							<div class="rounded-2xl bg-white/8 p-4 ring-1 ring-brand-gold/40">
-								<p class="text-sm text-white/70">Costo neto (factura)</p>
-								{#if needsSourceRate && purchaseSummary.netTotalAlt != null}
-									<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
-										{srcSymbol}
-										{purchaseSummary.netTotalAlt.toFixed(2)}
-									</p>
-								{:else}
-									<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
-										{formatPrice(netTotalPurchase)}
-									</p>
-								{/if}
-								<div class="mt-3 space-y-1 text-xs text-white/70">
-									{#if needsSourceRate && purchaseSummary.subtotalAlt != null}
-										<div class="flex items-center justify-between gap-3">
-											<span>Subtotal</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{srcSymbol}
-												{purchaseSummary.subtotalAlt.toFixed(2)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span class="text-brand-gold">Descuento ({settlementDiscountLabel})</span>
-											<span class="font-mono font-semibold text-brand-gold tabular-nums">
-												− {srcSymbol}
-												{(purchaseSummary.discountAmountAlt ?? 0).toFixed(2)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span>Subtotal neto</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{srcSymbol}
-												{(purchaseSummary.netSubtotalAlt ?? 0).toFixed(2)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span>IVA neto</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{srcSymbol}
-												{(purchaseSummary.netTaxAmountAlt ?? 0).toFixed(2)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span>Equiv. inventario</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{formatPrice(netSubtotalPurchase)}
-											</span>
-										</div>
-									{:else}
-										<div class="flex items-center justify-between gap-3">
-											<span>Subtotal</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{formatPrice(purchaseSummary.subtotal)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span class="text-brand-gold">Descuento ({settlementDiscountLabel})</span>
-											<span class="font-mono font-semibold text-brand-gold tabular-nums">
-												− {formatPrice(settlementDiscountAmount)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span>Subtotal neto</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{formatPrice(netSubtotalPurchase)}
-											</span>
-										</div>
-										<div class="flex items-center justify-between gap-3">
-											<span>IVA neto</span>
-											<span class="font-mono font-semibold text-white tabular-nums">
-												{formatPrice(netTaxPurchase)}
-											</span>
-										</div>
-										{#if purchaseSummary.netTotalAlt !== undefined || Number(purchaseOrder.bcvRate || 0) > 0}
-											<div class="flex items-center justify-between gap-3">
-												<span>Equivalente BCV</span>
-												<span class="font-mono font-semibold text-white tabular-nums">
-													{formatVesAmount(netTotalPurchaseInBs)}
-												</span>
-											</div>
-										{/if}
-									{/if}
-									{#if purchaseOrder.settlementDiscountNotes}
-										<p class="pt-1 whitespace-pre-wrap text-white/60">
-											{purchaseOrder.settlementDiscountNotes}
-										</p>
-									{/if}
-								</div>
-							</div>
-						{/if}
-
-						<div class="rounded-2xl bg-white/8 p-4">
-							<p class="text-sm text-white/70">Valor estimado de venta</p>
-							<p class="mt-2 font-mono text-2xl font-semibold text-brand-gold tabular-nums">
-								{formatPrice(totalSale)}
-							</p>
-						</div>
-
-						<div class="rounded-2xl bg-white/8 p-4">
-							<p class="text-sm text-white/70">
-								{hasSettlementDiscount ? 'Diferencial neto (factura)' : 'Diferencial estimado'}
-							</p>
-							<p
-								class="mt-2 font-mono text-2xl font-semibold tabular-nums {(hasSettlementDiscount
-									? netTotalProfit
-									: totalProfit) >= 0
-									? 'text-success'
-									: 'text-error'}"
-							>
-								{formatPrice(hasSettlementDiscount ? netTotalProfit : totalProfit)}
-							</p>
-						</div>
-					</div>
-				</section>
-
-				<section class="glass-card overflow-hidden">
-					<div
-						class="flex flex-col gap-4 bg-surface-container-lowest px-6 py-5 md:flex-row md:items-center md:justify-between"
-					>
-						<div class="flex items-center gap-3">
-							<div
-								class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
-							>
-								<ScrollText class="h-5 w-5" />
-							</div>
-							<h2 class="text-xl font-semibold text-brand-navy">Registro de auditoría</h2>
-						</div>
-					</div>
-
-					<div class="px-6 py-5">
-						{#if auditTimeline.length === 0}
-							<div class="space-y-4">
-								<div class="rounded-2xl bg-surface-container-low p-4">
-									<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-										Creado por
-									</p>
-									<p class="mt-2 font-semibold text-brand-navy">
-										{purchaseOrder.createdBy?.fullName ?? 'Usuario no disponible'}
-									</p>
-									<p class="mt-1 text-sm text-on-surface-variant">
-										{formatDate(purchaseOrder.createdAt, {
-											dateStyle: 'medium',
-											timeStyle: 'short'
-										})}
-									</p>
-								</div>
-								{#if purchaseOrder.confirmedAt}
-									<div class="rounded-2xl bg-surface-container-low p-4">
-										<p class="text-[11px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
-											Confirmado por
-										</p>
-										<p class="mt-2 font-semibold text-brand-navy">
-											{purchaseOrder.confirmedBy?.fullName ?? 'Usuario no disponible'}
-										</p>
-										<p class="mt-1 text-sm text-on-surface-variant">
-											{formatDate(purchaseOrder.confirmedAt, {
-												dateStyle: 'medium',
-												timeStyle: 'short'
-											})}
-										</p>
-									</div>
-								{/if}
-							</div>
-						{:else}
-							<ol class="relative border-l border-outline-variant/25">
-								{#each auditTimeline as event (event.id)}
-									{@const isPayment = event.entityType === 'purchase_order_payment'}
-									{@const isVoid = isPayment && event.action === 'update'}
-									{@const isCreate = event.action === 'create'}
-									<li class="ms-5 mb-6 last:mb-0">
-										<span
-											class="absolute -start-[9px] flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-surface-container-lowest
-										{isVoid
-												? 'bg-error-container text-on-error-container'
-												: isPayment
-													? 'bg-success/15 text-success'
-													: isCreate
-														? 'bg-brand-navy/10 text-brand-navy'
-														: 'bg-surface-container-high text-on-surface-variant'}"
-										>
-											{#if isVoid}
-												<svg
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													class="h-2.5 w-2.5"><path d="M18 6 6 18M6 6l12 12" /></svg
-												>
-											{:else if isPayment}
-												<svg
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
-												>
-											{:else if isCreate}
-												<svg
-													viewBox="0 0 24 24"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													class="h-2.5 w-2.5"><path d="M12 5v14M5 12h14" /></svg
-												>
-											{:else}
-												<svg viewBox="0 0 24 24" fill="currentColor" class="h-1.5 w-1.5"
-													><circle cx="12" cy="12" r="6" /></svg
-												>
-											{/if}
-										</span>
-										<p
-											class="text-sm font-semibold text-on-surface
-										{isVoid ? 'text-error' : ''}"
-										>
-											{event.label}
-										</p>
-										<p class="mt-0.5 text-xs text-on-surface-variant">
-											{event.changedByName ?? 'Usuario desconocido'}
-										</p>
-										<time class="mt-0.5 block font-mono text-[11px] text-outline tabular-nums">
-											{formatDate(event.changedAt, { dateStyle: 'short', timeStyle: 'short' })}
-										</time>
-									</li>
-								{/each}
-							</ol>
-						{/if}
-					</div>
-				</section>
-			</aside>
-		</div>
+	{#if isDraft && !isReadyForReview}
+		<PurchaseOrderDraftBanner />
 	{/if}
+
+	<div
+		class="space-y-2 md:space-y-0 md:grid md:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)] gap-2"
+	>
+		<div class="space-y-2">
+			<PurchaseOrderOverviewCard {purchaseOrder} />
+
+			<PurchaseOrderItemsList
+				{purchaseOrder}
+				{items}
+				{lotsMap}
+				{showReviewColumn}
+				onToggleItemReviewed={handleToggleItemReviewed}
+				onRevertLot={openRevertModal}
+			/>
+
+			{#if isConfirmed && movements.length > 0}
+				<PurchaseOrderMovementsSection {movements} {items} {lotsMap} />
+			{/if}
+		</div>
+
+		<aside class="space-y-2 @container/aside">
+			<PurchaseOrderAsidePanel
+				onRegisterPayment={() => (showPaymentsDrawer = true)}
+				onViewPayments={() => (showPaymentsHistoryDrawer = true)}
+				onViewAudit={() => (showAuditHistoryDrawer = true)}
+			/>
+		</aside>
+	</div>
 </div>
+
+<PurchaseOrderPaymentsDrawer
+	open={showPaymentsDrawer}
+	onclose={() => (showPaymentsDrawer = false)}
+	purchaseOrderId={purchaseOrder.id}
+	status={purchaseOrder.status}
+	defaultBcvRate={purchaseOrder.bcvRate}
+	{payments}
+	purchaseOrder={purchaseOrder as PurchaseOrder}
+	{earlyPaymentBenefits}
+	pendingBalanceUsd={balance.settlementBalance}
+	debtTotalUsd={balance.settlementDebtAmount}
+	isFullyPaid={balance.isSettlementFullyPaid}
+	settlementCurrency={balance.settlementCurrency}
+	composerRequest={paymentComposerRequest}
+	onFinanceChanged={handleFinanceChanged}
+/>
+
+<PurchaseOrderPaymentsHistoryDrawer
+	open={showPaymentsHistoryDrawer}
+	onclose={() => (showPaymentsHistoryDrawer = false)}
+	purchaseOrderId={purchaseOrder.id}
+	status={purchaseOrder.status}
+	{payments}
+	{earlyPaymentBenefits}
+	settlementCurrency={balance.settlementCurrency}
+	onFinanceChanged={handleFinanceChanged}
+/>
+
+<PurchaseOrderAuditHistoryDrawer
+	open={showAuditHistoryDrawer}
+	onclose={() => (showAuditHistoryDrawer = false)}
+	{auditHistory}
+	{purchaseOrder}
+/>
 
 <ConfirmModal
 	bind:open={showConfirmModal}
@@ -1961,14 +575,10 @@
 	bind:open={showMarkReadyModal}
 	title="Marcar lista para revisar"
 	message={markReadyMessage}
-	confirmLabel={markReadyConfirmLabel}
-	secondaryLabel={markReadySecondaryLabel}
+	confirmLabel="Marcar lista"
 	confirmColor="yellow"
-	secondaryColor="red"
-	loading={actionLoading && readyStateAction === 'preserve'}
-	secondaryLoading={actionLoading && readyStateAction === 'clear'}
-	onConfirm={() => handleMarkReady(false)}
-	onSecondary={() => handleMarkReady(true)}
+	loading={actionLoading}
+	onConfirm={handleMarkReady}
 	onCancel={() => (showMarkReadyModal = false)}
 />
 
@@ -1976,14 +586,10 @@
 	bind:open={showUnmarkReadyModal}
 	title="Volver a borrador"
 	message={unmarkReadyMessage}
-	confirmLabel={unmarkReadyConfirmLabel}
-	secondaryLabel={unmarkReadySecondaryLabel}
-	confirmColor="blue"
-	secondaryColor="red"
-	loading={actionLoading && readyStateAction === 'preserve'}
-	secondaryLoading={actionLoading && readyStateAction === 'clear'}
-	onConfirm={() => handleUnmarkReady(false)}
-	onSecondary={() => handleUnmarkReady(true)}
+	confirmLabel="Sí, volver a borrador"
+	confirmColor="red"
+	loading={actionLoading}
+	onConfirm={handleUnmarkReady}
 	onCancel={() => (showUnmarkReadyModal = false)}
 />
 
