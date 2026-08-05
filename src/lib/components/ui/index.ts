@@ -45,3 +45,7 @@ export {
 	PurchaseOrderStatusBadge,
 	PurchaseOrderDueBadge
 } from './badges';
+
+export { default as PaymentMethodPills } from './payment/PaymentMethodPills.svelte';
+export { default as PaymentRateInput } from './payment/PaymentRateInput.svelte';
+export { default as PaymentReferenceField } from './payment/PaymentReferenceField.svelte';
