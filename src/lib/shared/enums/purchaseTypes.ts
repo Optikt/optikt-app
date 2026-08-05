@@ -5,6 +5,13 @@
 
 import type { BadgeVariant } from '$lib/shared/badge-variants';
 import { CurrencyCode } from './currencyTypes';
+import {
+	PAYMENT_METHOD_CURRENCY,
+	PAYMENT_METHOD_LABELS,
+	PaymentMethod,
+	getPaymentMethodCurrency,
+	requiresPaymentMethodSpecificRate
+} from './paymentMethods';
 
 // ============================================================================
 // PURCHASE ORDER STATUS
@@ -254,47 +261,25 @@ export function isAltSourceCurrency(currency: string): boolean {
  * (EUR, PayPal, or any free-form channel). The method determines the
  * `currencyCode` persisted on the payment for normalization.
  */
-export enum PurchasePaymentMethod {
-	PAGO_MOVIL_BS = 'PAGO_MOVIL_BS',
-	TRANSFERENCIA_BS = 'TRANSFERENCIA_BS',
-	PUNTO_VENTA_BS = 'PUNTO_VENTA_BS',
-	EFECTIVO_BS = 'EFECTIVO_BS',
-	EFECTIVO_USD = 'EFECTIVO_USD',
-	BINANCE_USDT = 'BINANCE_USDT',
-	OTRO = 'OTRO'
-}
+/** Local convenience alias for the shared enum (see paymentMethods.ts). */
+type PurchasePaymentMethod = PaymentMethod;
 
-export const ALL_PURCHASE_PAYMENT_METHODS = Object.values(
-	PurchasePaymentMethod
-) as PurchasePaymentMethod[];
+export const ALL_PURCHASE_PAYMENT_METHODS = Object.values(PaymentMethod) as PurchasePaymentMethod[];
 
-export const PURCHASE_PAYMENT_METHOD_LABELS: Record<PurchasePaymentMethod, string> = {
-	[PurchasePaymentMethod.PAGO_MOVIL_BS]: 'Pago Móvil Bs',
-	[PurchasePaymentMethod.TRANSFERENCIA_BS]: 'Transferencia Bs',
-	[PurchasePaymentMethod.PUNTO_VENTA_BS]: 'Punto de Venta Bs',
-	[PurchasePaymentMethod.EFECTIVO_BS]: 'Efectivo Bs',
-	[PurchasePaymentMethod.EFECTIVO_USD]: 'Efectivo $',
-	[PurchasePaymentMethod.BINANCE_USDT]: 'Binance USDT',
-	[PurchasePaymentMethod.OTRO]: 'Otro'
-};
+export const PURCHASE_PAYMENT_METHOD_LABELS = PAYMENT_METHOD_LABELS;
 
 export function getPurchasePaymentMethodLabel(method: string): string {
-	return PURCHASE_PAYMENT_METHOD_LABELS[method as PurchasePaymentMethod] ?? method;
+	return PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? method;
 }
 
+/** Alias export for consumers (same enum as PaymentMethod). */
+export { PaymentMethod, PaymentMethod as PurchasePaymentMethod } from './paymentMethods';
+
 /** Currency persisted on the payment row for each method. */
-export const PURCHASE_PAYMENT_METHOD_CURRENCY: Record<PurchasePaymentMethod, CurrencyCode> = {
-	[PurchasePaymentMethod.PAGO_MOVIL_BS]: CurrencyCode.VES,
-	[PurchasePaymentMethod.TRANSFERENCIA_BS]: CurrencyCode.VES,
-	[PurchasePaymentMethod.PUNTO_VENTA_BS]: CurrencyCode.VES,
-	[PurchasePaymentMethod.EFECTIVO_BS]: CurrencyCode.VES,
-	[PurchasePaymentMethod.EFECTIVO_USD]: CurrencyCode.USD_BCV,
-	[PurchasePaymentMethod.BINANCE_USDT]: CurrencyCode.USDT,
-	[PurchasePaymentMethod.OTRO]: CurrencyCode.OTHER
-};
+export const PURCHASE_PAYMENT_METHOD_CURRENCY = PAYMENT_METHOD_CURRENCY;
 
 export function currencyForPurchasePaymentMethod(method: PurchasePaymentMethod): CurrencyCode {
-	return PURCHASE_PAYMENT_METHOD_CURRENCY[method] ?? CurrencyCode.OTHER;
+	return getPaymentMethodCurrency(method);
 }
 
 /**
@@ -302,15 +287,19 @@ export function currencyForPurchasePaymentMethod(method: PurchasePaymentMethod):
  * Bs methods normalize via the BCV rate only; USD BCV cash is the base.
  */
 export function requiresPurchasePaymentMethodSpecificRate(method: PurchasePaymentMethod): boolean {
-	return method === PurchasePaymentMethod.BINANCE_USDT || method === PurchasePaymentMethod.OTRO;
+	return requiresPaymentMethodSpecificRate(method);
 }
 
 /** Label for the method-specific exchange rate field. */
 export function getPurchasePaymentMethodRateLabel(method: PurchasePaymentMethod): string {
 	switch (method) {
-		case PurchasePaymentMethod.BINANCE_USDT:
+		case PaymentMethod.EFECTIVO_EUR:
+			return 'Tasa EUR (Bs/€)';
+		case PaymentMethod.BINANCE_USDT:
 			return 'Tasa USDT (Bs/USDT)';
-		case PurchasePaymentMethod.OTRO:
+		case PaymentMethod.PAYPAL:
+			return 'Tasa PayPal (Bs/$)';
+		case PaymentMethod.OTRO:
 			return 'Tasa usada (Bs/unidad)';
 		default:
 			return '';
@@ -320,13 +309,13 @@ export function getPurchasePaymentMethodRateLabel(method: PurchasePaymentMethod)
 /** Placeholder hint for the payment reference field per method. */
 export function getPurchasePaymentMethodReferenceHint(method: PurchasePaymentMethod): string {
 	switch (method) {
-		case PurchasePaymentMethod.PAGO_MOVIL_BS:
+		case PaymentMethod.PAGO_MOVIL_BS:
 			return 'Banco, cédula y teléfono del emisor';
-		case PurchasePaymentMethod.TRANSFERENCIA_BS:
+		case PaymentMethod.TRANSFERENCIA_BS:
 			return 'Banco y número de referencia';
-		case PurchasePaymentMethod.PUNTO_VENTA_BS:
+		case PaymentMethod.PUNTO_VENTA_BS:
 			return 'Banco y lote / voucher';
-		case PurchasePaymentMethod.BINANCE_USDT:
+		case PaymentMethod.BINANCE_USDT:
 			return 'TXID o hash de la transacción';
 		default:
 			return 'Banco, recibo o referencia';
