@@ -1,10 +1,6 @@
 ## createSubscriber
 
-<blockquote class="since note">
-
-Available since 5.7.0
-
-</blockquote>
+> Available since 5.7.0
 
 Returns a `subscribe` function that integrates external event-based systems with Svelte's reactivity.
 It's particularly useful for integrating with web APIs like `MediaQuery`, `IntersectionObserver`, or `WebSocket`.

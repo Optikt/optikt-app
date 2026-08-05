@@ -1,12 +1,10 @@
 {
 	"$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "@howaboua/opencode-planning-toolkit@latest"
-  ],
-  "mcp": {
-    "svelte": {
-      "type": "remote",
-      "url": "https://mcp.svelte.dev/mcp"
-    }
-  }
+	"plugin": ["@howaboua/opencode-planning-toolkit@latest"],
+	"mcp": {
+		"svelte": {
+			"type": "remote",
+			"url": "https://mcp.svelte.dev/mcp"
+		}
+	}
 }
