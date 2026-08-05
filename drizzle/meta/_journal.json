@@ -253,6 +253,13 @@
       "when": 1786572000000,
       "tag": "0035_payment_method_eur_paypal",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1787176000000,
+      "tag": "0036_is_cashea_sale",
+      "breakpoints": true
     }
   ]
 }
