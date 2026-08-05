@@ -56,6 +56,7 @@
 	// ── Header fields ──────────────────────────────────────────────────────
 	let saleDate = $state(untrack(() => sale.saleDate.slice(0, 10)));
 	let notes = $state(untrack(() => sale.notes ?? ''));
+	let isCashea = $state(untrack(() => sale.isCashea ?? false));
 	let discount = $state(untrack(() => sale.discount));
 	let discountType = $state<string>(untrack(() => sale.discountType));
 
@@ -472,6 +473,7 @@
 		if (notes !== (sale.notes ?? '')) {
 			payload.notes = notes || undefined;
 		}
+		if (isCashea !== (sale.isCashea ?? false)) payload.isCashea = isCashea;
 		if (discount !== sale.discount) payload.discount = discount;
 		if (discountType !== sale.discountType) payload.discountType = discountType as DiscountTypeEnum;
 
@@ -585,6 +587,17 @@
 						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
 					/>
 				</div>
+				<label
+					class="mt-2 flex items-center gap-2 rounded-lg bg-surface-container/60 px-3 py-2.5 text-xs text-on-surface-variant"
+				>
+					<input
+						type="checkbox"
+						bind:checked={isCashea}
+						class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
+					/>
+					<span class="font-medium text-on-surface">Venta vía Cashea</span>
+					<span class="text-on-surface-variant">— financiada por Cashea</span>
+				</label>
 			</div>
 		</section>
 

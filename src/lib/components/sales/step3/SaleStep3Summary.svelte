@@ -42,6 +42,7 @@
 		discount: number;
 		discountType: DiscountTypeEnum;
 		notes: string;
+		isCashea?: boolean;
 		defaultTaxRate?: number;
 		customerFallbackName?: string;
 		customerFallbackDocument?: string;
@@ -70,6 +71,7 @@
 		discount = $bindable(),
 		discountType = $bindable(),
 		notes = $bindable(),
+		isCashea = $bindable(false),
 		defaultTaxRate = DEFAULT_TAX_RATE,
 		customerFallbackName = 'Venta sin cliente',
 		customerFallbackDocument = 'Sin documento',
@@ -271,6 +273,13 @@
 			document={displayCustomerDocument}
 			statusLabel={statusMeta.label}
 		/>
+		{#if isCashea}
+			<span
+				class="inline-flex items-center gap-1 rounded-md bg-brand-gold/15 px-2 py-1 text-[10px] font-semibold text-brand-navy uppercase tracking-wide"
+			>
+				Cashea
+			</span>
+		{/if}
 		<div
 			class="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 transition-colors duration-150 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-100 hover:border-slate-400"
 		>

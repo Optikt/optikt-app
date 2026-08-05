@@ -71,6 +71,7 @@
 		saleId?: string;
 		remainingBcvUsd?: number;
 		onPaymentAdded?: (paidAmount: number) => void;
+		isCasheaSale?: boolean;
 		// --- purchase ---
 		purchaseOrderId?: string;
 		status?: string;
@@ -100,6 +101,7 @@
 		saleId,
 		remainingBcvUsd = 0,
 		onPaymentAdded,
+		isCasheaSale = false,
 		purchaseOrderId,
 		status,
 		defaultBcvRate = 0,
@@ -143,7 +145,6 @@
 	let notes = $state('');
 	let submitting = $state(false);
 	let amountInputEl = $state<HTMLInputElement | null>(null);
-	let isCashea = $state(false);
 	let showOverpaymentModal = $state(false);
 	let pendingAddPayload = $state<Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null>(null);
 	let showEarlyPaymentBenefitModal = $state(false);
@@ -435,7 +436,6 @@
 		paymentDate = toISODate(nowUTC());
 		reference = '';
 		notes = '';
-		isCashea = false;
 	}
 
 	function partialReset() {
@@ -466,7 +466,6 @@
 		specificRateInput = '';
 		reference = request?.reference ?? '';
 		notes = request?.notes ?? '';
-		isCashea = false;
 	}
 
 	let prevDrawerResetKey = 0;
@@ -531,7 +530,6 @@
 		specificRateInput = auto > 0 ? auto.toFixed(2) : '';
 		reference = '';
 		notes = '';
-		isCashea = false;
 	}
 
 	function handleNativeInput(event: Event) {
@@ -564,7 +562,7 @@
 				exchangeRate: needsSpecificRate ? specificRateValue : undefined,
 				bcvRate: activeBcvRate,
 				rateType: rateType ?? undefined,
-				isCasheaPayment: isCashea || undefined,
+				isCasheaPayment: isCasheaSale || undefined,
 				reference: referenceToSubmit,
 				notes: notes.trim() || undefined
 			});
@@ -878,16 +876,19 @@
 				{/if}
 			</div>
 
-			<!-- Cashea (sale, Bs rails) -->
-			{#if kind === 'sale' && isBsPaymentMethod(rail)}
-				<label class="flex items-center gap-2 text-xs text-on-surface-variant">
+			<!-- Cashea (sale, solo si la venta es Cashea) -->
+			{#if kind === 'sale' && isCasheaSale && isBsPaymentMethod(rail)}
+				<label
+					class="flex items-center gap-2 rounded-lg bg-brand-gold/10 px-3 py-2 text-xs text-on-surface-variant"
+				>
 					<input
 						type="checkbox"
-						bind:checked={isCashea}
+						checked={isCasheaSale}
+						disabled
 						class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
 					/>
 					<span class="font-medium text-on-surface">Pago vía Cashea</span>
-					<span class="text-on-surface-variant">— venta financiada por Cashea</span>
+					<span class="text-on-surface-variant">— la venta se financia por Cashea</span>
 				</label>
 			{/if}
 

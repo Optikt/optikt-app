@@ -12,6 +12,7 @@
 		saleDate: Date;
 		secondaryDate?: string;
 		notes: string;
+		isCashea?: boolean;
 		nextOrderNumber?: number;
 		entityNumberValue?: string;
 		stepLabel?: string;
@@ -30,6 +31,7 @@
 		saleDate = $bindable(),
 		secondaryDate = $bindable(''),
 		notes = $bindable(),
+		isCashea = $bindable(false),
 		nextOrderNumber,
 		entityNumberValue,
 		stepLabel = 'Paso 1: Información',
@@ -81,6 +83,18 @@
 			bind:creatingCustomer
 			resetKey={resetCounter}
 		/>
+
+		<label
+			class="mt-3 flex items-center gap-2 rounded-lg bg-surface-container/60 px-3 py-2.5 text-xs text-on-surface-variant"
+		>
+			<input
+				type="checkbox"
+				bind:checked={isCashea}
+				class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
+			/>
+			<span class="font-medium text-on-surface">Venta vía Cashea</span>
+			<span class="text-on-surface-variant">— financiada por Cashea (pago a plazos)</span>
+		</label>
 	</div>
 
 	<SaleWizardFloatingActions
