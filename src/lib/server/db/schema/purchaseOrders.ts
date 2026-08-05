@@ -21,7 +21,7 @@ import {
 	PurchaseDocumentType,
 	PurchaseDiscountType,
 	PurchasePaymentTerms,
-	PurchasePaymentMethod
+	PaymentMethod
 } from '../../../shared/enums/purchaseTypes';
 import { CurrencyCode } from '../../../shared/enums/currencyTypes';
 import { products } from './products';
@@ -61,10 +61,7 @@ export const purchasePaymentCurrencyEnum = pgEnum(
 	enumValues(CurrencyCode)
 );
 
-export const purchasePaymentMethodEnum = pgEnum(
-	'purchase_payment_method',
-	enumValues(PurchasePaymentMethod)
-);
+export const purchasePaymentMethodEnum = pgEnum('payment_method', enumValues(PaymentMethod));
 
 // ============================================================================
 // PURCHASE ORDERS (Cabecera de Compra / Carga)
@@ -196,6 +193,8 @@ export const purchaseOrderPayments = pgTable(
 		bcvUsdRate: doublePrecision('bcv_usd_rate').notNull(),
 		/** Method-specific rate to VES when the payment is not USD_BCV */
 		specificRate: doublePrecision('specific_rate'),
+		/** Currency code the specific rate refers to (e.g. EUR_BCV, USDT, USD_PAYPAL) or null. */
+		rateType: varchar('rate_type', { length: 20 }),
 		/** Computed amount in VES */
 		amountBs: doublePrecision('amount_bs').notNull(),
 		/** Computed amount normalized to USD BCV */
