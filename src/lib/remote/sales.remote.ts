@@ -500,6 +500,8 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 				paymentMethod: data.paymentMethod,
 				amount: data.amount,
 				exchangeRate: data.exchangeRate ?? null,
+				rateType: data.rateType ?? null,
+				isCasheaPayment: data.isCasheaPayment ?? false,
 				bcvRate: data.bcvRate,
 				paymentDate: data.paymentDate,
 				amountBcvUsd,

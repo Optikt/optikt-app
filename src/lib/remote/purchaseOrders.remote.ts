@@ -722,7 +722,7 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 
 	try {
 		const updated = await db.transaction(async (tx) =>
-			setPurchaseOrderReadyForReview(data.id, false, tx, data.clearReviewed)
+			setPurchaseOrderReadyForReview(data.id, false, tx, true)
 		);
 		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
@@ -921,6 +921,7 @@ export const addPurchaseOrderPaymentCmd = command(
 						amount: data.amount,
 						bcvUsdRate: data.bcvUsdRate,
 						specificRate: data.specificRate ?? null,
+						rateType: data.rateType ?? null,
 						amountBs: normalized.amountBs,
 						amountUsdBcv: normalized.amountUsdBcv,
 						amountAppliedToDebt,
