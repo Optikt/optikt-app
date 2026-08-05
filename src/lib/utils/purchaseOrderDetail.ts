@@ -186,8 +186,9 @@ export function classifyAuditEntry(entry: ChangeHistoryWithUser): AuditEvent | n
 					action
 				};
 			}
-			if ('readyForReviewAt' in changes) {
-				const label = changes.readyForReviewAt?.new ? 'Enviada a revisión' : 'Devuelta a borrador';
+			if ('readyForReviewAt' in changes || 'isReadyForReview' in changes) {
+				const ready = changes.readyForReviewAt?.new ?? changes.isReadyForReview?.new ?? false;
+				const label = ready ? 'Enviada a revisión' : 'Devuelta a borrador';
 				return {
 					id: entry.id,
 					label,
