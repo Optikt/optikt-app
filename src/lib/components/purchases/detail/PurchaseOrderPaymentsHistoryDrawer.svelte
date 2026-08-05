@@ -182,25 +182,25 @@
 					class="bg-surface-container-low/40 text-[11px] tracking-[0.18em] text-outline uppercase"
 				>
 					<tr>
-						<th class="px-4 py-3">Pago</th>
-						<th class="px-4 py-3">Fecha</th>
-						<th class="px-4 py-3">Por</th>
-						<th class="px-4 py-3">Método</th>
-						<th class="px-4 py-3 text-right">Monto</th>
-						<th class="px-4 py-3 text-right">USD BCV</th>
+						<th class="px-2 py-2">Pago</th>
+						<th class="px-2 py-2">Fecha</th>
+						<th class="px-2 py-2">Por</th>
+						<th class="px-2 py-2">Método</th>
+						<th class="px-2 py-2 text-right">Monto</th>
+						<th class="px-2 py-2 text-right">USD BCV</th>
 						{#if isNativeSettlement}
-							<th class="px-4 py-3 text-right">Abono {settlementSymbol}</th>
-							<th class="px-4 py-3 text-right">Var.</th>
+							<th class="px-2 py-2 text-right">Abono {settlementSymbol}</th>
+							<th class="px-2 py-2 text-right">Var.</th>
 						{/if}
-						<th class="px-4 py-3">Detalle</th>
-						<th class="w-12 px-4 py-3"></th>
+						<th class="px-2 py-2">Detalle</th>
+						<th class="w-12 px-2 py-2"></th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-outline-variant/15">
 					{#each sortedPayments as payment (payment.id)}
 						{@const earlyBenefit = benefitForPayment(payment.id)}
 						<tr class:opacity-60={payment.voidedAt}>
-							<td class="px-4 py-3 align-top">
+							<td class="px-2 py-2 align-top">
 								<div class="font-semibold text-brand-navy">#{payment.paymentNumber}</div>
 								{#if payment.voidedAt}
 									<p class="mt-1 text-[10px] font-semibold tracking-[0.14em] text-error uppercase">
@@ -208,31 +208,31 @@
 									</p>
 								{/if}
 							</td>
-							<td class="px-4 py-3 align-top text-on-surface-variant">
+							<td class="px-2 py-2 align-top text-xs text-on-surface-variant">
 								<div class:line-through={payment.voidedAt}>
 									{formatDateOnly(payment.paymentDate, { dateStyle: 'short' })}
 								</div>
 							</td>
-							<td class="px-4 py-3 align-top text-xs text-on-surface-variant">
+							<td class="px-2 py-2 align-top text-xs text-on-surface-variant">
 								<div>{payment.createdByName}</div>
 								{#if payment.voidedAt && payment.voidedByName}
 									<div class="mt-1 text-[10px] text-error">↳ {payment.voidedByName}</div>
 								{/if}
 							</td>
-							<td class="px-4 py-3 align-top">
-								<AppBadge variant="neutral"
+							<td class="px-2 py-2 align-top">
+								<AppBadge variant="neutral" class="text-[10px]"
 									>{PURCHASE_PAYMENT_METHOD_LABELS[
 										payment.paymentMethod as PurchasePaymentMethod
 									] ?? payment.paymentMethod}</AppBadge
 								>
 							</td>
 							<td
-								class="px-4 py-3 text-right align-top font-mono text-on-surface-variant tabular-nums"
+								class="px-2 py-2 text-right align-top font-mono text-on-surface-variant tabular-nums"
 							>
 								<span class:line-through={payment.voidedAt}>{formatOriginalAmount(payment)}</span>
 							</td>
 							<td
-								class="px-4 py-3 text-right align-top font-mono font-semibold text-brand-navy tabular-nums"
+								class="px-2 py-2 text-right align-top font-mono font-semibold text-brand-navy tabular-nums"
 							>
 								<span class:line-through={payment.voidedAt}
 									>{formatPrice(payment.amountUsdBcv)}</span
@@ -241,7 +241,7 @@
 							{#if isNativeSettlement}
 								{@const pvar = paymentVariance(payment)}
 								<td
-									class="px-4 py-3 text-right align-top font-mono tabular-nums {pvar > 0
+									class="px-2 py-2 text-right align-top font-mono tabular-nums {pvar > 0
 										? 'text-success'
 										: pvar < 0
 											? 'text-error'
@@ -252,7 +252,7 @@
 									</span>
 								</td>
 								<td
-									class="px-4 py-3 text-right align-top font-mono tabular-nums {pvar > 0
+									class="px-2 py-2 text-right align-top font-mono tabular-nums {pvar > 0
 										? 'text-success'
 										: pvar < 0
 											? 'text-error'
@@ -263,8 +263,11 @@
 									</span>
 								</td>
 							{/if}
-							<td class="px-4 py-3 align-top text-xs text-on-surface-variant">
-								<p class="whitespace-pre-wrap">
+							<td class="px-2 py-2 align-top text-xs text-on-surface-variant">
+								<p
+									class="max-w-[8rem] whitespace-pre-wrap truncate"
+									title={payment.reference || payment.notes || '—'}
+								>
 									{payment.reference || payment.notes || '—'}
 								</p>
 								{#if earlyBenefit}
@@ -277,7 +280,7 @@
 									</div>
 								{/if}
 							</td>
-							<td class="px-4 py-3 text-right align-top">
+							<td class="px-2 py-2 text-right align-top">
 								{#if canVoidPayment && !payment.voidedAt}
 									<button
 										type="button"

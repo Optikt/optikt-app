@@ -109,7 +109,10 @@
 				{isFullyPaid}
 				{settlementCurrency}
 				{composerRequest}
-				{onFinanceChanged}
+				onFinanceChanged={(payload) => {
+					onFinanceChanged?.(payload);
+					onclose();
+				}}
 				variant="drawer"
 				drawerResetKey={drawerResetCount}
 			/>
