@@ -10,6 +10,7 @@
 	} from '$lib/components/ui';
 	import { addPayment } from '$lib/remote/sales.remote';
 	import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders.remote';
+	import CasheaCheckbox from './CasheaCheckbox.svelte';
 	import {
 		CurrencyCode,
 		PAYMENT_CURRENCY_GROUPS,
@@ -878,18 +879,12 @@
 
 			<!-- Cashea (sale, solo si la venta es Cashea) -->
 			{#if kind === 'sale' && isCasheaSale && isBsPaymentMethod(rail)}
-				<label
-					class="flex items-center gap-2 rounded-lg bg-brand-gold/10 px-3 py-2 text-xs text-on-surface-variant"
-				>
-					<input
-						type="checkbox"
-						checked={isCasheaSale}
-						disabled
-						class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
-					/>
-					<span class="font-medium text-on-surface">Pago vía Cashea</span>
-					<span class="text-on-surface-variant">— la venta se financia por Cashea</span>
-				</label>
+				<CasheaCheckbox
+					variant="gold"
+					disabled
+					label="Pago con Cashea"
+					bind:isCashea={isCasheaSale}
+				/>
 			{/if}
 
 			<!-- Referencia + notas -->
