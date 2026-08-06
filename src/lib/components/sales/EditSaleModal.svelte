@@ -23,6 +23,7 @@
 	import { SaleItemType, FreeItemCategory, LensType } from '$lib/shared/enums/lensTypes';
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
+	import CasheaCheckbox from './CasheaCheckbox.svelte';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
@@ -587,17 +588,7 @@
 						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
 					/>
 				</div>
-				<label
-					class="mt-2 flex items-center gap-2 rounded-lg bg-surface-container/60 px-3 py-2.5 text-xs text-on-surface-variant"
-				>
-					<input
-						type="checkbox"
-						bind:checked={isCashea}
-						class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
-					/>
-					<span class="font-medium text-on-surface">Venta vía Cashea</span>
-					<span class="text-on-surface-variant">— financiada por Cashea</span>
-				</label>
+				<CasheaCheckbox bind:isCashea class="mt-2" />
 			</div>
 		</section>
 

@@ -2,6 +2,7 @@
 	import { ArrowLeft } from '@lucide/svelte';
 	import CustomerLookupInput from '../CustomerLookupInput.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
+	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { NewCustomerData } from '../newSaleTypes';
 
@@ -84,17 +85,7 @@
 			resetKey={resetCounter}
 		/>
 
-		<label
-			class="mt-3 flex items-center gap-2 rounded-lg bg-surface-container/60 px-3 py-2.5 text-xs text-on-surface-variant"
-		>
-			<input
-				type="checkbox"
-				bind:checked={isCashea}
-				class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
-			/>
-			<span class="font-medium text-on-surface">Venta vía Cashea</span>
-			<span class="text-on-surface-variant">— financiada por Cashea (pago a plazos)</span>
-		</label>
+		<CasheaCheckbox bind:isCashea class="mt-2" />
 	</div>
 
 	<SaleWizardFloatingActions
