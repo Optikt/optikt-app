@@ -473,8 +473,10 @@
 			<!-- Payment Form -->
 			<div class="p-6">
 				<PaymentForm
+					kind="sale"
 					saleId={row.saleId}
 					remainingBcvUsd={row.balance}
+					isCasheaSale={row.isCashea}
 					{bcvRate}
 					onPaymentAdded={handlePaymentAdded}
 				/>

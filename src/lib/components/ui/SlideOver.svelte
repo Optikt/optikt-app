@@ -2,11 +2,13 @@
 	import type { Snippet } from 'svelte';
 
 	type Size = 'md' | 'lg' | 'xl';
+	type Direction = 'right' | 'bottom';
 
 	let {
 		open = $bindable(false),
 		onclose,
 		size = 'lg' as Size,
+		direction = 'right' as Direction,
 		children,
 		header,
 		footer
@@ -14,6 +16,7 @@
 		open?: boolean;
 		onclose?: () => void;
 		size?: Size;
+		direction?: Direction;
 		children: Snippet;
 		header?: Snippet<[{ onclose: () => void }]>;
 		footer?: Snippet;
@@ -51,26 +54,47 @@
 	role="presentation"
 ></div>
 
-<div
-	bind:this={panel}
-	class="fixed top-0 right-0 z-55 flex h-full w-full {maxWidth[
-		size
-	]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
-	class:translate-x-full={!open}
-	class:translate-x-0={open}
-	role="dialog"
-	aria-modal="true"
-	tabindex="-1"
->
-	{#if header}
-		{@render header({ onclose: handleClose })}
-	{/if}
-
-	<div class="flex-1 overflow-y-auto px-6 py-4">
-		{@render children()}
+{#if direction === 'bottom'}
+	<div
+		bind:this={panel}
+		class="fixed inset-x-0 bottom-0 z-55 flex max-h-[90vh] w-full flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none rounded-t-2xl"
+		class:translate-y-full={!open}
+		class:translate-y-0={open}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div class="mx-auto mt-2 h-1.5 w-10 rounded-full bg-outline/30 shrink-0"></div>
+		{#if header}
+			{@render header({ onclose: handleClose })}
+		{/if}
+		<div class="flex-1 overflow-y-auto px-6 py-4">
+			{@render children()}
+		</div>
+		{#if footer}
+			{@render footer()}
+		{/if}
 	</div>
-
-	{#if footer}
-		{@render footer()}
-	{/if}
-</div>
+{:else}
+	<div
+		bind:this={panel}
+		class="fixed top-0 right-0 z-55 flex h-full w-full {maxWidth[
+			size
+		]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
+		class:translate-x-full={!open}
+		class:translate-x-0={open}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		{#if header}
+			{@render header({ onclose: handleClose })}
+		{/if}
+		<div class="flex-1 overflow-y-auto px-6 py-4">
+			{@render children()}
+		</div>
+		{#if footer}
+			{@render footer()}
+		{/if}
+	</div>
+{/if}

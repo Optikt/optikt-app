@@ -8,6 +8,7 @@
 		Play,
 		Printer,
 		CircleCheck,
+		ReceiptText,
 		X
 	} from '@lucide/svelte';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -20,7 +21,7 @@
 		SaleMovementsModal
 	} from '$lib/components/sales';
 	import { PDFViewerModal } from '$lib/components/pdf';
-	import { ConfirmModal, SaleStatusBadge, SlideOver } from '$lib/components/ui';
+	import { AppBadge, ConfirmModal, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
 	import {
@@ -661,46 +662,47 @@
 	size="md"
 >
 	{#snippet header({ onclose })}
-		<div
-			class="flex items-start justify-between gap-3 border-b border-outline-variant/20 px-6 py-4"
-		>
-			<div class="min-w-0">
-				<h2 class="truncate text-sm font-bold text-on-surface">Procesar Pago</h2>
+		<div class="flex items-center justify-between border-b border-outline-variant/15 px-6 py-4">
+			<div class="flex items-center gap-3">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-high text-brand-navy"
+				>
+					<ReceiptText class="h-5 w-5" />
+				</div>
+				<div>
+					<div class="flex items-center gap-2">
+						<h2 class="text-lg font-semibold text-brand-navy">Registrar pago</h2>
+						{#if remainingBcvUsd > 0.01}
+							<AppBadge variant="info">Saldo: {formatPrice(remainingBcvUsd)}</AppBadge>
+						{:else}
+							<AppBadge variant="success">Pagado</AppBadge>
+						{/if}
+					</div>
+					<p class="text-xs text-on-surface-variant">
+						{sale.paidAmountBcvUsd != null && sale.paidAmountBcvUsd > 0
+							? 'Pagos registrados'
+							: 'Sin pagos registrados'}
+					</p>
+				</div>
 			</div>
 			<button
 				type="button"
 				onclick={onclose}
-				class="shrink-0 cursor-pointer rounded-md p-1.5 text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface-variant max-sm:p-3"
+				class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+				aria-label="Cerrar"
 			>
-				<X class="h-4 w-4" />
+				<X class="h-5 w-5" />
 			</button>
 		</div>
 	{/snippet}
-	<!-- SALDO PENDIENTE -->
-	{#if remainingBcvUsd > 0.01}
-		<p class="text-2xl font-bold text-amber-600">{formatPrice(remainingBcvUsd)}</p>
-	{:else}
-		<p class="text-2xl font-bold text-green-600">Pagado</p>
-	{/if}
 
-	<!-- Fiscal Data -->
-	<div class="mt-3 space-y-1">
-		<div class="flex items-center justify-between">
-			<span class="text-xs text-gray-400">Base Imponible</span>
-			<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxableBase)}</span>
-		</div>
-		<div class="flex items-center justify-between">
-			<span class="text-xs text-gray-400">IVA ({sale.snapshotTaxRate}%)</span>
-			<span class="font-mono text-xs text-gray-400">{formatPrice(taxBreakdown.taxAmount)}</span>
-		</div>
-	</div>
-
-	<!-- Payment Form (drawer variant) -->
-	<div class="mt-4">
+	<div class="px-6 space-y-4">
 		<PaymentForm
+			kind="sale"
 			saleId={sale.id}
 			{remainingBcvUsd}
 			{bcvRate}
+			isCasheaSale={sale.isCashea}
 			variant="drawer"
 			drawerResetKey={drawerResetCount}
 			onPaymentAdded={handlePaymentAdded}

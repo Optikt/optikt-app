@@ -126,8 +126,8 @@
 
 			{#if item.kind === 'lens'}
 				<div>
-					<EyeSummary eye="OI" lensEntry={item.lensPair.oi} />
 					<EyeSummary eye="OD" lensEntry={item.lensPair.od} />
+					<EyeSummary eye="OI" lensEntry={item.lensPair.oi} />
 				</div>
 			{/if}
 		</div>

@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * @deprecated Usar SupplierCombobox (src/lib/components/purchases/step1/) o el Combobox
+	 * de shadcn-svelte. Svelecte tiene limitaciones de estilizado que son inconsistentes con
+	 * el resto de inputs del wizard de compras.
+	 *
+	 * Para nuevas funcionalidades con selector buscable, preferir shadcn-svelte Combobox.
+	 */
 	import type { ComponentProps } from 'svelte';
 	import Svelecte from 'svelecte';
 	import { fade } from 'svelte/transition';
@@ -96,7 +103,13 @@
 
 {#snippet selection(selectedOptions: unknown, _: unknown)}
 	{#each selectedOptions as Options as option, i (`select-input-${i}`)}
-		<div class={['bg-primary-blue rounded-lg px-1 py-0.5', { ' text-gray-600': disabled }]}>
+		<div
+			title={'id' in option ? option.name : option.label}
+			class={[
+				'max-w-full truncate bg-primary-blue rounded-lg px-1 py-0.5',
+				{ ' text-gray-600': disabled }
+			]}
+		>
 			{#if 'id' in option}
 				{option.name}
 			{:else}
@@ -159,6 +172,14 @@
 		border-color: rgba(65, 158, 189, 0.35) !important;
 		box-shadow: 0 0 0 2px rgba(65, 158, 189, 0.15) !important;
 		outline: none !important;
+	}
+
+	/* ── Prevent text wrapping in selected value ──────────────────────── */
+	:global(.sv-item, .sv-item-selected) {
+		overflow: hidden !important;
+		text-overflow: ellipsis !important;
+		white-space: nowrap !important;
+		max-width: 100% !important;
 	}
 
 	/* ── Disabled ─────────────────────────────────────────────────────── */

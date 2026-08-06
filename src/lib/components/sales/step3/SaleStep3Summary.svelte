@@ -23,6 +23,7 @@
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData, TreatmentSaleItemRow } from '../newSaleTypes';
 	import SaleCustomerBanner from '../SaleCustomerBanner.svelte';
+	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import { getContext } from 'svelte';
@@ -42,6 +43,7 @@
 		discount: number;
 		discountType: DiscountTypeEnum;
 		notes: string;
+		isCashea?: boolean;
 		defaultTaxRate?: number;
 		customerFallbackName?: string;
 		customerFallbackDocument?: string;
@@ -70,6 +72,7 @@
 		discount = $bindable(),
 		discountType = $bindable(),
 		notes = $bindable(),
+		isCashea = $bindable(false),
 		defaultTaxRate = DEFAULT_TAX_RATE,
 		customerFallbackName = 'Venta sin cliente',
 		customerFallbackDocument = 'Sin documento',
@@ -271,6 +274,7 @@
 			document={displayCustomerDocument}
 			statusLabel={statusMeta.label}
 		/>
+		<CasheaCheckbox bind:isCashea />
 		<div
 			class="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 transition-colors duration-150 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-100 hover:border-slate-400"
 		>

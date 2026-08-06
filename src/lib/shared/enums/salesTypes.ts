@@ -4,6 +4,17 @@
  */
 
 import type { BadgeVariant } from '$lib/shared/badge-variants';
+import { PaymentMethod } from './paymentMethods';
+
+export {
+	ALL_PAYMENT_METHODS,
+	BOLIVAR_PAYMENT_METHODS,
+	FOREIGN_PAYMENT_METHODS,
+	PAYMENT_METHOD_LABELS,
+	PaymentMethod,
+	getPaymentMethodLabel,
+	isBsPaymentMethod
+} from './paymentMethods';
 
 // ============================================================================
 // SALE STATUS
@@ -42,49 +53,20 @@ export function getSaleStatusBadgeColor(status: string): BadgeVariant {
 
 // ============================================================================
 // PAYMENT METHOD (for individual payments)
+// Shared with purchases — see paymentMethods.ts
 // ============================================================================
-
-export enum PaymentMethod {
-	PAGO_MOVIL_BS = 'PAGO_MOVIL_BS',
-	TRANSFERENCIA_BS = 'TRANSFERENCIA_BS',
-	PUNTO_VENTA_BS = 'PUNTO_VENTA_BS',
-	EFECTIVO_BS = 'EFECTIVO_BS',
-	EFECTIVO_USD = 'EFECTIVO_USD',
-	BINANCE_USDT = 'BINANCE_USDT'
-}
-
-export const ALL_PAYMENT_METHODS = Object.values(PaymentMethod) as PaymentMethod[];
-
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-	[PaymentMethod.PAGO_MOVIL_BS]: 'Pago Móvil Bs',
-	[PaymentMethod.TRANSFERENCIA_BS]: 'Transferencia Bs',
-	[PaymentMethod.PUNTO_VENTA_BS]: 'Punto de Venta Bs',
-	[PaymentMethod.EFECTIVO_BS]: 'Efectivo Bs',
-	[PaymentMethod.EFECTIVO_USD]: 'Efectivo $',
-	[PaymentMethod.BINANCE_USDT]: 'Binance USDT'
-};
-
-export function getPaymentMethodLabel(method: string): string {
-	return PAYMENT_METHOD_LABELS[method as PaymentMethod] ?? method;
-}
-
-/** Whether a payment method is denominated in Bolivares (no method-specific exchange rate needed) */
-export function isBsPaymentMethod(method: PaymentMethod): boolean {
-	return [
-		PaymentMethod.PAGO_MOVIL_BS,
-		PaymentMethod.TRANSFERENCIA_BS,
-		PaymentMethod.PUNTO_VENTA_BS,
-		PaymentMethod.EFECTIVO_BS
-	].includes(method);
-}
 
 /** Label for the method-specific exchange rate field */
 export function getExchangeRateLabel(method: PaymentMethod): string {
 	switch (method) {
 		case PaymentMethod.EFECTIVO_USD:
 			return 'Tasa USD Cash (Bs/$)';
+		case PaymentMethod.EFECTIVO_EUR:
+			return 'Tasa EUR efectivo (Bs/€)';
 		case PaymentMethod.BINANCE_USDT:
 			return 'Tasa USDT (Bs/USDT)';
+		case PaymentMethod.PAYPAL:
+			return 'Tasa PayPal (Bs/$)';
 		default:
 			return '';
 	}

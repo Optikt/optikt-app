@@ -358,6 +358,7 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				snapshotTaxRate: data.snapshotTaxRate,
 				total,
 				paidAmountBcvUsd: 0,
+				isCashea: data.isCashea ?? false,
 				notes: data.notes ?? null,
 				createdAt: now,
 				updatedAt: now
@@ -500,6 +501,8 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 				paymentMethod: data.paymentMethod,
 				amount: data.amount,
 				exchangeRate: data.exchangeRate ?? null,
+				rateType: data.rateType ?? null,
+				isCasheaPayment: data.isCasheaPayment ?? false,
 				bcvRate: data.bcvRate,
 				paymentDate: data.paymentDate,
 				amountBcvUsd,
@@ -1149,6 +1152,7 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 		if (data.discount !== undefined) headerUpdate.discount = data.discount;
 		if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
 		if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
+		if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
 
 		// If discount changed without items, recalculate total
 		if (data.discount !== undefined || data.discountType !== undefined) {

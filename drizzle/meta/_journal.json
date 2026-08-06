@@ -225,6 +225,41 @@
       "when": 1784159252000,
       "tag": "0031_purchase_payable_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1784571208000,
+      "tag": "0032_drop_settlement_rate_to_ves",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785364800000,
+      "tag": "0033_purchase_order_payment_method",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1785960000000,
+      "tag": "0034_payment_method_enum",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786572000000,
+      "tag": "0035_payment_method_eur_paypal",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1787176000000,
+      "tag": "0036_is_cashea_sale",
+      "breakpoints": true
     }
   ]
 }

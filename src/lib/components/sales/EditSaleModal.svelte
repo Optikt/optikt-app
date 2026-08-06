@@ -23,6 +23,7 @@
 	import { SaleItemType, FreeItemCategory, LensType } from '$lib/shared/enums/lensTypes';
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
+	import CasheaCheckbox from './CasheaCheckbox.svelte';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
@@ -56,6 +57,7 @@
 	// ── Header fields ──────────────────────────────────────────────────────
 	let saleDate = $state(untrack(() => sale.saleDate.slice(0, 10)));
 	let notes = $state(untrack(() => sale.notes ?? ''));
+	let isCashea = $state(untrack(() => sale.isCashea ?? false));
 	let discount = $state(untrack(() => sale.discount));
 	let discountType = $state<string>(untrack(() => sale.discountType));
 
@@ -472,6 +474,7 @@
 		if (notes !== (sale.notes ?? '')) {
 			payload.notes = notes || undefined;
 		}
+		if (isCashea !== (sale.isCashea ?? false)) payload.isCashea = isCashea;
 		if (discount !== sale.discount) payload.discount = discount;
 		if (discountType !== sale.discountType) payload.discountType = discountType as DiscountTypeEnum;
 
@@ -585,6 +588,7 @@
 						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
 					/>
 				</div>
+				<CasheaCheckbox bind:isCashea class="mt-2" />
 			</div>
 		</section>
 

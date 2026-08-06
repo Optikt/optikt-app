@@ -20,7 +20,8 @@ import {
 	PurchaseOrderItemType,
 	PurchaseDocumentType,
 	PurchaseDiscountType,
-	PurchasePaymentTerms
+	PurchasePaymentTerms,
+	PaymentMethod
 } from '../../../shared/enums/purchaseTypes';
 import { CurrencyCode } from '../../../shared/enums/currencyTypes';
 import { products } from './products';
@@ -60,6 +61,8 @@ export const purchasePaymentCurrencyEnum = pgEnum(
 	enumValues(CurrencyCode)
 );
 
+export const purchasePaymentMethodEnum = pgEnum('payment_method', enumValues(PaymentMethod));
+
 // ============================================================================
 // PURCHASE ORDERS (Cabecera de Compra / Carga)
 // ============================================================================
@@ -98,8 +101,6 @@ export const purchaseOrders = pgTable(
 		settlementCurrency: purchasePaymentCurrencyEnum('settlement_currency')
 			.notNull()
 			.default(CurrencyCode.USD_BCV),
-		/** Settlement currency rate in Bs per unit, captured when the order is issued. */
-		settlementRateToVes: doublePrecision('settlement_rate_to_ves'),
 		/** Contractual total before the settlement discount, in settlementCurrency. */
 		settlementGrossAmount: doublePrecision('settlement_gross_amount').notNull().default(0),
 		/** Contractual debt after the settlement discount, in settlementCurrency. */
@@ -182,6 +183,8 @@ export const purchaseOrderPayments = pgTable(
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		purchaseOrderId: uuid('purchase_order_id').notNull(),
 		paymentNumber: integer('payment_number').notNull(),
+		/** Payment rail used (Pago Móvil, Transferencia, etc.) — determines currencyCode */
+		paymentMethod: purchasePaymentMethodEnum('payment_method').notNull().default('OTRO'),
 		currencyCode: purchasePaymentCurrencyEnum('currency_code').notNull(),
 		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** Amount entered in the payment's native currency */
@@ -190,6 +193,8 @@ export const purchaseOrderPayments = pgTable(
 		bcvUsdRate: doublePrecision('bcv_usd_rate').notNull(),
 		/** Method-specific rate to VES when the payment is not USD_BCV */
 		specificRate: doublePrecision('specific_rate'),
+		/** Currency code the specific rate refers to (e.g. EUR_BCV, USDT, USD_PAYPAL) or null. */
+		rateType: varchar('rate_type', { length: 20 }),
 		/** Computed amount in VES */
 		amountBs: doublePrecision('amount_bs').notNull(),
 		/** Computed amount normalized to USD BCV */

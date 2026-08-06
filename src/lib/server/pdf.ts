@@ -14,6 +14,15 @@ const PDF_SHUTDOWN_ERROR_MESSAGE = '[pdf] failed to close browser during shutdow
 type PdfShutdownLogger = (message: string, error: unknown) => void;
 type PdfShutdownFinalize = () => void;
 
+export function buildPrintUrl(path: string, fallbackOrigin: string): string {
+	console.log('DEBUG: buildPrintUrl');
+	const { PORT = '' } = process.env;
+	console.log('DEBUG: PORT', PORT);
+	const origin = PORT ? `http://localhost:${PORT}` : fallbackOrigin;
+	console.log('DEBUG: origin', origin);
+	return new URL(path, origin).toString();
+}
+
 export function normalizePdfUrl(url: string): string {
 	try {
 		return new URL(url).toString();

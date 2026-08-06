@@ -621,31 +621,6 @@
 									<span class="text-center text-[10px] font-bold text-slate-500">DIP</span>
 
 									<div class="flex items-center gap-1.5">
-										<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></span>
-										<span class="text-[11px] font-bold text-slate-600">OI</span>
-									</div>
-									<span
-										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-										>{prescriptionValue(group.item.osSphere)}</span
-									>
-									<span
-										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-										>{prescriptionValue(group.item.osCylinder)}</span
-									>
-									<span
-										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-										>{prescriptionValue(group.item.osAxis)}</span
-									>
-									<span
-										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-										>{prescriptionValue(group.item.osAddition)}</span
-									>
-									<span
-										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
-										>—</span
-									>
-
-									<div class="flex items-center gap-1.5">
 										<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500"></span>
 										<span class="text-[11px] font-bold text-slate-600">OD</span>
 									</div>
@@ -669,14 +644,39 @@
 										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 										>—</span
 									>
+
+									<div class="flex items-center gap-1.5">
+										<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></span>
+										<span class="text-[11px] font-bold text-slate-600">OI</span>
+									</div>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osSphere)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osCylinder)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osAxis)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>{prescriptionValue(group.item.osAddition)}</span
+									>
+									<span
+										class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+										>—</span
+									>
 								</div>
 
 								<div class="mt-3 flex gap-6 border-t border-slate-200 pt-3 text-[11px]">
 									<span class="text-slate-500"
-										>Alt. Montaje OI: <strong class="font-mono text-slate-800">—</strong></span
+										>Alt. Montaje OD: <strong class="font-mono text-slate-800">—</strong></span
 									>
 									<span class="text-slate-500"
-										>Alt. Montaje OD: <strong class="font-mono text-slate-800">—</strong></span
+										>Alt. Montaje OI: <strong class="font-mono text-slate-800">—</strong></span
 									>
 								</div>
 							</div>

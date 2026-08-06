@@ -66,7 +66,8 @@ import { db } from '$lib/server/db';
 import {
 	PurchaseOrderItemType,
 	PurchaseOrderStatus,
-	PurchasePaymentTerms
+	PurchasePaymentTerms,
+	currencyForPurchasePaymentMethod
 } from '$lib/shared/enums';
 import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
 import { validatePurchaseOrderDraftReadiness } from '$lib/shared/purchaseOrderRules';
@@ -303,7 +304,6 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,
 					settlementCurrency,
-					settlementRateToVes: data.settlementRateToVes ?? null,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
@@ -596,7 +596,6 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,
 					settlementCurrency,
-					settlementRateToVes: data.settlementRateToVes ?? null,
 					...creditTerms,
 					notes: data.notes,
 					settlementDiscountType: data.discount?.type ?? 'NONE',
@@ -723,7 +722,7 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 
 	try {
 		const updated = await db.transaction(async (tx) =>
-			setPurchaseOrderReadyForReview(data.id, false, tx, data.clearReviewed)
+			setPurchaseOrderReadyForReview(data.id, false, tx, true)
 		);
 		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
@@ -874,8 +873,10 @@ export const addPurchaseOrderPaymentCmd = command(
 			};
 		}
 
+		const currencyCode = currencyForPurchasePaymentMethod(data.paymentMethod);
+
 		const normalized = normalizePurchasePaymentAmounts({
-			currencyCode: data.currencyCode,
+			currencyCode,
 			amount: data.amount,
 			bcvUsdRate: data.bcvUsdRate,
 			specificRate: data.specificRate
@@ -914,11 +915,13 @@ export const addPurchaseOrderPaymentCmd = command(
 					{
 						purchaseOrderId: data.purchaseOrderId,
 						paymentNumber,
-						currencyCode: data.currencyCode,
+						paymentMethod: data.paymentMethod,
+						currencyCode,
 						paymentDate: data.paymentDate,
 						amount: data.amount,
 						bcvUsdRate: data.bcvUsdRate,
 						specificRate: data.specificRate ?? null,
+						rateType: data.rateType ?? null,
 						amountBs: normalized.amountBs,
 						amountUsdBcv: normalized.amountUsdBcv,
 						amountAppliedToDebt,

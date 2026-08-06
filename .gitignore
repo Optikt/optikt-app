@@ -31,3 +31,5 @@ vite.config.ts.timestamp-*
 .svelte-doctor
 /stitch-prompts
 
+.codebase-memory/
+.opencode/

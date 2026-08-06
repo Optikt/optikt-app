@@ -13,16 +13,24 @@ import { fromISO, fromISODate, toISODate } from '$lib/dates';
 
 export { toISODate as dateToISODateString, fromISODate as parseISODateToLocal } from '$lib/dates';
 
+// Cached Intl formatters (module-level) to avoid re-instantiating on every call.
+const usdCurrencyFormatter = new Intl.NumberFormat('es-VE', {
+	style: 'currency',
+	currency: 'USD',
+	minimumFractionDigits: 2
+});
+const decimalFormatter = new Intl.NumberFormat('es-VE', {
+	style: 'decimal',
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 2
+});
+
 /**
  * Format a number as USD currency (es-VE locale)
  * Example: formatPrice(1234.5) → "$1.234,50"
  */
 export function formatPrice(price: number): string {
-	return new Intl.NumberFormat('es-VE', {
-		style: 'currency',
-		currency: 'USD',
-		minimumFractionDigits: 2
-	}).format(price);
+	return usdCurrencyFormatter.format(price);
 }
 
 /**
@@ -30,11 +38,7 @@ export function formatPrice(price: number): string {
  * Example: formatCurrency(1234.5) → "1.234,50"
  */
 export function formatCurrency(value: number): string {
-	return new Intl.NumberFormat('es-VE', {
-		style: 'decimal',
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2
-	}).format(value);
+	return decimalFormatter.format(value);
 }
 
 /**

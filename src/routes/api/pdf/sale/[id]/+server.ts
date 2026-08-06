@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { generatePdf } from '$lib/server/pdf';
+import { buildPrintUrl, generatePdf } from '$lib/server/pdf';
 import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales';
 import { SaleStatus } from '$lib/shared/enums';
 
@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 		error(409, 'No se puede imprimir una venta cancelada');
 	}
 
-	const printUrl = new URL(`/print/sale/${params.id}`, url).toString();
+	const printUrl = buildPrintUrl(`/print/sale/${params.id}`, url.origin);
 	const cookieHeader = request.headers.get('cookie');
 	const pdf = await generatePdf(printUrl, cookieHeader);
 	const fileName = `recibo-venta-${String(sale.orderNumber).padStart(4, '0')}.pdf`;

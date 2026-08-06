@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { AlertTriangle, Save, X } from '@lucide/svelte';
+	import { AlertTriangle, Save, PackageCheck, TrendingUp } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
-	import { ConfirmModal, PageHeader } from '$lib/components/ui';
+	import { WizardHeader, ConfirmModal } from '$lib/components/ui';
 	import {
 		createPurchaseOrderCmd,
 		savePurchaseOrderDraftCmd
@@ -16,18 +16,14 @@
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency,
-		CurrencyCode,
-		ACTIVE_PURCHASE_SOURCE_CURRENCIES,
-		PURCHASE_SOURCE_CURRENCY_LABELS
+		CurrencyCode
 	} from '$lib/shared/enums';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import PurchaseOrderDocumentPanel from './PurchaseOrderDocumentPanel.svelte';
-	import PurchaseOrderItemsPanel from './PurchaseOrderItemsPanel.svelte';
-	import PurchaseOrderSummaryPanel from './PurchaseOrderSummaryPanel.svelte';
-	import PurchaseOrderDiscountPanel from './PurchaseOrderDiscountPanel.svelte';
-	import PurchaseOrderPaymentTermsPanel from './PurchaseOrderPaymentTermsPanel.svelte';
+	import PurchaseOrderStep2 from './step2/PurchaseOrderStep2.svelte';
+	import PurchaseOrderStep1Card1 from './step1/PurchaseOrderStep1Card1.svelte';
+	import PurchaseOrderStep1Card2 from './step1/PurchaseOrderStep1Card2.svelte';
 	import {
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
@@ -102,11 +98,11 @@
 	let settlementCurrency = $state<string>(
 		initialValues?.settlementCurrency ??
 			untrack(
-				() => SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE]
-			) ??
-			'USD_BCV'
+				() =>
+					SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+					'USD_BCV'
+			)
 	);
-	let settlementRateToVes = $state<number>(initialValues?.settlementRateToVes ?? 0);
 	let notes = $state(initialValues?.notes ?? '');
 	let paymentTerms = $state<PurchasePaymentTerms>(
 		initialValues?.paymentTerms ?? PurchasePaymentTerms.CONTADO
@@ -128,6 +124,43 @@
 	let showPricingModeConfirmModal = $state(false);
 	let pendingSourceCurrency = $state<string | null>(null);
 	let items = $state<PurchaseOrderDraftItem[]>(initialValues?.items ?? []);
+	let currentStep = $state(1);
+
+	const saving = $derived(savingAction !== null);
+
+	const steps = [
+		{ num: 1, label: 'Información' },
+		{ num: 2, label: 'Artículos' },
+		{ num: 3, label: 'Revisar' }
+	];
+
+	const stepValid = $derived.by(() => {
+		switch (currentStep) {
+			case 1:
+				return (
+					Boolean(supplierId) &&
+					Boolean(orderDate) &&
+					Number(bcvRate) > 0 &&
+					String(notes ?? '').trim().length >= 6 &&
+					Boolean(settlementCurrency) &&
+					(documentType === PurchaseDocumentType.INVOICE
+						? (invoiceNumber ?? '').length >= 2
+						: (deliveryNoteNumber ?? '').length >= 2) &&
+					(paymentTerms === PurchasePaymentTerms.CONTADO || Boolean(creditDueDate)) &&
+					(discountType === PurchaseDiscountType.NONE || Number(discountValue) > 0) &&
+					(!sourceCurrencyRequiresRateToVes(sourceCurrency) || Number(sourceRateToVes) > 0)
+				);
+			case 2:
+				return items.length > 0 && reviewStatus.allReviewed;
+			case 3:
+				return true;
+			default:
+				return false;
+		}
+	});
+
+	const canNext = $derived(currentStep < 3 && stepValid && !saving);
+	const canBack = $derived(currentStep > 1);
 
 	const discount = $derived<PurchaseOrderDiscountInput>({
 		type: discountType,
@@ -137,7 +170,6 @@
 	const summary = $derived(calculatePurchaseOrderSummary(items, discount, bcvRate));
 	const supplierLocked = $derived(items.length > 0);
 	const isEdit = $derived(mode === 'edit');
-	const saving = $derived(savingAction !== null);
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
 	const unreviewedWarningLines = $derived(
 		items
@@ -156,6 +188,40 @@
 	const hasDraftWarnings = $derived(
 		unreviewedWarningLines.length > 0 || zeroValueWarningLines.length > 0
 	);
+
+	let showDocumentTypeConfirm = $state(false);
+	let docTypeGuard = false;
+
+	let showSupplierConfirm = $state(false);
+	let supplierGuard = false;
+	let prevSupplierId = $state(untrack(() => supplierId));
+	let prevDocumentType = $state(untrack(() => documentType));
+
+	$effect(() => {
+		if (supplierGuard) {
+			supplierGuard = false;
+			prevSupplierId = supplierId;
+			return;
+		}
+		if (items.length > 0 && supplierId !== prevSupplierId && supplierId !== '') {
+			showSupplierConfirm = true;
+		} else {
+			prevSupplierId = supplierId;
+		}
+	});
+
+	$effect(() => {
+		if (docTypeGuard) {
+			docTypeGuard = false;
+			prevDocumentType = documentType;
+			return;
+		}
+		if (items.length > 0 && documentType !== prevDocumentType) {
+			showDocumentTypeConfirm = true;
+		} else {
+			prevDocumentType = documentType;
+		}
+	});
 
 	const canSave = $derived(
 		canPersistPurchaseOrderDraft(
@@ -200,6 +266,13 @@
 	}
 
 	let settlementManuallyChanged = $state(false);
+	const settlementCurrencyConflict = $derived(
+		settlementManuallyChanged &&
+			settlementCurrency !==
+				(SOURCE_TO_CURRENCY_CODE[sourceCurrency as keyof typeof SOURCE_TO_CURRENCY_CODE] ??
+					'USD_BCV')
+	);
+
 	$effect(() => {
 		if (!settlementManuallyChanged) {
 			settlementCurrency =
@@ -217,6 +290,30 @@
 		void goto(resolve('/purchases'));
 	}
 
+	function cancelDocumentTypeChange() {
+		docTypeGuard = true;
+		documentType = prevDocumentType;
+		showDocumentTypeConfirm = false;
+	}
+
+	function confirmDocumentTypeChange(clearItems: boolean) {
+		if (clearItems) items = [];
+		prevDocumentType = documentType;
+		showDocumentTypeConfirm = false;
+	}
+
+	function cancelSupplierChange() {
+		supplierGuard = true;
+		supplierId = prevSupplierId;
+		showSupplierConfirm = false;
+	}
+
+	function confirmSupplierChange() {
+		items = [];
+		prevSupplierId = supplierId;
+		showSupplierConfirm = false;
+	}
+
 	function getDraftItemTitle(item: PurchaseOrderDraftItem): string {
 		if (item.itemType === PurchaseOrderItemType.PRODUCT) {
 			const product = products.find((candidate) => candidate.id === item.productId);
@@ -226,6 +323,19 @@
 		const lensItem = lensItems.find((candidate) => candidate.id === item.lensCatalogItemId);
 		return lensItem ? lensItem.name : 'Lente seleccionado';
 	}
+
+	function getItemSku(item: PurchaseOrderDraftItem): string {
+		if (item.itemType === PurchaseOrderItemType.PRODUCT) {
+			const product = products.find((candidate) => candidate.id === item.productId);
+			return product?.sku ?? '';
+		}
+		const lensItem = lensItems.find((candidate) => candidate.id === item.lensCatalogItemId);
+		return lensItem?.material?.name ?? '';
+	}
+
+	const marginPercentage = $derived(
+		summary.subtotal > 0 ? (summary.estimatedProfit / summary.subtotal) * 100 : 0
+	);
 
 	function buildZeroValueWarningLine(item: PurchaseOrderDraftItem): ZeroValueWarningLine | null {
 		const fields = getDraftItemZeroValueFields(item);
@@ -256,6 +366,14 @@
 	function handleDraftWarningConfirm() {
 		showDraftWarningModal = false;
 		void savePurchaseOrder();
+	}
+
+	function handleNext() {
+		if (canNext) currentStep++;
+	}
+
+	function handleBack() {
+		if (canBack) currentStep--;
 	}
 
 	function clearItemPricing(item: PurchaseOrderDraftItem) {
@@ -332,10 +450,6 @@
 			altRate: sourceCurrencyRequiresRateToVes(sourceCurrency) ? sourceRateToVes : undefined,
 			sourceCurrency,
 			settlementCurrency: settlementCurrency as CurrencyCode,
-			settlementRateToVes:
-				settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'
-					? settlementRateToVes
-					: undefined,
 			paymentTerms,
 			creditDueDate,
 			earlyPaymentDiscountPercent,
@@ -400,178 +514,330 @@
 	}
 </script>
 
-<div class="space-y-6 p-6">
-	<PageHeader
-		title={isEdit ? 'Editar Orden de Compra' : 'Crear Orden de Compra'}
-		backLabel={isEdit ? 'Volver al detalle' : 'Volver a órdenes'}
-		backOnClick={goBack}
+<div class="space-y-2 p-4">
+	<WizardHeader
+		{steps}
+		{currentStep}
+		canNavigateToStep={(stepNum) => stepNum <= currentStep || stepValid}
+		onStepSelect={(stepNum) => {
+			currentStep = stepNum;
+		}}
 	>
-		{#snippet actions()}
-			<button
-				type="button"
-				onclick={goBack}
-				class="inline-flex items-center gap-2 rounded-xl bg-surface-container-lowest px-4 py-2.5 text-sm font-semibold text-brand-navy ring-1 ring-outline-variant/30 transition-colors hover:bg-surface-container-high"
-			>
-				<X class="h-4 w-4" />
-				Cancelar
-			</button>
-			<button
-				type="button"
-				onclick={handleSaveClick}
-				disabled={!canSave || saving}
-				class="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-2.5 text-sm font-bold text-brand-navy transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
-			>
-				<Save class="h-4 w-4" />
-				{savingAction === 'draft'
-					? 'Guardando...'
-					: isEdit
-						? 'Guardar cambios'
-						: 'Guardar orden (borrador)'}
-			</button>
+		{#snippet breadcrumbs()}
+			<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
+				<a href={resolve('/purchases')} class="transition-colors hover:text-brand-blue">Compras</a>
+				<span class="mx-2 text-outline">›</span>
+				<span class="text-brand-navy">{isEdit ? 'Editar compra' : 'Nueva compra'}</span>
+			</p>
 		{/snippet}
-	</PageHeader>
+	</WizardHeader>
 
-	<div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-		<div
-			class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-		>
-			{isEdit ? 'Los cambios se guardan como borrador' : 'Se guarda primero como borrador'}
+	{#if isEdit}
+		<p class="text-xs text-on-surface-variant">Los cambios se guardan como borrador</p>
+	{/if}
+
+	<!-- Step content -->
+	{#if currentStep === 1}
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+			<PurchaseOrderStep1Card1
+				{suppliers}
+				bind:supplierId
+				{supplierLocked}
+				bind:documentType
+				bind:orderDate
+				bind:invoiceNumber
+				bind:deliveryNoteNumber
+				bind:notes
+				{paymentTerms}
+				{creditDueDate}
+				{earlyPaymentDiscountPercent}
+				{earlyPaymentDiscountDeadline}
+				onPaymentTermsChange={handlePaymentTermsChange}
+				onCreditDueDateChange={(value) => (creditDueDate = value)}
+				onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
+				onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
+			/>
+
+			<PurchaseOrderStep1Card2
+				bind:sourceCurrency
+				bind:bcvRate
+				bind:sourceRateToVes
+				{settlementCurrency}
+				{settlementManuallyChanged}
+				bind:discountType
+				bind:discountValue
+				bind:discountNotes
+				onSourceCurrencyChange={(val) => requestPricingModeChange(val)}
+				onBcvRateChange={(val) => (bcvRate = val)}
+				onSourceRateToVesChange={(val) => (sourceRateToVes = val)}
+				onSettlementManuallyChangedChange={(val) => (settlementManuallyChanged = val)}
+				onSettlementCurrencyChange={(val) => (settlementCurrency = val)}
+				onDiscountTypeChange={(val) => (discountType = val)}
+				onDiscountValueChange={(val) => (discountValue = val)}
+				onDiscountNotesChange={(val) => (discountNotes = val)}
+				{settlementCurrencyConflict}
+			/>
 		</div>
-		{#if items.length > 0}
-			<div
-				class="inline-flex items-center gap-2 self-start rounded-full bg-surface-container-high px-4 py-2 text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-			>
-				{reviewStatus.reviewedCount} / {reviewStatus.totalCount} líneas marcadas
-			</div>
-		{/if}
-	</div>
-
-	<div class="space-y-5">
-		<PurchaseOrderDocumentPanel
-			{suppliers}
-			bind:supplierId
-			bind:documentType
-			bind:orderDate
-			bind:bcvRate
-			bind:sourceRateToVes
-			{sourceCurrency}
-			bind:invoiceNumber
-			bind:deliveryNoteNumber
-			bind:notes
-			{supplierLocked}
-		/>
-
-		<section class="rounded-2xl bg-surface-container-low p-5 ring-1 ring-outline-variant/20">
-			<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-				<div class="space-y-1">
-					<p class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
-						Modo de captura
-					</p>
-					<h2 class="text-lg font-semibold text-brand-navy">Base de precios de la factura</h2>
-					<p class="max-w-2xl text-sm text-on-surface-variant">
-						{#if sourceCurrency === PurchaseSourceCurrency.VES}
-							Ingresa el precio unitario sin IVA en bolívares. El sistema deriva el costo USD para
-							inventario usando la tasa BCV.
-						{:else if sourceCurrency === PurchaseSourceCurrency.EUR}
-							Ingresa el precio unitario sin IVA en euros. El sistema convierte a USD usando la tasa
-							EUR y la tasa BCV.
-						{:else if sourceCurrency === PurchaseSourceCurrency.USDT}
-							Ingresa el precio unitario sin IVA en USDT. El sistema convierte a USD usando la tasa
-							USDT y la tasa BCV.
-						{:else if sourceCurrency === PurchaseSourceCurrency.PAYPAL}
-							Ingresa el precio unitario sin IVA en USD PayPal. El sistema convierte a USD usando la
-							tasa PayPal y la tasa BCV.
-						{:else}
-							Ingresa el costo unitario en USD BCV como hasta ahora. El equivalente en Bs se calcula
-							desde la tasa BCV.
-						{/if}
-					</p>
-				</div>
-
-				<div class="inline-flex rounded-xl bg-surface-container-high p-1">
-					{#each ACTIVE_PURCHASE_SOURCE_CURRENCIES as currency (currency)}
-						<button
-							type="button"
-							onclick={() => requestPricingModeChange(currency)}
-							class={`rounded-lg px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase transition-colors ${
-								sourceCurrency === currency
-									? 'bg-brand-navy text-white'
-									: 'text-on-surface-variant hover:text-brand-navy'
-							}`}
-							aria-pressed={sourceCurrency === currency}
-						>
-							{PURCHASE_SOURCE_CURRENCY_LABELS[currency]}
-						</button>
-					{/each}
-				</div>
-
-				<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-					<label
-						for="settlement-currency"
-						class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-					>
-						Moneda de obligación
-					</label>
-					<select
-						id="settlement-currency"
-						class="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-						bind:value={settlementCurrency}
-						onchange={() => (settlementManuallyChanged = true)}
-					>
-						<option value="USD_BCV">USD (BCV)</option>
-						<option value="EUR_BCV">EUR (BCV)</option>
-						<option value="USDT">USDT</option>
-						<option value="USD_PAYPAL">USD PayPal</option>
-						<option value="VES">Bs. (Bolívares)</option>
-					</select>
-					{#if settlementCurrency !== 'USD_BCV' && settlementCurrency !== 'VES'}
-						<label
-							for="settlement-rate"
-							class="text-xs font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
-						>
-							Tasa {settlementCurrency}
-						</label>
-						<input
-							id="settlement-rate"
-							type="number"
-							bind:value={settlementRateToVes}
-							class="w-32 rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-							placeholder="Bs/unidad"
-						/>
-					{/if}
-				</div>
-			</div>
-		</section>
-
-		<PurchaseOrderItemsPanel
+	{:else if currentStep === 2}
+		<PurchaseOrderStep2
 			bind:items
 			{products}
 			{lensItems}
 			{supplierId}
+			supplierName={suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
 			{documentType}
 			{sourceCurrency}
+			{settlementCurrency}
 			{sourceRateToVes}
 			bcvUsdRate={bcvRate}
 			{defaultTaxRate}
 		/>
+	{:else if currentStep === 3}
+		<div class="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-4">
+			<!-- LEFT: Items list card with table layout -->
+			<div
+				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
+			>
+				<div
+					class="flex items-center gap-2 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+				>
+					<PackageCheck class="h-5 w-5 text-brand-blue" />
+					<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
+						Artículos incluidos
+					</h2>
+					<span
+						class="ml-auto text-xs font-medium text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-full"
+					>
+						{items.length}
+						{items.length === 1 ? 'ítem' : 'ítems'}
+					</span>
+				</div>
 
-		<PurchaseOrderDiscountPanel bind:discountType bind:discountValue bind:discountNotes />
+				<!-- Column headers -->
+				<div
+					class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 px-4 py-2 border-b border-outline-variant/20 bg-surface-container-lowest text-[10px] font-medium uppercase tracking-wide text-on-surface-variant shrink-0"
+				>
+					<span>Cant.</span>
+					<span>Artículo</span>
+					<span class="text-right">C. Unit</span>
+					<span class="text-right">Total</span>
+				</div>
 
-		<PurchaseOrderPaymentTermsPanel
-			{paymentTerms}
-			{creditDueDate}
-			{earlyPaymentDiscountPercent}
-			{earlyPaymentDiscountDeadline}
-			totalNetAmount={summary.netTotal}
-			totalNetAmountAlt={sourceCurrency !== 'USD' ? summary.netTotalAlt : undefined}
-			{sourceCurrency}
-			onPaymentTermsChange={handlePaymentTermsChange}
-			onCreditDueDateChange={(value) => (creditDueDate = value)}
-			onEarlyPaymentDiscountPercentChange={(value) => (earlyPaymentDiscountPercent = value)}
-			onEarlyPaymentDiscountDeadlineChange={(value) => (earlyPaymentDiscountDeadline = value)}
-		/>
+				<!-- Items list -->
+				<div class="flex-1 overflow-y-auto min-h-0 p-2">
+					<div class="flex flex-col">
+						{#each items as item (item.id)}
+							<div
+								class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 items-center px-2 py-2.5 border-b border-outline-variant/10 last:border-none rounded-md hover:bg-surface-container-high transition-colors duration-150"
+							>
+								<!-- Quantity badge -->
+								<span
+									class="font-mono text-sm text-brand-navy font-bold bg-surface-container-high w-8 h-8 flex items-center justify-center rounded-md shrink-0"
+								>
+									{item.quantity}x
+								</span>
+								<!-- Name + SKU + IVA badge -->
+								<div class="flex flex-col min-w-0">
+									<span
+										class="text-sm font-medium text-brand-navy truncate"
+										title={getDraftItemTitle(item)}
+									>
+										{getDraftItemTitle(item)}
+									</span>
+									<span class="text-[10px] font-mono truncate flex items-center gap-1.5">
+										<span class="text-on-surface-variant">{getItemSku(item)}</span>
+										<span
+											class="inline-block px-1 py-0.5 rounded text-[9px] font-bold {item.appliesIva
+												? 'bg-brand-blue/10 text-brand-blue'
+												: 'bg-surface-container-high text-on-surface-variant'}"
+										>
+											{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}
+										</span>
+									</span>
+								</div>
+								<!-- Unit cost -->
+								<div class="text-right">
+									<span class="font-mono text-xs text-on-surface-variant tabular-nums">
+										{formatPrice(Number(item.unitPurchasePrice || 0))}
+									</span>
+								</div>
+								<!-- Total -->
+								<div class="text-right">
+									<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
+										{formatPrice(Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0))}
+									</span>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			</div>
 
-		<PurchaseOrderSummaryPanel {summary} {bcvRate} {discount} {sourceCurrency} {sourceRateToVes} />
+			<!-- RIGHT: Summary card with color contrast -->
+			<div
+				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
+			>
+				<div class="flex flex-col gap-3 px-4 pt-4 pb-3 flex-1">
+					<h2
+						class="text-sm font-semibold uppercase tracking-wide text-brand-navy border-b border-outline-variant/30 pb-2 shrink-0"
+					>
+						Resumen de compra
+					</h2>
+
+					<!-- Metadata: supplier · date · BCV -->
+					<div class="space-y-1 text-xs shrink-0">
+						<div class="flex items-center gap-2">
+							<span class="text-on-surface-variant">Proveedor:</span>
+							<span class="font-medium text-brand-navy truncate">
+								{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
+							</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<span class="text-on-surface-variant">
+								{documentType === PurchaseDocumentType.INVOICE ? 'Factura' : 'Nota'}:
+							</span>
+							<span class="font-medium text-brand-navy truncate">
+								{documentType === PurchaseDocumentType.INVOICE ? invoiceNumber : deliveryNoteNumber}
+							</span>
+							<span class="ml-auto text-on-surface-variant">
+								BCV:
+								<span class="font-medium text-brand-navy tabular-nums"
+									>{Number(bcvRate || 0).toFixed(2)}</span
+								>
+							</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<span class="text-on-surface-variant">Fecha:</span>
+							<span class="font-medium text-brand-navy">{orderDate}</span>
+						</div>
+					</div>
+
+					<!-- Cost breakdown -->
+					<div class="space-y-1.5 text-xs pt-2 border-t border-outline-variant/30 shrink-0">
+						<div class="flex justify-between">
+							<span class="text-on-surface-variant">Subtotal</span>
+							<span class="font-mono font-semibold text-brand-navy tabular-nums">
+								{formatPrice(summary.subtotal)}
+							</span>
+						</div>
+						{#if discount.type !== PurchaseDiscountType.NONE && discount.value > 0}
+							<div class="flex justify-between text-success">
+								<span>Descuento</span>
+								<span class="font-mono tabular-nums">−{formatPrice(summary.discountAmount)}</span>
+							</div>
+						{/if}
+						<div class="flex justify-between">
+							<span class="text-on-surface-variant"
+								>IVA ({discount.type !== PurchaseDiscountType.NONE && discount.value > 0
+									? 'neto'
+									: 'estimado'})</span
+							>
+							<span class="font-mono font-semibold text-brand-navy tabular-nums">
+								{discount.type !== PurchaseDiscountType.NONE && discount.value > 0
+									? formatPrice(summary.netTaxAmount)
+									: formatPrice(summary.taxAmount)}
+							</span>
+						</div>
+						<div class="flex justify-between text-on-surface-variant">
+							<span>Venta estimada</span>
+							<span class="font-mono tabular-nums">{formatPrice(summary.estimatedSale)}</span>
+						</div>
+					</div>
+
+					<!-- Net total - Navy box -->
+					<div class="rounded-lg bg-brand-navy p-3 shadow-md shrink-0">
+						<p class="text-[10px] font-medium uppercase tracking-wide text-brand-blue-light/80">
+							Total neto a pagar
+						</p>
+						<p class="mt-1 font-mono text-xl font-bold text-white">
+							{formatPrice(summary.netTotal)}
+							<span class="text-sm font-medium text-white/60">USD</span>
+						</p>
+						<div class="mt-1 flex items-center gap-3 text-[10px] text-white/60">
+							<span>
+								{summary.lineCount}
+								{summary.lineCount === 1 ? 'línea' : 'líneas'}
+							</span>
+							<span>·</span>
+							<span>{summary.totalUnits} unds</span>
+						</div>
+					</div>
+
+					<!-- Margin highlight - Green box -->
+					<div
+						class="rounded-lg bg-success-container/50 border border-success-container p-3 flex items-center justify-between gap-2 shrink-0"
+					>
+						<div class="flex items-center gap-2 min-w-0">
+							<TrendingUp class="h-4 w-4 shrink-0 text-on-success-container" />
+							<div class="min-w-0">
+								<p
+									class="text-[10px] font-semibold uppercase tracking-wide text-on-success-container"
+								>
+									Margen proyectado
+								</p>
+								<p class="text-[9px] text-on-surface-variant truncate">
+									Venta: {formatPrice(summary.estimatedSale)}
+								</p>
+							</div>
+						</div>
+						<div class="text-right shrink-0">
+							<p
+								class="text-lg font-bold font-mono text-on-success-container tabular-nums leading-none"
+							>
+								{formatPrice(summary.estimatedProfit)}
+							</p>
+							<p class="text-[10px] font-medium text-on-success-container/80">
+								({marginPercentage.toFixed(0)}%)
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<div class="flex items-center justify-between gap-3 pt-2">
+		<div>
+			{#if canBack}
+				<button
+					type="button"
+					onclick={handleBack}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				>
+					← Atrás
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={goBack}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant/30 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-high"
+				>
+					Cancelar
+				</button>
+			{/if}
+		</div>
+		<div class="flex items-center gap-2">
+			{#if currentStep < 3}
+				<button
+					type="button"
+					onclick={handleNext}
+					disabled={!canNext}
+					class="inline-flex items-center gap-1.5 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					Siguiente →
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={handleSaveClick}
+					disabled={!canSave || saving}
+					class="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-bold text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					<Save class="h-4 w-4" />
+					{saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear orden'}
+				</button>
+			{/if}
+		</div>
 	</div>
 </div>
 
@@ -679,3 +945,41 @@
 	onConfirm={confirmPricingModeChange}
 	onCancel={cancelPricingModeChange}
 />
+
+<ConfirmModal
+	bind:open={showDocumentTypeConfirm}
+	title="¿Cambiar tipo de documento?"
+	size="lg"
+	confirmLabel="Limpiar"
+	secondaryLabel="Mantener"
+	cancelLabel="Cancelar"
+	confirmColor="red"
+	onConfirm={() => confirmDocumentTypeChange(true)}
+	onSecondary={() => confirmDocumentTypeChange(false)}
+	onCancel={cancelDocumentTypeChange}
+>
+	{#snippet body()}
+		<p class="text-sm text-on-surface">
+			Ya tienes artículos agregados en el Paso 2. Cambiar de Factura a Nota de entrega (o viceversa)
+			afectará el cálculo de IVA en los costos ingresados.
+		</p>
+	{/snippet}
+</ConfirmModal>
+
+<ConfirmModal
+	bind:open={showSupplierConfirm}
+	title="¿Cambiar proveedor?"
+	size="md"
+	confirmLabel="Cambiar"
+	cancelLabel="Cancelar"
+	confirmColor="red"
+	onConfirm={confirmSupplierChange}
+	onCancel={cancelSupplierChange}
+>
+	{#snippet body()}
+		<p class="text-sm text-on-surface">
+			Ya tienes artículos agregados para el proveedor actual en el Paso 2. Cambiar de proveedor
+			eliminará todos los artículos seleccionados.
+		</p>
+	{/snippet}
+</ConfirmModal>

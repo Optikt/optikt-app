@@ -2,6 +2,7 @@
 	import { ArrowLeft } from '@lucide/svelte';
 	import CustomerLookupInput from '../CustomerLookupInput.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
+	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { NewCustomerData } from '../newSaleTypes';
 
@@ -12,6 +13,7 @@
 		saleDate: Date;
 		secondaryDate?: string;
 		notes: string;
+		isCashea?: boolean;
 		nextOrderNumber?: number;
 		entityNumberValue?: string;
 		stepLabel?: string;
@@ -30,6 +32,7 @@
 		saleDate = $bindable(),
 		secondaryDate = $bindable(''),
 		notes = $bindable(),
+		isCashea = $bindable(false),
 		nextOrderNumber,
 		entityNumberValue,
 		stepLabel = 'Paso 1: Información',
@@ -81,6 +84,8 @@
 			bind:creatingCustomer
 			resetKey={resetCounter}
 		/>
+
+		<CasheaCheckbox bind:isCashea class="mt-2" />
 	</div>
 
 	<SaleWizardFloatingActions

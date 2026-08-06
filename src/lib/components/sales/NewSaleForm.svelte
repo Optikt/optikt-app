@@ -110,6 +110,7 @@
 	let discount = $state(0);
 	let discountType = $state<DiscountTypeEnum>(DiscountType.FIXED);
 	let notes = $state('');
+	let isCashea = $state(false);
 	let submitting = $state(false);
 
 	const formattedOrderNumber = $derived(
@@ -287,6 +288,7 @@
 				discountType,
 				snapshotTaxRate,
 				notes: notes || undefined,
+				isCashea,
 				prescription,
 				items: saleItems
 			});
@@ -307,7 +309,7 @@
 	}
 </script>
 
-<div class="w-full">
+<div class="w-full space-y-2">
 	<WizardHeader
 		steps={STEPS}
 		{currentStep}
@@ -326,6 +328,7 @@
 			bind:newCustomer
 			bind:saleDate
 			bind:notes
+			bind:isCashea
 			{nextOrderNumber}
 			valid={step1Valid}
 			onnext={nextStep}
@@ -356,6 +359,7 @@
 			bind:discount
 			bind:discountType
 			bind:notes
+			bind:isCashea
 			{defaultTaxRate}
 			{submitting}
 			{canSubmit}

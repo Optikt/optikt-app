@@ -18,6 +18,7 @@ import { lensCatalogItems } from './lenses';
 import { prescriptions } from './prescriptions';
 import { supplierTreatments, suppliers } from './suppliers';
 import { inventoryLots } from './inventoryLots';
+import { purchasePaymentMethodEnum as paymentMethodEnum } from './purchaseOrders';
 import { enumValues } from './utils';
 import {
 	SaleItemType,
@@ -64,6 +65,8 @@ export const sales = pgTable(
 		total: doublePrecision().notNull(),
 		/** Sum of all payments converted to BCV USD */
 		paidAmountBcvUsd: doublePrecision('paid_amount_bcv_usd').notNull().default(0),
+		/** True when the sale was financed through Cashea (buy-now-pay-later). */
+		isCashea: boolean('is_cashea').notNull().default(false),
 		notes: varchar(),
 		/** Reason for cancellation (required when cancelling) */
 		cancellationReason: varchar('cancellation_reason', { length: 500 }),
@@ -274,7 +277,7 @@ export const salePayments = pgTable(
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		saleId: uuid('sale_id').notNull(),
 		/** Payment method enum value */
-		paymentMethod: varchar('payment_method').notNull(),
+		paymentMethod: paymentMethodEnum('payment_method').notNull(),
 		/** Amount in the native currency of the payment method */
 		amount: doublePrecision().notNull(),
 		/**
@@ -284,12 +287,16 @@ export const salePayments = pgTable(
 		 * - Binance USDT: USDT/Bs rate (e.g. 602 Bs per USDT)
 		 */
 		exchangeRate: doublePrecision('exchange_rate'),
+		/** Currency code the specific rate refers to (e.g. EUR_BCV, USDT, USD_PAYPAL) or null. */
+		rateType: varchar('rate_type', { length: 20 }),
 		/** BCV Bs/$ official rate at payment time (always required) */
 		bcvRate: doublePrecision('bcv_rate').notNull(),
 		/** Date when the payment was actually received */
 		paymentDate: timestamp('payment_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** Computed BCV USD equivalent: for Bs methods = amount / bcvRate, otherwise = (amount * exchangeRate) / bcvRate */
 		amountBcvUsd: doublePrecision('amount_bcv_usd').notNull(),
+		/** True when the payment was collected through Cashea (buy-now-pay-later). */
+		isCasheaPayment: boolean('is_cashea_payment').notNull().default(false),
 		/** Payment reference number (transfer ref, etc.) */
 		reference: varchar(),
 		notes: varchar(),

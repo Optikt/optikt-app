@@ -16,6 +16,7 @@ export interface ReceivableRow {
 	customerPhone: string | null;
 	customerIdNumber: string | null;
 	totalAmount: number;
+	isCashea: boolean;
 	totalPaid: number;
 	balance: number;
 	daysPending: number;
@@ -72,6 +73,7 @@ export async function getReceivables(
 			createdAt: sales.createdAt,
 			totalAmount: sales.total,
 			paidAmountBcvUsd: sales.paidAmountBcvUsd,
+			isCashea: sales.isCashea,
 			customerId: customers.id,
 			customerFirstName: customers.firstName,
 			customerLastName: customers.lastName,
@@ -130,6 +132,7 @@ export async function getReceivables(
 			customerIdNumber: r.customerIdNumber,
 			totalAmount: r.totalAmount,
 			totalPaid: r.paidAmountBcvUsd,
+			isCashea: r.isCashea,
 			balance,
 			daysPending,
 			payments: salePaymentsList.map((p) => ({
