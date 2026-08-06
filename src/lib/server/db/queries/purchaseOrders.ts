@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
+import { buildTokenSearchConditions } from '$lib/server/db/search';
 import {
 	purchaseOrders,
 	purchaseOrderItems,
@@ -157,20 +158,14 @@ function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 
 	if (!opts.includeDeleted) conditions.push(isNull(purchaseOrders.deletedAt));
 	if (opts.search?.trim()) {
-		const searchTerm = opts.search.trim();
-		const pattern = `%${searchTerm}%`;
-		conditions.push(sql`(
-			cast(${purchaseOrders.orderNumber} as text) ilike ${pattern}
-			or concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0')) ilike ${pattern}
-			or coalesce(${purchaseOrders.invoiceNumber}, '') ilike ${pattern}
-			or coalesce(${purchaseOrders.deliveryNoteNumber}, '') ilike ${pattern}
-			or exists (
-				select 1
-				from ${suppliers}
-				where ${suppliers.id} = ${purchaseOrders.supplierId}
-					and ${suppliers.name} ilike ${pattern}
-			)
-		)`);
+		const concatFields = sql`concat(
+			cast(${purchaseOrders.orderNumber} as text), ' ',
+			concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0')), ' ',
+			coalesce(${purchaseOrders.invoiceNumber}, ''), ' ',
+			coalesce(${purchaseOrders.deliveryNoteNumber}, ''), ' ',
+			coalesce(${suppliers.name}, '')
+		)`;
+		conditions.push(...buildTokenSearchConditions(opts.search, concatFields));
 	}
 	if (opts.status) conditions.push(eq(purchaseOrders.status, opts.status));
 	if (opts.readyForReview !== undefined) {
@@ -380,7 +375,11 @@ export async function getAllPurchaseOrders(
 
 export async function countPurchaseOrders(options?: PurchaseOrderFilterOptions): Promise<number> {
 	const where = buildPOConditions(options ?? {});
-	const base = db.select({ value: count() }).from(purchaseOrders).$dynamic();
+	const base = db
+		.select({ value: count() })
+		.from(purchaseOrders)
+		.leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
+		.$dynamic();
 	if (where) base.where(where);
 	const [result] = await base;
 	return result.value;

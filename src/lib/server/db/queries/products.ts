@@ -8,13 +8,13 @@ import {
 	lte,
 	asc,
 	desc,
-	ilike,
 	count,
 	sql,
 	type AnyColumn,
 	type SQL
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { buildTokenSearchConditions } from '$lib/server/db/search';
 import { ProductStockFilter } from '$lib/shared/enums';
 import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -101,13 +101,8 @@ function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
 	}
 
 	if (opts.search) {
-		conditions.push(
-			or(
-				ilike(products.name, `%${opts.search}%`),
-				ilike(products.personalCode, `%${opts.search}%`),
-				ilike(products.sku, `%${opts.search}%`)
-			)!
-		);
+		const concatFields = sql`concat(${products.name}, ' ', ${products.sku}, ' ', ${products.personalCode}, ' ', ${brands.name}, ' ', ${suppliers.name})`;
+		conditions.push(...buildTokenSearchConditions(opts.search, concatFields));
 	}
 
 	if (opts.type) {
@@ -192,7 +187,12 @@ export async function getAllProductsWithRelations(
  */
 export async function countProducts(options?: ProductFilterOptions): Promise<number> {
 	const where = buildProductConditions(options ?? {});
-	const base = db.select({ value: count() }).from(products).$dynamic();
+	const base = db
+		.select({ value: count() })
+		.from(products)
+		.leftJoin(brands, eq(products.brandId, brands.id))
+		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+		.$dynamic();
 	if (where) base.where(where);
 	const [result] = await base;
 	return result.value;

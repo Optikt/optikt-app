@@ -4,6 +4,7 @@
  */
 import { query, form, command } from '$app/server';
 import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
+import { matchesAllTokens } from '$lib/utils/search';
 import { UserRole } from '$lib/shared/enums';
 import { invalid } from '@sveltejs/kit';
 import {
@@ -44,15 +45,18 @@ export const listCustomers = query(
 
 		// Apply search filter (name, phone, idNumber)
 		if (search) {
-			const searchLower = search.toLowerCase();
-			allCustomers = allCustomers.filter(
-				(customer) =>
-					customer.firstName.toLowerCase().includes(searchLower) ||
-					customer.lastName.toLowerCase().includes(searchLower) ||
-					customer.idNumber?.toLowerCase().includes(searchLower) ||
-					customer.primaryPhone?.includes(search) ||
-					customer.email?.toLowerCase().includes(searchLower)
-			);
+			allCustomers = allCustomers.filter((customer) => {
+				const searchableText = [
+					customer.firstName,
+					customer.lastName,
+					customer.idNumber,
+					customer.primaryPhone,
+					customer.email
+				]
+					.filter(Boolean)
+					.join(' ');
+				return matchesAllTokens(search, searchableText);
+			});
 		}
 
 		// Calculate pagination

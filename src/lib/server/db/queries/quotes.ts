@@ -7,14 +7,13 @@ import {
 	gte,
 	lte,
 	max,
-	ilike,
-	or,
 	count,
 	sql,
 	type AnyColumn,
 	type SQL
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { buildTokenSearchConditions } from '$lib/server/db/search';
 import type { DbOrTx } from '$lib/server/db/types';
 import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
@@ -118,15 +117,8 @@ function buildQuoteConditions(opts: QuoteFilterOptions): SQL | undefined {
 	}
 
 	if (opts.search) {
-		const pattern = `%${opts.search}%`;
-		conditions.push(
-			or(
-				ilike(customers.firstName, pattern),
-				ilike(customers.lastName, pattern),
-				ilike(customers.idNumber, pattern),
-				ilike(users.fullName, pattern)
-			)!
-		);
+		const concatFields = sql`concat(coalesce(${customers.firstName}, ''), ' ', coalesce(${customers.lastName}, ''), ' ', coalesce(${customers.idNumber}, ''), ' ', coalesce(${users.fullName}, ''))`;
+		conditions.push(...buildTokenSearchConditions(opts.search, concatFields));
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;

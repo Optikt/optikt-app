@@ -8,7 +8,6 @@ import {
 	lte,
 	sum,
 	max,
-	ilike,
 	or,
 	count,
 	sql,
@@ -17,6 +16,7 @@ import {
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
+import { buildTokenSearchConditions } from '$lib/server/db/search';
 import type { DbOrTx } from '$lib/server/db/types';
 import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
@@ -159,20 +159,22 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 
 	if (opts.search) {
 		const rawSearch = opts.search.trim();
-		const pattern = `%${rawSearch}%`;
-		const searchConditions: SQL[] = [
-			ilike(customers.firstName, pattern),
-			ilike(customers.lastName, pattern),
-			ilike(customers.idNumber, pattern),
-			ilike(users.fullName, pattern)
-		];
+		const concatFields = sql`concat(coalesce(${customers.firstName}, ''), ' ', coalesce(${customers.lastName}, ''), ' ', coalesce(${customers.idNumber}, ''), ' ', coalesce(${users.fullName}, ''))`;
+		const tokenConditions = buildTokenSearchConditions(rawSearch, concatFields);
+		const tokenGroup = tokenConditions.length > 0 ? and(...tokenConditions) : undefined;
 
 		const normalizedOrderNumber = rawSearch.replace(/^#/, '');
-		if (/^\d+$/.test(normalizedOrderNumber)) {
-			searchConditions.push(eq(sales.orderNumber, Number(normalizedOrderNumber)));
-		}
+		const orderNumberCondition = /^\d+$/.test(normalizedOrderNumber)
+			? eq(sales.orderNumber, Number(normalizedOrderNumber))
+			: undefined;
 
-		conditions.push(or(...searchConditions)!);
+		if (tokenGroup && orderNumberCondition) {
+			conditions.push(or(tokenGroup, orderNumberCondition)!);
+		} else if (tokenGroup) {
+			conditions.push(tokenGroup);
+		} else if (orderNumberCondition) {
+			conditions.push(orderNumberCondition);
+		}
 	}
 
 	if (opts.shippingCostPending) {

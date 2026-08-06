@@ -1,4 +1,5 @@
 import { eq, isNull, and, or, ilike, desc, inArray, sql } from 'drizzle-orm';
+import { matchesAllTokens } from '$lib/utils/search';
 import { db } from '$lib/server/db';
 import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -302,15 +303,18 @@ export async function getLensCatalogItemsWithRelations(options?: {
 
 	// Text search in memory (name, supplier, material, technologyName, differentiators)
 	if (options?.search) {
-		const searchLower = options.search.toLowerCase();
-		items = items.filter(
-			(item) =>
-				item.name.toLowerCase().includes(searchLower) ||
-				item.supplier?.name.toLowerCase().includes(searchLower) ||
-				item.material?.name.toLowerCase().includes(searchLower) ||
-				item.technologyName?.toLowerCase().includes(searchLower) ||
-				item.differentiators?.some((d) => d.toLowerCase().includes(searchLower))
-		);
+		items = items.filter((item) => {
+			const searchableText = [
+				item.name,
+				item.supplier?.name,
+				item.material?.name,
+				item.technologyName,
+				...(item.differentiators ?? [])
+			]
+				.filter(Boolean)
+				.join(' ');
+			return matchesAllTokens(options.search!, searchableText);
+		});
 	}
 
 	// Load ranges for each item

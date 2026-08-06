@@ -8,12 +8,12 @@ import {
 	count,
 	gte,
 	lte,
-	ilike,
 	sql,
 	type SQL,
 	type AnyColumn
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { buildTokenSearchConditions } from '$lib/server/db/search';
 import {
 	inventoryMovements,
 	inventoryLots,
@@ -86,22 +86,23 @@ function buildMovementSearchCondition(search?: string): SQL | undefined {
 	const value = search?.trim();
 	if (!value) return undefined;
 
-	const term = `%${value}%`;
+	const concatFields = sql`concat(
+		coalesce(${products.name}, ''), ' ',
+		coalesce(${products.sku}, ''), ' ',
+		coalesce(${lensCatalogItems.name}, ''), ' ',
+		coalesce(${lensCatalogItems.type}, ''), ' ',
+		coalesce(${users.fullName}, ''), ' ',
+		coalesce(${inventoryMovements.notes}, ''), ' ',
+		coalesce(CAST(${inventoryLots.lotNumber} AS TEXT), ''), ' ',
+		coalesce(CONCAT('L-', LPAD(CAST(${inventoryLots.lotNumber} AS TEXT), 4, '0')), ''), ' ',
+		coalesce(CAST(${purchaseOrders.orderNumber} AS TEXT), ''), ' ',
+		coalesce(CONCAT('PO-', LPAD(CAST(${purchaseOrders.orderNumber} AS TEXT), 4, '0')), ''), ' ',
+		coalesce(CAST(${sales.orderNumber} AS TEXT), ''), ' ',
+		coalesce(CONCAT('#', LPAD(CAST(${sales.orderNumber} AS TEXT), 4, '0')), '')
+	)`;
 
-	return or(
-		ilike(products.name, term),
-		ilike(products.sku, term),
-		ilike(lensCatalogItems.name, term),
-		ilike(lensCatalogItems.type, term),
-		ilike(users.fullName, term),
-		ilike(inventoryMovements.notes, term),
-		sql`CAST(${inventoryLots.lotNumber} AS TEXT) ILIKE ${term}`,
-		sql`CONCAT('L-', LPAD(CAST(${inventoryLots.lotNumber} AS TEXT), 4, '0')) ILIKE ${term}`,
-		sql`CAST(${purchaseOrders.orderNumber} AS TEXT) ILIKE ${term}`,
-		sql`CONCAT('PO-', LPAD(CAST(${purchaseOrders.orderNumber} AS TEXT), 4, '0')) ILIKE ${term}`,
-		sql`CAST(${sales.orderNumber} AS TEXT) ILIKE ${term}`,
-		sql`CONCAT('#', LPAD(CAST(${sales.orderNumber} AS TEXT), 4, '0')) ILIKE ${term}`
-	);
+	const conditions = buildTokenSearchConditions(value, concatFields);
+	return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
 function combineMovementFilters(opts: MovementFilterOptions): SQL | undefined {
