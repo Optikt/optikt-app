@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { CircleX, Package, Plus, RotateCcw, Search, TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { PageHeader, SelectInput } from '$lib/components/ui';
@@ -10,6 +10,7 @@
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
+		saveReferrerParams,
 		setQueryParam
 	} from '$lib/utils';
 	import {
@@ -168,6 +169,13 @@
 	function getEditHref(product: ProductWithRelations): `/products/${string}/update` {
 		return `/products/${product.id}/update`;
 	}
+
+	beforeNavigate(({ to }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/products' && path.startsWith('/products')) {
+			saveReferrerParams('/products');
+		}
+	});
 </script>
 
 <svelte:head>

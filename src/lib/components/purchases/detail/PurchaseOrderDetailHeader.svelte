@@ -13,6 +13,7 @@
 	import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 	import { resolve } from '$app/paths';
+	import { peekBackUrl } from '$lib/utils';
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;
@@ -43,6 +44,8 @@
 		onConfirmAndPay,
 		onCancel
 	}: Props = $props();
+
+	const backHref = peekBackUrl('/purchases');
 
 	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
 	const isReadyForReview = $derived(Boolean(purchaseOrder.isReadyForReview));
@@ -104,7 +107,7 @@
 	<div class="inline-flex gap-2 items-center">
 		<a
 			title="Volver a la lista de compras"
-			href={resolve('/purchases')}
+			href={resolve(backHref as '/purchases')}
 			class="text-on-surface-variant transition-colors hover:text-brand-blue"
 		>
 			<ArrowLeft size={24} />

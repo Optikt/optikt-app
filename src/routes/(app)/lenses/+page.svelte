@@ -1,12 +1,18 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { LensCatalogTable, LensPropertiesTab } from '$lib/components/lenses';
 	import { PageHeader, SelectInput } from '$lib/components/ui';
-	import { parsePageParam, replaceUrlSearch, setQueryParam, getErrorMessage } from '$lib/utils';
+	import {
+		parsePageParam,
+		replaceUrlSearch,
+		saveReferrerParams,
+		setQueryParam,
+		getErrorMessage
+	} from '$lib/utils';
 	import { listLensCatalog } from '$lib/remote/lenses.remote';
 	import {
 		ALL_LENS_SOURCES,
@@ -210,6 +216,13 @@
 	function getEditHref(item: LensCatalogItemWithRelations): `/lenses/${string}/edit` {
 		return `/lenses/${item.id}/edit`;
 	}
+
+	beforeNavigate(({ to }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/lenses' && path.startsWith('/lenses')) {
+			saveReferrerParams('/lenses');
+		}
+	});
 </script>
 
 <svelte:head>

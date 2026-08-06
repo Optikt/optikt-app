@@ -7,7 +7,7 @@
 	import { ChangeHistoryModal } from '$lib/components/history';
 	import { AppBadge, ConfirmModal, StatusBadge } from '$lib/components/ui';
 	import { deleteProductById } from '$lib/remote/products.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, getBackUrl, peekBackUrl } from '$lib/utils';
 	import {
 		getProductTypeLabel,
 		isAdminRole,
@@ -42,6 +42,8 @@
 	let confirmInput = $state('');
 	let showHistoryModal = $state(false);
 
+	const backHref = peekBackUrl('/products');
+
 	const relatedNames = $derived({
 		...(product.brand ? { [product.brand.id]: product.brand.name } : {}),
 		...(product.supplier ? { [product.supplier.id]: product.supplier.name } : {}),
@@ -67,7 +69,7 @@
 		try {
 			await deleteProductById({ id: product.id });
 			toast.success('Producto eliminado correctamente');
-			goto(resolve('/products'));
+			goto(resolve(getBackUrl('/products') as '/products'));
 		} catch (e) {
 			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando producto'));
@@ -89,7 +91,7 @@
 				<nav
 					class="flex items-center gap-2 text-[0.7rem] font-bold tracking-[0.18em] text-outline uppercase"
 				>
-					<a href={resolve('/products')} class="transition-colors hover:text-brand-blue"
+					<a href={resolve(backHref as '/products')} class="transition-colors hover:text-brand-blue"
 						>Inventario</a
 					>
 					<ChevronRight class="h-3.5 w-3.5" />

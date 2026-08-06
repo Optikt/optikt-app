@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import {
@@ -9,6 +9,7 @@
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
+		saveReferrerParams,
 		setQueryParam
 	} from '$lib/utils';
 	import { listSales, getSalesStats } from '$lib/remote/sales.remote';
@@ -142,6 +143,13 @@
 	function getViewHref(sale: SaleWithRelations): `/sales/${string}` {
 		return `/sales/${sale.id}`;
 	}
+
+	beforeNavigate(({ to }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/sales' && path.startsWith('/sales')) {
+			saveReferrerParams('/sales');
+		}
+	});
 </script>
 
 <svelte:head>

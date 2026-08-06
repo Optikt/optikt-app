@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { ArrowRightLeft, Plus } from '@lucide/svelte';
@@ -19,6 +19,7 @@
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
+		saveReferrerParams,
 		setQueryParam
 	} from '$lib/utils';
 	import type { PageData } from './$types';
@@ -211,6 +212,13 @@
 	function getViewHref(purchaseOrder: PurchaseOrderWithRelations): `/purchases/${string}` {
 		return `/purchases/${purchaseOrder.id}`;
 	}
+
+	beforeNavigate(({ to }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/purchases' && path.startsWith('/purchases')) {
+			saveReferrerParams('/purchases');
+		}
+	});
 </script>
 
 <svelte:head>

@@ -15,7 +15,7 @@
 		getLensSourceLabel,
 		getLensTypeLabel
 	} from '$lib/shared/enums/lensTypes';
-	import { getErrorMessage, formatPrice, formatDate } from '$lib/utils';
+	import { getErrorMessage, formatPrice, formatDate, getBackUrl } from '$lib/utils';
 	import {
 		getLensMarginPercent,
 		getLensTotalCost,
@@ -54,7 +54,7 @@
 	}
 
 	function goBack() {
-		goto(resolve('/lenses'));
+		goto(resolve(getBackUrl('/lenses') as '/lenses'));
 	}
 
 	async function confirmDelete() {
@@ -703,7 +703,7 @@
 			title={item.name}
 			subtitle="Detalle de lente"
 			backLabel="Volver al catálogo"
-			backHref="/lenses"
+			backOnClick={goBack}
 		/>
 
 		<!-- Tags row -->

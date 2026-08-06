@@ -23,7 +23,7 @@
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { AppBadge, ConfirmModal, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
-	import { formatDate, formatDateOnly, formatPrice } from '$lib/utils';
+	import { formatDate, formatDateOnly, formatPrice, getBackUrl } from '$lib/utils';
 	import {
 		PaymentMethod,
 		PAYMENT_METHOD_LABELS,
@@ -168,7 +168,7 @@
 	}
 
 	function goBack() {
-		goto(resolve('/sales'));
+		goto(resolve(getBackUrl('/sales') as '/sales'));
 	}
 
 	function openPdfReceipt() {

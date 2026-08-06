@@ -24,7 +24,7 @@
 	} from '$lib/components/ui';
 	import { cancelQuote, convertQuoteToSale, assignQuoteCustomer } from '$lib/remote/quotes.remote';
 	import { canOperate } from '$lib/shared/enums';
-	import { formatPrice, formatDateOnly, getErrorMessage } from '$lib/utils';
+	import { formatPrice, formatDateOnly, getErrorMessage, getBackUrl } from '$lib/utils';
 	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { SaleItemType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 	import { QuoteStatus } from '$lib/shared/contracts/quotes';
@@ -173,7 +173,7 @@
 	}
 
 	function goBack() {
-		goto(resolve('/quotes'));
+		goto(resolve(getBackUrl('/quotes') as '/quotes'));
 	}
 
 	function openPdfQuote() {

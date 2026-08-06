@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Plus, Search, UserPlus, TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import {
@@ -9,6 +9,7 @@
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
+		saveReferrerParams,
 		setQueryParam
 	} from '$lib/utils';
 	import { listCustomers } from '$lib/remote/customers.remote';
@@ -82,6 +83,13 @@
 	function getViewHref(customer: Customer): `/customers/${string}` {
 		return `/customers/${customer.id}`;
 	}
+
+	beforeNavigate(({ to }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/customers' && path.startsWith('/customers')) {
+			saveReferrerParams('/customers');
+		}
+	});
 </script>
 
 <svelte:head>

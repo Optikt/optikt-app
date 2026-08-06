@@ -37,7 +37,8 @@
 		getFullName,
 		scrollToFirstError,
 		toastUnboundErrors,
-		parseISODateToLocal
+		parseISODateToLocal,
+		peekBackUrl
 	} from '$lib/utils';
 	import { canOperate } from '$lib/shared/enums';
 	import { generateUUID } from '$lib/utils/generateUUID';
@@ -52,6 +53,7 @@
 	const customerSales = untrack(() => data.customerSales);
 	const customerQuotes = untrack(() => data.customerQuotes);
 	const canAct = $derived(canOperate(data.user.role));
+	const backHref = peekBackUrl('/customers');
 
 	// State for the active history tab
 	let activeTab = $state<'prescriptions' | 'sales' | 'quotes'>('prescriptions');
@@ -160,7 +162,7 @@
 <div class="p-6">
 	<!-- Back link -->
 	<a
-		href={resolve('/customers')}
+		href={resolve(backHref as '/customers')}
 		class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:text-brand-blue"
 	>
 		<ArrowLeft class="h-4 w-4" />

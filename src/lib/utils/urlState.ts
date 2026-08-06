@@ -27,3 +27,26 @@ export function replaceUrlSearch(url: URL, updater: (params: URLSearchParams) =>
 	updater(nextUrl.searchParams);
 	history.replaceState(history.state, '', nextUrl);
 }
+
+function referrerKey(basePath: string): string {
+	return `listReferrer:${basePath}`;
+}
+
+export function saveReferrerParams(basePath: string): void {
+	if (typeof window === 'undefined') return;
+	sessionStorage.setItem(referrerKey(basePath), window.location.search);
+}
+
+export function peekBackUrl(basePath: string): string {
+	if (typeof window === 'undefined') return basePath;
+	const saved = sessionStorage.getItem(referrerKey(basePath));
+	if (!saved) return basePath;
+	return `${basePath}${saved}`;
+}
+
+export function getBackUrl(basePath: string): string {
+	if (typeof window === 'undefined') return basePath;
+	const url = peekBackUrl(basePath);
+	if (url !== basePath) sessionStorage.removeItem(referrerKey(basePath));
+	return url;
+}

@@ -9,11 +9,17 @@
 		CircleX
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { PageHeader } from '$lib/components/ui';
-	import { getErrorMessage, parsePageParam, replaceUrlSearch, setQueryParam } from '$lib/utils';
+	import {
+		getErrorMessage,
+		parsePageParam,
+		replaceUrlSearch,
+		saveReferrerParams,
+		setQueryParam
+	} from '$lib/utils';
 	import { listQuotes, getQuoteStats } from '$lib/remote/quotes.remote';
 	import { QuotesTable } from '$lib/components/quotes';
 	import { canOperate } from '$lib/shared/enums';
@@ -117,6 +123,13 @@
 	function getViewHref(quote: QuoteWithRelations): `/quotes/${string}` {
 		return `/quotes/${quote.id}`;
 	}
+
+	beforeNavigate(({ to }) => {
+		const path = to?.url.pathname ?? '';
+		if (path !== '/quotes' && path.startsWith('/quotes')) {
+			saveReferrerParams('/quotes');
+		}
+	});
 </script>
 
 <svelte:head>
