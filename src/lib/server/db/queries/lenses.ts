@@ -322,8 +322,7 @@ export async function getLensCatalogItemsWithRelations(options?: {
 			.filter((item) => matchesAllTokens(search, fields(item).join(' ')))
 			.sort(
 				(a, b) =>
-					computeRelevanceScore(search, fields(b)) -
-					computeRelevanceScore(search, fields(a))
+					computeRelevanceScore(search, fields(b)) - computeRelevanceScore(search, fields(a))
 			);
 	}
 

@@ -58,8 +58,7 @@ export const listCustomers = query(
 				.filter((customer) => matchesAllTokens(search, fields(customer).join(' ')))
 				.sort(
 					(a, b) =>
-						computeRelevanceScore(search, fields(b)) -
-						computeRelevanceScore(search, fields(a))
+						computeRelevanceScore(search, fields(b)) - computeRelevanceScore(search, fields(a))
 				);
 		}
 
