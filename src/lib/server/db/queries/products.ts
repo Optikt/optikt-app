@@ -11,10 +11,11 @@ import {
 	count,
 	sql,
 	type AnyColumn,
-	type SQL
+	type SQL,
+	type SQLWrapper
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
 import { ProductStockFilter } from '$lib/shared/enums';
 import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -84,6 +85,14 @@ const ORDER_COLUMNS: Record<ProductOrderBy, AnyColumn> = {
  *
  * Defaults (no options): active, non-deleted products only.
  */
+function productSearchConcat(): SQL {
+	return sql`concat(${products.name}, ' ', ${products.sku}, ' ', ${products.personalCode}, ' ', ${brands.name}, ' ', ${suppliers.name})`;
+}
+
+function productSearchFields(): SQLWrapper[] {
+	return [products.name, products.sku, products.personalCode, brands.name, suppliers.name];
+}
+
 function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
 	const conditions: SQL[] = [];
 
@@ -101,8 +110,7 @@ function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
 	}
 
 	if (opts.search) {
-		const concatFields = sql`concat(${products.name}, ' ', ${products.sku}, ' ', ${products.personalCode}, ' ', ${brands.name}, ' ', ${suppliers.name})`;
-		conditions.push(...buildTokenSearchConditions(opts.search, concatFields));
+		conditions.push(...buildTokenSearchConditions(opts.search, productSearchConcat()));
 	}
 
 	if (opts.type) {
@@ -167,7 +175,12 @@ export async function getAllProductsWithRelations(
 		.$dynamic();
 
 	if (where) base.where(where);
-	if (orderClause) base.orderBy(orderClause);
+	const orderByColumns: SQL[] = [];
+	if (opts.search) {
+		orderByColumns.push(relevanceScoreOrderSql(opts.search, productSearchFields()));
+	}
+	if (orderClause) orderByColumns.push(orderClause);
+	if (orderByColumns.length > 0) base.orderBy(...orderByColumns);
 	if (opts.limit) base.limit(opts.limit);
 	if (opts.offset) base.offset(opts.offset);
 

@@ -10,10 +10,11 @@ import {
 	count,
 	sql,
 	type AnyColumn,
-	type SQL
+	type SQL,
+	type SQLWrapper
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
 import type { DbOrTx } from '$lib/server/db/types';
 import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
@@ -89,6 +90,14 @@ const ORDER_COLUMNS: Record<QuoteOrderBy, AnyColumn> = {
 	createdAt: quotes.createdAt
 };
 
+function quoteSearchConcat(): SQL {
+	return sql`concat(coalesce(${customers.firstName}, ''), ' ', coalesce(${customers.lastName}, ''), ' ', coalesce(${customers.idNumber}, ''), ' ', coalesce(${users.fullName}, ''))`;
+}
+
+function quoteSearchFields(): SQLWrapper[] {
+	return [customers.firstName, customers.lastName, customers.idNumber, users.fullName];
+}
+
 function buildQuoteConditions(opts: QuoteFilterOptions): SQL | undefined {
 	const conditions: SQL[] = [];
 
@@ -117,8 +126,7 @@ function buildQuoteConditions(opts: QuoteFilterOptions): SQL | undefined {
 	}
 
 	if (opts.search) {
-		const concatFields = sql`concat(coalesce(${customers.firstName}, ''), ' ', coalesce(${customers.lastName}, ''), ' ', coalesce(${customers.idNumber}, ''), ' ', coalesce(${users.fullName}, ''))`;
-		conditions.push(...buildTokenSearchConditions(opts.search, concatFields));
+		conditions.push(...buildTokenSearchConditions(opts.search, quoteSearchConcat()));
 	}
 
 	return conditions.length > 0 ? and(...conditions) : undefined;
@@ -163,7 +171,12 @@ export async function getAllQuotes(options?: GetQuotesOptions): Promise<QuoteWit
 		.$dynamic();
 
 	if (where) base.where(where);
-	base.orderBy(orderFn(orderCol));
+	const orderByColumns: SQL[] = [];
+	if (opts.search) {
+		orderByColumns.push(relevanceScoreOrderSql(opts.search.trim(), quoteSearchFields()));
+	}
+	orderByColumns.push(orderFn(orderCol));
+	if (orderByColumns.length > 0) base.orderBy(...orderByColumns);
 	if (opts.limit) base.limit(opts.limit);
 	if (opts.offset) base.offset(opts.offset);
 

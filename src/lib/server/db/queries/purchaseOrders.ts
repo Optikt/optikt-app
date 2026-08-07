@@ -10,11 +10,12 @@ import {
 	lt,
 	sql,
 	type SQL,
+	type SQLWrapper,
 	type AnyColumn
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
 import {
 	purchaseOrders,
 	purchaseOrderItems,
@@ -153,19 +154,32 @@ function buildOverdueBalanceCondition(): SQL {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+function poSearchConcat(): SQL {
+	return sql`concat(
+		cast(${purchaseOrders.orderNumber} as text), ' ',
+		concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0')), ' ',
+		coalesce(${purchaseOrders.invoiceNumber}, ''), ' ',
+		coalesce(${purchaseOrders.deliveryNoteNumber}, ''), ' ',
+		coalesce(${suppliers.name}, '')
+	)`;
+}
+
+function poSearchFields(): SQLWrapper[] {
+	return [
+		sql`cast(${purchaseOrders.orderNumber} as text)`,
+		sql`concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0'))`,
+		purchaseOrders.invoiceNumber,
+		purchaseOrders.deliveryNoteNumber,
+		suppliers.name
+	];
+}
+
 function buildPOConditions(opts: PurchaseOrderFilterOptions): SQL | undefined {
 	const conditions: SQL[] = [];
 
 	if (!opts.includeDeleted) conditions.push(isNull(purchaseOrders.deletedAt));
 	if (opts.search?.trim()) {
-		const concatFields = sql`concat(
-			cast(${purchaseOrders.orderNumber} as text), ' ',
-			concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0')), ' ',
-			coalesce(${purchaseOrders.invoiceNumber}, ''), ' ',
-			coalesce(${purchaseOrders.deliveryNoteNumber}, ''), ' ',
-			coalesce(${suppliers.name}, '')
-		)`;
-		conditions.push(...buildTokenSearchConditions(opts.search, concatFields));
+		conditions.push(...buildTokenSearchConditions(opts.search, poSearchConcat()));
 	}
 	if (opts.status) conditions.push(eq(purchaseOrders.status, opts.status));
 	if (opts.readyForReview !== undefined) {
@@ -357,7 +371,12 @@ export async function getAllPurchaseOrders(
 		.$dynamic();
 
 	if (where) base.where(where);
-	base.orderBy(orderClause);
+	const orderByColumns: SQL[] = [];
+	if (opts.search?.trim()) {
+		orderByColumns.push(relevanceScoreOrderSql(opts.search.trim(), poSearchFields()));
+	}
+	orderByColumns.push(orderClause);
+	if (orderByColumns.length > 0) base.orderBy(...orderByColumns);
 	if (opts.limit) base.limit(opts.limit);
 	if (opts.offset) base.offset(opts.offset);
 

@@ -1,5 +1,5 @@
 import { eq, isNull, and, or, ilike, desc, inArray, sql } from 'drizzle-orm';
-import { matchesAllTokens } from '$lib/utils/search';
+import { computeRelevanceScore, matchesAllTokens } from '$lib/utils/search';
 import { db } from '$lib/server/db';
 import { LensType, LensCatalogSource } from '$lib/shared/enums';
 import type { DbOrTx } from '$lib/server/db/types';
@@ -301,20 +301,30 @@ export async function getLensCatalogItemsWithRelations(options?: {
 		);
 	}
 
-	// Text search in memory (name, supplier, material, technologyName, differentiators)
+	// Text search in memory (name, supplier, material, technologyName, differentiators, traits)
 	if (options?.search) {
-		items = items.filter((item) => {
-			const searchableText = [
+		const search = options.search;
+		const fields = (item: (typeof items)[number]): string[] =>
+			[
 				item.name,
 				item.supplier?.name,
 				item.material?.name,
 				item.technologyName,
-				...(item.differentiators ?? [])
-			]
-				.filter(Boolean)
-				.join(' ');
-			return matchesAllTokens(options.search!, searchableText);
-		});
+				...(item.differentiators ?? []),
+				item.hasAr ? 'AR' : null,
+				...(item.arColors ?? []),
+				item.hasBluecut ? 'BLUE' : null,
+				item.isPhotochromic ? 'FOTOCROMÁTICO' : null,
+				...(item.photochromicColors ?? [])
+			].filter((value): value is string => Boolean(value));
+
+		items = items
+			.filter((item) => matchesAllTokens(search, fields(item).join(' ')))
+			.sort(
+				(a, b) =>
+					computeRelevanceScore(search, fields(b)) -
+					computeRelevanceScore(search, fields(a))
+			);
 	}
 
 	// Load ranges for each item

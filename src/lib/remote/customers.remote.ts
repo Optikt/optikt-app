@@ -4,7 +4,7 @@
  */
 import { query, form, command } from '$app/server';
 import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
-import { matchesAllTokens } from '$lib/utils/search';
+import { computeRelevanceScore, matchesAllTokens } from '$lib/utils/search';
 import { UserRole } from '$lib/shared/enums';
 import { invalid } from '@sveltejs/kit';
 import {
@@ -43,20 +43,24 @@ export const listCustomers = query(
 		// Get all customers (active or all including deleted)
 		let allCustomers = await getAllCustomers({ includeDeleted });
 
-		// Apply search filter (name, phone, idNumber)
+		// Apply search filter (name, phone, idNumber) with relevance ranking
 		if (search) {
-			allCustomers = allCustomers.filter((customer) => {
-				const searchableText = [
+			const fields = (customer: Customer): string[] =>
+				[
 					customer.firstName,
 					customer.lastName,
 					customer.idNumber,
 					customer.primaryPhone,
 					customer.email
-				]
-					.filter(Boolean)
-					.join(' ');
-				return matchesAllTokens(search, searchableText);
-			});
+				].filter((value): value is string => Boolean(value));
+
+			allCustomers = allCustomers
+				.filter((customer) => matchesAllTokens(search, fields(customer).join(' ')))
+				.sort(
+					(a, b) =>
+						computeRelevanceScore(search, fields(b)) -
+						computeRelevanceScore(search, fields(a))
+				);
 		}
 
 		// Calculate pagination

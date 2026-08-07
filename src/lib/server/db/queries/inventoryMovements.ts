@@ -10,10 +10,11 @@ import {
 	lte,
 	sql,
 	type SQL,
+	type SQLWrapper,
 	type AnyColumn
 } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
 import {
 	inventoryMovements,
 	inventoryLots,
@@ -82,11 +83,8 @@ function buildMovementConditions(opts: MovementFilterOptions): SQL | undefined {
 	return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
-function buildMovementSearchCondition(search?: string): SQL | undefined {
-	const value = search?.trim();
-	if (!value) return undefined;
-
-	const concatFields = sql`concat(
+function movementSearchConcat(): SQL {
+	return sql`concat(
 		coalesce(${products.name}, ''), ' ',
 		coalesce(${products.sku}, ''), ' ',
 		coalesce(${lensCatalogItems.name}, ''), ' ',
@@ -100,8 +98,30 @@ function buildMovementSearchCondition(search?: string): SQL | undefined {
 		coalesce(CAST(${sales.orderNumber} AS TEXT), ''), ' ',
 		coalesce(CONCAT('#', LPAD(CAST(${sales.orderNumber} AS TEXT), 4, '0')), '')
 	)`;
+}
 
-	const conditions = buildTokenSearchConditions(value, concatFields);
+function movementSearchFields(): SQLWrapper[] {
+	return [
+		products.name,
+		products.sku,
+		lensCatalogItems.name,
+		lensCatalogItems.type,
+		users.fullName,
+		inventoryMovements.notes,
+		sql`cast(${inventoryLots.lotNumber} as text)`,
+		sql`concat('L-', lpad(cast(${inventoryLots.lotNumber} as text), 4, '0'))`,
+		sql`cast(${purchaseOrders.orderNumber} as text)`,
+		sql`concat('PO-', lpad(cast(${purchaseOrders.orderNumber} as text), 4, '0'))`,
+		sql`cast(${sales.orderNumber} as text)`,
+		sql`concat('#', lpad(cast(${sales.orderNumber} as text), 4, '0'))`
+	];
+}
+
+function buildMovementSearchCondition(search?: string): SQL | undefined {
+	const value = search?.trim();
+	if (!value) return undefined;
+
+	const conditions = buildTokenSearchConditions(value, movementSearchConcat());
 	return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
@@ -316,7 +336,12 @@ export async function getMovementsWithDetails(options?: GetMovementsOptions) {
 		.$dynamic();
 
 	if (where) base.where(where);
-	base.orderBy(orderClause);
+	const orderByColumns: SQL[] = [];
+	if (opts.search) {
+		orderByColumns.push(relevanceScoreOrderSql(opts.search.trim(), movementSearchFields()));
+	}
+	orderByColumns.push(orderClause);
+	if (orderByColumns.length > 0) base.orderBy(...orderByColumns);
 	if (opts.limit) base.limit(opts.limit);
 	if (opts.offset) base.offset(opts.offset);
 

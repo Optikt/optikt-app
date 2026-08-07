@@ -12,11 +12,12 @@ import {
 	count,
 	sql,
 	type AnyColumn,
-	type SQL
+	type SQL,
+	type SQLWrapper
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
 import type { DbOrTx } from '$lib/server/db/types';
 import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
 import {
@@ -130,6 +131,14 @@ const ORDER_COLUMNS: Record<SaleOrderBy, AnyColumn> = {
  * NOTE: When using `search`, the query MUST include LEFT JOINs on
  * `customers` and `users` tables (as `getAllSales` does).
  */
+function saleSearchConcat(): SQL {
+	return sql`concat(coalesce(${customers.firstName}, ''), ' ', coalesce(${customers.lastName}, ''), ' ', coalesce(${customers.idNumber}, ''), ' ', coalesce(${users.fullName}, ''))`;
+}
+
+function saleSearchFields(): SQLWrapper[] {
+	return [customers.firstName, customers.lastName, customers.idNumber, users.fullName];
+}
+
 function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	const conditions: SQL[] = [];
 
@@ -159,8 +168,7 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 
 	if (opts.search) {
 		const rawSearch = opts.search.trim();
-		const concatFields = sql`concat(coalesce(${customers.firstName}, ''), ' ', coalesce(${customers.lastName}, ''), ' ', coalesce(${customers.idNumber}, ''), ' ', coalesce(${users.fullName}, ''))`;
-		const tokenConditions = buildTokenSearchConditions(rawSearch, concatFields);
+		const tokenConditions = buildTokenSearchConditions(rawSearch, saleSearchConcat());
 		const tokenGroup = tokenConditions.length > 0 ? and(...tokenConditions) : undefined;
 
 		const normalizedOrderNumber = rawSearch.replace(/^#/, '');
@@ -240,7 +248,12 @@ export async function getAllSales(options?: GetSalesOptions): Promise<SaleWithRe
 		.$dynamic();
 
 	if (where) base.where(where);
-	base.orderBy(orderFn(orderCol));
+	const orderByColumns: SQL[] = [];
+	if (opts.search) {
+		orderByColumns.push(relevanceScoreOrderSql(opts.search.trim(), saleSearchFields()));
+	}
+	orderByColumns.push(orderFn(orderCol));
+	if (orderByColumns.length > 0) base.orderBy(...orderByColumns);
 	if (opts.limit) base.limit(opts.limit);
 	if (opts.offset) base.offset(opts.offset);
 
