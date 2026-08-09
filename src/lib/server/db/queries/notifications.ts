@@ -1,5 +1,5 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
-import type { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
+import { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
 import { isNotificationLink, type NotificationLink } from '$lib/shared/notifications';
 import { db } from '../index';
 import {
@@ -166,4 +166,44 @@ export async function hasRecentNotificationOfType(
 		.limit(1);
 
 	return Boolean(notification);
+}
+
+export type BackupNotificationListItem = {
+	id: string;
+	type: NotificationType;
+	fileName: string | null;
+	sizeBytes: number | null;
+	error: string | null;
+	createdAt: string;
+};
+
+export async function getRecentBackupNotifications(
+	limit = 50,
+	executor: DbOrTx = db
+): Promise<BackupNotificationListItem[]> {
+	const rows = await executor
+		.select({
+			id: notifications.id,
+			type: notifications.type,
+			metadata: notifications.metadata,
+			createdAt: notifications.createdAt
+		})
+		.from(notifications)
+		.where(
+			sql`${notifications.type} in (${NotificationType.BACKUP_CREATED}, ${NotificationType.BACKUP_FAILED})`
+		)
+		.orderBy(desc(notifications.createdAt))
+		.limit(limit);
+
+	return rows.map((row) => {
+		const metadata = row.metadata ?? {};
+		return {
+			id: row.id,
+			type: row.type as NotificationType,
+			fileName: typeof metadata.fileName === 'string' ? metadata.fileName : null,
+			sizeBytes: typeof metadata.sizeBytes === 'number' ? metadata.sizeBytes : null,
+			error: typeof metadata.error === 'string' ? metadata.error : null,
+			createdAt: row.createdAt
+		};
+	});
 }

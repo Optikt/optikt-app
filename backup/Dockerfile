@@ -9,9 +9,8 @@ RUN apk add --no-cache \
 
 COPY rclone.conf /etc/rclone/rclone.conf
 COPY backup.sh /usr/local/bin/backup.sh
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chmod +x /usr/local/bin/backup.sh /usr/local/bin/entrypoint.sh \
+RUN chmod +x /usr/local/bin/backup.sh \
     && mkdir -p /backups /var/log /etc/rclone
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/usr/local/bin/backup.sh"]

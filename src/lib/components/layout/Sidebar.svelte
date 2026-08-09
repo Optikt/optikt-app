@@ -15,6 +15,7 @@
 		ClipboardCheck,
 		ClipboardList,
 		HandCoins,
+		HardDrive,
 		Wallet
 	} from '@lucide/svelte';
 	import { getInventoryCountContext } from '$lib/context';
@@ -49,7 +50,8 @@
 		purchases: ClipboardList,
 		'clipboard-check': ClipboardCheck,
 		receivables: HandCoins,
-		wallet: Wallet
+		wallet: Wallet,
+		'hard-drive': HardDrive
 	};
 
 	const navItems = NAV_ITEMS;
