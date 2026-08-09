@@ -9,6 +9,7 @@ Scope: feature
 ### 1.1 Dockerfile simplificado (`backup/Dockerfile`)
 
 Cambios:
+
 - Eliminar `entrypoint.sh` del COPY y del ENTRYPOINT
 - Cambiar ENTRYPOINT por CMD que ejecuta backup.sh directamente
 - bash sigue siendo necesario (backup.sh usa bash)
@@ -57,19 +58,19 @@ Agregar sección "Setup en Dokploy" reemplazando la sección actual de docker-co
 4. Schedule: `0 2 * * *` (todos los días a las 2:00 AM)
 5. Environment variables — mismas que antes:
 
-| Variable | Valor |
-|---|---|
-| PG_HOST | postgres (o nombre del contenedor de BD) |
-| PG_PORT | 5432 |
-| PG_USER | optikt |
-| PG_PASSWORD | (valor de DB_PASSWORD) |
-| PG_DB | optikt_db |
-| DRIVE_REMOTE | gdrive |
-| BACKUP_RETENTION_DAYS | 30 |
-| TZ | America/Caracas |
-| RCLONE_CONFIG_GDRIVE_TOKEN | (token JSON de rclone) |
-| NOTIFY_URL | http://optikt-app:3000/api/internal/backup-webhook |
-| NOTIFY_TOKEN | (valor de BACKUP_NOTIFY_TOKEN) |
+| Variable                   | Valor                                              |
+| -------------------------- | -------------------------------------------------- |
+| PG_HOST                    | postgres (o nombre del contenedor de BD)           |
+| PG_PORT                    | 5432                                               |
+| PG_USER                    | optikt                                             |
+| PG_PASSWORD                | (valor de DB_PASSWORD)                             |
+| PG_DB                      | optikt_db                                          |
+| DRIVE_REMOTE               | gdrive                                             |
+| BACKUP_RETENTION_DAYS      | 30                                                 |
+| TZ                         | America/Caracas                                    |
+| RCLONE_CONFIG_GDRIVE_TOKEN | (token JSON de rclone)                             |
+| NOTIFY_URL                 | http://optikt-app:3000/api/internal/backup-webhook |
+| NOTIFY_TOKEN               | (valor de BACKUP_NOTIFY_TOKEN)                     |
 
 6. Guardar. Dokploy ejecutará automáticamente según el cron.
 7. Para probar: hacer clic en **Run Now** en la UI de Dokploy.
@@ -78,6 +79,7 @@ Agregar sección "Setup en Dokploy" reemplazando la sección actual de docker-co
 
 La app usa la API de Dokploy para disparar el job manualmente.
 Configurar en `.env`:
+
 - `DOKPLOY_API_URL` — URL base de Dokploy (ej. https://dokploy.mi-dominio.com)
 - `DOKPLOY_API_KEY` — API key generada en Profile Settings
 - `DOKPLOY_BACKUP_SCHEDULE_ID` — ID del schedule job (visible en la URL al editar)
@@ -92,8 +94,9 @@ Configurar en `.env`:
 **Archivo:** `src/lib/shared/enums/notificationTypes.ts`
 
 Agregar al enum:
+
 ```ts
-BACKUP_FAILED = 'BACKUP_FAILED'
+BACKUP_FAILED = 'BACKUP_FAILED';
 ```
 
 ### 2.2 Webhook actualizado
@@ -101,11 +104,13 @@ BACKUP_FAILED = 'BACKUP_FAILED'
 **Archivo:** `src/routes/api/internal/backup-webhook/+server.ts`
 
 Cambios:
+
 - Leer `status` del body (además de `filename`, `size`, `timestamp`)
 - Si `status === "error"`, crear notificación `BACKUP_FAILED` en vez de `BACKUP_CREATED`
 - Guardar `size` y `timestamp` en metadata para ambos casos
 
 Nuevo handler:
+
 ```ts
 import { notifyBackupCreated, notifyBackupFailed } from '$lib/server/notifications/service';
 
@@ -114,17 +119,17 @@ import { notifyBackupCreated, notifyBackupFailed } from '$lib/server/notificatio
 const status = body.status || 'success';
 
 if (status === 'error') {
-    await notifyBackupFailed({
-        fileName: body.filename,
-        error: body.error || 'Error desconocido',
-        timestamp: body.timestamp
-    });
+	await notifyBackupFailed({
+		fileName: body.filename,
+		error: body.error || 'Error desconocido',
+		timestamp: body.timestamp
+	});
 } else {
-    await notifyBackupCreated({
-        fileName: body.filename,
-        sizeBytes: body.size ? parseSize(body.size) : undefined,
-        timestamp: body.timestamp
-    });
+	await notifyBackupCreated({
+		fileName: body.filename,
+		sizeBytes: body.size ? parseSize(body.size) : undefined,
+		timestamp: body.timestamp
+	});
 }
 ```
 
@@ -133,25 +138,29 @@ if (status === 'error') {
 **Archivo:** `src/lib/server/notifications/service.ts`
 
 Agregar `notifyBackupFailed`:
+
 ```ts
 export async function notifyBackupFailed(input: {
-    fileName: string;
-    error: string;
-    timestamp?: string;
-    executor?: DbOrTx;
+	fileName: string;
+	error: string;
+	timestamp?: string;
+	executor?: DbOrTx;
 }) {
-    return publishNotification({
-        type: NotificationType.BACKUP_FAILED,
-        severity: NotificationSeverity.ERROR,
-        title: 'Backup de base de datos fallido',
-        body: `El backup ${input.fileName} falló: ${input.error}.`,
-        metadata: {
-            fileName: input.fileName,
-            error: input.error,
-            timestamp: input.timestamp ?? null
-        },
-        targetRoles: [UserRole.ADMIN]
-    }, input.executor);
+	return publishNotification(
+		{
+			type: NotificationType.BACKUP_FAILED,
+			severity: NotificationSeverity.ERROR,
+			title: 'Backup de base de datos fallido',
+			body: `El backup ${input.fileName} falló: ${input.error}.`,
+			metadata: {
+				fileName: input.fileName,
+				error: input.error,
+				timestamp: input.timestamp ?? null
+			},
+			targetRoles: [UserRole.ADMIN]
+		},
+		input.executor
+	);
 }
 ```
 
@@ -162,17 +171,16 @@ Actualizar `notifyBackupCreated` para aceptar `timestamp` en metadata.
 **Archivo:** `src/lib/server/db/queries/notifications.ts` (o nuevo archivo `src/lib/server/db/queries/backupHistory.ts`)
 
 Nueva función:
+
 ```ts
 export async function getRecentBackupNotifications(limit = 50, executor?: DbOrTx) {
-    const db = executor ?? db;
-    return db.query.notifications.findMany({
-        where: (n, { inArray }) => inArray(n.type, [
-            NotificationType.BACKUP_CREATED,
-            NotificationType.BACKUP_FAILED
-        ]),
-        orderBy: (n, { desc }) => desc(n.createdAt),
-        limit
-    });
+	const db = executor ?? db;
+	return db.query.notifications.findMany({
+		where: (n, { inArray }) =>
+			inArray(n.type, [NotificationType.BACKUP_CREATED, NotificationType.BACKUP_FAILED]),
+		orderBy: (n, { desc }) => desc(n.createdAt),
+		limit
+	});
 }
 ```
 
@@ -189,7 +197,7 @@ import { env } from '$env/dynamic/private';
 
 // Schemas
 const ListBackupHistorySchema = z.object({
-    limit: z.number().min(1).max(100).optional().default(50)
+	limit: z.number().min(1).max(100).optional().default(50)
 });
 
 const RunBackupSchema = z.object({});
@@ -198,94 +206,97 @@ const GetBackupStatusSchema = z.object({});
 
 // Handlers
 export const listBackupHistory = command(ListBackupHistorySchema, async (input, ctx) => {
-    requireUserAdmin(ctx.user);
-    const notifications = await getRecentBackupNotifications(input.limit);
-    return notifications.map(n => ({
-        id: n.id,
-        type: n.type,
-        fileName: (n.metadata as any)?.fileName ?? 'Desconocido',
-        size: (n.metadata as any)?.sizeBytes ?? null,
-        timestamp: n.createdAt,
-        status: n.type === 'BACKUP_CREATED' ? 'success' : 'error',
-        error: (n.metadata as any)?.error ?? null
-    }));
+	requireUserAdmin(ctx.user);
+	const notifications = await getRecentBackupNotifications(input.limit);
+	return notifications.map((n) => ({
+		id: n.id,
+		type: n.type,
+		fileName: (n.metadata as any)?.fileName ?? 'Desconocido',
+		size: (n.metadata as any)?.sizeBytes ?? null,
+		timestamp: n.createdAt,
+		status: n.type === 'BACKUP_CREATED' ? 'success' : 'error',
+		error: (n.metadata as any)?.error ?? null
+	}));
 });
 
 export const runBackup = command(RunBackupSchema, async (_input, ctx) => {
-    requireUserAdmin(ctx.user);
-    
-    const apiUrl = env.DOKPLOY_API_URL;
-    const apiKey = env.DOKPLOY_API_KEY;
-    const scheduleId = env.DOKPLOY_BACKUP_SCHEDULE_ID;
-    
-    if (!apiUrl || !apiKey || !scheduleId) {
-        throw new Error('Dokploy API no configurada. Configurar DOKPLOY_API_URL, DOKPLOY_API_KEY y DOKPLOY_BACKUP_SCHEDULE_ID.');
-    }
+	requireUserAdmin(ctx.user);
 
-    const response = await fetch(`${apiUrl}/api/schedule/trigger`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey
-        },
-        body: JSON.stringify({ scheduleId })
-    });
+	const apiUrl = env.DOKPLOY_API_URL;
+	const apiKey = env.DOKPLOY_API_KEY;
+	const scheduleId = env.DOKPLOY_BACKUP_SCHEDULE_ID;
 
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Dokploy API respondió con error (${response.status}): ${text}`);
-    }
+	if (!apiUrl || !apiKey || !scheduleId) {
+		throw new Error(
+			'Dokploy API no configurada. Configurar DOKPLOY_API_URL, DOKPLOY_API_KEY y DOKPLOY_BACKUP_SCHEDULE_ID.'
+		);
+	}
 
-    return { success: true, message: 'Backup iniciado. Recibirá una notificación al completar.' };
+	const response = await fetch(`${apiUrl}/api/schedule/trigger`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'x-api-key': apiKey
+		},
+		body: JSON.stringify({ scheduleId })
+	});
+
+	if (!response.ok) {
+		const text = await response.text();
+		throw new Error(`Dokploy API respondió con error (${response.status}): ${text}`);
+	}
+
+	return { success: true, message: 'Backup iniciado. Recibirá una notificación al completar.' };
 });
 
 export const getBackupStatus = command(GetBackupStatusSchema, async (_input, ctx) => {
-    requireUserAdmin(ctx.user);
-    
-    const [latest] = await getRecentBackupNotifications(1);
-    
-    if (!latest) {
-        return {
-            status: 'unknown',
-            label: 'Sin historial de backups',
-            lastBackupAt: null,
-            lastBackupFile: null,
-            isHealthy: false
-        };
-    }
+	requireUserAdmin(ctx.user);
 
-    const hoursSinceLastBackup = (Date.now() - new Date(latest.createdAt).getTime()) / (1000 * 60 * 60);
-    const isSuccess = latest.type === 'BACKUP_CREATED';
-    
-    let status: 'healthy' | 'stale' | 'failing';
-    let label: string;
-    let isHealthy: boolean;
+	const [latest] = await getRecentBackupNotifications(1);
 
-    if (isSuccess && hoursSinceLastBackup < 26) {
-        status = 'healthy';
-        label = 'Backups funcionando correctamente';
-        isHealthy = true;
-    } else if (isSuccess && hoursSinceLastBackup < 50) {
-        status = 'stale';
-        label = 'Último backup tiene más de 24 horas';
-        isHealthy = false;
-    } else {
-        status = 'failing';
-        label = isSuccess 
-            ? `Sin backups en ${Math.round(hoursSinceLastBackup)} horas`
-            : 'Último backup falló';
-        isHealthy = false;
-    }
+	if (!latest) {
+		return {
+			status: 'unknown',
+			label: 'Sin historial de backups',
+			lastBackupAt: null,
+			lastBackupFile: null,
+			isHealthy: false
+		};
+	}
 
-    return {
-        status,
-        label,
-        lastBackupAt: latest.createdAt,
-        lastBackupFile: (latest.metadata as any)?.fileName ?? null,
-        lastBackupStatus: isSuccess ? 'success' : 'error',
-        hoursSinceLastBackup: Math.round(hoursSinceLastBackup),
-        isHealthy
-    };
+	const hoursSinceLastBackup =
+		(Date.now() - new Date(latest.createdAt).getTime()) / (1000 * 60 * 60);
+	const isSuccess = latest.type === 'BACKUP_CREATED';
+
+	let status: 'healthy' | 'stale' | 'failing';
+	let label: string;
+	let isHealthy: boolean;
+
+	if (isSuccess && hoursSinceLastBackup < 26) {
+		status = 'healthy';
+		label = 'Backups funcionando correctamente';
+		isHealthy = true;
+	} else if (isSuccess && hoursSinceLastBackup < 50) {
+		status = 'stale';
+		label = 'Último backup tiene más de 24 horas';
+		isHealthy = false;
+	} else {
+		status = 'failing';
+		label = isSuccess
+			? `Sin backups en ${Math.round(hoursSinceLastBackup)} horas`
+			: 'Último backup falló';
+		isHealthy = false;
+	}
+
+	return {
+		status,
+		label,
+		lastBackupAt: latest.createdAt,
+		lastBackupFile: (latest.metadata as any)?.fileName ?? null,
+		lastBackupStatus: isSuccess ? 'success' : 'error',
+		hoursSinceLastBackup: Math.round(hoursSinceLastBackup),
+		isHealthy
+	};
 });
 ```
 
@@ -299,8 +310,8 @@ import { listBackupHistory } from '$lib/remote/backups.remote';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-    // Initial data via server load (optional — can also fetch client-side)
-    return {};
+	// Initial data via server load (optional — can also fetch client-side)
+	return {};
 };
 ```
 
@@ -309,6 +320,7 @@ La página usa `listBackupHistory` y `getBackupStatus` vía `useCommand()` en el
 **Archivo:** `src/routes/(app)/backups/+page.svelte` (nuevo)
 
 Layout:
+
 ```
 ┌────────────────────────────────────────────┐
 │  Backups de base de datos                  │
@@ -326,6 +338,7 @@ Layout:
 ```
 
 Estados:
+
 - **Loading**: skeleton/spinner en tabla
 - **Error**: toast + mensaje inline
 - **Empty**: "No hay historial de backups. Configurá el Schedule Job en Dokploy."
@@ -335,32 +348,33 @@ Estados:
 ### 2.7 Componentes
 
 **`BackupsStatusBadge.svelte`** — Badge de estado general:
+
 ```svelte
 <script lang="ts">
-    interface Props {
-        status: 'healthy' | 'stale' | 'failing' | 'unknown';
-        label: string;
-        lastBackupAt: string | null;
-    }
-    let { status, label, lastBackupAt }: Props = $props();
+	interface Props {
+		status: 'healthy' | 'stale' | 'failing' | 'unknown';
+		label: string;
+		lastBackupAt: string | null;
+	}
+	let { status, label, lastBackupAt }: Props = $props();
 </script>
 
 <div class="flex items-center gap-2">
-    {#if status === 'healthy'}
-        <span class="h-2 w-2 rounded-full bg-green-500" />
-    {:else if status === 'stale'}
-        <span class="h-2 w-2 rounded-full bg-yellow-500" />
-    {:else if status === 'failing'}
-        <span class="h-2 w-2 rounded-full bg-red-500" />
-    {:else}
-        <span class="h-2 w-2 rounded-full bg-gray-400" />
-    {/if}
-    <span class="text-sm">{label}</span>
-    {#if lastBackupAt}
-        <span class="text-xs text-outline">
-            · Último: {new Date(lastBackupAt).toLocaleString('es-VE')}
-        </span>
-    {/if}
+	{#if status === 'healthy'}
+		<span class="h-2 w-2 rounded-full bg-green-500" />
+	{:else if status === 'stale'}
+		<span class="h-2 w-2 rounded-full bg-yellow-500" />
+	{:else if status === 'failing'}
+		<span class="h-2 w-2 rounded-full bg-red-500" />
+	{:else}
+		<span class="h-2 w-2 rounded-full bg-gray-400" />
+	{/if}
+	<span class="text-sm">{label}</span>
+	{#if lastBackupAt}
+		<span class="text-xs text-outline">
+			· Último: {new Date(lastBackupAt).toLocaleString('es-VE')}
+		</span>
+	{/if}
 </div>
 ```
 
@@ -371,6 +385,7 @@ Estados:
 **Archivo:** `src/lib/shared/routes.ts`
 
 Agregar a `SUPER_ADMIN_ITEMS`:
+
 ```ts
 { href: '/backups', label: 'Backups', icon: 'hard-drive' }
 ```
@@ -382,6 +397,7 @@ Verificar que el icono `hard-drive` existe en el mapeo de iconos de la sidebar.
 **Archivo:** `.env.example`
 
 Agregar:
+
 ```env
 # Dokploy API (para trigger manual de backups)
 DOKPLOY_API_URL=
@@ -393,14 +409,14 @@ DOKPLOY_BACKUP_SCHEDULE_ID=
 
 ## Lo que NO se necesita (eliminado del diseño anterior)
 
-| Componente | Motivo |
-|---|---|
-| docker-socket-proxy | No se usa Docker API. El trigger va por Dokploy API. |
-| HEALTHCHECK en Dockerfile | Container efímero — Dokploy maneja health vía exit code. |
-| `/tmp/backup-last-run` | No hay container long-running que monitorear. |
-| rclone en optikt-app | No se lista GDrive directo. Se usa tabla notifications. |
-| Google Drive API / `googleapis` | No se consulta GDrive. El webhook registra todo en DB. |
-| docker exec / Docker API calls | Reemplazado por Dokploy API. |
+| Componente                      | Motivo                                                   |
+| ------------------------------- | -------------------------------------------------------- |
+| docker-socket-proxy             | No se usa Docker API. El trigger va por Dokploy API.     |
+| HEALTHCHECK en Dockerfile       | Container efímero — Dokploy maneja health vía exit code. |
+| `/tmp/backup-last-run`          | No hay container long-running que monitorear.            |
+| rclone en optikt-app            | No se lista GDrive directo. Se usa tabla notifications.  |
+| Google Drive API / `googleapis` | No se consulta GDrive. El webhook registra todo en DB.   |
+| docker exec / Docker API calls  | Reemplazado por Dokploy API.                             |
 
 ---
 

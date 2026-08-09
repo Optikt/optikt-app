@@ -33,31 +33,5 @@ services:
     ports:
       - '3000:3000'
 
-  backup:
-    image: optikt/optikt-backup:latest
-    container_name: optikt-backup
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
-    environment:
-      BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
-      PG_HOST: postgres
-      PG_PORT: '5432'
-      PG_USER: optikt
-      PG_PASSWORD: ${DB_PASSWORD}
-      PG_DB: optikt_db
-      GOOGLE_DRIVE_BACKUP_FOLDER_ID: ${GOOGLE_DRIVE_BACKUP_FOLDER_ID}
-      RCLONE_CONFIG_GDRIVE_ROOT_FOLDER_ID: ${GOOGLE_DRIVE_BACKUP_FOLDER_ID}
-      DRIVE_REMOTE: gdrive
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
-      TZ: ${TZ:-UTC}
-      RCLONE_CONFIG_GDRIVE_TOKEN: ${RCLONE_CONFIG_GDRIVE_TOKEN}
-      NOTIFY_URL: http://optikt-app:3000/api/internal/backup-webhook
-      NOTIFY_TOKEN: ${BACKUP_NOTIFY_TOKEN:-}
-
 volumes:
   postgres_data:

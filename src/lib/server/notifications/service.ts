@@ -91,6 +91,27 @@ export async function notifyBackupCreated(input: {
 	);
 }
 
+export async function notifyBackupFailed(input: {
+	fileName: string;
+	error: string;
+	executor?: DbOrTx;
+}) {
+	return publishNotification(
+		{
+			type: NotificationType.BACKUP_FAILED,
+			severity: NotificationSeverity.ERROR,
+			title: 'Backup de base de datos fallido',
+			body: `El backup ${input.fileName} falló: ${input.error}.`,
+			metadata: {
+				fileName: input.fileName,
+				error: input.error
+			},
+			targetRoles: [UserRole.ADMIN]
+		},
+		input.executor
+	);
+}
+
 export async function notifyRatesUpdated(input: {
 	refreshedAt: string;
 	updatedKeys: string[];

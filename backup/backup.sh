@@ -2,6 +2,7 @@
 set -uo pipefail
 
 STATUS="success"
+ERROR_MSG=""
 TIMESTAMP=$(date +%Y-%m-%d_%H%M%S)
 FILENAME="optikt-backup-${TIMESTAMP}.sql.gz"
 BACKUP_FILE="/backups/${FILENAME}"
@@ -25,6 +26,7 @@ if PGPASSWORD="${PG_PASSWORD}" pg_dump \
 else
   echo "      ERROR: pg_dump failed!"
   STATUS="error"
+  ERROR_MSG="pg_dump failed"
 fi
 
 # 2. Upload to Google Drive
@@ -37,10 +39,12 @@ if [ -f "${BACKUP_FILE}" ]; then
   else
     echo "      ERROR: Upload failed!"
     STATUS="error"
+    ERROR_MSG="rclone upload failed (DNS/network/credentials)"
   fi
 else
   echo "      SKIP: No backup file to upload."
   STATUS="error"
+  ERROR_MSG="no backup file produced"
 fi
 
 # 3. Retention policy — remove files older than N days
@@ -63,7 +67,7 @@ if [ -n "${NOTIFY_URL:-}" ]; then
   curl -sf -X POST "${NOTIFY_URL}" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${NOTIFY_TOKEN:-}" \
-    -d "{\"status\":\"${STATUS}\",\"filename\":\"${FILENAME}\",\"size\":\"${BACKUP_SIZE:-unknown}\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+    -d "{\"status\":\"${STATUS}\",\"filename\":\"${FILENAME}\",\"size\":\"${BACKUP_SIZE:-unknown}\",\"error\":\"${ERROR_MSG}\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
     || true
   echo "      Notification sent."
 fi

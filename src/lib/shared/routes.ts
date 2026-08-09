@@ -28,7 +28,10 @@ export const ADMIN_ITEMS = [
 export type AdminRoute = (typeof ADMIN_ITEMS)[number]['href'];
 
 /** Super admin sidebar items */
-export const SUPER_ADMIN_ITEMS = [{ href: '/users', label: 'Usuarios', icon: 'shield' }] as const;
+export const SUPER_ADMIN_ITEMS = [
+	{ href: '/users', label: 'Usuarios', icon: 'shield' },
+	{ href: '/backups', label: 'Backups', icon: 'hard-drive' }
+] as const;
 export type SuperAdminRoute = (typeof SUPER_ADMIN_ITEMS)[number]['href'];
 
 /** Extra routes used in non-sidebar components */
