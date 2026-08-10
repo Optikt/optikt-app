@@ -4,6 +4,7 @@
 
 import type { RemoteFormIssue } from '@sveltejs/kit';
 import { toast } from 'svelte-sonner';
+import { logger } from './logger';
 
 const ERROR_FIELD_SELECTORS =
 	'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"], [class*="ring-red"]';
@@ -128,7 +129,7 @@ export function toastUnboundErrors(allIssues: RemoteFormIssue[]): void {
 		}
 
 		if (unboundIssues.length > 0) {
-			console.error('remote-form.unbound-issues', {
+			logger.warn('remote-form.unbound-issues', {
 				issues: unboundIssues
 			});
 		}

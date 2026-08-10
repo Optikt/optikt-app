@@ -1,6 +1,7 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import * as auth from '$lib/server/auth';
 import { registerPdfBrowserShutdown } from '$lib/server/pdf';
+import { logger } from '$lib/utils/logger';
 
 registerPdfBrowserShutdown();
 
@@ -52,7 +53,7 @@ const serverHandleError: HandleServerError = ({ error, event, status, message })
 	const err = error as { name?: string; message?: string; stack?: string; cause?: unknown };
 	const cause = serializeCause(err?.cause);
 
-	console.error('[handleError]', {
+	logger.error('Unhandled server error', undefined, {
 		url: event.url.pathname,
 		status,
 		message: err?.message ?? message,

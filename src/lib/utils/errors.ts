@@ -1,4 +1,5 @@
 import { isHttpError } from '@sveltejs/kit';
+import { logger } from './logger';
 
 /**
  * Extract error message from various error types
@@ -56,7 +57,7 @@ export function reportClientError(
 	error: unknown,
 	context: Record<string, unknown> = {}
 ): void {
-	console.error(`[${source}]`, {
+	logger.error(source, undefined, {
 		...context,
 		...serializeErrorDetails(error)
 	});

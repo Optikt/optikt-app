@@ -10,6 +10,7 @@ import {
 } from '$lib/server/db/queries/notifications';
 import type { Notification } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
+import { logger } from '$lib/utils/logger';
 
 type PublishNotificationInput = {
 	type: NotificationType;
@@ -39,7 +40,7 @@ async function publishNotification(
 			executor
 		);
 	} catch (error) {
-		console.error('No se pudo publicar la notificación', error);
+		logger.error('No se pudo publicar la notificación', error);
 		return null;
 	}
 }

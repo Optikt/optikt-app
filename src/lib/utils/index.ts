@@ -1,5 +1,6 @@
 // Utility functions barrel export
 export * from './errors';
+export * from './logger';
 export * from './form';
 export * from './rif';
 export * from './generateUUID';
