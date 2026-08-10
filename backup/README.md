@@ -89,25 +89,51 @@ Hacé esto cada vez que modifiques algo en `backup/`. En el futuro puede automat
 
 ### Environment variables
 
-| Variable                     | Valor                                                |
-| ---------------------------- | ---------------------------------------------------- |
-| `PG_HOST`                    | nombre del contenedor de la BD (ej. `postgres`)      |
-| `PG_PORT`                    | `5432`                                               |
-| `PG_USER`                    | `optikt`                                             |
-| `PG_PASSWORD`                | valor de `DB_PASSWORD`                               |
-| `PG_DB`                      | `optikt_db`                                          |
-| `DRIVE_REMOTE`               | `gdrive`                                             |
-| `BACKUP_RETENTION_DAYS`      | `30`                                                 |
-| `TZ`                         | `America/Caracas`                                    |
-| `RCLONE_CONFIG_GDRIVE_TOKEN` | el JSON del token OAuth2                             |
-| `NOTIFY_URL`                 | `http://optikt-app:3000/api/internal/backup-webhook` |
-| `NOTIFY_TOKEN`               | valor de `BACKUP_NOTIFY_TOKEN`                       |
+| Variable                        | Valor                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `PG_HOST`                       | nombre del contenedor de la BD (ej. `postgres`)                           |
+| `PG_PORT`                       | `5432`                                                                    |
+| `PG_USER`                       | `optikt`                                                                  |
+| `PG_PASSWORD`                   | valor de `DB_PASSWORD`                                                    |
+| `PG_DB`                         | `optikt_db`                                                               |
+| `DRIVE_REMOTE`                  | `gdrive`                                                                  |
+| `GOOGLE_DRIVE_BACKUP_FOLDER_ID` | ID de la carpeta de Drive (opcional). Si se omite, sube al root de Drive. |
+| `BACKUP_RETENTION_DAYS`         | `30`                                                                      |
+| `TZ`                            | `America/Caracas`                                                         |
+| `RCLONE_CONFIG_GDRIVE_TOKEN`    | el JSON del token OAuth2                                                  |
+| `NOTIFY_URL`                    | `http://optikt-app:3000/api/internal/backup-webhook`                      |
+| `NOTIFY_TOKEN`                  | valor de `BACKUP_NOTIFY_TOKEN`                                            |
 
 > **Importante:** el container es efímero y Dokploy no conserva el exit code como healthcheck automático, pero guarda el historial de logs de cada ejecución en **Schedule Jobs**. El webhook notifica a optikt-app el resultado (éxito/error), que es lo que alimenta la UI de Backups en la app.
 
+### Comando real del Schedule Job (referencia)
+
+El job en Dokploy (nombre `optikt-backup`, cron `0 2 * * *`) ejecuta en esencia:
+
+```bash
+docker run --rm \
+  --network dokploy-network \
+  -e PG_HOST=optikt-database-tbgscg \
+  -e PG_PORT=5432 \
+  -e PG_USER=optikt \
+  -e 'PG_PASSWORD=TU_PASSWORD' \
+  -e PG_DB=optikt_db \
+  -e DRIVE_REMOTE=gdrive \
+  -e GOOGLE_DRIVE_BACKUP_FOLDER_ID=TU_FOLDER_ID \
+  -e BACKUP_RETENTION_DAYS=30 \
+  -e TZ=America/Caracas \
+  -e 'RCLONE_CONFIG_GDRIVE_TOKEN={"access_token":"...","token_type":"Bearer",...}' \
+  -e NOTIFY_URL=http://optikt-app-8w0vr1:3000/api/internal/backup-webhook \
+  -e 'NOTIFY_TOKEN=TU_TOKEN' \
+  --name optikt-backup-$(date +%s) \
+  optikt/optikt-backup:latest
+```
+
+> **Nota importante:** `optikt-app-8w0vr1` es el nombre del servicio en Docker Swarm. Si se recrea el servicio `optikt-app` en Dokploy, este hash cambia y hay que actualizar `NOTIFY_URL` en el Schedule Job. Igual con `optikt-database-tbgscg` si se recrea la BD.
+
 ### Probar
 
-Hacé clic en **Run Now** en la UI de Dokploy. Verificá en los logs del job que el backup se ejecutó, subió a Drive y envió el webhook.
+Hacé clic en **Run Now** en la UI de Dokploy. Verificá en los logs del job que el backup se ejecutó, subió a Drive y envió el webhook (debe decir "Notification sent.", no "Notification FAILED.").
 
 ---
 
@@ -163,3 +189,28 @@ Repetí el paso 1 (wizard de rclone) para generar un token fresco y actualizá l
 ### DNS stale (el problema que motivó este cambio)
 
 El approach anterior usaba un container long-running con busybox crond y `docker exec` para triggers. Con el tiempo, el DNS interno de Docker (`127.0.0.11:53`) se corrompía, rclone no podía resolver `oauth2.googleapis.com` y los uploads fallaban por días sin que nadie se enterara. Con Dokploy Schedule Jobs, cada ejecución es un container fresco con DNS fresco — este problema no vuelve a ocurrir.
+
+---
+
+## 7. Mantenimiento
+
+### Checklist diario (después de que corra el job a las 2 AM)
+
+- [ ] Backup aparece en Google Drive (en la carpeta correcta, no en el root)
+- [ ] Notificación aparece en `/backups` de optikt-app
+- [ ] No hay containers de backup colgados (`docker ps -a | grep optikt-backup`)
+- [ ] Los logs del Schedule Job en Dokploy dicen "Notification sent." (no "Notification FAILED.")
+
+### Qué actualizar si cambia algo
+
+| Si cambia...           | Hacé esto en Dokploy → Schedule Jobs → `optikt-backup` |
+| ---------------------- | ------------------------------------------------------ |
+| Se recrea `optikt-app` | Actualizar `NOTIFY_URL` (el hash `-8w0vr1` cambia)     |
+| Contraseña de la DB    | Actualizar `PG_PASSWORD`                               |
+| Token de Google Drive  | Actualizar `RCLONE_CONFIG_GDRIVE_TOKEN`                |
+| Carpeta de Drive       | Actualizar `GOOGLE_DRIVE_BACKUP_FOLDER_ID`             |
+
+### Ejecutar manualmente
+
+- Botón **Run Now** en Dokploy → Schedule Jobs → `optikt-backup`, o
+- Botón **"Ejecutar backup ahora"** en la app (`/backups`, SUPERADMIN), que dispara el job vía la API de Dokploy.
