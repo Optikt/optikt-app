@@ -14,10 +14,10 @@
 	import { BackupsStatusBadge, BackupsTable } from '$lib/components/backups';
 
 	let { data } = $props();
-	let { initialHistory } = untrack(() => data);
+	let { initialHistory, initialStatus } = untrack(() => data);
 
 	let history = $state<BackupHistoryItem[]>(initialHistory);
-	let status = $state<BackupStatus | null>(null);
+	let status = $state<BackupStatus>(initialStatus);
 	let loading = $state(false);
 	let running = $state(false);
 
@@ -48,22 +48,6 @@
 			running = false;
 		}
 	}
-
-	// Load initial status after mount (notifications table read is fast)
-	let statusLoaded = $state(false);
-	$effect(() => {
-		if (statusLoaded) return;
-		getBackupStatus({})
-			.then((s) => {
-				status = s;
-			})
-			.catch((e) => {
-				console.error('Error cargando estado de backups', e);
-			})
-			.finally(() => {
-				statusLoaded = true;
-			});
-	});
 </script>
 
 <svelte:head>
@@ -75,11 +59,9 @@
 		<div>
 			<h1 class="text-3xl font-bold tracking-tight text-brand-navy">Backups</h1>
 			<p class="text-outline">Backups de base de datos</p>
-			{#if status}
-				<div class="mt-3">
-					<BackupsStatusBadge {status} />
-				</div>
-			{/if}
+			<div class="mt-3">
+				<BackupsStatusBadge {status} />
+			</div>
 		</div>
 		<div class="flex flex-wrap gap-2">
 			<Button variant="outline" onclick={fetchAll} disabled={loading}>
