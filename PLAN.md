@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-08-09.
+> Actualizado: 2026-08-10.
 
 ---
 
@@ -128,6 +128,37 @@
 
 ## 2. Features Pendientes (Planes Activos)
 
+### ✅ FP2 · backup-ui (COMPLETADO — 2026-08-10)
+
+**Qué se implementó:**
+
+El approach final difiere del plan original. En vez de Docker API + socket-proxy, se migró a Dokploy cron (container efímero) + UI basada en notificaciones.
+
+**Fase 1 — Infra:**
+
+- `backup/Dockerfile` simplificado: sin `entrypoint.sh` ni `crond`, CMD directo a `backup.sh`. Container efímero — ejecuta, sube a Drive, notifica y muere.
+- `backup/entrypoint.sh` eliminado.
+- `backup/backup.sh` mejorado: captura `ERROR_MSG` en cada paso (pg_dump, upload), notifica webhook con status real (no mentía con `curl || true`), soporta `GOOGLE_DRIVE_BACKUP_FOLDER_ID` vía `--drive-root-folder-id` de rclone (para subir a carpeta específica, no al root).
+- `docker-compose-prod.yml`: servicio `backup` eliminado (Dokploy lo gestiona como Schedule Job).
+- **Bug resuelto:** DNS stale de Docker (`127.0.0.11:53` se corrompía tras días) → al ser container efímero, cada ejecución tiene DNS fresco. Los uploads dejaron de fallar.
+- Schedule Job en Dokploy: nombre `optikt-backup`, cron `0 2 * * *`, comando `docker run --rm` con todas las env vars inline. Network `dokploy-network`, hosts `optikt-database-tbgscg` y `optikt-app-8w0vr1`.
+
+**Fase 2 — UI:**
+
+- Migración DB `0037`: nuevo valor `BACKUP_FAILED` en enum `notification_type`.
+- `NotificationType.BACKUP_FAILED` + `notifyBackupFailed()` en el servicio de notificaciones.
+- Webhook `backup-webhook` actualizado: crea `BACKUP_CREATED` o `BACKUP_FAILED` según `status`, guarda tamaño y error en metadata.
+- Query `getRecentBackupNotifications()` — filtra por ambos tipos, devuelve fileName, sizeBytes, error, createdAt.
+- `src/lib/remote/backups.remote.ts`: `listBackupHistory`, `getBackupStatus`, `runBackup` (vía Dokploy API `POST /api/schedule.runManually` con `x-api-key`).
+- Página `/backups` (solo SUPERADMIN): `+page.server.ts` con SSR (computa status del último registro, sin fetch client-side en carga inicial), `+page.svelte` con badge de estado (verde/amarillo/rojo), botón "Ejecutar backup ahora" (dispara el Schedule Job vía Dokploy API), tabla de historial.
+- Componentes: `BackupsStatusBadge.svelte`, `BackupsTable.svelte`.
+- Sidebar: `/backups` en `SUPER_ADMIN_ITEMS` con icono `HardDrive` de Lucide.
+- Env vars nuevas: `DOKPLOY_API_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_BACKUP_SCHEDULE_ID`.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, `pnpm test:unit` 741 tests ✓. Probado en producción: backup automático funciona, webhook notifica correctamente, UI muestra historial y status, botón trigger dispara el job vía Dokploy API.
+
+---
+
 ### FP1 · preserve-list-filters 🔴
 
 **Problema:** Al navegar lista→detalle→volver en ventas, compras, lentes, productos, clientes y cotizaciones, los filtros se pierden porque el botón volver va a la URL base sin query params.
@@ -139,20 +170,6 @@
 **Dificultad:** Baja. **Solución:** (a) Utilidad `saveReferrerParams`/`getBackUrl` en `src/lib/utils/urlState.ts` (ya existe parcialmente). (b) `beforeNavigate` en cada lista para guardar params. (c) `goBack()` modificado en cada detalle. ~1 día.
 
 **Estado:** Plan activo. Sin empezar implementación.
-
----
-
-### FP2 · backup-ui 🔴
-
-**Problema:** El container de backups (`optikt-backup`) usa busybox crond que muere silenciosamente con el tiempo. No hay forma de saber si los backups se están ejecutando sin hacer SSH al servidor. No hay UI.
-
-**Por qué importa:** Sin backups, un fallo de disco o error humano pierde TODA la data del negocio. La app corre on-premise en Venezuela — no hay RDS managed ni snapshots automáticos.
-
-**Contras:** Requiere docker-socket-proxy (contenedor extra en el droplet). Agrega superficie de ataque (Docker API, aunque restringida a proxy con permisos mínimos).
-
-**Dificultad:** Media. **Solución:** (a) docker-socket-proxy con permisos mínimos (CONTAINERS=1, EXEC=1, POST=1). (b) HEALTHCHECK en backup/Dockerfile. (c) Remote functions: listBackups, runBackup, restartBackup, getBackupStatus. (d) UI en /backups (solo SUPERADMIN): tabla de backups en Drive, botón Ejecutar ahora, status indicator. ~3 días.
-
-**Estado:** Plan activo. Infraestructura y specs definidos (`backup-infra-sec`, `backup-ui-ux`). Sin empezar.
 
 ---
 
@@ -308,12 +325,12 @@
 
 | Prioridad | Ítem                          | Esfuerzo                |
 | --------- | ----------------------------- | ----------------------- |
+| ✅        | FP2 · backup-ui               | Completado              |
 | 🔴        | DT4 · Console.log en prod     | 1 día                   |
 | 🔴        | DT5 · Error pattern duplicado | 1 día                   |
 | 🔴        | DT3 · Validación Zod          | 3 días                  |
 | 🔴        | DT2 · Errores silenciados     | 4 días                  |
-| 🔴        | FP1 · preserve-list-filters   | 1 día                   |
-| 🔴        | FP2 · backup-ui               | 3 días                  |
+| ❌        | FP1 · preserve-list-filters   | 1 día                   |
 | 🔴        | FP3 · public-catalog-api      | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes       | 15-20 días (5 archivos) |
 | 🟡        | DT8 · Dashboard gráficos      | 3 días                  |
@@ -339,7 +356,7 @@
 
 ```
 Semana 1:  DT4 + DT5 + DT3 (deuda técnica rápida)
-Semana 2:  FP1 + FP2 (backups UI + filtros)
+Semana 2:  FP1 (preserve-list-filters)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)
 Semana 7-8: DT1 parcial (LensCatalogForm + EditSaleModal)
