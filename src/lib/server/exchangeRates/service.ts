@@ -6,6 +6,7 @@ import type {
 	ExchangeRatesSnapshot
 } from '$lib/shared/exchangeRates';
 import { fetchExchangeRatesFromApi, getExchangeRatesApiUrl } from './client';
+import { logger } from '$lib/utils/logger';
 
 type RefreshSource = 'manual' | 'poller' | 'startup' | 'lazy';
 
@@ -168,7 +169,8 @@ export async function refreshExchangeRates(options?: {
 			cache.lastFetchedAt = nowISO();
 			cache.lastError = null;
 		} catch (error) {
-			cache.lastError = error instanceof Error ? error.message : 'Error obteniendo tasas';
+			logger.error('Error obteniendo tasas de cambio de la API', error);
+			cache.lastError = 'No se pudo conectar con el proveedor de tasas';
 		} finally {
 			cache.refreshPromise = null;
 		}

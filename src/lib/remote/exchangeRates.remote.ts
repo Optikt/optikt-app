@@ -73,6 +73,9 @@ export const refreshExchangeRatesCommand = command(
 	async (): Promise<ExchangeRatesSnapshot> => {
 		requireAuth();
 		const snapshot = await refreshExchangeRates({ force: true, source: 'manual' });
+		if (snapshot.lastError) {
+			throw new Error(snapshot.lastError);
+		}
 		await publishExchangeRatesTransition(snapshot);
 		return snapshot;
 	}
