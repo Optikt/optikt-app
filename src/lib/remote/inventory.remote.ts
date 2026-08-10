@@ -164,7 +164,6 @@ export const createManualAdjustmentCmd = command(ManualAdjustmentSchema, async (
 			movementId: result.movement.id
 		};
 	} catch (e) {
-		console.error('Error creating manual adjustment:', e);
 		return { success: false as const, error: getErrorMessage(e) };
 	}
 });
@@ -237,7 +236,6 @@ export const revertFullLotCmd = command(RevertLotSchema, async (data) => {
 
 		return { success: true as const, lotId: data.lotId };
 	} catch (e) {
-		console.error('Error reverting lot:', e);
 		return { success: false as const, error: getErrorMessage(e) };
 	}
 });

@@ -72,7 +72,6 @@ export const createSession = command(CreateInventoryCountSessionSchema, async (d
 
 		return { success: true as const, session };
 	} catch (error) {
-		console.error('Error creating inventory count session:', error);
 		return { success: false as const, error: getErrorMessage(error) };
 	}
 });
@@ -89,7 +88,6 @@ export const upsertCountLine = command(UpsertInventoryCountLineSchema, async (da
 
 		return { success: true as const, line };
 	} catch (error) {
-		console.error('Error saving inventory count line:', error);
 		return { success: false as const, error: getErrorMessage(error) };
 	}
 });
@@ -107,7 +105,6 @@ export const setLineAdjustmentStatus = command(
 
 			return { success: true as const, line };
 		} catch (error) {
-			console.error('Error updating inventory count adjustment status:', error);
 			return { success: false as const, error: getErrorMessage(error) };
 		}
 	}
@@ -120,7 +117,6 @@ export const applySession = command(SessionIdSchema, async (data) => {
 		const session = await applyInventoryCountSession(data.id, user.id);
 		return { success: true as const, session };
 	} catch (error) {
-		console.error('Error applying inventory count session:', error);
 		return { success: false as const, error: getErrorMessage(error) };
 	}
 });
@@ -132,7 +128,6 @@ export const cancelSession = command(CancelInventoryCountSessionSchema, async (d
 		const session = await cancelInventoryCountSession(data.id, user.id, data.reason);
 		return { success: true as const, session };
 	} catch (error) {
-		console.error('Error cancelling inventory count session:', error);
 		return { success: false as const, error: getErrorMessage(error) };
 	}
 });

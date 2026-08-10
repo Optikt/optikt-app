@@ -382,7 +382,6 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 
 		return { success: true as const, purchaseOrder: result };
 	} catch (e) {
-		console.error('Error creating purchase order:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error creando orden de compra'
@@ -476,7 +475,6 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
-		console.error('Error updating purchase order:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error actualizando orden de compra'
@@ -665,7 +663,6 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 
 		return { success: true as const, ...result };
 	} catch (e) {
-		console.error('Error saving purchase order draft:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error guardando borrador de compra'
@@ -700,7 +697,6 @@ export const markPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema, a
 		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
-		console.error('Error marking purchase order ready:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error marcando orden como lista'
@@ -727,7 +723,6 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 		await auditService.logUpdate('purchase_order', data.id, existing, updated, context);
 		return { success: true as const, purchaseOrder: updated };
 	} catch (e) {
-		console.error('Error unmarking purchase order ready:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error devolviendo orden a edición'
@@ -761,7 +756,6 @@ export const togglePurchaseOrderItemReviewedCmd = command(
 			await auditService.logUpdate('purchase_order_item', data.id, item, updated, context);
 			return { success: true as const, item: updated };
 		} catch (e) {
-			console.error('Error toggling purchase order item reviewed:', e);
 			return {
 				success: false as const,
 				error: e instanceof Error ? e.message : 'Error actualizando línea'
@@ -817,7 +811,6 @@ export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async
 
 		return { success: true as const, purchaseOrder: result, priceSuggestions: suggestions };
 	} catch (e) {
-		console.error('Error confirming purchase order:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error confirmando orden de compra',
@@ -844,7 +837,6 @@ export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (
 
 		return { success: true as const, purchaseOrder: result };
 	} catch (e) {
-		console.error('Error cancelling purchase order:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error cancelando orden de compra'
@@ -1006,7 +998,6 @@ export const addPurchaseOrderPaymentCmd = command(
 				dueStatus: result.dueStatus
 			};
 		} catch (e) {
-			console.error('Error adding purchase order payment:', e);
 			return {
 				success: false as const,
 				error: e instanceof Error ? e.message : 'Error registrando pago'
@@ -1090,7 +1081,6 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 			dueStatus: result.dueStatus
 		};
 	} catch (e) {
-		console.error('Error voiding purchase order payment:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error anulando pago'
@@ -1189,7 +1179,6 @@ export const setPurchaseOrderCreditTermsCmd = command(
 				dueStatus: result.dueStatus
 			};
 		} catch (e) {
-			console.error('Error setting purchase order credit terms:', e);
 			return {
 				success: false as const,
 				error: e instanceof Error ? e.message : 'Error configurando crédito'
@@ -1231,7 +1220,6 @@ export const applyPriceSuggestionsCmd = command(ApplyPriceSuggestionsSchema, asy
 		const updatedCount = results.filter((r) => r.updated).length;
 		return { success: true as const, updatedCount };
 	} catch (e) {
-		console.error('Error applying price suggestions:', e);
 		return {
 			success: false as const,
 			error: e instanceof Error ? e.message : 'Error actualizando precios'

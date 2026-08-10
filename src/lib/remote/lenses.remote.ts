@@ -967,7 +967,6 @@ export const adjustLensStock = command(ManualLensAdjustmentSchema, async (data) 
 			movementId: result.movement.id
 		};
 	} catch (error) {
-		console.error('Error adjusting lens stock:', error);
 		return { success: false as const, error: getErrorMessage(error) };
 	}
 });
