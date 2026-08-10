@@ -50,6 +50,7 @@
 **Hallazgo real:** 143 de 152 remote functions (94.1%) ya pasan un Zod schema como primer argumento a `command()`/`query()`/`form()` — SvelteKit valida internamente, por eso hay solo 1 `.safeParse()` manual (en un helper de finanzas, no en validación primaria). Contar `.safeParse()` es irrelevante: el `.parse()` ocurre dentro de SvelteKit. Las 9 remote functions sin schema reciben **cero input** del cliente — correcto tal cual.
 
 **Cambios:**
+
 - Eliminados 5 schemas muertos (exportados pero nunca usados por ninguna remote function): `ExpenseIdSchema`, `ListInventoryLotsSchema` (+ sus tests), `AddPurchaseOrderItemSchema`, `UpdateSaleStatusSchema`, `EnrichFreeQuoteItemSchema` (+ su type).
 - 91.5% → 100% de schemas en uso.
 
@@ -349,31 +350,31 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ## Resumen de Esfuerzo
 
-| Prioridad | Ítem                          | Esfuerzo                |
-| --------- | ----------------------------- | ----------------------- |
-| ✅        | FP2 · backup-ui               | Completado              |
-| ✅        | DT4 · Console.log en prod     | Completado              |
-| ✅        | DT2 · Errores silenciados     | Completado              |
-| ✅        | DT3 · Validación Zod          | Completado              |
-| 🔴        | DT5 · Error pattern duplicado | 1 día                   |
-| 🟡        | DT10 · Zod refinements negocio| 5 días                  |
-| ❌        | FP1 · preserve-list-filters   | 1 día                   |
-| 🔴        | FP3 · public-catalog-api      | 15 días                 |
-| 🟡        | DT1 · Archivos gigantes       | 15-20 días (5 archivos) |
-| 🟡        | DT8 · Dashboard gráficos      | 3 días                  |
-| 🟡        | NF1 · Órdenes laboratorio     | 10 días                 |
-| 🟡        | NF2 · Citas/agenda            | 5 días                  |
-| 🟡        | NF3 · POS rápido              | 5 días                  |
-| 🟡        | NF4 · Garantías               | 5 días                  |
-| 🟡        | NF6 · Upload imágenes         | 5 días                  |
-| 🟡        | DT6 · Soft-delete consistente | 3 días                  |
-| 🟡        | DT9 · Tests remote funcs      | 10 días                 |
-| 🟢        | NF7 · Visor auditoría         | 2 días                  |
-| 🟢        | NF10 · Export Excel           | 1 día                   |
-| 🟢        | NF11 · Código barras          | 2 días                  |
-| 🟢        | DT7 · PDF stack limpio        | 2 días                  |
-| 🟢        | NF8 · Comisiones              | 5 días                  |
-| ⚪        | NF9 · Multi-sucursal          | 20 días                 |
+| Prioridad | Ítem                           | Esfuerzo                |
+| --------- | ------------------------------ | ----------------------- |
+| ✅        | FP2 · backup-ui                | Completado              |
+| ✅        | DT4 · Console.log en prod      | Completado              |
+| ✅        | DT2 · Errores silenciados      | Completado              |
+| ✅        | DT3 · Validación Zod           | Completado              |
+| 🔴        | DT5 · Error pattern duplicado  | 1 día                   |
+| 🟡        | DT10 · Zod refinements negocio | 5 días                  |
+| ❌        | FP1 · preserve-list-filters    | 1 día                   |
+| 🔴        | FP3 · public-catalog-api       | 15 días                 |
+| 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
+| 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
+| 🟡        | NF1 · Órdenes laboratorio      | 10 días                 |
+| 🟡        | NF2 · Citas/agenda             | 5 días                  |
+| 🟡        | NF3 · POS rápido               | 5 días                  |
+| 🟡        | NF4 · Garantías                | 5 días                  |
+| 🟡        | NF6 · Upload imágenes          | 5 días                  |
+| 🟡        | DT6 · Soft-delete consistente  | 3 días                  |
+| 🟡        | DT9 · Tests remote funcs       | 10 días                 |
+| 🟢        | NF7 · Visor auditoría          | 2 días                  |
+| 🟢        | NF10 · Export Excel            | 1 día                   |
+| 🟢        | NF11 · Código barras           | 2 días                  |
+| 🟢        | DT7 · PDF stack limpio         | 2 días                  |
+| 🟢        | NF8 · Comisiones               | 5 días                  |
+| ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
 **Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5 y FP1.
 
