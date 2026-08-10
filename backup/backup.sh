@@ -29,11 +29,18 @@ else
   ERROR_MSG="pg_dump failed"
 fi
 
+# Destination folder: root of Drive, or a specific folder if GOOGLE_DRIVE_BACKUP_FOLDER_ID is set
+if [ -n "${GOOGLE_DRIVE_BACKUP_FOLDER_ID:-}" ]; then
+  DRIVE_DEST="${DRIVE_REMOTE:-gdrive}:${GOOGLE_DRIVE_BACKUP_FOLDER_ID}"
+else
+  DRIVE_DEST="${DRIVE_REMOTE:-gdrive}:"
+fi
+
 # 2. Upload to Google Drive
 echo "[2/4] Uploading to Google Drive..."
 if [ -f "${BACKUP_FILE}" ]; then
   if rclone copyto "${BACKUP_FILE}" \
-    "${DRIVE_REMOTE:-gdrive}:${FILENAME}" \
+    "${DRIVE_DEST}${FILENAME}" \
     --config /etc/rclone/rclone.conf; then
     echo "      Uploaded: ${FILENAME}"
   else
@@ -51,7 +58,7 @@ fi
 RETENTION="${BACKUP_RETENTION_DAYS:-30}"
 echo "[3/4] Enforcing retention (${RETENTION} days)..."
 rclone delete \
-  "${DRIVE_REMOTE:-gdrive}:" \
+  "${DRIVE_DEST}" \
   --min-age "${RETENTION}d" \
   --config /etc/rclone/rclone.conf \
   && echo "      Old backups removed." \
@@ -61,15 +68,17 @@ rclone delete \
 echo "[4/4] Cleaning up local file..."
 rm -f "${BACKUP_FILE}" && echo "      Local file removed."
 
-# 5. Optional webhook notification (non-critical — failures are ignored)
+# 5. Optional webhook notification (non-critical — failures are logged, not fatal)
 if [ -n "${NOTIFY_URL:-}" ]; then
   echo "[5/5] Sending notification to ${NOTIFY_URL}..."
-  curl -sf -X POST "${NOTIFY_URL}" \
+  if curl -sf -X POST "${NOTIFY_URL}" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${NOTIFY_TOKEN:-}" \
-    -d "{\"status\":\"${STATUS}\",\"filename\":\"${FILENAME}\",\"size\":\"${BACKUP_SIZE:-unknown}\",\"error\":\"${ERROR_MSG}\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
-    || true
-  echo "      Notification sent."
+    -d "{\"status\":\"${STATUS}\",\"filename\":\"${FILENAME}\",\"size\":\"${BACKUP_SIZE:-unknown}\",\"error\":\"${ERROR_MSG}\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"; then
+    echo "      Notification sent."
+  else
+    echo "      Notification FAILED."
+  fi
 fi
 
 echo "=== Backup ${STATUS} at $(date) ==="
