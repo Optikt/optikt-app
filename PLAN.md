@@ -30,15 +30,16 @@
 
 ---
 
-### DT2 · Errores silenciados en 148 catch blocks 🔴
+### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
-**Problema:** 82% de los bloques catch solo hacen `console.error`. Cero retry, cero logging estructurado, cero alertas. Los remote functions devuelven `{success: false, error: "..."}` que el frontend muestra como toast genérico. Si falla un pago o una creación de orden, el servidor no deja rastro útil.
+**Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
 
-**Riesgo de no hacerlo:** Bugs en producción invisibles. Sin trazas no se diagnostica ni se mejora. Un error intermitente puede durar semanas sin que nadie lo sepa.
+**Cambios:**
 
-**Contras:** Agregar logging requiere decisión de stack (¿Winston? ¿Pino? ¿solo structured console?). No agrega valor visible al usuario.
+- `logger.error('Error obteniendo tasas de cambio de la API', error)` agregado en el catch de `refreshExchangeRates`.
+- Bonus: el error se propaga al UI — `refreshExchangeRatesCommand` ahora lanza si `snapshot.lastError` está seteado (antes el UI mostraba "Tasas actualizadas" con la API caída). Mensaje amigable al usuario ("No se pudo conectar con el proveedor de tasas"), detalle técnico en logs.
 
-**Dificultad:** Media. **Solución:** (a) Crear wrapper `logger.ts` con niveles y structured JSON. (b) Reemplazar `console.error` en remotes por `logger.error`. (c) Agregar regla ESLint `no-console: error`. (d) Usar `getErrorMessage()` existente en vez del inline `e instanceof Error ? e.message`.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓.
 
 ---
 
@@ -54,15 +55,22 @@
 
 ---
 
-### DT4 · 162 console.log/error en producción 🔴
+### ✅ DT4 · 162 console.log/error en producción (COMPLETADO — 2026-08-10)
 
-**Problema:** `pdf.ts` tiene `console.log('DEBUG: PORT', PORT)` corriendo en producción. `purchaseOrders.remote.ts` tiene 12 llamadas. ESLint sin regla `no-console`. Cero diferenciación entre log de desarrollo y producción.
+**Qué se hizo:** Cero `console.*` en código de producción (solo dentro del logger). Se creó un wrapper compartido y se eliminó el ruido.
 
-**Riesgo de no hacerlo:** Inunda logs del servidor. Expone variables de entorno (PORT). Dificulta encontrar errores reales entre el ruido.
+**Cambios:**
 
-**Contras:** Quitar consoles requiere inspección manual de cada uno para decidir si es debug legítimo o error real.
+- Nuevo `src/lib/utils/logger.ts` — wrapper `debug/info/warn/error` con formato `[level] message`, contexto opcional. `debug` solo en dev (`import.meta.env?.DEV`). Cero dependencias.
+- **139 `console.error`/`warn` redundantes eliminados** en 71 componentes/páginas + 20 en remote functions — catch blocks que ya mostraban toast o retornaban `{success:false}`.
+- **16 intencionales → `logger.*`**: hooks.server (`handleError`), exchangeRates poller, notifications service, `reportClientError`, form unbound-issues (`warn`), defaults de PDF shutdown.
+- **7 paths silenciosos → `logger.error`** (única señal del fallo, sin toast): refreshStats en products/sales/quotes, CommandSearch, NewQuoteForm, NewSaleForm, LensCatalogForm.
+- DEBUG logs de `pdf.ts` eliminados.
+- Nota: `pdf.ts` usa import relativo (`../utils/logger`) porque su fixture de test corre en node plano sin alias `$lib`; el logger evita `import.meta.env` directo por la misma razón.
 
-**Dificultad:** Baja. **Solución:** (a) Agregar `"no-console": "error"` a ESLint. (b) Reemplazar `console.error` por `logger.error` (ver DT2). (c) Eliminar los DEBUG de pdf.ts. (d) Los `console.error` legítimos que queden usar `// eslint-disable-next-line no-console` con justificación.
+**Pendiente (de la solución original):** regla ESLint `no-console: error` — con cero usos restantes ya es aplicable como guard rail.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓. 83 archivos, −183/+50 líneas.
 
 ---
 
@@ -326,10 +334,9 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | Prioridad | Ítem                          | Esfuerzo                |
 | --------- | ----------------------------- | ----------------------- |
 | ✅        | FP2 · backup-ui               | Completado              |
-| 🔴        | DT4 · Console.log en prod     | 1 día                   |
+| ✅        | DT4 · Console.log en prod     | Completado              |
+| ✅        | DT2 · Errores silenciados     | Completado              |
 | 🔴        | DT5 · Error pattern duplicado | 1 día                   |
-| 🔴        | DT3 · Validación Zod          | 3 días                  |
-| 🔴        | DT2 · Errores silenciados     | 4 días                  |
 | ❌        | FP1 · preserve-list-filters   | 1 día                   |
 | 🔴        | FP3 · public-catalog-api      | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes       | 15-20 días (5 archivos) |
@@ -348,14 +355,14 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones              | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal          | 20 días                 |
 
-**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 6 días para resolver DT3, DT4, DT5 y FP1.
+**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5, DT3 y FP1.
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT4 + DT5 + DT3 (deuda técnica rápida)
+Semana 1:  DT5 + DT3 (deuda técnica rápida)
 Semana 2:  FP1 (preserve-list-filters)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)
