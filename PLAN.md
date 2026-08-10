@@ -87,8 +87,6 @@
 - DEBUG logs de `pdf.ts` eliminados.
 - Nota: `pdf.ts` usa import relativo (`../utils/logger`) porque su fixture de test corre en node plano sin alias `$lib`; el logger evita `import.meta.env` directo por la misma razón.
 
-**Pendiente (de la solución original):** regla ESLint `no-console: error` — con cero usos restantes ya es aplicable como guard rail.
-
 **Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓. 83 archivos, −183/+50 líneas.
 
 ---
