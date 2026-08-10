@@ -30,7 +30,11 @@ export default defineConfig(
 					varsIgnorePattern: '^_',
 					argsIgnorePattern: '^_'
 				}
-			]
+			],
+			// console.* is only allowed through the logger wrapper ($lib/utils/logger).
+			// logger.ts opts out with a file-level disable; scripts/* run in plain node
+			// outside the app bundle and are exempted in the override below.
+			'no-console': 'error'
 		}
 	},
 	{
@@ -55,6 +59,14 @@ export default defineConfig(
 		files: ['**/*.svelte'],
 		rules: {
 			'svelte/require-store-reactive-access': 'off'
+		}
+	},
+	{
+		files: ['scripts/**'],
+		rules: {
+			// Standalone node scripts (bootstrap) run outside the Vite build and
+			// cannot import the logger — console output is their only interface.
+			'no-console': 'off'
 		}
 	},
 	{

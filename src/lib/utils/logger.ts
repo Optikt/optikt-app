@@ -1,3 +1,5 @@
+/* eslint-disable no-console -- logger is the only sanctioned console gateway */
+
 type LogContext = Record<string, unknown>;
 
 const IS_DEV = import.meta.env?.DEV === true;
