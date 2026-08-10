@@ -96,12 +96,13 @@
 **Qué se hizo:** El diagnóstico original ("12+ veces en cada archivo remote") estaba desactualizado — la migración a `getErrorMessage()` ya había ocurrido: 63 archivos lo usaban. Solo quedaban **4 rezagados con 16 instancias** del patrón inline `e instanceof Error ? e.message : '...'`.
 
 **Cambios:**
+
 - `purchaseOrders.remote.ts`: 12 patrones → `getErrorMessage(e, '<mensaje>')`.
 - `exchangeRates.svelte.ts`: 2 patrones (store).
 - `LensCatalogForm.svelte` y `ProductForm.svelte`: 1 patrón cada uno (incluida la expresión multi-línea de ProductForm).
 - Zero patrones inline restantes en `src/` (solo la implementación de `getErrorMessage` y el serializador de hooks usan `instanceof Error`, correctamente).
 
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa (eslint), 738/738 tests ✓.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa completo (prettier + eslint), 738/738 tests ✓.
 
 ---
 
