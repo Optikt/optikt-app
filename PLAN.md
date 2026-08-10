@@ -43,15 +43,33 @@
 
 ---
 
-### DT3 · Validación Zod subutilizada 🔴
+### ✅ DT3 · Validación Zod subutilizada (COMPLETADO — 2026-08-10)
 
-**Problema:** 25 schemas Zod existen en `src/lib/schemas/`. Solo 1 `.safeParse()` en todos los remote functions. Las validaciones de negocio se hacen con ifs inline, duplicando lógica entre front y back.
+**Qué se hizo:** Auditoría completa de validación en la capa remote. **El problema original estaba mal diagnosticado.**
 
-**Riesgo de no hacerlo:** Validación frágil e inconsistente. Cambios de reglas de negocio requieren cazar ifs dispersos. Los schemas existen pero son código muerto.
+**Hallazgo real:** 143 de 152 remote functions (94.1%) ya pasan un Zod schema como primer argumento a `command()`/`query()`/`form()` — SvelteKit valida internamente, por eso hay solo 1 `.safeParse()` manual (en un helper de finanzas, no en validación primaria). Contar `.safeParse()` es irrelevante: el `.parse()` ocurre dentro de SvelteKit. Las 9 remote functions sin schema reciben **cero input** del cliente — correcto tal cual.
 
-**Contras:** Puede romper flujos si los schemas son más estrictos que los ifs actuales. Requiere testear cada remote.
+**Cambios:**
+- Eliminados 5 schemas muertos (exportados pero nunca usados por ninguna remote function): `ExpenseIdSchema`, `ListInventoryLotsSchema` (+ sus tests), `AddPurchaseOrderItemSchema`, `UpdateSaleStatusSchema`, `EnrichFreeQuoteItemSchema` (+ su type).
+- 91.5% → 100% de schemas en uso.
 
-**Dificultad:** Baja. **Solución:** Agregar `schema.safeParse(input)` al inicio de cada handler en `*.remote.ts`. Si falla, retornar error descriptivo con los issues de Zod. ~2h por archivo.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, tests de schemas ✓.
+
+**Lo que NO se hizo (scope real, ver DT10):** validaciones de **negocio** inline (ifs en handlers como "no borrar producto con ventas") no están centralizadas en Zod. Ese es el trabajo grande y va aparte.
+
+---
+
+### DT10 · Validación de negocio en Zod refinements 🟡
+
+**Problema:** Las reglas de negocio (no borrar producto con ventas, no cerrar venta sin pago completo, no anular pago conciliado, etc.) viven como ifs inline dentro de los handlers de las remote functions. Los schemas Zod validan forma (shape), no reglas de negocio.
+
+**Por qué importa:** La misma regla se duplica entre front (deshabilitar botones) y back (ifs en handlers). Cuando cambia una regla hay que cazarla en 2+ lugares. Los schemas son el contrato — deberían poder expresar "este input es inválido en el contexto actual" con `.superRefine()`.
+
+**Contras:** Algunas reglas dependen del estado de la DB (consultas), no solo del input — esas no caben en un schema puro; requieren validación en el handler de todos modos. Riesgo de romper flujos si un refinement es más estricto que el if actual.
+
+**Dificultad:** Media (5 días). **Solución:** (a) Inventariar las reglas de negocio inline por dominio (sales, purchaseOrders, inventory, customers). (b) Clasificar: input-only (→ `.superRefine()` en el schema) vs state-dependent (→ helper compartido server-side). (c) Mover las input-only a los schemas con mensajes en español. (d) Extraer las state-dependent a helpers reutilizables entre remote functions. ~5 días.
+
+**Estado:** Plan activo. Sin empezar.
 
 ---
 
@@ -336,7 +354,9 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | FP2 · backup-ui               | Completado              |
 | ✅        | DT4 · Console.log en prod     | Completado              |
 | ✅        | DT2 · Errores silenciados     | Completado              |
+| ✅        | DT3 · Validación Zod          | Completado              |
 | 🔴        | DT5 · Error pattern duplicado | 1 día                   |
+| 🟡        | DT10 · Zod refinements negocio| 5 días                  |
 | ❌        | FP1 · preserve-list-filters   | 1 día                   |
 | 🔴        | FP3 · public-catalog-api      | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes       | 15-20 días (5 archivos) |
@@ -355,14 +375,14 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones              | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal          | 20 días                 |
 
-**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5, DT3 y FP1.
+**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5 y FP1.
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT5 + DT3 (deuda técnica rápida)
+Semana 1:  DT5 (deuda técnica rápida)
 Semana 2:  FP1 (preserve-list-filters)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)
