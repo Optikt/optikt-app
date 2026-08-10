@@ -63,16 +63,6 @@ export const ListInventoryMovementsSchema = ListPaginationSchema.extend({
 });
 
 // ============================================================================
-// LIST LOTS
-// ============================================================================
-
-export const ListInventoryLotsSchema = ListPaginationSchema.extend({
-	productId: z.uuid().optional(),
-	lensCatalogItemId: z.uuid().optional(),
-	isActive: z.boolean().optional()
-});
-
-// ============================================================================
 // REVERT FULL LOT (undo entire PO lot creation)
 // ============================================================================
 

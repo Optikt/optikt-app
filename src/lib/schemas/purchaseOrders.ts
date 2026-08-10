@@ -188,14 +188,6 @@ export const SavePurchaseOrderDraftSchema = z
 	.superRefine(validatePurchaseOrderCreditTerms);
 
 // ============================================================================
-// ADD ITEM TO EXISTING PO
-// ============================================================================
-
-export const AddPurchaseOrderItemSchema = PurchaseOrderItemSchema.extend({
-	purchaseOrderId: z.uuid()
-});
-
-// ============================================================================
 // CONFIRM PO
 // ============================================================================
 

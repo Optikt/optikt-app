@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	ManualAdjustmentSchema,
 	ManualLensAdjustmentSchema,
-	ListInventoryMovementsSchema,
-	ListInventoryLotsSchema
+	ListInventoryMovementsSchema
 } from './inventory';
 import { InventoryMovementType, AdjustmentReason } from '$lib/shared/enums';
 
@@ -154,25 +153,6 @@ describe('ListInventoryMovementsSchema', () => {
 	it('accepts search filter', () => {
 		const result = ListInventoryMovementsSchema.safeParse({
 			search: 'PO-0001'
-		});
-		expect(result.success).toBe(true);
-	});
-});
-
-describe('ListInventoryLotsSchema', () => {
-	it('accepts empty object (defaults)', () => {
-		const result = ListInventoryLotsSchema.safeParse({});
-		expect(result.success).toBe(true);
-	});
-
-	it('accepts isActive filter', () => {
-		const result = ListInventoryLotsSchema.safeParse({ isActive: true });
-		expect(result.success).toBe(true);
-	});
-
-	it('accepts productId filter', () => {
-		const result = ListInventoryLotsSchema.safeParse({
-			productId: '00000000-0000-4000-8000-000000000001'
 		});
 		expect(result.success).toBe(true);
 	});

@@ -30,39 +30,66 @@
 
 ---
 
-### DT2 · Errores silenciados en 148 catch blocks 🔴
+### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
-**Problema:** 82% de los bloques catch solo hacen `console.error`. Cero retry, cero logging estructurado, cero alertas. Los remote functions devuelven `{success: false, error: "..."}` que el frontend muestra como toast genérico. Si falla un pago o una creación de orden, el servidor no deja rastro útil.
+**Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
 
-**Riesgo de no hacerlo:** Bugs en producción invisibles. Sin trazas no se diagnostica ni se mejora. Un error intermitente puede durar semanas sin que nadie lo sepa.
+**Cambios:**
 
-**Contras:** Agregar logging requiere decisión de stack (¿Winston? ¿Pino? ¿solo structured console?). No agrega valor visible al usuario.
+- `logger.error('Error obteniendo tasas de cambio de la API', error)` agregado en el catch de `refreshExchangeRates`.
+- Bonus: el error se propaga al UI — `refreshExchangeRatesCommand` ahora lanza si `snapshot.lastError` está seteado (antes el UI mostraba "Tasas actualizadas" con la API caída). Mensaje amigable al usuario ("No se pudo conectar con el proveedor de tasas"), detalle técnico en logs.
 
-**Dificultad:** Media. **Solución:** (a) Crear wrapper `logger.ts` con niveles y structured JSON. (b) Reemplazar `console.error` en remotes por `logger.error`. (c) Agregar regla ESLint `no-console: error`. (d) Usar `getErrorMessage()` existente en vez del inline `e instanceof Error ? e.message`.
-
----
-
-### DT3 · Validación Zod subutilizada 🔴
-
-**Problema:** 25 schemas Zod existen en `src/lib/schemas/`. Solo 1 `.safeParse()` en todos los remote functions. Las validaciones de negocio se hacen con ifs inline, duplicando lógica entre front y back.
-
-**Riesgo de no hacerlo:** Validación frágil e inconsistente. Cambios de reglas de negocio requieren cazar ifs dispersos. Los schemas existen pero son código muerto.
-
-**Contras:** Puede romper flujos si los schemas son más estrictos que los ifs actuales. Requiere testear cada remote.
-
-**Dificultad:** Baja. **Solución:** Agregar `schema.safeParse(input)` al inicio de cada handler en `*.remote.ts`. Si falla, retornar error descriptivo con los issues de Zod. ~2h por archivo.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓.
 
 ---
 
-### DT4 · 162 console.log/error en producción 🔴
+### ✅ DT3 · Validación Zod subutilizada (COMPLETADO — 2026-08-10)
 
-**Problema:** `pdf.ts` tiene `console.log('DEBUG: PORT', PORT)` corriendo en producción. `purchaseOrders.remote.ts` tiene 12 llamadas. ESLint sin regla `no-console`. Cero diferenciación entre log de desarrollo y producción.
+**Qué se hizo:** Auditoría completa de validación en la capa remote. **El problema original estaba mal diagnosticado.**
 
-**Riesgo de no hacerlo:** Inunda logs del servidor. Expone variables de entorno (PORT). Dificulta encontrar errores reales entre el ruido.
+**Hallazgo real:** 143 de 152 remote functions (94.1%) ya pasan un Zod schema como primer argumento a `command()`/`query()`/`form()` — SvelteKit valida internamente, por eso hay solo 1 `.safeParse()` manual (en un helper de finanzas, no en validación primaria). Contar `.safeParse()` es irrelevante: el `.parse()` ocurre dentro de SvelteKit. Las 9 remote functions sin schema reciben **cero input** del cliente — correcto tal cual.
 
-**Contras:** Quitar consoles requiere inspección manual de cada uno para decidir si es debug legítimo o error real.
+**Cambios:**
 
-**Dificultad:** Baja. **Solución:** (a) Agregar `"no-console": "error"` a ESLint. (b) Reemplazar `console.error` por `logger.error` (ver DT2). (c) Eliminar los DEBUG de pdf.ts. (d) Los `console.error` legítimos que queden usar `// eslint-disable-next-line no-console` con justificación.
+- Eliminados 5 schemas muertos (exportados pero nunca usados por ninguna remote function): `ExpenseIdSchema`, `ListInventoryLotsSchema` (+ sus tests), `AddPurchaseOrderItemSchema`, `UpdateSaleStatusSchema`, `EnrichFreeQuoteItemSchema` (+ su type).
+- 91.5% → 100% de schemas en uso.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, tests de schemas ✓.
+
+**Lo que NO se hizo (scope real, ver DT10):** validaciones de **negocio** inline (ifs en handlers como "no borrar producto con ventas") no están centralizadas en Zod. Ese es el trabajo grande y va aparte.
+
+---
+
+### DT10 · Validación de negocio en Zod refinements 🟡
+
+**Problema:** Las reglas de negocio (no borrar producto con ventas, no cerrar venta sin pago completo, no anular pago conciliado, etc.) viven como ifs inline dentro de los handlers de las remote functions. Los schemas Zod validan forma (shape), no reglas de negocio.
+
+**Por qué importa:** La misma regla se duplica entre front (deshabilitar botones) y back (ifs en handlers). Cuando cambia una regla hay que cazarla en 2+ lugares. Los schemas son el contrato — deberían poder expresar "este input es inválido en el contexto actual" con `.superRefine()`.
+
+**Contras:** Algunas reglas dependen del estado de la DB (consultas), no solo del input — esas no caben en un schema puro; requieren validación en el handler de todos modos. Riesgo de romper flujos si un refinement es más estricto que el if actual.
+
+**Dificultad:** Media (5 días). **Solución:** (a) Inventariar las reglas de negocio inline por dominio (sales, purchaseOrders, inventory, customers). (b) Clasificar: input-only (→ `.superRefine()` en el schema) vs state-dependent (→ helper compartido server-side). (c) Mover las input-only a los schemas con mensajes en español. (d) Extraer las state-dependent a helpers reutilizables entre remote functions. ~5 días.
+
+**Estado:** Plan activo. Sin empezar.
+
+---
+
+### ✅ DT4 · 162 console.log/error en producción (COMPLETADO — 2026-08-10)
+
+**Qué se hizo:** Cero `console.*` en código de producción (solo dentro del logger). Se creó un wrapper compartido y se eliminó el ruido.
+
+**Cambios:**
+
+- Nuevo `src/lib/utils/logger.ts` — wrapper `debug/info/warn/error` con formato `[level] message`, contexto opcional. `debug` solo en dev (`import.meta.env?.DEV`). Cero dependencias.
+- **139 `console.error`/`warn` redundantes eliminados** en 71 componentes/páginas + 20 en remote functions — catch blocks que ya mostraban toast o retornaban `{success:false}`.
+- **16 intencionales → `logger.*`**: hooks.server (`handleError`), exchangeRates poller, notifications service, `reportClientError`, form unbound-issues (`warn`), defaults de PDF shutdown.
+- **7 paths silenciosos → `logger.error`** (única señal del fallo, sin toast): refreshStats en products/sales/quotes, CommandSearch, NewQuoteForm, NewSaleForm, LensCatalogForm.
+- DEBUG logs de `pdf.ts` eliminados.
+- Nota: `pdf.ts` usa import relativo (`../utils/logger`) porque su fixture de test corre en node plano sin alias `$lib`; el logger evita `import.meta.env` directo por la misma razón.
+
+**Pendiente (de la solución original):** regla ESLint `no-console: error` — con cero usos restantes ya es aplicable como guard rail.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓. 83 archivos, −183/+50 líneas.
 
 ---
 
@@ -323,39 +350,40 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ## Resumen de Esfuerzo
 
-| Prioridad | Ítem                          | Esfuerzo                |
-| --------- | ----------------------------- | ----------------------- |
-| ✅        | FP2 · backup-ui               | Completado              |
-| 🔴        | DT4 · Console.log en prod     | 1 día                   |
-| 🔴        | DT5 · Error pattern duplicado | 1 día                   |
-| 🔴        | DT3 · Validación Zod          | 3 días                  |
-| 🔴        | DT2 · Errores silenciados     | 4 días                  |
-| ❌        | FP1 · preserve-list-filters   | 1 día                   |
-| 🔴        | FP3 · public-catalog-api      | 15 días                 |
-| 🟡        | DT1 · Archivos gigantes       | 15-20 días (5 archivos) |
-| 🟡        | DT8 · Dashboard gráficos      | 3 días                  |
-| 🟡        | NF1 · Órdenes laboratorio     | 10 días                 |
-| 🟡        | NF2 · Citas/agenda            | 5 días                  |
-| 🟡        | NF3 · POS rápido              | 5 días                  |
-| 🟡        | NF4 · Garantías               | 5 días                  |
-| 🟡        | NF6 · Upload imágenes         | 5 días                  |
-| 🟡        | DT6 · Soft-delete consistente | 3 días                  |
-| 🟡        | DT9 · Tests remote funcs      | 10 días                 |
-| 🟢        | NF7 · Visor auditoría         | 2 días                  |
-| 🟢        | NF10 · Export Excel           | 1 día                   |
-| 🟢        | NF11 · Código barras          | 2 días                  |
-| 🟢        | DT7 · PDF stack limpio        | 2 días                  |
-| 🟢        | NF8 · Comisiones              | 5 días                  |
-| ⚪        | NF9 · Multi-sucursal          | 20 días                 |
+| Prioridad | Ítem                           | Esfuerzo                |
+| --------- | ------------------------------ | ----------------------- |
+| ✅        | FP2 · backup-ui                | Completado              |
+| ✅        | DT4 · Console.log en prod      | Completado              |
+| ✅        | DT2 · Errores silenciados      | Completado              |
+| ✅        | DT3 · Validación Zod           | Completado              |
+| 🔴        | DT5 · Error pattern duplicado  | 1 día                   |
+| 🟡        | DT10 · Zod refinements negocio | 5 días                  |
+| ❌        | FP1 · preserve-list-filters    | 1 día                   |
+| 🔴        | FP3 · public-catalog-api       | 15 días                 |
+| 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
+| 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
+| 🟡        | NF1 · Órdenes laboratorio      | 10 días                 |
+| 🟡        | NF2 · Citas/agenda             | 5 días                  |
+| 🟡        | NF3 · POS rápido               | 5 días                  |
+| 🟡        | NF4 · Garantías                | 5 días                  |
+| 🟡        | NF6 · Upload imágenes          | 5 días                  |
+| 🟡        | DT6 · Soft-delete consistente  | 3 días                  |
+| 🟡        | DT9 · Tests remote funcs       | 10 días                 |
+| 🟢        | NF7 · Visor auditoría          | 2 días                  |
+| 🟢        | NF10 · Export Excel            | 1 día                   |
+| 🟢        | NF11 · Código barras           | 2 días                  |
+| 🟢        | DT7 · PDF stack limpio         | 2 días                  |
+| 🟢        | NF8 · Comisiones               | 5 días                  |
+| ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 6 días para resolver DT3, DT4, DT5 y FP1.
+**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5 y FP1.
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT4 + DT5 + DT3 (deuda técnica rápida)
+Semana 1:  DT5 (deuda técnica rápida)
 Semana 2:  FP1 (preserve-list-filters)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)
