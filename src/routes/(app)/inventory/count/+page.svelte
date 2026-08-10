@@ -197,7 +197,6 @@
 			showCreateModal = false;
 			await goto(resolve(`/inventory/count/${result.session.id}`));
 		} catch (error) {
-			console.error(error);
 			formError = getErrorMessage(error, 'No se pudo iniciar la sesión');
 			toast.error(formError);
 		} finally {
@@ -244,7 +243,6 @@
 				return;
 			}
 
-			console.error(error);
 			toast.error(getErrorMessage(error, 'No se pudo filtrar el historial'));
 		} finally {
 			if (requestId === historyRequestId) {

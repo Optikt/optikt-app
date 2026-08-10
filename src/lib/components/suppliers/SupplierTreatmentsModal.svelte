@@ -74,7 +74,6 @@
 			const treatmentsQuery = listSupplierTreatments({ supplierId: supplier.id });
 			treatments = imperative ? await treatmentsQuery : await treatmentsQuery;
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando tratamientos'));
 		} finally {
 			loading = false;
@@ -151,7 +150,6 @@
 			deletingTreatment = null;
 			await loadTreatments({ imperative: true });
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando tratamiento'));
 		} finally {
 			deleteLoading = false;

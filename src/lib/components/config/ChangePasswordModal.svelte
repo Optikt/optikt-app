@@ -73,7 +73,6 @@
 						toastUnboundErrors(allIssues);
 					}
 				} catch (e) {
-					console.error(e);
 					toast.error(getErrorMessage(e, 'Error al cambiar contraseña'));
 				} finally {
 					loading = false;

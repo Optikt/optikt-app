@@ -69,7 +69,6 @@
 			showDeleteModal = false;
 			onRefresh?.();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando proveedor'));
 		} finally {
 			deleteLoading = false;

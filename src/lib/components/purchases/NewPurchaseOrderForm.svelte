@@ -501,7 +501,6 @@
 
 			toast.error(result.error ?? 'Error creando la orden de compra');
 		} catch (error) {
-			console.error(error);
 			toast.error(
 				getErrorMessage(
 					error,

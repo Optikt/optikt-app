@@ -71,7 +71,6 @@
 			toast.success('Producto eliminado correctamente');
 			goto(resolve(getBackUrl('/products') as '/products'));
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando producto'));
 		} finally {
 			deleteLoading = false;

@@ -5,7 +5,7 @@
 	import type { SearchResults } from '$lib/remote/search.remote';
 	import { getLensTypeLabel } from '$lib/shared/enums';
 	import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice, logger } from '$lib/utils';
 	import { resolve } from '$app/paths';
 
 	const PRODUCT_TYPE_ICON_CLASSES: Record<string, string> = {
@@ -41,7 +41,7 @@
 			try {
 				results = await universalSearch({ query: q });
 			} catch (e) {
-				console.error(e);
+				logger.error('Error en búsqueda global', e);
 				results = null;
 			} finally {
 				loading = false;

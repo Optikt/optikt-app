@@ -309,7 +309,6 @@
 
 			updateLineLocally(result.line);
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'No se pudo actualizar el tracking del ajuste'));
 		} finally {
 			updatingAdjustmentLineIds = updatingAdjustmentLineIds.filter(
@@ -413,7 +412,6 @@
 			updateLineLocally(result.line);
 			stopEditing();
 		} catch (error) {
-			console.error(error);
 			lines = previousLines;
 			session = { ...session, lines: previousLines };
 			toast.error(getErrorMessage(error, 'No se pudo guardar el conteo'));
@@ -447,7 +445,6 @@
 			stopEditing();
 			toast.success('Sesión de conteo cerrada');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'No se pudo cerrar la sesión'));
 		} finally {
 			isApplying = false;
@@ -482,7 +479,6 @@
 			stopEditing();
 			toast.success('Sesión cancelada');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'No se pudo cancelar la sesión'));
 		} finally {
 			isCancelling = false;

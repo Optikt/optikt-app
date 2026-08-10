@@ -44,7 +44,6 @@
 				toast.success('Fórmula actualizada exitosamente');
 				goBack();
 			} catch (error) {
-				console.error(error);
 				toast.error(getErrorMessage(error, 'Error actualizando fórmula'));
 			} finally {
 				isSubmitting = false;

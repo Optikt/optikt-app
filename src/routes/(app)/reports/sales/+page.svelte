@@ -40,7 +40,6 @@
 			sales = result.sales;
 			summary = result.summary;
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando reporte de ventas'));
 		} finally {
 			loading = false;

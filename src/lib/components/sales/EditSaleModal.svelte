@@ -492,7 +492,6 @@
 				toast.error(result.error ?? 'Error actualizando venta');
 			}
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error actualizando venta'));
 		} finally {
 			saving = false;

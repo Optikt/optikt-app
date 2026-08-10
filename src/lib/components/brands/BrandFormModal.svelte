@@ -132,8 +132,7 @@
 					try {
 						await submit();
 						handleUpdateResult(formEl);
-					} catch (e) {
-						console.error(e);
+					} catch {
 						toast.error('Error actualizando marca');
 					} finally {
 						isSubmitting = false;
@@ -211,8 +210,7 @@
 					try {
 						await submit();
 						handleCreateResult(formEl);
-					} catch (e) {
-						console.error(e);
+					} catch {
 						toast.error('Error creando marca');
 					} finally {
 						isSubmitting = false;

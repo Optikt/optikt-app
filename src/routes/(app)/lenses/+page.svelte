@@ -144,7 +144,6 @@
 			});
 			catalogPage = 1;
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando catálogo de lentes'));
 		} finally {
 			catalogLoading = false;

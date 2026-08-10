@@ -7,6 +7,7 @@
 	import { PageHeader, SelectInput } from '$lib/components/ui';
 	import {
 		getErrorMessage,
+		logger,
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
@@ -114,7 +115,6 @@
 				includeDeleted
 			});
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando productos'));
 		} finally {
 			loading = false;
@@ -125,7 +125,7 @@
 		try {
 			stats = await getProductInventoryStats({});
 		} catch (e) {
-			console.error(e);
+			logger.error('Error cargando estadísticas de inventario', e);
 		}
 	}
 

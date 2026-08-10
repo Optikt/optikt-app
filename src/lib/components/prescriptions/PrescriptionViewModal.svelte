@@ -46,7 +46,6 @@
 				toast.error(result.error ?? 'Error al actualizar fórmula');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error al actualizar fórmula'));
 		} finally {
 			isSettingCurrent = false;
@@ -72,7 +71,6 @@
 				toast.error(result.error ?? 'Error al eliminar fórmula');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error al eliminar fórmula'));
 		} finally {
 			isDeleting = false;

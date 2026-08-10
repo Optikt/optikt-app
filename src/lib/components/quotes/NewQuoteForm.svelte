@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { createNewQuote } from '$lib/remote/quotes.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
-	import { getErrorMessage, dateToISODateString } from '$lib/utils';
+	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
@@ -132,7 +132,7 @@
 		try {
 			customerPrescription = await getLatestCustomerPrescription({ customerId: custId });
 		} catch (e) {
-			console.error('Error fetching prescription:', e);
+			logger.error('Error obteniendo fórmula del cliente', e);
 			customerPrescription = null;
 		}
 	}
@@ -230,7 +230,6 @@
 			toast.success('Presupuesto creado exitosamente');
 			goto(resolve(`/quotes/${result.quote.id}`));
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error creando presupuesto'));
 		} finally {
 			submitting = false;

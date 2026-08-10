@@ -6,6 +6,7 @@
 	import { page } from '$app/state';
 	import {
 		getErrorMessage,
+		logger,
 		parseBooleanParam,
 		parsePageParam,
 		replaceUrlSearch,
@@ -85,7 +86,6 @@
 				hasFreeItem: hasFreeItemFilter || undefined
 			});
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando ventas'));
 		} finally {
 			loading = false;
@@ -96,7 +96,7 @@
 		try {
 			stats = await getSalesStats({});
 		} catch (e) {
-			console.error(e);
+			logger.error('Error cargando estadísticas de ventas', e);
 		}
 	}
 

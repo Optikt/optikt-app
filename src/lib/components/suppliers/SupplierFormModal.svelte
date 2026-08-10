@@ -167,8 +167,7 @@
 					try {
 						await submit();
 						handleUpdateResult(formEl);
-					} catch (e) {
-						console.error(e);
+					} catch {
 						toast.error('Error actualizando proveedor');
 					} finally {
 						isSubmitting = false;
@@ -329,8 +328,7 @@
 					try {
 						await submit();
 						handleCreateResult(formEl);
-					} catch (e) {
-						console.error(e);
+					} catch {
 						toast.error('Error creando proveedor');
 					} finally {
 						isSubmitting = false;

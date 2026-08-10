@@ -88,7 +88,6 @@
 			confirmInput = '';
 			onRefresh?.();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando producto'));
 		} finally {
 			deleteLoading = false;
@@ -151,7 +150,6 @@
 	}
 
 	function handleLongPressError(error: unknown, label: string) {
-		console.error(error);
 		toast.error(`No se pudo copiar ${label.toLowerCase()}`);
 	}
 
@@ -168,8 +166,7 @@
 		try {
 			await navigator.clipboard.writeText(text);
 			toast.success(`${label} copiado`);
-		} catch (error) {
-			console.error(error);
+		} catch {
 			toast.error(`No se pudo copiar ${label.toLowerCase()}`);
 		}
 	}

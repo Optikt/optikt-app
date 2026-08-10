@@ -66,7 +66,6 @@
 					toastUnboundErrors(allIssues);
 				}
 			} catch (e) {
-				console.error(e);
 				toast.error(getErrorMessage(e, 'Error al guardar configuración'));
 			} finally {
 				loading = false;

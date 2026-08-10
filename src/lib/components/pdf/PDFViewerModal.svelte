@@ -59,8 +59,7 @@
 				container,
 				store,
 				options: { scaleValue: '1', l10n },
-				onError(err: unknown) {
-					console.error('PDFSlick error:', err);
+				onError() {
 					error = 'Error al cargar el PDF';
 					loading = false;
 				}
@@ -74,8 +73,7 @@
 			});
 			pdfSlick = instance;
 			loading = false;
-		} catch (e) {
-			console.error('Error initializing PDF viewer:', e);
+		} catch {
 			error = 'Error al cargar el PDF';
 			loading = false;
 		}
@@ -87,8 +85,8 @@
 			try {
 				pdfSlick.unbindEvents();
 				pdfSlick._cleanup();
-			} catch (e) {
-				console.warn('PDFSlick cleanup error:', e);
+			} catch {
+				/* ignore cleanup errors */
 			}
 		}
 	});

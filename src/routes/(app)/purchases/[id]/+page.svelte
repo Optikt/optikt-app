@@ -213,7 +213,6 @@
 				toast.error(result.error ?? 'Error deshaciendo la recepción del lote');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error deshaciendo la recepción del lote'));
 		} finally {
 			revertLoading = false;
@@ -237,7 +236,6 @@
 			items = items.map((entry) =>
 				entry.id === item.id ? { ...entry, isReviewed: previous } : entry
 			);
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error actualizando la línea'));
 		}
 	}
@@ -269,7 +267,6 @@
 				toast.error(result.error ?? 'Error confirmando la orden');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
 		} finally {
 			actionLoading = false;
@@ -330,7 +327,6 @@
 				toast.error(result.error ?? 'Error confirmando la orden');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
 		} finally {
 			actionLoading = false;
@@ -356,7 +352,6 @@
 				toast.error(result.error ?? 'Error marcando la orden como lista');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error marcando orden como lista'));
 		} finally {
 			actionLoading = false;
@@ -382,7 +377,6 @@
 				toast.error(result.error ?? 'Error devolviendo la orden a preparación');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error devolviendo orden a preparación'));
 		} finally {
 			actionLoading = false;
@@ -405,7 +399,6 @@
 				toast.error(result.error ?? 'Error actualizando precios');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error actualizando precios'));
 		} finally {
 			priceLoading = false;
@@ -439,7 +432,6 @@
 				toast.error(result.error ?? 'Error cancelando la orden');
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cancelando orden de compra'));
 		} finally {
 			actionLoading = false;

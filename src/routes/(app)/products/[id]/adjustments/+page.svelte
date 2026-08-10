@@ -172,7 +172,6 @@
 				toast.error(result.error ?? 'Error al registrar ajuste');
 			}
 		} catch (error) {
-			console.error('Error creating adjustment:', error);
 			toast.error(getErrorMessage(error, 'Error al registrar ajuste'));
 		} finally {
 			isSubmitting = false;

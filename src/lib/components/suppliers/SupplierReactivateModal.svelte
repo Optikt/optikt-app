@@ -37,7 +37,6 @@
 			open = false;
 			onSuccess?.();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error reactivando proveedor'));
 		} finally {
 			loading = false;

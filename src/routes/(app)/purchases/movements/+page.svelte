@@ -75,7 +75,6 @@
 				dateTo: dateTo || undefined
 			});
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando movimientos'));
 		} finally {
 			loading = false;

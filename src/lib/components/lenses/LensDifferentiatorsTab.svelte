@@ -47,7 +47,6 @@
 			const tags = await listDifferentiators({ page: 1, perPage: 100 });
 			differentiators = tags;
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando etiquetas'));
 		}
 	}
@@ -81,7 +80,6 @@
 			showDeleteModal = false;
 			await refreshData();
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando etiqueta'));
 		} finally {
 			deleteLoading = false;
@@ -196,7 +194,6 @@
 					toastUnboundErrors(allIssues);
 				}
 			} catch (error) {
-				console.error(error);
 				toast.error(getErrorMessage(error, 'Error renombrando etiqueta'));
 			} finally {
 				renameLoading = false;

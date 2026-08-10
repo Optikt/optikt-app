@@ -47,7 +47,6 @@
 			voidingPayment = null;
 			onPaymentVoided?.(result.paidAmount);
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error anulando pago'));
 		} finally {
 			voidLoading = false;

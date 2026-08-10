@@ -33,7 +33,6 @@
 			} else {
 				errorMessage = 'Error al iniciar sesión';
 			}
-			console.error(e);
 		}
 	})}
 	class="flex flex-col gap-5"

@@ -195,8 +195,7 @@
 			} else {
 				toast.error(result.error ?? 'Error al actualizar estado');
 			}
-		} catch (e) {
-			console.error(e);
+		} catch {
 			toast.error('Error al marcar como En Progreso');
 		} finally {
 			transitioning = false;
@@ -217,8 +216,7 @@
 			} else {
 				toast.error(result.error ?? 'Error al completar venta');
 			}
-		} catch (e) {
-			console.error(e);
+		} catch {
 			toast.error('Error al completar venta');
 		} finally {
 			transitioning = false;

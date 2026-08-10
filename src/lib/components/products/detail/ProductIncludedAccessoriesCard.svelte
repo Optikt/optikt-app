@@ -92,7 +92,6 @@
 			brandAccessories = nextBrandAccessories as AccessoryRule[];
 			productOverride = nextOverride as ProductOverride | null;
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error recargando accesorios incluidos'));
 		} finally {
 			loading = false;
@@ -128,7 +127,6 @@
 
 			accessoryOptions = nextOptions.sort((left, right) => left.name.localeCompare(right.name));
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando accesorios disponibles'));
 		} finally {
 			loadingOptions = false;
@@ -165,7 +163,6 @@
 			await refreshState();
 			toast.success('Configuración personalizada creada para este producto');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error personalizando accesorios del producto'));
 		} finally {
 			saving = false;
@@ -189,7 +186,6 @@
 					: 'Accesorios automáticos desactivados para este producto'
 			);
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error actualizando el estado de accesorios'));
 		} finally {
 			saving = false;
@@ -214,7 +210,6 @@
 			showAddDialog = false;
 			toast.success('Accesorio agregado a la configuración del producto');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error guardando accesorio del producto'));
 		} finally {
 			saving = false;
@@ -240,7 +235,6 @@
 			await refreshState();
 			toast.success('Configuración de precio actualizada');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error actualizando configuración de precio'));
 		} finally {
 			saving = false;
@@ -254,7 +248,6 @@
 			await refreshState();
 			toast.success('Accesorio removido de la configuración del producto');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando accesorio del producto'));
 		} finally {
 			saving = false;
@@ -283,7 +276,6 @@
 			await refreshState();
 			toast.success('El producto volvió a heredar la configuración de su marca');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error restableciendo la configuración del producto'));
 		} finally {
 			saving = false;

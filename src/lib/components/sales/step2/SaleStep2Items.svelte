@@ -211,7 +211,6 @@
 				toast.info(`✓ Se agregaron automáticamente: ${addedNames.join(', ')}`);
 			}
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando accesorios incluidos'));
 		}
 	}

@@ -50,7 +50,6 @@
 			});
 			entries = response.entries;
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando historial'));
 		} finally {
 			loading = false;

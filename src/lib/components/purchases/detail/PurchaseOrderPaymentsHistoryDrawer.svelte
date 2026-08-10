@@ -132,7 +132,6 @@
 			showVoidModal = false;
 			voidingPayment = null;
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error anulando pago'));
 		} finally {
 			voidLoading = false;

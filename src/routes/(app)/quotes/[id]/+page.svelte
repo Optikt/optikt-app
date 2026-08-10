@@ -127,7 +127,6 @@
 				toast.error(result.error ?? 'Error asignando cliente');
 			}
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error asignando cliente'));
 		} finally {
 			assigningCustomer = false;

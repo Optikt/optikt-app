@@ -150,7 +150,6 @@
 			}
 			onchange?.();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error buscando cliente'));
 		} finally {
 			searching = false;

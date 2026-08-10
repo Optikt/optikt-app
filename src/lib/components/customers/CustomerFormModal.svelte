@@ -170,7 +170,6 @@
 						await submit();
 						handleUpdateResult(formEl);
 					} catch (e) {
-						console.error(e);
 						toast.error(getErrorMessage(e, 'Error actualizando cliente'));
 					} finally {
 						isSubmitting = false;
@@ -282,7 +281,6 @@
 						await submit();
 						handleCreateResult(formEl);
 					} catch (e) {
-						console.error(e);
 						toast.error(getErrorMessage(e, 'Error creando cliente'));
 					} finally {
 						isSubmitting = false;

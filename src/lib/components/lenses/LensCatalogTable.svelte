@@ -105,7 +105,6 @@
 			showDeleteModal = false;
 			await onRefresh?.();
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando lente'));
 		} finally {
 			deleteLoading = false;

@@ -65,7 +65,6 @@
 		try {
 			materials = await listLensMaterials(undefined);
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando materiales'));
 		}
 	}
@@ -118,7 +117,6 @@
 			if (editingId === selectedMaterial.id) closeDrawer();
 			await refreshMaterials();
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando material'));
 		} finally {
 			deleteLoading = false;
@@ -277,8 +275,7 @@
 					} else {
 						toastUnboundErrors(allIssues);
 					}
-				} catch (error) {
-					console.error(error);
+				} catch {
 					toast.error('Error actualizando material');
 				} finally {
 					loading = false;
@@ -385,8 +382,7 @@
 					} else {
 						toastUnboundErrors(allIssues);
 					}
-				} catch (error) {
-					console.error(error);
+				} catch {
 					toast.error('Error creando material');
 				} finally {
 					loading = false;

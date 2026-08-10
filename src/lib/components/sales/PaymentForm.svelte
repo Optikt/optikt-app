@@ -584,7 +584,6 @@
 			else partialReset();
 			onPaymentAdded?.(result.paidAmount);
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error registrando pago'));
 		} finally {
 			submitting = false;
@@ -609,7 +608,6 @@
 			toast.success('Pago registrado');
 			partialReset();
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error registrando pago'));
 		} finally {
 			submitting = false;

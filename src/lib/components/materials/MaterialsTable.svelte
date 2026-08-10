@@ -63,7 +63,6 @@
 			showDeleteModal = false;
 			onRefresh?.();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando material'));
 		} finally {
 			deleteLoading = false;

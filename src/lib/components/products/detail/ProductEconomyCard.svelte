@@ -64,7 +64,6 @@
 			editingPrice = false;
 			toast.success('Precio de venta actualizado');
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error actualizando precio'));
 		} finally {
 			priceSaving = false;

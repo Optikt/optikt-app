@@ -61,7 +61,6 @@
 					toastUnboundErrors(allIssues);
 				}
 			} catch (e) {
-				console.error(e);
 				toast.error(getErrorMessage(e, 'Error al actualizar perfil'));
 			} finally {
 				loading = false;

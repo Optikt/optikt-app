@@ -44,7 +44,6 @@
 			refunds = result.refunds;
 			summary = result.summary;
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando reporte de pagos'));
 		} finally {
 			loading = false;

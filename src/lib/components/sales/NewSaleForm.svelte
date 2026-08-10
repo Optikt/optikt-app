@@ -4,7 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { createSale } from '$lib/remote/sales.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
-	import { getErrorMessage, dateToISODateString } from '$lib/utils';
+	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
 	import { isDiscountValueValid } from '$lib/utils';
 	import { nowUTC, fromISODate } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
@@ -152,7 +152,7 @@
 		try {
 			customerPrescription = await getLatestCustomerPrescription({ customerId: custId });
 		} catch (e) {
-			console.error('Error fetching prescription:', e);
+			logger.error('Error obteniendo fórmula del cliente', e);
 			customerPrescription = null;
 		}
 	}
@@ -301,7 +301,6 @@
 			toast.success('Venta registrada exitosamente');
 			goto(resolve(`/sales/${result.sale.id}`));
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error registrando venta'));
 		} finally {
 			submitting = false;

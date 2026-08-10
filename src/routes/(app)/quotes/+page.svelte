@@ -15,6 +15,7 @@
 	import { PageHeader } from '$lib/components/ui';
 	import {
 		getErrorMessage,
+		logger,
 		parsePageParam,
 		replaceUrlSearch,
 		saveReferrerParams,
@@ -91,7 +92,7 @@
 		try {
 			stats = await getQuoteStats({});
 		} catch (e) {
-			console.error(e);
+			logger.error('Error cargando estadísticas de presupuestos', e);
 		}
 	}
 

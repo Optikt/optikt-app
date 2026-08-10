@@ -69,7 +69,6 @@
 			if (currentRequestId !== requestId) return;
 			rules = nextRules as AccessoryRule[];
 		} catch (error) {
-			console.error(error);
 			if (currentRequestId !== requestId) return;
 			loadError = 'No se pudieron cargar los accesorios incluidos de esta marca.';
 			toast.error(getErrorMessage(error, 'Error cargando accesorios incluidos'));
@@ -109,7 +108,6 @@
 
 			accessoryOptions = nextOptions.sort((left, right) => left.name.localeCompare(right.name));
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando accesorios disponibles'));
 		} finally {
 			loadingOptions = false;
@@ -139,7 +137,6 @@
 			showAddDialog = false;
 			toast.success('Accesorio agregado a la marca');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error guardando accesorio incluido'));
 		} finally {
 			saving = false;
@@ -153,7 +150,6 @@
 			await loadRules({ imperative: true });
 			toast.success('Accesorio removido de la marca');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando accesorio incluido'));
 		} finally {
 			saving = false;
@@ -176,7 +172,6 @@
 			await loadRules({ imperative: true });
 			toast.success('Configuración de precio actualizada');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error actualizando configuración de precio'));
 		} finally {
 			saving = false;

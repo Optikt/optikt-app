@@ -105,7 +105,6 @@
 		try {
 			prescriptions = await listPrescriptions({ customerId: customer.id });
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando fórmulas'));
 		}
 	}
@@ -143,7 +142,6 @@
 			deleteTarget = null;
 			fetchPrescriptions();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando fórmula'));
 		} finally {
 			deleteLoading = false;
@@ -252,7 +250,6 @@
 								await invalidateAll();
 								customer = data.customer;
 							} catch (e) {
-								console.error(e);
 								toast.error(getErrorMessage(e, 'Error actualizando cliente'));
 							} finally {
 								editLoading = false;

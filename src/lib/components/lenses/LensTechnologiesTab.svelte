@@ -75,7 +75,6 @@
 				name: s.name
 			}));
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando datos'));
 		}
 	}
@@ -143,7 +142,6 @@
 			if (editingId === selectedTechnology.id) closeDrawer();
 			await refreshData();
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando tecnología'));
 		} finally {
 			deleteLoading = false;
@@ -289,8 +287,7 @@
 					} else {
 						toastUnboundErrors(allIssues);
 					}
-				} catch (error) {
-					console.error(error);
+				} catch {
 					toast.error('Error actualizando tecnología');
 				} finally {
 					loading = false;
@@ -385,8 +382,7 @@
 					} else {
 						toastUnboundErrors(allIssues);
 					}
-				} catch (error) {
-					console.error(error);
+				} catch {
 					toast.error('Error creando tecnología');
 				} finally {
 					loading = false;

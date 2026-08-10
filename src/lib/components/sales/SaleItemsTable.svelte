@@ -190,8 +190,7 @@
 			} else {
 				toast.error(result.error);
 			}
-		} catch (err) {
-			console.error(err);
+		} catch {
 			toast.error('Error al completar el ítem');
 		} finally {
 			enrichSaving = false;
@@ -266,8 +265,7 @@
 			} else {
 				toast.error(result.error);
 			}
-		} catch (err) {
-			console.error(err);
+		} catch {
 			toast.error('Error al actualizar costos');
 		} finally {
 			saving = false;

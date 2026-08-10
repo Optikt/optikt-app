@@ -64,7 +64,6 @@
 		} catch (error) {
 			loadError = getErrorMessage(error, 'No se pudieron cargar las notificaciones');
 			if (!silent) {
-				console.error(error);
 				toast.error(loadError);
 			}
 		} finally {
@@ -118,7 +117,6 @@
 			try {
 				await markNotificationReadCommand({ id: notification.id });
 			} catch (error) {
-				console.error(error);
 				toast.error(getErrorMessage(error, 'No se pudo marcar la notificación'));
 				void loadNotifications({ silent: true, imperative: true });
 			}
@@ -143,7 +141,6 @@
 			unreadCount = 0;
 			toast.success('Notificaciones marcadas como leídas');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'No se pudieron marcar las notificaciones'));
 			void loadNotifications({ silent: true, imperative: true });
 		} finally {

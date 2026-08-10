@@ -39,7 +39,6 @@
 			daily = d;
 			pipeline = p;
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando reporte de caja'));
 		} finally {
 			loading = false;

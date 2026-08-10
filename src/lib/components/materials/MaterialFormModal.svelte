@@ -131,8 +131,7 @@
 					try {
 						await submit();
 						handleUpdateResult(formEl);
-					} catch (e) {
-						console.error(e);
+					} catch {
 						toast.error('Error actualizando material');
 					} finally {
 						isSubmitting = false;
@@ -214,8 +213,7 @@
 					try {
 						await submit();
 						handleCreateResult(formEl);
-					} catch (e) {
-						console.error(e);
+					} catch {
 						toast.error('Error creando material');
 					} finally {
 						isSubmitting = false;

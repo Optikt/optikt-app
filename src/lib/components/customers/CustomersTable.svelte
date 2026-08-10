@@ -101,7 +101,6 @@
 			showDeleteModal = false;
 			onRefresh?.();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error eliminando cliente'));
 		} finally {
 			deleteLoading = false;

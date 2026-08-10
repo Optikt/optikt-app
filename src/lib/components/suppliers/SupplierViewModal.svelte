@@ -84,7 +84,6 @@
 			if (requestId !== relationRequestId) return;
 			relatedBrands = brands;
 		} catch (error) {
-			console.error(error);
 			if (requestId !== relationRequestId) return;
 			relatedBrands = [];
 			relationsError = 'No se pudieron cargar las marcas relacionadas.';
@@ -101,7 +100,6 @@
 		try {
 			brandOptions = await listBrandRelationOptions({});
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando marcas disponibles'));
 		} finally {
 			loadingBrandOptions = false;
@@ -129,7 +127,6 @@
 			await loadRelatedBrands(supplier.id, { imperative: true });
 			toast.success('Marca agregada al proveedor');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error agregando marca al proveedor'));
 		} finally {
 			savingRelation = false;
@@ -145,7 +142,6 @@
 			await loadRelatedBrands(supplier.id, { imperative: true });
 			toast.success('Marca removida del proveedor');
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error removiendo marca del proveedor'));
 		} finally {
 			savingRelation = false;

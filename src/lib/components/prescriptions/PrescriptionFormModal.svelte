@@ -254,7 +254,6 @@
 			await submit();
 			handleResult(formEl);
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error al guardar la fórmula'));
 		} finally {
 			isSubmitting = false;

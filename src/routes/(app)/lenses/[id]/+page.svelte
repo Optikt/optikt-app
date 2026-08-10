@@ -64,7 +64,6 @@
 			toast.success('Lente eliminado correctamente');
 			goto(resolve('/lenses'));
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error eliminando lente'));
 		} finally {
 			deleteLoading = false;

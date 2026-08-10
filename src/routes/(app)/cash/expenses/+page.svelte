@@ -72,7 +72,6 @@
 				includeVoided
 			});
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cargando egresos'));
 		} finally {
 			loading = false;
@@ -161,7 +160,6 @@
 			showCreate = false;
 			await applyFilter();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error registrando egreso'));
 		} finally {
 			creating = false;
@@ -180,7 +178,6 @@
 			toast.success('Egreso anulado');
 			await applyFilter();
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error anulando egreso'));
 		}
 	}

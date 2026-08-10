@@ -73,7 +73,6 @@
 				toast.error(result.error ?? 'Error cancelando presupuesto');
 			}
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cancelando presupuesto'));
 		} finally {
 			actionLoading = false;

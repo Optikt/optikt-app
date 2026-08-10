@@ -16,6 +16,7 @@
 		type SelectOption,
 		type PendingEntity
 	} from '$lib/components/ui';
+	import { logger } from '$lib/utils';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
 		SPHERE_RANGE_MODE,
@@ -185,7 +186,7 @@
 				supplierTechnologies = res;
 			})
 			.catch((err) => {
-				console.error(err);
+				logger.error('Error cargando tecnologías del proveedor', err);
 				supplierTechnologies = [];
 			});
 	}
@@ -505,7 +506,6 @@
 			await submit();
 			onSuccess();
 		} catch (e) {
-			console.error(e);
 			toast.error(e instanceof Error ? e.message : fallbackMessage);
 		} finally {
 			isSubmitting = false;

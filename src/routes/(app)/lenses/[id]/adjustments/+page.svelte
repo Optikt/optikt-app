@@ -197,7 +197,6 @@
 				toast.error(result.error ?? 'Error al registrar ajuste');
 			}
 		} catch (error) {
-			console.error('Error adjusting lens stock:', error);
 			toast.error(getErrorMessage(error, 'Error al registrar ajuste'));
 		} finally {
 			isSubmitting = false;

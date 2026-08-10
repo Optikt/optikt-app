@@ -43,7 +43,6 @@
 				toast.success('Fórmula creada exitosamente');
 				goBack();
 			} catch (error) {
-				console.error(error);
 				toast.error(getErrorMessage(error, 'Error creando fórmula'));
 			} finally {
 				isSubmitting = false;

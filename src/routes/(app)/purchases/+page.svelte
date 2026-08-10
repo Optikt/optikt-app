@@ -138,7 +138,6 @@
 				orderSort
 			});
 		} catch (error) {
-			console.error(error);
 			toast.error(getErrorMessage(error, 'Error cargando órdenes de compra'));
 		} finally {
 			loading = false;

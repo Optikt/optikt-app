@@ -95,7 +95,6 @@
 				toast.error(result.error ?? 'Error cancelando venta');
 			}
 		} catch (e) {
-			console.error(e);
 			toast.error(getErrorMessage(e, 'Error cancelando venta'));
 		} finally {
 			actionLoading = false;

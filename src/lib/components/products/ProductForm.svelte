@@ -414,7 +414,6 @@
 
 			handleCreateResult(formEl);
 		} catch (error) {
-			console.error(error);
 			toast.error(
 				error instanceof Error
 					? error.message

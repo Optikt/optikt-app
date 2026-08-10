@@ -125,7 +125,6 @@
 				goto(resolve(`/customers/${customerId}`));
 			} catch (e) {
 				resetFormInstance();
-				console.error(e);
 				toast.error(getErrorMessage(e, 'Error creando cliente'));
 			} finally {
 				isSubmitting = false;
