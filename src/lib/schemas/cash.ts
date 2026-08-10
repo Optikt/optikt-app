@@ -2,7 +2,7 @@
  * Cash & Expenses validation schemas
  */
 import { z } from 'zod';
-import { CoercedNumber, EntityIdSchema } from './common';
+import { CoercedNumber } from './common';
 import { ALL_EXPENSE_CATEGORIES, ALL_EXPENSE_CURRENCIES, ALL_RATE_TYPES } from '$lib/shared/enums';
 import {
 	requiresExpenseExchangeRate,
@@ -94,5 +94,3 @@ export const CashReportFiltersSchema = z
 		path: ['to'],
 		message: 'Fecha hasta debe ser ≥ desde'
 	});
-
-export const ExpenseIdSchema = EntityIdSchema('Egreso');

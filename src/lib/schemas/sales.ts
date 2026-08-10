@@ -241,15 +241,6 @@ export const VoidPaymentSchema = z.object({
 });
 
 // ============================================================================
-// UPDATE SALE STATUS SCHEMA
-// ============================================================================
-
-export const UpdateSaleStatusSchema = z.object({
-	id: z.uuid('ID de venta inválido'),
-	status: z.enum(ALL_SALE_STATUSES, 'Estado inválido')
-});
-
-// ============================================================================
 // CANCEL SALE SCHEMA
 // ============================================================================
 
@@ -294,19 +285,6 @@ export const UpdateSaleItemCostsSchema = z.object({
 export const EnrichFreeItemSchema = z
 	.object({
 		saleItemId: z.uuid('ID de artículo requerido'),
-		category: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
-		unitCost: CoercedNumber.min(0, 'El costo no puede ser negativo'),
-		supplierId: z.uuid().optional(),
-		opticalNotes: z.string().max(1000).optional()
-	})
-	.refine((data) => data.category === FreeItemCategory.SERVICE || data.unitCost > 0, {
-		message: 'El costo debe ser mayor a 0',
-		path: ['unitCost']
-	});
-
-export const EnrichFreeQuoteItemSchema = z
-	.object({
-		quoteItemId: z.uuid('ID de artículo de presupuesto requerido'),
 		category: z.enum(ALL_FREE_ITEM_CATEGORIES as [string, ...string[]]),
 		unitCost: CoercedNumber.min(0, 'El costo no puede ser negativo'),
 		supplierId: z.uuid().optional(),
@@ -376,7 +354,6 @@ export type VoidPaymentInput = z.infer<typeof VoidPaymentSchema>;
 export type CancelSaleInput = z.infer<typeof CancelSaleSchema>;
 export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;
 export type EnrichFreeItemInput = z.infer<typeof EnrichFreeItemSchema>;
-export type EnrichFreeQuoteItemInput = z.infer<typeof EnrichFreeQuoteItemSchema>;
 export type UpdateSaleInput = z.infer<typeof UpdateSaleSchema>;
 export type MarkAsInProgressInput = z.infer<typeof MarkAsInProgressSchema>;
 export type MarkAsCompletedInput = z.infer<typeof MarkAsCompletedSchema>;
