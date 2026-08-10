@@ -129,7 +129,7 @@ export const runBackup = command(
 			);
 		}
 
-		const response = await fetch(`${apiUrl}/api/schedule/trigger`, {
+		const response = await fetch(`${apiUrl}/api/schedule.runManually`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -140,6 +140,11 @@ export const runBackup = command(
 
 		if (!response.ok) {
 			const text = await response.text();
+			if (response.status === 404 || text.trimStart().startsWith('<!')) {
+				throw new Error(
+					'Dokploy no encontrado en esa URL. Verificar DOKPLOY_API_URL en las variables de entorno.'
+				);
+			}
 			throw new Error(`Dokploy API respondió con error (${response.status}): ${text}`);
 		}
 
