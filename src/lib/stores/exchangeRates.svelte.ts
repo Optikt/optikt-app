@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { resolve } from '$app/paths';
 import { refreshExchangeRatesCommand } from '$lib/remote/exchangeRates.remote';
 import type { ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
+import { getErrorMessage } from '$lib/utils';
 
 let snapshot = $state<ExchangeRatesSnapshot | null>(null);
 let loading = $state(true);
@@ -44,7 +45,7 @@ export function getExchangeRatesStore() {
 				snapshot = await refreshExchangeRatesCommand({});
 				error = null;
 			} catch (e) {
-				error = e instanceof Error ? e.message : 'Error al actualizar tasas';
+				error = getErrorMessage(e, 'Error al actualizar tasas');
 				throw e;
 			}
 		}
@@ -61,7 +62,7 @@ export function initExchangeRatesPolling() {
 			snapshot = await res.json();
 			error = null;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Error al cargar tasas';
+			error = getErrorMessage(e, 'Error al cargar tasas');
 		} finally {
 			loading = false;
 		}

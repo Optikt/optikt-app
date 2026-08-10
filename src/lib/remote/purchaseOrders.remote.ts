@@ -4,6 +4,7 @@
  */
 import { query, command } from '$app/server';
 import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { getErrorMessage } from '$lib/utils';
 import { z } from 'zod';
 import {
 	ListPurchaseOrdersSchema,
@@ -384,7 +385,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error creando orden de compra'
+			error: getErrorMessage(e, 'Error creando orden de compra')
 		};
 	}
 });
@@ -477,7 +478,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error actualizando orden de compra'
+			error: getErrorMessage(e, 'Error actualizando orden de compra')
 		};
 	}
 });
@@ -665,7 +666,7 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error guardando borrador de compra'
+			error: getErrorMessage(e, 'Error guardando borrador de compra')
 		};
 	}
 });
@@ -699,7 +700,7 @@ export const markPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema, a
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error marcando orden como lista'
+			error: getErrorMessage(e, 'Error marcando orden como lista')
 		};
 	}
 });
@@ -725,7 +726,7 @@ export const unmarkPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema,
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error devolviendo orden a edición'
+			error: getErrorMessage(e, 'Error devolviendo orden a edición')
 		};
 	}
 });
@@ -758,7 +759,7 @@ export const togglePurchaseOrderItemReviewedCmd = command(
 		} catch (e) {
 			return {
 				success: false as const,
-				error: e instanceof Error ? e.message : 'Error actualizando línea'
+				error: getErrorMessage(e, 'Error actualizando línea')
 			};
 		}
 	}
@@ -813,7 +814,7 @@ export const confirmPurchaseOrderCmd = command(ConfirmPurchaseOrderSchema, async
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error confirmando orden de compra',
+			error: getErrorMessage(e, 'Error confirmando orden de compra'),
 			priceSuggestions: []
 		};
 	}
@@ -839,7 +840,7 @@ export const cancelPurchaseOrderCmd = command(CancelPurchaseOrderSchema, async (
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error cancelando orden de compra'
+			error: getErrorMessage(e, 'Error cancelando orden de compra')
 		};
 	}
 });
@@ -1000,7 +1001,7 @@ export const addPurchaseOrderPaymentCmd = command(
 		} catch (e) {
 			return {
 				success: false as const,
-				error: e instanceof Error ? e.message : 'Error registrando pago'
+				error: getErrorMessage(e, 'Error registrando pago')
 			};
 		}
 	}
@@ -1083,7 +1084,7 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error anulando pago'
+			error: getErrorMessage(e, 'Error anulando pago')
 		};
 	}
 });
@@ -1181,7 +1182,7 @@ export const setPurchaseOrderCreditTermsCmd = command(
 		} catch (e) {
 			return {
 				success: false as const,
-				error: e instanceof Error ? e.message : 'Error configurando crédito'
+				error: getErrorMessage(e, 'Error configurando crédito')
 			};
 		}
 	}
@@ -1222,7 +1223,7 @@ export const applyPriceSuggestionsCmd = command(ApplyPriceSuggestionsSchema, asy
 	} catch (e) {
 		return {
 			success: false as const,
-			error: e instanceof Error ? e.message : 'Error actualizando precios'
+			error: getErrorMessage(e, 'Error actualizando precios')
 		};
 	}
 });

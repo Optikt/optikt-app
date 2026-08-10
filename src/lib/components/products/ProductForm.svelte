@@ -14,6 +14,7 @@
 	} from '$lib/components/ui';
 	import {
 		formatPrice,
+		getErrorMessage,
 		getFormErrorMessage,
 		scrollToFirstError,
 		toastUnboundErrors
@@ -415,11 +416,10 @@
 			handleCreateResult(formEl);
 		} catch (error) {
 			toast.error(
-				error instanceof Error
-					? error.message
-					: isEditMode
-						? 'Error actualizando producto'
-						: 'Error creando producto'
+				getErrorMessage(
+					error,
+					isEditMode ? 'Error actualizando producto' : 'Error creando producto'
+				)
 			);
 		} finally {
 			isSubmitting = false;

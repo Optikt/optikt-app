@@ -91,15 +91,17 @@
 
 ---
 
-### DT5 · Patrón de error duplicado 🟡
+### ✅ DT5 · Patrón de error duplicado (COMPLETADO — 2026-08-10)
 
-**Problema:** `e instanceof Error ? e.message : 'Error...'` repetido 12+ veces en cada archivo remote. `getErrorMessage()` existe en `src/lib/utils/errors.ts` hace tiempo pero solo 3 archivos lo usan.
+**Qué se hizo:** El diagnóstico original ("12+ veces en cada archivo remote") estaba desactualizado — la migración a `getErrorMessage()` ya había ocurrido: 63 archivos lo usaban. Solo quedaban **4 rezagados con 16 instancias** del patrón inline `e instanceof Error ? e.message : '...'`.
 
-**Riesgo de no hacerlo:** Código ruidoso. Cambiar el formato de error requiere editar 100+ líneas idénticas.
+**Cambios:**
+- `purchaseOrders.remote.ts`: 12 patrones → `getErrorMessage(e, '<mensaje>')`.
+- `exchangeRates.svelte.ts`: 2 patrones (store).
+- `LensCatalogForm.svelte` y `ProductForm.svelte`: 1 patrón cada uno (incluida la expresión multi-línea de ProductForm).
+- Zero patrones inline restantes en `src/` (solo la implementación de `getErrorMessage` y el serializador de hooks usan `instanceof Error`, correctamente).
 
-**Contras:** Ninguno. Refactor mecánico.
-
-**Dificultad:** Baja. **Solución:** Replace-all del patrón inline por `getErrorMessage(e, 'Mensaje fallback')` en todos los `*.remote.ts`. ~1 día.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa (eslint), 738/738 tests ✓.
 
 ---
 
@@ -354,7 +356,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
-| 🔴        | DT5 · Error pattern duplicado  | 1 día                   |
+| ✅        | DT5 · Error pattern duplicado  | Completado              |
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
 | ❌        | FP1 · preserve-list-filters    | 1 día                   |
 | 🔴        | FP3 · public-catalog-api       | 15 días                 |
@@ -374,14 +376,14 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5 y FP1.
+**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1.
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT5 (deuda técnica rápida)
+Semana 1:  FP1 (preserve-list-filters)
 Semana 2:  FP1 (preserve-list-filters)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)
