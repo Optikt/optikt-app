@@ -29,19 +29,18 @@ else
   ERROR_MSG="pg_dump failed"
 fi
 
-# Destination folder: root of Drive, or a specific folder if GOOGLE_DRIVE_BACKUP_FOLDER_ID is set
+# rclone flags: root of Drive, or a specific folder if GOOGLE_DRIVE_BACKUP_FOLDER_ID is set
+RCLONE_FLAGS="--config /etc/rclone/rclone.conf"
 if [ -n "${GOOGLE_DRIVE_BACKUP_FOLDER_ID:-}" ]; then
-  DRIVE_DEST="${DRIVE_REMOTE:-gdrive}:${GOOGLE_DRIVE_BACKUP_FOLDER_ID}"
-else
-  DRIVE_DEST="${DRIVE_REMOTE:-gdrive}:"
+  RCLONE_FLAGS="$RCLONE_FLAGS --drive-root-folder-id ${GOOGLE_DRIVE_BACKUP_FOLDER_ID}"
 fi
 
 # 2. Upload to Google Drive
 echo "[2/4] Uploading to Google Drive..."
 if [ -f "${BACKUP_FILE}" ]; then
   if rclone copyto "${BACKUP_FILE}" \
-    "${DRIVE_DEST}${FILENAME}" \
-    --config /etc/rclone/rclone.conf; then
+    "${DRIVE_REMOTE:-gdrive}:${FILENAME}" \
+    $RCLONE_FLAGS; then
     echo "      Uploaded: ${FILENAME}"
   else
     echo "      ERROR: Upload failed!"
@@ -58,9 +57,9 @@ fi
 RETENTION="${BACKUP_RETENTION_DAYS:-30}"
 echo "[3/4] Enforcing retention (${RETENTION} days)..."
 rclone delete \
-  "${DRIVE_DEST}" \
+  "${DRIVE_REMOTE:-gdrive}:" \
   --min-age "${RETENTION}d" \
-  --config /etc/rclone/rclone.conf \
+  $RCLONE_FLAGS \
   && echo "      Old backups removed." \
   || echo "      WARN: Retention cleanup failed (non-critical)."
 
