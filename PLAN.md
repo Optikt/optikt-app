@@ -201,6 +201,42 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ---
 
+### ✅ FP4 · Flujo de estados de venta (COMPLETADO — 2026-08-10)
+
+**Problema resuelto:** El pago completo de una venta la forzaba a `COMPLETED` automáticamente. Un cliente que paga por adelantado (producto no listo aún) quedaba como "completada" — falso. Y no existía un estado "listo para retirar" ni forma de revertir errores.
+
+**Qué se implementó:**
+
+- **Nuevo estado `READY` ("Lista para Retirar")**: enum + label + badge (purple), migración `0038` (`ALTER TYPE sale_status ADD VALUE 'READY'`, idempotente), filtro de listado actualizado.
+- **Se eliminó el auto-complete**: `addPayment` ya no cambia el estado al quedar cubierta la venta.
+- **Modal post-pago** (`SaleStatusModal`): al completar el pago, pregunta qué estado poner — PENDING → [En Progreso, Lista para Retirar, Completada]; IN_PROGRESS → [Lista para Retirar, Completada]; o "mantener".
+- **Transiciones manuales bidireccionales** vía comando unificado `setSaleStatus` (reemplaza `markAsInProgress`/`markAsCompleted`):
+  - Adelante (→ COMPLETED): cualquier usuario con permiso sobre la venta.
+  - Atrás (revertir): solo ADMIN/MANAGER (badge "Revertir" en el modal).
+  - `completedAt` se setea al entrar a COMPLETED y se borra al salir.
+- **Consistencia**: `voidPayment` revierte READY→IN_PROGRESS si queda underpaid; `updateSale` trata READY como IN_PROGRESS (solo admin edita); botón Cancelar disponible también en READY.
+- **Bugfix**: array inline de `sales/+page.svelte` tenía `'REFUNDED'` (un RefundStatus, no SaleStatus) — ahora importa `ALL_SALE_STATUSES` compartido.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 736/736 tests ✓.
+
+**Nota operativa:** las ventas PENDING ya pagadas antes del deploy quedan en PENDING — se transicionan manualmente con el modal. `completedAt` sigue siendo el ancla de revenue recognition (solo se setea en COMPLETED).
+
+---
+
+### FP5 · Historial de estados en venta 🟡
+
+**Problema:** Las transiciones de estado ya se registran en `change_history` (auditoría con diff, motivo, timestamp y usuario — via `auditService.logUpdate` en `setSaleStatus` y en el revert por `voidPayment`), pero el `ChangeHistoryModal` no está integrado en la página de detalle de venta. El operador no puede consultar cuándo/cómo cambió el estado desde el UI.
+
+**Por qué importa:** El modal de estados permite revertir (admin) — sin historial visible no se puede auditar quién revirtió ni por qué. Los demás módulos (products, lenses) ya tienen el modal; ventas es el hueco.
+
+**Contras:** Ninguno técnico. Solo UI.
+
+**Dificultad:** Baja (1-2 días). **Solución:** (a) Integrar el `ChangeHistoryModal` existente en `sales/[id]/+page.svelte` con entityType `sale` y botón "Historial" junto a los otros acciones. (b) Opcional: timeline dedicado de estados (PENDIENTE → EN PROGRESO → LISTA PARA RETIRAR → COMPLETADA) filtrando `change_history` por diffs que toquen el campo `status`.
+
+**Estado:** Pendiente. Sin empezar.
+
+---
+
 ### FP3 · public-catalog-api 🔴
 
 **Problema:** La óptica no tiene presencia web. No hay landing page, no hay catálogo público. El plan anterior (API Go + Tailscale Funnel + RustFS) se descartó por fragilidad ante cortes de luz.
@@ -354,6 +390,8 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | Prioridad | Ítem                           | Esfuerzo                |
 | --------- | ------------------------------ | ----------------------- |
 | ✅        | FP2 · backup-ui                | Completado              |
+| ✅        | FP4 · Estados de venta         | Completado              |
+| 🟡        | FP5 · Historial estados venta  | 1-2 días                |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
