@@ -1,4 +1,5 @@
 export { default as CancelSaleModal } from './CancelSaleModal.svelte';
+export { default as SaleStatusModal } from './SaleStatusModal.svelte';
 export { default as EditSaleModal } from './EditSaleModal.svelte';
 export { default as SalesTable } from './SalesTable.svelte';
 export { default as NewSaleForm } from './NewSaleForm.svelte';
