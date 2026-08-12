@@ -18,7 +18,8 @@ import {
 	ALL_DISCOUNT_TYPES,
 	ALL_REFUND_STATUSES,
 	DiscountType,
-	RefundStatus
+	RefundStatus,
+	SaleStatus
 } from '$lib/shared/enums';
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
@@ -318,16 +319,18 @@ export const UpdateSaleSchema = z.object({
 // STATE TRANSITION SCHEMAS
 // ============================================================================
 
-/** Mark a sale as IN_PROGRESS */
-export const MarkAsInProgressSchema = z.object({
-	id: z.uuid('ID de venta inválido'),
-	reason: z.string().min(1, 'El motivo es obligatorio')
-});
+/** Set the sale status (forward or backward transition). CANCELLED is excluded — use cancelSale. */
+const SALE_STATUS_TRANSITIONS: SaleStatus[] = [
+	SaleStatus.PENDING,
+	SaleStatus.IN_PROGRESS,
+	SaleStatus.READY,
+	SaleStatus.COMPLETED
+];
 
-/** Mark a sale as COMPLETED */
-export const MarkAsCompletedSchema = z.object({
+export const SetSaleStatusSchema = z.object({
 	id: z.uuid('ID de venta inválido'),
-	reason: z.string().min(1, 'El motivo es obligatorio')
+	status: z.enum(SALE_STATUS_TRANSITIONS, 'Estado inválido'),
+	reason: z.string().max(500, 'El motivo no puede exceder 500 caracteres').optional()
 });
 
 // ============================================================================
@@ -355,5 +358,4 @@ export type CancelSaleInput = z.infer<typeof CancelSaleSchema>;
 export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;
 export type EnrichFreeItemInput = z.infer<typeof EnrichFreeItemSchema>;
 export type UpdateSaleInput = z.infer<typeof UpdateSaleSchema>;
-export type MarkAsInProgressInput = z.infer<typeof MarkAsInProgressSchema>;
-export type MarkAsCompletedInput = z.infer<typeof MarkAsCompletedSchema>;
+export type SetSaleStatusInput = z.infer<typeof SetSaleStatusSchema>;

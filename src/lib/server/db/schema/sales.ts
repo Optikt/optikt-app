@@ -52,7 +52,7 @@ export const sales = pgTable(
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
 		saleDate: timestamp('sale_date', { withTimezone: true, mode: 'string' }).notNull(),
-		/** PENDING → IN_PROGRESS → COMPLETED (auto when fully paid) → CANCELLED */
+		/** PENDING → IN_PROGRESS → READY → COMPLETED → CANCELLED (fully paid no longer auto-completes) */
 		status: saleStatusEnum('status').notNull().default('PENDING'),
 		subtotal: doublePrecision().notNull(),
 		/** Global discount value (fixed amount or percentage input) */
