@@ -10,7 +10,8 @@ import {
 	foreignKey,
 	primaryKey
 } from 'drizzle-orm/pg-core';
-import { NotificationSeverity, NotificationType, UserRole } from '../../../shared/enums';
+import { NotificationSeverity, NotificationType } from '../../../shared/enums/notificationTypes';
+import { UserRole } from '../../../shared/enums/roles';
 import { enumValues } from './utils';
 import { users } from './users';
 
