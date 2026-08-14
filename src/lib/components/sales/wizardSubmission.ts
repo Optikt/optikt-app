@@ -120,6 +120,7 @@ export function buildSaleItemsFromWizard(
 			odAddition: item.lensPair.od.enabled
 				? (item.lensPair.od.prescription.addition ?? undefined)
 				: undefined,
+			odAltura: item.lensPair.od.enabled ? (item.lensPair.od.altura ?? undefined) : undefined,
 			osSphere: item.lensPair.oi.enabled
 				? (item.lensPair.oi.prescription.sphere ?? undefined)
 				: undefined,
@@ -132,6 +133,7 @@ export function buildSaleItemsFromWizard(
 			osAddition: item.lensPair.oi.enabled
 				? (item.lensPair.oi.prescription.addition ?? undefined)
 				: undefined,
+			osAltura: item.lensPair.oi.enabled ? (item.lensPair.oi.altura ?? undefined) : undefined,
 			quantity: 1,
 			unitPrice: item.unitPrice,
 			discount: item.discount,
@@ -290,14 +292,15 @@ export function buildPrescriptionPayload(
 		odCylinder: pair.od.prescription.cylinder ?? undefined,
 		odAxis: pair.od.prescription.axis ?? undefined,
 		odAddition: pair.od.prescription.addition ?? undefined,
+		odAltura: pair.od.altura ?? undefined,
 		osSphere: pair.oi.prescription.sphere ?? undefined,
 		osCylinder: pair.oi.prescription.cylinder ?? undefined,
 		osAxis: pair.oi.prescription.axis ?? undefined,
 		osAddition: pair.oi.prescription.addition ?? undefined,
+		osAltura: pair.oi.altura ?? undefined,
 		dp: pair.od.dp ?? undefined,
 		npRight: pair.od.np ?? undefined,
 		npLeft: pair.oi.np ?? undefined,
-		altura: undefined,
 		treatmentAntiReflective: false,
 		treatmentBlueBlock: false,
 		treatmentPhotochromic: false,
