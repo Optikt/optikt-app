@@ -34,6 +34,7 @@
 		isBsPaymentMethod
 	} from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
+	import { CasheaIsotipo } from '$lib/components/branding';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import { computeTaxBreakdown } from '$lib/shared/tax';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
@@ -238,9 +239,20 @@
 				<p class="text-xs font-semibold tracking-widest text-on-surface-variant uppercase">
 					Detalle de venta
 				</p>
-				<h1 class="mt-0 text-2xl font-bold text-on-surface">
-					Venta {formattedOrderNumber}
-				</h1>
+				<div class="flex items-center gap-2">
+					<h1 class="mt-0 text-2xl font-bold text-on-surface">
+						Venta {formattedOrderNumber}
+					</h1>
+					{#if sale.isCashea}
+						<span
+							class="inline-flex items-center rounded-md bg-surface-container-high px-1.5 py-0.5 ring-1 ring-outline-variant/40"
+							title="Venta con Cashea"
+							aria-label="Venta con Cashea"
+						>
+							<CasheaIsotipo class="h-5 w-5" />
+						</span>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Actions -->
