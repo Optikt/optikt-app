@@ -175,10 +175,12 @@
 			odCylinder: item.odCylinder ?? undefined,
 			odAxis: item.odAxis ?? undefined,
 			odAddition: item.odAddition ?? undefined,
+			odAltura: item.odAltura ?? undefined,
 			osSphere: item.osSphere ?? undefined,
 			osCylinder: item.osCylinder ?? undefined,
 			osAxis: item.osAxis ?? undefined,
 			osAddition: item.osAddition ?? undefined,
+			osAltura: item.osAltura ?? undefined,
 			quantity: item.quantity,
 			unitPrice: item.unitPrice,
 			discount: item.discount,
@@ -973,7 +975,7 @@
 								>
 								<div
 									class="grid gap-2"
-									class:grid-cols-4={showAddition}
+									class:grid-cols-5={showAddition}
 									class:grid-cols-3={!showAddition}
 								>
 									<span class="text-[10px] font-medium text-slate-500">Esf</span>
@@ -981,11 +983,12 @@
 									<span class="text-[10px] font-medium text-slate-500">Eje</span>
 									{#if showAddition}
 										<span class="text-[10px] font-medium text-slate-500">Add</span>
+										<span class="text-[10px] font-medium text-slate-500">Alt</span>
 									{/if}
 								</div>
 								<div
 									class="grid gap-2"
-									class:grid-cols-4={showAddition}
+									class:grid-cols-5={showAddition}
 									class:grid-cols-3={!showAddition}
 								>
 									<input
@@ -1023,6 +1026,15 @@
 											placeholder="—"
 											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
 										/>
+										<input
+											type="number"
+											bind:value={editLensTmp.odAltura}
+											step="1"
+											min={10}
+											max={40}
+											placeholder="—"
+											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+										/>
 									{/if}
 								</div>
 							</div>
@@ -1034,7 +1046,7 @@
 								>
 								<div
 									class="grid gap-2"
-									class:grid-cols-4={showAddition}
+									class:grid-cols-5={showAddition}
 									class:grid-cols-3={!showAddition}
 								>
 									<span class="text-[10px] font-medium text-slate-500">Esf</span>
@@ -1042,11 +1054,12 @@
 									<span class="text-[10px] font-medium text-slate-500">Eje</span>
 									{#if showAddition}
 										<span class="text-[10px] font-medium text-slate-500">Add</span>
+										<span class="text-[10px] font-medium text-slate-500">Alt</span>
 									{/if}
 								</div>
 								<div
 									class="grid gap-2"
-									class:grid-cols-4={showAddition}
+									class:grid-cols-5={showAddition}
 									class:grid-cols-3={!showAddition}
 								>
 									<input
@@ -1081,6 +1094,15 @@
 											step="0.25"
 											min={0}
 											max={5}
+											placeholder="—"
+											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+										/>
+										<input
+											type="number"
+											bind:value={editLensTmp.osAltura}
+											step="1"
+											min={10}
+											max={40}
 											placeholder="—"
 											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
 										/>
