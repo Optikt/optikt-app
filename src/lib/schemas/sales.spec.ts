@@ -195,6 +195,26 @@ describe('CreateSaleSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('accepts an explicit order number (admin backfill)', () => {
+		const result = CreateSaleSchema.safeParse({
+			...validBase,
+			orderNumber: 215,
+			items: [makeProductItem()]
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects order number 0 or negative', () => {
+		for (const orderNumber of [0, -5]) {
+			const result = CreateSaleSchema.safeParse({
+				...validBase,
+				orderNumber,
+				items: [makeProductItem()]
+			});
+			expect(result.success).toBe(false);
+		}
+	});
+
 	it('accepts an explicit snapshot tax rate at document level', () => {
 		const result = CreateSaleSchema.safeParse({
 			...validBase,
@@ -532,6 +552,24 @@ describe('UpdateSaleSchema', () => {
 			snapshotTaxRate: 8
 		});
 		expect(result.success).toBe(true);
+	});
+
+	it('accepts an order number reassignment', () => {
+		const result = UpdateSaleSchema.safeParse({
+			...validBase,
+			orderNumber: 220
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects order number 0 or negative', () => {
+		for (const orderNumber of [0, -1]) {
+			const result = UpdateSaleSchema.safeParse({
+				...validBase,
+				orderNumber
+			});
+			expect(result.success).toBe(false);
+		}
 	});
 
 	it('accepts header changes with items replacement', () => {

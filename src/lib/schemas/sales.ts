@@ -188,6 +188,8 @@ export const CreateSaleSchema = z
 		/** Inline customer data (when customer NOT found by cédula) */
 		newCustomer: InlineCustomerSchema.optional(),
 		saleDate: z.iso.date('Fecha de venta inválida'),
+		/** Optional: backfill historical sales with a specific order number. Default: next sequential. */
+		orderNumber: z.number().int().min(1, 'Número de orden inválido').optional(),
 		discount: CoercedNumber.min(0).default(0),
 		discountType: z.enum(ALL_DISCOUNT_TYPES).default(DiscountType.FIXED),
 		notes: z.string().optional(),
@@ -308,6 +310,8 @@ export const UpdateSaleSchema = z.object({
 	saleDate: z.iso.date().optional(),
 	notes: z.string().optional(),
 	isCashea: z.boolean().optional(),
+	/** Optional: reassign the order number (admin only, no UI yet). */
+	orderNumber: z.number().int().min(1, 'Número de orden inválido').optional(),
 	discount: CoercedNumber.min(0).optional(),
 	discountType: z.enum(ALL_DISCOUNT_TYPES).optional(),
 	snapshotTaxRate: CoercedNumber.min(0).optional(),
