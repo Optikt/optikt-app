@@ -37,18 +37,18 @@ export const prescriptions = pgTable(
 		odCylinder: doublePrecision('od_cylinder'),
 		odAxis: integer('od_axis'),
 		odAddition: doublePrecision('od_addition'),
+		odAltura: doublePrecision('od_altura'),
 		// Left eye (OS)
 		osSphere: doublePrecision('os_sphere'),
 		osCylinder: doublePrecision('os_cylinder'),
 		osAxis: integer('os_axis'),
 		osAddition: doublePrecision('os_addition'),
+		osAltura: doublePrecision('os_altura'),
 		// Distancia Pupilar (DP) - total pupillary distance
 		dp: doublePrecision(),
 		// Nasopupilar (NP) - per-eye measurements
 		npRight: doublePrecision('np_right'),
 		npLeft: doublePrecision('np_left'),
-		// Altura (segment height) - for bifocal/progressive lenses
-		altura: doublePrecision(),
 		// Treatments
 		treatments: json('treatments').$type<PrescriptionTreatments>(),
 		// Additional

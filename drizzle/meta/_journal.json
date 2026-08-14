@@ -274,6 +274,13 @@
       "when": 1788790000000,
       "tag": "0038_add_ready_sale_status",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1786726161170,
+      "tag": "0039_wild_william_stryker",
+      "breakpoints": true
     }
   ]
 }
