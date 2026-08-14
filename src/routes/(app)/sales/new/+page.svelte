@@ -17,6 +17,7 @@
 			suppliers={data.suppliers}
 			nextOrderNumber={data.nextOrderNumber}
 			defaultTaxRate={data.defaultTaxRate}
+			canEditOrderNumber={data.isAdmin}
 		>
 			{#snippet breadcrumbs()}
 				<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">

@@ -2,7 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createSale } from '$lib/remote/sales.remote';
+	import { createSale, getNextOrderNumberCommand } from '$lib/remote/sales.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
 	import { isDiscountValueValid } from '$lib/utils';
@@ -14,7 +14,7 @@
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
 	import type { Snippet } from 'svelte';
-	import { setContext } from 'svelte';
+	import { setContext, untrack } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
 	import { CATALOG_KEY } from './wizardContext';
 	import {
@@ -37,6 +37,8 @@
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
 		defaultTaxRate?: number;
+		/** ADMIN can override the suggested order number (backfill historical sales). */
+		canEditOrderNumber?: boolean;
 		breadcrumbs?: Snippet;
 	}
 
@@ -46,6 +48,7 @@
 		suppliers: _suppliers,
 		nextOrderNumber,
 		defaultTaxRate,
+		canEditOrderNumber = false,
 		breadcrumbs
 	}: Props = $props();
 
@@ -113,9 +116,9 @@
 	let isCashea = $state(false);
 	let submitting = $state(false);
 
-	const formattedOrderNumber = $derived(
-		nextOrderNumber ? `${String(nextOrderNumber).padStart(4, '0')}` : ''
-	);
+	// Suggested order number (MAX + 1). ADMIN may override to backfill historical sales.
+	// untrack: snapshot the server-provided suggestion once at mount.
+	let orderNumberInput = $state(untrack(() => (nextOrderNumber ? String(nextOrderNumber) : '')));
 	let orderDateIso = $state(dateToISODateString(initialDate));
 
 	// Sync: user edits date in WizardHeader → update saleDate
@@ -264,6 +267,16 @@
 	// SUBMIT
 	// ============================================================================
 
+	async function handleResetOrderNumber() {
+		try {
+			const next = await getNextOrderNumberCommand({});
+			orderNumberInput = String(next);
+			toast.success(`Número actualizado: #${String(next).padStart(4, '0')}`);
+		} catch (e) {
+			toast.error(getErrorMessage(e, 'No se pudo obtener el último número'));
+		}
+	}
+
 	async function handleSubmit() {
 		if (hasInvalidItemDiscount || hasInvalidGlobalDiscount) {
 			toast.error('Revise los descuentos antes de registrar la venta');
@@ -284,6 +297,8 @@
 				newCustomer:
 					newCustomer && newCustomer.firstName && newCustomer.lastName ? newCustomer : undefined,
 				saleDate: dateToISODateString(saleDate),
+				orderNumber:
+					canEditOrderNumber && orderNumberInput.trim() ? Number(orderNumberInput) : undefined,
 				discount,
 				discountType,
 				snapshotTaxRate,
@@ -314,7 +329,9 @@
 		{currentStep}
 		{canNavigateToStep}
 		onStepSelect={(step) => goToStep(step as WizardStep)}
-		orderNumber={formattedOrderNumber}
+		bind:orderNumber={orderNumberInput}
+		orderNumberEditable={canEditOrderNumber}
+		onResetOrderNumber={handleResetOrderNumber}
 		bind:orderDate={orderDateIso}
 		{breadcrumbs}
 	/>

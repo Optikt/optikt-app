@@ -20,6 +20,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		products,
 		lensItems,
 		suppliers,
-		nextOrderNumber
+		nextOrderNumber,
+		isAdmin: locals.user?.role === UserRole.ADMIN
 	};
 };

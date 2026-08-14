@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Hash, Check } from '@lucide/svelte';
+	import { Hash, Check, Pencil, RotateCcw } from '@lucide/svelte';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 	import type { Snippet } from 'svelte';
@@ -21,6 +21,10 @@
 		canNavigateToStep: (step: number) => boolean;
 		onStepSelect: (step: number) => void;
 		orderNumber?: string;
+		/** Render an editable input instead of a static badge (e.g. admin backfill). */
+		orderNumberEditable?: boolean;
+		/** Refetch the latest suggested order number (MAX + 1) and reset the input. */
+		onResetOrderNumber?: () => void | Promise<void>;
 		orderDate?: string;
 		breadcrumbs?: Snippet;
 	}
@@ -32,13 +36,34 @@
 		currentStep,
 		canNavigateToStep,
 		onStepSelect,
-		orderNumber,
+		orderNumber = $bindable(),
+		orderNumberEditable = false,
+		onResetOrderNumber,
 		orderDate = $bindable(),
 		breadcrumbs
 	}: Props = $props();
 
 	let open = $state(false);
 	let value = $state<DateValue | undefined>();
+
+	// Order number: edit-on-demand (admin). Enter/Esc/blur commit; reset button refetches the suggestion.
+	let editingOrderNumber = $state(false);
+	let orderNumberEditEl = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (editingOrderNumber) {
+			orderNumberEditEl?.focus();
+		}
+	});
+
+	function enableOrderNumberEdit() {
+		if (!orderNumberEditable) return;
+		editingOrderNumber = true;
+	}
+
+	function commitOrderNumberEdit() {
+		editingOrderNumber = false;
+	}
 
 	$effect(() => {
 		if (value) {
@@ -83,15 +108,69 @@
 				{#if breadcrumbs}
 					{@render breadcrumbs()}
 				{/if}
-				{#if orderNumber || orderDate}
+				{#if orderNumberEditable || orderNumber || orderDate}
 					<div class="flex items-center gap-2 text-xs">
-						{#if orderNumber}
-							<div
-								class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue"
-							>
-								<Hash class="h-3.5 w-3.5" />
-								<span class="font-mono font-semibold">{orderNumber}</span>
-							</div>
+						{#if orderNumberEditable || orderNumber}
+							{#if orderNumberEditable}
+								{#if editingOrderNumber}
+									<div
+										class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue ring-1 ring-brand-blue/40"
+										title="Enter para guardar"
+									>
+										<Hash class="h-3.5 w-3.5" />
+										<input
+											bind:this={orderNumberEditEl}
+											type="text"
+											inputmode="numeric"
+											pattern="[0-9]*"
+											class="w-16 bg-transparent font-mono font-semibold text-brand-blue outline-none"
+											aria-label="Número de orden (vacío = automático)"
+											bind:value={orderNumber}
+											onkeydown={(event) => {
+												if (event.key === 'Enter' || event.key === 'Escape') {
+													commitOrderNumberEdit();
+												}
+											}}
+											onblur={commitOrderNumberEdit}
+										/>
+										<button
+											type="button"
+											onmousedown={(event) => event.preventDefault()}
+											onclick={onResetOrderNumber}
+											class="cursor-pointer rounded p-0.5 text-brand-blue/50 transition-colors hover:text-brand-blue"
+											title="Usar último número generado"
+											aria-label="Usar último número generado"
+										>
+											<RotateCcw class="h-3 w-3" />
+										</button>
+										<Check
+											class="h-3 w-3 shrink-0 cursor-pointer text-brand-blue"
+											onmousedown={(event) => event.preventDefault()}
+											onclick={commitOrderNumberEdit}
+										/>
+									</div>
+								{:else}
+									<button
+										type="button"
+										onclick={enableOrderNumberEdit}
+										class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue transition-colors hover:bg-surface-container-highest hover:ring-1 hover:ring-brand-blue/40"
+										title="Editar número de orden (vacío = automático)"
+									>
+										<Hash class="h-3.5 w-3.5" />
+										<span class="font-mono font-semibold">{orderNumber}</span>
+										<Pencil
+											class="h-3 w-3 shrink-0 text-brand-blue/50 transition-colors group-hover:text-brand-blue"
+										/>
+									</button>
+								{/if}
+							{:else}
+								<div
+									class="flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1 text-brand-blue"
+								>
+									<Hash class="h-3.5 w-3.5" />
+									<span class="font-mono font-semibold">{orderNumber}</span>
+								</div>
+							{/if}
 						{/if}
 						<Popover.Root bind:open>
 							<Popover.Trigger>
