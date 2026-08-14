@@ -15,8 +15,7 @@ import {
 	UpdateSaleItemCostsSchema,
 	EnrichFreeItemSchema,
 	UpdateSaleSchema,
-	MarkAsInProgressSchema,
-	MarkAsCompletedSchema
+	SetSaleStatusSchema
 } from '$lib/schemas/sales';
 import {
 	getAllSales,
@@ -470,7 +469,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 /**
  * Add a payment to a sale.
  * Computes amountBcvUsd based on payment method and exchange rates.
- * Auto-completes sale if fully paid.
+ * Does NOT auto-complete the sale — status transitions are manual
+ * (the UI offers to set READY/COMPLETED once the sale is fully paid).
  */
 export const addPayment = command(AddPaymentSchema, async (data) => {
 	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
@@ -514,29 +514,10 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 
 		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
 
-		// Auto-complete if fully paid (small tolerance for floating point).
-		// completedAt anchors delivery-based revenue recognition.
-		if (newPaidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
-			await updateSaleQuery(
-				data.saleId,
-				{ status: SaleStatus.COMPLETED, completedAt: nowISO() },
-				tx
-			);
-		}
-
 		return { payment: newPayment, paidAmount: newPaidAmount };
 	});
 
 	// Audit logs (best-effort, after transaction succeeds)
-	if (paidAmount >= sale.total - 0.01 && sale.status === SaleStatus.PENDING) {
-		const updated = await findSaleById(data.saleId);
-		if (updated) {
-			await auditService.logUpdate('sale', data.saleId, sale, updated, context, {
-				excludeFields: ['createdAt', 'updatedAt', 'deletedAt']
-			});
-		}
-	}
-
 	await auditService.logCreate('sale_payment', payment, context, {
 		excludeFields: ['createdAt', 'updatedAt']
 	});
@@ -580,12 +561,19 @@ export const voidPayment = command(VoidPaymentSchema, async (data) => {
 		if (sale.status === SaleStatus.COMPLETED && newPaidAmount < sale.total - 0.01) {
 			await updateSaleQuery(data.saleId, { status: SaleStatus.PENDING, completedAt: null }, tx);
 		}
+		// If sale was READY (fully paid) but now underpaid, reopen to IN_PROGRESS.
+		else if (sale.status === SaleStatus.READY && newPaidAmount < sale.total - 0.01) {
+			await updateSaleQuery(data.saleId, { status: SaleStatus.IN_PROGRESS }, tx);
+		}
 
 		return newPaidAmount;
 	});
 
 	// Audit log (best-effort, after transaction succeeds)
-	if (sale.status === SaleStatus.COMPLETED && paidAmount < sale.total - 0.01) {
+	const statusChangedByVoid =
+		(sale.status === SaleStatus.COMPLETED || sale.status === SaleStatus.READY) &&
+		paidAmount < sale.total - 0.01;
+	if (statusChangedByVoid) {
 		const updated = await findSaleById(data.saleId);
 		if (updated) {
 			await auditService.logUpdate('sale', data.saleId, sale, updated, context, {
@@ -892,7 +880,7 @@ export const enrichFreeItem = command(EnrichFreeItemSchema, async (data) => {
  *
  * Strict state/role enforcement:
  * - COMPLETED: blocked entirely.
- * - IN_PROGRESS: only ADMIN/MANAGER may edit.
+ * - IN_PROGRESS / READY: only ADMIN/MANAGER may edit.
  * - PENDING: allowed for authorized users.
  *
  * When items change the full inventory is reset (CANCEL_REVERT) and
@@ -918,10 +906,13 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 	}
 
 	const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MANAGER;
-	if (existing.status === SaleStatus.IN_PROGRESS && !isAdmin) {
+	if (
+		(existing.status === SaleStatus.IN_PROGRESS || existing.status === SaleStatus.READY) &&
+		!isAdmin
+	) {
 		return {
 			success: false as const,
-			error: 'Solo administradores pueden modificar ventas en progreso'
+			error: 'Solo administradores pueden modificar ventas en progreso o listas para retirar'
 		};
 	}
 
@@ -1190,29 +1181,71 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 // STATE TRANSITIONS
 // ============================================================================
 
+/** Forward order used to decide whether a transition goes backwards. */
+const SALE_STATUS_FLOW: SaleStatus[] = [
+	SaleStatus.PENDING,
+	SaleStatus.IN_PROGRESS,
+	SaleStatus.READY,
+	SaleStatus.COMPLETED
+];
+
 /**
- * Transition a sale from PENDING → IN_PROGRESS.
+ * Set the sale status (manual transition, forward or backward).
+ * - Forward transitions (toward COMPLETED): any user that can manage the sale.
+ * - Backward transitions (reverting): ADMIN/MANAGER only.
+ * - completedAt is set when entering COMPLETED and cleared when leaving it.
  */
-export const markAsInProgress = command(MarkAsInProgressSchema, async (data) => {
+export const setSaleStatus = command(SetSaleStatusSchema, async (data) => {
 	const user = requireAuth();
 	const context = getAuditContext();
 
 	const existing = await findSaleById(data.id);
 	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
 
+	const targetStatus = data.status as SaleStatus;
+
+	if (existing.status === SaleStatus.CANCELLED) {
+		return {
+			success: false as const,
+			error: 'No se puede cambiar el estado de una venta cancelada'
+		};
+	}
+
+	if (existing.status === targetStatus) {
+		return { success: false as const, error: 'La venta ya está en ese estado' };
+	}
+
 	if (!canManageSaleByOwner(user.role, user.id, existing.sellerId)) {
 		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
 	}
 
-	if (existing.status !== SaleStatus.PENDING) {
+	const isAdmin = user.role === UserRole.ADMIN || user.role === UserRole.MANAGER;
+	const currentIndex = SALE_STATUS_FLOW.indexOf(existing.status as SaleStatus);
+	const targetIndex = SALE_STATUS_FLOW.indexOf(targetStatus);
+	const isBackward = targetIndex < currentIndex;
+	if (isBackward && !isAdmin) {
 		return {
 			success: false as const,
-			error: 'Solo se pueden marcar como "En Progreso" ventas en estado Pendiente'
+			error: 'Solo administradores pueden revertir el estado de una venta'
+		};
+	}
+
+	if (isBackward && !data.reason?.trim()) {
+		return {
+			success: false as const,
+			error: 'El motivo es obligatorio para revertir el estado'
 		};
 	}
 
 	const updated = await db.transaction(async (tx) => {
-		return updateSaleQuery(data.id, { status: SaleStatus.IN_PROGRESS }, tx);
+		return updateSaleQuery(
+			data.id,
+			{
+				status: targetStatus,
+				completedAt: targetStatus === SaleStatus.COMPLETED ? nowISO() : null
+			},
+			tx
+		);
 	});
 
 	if (!updated) {
@@ -1224,48 +1257,7 @@ export const markAsInProgress = command(MarkAsInProgressSchema, async (data) => 
 		data.id,
 		existing,
 		updated,
-		{ ...context, reason: data.reason },
-		{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
-	);
-
-	return { success: true as const, sale: updated };
-});
-
-/**
- * Transition a sale from IN_PROGRESS → COMPLETED.
- */
-export const markAsCompleted = command(MarkAsCompletedSchema, async (data) => {
-	const user = requireAuth();
-	const context = getAuditContext();
-
-	const existing = await findSaleById(data.id);
-	if (!existing) return { success: false as const, error: 'Venta no encontrada' };
-
-	if (!canManageSaleByOwner(user.role, user.id, existing.sellerId)) {
-		return { success: false as const, error: 'No tienes permisos para modificar esta venta' };
-	}
-
-	if (existing.status !== SaleStatus.IN_PROGRESS) {
-		return {
-			success: false as const,
-			error: 'Solo se pueden completar ventas en estado "En Progreso"'
-		};
-	}
-
-	const updated = await db.transaction(async (tx) => {
-		return updateSaleQuery(data.id, { status: SaleStatus.COMPLETED, completedAt: nowISO() }, tx);
-	});
-
-	if (!updated) {
-		return { success: false as const, error: 'Error al actualizar la venta' };
-	}
-
-	await auditService.logUpdate(
-		'sale',
-		data.id,
-		existing,
-		updated,
-		{ ...context, reason: data.reason },
+		{ ...context, reason: data.reason?.trim() || undefined },
 		{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
 	);
 

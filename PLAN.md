@@ -87,21 +87,22 @@
 - DEBUG logs de `pdf.ts` eliminados.
 - Nota: `pdf.ts` usa import relativo (`../utils/logger`) porque su fixture de test corre en node plano sin alias `$lib`; el logger evita `import.meta.env` directo por la misma razón.
 
-**Pendiente (de la solución original):** regla ESLint `no-console: error` — con cero usos restantes ya es aplicable como guard rail.
-
 **Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓. 83 archivos, −183/+50 líneas.
 
 ---
 
-### DT5 · Patrón de error duplicado 🟡
+### ✅ DT5 · Patrón de error duplicado (COMPLETADO — 2026-08-10)
 
-**Problema:** `e instanceof Error ? e.message : 'Error...'` repetido 12+ veces en cada archivo remote. `getErrorMessage()` existe en `src/lib/utils/errors.ts` hace tiempo pero solo 3 archivos lo usan.
+**Qué se hizo:** El diagnóstico original ("12+ veces en cada archivo remote") estaba desactualizado — la migración a `getErrorMessage()` ya había ocurrido: 63 archivos lo usaban. Solo quedaban **4 rezagados con 16 instancias** del patrón inline `e instanceof Error ? e.message : '...'`.
 
-**Riesgo de no hacerlo:** Código ruidoso. Cambiar el formato de error requiere editar 100+ líneas idénticas.
+**Cambios:**
 
-**Contras:** Ninguno. Refactor mecánico.
+- `purchaseOrders.remote.ts`: 12 patrones → `getErrorMessage(e, '<mensaje>')`.
+- `exchangeRates.svelte.ts`: 2 patrones (store).
+- `LensCatalogForm.svelte` y `ProductForm.svelte`: 1 patrón cada uno (incluida la expresión multi-línea de ProductForm).
+- Zero patrones inline restantes en `src/` (solo la implementación de `getErrorMessage` y el serializador de hooks usan `instanceof Error`, correctamente).
 
-**Dificultad:** Baja. **Solución:** Replace-all del patrón inline por `getErrorMessage(e, 'Mensaje fallback')` en todos los `*.remote.ts`. ~1 día.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa completo (prettier + eslint), 738/738 tests ✓.
 
 ---
 
@@ -197,6 +198,42 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 **Dificultad:** Baja. **Solución:** (a) Utilidad `saveReferrerParams`/`getBackUrl` en `src/lib/utils/urlState.ts` (ya existe parcialmente). (b) `beforeNavigate` en cada lista para guardar params. (c) `goBack()` modificado en cada detalle. ~1 día.
 
 **Estado:** Plan activo. Sin empezar implementación.
+
+---
+
+### ✅ FP4 · Flujo de estados de venta (COMPLETADO — 2026-08-10)
+
+**Problema resuelto:** El pago completo de una venta la forzaba a `COMPLETED` automáticamente. Un cliente que paga por adelantado (producto no listo aún) quedaba como "completada" — falso. Y no existía un estado "listo para retirar" ni forma de revertir errores.
+
+**Qué se implementó:**
+
+- **Nuevo estado `READY` ("Lista para Retirar")**: enum + label + badge (purple), migración `0038` (`ALTER TYPE sale_status ADD VALUE 'READY'`, idempotente), filtro de listado actualizado.
+- **Se eliminó el auto-complete**: `addPayment` ya no cambia el estado al quedar cubierta la venta.
+- **Modal post-pago** (`SaleStatusModal`): al completar el pago, pregunta qué estado poner — PENDING → [En Progreso, Lista para Retirar, Completada]; IN_PROGRESS → [Lista para Retirar, Completada]; o "mantener".
+- **Transiciones manuales bidireccionales** vía comando unificado `setSaleStatus` (reemplaza `markAsInProgress`/`markAsCompleted`):
+  - Adelante (→ COMPLETED): cualquier usuario con permiso sobre la venta.
+  - Atrás (revertir): solo ADMIN/MANAGER (badge "Revertir" en el modal).
+  - `completedAt` se setea al entrar a COMPLETED y se borra al salir.
+- **Consistencia**: `voidPayment` revierte READY→IN_PROGRESS si queda underpaid; `updateSale` trata READY como IN_PROGRESS (solo admin edita); botón Cancelar disponible también en READY.
+- **Bugfix**: array inline de `sales/+page.svelte` tenía `'REFUNDED'` (un RefundStatus, no SaleStatus) — ahora importa `ALL_SALE_STATUSES` compartido.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 736/736 tests ✓.
+
+**Nota operativa:** las ventas PENDING ya pagadas antes del deploy quedan en PENDING — se transicionan manualmente con el modal. `completedAt` sigue siendo el ancla de revenue recognition (solo se setea en COMPLETED).
+
+---
+
+### FP5 · Historial de estados en venta 🟡
+
+**Problema:** Las transiciones de estado ya se registran en `change_history` (auditoría con diff, motivo, timestamp y usuario — via `auditService.logUpdate` en `setSaleStatus` y en el revert por `voidPayment`), pero el `ChangeHistoryModal` no está integrado en la página de detalle de venta. El operador no puede consultar cuándo/cómo cambió el estado desde el UI.
+
+**Por qué importa:** El modal de estados permite revertir (admin) — sin historial visible no se puede auditar quién revirtió ni por qué. Los demás módulos (products, lenses) ya tienen el modal; ventas es el hueco.
+
+**Contras:** Ninguno técnico. Solo UI.
+
+**Dificultad:** Baja (1-2 días). **Solución:** (a) Integrar el `ChangeHistoryModal` existente en `sales/[id]/+page.svelte` con entityType `sale` y botón "Historial" junto a los otros acciones. (b) Opcional: timeline dedicado de estados (PENDIENTE → EN PROGRESO → LISTA PARA RETIRAR → COMPLETADA) filtrando `change_history` por diffs que toquen el campo `status`.
+
+**Estado:** Pendiente. Sin empezar.
 
 ---
 
@@ -353,10 +390,12 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | Prioridad | Ítem                           | Esfuerzo                |
 | --------- | ------------------------------ | ----------------------- |
 | ✅        | FP2 · backup-ui                | Completado              |
+| ✅        | FP4 · Estados de venta         | Completado              |
+| 🟡        | FP5 · Historial estados venta  | 1-2 días                |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
-| 🔴        | DT5 · Error pattern duplicado  | 1 día                   |
+| ✅        | DT5 · Error pattern duplicado  | Completado              |
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
 | ❌        | FP1 · preserve-list-filters    | 1 día                   |
 | 🔴        | FP3 · public-catalog-api       | 15 días                 |
@@ -376,14 +415,14 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 4 días para resolver DT5 y FP1.
+**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1.
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT5 (deuda técnica rápida)
+Semana 1:  FP1 (preserve-list-filters)
 Semana 2:  FP1 (preserve-list-filters)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)

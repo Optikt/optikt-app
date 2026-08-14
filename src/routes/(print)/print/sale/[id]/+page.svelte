@@ -50,7 +50,7 @@
 	const ivaRate = sale.snapshotTaxRate > 0 ? sale.snapshotTaxRate : null;
 	const remainingAmount = Math.max(0, sale.total - sale.paidAmountBcvUsd);
 	const showRemainingAmount = payments.length > 0 && remainingAmount > 0.01;
-	const showAdditionalPayments = sale.status !== SaleStatus.COMPLETED;
+	const showAdditionalPayments = sale.status !== SaleStatus.CANCELLED;
 
 	const treatmentGroups = items.reduce<Record<string, SaleItemWithDetails[]>>((groups, item) => {
 		if (item.itemType !== SaleItemType.TREATMENT || !item.parentSaleItemId) {

@@ -16,7 +16,7 @@
 		type SelectOption,
 		type PendingEntity
 	} from '$lib/components/ui';
-	import { logger } from '$lib/utils';
+	import { getErrorMessage, logger } from '$lib/utils';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
 	import {
 		SPHERE_RANGE_MODE,
@@ -506,7 +506,7 @@
 			await submit();
 			onSuccess();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : fallbackMessage);
+			toast.error(getErrorMessage(e, fallbackMessage));
 		} finally {
 			isSubmitting = false;
 		}

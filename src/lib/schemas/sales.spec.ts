@@ -4,8 +4,7 @@ import {
 	CreateSaleSchema,
 	CancelSaleSchema,
 	UpdateSaleSchema,
-	MarkAsInProgressSchema,
-	MarkAsCompletedSchema
+	SetSaleStatusSchema
 } from '$lib/schemas/sales';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { DiscountType, RefundStatus } from '$lib/shared/enums';
@@ -599,57 +598,56 @@ describe('UpdateSaleSchema', () => {
 	});
 });
 
-// ── MarkAsInProgressSchema ─────────────────────────────────────────────────
+// ── SetSaleStatusSchema ────────────────────────────────────────────────────
 
-describe('MarkAsInProgressSchema', () => {
+describe('SetSaleStatusSchema', () => {
 	it('accepts valid input', () => {
-		const result = MarkAsInProgressSchema.safeParse({
+		const result = SetSaleStatusSchema.safeParse({
 			id: crypto.randomUUID(),
-			reason: 'Iniciando proceso'
+			status: 'READY',
+			reason: 'El lente quedó listo'
 		});
 		expect(result.success).toBe(true);
 	});
 
-	it('rejects empty reason', () => {
-		const result = MarkAsInProgressSchema.safeParse({
+	it('accepts empty or absent reason', () => {
+		const withEmpty = SetSaleStatusSchema.safeParse({
 			id: crypto.randomUUID(),
+			status: 'COMPLETED',
 			reason: ''
+		});
+		expect(withEmpty.success).toBe(true);
+
+		const withoutReason = SetSaleStatusSchema.safeParse({
+			id: crypto.randomUUID(),
+			status: 'COMPLETED'
+		});
+		expect(withoutReason.success).toBe(true);
+	});
+
+	it('rejects reason over 500 chars', () => {
+		const result = SetSaleStatusSchema.safeParse({
+			id: crypto.randomUUID(),
+			status: 'COMPLETED',
+			reason: 'x'.repeat(501)
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it('rejects invalid status', () => {
+		const result = SetSaleStatusSchema.safeParse({
+			id: crypto.randomUUID(),
+			status: 'CANCELLED',
+			reason: 'Cancelando'
 		});
 		expect(result.success).toBe(false);
 	});
 
 	it('rejects invalid id', () => {
-		const result = MarkAsInProgressSchema.safeParse({
+		const result = SetSaleStatusSchema.safeParse({
 			id: 'bad',
+			status: 'IN_PROGRESS',
 			reason: 'Iniciando proceso'
-		});
-		expect(result.success).toBe(false);
-	});
-});
-
-// ── MarkAsCompletedSchema ──────────────────────────────────────────────────
-
-describe('MarkAsCompletedSchema', () => {
-	it('accepts valid input', () => {
-		const result = MarkAsCompletedSchema.safeParse({
-			id: crypto.randomUUID(),
-			reason: 'Venta completada'
-		});
-		expect(result.success).toBe(true);
-	});
-
-	it('rejects empty reason', () => {
-		const result = MarkAsCompletedSchema.safeParse({
-			id: crypto.randomUUID(),
-			reason: ''
-		});
-		expect(result.success).toBe(false);
-	});
-
-	it('rejects invalid id', () => {
-		const result = MarkAsCompletedSchema.safeParse({
-			id: 'bad',
-			reason: 'Venta completada'
 		});
 		expect(result.success).toBe(false);
 	});

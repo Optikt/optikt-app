@@ -7,7 +7,6 @@
 		Pen,
 		Play,
 		Printer,
-		CircleCheck,
 		ReceiptText,
 		X
 	} from '@lucide/svelte';
@@ -18,10 +17,11 @@
 		EditSaleModal,
 		PaymentForm,
 		SaleItemsTable,
-		SaleMovementsModal
+		SaleMovementsModal,
+		SaleStatusModal
 	} from '$lib/components/sales';
 	import { PDFViewerModal } from '$lib/components/pdf';
-	import { AppBadge, ConfirmModal, SaleStatusBadge, SlideOver } from '$lib/components/ui';
+	import { AppBadge, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice, getBackUrl } from '$lib/utils';
 	import {
@@ -35,7 +35,6 @@
 	} from '$lib/shared/enums';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
-	import { markAsInProgress, markAsCompleted } from '$lib/remote/sales.remote';
 	import { computeTaxBreakdown } from '$lib/shared/tax';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
@@ -73,11 +72,9 @@
 		showStockModal = false;
 	}
 
-	// State transition confirmations
-	let showInProgressConfirm = $state(false);
-	let showCompletedConfirm = $state(false);
-	let transitionReason = $state('');
-	let transitioning = $state(false);
+	// State transition
+	let showStatusModal = $state(false);
+	let statusModalPreset = $state<SaleStatus[] | undefined>(undefined);
 
 	let formattedOrderNumber = $derived(`#${String(sale.orderNumber).padStart(4, '0')}`);
 	let remainingBcvUsd = $derived(Math.max(0, sale.total - sale.paidAmountBcvUsd));
@@ -88,6 +85,7 @@
 	let canManageSale = $derived(canManageSaleByOwner(data.user.role, data.user.id, sale.sellerId));
 	let isPending = $derived(sale.status === SaleStatus.PENDING);
 	let isInProgress = $derived(sale.status === SaleStatus.IN_PROGRESS);
+	let isReady = $derived(sale.status === SaleStatus.READY);
 
 	let pendingFreeItemCount = $derived(
 		items.filter(
@@ -98,8 +96,10 @@
 	);
 	let isCompleted = $derived(sale.status === SaleStatus.COMPLETED);
 	let isCancelled = $derived(sale.status === SaleStatus.CANCELLED);
-	let canPrintReceipt = $derived((isPending || isInProgress || isCompleted) && !isCancelled);
-	let showPaymentForm = $derived(canAct && (isPending || isInProgress) && remainingBcvUsd > 0.01);
+	let canPrintReceipt = $derived(
+		(isPending || isInProgress || isReady || isCompleted) && !isCancelled
+	);
+	let showPaymentForm = $derived(canAct && !isCancelled && remainingBcvUsd > 0.01);
 	let isAdmin = $derived(data.user.role === UserRole.ADMIN || data.user.role === UserRole.MANAGER);
 	let receiptHalfLetterOverflowRisk = $derived(
 		hasHalfLetterReceiptOverflowRisk({ itemLineCount: items.length, paymentCount: payments.length })
@@ -165,6 +165,18 @@
 		await invalidateAll();
 		syncFromData();
 		showDrawer = false;
+
+		// Sale just became fully paid — offer to move it forward
+		// (PENDING → IN_PROGRESS/READY/COMPLETED, IN_PROGRESS → READY/COMPLETED, READY → COMPLETED).
+		if (sale.paidAmountBcvUsd >= sale.total - 0.01 && (isPending || isInProgress || isReady)) {
+			statusModalPreset =
+				sale.status === SaleStatus.PENDING
+					? [SaleStatus.IN_PROGRESS, SaleStatus.READY, SaleStatus.COMPLETED]
+					: sale.status === SaleStatus.IN_PROGRESS
+						? [SaleStatus.READY, SaleStatus.COMPLETED]
+						: [SaleStatus.COMPLETED];
+			showStatusModal = true;
+		}
 	}
 
 	function goBack() {
@@ -181,46 +193,10 @@
 		toast.warning('Este recibo tiene muchos ítems o pagos y puede superar media carta.');
 	}
 
-	async function handleMarkInProgress() {
-		if (!transitionReason.trim()) return;
-		transitioning = true;
-		try {
-			const result = await markAsInProgress({ id: sale.id, reason: transitionReason.trim() });
-			if (result.success) {
-				toast.success('Venta marcada como En Progreso');
-				showInProgressConfirm = false;
-				transitionReason = '';
-				await invalidateAll();
-				syncFromData();
-			} else {
-				toast.error(result.error ?? 'Error al actualizar estado');
-			}
-		} catch {
-			toast.error('Error al marcar como En Progreso');
-		} finally {
-			transitioning = false;
-		}
-	}
-
-	async function handleMarkCompleted() {
-		if (!transitionReason.trim()) return;
-		transitioning = true;
-		try {
-			const result = await markAsCompleted({ id: sale.id, reason: transitionReason.trim() });
-			if (result.success) {
-				toast.success('Venta completada');
-				showCompletedConfirm = false;
-				transitionReason = '';
-				await invalidateAll();
-				syncFromData();
-			} else {
-				toast.error(result.error ?? 'Error al completar venta');
-			}
-		} catch {
-			toast.error('Error al completar venta');
-		} finally {
-			transitioning = false;
-		}
+	async function handleStatusChanged() {
+		await invalidateAll();
+		syncFromData();
+		statusModalPreset = undefined;
 	}
 
 	async function handleEditSuccess() {
@@ -291,7 +267,21 @@
 				{/if}
 
 				<!-- Grupo B: Flujo (alta jerarquía) -->
-				{#if canManageSale && (isPending || isInProgress)}
+				{#if canManageSale && !isCancelled && (isPending || isInProgress || isReady || (isCompleted && isAdmin))}
+					<button
+						type="button"
+						onclick={() => {
+							statusModalPreset = undefined;
+							showStatusModal = true;
+						}}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] bg-brand-blue px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors hover:bg-brand-blue-dark"
+					>
+						<Play class="h-4 w-4" />
+						Cambiar Estado
+					</button>
+				{/if}
+
+				{#if canManageSale && (isPending || isInProgress || isReady)}
 					<button
 						type="button"
 						onclick={() => (showEditModal = true)}
@@ -302,39 +292,8 @@
 					</button>
 				{/if}
 
-				{#if isPending && isAdmin}
-					<button
-						type="button"
-						onclick={() => {
-							transitionReason = '';
-							showInProgressConfirm = true;
-						}}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] bg-brand-blue px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors hover:bg-brand-blue-dark"
-					>
-						<Play class="h-4 w-4" />
-						En Progreso
-					</button>
-				{/if}
-
-				{#if isInProgress && canManageSale}
-					<button
-						type="button"
-						onclick={() => {
-							transitionReason = '';
-							showCompletedConfirm = true;
-						}}
-						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] px-4 py-2 text-xs font-bold text-on-primary shadow-[var(--ds-shadow-md)] transition-colors {remainingBcvUsd <=
-						0.01
-							? 'bg-success hover:bg-success/90'
-							: 'bg-brand-blue hover:bg-brand-blue-dark'}"
-					>
-						<CircleCheck class="h-4 w-4" />
-						Completar
-					</button>
-				{/if}
-
 				<!-- Grupo C: Destructivo (aislado) -->
-				{#if canManageSale && (isPending || isInProgress)}
+				{#if canManageSale && (isPending || isInProgress || isReady)}
 					<div class="ml-4 border-l border-error-container pl-4">
 						<button
 							type="button"
@@ -725,40 +684,14 @@
 	onSuccess={handleCancelSuccess}
 />
 
-<!-- Mark as In Progress confirmation -->
-<ConfirmModal
-	bind:open={showInProgressConfirm}
-	title="Marcar como En Progreso"
-	confirmLabel="Marcar En Progreso"
-	confirmColor="blue"
-	loading={transitioning}
-	permanent={transitioning}
-	confirmDisabled={!transitionReason.trim()}
-	onConfirm={handleMarkInProgress}
-	onCancel={() => {
-		showInProgressConfirm = false;
-		transitionReason = '';
-	}}
->
-	{#snippet body()}
-		<p class="mb-3 text-sm text-gray-700">
-			Va a marcar esta venta como <strong>En Progreso</strong>. Esto indica que el pedido está
-			siendo procesado.
-		</p>
-		<label
-			for="in-progress-reason"
-			class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase"
-		>
-			Motivo <span class="text-red-500">*</span>
-		</label>
-		<textarea
-			id="in-progress-reason"
-			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-			rows="2"
-			placeholder="Ej: Se envió al laboratorio..."
-			bind:value={transitionReason}></textarea>
-	{/snippet}
-</ConfirmModal>
+<SaleStatusModal
+	bind:open={showStatusModal}
+	saleId={sale.id}
+	currentStatus={sale.status as SaleStatus}
+	{isAdmin}
+	presetTargets={statusModalPreset}
+	onSuccess={handleStatusChanged}
+/>
 
 <!-- PDF Preview Modal -->
 {#if showPdfPreview}
@@ -769,37 +702,3 @@
 		onClose={() => (showPdfPreview = false)}
 	/>
 {/if}
-
-<!-- Mark as Completed confirmation -->
-<ConfirmModal
-	bind:open={showCompletedConfirm}
-	title="Completar Venta"
-	confirmLabel="Completar Venta"
-	confirmColor="green"
-	loading={transitioning}
-	permanent={transitioning}
-	confirmDisabled={!transitionReason.trim()}
-	onConfirm={handleMarkCompleted}
-	onCancel={() => {
-		showCompletedConfirm = false;
-		transitionReason = '';
-	}}
->
-	{#snippet body()}
-		<p class="mb-3 text-sm text-gray-700">
-			Va a marcar esta venta como <strong>Completada</strong>. ¿Está seguro?
-		</p>
-		<label
-			for="complete-reason"
-			class="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase"
-		>
-			Motivo <span class="text-red-500">*</span>
-		</label>
-		<textarea
-			id="complete-reason"
-			class="w-full rounded-lg border border-slate-300 p-3 text-sm text-slate-800 placeholder-slate-400 focus:border-green-400 focus:ring-1 focus:ring-green-400"
-			rows="2"
-			placeholder="Ej: Cliente retiró orden..."
-			bind:value={transitionReason}></textarea>
-	{/snippet}
-</ConfirmModal>

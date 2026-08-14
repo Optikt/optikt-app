@@ -16,7 +16,7 @@
 	import { listSales, getSalesStats } from '$lib/remote/sales.remote';
 	import { SaleFilterBar, SalesTable, SaleStatsCards } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
-	import { canOperate } from '$lib/shared/enums';
+	import { canOperate, ALL_SALE_STATUSES } from '$lib/shared/enums';
 	import type { SaleStatus } from '$lib/shared/enums';
 	import type { SaleWithRelations, SalesStats } from '$lib/server/db/queries/sales';
 	import type { PaginatedSales } from '$lib/remote/sales.remote';
@@ -31,14 +31,6 @@
 	const initialStatus = initialQuery.get('status');
 	const initialShippingPending = parseBooleanParam(initialQuery.get('shippingPending'));
 	const initialFreeItem = parseBooleanParam(initialQuery.get('freeItem'));
-
-	const ALL_SALE_STATUSES: SaleStatus[] = [
-		'PENDING',
-		'IN_PROGRESS',
-		'COMPLETED',
-		'CANCELLED',
-		'REFUNDED'
-	] as SaleStatus[];
 
 	function parseSaleStatus(value: string | null): SaleStatus | '' {
 		if (!value) return '';
