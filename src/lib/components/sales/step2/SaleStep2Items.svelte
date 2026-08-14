@@ -494,8 +494,10 @@
 			dest.oi.prescription = { ...src.oi.prescription };
 			dest.od.dp = src.od.dp;
 			dest.od.np = src.od.np;
+			dest.od.altura = src.od.altura;
 			dest.oi.dp = src.oi.dp;
 			dest.oi.np = src.oi.np;
+			dest.oi.altura = src.oi.altura;
 			dest.lensType = src.lensType;
 			dest.doctorName = src.doctorName;
 		}

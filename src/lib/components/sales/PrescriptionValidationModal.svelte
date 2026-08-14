@@ -103,7 +103,8 @@
 														addition: eye.addition
 													},
 													dp: null,
-													np: null
+													np: null,
+													altura: null
 												}}
 											/>
 											<span

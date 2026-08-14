@@ -35,13 +35,15 @@ const lensRow: SaleItemRow = {
 			enabled: true,
 			prescription: { sphere: 2, cylinder: -0.5, axis: 180, addition: 1.5 },
 			dp: null,
-			np: null
+			np: null,
+			altura: null
 		},
 		oi: {
 			enabled: true,
 			prescription: { sphere: 1.75, cylinder: -0.25, axis: 170, addition: 1.5 },
 			dp: null,
-			np: null
+			np: null,
+			altura: null
 		},
 		lensType: LensType.MONOFOCAL,
 		doctorName: ''
@@ -176,13 +178,15 @@ describe('buildPrescriptionPayload', () => {
 					enabled: true,
 					prescription: { sphere: 2, cylinder: -0.5, axis: 180, addition: 1.5 },
 					dp: null,
-					np: null
+					np: null,
+					altura: null
 				},
 				oi: {
 					enabled: true,
 					prescription: { sphere: 1.75, cylinder: -0.25, axis: 170, addition: 1.5 },
 					dp: null,
-					np: null
+					np: null,
+					altura: null
 				},
 				lensType: LensType.PROGRESSIVE,
 				doctorName: 'Dr. Martinez'

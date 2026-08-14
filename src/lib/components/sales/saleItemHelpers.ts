@@ -141,6 +141,8 @@ export interface PrescriptionFieldErrors {
 	oiDp?: string;
 	odNp?: string;
 	oiNp?: string;
+	odAltura?: string;
+	oiAltura?: string;
 	doctorName?: string;
 }
 
@@ -336,6 +338,13 @@ export function validateLensPair(pair: LensPairEntry): PrescriptionFieldErrors {
 				errors.odNp = 'NP debe ser 10-80';
 			}
 		}
+		if (pair.od.altura != null) {
+			if (!Number.isInteger(pair.od.altura)) {
+				errors.odAltura = 'Altura debe ser número entero';
+			} else if (pair.od.altura < 10 || pair.od.altura > 40) {
+				errors.odAltura = 'Altura debe ser 10-40';
+			}
+		}
 	}
 	if (pair.oi.enabled) {
 		const oi = validateNumericEyeFields(
@@ -361,6 +370,13 @@ export function validateLensPair(pair: LensPairEntry): PrescriptionFieldErrors {
 				errors.oiNp = 'NP debe ser número entero';
 			} else if (pair.oi.np < 10 || pair.oi.np > 80) {
 				errors.oiNp = 'NP debe ser 10-80';
+			}
+		}
+		if (pair.oi.altura != null) {
+			if (!Number.isInteger(pair.oi.altura)) {
+				errors.oiAltura = 'Altura debe ser número entero';
+			} else if (pair.oi.altura < 10 || pair.oi.altura > 40) {
+				errors.oiAltura = 'Altura debe ser 10-40';
 			}
 		}
 	}

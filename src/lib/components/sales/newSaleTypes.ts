@@ -19,6 +19,7 @@ export interface LensEyeEntry {
 	prescription: LensOrderedPrescription;
 	dp: number | null;
 	np: number | null;
+	altura: number | null;
 }
 
 /** A lens pair entry - both eyes sharing the same catalog item */
@@ -195,7 +196,8 @@ export function createEmptyEyeEntry(): LensEyeEntry {
 		enabled: true,
 		prescription: { sphere: null, cylinder: null, axis: null, addition: null },
 		dp: null,
-		np: null
+		np: null,
+		altura: null
 	};
 }
 

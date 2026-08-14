@@ -24,12 +24,14 @@
 				enabled: p.od.enabled,
 				dp: p.od.dp,
 				np: p.od.np,
+				altura: p.od.altura,
 				prescription: { ...p.od.prescription }
 			},
 			oi: {
 				enabled: p.oi.enabled,
 				dp: p.oi.dp,
 				np: p.oi.np,
+				altura: p.oi.altura,
 				prescription: { ...p.oi.prescription }
 			}
 		};
@@ -69,6 +71,7 @@
 		draft.oi.prescription = { ...draft.od.prescription };
 		draft.oi.dp = draft.od.dp;
 		draft.oi.np = draft.od.np;
+		draft.oi.altura = draft.od.altura;
 	}
 
 	function clearPrescription() {
@@ -81,13 +84,15 @@
 			...draft.od,
 			prescription: draft.od.enabled ? draft.od.prescription : clearPrescription(),
 			dp: draft.od.enabled ? draft.od.dp : null,
-			np: draft.od.enabled ? draft.od.np : null
+			np: draft.od.enabled ? draft.od.np : null,
+			altura: draft.od.enabled ? draft.od.altura : null
 		};
 		pair.oi = {
 			...draft.oi,
 			prescription: draft.oi.enabled ? draft.oi.prescription : clearPrescription(),
 			dp: draft.oi.enabled ? draft.oi.dp : null,
-			np: draft.oi.enabled ? draft.oi.np : null
+			np: draft.oi.enabled ? draft.oi.np : null,
+			altura: draft.oi.enabled ? draft.oi.altura : null
 		};
 		open = false;
 	}
@@ -184,7 +189,7 @@
 		<!-- Prescription table -->
 		<div
 			class="grid gap-x-1.5 gap-y-1"
-			class:grid-cols-[3.5rem_repeat(6,1fr)]={requiresAddition}
+			class:grid-cols-[3.5rem_repeat(7,1fr)]={requiresAddition}
 			class:grid-cols-[3.5rem_repeat(5,1fr)]={!requiresAddition}
 		>
 			<div class="text-center text-[10px] font-semibold text-outline uppercase"></div>
@@ -193,6 +198,7 @@
 			<div class="text-center text-[10px] font-semibold text-outline uppercase">EJE</div>
 			{#if requiresAddition}
 				<div class="text-center text-[10px] font-semibold text-outline uppercase">ADD</div>
+				<div class="text-center text-[10px] font-semibold text-outline uppercase">ALT</div>
 			{/if}
 			<div class="text-center text-[10px] font-semibold text-outline uppercase">DP</div>
 			<div class="text-center text-[10px] font-semibold text-outline uppercase">DNP</div>
@@ -261,6 +267,22 @@
 						max={5}
 						placeholder="+1.50"
 						bind:value={draft.od.prescription.addition}
+						disabled={!draft.od.enabled}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+					/>
+				</div>
+				<div
+					class="rounded-lg border bg-blue-50/40 p-0.5 {draftRxErrs.odAltura
+						? 'border-red-300'
+						: 'border-blue-200/60'}"
+				>
+					<input
+						type="number"
+						step="1"
+						min={10}
+						max={40}
+						placeholder="18"
+						bind:value={draft.od.altura}
 						disabled={!draft.od.enabled}
 						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 					/>
@@ -363,6 +385,22 @@
 						max={5}
 						placeholder="+1.50"
 						bind:value={draft.oi.prescription.addition}
+						disabled={!draft.oi.enabled}
+						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
+					/>
+				</div>
+				<div
+					class="rounded-lg border bg-rose-50/40 p-0.5 {draftRxErrs.oiAltura
+						? 'border-red-300'
+						: 'border-rose-200/60'}"
+				>
+					<input
+						type="number"
+						step="1"
+						min={10}
+						max={40}
+						placeholder="18"
+						bind:value={draft.oi.altura}
 						disabled={!draft.oi.enabled}
 						class="w-full rounded border-0 bg-transparent px-1 py-1 text-right font-mono text-xs text-slate-700 placeholder-slate-400 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:text-slate-400 disabled:placeholder-slate-300"
 					/>
