@@ -11,14 +11,15 @@ export interface PrescriptionFormData {
 	odCylinder: string;
 	odAxis: string;
 	odAddition: string;
+	odAltura: string;
 	osSphere: string;
 	osCylinder: string;
 	osAxis: string;
 	osAddition: string;
+	osAltura: string;
 	dp: string;
 	npRight: string;
 	npLeft: string;
-	altura: string;
 	treatmentAntiReflective: boolean;
 	treatmentBlueBlock: boolean;
 	treatmentPhotochromic: boolean;
@@ -46,14 +47,15 @@ export function createPrescriptionFormData(): PrescriptionFormData {
 		odCylinder: '',
 		odAxis: '',
 		odAddition: '',
+		odAltura: '',
 		osSphere: '',
 		osCylinder: '',
 		osAxis: '',
 		osAddition: '',
+		osAltura: '',
 		dp: '',
 		npRight: '',
 		npLeft: '',
-		altura: '',
 		treatmentAntiReflective: false,
 		treatmentBlueBlock: false,
 		treatmentPhotochromic: false,
@@ -77,14 +79,15 @@ export function prescriptionToFormData(prescription: Prescription): Prescription
 		odCylinder: toInputValue(prescription.odCylinder),
 		odAxis: toInputValue(prescription.odAxis),
 		odAddition: toInputValue(prescription.odAddition),
+		odAltura: toInputValue(prescription.odAltura),
 		osSphere: toInputValue(prescription.osSphere),
 		osCylinder: toInputValue(prescription.osCylinder),
 		osAxis: toInputValue(prescription.osAxis),
 		osAddition: toInputValue(prescription.osAddition),
+		osAltura: toInputValue(prescription.osAltura),
 		dp: toInputValue(prescription.dp),
 		npRight: toInputValue(prescription.npRight),
 		npLeft: toInputValue(prescription.npLeft),
-		altura: toInputValue(prescription.altura),
 		treatmentAntiReflective: prescription.treatments?.antiReflective ?? false,
 		treatmentBlueBlock: prescription.treatments?.blueBlock ?? false,
 		treatmentPhotochromic: prescription.treatments?.photochromic ?? false,

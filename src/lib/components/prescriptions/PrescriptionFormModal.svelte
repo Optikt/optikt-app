@@ -71,7 +71,9 @@
 		dp: '' as string,
 		npRight: '' as string,
 		npLeft: '' as string,
-		altura: '' as string,
+		// Altura per eye
+		odAltura: '' as string,
+		osAltura: '' as string,
 		// Treatments
 		treatmentAntiReflective: false,
 		treatmentBlueBlock: false,
@@ -101,7 +103,8 @@
 			untrack(() => {
 				formData.odAddition = '';
 				formData.osAddition = '';
-				formData.altura = '';
+				formData.odAltura = '';
+				formData.osAltura = '';
 			});
 		}
 	});
@@ -128,7 +131,8 @@
 						dp: prescription.dp?.toString() ?? '',
 						npRight: prescription.npRight?.toString() ?? '',
 						npLeft: prescription.npLeft?.toString() ?? '',
-						altura: prescription.altura?.toString() ?? '',
+						odAltura: prescription.odAltura?.toString() ?? '',
+						osAltura: prescription.osAltura?.toString() ?? '',
 						treatmentAntiReflective: prescription.treatments?.antiReflective ?? false,
 						treatmentBlueBlock: prescription.treatments?.blueBlock ?? false,
 						treatmentPhotochromic: prescription.treatments?.photochromic ?? false,
@@ -153,7 +157,8 @@
 						dp: '',
 						npRight: '',
 						npLeft: '',
-						altura: '',
+						odAltura: '',
+						osAltura: '',
 						treatmentAntiReflective: false,
 						treatmentBlueBlock: false,
 						treatmentPhotochromic: false,
@@ -456,15 +461,24 @@
 				/>
 			</div>
 			{#if showAltura}
-				<div class="mt-2 w-1/3">
+				<div class="mt-2 grid grid-cols-2 gap-3">
 					<FormInput
-						name="altura"
-						label="Altura (mm)"
+						name="odAltura"
+						label="Altura OD (mm)"
 						type="number"
 						min={0}
 						placeholder="18"
-						bind:value={formData.altura}
-						error={formInstance.fields.altura?.issues()}
+						bind:value={formData.odAltura}
+						error={formInstance.fields.odAltura?.issues()}
+					/>
+					<FormInput
+						name="osAltura"
+						label="Altura OI (mm)"
+						type="number"
+						min={0}
+						placeholder="18"
+						bind:value={formData.osAltura}
+						error={formInstance.fields.osAltura?.issues()}
 					/>
 				</div>
 			{/if}

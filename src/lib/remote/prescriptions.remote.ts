@@ -160,16 +160,17 @@ export const updatePrescriptionForm = form(
 		if (data.odAxis !== undefined) updateData.odAxis = normalizeOpticalValue(data.odAxis);
 		if (data.odAddition !== undefined)
 			updateData.odAddition = normalizeOpticalValue(data.odAddition);
+		if (data.odAltura !== undefined) updateData.odAltura = data.odAltura ?? null;
 		if (data.osSphere !== undefined) updateData.osSphere = normalizeOpticalValue(data.osSphere);
 		if (data.osCylinder !== undefined)
 			updateData.osCylinder = normalizeOpticalValue(data.osCylinder);
 		if (data.osAxis !== undefined) updateData.osAxis = normalizeOpticalValue(data.osAxis);
 		if (data.osAddition !== undefined)
 			updateData.osAddition = normalizeOpticalValue(data.osAddition);
+		if (data.osAltura !== undefined) updateData.osAltura = data.osAltura ?? null;
 		if (data.dp !== undefined) updateData.dp = data.dp ?? null;
 		if (data.npRight !== undefined) updateData.npRight = data.npRight ?? null;
 		if (data.npLeft !== undefined) updateData.npLeft = data.npLeft ?? null;
-		if (data.altura !== undefined) updateData.altura = data.altura ?? null;
 		// Build treatments if any treatment field is present
 		if (
 			data.treatmentAntiReflective !== undefined ||

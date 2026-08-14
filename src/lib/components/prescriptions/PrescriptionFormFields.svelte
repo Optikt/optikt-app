@@ -58,14 +58,15 @@
 		| 'odCylinder'
 		| 'odAxis'
 		| 'odAddition'
+		| 'odAltura'
 		| 'osSphere'
 		| 'osCylinder'
 		| 'osAxis'
 		| 'osAddition'
+		| 'osAltura'
 		| 'dp'
 		| 'npRight'
-		| 'npLeft'
-		| 'altura';
+		| 'npLeft';
 
 	interface NumericFieldConfig {
 		inputmode: 'decimal' | 'numeric';
@@ -191,7 +192,16 @@
 			allowDecimal: false,
 			decimals: 0
 		},
-		altura: {
+		odAltura: {
+			inputmode: 'numeric',
+			step: '1',
+			min: 10,
+			max: 40,
+			allowNegative: false,
+			allowDecimal: false,
+			decimals: 0
+		},
+		osAltura: {
 			inputmode: 'numeric',
 			step: '1',
 			min: 10,
@@ -550,7 +560,7 @@
 
 			<div
 				class="grid gap-4 sm:grid-cols-2"
-				class:xl:grid-cols-4={showAltura}
+				class:xl:grid-cols-5={showAltura}
 				class:xl:grid-cols-3={!showAltura}
 			>
 				{@render measurementInput('dp', 'rx-dp', 'DP (mm)', '62')}
@@ -558,7 +568,8 @@
 				{@render measurementInput('npLeft', 'rx-np-left', 'NP Izq', '31')}
 
 				{#if showAltura}
-					{@render measurementInput('altura', 'rx-altura', 'Altura (mm)', '18')}
+					{@render measurementInput('odAltura', 'rx-od-altura', 'Alt Der', '18')}
+					{@render measurementInput('osAltura', 'rx-os-altura', 'Alt Izq', '18')}
 				{/if}
 			</div>
 		</section>

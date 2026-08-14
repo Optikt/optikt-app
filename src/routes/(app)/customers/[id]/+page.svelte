@@ -524,12 +524,19 @@
 								<span>DP/NP</span>
 								<span class="font-mono text-white">{formatDpNp(currentPrescription)}</span>
 							</div>
-							{#if currentPrescription.altura != null}
+							{#if currentPrescription.odAltura != null || currentPrescription.osAltura != null}
 								<div
 									class="flex items-center justify-between gap-3 rounded-lg bg-white/5 px-3 py-2"
 								>
 									<span>Altura</span>
-									<span class="font-mono text-white">{currentPrescription.altura}mm</span>
+									<span class="font-mono text-white"
+										>{currentPrescription.odAltura != null
+											? `OD ${currentPrescription.odAltura}mm`
+											: '—'}
+										/ {currentPrescription.osAltura != null
+											? `OI ${currentPrescription.osAltura}mm`
+											: '—'}</span
+									>
 								</div>
 							{/if}
 						</div>
@@ -868,8 +875,17 @@
 													class="mt-4 flex flex-wrap items-center gap-5 text-sm text-on-surface-variant"
 												>
 													<span><strong>DP/NP:</strong> {formatDpNp(prescription)}</span>
-													{#if prescription.altura != null}
-														<span><strong>Altura:</strong> {prescription.altura}mm</span>
+													{#if prescription.odAltura != null || prescription.osAltura != null}
+														<span
+															><strong>Altura:</strong>
+															{prescription.odAltura != null
+																? `OD ${prescription.odAltura}mm`
+																: 'OD —'}
+															/
+															{prescription.osAltura != null
+																? `OI ${prescription.osAltura}mm`
+																: 'OI —'}</span
+														>
 													{/if}
 													{#if prescription.doctorName}
 														<span><strong>Doctor:</strong> {prescription.doctorName}</span>
