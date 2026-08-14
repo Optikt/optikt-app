@@ -23,7 +23,7 @@ import {
 } from '$lib/shared/enums';
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
-import { AxisSchema } from '$lib/schemas/prescriptions';
+import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -101,11 +101,13 @@ export const SaleItemSchema = z
 		odCylinder: OptionalCylinderSchema.optional(),
 		odAxis: AxisSchema.optional(),
 		odAddition: OptionalAdditionSchema.optional(),
+		odAltura: AlturaSchema.optional(),
 		/** Prescription snapshot: left eye */
 		osSphere: OptionalSphereSchema.optional(),
 		osCylinder: OptionalCylinderSchema.optional(),
 		osAxis: AxisSchema.optional(),
 		osAddition: OptionalAdditionSchema.optional(),
+		osAltura: AlturaSchema.optional(),
 		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
 		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),
 		discount: CoercedNumber.min(0).default(0),

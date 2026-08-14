@@ -183,18 +183,18 @@ const PrescriptionBaseSchema = z.object({
 	odCylinder: OptionalCylinderSchema,
 	odAxis: AxisSchema.optional(),
 	odAddition: OptionalAdditionSchema,
+	odAltura: AlturaSchema.optional(),
 	// Left eye (OS)
 	osSphere: OptionalSphereSchema,
 	osCylinder: OptionalCylinderSchema,
 	osAxis: AxisSchema.optional(),
 	osAddition: OptionalAdditionSchema,
+	osAltura: AlturaSchema.optional(),
 	// Distancia Pupilar (DP) - total
 	dp: DpSchema.optional(),
 	// Nasopupilar (NP) - per-eye
 	npRight: NpSchema.optional(),
 	npLeft: NpSchema.optional(),
-	// Altura (segment height) - for bifocal/progressive lenses
-	altura: AlturaSchema.optional(),
 	// Treatments (separate fields for form compatibility)
 	treatmentAntiReflective: TreatmentAntiReflectiveSchema,
 	treatmentBlueBlock: TreatmentBlueBlockSchema,
