@@ -211,9 +211,17 @@ export const lookupCustomer = query(CustomerLookupSchema, async (data) => {
  * Persists items with prescriptions and decrements product stock.
  */
 export const createSale = command(CreateSaleSchema, async (data) => {
-	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
+	const user = requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
 	const context = getAuditContext();
+
+	// Only ADMIN can assign a custom order number (backfill historical sales).
+	if (data.orderNumber && user.role !== UserRole.ADMIN) {
+		return {
+			success: false as const,
+			error: 'Solo administradores pueden asignar un número de orden'
+		};
+	}
 
 	// Validate customer reference (reads only - safe outside transaction)
 	let existingCustomerId: string | null = null;
@@ -341,7 +349,19 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 		}
 
 		// Create the sale header
-		const orderNumber = await getNextOrderNumber(tx);
+		// Custom order number (admin backfill) or next sequential (MAX + 1),
+		// so a backfilled #215 makes the default continue from #216.
+		const orderNumber = data.orderNumber ?? (await getNextOrderNumber(tx));
+		if (data.orderNumber) {
+			const [existing] = await tx
+				.select({ id: sales.id })
+				.from(sales)
+				.where(eq(sales.orderNumber, orderNumber));
+			if (existing) {
+				throw new Error(`El número de orden #${orderNumber} ya existe`);
+			}
+		}
+
 		const [newSale] = await tx
 			.insert(sales)
 			.values({
@@ -916,6 +936,27 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 		};
 	}
 
+	// Order number reassignment: admin only (code-only for now, no UI field yet).
+	if (data.orderNumber && !isAdmin) {
+		return {
+			success: false as const,
+			error: 'Solo administradores pueden cambiar el número de orden'
+		};
+	}
+
+	if (data.orderNumber) {
+		const [existingOrder] = await db
+			.select({ id: sales.id })
+			.from(sales)
+			.where(eq(sales.orderNumber, data.orderNumber));
+		if (existingOrder) {
+			return {
+				success: false as const,
+				error: `El número de orden #${data.orderNumber} ya existe`
+			};
+		}
+	}
+
 	// Payment protection
 	const paidAmount = existing.paidAmountBcvUsd;
 
@@ -1123,6 +1164,7 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 			if (data.notes !== undefined) updateData.notes = data.notes;
 			if (data.discount !== undefined) updateData.discount = data.discount;
 			if (data.discountType !== undefined) updateData.discountType = data.discountType;
+			if (data.orderNumber !== undefined) updateData.orderNumber = data.orderNumber;
 
 			const [updated] = await tx
 				.update(sales)
@@ -1144,6 +1186,7 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 		if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
 		if (data.snapshotTaxRate !== undefined) headerUpdate.snapshotTaxRate = data.snapshotTaxRate;
 		if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
+		if (data.orderNumber !== undefined) headerUpdate.orderNumber = data.orderNumber;
 
 		// If discount changed without items, recalculate total
 		if (data.discount !== undefined || data.discountType !== undefined) {
@@ -1262,4 +1305,17 @@ export const setSaleStatus = command(SetSaleStatusSchema, async (data) => {
 	);
 
 	return { success: true as const, sale: updated };
+});
+
+// ============================================================================
+// ORDER NUMBER
+// ============================================================================
+
+/**
+ * Get the next suggested order number (MAX + 1).
+ * Used to reset the create-sale form suggestion after a manual override.
+ */
+export const getNextOrderNumberCommand = query(EmptySchema, async (): Promise<number> => {
+	requireAuth();
+	return getNextOrderNumber();
 });
