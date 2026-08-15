@@ -1,7 +1,8 @@
-import type { Handle, HandleServerError } from '@sveltejs/kit';
+import type { Handle, HandleServerError, HandleValidationError } from '@sveltejs/kit';
 import * as auth from '$lib/server/auth';
 import { registerPdfBrowserShutdown } from '$lib/server/pdf';
 import { logger } from '$lib/utils/logger';
+import { buildValidationMessage } from '$lib/utils/validationError';
 
 registerPdfBrowserShutdown();
 
@@ -73,4 +74,15 @@ const serverHandleError: HandleServerError = ({ error, event, status, message })
 };
 
 export const handleError = serverHandleError;
+
+const serverHandleValidationError: HandleValidationError = ({ issues, event }) => {
+	logger.error('Remote function schema validation failed', undefined, {
+		url: event.url.pathname,
+		issues
+	});
+
+	return { message: buildValidationMessage(issues) };
+};
+
+export const handleValidationError = serverHandleValidationError;
 export const handle: Handle = handleAuth;
