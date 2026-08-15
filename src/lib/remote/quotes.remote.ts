@@ -64,7 +64,7 @@ import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
-import { monthStart, nowISO, toUTCString } from '$lib/dates';
+import { monthStart, nowISO, toISODate, nowUTC, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
 import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
@@ -650,7 +650,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 	const { sale, prescription } = await db.transaction(async (tx) => {
 		const now = nowISO();
 		const orderNumber = await getNextOrderNumber(tx);
-		const prescriptionPayload = derivePrescriptionFromQuoteItems(items, now.slice(0, 10));
+		const prescriptionPayload = derivePrescriptionFromQuoteItems(items, toISODate(nowUTC()));
 		let createdPrescription: Prescription | null = null;
 
 		if (prescriptionPayload) {
@@ -669,7 +669,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				orderNumber,
 				customerId: quote.customerId!,
 				sellerId: context.userId!,
-				saleDate: now.slice(0, 10),
+				saleDate: toISODate(nowUTC()),
 				status: SaleStatus.PENDING,
 				subtotal: quote.subtotal,
 				discount: quote.discount,

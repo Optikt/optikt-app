@@ -69,7 +69,7 @@ import type {
 } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
-import { nowISO } from '$lib/dates';
+import { nowISO, toISODate, nowUTC } from '$lib/dates';
 import {
 	ADJUSTMENT_REPORT_CATEGORIES,
 	AdjustmentReason,
@@ -819,7 +819,7 @@ export const adjustLensStock = command(ManualLensAdjustmentSchema, async (data) 
 							supplierId: item.supplierId,
 							status: PurchaseOrderStatus.CONFIRMED,
 							documentType: PurchaseDocumentType.INVOICE,
-							orderDate: now.slice(0, 10),
+							orderDate: toISODate(nowUTC()),
 							bcvRate: 0,
 							notes: 'Soporte técnico para ajuste manual de lente STOCK',
 							createdById: user.id,
