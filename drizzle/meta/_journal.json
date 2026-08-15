@@ -257,21 +257,21 @@
     {
       "idx": 36,
       "version": "7",
-      "when": 1787176000000,
+      "when": 1786622400000,
       "tag": "0036_is_cashea_sale",
       "breakpoints": true
     },
     {
       "idx": 37,
       "version": "7",
-      "when": 1788100000000,
+      "when": 1786694400000,
       "tag": "0037_backup_failed_notification",
       "breakpoints": true
     },
     {
       "idx": 38,
       "version": "7",
-      "when": 1788790000000,
+      "when": 1786705200000,
       "tag": "0038_add_ready_sale_status",
       "breakpoints": true
     },
