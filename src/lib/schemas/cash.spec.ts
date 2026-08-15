@@ -7,7 +7,7 @@ const baseUsd = {
 	currency: 'USD',
 	amount: 500,
 	bcvRate: 36.5,
-	expenseDate: '2025-05-15T12:00:00.000Z'
+	expenseDate: '2025-05-15'
 };
 
 describe('CreateExpenseSchema', () => {

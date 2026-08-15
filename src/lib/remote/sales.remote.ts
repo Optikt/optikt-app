@@ -78,7 +78,7 @@ import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { createExpense } from '$lib/server/db/queries/cash';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { inventoryMovements } from '$lib/server/db/schema';
-import { monthStart, nowISO, toUTCString } from '$lib/dates';
+import { monthStart, nowISO, toISODate, nowUTC, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
@@ -751,7 +751,7 @@ export const cancelSale = command(CancelSaleSchema, async (data) => {
 					exchangeRate: null,
 					bcvRate: refundBcvRate,
 					rateType: null,
-					expenseDate: now,
+					expenseDate: toISODate(nowUTC()),
 					registeredById: context.userId!,
 					reference: `SALE:${existing.id}`,
 					notes: data.refundNotes ?? null

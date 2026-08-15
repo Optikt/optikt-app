@@ -34,7 +34,7 @@ export const CreateExpenseSchema = z
 		exchangeRate: CoercedNumber.positive('Tasa debe ser mayor a 0').optional(),
 		bcvRate: CoercedNumber.positive('Tasa BCV debe ser mayor a 0'),
 		rateType: RateTypeEnum.optional(),
-		expenseDate: z.iso.datetime('Fecha del gasto requerida'),
+		expenseDate: z.iso.date('Fecha del gasto requerida'),
 		reference: z.string().trim().max(100).optional(),
 		notes: z.string().trim().max(1000).optional()
 	})

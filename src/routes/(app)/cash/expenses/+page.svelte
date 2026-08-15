@@ -143,7 +143,6 @@
 				toast.error('Tasa inválida');
 				return;
 			}
-			const isoDate = `${form.expenseDate}T12:00:00.000Z`;
 			await createExpenseCommand({
 				category: form.category,
 				description: form.description.trim(),
@@ -152,7 +151,7 @@
 				exchangeRate,
 				bcvRate,
 				rateType: needsRateType ? form.rateType : undefined,
-				expenseDate: isoDate,
+				expenseDate: form.expenseDate,
 				reference: form.reference.trim() || undefined,
 				notes: form.notes.trim() || undefined
 			});
