@@ -819,7 +819,7 @@ export const adjustLensStock = command(ManualLensAdjustmentSchema, async (data) 
 							supplierId: item.supplierId,
 							status: PurchaseOrderStatus.CONFIRMED,
 							documentType: PurchaseDocumentType.INVOICE,
-							orderDate: now,
+							orderDate: now.slice(0, 10),
 							bcvRate: 0,
 							notes: 'Soporte técnico para ajuste manual de lente STOCK',
 							createdById: user.id,

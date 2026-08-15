@@ -669,7 +669,7 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				orderNumber,
 				customerId: quote.customerId!,
 				sellerId: context.userId!,
-				saleDate: now,
+				saleDate: now.slice(0, 10),
 				status: SaleStatus.PENDING,
 				subtotal: quote.subtotal,
 				discount: quote.discount,

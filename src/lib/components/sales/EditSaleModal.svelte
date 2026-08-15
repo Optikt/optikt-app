@@ -471,7 +471,7 @@
 		const payload: UpdateSaleInput = { id: sale.id, reason: reason.trim() };
 
 		if (saleDate !== sale.saleDate.slice(0, 10)) {
-			payload.saleDate = new Date(saleDate + 'T12:00:00').toISOString();
+			payload.saleDate = saleDate;
 		}
 		if (notes !== (sale.notes ?? '')) {
 			payload.notes = notes || undefined;
