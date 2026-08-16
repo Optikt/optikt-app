@@ -302,7 +302,19 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ---
 
-### FP3 · public-catalog-api 🔴
+### FP6 · Carga lazy del catálogo + búsqueda con ranking 🔴
+
+**Problema:** `/sales/new`, `/purchases/new` y `/sales/[id]` cargan el catálogo completo en SSR (471 productos + 240 lentes con relaciones ≈ 1MB JSON por página). La DB no es el cuello — es serialización + transferencia + parse + hidratación. Resultado: segundos de espera al abrir "Nueva venta"/"Nueva compra".
+
+**Por qué importa:** Es la acción más frecuente del día (vender). Cada apertura de wizard espera. Además el search bar global (`universalSearch`) busca con `ilike` tonto ordenado por createdAt — TODO explícito en CommandSearch.svelte:26.
+
+**Contras:** El search pasa de filtro local instantáneo a roundtrip server (mitigado con debounce + loading + cache). Reescritura de los pickers de lentes (typeahead con ranking).
+
+**Dificultad:** Media (5-7 días). **Solución:** (a) SSR mínimo (suppliers + orderNumber) en las 3 páginas. (b) Remote `searchCatalog` reutilizando el search con ranking existente: relevancia SQL para productos (`getAllProductsWithRelations({ search, limit })`) y token+`computeRelevanceScore` para lentes (`getLensCatalogItemsWithRelations({ search })` — el de `/lenses`, ya perfecto). (c) Cache del wizard (`Map<id, obj>`) al agregar items — helpers existentes sin cambios. (d) `universalSearch` migrado al mismo ranking (aditivo, DTOs intactos). Plan detallado: `docs/plans/lazy-catalog-search.md`.
+
+**Estado:** Plan activo. Sin empezar.
+
+---
 
 **Problema:** La óptica no tiene presencia web. No hay landing page, no hay catálogo público. El plan anterior (API Go + Tailscale Funnel + RustFS) se descartó por fragilidad ante cortes de luz.
 
@@ -457,6 +469,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | FP2 · backup-ui                | Completado              |
 | ✅        | FP4 · Estados de venta         | Completado              |
 | 🟡        | FP5 · Historial estados venta  | 1-2 días                |
+| 🔴        | FP6 · Catálogo lazy + ranking | 5-7 días                |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
@@ -465,7 +478,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | DT11 · Dead code componentes  | 1 día                   |
 | 🟢        | DT12 · Tablas duplicadas      | 2 días                  |
 | 🟢        | DT13 · Enums moneda           | 2 días                  |
-| 🟡        | DT14 · Wizard compras SSR     | 2 días                  |
+| 🟡        | DT14 · Wizard compras SSR     | Absorbido por FP6       |
 | 🟡        | DT15 · Altura en presupuestos | 2 días                  |
 | ❌        | FP1 · preserve-list-filters    | 1 día                   |
 | 🔴        | FP3 · public-catalog-api       | 15 días                 |
@@ -485,7 +498,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~119 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1; DT11-13 (5 días) para limpiar deuda low-hanging.
+**Total estimado:** ~125 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1; DT11-13 (5 días) para limpiar deuda low-hanging.
 
 ---
 
