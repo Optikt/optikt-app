@@ -1,11 +1,13 @@
 <script lang="ts">
-	import SelectInput from '$lib/components/ui/SelectInput.svelte';
-	import { TriangleAlert, Eye, Package } from '@lucide/svelte';
+	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import { TriangleAlert, Eye, Package, Loader2 } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import { formatPrice, normalizeSingleSelectValue } from '$lib/utils';
+	import { formatPrice, logger } from '$lib/utils';
 	import { getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
+	import { searchCatalog, getCatalogItemsByIds } from '$lib/remote/catalog.remote';
+	import { cacheCatalogItems } from './catalogCache.svelte';
 
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;
 
@@ -22,17 +24,13 @@
 		kind: 'product' | 'lens';
 		/** Selected product or lens ID */
 		value: string;
-		/** Available products */
-		products?: ProductWithRelations[];
-		/** Available lens catalog items */
-		lensItems?: LensCatalogItemWithRelations[];
 		/** Label */
 		label?: string;
 		/** Callback when selection changes, passes unit price */
 		onselect?: (id: string, unitPrice: number) => void;
 	}
 
-	let { kind, value = '', products = [], lensItems = [], label, onselect }: Props = $props();
+	let { kind, value = '', label, onselect }: Props = $props();
 
 	interface SelectOption {
 		id: string;
@@ -47,8 +45,15 @@
 		inventoryMode?: string;
 	}
 
-	const productOptions: SelectOption[] = $derived(
-		products.map((p) => ({
+	let options = $state<SelectOption[]>([]);
+	let searching = $state(false);
+	let loadedValue = $state('');
+
+	let searchTimer: ReturnType<typeof setTimeout> | undefined;
+	let searchSeq = 0;
+
+	function mapProducts(list: ProductWithRelations[]): SelectOption[] {
+		return list.map((p) => ({
 			id: p.id,
 			label: `${p.name}${p.sku ? ` (${p.sku})` : ''}`,
 			name: p.name,
@@ -58,11 +63,11 @@
 			price: p.currentSalePrice ?? 0,
 			productType: p.type,
 			source: undefined
-		}))
-	);
+		}));
+	}
 
-	const lensOptions: SelectOption[] = $derived(
-		lensItems.map((l) => ({
+	function mapLenses(list: LensCatalogItemWithRelations[]): SelectOption[] {
+		return list.map((l) => ({
 			id: l.id,
 			label: l.name,
 			name: l.name,
@@ -73,27 +78,53 @@
 			productType: '',
 			source: l.source,
 			inventoryMode: l.inventoryMode
-		}))
-	);
+		}));
+	}
 
-	const options = $derived(kind === 'product' ? productOptions : lensOptions);
-	const placeholder = $derived(kind === 'product' ? 'Buscar producto...' : 'Buscar lente...');
-	const visibleValue = $derived(normalizeSingleSelectValue(value, options as SelectOption[], 'id'));
-
-	/** Currently selected item's stock (works for both products and lenses) */
-	const selectedStock = $derived.by((): number | null => {
-		if (!value) return null;
-		if (kind === 'product') {
-			const p = products.find((p) => p.id === value);
-			return p?.stock ?? null;
+	async function runSearch(query: string) {
+		const seq = ++searchSeq;
+		searching = true;
+		try {
+			const results = await searchCatalog({ q: query, limit: 20 });
+			if (seq !== searchSeq) return;
+			cacheCatalogItems(results.products, results.lensItems);
+			options = kind === 'product' ? mapProducts(results.products) : mapLenses(results.lensItems);
+		} catch (e) {
+			if (seq !== searchSeq) return;
+			options = [];
+			logger.error('Error en búsqueda de catálogo', e);
+		} finally {
+			if (seq === searchSeq) searching = false;
 		}
-		const l = lensItems.find((l) => l.id === value);
-		return l?.stock ?? null;
+	}
+
+	function handleQueryChange(query: string) {
+		clearTimeout(searchTimer);
+		if (query.trim().length < 2) {
+			options = [];
+			return;
+		}
+		searchTimer = setTimeout(() => void runSearch(query.trim()), 250);
+	}
+
+	// Load the currently-selected item so the combobox shows its label.
+	$effect(() => {
+		if (value && value !== loadedValue) {
+			loadedValue = value;
+			void getCatalogItemsByIds(
+				kind === 'product' ? { productIds: [value] } : { lensIds: [value] }
+			).then((results) => {
+				cacheCatalogItems(results.products, results.lensItems);
+				options = kind === 'product' ? mapProducts(results.products) : mapLenses(results.lensItems);
+			});
+		}
 	});
 
 	const selectedOption = $derived(options.find((opt) => opt.id === value));
 	const hasStockWarning = $derived(
-		selectedOption?.inventoryMode === 'STOCK' && selectedStock !== null && selectedStock <= 0
+		selectedOption?.inventoryMode === 'STOCK' &&
+			selectedOption.stock !== null &&
+			selectedOption.stock <= 0
 	);
 	const isOnDemand = $derived(
 		!!value && kind === 'lens' && selectedOption?.inventoryMode === 'ON_DEMAND'
@@ -101,21 +132,14 @@
 
 	function handleChange(selected: SelectOption | null) {
 		const newId = selected?.id ?? '';
-
-		if (newId && onselect) {
-			if (kind === 'product') {
-				const product = products.find((p) => p.id === newId);
-				if (product) onselect(newId, product.currentSalePrice ?? 0);
-			} else {
-				const lens = lensItems.find((l) => l.id === newId);
-				if (lens) {
-					onselect(newId, lens.salePrice ?? lens.basePrice);
-				}
-			}
-		} else if (!newId && onselect) {
-			onselect('', 0);
+		if (newId) {
+			onselect?.(newId, selected?.price ?? 0);
+		} else {
+			onselect?.('', 0);
 		}
 	}
+
+	const placeholder = $derived(kind === 'product' ? 'Buscar producto...' : 'Buscar lente...');
 </script>
 
 <div>
@@ -123,18 +147,20 @@
 		<p class="mb-1 text-sm font-medium text-on-surface-variant">{label}</p>
 	{/if}
 
-	<SelectInput
+	<SearchCombobox
+		{options}
 		{placeholder}
-		options={options as { name: string; id: string | number }[]}
-		value={visibleValue}
-		valueField="id"
-		labelField="label"
-		onChange={handleChange}
+		{value}
+		getId={(s: unknown) => (s as SelectOption).id}
+		getLabel={(s: unknown) => (s as SelectOption).label}
+		onquerychange={handleQueryChange}
+		onselect={(s: unknown) => handleChange(s as SelectOption)}
+		onclear={() => handleChange(null)}
 	>
-		{#snippet option(item)}
-			{@const opt = item as SelectOption}
-			{@const badge = getBadge(opt.productType)}
-			{@const Icon = getIcon(opt)}
+		{#snippet children(opt)}
+			{@const item = opt.option as SelectOption}
+			{@const badge = getBadge(item.productType)}
+			{@const Icon = getIcon(item)}
 			<div class="flex items-center gap-2.5 py-0.5">
 				<div
 					class="flex h-7 w-7 min-w-7 items-center justify-center rounded-md"
@@ -145,60 +171,39 @@
 				</div>
 				<div class="flex min-w-0 flex-1 flex-col gap-px">
 					<div class="flex flex-wrap items-center gap-1.5">
-						<span class="font-semibold text-slate-800">{opt.name}</span>
-						{#if opt.brand}
-							<span class="text-xs text-slate-500">· {opt.brand}</span>
+						<span class="font-semibold text-slate-800">{item.name}</span>
+						{#if item.brand}
+							<span class="text-xs text-slate-500">· {item.brand}</span>
 						{/if}
-						{#if opt.stock !== null}
-							{#if opt.stock <= 0}
+						{#if item.stock !== null}
+							{#if item.stock <= 0}
 								<span class="rounded-full bg-red-50 px-1.5 py-px text-xs font-medium text-red-600">
 									<strong>Sin stock</strong>
 								</span>
-							{:else if opt.stock <= 3}
-								<span class="text-xs font-medium text-amber-600">{opt.stock} disp.</span>
+							{:else if item.stock <= 3}
+								<span class="text-xs font-medium text-amber-600">{item.stock} disp.</span>
 							{:else}
-								<span class="text-xs font-medium text-green-600">{opt.stock} disp.</span>
+								<span class="text-xs font-medium text-green-600">{item.stock} disp.</span>
 							{/if}
-						{:else if opt.source}
+						{:else if item.source}
 							<span class="rounded-full bg-sky-50 px-1.5 py-px text-xs font-medium text-sky-600"
 								>Por pedido</span
 							>
 						{/if}
 					</div>
 					<div class="flex items-center gap-2 text-[0.8rem]">
-						{#if opt.sku}
-							<span class="font-mono text-slate-500">{opt.sku}</span>
+						{#if item.sku}
+							<span class="font-mono text-slate-500">{item.sku}</span>
 						{/if}
-						<span class="font-semibold text-blue-800">{formatPrice(opt.price)}</span>
+						<span class="font-semibold text-blue-800">{formatPrice(item.price)}</span>
+						{#if searching && opt.highlighted}
+							<Loader2 class="h-3.5 w-3.5 animate-spin text-slate-400" />
+						{/if}
 					</div>
 				</div>
 			</div>
 		{/snippet}
-
-		{#snippet selection(selectedOptions)}
-			{@const opt = selectedOptions[0] as SelectOption}
-			{@const badge = getBadge(opt.productType)}
-			{@const Icon = getIcon(opt)}
-			<div class="flex items-center gap-1.5">
-				<div
-					class="flex h-5.5 w-5.5 min-w-5.5 items-center justify-center rounded"
-					style:background={badge.bg}
-					style:color={badge.text}
-				>
-					<Icon class="h-3 w-3" />
-				</div>
-				<span class="font-medium">{opt.name}</span>
-				{#if opt.inventoryMode === 'STOCK' && opt.stock !== null && opt.stock <= 0}
-					<span class="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-						<TriangleAlert class="h-3 w-3" />
-						Sin stock
-					</span>
-				{:else if opt.inventoryMode === 'ON_DEMAND'}
-					<span class="text-xs font-medium text-sky-600">Por pedido</span>
-				{/if}
-			</div>
-		{/snippet}
-	</SelectInput>
+	</SearchCombobox>
 
 	{#if isOnDemand}
 		<div

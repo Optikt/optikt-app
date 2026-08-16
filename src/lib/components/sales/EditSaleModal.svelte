@@ -24,33 +24,33 @@
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import CasheaCheckbox from './CasheaCheckbox.svelte';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import ItemSelect from './ItemSelect.svelte';
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
+	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
+	import { cacheCatalogItems, getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
 
 	interface Props {
 		open: boolean;
 		sale: SaleWithRelations;
 		items: SaleItemWithDetails[];
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		treatments: SupplierTreatment[];
 		onSuccess?: () => void;
 	}
 
-	let {
-		open = $bindable(),
-		sale,
-		items,
-		products,
-		lensItems = [],
-		treatments = [],
-		onSuccess
-	}: Props = $props();
+	let { open = $bindable(), sale, items, treatments = [], onSuccess }: Props = $props();
+
+	// Seed the catalog cache with the lens items already in this sale so
+	// treatment lists and lens type checks work without SSR-loading the catalog.
+	onMount(() => {
+		const lensIds = items.map((i) => i.lensCatalogItemId).filter((id): id is string => Boolean(id));
+		if (lensIds.length === 0) return;
+		void getCatalogItemsByIds({ lensIds }).then((results) =>
+			cacheCatalogItems([], results.lensItems)
+		);
+	});
 
 	let saving = $state(false);
 
@@ -119,7 +119,7 @@
 
 	let availableTreatments = $derived.by(() => {
 		if (!editLensTmp.lensCatalogItemId) return [];
-		const lens = lensItems.find((l) => l.id === editLensTmp.lensCatalogItemId);
+		const lens = getCachedLensItems().find((l) => l.id === editLensTmp.lensCatalogItemId);
 		const supplierId = lens?.supplier?.id;
 		if (!supplierId) return [];
 		return treatments.filter((t) => t.supplierId === supplierId);
@@ -133,7 +133,7 @@
 
 	let selectedLens = $derived(
 		editLensTmp.lensCatalogItemId
-			? (lensItems.find((l) => l.id === editLensTmp.lensCatalogItemId) ?? null)
+			? (getCachedLensItems().find((l) => l.id === editLensTmp.lensCatalogItemId) ?? null)
 			: null
 	);
 
@@ -361,7 +361,7 @@
 			toast.error('Seleccione un producto');
 			return;
 		}
-		const product = products.find((p) => p.id === addProductId);
+		const product = getCachedProducts().find((p) => p.id === addProductId);
 		if (!product) {
 			toast.error('Producto no encontrado');
 			return;
@@ -692,7 +692,6 @@
 						<ItemSelect
 							kind="product"
 							value={addProductId}
-							{products}
 							onselect={handleProductSelect}
 							label="Producto"
 						/>
@@ -897,7 +896,6 @@
 						<ItemSelect
 							kind="lens"
 							value={editLensTmp.lensCatalogItemId ?? ''}
-							{lensItems}
 							onselect={handleLensSelect}
 							label="Cristal"
 						/>

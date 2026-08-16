@@ -1,19 +1,13 @@
 /**
  * Universal Search Remote Function
- * Searches across products and lab lens catalog
+ * Searches across products and lab lens catalog with token-based ranking
+ * (best matches first — same search used by /lenses and the wizards).
  */
 import { query } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { UniversalSearchSchema } from '$lib/schemas/search';
-import { db } from '$lib/server/db';
-import {
-	products,
-	lensCatalogItems,
-	lensMaterials,
-	suppliers,
-	brands
-} from '$lib/server/db/schema';
-import { eq, and, isNull, ilike, or, desc } from 'drizzle-orm';
+import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
+import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses';
 
 /** A product search result */
 export interface ProductResult {
@@ -50,11 +44,10 @@ export const universalSearch = query(
 	async (data): Promise<SearchResults> => {
 		requireAuth();
 
-		const searchText = data.query.toLowerCase().trim();
-
+		const search = data.query.trim();
 		const [productResults, lensResults] = await Promise.all([
-			searchProducts(searchText),
-			searchLenses(searchText)
+			searchProducts(search),
+			searchLenses(search)
 		]);
 
 		return {
@@ -66,59 +59,32 @@ export const universalSearch = query(
 );
 
 async function searchProducts(search: string): Promise<ProductResult[]> {
-	const results = await db
-		.select({
-			id: products.id,
-			sku: products.sku,
-			name: products.name,
-			type: products.type,
-			currentSalePrice: products.currentSalePrice,
-			brand: brands.name,
-			supplier: suppliers.name
-		})
-		.from(products)
-		.leftJoin(brands, eq(products.brandId, brands.id))
-		.leftJoin(suppliers, eq(products.supplierId, suppliers.id))
-		.where(
-			and(
-				isNull(products.deletedAt),
-				eq(products.isActive, true),
-				or(
-					ilike(products.name, `%${search}%`),
-					ilike(products.sku, `%${search}%`),
-					ilike(products.type, `%${search}%`)
-				)
-			)
-		)
-		.limit(MAX_RESULTS)
-		.orderBy(desc(products.createdAt));
+	// Token search with SQL relevance ranking (name, sku, personalCode, brand, supplier)
+	const results = await getAllProductsWithRelations({ search, limit: MAX_RESULTS });
 
-	return results;
+	return results.map((p) => ({
+		id: p.id,
+		sku: p.sku,
+		name: p.name,
+		type: p.type,
+		currentSalePrice: p.currentSalePrice,
+		brand: p.brand?.name ?? null,
+		supplier: p.supplier?.name ?? null
+	}));
 }
 
 async function searchLenses(search: string): Promise<LensCatalogResult[]> {
-	const results = await db
-		.select({
-			id: lensCatalogItems.id,
-			name: lensCatalogItems.name,
-			type: lensCatalogItems.type,
-			source: lensCatalogItems.source,
-			materialName: lensMaterials.name,
-			supplierName: suppliers.name,
-			basePrice: lensCatalogItems.basePrice
-		})
-		.from(lensCatalogItems)
-		.leftJoin(lensMaterials, eq(lensCatalogItems.materialId, lensMaterials.id))
-		.leftJoin(suppliers, eq(lensCatalogItems.supplierId, suppliers.id))
-		.where(
-			and(
-				isNull(lensCatalogItems.deletedAt),
-				eq(lensCatalogItems.isActive, true),
-				ilike(lensCatalogItems.name, `%${search}%`)
-			)
-		)
-		.limit(MAX_RESULTS)
-		.orderBy(desc(lensCatalogItems.createdAt));
+	// Token search with relevance ranking (name, supplier, material, technology,
+	// differentiators, AR/BLUE/FOTOCROMÁTICO, colors) — same as /lenses.
+	const results = await getLensCatalogItemsWithRelations({ search });
 
-	return results;
+	return results.slice(0, MAX_RESULTS).map((l) => ({
+		id: l.id,
+		name: l.name,
+		type: l.type,
+		source: l.source,
+		materialName: l.material?.name ?? null,
+		supplierName: l.supplier?.name ?? null,
+		basePrice: l.basePrice
+	}));
 }

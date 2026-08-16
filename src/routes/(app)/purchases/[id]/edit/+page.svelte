@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import { NewPurchaseOrderForm } from '$lib/components/purchases';
 	import {
 		createPurchaseOrderDraftItemFromExisting,
 		type PurchaseOrderDraftInitialValues
 	} from '$lib/components/purchases/purchaseOrderDraft';
+	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
+	import { cacheCatalogItems } from '$lib/components/sales/catalogCache.svelte';
 	import {
 		PurchaseDiscountType,
 		PurchaseDocumentType,
@@ -13,7 +15,22 @@
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-	let { purchaseOrder, items, suppliers, products, lensItems } = untrack(() => data);
+	let { purchaseOrder, items, suppliers } = untrack(() => data);
+
+	// Seed the catalog cache with the items already in this purchase order so
+	// titles/SKUs render without fetching the full catalog.
+	onMount(() => {
+		const productIds = items
+			.filter((i) => i.itemType === 'PRODUCT' && i.productId)
+			.map((i) => i.productId as string);
+		const lensIds = items
+			.filter((i) => i.lensCatalogItemId)
+			.map((i) => i.lensCatalogItemId as string);
+		if (productIds.length === 0 && lensIds.length === 0) return;
+		void getCatalogItemsByIds({ productIds, lensIds }).then((results) =>
+			cacheCatalogItems(results.products, results.lensItems)
+		);
+	});
 
 	const initialDraft: PurchaseOrderDraftInitialValues = {
 		supplierId: purchaseOrder.supplierId,
@@ -44,11 +61,4 @@
 	<title>Editar PO-{String(purchaseOrder.orderNumber).padStart(4, '0')} - Optikt</title>
 </svelte:head>
 
-<NewPurchaseOrderForm
-	{suppliers}
-	{products}
-	{lensItems}
-	mode="edit"
-	purchaseOrderId={purchaseOrder.id}
-	{initialDraft}
-/>
+<NewPurchaseOrderForm {suppliers} mode="edit" purchaseOrderId={purchaseOrder.id} {initialDraft} />

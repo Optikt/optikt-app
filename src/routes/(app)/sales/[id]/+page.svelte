@@ -683,8 +683,6 @@
 	bind:open={showEditModal}
 	{sale}
 	{items}
-	products={data.allProducts}
-	lensItems={data.allLensItems}
 	treatments={data.allTreatments}
 	onSuccess={handleEditSuccess}
 />

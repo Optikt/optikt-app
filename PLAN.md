@@ -99,6 +99,7 @@
 ### DT13 · Enums y labels de moneda duplicados 🟢
 
 **Problema:** `PurchaseSourceCurrency` vs `CurrencyCode` — dos enums con sets que se solapan parcialmente (`USDT`, `VES`), más tres implementaciones de labels/symbols:
+
 - `src/lib/shared/enums/purchaseTypes.ts`: `PURCHASE_SOURCE_CURRENCY_LABELS/SYMBOLS`, `getPurchaseSourceCurrencyLabel/Symbol`, `isAltSourceCurrency`
 - `src/lib/shared/enums/currencyTypes.ts`: `CURRENCY_LABELS/SYMBOLS`, `getCurrencyLabel` (también consumido por `cashTypes.ts`)
 - `src/lib/shared/purchaseOrderCurrencies.ts`: `getSourceCurrencySymbol`, `getSettlementCurrencyLabel/Symbol`, `isAltDisplayCurrency` (duplica `isAltSourceCurrency`)
@@ -469,17 +470,17 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | FP2 · backup-ui                | Completado              |
 | ✅        | FP4 · Estados de venta         | Completado              |
 | 🟡        | FP5 · Historial estados venta  | 1-2 días                |
-| 🔴        | FP6 · Catálogo lazy + ranking | 5-7 días                |
+| 🔴        | FP6 · Catálogo lazy + ranking  | 5-7 días                |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
 | ✅        | DT5 · Error pattern duplicado  | Completado              |
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
-| 🟢        | DT11 · Dead code componentes  | 1 día                   |
-| 🟢        | DT12 · Tablas duplicadas      | 2 días                  |
-| 🟢        | DT13 · Enums moneda           | 2 días                  |
-| 🟡        | DT14 · Wizard compras SSR     | Absorbido por FP6       |
-| 🟡        | DT15 · Altura en presupuestos | 2 días                  |
+| 🟢        | DT11 · Dead code componentes   | 1 día                   |
+| 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
+| 🟢        | DT13 · Enums moneda            | 2 días                  |
+| 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
+| 🟡        | DT15 · Altura en presupuestos  | 2 días                  |
 | ❌        | FP1 · preserve-list-filters    | 1 día                   |
 | 🔴        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |

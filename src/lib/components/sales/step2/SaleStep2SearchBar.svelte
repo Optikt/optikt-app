@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
-	import { Search, X, Package, Eye } from '@lucide/svelte';
-	import { formatPrice } from '$lib/utils';
-	import { matchesAllTokens } from '$lib/utils/search';
+	import { Search, X, Package, Eye, Loader2 } from '@lucide/svelte';
+	import { formatPrice, logger } from '$lib/utils';
 	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { allowsDuplicateProductLines } from '../includedAccessories';
-	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
+	import { searchCatalog } from '$lib/remote/catalog.remote';
+	import { cacheCatalogItems } from '../catalogCache.svelte';
+	import type { ProductWithRelations } from '$lib/server/db/queries/products';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 
 	interface QuickAddOption {
 		key: string;
@@ -29,10 +30,13 @@
 
 	let { filter, items, onselect }: Props = $props();
 
-	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
-
 	let quickAddQuery = $state('');
 	let quickAddOpen = $state(false);
+	let quickAddLoading = $state(false);
+	let quickAddOptions = $state<QuickAddOption[]>([]);
+
+	let searchTimer: ReturnType<typeof setTimeout> | undefined;
+	let searchSeq = 0;
 
 	const quickAddPlaceholder = $derived.by(() => {
 		if (filter === 'product') return 'Buscar producto por nombre o código...';
@@ -40,7 +44,11 @@
 		return 'Buscar items...';
 	});
 
-	const quickAddOptions = $derived.by((): QuickAddOption[] => {
+	/** Map ranked server results to the same option shape used before. */
+	function buildOptions(
+		products: ProductWithRelations[],
+		lensItems: LensCatalogItemWithRelations[]
+	): QuickAddOption[] {
 		const selectedProductIds = new Set(
 			items
 				.filter((item) => item.kind === 'product' && item.productId !== '')
@@ -99,34 +107,50 @@
 					});
 
 		return [...productOptions, ...lensOptions];
-	});
+	}
 
-	const visibleQuickAddOptions = $derived.by(() => {
+	async function runSearch() {
 		const query = quickAddQuery.trim();
-		if (query.length < 2) return [];
-		return quickAddOptions.filter((option) => {
-			const searchableText = `${option.name} ${option.secondaryText}`;
-			return matchesAllTokens(query, searchableText);
-		});
-	});
+		if (query.length < 2) {
+			quickAddOptions = [];
+			return;
+		}
+
+		const seq = ++searchSeq;
+		quickAddLoading = true;
+		try {
+			const results = await searchCatalog({ q: query, limit: 20 });
+			if (seq !== searchSeq) return; // stale response — a newer query is in flight
+			cacheCatalogItems(results.products, results.lensItems);
+			quickAddOptions = buildOptions(results.products, results.lensItems);
+		} catch (e) {
+			if (seq !== searchSeq) return;
+			quickAddOptions = [];
+			logger.error('Error en búsqueda de catálogo', e);
+		} finally {
+			if (seq === searchSeq) quickAddLoading = false;
+		}
+	}
+
+	function handleQuickAddInput() {
+		quickAddOpen = quickAddQuery.trim().length >= 2;
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(runSearch, 250);
+	}
 
 	const visibleProductQuickAddOptions = $derived(
-		visibleQuickAddOptions.filter((o) => o.kind === 'product')
+		quickAddOptions.filter((o) => o.kind === 'product')
 	);
-	const visibleLensQuickAddOptions = $derived(
-		visibleQuickAddOptions.filter((o) => o.kind === 'lens')
-	);
-	const totalQuickAddResults = $derived(visibleQuickAddOptions.length);
+	const visibleLensQuickAddOptions = $derived(quickAddOptions.filter((o) => o.kind === 'lens'));
+	const totalQuickAddResults = $derived(quickAddOptions.length);
 
 	function closeQuickAdd() {
 		quickAddOpen = false;
 	}
 	function resetQuickAdd() {
 		quickAddQuery = '';
+		quickAddOptions = [];
 		quickAddOpen = false;
-	}
-	function handleQuickAddInput() {
-		quickAddOpen = quickAddQuery.trim().length >= 2;
 	}
 	function handleQuickAddBlur() {
 		setTimeout(() => {
@@ -138,9 +162,9 @@
 			closeQuickAdd();
 			return;
 		}
-		if (event.key === 'Enter' && visibleQuickAddOptions.length > 0) {
+		if (event.key === 'Enter' && quickAddOptions.length > 0) {
 			event.preventDefault();
-			onselect(visibleQuickAddOptions[0]);
+			onselect(quickAddOptions[0]);
 			resetQuickAdd();
 		}
 	}
@@ -174,7 +198,12 @@
 		<div
 			class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 		>
-			{#if totalQuickAddResults > 0}
+			{#if quickAddLoading}
+				<div class="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+					<Loader2 class="h-4 w-4 animate-spin" />
+					Buscando...
+				</div>
+			{:else if totalQuickAddResults > 0}
 				{#if visibleProductQuickAddOptions.length > 0}
 					<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
 						<div

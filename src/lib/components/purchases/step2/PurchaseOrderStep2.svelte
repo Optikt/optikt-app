@@ -16,14 +16,19 @@
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import { searchCatalog } from '$lib/remote/catalog.remote';
+	import {
+		cacheCatalogItems,
+		getCachedProducts,
+		getCachedLensItems
+	} from '../../sales/catalogCache.svelte';
+	import { logger } from '$lib/utils';
 	import ItemsContextHeader from './ItemsContextHeader.svelte';
 	import ProductSearchCombobox from './ProductSearchCombobox.svelte';
 	import ItemsList from './ItemsList.svelte';
 
 	interface Props {
 		items: PurchaseOrderDraftItem[];
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		supplierId: string;
 		supplierName: string;
 		documentType: PurchaseDocumentType;
@@ -36,8 +41,6 @@
 
 	let {
 		items = $bindable(),
-		products,
-		lensItems,
 		supplierId,
 		supplierName,
 		documentType,
@@ -52,8 +55,33 @@
 	const currencySymbol = $derived(isAltMode ? getSourceCurrencySymbol(sourceCurrency) : '$');
 	const saleSymbol = '$';
 
-	const supplierProducts = $derived(products.filter((p) => p.supplierId === supplierId));
-	const supplierLenses = $derived(lensItems.filter((l) => l.supplierId === supplierId));
+	let supplierProducts = $state<ProductWithRelations[]>([]);
+	let supplierLenses = $state<LensCatalogItemWithRelations[]>([]);
+	let catalogLoading = $state(false);
+
+	// Fetch the supplier's catalog on demand (lazy) instead of SSR-loading everything.
+	$effect(() => {
+		if (!supplierId) {
+			supplierProducts = [];
+			supplierLenses = [];
+			return;
+		}
+		catalogLoading = true;
+		searchCatalog({ supplierId, limit: 50 })
+			.then((results) => {
+				cacheCatalogItems(results.products, results.lensItems);
+				supplierProducts = results.products;
+				supplierLenses = results.lensItems;
+			})
+			.catch((e) => {
+				supplierProducts = [];
+				supplierLenses = [];
+				logger.error('Error cargando catálogo del proveedor', e);
+			})
+			.finally(() => {
+				catalogLoading = false;
+			});
+	});
 
 	const lineCount = $derived(items.length);
 	const totalItems = $derived(items.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
@@ -76,10 +104,10 @@
 			const item = createEmptyPurchaseOrderDraftItem();
 
 			if (kind === 'product') {
-				const product = supplierProducts.find((p) => p.id === id);
+				const product = getCachedProducts().find((p) => p.id === id);
 				if (product) applyProductDefaults(item, product, documentType, defaultTaxRate);
 			} else {
-				const lens = supplierLenses.find((l) => l.id === id);
+				const lens = getCachedLensItems().find((l) => l.id === id);
 				if (lens) applyLensDefaults(item, lens, documentType, defaultTaxRate);
 			}
 
@@ -119,6 +147,8 @@
 			{addedProductIds}
 			{addedLensIds}
 			{currencySymbol}
+			{supplierId}
+			disabled={catalogLoading}
 			onselect={handleSearchSelect}
 		/>
 

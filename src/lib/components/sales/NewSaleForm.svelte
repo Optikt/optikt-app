@@ -8,8 +8,6 @@
 	import { isDiscountValueValid } from '$lib/utils';
 	import { nowUTC, fromISODate } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
@@ -17,6 +15,7 @@
 	import { setContext, untrack } from 'svelte';
 	import { WizardHeader } from '$lib/components/ui';
 	import { CATALOG_KEY } from './wizardContext';
+	import { getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
 	import {
 		buildStep2PrescriptionConfirmation,
 		calculateSaleSummarySubtotal,
@@ -32,8 +31,6 @@
 	import PrescriptionValidationModal from './PrescriptionValidationModal.svelte';
 
 	interface Props {
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		suppliers: Supplier[];
 		nextOrderNumber?: number;
 		defaultTaxRate?: number;
@@ -43,8 +40,6 @@
 	}
 
 	let {
-		products,
-		lensItems,
 		suppliers: _suppliers,
 		nextOrderNumber,
 		defaultTaxRate,
@@ -52,12 +47,13 @@
 		breadcrumbs
 	}: Props = $props();
 
+	// Catalog is loaded on demand (searchCatalog) and cached as items are selected.
 	setContext(CATALOG_KEY, {
 		get products() {
-			return products;
+			return getCachedProducts();
 		},
 		get lensItems() {
-			return lensItems;
+			return getCachedLensItems();
 		}
 	});
 
@@ -177,7 +173,7 @@
 	let includedAccessoryMap = $state<IncludedAccessoryMap>({});
 
 	const step2PrescriptionConfirmation = $derived(
-		buildStep2PrescriptionConfirmation(items, lensItems)
+		buildStep2PrescriptionConfirmation(items, getCachedLensItems())
 	);
 
 	// ============================================================================
@@ -221,7 +217,12 @@
 	const hasOutOfStockItem = $derived(
 		items.some((i) => {
 			if (i.kind === 'product' && i.productId) {
-				const availableForItem = getAvailableProductStock(items, products, i.productId, i.id);
+				const availableForItem = getAvailableProductStock(
+					items,
+					getCachedProducts(),
+					i.productId,
+					i.id
+				);
 				if (availableForItem === null) return false;
 
 				return availableForItem <= 0 || i.quantity > availableForItem;
@@ -287,7 +288,7 @@
 		submitting = true;
 
 		try {
-			const saleItems = buildSaleItemsFromWizard(items, products, lensItems);
+			const saleItems = buildSaleItemsFromWizard(items, getCachedProducts(), getCachedLensItems());
 			const snapshotTaxRate = defaultTaxRate ?? DEFAULT_TAX_RATE;
 			const prescription = buildPrescriptionPayload(items, dateToISODateString(saleDate)) as
 				Parameters<typeof createSale>[0]['prescription'] | undefined;

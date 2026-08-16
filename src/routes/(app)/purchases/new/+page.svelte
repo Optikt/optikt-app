@@ -9,9 +9,4 @@
 	<title>Nueva Orden de Compra - Optikt</title>
 </svelte:head>
 
-<NewPurchaseOrderForm
-	suppliers={data.suppliers}
-	products={data.products}
-	lensItems={data.lensItems}
-	defaultTaxRate={data.defaultTaxRate}
-/>
+<NewPurchaseOrderForm suppliers={data.suppliers} defaultTaxRate={data.defaultTaxRate} />

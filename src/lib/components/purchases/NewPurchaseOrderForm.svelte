@@ -18,8 +18,7 @@
 		PurchaseSourceCurrency,
 		CurrencyCode
 	} from '$lib/shared/enums';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
+	import { getCachedProducts, getCachedLensItems } from '../sales/catalogCache.svelte';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import PurchaseOrderStep2 from './step2/PurchaseOrderStep2.svelte';
 	import PurchaseOrderStep1Card1 from './step1/PurchaseOrderStep1Card1.svelte';
@@ -68,8 +67,6 @@
 
 	interface Props {
 		suppliers: SupplierOption[];
-		products: ProductWithRelations[];
-		lensItems: LensCatalogItemWithRelations[];
 		defaultTaxRate?: number;
 		mode?: 'create' | 'edit';
 		purchaseOrderId?: string;
@@ -78,8 +75,6 @@
 
 	let {
 		suppliers,
-		products,
-		lensItems,
 		defaultTaxRate = DEFAULT_TAX_RATE,
 		mode = 'create',
 		purchaseOrderId,
@@ -316,20 +311,24 @@
 
 	function getDraftItemTitle(item: PurchaseOrderDraftItem): string {
 		if (item.itemType === PurchaseOrderItemType.PRODUCT) {
-			const product = products.find((candidate) => candidate.id === item.productId);
+			const product = getCachedProducts().find((candidate) => candidate.id === item.productId);
 			return product ? `${product.sku} - ${product.name}` : 'Producto seleccionado';
 		}
 
-		const lensItem = lensItems.find((candidate) => candidate.id === item.lensCatalogItemId);
+		const lensItem = getCachedLensItems().find(
+			(candidate) => candidate.id === item.lensCatalogItemId
+		);
 		return lensItem ? lensItem.name : 'Lente seleccionado';
 	}
 
 	function getItemSku(item: PurchaseOrderDraftItem): string {
 		if (item.itemType === PurchaseOrderItemType.PRODUCT) {
-			const product = products.find((candidate) => candidate.id === item.productId);
+			const product = getCachedProducts().find((candidate) => candidate.id === item.productId);
 			return product?.sku ?? '';
 		}
-		const lensItem = lensItems.find((candidate) => candidate.id === item.lensCatalogItemId);
+		const lensItem = getCachedLensItems().find(
+			(candidate) => candidate.id === item.lensCatalogItemId
+		);
 		return lensItem?.material?.name ?? '';
 	}
 
@@ -580,8 +579,6 @@
 	{:else if currentStep === 2}
 		<PurchaseOrderStep2
 			bind:items
-			{products}
-			{lensItems}
 			{supplierId}
 			supplierName={suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
 			{documentType}

@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { Plus, Glasses, Package } from '@lucide/svelte';
-	import { matchesAllTokens } from '$lib/utils/search';
+	import { Plus, Glasses, Package, Loader2 } from '@lucide/svelte';
+	import { logger } from '$lib/utils';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import { searchCatalog } from '$lib/remote/catalog.remote';
+	import { cacheCatalogItems } from '../../sales/catalogCache.svelte';
 
 	type SearchOption = {
 		key: string;
@@ -21,6 +23,7 @@
 		addedProductIds: Set<string>;
 		addedLensIds: Set<string>;
 		currencySymbol: string;
+		supplierId?: string;
 		onselect: (id: string, kind: 'product' | 'lens') => void;
 		disabled?: boolean;
 	}
@@ -31,19 +34,25 @@
 		addedProductIds,
 		addedLensIds,
 		currencySymbol,
+		supplierId = '',
 		onselect,
 		disabled = false
 	}: Props = $props();
 
 	let pendingItemType = $state<'product' | 'lens'>('product');
+	let serverOptions = $state<SearchOption[]>([]);
+	let searching = $state(false);
+
+	let searchTimer: ReturnType<typeof setTimeout> | undefined;
+	let searchSeq = 0;
 
 	const typeOptions = [
 		{ value: 'product', label: 'Productos' },
 		{ value: 'lens', label: 'Lentes' }
 	];
 
-	const productOptions: SearchOption[] = $derived(
-		products
+	function mapProducts(list: ProductWithRelations[]): SearchOption[] {
+		return list
 			.filter((p) => !addedProductIds.has(p.id))
 			.map((p) => ({
 				key: `p-${p.id}`,
@@ -52,11 +61,11 @@
 				label: `${p.sku} - ${p.name}`,
 				secondaryText: p.brand ? `${p.brand.name}` : '',
 				price: p.currentSalePrice ?? 0
-			}))
-	);
+			}));
+	}
 
-	const lensOptions: SearchOption[] = $derived(
-		lensItems
+	function mapLenses(list: LensCatalogItemWithRelations[]): SearchOption[] {
+		return list
 			.filter((l) => !addedLensIds.has(l.id))
 			.map((l) => ({
 				key: `l-${l.id}`,
@@ -65,10 +74,49 @@
 				label: l.name,
 				secondaryText: l.type ?? '',
 				price: l.salePrice ?? l.basePrice ?? 0
-			}))
+			}));
+	}
+
+	// Local supplier set (fetched lazily by PurchaseOrderStep2) — initial options.
+	const localOptions: SearchOption[] = $derived(
+		pendingItemType === 'product' ? mapProducts(products) : mapLenses(lensItems)
 	);
 
-	const currentOptions = $derived(pendingItemType === 'product' ? productOptions : lensOptions);
+	// Server results replace local options once the user types (ranked token search).
+	const currentOptions = $derived(serverOptions.length > 0 ? serverOptions : localOptions);
+
+	function handleQueryChange(query: string) {
+		clearTimeout(searchTimer);
+		if (query.trim().length < 2) {
+			serverOptions = [];
+			return;
+		}
+		searchTimer = setTimeout(() => void runServerSearch(query.trim()), 250);
+	}
+
+	async function runServerSearch(query: string) {
+		const seq = ++searchSeq;
+		searching = true;
+		try {
+			const results = await searchCatalog({
+				q: query,
+				supplierId: supplierId || undefined,
+				limit: 20
+			});
+			if (seq !== searchSeq) return;
+			cacheCatalogItems(results.products, results.lensItems);
+			serverOptions =
+				pendingItemType === 'product'
+					? mapProducts(results.products)
+					: mapLenses(results.lensItems);
+		} catch (e) {
+			if (seq !== searchSeq) return;
+			serverOptions = [];
+			logger.error('Error en búsqueda de catálogo', e);
+		} finally {
+			if (seq === searchSeq) searching = false;
+		}
+	}
 
 	function handleSelect(option: unknown) {
 		const opt = option as SearchOption;
@@ -83,6 +131,7 @@
 			options={typeOptions}
 			onchange={(val) => {
 				pendingItemType = val as 'product' | 'lens';
+				serverOptions = [];
 			}}
 		/>
 	</div>
@@ -94,10 +143,7 @@
 			clearOnSelect={true}
 			getId={(s: unknown) => (s as SearchOption).key}
 			getLabel={(s: unknown) => (s as SearchOption).label}
-			filterFn={(query: string, s: unknown) => {
-				const opt = s as SearchOption;
-				return matchesAllTokens(query, `${opt.label} ${opt.secondaryText}`);
-			}}
+			onquerychange={handleQueryChange}
 			onselect={handleSelect}
 			onclear={() => {}}
 		>
@@ -120,7 +166,11 @@
 					<span class="shrink-0 text-xs font-semibold text-brand-navy tabular-nums">
 						{currencySymbol}{item.price.toFixed(2)}
 					</span>
-					<Plus class="h-4 w-4 shrink-0 text-brand-blue" aria-hidden="true" />
+					{#if searching}
+						<Loader2 class="h-4 w-4 shrink-0 animate-spin text-brand-blue" aria-hidden="true" />
+					{:else}
+						<Plus class="h-4 w-4 shrink-0 text-brand-blue" aria-hidden="true" />
+					{/if}
 				</div>
 			{/snippet}
 		</SearchCombobox>

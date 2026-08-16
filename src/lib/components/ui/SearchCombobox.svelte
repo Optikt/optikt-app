@@ -13,6 +13,8 @@
 		filterFn?: (query: string, option: T) => boolean;
 		onselect: (option: T) => void;
 		onclear?: () => void;
+		/** Called with the raw query on every input — enables async/server search. */
+		onquerychange?: (query: string) => void;
 		children: Snippet<[{ option: T; highlighted: boolean; selected: boolean }]>;
 	};
 
@@ -27,6 +29,7 @@
 		filterFn,
 		onselect,
 		onclear,
+		onquerychange,
 		children
 	}: Props<unknown> = $props();
 
@@ -59,6 +62,7 @@
 	function handleInput() {
 		open = true;
 		highlightedIdx = 0;
+		onquerychange?.(query);
 	}
 
 	function handleSelect(option: unknown) {

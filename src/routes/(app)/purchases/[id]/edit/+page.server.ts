@@ -6,9 +6,7 @@ import {
 	findPurchaseOrderByIdWithRelations,
 	getPurchaseOrderItems
 } from '$lib/server/db/queries/purchaseOrders';
-import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
-import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);
@@ -26,18 +24,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		redirect(303, `/purchases/${params.id}`);
 	}
 
-	const [items, suppliers, products, lensItems] = await Promise.all([
+	const [items, suppliers] = await Promise.all([
 		getPurchaseOrderItems(params.id),
-		getAllSuppliers({ includeDeleted: false }),
-		getAllProductsWithRelations({ includeInactive: true, limit: 500 }),
-		getLensCatalogItemsWithRelations()
+		getAllSuppliers({ includeDeleted: false })
 	]);
 
 	return {
 		purchaseOrder,
 		items,
-		suppliers,
-		products,
-		lensItems
+		suppliers
 	};
 };
