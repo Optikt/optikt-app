@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-08-10.
+> Actualizado: 2026-08-16.
 
 ---
 
@@ -71,6 +71,71 @@
 **Dificultad:** Media (5 días). **Solución:** (a) Inventariar las reglas de negocio inline por dominio (sales, purchaseOrders, inventory, customers). (b) Clasificar: input-only (→ `.superRefine()` en el schema) vs state-dependent (→ helper compartido server-side). (c) Mover las input-only a los schemas con mensajes en español. (d) Extraer las state-dependent a helpers reutilizables entre remote functions. ~5 días.
 
 **Estado:** Plan activo. Sin empezar.
+
+---
+
+### DT11 · Dead code: componentes sin usar 🟢
+
+**Problema:** `CustomerViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable` y `PurchaseCurrencyInput` se exportan en sus barrels pero tienen **cero imports** en el código (verificado con rg, 2026-08-16). `SupplierViewModal` se descartó de la lista: sí se usa en `SuppliersTable.svelte` (heredado de TECH_DEBT.md, estaba mal listado).
+
+**Riesgo de no hacerlo:** Confusión en onboarding — parece que el componente existe con funcionalidad que nadie usa. Mantenimiento de código muerto.
+
+**Contras:** Git history los recupera si se necesitan después.
+
+**Dificultad:** Baja (1 día). **Solución:** Auditar barrels (`prescriptions/index.ts`, `customers/index.ts`, `ui/index.ts`), confirmar cero imports, eliminar componentes + exports + specs asociadas.
+
+---
+
+### DT12 · DataTable y DataGrid duplicados 🟢
+
+**Problema:** Dos implementaciones de tabla con APIs distintas en `src/lib/components/ui/` (`DataTable.svelte` y `DataGrid.svelte`) — misma función, contratos incompatibles.
+
+**Riesgo de no hacerlo:** Dos fuentes de bugs de UI. Migrar entre componentes requiere reescritura, no cambio de import.
+
+**Dificultad:** Media (2 días). **Solución:** Inventariar usos de cada uno, elegir el dominante, migrar los usos del otro y eliminar el perdedor.
+
+---
+
+### DT13 · Enums y labels de moneda duplicados 🟢
+
+**Problema:** `PurchaseSourceCurrency` vs `CurrencyCode` — dos enums con sets que se solapan parcialmente (`USDT`, `VES`), más tres implementaciones de labels/symbols:
+- `src/lib/shared/enums/purchaseTypes.ts`: `PURCHASE_SOURCE_CURRENCY_LABELS/SYMBOLS`, `getPurchaseSourceCurrencyLabel/Symbol`, `isAltSourceCurrency`
+- `src/lib/shared/enums/currencyTypes.ts`: `CURRENCY_LABELS/SYMBOLS`, `getCurrencyLabel` (también consumido por `cashTypes.ts`)
+- `src/lib/shared/purchaseOrderCurrencies.ts`: `getSourceCurrencySymbol`, `getSettlementCurrencyLabel/Symbol`, `isAltDisplayCurrency` (duplica `isAltSourceCurrency`)
+
+**Riesgo:** Inconsistencias de display según qué helper use cada módulo. Cambiar un label requiere 2-3 archivos.
+
+**Dificultad:** Media (2 días). **Solución (Opción B):** Delegar todo a `currencyTypes.ts`; mantener ambos enums pero con semántica clara; eliminar los helpers redundantes.
+
+---
+
+### DT14 · Wizard de compras carga todo en SSR 🟡
+
+**Problema:** El `load` de `/purchases/new` trae **todos** los productos (`getAllProductsWithRelations({ limit: 500 })`) y lentes sin filtrar por proveedor. El proveedor se elige en Step 1, pero los datos se cargan antes de saber cuál es. Payload SSR innecesario; la búsqueda cliente-side escanea registros que nunca se usarán.
+
+**Riesgo:** Memoria y tiempo SSR desperdiciados. Escala mal con catálogo grande.
+
+**Dificultad:** Baja-Media (1-3 días). **Solución:** Opción A (primero): al validar Step 1, fetchear productos del proveedor vía `/api/products?supplierId=X`; el `load` SSR deja de traer productos/lentes. Opción B (ideal): search server-side `/api/products/search?supplierId=X&q=texto` con el combobox consultando en tiempo real. **Archivos:** `src/routes/(app)/purchases/new/+page.server.ts`, `+page.svelte`, `src/lib/components/purchases/step2/PurchaseOrderStep2.svelte`.
+
+---
+
+### DT15 · Altura por ojo ausente en presupuestos 🟡
+
+**Problema:** El feature ALTURA (`od_altura`/`os_altura`, 2026-08) se agregó a `sale_items` y `prescriptions`, pero `quote_items` no tiene las columnas — los presupuestos ni capturan ni conservan la altura (detectado en auditoría de TECH_DEBT.md).
+
+**Riesgo:** Conversión presupuesto→venta pierde dato clínico; el presupuesto muestra una fórmula incompleta al cliente.
+
+**Dificultad:** Baja-Media (1-2 días). **Solución:** Migración idempotente (`ADD COLUMN IF NOT EXISTS`, mismo patrón que 0039), inputs ALT en el wizard de presupuesto reutilizando `AlturaSchema`, persistencia en `quotes.remote.ts`, display en detalle.
+
+---
+
+### ✅ Resueltos por auditoría de TECH_DEBT.md (2026-08-16)
+
+El archivo `TECH_DEBT.md` fue auditado, consolidado y eliminado. De sus 8 items, 3 ya estaban resueltos en el código:
+
+- **Prescripción global para operaciones con múltiples cristales** — resuelto: la Rx por ojo (od/os sphere, cylinder, axis, addition) ya vive en `sale_items` (`schema/sales.ts`) y `quote_items` (`schema/quotes.ts`).
+- **`build/` en el repo** — ya ignorado: `/build` en `.gitignore` (línea 10), cero archivos tracked.
+- **Conversión dual en slide-over de pagos de ventas** — ya implementado: `PaymentForm.svelte:853` muestra `≈ X USD BCV` con la tasa del día para pagos en moneda distinta.
 
 ---
 
@@ -150,7 +215,7 @@
 
 **Contras:** Testear remotes requiere mock de DB (o testcontainers con PostgreSQL). Setup no trivial. Tiempo significativo.
 
-**Dificultad:** Alta. **Solución:** (a) Setup de testcontainers con PostgreSQL + migraciones. (b) Tests de integración para los 10-15 comandos más críticos. (c) Incorporar al CI. ~1-2 semanas.
+**Dificultad:** Alta. **Solución:** (a) Setup de testcontainers con PostgreSQL + migraciones. (b) Tests de integración para los 10-15 comandos más críticos. (c) Incorporar al CI. (d) E2E: flujo completo del wizard óptico de venta/presupuesto (paso 2, confirmación, autosync del tipo de lente), pagos/cancelaciones/reembolsos, reportes. ~1-2 semanas.
 
 ---
 
@@ -397,6 +462,11 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT3 · Validación Zod           | Completado              |
 | ✅        | DT5 · Error pattern duplicado  | Completado              |
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
+| 🟢        | DT11 · Dead code componentes  | 1 día                   |
+| 🟢        | DT12 · Tablas duplicadas      | 2 días                  |
+| 🟢        | DT13 · Enums moneda           | 2 días                  |
+| 🟡        | DT14 · Wizard compras SSR     | 2 días                  |
+| 🟡        | DT15 · Altura en presupuestos | 2 días                  |
 | ❌        | FP1 · preserve-list-filters    | 1 día                   |
 | 🔴        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
@@ -415,7 +485,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~110 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1.
+**Total estimado:** ~119 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1; DT11-13 (5 días) para limpiar deuda low-hanging.
 
 ---
 
