@@ -6,6 +6,7 @@
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import { getLensSourceLabel } from '$lib/shared/enums/lensTypes';
 	import { searchCatalog } from '$lib/remote/catalog.remote';
 	import { cacheCatalogItems } from '../../sales/catalogCache.svelte';
 
@@ -73,7 +74,7 @@
 				id: l.id,
 				kind: 'lens' as const,
 				label: l.name,
-				secondaryText: l.type ?? '',
+				secondaryText: [l.type, getLensSourceLabel(l.source)].filter(Boolean).join(' · '),
 				price: l.salePrice ?? l.basePrice ?? 0
 			}));
 	}

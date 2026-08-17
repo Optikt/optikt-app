@@ -1,7 +1,7 @@
 import { eq, isNull, and, or, ilike, desc, inArray, sql } from 'drizzle-orm';
 import { computeRelevanceScore, matchesAllTokens } from '$lib/utils/search';
 import { db } from '$lib/server/db';
-import { LensType, LensCatalogSource } from '$lib/shared/enums';
+import { LensType, LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
 import type { DbOrTx } from '$lib/server/db/types';
 import {
 	lensMaterials,
@@ -301,7 +301,8 @@ export async function getLensCatalogItemsWithRelations(options?: {
 		);
 	}
 
-	// Text search in memory (name, supplier, material, technologyName, differentiators, traits)
+	// Text search in memory (name, supplier, material, technologyName, source,
+	// differentiators, traits, colors)
 	if (options?.search) {
 		const search = options.search;
 		const fields = (item: (typeof items)[number]): string[] =>
@@ -310,6 +311,9 @@ export async function getLensCatalogItemsWithRelations(options?: {
 				item.supplier?.name,
 				item.material?.name,
 				item.technologyName,
+				item.source,
+				getLensSourceLabel(item.source),
+				item.source === LensCatalogSource.LAB ? 'tallado' : null,
 				...(item.differentiators ?? []),
 				item.hasAr ? 'AR' : null,
 				...(item.arColors ?? []),
