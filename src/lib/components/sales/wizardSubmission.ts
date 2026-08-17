@@ -240,6 +240,7 @@ export function buildQuoteItemsFromWizard(
 			odAddition: item.lensPair.od.enabled
 				? (item.lensPair.od.prescription.addition ?? undefined)
 				: undefined,
+			odAltura: item.lensPair.od.enabled ? (item.lensPair.od.altura ?? undefined) : undefined,
 			osSphere: item.lensPair.oi.enabled
 				? (item.lensPair.oi.prescription.sphere ?? undefined)
 				: undefined,
@@ -252,6 +253,7 @@ export function buildQuoteItemsFromWizard(
 			osAddition: item.lensPair.oi.enabled
 				? (item.lensPair.oi.prescription.addition ?? undefined)
 				: undefined,
+			osAltura: item.lensPair.oi.enabled ? (item.lensPair.oi.altura ?? undefined) : undefined,
 			quantity: 1,
 			unitPrice: item.unitPrice,
 			discount: item.discount,

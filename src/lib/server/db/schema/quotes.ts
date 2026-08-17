@@ -120,10 +120,12 @@ export const quoteItems = pgTable(
 		odCylinder: doublePrecision('od_cylinder'),
 		odAxis: integer('od_axis'),
 		odAddition: doublePrecision('od_addition'),
+		odAltura: doublePrecision('od_altura'),
 		osSphere: doublePrecision('os_sphere'),
 		osCylinder: doublePrecision('os_cylinder'),
 		osAxis: integer('os_axis'),
 		osAddition: doublePrecision('os_addition'),
+		osAltura: doublePrecision('os_altura'),
 
 		// --- Pricing ---
 		quantity: integer().notNull(),

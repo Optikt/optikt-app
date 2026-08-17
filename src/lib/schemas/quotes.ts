@@ -19,7 +19,7 @@ import {
 	ALL_FREE_ITEM_CATEGORIES,
 	FreeItemCategory
 } from '$lib/shared/enums/lensTypes';
-import { AxisSchema } from '$lib/schemas/prescriptions';
+import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
 import { InlineCustomerSchema } from '$lib/schemas/sales';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
@@ -57,10 +57,12 @@ export const QuoteItemSchema = z
 		odCylinder: OptionalCylinderSchema.optional(),
 		odAxis: AxisSchema.optional(),
 		odAddition: OptionalAdditionSchema.optional(),
+		odAltura: AlturaSchema.optional(),
 		osSphere: OptionalSphereSchema.optional(),
 		osCylinder: OptionalCylinderSchema.optional(),
 		osAxis: AxisSchema.optional(),
 		osAddition: OptionalAdditionSchema.optional(),
+		osAltura: AlturaSchema.optional(),
 
 		quantity: CoercedInteger.min(1, 'Cantidad debe ser al menos 1'),
 		unitPrice: CoercedNumber.min(0, 'Precio debe ser mayor o igual a 0'),

@@ -111,6 +111,33 @@ describe('QuoteItemSchema', () => {
 		);
 		expect(result.success).toBe(true);
 	});
+
+	it('accepts per-eye altura within 10-40mm', () => {
+		const result = QuoteItemSchema.safeParse(
+			makeLensPairItem({
+				odAddition: 1.5,
+				osAddition: 1.5,
+				odAltura: 28,
+				osAltura: 30
+			})
+		);
+		expect(result.success).toBe(true);
+	});
+
+	it('rejects altura out of 10-40mm range', () => {
+		const result = QuoteItemSchema.safeParse(
+			makeLensPairItem({
+				odAltura: 5,
+				osAltura: 45
+			})
+		);
+		expect(result.success).toBe(false);
+	});
+
+	it('treats altura as optional', () => {
+		const result = QuoteItemSchema.safeParse(makeLensPairItem({}));
+		expect(result.success).toBe(true);
+	});
 });
 
 // ── CreateQuoteSchema ───────────────────────────────────────────────────

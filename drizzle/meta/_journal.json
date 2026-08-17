@@ -281,6 +281,13 @@
       "when": 1786726161170,
       "tag": "0039_wild_william_stryker",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1786726161171,
+      "tag": "0040_quotes_altura",
+      "breakpoints": true
     }
   ]
 }
