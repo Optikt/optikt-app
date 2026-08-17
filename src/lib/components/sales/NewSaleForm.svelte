@@ -49,12 +49,8 @@
 
 	// Catalog is loaded on demand (searchCatalog) and cached as items are selected.
 	setContext(CATALOG_KEY, {
-		get products() {
-			return getCachedProducts();
-		},
-		get lensItems() {
-			return getCachedLensItems();
-		}
+		getProducts: getCachedProducts,
+		getLensItems: getCachedLensItems
 	});
 
 	// ============================================================================

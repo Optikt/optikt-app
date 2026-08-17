@@ -38,16 +38,18 @@
 		onopenTreatment = undefined
 	}: Props = $props();
 
-	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
+	const catalog = getContext<CatalogData>(CATALOG_KEY);
 
 	const isLensKind = $derived(item.kind === 'lens');
 	const isProductKind = $derived(item.kind === 'product');
 	const isTreatmentKind = $derived(item.kind === 'treatment');
 
-	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);
+	const lens = $derived(
+		item.kind === 'lens' ? findLensItem(item, catalog.getLensItems()) : undefined
+	);
 	const maxStock = $derived(
 		item.kind === 'product' && item.productId
-			? (products.find((p) => p.id === item.productId)?.stock ?? null)
+			? (catalog.getProducts().find((p) => p.id === item.productId)?.stock ?? null)
 			: null
 	);
 

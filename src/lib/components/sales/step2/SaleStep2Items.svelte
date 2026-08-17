@@ -81,7 +81,7 @@
 		onprev
 	}: Props = $props();
 
-	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
+	const catalog = getContext<CatalogData>(CATALOG_KEY);
 
 	// ============================================================================
 	// ITEMS MANAGEMENT
@@ -116,7 +116,7 @@
 	}
 
 	function getAvailableStockForProduct(productId: string, excludeItemId?: string): number | null {
-		return getAvailableProductStock(items, products, productId, excludeItemId);
+		return getAvailableProductStock(items, catalog.getProducts(), productId, excludeItemId);
 	}
 
 	function createItemFromQuickAdd(option: {
@@ -136,7 +136,7 @@
 		item.lensPair.catalogItemId = option.id;
 		item.productId = option.id;
 
-		const lens = lensItems.find((l) => l.id === option.id);
+		const lens = catalog.getLensItems().find((l) => l.id === option.id);
 		if (lens) {
 			item.costOverrides = {
 				baseCost: lens.pairPurchasePrice,
@@ -276,21 +276,23 @@
 
 	$effect(() => {
 		const lensItemsInCart = items.filter((i): i is LensSaleItemRow => i.kind === 'lens');
-		untrack(() => {
-			for (const item of lensItemsInCart) {
-				const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
+		// Read the catalog outside untrack so the effect re-runs once the cache fills with the lens.
+		const cacheItems = catalog.getLensItems();
+		for (const item of lensItemsInCart) {
+			const lens = cacheItems.find((l) => l.id === item.lensPair.catalogItemId);
+			untrack(() => {
 				if (lens?.supplier?.id && lens.source !== LensCatalogSource.FINISHED) {
-					loadTreatmentsForSupplier(lens.supplier.id);
+					void loadTreatmentsForSupplier(lens.supplier.id);
 				}
-			}
-		});
+			});
+		}
 	});
 
 	const itemTreatmentsMap = $derived.by(() => {
 		const map: Record<string, SupplierTreatment[]> = {};
 		for (const item of items) {
 			if (item.kind !== 'lens') continue;
-			const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
+			const lens = catalog.getLensItems().find((l) => l.id === item.lensPair.catalogItemId);
 			if (lens?.supplier?.id && treatmentCache[lens.supplier.id]) {
 				map[item.id] = treatmentCache[lens.supplier.id];
 			}
@@ -339,7 +341,7 @@
 		if (!activeTreatmentLensId) return;
 		const lensItem = items.find((i) => i.id === activeTreatmentLensId);
 		if (!lensItem || lensItem.kind !== 'lens') return;
-		const lens = lensItems.find((l) => l.id === lensItem.lensPair.catalogItemId);
+		const lens = catalog.getLensItems().find((l) => l.id === lensItem.lensPair.catalogItemId);
 		const brand = lens?.supplier?.name ?? '';
 
 		if (treatment) {
@@ -425,7 +427,7 @@
 	 *  Uses salePrice (sell price) when available, otherwise falls back to basePrice (cost). */
 	function recalcSuggestedPrice(item: SaleItemRow) {
 		if (item.kind !== 'lens') return;
-		const lens = lensItems.find((l) => l.id === item.lensPair.catalogItemId);
+		const lens = catalog.getLensItems().find((l) => l.id === item.lensPair.catalogItemId);
 		if (!lens) return;
 
 		const eyeCount = getEnabledEyeCount(item);

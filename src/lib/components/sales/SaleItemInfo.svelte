@@ -17,13 +17,15 @@
 
 	let { item, showAccessoryBadge = false }: Props = $props();
 
-	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
+	const catalog = getContext<CatalogData>(CATALOG_KEY);
 
 	const isLensKind = $derived(item.kind === 'lens');
 	const isProductKind = $derived(item.kind === 'product');
 
-	const product = $derived(item.kind === 'product' ? findProduct(item, products) : undefined);
-	const lens = $derived(item.kind === 'lens' ? findLensItem(item, lensItems) : undefined);
+	const product = $derived(
+		item.kind === 'product' ? findProduct(item, catalog.getProducts()) : undefined
+	);
+	const lens = $derived(item.kind === 'lens' ? findLensItem(item, catalog.getLensItems()) : undefined);
 
 	const productTypeIcon = $derived(
 		item.kind === 'product' && product?.type ? getProductTypeIcon(product.type) : undefined

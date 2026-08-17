@@ -40,12 +40,8 @@
 	}: Props = $props();
 
 	setContext(CATALOG_KEY, {
-		get products() {
-			return products;
-		},
-		get lensItems() {
-			return lensItems;
-		}
+		getProducts: () => products,
+		getLensItems: () => lensItems
 	});
 
 	// ============================================================================

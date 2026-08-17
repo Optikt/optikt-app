@@ -88,7 +88,7 @@
 		onsubmit
 	}: Props = $props();
 
-	const { products, lensItems } = getContext<CatalogData>(CATALOG_KEY);
+	const catalog = getContext<CatalogData>(CATALOG_KEY);
 
 	const grossSubtotal = $derived(calculateSaleSummarySubtotal(items));
 
@@ -108,7 +108,9 @@
 
 	const canSubmitFinal = $derived(canSubmit && !hasInvalidGlobalDiscount);
 
-	const taxItems = $derived(buildTaxItemsFromWizard(items, products, lensItems, defaultTaxRate));
+	const taxItems = $derived(
+		buildTaxItemsFromWizard(items, catalog.getProducts(), catalog.getLensItems(), defaultTaxRate)
+	);
 
 	const adjustedTaxBreakdown = $derived.by(() =>
 		computeAdjustedTaxBreakdown(taxItems, appliedGlobalDiscount)
@@ -173,11 +175,11 @@
 	});
 
 	function getProduct(item: SaleItemRow): ProductWithRelations | undefined {
-		return findProduct(item, products);
+		return findProduct(item, catalog.getProducts());
 	}
 
 	function getLens(item: SaleItemRow): LensCatalogItemWithRelations | undefined {
-		return findLensItem(item, lensItems);
+		return findLensItem(item, catalog.getLensItems());
 	}
 
 	function formatTaxRate(rate: number): string {
