@@ -74,17 +74,11 @@
 
 ---
 
-### DT11 · Dead code: componentes sin usar 🟢
+### ✅ DT11 · Dead code: componentes sin usar (COMPLETADO — 2026-08-17)
 
-**Problema:** `CustomerViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable` y `PurchaseCurrencyInput` se exportan en sus barrels pero tienen **cero imports** en el código (verificado con rg, 2026-08-16). `SupplierViewModal` se descartó de la lista: sí se usa en `SuppliersTable.svelte` (heredado de TECH_DEBT.md, estaba mal listado).
+**Qué se hizo:** Eliminados 5 componentes con cero imports (verificado con rg): `CustomerViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable` y `PurchaseCurrencyInput` (este último huérfano total, sin barrel export). Limpiados los exports de `customers/index.ts` y `prescriptions/index.ts`. `SupplierViewModal` NO se tocó — sí se usa en `SuppliersTable.svelte`. **-1410 líneas.**
 
-**Riesgo de no hacerlo:** Confusión en onboarding — parece que el componente existe con funcionalidad que nadie usa. Mantenimiento de código muerto.
-
-**Contras:** Git history los recupera si se necesitan después.
-
-**Dificultad:** Baja (1 día). **Solución:** Auditar barrels (`prescriptions/index.ts`, `customers/index.ts`, `ui/index.ts`), confirmar cero imports, eliminar componentes + exports + specs asociadas. Plan detallado: `docs/plans/dead-code-cleanup.md`.
-
-**Estado:** Plan activo.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 755/755 tests.
 
 ---
 
@@ -122,15 +116,16 @@
 
 ---
 
-### DT15 · Altura por ojo ausente en presupuestos 🟡
+### ✅ DT15 · Altura por ojo ausente en presupuestos (COMPLETADO — 2026-08-17)
 
-**Problema:** El feature ALTURA (`od_altura`/`os_altura`, 2026-08) se agregó a `sale_items` y `prescriptions`, pero `quote_items` no tiene las columnas — los presupuestos ni capturan ni conservan la altura (detectado en auditoría de TECH_DEBT.md).
+**Qué se hizo:** `quote_items` ahora captura y persiste la altura por ojo:
+- Migración **0040** idempotente: `od_altura`/`os_altura` en `quote_items`.
+- `QuoteItemSchema`: `AlturaSchema.optional()` por ojo (10-40mm).
+- `buildQuoteItemsFromWizard` mapea `lensPair.od/oi.altura`.
+- `quotes.remote` persiste en el insert **y en la conversión presupuesto→venta** (antes la venta creada desde quote perdía la altura — mismo bug por otra puerta).
+- El wizard de presupuesto ya capturaba la altura (reusa componentes de venta) — sin cambios de UI.
 
-**Riesgo:** Conversión presupuesto→venta pierde dato clínico; el presupuesto muestra una fórmula incompleta al cliente.
-
-**Dificultad:** Baja-Media (1-2 días). **Solución:** Migración idempotente (`ADD COLUMN IF NOT EXISTS`, mismo patrón que 0039), inputs ALT en el wizard de presupuesto reutilizando `AlturaSchema`, persistencia en `quotes.remote.ts`, display en detalle. Plan detallado: `docs/plans/quotes-altura.md`.
-
-**Estado:** Plan activo.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 758/758 tests. Migración aplicada + idempotente en local.
 
 ---
 
@@ -484,11 +479,11 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT3 · Validación Zod           | Completado              |
 | ✅        | DT5 · Error pattern duplicado  | Completado              |
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
-| 🟢        | DT11 · Dead code componentes   | 1 día                   |
+| ✅        | DT11 · Dead code componentes  | Completado              |
+| ✅        | DT15 · Altura en presupuestos | Completado              |
 | 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
-| 🟢        | DT13 · Enums moneda            | 2 días                  |
-| 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
-| 🟡        | DT15 · Altura en presupuestos  | 2 días                  |
+| 🟢        | DT13 · Enums moneda           | 2 días                  |
+| 🟡        | DT14 · Wizard compras SSR     | Absorbido por FP6       |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
 | 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
