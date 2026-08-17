@@ -36,12 +36,17 @@ export function getCurrencyLabel(code: string): string {
 export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
 	[CurrencyCode.USD_BCV]: '$',
 	[CurrencyCode.EUR_BCV]: '€',
-	[CurrencyCode.USDT]: '$',
+	[CurrencyCode.USDT]: 'USDT',
 	[CurrencyCode.USD_PAYPAL]: '$',
 	[CurrencyCode.USD_EFECTIVO]: '$',
-	[CurrencyCode.VES]: 'Bs.',
+	[CurrencyCode.VES]: 'Bs',
 	[CurrencyCode.OTHER]: '¤'
 };
+
+/** Get the display symbol for a currency code, with a neutral fallback. */
+export function getCurrencySymbol(code: string): string {
+	return CURRENCY_SYMBOLS[code as CurrencyCode] ?? '¤';
+}
 
 /**
  * Base currency for sales (all prices normalized to this)

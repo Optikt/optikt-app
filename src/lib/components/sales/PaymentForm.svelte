@@ -26,7 +26,7 @@
 		rateTypeForCurrency,
 		rateTypeForRail
 	} from '$lib/shared/enums';
-	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { getCurrencySymbol } from '$lib/shared/enums';
 	import {
 		computePaymentExchangeVariance,
 		denormalizePurchasePaymentAmount,
@@ -160,7 +160,7 @@
 		kind === 'purchase' && settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
 	);
 	const settlementSymbol = $derived(
-		isNativeSettlement ? getSettlementCurrencySymbol(settlementCurrency!) : ''
+		isNativeSettlement ? getCurrencySymbol(settlementCurrency!) : ''
 	);
 	const railsByCurrency = $derived(
 		kind === 'purchase' ? PAYMENT_RAILS_BY_CURRENCY : SALES_RAILS_BY_CURRENCY

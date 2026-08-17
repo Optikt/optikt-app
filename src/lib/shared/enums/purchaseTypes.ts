@@ -222,35 +222,6 @@ export const ACTIVE_PURCHASE_SOURCE_CURRENCIES = [
 	PurchaseSourceCurrency.PAYPAL
 ] as const;
 
-export const PURCHASE_SOURCE_CURRENCY_LABELS: Record<PurchaseSourceCurrency, string> = {
-	[PurchaseSourceCurrency.USD]: 'USD BCV',
-	[PurchaseSourceCurrency.VES]: 'Bolívares',
-	[PurchaseSourceCurrency.EUR]: 'Euro (€)',
-	[PurchaseSourceCurrency.USDT]: 'USDT',
-	[PurchaseSourceCurrency.PAYPAL]: 'USD PayPal'
-};
-
-export const PURCHASE_SOURCE_CURRENCY_SYMBOLS: Record<PurchaseSourceCurrency, string> = {
-	[PurchaseSourceCurrency.USD]: '$',
-	[PurchaseSourceCurrency.VES]: 'Bs',
-	[PurchaseSourceCurrency.EUR]: '€',
-	[PurchaseSourceCurrency.USDT]: 'USDT',
-	[PurchaseSourceCurrency.PAYPAL]: '$'
-};
-
-export function getPurchaseSourceCurrencyLabel(currency: string): string {
-	return PURCHASE_SOURCE_CURRENCY_LABELS[currency as PurchaseSourceCurrency] ?? currency;
-}
-
-export function getPurchaseSourceCurrencySymbol(currency: string): string {
-	return PURCHASE_SOURCE_CURRENCY_SYMBOLS[currency as PurchaseSourceCurrency] ?? currency;
-}
-
-/** Whether this source currency requires entering an alt price (not USD). */
-export function isAltSourceCurrency(currency: string): boolean {
-	return currency === PurchaseSourceCurrency.VES || currency === PurchaseSourceCurrency.EUR;
-}
-
 // ============================================================================
 // PURCHASE PAYMENT METHOD
 // ============================================================================
