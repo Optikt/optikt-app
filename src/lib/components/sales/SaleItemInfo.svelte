@@ -25,7 +25,9 @@
 	const product = $derived(
 		item.kind === 'product' ? findProduct(item, catalog.getProducts()) : undefined
 	);
-	const lens = $derived(item.kind === 'lens' ? findLensItem(item, catalog.getLensItems()) : undefined);
+	const lens = $derived(
+		item.kind === 'lens' ? findLensItem(item, catalog.getLensItems()) : undefined
+	);
 
 	const productTypeIcon = $derived(
 		item.kind === 'product' && product?.type ? getProductTypeIcon(product.type) : undefined
