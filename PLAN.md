@@ -253,17 +253,15 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ---
 
-### FP1 · preserve-list-filters 🔴
+### ✅ FP1 · preserve-list-filters (COMPLETADO — verificado 2026-08-17)
 
-**Problema:** Al navegar lista→detalle→volver en ventas, compras, lentes, productos, clientes y cotizaciones, los filtros se pierden porque el botón volver va a la URL base sin query params.
+**Qué se implementó** (sesión previa, verificado en código):
 
-**Por qué importa:** Rompe el flujo de trabajo. Usuario filtra 50 ventas, abre una para ver detalle, vuelve y tiene que re-filtrar. Cada vez. 6 secciones afectadas.
+- `saveReferrerParams` (urlState.ts:35) wireado en las **6 listas**: sales, purchases, lenses, products, customers, quotes.
+- `getBackUrl` / `peekBackUrl` (urlState.ts:47) wireado en los **6 detalles**: `quotes/[id]`, `lenses/[id]`, `products/[id]`, `sales/[id]`, `customers/[id]`, `purchases/[id]` (PurchaseOrderDetailHeader.svelte:48).
+- Volver desde detalle restaura query params de la lista (filtros + búsqueda).
 
-**Contras:** SessionStorage implica que si el usuario abre dos tabs de la misma sección, los filtros se pisan. Edge case aceptable.
-
-**Dificultad:** Baja. **Solución:** (a) Utilidad `saveReferrerParams`/`getBackUrl` en `src/lib/utils/urlState.ts` (ya existe parcialmente). (b) `beforeNavigate` en cada lista para guardar params. (c) `goBack()` modificado en cada detalle. ~1 día.
-
-**Estado:** Plan activo. Sin empezar implementación.
+**Verificación:** rg sobre `src/routes` confirma los 12 puntas (6 save + 6 back).
 
 ---
 
@@ -476,6 +474,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | FP4 · Estados de venta         | Completado              |
 | 🟡        | FP5 · Historial estados venta  | 1-2 días                |
 | ✅        | FP6 · Catálogo lazy + ranking  | Completado              |
+| ✅        | FP1 · preserve-list-filters    | Completado              |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
@@ -486,8 +485,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | DT13 · Enums moneda            | 2 días                  |
 | 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
 | 🟡        | DT15 · Altura en presupuestos  | 2 días                  |
-| ❌        | FP1 · preserve-list-filters    | 1 día                   |
-| 🔴        | FP3 · public-catalog-api       | 15 días                 |
+| ❌        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
 | 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
 | 🟡        | NF1 · Órdenes laboratorio      | 10 días                 |
@@ -504,7 +502,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~125 días-hombre. **Quick wins (🔴 bajo esfuerzo):** 1 día para resolver FP1; DT11-13 (5 días) para limpiar deuda low-hanging.
+**Total estimado:** ~124 días-hombre. **Quick wins (🔴 bajo esfuerzo):** DT11-13 (5 días) para limpiar deuda low-hanging.
 
 ---
 
