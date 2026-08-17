@@ -303,17 +303,22 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ---
 
-### FP6 · Carga lazy del catálogo + búsqueda con ranking 🔴
+### ✅ FP6 · Carga lazy del catálogo + búsqueda con ranking (COMPLETADO — 2026-08-17)
 
-**Problema:** `/sales/new`, `/purchases/new` y `/sales/[id]` cargan el catálogo completo en SSR (471 productos + 240 lentes con relaciones ≈ 1MB JSON por página). La DB no es el cuello — es serialización + transferencia + parse + hidratación. Resultado: segundos de espera al abrir "Nueva venta"/"Nueva compra".
+**Qué se implementó:**
 
-**Por qué importa:** Es la acción más frecuente del día (vender). Cada apertura de wizard espera. Además el search bar global (`universalSearch`) busca con `ilike` tonto ordenado por createdAt — TODO explícito en CommandSearch.svelte:26.
+- **SSR sin catálogo** en las 4 páginas (`/sales/new`, `/purchases/new`, `/sales/[id]`, `/purchases/[id]/edit`): payload ~1MB → ~10KB.
+- **`searchCatalog`** (`src/lib/remote/catalog.remote.ts` + `CatalogSearchSchema`): productos con relevancia SQL por tokens; lentes con token+ranking (mismo que `/lenses`); filtro `supplierId` para compras.
+- **`getCatalogItemsByIds`**: seed del cache con items existentes (edición venta/PO).
+- **`catalogCache.svelte.ts`**: cache reactivo compartido (`Map<id, obj>`) — los helpers existentes (stock, buildSaleItems, Rx confirmation) funcionan sin cambios.
+- **SearchBar venta step 2**: debounce 250ms + loader (sin flash "Sin resultados") + race-guard.
+- **Wizard compras**: fetch del set del proveedor al elegirlo; combobox con search server + fuente local.
+- **`EditSaleModal`/`ItemSelect`**: typeahead server-side.
+- **`universalSearch`** (nav): reemplaza los `ilike` tontos por el search con ranking (DTOs intactos).
+- **Extra**: lentes buscables por source — "terminado", "laboratorio", "tallado" (sinónimo LAB), "lab", "finished" (raw).
+- Plan detallado: `docs/plans/lazy-catalog-search.md`.
 
-**Contras:** El search pasa de filtro local instantáneo a roundtrip server (mitigado con debounce + loading + cache). Reescritura de los pickers de lentes (typeahead con ranking).
-
-**Dificultad:** Media (5-7 días). **Solución:** (a) SSR mínimo (suppliers + orderNumber) en las 3 páginas. (b) Remote `searchCatalog` reutilizando el search con ranking existente: relevancia SQL para productos (`getAllProductsWithRelations({ search, limit })`) y token+`computeRelevanceScore` para lentes (`getLensCatalogItemsWithRelations({ search })` — el de `/lenses`, ya perfecto). (c) Cache del wizard (`Map<id, obj>`) al agregar items — helpers existentes sin cambios. (d) `universalSearch` migrado al mismo ranking (aditivo, DTOs intactos). Plan detallado: `docs/plans/lazy-catalog-search.md`.
-
-**Estado:** Plan activo. Sin empezar.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 755/755 tests.
 
 ---
 
@@ -470,7 +475,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | FP2 · backup-ui                | Completado              |
 | ✅        | FP4 · Estados de venta         | Completado              |
 | 🟡        | FP5 · Historial estados venta  | 1-2 días                |
-| 🔴        | FP6 · Catálogo lazy + ranking  | 5-7 días                |
+| ✅        | FP6 · Catálogo lazy + ranking  | Completado              |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
 | ✅        | DT3 · Validación Zod           | Completado              |
