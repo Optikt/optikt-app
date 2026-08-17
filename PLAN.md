@@ -92,19 +92,17 @@
 
 ---
 
-### DT13 · Enums y labels de moneda duplicados 🟡
+### ✅ DT13 · Enums y labels de moneda duplicados (COMPLETADO — 2026-08-17)
 
-**Problema (auditoría 2026-08-17):** `PurchaseSourceCurrency` vs `CurrencyCode` — dos enums con sets solapados (`USDT`, `VES`). La duplicación real viva es menor de lo que decía el análisis anterior:
+**Qué se hizo (auditoría previa redujo el alcance):**
 
-- **Vivo:** `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts, 12 consumidores) duplica `CURRENCY_SYMBOLS` (currencyTypes.ts). `getSourceCurrencySymbol` (13 consumidores) es el canónico de PurchaseSourceCurrency.
-- **Muerto (cero consumidores):** `PURCHASE_SOURCE_CURRENCY_LABELS`, `PURCHASE_SOURCE_CURRENCY_SYMBOLS`, `getPurchaseSourceCurrencyLabel`, `getPurchaseSourceCurrencySymbol`, `isAltSourceCurrency` (purchaseTypes.ts) + `getSettlementCurrencyLabel`, `isAltDisplayCurrency` (purchaseOrderCurrencies.ts).
-- **4ª implementación hermana:** `EXPENSE_CURRENCY_LABELS/SYMBOLS` (cashTypes.ts) — enum propio, se trata como **DT16**.
+- **7 helpers muertos eliminados** (cero consumidores): `PURCHASE_SOURCE_CURRENCY_LABELS`, `PURCHASE_SOURCE_CURRENCY_SYMBOLS`, `getPurchaseSourceCurrencyLabel`, `getPurchaseSourceCurrencySymbol`, `isAltSourceCurrency` (purchaseTypes.ts) + `getSettlementCurrencyLabel`, `isAltDisplayCurrency` (purchaseOrderCurrencies.ts).
+- **Símbolos unificados:** `CURRENCY_SYMBOLS` alineada (USDT→`'USDT'`, VES→`'Bs'`, USD_EFECTIVO→`'$'`) + nuevo `getCurrencySymbol(code)` en `currencyTypes.ts`. Eliminado `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts).
+- **5 consumidores migrados** a `getCurrencySymbol`: `PaymentForm`, `PurchaseOrdersTable`, `PurchaseOrderFinancialCard`, `PurchaseOrderPaymentsHistoryDrawer`, `UpcomingPurchasePaymentsWidget`.
+- `getSourceCurrencySymbol` queda como único helper de PurchaseSourceCurrency. Core intacto: `SOURCE_TO_CURRENCY_CODE`, `sourcePriceToUsdBcv`, `sourceCurrencyRequiresRateToVes`, `getCurrencyLabel`.
+- **Único cambio visible:** USD_EFECTIVO en settlement `¤`→`$` (mejora). Cero cambios en USDT/VES.
 
-**Riesgo:** Cambiar un label requiere 2-3 archivos; helpers muertos confunden.
-
-**Dificultad:** Media (1 día). **Solución:** (a) Borrar los 7 helpers muertos. (b) Unificar símbolos: nuevo `getCurrencySymbol` en `currencyTypes.ts` (usa `CURRENCY_SYMBOLS`), migrar los 12 consumidores — tablas idénticas, cero cambio visual (verificado por script). (c) Mantener `getSourceCurrencySymbol` como único helper de PurchaseSourceCurrency. Core sano intacto: `SOURCE_TO_CURRENCY_CODE`, `sourcePriceToUsdBcv`, `sourceCurrencyRequiresRateToVes`, `getCurrencyLabel`.
-
-**Estado:** Plan activo. Plan detallado: `docs/plans/currency-consolidation.md`.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 758/758 tests, cero referencias a helpers muertos.
 
 ---
 
@@ -499,7 +497,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT11 · Dead code componentes   | Completado              |
 | ✅        | DT15 · Altura en presupuestos  | Completado              |
 | 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
-| 🟡        | DT13 · Enums moneda            | 1 día                   |
+| ✅        | DT13 · Enums moneda            | Completado              |
 | 🟢        | DT16 · Enums moneda gastos     | 2 días                  |
 | 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
