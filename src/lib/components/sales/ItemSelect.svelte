@@ -150,6 +150,7 @@
 	<SearchCombobox
 		{options}
 		{placeholder}
+		loading={searching}
 		{value}
 		getId={(s: unknown) => (s as SelectOption).id}
 		getLabel={(s: unknown) => (s as SelectOption).label}

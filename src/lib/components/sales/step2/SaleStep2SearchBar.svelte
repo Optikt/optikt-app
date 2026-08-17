@@ -134,6 +134,8 @@
 
 	function handleQuickAddInput() {
 		quickAddOpen = quickAddQuery.trim().length >= 2;
+		// Show the loader immediately (covers the debounce window too).
+		if (quickAddQuery.trim().length >= 2) quickAddLoading = true;
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(runSearch, 250);
 	}
@@ -198,12 +200,7 @@
 		<div
 			class="absolute top-full right-0 left-0 z-30 mt-1.5 max-h-[50vh] overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60"
 		>
-			{#if quickAddLoading}
-				<div class="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
-					<Loader2 class="h-4 w-4 animate-spin" />
-					Buscando...
-				</div>
-			{:else if totalQuickAddResults > 0}
+			{#if totalQuickAddResults > 0}
 				{#if visibleProductQuickAddOptions.length > 0}
 					<div class="border-b border-slate-100 px-3 pt-2.5 pb-1">
 						<div
@@ -291,6 +288,11 @@
 						</button>
 					{/each}
 				{/if}
+			{:else if quickAddLoading}
+				<div class="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+					<Loader2 class="h-4 w-4 animate-spin" />
+					Buscando...
+				</div>
 			{:else}
 				<div class="py-6 text-center">
 					<p class="text-sm text-slate-500">

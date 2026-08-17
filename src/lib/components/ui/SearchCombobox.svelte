@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { Search, ChevronDown, X } from '@lucide/svelte';
+	import { Search, ChevronDown, X, Loader2 } from '@lucide/svelte';
 	import { type Snippet, untrack } from 'svelte';
 
 	type Props<T> = {
 		options: T[];
 		placeholder: string;
 		disabled?: boolean;
+		/** Show a loading spinner instead of "Sin resultados" while async search runs. */
+		loading?: boolean;
 		clearOnSelect?: boolean;
 		value?: string;
 		getId: (option: T) => string;
@@ -22,6 +24,7 @@
 		options,
 		placeholder,
 		disabled = false,
+		loading = false,
 		clearOnSelect = false,
 		value = '',
 		getId,
@@ -193,7 +196,14 @@
 		<div
 			class="absolute left-0 right-0 top-full z-50 rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
 		>
-			Sin resultados
+			{#if loading}
+				<span class="inline-flex items-center gap-2">
+					<Loader2 class="h-4 w-4 animate-spin" />
+					Buscando...
+				</span>
+			{:else}
+				Sin resultados
+			{/if}
 		</div>
 	{/if}
 </div>

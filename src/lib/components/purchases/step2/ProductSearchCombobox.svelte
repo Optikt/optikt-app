@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Plus, Glasses, Package, Loader2 } from '@lucide/svelte';
+	import { matchesAllTokens } from '$lib/utils/search';
 	import { logger } from '$lib/utils';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
@@ -140,9 +141,14 @@
 			options={currentOptions}
 			placeholder="Buscar producto por nombre o código…"
 			{disabled}
+			loading={searching}
 			clearOnSelect={true}
 			getId={(s: unknown) => (s as SearchOption).key}
 			getLabel={(s: unknown) => (s as SearchOption).label}
+			filterFn={(query: string, s: unknown) => {
+				const opt = s as SearchOption;
+				return matchesAllTokens(query, `${opt.label} ${opt.secondaryText}`);
+			}}
 			onquerychange={handleQueryChange}
 			onselect={handleSelect}
 			onclear={() => {}}
