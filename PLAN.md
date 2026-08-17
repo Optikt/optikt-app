@@ -119,6 +119,7 @@
 ### ✅ DT15 · Altura por ojo ausente en presupuestos (COMPLETADO — 2026-08-17)
 
 **Qué se hizo:** `quote_items` ahora captura y persiste la altura por ojo:
+
 - Migración **0040** idempotente: `od_altura`/`os_altura` en `quote_items`.
 - `QuoteItemSchema`: `AlturaSchema.optional()` por ojo (10-40mm).
 - `buildQuoteItemsFromWizard` mapea `lensPair.od/oi.altura`.
@@ -479,11 +480,11 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT3 · Validación Zod           | Completado              |
 | ✅        | DT5 · Error pattern duplicado  | Completado              |
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
-| ✅        | DT11 · Dead code componentes  | Completado              |
-| ✅        | DT15 · Altura en presupuestos | Completado              |
+| ✅        | DT11 · Dead code componentes   | Completado              |
+| ✅        | DT15 · Altura en presupuestos  | Completado              |
 | 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
-| 🟢        | DT13 · Enums moneda           | 2 días                  |
-| 🟡        | DT14 · Wizard compras SSR     | Absorbido por FP6       |
+| 🟢        | DT13 · Enums moneda            | 2 días                  |
+| 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
 | 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
