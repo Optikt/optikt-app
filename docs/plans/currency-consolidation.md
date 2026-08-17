@@ -13,7 +13,7 @@ plan status: active
 ## Estado actual
 
 **Vivo — duplicación real:**
-- `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts) — 12 consumidores; tabla idéntica a `CURRENCY_SYMBOLS` (currencyTypes.ts). Verificar paridad por script antes de migrar.
+- `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts) — 12 consumidores. **Nota: las tablas NO son idénticas** — difieren en USDT (`'USDT'` vs `'$'`), VES (`'Bs'` vs `'Bs.'`) y USD_EFECTIVO (`'¤'` default vs `'$'`). Estrategia: alinear `CURRENCY_SYMBOLS` a los valores de settlement (USDT→`'USDT'`, VES→`'Bs'`, USD_EFECTIVO→`'$'`) — `CURRENCY_SYMBOLS` no tiene consumidores externos, cero colateral. Resultado: los 12 consumidores no ven ningún cambio visible salvo USD_EFECTIVO `'¤'`→`'$'` (mejora).
 - `getSourceCurrencySymbol` (purchaseOrderCurrencies.ts) — 13 consumidores; se queda como el único helper de símbolos de `PurchaseSourceCurrency`.
 
 **Muerto (cero imports, solo self-referencias):**
@@ -28,10 +28,10 @@ plan status: active
    - `src/lib/shared/enums/purchaseTypes.ts`: borrar `PURCHASE_SOURCE_CURRENCY_LABELS`, `PURCHASE_SOURCE_CURRENCY_SYMBOLS`, `getPurchaseSourceCurrencyLabel`, `getPurchaseSourceCurrencySymbol`, `isAltSourceCurrency`
    - `src/lib/shared/purchaseOrderCurrencies.ts`: borrar `getSettlementCurrencyLabel`, `isAltDisplayCurrency`; limpiar el doc comment que las menciona
 2. **Fase 2 — unificar símbolos vivos:**
-   - `src/lib/shared/enums/currencyTypes.ts`: nuevo `getCurrencySymbol(code: string): string` → `CURRENCY_SYMBOLS[code] ?? '¤'`
+   - `src/lib/shared/enums/currencyTypes.ts`: alinear `CURRENCY_SYMBOLS` (USDT→`'USDT'`, VES→`'Bs'`, USD_EFECTIVO→`'$'`) + nuevo `getCurrencySymbol(code: string): string` → `CURRENCY_SYMBOLS[code] ?? '¤'`
    - Borrar `getSettlementCurrencySymbol` de purchaseOrderCurrencies.ts
    - Migrar los 12 consumidores a `getCurrencySymbol` (import desde `$lib/shared/enums`)
-3. **Verificación de paridad (antes de cambiar imports):** script que assert `getSettlementCurrencySymbol(c) === CURRENCY_SYMBOLS[c]` para todo `CurrencyCode` → cero cambio visual garantizado
+3. **Verificación de paridad:** script que assert el output de `getSettlementCurrencySymbol` == `getCurrencySymbol` para todo `CurrencyCode` (tras alinear) → cero cambio visual salvo USD_EFECTIVO
 4. **Verificar:** `pnpm check` + `pnpm lint` + `pnpm test:unit`
 
 ## Archivos
