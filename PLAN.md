@@ -92,17 +92,33 @@
 
 ---
 
-### DT13 · Enums y labels de moneda duplicados 🟢
+### DT13 · Enums y labels de moneda duplicados 🟡
 
-**Problema:** `PurchaseSourceCurrency` vs `CurrencyCode` — dos enums con sets que se solapan parcialmente (`USDT`, `VES`), más tres implementaciones de labels/symbols:
+**Problema (auditoría 2026-08-17):** `PurchaseSourceCurrency` vs `CurrencyCode` — dos enums con sets solapados (`USDT`, `VES`). La duplicación real viva es menor de lo que decía el análisis anterior:
 
-- `src/lib/shared/enums/purchaseTypes.ts`: `PURCHASE_SOURCE_CURRENCY_LABELS/SYMBOLS`, `getPurchaseSourceCurrencyLabel/Symbol`, `isAltSourceCurrency`
-- `src/lib/shared/enums/currencyTypes.ts`: `CURRENCY_LABELS/SYMBOLS`, `getCurrencyLabel` (también consumido por `cashTypes.ts`)
-- `src/lib/shared/purchaseOrderCurrencies.ts`: `getSourceCurrencySymbol`, `getSettlementCurrencyLabel/Symbol`, `isAltDisplayCurrency` (duplica `isAltSourceCurrency`)
+- **Vivo:** `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts, 12 consumidores) duplica `CURRENCY_SYMBOLS` (currencyTypes.ts). `getSourceCurrencySymbol` (13 consumidores) es el canónico de PurchaseSourceCurrency.
+- **Muerto (cero consumidores):** `PURCHASE_SOURCE_CURRENCY_LABELS`, `PURCHASE_SOURCE_CURRENCY_SYMBOLS`, `getPurchaseSourceCurrencyLabel`, `getPurchaseSourceCurrencySymbol`, `isAltSourceCurrency` (purchaseTypes.ts) + `getSettlementCurrencyLabel`, `isAltDisplayCurrency` (purchaseOrderCurrencies.ts).
+- **4ª implementación hermana:** `EXPENSE_CURRENCY_LABELS/SYMBOLS` (cashTypes.ts) — enum propio, se trata como **DT16**.
 
-**Riesgo:** Inconsistencias de display según qué helper use cada módulo. Cambiar un label requiere 2-3 archivos.
+**Riesgo:** Cambiar un label requiere 2-3 archivos; helpers muertos confunden.
 
-**Dificultad:** Media (2 días). **Solución (Opción B):** Delegar todo a `currencyTypes.ts`; mantener ambos enums pero con semántica clara; eliminar los helpers redundantes.
+**Dificultad:** Media (1 día). **Solución:** (a) Borrar los 7 helpers muertos. (b) Unificar símbolos: nuevo `getCurrencySymbol` en `currencyTypes.ts` (usa `CURRENCY_SYMBOLS`), migrar los 12 consumidores — tablas idénticas, cero cambio visual (verificado por script). (c) Mantener `getSourceCurrencySymbol` como único helper de PurchaseSourceCurrency. Core sano intacto: `SOURCE_TO_CURRENCY_CODE`, `sourcePriceToUsdBcv`, `sourceCurrencyRequiresRateToVes`, `getCurrencyLabel`.
+
+**Estado:** Plan activo. Plan detallado: `docs/plans/currency-consolidation.md`.
+
+---
+
+### DT16 · Enums de moneda de gastos 🟢
+
+**Problema:** `cashTypes.ts` define `EXPENSE_CURRENCIES`/`EXPENSE_CURRENCY_LABELS`/`EXPENSE_CURRENCY_SYMBOLS` (enum propio `'USD'|'VES'|'USDT'|'EUR'`) — una 4ª implementación de moneda que se solapa con `CurrencyCode` y `PurchaseSourceCurrency`. Detección en auditoría DT13 (2026-08-17); fuera de scope de DT13.
+
+**Por qué importa:** 4 fuentes de verdad de "qué es una moneda y cómo se muestra". Cambiar un símbolo de gastos requiere tocar un archivo distinto al resto.
+
+**Contras:** Refactor de gastos UI (caja de gastos, pagos) — el enum local no es `CurrencyCode` y las filas persisten strings.
+
+**Dificultad:** Media (2 días). **Solución:** (a) Mapear `ExpenseCurrency` → `CurrencyCode` (`USD`→`USD_BCV`, `EUR`→`EUR_BCV`, `VES`→`VES`, `USDT`→`USDT`) o unificar el enum directamente. (b) Reemplazar labels/symbols por `getCurrencyLabel`/`getCurrencySymbol`. (c) Verificar display de caja de gastos y pagos de gastos.
+
+**Estado:** Plan activo. Sin empezar.
 
 ---
 
@@ -483,7 +499,8 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT11 · Dead code componentes   | Completado              |
 | ✅        | DT15 · Altura en presupuestos  | Completado              |
 | 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
-| 🟢        | DT13 · Enums moneda            | 2 días                  |
+| 🟡        | DT13 · Enums moneda            | 1 día                   |
+| 🟢        | DT16 · Enums moneda gastos     | 2 días                  |
 | 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
@@ -502,7 +519,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~124 días-hombre. **Quick wins (🔴 bajo esfuerzo):** DT11-13 (5 días) para limpiar deuda low-hanging.
+**Total estimado:** ~125 días-hombre. **Quick wins (🔴 bajo esfuerzo):** DT13 (1 día) para limpiar la consolidación de monedas.
 
 ---
 
