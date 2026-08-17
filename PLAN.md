@@ -82,7 +82,9 @@
 
 **Contras:** Git history los recupera si se necesitan después.
 
-**Dificultad:** Baja (1 día). **Solución:** Auditar barrels (`prescriptions/index.ts`, `customers/index.ts`, `ui/index.ts`), confirmar cero imports, eliminar componentes + exports + specs asociadas.
+**Dificultad:** Baja (1 día). **Solución:** Auditar barrels (`prescriptions/index.ts`, `customers/index.ts`, `ui/index.ts`), confirmar cero imports, eliminar componentes + exports + specs asociadas. Plan detallado: `docs/plans/dead-code-cleanup.md`.
+
+**Estado:** Plan activo.
 
 ---
 
@@ -126,7 +128,9 @@
 
 **Riesgo:** Conversión presupuesto→venta pierde dato clínico; el presupuesto muestra una fórmula incompleta al cliente.
 
-**Dificultad:** Baja-Media (1-2 días). **Solución:** Migración idempotente (`ADD COLUMN IF NOT EXISTS`, mismo patrón que 0039), inputs ALT en el wizard de presupuesto reutilizando `AlturaSchema`, persistencia en `quotes.remote.ts`, display en detalle.
+**Dificultad:** Baja-Media (1-2 días). **Solución:** Migración idempotente (`ADD COLUMN IF NOT EXISTS`, mismo patrón que 0039), inputs ALT en el wizard de presupuesto reutilizando `AlturaSchema`, persistencia en `quotes.remote.ts`, display en detalle. Plan detallado: `docs/plans/quotes-altura.md`.
+
+**Estado:** Plan activo.
 
 ---
 
