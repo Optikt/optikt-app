@@ -39,21 +39,12 @@ export function sourceCurrencyRequiresRateToVes(sourceCurrency: string): boolean
 	);
 }
 
-/**
- * Whether the source currency is NOT USD-BCV (i.e. displays alternative-price
- * fields in the UI).  Equivalent to the existing `isAltSourceCurrency`.
- */
-export function isAltDisplayCurrency(sourceCurrency: string): boolean {
-	return sourceCurrency !== PurchaseSourceCurrency.USD;
-}
-
 // ============================================================================
 // DISPLAY HELPERS
 // ============================================================================
 
 /**
  * Display symbol for a source currency in UI (item rows, summaries).
- * Uses the same symbols as `PURCHASE_SOURCE_CURRENCY_SYMBOLS`.
  */
 export function getSourceCurrencySymbol(sourceCurrency: string): string {
 	switch (sourceCurrency) {
@@ -67,37 +58,6 @@ export function getSourceCurrencySymbol(sourceCurrency: string): string {
 			return 'USDT';
 		case PurchaseSourceCurrency.PAYPAL:
 			return '$';
-		default:
-			return '¤';
-	}
-}
-
-/** Display label for a settlement currency (uses CurrencyCode labels). */
-export function getSettlementCurrencyLabel(currencyCode: string): string {
-	const labels: Record<string, string> = {
-		[CurrencyCode.USD_BCV]: 'USD BCV',
-		[CurrencyCode.EUR_BCV]: 'EUR BCV',
-		[CurrencyCode.USDT]: 'USDT',
-		[CurrencyCode.USD_PAYPAL]: 'USD PayPal',
-		[CurrencyCode.VES]: 'Bolívares (Bs)',
-		[CurrencyCode.USD_EFECTIVO]: 'USD efectivo'
-	};
-	return labels[currencyCode] ?? currencyCode;
-}
-
-/** Display symbol for a settlement currency. */
-export function getSettlementCurrencySymbol(currencyCode: string): string {
-	switch (currencyCode) {
-		case CurrencyCode.USD_BCV:
-			return '$';
-		case CurrencyCode.EUR_BCV:
-			return '€';
-		case CurrencyCode.USDT:
-			return 'USDT';
-		case CurrencyCode.USD_PAYPAL:
-			return '$';
-		case CurrencyCode.VES:
-			return 'Bs';
 		default:
 			return '¤';
 	}

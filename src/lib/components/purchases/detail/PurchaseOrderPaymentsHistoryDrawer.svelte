@@ -9,7 +9,7 @@
 		PurchaseOrderStatus,
 		PurchasePaymentMethod
 	} from '$lib/shared/enums';
-	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { getCurrencySymbol } from '$lib/shared/enums';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
@@ -54,7 +54,7 @@
 		settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
 	);
 	const settlementSymbol = $derived(
-		isNativeSettlement ? getSettlementCurrencySymbol(settlementCurrency!) : ''
+		isNativeSettlement ? getCurrencySymbol(settlementCurrency!) : ''
 	);
 	const sortedPayments = $derived.by(() =>
 		[...payments].sort((left, right) => left.paymentNumber - right.paymentNumber)

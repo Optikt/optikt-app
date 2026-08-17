@@ -9,7 +9,7 @@
 		PurchaseSourceCurrency,
 		getPurchasePaymentTermsLabel
 	} from '$lib/shared/enums';
-	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { getCurrencySymbol } from '$lib/shared/enums';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
 	import { formatAltAmount } from '$lib/utils/purchaseOrderDetail';
 
@@ -75,7 +75,7 @@
 
 	// ----- Saldo -----
 	const isNativeCurrency = $derived(balance.settlementCurrency !== CurrencyCode.USD_BCV);
-	const settlementSymbol = $derived(getSettlementCurrencySymbol(balance.settlementCurrency));
+	const settlementSymbol = $derived(getCurrencySymbol(balance.settlementCurrency));
 	const paidAmount = $derived(
 		isNativeCurrency
 			? `${balance.totalAppliedToDebt.toFixed(2)} ${settlementSymbol}`

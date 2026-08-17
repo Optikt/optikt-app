@@ -8,7 +8,7 @@
 		PurchaseDocumentType,
 		CurrencyCode
 	} from '$lib/shared/enums';
-	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { getCurrencySymbol } from '$lib/shared/enums';
 	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
 	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
 
@@ -88,7 +88,7 @@
 		const b = purchaseOrder.balance;
 		if (!b) return formatPrice(0);
 		if (b.settlementCurrency && b.settlementCurrency !== CurrencyCode.USD_BCV) {
-			const sym = getSettlementCurrencySymbol(b.settlementCurrency);
+			const sym = getCurrencySymbol(b.settlementCurrency);
 			return `${b.settlementBalance.toFixed(2)} ${sym}`;
 		}
 		return formatPrice(b.balance);

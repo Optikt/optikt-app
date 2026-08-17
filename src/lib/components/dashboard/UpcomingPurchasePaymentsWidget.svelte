@@ -4,7 +4,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { PurchaseOrderDueBadge } from '$lib/components/ui';
 	import { CurrencyCode } from '$lib/shared/enums';
-	import { getSettlementCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { getCurrencySymbol } from '$lib/shared/enums';
 	import type { UpcomingPurchaseOrderDue } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 	import { formatDateOnly } from '$lib/utils';
 
@@ -86,7 +86,7 @@
 							{currency === CurrencyCode.USD_BCV ? 'USD BCV' : currency}
 						</span>
 						<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-							{getSettlementCurrencySymbol(currency)}
+							{getCurrencySymbol(currency)}
 							{group.total.toFixed(2)}
 						</span>
 					</div>
@@ -115,7 +115,7 @@
 						<div class="flex items-center justify-between gap-3 sm:justify-end">
 							<div class="text-right">
 								<p class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-									{getSettlementCurrencySymbol(due.balance.settlementCurrency)}
+									{getCurrencySymbol(due.balance.settlementCurrency)}
 									{Number(dueAmount(due)).toFixed(2)}
 								</p>
 								<p class="text-xs text-on-surface-variant">
