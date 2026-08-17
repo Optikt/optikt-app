@@ -1,6 +1,6 @@
 {
   "id": "0040_quotes_altura",
-  "prevId": "1af0d3ad-7ea5-4591-9def-944f39a8120c",
+  "prevId": "d08cf233-9c50-42c6-b3d7-21f985153023",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
