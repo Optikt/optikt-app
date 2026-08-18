@@ -24,6 +24,7 @@
 	import { AppBadge, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
 	import { formatDate, formatDateOnly, formatPrice, getBackUrl } from '$lib/utils';
+	import { getErrorMessage } from '$lib/utils/errors';
 	import {
 		PaymentMethod,
 		PAYMENT_METHOD_LABELS,
@@ -41,6 +42,7 @@
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
+	import { printTickeraReceipt } from '$lib/remote/printing.remote';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 
@@ -56,6 +58,7 @@
 
 	// Drawer state
 	let showDrawer = $state(false);
+	let printingTickera = $state(false);
 	let drawerResetCount = $state(0);
 
 	// Stock movements modal
@@ -189,6 +192,23 @@
 		window.open(resolve(`/api/pdf/sale/${sale.id}`), '_blank', 'noopener,noreferrer');
 	}
 
+	async function printTickera() {
+		if (printingTickera) return;
+		printingTickera = true;
+		try {
+			const result = await printTickeraReceipt({ saleId: sale.id });
+			if (result.success) {
+				toast.success(`Recibo enviado a la tickera (${result.bytes ?? ''} bytes)`);
+			} else {
+				toast.error(result.error ?? 'No se pudo imprimir en la tickera');
+			}
+		} catch (error) {
+			toast.error(getErrorMessage(error, 'No se pudo imprimir en la tickera'));
+		} finally {
+			printingTickera = false;
+		}
+	}
+
 	function warnIfReceiptMayExceedHalfLetter() {
 		if (!receiptHalfLetterOverflowRisk) return;
 		toast.warning('Este recibo tiene muchos ítems o pagos y puede superar media carta.');
@@ -275,6 +295,16 @@
 					>
 						<Printer class="h-4 w-4" />
 						Imprimir PDF
+					</button>
+
+					<button
+						type="button"
+						onclick={printTickera}
+						disabled={printingTickera}
+						class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--ds-radius-lg)] border border-outline-variant px-3 py-2 text-xs font-semibold text-on-surface-variant shadow-[var(--ds-shadow-md)] transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						<ReceiptText class="h-4 w-4" />
+						{printingTickera ? 'Imprimiendo...' : 'Imprimir Tickera'}
 					</button>
 				{/if}
 
