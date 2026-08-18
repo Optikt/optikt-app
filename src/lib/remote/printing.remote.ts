@@ -2,8 +2,11 @@
  * Impresión del recibo de venta en la TICKERA (agente local optikt-print-agent).
  *
  * Este camino es DISTINTO e independiente del recibo A4/PDF que ya existe:
- * pega un POST al agente con datos estructurados; el agente formatea a ESC/POS
+ * hace POST al agente con datos estructurados; el agente formatea a ESC/POS
  * de 80mm y lo manda al Spooler de Windows (Kadosh).
+ *
+ * Contract v2 (convenido con el agente): TODO en bolívares, convirtiendo por la
+ * tasa USD-BCV más reciente ya cachead en la app. El recibo lleva date/time.
  *
  * Si la PC de recepción está apagada o el agente no responde, devolvemos un
  * error amigable — no hay cola aún (fase 1 síncrona).
@@ -18,6 +21,7 @@ import {
 	type PaymentMethod
 } from '$lib/shared/enums/paymentMethods';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { fromISO } from '$lib/dates';
 import {
 	findSaleByIdWithRelations,
 	getSaleItemsWithDetails,
@@ -25,25 +29,25 @@ import {
 	type SaleItemWithDetails
 } from '$lib/server/db/queries/sales';
 import { getSettings } from '$lib/server/db/queries/settings';
+import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
-import { computeDiscount, formatDate } from '$lib/utils';
+import { computeDiscount } from '$lib/utils';
 import { getPrintItemLabel, getPrintLensRxSummary } from '$lib/utils/printDocumentItems';
 import { PrintTickeraSchema } from '$lib/schemas/printing';
 
 const AGENT_TIMEOUT_MS = 10_000;
+const BCV_CODE = 'USD'; // tasa usada para convertir todo el recibo a Bs
 
 type TickeraItem = {
 	description: string;
 	quantity: number;
-	unitPrice: number;
-	price: number;
+	unitPrice: number; // Bs
+	price: number; // Bs
 };
 
 type TickeraPayment = {
 	method: string;
-	amount: number;
-	currency: 'USD' | 'VES' | 'USDT';
-	amountBcvUsd: number | null;
+	amount: number; // Bs
 };
 
 type TickeraPayload = {
@@ -51,24 +55,21 @@ type TickeraPayload = {
 	store: {
 		name: string | null;
 		rif: string | null;
-		phone: string | null;
 		address: string | null;
-		website: string | null;
 	};
 	receiptNumber: number;
-	date: string;
-	cashier: string | null;
+	date: string; // dd/mm/yy
+	time: string; // HH:mm
 	customer: string;
 	customerIdNumber: string | null;
 	items: TickeraItem[];
 	totals: {
-		currency: 'USD';
+		currency: 'Bs';
 		subtotal: number;
+		discount: number;
 		taxRate: number | null;
 		tax: number;
 		total: number;
-		paid: number;
-		change: number;
 	};
 	payments: TickeraPayment[];
 	footerMessage: string | null;
@@ -93,6 +94,25 @@ function describeItem(item: SaleItemWithDetails): string {
 	return `${label} ${getPrintLensRxSummary(item)}`.trim();
 }
 
+function toBs(usd: number, rate: number): number {
+	return Math.round(usd * rate * 100) / 100;
+}
+
+function formatReceiptDateTime(saleDate: string): { date: string; time: string } {
+	const d = fromISO(saleDate);
+	const date = new Intl.DateTimeFormat('es-VE', {
+		day: '2-digit',
+		month: '2-digit',
+		year: '2-digit'
+	}).format(d);
+	const time = new Intl.DateTimeFormat('es-VE', {
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: false
+	}).format(d);
+	return { date, time };
+}
+
 export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
@@ -104,6 +124,14 @@ export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 			success: false as const,
 			error:
 				'Impresión por tickera no configurada en el servidor (PRINT_AGENT_URL / PRINT_AGENT_TOKEN)'
+		};
+	}
+
+	const bcvRate = await getExchangeRateValue(BCV_CODE);
+	if (bcvRate === null || bcvRate <= 0) {
+		return {
+			success: false as const,
+			error: 'No hay tasa BCV disponible para convertir el recibo a bolívares'
 		};
 	}
 
@@ -129,61 +157,48 @@ export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 		return {
 			description: describeItem(item),
 			quantity: item.quantity,
-			unitPrice: item.unitPrice,
-			price: Math.round(lineTotal * 100) / 100
+			unitPrice: toBs(item.unitPrice, bcvRate),
+			price: toBs(lineTotal, bcvRate)
 		};
 	});
 
 	const taxBreakdown = computeSnapshotTaxBreakdown(saleItems, sale.snapshotTaxRate);
 	const subtotal = taxBreakdown.taxableBase + taxBreakdown.exemptTotal;
 	const taxRate = sale.snapshotTaxRate && sale.snapshotTaxRate > 0 ? sale.snapshotTaxRate : null;
-	const paid = sale.paidAmountBcvUsd;
-	const change = Math.max(0, Math.round((paid - sale.total) * 100) / 100);
 
 	const tickeraPayments: TickeraPayment[] = payments.map((payment) => {
-		const currency = isBsPaymentMethod(payment.paymentMethod as PaymentMethod)
-			? 'VES'
-			: payment.paymentMethod === 'BINANCE_USDT'
-				? 'USDT'
-				: 'USD';
-		return {
-			method: getPaymentMethodLabel(payment.paymentMethod),
-			amount: payment.amount,
-			currency,
-			amountBcvUsd: payment.amountBcvUsd
-		};
+		const isBs = isBsPaymentMethod(payment.paymentMethod as PaymentMethod);
+		const amountBs = isBs ? payment.amount : toBs(payment.amountBcvUsd ?? payment.amount, bcvRate);
+		return { method: getPaymentMethodLabel(payment.paymentMethod), amount: amountBs };
 	});
+
+	const { date, time } = formatReceiptDateTime(sale.saleDate);
 
 	const payload: TickeraPayload = {
 		type: 'SALE',
 		store: {
 			name: settings.businessName?.trim() || null,
 			rif: settings.businessRif?.trim() || null,
-			phone: settings.businessPhone?.trim() || null,
-			address: settings.businessAddress?.trim() || null,
-			website: settings.businessWebsite?.trim() || null
+			address: settings.businessAddress?.trim() || null
 		},
 		receiptNumber: sale.orderNumber,
-		date: formatDate(sale.saleDate, { day: 'numeric', month: 'short', year: 'numeric' }),
-		cashier: sale.seller?.fullName ?? null,
+		date,
+		time,
 		customer: sale.customer
 			? `${sale.customer.firstName} ${sale.customer.lastName}`
 			: 'Cliente General',
 		customerIdNumber: sale.customer?.idNumber ?? null,
 		items,
 		totals: {
-			currency: 'USD',
-			subtotal: Math.round(subtotal * 100) / 100,
+			currency: 'Bs',
+			subtotal: toBs(subtotal, bcvRate),
+			discount: sale.discount > 0 ? toBs(sale.discount, bcvRate) : 0,
 			taxRate,
-			tax: Math.round(taxBreakdown.taxAmount * 100) / 100,
-			total: sale.total,
-			paid,
-			change
+			tax: toBs(taxBreakdown.taxAmount, bcvRate),
+			total: toBs(sale.total, bcvRate)
 		},
 		payments: tickeraPayments,
-		footerMessage: settings.businessWebsite?.trim()
-			? `¡Gracias por su compra! ${settings.businessWebsite.trim()}`
-			: '¡Gracias por su compra!'
+		footerMessage: '¡Gracias por su compra!'
 	};
 
 	// Llamada síncrona al agente (fase 1). PC apagada → fetch rechaza → error amigable.
@@ -193,10 +208,7 @@ export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 	try {
 		const response = await fetch(`${agentUrl.replace(/\/$/, '')}/imprimir`, {
 			method: 'POST',
-			headers: {
-				'content-type': 'application/json',
-				'x-auth-token': agentToken
-			},
+			headers: { 'content-type': 'application/json', 'x-auth-token': agentToken },
 			body: JSON.stringify(payload),
 			signal: controller.signal
 		});
