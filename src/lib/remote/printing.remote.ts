@@ -20,7 +20,7 @@ import {
 } from '$lib/server/db/queries/sales';
 import { getSettings } from '$lib/server/db/queries/settings';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
-import { getPrintItemLabel, getPrintLensRxSummary } from '$lib/utils/printDocumentItems';
+import { getPrintItemLabel } from '$lib/utils/printDocumentItems';
 import { PrintTickeraSchema } from '$lib/schemas/printing';
 
 const AGENT_TIMEOUT_MS = 10_000;
@@ -55,7 +55,7 @@ function buildItemsRows(items: SaleItemWithDetails[]): SaleItemWithDetails[] {
 function describeItem(item: SaleItemWithDetails): string {
 	const label = getPrintItemLabel(item);
 	if (item.itemType !== SaleItemType.LENS_PAIR) return label;
-	return `${label} ${getPrintLensRxSummary(item)}`.trim();
+	return `${label}`.trim();
 }
 
 export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
