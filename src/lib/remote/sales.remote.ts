@@ -1080,8 +1080,16 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 				.where(and(eq(saleItems.saleId, data.id), isNull(saleItems.deletedAt)));
 
 			// ── 4. Insert new items + consume inventory ──────────────────────
-			for (const item of data.items!) {
-				const saleItemId = item.id ?? crypto.randomUUID();
+			const idMap = new Map<string, string>();
+			const newIds = new Map<number, string>();
+			data.items!.forEach((item, index) => {
+				const newId = crypto.randomUUID();
+				newIds.set(index, newId);
+				if (item.id) idMap.set(item.id, newId);
+			});
+			for (const [index, item] of data.items!.entries()) {
+				const saleItemId = newIds.get(index)!;
+				const resolvedParentId = item.parentSaleItemId ? (idMap.get(item.parentSaleItemId) ?? null) : null;
 
 				let lotId: string | null = null;
 				let snapshotCostTotal: number | null = null;
@@ -1099,7 +1107,7 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 					id: saleItemId,
 					saleId: data.id,
 					itemType: item.itemType,
-					parentSaleItemId: item.parentSaleItemId ?? null,
+					parentSaleItemId: resolvedParentId,
 					productId: item.productId ?? null,
 					lensCatalogItemId: item.lensCatalogItemId ?? null,
 					supplierTreatmentId: item.supplierTreatmentId ?? null,
