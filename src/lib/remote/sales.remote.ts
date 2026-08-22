@@ -1176,6 +1176,7 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 			if (data.notes !== undefined) updateData.notes = data.notes;
 			if (data.discount !== undefined) updateData.discount = data.discount;
 			if (data.discountType !== undefined) updateData.discountType = data.discountType;
+			if (data.isCashea !== undefined) updateData.isCashea = data.isCashea;
 			if (data.orderNumber !== undefined) updateData.orderNumber = data.orderNumber;
 
 			const [updated] = await tx
@@ -1200,10 +1201,9 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 		if (data.isCashea !== undefined) headerUpdate.isCashea = data.isCashea;
 		if (data.orderNumber !== undefined) headerUpdate.orderNumber = data.orderNumber;
 
-		// If discount changed without items, recalculate total
 		if (data.discount !== undefined || data.discountType !== undefined) {
+			headerUpdate.subtotal = newSubtotal;
 			headerUpdate.total = newTotal;
-			headerUpdate.subtotal = existing.subtotal;
 		}
 
 		const [updated] = await tx

@@ -18,7 +18,7 @@
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales.remote';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { computeDiscount, formatPrice, getErrorMessage } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
 	import { SaleItemType, FreeItemCategory, LensType } from '$lib/shared/enums/lensTypes';
 	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
@@ -116,6 +116,21 @@
 	let activeItems = $derived(editableItems.filter((i) => !i._removed));
 	let mainItems = $derived(activeItems.filter((i) => i.itemType !== SaleItemType.TREATMENT));
 	let removedCount = $derived(editableItems.filter((i) => i._removed).length);
+	let previewSubtotal = $derived(
+		activeItems.reduce((acc, item) => {
+			const lineTotal = item.unitPrice * item.quantity;
+			const itemDiscount = computeDiscount(
+				item.discount ?? 0,
+				item.discountType ?? DiscountType.FIXED,
+				lineTotal
+			);
+			return acc + lineTotal - itemDiscount;
+		}, 0)
+	);
+	let previewGlobalDiscount = $derived(
+		computeDiscount(discount ?? 0, discountType ?? DiscountType.FIXED, previewSubtotal)
+	);
+	let previewTotal = $derived(Math.max(0, previewSubtotal - previewGlobalDiscount));
 
 	let availableTreatments = $derived.by(() => {
 		if (!editLensTmp.lensCatalogItemId) return [];
@@ -1323,7 +1338,21 @@
 				<div class="flex justify-between">
 					<span class="text-slate-600 dark:text-slate-400">Subtotal</span>
 					<span class="font-semibold text-slate-800 dark:text-white">
-						{formatPrice(activeItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0))}
+						{formatPrice(previewSubtotal)}
+					</span>
+				</div>
+				{#if previewGlobalDiscount > 0}
+					<div class="flex justify-between">
+						<span class="text-slate-600 dark:text-slate-400">Descuento</span>
+						<span class="font-semibold text-slate-800 dark:text-white">
+							-{formatPrice(previewGlobalDiscount)}
+						</span>
+					</div>
+				{/if}
+				<div class="flex justify-between">
+					<span class="font-bold text-slate-800 dark:text-white">Total</span>
+					<span class="font-bold text-slate-800 dark:text-white">
+						{formatPrice(previewTotal)}
 					</span>
 				</div>
 				{#if removedCount > 0}
