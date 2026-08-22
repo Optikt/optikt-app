@@ -23,7 +23,7 @@
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { AppBadge, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
-	import { formatDate, formatDateOnly, formatPrice, getBackUrl } from '$lib/utils';
+	import { computeDiscount, formatDate, formatDateOnly, formatPrice, getBackUrl } from '$lib/utils';
 	import { getErrorMessage } from '$lib/utils/errors';
 	import {
 		PaymentMethod,
@@ -110,6 +110,9 @@
 	);
 	let lastUpdatedLabel = $derived(
 		sale.updatedAt ? formatDate(sale.updatedAt, { dateStyle: 'medium', timeStyle: 'short' }) : null
+	);
+	let globalDiscountAmount = $derived(
+		computeDiscount(sale.discount ?? 0, sale.discountType ?? 'FIXED', sale.subtotal)
 	);
 
 	const taxBreakdown = $derived(
@@ -481,6 +484,9 @@
 				<SaleItemsTable
 					{items}
 					subtotal={sale.subtotal}
+					discount={sale.discount}
+					discountType={sale.discountType}
+					total={sale.total}
 					allowCostEdit={canAct}
 					suppliers={data.suppliers}
 					onCostsUpdated={async () => {
@@ -503,11 +509,25 @@
 									>{formatPrice(sale.subtotal)}</span
 								>
 							</div>
+							{#if globalDiscountAmount > 0.01}
+								<div class="flex items-center justify-between">
+									<span class="text-xs text-outline"
+										>Descuento {#if sale.discountType === 'PERCENTAGE'}({sale.discount}%){/if}</span
+									>
+									<span class="text-xs font-semibold text-red-600"
+										>-{formatPrice(globalDiscountAmount)}</span
+									>
+								</div>
+							{/if}
 							<div class="flex items-center justify-between">
 								<span class="text-xs text-outline">IVA ({sale.snapshotTaxRate}%)</span>
 								<span class="text-xs font-semibold text-on-surface"
 									>{formatPrice(taxBreakdown.taxAmount)}</span
 								>
+							</div>
+							<div class="flex items-center justify-between">
+								<span class="text-xs font-bold text-on-surface">Total</span>
+								<span class="text-xs font-bold text-on-surface">{formatPrice(sale.total)}</span>
 							</div>
 						</div>
 

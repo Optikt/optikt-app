@@ -8,7 +8,7 @@
 		FreeItemCategory,
 		FreeItemEnrichmentStatus
 	} from '$lib/shared/enums/lensTypes';
-	import { formatPrice } from '$lib/utils';
+	import { computeDiscount, formatPrice } from '$lib/utils';
 	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales.remote';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import { hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
@@ -26,12 +26,15 @@
 	interface Props {
 		items: SaleItemWithDetails[];
 		subtotal: number;
+		discount?: number;
+		discountType?: string;
+		total?: number;
 		allowCostEdit?: boolean;
 		suppliers?: { id: string; name: string }[];
 		onCostsUpdated?: () => void;
 	}
 
-	let { items, subtotal, allowCostEdit = true, suppliers = [], onCostsUpdated }: Props = $props();
+	let { items, subtotal, discount = 0, discountType = 'FIXED', total, allowCostEdit = true, suppliers = [], onCostsUpdated }: Props = $props();
 
 	// Edit state
 	let editingItemId = $state<string | null>(null);
@@ -737,6 +740,21 @@
 			<span class="text-sm font-bold text-gray-700">Subtotal general</span>
 			<span class="text-base font-bold text-gray-900">{formatPrice(subtotal)}</span>
 		</div>
+		{#if discount > 0 && total != null}
+			{@const discountAmount = computeDiscount(discount, discountType, subtotal)}
+			<div class="flex items-center justify-between mt-1">
+				<span class="text-xs font-medium tracking-wider text-gray-400 uppercase"
+					>Descuento {#if discountType === 'PERCENTAGE'}({discount}%){/if}</span
+				>
+				<span class="text-xs font-semibold text-red-500">-{formatPrice(discountAmount)}</span>
+			</div>
+		{/if}
+		{#if total != null}
+			<div class="flex items-center justify-between mt-1 pt-1 border-t border-gray-100">
+				<span class="text-sm font-bold text-gray-700">Total</span>
+				<span class="text-base font-bold text-gray-900">{formatPrice(total)}</span>
+			</div>
+		{/if}
 	</div>
 </section>
 
