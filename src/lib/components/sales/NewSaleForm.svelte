@@ -6,7 +6,7 @@
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
 	import { isDiscountValueValid } from '$lib/utils';
-	import { nowUTC, fromISODate } from '$lib/dates';
+	import { nowUTC, fromISODate, toUTCString } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
@@ -293,7 +293,7 @@
 				customerId: customerId || undefined,
 				newCustomer:
 					newCustomer && newCustomer.firstName && newCustomer.lastName ? newCustomer : undefined,
-				saleDate: dateToISODateString(saleDate),
+				saleDate: toUTCString(saleDate),
 				orderNumber:
 					canEditOrderNumber && orderNumberInput.trim() ? Number(orderNumberInput) : undefined,
 				discount,

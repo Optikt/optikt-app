@@ -31,6 +31,7 @@
 	import { untrack, onMount } from 'svelte';
 	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
 	import { cacheCatalogItems, getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
+import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
 
 	interface Props {
 		open: boolean;
@@ -55,7 +56,7 @@
 	let saving = $state(false);
 
 	// ── Header fields ──────────────────────────────────────────────────────
-	let saleDate = $state(untrack(() => sale.saleDate.slice(0, 10)));
+	let saleDate = $state(untrack(() => fromISO(sale.saleDate).toISOString().slice(0, 10)));
 	let notes = $state(untrack(() => sale.notes ?? ''));
 	let isCashea = $state(untrack(() => sale.isCashea ?? false));
 	let discount = $state(untrack(() => sale.discount));
@@ -486,7 +487,17 @@
 		const payload: UpdateSaleInput = { id: sale.id, reason: reason.trim() };
 
 		if (saleDate !== sale.saleDate.slice(0, 10)) {
-			payload.saleDate = saleDate;
+			const old = fromISO(sale.saleDate);
+			const nd = fromISODate(saleDate)!;
+			const isDateOnly = !sale.saleDate.includes('T');
+			const isMidnightUTC =
+				old.getUTCHours() === 0 &&
+				old.getUTCMinutes() === 0 &&
+				old.getUTCSeconds() === 0 &&
+				old.getUTCMilliseconds() === 0;
+			const src = isDateOnly || isMidnightUTC ? nowUTC() : old;
+			nd.setHours(src.getHours(), src.getMinutes(), src.getSeconds(), src.getMilliseconds());
+			payload.saleDate = toUTCString(nd);
 		}
 		if (notes !== (sale.notes ?? '')) {
 			payload.notes = notes || undefined;

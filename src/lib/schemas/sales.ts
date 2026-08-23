@@ -189,7 +189,7 @@ export const CreateSaleSchema = z
 		customerId: z.uuid().optional(),
 		/** Inline customer data (when customer NOT found by cédula) */
 		newCustomer: InlineCustomerSchema.optional(),
-		saleDate: z.iso.date('Fecha de venta inválida'),
+		saleDate: z.union([z.iso.datetime({ offset: true }), z.iso.date('Fecha de venta inválida')]),
 		/** Optional: backfill historical sales with a specific order number. Default: next sequential. */
 		orderNumber: z.number().int().min(1, 'Número de orden inválido').optional(),
 		discount: CoercedNumber.min(0).default(0),
@@ -309,7 +309,7 @@ export const UpdateSaleSchema = z.object({
 	reason: z.string().min(1, 'El motivo de la modificación es obligatorio'),
 	/** Always-editable header fields */
 	customerId: z.uuid().optional(),
-	saleDate: z.iso.date().optional(),
+	saleDate: z.union([z.iso.datetime({ offset: true }), z.iso.date()]).optional(),
 	notes: z.string().optional(),
 	isCashea: z.boolean().optional(),
 	/** Optional: reassign the order number (admin only, no UI yet). */

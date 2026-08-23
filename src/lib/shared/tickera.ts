@@ -169,12 +169,14 @@ export function buildTickeraPayload(input: TickeraSaleInput): TickeraPayload {
 	const date = new Intl.DateTimeFormat('es-VE', {
 		day: '2-digit',
 		month: '2-digit',
-		year: '2-digit'
+		year: '2-digit',
+		timeZone: 'America/Caracas'
 	}).format(d);
 	const time = new Intl.DateTimeFormat('es-VE', {
 		hour: '2-digit',
 		minute: '2-digit',
-		hour12: false
+		hour12: false,
+		timeZone: 'America/Caracas'
 	}).format(d);
 
 	return {
