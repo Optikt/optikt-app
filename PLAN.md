@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-08-16.
+> Actualizado: 2026-08-17.
 
 ---
 
@@ -517,15 +517,15 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~125 días-hombre. **Quick wins (🔴 bajo esfuerzo):** DT13 (1 día) para limpiar la consolidación de monedas.
+**Total estimado:** ~124 días-hombre. **Quick wins (🟢 bajo esfuerzo):** DT16 (2 días), DT12 (2 días), NF10 (1 día).
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  FP1 (preserve-list-filters)
-Semana 2:  FP1 (preserve-list-filters)
+Semana 1:  DT16 (moneda gastos) + DT12 (tablas duplicadas)
+Semana 2:  FP5 (historial estados venta)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)
 Semana 7-8: DT1 parcial (LensCatalogForm + EditSaleModal)
