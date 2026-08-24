@@ -31,7 +31,7 @@
 	import { untrack, onMount } from 'svelte';
 	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
 	import { cacheCatalogItems, getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
-import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
+	import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
 
 	interface Props {
 		open: boolean;

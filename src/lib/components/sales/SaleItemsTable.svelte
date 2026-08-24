@@ -34,7 +34,16 @@
 		onCostsUpdated?: () => void;
 	}
 
-	let { items, subtotal, discount = 0, discountType = 'FIXED', total, allowCostEdit = true, suppliers = [], onCostsUpdated }: Props = $props();
+	let {
+		items,
+		subtotal,
+		discount = 0,
+		discountType = 'FIXED',
+		total,
+		allowCostEdit = true,
+		suppliers = [],
+		onCostsUpdated
+	}: Props = $props();
 
 	// Edit state
 	let editingItemId = $state<string | null>(null);
