@@ -1,3 +1,9 @@
+/**
+ * Server PDF generation — HTML → PDF via headless Chromium.
+ * Stack: puppeteer-core + @sparticuz/chromium (server-only, nunca va al bundle cliente).
+ * No confundir con el viewer cliente (PDFViewerModal.svelte → @pdfslick/core + pdfjs-dist),
+ * que solo *muestra* el PDF ya generado. Son 2 concerns separados — ver DT7 en PLAN.md.
+ */
 import chromium from '@sparticuz/chromium';
 import type { Browser } from 'puppeteer-core';
 import puppeteer from 'puppeteer-core';

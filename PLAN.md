@@ -198,15 +198,14 @@ El archivo `TECH_DEBT.md` fue auditado, consolidado y eliminado. De sus 8 items,
 
 ---
 
-### DT7 · Dos stacks de PDF redundantes 🟢
+### ✅ DT7 · Dos stacks de PDF redundantes (COMPLETADO — 2026-08-17)
 
-**Problema:** `puppeteer-core` + `@sparticuz/chromium` + `@pdfslick/core` + `pdfjs-dist`. Cuatro dependencias de PDF. Probablemente `@pdfslick/core` y `pdfjs-dist` son para visualización client-side y `puppeteer` para generación server-side, pero no está documentado.
+**Qué se hizo (auditoría 2026-08-17):** No hay redundancia — son 2 concerns separados:
 
-**Riesgo de no hacerlo:** Bundle más pesado. Dos fuentes de bugs. Actualizaciones de seguridad duplicadas.
+- `puppeteer-core` + `@sparticuz/chromium` → generación **server** (`src/lib/server/pdf.ts`, `page.pdf()`).
+- `@pdfslick/core` + `pdfjs-dist` → visualización **cliente** (`PDFViewerModal.svelte`, lazy `import()`). `pdfjs-dist` es peer requerido por pdfslick para el worker.
 
-**Contras:** Si ambos son necesarios (uno para generar, otro para mostrar), no hay nada que hacer.
-
-**Dificultad:** Media. **Solución:** Auditar qué usa cada dependencia. Si hay solapamiento real, consolidar. Si no, documentar por qué ambas.
+**Verificación:** `puppeteer` es server-only (no entra al bundle cliente), `pdfslick` es `import()` dinámico. Documentado en cabeceras de ambos archivos — ver DT7. Sin consolidación necesaria.
 
 ---
 
@@ -513,7 +512,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF7 · Visor auditoría          | 2 días                  |
 | 🟢        | NF10 · Export Excel            | 1 día                   |
 | 🟢        | NF11 · Código barras           | 2 días                  |
-| 🟢        | DT7 · PDF stack limpio         | 2 días                  |
+| ✅        | DT7 · PDF stack                | Completado              |
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 

@@ -1,4 +1,8 @@
 <script lang="ts">
+	// Client PDF viewer — renderiza el PDF generado en el server.
+	// Stack: @pdfslick/core (wrapper) + pdfjs-dist (worker). pdfjs-dist es peer
+	// requerido por pdfslick para GlobalWorkerOptions.workerSrc — no es duplicado.
+	// Generación server está en src/lib/server/pdf.ts (puppeteer + chromium) — ver DT7.
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		X,
