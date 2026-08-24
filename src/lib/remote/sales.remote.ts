@@ -1089,7 +1089,9 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 			});
 			for (const [index, item] of data.items!.entries()) {
 				const saleItemId = newIds.get(index)!;
-				const resolvedParentId = item.parentSaleItemId ? (idMap.get(item.parentSaleItemId) ?? null) : null;
+				const resolvedParentId = item.parentSaleItemId
+					? (idMap.get(item.parentSaleItemId) ?? null)
+					: null;
 
 				let lotId: string | null = null;
 				let snapshotCostTotal: number | null = null;
