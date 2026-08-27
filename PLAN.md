@@ -516,7 +516,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~124 días-hombre. **Quick wins (🟢 bajo esfuerzo):** DT16 (2 días), DT12 (2 días), NF10 (1 día).
+**Total estimado:** ~122 días-hombre. **Quick wins (🟢 bajo esfuerzo):** DT16 (2 días), DT12 (2 días), NF10 (1 día).
 
 ---
 
