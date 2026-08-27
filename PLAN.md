@@ -120,6 +120,20 @@
 
 ---
 
+### DT17 · pdfjs-dist pinneado en 6.0.227 (TECH_DEBT) ⚪
+
+**Problema:** `@pdfslick/core@4.0.0` compila su visor contra la API interna de `pdfjs-dist` 6.0.x. Subir a `6.1.200` rompió el worker (`edb9847 — fix: revert pdfjs-dist to 6.0.227 (version mismatch with @pdfslick/core worker)`, 2026-07-12). El `^6.0.227` volvió a resolver a `6.1.200` silenciosamente por el caret, por eso hoy se pinneó **exacto sin `^`** en `package.json:70-76` (`"pdfjs-dist": "6.0.227"`, `"@pdfslick/core": "4.0.0"`).
+
+**Por qué no se arregla ahora:** Funciona en dev y prod. Viewer cliente (`PDFViewerModal.svelte → pdfjs-dist`) no es crítico vs generación server (`puppeteer-core + @sparticuz/chromium → src/lib/server/pdf.ts`). Cambiar implica test manual del modal + esperar release de pdfslick que soporte pdfjs nuevo. ROI nulo hoy.
+
+**Riesgo de no hacerlo:** Quedarse en pdfjs 6.0.227 indefinidamente. Peer range de pdfslick (`^6.0.227`) miente — soporte real es más estricto.
+
+**Cuándo revisitar:** Cuando `@pdfslick/core` publique versión que declare soporte para `pdfjs-dist` ≥6.2.x, probar `6.2.108`+ en branch y verificar `PDFViewerModal.svelte:52-56` (worker + `GlobalWorkerOptions`).
+
+**Estado:** TECH_DEBT documentado 2026-08-27. No tocar hasta upstream fix.
+
+---
+
 ### DT14 · Wizard de compras carga todo en SSR 🟡
 
 **Problema:** El `load` de `/purchases/new` trae **todos** los productos (`getAllProductsWithRelations({ limit: 500 })`) y lentes sin filtrar por proveedor. El proveedor se elige en Step 1, pero los datos se cargan antes de saber cuál es. Payload SSR innecesario; la búsqueda cliente-side escanea registros que nunca se usarán.
