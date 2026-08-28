@@ -1,4 +1,6 @@
-import type { ExpenseCurrency } from '$lib/shared/enums';
+import { CurrencyCode, isBaseCurrency } from '$lib/shared/enums/currencyTypes';
+import type { ExpenseCurrency } from '$lib/shared/enums/cashTypes';
+import { EXPENSE_TO_CURRENCY_CODE } from '$lib/shared/enums/cashTypes';
 
 interface CalculateExpenseAmountBcvUsdParams {
 	currency: ExpenseCurrency;
@@ -11,21 +13,26 @@ function roundCurrency(value: number): number {
 	return Number(value.toFixed(2));
 }
 
+function toCurrencyCode(c: ExpenseCurrency): CurrencyCode {
+	return EXPENSE_TO_CURRENCY_CODE[c];
+}
+
 export function requiresExpenseExchangeRate(currency: ExpenseCurrency): boolean {
-	return currency !== 'USD';
+	return !isBaseCurrency(toCurrencyCode(currency));
 }
 
 export function requiresExpenseRateType(currency: ExpenseCurrency): boolean {
-	return currency === 'VES' || currency === 'EUR';
+	const cc = toCurrencyCode(currency);
+	return cc === CurrencyCode.VES || cc === CurrencyCode.EUR_BCV;
 }
 
 export function getExpenseExchangeRateLabel(currency: ExpenseCurrency): string {
-	switch (currency) {
-		case 'VES':
+	switch (toCurrencyCode(currency)) {
+		case CurrencyCode.VES:
 			return 'Tasa usada (Bs/USD)';
-		case 'USDT':
+		case CurrencyCode.USDT:
 			return 'Tasa USDT (Bs/USDT)';
-		case 'EUR':
+		case CurrencyCode.EUR_BCV:
 			return 'Tasa usada (EUR→USD)';
 		default:
 			return 'Tasa usada';
@@ -40,17 +47,19 @@ export function calculateExpenseAmountBcvUsd({
 }: CalculateExpenseAmountBcvUsdParams): number {
 	if (amount <= 0 || bcvRate <= 0) return 0;
 
-	if (currency === 'USD') {
+	const cc = toCurrencyCode(currency);
+
+	if (cc === CurrencyCode.USD_BCV) {
 		return roundCurrency(amount);
 	}
 
-	if (currency === 'VES') {
+	if (cc === CurrencyCode.VES) {
 		return roundCurrency(amount / bcvRate);
 	}
 
 	if (!exchangeRate || exchangeRate <= 0) return 0;
 
-	if (currency === 'USDT') {
+	if (cc === CurrencyCode.USDT) {
 		return roundCurrency((amount * exchangeRate) / bcvRate);
 	}
 

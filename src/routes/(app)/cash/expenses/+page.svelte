@@ -9,12 +9,13 @@
 		ALL_EXPENSE_CURRENCIES,
 		ALL_RATE_TYPES,
 		EXPENSE_CATEGORY_LABELS,
-		EXPENSE_CURRENCY_LABELS,
+		EXPENSE_TO_CURRENCY_CODE,
 		RATE_TYPE_LABELS,
 		type ExpenseCategory,
 		type ExpenseCurrency,
 		type RateType
 	} from '$lib/shared/enums';
+	import { getCurrencyLabel } from '$lib/shared/enums/currencyTypes';
 	import {
 		calculateExpenseAmountBcvUsd,
 		getExpenseExchangeRateLabel,
@@ -759,7 +760,7 @@
 							>
 							<select bind:value={form.currency} required class={fieldInputClass}>
 								{#each ALL_EXPENSE_CURRENCIES as c (c)}
-									<option value={c}>{EXPENSE_CURRENCY_LABELS[c]}</option>
+									<option value={c}>{getCurrencyLabel(EXPENSE_TO_CURRENCY_CODE[c])}</option>
 								{/each}
 							</select>
 						</label>
