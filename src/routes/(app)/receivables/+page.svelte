@@ -13,7 +13,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PageHeader } from '$lib/components/ui';
+	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
 	import { PaymentForm } from '$lib/components/sales';
 	import { formatPrice, formatDate, replaceUrlSearch, setQueryParam } from '$lib/utils';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
@@ -170,7 +170,7 @@
 					<Wallet size={18} />
 					<span class="font-mono">{formatPrice(summary.totalBalance)}</span>
 					<span class="text-white/60"
-						>pendientes en {summary.totalCount} venta{summary.totalCount !== 1 ? 's' : ''}</span
+						>con saldo en {summary.totalCount} venta{summary.totalCount !== 1 ? 's' : ''}</span
 					>
 				</div>
 			{/if}
@@ -203,7 +203,7 @@
 					<HandCoins size={20} />
 				</div>
 				<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-					Ventas Pendientes
+					Ventas con Saldo
 				</p>
 			</div>
 			<p class="font-heading text-3xl font-bold text-brand-navy">{summary.totalCount}</p>
@@ -295,6 +295,9 @@
 							>Venta</th
 						>
 						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
+							>Estado</th
+						>
+						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
 							>Fecha</th
 						>
 						<th class="px-4 py-4 text-xs font-semibold tracking-wider text-slate-500 uppercase"
@@ -319,7 +322,7 @@
 				<tbody class="divide-y divide-surface-container-high">
 					{#if filteredRows.length === 0}
 						<tr>
-							<td colspan="8" class="px-6 py-16 text-center">
+							<td colspan="9" class="px-6 py-16 text-center">
 								<div class="flex flex-col items-center gap-3 text-on-surface-variant">
 									<HandCoins size={40} class="text-outline/40" />
 									<p class="text-lg font-semibold text-brand-navy">Sin cuentas pendientes</p>
@@ -353,6 +356,9 @@
 									>
 										{row.saleNumber}
 									</a>
+								</td>
+								<td class="px-4 py-4">
+									<SaleStatusBadge status={row.status} />
 								</td>
 								<td class="px-4 py-4 text-sm text-on-surface-variant">
 									{formatDate(row.createdAt, { dateStyle: 'medium' })}

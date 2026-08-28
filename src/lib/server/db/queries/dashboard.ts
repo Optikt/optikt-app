@@ -1,4 +1,4 @@
-import { eq, isNull, and, gte, lte, count, sum, sql, desc } from 'drizzle-orm';
+import { eq, isNull, and, gt, gte, lte, count, sum, sql, desc } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import {
 	sales,
@@ -82,14 +82,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 			.where(and(isNull(quotes.deletedAt), eq(quotes.status, 'DRAFT')))
 			.then(([r]) => r.value),
 
-		// Pending payments (PENDING sales with outstanding balance)
+		// Pending payments (non-cancelled sales with outstanding balance)
 		db
 			.select({
 				count: count(),
 				amount: sum(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`)
 			})
 			.from(sales)
-			.where(and(isNull(sales.deletedAt), eq(sales.status, 'PENDING')))
+			.where(
+				and(
+					isNull(sales.deletedAt),
+					sql`${sales.status} != 'CANCELLED'`,
+					gt(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`, 0)
+				)
+			)
 			.then(([r]) => ({ count: r.count, amount: Number(r.amount ?? 0) })),
 
 		// Low stock products (stock ≤ minStock, active, non-deleted)

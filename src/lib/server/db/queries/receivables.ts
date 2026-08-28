@@ -10,6 +10,7 @@ import type { SalePayment } from '$lib/server/db/schema';
 export interface ReceivableRow {
 	saleId: string;
 	saleNumber: string;
+	status: string;
 	createdAt: string;
 	customerId: string | null;
 	customerName: string | null;
@@ -47,9 +48,9 @@ export interface ReceivablesFilters {
 // ============================================================================
 
 /**
- * Get all receivables (PENDING sales with outstanding balance > 0).
+ * Get all receivables (non-cancelled sales with outstanding balance > 0).
  *
- * Returns each sale with customer info, balance, days pending, and payment history.
+ * Returns each sale with customer info, status, balance, days pending, and payment history.
  * Ordered by balance DESC (largest debt first).
  */
 export async function getReceivables(
@@ -57,7 +58,7 @@ export async function getReceivables(
 ): Promise<{ rows: ReceivableRow[]; summary: ReceivablesSummary }> {
 	const conditions = [
 		isNull(sales.deletedAt),
-		eq(sales.status, 'PENDING'),
+		sql`${sales.status} != 'CANCELLED'`,
 		gt(sql<number>`${sales.total} - ${sales.paidAmountBcvUsd}`, 0)
 	];
 
@@ -70,6 +71,7 @@ export async function getReceivables(
 		.select({
 			saleId: sales.id,
 			orderNumber: sales.orderNumber,
+			status: sales.status,
 			createdAt: sales.createdAt,
 			totalAmount: sales.total,
 			paidAmountBcvUsd: sales.paidAmountBcvUsd,
@@ -125,6 +127,7 @@ export async function getReceivables(
 		return {
 			saleId: r.saleId,
 			saleNumber: `#${String(r.orderNumber).padStart(4, '0')}`,
+			status: r.status,
 			createdAt: r.createdAt,
 			customerId: r.customerId,
 			customerName: r.customerFirstName ? `${r.customerFirstName} ${r.customerLastName}` : null,

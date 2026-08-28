@@ -34,7 +34,7 @@ export interface ReceivablesData {
 // ============================================================================
 
 /**
- * Get all receivables (PENDING sales with outstanding balance)
+ * Get all receivables (non-cancelled sales with outstanding balance)
  */
 export const getReceivablesQuery = query(
 	GetReceivablesSchema,
