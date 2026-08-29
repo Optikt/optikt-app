@@ -2,6 +2,7 @@
  * Cash & Expenses Enums
  * Shared between client and server for type safety
  */
+import { CurrencyCode } from './currencyTypes';
 
 // ============================================================================
 // EXPENSE CATEGORY
@@ -53,6 +54,19 @@ export const ALL_EXPENSE_CURRENCIES = ['USD', 'VES', 'USDT', 'EUR'] as const;
 
 export type ExpenseCurrency = (typeof ALL_EXPENSE_CURRENCIES)[number];
 
+/**
+ * Maps short expense currency codes to the canonical {@link CurrencyCode} enum.
+ * Use `getCurrencyLabel` / `getCurrencySymbol` via this map instead of the
+ * per-domain `EXPENSE_CURRENCY_LABELS` / `EXPENSE_CURRENCY_SYMBOLS`.
+ */
+export const EXPENSE_TO_CURRENCY_CODE: Record<ExpenseCurrency, CurrencyCode> = {
+	USD: CurrencyCode.USD_BCV,
+	VES: CurrencyCode.VES,
+	USDT: CurrencyCode.USDT,
+	EUR: CurrencyCode.EUR_BCV
+};
+
+/** @deprecated Use `getCurrencyLabel(EXPENSE_TO_CURRENCY_CODE[c])` instead. */
 export const EXPENSE_CURRENCY_LABELS: Record<ExpenseCurrency, string> = {
 	USD: 'USD',
 	VES: 'Bs',
@@ -60,6 +74,7 @@ export const EXPENSE_CURRENCY_LABELS: Record<ExpenseCurrency, string> = {
 	EUR: 'EUR'
 };
 
+/** @deprecated Use `getCurrencySymbol(EXPENSE_TO_CURRENCY_CODE[c])` instead. */
 export const EXPENSE_CURRENCY_SYMBOLS: Record<ExpenseCurrency, string> = {
 	USD: '$',
 	VES: 'Bs.',
@@ -67,7 +82,7 @@ export const EXPENSE_CURRENCY_SYMBOLS: Record<ExpenseCurrency, string> = {
 	EUR: '€'
 };
 
-/** Whether the currency is already normalized to USD BCV without extra conversion. */
+/** @deprecated Use `isBaseCurrency(EXPENSE_TO_CURRENCY_CODE[c])` instead. */
 export function isUsdLike(currency: ExpenseCurrency): boolean {
 	return currency === 'USD';
 }

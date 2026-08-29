@@ -106,17 +106,16 @@
 
 ---
 
-### DT16 · Enums de moneda de gastos 🟢
+### ✅ DT16 · Enums de moneda de gastos (COMPLETADO — 2026-08-29)
 
-**Problema:** `cashTypes.ts` define `EXPENSE_CURRENCIES`/`EXPENSE_CURRENCY_LABELS`/`EXPENSE_CURRENCY_SYMBOLS` (enum propio `'USD'|'VES'|'USDT'|'EUR'`) — una 4ª implementación de moneda que se solapa con `CurrencyCode` y `PurchaseSourceCurrency`. Detección en auditoría DT13 (2026-08-17); fuera de scope de DT13.
+**Qué se hizo:** Delegar expense currencies al sistema canónico `CurrencyCode` sin migrar DB.
 
-**Por qué importa:** 4 fuentes de verdad de "qué es una moneda y cómo se muestra". Cambiar un símbolo de gastos requiere tocar un archivo distinto al resto.
+- **Mapping** `EXPENSE_TO_CURRENCY_CODE` en `cashTypes.ts`: `USD→USD_BCV`, `EUR→EUR_BCV`, `VES→VES`, `USDT→USDT`.
+- **`expenseCalculations.ts`** migrado: `requiresExpenseExchangeRate`, `requiresExpenseRateType`, `getExpenseExchangeRateLabel` y `calculateExpenseAmountBcvUsd` ahora resuelven a `CurrencyCode` vía el mapping en vez de comparar strings literales.
+- **`+page.svelte`** migrado: select de moneda usa `getCurrencyLabel(EXPENSE_TO_CURRENCY_CODE[c])` en vez de `EXPENSE_CURRENCY_LABELS[c]`.
+- `EXPENSE_CURRENCY_LABELS`, `EXPENSE_CURRENCY_SYMBOLS` e `isUsdLike` marcadas `@deprecated` (se borran en una versión futura).
 
-**Contras:** Refactor de gastos UI (caja de gastos, pagos) — el enum local no es `CurrencyCode` y las filas persisten strings.
-
-**Dificultad:** Media (2 días). **Solución:** (a) Mapear `ExpenseCurrency` → `CurrencyCode` (`USD`→`USD_BCV`, `EUR`→`EUR_BCV`, `VES`→`VES`, `USDT`→`USDT`) o unificar el enum directamente. (b) Reemplazar labels/symbols por `getCurrencyLabel`/`getCurrencySymbol`. (c) Verificar display de caja de gastos y pagos de gastos.
-
-**Estado:** Plan activo. Sin empezar.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, tests pasaron. Sin migración SQL — `cash_expenses.currency` sigue `varchar(10)` con `USD`/`VES`/`USDT`/`EUR`.
 
 ---
 
@@ -511,7 +510,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | ✅        | DT15 · Altura en presupuestos  | Completado              |
 | 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
 | ✅        | DT13 · Enums moneda            | Completado              |
-| 🟢        | DT16 · Enums moneda gastos     | 2 días                  |
+| ✅        | DT16 · Enums moneda gastos     | Completado              |
 | 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
@@ -530,14 +529,14 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~122 días-hombre. **Quick wins (🟢 bajo esfuerzo):** DT16 (2 días), DT12 (2 días), NF10 (1 día).
+**Total estimado:** ~120 días-hombre. **Quick wins (🟢 bajo esfuerzo):** DT12 (2 días), NF10 (1 día).
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT16 (moneda gastos) + DT12 (tablas duplicadas)
+Semana 1:  DT12 (tablas duplicadas)
 Semana 2:  FP5 (historial estados venta)
 Semana 3-5: FP3 inicio (public-catalog-api)
 Semana 6:  DT8 (dashboard gráficos)

@@ -33,3 +33,4 @@ vite.config.ts.timestamp-*
 
 .codebase-memory/
 .opencode/
+.agents/
