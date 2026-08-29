@@ -119,7 +119,7 @@
 		<select
 			bind:value={productTypeFilter}
 			onchange={handleFilterChange}
-			class="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+			class="w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue focus:outline-none"
 		>
 			<option value="">Todos los tipos</option>
 			{#each MATERIAL_CATEGORIES as t (t)}

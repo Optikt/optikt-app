@@ -57,14 +57,14 @@
 {#if direction === 'bottom'}
 	<div
 		bind:this={panel}
-		class="fixed inset-x-0 bottom-0 z-55 flex max-h-[90vh] w-full flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none rounded-t-2xl"
+		class="fixed inset-x-0 bottom-0 z-55 flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
 		class:translate-y-full={!open}
 		class:translate-y-0={open}
 		role="dialog"
 		aria-modal="true"
 		tabindex="-1"
 	>
-		<div class="mx-auto mt-2 h-1.5 w-10 rounded-full bg-outline/30 shrink-0"></div>
+		<div class="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-outline/30"></div>
 		{#if header}
 			{@render header({ onclose: handleClose })}
 		{/if}

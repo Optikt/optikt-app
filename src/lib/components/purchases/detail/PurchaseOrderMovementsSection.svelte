@@ -18,21 +18,21 @@
 	let expanded = $state(false);
 </script>
 
-<div class="rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden">
+<div class="overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20">
 	<button
 		type="button"
 		onclick={() => (expanded = !expanded)}
-		class="w-full flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+		class="flex w-full shrink-0 items-center gap-3 border-b border-outline-variant/30 bg-surface-container-high px-4 py-3"
 		aria-expanded={expanded}
 		aria-controls="purchase-movements-content"
 	>
-		<ArrowRightLeft class="h-5 w-5 text-brand-blue shrink-0" />
-		<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
+		<ArrowRightLeft class="h-5 w-5 shrink-0 text-brand-blue" />
+		<h2 class="text-sm font-semibold tracking-wide text-brand-navy uppercase">
 			Movimientos generados
 		</h2>
 		<AppBadge variant="neutral" class="ml-auto">{movements.length} movimientos</AppBadge>
 		<ChevronDown
-			class="h-4 w-4 text-on-surface-variant shrink-0 transition-transform duration-200 {expanded
+			class="h-4 w-4 shrink-0 text-on-surface-variant transition-transform duration-200 {expanded
 				? 'rotate-180'
 				: ''}"
 		/>
@@ -65,7 +65,7 @@
 								</span>
 							</div>
 							<div
-								class="hidden sm:block px-1 mt-0.5 font-mono text-[10px] text-on-surface-variant"
+								class="mt-0.5 hidden px-1 font-mono text-[10px] text-on-surface-variant sm:block"
 							>
 								{formatLotCode(movement.lotId, lotsMap)} · {movement.quantityBefore} → {movement.quantityAfter}
 								· {formatDate(movement.createdAt, {
@@ -74,7 +74,7 @@
 							</div>
 							{#if movement.notes}
 								<p
-									class="px-1 mt-0.5 text-xs text-on-surface-variant truncate"
+									class="mt-0.5 truncate px-1 text-xs text-on-surface-variant"
 									title={movement.notes}
 								>
 									{movement.notes}

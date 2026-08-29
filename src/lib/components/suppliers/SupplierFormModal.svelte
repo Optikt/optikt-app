@@ -194,7 +194,7 @@
 							name="type"
 							bind:value={formData.type}
 							required
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 						>
 							{#each ALL_SUPPLIER_TYPES as t (t)}
 								<option value={t}>{SUPPLIER_TYPE_LABELS[t]}</option>
@@ -353,7 +353,7 @@
 							name="type"
 							bind:value={formData.type}
 							required
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 						>
 							{#each ALL_SUPPLIER_TYPES as t (t)}
 								<option value={t}>{SUPPLIER_TYPE_LABELS[t]}</option>

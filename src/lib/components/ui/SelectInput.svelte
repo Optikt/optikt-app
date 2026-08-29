@@ -106,7 +106,7 @@
 		<div
 			title={'id' in option ? option.name : option.label}
 			class={[
-				'max-w-full truncate bg-primary-blue rounded-lg px-1 py-0.5',
+				'bg-primary-blue max-w-full truncate rounded-lg px-1 py-0.5',
 				{ ' text-gray-600': disabled }
 			]}
 		>

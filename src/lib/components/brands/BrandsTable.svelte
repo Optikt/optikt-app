@@ -106,22 +106,22 @@
 	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Nombre</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>País</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Sitio Web</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Estado</th
 		>
 	{/snippet}
 
 	{#snippet row(brand)}
-		<td class="font-medium px-4 py-3 text-sm">{brand.name}</td>
+		<td class="px-4 py-3 text-sm font-medium">{brand.name}</td>
 		<td class="px-4 py-3 text-sm">{brand.country ?? '-'}</td>
 		<td class="px-4 py-3 text-sm">
 			{#if brand.website}

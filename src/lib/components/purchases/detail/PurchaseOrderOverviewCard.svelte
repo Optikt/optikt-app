@@ -45,12 +45,12 @@
 	);
 </script>
 
-<div class="rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden">
+<div class="overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20">
 	<div
-		class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+		class="flex shrink-0 items-center gap-3 border-b border-outline-variant/30 bg-surface-container-high px-4 py-3"
 	>
 		<FileText class="h-5 w-5 text-brand-blue" />
-		<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
+		<h2 class="text-sm font-semibold tracking-wide text-brand-navy uppercase">
 			Detalles de la orden
 		</h2>
 	</div>
@@ -65,7 +65,7 @@
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 				Proveedor
 			</p>
-			<p class="text-sm font-semibold text-brand-navy truncate">
+			<p class="truncate text-sm font-semibold text-brand-navy">
 				{purchaseOrder.supplier?.name ?? '—'}
 			</p>
 		</div>
@@ -81,7 +81,7 @@
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 				{documentLabel}
 			</p>
-			<p class="text-sm font-semibold text-brand-navy truncate">{documentNumber}</p>
+			<p class="truncate text-sm font-semibold text-brand-navy">{documentNumber}</p>
 		</div>
 		<div class="space-y-1">
 			<p class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
@@ -145,7 +145,7 @@
 	</div>
 
 	{#if supplementalDeliveryNoteNumber || purchaseOrder.notes}
-		<div class="border-t border-outline-variant/60 px-4 py-3 md:px-3 md:py-3 space-y-2">
+		<div class="space-y-2 border-t border-outline-variant/60 px-4 py-3 md:px-3 md:py-3">
 			{#if supplementalDeliveryNoteNumber}
 				<div class="space-y-0.5">
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
@@ -161,7 +161,7 @@
 					<p class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase">
 						Notas internas
 					</p>
-					<p class="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">
+					<p class="text-sm leading-relaxed whitespace-pre-wrap text-on-surface">
 						{purchaseOrder.notes}
 					</p>
 				</div>

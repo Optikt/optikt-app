@@ -58,10 +58,10 @@
 			class={[
 				'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm shadow-sm transition-colors',
 				'placeholder:text-slate-400',
-				'focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue',
-				'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
+				'focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none',
+				'disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-50',
 				'pr-10',
-				hasError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-slate-300'
+				hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300'
 			].join(' ')}
 		/>
 		<button

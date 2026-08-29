@@ -83,7 +83,7 @@
 </script>
 
 <div class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20">
-	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-4">
+	<h2 class="mb-4 text-sm font-bold tracking-[0.16em] text-brand-navy uppercase">
 		<FileText class="mr-2 inline-block h-4 w-4 text-brand-blue" />
 		Documento y condición de pago
 	</h2>
@@ -99,7 +99,7 @@
 	</FieldWrapper>
 
 	<!-- Secondary fields (container query grid) -->
-	<div class="grid grid-cols-1 @sm:grid-cols-3 gap-4 mt-4">
+	<div class="mt-4 grid grid-cols-1 gap-4 @sm:grid-cols-3">
 		<FieldWrapper label="Documento">
 			<SegmentedToggle
 				value={documentType}
@@ -132,7 +132,7 @@
 		<textarea
 			bind:value={notes}
 			rows="3"
-			class={`${inputClass} min-h-[3rem] h-[3rem] max-h-[5rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
+			class={`${inputClass} h-[3rem] max-h-[5rem] min-h-[3rem] resize-y ${notesTooShort ? 'ring-1 ring-error/50' : ''}`}
 			placeholder="Observaciones internas o acuerdos con proveedor..."></textarea>
 		<div use:autoAnimate>
 			{#if notesTooShort}
@@ -142,10 +142,10 @@
 	</FieldWrapper>
 
 	<!-- Divider -->
-	<hr class="border-outline-variant/40 my-2" />
+	<hr class="my-2 border-outline-variant/40" />
 
 	<!-- Condición de pago -->
-	<p class="text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase mb-2">
+	<p class="mb-2 text-[10px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase">
 		Condición de pago
 	</p>
 	<div class="flex items-center gap-3">
@@ -164,7 +164,7 @@
 			onclick={() => (creditDrawerOpen = true)}
 			disabled={!isCredit}
 			title="Configurar crédito"
-			class="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40 disabled:cursor-not-allowed"
+			class="rounded-lg p-2 text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-40"
 		>
 			<Settings class="h-5 w-5" />
 		</button>
@@ -174,14 +174,14 @@
 		<!-- Crédito summary or hint -->
 		{#if isCredit}
 			{#if creditConfigured}
-				<p class="text-sm text-on-surface-variant mt-2">
+				<p class="mt-2 text-sm text-on-surface-variant">
 					Vence el {creditDueDate}
 					{#if earlyPaymentDiscountPercent && earlyPaymentDiscountDeadline}
 						· Pronto pago {earlyPaymentDiscountPercent}% antes del {earlyPaymentDiscountDeadline}
 					{/if}
 				</p>
 			{:else}
-				<p class="text-sm text-on-surface-variant/80 mt-2 italic">
+				<p class="mt-2 text-sm text-on-surface-variant/80 italic">
 					Configura las condiciones del crédito usando el botón de ajustes
 				</p>
 			{/if}

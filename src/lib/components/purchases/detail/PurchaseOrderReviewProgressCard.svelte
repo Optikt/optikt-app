@@ -13,15 +13,15 @@
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
 </script>
 
-<div class="rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden">
+<div class="overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20">
 	<div class="px-4 pt-4 pb-3">
 		<h2
-			class="text-sm font-semibold uppercase tracking-wide text-brand-navy border-b border-outline-variant/30 pb-2"
+			class="border-b border-outline-variant/30 pb-2 text-sm font-semibold tracking-wide text-brand-navy uppercase"
 		>
 			Progreso de revisión
 		</h2>
 		<div class="mt-3 space-y-2">
-			<div class="h-2 rounded-full bg-surface-container-high overflow-hidden">
+			<div class="h-2 overflow-hidden rounded-full bg-surface-container-high">
 				<div
 					class="h-full rounded-full transition-all duration-300 {reviewStatus.allReviewed
 						? 'bg-success'
@@ -50,7 +50,7 @@
 					Confirma cada línea antes de proceder con la orden.
 				</p>
 			{:else}
-				<p class="text-[10px] text-success font-medium">
+				<p class="text-[10px] font-medium text-success">
 					Todos los artículos han sido revisados. Puedes confirmar la orden.
 				</p>
 			{/if}

@@ -187,7 +187,7 @@
 							id="role"
 							name="role"
 							bind:value={formData.role}
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 						>
 							{#each ALL_ROLES as role, index (`${role}-${index}`)}
 								<option value={role}>{role}</option>
@@ -298,7 +298,7 @@
 							id="role"
 							name="role"
 							bind:value={formData.role}
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 						>
 							{#each ALL_ROLES as role, index (`${role}-${index}`)}
 								<option value={role}>{role}</option>

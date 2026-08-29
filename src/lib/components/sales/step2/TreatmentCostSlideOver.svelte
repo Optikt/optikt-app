@@ -53,7 +53,7 @@
 				bind:value={draftCost}
 				step="0.01"
 				min="0"
-				class="w-28 rounded-lg border bg-surface px-2 py-1.5 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none border-outline-variant/40"
+				class="w-28 rounded-lg border border-outline-variant/40 bg-surface px-2 py-1.5 text-right font-mono text-xs text-brand-navy focus:border-brand-blue focus:outline-none"
 			/>
 		</div>
 		<div

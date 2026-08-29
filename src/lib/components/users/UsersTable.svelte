@@ -67,25 +67,25 @@
 	emptyDescription="Intenta ajustar los filtros de búsqueda"
 >
 	{#snippet header()}
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Nombre</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Email</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Usuario</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Rol</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Estado</th
 		>
 	{/snippet}
 
 	{#snippet row(user)}
-		<td class="font-medium px-4 py-3 text-sm">{user.fullName}</td>
+		<td class="px-4 py-3 text-sm font-medium">{user.fullName}</td>
 		<td class="px-4 py-3 text-sm">{user.email}</td>
 		<td class="px-4 py-3 text-sm">
 			<span class="font-mono text-sm text-slate-600">@{user.username}</span>

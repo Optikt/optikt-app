@@ -380,7 +380,7 @@
 									<div class="mb-1.5 flex items-center gap-1.5">
 										<FlaskConical class="h-3 w-3 text-purple-600" />
 										<span
-											class="text-[10px] font-semibold uppercase tracking-wider text-purple-700"
+											class="text-[10px] font-semibold tracking-wider text-purple-700 uppercase"
 										>
 											Tratamientos / Filtros
 										</span>
@@ -397,7 +397,7 @@
 														>{t.treatmentName}</span
 													>
 													<span
-														class="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] shrink-0 {t.treatmentCategory ===
+														class="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.12em] uppercase {t.treatmentCategory ===
 														TreatmentCategory.AR
 															? 'bg-brand-blue/10 text-brand-blue'
 															: 'bg-surface-container-high text-on-surface-variant'}"

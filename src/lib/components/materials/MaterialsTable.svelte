@@ -93,22 +93,22 @@
 	reactivateIcon={RotateCcw}
 >
 	{#snippet header()}
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Nombre</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Código</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Tipo</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Estado</th
 		>
 	{/snippet}
 
 	{#snippet row(material)}
-		<td class="font-medium px-4 py-3 text-sm">{material.name}</td>
+		<td class="px-4 py-3 text-sm font-medium">{material.name}</td>
 		<td class="px-4 py-3 text-sm">
 			<span
 				class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600"

@@ -186,12 +186,12 @@
 				{#if selectedIsBackward}
 					<span class="text-error">*</span>
 				{:else}
-					<span class="ml-1 font-normal normal-case text-on-surface-variant/70"> (opcional) </span>
+					<span class="ml-1 font-normal text-on-surface-variant/70 normal-case"> (opcional) </span>
 				{/if}
 			</label>
 			<textarea
 				id="sale-status-reason"
-				class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition-colors placeholder-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue"
+				class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 				rows="3"
 				placeholder={selectedIsBackward
 					? 'Requerido al revertir — explica por qué se corrige el estado'

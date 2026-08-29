@@ -104,13 +104,13 @@
 </script>
 
 <div
-	class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
+	class="flex flex-col overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20"
 >
 	<div
-		class="flex items-center gap-3 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+		class="flex shrink-0 items-center gap-3 border-b border-outline-variant/30 bg-surface-container-high px-4 py-3"
 	>
 		<PackageCheck class="h-5 w-5 text-brand-blue" />
-		<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
+		<h2 class="text-sm font-semibold tracking-wide text-brand-navy uppercase">
 			Artículos recibidos
 		</h2>
 		{#if showReviewColumn}
@@ -123,7 +123,7 @@
 
 	{#if items.length > 0}
 		<div
-			class="flex flex-col gap-2 px-4 py-2.5 border-b border-outline-variant/20 bg-surface-container-lowest sm:flex-row sm:items-center"
+			class="flex flex-col gap-2 border-b border-outline-variant/20 bg-surface-container-lowest px-4 py-2.5 sm:flex-row sm:items-center"
 		>
 			<div class="relative flex-1">
 				<Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-outline" />
@@ -162,7 +162,7 @@
 			type="button"
 			onclick={() => onToggleItemReviewed(item)}
 			aria-pressed={item.isReviewed}
-			class="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors {item.isReviewed
+			class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors {item.isReviewed
 				? 'bg-success text-white shadow-sm'
 				: 'text-outline hover:bg-surface-container-high hover:text-on-surface'}"
 			aria-label={item.isReviewed ? 'Marcar como no revisada' : 'Marcar como revisada'}
@@ -180,7 +180,7 @@
 			onclick={() => onRevertLot(item)}
 			title="Deshacer recepción completa del lote"
 			aria-label="Deshacer recepción completa del lote"
-			class="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg text-error transition-colors hover:bg-error-container/60 hover:text-on-error-container"
+			class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-error transition-colors hover:bg-error-container/60 hover:text-on-error-container"
 		>
 			<RotateCcw class="h-4 w-4" />
 		</button>
@@ -195,7 +195,7 @@
 
 	{#snippet itemName(item: PurchaseOrderItemWithProduct, extraClass = '')}
 		<p
-			class="text-sm leading-snug font-semibold text-brand-navy break-words {extraClass}"
+			class="text-sm leading-snug font-semibold break-words text-brand-navy {extraClass}"
 			title="{itemDisplayName(item)} • {itemDisplayMeta(item)}"
 		>
 			{itemDisplayName(item)}
@@ -212,21 +212,21 @@
 
 	{#if filteredItems.length > 0}
 		<!-- ============ MOBILE: cards apiladas ============ -->
-		<div class="md:hidden flex flex-col gap-2 p-3">
+		<div class="flex flex-col gap-2 p-3 md:hidden">
 			{#each filteredItems as item (item.id)}
 				{@const lot = lotForItem(item, lotsMap)}
 				{@const showAlt = showAltPrices && item.unitPurchasePriceAlt !== null}
 				{@const altTotal = purchaseLineTotalAlt(item)}
 				{@const lineTotal = purchaseLineTotal(item)}
 				<div
-					class="rounded-xl bg-surface-container-lowest ring-1 ring-outline-variant/15 p-3 {showReviewColumn &&
+					class="rounded-xl bg-surface-container-lowest p-3 ring-1 ring-outline-variant/15 {showReviewColumn &&
 					item.isReviewed
-						? 'ring-success/40 bg-success-container/30'
+						? 'bg-success-container/30 ring-success/40'
 						: ''}"
 				>
 					<div class="flex items-start gap-2">
 						<span
-							class="shrink-0 font-mono text-xs font-bold text-brand-navy bg-surface-container-high w-8 h-8 flex items-center justify-center rounded-lg"
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-high font-mono text-xs font-bold text-brand-navy"
 							>{item.quantity}x</span
 						>
 						{@render itemName(item, 'flex-1 min-w-0')}
@@ -236,7 +236,7 @@
 					</div>
 
 					{#if item.product?.personalCode}
-						<p class="mt-1 font-mono text-[11px] leading-4 text-on-surface-variant break-all">
+						<p class="mt-1 font-mono text-[11px] leading-4 break-all text-on-surface-variant">
 							{item.product.personalCode}
 						</p>
 					{/if}
@@ -261,15 +261,15 @@
 
 					{#if isConfirmed}
 						<div
-							class="mt-2 pt-2 border-t border-outline-variant/15 flex items-center justify-between gap-2 text-xs"
+							class="mt-2 flex items-center justify-between gap-2 border-t border-outline-variant/15 pt-2 text-xs"
 						>
 							{#if lot}
-								<div class="flex items-center gap-1.5 min-w-0">
-									<span class="text-on-surface-variant shrink-0">Lote</span>
-									<span class="font-mono text-sm font-semibold text-brand-navy truncate">
+								<div class="flex min-w-0 items-center gap-1.5">
+									<span class="shrink-0 text-on-surface-variant">Lote</span>
+									<span class="truncate font-mono text-sm font-semibold text-brand-navy">
 										{formatLotCode(item.lotId, lotsMap)}
 									</span>
-									<span class="text-on-surface-variant shrink-0">
+									<span class="shrink-0 text-on-surface-variant">
 										Disp. {lot.quantityAvailable}/{lot.quantityInitial}
 									</span>
 								</div>
@@ -286,7 +286,7 @@
 		</div>
 
 		<!-- ============ DESKTOP: tabla semántica ============ -->
-		<div class="hidden md:block overflow-x-auto">
+		<div class="hidden overflow-x-auto md:block">
 			<table class="w-full table-fixed text-sm">
 				<colgroup>
 					{#if showReviewColumn}
@@ -303,7 +303,7 @@
 					{/if}
 				</colgroup>
 				<thead
-					class="bg-surface-container-high/70 text-[10px] font-medium uppercase tracking-wide text-on-surface-variant"
+					class="bg-surface-container-high/70 text-[10px] font-medium tracking-wide text-on-surface-variant uppercase"
 				>
 					<tr>
 						{#if showReviewColumn}
@@ -342,7 +342,7 @@
 							<td class="px-2 py-2.5">
 								{#if item.product?.personalCode}
 									<span
-										class="font-mono text-xs leading-4 font-semibold text-brand-navy break-all"
+										class="font-mono text-xs leading-4 font-semibold break-all text-brand-navy"
 										title={item.product.personalCode}
 									>
 										{item.product.personalCode}
@@ -354,7 +354,7 @@
 							<td class="px-2 py-2.5">
 								{@render itemName(item)}
 								<span
-									class="mt-1 inline-block w-fit px-1 py-0.5 rounded text-[9px] font-bold {item.appliesIva
+									class="mt-1 inline-block w-fit rounded px-1 py-0.5 text-[9px] font-bold {item.appliesIva
 										? 'bg-brand-blue/10 text-brand-blue'
 										: 'bg-surface-container-high text-on-surface-variant'}"
 									>{item.appliesIva ? `IVA ${item.ivaRate}%` : 'Exento'}</span
@@ -453,9 +453,9 @@
 	{/if}
 
 	<div
-		class="border-t border-outline-variant/20 px-4 py-2 bg-surface-container-high/50 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0"
+		class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-variant/20 bg-surface-container-high/50 px-4 py-2 text-xs"
 	>
-		<div class="flex items-center gap-2 flex-wrap">
+		<div class="flex flex-wrap items-center gap-2">
 			<AppBadge variant="neutral">{totalUnits} unidades</AppBadge>
 			{#if showReviewColumn}
 				<AppBadge variant={reviewStatus.allReviewed ? 'success' : 'info'}>

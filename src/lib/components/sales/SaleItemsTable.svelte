@@ -751,7 +751,7 @@
 		</div>
 		{#if discount > 0 && total != null}
 			{@const discountAmount = computeDiscount(discount, discountType, subtotal)}
-			<div class="flex items-center justify-between mt-1">
+			<div class="mt-1 flex items-center justify-between">
 				<span class="text-xs font-medium tracking-wider text-gray-400 uppercase"
 					>Descuento {#if discountType === 'PERCENTAGE'}({discount}%){/if}</span
 				>
@@ -759,7 +759,7 @@
 			</div>
 		{/if}
 		{#if total != null}
-			<div class="flex items-center justify-between mt-1 pt-1 border-t border-gray-100">
+			<div class="mt-1 flex items-center justify-between border-t border-gray-100 pt-1">
 				<span class="text-sm font-bold text-gray-700">Total</span>
 				<span class="text-base font-bold text-gray-900">{formatPrice(total)}</span>
 			</div>

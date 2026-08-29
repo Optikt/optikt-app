@@ -12,7 +12,7 @@
 </script>
 
 <div
-	class="relative w-full inline-grid overflow-hidden rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm {disabled
+	class="relative inline-grid w-full overflow-hidden rounded-lg border border-outline-variant/30 bg-white p-1 shadow-sm {disabled
 		? 'opacity-60'
 		: ''}"
 	style="grid-template-columns: repeat({options.length}, 1fr)"

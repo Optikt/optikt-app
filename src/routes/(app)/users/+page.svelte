@@ -128,7 +128,7 @@
 		<select
 			bind:value={roleFilter}
 			onchange={handleFilterChange}
-			class="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue"
+			class="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-brand-blue focus:outline-none"
 		>
 			<option value="">Todos los roles</option>
 			{#each ALL_ROLES as role, index (`${role}-${index}`)}

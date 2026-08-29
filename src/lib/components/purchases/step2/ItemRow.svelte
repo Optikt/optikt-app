@@ -76,12 +76,12 @@
 	aria-label="Artículo: {productName}"
 >
 	<div
-		class="grid grid-cols-[minmax(160px,1fr)_70px_110px_110px_90px_72px] gap-3 items-center
+		class="grid grid-cols-[minmax(160px,1fr)_70px_110px_110px_90px_72px] items-center gap-3
 			max-[500px]:grid-cols-[1fr_auto]
 			max-[500px]:gap-2"
 	>
 		<!-- Producto -->
-		<div class="flex items-center gap-2 min-w-0 max-[500px]:col-span-2">
+		<div class="flex min-w-0 items-center gap-2 max-[500px]:col-span-2">
 			<div
 				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant"
 			>
@@ -96,7 +96,7 @@
 					{sku} - {productName}
 				</p>
 				<p
-					class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide {item.appliesIva
+					class="mt-0.5 text-[10px] font-semibold tracking-wide uppercase {item.appliesIva
 						? 'text-brand-blue'
 						: 'text-on-surface-variant'}"
 				>
@@ -104,12 +104,12 @@
 				</p>
 			</div>
 			<!-- Acciones (aparecen dentro del área de producto en modo angosto) -->
-			<div class="max-[500px]:flex hidden items-center justify-end gap-1 ml-auto">
+			<div class="ml-auto hidden items-center justify-end gap-1 max-[500px]:flex">
 				<button
 					type="button"
 					onclick={toggleReviewed}
 					class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors {item.isReviewed
-						? 'bg-brand-blue text-white border-brand-blue'
+						? 'border-brand-blue bg-brand-blue text-white'
 						: 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant hover:border-brand-blue hover:text-brand-blue'}"
 					aria-label={item.isReviewed ? 'Desmarcar como revisado' : 'Marcar como revisado'}
 					aria-pressed={item.isReviewed}
@@ -137,7 +137,7 @@
 				step="1"
 				disabled={item.isReviewed}
 				bind:value={item.quantity}
-				class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 text-center text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+				class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 text-center text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				aria-label="Cantidad"
 			/>
 		</div>
@@ -156,7 +156,7 @@
 					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
 					2
 						? 'pr-10'
-						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 					aria-label="Costo unitario"
 				/>
 				<span
@@ -180,7 +180,7 @@
 					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
 					2
 						? 'pr-10'
-						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 					aria-label="Precio de venta"
 				/>
 				<span
@@ -203,7 +203,7 @@
 				type="button"
 				onclick={toggleReviewed}
 				class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors {item.isReviewed
-					? 'bg-brand-blue text-white border-brand-blue'
+					? 'border-brand-blue bg-brand-blue text-white'
 					: 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant hover:border-brand-blue hover:text-brand-blue'}"
 				aria-label={item.isReviewed ? 'Desmarcar como revisado' : 'Marcar como revisado'}
 				aria-pressed={item.isReviewed}

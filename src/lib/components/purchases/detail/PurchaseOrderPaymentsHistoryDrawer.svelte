@@ -264,7 +264,7 @@
 							{/if}
 							<td class="px-2 py-2 align-top text-xs text-on-surface-variant">
 								<p
-									class="max-w-[8rem] whitespace-pre-wrap truncate"
+									class="max-w-[8rem] truncate whitespace-pre-wrap"
 									title={payment.reference || payment.notes || '—'}
 								>
 									{payment.reference || payment.notes || '—'}

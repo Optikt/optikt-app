@@ -120,7 +120,7 @@
 			id="purchase-status-filter"
 			value={statusFilter}
 			onchange={(e) => onStatusChange(e.currentTarget.value as PurchaseOrderStatusFilter)}
-			class="{selectClass} w-32 hidden lg:inline-block"
+			class="{selectClass} hidden w-32 lg:inline-block"
 		>
 			<option value="">Estado</option>
 			{#each statusFilterOptions as option (option.value)}
@@ -132,7 +132,7 @@
 			id="purchase-supplier-filter"
 			value={supplierFilter}
 			onchange={(e) => onSupplierChange(e.currentTarget.value)}
-			class="{selectClass} w-36 hidden lg:inline-block"
+			class="{selectClass} hidden w-36 lg:inline-block"
 		>
 			<option value="">Proveedor</option>
 			{#each suppliers as supplier (supplier.id)}
@@ -143,32 +143,32 @@
 		<button
 			type="button"
 			onclick={onTogglePending}
-			class="h-9 hidden lg:inline-flex items-center justify-center rounded-lg xl:px-2.5 xl:gap-1.5 transition-colors {pendingBalanceFilter
+			class="hidden h-9 items-center justify-center rounded-lg transition-colors lg:inline-flex xl:gap-1.5 xl:px-2.5 {pendingBalanceFilter
 				? 'bg-brand-navy text-white'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
 			title="Filtrar por saldo pendiente"
 		>
 			<Wallet class="h-3.5 w-3.5" />
-			<span class="hidden xl:inline text-sm">Pendiente</span>
+			<span class="hidden text-sm xl:inline">Pendiente</span>
 		</button>
 
 		<button
 			type="button"
 			onclick={onToggleOverdue}
-			class="h-9 hidden lg:inline-flex items-center justify-center rounded-lg xl:px-2.5 xl:gap-1.5 transition-colors {overdueBalanceFilter
+			class="hidden h-9 items-center justify-center rounded-lg transition-colors lg:inline-flex xl:gap-1.5 xl:px-2.5 {overdueBalanceFilter
 				? 'bg-error-container text-on-error-container'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"
 			title="Filtrar por vencidas"
 		>
 			<TriangleAlert class="h-3.5 w-3.5" />
-			<span class="hidden xl:inline text-sm">Vencidas</span>
+			<span class="hidden text-sm xl:inline">Vencidas</span>
 		</button>
 
 		<select
 			id="purchase-order-sort-field"
 			value={orderBy}
 			onchange={(e) => onSortFieldChange(e.currentTarget.value as PurchaseOrderSortField)}
-			class="{selectClass} w-32 hidden lg:inline-block"
+			class="{selectClass} hidden w-32 lg:inline-block"
 			aria-label="Ordenar por"
 		>
 			{#each sortFieldOptions as option (option.value)}
@@ -179,7 +179,7 @@
 		<button
 			type="button"
 			onclick={onToggleSortDirection}
-			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest"
+			class="hidden h-9 w-9 items-center justify-center rounded-lg bg-surface-container-high text-brand-navy transition-colors hover:bg-surface-container-highest lg:inline-flex"
 			aria-label={orderSort === 'desc' ? 'Orden descendente' : 'Orden ascendente'}
 		>
 			{#if orderSort === 'desc'}
@@ -193,7 +193,7 @@
 			type="button"
 			onclick={onClearFilters}
 			disabled={!hasActiveFilters}
-			class="h-9 w-9 hidden lg:inline-flex items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 {hasActiveFilters
+			class="hidden h-9 w-9 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 lg:inline-flex {hasActiveFilters
 				? 'bg-brand-navy text-white hover:bg-brand-navy-dark'
 				: 'bg-surface-container-high text-outline'}"
 			aria-label="Limpiar filtros"
@@ -204,7 +204,7 @@
 		<button
 			type="button"
 			onclick={() => (mobileFiltersOpen = !mobileFiltersOpen)}
-			class="relative inline-flex lg:hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors {activeFilterCount >
+			class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors lg:hidden {activeFilterCount >
 			0
 				? 'bg-brand-blue text-white'
 				: 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'}"

@@ -97,7 +97,7 @@
 			/>
 		</FieldWrapper>
 
-		<label class="flex items-center gap-2 cursor-pointer select-none">
+		<label class="flex cursor-pointer items-center gap-2 select-none">
 			<input
 				type="checkbox"
 				checked={hasEarlyPayment}
@@ -126,7 +126,7 @@
 								step="0.01"
 								bind:value={tempEarlyPercent}
 								placeholder="0"
-								class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-8 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 font-mono"
+								class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-8 font-mono text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 							/>
 							<span
 								class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-on-surface-variant"

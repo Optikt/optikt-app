@@ -570,7 +570,7 @@
 			{:else}
 				{#each items as item, _index (item.id)}
 					{#if item.kind === 'treatment'}
-						<div class="border-l-2 border-slate-200 pl-3 ml-4">
+						<div class="ml-4 border-l-2 border-slate-200 pl-3">
 							<SaleStep2ItemCard
 								{item}
 								onremove={() => handleRemoveTreatment(item.id)}
