@@ -133,7 +133,7 @@
 
 ---
 
-### DT14 · Wizard de compras carga todo en SSR 🟡
+### ✅ DT14 · Wizard de compras carga todo en SSR (COMPLETADO — absorbido por FP6, 2026-08-17)
 
 **Problema:** El `load` de `/purchases/new` trae **todos** los productos (`getAllProductsWithRelations({ limit: 500 })`) y lentes sin filtrar por proveedor. El proveedor se elige en Step 1, pero los datos se cargan antes de saber cuál es. Payload SSR innecesario; la búsqueda cliente-side escanea registros que nunca se usarán.
 
@@ -511,7 +511,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
 | ✅        | DT13 · Enums moneda            | Completado              |
 | ✅        | DT16 · Enums moneda gastos     | Completado              |
-| 🟡        | DT14 · Wizard compras SSR      | Absorbido por FP6       |
+| ✅        | DT14 · Wizard compras SSR      | Completado (FP6)        |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
 | 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
 | 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
