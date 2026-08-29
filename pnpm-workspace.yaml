@@ -1,5 +1,4 @@
 allowBuilds:
-  '@sentry/cli': set this to true or false
   esbuild: true
 minimumReleaseAgeExclude:
   - '@node-rs/argon2-android-arm-eabi@2.2.0'
