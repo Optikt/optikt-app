@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { sha256 } from '@oslojs/crypto/sha2';
-import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
+import { createHash } from 'node:crypto';
+import { encodeBase64url } from '@oslojs/encoding';
 import * as sessionQueries from '$lib/server/db/queries/sessions';
 import * as userQueries from '$lib/server/db/queries/users';
 import { dev } from '$app/environment';
@@ -17,7 +17,7 @@ export function generateSessionToken(): string {
 }
 
 export function getTokenHash(token: string): string {
-	return encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+	return createHash('sha256').update(token).digest('hex');
 }
 
 export async function createSession(
