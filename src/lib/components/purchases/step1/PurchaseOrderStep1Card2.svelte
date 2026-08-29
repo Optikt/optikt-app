@@ -110,7 +110,7 @@
 </script>
 
 <div class="@container rounded-2xl bg-surface-container-low p-4 ring-1 ring-outline-variant/20">
-	<h2 class="text-sm font-bold tracking-[0.16em] text-brand-navy uppercase mb-4">
+	<h2 class="mb-4 text-sm font-bold tracking-[0.16em] text-brand-navy uppercase">
 		<DollarSign class="mr-2 inline-block h-4 w-4 text-brand-gold-dark" />
 		Datos financieros
 	</h2>
@@ -121,7 +121,7 @@
 			<select
 				value={sourceCurrency}
 				onchange={handleSourceCurrencyChange}
-				class="max-w-xs w-1/3 rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				class="w-1/3 max-w-xs rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 			>
 				{#each CURRENCY_OPTIONS as opt (opt.value)}
 					<option value={opt.value}>{opt.label}</option>
@@ -129,7 +129,7 @@
 			</select>
 		</FieldWrapper>
 
-		<div class="grid grid-cols-1 @sm:grid-cols-2 gap-4">
+		<div class="grid grid-cols-1 gap-4 @sm:grid-cols-2">
 			<FieldWrapper label="Tasa USD BCV/Bs" required>
 				<input
 					type="number"
@@ -165,7 +165,7 @@
 		</div>
 
 		<!-- Moneda de obligación (hidden by default) -->
-		<label class="flex items-center gap-2 cursor-pointer select-none pt-1">
+		<label class="flex cursor-pointer items-center gap-2 pt-1 select-none">
 			<input
 				type="checkbox"
 				checked={settlementManuallyChanged}
@@ -185,7 +185,7 @@
 						settlementCurrency = (e.target as HTMLSelectElement).value;
 						onSettlementCurrencyChange?.(settlementCurrency);
 					}}
-					class="max-w-xs w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+					class="w-full max-w-xs rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
 				>
 					{#each SETTLEMENT_OPTIONS as opt (opt.value)}
 						<option value={opt.value}>{opt.label}</option>
@@ -195,7 +195,7 @@
 					<div
 						class="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
 					>
-						<AlertTriangle class="h-4 w-4 shrink-0 mt-px" />
+						<AlertTriangle class="mt-px h-4 w-4 shrink-0" />
 						<span>
 							La moneda de obligación es distinta a la moneda de factura. Revisá que el proveedor
 							realmente exija otra moneda.
@@ -206,7 +206,7 @@
 		</div>
 
 		<!-- Divider -->
-		<hr class="border-outline-variant/50 my-4" />
+		<hr class="my-4 border-outline-variant/50" />
 
 		<!-- Descuento -->
 		<FieldWrapper label="Tipo de descuento">
@@ -223,7 +223,7 @@
 
 		<div use:autoAnimate>
 			{#if discountIsActive}
-				<div class="grid grid-cols-1 @sm:grid-cols-2 gap-4">
+				<div class="grid grid-cols-1 gap-4 @sm:grid-cols-2">
 					<FieldWrapper label="Valor del descuento">
 						<div class="relative">
 							<input

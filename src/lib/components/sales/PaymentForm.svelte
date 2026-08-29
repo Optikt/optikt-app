@@ -816,12 +816,12 @@
 							placeholder={debtBalanceUsd > 0 ? debtBalanceUsd.toFixed(2) : '0.00'}
 							step="0.01"
 							min="0"
-							class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-2.5 pr-3.5 pl-8 font-mono text-sm font-semibold text-on-surface placeholder:text-outline focus:border-brand-blue focus:outline-none transition-all duration-200"
+							class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-2.5 pr-3.5 pl-8 font-mono text-sm font-semibold text-on-surface transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
 						/>
 					</div>
 				</div>
 
-				<div class="space-y-1.5 flex flex-col">
+				<div class="flex flex-col space-y-1.5">
 					<label
 						for="pay-native"
 						class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
@@ -842,7 +842,7 @@
 							step="0.01"
 							min="0"
 							bind:this={amountInputEl}
-							class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface placeholder:text-outline focus:border-brand-blue focus:outline-none transition-all duration-200 ring-1 ring-brand-navy/10"
+							class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface ring-1 ring-brand-navy/10 transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
 						/>
 					</div>
 				</div>
@@ -925,7 +925,7 @@
 				</div>
 			{:else if showPurchasePreview}
 				<div
-					class="rounded-lg bg-surface-container-high px-3 py-2.5 text-xs font-mono {isNativeSettlement &&
+					class="rounded-lg bg-surface-container-high px-3 py-2.5 font-mono text-xs {isNativeSettlement &&
 					amountAppliedToDebt != null &&
 					amountAppliedToDebt > 0
 						? 'space-y-1'

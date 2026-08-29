@@ -127,7 +127,7 @@
 <div class="relative">
 	<div class="relative">
 		<Search
-			class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline"
+			class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-outline"
 		/>
 		<input
 			bind:this={inputEl}
@@ -144,14 +144,14 @@
 			onclick={handleClick}
 			onblur={handleBlur}
 			onkeydown={handleKeyDown}
-			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pl-9 pr-14 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open
+			class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 pr-14 pl-9 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0 {open
 				? 'rounded-b-none'
 				: ''}"
 		/>
 		<button
 			type="button"
 			onclick={() => (open = !open)}
-			class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-outline hover:text-on-surface"
+			class="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-outline hover:text-on-surface"
 			tabindex="-1"
 		>
 			<ChevronDown class="h-4 w-4 transition-transform duration-150 {open ? 'rotate-180' : ''}" />
@@ -160,7 +160,7 @@
 			<button
 				type="button"
 				onclick={handleClear}
-				class="absolute right-8 top-1/2 -translate-y-1/2 rounded p-1 text-outline hover:text-error"
+				class="absolute top-1/2 right-8 -translate-y-1/2 rounded p-1 text-outline hover:text-error"
 				tabindex="-1"
 				aria-label="Limpiar búsqueda"
 			>
@@ -171,7 +171,7 @@
 
 	{#if open && filtered.length > 0}
 		<div
-			class="absolute left-0 right-0 top-full z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest shadow-lg"
+			class="absolute top-full right-0 left-0 z-50 max-h-60 overflow-y-auto rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest shadow-lg"
 			role="listbox"
 			id="searchcombobox-list"
 		>
@@ -181,7 +181,7 @@
 					onclick={() => handleSelect(option)}
 					onmousedown={(e) => e.preventDefault()}
 					onmouseenter={() => (highlightedIdx = i)}
-					class="flex w-full items-center cursor-pointer transition-colors hover:bg-surface-container-high {i ===
+					class="flex w-full cursor-pointer items-center transition-colors hover:bg-surface-container-high {i ===
 					highlightedIdx
 						? 'bg-surface-container-high'
 						: ''}"
@@ -194,7 +194,7 @@
 		</div>
 	{:else if open && query}
 		<div
-			class="absolute left-0 right-0 top-full z-50 rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
+			class="absolute top-full right-0 left-0 z-50 rounded-b-lg border-x border-b border-outline-variant/20 bg-surface-container-lowest px-3 py-4 text-center text-sm text-on-surface-variant shadow-lg"
 		>
 			{#if loading}
 				<span class="inline-flex items-center gap-2">

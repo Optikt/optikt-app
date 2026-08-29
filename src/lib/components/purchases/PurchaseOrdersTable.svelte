@@ -141,7 +141,7 @@
 			<td class="px-2 py-2.5 text-sm whitespace-nowrap text-on-surface-variant tabular-nums">
 				{shortDate(purchaseOrder.orderDate)}
 			</td>
-			<td class="px-2 py-2.5 hidden 2xl:table-cell">
+			<td class="hidden px-2 py-2.5 2xl:table-cell">
 				<div
 					class="max-w-[7rem] truncate text-sm"
 					title="{documentLabel(purchaseOrder)}: {documentNumber(purchaseOrder)}"

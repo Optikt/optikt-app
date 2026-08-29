@@ -103,8 +103,8 @@
 	</div>
 {/snippet}
 
-<div class="sm:px-2 sm:pt-2 flex flex-wrap items-center gap-2 justify-between">
-	<div class="inline-flex gap-2 items-center">
+<div class="flex flex-wrap items-center justify-between gap-2 sm:px-2 sm:pt-2">
+	<div class="inline-flex items-center gap-2">
 		<a
 			title="Volver a la lista de compras"
 			href={resolve(backHref as '/purchases')}
@@ -113,7 +113,7 @@
 			<ArrowLeft size={24} />
 		</a>
 		<h1
-			class="font-heading text-[30px] font-bold text-brand-navy tracking-tight leading-none whitespace-nowrap"
+			class="font-heading text-[30px] leading-none font-bold tracking-tight whitespace-nowrap text-brand-navy"
 		>
 			{formattedOrderNumber}
 		</h1>
@@ -121,7 +121,7 @@
 	{@render statusBadges('hidden sm:flex items-center gap-2 flex-wrap shrink-0')}
 
 	<!-- DESKTOP (sm+) -->
-	<div class="hidden sm:flex flex-wrap gap-2 items-center shrink-0">
+	<div class="hidden shrink-0 flex-wrap items-center gap-2 sm:flex">
 		{#if isDraft && !isReadyForReview}
 			<button
 				type="button"
@@ -170,7 +170,7 @@
 						type="button"
 						onclick={() => (showConfirmDropdown = !showConfirmDropdown)}
 						disabled={actionLoading || !allItemsReviewed}
-						class="inline-flex items-center justify-center rounded-r-xl bg-brand-gold px-2 py-2 text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark border-l border-brand-gold-dark/30 disabled:cursor-not-allowed disabled:opacity-60"
+						class="inline-flex items-center justify-center rounded-r-xl border-l border-brand-gold-dark/30 bg-brand-gold px-2 py-2 text-brand-navy shadow-sm transition-colors hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-60"
 						aria-label="Más opciones"
 					>
 						<ChevronDown class="h-4 w-4" />
@@ -178,7 +178,7 @@
 				{/if}
 				{#if showConfirmDropdown}
 					<div
-						class="absolute top-full right-0 z-50 mt-1 min-w-[200px] rounded-lg bg-surface-container-lowest shadow-lg ring-1 ring-outline-variant/20 overflow-hidden"
+						class="absolute top-full right-0 z-50 mt-1 min-w-[200px] overflow-hidden rounded-lg bg-surface-container-lowest shadow-lg ring-1 ring-outline-variant/20"
 						onblur={() => (showConfirmDropdown = false)}
 						tabindex="-1"
 					>
@@ -211,7 +211,7 @@
 	</div>
 
 	<!-- MOBILE (< sm) -->
-	<div class="flex sm:hidden items-center gap-1 shrink-0">
+	<div class="flex shrink-0 items-center gap-1 sm:hidden">
 		{#if isDraft && !isReadyForReview}
 			<button
 				type="button"
@@ -248,7 +248,7 @@
 				</button>
 				{#if showOverflowMenu}
 					<div
-						class="absolute top-full right-0 z-50 mt-1 min-w-44 rounded-xl bg-surface-container-lowest shadow-lg ring-1 ring-outline-variant/20 overflow-hidden"
+						class="absolute top-full right-0 z-50 mt-1 min-w-44 overflow-hidden rounded-xl bg-surface-container-lowest shadow-lg ring-1 ring-outline-variant/20"
 					>
 						{#if isDraft && !isReadyForReview}
 							<button

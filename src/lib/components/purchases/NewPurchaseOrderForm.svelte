@@ -536,7 +536,7 @@
 
 	<!-- Step content -->
 	{#if currentStep === 1}
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+		<div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
 			<PurchaseOrderStep1Card1
 				{suppliers}
 				bind:supplierId
@@ -589,20 +589,20 @@
 			{defaultTaxRate}
 		/>
 	{:else if currentStep === 3}
-		<div class="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-4">
+		<div class="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_20rem]">
 			<!-- LEFT: Items list card with table layout -->
 			<div
-				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
+				class="flex flex-col overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20"
 			>
 				<div
-					class="flex items-center gap-2 px-4 py-3 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+					class="flex shrink-0 items-center gap-2 border-b border-outline-variant/30 bg-surface-container-high px-4 py-3"
 				>
 					<PackageCheck class="h-5 w-5 text-brand-blue" />
-					<h2 class="text-sm font-semibold uppercase tracking-wide text-brand-navy">
+					<h2 class="text-sm font-semibold tracking-wide text-brand-navy uppercase">
 						Artículos incluidos
 					</h2>
 					<span
-						class="ml-auto text-xs font-medium text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-full"
+						class="ml-auto rounded-full bg-brand-blue/10 px-2 py-0.5 text-xs font-medium text-brand-blue"
 					>
 						{items.length}
 						{items.length === 1 ? 'ítem' : 'ítems'}
@@ -611,7 +611,7 @@
 
 				<!-- Column headers -->
 				<div
-					class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 px-4 py-2 border-b border-outline-variant/20 bg-surface-container-lowest text-[10px] font-medium uppercase tracking-wide text-on-surface-variant shrink-0"
+					class="grid shrink-0 grid-cols-[3rem_1fr_5rem_5rem] gap-3 border-b border-outline-variant/20 bg-surface-container-lowest px-4 py-2 text-[10px] font-medium tracking-wide text-on-surface-variant uppercase"
 				>
 					<span>Cant.</span>
 					<span>Artículo</span>
@@ -620,30 +620,30 @@
 				</div>
 
 				<!-- Items list -->
-				<div class="flex-1 overflow-y-auto min-h-0 p-2">
+				<div class="min-h-0 flex-1 overflow-y-auto p-2">
 					<div class="flex flex-col">
 						{#each items as item (item.id)}
 							<div
-								class="grid grid-cols-[3rem_1fr_5rem_5rem] gap-3 items-center px-2 py-2.5 border-b border-outline-variant/10 last:border-none rounded-md hover:bg-surface-container-high transition-colors duration-150"
+								class="grid grid-cols-[3rem_1fr_5rem_5rem] items-center gap-3 rounded-md border-b border-outline-variant/10 px-2 py-2.5 transition-colors duration-150 last:border-none hover:bg-surface-container-high"
 							>
 								<!-- Quantity badge -->
 								<span
-									class="font-mono text-sm text-brand-navy font-bold bg-surface-container-high w-8 h-8 flex items-center justify-center rounded-md shrink-0"
+									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-container-high font-mono text-sm font-bold text-brand-navy"
 								>
 									{item.quantity}x
 								</span>
 								<!-- Name + SKU + IVA badge -->
-								<div class="flex flex-col min-w-0">
+								<div class="flex min-w-0 flex-col">
 									<span
-										class="text-sm font-medium text-brand-navy truncate"
+										class="truncate text-sm font-medium text-brand-navy"
 										title={getDraftItemTitle(item)}
 									>
 										{getDraftItemTitle(item)}
 									</span>
-									<span class="text-[10px] font-mono truncate flex items-center gap-1.5">
+									<span class="flex items-center gap-1.5 truncate font-mono text-[10px]">
 										<span class="text-on-surface-variant">{getItemSku(item)}</span>
 										<span
-											class="inline-block px-1 py-0.5 rounded text-[9px] font-bold {item.appliesIva
+											class="inline-block rounded px-1 py-0.5 text-[9px] font-bold {item.appliesIva
 												? 'bg-brand-blue/10 text-brand-blue'
 												: 'bg-surface-container-high text-on-surface-variant'}"
 										>
@@ -671,20 +671,20 @@
 
 			<!-- RIGHT: Summary card with color contrast -->
 			<div
-				class="flex flex-col rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden"
+				class="flex flex-col overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20"
 			>
-				<div class="flex flex-col gap-3 px-4 pt-4 pb-3 flex-1">
+				<div class="flex flex-1 flex-col gap-3 px-4 pt-4 pb-3">
 					<h2
-						class="text-sm font-semibold uppercase tracking-wide text-brand-navy border-b border-outline-variant/30 pb-2 shrink-0"
+						class="shrink-0 border-b border-outline-variant/30 pb-2 text-sm font-semibold tracking-wide text-brand-navy uppercase"
 					>
 						Resumen de compra
 					</h2>
 
 					<!-- Metadata: supplier · date · BCV -->
-					<div class="space-y-1 text-xs shrink-0">
+					<div class="shrink-0 space-y-1 text-xs">
 						<div class="flex items-center gap-2">
 							<span class="text-on-surface-variant">Proveedor:</span>
-							<span class="font-medium text-brand-navy truncate">
+							<span class="truncate font-medium text-brand-navy">
 								{suppliers.find((s) => s.id === supplierId)?.name ?? '—'}
 							</span>
 						</div>
@@ -692,7 +692,7 @@
 							<span class="text-on-surface-variant">
 								{documentType === PurchaseDocumentType.INVOICE ? 'Factura' : 'Nota'}:
 							</span>
-							<span class="font-medium text-brand-navy truncate">
+							<span class="truncate font-medium text-brand-navy">
 								{documentType === PurchaseDocumentType.INVOICE ? invoiceNumber : deliveryNoteNumber}
 							</span>
 							<span class="ml-auto text-on-surface-variant">
@@ -709,7 +709,7 @@
 					</div>
 
 					<!-- Cost breakdown -->
-					<div class="space-y-1.5 text-xs pt-2 border-t border-outline-variant/30 shrink-0">
+					<div class="shrink-0 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs">
 						<div class="flex justify-between">
 							<span class="text-on-surface-variant">Subtotal</span>
 							<span class="font-mono font-semibold text-brand-navy tabular-nums">
@@ -741,8 +741,8 @@
 					</div>
 
 					<!-- Net total - Navy box -->
-					<div class="rounded-lg bg-brand-navy p-3 shadow-md shrink-0">
-						<p class="text-[10px] font-medium uppercase tracking-wide text-brand-blue-light/80">
+					<div class="shrink-0 rounded-lg bg-brand-navy p-3 shadow-md">
+						<p class="text-[10px] font-medium tracking-wide text-brand-blue-light/80 uppercase">
 							Total neto a pagar
 						</p>
 						<p class="mt-1 font-mono text-xl font-bold text-white">
@@ -761,24 +761,24 @@
 
 					<!-- Margin highlight - Green box -->
 					<div
-						class="rounded-lg bg-success-container/50 border border-success-container p-3 flex items-center justify-between gap-2 shrink-0"
+						class="flex shrink-0 items-center justify-between gap-2 rounded-lg border border-success-container bg-success-container/50 p-3"
 					>
-						<div class="flex items-center gap-2 min-w-0">
+						<div class="flex min-w-0 items-center gap-2">
 							<TrendingUp class="h-4 w-4 shrink-0 text-on-success-container" />
 							<div class="min-w-0">
 								<p
-									class="text-[10px] font-semibold uppercase tracking-wide text-on-success-container"
+									class="text-[10px] font-semibold tracking-wide text-on-success-container uppercase"
 								>
 									Margen proyectado
 								</p>
-								<p class="text-[9px] text-on-surface-variant truncate">
+								<p class="truncate text-[9px] text-on-surface-variant">
 									Venta: {formatPrice(summary.estimatedSale)}
 								</p>
 							</div>
 						</div>
-						<div class="text-right shrink-0">
+						<div class="shrink-0 text-right">
 							<p
-								class="text-lg font-bold font-mono text-on-success-container tabular-nums leading-none"
+								class="font-mono text-lg leading-none font-bold text-on-success-container tabular-nums"
 							>
 								{formatPrice(summary.estimatedProfit)}
 							</p>

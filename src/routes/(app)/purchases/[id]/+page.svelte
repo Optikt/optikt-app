@@ -477,7 +477,7 @@
 	{/if}
 
 	<div
-		class="space-y-2 md:space-y-0 md:grid md:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)] gap-2"
+		class="gap-2 space-y-2 md:grid md:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)] md:space-y-0"
 	>
 		<div class="space-y-2">
 			<PurchaseOrderOverviewCard {purchaseOrder} />
@@ -496,7 +496,7 @@
 			{/if}
 		</div>
 
-		<aside class="space-y-2 @container/aside">
+		<aside class="@container/aside space-y-2">
 			<PurchaseOrderAsidePanel
 				onRegisterPayment={() => (showPaymentsDrawer = true)}
 				onViewPayments={() => (showPaymentsHistoryDrawer = true)}

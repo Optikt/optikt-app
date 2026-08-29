@@ -84,28 +84,28 @@
 	emptyDescription="Agrega un proveedor para comenzar"
 >
 	{#snippet header()}
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Nombre</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Tipo</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>RIF</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Teléfono</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Contacto</th
 		>
-		<th class="font-semibold px-4 py-3 text-xs font-medium uppercase tracking-wider text-slate-500"
+		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
 			>Estado</th
 		>
 	{/snippet}
 
 	{#snippet row(supplier)}
-		<td class="font-medium px-4 py-3 text-sm">{supplier.name}</td>
+		<td class="px-4 py-3 text-sm font-medium">{supplier.name}</td>
 		<td class="px-4 py-3 text-sm">
 			<SupplierTypeBadge type={supplier.type} />
 		</td>

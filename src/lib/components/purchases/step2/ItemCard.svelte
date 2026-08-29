@@ -76,7 +76,7 @@
 	aria-label="Artículo: {productName}"
 >
 	<div class="flex justify-between gap-3">
-		<div class="flex items-center gap-2 min-w-0 flex-1">
+		<div class="flex min-w-0 flex-1 items-center gap-2">
 			<div
 				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-on-surface-variant"
 			>
@@ -91,7 +91,7 @@
 					{sku} - {productName}
 				</p>
 				<p
-					class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide {item.appliesIva
+					class="mt-0.5 text-[10px] font-semibold tracking-wide uppercase {item.appliesIva
 						? 'text-brand-blue'
 						: 'text-on-surface-variant'}"
 				>
@@ -104,7 +104,7 @@
 				type="button"
 				onclick={toggleReviewed}
 				class="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors {item.isReviewed
-					? 'bg-brand-blue text-white border-brand-blue'
+					? 'border-brand-blue bg-brand-blue text-white'
 					: 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant hover:border-brand-blue hover:text-brand-blue'}"
 				aria-label={item.isReviewed ? 'Desmarcar como revisado' : 'Marcar como revisado'}
 				aria-pressed={item.isReviewed}
@@ -127,7 +127,7 @@
 			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 				>Cantidad</span
 			>
-			<div class="flex-1 max-w-[120px]">
+			<div class="max-w-[120px] flex-1">
 				<label for="cant-m-{item.id}" class="sr-only">Cantidad</label>
 				<input
 					id="cant-m-{item.id}"
@@ -136,7 +136,7 @@
 					step="1"
 					disabled={item.isReviewed}
 					bind:value={item.quantity}
-					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				/>
 			</div>
 		</div>
@@ -144,7 +144,7 @@
 			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 				>Costo UND.</span
 			>
-			<div class="relative flex-1 max-w-[120px]">
+			<div class="relative max-w-[120px] flex-1">
 				<label for="costo-m-{item.id}" class="sr-only">Costo unitario</label>
 				<input
 					id="costo-m-{item.id}"
@@ -156,7 +156,7 @@
 					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
 					2
 						? 'pr-10'
-						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
@@ -168,7 +168,7 @@
 			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 				>Venta UND.</span
 			>
-			<div class="relative flex-1 max-w-[120px]">
+			<div class="relative max-w-[120px] flex-1">
 				<label for="venta-m-{item.id}" class="sr-only">Precio de venta</label>
 				<input
 					id="venta-m-{item.id}"
@@ -180,7 +180,7 @@
 					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
 					2
 						? 'pr-10'
-						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+						: 'pr-6'} text-right text-sm tabular-nums transition-colors focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				/>
 				<span
 					class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-on-surface-variant"
@@ -188,7 +188,7 @@
 				>
 			</div>
 		</div>
-		<div class="flex items-center justify-between gap-3 pt-1 border-t border-outline-variant/20">
+		<div class="flex items-center justify-between gap-3 border-t border-outline-variant/20 pt-1">
 			<span class="text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
 				>Total</span
 			>

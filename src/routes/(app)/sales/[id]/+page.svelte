@@ -715,7 +715,7 @@
 		</div>
 	{/snippet}
 
-	<div class="px-6 space-y-4">
+	<div class="space-y-4 px-6">
 		<PaymentForm
 			kind="sale"
 			saleId={sale.id}

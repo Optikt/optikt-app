@@ -599,7 +599,7 @@
 					</div>
 
 					{#if item.salePrice}
-						<div class="mt-4 backdrop-blur-sm border-t border-white/15 pt-3">
+						<div class="mt-4 border-t border-white/15 pt-3 backdrop-blur-sm">
 							<p class="text-xs font-bold tracking-[0.14em] text-white uppercase">
 								Precio de venta
 							</p>

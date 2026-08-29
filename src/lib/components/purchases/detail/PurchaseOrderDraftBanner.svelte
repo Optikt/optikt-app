@@ -2,8 +2,8 @@
 	import { TriangleAlert } from '@lucide/svelte';
 </script>
 
-<div class="rounded-xl bg-warning-container/80 border border-warning/30 p-2 flex items-start gap-3">
-	<TriangleAlert class="h-5 w-5 shrink-0 text-warning mt-0.5" />
+<div class="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning-container/80 p-2">
+	<TriangleAlert class="mt-0.5 h-5 w-5 shrink-0 text-warning" />
 	<div>
 		<p class="text-sm font-semibold text-on-warning-container">Borrador en preparación</p>
 		<p class="mt-1 text-xs text-on-surface-variant">

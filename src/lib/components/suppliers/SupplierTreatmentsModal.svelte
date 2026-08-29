@@ -227,7 +227,7 @@
 											name="name"
 											type="text"
 											value={treatment.name}
-											class="w-full rounded-md border border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+											class="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
 											placeholder="Nombre del tratamiento"
 										/>
 										{#if currentEditForm.fields.name?.issues()}
@@ -246,7 +246,7 @@
 												id="edit-category-{treatment.id}"
 												name="category"
 												value={treatment.category}
-												class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+												class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 											>
 												{#each ALL_TREATMENT_CATEGORIES as cat (cat)}
 													<option value={cat}>{TREATMENT_CATEGORY_LABELS[cat]}</option>
@@ -265,7 +265,7 @@
 												step="0.01"
 												min="0"
 												value={treatment.price}
-												class="w-full rounded-md border border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+												class="w-full rounded-md border border-slate-300 p-2 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
 												placeholder="0.00"
 											/>
 										</div>
@@ -282,7 +282,7 @@
 												step="0.01"
 												min="0"
 												value={treatment.salePrice ?? ''}
-												class="w-full rounded-md border border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+												class="w-full rounded-md border border-slate-300 p-2 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
 												placeholder="0.00"
 											/>
 										</div>
@@ -402,7 +402,7 @@
 								id="create-name"
 								name="name"
 								type="text"
-								class="w-full rounded-md border border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+								class="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-blue-500 focus:ring-blue-500"
 								placeholder="Nombre del tratamiento"
 							/>
 							{#if currentCreateForm.fields.name?.issues()}
@@ -421,7 +421,7 @@
 									id="create-category"
 									name="category"
 									value={TreatmentCategory.AR}
-									class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-brand-blue"
+									class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none"
 								>
 									{#each ALL_TREATMENT_CATEGORIES as cat (cat)}
 										<option value={cat}>{TREATMENT_CATEGORY_LABELS[cat]}</option>
@@ -438,7 +438,7 @@
 									type="number"
 									step="0.01"
 									min="0"
-									class="w-full rounded-md border border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+									class="w-full rounded-md border border-slate-300 p-2 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
 									placeholder="0.00"
 								/>
 								{#if currentCreateForm.fields.price?.issues()}
@@ -458,7 +458,7 @@
 									type="number"
 									step="0.01"
 									min="0"
-									class="w-full rounded-md border border-slate-300 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+									class="w-full rounded-md border border-slate-300 p-2 text-right font-mono text-sm focus:border-blue-500 focus:ring-blue-500"
 									placeholder="0.00"
 								/>
 							</div>

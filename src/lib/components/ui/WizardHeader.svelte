@@ -177,7 +177,7 @@
 								{#snippet child({ props })}
 									<Button
 										{...props}
-										class="h-7 gap-1.5 rounded-lg border !border-outline-variant/30 bg-surface-container text-on-surface px-2.5 py-1 text-xs font-normal !text-black hover:border-brand-blue hover:bg-surface-container-high"
+										class="h-7 gap-1.5 rounded-lg border !border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs font-normal !text-black text-on-surface hover:border-brand-blue hover:bg-surface-container-high"
 									>
 										<!-- class="hover:border-brand-blue hover:bg-surface-container-high focus:border-brand-blue focus:ring-1 focus:ring-brand-blue" -->
 										{value

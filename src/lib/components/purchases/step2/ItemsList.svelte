@@ -45,7 +45,7 @@
 
 <div class="space-y-3">
 	<div
-		class="hidden xl:grid gap-3 px-3 pb-1 text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase"
+		class="hidden gap-3 px-3 pb-1 text-[10px] font-semibold tracking-[0.16em] text-on-surface-variant uppercase xl:grid"
 		style="grid-template-columns: minmax(160px,1fr) 70px 110px 110px 90px 72px"
 	>
 		<span>Artículo</span>

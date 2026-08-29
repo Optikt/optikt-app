@@ -796,7 +796,7 @@
 							id="lc_differentiators"
 							bind:value={differentiatorsText}
 							placeholder="Ej: Cilindro Alto 2, UV400, Extra Delgado"
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 placeholder:text-outline"
+							class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-outline focus:ring-2 focus:ring-brand-blue focus:outline-none"
 						/>
 						<p class={helperTextClass}>{differentiatorHelperText}</p>
 					</div>
@@ -823,7 +823,7 @@
 							name={autoNameEnabled ? undefined : 'name'}
 							bind:value={formData.name}
 							placeholder="Ej: Novak · Policarbonato · Monofocal"
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue placeholder:text-outline"
+							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-outline focus:ring-2 focus:ring-brand-blue focus:outline-none"
 							required
 							disabled={autoNameEnabled}
 						/>
@@ -864,7 +864,7 @@
 											id="lc_ar_colors"
 											bind:value={arColorsText}
 											placeholder="Ej: Verde, Azul"
-											class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-1 placeholder:text-outline"
+											class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-outline focus:ring-2 focus:ring-brand-blue focus:outline-none"
 										/>
 									</div>
 								{/if}
@@ -905,7 +905,7 @@
 											id="lc_photochromic_colors"
 											bind:value={photochromicColorsText}
 											placeholder="Ej: Gris, Café"
-											class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-1 placeholder:text-outline"
+											class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors placeholder:text-outline focus:ring-2 focus:ring-brand-blue focus:outline-none"
 										/>
 									</div>
 								{/if}
@@ -920,10 +920,10 @@
 					<div class="flex items-center gap-2">
 						<span class="h-2 w-2 rounded-full bg-brand-blue"></span>
 						<h3 class={sectionTitleClass}>Rangos opticos</h3>
-						<span class="relative group cursor-help">
+						<span class="group relative cursor-help">
 							<Info class="h-4 w-4 text-outline" />
 							<span
-								class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg z-50"
+								class="absolute bottom-full left-1/2 z-50 mb-2 hidden w-72 -translate-x-1/2 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg group-hover:block"
 							>
 								<p class="mb-1 font-medium">¿Qué son los rangos?</p>
 								<p>
@@ -976,7 +976,7 @@
 								<div class={showAddition ? 'lg:col-span-4' : 'lg:col-span-6'}>
 									<div class={rangeHeaderRowWithToggleClass}>
 										<Label class={fieldLabelClass}>Esfera (ESF)</Label>
-										<span class="relative group">
+										<span class="group relative">
 											<button
 												type="button"
 												aria-pressed={range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE}
@@ -989,7 +989,7 @@
 												±
 											</button>
 											<span
-												class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-72 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg z-50"
+												class="absolute bottom-full left-1/2 z-50 mb-2 hidden w-72 -translate-x-1/2 rounded-lg bg-slate-800 p-3 text-sm text-white shadow-lg group-hover:block"
 											>
 												<p class="font-medium text-white">
 													{range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE
@@ -1271,7 +1271,7 @@
 									type="number"
 									step="0.01"
 									min="0"
-									class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue pl-7 font-mono"
+									class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 pl-7 font-mono text-sm shadow-sm transition-colors focus:ring-2 focus:ring-brand-blue focus:outline-none"
 									required
 								/>
 							</div>
@@ -1296,7 +1296,7 @@
 								type="number"
 								step="0.01"
 								min="0"
-								class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
+								class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm shadow-sm transition-colors focus:ring-2 focus:ring-brand-blue focus:outline-none"
 							/>
 						</div>
 						<div>
@@ -1308,7 +1308,7 @@
 								type="number"
 								step="0.01"
 								min="0"
-								class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
+								class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm shadow-sm transition-colors focus:ring-2 focus:ring-brand-blue focus:outline-none"
 							/>
 						</div>
 						<div>
@@ -1320,7 +1320,7 @@
 								type="number"
 								step="0.01"
 								min="0"
-								class="block w-full rounded-lg border border-slate-300 bg-brand-navy px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono font-bold text-white"
+								class="mt-2 block w-full rounded-lg border border-slate-300 bg-brand-navy px-3 py-2.5 font-mono text-sm font-bold text-white shadow-sm transition-colors focus:ring-2 focus:ring-brand-blue focus:outline-none"
 							/>
 						</div>
 					</div>
@@ -1433,7 +1433,7 @@
 										bind:value={formData.stock}
 										type="number"
 										min="0"
-										class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-2 font-mono"
+										class="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-mono text-sm shadow-sm transition-colors focus:ring-2 focus:ring-brand-blue focus:outline-none"
 									/>
 								</div>
 							{/if}
@@ -1455,7 +1455,7 @@
 							bind:value={formData.notes}
 							rows={3}
 							placeholder="Acuerdos con proveedor, restricciones o notas operativas..."
-							class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue mt-3"
+							class="mt-3 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:ring-2 focus:ring-brand-blue focus:outline-none"
 						></textarea>
 					</div>
 				</div>

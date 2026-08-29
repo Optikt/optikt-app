@@ -30,13 +30,13 @@
 	}
 </script>
 
-<div class="rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20 overflow-hidden">
+<div class="overflow-hidden rounded-2xl bg-surface-container-low ring-1 ring-outline-variant/20">
 	<div
-		class="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 border-b border-outline-variant/30 bg-surface-container-high shrink-0"
+		class="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-outline-variant/30 bg-surface-container-high px-3 py-2.5"
 	>
-		<div class="flex items-center gap-1.5 shrink-0">
+		<div class="flex shrink-0 items-center gap-1.5">
 			<History class="h-4 w-4 text-brand-blue" />
-			<h2 class="text-xs font-semibold uppercase tracking-wide text-brand-navy whitespace-nowrap">
+			<h2 class="text-xs font-semibold tracking-wide whitespace-nowrap text-brand-navy uppercase">
 				Auditoría
 			</h2>
 		</div>
@@ -44,22 +44,22 @@
 		<button
 			type="button"
 			onclick={onViewAudit}
-			class="ml-auto text-[10px] font-semibold text-brand-blue uppercase tracking-wide hover:underline shrink-0"
+			class="ml-auto shrink-0 text-[10px] font-semibold tracking-wide text-brand-blue uppercase hover:underline"
 		>
 			Ver historial
 		</button>
 	</div>
 
-	<div class="p-2 space-y-1.5">
+	<div class="space-y-1.5 p-2">
 		{#if recentEvents.length > 0}
 			{#each recentEvents as event (event.id)}
 				<div
 					class="flex items-start gap-2 rounded-lg bg-surface-container-lowest/50 px-2.5 py-1.5 text-xs"
 				>
-					<span class={`mt-1 h-2 w-2 rounded-full shrink-0 ${eventDotClass(event)}`}></span>
+					<span class={`mt-1 h-2 w-2 shrink-0 rounded-full ${eventDotClass(event)}`}></span>
 					<div class="min-w-0">
-						<p class="font-medium text-on-surface truncate">{event.label}</p>
-						<p class="text-[10px] text-on-surface-variant truncate">
+						<p class="truncate font-medium text-on-surface">{event.label}</p>
+						<p class="truncate text-[10px] text-on-surface-variant">
 							{event.changedByName ?? 'Usuario desconocido'} · {formatDate(event.changedAt, {
 								dateStyle: 'short'
 							})}

@@ -140,7 +140,7 @@
 		{totalCost}
 	/>
 
-	<div class="px-4 sm:px-6 space-y-6">
+	<div class="space-y-6 px-4 sm:px-6">
 		<ProductSearchCombobox
 			products={supplierProducts}
 			lensItems={supplierLenses}

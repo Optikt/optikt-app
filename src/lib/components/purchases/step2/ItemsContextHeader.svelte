@@ -32,23 +32,23 @@
 	aria-label="Contexto de la orden"
 >
 	<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-		<span class="hidden sm:inline text-on-surface-variant">Proveedor:</span>
+		<span class="hidden text-on-surface-variant sm:inline">Proveedor:</span>
 		<span class="font-semibold text-brand-navy">{supplierName}</span>
 
 		<span class="text-outline" aria-hidden="true">·</span>
 
-		<span class="hidden sm:inline text-on-surface-variant">Moneda:</span>
+		<span class="hidden text-on-surface-variant sm:inline">Moneda:</span>
 		<span class="font-semibold text-brand-navy">{currencyLabel}</span>
 
 		<span class="text-outline" aria-hidden="true">·</span>
 
-		<span class="hidden sm:inline text-on-surface-variant">Tasa BCV:</span>
+		<span class="hidden text-on-surface-variant sm:inline">Tasa BCV:</span>
 		<span class="font-semibold text-brand-navy tabular-nums">{Number(bcvRate || 0).toFixed(2)}</span
 		>
 
 		{#if sourceRateToVes > 0}
 			<span class="text-outline" aria-hidden="true">·</span>
-			<span class="hidden sm:inline text-on-surface-variant"
+			<span class="hidden text-on-surface-variant sm:inline"
 				>{getSourceCurrencySymbol(sourceCurrency)}</span
 			>
 			<span class="font-semibold text-brand-navy tabular-nums">{sourceRateToVes}</span>
@@ -61,7 +61,7 @@
 			>
 
 			<span class="text-outline" aria-hidden="true">·</span>
-			<span class="hidden sm:inline text-on-surface-variant">Total:</span>
+			<span class="hidden text-on-surface-variant sm:inline">Total:</span>
 			<span class="font-semibold text-brand-navy tabular-nums">{formatPrice(totalCost)}</span>
 		{/if}
 	</div>

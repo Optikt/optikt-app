@@ -126,7 +126,7 @@
 					<input
 						id="qty-{item.id}"
 						type="number"
-						class="w-full rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue/30"
+						class="w-full rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none"
 						disabled={isLensKind || isTreatmentKind}
 						min="1"
 						max={isProductKind ? (maxStock ?? undefined) : undefined}
@@ -147,7 +147,7 @@
 						bind:value={item.unitPrice}
 						step="0.01"
 						min="0"
-						class="w-full rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue/30"
+						class="w-full rounded-lg border border-slate-200 px-2 py-1 font-mono text-sm focus:border-brand-blue focus:ring-1 focus:ring-brand-blue/30 focus:outline-none"
 					/>
 				</div>
 				<div class="shrink-0">

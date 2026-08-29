@@ -126,8 +126,8 @@
 	}
 </script>
 
-<div class="flex flex-col sm:flex-row sm:items-start gap-2">
-	<div class="sm:w-52 shrink-0">
+<div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+	<div class="shrink-0 sm:w-52">
 		<SegmentedToggle
 			value={pendingItemType}
 			options={typeOptions}
@@ -137,7 +137,7 @@
 			}}
 		/>
 	</div>
-	<div class="flex-1 min-w-0">
+	<div class="min-w-0 flex-1">
 		<SearchCombobox
 			options={currentOptions}
 			placeholder="Buscar producto por nombre o código…"
