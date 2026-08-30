@@ -5,6 +5,7 @@ import {
 	getSaleItemsWithDetails,
 	getSalePayments
 } from '$lib/server/db/queries/sales';
+import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
 import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';
 import { MovementReferenceType } from '$lib/shared/enums';
@@ -19,17 +20,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(404, 'Venta no encontrada');
 	}
 
-	const [items, payments, movements, supplierList, allTreatments] = await Promise.all([
-		getSaleItemsWithDetails(params.id),
-		getSalePayments(params.id, { includeVoided: true }),
-		getMovementsWithDetails({
-			referenceType: MovementReferenceType.SALE,
-			referenceId: params.id,
-			orderSort: 'asc'
-		}),
-		getAllSuppliers({ orderBy: 'name' }),
-		getAllTreatments()
-	]);
+	const [items, payments, movements, supplierList, allTreatments, auditHistory] = await Promise.all(
+		[
+			getSaleItemsWithDetails(params.id),
+			getSalePayments(params.id, { includeVoided: true }),
+			getMovementsWithDetails({
+				referenceType: MovementReferenceType.SALE,
+				referenceId: params.id,
+				orderSort: 'asc'
+			}),
+			getAllSuppliers({ orderBy: 'name' }),
+			getAllTreatments(),
+			getEntityHistory('sale', params.id)
+		]
+	);
 
 	return {
 		sale,
@@ -37,6 +41,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		payments,
 		movements,
 		suppliers: supplierList,
-		allTreatments
+		allTreatments,
+		auditHistory
 	};
 };

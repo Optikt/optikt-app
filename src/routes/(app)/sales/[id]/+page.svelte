@@ -20,6 +20,7 @@
 		SaleMovementsModal,
 		SaleStatusModal
 	} from '$lib/components/sales';
+	import { SaleAuditTimeline, SaleAuditHistoryDrawer } from '$lib/components/sales/detail';
 	import { PDFViewerModal } from '$lib/components/pdf';
 	import { AppBadge, SaleStatusBadge, SlideOver } from '$lib/components/ui';
 	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
@@ -66,6 +67,10 @@
 
 	// PDF preview modal
 	let showPdfPreview = $state(false);
+
+	// Audit history drawer
+	let showAuditDrawer = $state(false);
+	let auditHistory = $state(untrack(() => data.auditHistory));
 	let pdfUrl = $derived(resolve(`/api/pdf/sale/${sale.id}`));
 
 	function openStockModal() {
@@ -134,6 +139,7 @@
 		items = next.items;
 		payments = next.payments;
 		movements = next.movements;
+		auditHistory = next.auditHistory;
 	}
 
 	function customerName(): string {
@@ -631,6 +637,15 @@
 					</div>
 				</div>
 
+				<div class="mt-3">
+					<SaleAuditTimeline
+						{auditHistory}
+						saleCreatedAt={sale.createdAt}
+						saleCreatedBy={sale.seller?.fullName}
+						onViewAudit={() => (showAuditDrawer = true)}
+					/>
+				</div>
+
 				{#if isCancelled && sale.refundStatus && sale.refundStatus !== RefundStatus.NO_PAYMENT}
 					<div
 						class="mt-4 rounded-[var(--ds-radius-xl)] border border-outline-variant/50 bg-surface-container-lowest p-6 shadow-[var(--ds-shadow-md)]"
@@ -762,3 +777,11 @@
 		onClose={() => (showPdfPreview = false)}
 	/>
 {/if}
+
+<SaleAuditHistoryDrawer
+	open={showAuditDrawer}
+	onclose={() => (showAuditDrawer = false)}
+	{auditHistory}
+	saleCreatedAt={sale.createdAt}
+	saleCreatedBy={sale.seller?.fullName}
+/>
