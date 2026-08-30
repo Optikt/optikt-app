@@ -28,7 +28,7 @@
 		"@eslint/compat": "latest",
 		"@eslint/js": "^10.0.1",
 		"@internationalized/date": "^3.12.3",
-		"@lucide/svelte": "^0.577.0",
+		"@lucide/svelte": "^1.37.0",
 		"@oslojs/encoding": "^1.1.0",
 		"@playwright/test": "^1.62.1",
 		"@sparticuz/chromium": "^149.0.0",

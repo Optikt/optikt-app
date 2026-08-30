@@ -64,8 +64,8 @@ importers:
         specifier: ^3.12.3
         version: 3.12.3
       '@lucide/svelte':
-        specifier: ^0.577.0
-        version: 0.577.0(svelte@5.57.0(@typescript-eslint/types@8.68.0))
+        specifier: ^1.37.0
+        version: 1.37.0(svelte@5.57.0(@typescript-eslint/types@8.68.0))
       '@oslojs/encoding':
         specifier: ^1.1.0
         version: 1.1.0
@@ -742,8 +742,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@lucide/svelte@0.577.0':
-    resolution: {integrity: sha512-0P6mkySd2MapIEgq08tADPmcN4DHndC/02PWwaLkOerXlx5Sv9aT4BxyXLIY+eccr0g/nEyCYiJesqS61YdBZQ==}
+  '@lucide/svelte@1.37.0':
+    resolution: {integrity: sha512-AxaiSxeuErlt4fNmmN28oaL5R7yVoQLsfSeiAONxCEK+l0/SrLAjRktQ0DkTQpomv1oRzOA3hohWY0ZHTZCMmw==}
     peerDependencies:
       svelte: ^5
 
@@ -3978,7 +3978,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@lucide/svelte@0.577.0(svelte@5.57.0(@typescript-eslint/types@8.68.0))':
+  '@lucide/svelte@1.37.0(svelte@5.57.0(@typescript-eslint/types@8.68.0))':
     dependencies:
       svelte: 5.57.0(@typescript-eslint/types@8.68.0)
 
