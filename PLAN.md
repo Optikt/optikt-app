@@ -141,14 +141,14 @@
 
 **Contras:** Añade logging/metrics. Si se loggea todo sin muestreo, ruido en logs. No debe impactar latencia.
 
-**Dificultad:** Baja (1-2 días). **Solución:**
-(a) **Hook `handle` en `src/hooks.server.ts`**: `performance.now()` al inicio/fin, log `routeId + duration` vía `logger.info` y header `Server-Timing`. Samplear 100% en dev, 10% en prod al inicio.
-(b) **Wrapper para remote functions**: decorador `withTiming('sales.createSale', fn)` que loguea `duration + params.size` (sin PII). Reusar `kit.experimental.instrumentation.server: true` ya activo en `svelte.config.js:15`.
+**Dificultad:** Baja (1-2 días) para base, +1 día SigNoz. **Solución:**
+(a) **Hook `handle` en `src/hooks.server.ts`**: `performance.now()` al inicio/fin, log `routeId + duration` vía `logger.info` y header `Server-Timing`. Samplear 100% en dev, 10% en prod.
+(b) **Wrapper para remote functions**: decorador `withTiming('sales.createSale', fn)` que loguea `duration` (sin PII). Reusar `kit.experimental.instrumentation.server: true` ya activo en `svelte.config.js:15`.
 (c) **DB slow-query**: envolver `DbOrTx` para loggear queries >200ms (Drizzle `logger`).
-(d) **Endpoint `/api/metrics` o log estructurado**: exponer p50/p95 en memoria (circular buffer) o solo logs JSON para después scrapear.
-(e) **Dashboard futuro**: no ahora — solo medir y loggear. Segundo paso: Grafana/Prometheus si hace falta.
+(d) **SigNoz experimental (elegido 2026-08-29):** desplegado en Dokploy (ClickHouse + SigNoz UI, ~500MB RAM) vía OpenTelemetry. Droplet actual: 3.8GB RAM, 2.1GB disponible, load 0.07 — entra justo. Queda como **TECH_DEBT** para evaluar 1-2 semanas si es suficiente. Alternativas a largo plazo: mover `optikt-database` a Supabase (libera ~150MB) o aumentar RAM del droplet.
+(e) **Fallback sin infra:** si SigNoz pesa mucho, volver a **Opción B** (`/admin/metrics` en memoria, 0MB extra) — el wrapper de (b) ya queda y solo cambia el exporter.
 
-**Estado:** Propuesto 2026-08-29. No empezado. Quick win para cuando haya banda.
+**Estado:** En evaluación 2026-08-29 — SigNoz desplegado experimental, modo prueba. Decisión pendiente: ¿SigNoz suficiente o se necesita Supabase/RAM?
 
 ---
 
