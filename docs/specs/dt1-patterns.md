@@ -13,6 +13,7 @@ Definir qué patrón aplicar en cada contexto de la descomposición DT1. Regla: 
 **Problema:** `PaymentForm.svelte` tiene 3+ switches sobre `PaymentMethod` (referenceConfig :333-410, nativeLabel/nativePrefix :390-415, rateType/currency derivations) y la lógica de compra duplica configuración por método (`PAYMENT_RAILS_BY_CURRENCY` vs `SALES_RAILS_BY_CURRENCY` en `paymentMethods.ts`). Agregar método de pago = cazar switches en 2+ archivos.
 
 **Solución:**
+
 - Interface `PaymentMethodStrategy`: `{ method, label, currency, rateType, referenceConfig, nativeLabel, nativePrefix, requiresSpecificRate, railsPerCurrency }`.
 - Registry `PAYMENT_METHOD_STRATEGIES: Record<PaymentMethod, PaymentMethodStrategy>` en `src/lib/shared/payments/strategies.ts`.
 - Consumidores: PaymentForm (UI), validación server (addSalePayment/addPurchaseOrderPayment), resumen de conversión.
@@ -44,6 +45,7 @@ Definir qué patrón aplicar en cada contexto de la descomposición DT1. Regla: 
 **Motivo:** estado mutable global oculto = tests frágiles + riesgo SSR leakage.
 
 **Sustitutos:**
+
 - Registries inmutables a nivel módulo (ej. `PAYMENT_METHOD_STRATEGIES`) → single source sin estado.
 - Svelte context para instancias por árbol (`setContext` raíz, `getContext` hijos).
 - Servicios módulo existentes (exchangeRates cache) quedan como están — auditar solo si DT1 los toca.
