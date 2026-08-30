@@ -10,6 +10,16 @@ updates:
         dependency-type: production
       development:
         dependency-type: development
+    ignore:
+      # Libs que rompen la app — pinneadas (PLAN:DT17, worker mismatch edb9847)
+      - dependency-name: '@pdfslick/core'
+      - dependency-name: 'pdfjs-dist'
+      # Node: permitir solo minor/patch dentro de v22 (runtime = 22.22.2)
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # TypeScript: bloquear v7 hasta SvelteKit 3 stable + svelte-check TS7
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
