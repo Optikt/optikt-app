@@ -16,3 +16,4 @@ minimumReleaseAgeExclude:
   - '@node-rs/argon2-win32-x64-msvc@2.2.0'
   - '@node-rs/argon2@2.2.0'
   - svelte@5.57.0
+  - '@lucide/svelte@1.37.0'
