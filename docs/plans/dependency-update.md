@@ -1,8 +1,8 @@
-# Plan: Actualización de Dependencias (2026-08-27)
+# Plan: Actualización de Dependencias (2026-08-27 → 2026-08-29)
 
-> Evaluación completa `pnpm outdated` + SvelteKit 3 RC + remote functions. Branch `chore/deps-2026-08`.
+> Evaluación completa `pnpm outdated` + SvelteKit 3 RC + remote functions. Branch `chore/deps-2026-08` mergeado a `main` (6 tandas) + PR-A/PR-E mergeados. PR-D abierto.
 > Contexto: `PLAN.md:DT17` pinneó `pdfjs-dist + @pdfslick/core` — fuera de este plan.
-> Último `pnpm outdated` 2026-08-28: 37 pendientes (2 pinneados, 1 deprecated, 2 majors bloqueados, resto tandas).
+> Último `pnpm outdated` en `main` 2026-08-29: 6 pendientes (todos PRs separados, ver §6). Histórico 2026-08-28: 37 pendientes.
 
 ## 1. Snapshot completo
 
@@ -125,31 +125,29 @@ pnpm test:e2e   # solo tras Tanda 5+6
 | e2e | `pnpm test:e2e` | solo tandas 5-6 |
 | manual | login → ventas wizard → `/api/pdf/sale/<id>` 200 → `PDFViewerModal` carga → inventario | solo tandas 3-5 |
 
-## 5. Checklist branch `chore/deps-2026-08` — Estado 2026-08-29
+## 5. Checklist — Estado 2026-08-29 (mergeado a `main`)
 
-- [x] Branch creado, DT17 pinneado (`pdfjs-dist 6.0.227 exact`, `@pdfslick/core 4.0.0 exact` / `PLAN.md:DT17`)
-- [x] Tanda 1 — tooling · `26dbeaf` — `prettier 3.9.6, eslint 10.9.1, eslint-plugin-svelte 3.23.0, typescript-eslint 8.68.0, globals 17.11.0, knip 6.32.3, svelte-doctor 0.3.7, tsx 4.23.12` → check 0, build 36s, 771 tests
-- [x] Tanda 2 — styling · `9347b74` — `tailwindcss 4.3.3, @tailwindcss/vite 4.3.3, prettier-plugin-tailwindcss 0.8.1, tailwind-variants 3.3.1` → check 0, build 1m15s, 771 tests
-- [x] Tanda 3 — runtime UI · `374724c` + `414213b` — `bits-ui 2.19.0, svelte-sonner 1.2.1, @internationalized/date 3.12.3, export-to-csv 1.5.0, libphonenumber-js 1.13.12, @node-rs/argon2 2.2.0` → check 0, build 1m23s, 771 tests
-- [x] Tanda 4 — validación · `bef338e` — `zod 4.3.6→4.5.1, svelte-check 4.7.2→4.7.6` (zod 4.5.4 quedó <24h `minimumReleaseAge`) → check 0, build 36.9s, 771 tests
-- [x] Tanda 5 — framework core · `5e6a035` + `381931b` — `@sveltejs/kit 2.69.2→2.70.3, svelte 5.56.4→5.57.0, @sveltejs/vite-plugin-svelte 7.2.0→7.3.0, vite 8.1.4→8.2.2` → check 0, build 1m02s→3m07s, 771 tests
-- [x] Tanda 6 — test infra · `2e9003c` — `vitest 4.1.11, @vitest/browser-playwright 4.1.11, @playwright/test 1.62.1, playwright 1.62.1, knip 6.33.0` → check 0, build 35s, 771 tests (vitest 4.1.11)
-- [ ] Tanda 7 — @oslojs/crypto → node:crypto — **PAUSADA, PR separado** (ver §6 PR-A)
-- [x] Push `chore/deps-2026-08` → origin (6 tandas, `pnpm-workspace.yaml` minimumReleaseAgeExclude actualizado para `argon2@2.2.0` + `svelte@5.57.0`)
+- [x] Branch `chore/deps-2026-08` creado, DT17 pinneado (`pdfjs-dist 6.0.227 exact`, `@pdfslick/core 4.0.0 exact` / `PLAN.md:DT17`) → mergeado a `main` via `4e2dc41`
+- [x] Tanda 1 — tooling · `26dbeaf` — `prettier 3.9.6, eslint 10.9.1, eslint-plugin-svelte 3.23.0, typescript-eslint 8.68.0, globals 17.11.0, knip 6.32.3, svelte-doctor 0.3.7, tsx 4.23.12` → check 0, build 36s, 771 tests — **en `main`**
+- [x] Tanda 2 — styling · `9347b74` — `tailwindcss 4.3.3, @tailwindcss/vite 4.3.3, prettier-plugin-tailwindcss 0.8.1, tailwind-variants 3.3.1` → check 0, build 1m15s, 771 tests — **en `main`**
+- [x] Tanda 3 — runtime UI · `374724c` + `414213b` — `bits-ui 2.19.0, svelte-sonner 1.2.1, @internationalized/date 3.12.3, export-to-csv 1.5.0, libphonenumber-js 1.13.12, @node-rs/argon2 2.2.0` → check 0, build 1m23s, 771 tests — **en `main`**
+- [x] Tanda 4 — validación · `bef338e` — `zod 4.3.6→4.5.1, svelte-check 4.7.2→4.7.6` (zod 4.5.4 quedó <24h `minimumReleaseAge`) → check 0, build 36.9s, 771 tests — **en `main`**
+- [x] Tanda 5 — framework core · `5e6a035` + `381931b` — `@sveltejs/kit 2.69.2→2.70.3, svelte 5.56.4→5.57.0, @sveltejs/vite-plugin-svelte 7.2.0→7.3.0, vite 8.1.4→8.2.2` → check 0, build 1m02s→3m07s, 771 tests — **en `main`**
+- [x] Tanda 6 — test infra · `2e9003c` — `vitest 4.1.11, @vitest/browser-playwright 4.1.11, @playwright/test 1.62.1, playwright 1.62.1, knip 6.33.0` → check 0, build 35s, 771 tests (vitest 4.1.11) — **en `main`**
+- [x] PR-A — `@oslojs/crypto` → `node:crypto` · `a917945` → merge `190de59` (#99) — **en `main`**
+- [x] PR-E — Actions `4→7` · `37ea3ba` → merge `e518b6a` — **en `main`**
+- [ ] PR-D — `puppeteer-core 25.9.0` · `9c2d681` — **abierto #101** (ver §6 PR-D)
 
-Cada tanda = `chore(deps): tanda N — <descripción>` para `git revert` limpio.
+Cada tanda/PR = `chore(deps): tanda N — <descripción>` para `git revert` limpio. `pnpm outdated` en `main` ahora 6 filas (vs 37 inicial).
 
 ## 6. PRs separados — TODO CON CUIDADO
 
-> Ninguno de estos entra en `chore/deps-2026-08`. Cada uno es branch + PR propio, con su propia verificación. No mezclar.
+> `chore/deps-2026-08` (Tandas 1-6), PR-A y PR-E ya en `main`. Restan abajo, cada uno branch + PR propio. No mezclar.
 
-### PR-A · `@oslojs/crypto` → `node:crypto` — PAUSADA 🔴
+### PR-A · `@oslojs/crypto` → `node:crypto` — MERGEADO ✅ (#99 `a917945` → `190de59`)
 
-- **Scope:** `src/lib/server/auth.ts:2` (`sha256` de `@oslojs/crypto` deprecated). Solo 1 import, pero toca hashing de sesión.
-- **Riesgo:** Si el hash cambia, sesiones existentes se invalidan. `verify` de password usa `@node-rs/argon2`, no este — impacto solo en token/session hash, no passwords.
-- **Pasos:** Reemplazar `import { sha256 } from '@oslojs/crypto/sha2'` por `createHash('sha256')` de `node:crypto`; quitar dep; `pnpm check` + `test:unit` + login manual + rotar una sesión.
-- **Branch sugerido:** `chore/auth-node-crypto`
-- **No olvidar:** `@oslojs/encoding` (`1.1.0`) se queda — no está deprecated.
+- **Scope:** `src/lib/server/auth.ts:2` (`sha256` deprecated) — 1 import, hashing de sesión.
+- **Hecho:** `createHash('sha256')` de `node:crypto`, quitada dep `@oslojs/crypto`, `check 0, build 34s, 771 tests`, SHA256 parity `hello → 2cf24dba...` verificado. `@oslojs/encoding` (`1.1.0`) se queda.
 
 ### PR-B · `typescript 6.0.3 → 7.0.2` — BLOQUEADO 🟡
 
@@ -164,17 +162,14 @@ Cada tanda = `chore(deps): tanda N — <descripción>` para `git revert` limpio.
 - **Branch sugerido:** `chore/lucide-1` — hacer con `pnpm update @lucide/svelte` + `grep -R lucide` + revisión visual de cada vista.
 - **Verificación:** `pnpm check`, `pnpm build`, screenshots de sidebar, modals, tablas.
 
-### PR-D · `puppeteer-core 25.3.0 → 25.9.0` (+ `@sparticuz/chromium`) — DEFERIDO 🟢
+### PR-D · `puppeteer-core 25.3.0 → 25.9.0` (+ `@sparticuz/chromium`) — ABIERTO 🟢 #101 `9c2d681`
 
 - **Scope:** `src/lib/server/pdf.ts` (`generatePdf`, `CHROMIUM_PATH`). En prod funciona (`Dockerfile:27 apk add chromium`), en dev falló `libnspr4.so` el 2026-08-27 por falta de `apt` libs, no por versión.
-- **Pasos previos:** `sudo apt-get install libnspr4 libnss3 ...` o usar `CHROMIUM_PATH=/usr/bin/chromium`. Luego bump + `curl /api/pdf/sale/<id>` debe dar 200 + `PDFViewerModal` carga.
-- **Branch sugerido:** `chore/puppeteer-25.9`
+- **Hecho:** Bump `25.9.0`, `check 0, build 33s, 771 tests` en `chore/puppeteer-25.9`. Falta merge a `main` tras review. Validar `curl /api/pdf/sale/<id>` 200 + `PDFViewerModal`.
 
-### PR-E · GitHub Actions `4 → 7` — DEFERIDO 🟢
+### PR-E · GitHub Actions `4 → 7` — MERGEADO ✅ (`37ea3ba` → `e518b6a`)
 
-- **Scope:** `.github/workflows/tests.yml` — `actions/checkout 4→7.0.1`, `actions/setup-node 4→7.0.0`, `actions/upload-artifact 4.6.2→7.0.1`, `docker/build-push-action 6.19.2→7.3.0`, `docker/login-action 3.7.0→4.6.0`, `docker/setup-buildx-action 3.12.0→4.3.0`, `pnpm/action-setup 4.4.0→6.0.10`
-- **Riesgo:** Syntax `with:` cambió en algunos. Probar CI en branch antes de merge a `main`.
-- **Branch sugerido:** `chore/actions-7`
+- **Scope:** 5 workflows — `actions/checkout 7, setup-node 7, upload-artifact 7, docker/setup-buildx 4, login 4, build-push 7, pnpm 6` — solo bumps `uses:`.
 
 ### PR-F · `pdfjs-dist 6.0.227 → 6.2.x` — TECH_DEBT DT17 ⚪
 
