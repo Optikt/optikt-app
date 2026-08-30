@@ -7,7 +7,7 @@ RUN corepack enable && corepack prepare pnpm@11.24.0 --activate
 WORKDIR /app
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 FROM base AS build
@@ -20,7 +20,7 @@ RUN pnpm build
 
 FROM base AS prod-deps
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm prune --prod
 
 FROM node:22-alpine AS runner
