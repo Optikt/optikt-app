@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-08-17.
+> Actualizado: 2026-08-29.
 
 ---
 
@@ -130,6 +130,25 @@
 **Cuándo revisitar:** Cuando `@pdfslick/core` publique versión que declare soporte para `pdfjs-dist` ≥6.2.x, probar `6.2.108`+ en branch y verificar `PDFViewerModal.svelte:52-56` (worker + `GlobalWorkerOptions`).
 
 **Estado:** TECH_DEBT documentado 2026-08-27. No tocar hasta upstream fix.
+
+---
+
+### DT18 · Observabilidad de latencia backend 🟢
+
+**Problema:** No se mide el tiempo de respuesta del backend. Hoy es rápido, pero no hay métrica de cuánto tarda cada `remote function`, `load` o query a DB. Cuando crezca el catálogo/ventas, no sabremos dónde se degrada.
+
+**Por qué importa:** Sin números no se puede optimizar. Detectar lento (p95, slow queries, remote functions pesadas) antes de que el usuario lo sienta. Base para SLOs y alertas futuras.
+
+**Contras:** Añade logging/metrics. Si se loggea todo sin muestreo, ruido en logs. No debe impactar latencia.
+
+**Dificultad:** Baja (1-2 días). **Solución:**
+(a) **Hook `handle` en `src/hooks.server.ts`**: `performance.now()` al inicio/fin, log `routeId + duration` vía `logger.info` y header `Server-Timing`. Samplear 100% en dev, 10% en prod al inicio.
+(b) **Wrapper para remote functions**: decorador `withTiming('sales.createSale', fn)` que loguea `duration + params.size` (sin PII). Reusar `kit.experimental.instrumentation.server: true` ya activo en `svelte.config.js:15`.
+(c) **DB slow-query**: envolver `DbOrTx` para loggear queries >200ms (Drizzle `logger`).
+(d) **Endpoint `/api/metrics` o log estructurado**: exponer p50/p95 en memoria (circular buffer) o solo logs JSON para después scrapear.
+(e) **Dashboard futuro**: no ahora — solo medir y loggear. Segundo paso: Grafana/Prometheus si hace falta.
+
+**Estado:** Propuesto 2026-08-29. No empezado. Quick win para cuando haya banda.
 
 ---
 
