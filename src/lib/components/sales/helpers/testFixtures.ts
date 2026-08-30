@@ -15,6 +15,7 @@ import {
 
 import {
 	createEmptyLensPair,
+	type FreeSaleItemRow,
 	type LensSaleItemRow,
 	type ProductSaleItemRow,
 	type SaleItemRow,
@@ -198,6 +199,29 @@ export function makeTreatmentRow(
 		discount: 0,
 		discountType: DiscountType.FIXED,
 		notes: ''
+	};
+}
+
+export function makeFreeRow(overrides: Partial<FreeSaleItemRow> = {}): FreeSaleItemRow {
+	return {
+		id: crypto.randomUUID(),
+		kind: 'free',
+		productId: '',
+		quantity: 1,
+		unitPrice: 150,
+		discount: 0,
+		discountType: DiscountType.FIXED,
+		notes: '',
+		isIncludedAccessory: false,
+		includedAccessoryParentItemId: null,
+		freeItem: {
+			category: 'OTHER',
+			description: 'Ítem libre',
+			unitCost: 0,
+			supplierId: null,
+			opticalNotes: ''
+		},
+		...overrides
 	};
 }
 

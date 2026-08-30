@@ -5,7 +5,13 @@
 
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import { DEFAULT_TAX_RATE, decomposePrice, type TaxableItem } from '$lib/shared/tax';
+import { DiscountType } from '$lib/shared/enums';
+import {
+	DEFAULT_TAX_RATE,
+	decomposePrice,
+	type TaxBreakdown,
+	type TaxableItem
+} from '$lib/shared/tax';
 import { computeDiscount } from '$lib/utils';
 
 import type { SaleItemRow } from '../newSaleTypes';
@@ -46,6 +52,16 @@ export function buildTaxItemsFromWizard(
 				discount: item.discount,
 				discountType: item.discountType,
 				isTaxable: item.isTaxable,
+				taxRate: defaultTaxRate
+			});
+		} else if (item.kind === 'free') {
+			// Free items (promo / gift) are always exempt — they have no isTaxable field.
+			result.push({
+				unitPrice: item.unitPrice,
+				quantity: item.quantity,
+				discount: item.discount,
+				discountType: item.discountType,
+				isTaxable: false,
 				taxRate: defaultTaxRate
 			});
 		}
@@ -98,4 +114,70 @@ export function getSnapshotTaxLabel(documentTaxRate: number | null): string | nu
 	});
 
 	return `IVA (${formatter.format(documentTaxRate)}%)`;
+}
+
+/**
+ * Tax breakdown with an extra field: the TAX-EXCLUSIVE subtotal (base of
+ * taxable lines + full exempt lines) BEFORE the global discount is applied.
+ * Used by the Step 3 summary so the "Subtotal" row shows the pre-tax,
+ * pre-discount value (e.g. base 75 + exempt 35 = 110 for a $87 frame + $35 lens).
+ */
+export type AdjustedTaxBreakdown = TaxBreakdown & { subtotalBeforeGlobal: number };
+
+/**
+ * Compute the tax breakdown of a list of items after applying a global
+ * discount proportionally, clamping the discount to the subtotal.
+ *
+ * `subtotalBeforeGlobal` is the pre-discount tax-exclusive subtotal for
+ * display. The discount math itself runs on the raw (tax-inclusive) line
+ * totals so the ratio/clamp behavior is unchanged.
+ */
+export function computeAdjustedTaxBreakdown(
+	itemsForTax: TaxableItem[],
+	globalDiscountValue: number
+): AdjustedTaxBreakdown {
+	const rawSubtotalBeforeGlobal = itemsForTax.reduce((sum, item) => {
+		const gross = item.unitPrice * item.quantity;
+		const lineDiscount =
+			item.discountType === DiscountType.PERCENTAGE ? gross * (item.discount / 100) : item.discount;
+		return sum + Math.max(0, gross - lineDiscount);
+	}, 0);
+
+	const discountRatio =
+		rawSubtotalBeforeGlobal > 0
+			? Math.min(Math.max(globalDiscountValue, 0), rawSubtotalBeforeGlobal) /
+				rawSubtotalBeforeGlobal
+			: 0;
+
+	let taxableBase = 0;
+	let exemptTotal = 0;
+	let taxAmount = 0;
+	let subtotalBeforeGlobal = 0;
+
+	for (const item of itemsForTax) {
+		const gross = item.unitPrice * item.quantity;
+		const lineDiscount =
+			item.discountType === DiscountType.PERCENTAGE ? gross * (item.discount / 100) : item.discount;
+		const lineAfterLocalDiscount = Math.max(0, gross - lineDiscount);
+		const adjustedLineTotal = lineAfterLocalDiscount * (1 - discountRatio);
+
+		if (item.isTaxable && item.taxRate > 0) {
+			const { base, tax } = decomposePrice(adjustedLineTotal, item.taxRate);
+			taxableBase += base;
+			taxAmount += tax;
+			// Pre-discount, tax-exclusive contribution = base of the unadjusted line.
+			subtotalBeforeGlobal += decomposePrice(lineAfterLocalDiscount, item.taxRate).base;
+		} else {
+			exemptTotal += adjustedLineTotal;
+			subtotalBeforeGlobal += lineAfterLocalDiscount;
+		}
+	}
+
+	return {
+		taxableBase,
+		exemptTotal,
+		taxAmount,
+		total: taxableBase + exemptTotal + taxAmount,
+		subtotalBeforeGlobal
+	};
 }
