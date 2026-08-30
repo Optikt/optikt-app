@@ -506,7 +506,12 @@
 		if (discount !== sale.discount) payload.discount = discount;
 		if (discountType !== sale.discountType) payload.discountType = discountType as DiscountTypeEnum;
 
-		if (removedCount > 0 || activeItems.some((i) => !i.id)) {
+		if (
+			removedCount > 0 ||
+			activeItems.some((i) => !i.id) ||
+			discount !== sale.discount ||
+			discountType !== sale.discountType
+		) {
 			payload.items = activeItems.map(({ _removed, ...input }) => input);
 		}
 

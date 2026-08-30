@@ -13,22 +13,27 @@ Las columnas `sales.subtotal` y `quotes.subtotal` guardan la suma **cruda de lí
 ## Fórmulas
 
 Para cada línea con descuento por línea aplicado:
+
 - `gross = unitPrice × quantity`
 - `lineDiscount = PERCENTAGE ? gross × discount/100 : discount`
 - `line = max(0, gross − lineDiscount)` (crudo, con IVA para gravables)
 - `rawSubtotal = Σ line` (base del descuento %) — igual que hoy
 
 Por línea ya descompuesta:
+
 - `isTaxable && taxRate > 0` → `{base, tax} = decomposePrice(line, taxRate)`; `subtotal += base`; `taxAmount += tax`
 - else → `subtotal += line` (exento)
 
 Importes globales:
+
 - `discount = computeDiscount(globalDiscountValue, globalDiscountType, rawSubtotal)` — idéntico a hoy
 - `total = max(0, rawSubtotal − discount)` — **idéntico a hoy**
 - `subtotal` almacenado = Σ base + Σ line exenta (nuevo valor)
 
 Ejemplo canónico: montura 87 (16% IVA, gravable) + cristal 35 (exento):
-`raw 122 → subtotal 110, tax 12, discount 12.2 (10%) → total 109.8`
+`raw 122 → subtotal 110, taxAmount 12 (bruto, pre-descuento), discount 12.2 (10%) → total 109.8`
+
+Nota: `taxAmount` del helper es el IVA **bruto** (descompone la línea cruda, pre-descuento global) — consistente con `computeTaxBreakdown` (detail card) y `computeSnapshotTaxBreakdown` (print/recibo). El IVA neto (post-descuento) solo lo presenta el card del wizard (`computeAdjustedTaxBreakdown`).
 
 ## Affected consumers (post-fix)
 
@@ -41,6 +46,7 @@ Ejemplo canónico: montura 87 (16% IVA, gravable) + cristal 35 (exento):
 ## Backfill migration
 
 Recomputar `sales.subtotal` y `quotes.subtotal` desde items persistidos:
+
 - fuentes: `unit_price`, `quantity`, `discount`, `discount_type`, `snapshot_is_taxable` (por item) + `snapshot_tax_rate` (header)
 - `snapshot_is_taxable IS NULL` (free items) → exento
 - UPDATE por subquery con GROUP BY sale_id; idempotente
@@ -48,6 +54,7 @@ Recomputar `sales.subtotal` y `quotes.subtotal` desde items persistidos:
 ## Tests
 
 Unit spec para el helper puro `computeSaleTotals`:
+
 1. Golden 87+35 → `{raw:122, subtotal:110, tax:12, total:122}`
 2. 10% discount → `{discount:12.2, total:109.8, subtotal:110}`
 3. FIXED discount

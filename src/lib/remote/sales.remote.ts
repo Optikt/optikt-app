@@ -82,6 +82,8 @@ import { monthStart, nowISO, toISODate, nowUTC, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
+import { computeSaleTotals, type SaleTotalsLine } from '$lib/shared/saleTotals';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 // ============================================================================
 // TYPES
@@ -125,6 +127,27 @@ function resolveLensSnapshotCosts(item: {
 	return {
 		snapshotCostTotal,
 		snapshotCostUnit: computeSnapshotCostUnit(snapshotCostTotal, item.quantity)
+	};
+}
+
+function toSaleTotalsLine(
+	item: {
+		unitPrice: number;
+		quantity: number;
+		discount: number;
+		discountType: string;
+		snapshotIsTaxable?: boolean | null;
+		itemType: string;
+	},
+	taxRate: number
+): SaleTotalsLine {
+	return {
+		unitPrice: item.unitPrice,
+		quantity: item.quantity,
+		discount: item.discount,
+		discountType: item.discountType,
+		isTaxable: item.snapshotIsTaxable ?? (item.itemType === SaleItemType.PRODUCT ? true : false),
+		taxRate
 	};
 }
 
@@ -300,15 +323,13 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 	}
 
 	// Calculate totals from items (pure computation - safe outside transaction)
-	const itemsSubtotal = data.items.reduce((acc, item) => {
-		const lineTotal = item.unitPrice * item.quantity;
-		const itemDiscount = computeDiscount(item.discount, item.discountType, lineTotal);
-		return acc + lineTotal - itemDiscount;
-	}, 0);
-
-	const subtotal = itemsSubtotal;
-	const globalDiscount = computeDiscount(data.discount, data.discountType, subtotal);
-	const total = Math.max(0, subtotal - globalDiscount);
+	const totals = computeSaleTotals(
+		data.items.map((item) => toSaleTotalsLine(item, data.snapshotTaxRate ?? DEFAULT_TAX_RATE)),
+		data.discount,
+		data.discountType
+	);
+	const subtotal = totals.subtotal;
+	const total = totals.total;
 	const hasLensItems = data.items.some((item) => item.itemType === SaleItemType.LENS_PAIR);
 
 	// All writes in a single transaction
@@ -976,18 +997,25 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 
 	let newSubtotal = existing.subtotal;
 
-	if (hasItemChanges) {
-		newSubtotal = data.items!.reduce((acc, item) => {
-			const lineTotal = item.unitPrice * item.quantity;
-			const itemDiscount = computeDiscount(item.discount, item.discountType, lineTotal);
-			return acc + lineTotal - itemDiscount;
-		}, 0);
-	}
-
 	const newDiscount = data.discount ?? existing.discount;
 	const newDiscountType = data.discountType ?? existing.discountType;
-	const newGlobalDiscount = computeDiscount(newDiscount, newDiscountType, newSubtotal);
-	const newTotal = Math.max(0, newSubtotal - newGlobalDiscount);
+
+	let newTotal = Math.max(
+		0,
+		newSubtotal - computeDiscount(newDiscount, newDiscountType, newSubtotal)
+	);
+
+	if (hasItemChanges) {
+		const totals = computeSaleTotals(
+			data.items!.map((item) =>
+				toSaleTotalsLine(item, data.snapshotTaxRate ?? existing.snapshotTaxRate)
+			),
+			newDiscount,
+			newDiscountType
+		);
+		newSubtotal = totals.subtotal;
+		newTotal = totals.total;
+	}
 
 	if (newTotal < paidAmount - 0.01) {
 		return {
