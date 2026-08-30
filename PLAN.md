@@ -152,6 +152,18 @@
 
 ---
 
+### DT19 · Dependencias fuera de scope (typescript, pdfjs, types/node) ⚪
+
+**Contexto:** Tras `chore/deps-2026-08` (Tandas 1-6) + PR-A/C/D/E mergeados a `main`, `pnpm outdated` final deja 3 familias **fuera de scope** (`docs/plans/dependency-update.md` histórico).
+
+- **`typescript 6.0.3 → 7.0.2`:** depende de **SvelteKit 3** stable. Kit 3 aún declara TS6; `svelte-check` y `typescript-eslint` sin soporte TS7. No se toca hasta Kit 3.
+- **`pdfjs-dist 6.0.227 / @pdfslick/core 4.0.0`:** ver **DT17**. Funciona por ahora (viewer `PDFViewerModal.svelte` + generación `puppeteer` server). Hay que tomar decisión futura: ¿mantener pinneado o buscar otra forma de ver PDFs (visor nativo, `pdf.js` sin `@pdfslick/core`)? Por ahora **no se toca** — funciona.
+- **`@types/node 22 → 26.4.0`:** runtime es `Node 22.22.2`. Se queda en `^22` a menos que hagamos **bump explícito de Node** (ej. a 24/26). Subir types sin subir runtime no aporta.
+
+**Estado:** Documentado 2026-08-29. No tocar hasta evento que lo desbloquee.
+
+---
+
 ### ✅ DT14 · Wizard de compras carga todo en SSR (COMPLETADO — absorbido por FP6, 2026-08-17)
 
 **Problema:** El `load` de `/purchases/new` trae **todos** los productos (`getAllProductsWithRelations({ limit: 500 })`) y lentes sin filtrar por proveedor. El proveedor se elige en Step 1, pero los datos se cargan antes de saber cuál es. Payload SSR innecesario; la búsqueda cliente-side escanea registros que nunca se usarán.
@@ -545,6 +557,9 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF10 · Export Excel            | 1 día                   |
 | 🟢        | NF11 · Código barras           | 2 días                  |
 | ✅        | DT7 · PDF stack                | Completado              |
+| 🟢        | DT18 · Latencia backend        | 1-2 días                |
+| ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT               |
+| ⚪        | DT19 · Deps fuera de scope     | Fuera de scope          |
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
