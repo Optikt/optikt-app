@@ -1,7 +1,7 @@
 ---
 plan name: expense-currency
 plan description: Unify expense currency with CurrencyCode
-plan status: active
+plan status: done
 ---
 
 ## Idea

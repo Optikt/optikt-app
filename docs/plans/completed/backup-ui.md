@@ -1,7 +1,7 @@
 ---
 plan name: backup-ui
 plan description: Backup management UI and reliability
-plan status: active
+plan status: done
 ---
 
 ## Idea

@@ -1,7 +1,7 @@
 ---
 plan name: lazy-catalog-search
 plan description: Lazy catalog load + ranked search
-plan status: completed
+plan status: done
 ---
 
 ## Idea

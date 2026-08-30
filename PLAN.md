@@ -30,33 +30,27 @@
 
 ---
 
-### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
+### DT8 · Dashboard sin gráficos 🟡
 
-**Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
+**Problema:** El dashboard (`/dashboard`) muestra 4 tarjetas numéricas (total clientes, ventas hoy, cotizaciones pendientes, stock bajo) + tablas. Sin tendencias visuales, sin comparativas temporales, sin breakdowns por producto/vendedor/marca.
 
-**Cambios:**
+**Riesgo de no hacerlo:** El dueño no ve la salud del negocio de un vistazo. Percepción de herramienta "básica" comparada con competidores. Decisiones sin datos.
 
-- `logger.error('Error obteniendo tasas de cambio de la API', error)` agregado en el catch de `refreshExchangeRates`.
-- Bonus: el error se propaga al UI — `refreshExchangeRatesCommand` ahora lanza si `snapshot.lastError` está seteado (antes el UI mostraba "Tasas actualizadas" con la API caída). Mensaje amigable al usuario ("No se pudo conectar con el proveedor de tasas"), detalle técnico en logs.
+**Contras:** Agregar librería de charts (`layercake`, `chart.js`) suma peso al bundle.
 
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓.
+**Dificultad:** Baja. **Solución:** Agregar `layercake` (Svelte-native, más liviano) o `chart.js`. KPIs nuevos: revenue diario/semanal/mensual, top productos, top vendedores, profit margin trend, conversion rate quotes→sales. ~3 días.
 
 ---
 
-### ✅ DT3 · Validación Zod subutilizada (COMPLETADO — 2026-08-10)
+### DT9 · Sin tests en remote functions 🟡
 
-**Qué se hizo:** Auditoría completa de validación en la capa remote. **El problema original estaba mal diagnosticado.**
+**Problema:** 58 archivos de test pero **cero** para `*.remote.ts`. La capa de lógica de negocio — donde viven comandos como `createSale`, `addSalePayment`, `confirmPurchaseOrder` — no tiene cobertura de tests unitarios. Los tests existentes cubren schemas, utils, helpers y queries, pero no la orquestación.
 
-**Hallazgo real:** 143 de 152 remote functions (94.1%) ya pasan un Zod schema como primer argumento a `command()`/`query()`/`form()` — SvelteKit valida internamente, por eso hay solo 1 `.safeParse()` manual (en un helper de finanzas, no en validación primaria). Contar `.safeParse()` es irrelevante: el `.parse()` ocurre dentro de SvelteKit. Las 9 remote functions sin schema reciben **cero input** del cliente — correcto tal cual.
+**Riesgo de no hacerlo:** Regresiones en comandos críticos (pagos, confirmaciones, ajustes de inventario) sin red de seguridad. Refactorizar remotes es peligroso.
 
-**Cambios:**
+**Contras:** Testear remotes requiere mock de DB (o testcontainers con PostgreSQL). Setup no trivial. Tiempo significativo.
 
-- Eliminados 5 schemas muertos (exportados pero nunca usados por ninguna remote function): `ExpenseIdSchema`, `ListInventoryLotsSchema` (+ sus tests), `AddPurchaseOrderItemSchema`, `UpdateSaleStatusSchema`, `EnrichFreeQuoteItemSchema` (+ su type).
-- 91.5% → 100% de schemas en uso.
-
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, tests de schemas ✓.
-
-**Lo que NO se hizo (scope real, ver DT10):** validaciones de **negocio** inline (ifs en handlers como "no borrar producto con ventas") no están centralizadas en Zod. Ese es el trabajo grande y va aparte.
+**Dificultad:** Alta. **Solución:** (a) Setup de testcontainers con PostgreSQL + migraciones. (b) Tests de integración para los 10-15 comandos más críticos. (c) Incorporar al CI. (d) E2E: flujo completo del wizard óptico de venta/presupuesto (paso 2, confirmación, autosync del tipo de lente), pagos/cancelaciones/reembolsos, reportes. ~1-2 semanas.
 
 ---
 
@@ -71,49 +65,6 @@
 **Dificultad:** Media (5 días). **Solución:** (a) Inventariar las reglas de negocio inline por dominio (sales, purchaseOrders, inventory, customers). (b) Clasificar: input-only (→ `.superRefine()` en el schema) vs state-dependent (→ helper compartido server-side). (c) Mover las input-only a los schemas con mensajes en español. (d) Extraer las state-dependent a helpers reutilizables entre remote functions. ~5 días.
 
 **Estado:** Plan activo. Sin empezar.
-
----
-
-### ✅ DT11 · Dead code: componentes sin usar (COMPLETADO — 2026-08-17)
-
-**Qué se hizo:** Eliminados 5 componentes con cero imports (verificado con rg): `CustomerViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable` y `PurchaseCurrencyInput` (este último huérfano total, sin barrel export). Limpiados los exports de `customers/index.ts` y `prescriptions/index.ts`. `SupplierViewModal` NO se tocó — sí se usa en `SuppliersTable.svelte`. **-1410 líneas.**
-
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 755/755 tests.
-
----
-
-### ✅ DT12 · DataTable y DataGrid duplicados (COMPLETADO — 2026-08-30)
-
-**Qué se hizo:** Eliminado `DataTable.svelte` y unificado todos los consumidores (12 tablas) en `DataGrid.svelte`. La paginación se hizo opcional (props `page`/`perPage`/`total`/`totalPages`/`onPageChange` opcionales) para soportar tablas paginadas y no paginadas con un solo componente. Cero referencias a `DataTable` en código fuente.
-
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio.
-
----
-
-### ✅ DT13 · Enums y labels de moneda duplicados (COMPLETADO — 2026-08-17)
-
-**Qué se hizo (auditoría previa redujo el alcance):**
-
-- **7 helpers muertos eliminados** (cero consumidores): `PURCHASE_SOURCE_CURRENCY_LABELS`, `PURCHASE_SOURCE_CURRENCY_SYMBOLS`, `getPurchaseSourceCurrencyLabel`, `getPurchaseSourceCurrencySymbol`, `isAltSourceCurrency` (purchaseTypes.ts) + `getSettlementCurrencyLabel`, `isAltDisplayCurrency` (purchaseOrderCurrencies.ts).
-- **Símbolos unificados:** `CURRENCY_SYMBOLS` alineada (USDT→`'USDT'`, VES→`'Bs'`, USD_EFECTIVO→`'$'`) + nuevo `getCurrencySymbol(code)` en `currencyTypes.ts`. Eliminado `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts).
-- **5 consumidores migrados** a `getCurrencySymbol`: `PaymentForm`, `PurchaseOrdersTable`, `PurchaseOrderFinancialCard`, `PurchaseOrderPaymentsHistoryDrawer`, `UpcomingPurchasePaymentsWidget`.
-- `getSourceCurrencySymbol` queda como único helper de PurchaseSourceCurrency. Core intacto: `SOURCE_TO_CURRENCY_CODE`, `sourcePriceToUsdBcv`, `sourceCurrencyRequiresRateToVes`, `getCurrencyLabel`.
-- **Único cambio visible:** USD_EFECTIVO en settlement `¤`→`$` (mejora). Cero cambios en USDT/VES.
-
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 758/758 tests, cero referencias a helpers muertos.
-
----
-
-### ✅ DT16 · Enums de moneda de gastos (COMPLETADO — 2026-08-29)
-
-**Qué se hizo:** Delegar expense currencies al sistema canónico `CurrencyCode` sin migrar DB.
-
-- **Mapping** `EXPENSE_TO_CURRENCY_CODE` en `cashTypes.ts`: `USD→USD_BCV`, `EUR→EUR_BCV`, `VES→VES`, `USDT→USDT`.
-- **`expenseCalculations.ts`** migrado: `requiresExpenseExchangeRate`, `requiresExpenseRateType`, `getExpenseExchangeRateLabel` y `calculateExpenseAmountBcvUsd` ahora resuelven a `CurrencyCode` vía el mapping en vez de comparar strings literales.
-- **`+page.svelte`** migrado: select de moneda usa `getCurrencyLabel(EXPENSE_TO_CURRENCY_CODE[c])` en vez de `EXPENSE_CURRENCY_LABELS[c]`.
-- `EXPENSE_CURRENCY_LABELS`, `EXPENSE_CURRENCY_SYMBOLS` e `isUsdLike` marcadas `@deprecated` (se borran en una versión futura).
-
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, tests pasaron. Sin migración SQL — `cash_expenses.currency` sigue `varchar(10)` con `USD`/`VES`/`USDT`/`EUR`.
 
 ---
 
@@ -162,37 +113,33 @@
 
 ---
 
-### ✅ DT14 · Wizard de compras carga todo en SSR (COMPLETADO — absorbido por FP6, 2026-08-17)
+### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
-**Problema:** El `load` de `/purchases/new` trae **todos** los productos (`getAllProductsWithRelations({ limit: 500 })`) y lentes sin filtrar por proveedor. El proveedor se elige en Step 1, pero los datos se cargan antes de saber cuál es. Payload SSR innecesario; la búsqueda cliente-side escanea registros que nunca se usarán.
+**Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
 
-**Riesgo:** Memoria y tiempo SSR desperdiciados. Escala mal con catálogo grande.
+**Cambios:**
 
-**Dificultad:** Baja-Media (1-3 días). **Solución:** Opción A (primero): al validar Step 1, fetchear productos del proveedor vía `/api/products?supplierId=X`; el `load` SSR deja de traer productos/lentes. Opción B (ideal): search server-side `/api/products/search?supplierId=X&q=texto` con el combobox consultando en tiempo real. **Archivos:** `src/routes/(app)/purchases/new/+page.server.ts`, `+page.svelte`, `src/lib/components/purchases/step2/PurchaseOrderStep2.svelte`.
+- `logger.error('Error obteniendo tasas de cambio de la API', error)` agregado en el catch de `refreshExchangeRates`.
+- Bonus: el error se propaga al UI — `refreshExchangeRatesCommand` ahora lanza si `snapshot.lastError` está seteado (antes el UI mostraba "Tasas actualizadas" con la API caída). Mensaje amigable al usuario ("No se pudo conectar con el proveedor de tasas"), detalle técnico en logs.
 
----
-
-### ✅ DT15 · Altura por ojo ausente en presupuestos (COMPLETADO — 2026-08-17)
-
-**Qué se hizo:** `quote_items` ahora captura y persiste la altura por ojo:
-
-- Migración **0040** idempotente: `od_altura`/`os_altura` en `quote_items`.
-- `QuoteItemSchema`: `AlturaSchema.optional()` por ojo (10-40mm).
-- `buildQuoteItemsFromWizard` mapea `lensPair.od/oi.altura`.
-- `quotes.remote` persiste en el insert **y en la conversión presupuesto→venta** (antes la venta creada desde quote perdía la altura — mismo bug por otra puerta).
-- El wizard de presupuesto ya capturaba la altura (reusa componentes de venta) — sin cambios de UI.
-
-**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 758/758 tests. Migración aplicada + idempotente en local.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, 741/741 tests ✓.
 
 ---
 
-### ✅ Resueltos por auditoría de TECH_DEBT.md (2026-08-16)
+### ✅ DT3 · Validación Zod subutilizada (COMPLETADO — 2026-08-10)
 
-El archivo `TECH_DEBT.md` fue auditado, consolidado y eliminado. De sus 8 items, 3 ya estaban resueltos en el código:
+**Qué se hizo:** Auditoría completa de validación en la capa remote. **El problema original estaba mal diagnosticado.**
 
-- **Prescripción global para operaciones con múltiples cristales** — resuelto: la Rx por ojo (od/os sphere, cylinder, axis, addition) ya vive en `sale_items` (`schema/sales.ts`) y `quote_items` (`schema/quotes.ts`).
-- **`build/` en el repo** — ya ignorado: `/build` en `.gitignore` (línea 10), cero archivos tracked.
-- **Conversión dual en slide-over de pagos de ventas** — ya implementado: `PaymentForm.svelte:853` muestra `≈ X USD BCV` con la tasa del día para pagos en moneda distinta.
+**Hallazgo real:** 143 de 152 remote functions (94.1%) ya pasan un Zod schema como primer argumento a `command()`/`query()`/`form()` — SvelteKit valida internamente, por eso hay solo 1 `.safeParse()` manual (en un helper de finanzas, no en validación primaria). Contar `.safeParse()` es irrelevante: el `.parse()` ocurre dentro de SvelteKit. Las 9 remote functions sin schema reciben **cero input** del cliente — correcto tal cual.
+
+**Cambios:**
+
+- Eliminados 5 schemas muertos (exportados pero nunca usados por ninguna remote function): `ExpenseIdSchema`, `ListInventoryLotsSchema` (+ sus tests), `AddPurchaseOrderItemSchema`, `UpdateSaleStatusSchema`, `EnrichFreeQuoteItemSchema` (+ su type).
+- 91.5% → 100% de schemas en uso.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, tests de schemas ✓.
+
+**Lo que NO se hizo (scope real, ver DT10):** validaciones de **negocio** inline (ifs en handlers como "no borrar producto con ventas") no están centralizadas en Zod. Ese es el trabajo grande y va aparte.
 
 ---
 
@@ -254,31 +201,112 @@ El archivo `TECH_DEBT.md` fue auditado, consolidado y eliminado. De sus 8 items,
 
 ---
 
-### DT8 · Dashboard sin gráficos 🟡
+### ✅ DT11 · Dead code: componentes sin usar (COMPLETADO — 2026-08-17)
 
-**Problema:** El dashboard (`/dashboard`) muestra 4 tarjetas numéricas (total clientes, ventas hoy, cotizaciones pendientes, stock bajo) + tablas. Sin tendencias visuales, sin comparativas temporales, sin breakdowns por producto/vendedor/marca.
+**Qué se hizo:** Eliminados 5 componentes con cero imports (verificado con rg): `CustomerViewModal`, `PrescriptionViewModal`, `PrescriptionFormModal`, `PrescriptionsTable` y `PurchaseCurrencyInput` (este último huérfano total, sin barrel export). Limpiados los exports de `customers/index.ts` y `prescriptions/index.ts`. `SupplierViewModal` NO se tocó — sí se usa en `SuppliersTable.svelte`. **-1410 líneas.**
 
-**Riesgo de no hacerlo:** El dueño no ve la salud del negocio de un vistazo. Percepción de herramienta "básica" comparada con competidores. Decisiones sin datos.
-
-**Contras:** Agregar librería de charts (`layercake`, `chart.js`) suma peso al bundle.
-
-**Dificultad:** Baja. **Solución:** Agregar `layercake` (Svelte-native, más liviano) o `chart.js`. KPIs nuevos: revenue diario/semanal/mensual, top productos, top vendedores, profit margin trend, conversion rate quotes→sales. ~3 días.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 755/755 tests.
 
 ---
 
-### DT9 · Sin tests en remote functions 🟡
+### ✅ DT12 · DataTable y DataGrid duplicados (COMPLETADO — 2026-08-30)
 
-**Problema:** 58 archivos de test pero **cero** para `*.remote.ts`. La capa de lógica de negocio — donde viven comandos como `createSale`, `addSalePayment`, `confirmPurchaseOrder` — no tiene cobertura de tests unitarios. Los tests existentes cubren schemas, utils, helpers y queries, pero no la orquestación.
+**Qué se hizo:** Eliminado `DataTable.svelte` y unificado todos los consumidores (12 tablas) en `DataGrid.svelte`. La paginación se hizo opcional (props `page`/`perPage`/`total`/`totalPages`/`onPageChange` opcionales) para soportar tablas paginadas y no paginadas con un solo componente. Cero referencias a `DataTable` en código fuente.
 
-**Riesgo de no hacerlo:** Regresiones en comandos críticos (pagos, confirmaciones, ajustes de inventario) sin red de seguridad. Refactorizar remotes es peligroso.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio.
 
-**Contras:** Testear remotes requiere mock de DB (o testcontainers con PostgreSQL). Setup no trivial. Tiempo significativo.
+---
 
-**Dificultad:** Alta. **Solución:** (a) Setup de testcontainers con PostgreSQL + migraciones. (b) Tests de integración para los 10-15 comandos más críticos. (c) Incorporar al CI. (d) E2E: flujo completo del wizard óptico de venta/presupuesto (paso 2, confirmación, autosync del tipo de lente), pagos/cancelaciones/reembolsos, reportes. ~1-2 semanas.
+### ✅ DT13 · Enums y labels de moneda duplicados (COMPLETADO — 2026-08-17)
+
+**Qué se hizo (auditoría previa redujo el alcance):**
+
+- **7 helpers muertos eliminados** (cero consumidores): `PURCHASE_SOURCE_CURRENCY_LABELS`, `PURCHASE_SOURCE_CURRENCY_SYMBOLS`, `getPurchaseSourceCurrencyLabel`, `getPurchaseSourceCurrencySymbol`, `isAltSourceCurrency` (purchaseTypes.ts) + `getSettlementCurrencyLabel`, `isAltDisplayCurrency` (purchaseOrderCurrencies.ts).
+- **Símbolos unificados:** `CURRENCY_SYMBOLS` alineada (USDT→`'USDT'`, VES→`'Bs'`, USD_EFECTIVO→`'$'`) + nuevo `getCurrencySymbol(code)` en `currencyTypes.ts`. Eliminado `getSettlementCurrencySymbol` (purchaseOrderCurrencies.ts).
+- **5 consumidores migrados** a `getCurrencySymbol`: `PaymentForm`, `PurchaseOrdersTable`, `PurchaseOrderFinancialCard`, `PurchaseOrderPaymentsHistoryDrawer`, `UpcomingPurchasePaymentsWidget`.
+- `getSourceCurrencySymbol` queda como único helper de PurchaseSourceCurrency. Core intacto: `SOURCE_TO_CURRENCY_CODE`, `sourcePriceToUsdBcv`, `sourceCurrencyRequiresRateToVes`, `getCurrencyLabel`.
+- **Único cambio visible:** USD_EFECTIVO en settlement `¤`→`$` (mejora). Cero cambios en USDT/VES.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 758/758 tests, cero referencias a helpers muertos.
+
+---
+
+### ✅ DT14 · Wizard de compras carga todo en SSR (COMPLETADO — absorbido por FP6, 2026-08-17)
+
+**Problema:** El `load` de `/purchases/new` trae **todos** los productos (`getAllProductsWithRelations({ limit: 500 })`) y lentes sin filtrar por proveedor. El proveedor se elige en Step 1, pero los datos se cargan antes de saber cuál es. Payload SSR innecesario; la búsqueda cliente-side escanea registros que nunca se usarán.
+
+**Riesgo:** Memoria y tiempo SSR desperdiciados. Escala mal con catálogo grande.
+
+**Dificultad:** Baja-Media (1-3 días). **Solución:** Opción A (primero): al validar Step 1, fetchear productos del proveedor vía `/api/products?supplierId=X`; el `load` SSR deja de traer productos/lentes. Opción B (ideal): search server-side `/api/products/search?supplierId=X&q=texto` con el combobox consultando en tiempo real. **Archivos:** `src/routes/(app)/purchases/new/+page.server.ts`, `+page.svelte`, `src/lib/components/purchases/step2/PurchaseOrderStep2.svelte`.
+
+---
+
+### ✅ DT15 · Altura por ojo ausente en presupuestos (COMPLETADO — 2026-08-17)
+
+**Qué se hizo:** `quote_items` ahora captura y persiste la altura por ojo:
+
+- Migración **0040** idempotente: `od_altura`/`os_altura` en `quote_items`.
+- `QuoteItemSchema`: `AlturaSchema.optional()` por ojo (10-40mm).
+- `buildQuoteItemsFromWizard` mapea `lensPair.od/oi.altura`.
+- `quotes.remote` persiste en el insert **y en la conversión presupuesto→venta** (antes la venta creada desde quote perdía la altura — mismo bug por otra puerta).
+- El wizard de presupuesto ya capturaba la altura (reusa componentes de venta) — sin cambios de UI.
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 758/758 tests. Migración aplicada + idempotente en local.
+
+---
+
+### ✅ DT16 · Enums de moneda de gastos (COMPLETADO — 2026-08-29)
+
+**Qué se hizo:** Delegar expense currencies al sistema canónico `CurrencyCode` sin migrar DB.
+
+- **Mapping** `EXPENSE_TO_CURRENCY_CODE` en `cashTypes.ts`: `USD→USD_BCV`, `EUR→EUR_BCV`, `VES→VES`, `USDT→USDT`.
+- **`expenseCalculations.ts`** migrado: `requiresExpenseExchangeRate`, `requiresExpenseRateType`, `getExpenseExchangeRateLabel` y `calculateExpenseAmountBcvUsd` ahora resuelven a `CurrencyCode` vía el mapping en vez de comparar strings literales.
+- **`+page.svelte`** migrado: select de moneda usa `getCurrencyLabel(EXPENSE_TO_CURRENCY_CODE[c])` en vez de `EXPENSE_CURRENCY_LABELS[c]`.
+- `EXPENSE_CURRENCY_LABELS`, `EXPENSE_CURRENCY_SYMBOLS` e `isUsdLike` marcadas `@deprecated` (se borran en una versión futura).
+
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, tests pasaron. Sin migración SQL — `cash_expenses.currency` sigue `varchar(10)` con `USD`/`VES`/`USDT`/`EUR`.
+
+---
+
+### ✅ Resueltos por auditoría de TECH_DEBT.md (2026-08-16)
+
+El archivo `TECH_DEBT.md` fue auditado, consolidado y eliminado. De sus 8 items, 3 ya estaban resueltos en el código:
+
+- **Prescripción global para operaciones con múltiples cristales** — resuelto: la Rx por ojo (od/os sphere, cylinder, axis, addition) ya vive en `sale_items` (`schema/sales.ts`) y `quote_items` (`schema/quotes.ts`).
+- **`build/` en el repo** — ya ignorado: `/build` en `.gitignore` (línea 10), cero archivos tracked.
+- **Conversión dual en slide-over de pagos de ventas** — ya implementado: `PaymentForm.svelte:853` muestra `≈ X USD BCV` con la tasa del día para pagos en moneda distinta.
 
 ---
 
 ## 2. Features Pendientes (Planes Activos)
+
+### FP3 · public-catalog-api — Catálogo público + imágenes en R2 ❌
+
+**Problema:** La óptica no tiene presencia web. No hay landing page, no hay catálogo público. El plan anterior (API Go + Tailscale Funnel + RustFS) se descartó por fragilidad ante cortes de luz.
+
+**Por qué importa:** Es el producto externo. Sin landing page, los clientes no descubren la óptica en internet. En Venezuela la competencia ya tiene presencia web.
+
+**Contras:** Dependencia en Cloudflare R2 (aunque free tier generoso: 10GB, egress gratis). Sharp (libvips nativo) puede dar problemas de compilación en el droplet. Es la feature más grande del roadmap.
+
+**Dificultad:** Alta. **Solución:** Arquitectura R2-first: (a) Migración DB con `product_publications` y `brand_publications` (flags de publicación, sin duplicar contenido). (b) Vistas SQL `public_catalog_products`/`public_brands` como contrato canónico. (c) Widget de upload de imágenes con sharp→WEBP multiresolución + subida a R2. (d) Snapshot generator que lee la vista y pushea JSON a R2 `/catalog/`. (e) Sync on-change + re-push horario. (f) La landing (repo aparte) consume de R2 vía HTTPS. ~2-3 semanas.
+
+**Estado:** Plan activo. Arquitectura definida en `public-catalog-arch`. Sin empezar.
+
+**Plan detallado:** `docs/plans/public-catalog-api.md` · **Spec:** `docs/specs/public-catalog-arch.md`
+
+---
+
+### ✅ FP1 · preserve-list-filters (COMPLETADO — verificado 2026-08-17)
+
+**Qué se implementó** (sesión previa, verificado en código):
+
+- `saveReferrerParams` (urlState.ts:35) wireado en las **6 listas**: sales, purchases, lenses, products, customers, quotes.
+- `getBackUrl` / `peekBackUrl` (urlState.ts:47) wireado en los **6 detalles**: `quotes/[id]`, `lenses/[id]`, `products/[id]`, `sales/[id]`, `customers/[id]`, `purchases/[id]` (PurchaseOrderDetailHeader.svelte:48).
+- Volver desde detalle restaura query params de la lista (filtros + búsqueda).
+
+**Verificación:** rg sobre `src/routes` confirma los 12 puntas (6 save + 6 back).
+
+---
 
 ### ✅ FP2 · backup-ui (COMPLETADO — 2026-08-10)
 
@@ -308,18 +336,6 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 - Env vars nuevas: `DOKPLOY_API_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_BACKUP_SCHEDULE_ID`.
 
 **Verificación:** `pnpm check` 0 errores, `pnpm lint` pasa, `pnpm test:unit` 741 tests ✓. Probado en producción: backup automático funciona, webhook notifica correctamente, UI muestra historial y status, botón trigger dispara el job vía Dokploy API.
-
----
-
-### ✅ FP1 · preserve-list-filters (COMPLETADO — verificado 2026-08-17)
-
-**Qué se implementó** (sesión previa, verificado en código):
-
-- `saveReferrerParams` (urlState.ts:35) wireado en las **6 listas**: sales, purchases, lenses, products, customers, quotes.
-- `getBackUrl` / `peekBackUrl` (urlState.ts:47) wireado en los **6 detalles**: `quotes/[id]`, `lenses/[id]`, `products/[id]`, `sales/[id]`, `customers/[id]`, `purchases/[id]` (PurchaseOrderDetailHeader.svelte:48).
-- Volver desde detalle restaura query params de la lista (filtros + búsqueda).
-
-**Verificación:** rg sobre `src/routes` confirma los 12 puntas (6 save + 6 back).
 
 ---
 
@@ -394,18 +410,6 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 **Verificación:** `pnpm check && pnpm lint` OK, `pnpm test:unit` 771 tests, E2E `purchase-order-credit-flow.test.ts` verde.
 
 Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
-
----
-
-**Problema:** La óptica no tiene presencia web. No hay landing page, no hay catálogo público. El plan anterior (API Go + Tailscale Funnel + RustFS) se descartó por fragilidad ante cortes de luz.
-
-**Por qué importa:** Es el producto externo. Sin landing page, los clientes no descubren la óptica en internet. En Venezuela la competencia ya tiene presencia web.
-
-**Contras:** Dependencia en Cloudflare R2 (aunque free tier generoso: 10GB, egress gratis). Sharp (libvips nativo) puede dar problemas de compilación en el droplet. Es la feature más grande del roadmap.
-
-**Dificultad:** Alta. **Solución:** Arquitectura R2-first: (a) Migración DB con `product_publications` y `brand_publications` (flags de publicación, sin duplicar contenido). (b) Vistas SQL `public_catalog_products`/`public_brands` como contrato canónico. (c) Widget de upload de imágenes con sharp→WEBP multiresolución + subida a R2. (d) Snapshot generator que lee la vista y pushea JSON a R2 `/catalog/`. (e) Sync on-change + re-push horario. (f) La landing (repo aparte) consume de R2 vía HTTPS. ~2-3 semanas.
-
-**Estado:** Plan activo. Arquitectura definida en `public-catalog-arch`. Sin empezar.
 
 ---
 

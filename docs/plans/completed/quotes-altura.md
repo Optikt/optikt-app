@@ -1,7 +1,7 @@
 ---
 plan name: quotes-altura
 plan description: Add per-eye altura to quote items
-plan status: active
+plan status: done
 ---
 
 ## Idea

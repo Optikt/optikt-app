@@ -1,7 +1,7 @@
 ---
 plan name: preserve-list-filters
 plan description: Preserve query params on back navigation
-plan status: active
+plan status: done
 ---
 
 ## Idea

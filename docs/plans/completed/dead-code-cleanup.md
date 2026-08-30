@@ -1,7 +1,7 @@
 ---
 plan name: dead-code-cleanup
 plan description: Remove unused components and exports
-plan status: active
+plan status: done
 ---
 
 ## Idea

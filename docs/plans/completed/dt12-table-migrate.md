@@ -1,7 +1,7 @@
 ---
 plan name: dt12-table-migrate
 plan description: Consolidar tablas UI duplicadas
-plan status: active
+plan status: done
 ---
 
 ## Idea
