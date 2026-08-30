@@ -137,13 +137,16 @@
 			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:max-h-[40rem] md:w-80 md:rounded-xl md:shadow-lg"
 		>
 			<div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
-				<div>
+				<div class="flex items-center gap-2">
 					<h3 id="exchange-rates-title" class="text-sm font-semibold text-brand-navy">
 						Tasas de cambio
 					</h3>
-					<p class="mt-0.5 text-[11px] text-slate-400">
-						Fuente externa sincronizada en segundo plano
-					</p>
+					{#if store.sseConnected}
+						<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-emerald-200/60">
+							<span class="h-1 w-1 rounded-full bg-emerald-500 animate-pulse"></span>
+							En tiempo real
+						</span>
+					{/if}
 				</div>
 				<div class="flex items-center gap-1.5">
 					<button

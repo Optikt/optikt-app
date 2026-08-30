@@ -7,9 +7,16 @@ import { getErrorMessage } from '$lib/utils';
 let snapshot = $state<ExchangeRatesSnapshot | null>(null);
 let loading = $state(true);
 let error = $state<string | null>(null);
+let sseConnected = $state(false);
 
 const bcvRate = $derived(snapshot?.rates.find((r) => r.code === 'USD')?.value ?? 0);
 const rates = $derived(snapshot?.rates ?? []);
+
+function applySnapshot(next: ExchangeRatesSnapshot) {
+	if (snapshot && snapshot.lastFetchedAt === next.lastFetchedAt) return;
+	snapshot = next;
+	error = null;
+}
 
 export function getExchangeRatesStore() {
 	return {
@@ -40,6 +47,9 @@ export function getExchangeRatesStore() {
 		get lastError() {
 			return snapshot?.lastError ?? null;
 		},
+		get sseConnected() {
+			return sseConnected;
+		},
 		async refresh() {
 			try {
 				snapshot = await refreshExchangeRatesCommand({});
@@ -55,12 +65,13 @@ export function getExchangeRatesStore() {
 export function initExchangeRatesPolling() {
 	if (!browser) return;
 
+	let eventSource: EventSource | null = null;
+
 	async function load() {
 		try {
 			const res = await fetch(resolve('/api/exchange-rates'));
 			if (!res.ok) throw new Error('Error al cargar tasas');
-			snapshot = await res.json();
-			error = null;
+			applySnapshot(await res.json());
 		} catch (e) {
 			error = getErrorMessage(e, 'Error al cargar tasas');
 		} finally {
@@ -68,7 +79,41 @@ export function initExchangeRatesPolling() {
 		}
 	}
 
+	function connectSSE() {
+		eventSource = new EventSource(resolve('/api/exchange-rates/stream'));
+
+		eventSource.onopen = () => {
+			sseConnected = true;
+		};
+
+		eventSource.onmessage = (event) => {
+			try {
+				const data = JSON.parse(event.data) as ExchangeRatesSnapshot;
+				applySnapshot(data);
+				loading = false;
+			} catch {
+				// malformed event — ignore
+			}
+		};
+
+		eventSource.onerror = () => {
+			sseConnected = false;
+			// EventSource auto-reconnects by default.
+			// If it stays in CONNECTING state, fall back to polling.
+			if (eventSource?.readyState === EventSource.CONNECTING) {
+				setTimeout(connectSSE, 5_000);
+			}
+		};
+	}
+
 	void load();
-	const id = setInterval(load, 60_000);
-	return () => clearInterval(id);
+	connectSSE();
+
+	const pollId = setInterval(load, 60_000);
+
+	return () => {
+		clearInterval(pollId);
+		eventSource?.close();
+		sseConnected = false;
+	};
 }
