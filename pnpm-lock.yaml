@@ -15,8 +15,8 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0
       '@pdfslick/core':
-        specifier: 4.0.0
-        version: 4.0.0(react@19.2.4)
+        specifier: 4.0.2
+        version: 4.0.2(react@19.2.4)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -33,8 +33,8 @@ importers:
         specifier: ^1.13.12
         version: 1.13.12
       pdfjs-dist:
-        specifier: 6.0.227
-        version: 6.0.227
+        specifier: 6.2.108
+        version: 6.2.108
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
@@ -1155,8 +1155,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@pdfslick/core@4.0.0':
-    resolution: {integrity: sha512-gzNDqFCQkJ92cvE890DcGVzUSuugvfG8bmspvOi39PxVeqK7cd8l5OPn30ie2AN/IgBRQYImK7C3oycwKLQRrQ==}
+  '@pdfslick/core@4.0.2':
+    resolution: {integrity: sha512-QAIMfgisVgVggZgO0N9y4Gzrh36P8X9bXbSoK3xOSY+cra9tJg1zcIi0DsNt6TQ5Ld2ZTkX2B5vg5IXmJR/mDw==}
 
   '@playwright/test@1.62.1':
     resolution: {integrity: sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==}
@@ -2881,8 +2881,8 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
-  pdfjs-dist@6.0.227:
-    resolution: {integrity: sha512-/P6M4SXw+70waMVLUM7rdRtvo+dEzqE1t6W/zQNvBETo2MaRa5rrvCcAYdfWGiUzadTgM0lJmRApUrW0d9zgKg==}
+  pdfjs-dist@6.2.108:
+    resolution: {integrity: sha512-YxFb+SQcodN2rnX9Tn3dHYlqfb7NjlzzfONPpJd+AKoKtUjEdevTfbC07d5TcczzOK6261auRkP/M8OBHs9vFQ==}
     engines: {node: '>=22.13.0 || >=24'}
 
   picocolors@1.1.1:
@@ -4236,9 +4236,9 @@ snapshots:
   '@oxc-resolver/binding-win32-x64-msvc@11.24.2':
     optional: true
 
-  '@pdfslick/core@4.0.0(react@19.2.4)':
+  '@pdfslick/core@4.0.2(react@19.2.4)':
     dependencies:
-      pdfjs-dist: 6.0.227
+      pdfjs-dist: 6.2.108
       zustand: 5.0.14(react@19.2.4)
     transitivePeerDependencies:
       - '@types/react'
@@ -5788,7 +5788,7 @@ snapshots:
 
   pathe@2.0.3: {}
 
-  pdfjs-dist@6.0.227:
+  pdfjs-dist@6.2.108:
     optionalDependencies:
       '@napi-rs/canvas': 1.0.0
 
