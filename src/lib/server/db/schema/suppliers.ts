@@ -75,7 +75,7 @@ export const supplierTreatments = pgTable(
 		salePrice: doublePrecision('sale_price'),
 		/** Whether this treatment is subject to tax (IVA) */
 		isTaxable: boolean('is_taxable').notNull().default(true),
-		isActive: boolean('is_active').notNull().default(true),
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow(),

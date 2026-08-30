@@ -173,8 +173,8 @@ export async function updateSupplier(
 /**
  * Soft delete a supplier by ID
  */
-export async function deleteSupplier(id: string): Promise<boolean> {
-	const result = await db
+export async function deleteSupplier(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(suppliers)
 		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(suppliers.id, id));
@@ -236,6 +236,7 @@ export async function getAllTreatments(): Promise<SupplierTreatment[]> {
 	return db
 		.select()
 		.from(supplierTreatments)
+		.where(isNull(supplierTreatments.deletedAt))
 		.orderBy(
 			asc(supplierTreatments.supplierId),
 			asc(supplierTreatments.category),
@@ -251,7 +252,7 @@ export async function getSupplierTreatments(
 	return executor
 		.select()
 		.from(supplierTreatments)
-		.where(eq(supplierTreatments.supplierId, supplierId))
+		.where(and(eq(supplierTreatments.supplierId, supplierId), isNull(supplierTreatments.deletedAt)))
 		.orderBy(asc(supplierTreatments.category), asc(supplierTreatments.name));
 }
 
@@ -303,7 +304,7 @@ export async function createSupplierTreatment(
 /** Update a supplier treatment */
 export async function updateSupplierTreatment(
 	id: string,
-	data: Partial<Pick<SupplierTreatment, 'name' | 'category' | 'price' | 'isActive'>>,
+	data: Partial<Pick<SupplierTreatment, 'name' | 'category' | 'price'>>,
 	executor: DbOrTx = db
 ): Promise<SupplierTreatment | null> {
 	const [treatment] = await executor
@@ -314,8 +315,12 @@ export async function updateSupplierTreatment(
 	return treatment ?? null;
 }
 
-/** Delete a supplier treatment (hard delete) */
+/** Soft-delete a supplier treatment */
 export async function deleteSupplierTreatment(id: string, executor: DbOrTx = db): Promise<boolean> {
-	const result = await executor.delete(supplierTreatments).where(eq(supplierTreatments.id, id));
-	return result.count > 0;
+	const [deleted] = await executor
+		.update(supplierTreatments)
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
+		.where(and(eq(supplierTreatments.id, id), isNull(supplierTreatments.deletedAt)))
+		.returning({ id: supplierTreatments.id });
+	return !!deleted;
 }

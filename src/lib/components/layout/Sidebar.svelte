@@ -16,7 +16,8 @@
 		ClipboardList,
 		HandCoins,
 		HardDrive,
-		Wallet
+		Wallet,
+		Trash2
 	} from '@lucide/svelte';
 	import { getInventoryCountContext } from '$lib/context';
 	import { isAdminRole, UserRole } from '$lib/shared/enums';
@@ -51,7 +52,8 @@
 		'clipboard-check': ClipboardCheck,
 		receivables: HandCoins,
 		wallet: Wallet,
-		'hard-drive': HardDrive
+		'hard-drive': HardDrive,
+		trash: Trash2
 	};
 
 	const navItems = NAV_ITEMS;

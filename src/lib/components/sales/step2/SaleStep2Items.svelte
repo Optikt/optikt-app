@@ -270,7 +270,7 @@
 	async function loadTreatmentsForSupplier(supplierId: string): Promise<SupplierTreatment[]> {
 		if (treatmentCache[supplierId]) return treatmentCache[supplierId];
 		const treatments = await listSupplierTreatments({ supplierId });
-		treatmentCache[supplierId] = treatments.filter((t) => t.isActive);
+		treatmentCache[supplierId] = treatments;
 		return treatmentCache[supplierId];
 	}
 

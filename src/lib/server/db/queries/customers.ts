@@ -215,8 +215,8 @@ export async function updateCustomer(
 /**
  * Soft delete a customer by ID
  */
-export async function deleteCustomer(id: string): Promise<boolean> {
-	const result = await db
+export async function deleteCustomer(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(customers)
 		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(customers.id, id));
@@ -336,8 +336,8 @@ export async function unsetCurrentPrescriptions(
 /**
  * Soft delete a prescription by ID
  */
-export async function deletePrescription(id: string): Promise<boolean> {
-	const result = await db
+export async function deletePrescription(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(prescriptions)
 		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(prescriptions.id, id));

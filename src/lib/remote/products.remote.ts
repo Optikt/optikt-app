@@ -21,10 +21,9 @@ import {
 	getProductInventoryStats as getProductInventoryStatsQuery,
 	findProductById,
 	findProductBySku,
-	updateProduct,
-	deleteProduct,
-	restoreProduct
+	updateProduct
 } from '$lib/server/db/queries/products';
+import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { upsertBrandSupplierLink } from '$lib/server/db/queries/brandSuppliers';
 import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
 import { db } from '$lib/server/db';
@@ -172,7 +171,6 @@ export const createProductForm = form(
 						.update(products)
 						.set({
 							deletedAt: null,
-							isActive: true,
 							updatedAt: now
 						})
 						.where(eq(products.id, existingSku.id))
@@ -319,38 +317,15 @@ export const deleteProductById = command(ProductIdSchema, async (data): Promise<
 		throw new Error('Producto no encontrado');
 	}
 
-	await deleteProduct(id);
+	const context = getAuditContext();
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('product', id, context.userId ?? null, tx);
+		if (!ok) throw new Error('Producto no encontrado');
+	});
 
 	// Log the deletion
-	await auditService.logDelete('product', existing, getAuditContext());
+	await auditService.logDelete('product', existing, context);
 });
-
-/**
- * Toggle product active status
- */
-export const toggleProductActive = command(
-	ProductIdSchema,
-	async (data): Promise<{ isActive: boolean }> => {
-		requireAdmin();
-
-		const { id } = data;
-
-		const existing = await findProductById(id);
-		if (!existing) {
-			throw new Error('Producto no encontrado');
-		}
-
-		const updated = await updateProduct(id, { isActive: !existing.isActive });
-		if (!updated) {
-			throw new Error('Error actualizando producto');
-		}
-
-		// Log the status change
-		await auditService.logUpdate('product', id, existing, updated, getAuditContext());
-
-		return { isActive: updated.isActive };
-	}
-);
 
 /**
  * Reactivate a soft-deleted product
@@ -368,7 +343,10 @@ export const reactivateProduct = command(
 			throw new Error('Producto eliminado no encontrado');
 		}
 
-		const restored = await restoreProduct(deletedProductId);
+		await db.transaction(async (tx) => {
+			await restore('product', deletedProductId, tx);
+		});
+		const restored = await findProductById(deletedProductId, { deleted: false });
 		if (!restored) {
 			throw new Error('Error restaurando producto');
 		}

@@ -22,8 +22,8 @@ export const login = form(loginSchema, async ({ identifier, password }) => {
 		error(400, 'Credenciales incorrectas');
 	}
 
-	// Check if user is active
-	if (!user.isActive) {
+	// Check if user is deactivated
+	if (user.deactivatedAt) {
 		error(400, 'Tu cuenta está desactivada. Contacta al administrador.');
 	}
 

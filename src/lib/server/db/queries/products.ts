@@ -3,7 +3,6 @@ import {
 	isNull,
 	isNotNull,
 	and,
-	or,
 	gt,
 	lte,
 	asc,
@@ -98,15 +97,6 @@ function buildProductConditions(opts: ProductFilterOptions): SQL | undefined {
 
 	if (!opts.includeDeleted) {
 		conditions.push(isNull(products.deletedAt));
-	}
-
-	if (!opts.includeInactive) {
-		if (opts.includeDeleted) {
-			// Keep active OR deleted (deleted products have isActive=false by design)
-			conditions.push(or(eq(products.isActive, true), isNotNull(products.deletedAt))!);
-		} else {
-			conditions.push(eq(products.isActive, true));
-		}
 	}
 
 	if (opts.search) {
@@ -345,12 +335,11 @@ export async function updateProduct(
 /**
  * Soft delete a product by ID
  */
-export async function deleteProduct(id: string): Promise<boolean> {
-	const result = await db
+export async function deleteProduct(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(products)
 		.set({
 			deletedAt: nowISO(),
-			isActive: false,
 			updatedAt: nowISO()
 		})
 		.where(eq(products.id, id));
@@ -360,10 +349,10 @@ export async function deleteProduct(id: string): Promise<boolean> {
 /**
  * Restore a soft-deleted product with new data
  */
-export async function restoreProduct(id: string): Promise<Product | null> {
-	const [product] = await db
+export async function restoreProduct(id: string, executor: DbOrTx = db): Promise<Product | null> {
+	const [product] = await executor
 		.update(products)
-		.set({ deletedAt: null, isActive: true, updatedAt: nowISO() })
+		.set({ deletedAt: null, updatedAt: nowISO() })
 		.where(eq(products.id, id))
 		.returning();
 	return product ?? null;

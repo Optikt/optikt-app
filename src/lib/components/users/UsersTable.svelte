@@ -90,15 +90,15 @@
 				<UserRoleBadge role={user.role} />
 			</td>
 			<td class="px-3 py-2.5 text-sm">
-				<StatusBadge active={user.isActive} />
+				<StatusBadge active={!user.deactivatedAt} />
 			</td>
 			<td class="px-3 py-2.5 text-sm">
 				<div class="flex justify-end gap-1">
 					<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(user)} />
 					<ActionButton
 						icon={Power}
-						title={user.isActive ? 'Desactivar' : 'Activar'}
-						color={user.isActive ? 'amber' : 'green'}
+						title={!user.deactivatedAt ? 'Desactivar' : 'Activar'}
+						color={!user.deactivatedAt ? 'amber' : 'green'}
 						onclick={() => openToggle(user)}
 					/>
 					<ActionButton

@@ -30,8 +30,7 @@ export const CreateLensMaterialSchema = z.object({
 });
 
 export const UpdateLensMaterialSchema = CreateLensMaterialSchema.partial().extend({
-	id: z.uuid(),
-	isActive: z.boolean().optional()
+	id: z.uuid()
 });
 
 // ============================================================================
@@ -48,8 +47,7 @@ export const CreateLensTechnologySchema = z.object({
 });
 
 export const UpdateLensTechnologySchema = CreateLensTechnologySchema.partial().extend({
-	id: z.uuid(),
-	isActive: z.boolean().optional()
+	id: z.uuid()
 });
 
 export type CreateLensTechnologyInput = z.infer<typeof CreateLensTechnologySchema>;
@@ -199,8 +197,7 @@ export const CreateLensCatalogItemSchema = BaseLensCatalogItemSchema.refine(
 );
 
 export const UpdateLensCatalogItemSchema = BaseLensCatalogItemSchema.partial().extend({
-	id: z.uuid(),
-	isActive: CoercedBoolean.optional()
+	id: z.uuid()
 });
 
 // ============================================================================

@@ -199,12 +199,12 @@
 			</span>
 			<span
 				class="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold tracking-[0.12em] uppercase"
-				class:bg-success-container={item.isActive}
-				class:text-on-success-container={item.isActive}
-				class:bg-surface-container-high={!item.isActive}
-				class:text-outline={!item.isActive}
+				class:bg-success-container={!item.deletedAt}
+				class:text-on-success-container={!item.deletedAt}
+				class:bg-surface-container-high={!!item.deletedAt}
+				class:text-outline={!!item.deletedAt}
 			>
-				{item.isActive ? 'Activo' : 'Inactivo'}
+				{!item.deletedAt ? 'Activo' : 'Eliminado'}
 			</span>
 			<span
 				class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-2 text-[11px] font-bold tracking-[0.12em] text-on-warning-container uppercase"
@@ -719,12 +719,12 @@
 			</span>
 			<span
 				class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase"
-				class:bg-success-container={item.isActive}
-				class:text-on-success-container={item.isActive}
-				class:bg-surface-container-high={!item.isActive}
-				class:text-outline={!item.isActive}
+				class:bg-success-container={!item.deletedAt}
+				class:text-on-success-container={!item.deletedAt}
+				class:bg-surface-container-high={!!item.deletedAt}
+				class:text-outline={!!item.deletedAt}
 			>
-				{item.isActive ? 'Activo' : 'Inactivo'}
+				{!item.deletedAt ? 'Activo' : 'Eliminado'}
 			</span>
 			<span
 				class="inline-flex items-center gap-1.5 rounded-full bg-warning-container px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-on-warning-container uppercase"

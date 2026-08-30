@@ -101,7 +101,7 @@
 					<h1 class="font-heading text-4xl font-extrabold tracking-[-0.04em] text-brand-navy">
 						{product.name}
 					</h1>
-					<StatusBadge active={product.isActive} />
+					<StatusBadge active={!product.deletedAt} />
 					{#if !product.isTaxable}
 						<AppBadge variant="neutral">Exento</AppBadge>
 					{/if}

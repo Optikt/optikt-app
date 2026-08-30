@@ -7,6 +7,7 @@ import { requireAuth, requireAdmin, requireRole } from '$lib/server/guards';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, desc, isNull, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db';
+import { softDelete } from '$lib/server/db/queries/deletedItems';
 import { inventoryLots, lensCatalogItems, lensOpticalRanges } from '$lib/server/db/schema';
 import {
 	CreateLensMaterialSchema,
@@ -30,10 +31,8 @@ import {
 	findLensMaterialByCode,
 	createLensMaterial,
 	updateLensMaterial,
-	deleteLensMaterial,
 	getLensCatalogItemsWithRelations,
 	findLensCatalogItemById,
-	deleteLensCatalogItem,
 	resolvePendingLensMaterial,
 	getTechnologiesBySupplier,
 	findLensTechnologyById,
@@ -41,7 +40,6 @@ import {
 	updateLensTechnology,
 	resolvePendingTechnology,
 	getAllTechnologies,
-	deleteLensTechnology,
 	getAllDifferentiators,
 	renameDifferentiator,
 	deleteDifferentiator
@@ -249,8 +247,10 @@ export const deleteLensMaterialById = command(LensIdSchema, async (data): Promis
 	const existing = await findLensMaterialById(data.id);
 	if (!existing) throw new Error('Material no encontrado');
 
-	const deleted = await deleteLensMaterial(data.id);
-	if (!deleted) throw new Error('Error eliminando material');
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('lens_material', data.id, getAuditContext().userId ?? null, tx);
+		if (!ok) throw new Error('Error eliminando material');
+	});
 
 	await auditService.logDelete('lens_material', existing, getAuditContext());
 });
@@ -332,8 +332,10 @@ export const deleteLensTechnologyById = command(LensIdSchema, async (data): Prom
 	const existing = await findLensTechnologyById(data.id);
 	if (!existing) throw new Error('Tecnología no encontrada');
 
-	const deleted = await deleteLensTechnology(data.id);
-	if (!deleted) throw new Error('Error eliminando tecnología');
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('lens_technology', data.id, getAuditContext().userId ?? null, tx);
+		if (!ok) throw new Error('Error eliminando tecnología');
+	});
 
 	await auditService.logDelete('lens_technology', existing, getAuditContext());
 });
@@ -558,7 +560,6 @@ export const updateLensCatalogItemForm = form(
 			inventoryMode,
 			stock,
 			notes,
-			isActive,
 			pendingSupplierName,
 			pendingMaterialName,
 			pendingMaterialRefractiveIndex,
@@ -660,7 +661,6 @@ export const updateLensCatalogItemForm = form(
 					...(isTaxable !== undefined && { isTaxable }),
 					...(inventoryMode !== undefined && { inventoryMode }),
 					...(notes !== undefined && { notes }),
-					...(isActive !== undefined && { isActive }),
 					...stockOverride,
 					pairPurchasePrice,
 					updatedAt: now
@@ -762,8 +762,10 @@ export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Pro
 	const existing = await findLensCatalogItemById(data.id);
 	if (!existing) throw new Error('Item de catálogo no encontrado');
 
-	const deleted = await deleteLensCatalogItem(data.id);
-	if (!deleted) throw new Error('Error eliminando item de catálogo');
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('lens_catalog_item', data.id, getAuditContext().userId ?? null, tx);
+		if (!ok) throw new Error('Error eliminando item de catálogo');
+	});
 
 	await auditService.logDelete('lens_catalog_item', existing, getAuditContext());
 });

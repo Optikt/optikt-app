@@ -2,6 +2,7 @@ import { eq, or, and, isNull, isNotNull, count } from 'drizzle-orm';
 import { UserRole } from '$lib/shared/enums';
 import { db } from '$lib/server/db';
 import { users, type User, type NewUser } from '$lib/server/db/schema';
+import type { DbOrTx } from '$lib/server/db/types';
 import { nowISO } from '$lib/dates';
 
 /**
@@ -107,14 +108,35 @@ export async function updateUser(
 /**
  * Soft delete a user by ID
  */
-export async function deleteUser(id: string): Promise<boolean> {
-	const result = await db
+export async function deleteUser(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(users)
 		.set({
 			deletedAt: nowISO(),
-			isActive: false,
 			updatedAt: nowISO()
 		})
+		.where(eq(users.id, id));
+	return result.count > 0;
+}
+
+/**
+ * Deactivate a user (sets deactivated_at). Distinct from soft-delete (deleted_at).
+ */
+export async function deactivateUser(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
+		.update(users)
+		.set({ deactivatedAt: nowISO(), updatedAt: nowISO() })
+		.where(eq(users.id, id));
+	return result.count > 0;
+}
+
+/**
+ * Reactivate a user (clears deactivated_at).
+ */
+export async function reactivateUser(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
+		.update(users)
+		.set({ deactivatedAt: null, updatedAt: nowISO() })
 		.where(eq(users.id, id));
 	return result.count > 0;
 }
@@ -142,7 +164,6 @@ export async function restoreUser(
 		.set({
 			...data,
 			deletedAt: null,
-			isActive: true,
 			updatedAt: nowISO()
 		})
 		.where(eq(users.id, id))

@@ -17,7 +17,7 @@ export interface UserListItem {
 	username: string;
 	fullName: string;
 	role: UserRole;
-	isActive: boolean;
+	deactivatedAt: string | null;
 	isSuperuser: boolean;
 	createdAt: string;
 }

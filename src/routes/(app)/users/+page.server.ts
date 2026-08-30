@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			username: users.username,
 			fullName: users.fullName,
 			role: users.role,
-			isActive: users.isActive,
+			deactivatedAt: users.deactivatedAt,
 			isSuperuser: users.isSuperuser,
 			createdAt: users.createdAt
 		})

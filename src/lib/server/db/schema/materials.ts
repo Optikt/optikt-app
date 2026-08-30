@@ -1,12 +1,4 @@
-import {
-	pgTable,
-	varchar,
-	index,
-	uniqueIndex,
-	uuid,
-	timestamp,
-	boolean
-} from 'drizzle-orm/pg-core';
+import { pgTable, varchar, index, uniqueIndex, uuid, timestamp } from 'drizzle-orm/pg-core';
 
 /**
  * Unified Materials Table
@@ -29,7 +21,6 @@ export const materials = pgTable(
 		code: varchar().notNull(),
 		productType: varchar('product_type', { length: 20 }).notNull(), // FRAME, CONTACT_LENS, ACCESSORY
 		description: varchar(),
-		isActive: boolean('is_active').notNull().default(true),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()

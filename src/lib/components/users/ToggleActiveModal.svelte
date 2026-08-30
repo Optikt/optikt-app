@@ -17,9 +17,11 @@
 
 	let loading = $state(false);
 
-	const action = $derived(user?.isActive ? 'desactivar' : 'activar');
-	const Icon = $derived(user?.isActive ? UserX : UserCheck);
-	const color = $derived(user?.isActive ? 'yellow' : 'green');
+	const isActive = $derived(!!user && !user.deactivatedAt);
+
+	const action = $derived(isActive ? 'desactivar' : 'activar');
+	const Icon = $derived(isActive ? UserX : UserCheck);
+	const color = $derived(isActive ? 'yellow' : 'green');
 
 	function handleCancel() {
 		open = false;
@@ -31,7 +33,7 @@
 		loading = true;
 		try {
 			await toggleUserActive({ id: user.id });
-			toast.success(user.isActive ? 'Usuario desactivado' : 'Usuario activado');
+			toast.success(isActive ? 'Usuario desactivado' : 'Usuario activado');
 			open = false;
 			onSuccess?.();
 		} catch (e) {
@@ -45,23 +47,23 @@
 <Dialog.Root bind:open>
 	<Dialog.Content class="sm:max-w-sm">
 		<Dialog.Header>
-			<Dialog.Title>{user?.isActive ? 'Desactivar Usuario' : 'Activar Usuario'}</Dialog.Title>
+			<Dialog.Title>{isActive ? 'Desactivar Usuario' : 'Activar Usuario'}</Dialog.Title>
 		</Dialog.Header>
 		<div class="flex items-start gap-3">
 			<div
 				class={[
 					'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-					user?.isActive ? 'bg-yellow-100' : 'bg-green-100'
+					isActive ? 'bg-yellow-100' : 'bg-green-100'
 				]}
 			>
-				<Icon class={['h-5 w-5', user?.isActive ? 'text-yellow-600' : 'text-green-600']} />
+				<Icon class={['h-5 w-5', isActive ? 'text-yellow-600' : 'text-green-600']} />
 			</div>
 			<div>
 				<p class="text-gray-700">
 					¿Está seguro que desea <strong>{action}</strong> al usuario
 					<strong>{user?.fullName}</strong>?
 				</p>
-				{#if user?.isActive}
+				{#if isActive}
 					<p class="mt-1 text-sm text-gray-500">
 						El usuario no podrá iniciar sesión hasta que sea activado nuevamente.
 					</p>
@@ -88,7 +90,7 @@
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
 						/></svg
 					>{/if}
-				{user?.isActive ? 'Desactivar' : 'Activar'}
+				{isActive ? 'Desactivar' : 'Activar'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -22,11 +22,12 @@ import {
 	createMaterial,
 	updateMaterial,
 	restoreMaterial,
-	deleteMaterial,
 	generateUniqueMaterialCode
 } from '$lib/server/db/queries/materials';
 import type { Material } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
+import { db } from '$lib/server/db';
+import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 /**
@@ -115,8 +116,7 @@ export const createMaterialForm = form(
 			name,
 			code,
 			productType,
-			description: description ?? null,
-			isActive: true
+			description: description ?? null
 		});
 
 		// Log the creation
@@ -193,10 +193,14 @@ export const deleteMaterialById = command(MaterialIdSchema, async (data): Promis
 		throw new Error('Material no encontrado');
 	}
 
-	await deleteMaterial(id);
+	const context = getAuditContext();
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('material', id, context.userId ?? null, tx);
+		if (!ok) throw new Error('Material no encontrado');
+	});
 
 	// Log the deletion
-	await auditService.logDelete('material', existing, getAuditContext());
+	await auditService.logDelete('material', existing, context);
 });
 
 /**
@@ -227,8 +231,7 @@ export const quickCreateMaterial = command(
 		const material = await createMaterial({
 			name,
 			code,
-			productType,
-			isActive: true
+			productType
 		});
 
 		// Log the creation
@@ -254,8 +257,9 @@ export const reactivateMaterial = command(
 			throw new Error('Material eliminado no encontrado');
 		}
 
-		// Restore the material (reactivation)
+		// Restore the material (reactivation) and clear its trash entry
 		const restored = await restoreMaterial(deletedMaterialId);
+		await restore('material', deletedMaterialId, db);
 
 		// Log the reactivation
 		await auditService.logCreate('material', restored, getAuditContext());
