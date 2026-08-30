@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-08-29.
+> Actualizado: 2026-08-30.
 
 ---
 
@@ -82,13 +82,11 @@
 
 ---
 
-### DT12 · DataTable y DataGrid duplicados 🟢
+### ✅ DT12 · DataTable y DataGrid duplicados (COMPLETADO — 2026-08-30)
 
-**Problema:** Dos implementaciones de tabla con APIs distintas en `src/lib/components/ui/` (`DataTable.svelte` y `DataGrid.svelte`) — misma función, contratos incompatibles.
+**Qué se hizo:** Eliminado `DataTable.svelte` y unificado todos los consumidores (12 tablas) en `DataGrid.svelte`. La paginación se hizo opcional (props `page`/`perPage`/`total`/`totalPages`/`onPageChange` opcionales) para soportar tablas paginadas y no paginadas con un solo componente. Cero referencias a `DataTable` en código fuente.
 
-**Riesgo de no hacerlo:** Dos fuentes de bugs de UI. Migrar entre componentes requiere reescritura, no cambio de import.
-
-**Dificultad:** Media (2 días). **Solución:** Inventariar usos de cada uno, elegir el dominante, migrar los usos del otro y eliminar el perdedor.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio.
 
 ---
 
@@ -230,15 +228,18 @@ El archivo `TECH_DEBT.md` fue auditado, consolidado y eliminado. De sus 8 items,
 
 ---
 
-### DT6 · Soft-delete inconsistente 🟡
+### ✅ DT6 · Soft-delete inconsistente (COMPLETADO — 2026-08-30)
 
-**Problema:** 13 tablas con `deletedAt` timestamp, 2 con `voidedAt` (sale_payments, cash_expenses), 8+ sin ningún mecanismo (settings, inventory_lots, notifications, etc.). `lens_technologies` y `supplier_treatments` usan `isActive` boolean. Sin estándar.
+**Qué se hizo (PR #110, `feat/soft-delete-unified`):**
 
-**Riesgo de no hacerlo:** Comportamiento impredecible al "borrar". Un DELETE en una tabla sin soft-delete pierde datos para siempre. La semántica de `voidedAt` vs `deletedAt` es ambigua.
+- **Migración `0041_dark_epoch.sql`:** crea tabla `deleted_items` (registry con snapshot JSONB), añade `deleted_at` a `supplier_treatments` y `lens_technologies`, backfill de `is_active → deleted_at` y eliminación de la columna `is_active` en 7 tablas.
+- **Registry centralizado** (`queries/deletedItems.ts`): 11 tipos de entidad soportados (user, product, brand, customer, prescription, supplier, material, lens_material, lens_technology, lens_catalog_item, supplier_treatment). Cada tipo tiene `softDelete()`, `snapshot()` y `label()`.
+- **Trash system:** tabla `deleted_items` + `listTrash()` + `restore()` — restauración atómica dentro de `db.transaction()`.
+- **Página `/trash`:** solo SUPERADMIN, tabla de registros eliminados con botón de restaurar.
+- **Semántica clara:** `deleted_at` = papelera (restorable), `voided_at` = anulación financiera (nunca se restaura), `deactivated_at` = desactivación de usuario (flujo distinto). `is_active` se mantiene solo en tablas donde es estado legítimo (`sessions`, `inventory_lots`, `brand_accessories`).
+- **55 archivos**, +8404/-282 líneas.
 
-**Contras:** Migración DB necesaria. Posible breaking change si queries no filtran `deletedAt`.
-
-**Dificultad:** Media. **Solución:** (a) Definir estándar: todo usa `deletedAt` timestamp (null = activo). (b) Migración para tablas sin él. (c) `voidedAt` → renombrar a `deletedAt` para consistencia (o mantener si la semántica es distinta). (d) Actualizar todos los queries afectados.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio.
 
 ---
 
@@ -344,17 +345,16 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 
 ---
 
-### FP5 · Historial de estados en venta 🟡
+### ✅ FP5 · Historial de estados en venta (COMPLETADO — 2026-08-30)
 
-**Problema:** Las transiciones de estado ya se registran en `change_history` (auditoría con diff, motivo, timestamp y usuario — via `auditService.logUpdate` en `setSaleStatus` y en el revert por `voidPayment`), pero el `ChangeHistoryModal` no está integrado en la página de detalle de venta. El operador no puede consultar cuándo/cómo cambió el estado desde el UI.
+**Qué se implementó (solución custom, no reusa ChangeHistoryModal):**
 
-**Por qué importa:** El modal de estados permite revertir (admin) — sin historial visible no se puede auditar quién revirtió ni por qué. Los demás módulos (products, lenses) ya tienen el modal; ventas es el hueco.
+- **`SaleAuditTimeline`:** widget compacto en el sidebar que muestra los 4 eventos de auditoría más recientes clasificados por `classifySaleAuditEntry()`.
+- **`SaleAuditHistoryDrawer`:** SlideOver con el timeline completo de auditoría de la venta.
+- **Clasificación:** `classifySaleAuditEntry()` en `saleDetail.ts` maneja create, status changes, customer/seller updates. Eventos de entidades hijas (`sale_item`, `sale_payment`) se filtran.
+- **Auditoría existente:** `change_history` ya registraba todos los cambios (create, status, customer, seller) via `auditService.logUpdate` — solo faltaba la UI de visualización.
 
-**Contras:** Ninguno técnico. Solo UI.
-
-**Dificultad:** Baja (1-2 días). **Solución:** (a) Integrar el `ChangeHistoryModal` existente en `sales/[id]/+page.svelte` con entityType `sale` y botón "Historial" junto a los otros acciones. (b) Opcional: timeline dedicado de estados (PENDIENTE → EN PROGRESO → LISTA PARA RETIRAR → COMPLETADA) filtrando `change_history` por diffs que toquen el campo `status`.
-
-**Estado:** Pendiente. Sin empezar.
+**Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio.
 
 ---
 
@@ -374,6 +374,26 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 - Plan detallado: `docs/plans/lazy-catalog-search.md`.
 
 **Verificación:** `pnpm check` 0 errores, `pnpm lint` limpio, 755/755 tests.
+
+---
+
+### ✅ FP7 · Compras Multimoneda y Deuda Nativa (COMPLETADO — 2026-08-30)
+
+**Qué se implementó:** Separación de tres conceptos acoplados: costo normalizado USD-BCV, moneda de factura y obligación contractual con proveedor. 6 fases completadas:
+
+- **Fase 0:** Contrato de negocio con ejemplos operativos y fórmulas.
+- **Fase 1:** Migración `0031` — columnas `settlementCurrency`, `settlementDebtAmount`, `amountAppliedToDebt` en `purchase_orders`, `purchase_order_payments` y `purchase_order_early_payment_benefits`. Renombrado `altRate → sourceRateToVes`.
+- **Fase 2:** Motor de deuda nativa — `purchaseOrderCurrencies.ts` centraliza conversiones, schemas Zod actualizados, variación cambiaria calculada.
+- **Fase 3:** Persistencia — queries y remote functions leen/escriben campos nativos, vencimientos contra deuda nativa.
+- **Fase 4A:** UI compras — formulario con moneda de factura independiente de moneda de obligación, balance card nativo, drawer de pagos con abono explícito.
+- **Fase 4B:** Dashboard y Caja — widget agrupa vencimientos por moneda, variación financiera en `CashReport`.
+- **Fase 5:** E2E test USDT, documentación en `docs/purchase-multicurrency.md`.
+
+**Monedas soportadas:** USD-BCV, Bs, EUR-BCV, USDT, USD PayPal. Legacy USD-BCV preservado sin cambios.
+
+**Verificación:** `pnpm check && pnpm lint` OK, `pnpm test:unit` 771 tests, E2E `purchase-order-credit-flow.test.ts` verde.
+
+Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 
 ---
 
@@ -529,8 +549,9 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | --------- | ------------------------------ | ----------------------- |
 | ✅        | FP2 · backup-ui                | Completado              |
 | ✅        | FP4 · Estados de venta         | Completado              |
-| 🟡        | FP5 · Historial estados venta  | 1-2 días                |
+| ✅        | FP5 · Historial estados venta  | Completado              |
 | ✅        | FP6 · Catálogo lazy + ranking  | Completado              |
+| ✅        | FP7 · Compras multimoneda      | Completado              |
 | ✅        | FP1 · preserve-list-filters    | Completado              |
 | ✅        | DT4 · Console.log en prod      | Completado              |
 | ✅        | DT2 · Errores silenciados      | Completado              |
@@ -539,7 +560,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟡        | DT10 · Zod refinements negocio | 5 días                  |
 | ✅        | DT11 · Dead code componentes   | Completado              |
 | ✅        | DT15 · Altura en presupuestos  | Completado              |
-| 🟢        | DT12 · Tablas duplicadas       | 2 días                  |
+| ✅        | DT12 · Tablas duplicadas       | Completado              |
 | ✅        | DT13 · Enums moneda            | Completado              |
 | ✅        | DT16 · Enums moneda gastos     | Completado              |
 | ✅        | DT14 · Wizard compras SSR      | Completado (FP6)        |
@@ -551,7 +572,7 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟡        | NF3 · POS rápido               | 5 días                  |
 | 🟡        | NF4 · Garantías                | 5 días                  |
 | 🟡        | NF6 · Upload imágenes          | 5 días                  |
-| 🟡        | DT6 · Soft-delete consistente  | 3 días                  |
+| ✅        | DT6 · Soft-delete consistente  | Completado              |
 | 🟡        | DT9 · Tests remote funcs       | 10 días                 |
 | 🟢        | NF7 · Visor auditoría          | 2 días                  |
 | 🟢        | NF10 · Export Excel            | 1 día                   |
@@ -563,19 +584,17 @@ El approach final difiere del plan original. En vez de Docker API + socket-proxy
 | 🟢        | NF8 · Comisiones               | 5 días                  |
 | ⚪        | NF9 · Multi-sucursal           | 20 días                 |
 
-**Total estimado:** ~120 días-hombre. **Quick wins (🟢 bajo esfuerzo):** DT12 (2 días), NF10 (1 día).
+**Total estimado:** ~115 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
 
 ---
 
 ## Orden de Ataque Sugerido
 
 ```
-Semana 1:  DT12 (tablas duplicadas)
-Semana 2:  FP5 (historial estados venta)
-Semana 3-5: FP3 inicio (public-catalog-api)
-Semana 6:  DT8 (dashboard gráficos)
-Semana 7-8: DT1 parcial (LensCatalogForm + EditSaleModal)
-Semana 9:  NF1 (órdenes laboratorio)
-Semana 10: NF6 (upload imágenes, coincide con FP3)
+Semana 1-2: FP3 inicio (public-catalog-api)
+Semana 3:  DT8 (dashboard gráficos)
+Semana 4-5: DT1 parcial (LensCatalogForm + EditSaleModal)
+Semana 6:  NF1 (órdenes laboratorio)
+Semana 7:  NF6 (upload imágenes, coincide con FP3)
 ...
 ```
