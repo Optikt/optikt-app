@@ -37,14 +37,14 @@ test.describe('purchase order credit payment flow', () => {
 	}) => {
 		await page.goto('/login');
 		await page.getByLabel('Correo Electrónico').fill(adminEmail);
-		await page.getByLabel('Contraseña').fill(adminPassword);
+		await page.getByLabel('Contraseña', { exact: true }).fill(adminPassword);
 		await page.getByRole('button', { name: /Iniciar Sesión/ }).click();
 		await expect(page.getByRole('heading', { name: /Centro de Operaciones/ })).toBeVisible();
 
 		await page.goto(`/purchases/${purchaseOrderId}`);
-		await page.getByRole('button', { name: /^Confirmar orden$/ }).click();
+		await page.getByRole('button', { name: /^Confirmar$/ }).click();
 		await page.getByRole('button', { name: /^Confirmar Orden$/ }).click();
-		await expect(page.getByText('Orden confirmada')).toBeVisible();
+		await expect(page.getByText('Orden confirmada').first()).toBeVisible();
 
 		await addPayment(page, '300');
 		await addPayment(page, '300');
@@ -85,29 +85,29 @@ test.describe('purchase order USDT flow', () => {
 	}) => {
 		await page.goto('/login');
 		await page.getByLabel('Correo Electrónico').fill(adminEmail);
-		await page.getByLabel('Contraseña').fill(adminPassword);
+		await page.getByLabel('Contraseña', { exact: true }).fill(adminPassword);
 		await page.getByRole('button', { name: /Iniciar Sesión/ }).click();
 		await expect(page.getByRole('heading', { name: /Centro de Operaciones/ })).toBeVisible();
 
 		await page.goto(`/purchases/${purchaseOrderId}`);
-		await page.getByRole('button', { name: /^Confirmar orden$/ }).click();
+		await page.getByRole('button', { name: /^Confirmar$/ }).click();
 		await page.getByRole('button', { name: /^Confirmar Orden$/ }).click();
-		await expect(page.getByText('Orden confirmada')).toBeVisible();
+		await expect(page.getByText('Orden confirmada').first()).toBeVisible();
 
 		await page.getByRole('button', { name: /Registrar pago/ }).click();
-		await page.getByLabel('Monto pagado').fill('5000');
-		await page.getByLabel('Tasa BCV USD').fill('40');
-		await page.getByLabel('Tasa USDT').fill('45');
-		await page.getByLabel('Referencia').fill(`E2E-USDT-${Date.now()}`);
-		await page.getByRole('button', { name: /Guardar pago/ }).click();
+		await page.getByLabel('USD BCV').fill('5000');
+		await page.getByLabel('Tasa BCV').fill('40');
+		await page.getByLabel('Tasa USDT (Bs/USDT)').fill('45');
+		await page.getByLabel('ID de transacción').fill(`E2E-USDT-${Date.now()}`);
+		await page.getByRole('button', { name: /Registrar abono|Registrar pago/ }).click();
 		await expect(page.getByText('Pago registrado')).toBeVisible();
 
 		await page.getByRole('button', { name: /Registrar pago/ }).click();
-		await page.getByLabel('Monto pagado').fill('4000');
-		await page.getByLabel('Tasa BCV USD').fill('42');
-		await page.getByLabel('Tasa USDT').fill('46');
-		await page.getByLabel('Referencia').fill(`E2E-USDT-2-${Date.now()}`);
-		await page.getByRole('button', { name: /Guardar pago/ }).click();
+		await page.getByLabel('USD BCV').fill('4000');
+		await page.getByLabel('Tasa BCV').fill('42');
+		await page.getByLabel('Tasa USDT (Bs/USDT)').fill('46');
+		await page.getByLabel('ID de transacción').fill(`E2E-USDT-2-${Date.now()}`);
+		await page.getByRole('button', { name: /Registrar abono|Registrar pago/ }).click();
 		await expect(page.getByText('Pago registrado')).toBeVisible();
 
 		await page.goto('/cash');
@@ -121,10 +121,10 @@ async function addPayment(
 	options: { applyEarlyPaymentBenefit?: boolean } = {}
 ) {
 	await page.getByRole('button', { name: /Registrar pago/ }).click();
-	await page.getByLabel('Monto pagado').fill(amount);
-	await page.getByLabel('Tasa BCV USD').fill('40');
-	await page.getByLabel('Referencia').fill(`E2E-${amount}-${Date.now()}`);
-	await page.getByRole('button', { name: /Guardar pago/ }).click();
+	await page.getByLabel('USD BCV').fill(amount);
+	await page.getByLabel('Tasa BCV').fill('40');
+	await page.getByLabel('Número de transacción').fill(`E2E-${amount}-${Date.now()}`);
+	await page.getByRole('button', { name: /Registrar abono|Registrar pago/ }).click();
 	if (options.applyEarlyPaymentBenefit) {
 		await expect(page.getByText('Pronto pago disponible')).toBeVisible();
 		await page.getByRole('button', { name: /Aplicar a esta PO/ }).click();
@@ -140,9 +140,9 @@ async function seedCreditPurchaseOrder(sql: Sql): Promise<string> {
 	const hashedPassword = await hash(adminPassword, argonOptions);
 
 	const [user] = await sql<{ id: string }[]>`
-		insert into users (email, username, full_name, hashed_password, is_active, is_superuser, role)
-		values (${adminEmail}, ${`e2e-${runId}`}, 'Optikt E2E Admin', ${hashedPassword}, true, true, 'ADMIN')
-		on conflict (email) do update set role = 'ADMIN', is_active = true
+		insert into users (email, username, full_name, hashed_password, is_superuser, role)
+		values (${adminEmail}, ${`e2e-${runId}`}, 'Optikt E2E Admin', ${hashedPassword}, true, 'ADMIN')
+		on conflict (email) do update set role = 'ADMIN'
 		returning id
 	`;
 
@@ -161,11 +161,11 @@ async function seedCreditPurchaseOrder(sql: Sql): Promise<string> {
 	const [product] = await sql<{ id: string }[]>`
 		insert into products (
 			sku, name, type, supplier_id, material_id,
-			current_purchase_price, current_sale_price, stock, min_stock, is_active
+			current_purchase_price, current_sale_price, stock, min_stock
 		)
 		values (
 			${`E2E-PO-${runId}`}, ${`Montura E2E ${runId}`}, 'FRAME', ${supplier.id}, ${material.id},
-			1000, 1500, 0, 1, true
+			1000, 1500, 0, 1
 		)
 		returning id
 	`;
@@ -212,9 +212,9 @@ async function seedUsdtPurchaseOrder(sql: Sql): Promise<string> {
 	const hashedPassword = await hash(adminPassword, argonOptions);
 
 	const [user] = await sql<{ id: string }[]>`
-		insert into users (email, username, full_name, hashed_password, is_active, is_superuser, role)
-		values (${adminEmail}, ${`e2e-${runId}`}, 'Optikt E2E Admin', ${hashedPassword}, true, true, 'ADMIN')
-		on conflict (email) do update set role = 'ADMIN', is_active = true
+		insert into users (email, username, full_name, hashed_password, is_superuser, role)
+		values (${adminEmail}, ${`e2e-${runId}`}, 'Optikt E2E Admin', ${hashedPassword}, true, 'ADMIN')
+		on conflict (email) do update set role = 'ADMIN'
 		returning id
 	`;
 
@@ -233,11 +233,11 @@ async function seedUsdtPurchaseOrder(sql: Sql): Promise<string> {
 	const [product] = await sql<{ id: string }[]>`
 		insert into products (
 			sku, name, type, supplier_id, material_id,
-			current_purchase_price, current_sale_price, stock, min_stock, is_active
+			current_purchase_price, current_sale_price, stock, min_stock
 		)
 		values (
 			${`E2E-USDT-${runId}`}, ${`Montura E2E USDT ${runId}`}, 'FRAME', ${supplier.id}, ${material.id},
-			1000, 1500, 0, 1, true
+			1000, 1500, 0, 1
 		)
 		returning id
 	`;
@@ -252,7 +252,7 @@ async function seedUsdtPurchaseOrder(sql: Sql): Promise<string> {
 			document_type, order_date, bcv_rate, source_currency, source_rate_to_ves,
 			payment_terms, credit_due_date,
 			settlement_discount_type, settlement_discount_value,
-			settlement_currency, settlement_rate_to_ves,
+			settlement_currency,
 			settlement_gross_amount, settlement_debt_amount, settlement_debt_amount_usd_bcv_at_order,
 			notes, created_by_id
 		)
@@ -261,7 +261,7 @@ async function seedUsdtPurchaseOrder(sql: Sql): Promise<string> {
 			'INVOICE', ${now.toISOString()}, 40, 'USDT', 45,
 			'CREDIT', ${dueDate},
 			'NONE', 0,
-			'USDT', 45,
+			'USDT',
 			250, 250, 320,
 			'Orden E2E USDT', ${user.id}
 		)
