@@ -1,0 +1,27 @@
+---
+plan name: dt1-decompose
+plan description: Descomponer archivos gigantes DT1
+plan status: active
+---
+
+## Idea
+Ejecutar DT1 (🔴 crítico) completo: descomponer los 39 archivos fuente >500 líneas del repo usando el patrón validado por el POC componentize-purchase-detail (2221→629). Aplicar patrones de diseño SOLO donde eliminan duplicación o habilitan testing: Strategy para métodos de pago (registry único reemplaza 3+ switches en PaymentForm.svelte + duplicación sales/purchases), Adapter para el seam de DB (formalizar QueryExecutor sobre el patrón existente executor: DbOrTx = db) y para pagos entre dominios (SalePaymentAdapter/PurchasePaymentAdapter tras PaymentSubmissionInput común), Factory como funciones puras por dominio (itemFactory), Builder solo para payloads multi-paso del wizard (buildQuoteItemsFromWizard, buildStep2PrescriptionConfirmation, calculatePurchaseOrderSummary). Singleton RECHAZADO (registries inmutables + Svelte context cubren single-source sin estado mutable; mejor testabilidad). Observer NO (Svelte reactivity lo cubre). Reducción de prop drilling vía política explícita: regla de 2 niveles — prop que atraviesa 2+ niveles intermedios → context tipado con Symbol key en src/lib/context/<dominio>.ts (precedentes: CATALOG_KEY, inventoryCount.ts, purchaseOrderDetail.ts); estado de escritura vive en orquestador, context solo expone comandos y datos reactivos de solo lectura. Secuencia por riesgo: (1) helpers puros con tests (saleItemHelpers 868, purchaseOrderDraft 607) — cero riesgo UI; (2) payment strategy flagship — habilita testing de pagos sin instanciar monolitos; (3) T1 componentes 1-PR cada uno (EditSaleModal 1440, LensCatalogForm 1473, PaymentForm 1076, count/[id] 1135); (4) remotes+queries server con barrels estables (sales 1335, purchaseOrders 1229+917, lenses 974+598, quotes 797); (5) páginas T2 con patrón orquestador (customers/[id] 964, cash 851, cash/expenses 912, sales/[id] 787, quotes/[id] 700, lenses/[id] 893); (6) espejo de specs + size gate CI bloqueante (check-file-size.sh: fail >500, warn >300) + actualizar PLAN.md DT1 a ✅. Verificación por PR: pnpm check/lint/test + rg imports + QA manual del flujo tocado + diff review sin lógica cambiada. Conflicto conocido: FP3 public-catalog-api toca ProductForm.svelte:931 — descomponer ProductForm antes del widget de imágenes o coordinar ramas. Objetivo final: cero archivos fuente >500 líneas, módulos nuevos ≤300, y base estructural para DT9 (tests de remotes) y DT10 (reglas de negocio centralizadas).
+
+## Implementation
+- Crear y vincular specs repo: dt1-patterns (catálogo de patrones + política context/props), dt1-split-protocol (mecánica, gates, naming), dt1-payment-strategy (strategy pagos + adapters dominio) — este paso.
+- Crear size gate: scripts/check-file-size.sh (fail >500, warn >300) + wire en CI como warning no-bloqueante; publicar baseline de 39 archivos en PLAN.md.
+- Fase 1 — helpers puros: split saleItemHelpers.ts (868, 53 funcs) → sales/helpers/{items,pricing,prescriptionValidation,taxBreakdown}.ts con specs espejo; split purchaseOrderDraft.ts (607, 48 funcs) → purchases/draft/{defaults,pricing,validation,summary}.ts con specs espejo. Gates verdes.
+- Fase 2 — payment strategy flagship: crear shared/payments/strategies.ts (PaymentMethodStrategy + registry consolidando switches de paymentMethods.ts y PaymentForm.svelte:333-415) + shared/payments/submission.ts + server/payments/{SalePaymentAdapter,PurchasePaymentAdapter} con specs data-driven; migrar PaymentForm.svelte a cero switches y descomponer en components/payments/ (PaymentReferenceInput, PaymentAmountCard, PaymentConversionCard) + PaymentsContext; orquestador ≤300 líneas.
+- Fase 3 — T1 componentes, 1-PR c/u: EditSaleModal.svelte (1440) → sales/edit/ paneles (lens editor, product/free item panels, summary) + sales context; LensCatalogForm.svelte (1473) → lenses/form/ (ranges section, pending entity handlers, validation) + context; página inventory/count/[id] (1135) → components/inventory/count/ (summary metrics, lines table, apply/cancel modals) + context de página.
+- Fase 4 — server remotes+queries: split sales.remote.ts (1335) → remote/sales/{queries,payments,items,commands}.remote.ts + barrel index re-export; purchaseOrders.remote.ts (1229) → remote/purchaseOrders/ + barrel; queries/purchaseOrders.ts (917) → queries/purchaseOrders/{orders,items,payments,review}.ts + barrel; lenses.remote.ts (974) + queries/lenses.ts (598); quotes.remote.ts (797). Mantener executor: DbOrTx = db en cada función.
+- Fase 5 — páginas T2 patrón orquestador: customers/[id] (964), cash/expenses (912), lenses/[id] (893), cash (851), inventory/count (799), sales/[id] (787), quotes/[id] (700), NewPurchaseOrderForm.svelte (981), ProductForm.svelte (931, coordinar con FP3). Secciones → components/<dominio>/detail/ + context tipado.
+- Fase 6 — cierre: espejo de specs grandes (sales.spec 692, fifoScenarios.spec 600, purchaseOrders.spec 524, purchaseOrderDraft.spec 487); activar size gate CI como bloqueante; actualizar PLAN.md DT1 a ✅ con stats finales; markPlanDone.
+
+## Required Specs
+<!-- SPECS_START -->
+- dt1-patterns
+- dt1-split-protocol
+- dt1-payment-strategy
+- public-catalog-arch
+- dt1-acceptance
+<!-- SPECS_END -->
