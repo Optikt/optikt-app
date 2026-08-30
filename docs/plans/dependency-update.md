@@ -56,6 +56,15 @@
 - **`typescript@7` / `@lucide/svelte@1`**: majors con breaking, ver §6.
 - **SvelteKit 3**: RC desde 2026-08-13 (`3.0.0-next.25`). No migrar hasta stable. Remote functions siguen experimentales incluso en v3 (requieren `kit.experimental.remoteFunctions` + `compilerOptions.experimental.async`; `async` se quita recién en Svelte 6).
 
+### 2.1 Ignores de Dependabot (`.github/dependabot.yml`)
+
+Dependabot a veces abre PRs de major aunque el `package.json` ya restrinja el rango (típico en `@types/node`, donde su política de actualización es agresiva). Para frenarlo de forma explícita y dejarlo documentado, el ecosistema `npm` tiene un bloque `ignore`:
+
+- **`@pdfslick/core`** y **`pdfjs-dist`**: ignore total por `dependency-name` — quedan pinneados exactos (`4.0.0` / `6.0.227`) hasta que `@pdfslick/core` soporte `pdfjs ≥6.2` (ver §PR-F).
+- **`@types/node`** y **`typescript`**: `update-types: ['version-update:semver-major']` — bloquea solo majors, permite minor/patch dentro de v22 / v6.
+
+**Tradeoff (aceptado):** estos ignores viven en `dependabot.yml` y no en `package.json`. Si mañana se desbloquea alguna de estas librerías, hay que editar `dependabot.yml` además del `package.json`. La ventaja es que la política de bloqueo queda explícita y auditable en el repo de CI, sin depender del comportamiento de resolución de Dependabot. No se pinea en `package.json` para no perder el "unlock" natural cuando llegue el momento (ej. SvelteKit 3 stable para TS7).
+
 ## 3. Tandas (1 commit por tanda, fácil revert)
 
 Cada tanda: `pnpm update <pkgs> && pnpm check && pnpm lint && pnpm build && pnpm test:unit`. Si algo falla, `git revert HEAD`.
