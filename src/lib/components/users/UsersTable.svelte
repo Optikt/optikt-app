@@ -4,7 +4,7 @@
 	import { deleteUserById } from '$lib/remote/users.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import {
-		DataTable,
+		DataGrid,
 		ActionButton,
 		ConfirmModal,
 		UserRoleBadge,
@@ -57,64 +57,62 @@
 	function handleToggleSuccess() {
 		onRefresh?.();
 	}
+
+	const columns = [
+		{ key: 'name', label: 'Nombre' },
+		{ key: 'email', label: 'Email' },
+		{ key: 'username', label: 'Usuario' },
+		{ key: 'role', label: 'Rol' },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 </script>
 
-<DataTable
+<DataGrid
+	{columns}
 	items={users}
 	{loading}
-	emptyIcon={Users}
 	emptyTitle="No se encontraron usuarios"
-	emptyDescription="Intenta ajustar los filtros de búsqueda"
+	emptySubtitle="Intenta ajustar los filtros de búsqueda"
 >
-	{#snippet header()}
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Nombre</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Email</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Usuario</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Rol</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Estado</th
-		>
+	{#snippet emptyIcon()}
+		<Users class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
 	{#snippet row(user)}
-		<td class="px-4 py-3 text-sm font-medium">{user.fullName}</td>
-		<td class="px-4 py-3 text-sm">{user.email}</td>
-		<td class="px-4 py-3 text-sm">
-			<span class="font-mono text-sm text-slate-600">@{user.username}</span>
-		</td>
-		<td class="px-4 py-3 text-sm">
-			<UserRoleBadge role={user.role} />
-		</td>
-		<td class="px-4 py-3 text-sm">
-			<StatusBadge active={user.isActive} />
-		</td>
+		<tr class="transition-colors hover:bg-surface-container-low">
+			<td class="px-3 py-2.5 text-sm font-medium">{user.fullName}</td>
+			<td class="px-3 py-2.5 text-sm">{user.email}</td>
+			<td class="px-3 py-2.5 text-sm">
+				<span class="font-mono text-sm text-slate-600">@{user.username}</span>
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<UserRoleBadge role={user.role} />
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<StatusBadge active={user.isActive} />
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<div class="flex justify-end gap-1">
+					<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(user)} />
+					<ActionButton
+						icon={Power}
+						title={user.isActive ? 'Desactivar' : 'Activar'}
+						color={user.isActive ? 'amber' : 'green'}
+						onclick={() => openToggle(user)}
+					/>
+					<ActionButton
+						icon={Trash2}
+						title="Eliminar"
+						color="red"
+						hidden={user.isSuperuser}
+						onclick={() => openDelete(user)}
+					/>
+				</div>
+			</td>
+		</tr>
 	{/snippet}
-
-	{#snippet actions(user)}
-		<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(user)} />
-		<ActionButton
-			icon={Power}
-			title={user.isActive ? 'Desactivar' : 'Activar'}
-			color={user.isActive ? 'amber' : 'green'}
-			onclick={() => openToggle(user)}
-		/>
-		<ActionButton
-			icon={Trash2}
-			title="Eliminar"
-			color="red"
-			hidden={user.isSuperuser}
-			onclick={() => openDelete(user)}
-		/>
-	{/snippet}
-</DataTable>
+</DataGrid>
 
 <!-- Toggle Active Modal -->
 <ToggleActiveModal

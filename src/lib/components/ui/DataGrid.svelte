@@ -11,10 +11,10 @@
 	interface Props {
 		columns: Column[];
 		items: T[];
-		page: number;
-		perPage: number;
-		total: number;
-		totalPages: number;
+		page?: number;
+		perPage?: number;
+		total?: number;
+		totalPages?: number;
 		loading?: boolean;
 		itemLabel?: string;
 		emptyIcon?: Snippet;
@@ -22,16 +22,16 @@
 		emptySubtitle?: string;
 		row: Snippet<[T]>;
 		mobileCard?: Snippet<[T]>;
-		onPageChange: (page: number) => void;
+		onPageChange?: (page: number) => void;
 	}
 
 	let {
 		columns,
 		items,
-		page,
+		page = 1,
 		perPage,
 		total,
-		totalPages,
+		totalPages = 1,
 		loading = false,
 		itemLabel = 'registros',
 		emptyIcon,
@@ -42,9 +42,11 @@
 		onPageChange
 	}: Props = $props();
 
-	let showing = $derived(Math.min(items.length, perPage));
+	let showing = $derived(perPage ? Math.min(items.length, perPage) : items.length);
+	let showPagination = $derived(!!onPageChange && total !== undefined && totalPages > 1);
 
 	function goToPage(p: number) {
+		if (!onPageChange) return;
 		if (p >= 1 && p <= totalPages) {
 			onPageChange(p);
 		}
@@ -105,43 +107,45 @@
 		</div>
 	</div>
 
-	<!-- Count + Pagination -->
-	<div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-		<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-			Mostrando {showing} de {total}
-			{itemLabel}
-		</p>
+	{#if showPagination}
+		<!-- Count + Pagination -->
+		<div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+			<p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">
+				Mostrando {showing} de {total}
+				{itemLabel}
+			</p>
 
-		<nav class="flex items-center gap-1">
-			<button
-				onclick={() => goToPage(page - 1)}
-				disabled={page <= 1}
-				class="rounded-lg px-2.5 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40"
-			>
-				‹
-			</button>
-
-			{#each getVisiblePages(page, totalPages) as pg (pg)}
+			<nav class="flex items-center gap-1">
 				<button
-					onclick={() => goToPage(pg)}
-					class="min-w-[2rem] rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors {pg ===
-					page
-						? 'bg-brand-blue text-white'
-						: 'text-on-surface-variant hover:bg-surface-container-high'}"
+					onclick={() => goToPage(page - 1)}
+					disabled={page <= 1}
+					class="rounded-lg px-2.5 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40"
 				>
-					{pg}
+					‹
 				</button>
-			{/each}
 
-			<button
-				onclick={() => goToPage(page + 1)}
-				disabled={page >= totalPages}
-				class="rounded-lg px-2.5 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40"
-			>
-				›
-			</button>
-		</nav>
-	</div>
+				{#each getVisiblePages(page, totalPages) as pg (pg)}
+					<button
+						onclick={() => goToPage(pg)}
+						class="min-w-[2rem] rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors {pg ===
+						page
+							? 'bg-brand-blue text-white'
+							: 'text-on-surface-variant hover:bg-surface-container-high'}"
+					>
+						{pg}
+					</button>
+				{/each}
+
+				<button
+					onclick={() => goToPage(page + 1)}
+					disabled={page >= totalPages}
+					class="rounded-lg px-2.5 py-1.5 text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:opacity-40"
+				>
+					›
+				</button>
+			</nav>
+		</div>
+	{/if}
 {:else}
 	<div
 		class="flex flex-col items-center justify-center rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-12 text-center"

@@ -6,7 +6,7 @@
 	import { toast } from 'svelte-sonner';
 	import { deleteMaterialById } from '$lib/remote/materials.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, StatusBadge } from '$lib/components/ui';
+	import { DataGrid, StatusBadge } from '$lib/components/ui';
 	import MaterialReactivateModal from '$lib/components/materials/MaterialReactivateModal.svelte';
 	import type { Material } from '$lib/server/db/schema';
 	import { MATERIAL_CATEGORY_LABELS } from '$lib/shared/enums/productTypes';
@@ -74,56 +74,83 @@
 		selectedMaterial = null;
 		confirmInput = '';
 	}
+
+	const columns = [
+		{ key: 'name', label: 'Nombre' },
+		{ key: 'code', label: 'Código' },
+		{ key: 'type', label: 'Tipo' },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 </script>
 
-<DataTable
+<DataGrid
+	{columns}
 	items={materials}
 	{loading}
-	emptyIcon={Tag}
 	emptyTitle="No se encontraron materiales"
-	emptyDescription="Agrega un material para comenzar"
-	defaultActions={canManage ? 'view,edit,delete,reactivate' : 'view'}
-	onView={openView}
-	onEdit={canManage && onEdit ? (m) => onEdit(m) : undefined}
-	onDelete={canManage ? openDelete : undefined}
-	onReactivate={canManage ? openReactivate : undefined}
-	viewIcon={Eye}
-	editIcon={SquarePen}
-	deleteIcon={Trash2}
-	reactivateIcon={RotateCcw}
+	emptySubtitle="Agrega un material para comenzar"
 >
-	{#snippet header()}
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Nombre</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Código</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Tipo</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Estado</th
-		>
+	{#snippet emptyIcon()}
+		<Tag class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
 	{#snippet row(material)}
-		<td class="px-4 py-3 text-sm font-medium">{material.name}</td>
-		<td class="px-4 py-3 text-sm">
-			<span
-				class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600"
-				>{material.code}</span
+		<tr class="transition-colors hover:bg-surface-container-low">
+			<td class="px-3 py-2.5 text-sm font-medium">{material.name}</td>
+			<td class="px-3 py-2.5 text-sm">
+				<span
+					class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-mono text-xs font-medium text-slate-600"
+					>{material.code}</span
+				>
+			</td>
+			<td class="px-3 py-2.5 text-sm"
+				>{MATERIAL_CATEGORY_LABELS[material.productType as MaterialCategory] ??
+					material.productType}</td
 			>
-		</td>
-		<td
-			>{MATERIAL_CATEGORY_LABELS[material.productType as MaterialCategory] ??
-				material.productType}</td
-		>
-		<td class="px-4 py-3 text-sm">
-			<StatusBadge active={!material.deletedAt} />
-		</td>
+			<td class="px-3 py-2.5 text-sm">
+				<StatusBadge active={!material.deletedAt} />
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<div class="flex justify-end gap-1">
+					<button
+						onclick={() => openView(material)}
+						class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+						title="Ver detalles"
+					>
+						<Eye class="h-4 w-4" />
+					</button>
+					{#if canManage && onEdit}
+						<button
+							onclick={() => onEdit(material)}
+							class="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50"
+							title="Editar"
+						>
+							<SquarePen class="h-4 w-4" />
+						</button>
+						{#if material.deletedAt}
+							<button
+								onclick={() => openReactivate(material)}
+								class="rounded-lg p-1.5 text-green-600 hover:bg-green-50"
+								title="Reactivar"
+							>
+								<RotateCcw class="h-4 w-4" />
+							</button>
+						{:else}
+							<button
+								onclick={() => openDelete(material)}
+								class="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+								title="Eliminar"
+							>
+								<Trash2 class="h-4 w-4" />
+							</button>
+						{/if}
+					{/if}
+				</div>
+			</td>
+		</tr>
 	{/snippet}
-</DataTable>
+</DataGrid>
 
 <!-- Delete Confirm Modal -->
 <Dialog.Root bind:open={showDeleteModal}>
