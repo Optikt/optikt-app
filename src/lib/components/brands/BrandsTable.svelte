@@ -6,7 +6,7 @@
 	import { toast } from 'svelte-sonner';
 	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
 	import { getErrorMessage } from '$lib/utils';
-	import { DataTable, StatusBadge } from '$lib/components/ui';
+	import { DataGrid, StatusBadge } from '$lib/components/ui';
 	import { BrandViewModal, BrandReactivateModal } from '$lib/components/brands';
 	import type { Brand } from '$lib/server/db/schema';
 
@@ -87,61 +87,88 @@
 		confirmInput = '';
 		productCount = 0;
 	}
+
+	const columns = [
+		{ key: 'name', label: 'Nombre' },
+		{ key: 'country', label: 'País' },
+		{ key: 'website', label: 'Sitio Web' },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 </script>
 
-<DataTable
+<DataGrid
+	{columns}
 	items={brands}
 	{loading}
-	emptyIcon={Tag}
 	emptyTitle="No se encontraron marcas"
-	emptyDescription="Agrega una marca para comenzar"
-	defaultActions={canManage ? 'view,edit,delete,reactivate' : 'view'}
-	onView={openView}
-	viewIcon={Eye}
-	onEdit={canManage && onEdit ? (b) => onEdit(b) : undefined}
-	editIcon={SquarePen}
-	onDelete={canManage ? openDelete : undefined}
-	deleteIcon={Trash2}
-	onReactivate={canManage ? openReactivate : undefined}
-	reactivateIcon={RotateCcw}
+	emptySubtitle="Agrega una marca para comenzar"
 >
-	{#snippet header()}
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Nombre</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>País</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Sitio Web</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Estado</th
-		>
+	{#snippet emptyIcon()}
+		<Tag class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
 	{#snippet row(brand)}
-		<td class="px-4 py-3 text-sm font-medium">{brand.name}</td>
-		<td class="px-4 py-3 text-sm">{brand.country ?? '-'}</td>
-		<td class="px-4 py-3 text-sm">
-			{#if brand.website}
-				<a
-					href={brand.website}
-					target="_blank"
-					rel="noopener noreferrer external"
-					class="text-primary-600 hover:underline"
-				>
-					{brand.website}
-				</a>
-			{:else}
-				-
-			{/if}
-		</td>
-		<td class="px-4 py-3 text-sm">
-			<StatusBadge active={!brand.deletedAt} />
-		</td>
+		<tr class="transition-colors hover:bg-surface-container-low">
+			<td class="px-3 py-2.5 text-sm font-medium">{brand.name}</td>
+			<td class="px-3 py-2.5 text-sm">{brand.country ?? '-'}</td>
+			<td class="px-3 py-2.5 text-sm">
+				{#if brand.website}
+					<a
+						href={brand.website}
+						target="_blank"
+						rel="noopener noreferrer external"
+						class="text-primary-600 hover:underline"
+					>
+						{brand.website}
+					</a>
+				{:else}
+					-
+				{/if}
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<StatusBadge active={!brand.deletedAt} />
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<div class="flex justify-end gap-1">
+					<button
+						onclick={() => openView(brand)}
+						class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+						title="Ver detalles"
+					>
+						<Eye class="h-4 w-4" />
+					</button>
+					{#if canManage && onEdit}
+						<button
+							onclick={() => onEdit(brand)}
+							class="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50"
+							title="Editar"
+						>
+							<SquarePen class="h-4 w-4" />
+						</button>
+						{#if brand.deletedAt}
+							<button
+								onclick={() => openReactivate(brand)}
+								class="rounded-lg p-1.5 text-green-600 hover:bg-green-50"
+								title="Reactivar"
+							>
+								<RotateCcw class="h-4 w-4" />
+							</button>
+						{:else}
+							<button
+								onclick={() => openDelete(brand)}
+								class="rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+								title="Eliminar"
+							>
+								<Trash2 class="h-4 w-4" />
+							</button>
+						{/if}
+					{/if}
+				</div>
+			</td>
+		</tr>
 	{/snippet}
-</DataTable>
+</DataGrid>
 
 <!-- Enhanced Delete Confirm Modal -->
 <Dialog.Root bind:open={showDeleteModal}>

@@ -4,7 +4,7 @@
 	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import {
-		DataTable,
+		DataGrid,
 		ConfirmModal,
 		SupplierTypeBadge,
 		StatusBadge,
@@ -74,88 +74,89 @@
 			deleteLoading = false;
 		}
 	}
+
+	const columns = [
+		{ key: 'name', label: 'Nombre' },
+		{ key: 'type', label: 'Tipo' },
+		{ key: 'rif', label: 'RIF' },
+		{ key: 'phone', label: 'Teléfono' },
+		{ key: 'contact', label: 'Contacto' },
+		{ key: 'status', label: 'Estado' },
+		{ key: 'actions', label: 'Acciones', align: 'right' as const }
+	];
 </script>
 
-<DataTable
+<DataGrid
+	{columns}
 	items={suppliers}
 	{loading}
-	emptyIcon={Truck}
 	emptyTitle="No se encontraron proveedores"
-	emptyDescription="Agrega un proveedor para comenzar"
+	emptySubtitle="Agrega un proveedor para comenzar"
 >
-	{#snippet header()}
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Nombre</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Tipo</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>RIF</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Teléfono</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Contacto</th
-		>
-		<th class="px-4 py-3 text-xs font-medium font-semibold tracking-wider text-slate-500 uppercase"
-			>Estado</th
-		>
+	{#snippet emptyIcon()}
+		<Truck class="mb-3 h-10 w-10 text-outline" />
 	{/snippet}
 
 	{#snippet row(supplier)}
-		<td class="px-4 py-3 text-sm font-medium">{supplier.name}</td>
-		<td class="px-4 py-3 text-sm">
-			<SupplierTypeBadge type={supplier.type} />
-		</td>
-		<td class="px-4 py-3 text-sm">
-			<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '-'}</span>
-		</td>
-		<td class="px-4 py-3 text-sm">{supplier.primaryPhone}</td>
-		<td class="px-4 py-3 text-sm">
-			{#if supplier.contactName}
-				<span>{supplier.contactName}</span>
-				{#if supplier.contactRole}
-					<span class="text-xs text-slate-500"> ({supplier.contactRole})</span>
+		<tr class="transition-colors hover:bg-surface-container-low">
+			<td class="px-3 py-2.5 text-sm font-medium">{supplier.name}</td>
+			<td class="px-3 py-2.5 text-sm">
+				<SupplierTypeBadge type={supplier.type} />
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<span class="font-mono text-sm text-slate-600">{supplier.rif ?? '-'}</span>
+			</td>
+			<td class="px-3 py-2.5 text-sm">{supplier.primaryPhone}</td>
+			<td class="px-3 py-2.5 text-sm">
+				{#if supplier.contactName}
+					<span>{supplier.contactName}</span>
+					{#if supplier.contactRole}
+						<span class="text-xs text-slate-500"> ({supplier.contactRole})</span>
+					{/if}
+				{:else}
+					-
 				{/if}
-			{:else}
-				-
-			{/if}
-		</td>
-		<td class="px-4 py-3 text-sm">
-			<StatusBadge active={!supplier.deletedAt} />
-		</td>
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<StatusBadge active={!supplier.deletedAt} />
+			</td>
+			<td class="px-3 py-2.5 text-sm">
+				<div class="flex justify-end gap-1">
+					<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(supplier)} />
+					<ActionButton
+						icon={FlaskConical}
+						title="Tratamientos"
+						color="blue"
+						onclick={() => openTreatments(supplier)}
+					/>
+					{#if canManage && onEdit}
+						<ActionButton
+							icon={SquarePen}
+							title="Editar"
+							color="blue"
+							onclick={() => onEdit(supplier)}
+						/>
+						{#if supplier.deletedAt}
+							<ActionButton
+								icon={RotateCcw}
+								title="Reactivar"
+								color="green"
+								onclick={() => openReactivate(supplier)}
+							/>
+						{:else}
+							<ActionButton
+								icon={Trash2}
+								title="Eliminar"
+								color="red"
+								onclick={() => openDelete(supplier)}
+							/>
+						{/if}
+					{/if}
+				</div>
+			</td>
+		</tr>
 	{/snippet}
-
-	{#snippet actions(supplier)}
-		<ActionButton icon={Eye} title="Ver detalles" onclick={() => openView(supplier)} />
-		<ActionButton
-			icon={FlaskConical}
-			title="Tratamientos"
-			color="blue"
-			onclick={() => openTreatments(supplier)}
-		/>
-		{#if canManage && onEdit}
-			<ActionButton icon={SquarePen} title="Editar" color="blue" onclick={() => onEdit(supplier)} />
-			{#if supplier.deletedAt}
-				<ActionButton
-					icon={RotateCcw}
-					title="Reactivar"
-					color="green"
-					onclick={() => openReactivate(supplier)}
-				/>
-			{:else}
-				<ActionButton
-					icon={Trash2}
-					title="Eliminar"
-					color="red"
-					onclick={() => openDelete(supplier)}
-				/>
-			{/if}
-		{/if}
-	{/snippet}
-</DataTable>
+</DataGrid>
 
 <!-- Delete Confirm Modal -->
 <ConfirmModal
