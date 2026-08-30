@@ -1,8 +1,9 @@
 {
 	"name": "optikt-app",
 	"private": true,
-	"version": "0.21.0",
+	"version": "0.20.12",
 	"type": "module",
+	"packageManager": "pnpm@11.24.0",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
