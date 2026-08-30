@@ -47,7 +47,7 @@ jobs:
     permissions:
       contents: read
     # Only run E2E on main branch or when explicitly requested
-    if: github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
