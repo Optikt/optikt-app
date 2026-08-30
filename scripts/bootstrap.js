@@ -80,13 +80,12 @@ async function ensureAdmin(url) {
 		const [user] = await sql`
 			insert into users (
 				email, username, full_name, hashed_password,
-				is_active, is_superuser, role
+				is_superuser, role
 			) values (
 				${ADMIN.email},
 				${ADMIN.username.toLowerCase()},
 				${ADMIN.fullName},
 				${hashedPassword},
-				true,
 				true,
 				${ADMIN.role}
 			)
