@@ -11,7 +11,7 @@ export interface ReceivableRow {
 	saleId: string;
 	saleNumber: string;
 	status: string;
-	createdAt: string;
+	saleDate: string;
 	customerId: string | null;
 	customerName: string | null;
 	customerPhone: string | null;
@@ -72,7 +72,7 @@ export async function getReceivables(
 			saleId: sales.id,
 			orderNumber: sales.orderNumber,
 			status: sales.status,
-			createdAt: sales.createdAt,
+			saleDate: sales.saleDate,
 			totalAmount: sales.total,
 			paidAmountBcvUsd: sales.paidAmountBcvUsd,
 			isCashea: sales.isCashea,
@@ -116,7 +116,7 @@ export async function getReceivables(
 
 	const receivables: ReceivableRow[] = rows.map((r) => {
 		const balance = r.totalAmount - r.paidAmountBcvUsd;
-		const createdMs = new Date(r.createdAt).getTime();
+		const createdMs = new Date(r.saleDate).getTime();
 		const daysPending = Math.floor((now - createdMs) / (1000 * 60 * 60 * 24));
 
 		totalBalance += balance;
@@ -128,7 +128,7 @@ export async function getReceivables(
 			saleId: r.saleId,
 			saleNumber: `#${String(r.orderNumber).padStart(4, '0')}`,
 			status: r.status,
-			createdAt: r.createdAt,
+			saleDate: r.saleDate,
 			customerId: r.customerId,
 			customerName: r.customerFirstName ? `${r.customerFirstName} ${r.customerLastName}` : null,
 			customerPhone: r.customerPhone,

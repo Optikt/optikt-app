@@ -361,7 +361,7 @@
 									<SaleStatusBadge status={row.status} />
 								</td>
 								<td class="px-4 py-4 text-sm text-on-surface-variant">
-									{formatDate(row.createdAt, { dateStyle: 'medium' })}
+									{formatDate(row.saleDate, { dateStyle: 'medium' })}
 								</td>
 								<td class="px-4 py-4">
 									<span
