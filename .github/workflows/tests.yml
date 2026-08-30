@@ -37,6 +37,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci # Dummy for import resolution
 
+      - name: Size gate (DT1, non-blocking)
+        continue-on-error: true
+        run: bash scripts/check-file-size.sh
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
