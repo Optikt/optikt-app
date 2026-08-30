@@ -20,7 +20,6 @@ import {
 	findPrescriptionById,
 	createPrescription,
 	updatePrescription,
-	deletePrescription,
 	findCustomerById,
 	unsetCurrentPrescriptions
 } from '$lib/server/db/queries/customers';
@@ -32,6 +31,7 @@ import {
 	toPrescriptionInsert
 } from '$lib/utils/prescription';
 import { db } from '$lib/server/db';
+import { softDelete } from '$lib/server/db/queries/deletedItems';
 
 /**
  * List all prescriptions for a customer
@@ -257,7 +257,16 @@ export const deletePrescriptionCommand = command(PrescriptionIdSchema, async (da
 	}
 
 	// Delete prescription
-	const deleted = await deletePrescription(data.id);
+	let deleted = true;
+	try {
+		await db.transaction(async (tx) => {
+			if (!(await softDelete('prescription', data.id, context.userId ?? null, tx))) {
+				deleted = false;
+			}
+		});
+	} catch {
+		deleted = false;
+	}
 	if (!deleted) {
 		return { success: false, error: 'Error al eliminar fórmula' };
 	}

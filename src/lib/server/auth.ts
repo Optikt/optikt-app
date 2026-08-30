@@ -46,8 +46,8 @@ export async function validateSessionToken(token: string) {
 
 	const { session, user } = result;
 
-	// Check if user is active
-	if (!user.isActive) {
+	// Check if user is deactivated
+	if (user.deactivatedAt) {
 		await sessionQueries.deactivateSession(session.id);
 		return { session: null, user: null };
 	}

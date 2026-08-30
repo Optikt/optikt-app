@@ -27,13 +27,11 @@ import {
 	createSupplier,
 	updateSupplier,
 	restoreSupplier,
-	deleteSupplier,
 	getSupplierTreatments,
 	findSupplierTreatmentById,
 	findSupplierTreatmentByName,
 	createSupplierTreatment,
-	updateSupplierTreatment,
-	deleteSupplierTreatment
+	updateSupplierTreatment
 } from '$lib/server/db/queries/suppliers';
 import {
 	countProductsByBrandSupplier,
@@ -44,6 +42,7 @@ import {
 	type NamedRelationOption
 } from '$lib/server/db/queries/brandSuppliers';
 import { db } from '$lib/server/db';
+import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
@@ -199,10 +198,14 @@ export const deleteSupplierById = command(SupplierIdSchema, async (data): Promis
 		throw new Error('Proveedor no encontrado');
 	}
 
-	await deleteSupplier(id);
+	const context = getAuditContext();
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('supplier', id, context.userId ?? null, tx);
+		if (!ok) throw new Error('Proveedor no encontrado');
+	});
 
 	// Log audit
-	await auditService.logDelete('supplier', existing, getAuditContext());
+	await auditService.logDelete('supplier', existing, context);
 });
 
 export const listBrandsForSupplier = query(
@@ -298,8 +301,9 @@ export const reactivateSupplier = command(
 			throw new Error('Proveedor eliminado no encontrado');
 		}
 
-		// Restore the supplier (reactivation)
+		// Restore the supplier (reactivation) and clear its trash entry
 		const restored = await restoreSupplier(deletedSupplierId);
+		await restore('supplier', deletedSupplierId, db);
 
 		// Log the reactivation
 		await auditService.logCreate('supplier', restored, getAuditContext());
@@ -399,7 +403,15 @@ export const deleteSupplierTreatmentById = command(
 			throw new Error('Tratamiento no encontrado');
 		}
 
-		await deleteSupplierTreatment(data.id);
+		await db.transaction(async (tx) => {
+			const ok = await softDelete(
+				'supplier_treatment',
+				data.id,
+				getAuditContext().userId ?? null,
+				tx
+			);
+			if (!ok) throw new Error('Tratamiento no encontrado');
+		});
 
 		await auditService.logDelete('supplier_treatment', existing, getAuditContext());
 	}

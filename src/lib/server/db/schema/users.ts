@@ -18,7 +18,7 @@ export const users = pgTable(
 		username: varchar().notNull(),
 		fullName: varchar('full_name').notNull(),
 		hashedPassword: varchar('hashed_password').notNull(),
-		isActive: boolean('is_active').notNull().default(true),
+		deactivatedAt: timestamp('deactivated_at', { withTimezone: true, mode: 'string' }),
 		isSuperuser: boolean('is_superuser').notNull().default(false),
 		role: varchar().notNull().default(UserRole.VIEWER).$type<UserRole>(),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),

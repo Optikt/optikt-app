@@ -139,8 +139,8 @@ export async function updateBrand(
 /**
  * Soft delete a brand by ID
  */
-export async function deleteBrand(id: string): Promise<boolean> {
-	const result = await db
+export async function deleteBrand(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(brands)
 		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(brands.id, id));

@@ -117,11 +117,6 @@ function buildMaterialConditions(opts: GetMaterialsOptions): SQL | undefined {
 		conditions.push(isNull(materials.deletedAt));
 	}
 
-	// Active/inactive
-	if (!opts.includeInactive) {
-		conditions.push(eq(materials.isActive, true));
-	}
-
 	// Product type
 	if (opts.productType) {
 		conditions.push(eq(materials.productType, opts.productType));
@@ -285,8 +280,8 @@ export async function updateMaterial(
 /**
  * Soft delete a material by ID
  */
-export async function deleteMaterial(id: string): Promise<boolean> {
-	const result = await db
+export async function deleteMaterial(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const result = await executor
 		.update(materials)
 		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(eq(materials.id, id));
@@ -301,7 +296,6 @@ export async function restoreMaterial(id: string): Promise<Material> {
 		.update(materials)
 		.set({
 			deletedAt: null,
-			isActive: true,
 			updatedAt: nowISO()
 		})
 		.where(eq(materials.id, id))

@@ -19,7 +19,7 @@ export type SessionWithUser = {
 		username: string;
 		fullName: string;
 		role: UserRole;
-		isActive: boolean;
+		deactivatedAt: string | null;
 		isSuperuser: boolean;
 	};
 };
@@ -36,7 +36,7 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<Session
 				username: users.username,
 				fullName: users.fullName,
 				role: users.role,
-				isActive: users.isActive,
+				deactivatedAt: users.deactivatedAt,
 				isSuperuser: users.isSuperuser
 			},
 			session: {

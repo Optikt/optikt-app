@@ -20,3 +20,4 @@ export * from './inventoryLots';
 export * from './inventoryMovements';
 export * from './receivables';
 export * from './notifications';
+export * from './deletedItems';

@@ -30,4 +30,5 @@ export * from './cashExpenses';
 
 // Audit / History
 export * from './changeHistory';
+export * from './deletedItems';
 export * from './notifications';

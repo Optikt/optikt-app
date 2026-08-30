@@ -27,8 +27,7 @@
 		username: '',
 		email: '',
 		password: '',
-		role: UserRole.VIEWER as UserRole,
-		isActive: true
+		role: UserRole.VIEWER as UserRole
 	});
 
 	// Local loading state
@@ -52,8 +51,7 @@
 					username: user.username,
 					email: user.email,
 					password: '',
-					role: user.role,
-					isActive: user.isActive
+					role: user.role
 				};
 			} else {
 				formData = {
@@ -61,8 +59,7 @@
 					username: '',
 					email: '',
 					password: '',
-					role: UserRole.VIEWER,
-					isActive: true
+					role: UserRole.VIEWER
 				};
 			}
 		}
@@ -194,18 +191,6 @@
 							{/each}
 						</select>
 					</div>
-					<div>
-						<Label for="isActive" class="mb-2">Estado</Label>
-						<select
-							id="isActive"
-							name="isActive"
-							value={formData.isActive ? 'true' : 'false'}
-							onchange={(e) => (formData.isActive = e.currentTarget.value === 'true')}
-						>
-							<option value="true">Activo</option>
-							<option value="false">Inactivo</option>
-						</select>
-					</div>
 				</div>
 
 				<div class="flex justify-end gap-2 pt-4">
@@ -303,18 +288,6 @@
 							{#each ALL_ROLES as role, index (`${role}-${index}`)}
 								<option value={role}>{role}</option>
 							{/each}
-						</select>
-					</div>
-					<div>
-						<Label for="isActive" class="mb-2">Estado</Label>
-						<select
-							id="isActive"
-							name="isActive"
-							value={formData.isActive ? 'true' : 'false'}
-							onchange={(e) => (formData.isActive = e.currentTarget.value === 'true')}
-						>
-							<option value="true">Activo</option>
-							<option value="false">Inactivo</option>
 						</select>
 					</div>
 				</div>

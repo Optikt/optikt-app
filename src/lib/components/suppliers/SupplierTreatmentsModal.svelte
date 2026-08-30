@@ -324,11 +324,7 @@
 								</form>
 							{:else}
 								<!-- Display row -->
-								<div
-									class="flex items-center gap-3 px-4 py-3 {!treatment.isActive
-										? 'opacity-50'
-										: ''}"
-								>
+								<div class="flex items-center gap-3 px-4 py-3">
 									<div class="flex-1">
 										<span class="text-sm font-medium text-slate-800">{treatment.name}</span>
 									</div>
@@ -355,11 +351,6 @@
 									>
 										{formatPrice(treatment.salePrice ?? treatment.price)}
 									</span>
-									{#if !treatment.isActive}
-										<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
-											>Inactivo</span
-										>
-									{/if}
 									{#if canManage}
 										<div class="flex gap-1">
 											<button

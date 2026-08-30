@@ -28,7 +28,7 @@ export async function getAllLensMaterials(): Promise<LensMaterial[]> {
 	return await db
 		.select()
 		.from(lensMaterials)
-		.where(and(isNull(lensMaterials.deletedAt), eq(lensMaterials.isActive, true)))
+		.where(isNull(lensMaterials.deletedAt))
 		.orderBy(lensMaterials.name);
 }
 
@@ -77,10 +77,10 @@ export async function updateLensMaterial(
 	return updated ?? null;
 }
 
-export async function deleteLensMaterial(id: string): Promise<boolean> {
-	const [deleted] = await db
+export async function deleteLensMaterial(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const [deleted] = await executor
 		.update(lensMaterials)
-		.set({ deletedAt: nowISO() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(and(eq(lensMaterials.id, id), isNull(lensMaterials.deletedAt)))
 		.returning({ id: lensMaterials.id });
 	return !!deleted;
@@ -107,7 +107,7 @@ export async function getTechnologiesBySupplier(
 	return await db
 		.select()
 		.from(lensTechnologies)
-		.where(and(eq(lensTechnologies.isActive, true), or(...orConditions)))
+		.where(and(isNull(lensTechnologies.deletedAt), or(...orConditions)))
 		.orderBy(lensTechnologies.name);
 }
 
@@ -138,7 +138,7 @@ export async function updateLensTechnology(
 }
 
 export async function getAllTechnologies(options?: { search?: string }): Promise<LensTechnology[]> {
-	const conditions = [eq(lensTechnologies.isActive, true)];
+	const conditions = [isNull(lensTechnologies.deletedAt)];
 
 	if (options?.search) {
 		const searchTerm = `%${options.search.toLowerCase()}%`;
@@ -152,11 +152,11 @@ export async function getAllTechnologies(options?: { search?: string }): Promise
 		.orderBy(lensTechnologies.name);
 }
 
-export async function deleteLensTechnology(id: string): Promise<boolean> {
-	const [updated] = await db
+export async function deleteLensTechnology(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const [updated] = await executor
 		.update(lensTechnologies)
-		.set({ isActive: false, updatedAt: nowISO() })
-		.where(and(eq(lensTechnologies.id, id), eq(lensTechnologies.isActive, true)))
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
+		.where(and(eq(lensTechnologies.id, id), isNull(lensTechnologies.deletedAt)))
 		.returning({ id: lensTechnologies.id });
 	return !!updated;
 }
@@ -229,10 +229,7 @@ export type LensCatalogItemWithRelations = LensCatalogItem & {
 };
 
 export async function getAllLensCatalogItems(): Promise<LensCatalogItem[]> {
-	return await db
-		.select()
-		.from(lensCatalogItems)
-		.where(and(isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)));
+	return await db.select().from(lensCatalogItems).where(isNull(lensCatalogItems.deletedAt));
 }
 
 export async function getLensCatalogItemsWithRelations(options?: {
@@ -246,7 +243,7 @@ export async function getLensCatalogItemsWithRelations(options?: {
 	/** Filter by specific differentiator tag */
 	differentiator?: string;
 }): Promise<LensCatalogItemWithRelations[]> {
-	const conditions = [isNull(lensCatalogItems.deletedAt), eq(lensCatalogItems.isActive, true)];
+	const conditions = [isNull(lensCatalogItems.deletedAt)];
 
 	if (options?.source) {
 		conditions.push(eq(lensCatalogItems.source, options.source));
@@ -480,10 +477,10 @@ export async function updateLensCatalogItem(
 	});
 }
 
-export async function deleteLensCatalogItem(id: string): Promise<boolean> {
-	const [deleted] = await db
+export async function deleteLensCatalogItem(id: string, executor: DbOrTx = db): Promise<boolean> {
+	const [deleted] = await executor
 		.update(lensCatalogItems)
-		.set({ deletedAt: nowISO() })
+		.set({ deletedAt: nowISO(), updatedAt: nowISO() })
 		.where(and(eq(lensCatalogItems.id, id), isNull(lensCatalogItems.deletedAt)))
 		.returning({ id: lensCatalogItems.id });
 	return !!deleted;
@@ -536,7 +533,7 @@ export async function resolvePendingTechnology(
 			and(
 				ilike(lensTechnologies.name, pendingName),
 				isNull(lensTechnologies.supplierId),
-				eq(lensTechnologies.isActive, true)
+				isNull(lensTechnologies.deletedAt)
 			)
 		);
 
@@ -551,7 +548,7 @@ export async function resolvePendingTechnology(
 				and(
 					ilike(lensTechnologies.name, pendingName),
 					eq(lensTechnologies.supplierId, supplierId),
-					eq(lensTechnologies.isActive, true)
+					isNull(lensTechnologies.deletedAt)
 				)
 			);
 
@@ -582,7 +579,7 @@ export async function getLensCatalogDistinctValues(): Promise<{
 	const techs = await db
 		.select({ id: lensTechnologies.id, name: lensTechnologies.name })
 		.from(lensTechnologies)
-		.where(eq(lensTechnologies.isActive, true))
+		.where(isNull(lensTechnologies.deletedAt))
 		.orderBy(lensTechnologies.name);
 
 	const diffRows = await db

@@ -107,8 +107,7 @@ export const CreateProductSchema = z.object({
 });
 
 export const UpdateProductSchema = CreateProductSchema.partial().extend({
-	id: z.uuid(),
-	isActive: z.boolean().optional()
+	id: z.uuid()
 });
 
 export const ProductIdSchema = EntityIdSchema();

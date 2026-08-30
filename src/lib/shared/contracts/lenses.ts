@@ -24,5 +24,4 @@ export interface LensCatalogContract {
 	basePrice: number;
 	mountingPrice: number;
 	shippingPrice: number;
-	isActive: boolean;
 }

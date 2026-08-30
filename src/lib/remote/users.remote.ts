@@ -17,10 +17,10 @@ import {
 	findDeletedUserByEmail,
 	findDeletedUserByUsername,
 	updateUser as dbUpdateUser,
-	deleteUser as dbDeleteUser,
 	restoreUser as dbRestoreUser,
 	countActiveAdmins
 } from '$lib/server/db/queries/users';
+import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
 // Import schemas
@@ -50,9 +50,9 @@ export const listUsers = command(ListUsersSchema, async (input): Promise<Paginat
 	// Exclude soft-deleted users
 	conditions.push(isNull(users.deletedAt));
 
-	// Filter by active status
+	// Filter by active status (deactivated users have a deactivated_at date)
 	if (!includeInactive) {
-		conditions.push(eq(users.isActive, true));
+		conditions.push(isNull(users.deactivatedAt));
 	}
 
 	// Filter by role
@@ -87,7 +87,7 @@ export const listUsers = command(ListUsersSchema, async (input): Promise<Paginat
 			username: users.username,
 			fullName: users.fullName,
 			role: users.role,
-			isActive: users.isActive,
+			deactivatedAt: users.deactivatedAt,
 			isSuperuser: users.isSuperuser,
 			createdAt: users.createdAt
 		})
@@ -113,7 +113,7 @@ export const listUsers = command(ListUsersSchema, async (input): Promise<Paginat
 export const createUser = command(CreateUserSchema, async (input): Promise<CreateUserResult> => {
 	requireUserAdmin();
 
-	const { email, username, password, fullName, role, isActive } = input;
+	const { email, username, password, fullName, role } = input;
 
 	// Check for existing ACTIVE email
 	const existingActiveEmail = await findUserByEmail(email);
@@ -147,7 +147,7 @@ export const createUser = command(CreateUserSchema, async (input): Promise<Creat
 				username: deletedUserByEmail.username,
 				fullName: deletedUserByEmail.fullName,
 				role: deletedUserByEmail.role,
-				isActive: deletedUserByEmail.isActive,
+				deactivatedAt: deletedUserByEmail.deactivatedAt,
 				isSuperuser: deletedUserByEmail.isSuperuser,
 				createdAt: deletedUserByEmail.createdAt
 			},
@@ -180,7 +180,6 @@ export const createUser = command(CreateUserSchema, async (input): Promise<Creat
 			fullName,
 			hashedPassword,
 			role: role ?? UserRole.VIEWER,
-			isActive: isActive ?? true,
 			isSuperuser: false,
 			createdAt: now,
 			updatedAt: now
@@ -191,7 +190,7 @@ export const createUser = command(CreateUserSchema, async (input): Promise<Creat
 			username: users.username,
 			fullName: users.fullName,
 			role: users.role,
-			isActive: users.isActive,
+			deactivatedAt: users.deactivatedAt,
 			isSuperuser: users.isSuperuser,
 			createdAt: users.createdAt
 		});
@@ -207,7 +206,7 @@ export const reactivateUser = command(
 	async (input): Promise<UserListItem> => {
 		requireUserAdmin();
 
-		const { deletedUserId, email, username, password, fullName, role, isActive } = input;
+		const { deletedUserId, email, username, password, fullName, role } = input;
 
 		// Verify the user exists and is deleted
 		const deletedUser = await findUserById(deletedUserId);
@@ -223,15 +222,15 @@ export const reactivateUser = command(
 			parallelism: 1
 		});
 
-		// Restore the user with new data
+		// Restore the user with new data and clear its trash entry
 		const restoredUser = await dbRestoreUser(deletedUserId, {
 			email: email.toLowerCase(),
 			username: username.toLowerCase(),
 			fullName,
 			hashedPassword,
-			role: role ?? UserRole.VIEWER,
-			isActive: isActive ?? true
+			role: role ?? UserRole.VIEWER
 		});
+		await restore('user', deletedUserId, db);
 
 		return {
 			id: restoredUser.id,
@@ -239,7 +238,7 @@ export const reactivateUser = command(
 			username: restoredUser.username,
 			fullName: restoredUser.fullName,
 			role: restoredUser.role,
-			isActive: restoredUser.isActive,
+			deactivatedAt: restoredUser.deactivatedAt,
 			isSuperuser: restoredUser.isSuperuser,
 			createdAt: restoredUser.createdAt
 		};
@@ -319,7 +318,7 @@ export const toggleUserActive = command(UserIdSchema, async (input): Promise<Use
 
 	const [updatedUser] = await db
 		.update(users)
-		.set({ isActive: !user.isActive, updatedAt: nowISO() })
+		.set({ deactivatedAt: user.deactivatedAt ? null : nowISO(), updatedAt: nowISO() })
 		.where(eq(users.id, input.id))
 		.returning({
 			id: users.id,
@@ -327,7 +326,7 @@ export const toggleUserActive = command(UserIdSchema, async (input): Promise<Use
 			username: users.username,
 			fullName: users.fullName,
 			role: users.role,
-			isActive: users.isActive,
+			deactivatedAt: users.deactivatedAt,
 			isSuperuser: users.isSuperuser,
 			createdAt: users.createdAt
 		});
@@ -371,9 +370,12 @@ export const deleteUserById = command(
 			}
 		}
 
-		const deleted = await dbDeleteUser(input.id);
+		await db.transaction(async (tx) => {
+			const ok = await softDelete('user', input.id, currentUser.id, tx);
+			if (!ok) error(404, 'Usuario no encontrado');
+		});
 
-		return { success: deleted };
+		return { success: true };
 	}
 );
 
@@ -391,7 +393,7 @@ export const createUserForm = form(
 	async (data, issue): Promise<CreateUserResult> => {
 		requireUserAdmin();
 
-		const { email, username, password, fullName, role, isActive } = data;
+		const { email, username, password, fullName, role } = data;
 
 		// Check for existing ACTIVE email
 		const existingActiveEmail = await findUserByEmail(email);
@@ -425,7 +427,7 @@ export const createUserForm = form(
 					username: deletedUserByEmail.username,
 					fullName: deletedUserByEmail.fullName,
 					role: deletedUserByEmail.role,
-					isActive: deletedUserByEmail.isActive,
+					deactivatedAt: deletedUserByEmail.deactivatedAt,
 					isSuperuser: deletedUserByEmail.isSuperuser,
 					createdAt: deletedUserByEmail.createdAt
 				},
@@ -458,7 +460,6 @@ export const createUserForm = form(
 				fullName,
 				hashedPassword,
 				role: role ?? UserRole.VIEWER,
-				isActive: isActive ?? true,
 				isSuperuser: false,
 				createdAt: now,
 				updatedAt: now
@@ -469,7 +470,7 @@ export const createUserForm = form(
 				username: users.username,
 				fullName: users.fullName,
 				role: users.role,
-				isActive: users.isActive,
+				deactivatedAt: users.deactivatedAt,
 				isSuperuser: users.isSuperuser,
 				createdAt: users.createdAt
 			});

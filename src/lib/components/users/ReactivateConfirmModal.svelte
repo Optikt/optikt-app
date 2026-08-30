@@ -34,8 +34,7 @@
 				username: formData.get('username') as string,
 				email: formData.get('email') as string,
 				password: formData.get('password') as string,
-				role: formData.get('role') as UserRole,
-				isActive: formData.get('isActive') === 'true'
+				role: formData.get('role') as UserRole
 			});
 			toast.success('Usuario reactivado exitosamente');
 			open = false;

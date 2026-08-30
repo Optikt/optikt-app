@@ -23,7 +23,7 @@
 			<p class="text-xs font-semibold tracking-[0.16em] text-outline uppercase">Operación</p>
 			<h2 class="font-heading mt-2 text-2xl font-bold text-brand-navy">Disponibilidad y reglas</h2>
 		</div>
-		<StatusBadge active={item.isActive} />
+		<StatusBadge active={!item.deletedAt} />
 	</div>
 
 	<div class="mt-5 space-y-3">

@@ -102,13 +102,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 		db
 			.select({ value: count() })
 			.from(products)
-			.where(
-				and(
-					isNull(products.deletedAt),
-					eq(products.isActive, true),
-					lte(products.stock, products.minStock)
-				)
-			)
+			.where(and(isNull(products.deletedAt), lte(products.stock, products.minStock)))
 			.then(([r]) => r.value),
 
 		// Low stock lenses (STOCK mode, stock ≤ 0, active, non-deleted)
@@ -118,7 +112,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 			.where(
 				and(
 					isNull(lensCatalogItems.deletedAt),
-					eq(lensCatalogItems.isActive, true),
 					eq(lensCatalogItems.inventoryMode, 'STOCK'),
 					lte(lensCatalogItems.stock, 0)
 				)
@@ -187,13 +180,7 @@ export async function getLowStockItems(limit = 10): Promise<LowStockItem[]> {
 				minStock: products.minStock
 			})
 			.from(products)
-			.where(
-				and(
-					isNull(products.deletedAt),
-					eq(products.isActive, true),
-					lte(products.stock, products.minStock)
-				)
-			)
+			.where(and(isNull(products.deletedAt), lte(products.stock, products.minStock)))
 			.limit(limit),
 
 		db
@@ -206,7 +193,6 @@ export async function getLowStockItems(limit = 10): Promise<LowStockItem[]> {
 			.where(
 				and(
 					isNull(lensCatalogItems.deletedAt),
-					eq(lensCatalogItems.isActive, true),
 					eq(lensCatalogItems.inventoryMode, 'STOCK'),
 					lte(lensCatalogItems.stock, 0)
 				)

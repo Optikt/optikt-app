@@ -75,8 +75,7 @@ export const UpdateSupplierTreatmentSchema = z.object({
 	category: z.enum(ALL_TREATMENT_CATS).optional(),
 	price: CoercedNumber.min(0).optional(),
 	salePrice: CoercedNumber.min(0).optional(),
-	isTaxable: CoercedBoolean.optional(),
-	isActive: CoercedBoolean.optional()
+	isTaxable: CoercedBoolean.optional()
 });
 
 export const SupplierTreatmentIdSchema = z.object({

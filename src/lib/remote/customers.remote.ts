@@ -21,13 +21,13 @@ import {
 	createCustomer,
 	createPrescription,
 	updateCustomer,
-	deleteCustomer,
 	restoreCustomer
 } from '$lib/server/db/queries/customers';
 import type { Customer } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { db } from '$lib/server/db';
+import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 
 /**
@@ -127,7 +127,9 @@ export const deleteCustomerById = command(CustomerIdSchema, async (data): Promis
 		return false;
 	}
 
-	const success = await deleteCustomer(data.id);
+	const success = await db.transaction(async (tx) => {
+		return softDelete('customer', data.id, getAuditContext().userId ?? null, tx);
+	});
 	if (success) {
 		// Log the deletion
 		await auditService.logDelete('customer', existing, getAuditContext());
@@ -147,6 +149,7 @@ export const reactivateCustomerForm = form(
 
 		// Check if customer exists and is deleted
 		const customer = await restoreCustomer(id);
+		await restore('customer', id, db);
 
 		if (!customer) {
 			invalid('Cliente no encontrado o no está eliminado');
@@ -170,6 +173,7 @@ export const reactivateCustomer = command(
 		const { id } = data;
 
 		const customer = await restoreCustomer(id);
+		await restore('customer', id, db);
 
 		if (!customer) {
 			invalid('Cliente no encontrado o no está eliminado');

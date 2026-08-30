@@ -22,7 +22,6 @@ import {
 	createBrand,
 	updateBrand,
 	restoreBrand,
-	deleteBrand,
 	countProductsByBrand
 } from '$lib/server/db/queries/brands';
 import {
@@ -34,6 +33,7 @@ import {
 	type NamedRelationOption
 } from '$lib/server/db/queries/brandSuppliers';
 import { db } from '$lib/server/db';
+import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
 import type { Brand } from '$lib/server/db/schema';
 import type { PaginatedResult, CreateEntityResult } from '$lib/types';
 import { auditService, getAuditContext } from '$lib/server/audit';
@@ -162,10 +162,14 @@ export const deleteBrandById = command(BrandIdSchema, async (data): Promise<void
 		throw new Error('Marca no encontrada');
 	}
 
-	await deleteBrand(id);
+	const context = getAuditContext();
+	await db.transaction(async (tx) => {
+		const ok = await softDelete('brand', id, context.userId ?? null, tx);
+		if (!ok) throw new Error('Marca no encontrada');
+	});
 
 	// Log the deletion
-	await auditService.logDelete('brand', existing, getAuditContext());
+	await auditService.logDelete('brand', existing, context);
 });
 
 /**
@@ -278,8 +282,9 @@ export const reactivateBrand = command(ReactivateBrandSchema, async (data): Prom
 		throw new Error('Marca eliminada no encontrada');
 	}
 
-	// Restore the brand (reactivation)
+	// Restore the brand (reactivation) and clear its trash entry
 	const restored = await restoreBrand(deletedBrandId);
+	await restore('brand', deletedBrandId, db);
 
 	// Log the reactivation
 	await auditService.logCreate('brand', restored, getAuditContext());

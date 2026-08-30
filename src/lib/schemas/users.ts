@@ -5,7 +5,6 @@
 import { z } from 'zod';
 import { UserRole } from '$lib/shared/enums';
 import {
-	CoercedBoolean,
 	EmailSchema,
 	UsernameSchema,
 	PasswordSchema,
@@ -25,8 +24,7 @@ export const CreateUserSchema = z.object({
 	username: UsernameSchema,
 	fullName: NameSchema('Nombre completo requerido'),
 	password: PasswordSchema,
-	role: z.enum(UserRole).default(UserRole.VIEWER),
-	isActive: CoercedBoolean.default(true)
+	role: z.enum(UserRole).default(UserRole.VIEWER)
 });
 
 export const UpdateUserSchema = CreateUserSchema.partial().extend({

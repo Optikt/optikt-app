@@ -40,13 +40,13 @@
 			<Eye class="mr-1 h-3 w-3" />
 			{getLensTypeLabel(item.type)}
 		</AppBadge>
-		<AppBadge variant={item.isActive ? 'success' : 'neutral'}>
-			{#if item.isActive}
+		<AppBadge variant={!item.deletedAt ? 'success' : 'neutral'}>
+			{#if !item.deletedAt}
 				<CircleCheck class="mr-1 h-3 w-3" />
 			{:else}
 				<CircleX class="mr-1 h-3 w-3" />
 			{/if}
-			{item.isActive ? 'Activo' : 'Inactivo'}
+			{!item.deletedAt ? 'Activo' : 'Eliminado'}
 		</AppBadge>
 		<AppBadge variant={getLensInventoryVariant(item.inventoryMode, item.stock)}>
 			<InventoryIcon class="mr-1 h-3 w-3" />

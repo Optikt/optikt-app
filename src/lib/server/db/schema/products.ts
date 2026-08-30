@@ -55,7 +55,6 @@ export const products = pgTable(
 		stock: integer().notNull().default(0),
 		minStock: integer('min_stock'),
 		imageUrl: varchar('image_url'),
-		isActive: boolean('is_active').notNull().default(true),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()

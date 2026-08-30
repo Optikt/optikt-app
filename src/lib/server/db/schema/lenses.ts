@@ -41,7 +41,6 @@ export const lensMaterials = pgTable(
 		code: varchar().notNull(),
 		refractiveIndex: doublePrecision('refractive_index'),
 		description: varchar(),
-		isActive: boolean('is_active').notNull().default(true),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
@@ -75,7 +74,7 @@ export const lensTechnologies = pgTable(
 		name: varchar().notNull(),
 		/** Minimum fitting height required for this design (mm) */
 		minFittingHeight: doublePrecision('min_fitting_height'),
-		isActive: boolean('is_active').notNull().default(true),
+		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow(),
@@ -149,7 +148,6 @@ export const lensCatalogItems = pgTable(
 		inventoryMode: lensInventoryModeEnum('inventory_mode').notNull().default('ON_DEMAND'),
 		stock: integer(),
 		notes: varchar(),
-		isActive: boolean('is_active').notNull().default(true),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
