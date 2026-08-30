@@ -36,7 +36,6 @@
 			loadingId = null;
 		}
 	}
-
 </script>
 
 <div class="space-y-6 p-6">
