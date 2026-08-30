@@ -25,6 +25,7 @@
 	let calcOpen = $state(false);
 	let refreshing = $state(false);
 	let tick = $state(0);
+	let sseAnimating = $state(false);
 
 	function getFooterLabel(_tick: number) {
 		if (!store.snapshot) {
@@ -106,6 +107,15 @@
 			window.clearInterval(clockInterval);
 		};
 	});
+
+	$effect(() => {
+		const src = store.lastUpdateSource;
+		if (src === 'sse') {
+			sseAnimating = true;
+			const id = setTimeout(() => (sseAnimating = false), 1500);
+			return () => clearTimeout(id);
+		}
+	});
 </script>
 
 <svelte:document onclick={handleClickOutside} />
@@ -142,8 +152,12 @@
 						Tasas de cambio
 					</h3>
 					{#if store.sseConnected}
-						<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-emerald-200/60">
-							<span class="h-1 w-1 rounded-full bg-emerald-500 animate-pulse"></span>
+						<span
+							class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-emerald-200/60 transition-all duration-300 {sseAnimating
+								? 'scale-110 bg-emerald-100 ring-emerald-300'
+								: ''}"
+						>
+							<span class="h-1 w-1 animate-pulse rounded-full bg-emerald-500"></span>
 							En tiempo real
 						</span>
 					{/if}
@@ -156,7 +170,7 @@
 						disabled={refreshing}
 						title="Refrescar tasas"
 					>
-						<RefreshCw class={refreshing ? 'animate-spin' : ''} size={14} />
+						<RefreshCw class={refreshing || sseAnimating ? 'animate-spin' : ''} size={14} />
 					</button>
 					<button
 						type="button"
@@ -210,8 +224,10 @@
 							</div>
 							<div class="flex w-24 shrink-0 items-center justify-end gap-0.5">
 								<div class="text-right">
-									<span class="font-mono text-lg font-bold text-brand-navy tabular-nums"
-										>{formatRate(rate.value)}</span
+									<span
+										class="rounded px-1 font-mono text-lg font-bold text-brand-navy tabular-nums transition-colors duration-500 {sseAnimating
+											? 'bg-amber-100 text-amber-700'
+											: ''}">{formatRate(rate.value)}</span
 									>
 									<span class="ml-1 text-[11px] text-slate-400">Bs</span>
 								</div>

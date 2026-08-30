@@ -8,14 +8,16 @@ let snapshot = $state<ExchangeRatesSnapshot | null>(null);
 let loading = $state(true);
 let error = $state<string | null>(null);
 let sseConnected = $state(false);
+let lastUpdateSource = $state<'sse' | 'poll' | 'manual' | null>(null);
 
 const bcvRate = $derived(snapshot?.rates.find((r) => r.code === 'USD')?.value ?? 0);
 const rates = $derived(snapshot?.rates ?? []);
 
-function applySnapshot(next: ExchangeRatesSnapshot) {
+function applySnapshot(next: ExchangeRatesSnapshot, source?: 'sse' | 'poll') {
 	if (snapshot && snapshot.lastFetchedAt === next.lastFetchedAt) return;
 	snapshot = next;
 	error = null;
+	if (source) lastUpdateSource = source;
 }
 
 export function getExchangeRatesStore() {
@@ -50,8 +52,12 @@ export function getExchangeRatesStore() {
 		get sseConnected() {
 			return sseConnected;
 		},
+		get lastUpdateSource() {
+			return lastUpdateSource;
+		},
 		async refresh() {
 			try {
+				lastUpdateSource = 'manual';
 				snapshot = await refreshExchangeRatesCommand({});
 				error = null;
 			} catch (e) {
@@ -71,7 +77,7 @@ export function initExchangeRatesPolling() {
 		try {
 			const res = await fetch(resolve('/api/exchange-rates'));
 			if (!res.ok) throw new Error('Error al cargar tasas');
-			applySnapshot(await res.json());
+			applySnapshot(await res.json(), 'poll');
 		} catch (e) {
 			error = getErrorMessage(e, 'Error al cargar tasas');
 		} finally {
@@ -89,7 +95,7 @@ export function initExchangeRatesPolling() {
 		eventSource.onmessage = (event) => {
 			try {
 				const data = JSON.parse(event.data) as ExchangeRatesSnapshot;
-				applySnapshot(data);
+				applySnapshot(data, 'sse');
 				loading = false;
 			} catch {
 				// malformed event — ignore
