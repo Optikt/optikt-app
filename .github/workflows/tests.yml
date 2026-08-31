@@ -46,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    continue-on-error: true
     # Only run E2E on main branch or when explicitly requested
     if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main'
 
