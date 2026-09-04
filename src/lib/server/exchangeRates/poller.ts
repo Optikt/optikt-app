@@ -3,6 +3,7 @@ import {
 	isExchangeRatesConfigured,
 	refreshExchangeRates
 } from './service';
+import { emitRatesUpdated } from './events';
 import { publishExchangeRatesTransition, syncExchangeRatesHealthState } from './health';
 import { logger } from '$lib/utils/logger';
 
@@ -12,6 +13,7 @@ async function runExchangeRatesPollCycle() {
 	try {
 		const snapshot = await refreshExchangeRates({ source: 'poller' });
 		await publishExchangeRatesTransition(snapshot);
+		emitRatesUpdated(snapshot);
 	} catch (error) {
 		logger.error('Error actualizando tasas de cambio', error);
 	}
@@ -34,6 +36,7 @@ export function startExchangeRatesPoller() {
 	void refreshExchangeRates({ source: 'startup' })
 		.then((snapshot) => {
 			syncExchangeRatesHealthState(snapshot);
+			emitRatesUpdated(snapshot);
 		})
 		.catch((error) => {
 			logger.error('Error cargando tasas de cambio al iniciar', error);

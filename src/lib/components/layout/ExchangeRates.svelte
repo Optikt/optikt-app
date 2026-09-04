@@ -25,6 +25,7 @@
 	let calcOpen = $state(false);
 	let refreshing = $state(false);
 	let tick = $state(0);
+	let sseAnimating = $state(false);
 
 	function getFooterLabel(_tick: number) {
 		if (!store.snapshot) {
@@ -106,6 +107,15 @@
 			window.clearInterval(clockInterval);
 		};
 	});
+
+	$effect(() => {
+		const src = store.lastUpdateSource;
+		if (src === 'sse') {
+			sseAnimating = true;
+			const id = setTimeout(() => (sseAnimating = false), 1500);
+			return () => clearTimeout(id);
+		}
+	});
 </script>
 
 <svelte:document onclick={handleClickOutside} />
@@ -137,13 +147,20 @@
 			class="fixed inset-x-3 top-[6.25rem] bottom-4 z-[60] flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/15 md:absolute md:top-full md:right-0 md:bottom-auto md:left-auto md:z-50 md:mt-2 md:max-h-[40rem] md:w-80 md:rounded-xl md:shadow-lg"
 		>
 			<div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
-				<div>
+				<div class="flex items-center gap-2">
 					<h3 id="exchange-rates-title" class="text-sm font-semibold text-brand-navy">
 						Tasas de cambio
 					</h3>
-					<p class="mt-0.5 text-[11px] text-slate-400">
-						Fuente externa sincronizada en segundo plano
-					</p>
+					{#if store.sseConnected}
+						<span
+							class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 ring-1 ring-emerald-200/60 transition-all duration-300 {sseAnimating
+								? 'scale-110 bg-emerald-100 ring-emerald-300'
+								: ''}"
+						>
+							<span class="h-1 w-1 animate-pulse rounded-full bg-emerald-500"></span>
+							En tiempo real
+						</span>
+					{/if}
 				</div>
 				<div class="flex items-center gap-1.5">
 					<button
@@ -153,7 +170,7 @@
 						disabled={refreshing}
 						title="Refrescar tasas"
 					>
-						<RefreshCw class={refreshing ? 'animate-spin' : ''} size={14} />
+						<RefreshCw class={refreshing || sseAnimating ? 'animate-spin' : ''} size={14} />
 					</button>
 					<button
 						type="button"
@@ -207,8 +224,10 @@
 							</div>
 							<div class="flex w-24 shrink-0 items-center justify-end gap-0.5">
 								<div class="text-right">
-									<span class="font-mono text-lg font-bold text-brand-navy tabular-nums"
-										>{formatRate(rate.value)}</span
+									<span
+										class="rounded px-1 font-mono text-lg font-bold text-brand-navy tabular-nums transition-colors duration-500 {sseAnimating
+											? 'bg-amber-100 text-amber-700'
+											: ''}">{formatRate(rate.value)}</span
 									>
 									<span class="ml-1 text-[11px] text-slate-400">Bs</span>
 								</div>
