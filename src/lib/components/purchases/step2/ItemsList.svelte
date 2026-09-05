@@ -13,6 +13,10 @@
 		lensItems: LensCatalogItemWithRelations[];
 		currencySymbol: string;
 		saleSymbol: string;
+		isAltMode?: boolean;
+		sourceCurrency?: string;
+		sourceRateToVes?: number;
+		bcvUsdRate?: number;
 		onremove: (itemId: string) => void;
 	}
 
@@ -22,6 +26,10 @@
 		lensItems,
 		currencySymbol,
 		saleSymbol,
+		isAltMode = false,
+		sourceCurrency = 'USD',
+		sourceRateToVes = 0,
+		bcvUsdRate = 0,
 		onremove
 	}: Props = $props();
 
@@ -70,6 +78,10 @@
 						sku={getItemSku(item)}
 						{currencySymbol}
 						{saleSymbol}
+						{isAltMode}
+						{sourceCurrency}
+						{sourceRateToVes}
+						{bcvUsdRate}
 						onremove={() => onremove(item.id)}
 					/>
 				</div>
@@ -80,6 +92,10 @@
 						sku={getItemSku(item)}
 						{currencySymbol}
 						{saleSymbol}
+						{isAltMode}
+						{sourceCurrency}
+						{sourceRateToVes}
+						{bcvUsdRate}
 						onremove={() => onremove(item.id)}
 					/>
 				</div>

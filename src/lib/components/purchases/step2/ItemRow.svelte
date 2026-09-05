@@ -2,8 +2,10 @@
 	import { Check, Trash2, Glasses, Package, AlertTriangle } from '@lucide/svelte';
 	import { ConfirmModal } from '$lib/components/ui';
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
-	import { PurchaseOrderItemType } from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
+	import { calculateDraftItemTotalAlt } from '../purchaseOrderDraft';
+	import { PurchaseOrderItemType, PurchaseSourceCurrency } from '$lib/shared/enums';
+	import { sourcePriceToUsdBcv } from '$lib/shared/purchaseOrderCurrencies';
+	import PricePair from '../PricePair.svelte';
 
 	interface Props {
 		item: PurchaseOrderDraftItem;
@@ -11,6 +13,10 @@
 		sku: string;
 		currencySymbol: string;
 		saleSymbol: string;
+		isAltMode?: boolean;
+		sourceCurrency?: string;
+		sourceRateToVes?: number;
+		bcvUsdRate?: number;
 		onremove?: () => void;
 	}
 
@@ -20,8 +26,29 @@
 		sku,
 		currencySymbol,
 		saleSymbol,
+		isAltMode = false,
+		sourceCurrency = PurchaseSourceCurrency.USD,
+		sourceRateToVes = 0,
+		bcvUsdRate = 0,
 		onremove
 	}: Props = $props();
+
+	function handleCostInput(raw: number) {
+		const value = Number.isFinite(raw) && raw >= 0 ? raw : 0;
+		if (!isAltMode) {
+			item.unitPurchasePrice = value;
+			return;
+		}
+		item.unitPurchasePriceAlt = value;
+		item.unitPurchasePrice = sourcePriceToUsdBcv({
+			sourceCurrency,
+			unitPriceAlt: value,
+			appliesIva: item.appliesIva,
+			ivaRate: item.ivaRate,
+			sourceRateToVes,
+			bcvRate: bcvUsdRate
+		});
+	}
 
 	let showDeleteConfirm = $state(false);
 	const initialValues = {
@@ -31,6 +58,7 @@
 	};
 
 	const lineTotal = $derived(Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0));
+	const lineTotalAlt = $derived(calculateDraftItemTotalAlt(item));
 	const hasWarning = $derived(
 		Number(item.unitPurchasePrice || 0) === 0 || Number(item.unitSalePrice || 0) === 0
 	);
@@ -152,7 +180,8 @@
 					min="0"
 					step="0.01"
 					disabled={item.isReviewed}
-					bind:value={item.unitPurchasePrice}
+					value={isAltMode ? (item.unitPurchasePriceAlt ?? 0) : item.unitPurchasePrice}
+					oninput={(e) => handleCostInput(Number((e.target as HTMLInputElement).value))}
 					class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-2 py-1.5 {currencySymbol.length >
 					2
 						? 'pr-10'
@@ -192,9 +221,7 @@
 
 		<!-- Total -->
 		<div class="flex items-center justify-end max-[500px]:col-start-2">
-			<span class="text-sm font-semibold text-brand-navy tabular-nums"
-				>{formatPrice(lineTotal)}</span
-			>
+			<PricePair amountAlt={lineTotalAlt} amountUsd={lineTotal} {sourceCurrency} />
 		</div>
 
 		<!-- Acciones (visibles en modo ancho) -->

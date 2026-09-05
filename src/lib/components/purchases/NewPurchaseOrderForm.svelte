@@ -23,7 +23,9 @@
 	import PurchaseOrderStep2 from './step2/PurchaseOrderStep2.svelte';
 	import PurchaseOrderStep1Card1 from './step1/PurchaseOrderStep1Card1.svelte';
 	import PurchaseOrderStep1Card2 from './step1/PurchaseOrderStep1Card2.svelte';
+	import PricePair from './PricePair.svelte';
 	import {
+		calculateDraftItemTotalAlt,
 		calculatePurchaseOrderSummary,
 		canPersistPurchaseOrderDraft,
 		getDraftItemZeroValueFields,
@@ -39,6 +41,7 @@
 		sourcePriceToUsdBcv
 	} from '$lib/shared/purchaseOrderCurrencies';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+	import { formatAltAmount } from '$lib/utils/purchaseOrderDetail';
 
 	type SupplierOption = {
 		id: string;
@@ -240,7 +243,11 @@
 
 		untrack(() => {
 			for (const item of items) {
-				if (item.unitPurchasePriceAlt === undefined || item.unitPurchasePriceAlt === null) {
+				if (
+					item.unitPurchasePriceAlt === undefined ||
+					item.unitPurchasePriceAlt === null ||
+					Number(item.unitPurchasePriceAlt) <= 0
+				) {
 					continue;
 				}
 
@@ -653,15 +660,20 @@
 								</div>
 								<!-- Unit cost -->
 								<div class="text-right">
-									<span class="font-mono text-xs text-on-surface-variant tabular-nums">
-										{formatPrice(Number(item.unitPurchasePrice || 0))}
-									</span>
+									<PricePair
+										amountAlt={Number(item.unitPurchasePriceAlt ?? 0)}
+										amountUsd={Number(item.unitPurchasePrice || 0)}
+										{sourceCurrency}
+									/>
 								</div>
 								<!-- Total -->
 								<div class="text-right">
-									<span class="font-mono text-sm font-semibold text-brand-navy tabular-nums">
-										{formatPrice(Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0))}
-									</span>
+									<PricePair
+										amountAlt={calculateDraftItemTotalAlt(item)}
+										amountUsd={Number(item.unitPurchasePrice || 0) *
+											Number(item.quantity || 0)}
+										{sourceCurrency}
+									/>
 								</div>
 							</div>
 						{/each}
@@ -712,9 +724,11 @@
 					<div class="shrink-0 space-y-1.5 border-t border-outline-variant/30 pt-2 text-xs">
 						<div class="flex justify-between">
 							<span class="text-on-surface-variant">Subtotal</span>
-							<span class="font-mono font-semibold text-brand-navy tabular-nums">
-								{formatPrice(summary.subtotal)}
-							</span>
+							<PricePair
+								amountAlt={summary.subtotalAlt ?? 0}
+								amountUsd={summary.subtotal}
+								{sourceCurrency}
+							/>
 						</div>
 						{#if discount.type !== PurchaseDiscountType.NONE && discount.value > 0}
 							<div class="flex justify-between text-success">
@@ -745,10 +759,19 @@
 						<p class="text-[10px] font-medium tracking-wide text-brand-blue-light/80 uppercase">
 							Total neto a pagar
 						</p>
-						<p class="mt-1 font-mono text-xl font-bold text-white">
-							{formatPrice(summary.netTotal)}
-							<span class="text-sm font-medium text-white/60">USD</span>
-						</p>
+						{#if sourceCurrency !== PurchaseSourceCurrency.USD}
+							<p class="mt-1 font-mono text-xl font-bold text-white">
+								{formatAltAmount(summary.netTotalAlt ?? 0, sourceCurrency)}
+							</p>
+							<p class="font-mono text-xs font-medium text-white/60 tabular-nums">
+								{formatPrice(summary.netTotal)} USD
+							</p>
+						{:else}
+							<p class="mt-1 font-mono text-xl font-bold text-white">
+								{formatPrice(summary.netTotal)}
+								<span class="text-sm font-medium text-white/60">USD</span>
+							</p>
+						{/if}
 						<div class="mt-1 flex items-center gap-3 text-[10px] text-white/60">
 							<span>
 								{summary.lineCount}

@@ -4,6 +4,7 @@
 		createEmptyPurchaseOrderDraftItem,
 		applyProductDefaults,
 		applyLensDefaults,
+		calculateDraftItemTotalAlt,
 		calculateOrderSubtotal
 	} from '../purchaseOrderDraft';
 	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
@@ -86,6 +87,9 @@
 	const lineCount = $derived(items.length);
 	const totalItems = $derived(items.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
 	const totalCost = $derived(calculateOrderSubtotal(items));
+	const totalCostAlt = $derived(
+		Math.round(items.reduce((sum, item) => sum + calculateDraftItemTotalAlt(item), 0) * 100) / 100
+	);
 
 	const addedProductIds = $derived(
 		new Set(items.filter((i) => i.productId).map((i) => i.productId))
@@ -138,6 +142,7 @@
 		{lineCount}
 		{totalItems}
 		{totalCost}
+		{totalCostAlt}
 	/>
 
 	<div class="space-y-6 px-4 sm:px-6">
@@ -158,6 +163,10 @@
 			lensItems={supplierLenses}
 			{currencySymbol}
 			{saleSymbol}
+			{isAltMode}
+			{sourceCurrency}
+			{sourceRateToVes}
+			{bcvUsdRate}
 			onremove={removeItem}
 		/>
 	</div>

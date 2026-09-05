@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
-	import { formatPrice } from '$lib/utils';
+	import PricePair from '../PricePair.svelte';
 
 	interface Props {
 		supplierName: string;
@@ -11,6 +11,7 @@
 		lineCount?: number;
 		totalItems?: number;
 		totalCost?: number;
+		totalCostAlt?: number;
 	}
 
 	let {
@@ -21,7 +22,8 @@
 		sourceRateToVes = 0,
 		lineCount = 0,
 		totalItems = 0,
-		totalCost = 0
+		totalCost = 0,
+		totalCostAlt = 0
 	}: Props = $props();
 
 	const hasStats = $derived(lineCount > 0);
@@ -62,7 +64,7 @@
 
 			<span class="text-outline" aria-hidden="true">·</span>
 			<span class="hidden text-on-surface-variant sm:inline">Total:</span>
-			<span class="font-semibold text-brand-navy tabular-nums">{formatPrice(totalCost)}</span>
+			<PricePair amountAlt={totalCostAlt} amountUsd={totalCost} {sourceCurrency} />
 		{/if}
 	</div>
 </aside>
