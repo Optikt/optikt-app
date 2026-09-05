@@ -6,6 +6,7 @@
 	import ItemCard from './ItemCard.svelte';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
 	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import { getCachedLensItems, getCachedProducts } from '../../sales/catalogCache.svelte';
 
 	interface Props {
 		items: PurchaseOrderDraftItem[];
@@ -33,18 +34,29 @@
 		onremove
 	}: Props = $props();
 
+	// TODO(tech-debt): la lista local topa en 50 ítems por proveedor; el fallback a la
+	// caché global es parche. A futuro: búsqueda por palabras on-demand y/o catálogo
+	// completo. Vigilar tope 50 de CatalogItemsByIdsSchema en órdenes grandes.
+	function findProduct(id: string): ProductWithRelations | undefined {
+		return products.find((pr) => pr.id === id) ?? getCachedProducts().find((pr) => pr.id === id);
+	}
+
+	function findLensItem(id: string): LensCatalogItemWithRelations | undefined {
+		return lensItems.find((ln) => ln.id === id) ?? getCachedLensItems().find((ln) => ln.id === id);
+	}
+
 	function getItemName(item: PurchaseOrderDraftItem): string {
 		if (item.itemType === 'PRODUCT') {
-			const p = products.find((pr) => pr.id === item.productId);
+			const p = item.productId ? findProduct(item.productId) : undefined;
 			return p ? `${p.sku} - ${p.name}` : 'Producto';
 		}
-		const l = lensItems.find((ln) => ln.id === item.lensCatalogItemId);
+		const l = item.lensCatalogItemId ? findLensItem(item.lensCatalogItemId) : undefined;
 		return l ? l.name : 'Lente';
 	}
 
 	function getItemSku(item: PurchaseOrderDraftItem): string {
 		if (item.itemType === 'PRODUCT') {
-			const p = products.find((pr) => pr.id === item.productId);
+			const p = item.productId ? findProduct(item.productId) : undefined;
 			return p?.sku ?? '';
 		}
 		return '';
