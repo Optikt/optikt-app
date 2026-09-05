@@ -33,6 +33,7 @@ Scope: repo
 ## UI decomposition (después del registry)
 
 `PaymentForm.svelte` (1076) → `components/payments/`:
+
 - `PaymentMethodPills.svelte` (ya existe, reusar)
 - `PaymentReferenceInput.svelte` — consume `referenceConfig` del strategy
 - `PaymentAmountCard.svelte` — nativeLabel/nativePrefix/currency del strategy

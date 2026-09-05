@@ -670,8 +670,7 @@
 								<div class="text-right">
 									<PricePair
 										amountAlt={calculateDraftItemTotalAlt(item)}
-										amountUsd={Number(item.unitPurchasePrice || 0) *
-											Number(item.quantity || 0)}
+										amountUsd={Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0)}
 										{sourceCurrency}
 									/>
 								</div>
