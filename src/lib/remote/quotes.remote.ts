@@ -56,7 +56,9 @@ import {
 	SaleItemType,
 	FreeItemEnrichmentStatus
 } from '$lib/shared/enums/lensTypes';
-import { computeDiscount, normalizeIdNumber } from '$lib/utils';
+import { normalizeIdNumber } from '$lib/utils';
+import { computeSaleTotals, type SaleTotalsLine } from '$lib/shared/saleTotals';
+import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
 import { auditService, getAuditContext } from '$lib/server/audit';
@@ -72,6 +74,27 @@ import { toPrescriptionInsert } from '$lib/utils/prescription';
 // ============================================================================
 // HELPERS
 // ============================================================================
+
+function toSaleTotalsLine(
+	item: {
+		unitPrice: number;
+		quantity: number;
+		discount: number;
+		discountType: string;
+		snapshotIsTaxable?: boolean | null;
+		itemType: string;
+	},
+	taxRate: number
+): SaleTotalsLine {
+	return {
+		unitPrice: item.unitPrice,
+		quantity: item.quantity,
+		discount: item.discount,
+		discountType: item.discountType,
+		isTaxable: item.snapshotIsTaxable ?? (item.itemType === SaleItemType.PRODUCT ? true : false),
+		taxRate
+	};
+}
 
 function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now: string) {
 	return {
@@ -351,15 +374,13 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 	}
 
 	// Calculate totals
-	const itemsSubtotal = data.items.reduce((acc, item) => {
-		const lineTotal = item.unitPrice * item.quantity;
-		const itemDiscount = computeDiscount(item.discount, item.discountType, lineTotal);
-		return acc + lineTotal - itemDiscount;
-	}, 0);
-
-	const subtotal = itemsSubtotal;
-	const globalDiscount = computeDiscount(data.discount, data.discountType, subtotal);
-	const total = Math.max(0, subtotal - globalDiscount);
+	const totals = computeSaleTotals(
+		data.items.map((item) => toSaleTotalsLine(item, data.snapshotTaxRate ?? DEFAULT_TAX_RATE)),
+		data.discount,
+		data.discountType
+	);
+	const subtotal = totals.subtotal;
+	const total = totals.total;
 
 	// All writes in a single transaction
 	const quote = await db.transaction(async (tx) => {
@@ -459,17 +480,17 @@ export const updateExistingQuote = command(UpdateQuoteSchema, async (data) => {
 	}
 
 	// Calculate totals from new items
-	const itemsSubtotal = data.items.reduce((acc, item) => {
-		const lineTotal = item.unitPrice * item.quantity;
-		const itemDiscount = computeDiscount(item.discount, item.discountType, lineTotal);
-		return acc + lineTotal - itemDiscount;
-	}, 0);
-
 	const discount = data.discount ?? existing.discount;
 	const discountType = data.discountType ?? existing.discountType;
-	const subtotal = itemsSubtotal;
-	const globalDiscount = computeDiscount(discount, discountType, subtotal);
-	const total = Math.max(0, subtotal - globalDiscount);
+	const totals = computeSaleTotals(
+		data.items.map((item) =>
+			toSaleTotalsLine(item, data.snapshotTaxRate ?? existing.snapshotTaxRate)
+		),
+		discount,
+		discountType
+	);
+	const subtotal = totals.subtotal;
+	const total = totals.total;
 
 	const quote = await db.transaction(async (tx) => {
 		const now = nowISO();
@@ -642,6 +663,13 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 		return { success: false as const, error: 'El presupuesto no tiene ítems' };
 	}
 
+	// Recomputed totals — never copy quote.subtotal/quote.total (pre-tax semantics)
+	const totals = computeSaleTotals(
+		items.map((item) => toSaleTotalsLine(item, quote.snapshotTaxRate)),
+		quote.discount,
+		quote.discountType
+	);
+
 	// Build a map of quote item IDs → new sale item IDs (for treatment parent references)
 	const idMap = new Map<string, string>();
 	for (const item of items) {
@@ -673,11 +701,11 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				sellerId: context.userId!,
 				saleDate: toISODate(nowUTC()),
 				status: SaleStatus.PENDING,
-				subtotal: quote.subtotal,
+				subtotal: totals.subtotal,
 				discount: quote.discount,
 				discountType: quote.discountType,
 				snapshotTaxRate: quote.snapshotTaxRate,
-				total: quote.total,
+				total: totals.total,
 				paidAmountBcvUsd: 0,
 				notes: quote.notes ?? null,
 				createdAt: now,

@@ -295,6 +295,13 @@
       "when": 1788060605217,
       "tag": "0041_dark_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1788739200000,
+      "tag": "0042_sale_subtotal_backfill",
+      "breakpoints": true
     }
   ]
 }

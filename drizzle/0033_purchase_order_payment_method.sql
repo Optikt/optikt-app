@@ -27,9 +27,9 @@ ALTER TABLE "public"."purchase_order_payments" ADD COLUMN "payment_method" "publ
 --    USD_BCV/USD_EFECTIVO → EFECTIVO_USD
 --    USDT                 → BINANCE_USDT
 --    anything else        → OTRO
-UPDATE "public"."purchase_order_payments" SET "payment_method" = 'TRANSFERENCIA_BS' WHERE "currency_code" = 'VES';--> statement-breakpoint
-UPDATE "public"."purchase_order_payments" SET "payment_method" = 'EFECTIVO_USD' WHERE "currency_code" IN ('USD_BCV', 'USD_EFECTIVO');--> statement-breakpoint
-UPDATE "public"."purchase_order_payments" SET "payment_method" = 'BINANCE_USDT' WHERE "currency_code" = 'USDT';--> statement-breakpoint
+UPDATE "public"."purchase_order_payments" SET "payment_method" = 'TRANSFERENCIA_BS' WHERE "currency_code"::text = 'VES';--> statement-breakpoint
+UPDATE "public"."purchase_order_payments" SET "payment_method" = 'EFECTIVO_USD' WHERE "currency_code"::text IN ('USD_BCV', 'USD_EFECTIVO');--> statement-breakpoint
+UPDATE "public"."purchase_order_payments" SET "payment_method" = 'BINANCE_USDT' WHERE "currency_code"::text = 'USDT';--> statement-breakpoint
 UPDATE "public"."purchase_order_payments" SET "payment_method" = 'OTRO' WHERE "payment_method" IS NULL;--> statement-breakpoint
 
 -- 4. Enforce NOT NULL + safe default for legacy insert paths

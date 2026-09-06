@@ -37,13 +37,32 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci # Dummy for import resolution
 
+      - name: Size gate (DT1, non-blocking)
+        continue-on-error: true
+        run: bash scripts/check-file-size.sh
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
     # Only run E2E on main branch or when explicitly requested
-    if: github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'run-e2e')
+    if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -64,10 +83,15 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm playwright install --with-deps
 
+      - name: Bootstrap database
+        run: pnpm db:bootstrap
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
       - name: Run E2E tests
         run: pnpm test:e2e
         env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci # Dummy for build
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Upload test results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

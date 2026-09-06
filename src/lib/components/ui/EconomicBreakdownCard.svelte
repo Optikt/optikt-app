@@ -30,7 +30,7 @@
 
 	let discountAmount = $derived.by(() => {
 		if (discountType === DiscountType.PERCENTAGE) {
-			return (discount / 100) * subtotal;
+			return (discount / 100) * (subtotal + taxBreakdown.taxAmount);
 		}
 
 		return discount;

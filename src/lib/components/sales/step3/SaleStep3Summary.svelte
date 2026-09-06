@@ -11,6 +11,7 @@
 		isItemDiscountValid,
 		itemLineTotal
 	} from '../saleItemHelpers';
+	import { computeAdjustedTaxBreakdown } from '../helpers/taxBreakdown';
 	import {
 		DiscountType,
 		TreatmentCategory,
@@ -28,12 +29,7 @@
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import { getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
-	import {
-		decomposePrice,
-		DEFAULT_TAX_RATE,
-		type TaxBreakdown,
-		type TaxableItem
-	} from '$lib/shared/tax';
+	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -117,7 +113,6 @@
 	);
 
 	const total = $derived(adjustedTaxBreakdown.total);
-	const subtotal = $derived(adjustedTaxBreakdown.taxableBase + adjustedTaxBreakdown.exemptTotal);
 
 	const taxableRates = $derived.by(() =>
 		Array.from(
@@ -218,54 +213,6 @@
 		return isActive
 			? 'bg-brand-navy text-white shadow-sm'
 			: 'text-on-surface-variant hover:bg-surface-container-high';
-	}
-
-	function computeAdjustedTaxBreakdown(
-		itemsForTax: TaxableItem[],
-		globalDiscountValue: number
-	): TaxBreakdown {
-		const subtotalBeforeGlobal = itemsForTax.reduce((sum, item) => {
-			const gross = item.unitPrice * item.quantity;
-			const lineDiscount =
-				item.discountType === DiscountType.PERCENTAGE
-					? gross * (item.discount / 100)
-					: item.discount;
-			return sum + Math.max(0, gross - lineDiscount);
-		}, 0);
-
-		const discountRatio =
-			subtotalBeforeGlobal > 0
-				? Math.min(Math.max(globalDiscountValue, 0), subtotalBeforeGlobal) / subtotalBeforeGlobal
-				: 0;
-
-		let taxableBase = 0;
-		let exemptTotal = 0;
-		let taxAmount = 0;
-
-		for (const item of itemsForTax) {
-			const gross = item.unitPrice * item.quantity;
-			const lineDiscount =
-				item.discountType === DiscountType.PERCENTAGE
-					? gross * (item.discount / 100)
-					: item.discount;
-			const lineAfterLocalDiscount = Math.max(0, gross - lineDiscount);
-			const adjustedLineTotal = lineAfterLocalDiscount * (1 - discountRatio);
-
-			if (item.isTaxable && item.taxRate > 0) {
-				const { base, tax } = decomposePrice(adjustedLineTotal, item.taxRate);
-				taxableBase += base;
-				taxAmount += tax;
-			} else {
-				exemptTotal += adjustedLineTotal;
-			}
-		}
-
-		return {
-			taxableBase,
-			exemptTotal,
-			taxAmount,
-			total: taxableBase + exemptTotal + taxAmount
-		};
 	}
 </script>
 
@@ -431,7 +378,9 @@
 				<div class="space-y-1">
 					<div class="flex items-center justify-between text-xs">
 						<span class="text-slate-500">Subtotal</span>
-						<span class="font-semibold text-brand-navy">{formatPrice(subtotal)}</span>
+						<span class="font-semibold text-brand-navy"
+							>{formatPrice(adjustedTaxBreakdown.subtotalBeforeGlobal)}</span
+						>
 					</div>
 					<div class="flex items-center justify-between text-xs">
 						<span class="text-slate-500">Descuento global</span>
