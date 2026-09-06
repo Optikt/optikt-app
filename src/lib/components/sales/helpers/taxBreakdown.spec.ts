@@ -68,6 +68,10 @@ describe('computeAdjustedTaxBreakdown', () => {
 		expect(result.taxableBase).toBeCloseTo(75, 2);
 		expect(result.exemptTotal).toBeCloseTo(35, 2);
 		expect(result.taxAmount).toBeCloseTo(12, 2);
+		// Pre-discount breakdown matches (no discount → same as adjusted).
+		expect(result.taxableBaseBeforeDiscount).toBeCloseTo(75, 2);
+		expect(result.exemptTotalBeforeDiscount).toBeCloseTo(35, 2);
+		expect(result.taxAmountBeforeDiscount).toBeCloseTo(12, 2);
 		// Total = BI + Exento + IVA = 75 + 35 + 12 = 122.
 		expect(result.total).toBeCloseTo(122, 2);
 		expect(result.subtotalBeforeGlobal + result.taxAmount).toBeCloseTo(122, 2);
@@ -96,9 +100,20 @@ describe('computeAdjustedTaxBreakdown', () => {
 
 		// Subtotal (pre-discount, tax-exclusive) unchanged: 110.
 		expect(result.subtotalBeforeGlobal).toBeCloseTo(110, 2);
+		// Pre-discount breakdown stays gross: BI 75 / Exento 35 / IVA 12.
+		expect(result.taxableBaseBeforeDiscount).toBeCloseTo(75, 2);
+		expect(result.exemptTotalBeforeDiscount).toBeCloseTo(35, 2);
+		expect(result.taxAmountBeforeDiscount).toBeCloseTo(12, 2);
 		// Total = raw 122 - 12.2 discount = 109.8.
 		expect(result.total).toBeCloseTo(109.8, 2);
 		expect(result.taxAmount).toBeCloseTo(12 * (1 - 0.1), 2);
+		// Consistency: Total = Base + Exento + IVA (pre-discount) − Descuento.
+		expect(
+			result.taxableBaseBeforeDiscount +
+				result.exemptTotalBeforeDiscount +
+				result.taxAmountBeforeDiscount -
+				12.2
+		).toBeCloseTo(result.total, 2);
 	});
 
 	it('stacks per-line discounts then applies the global discount proportionally', () => {
@@ -169,6 +184,73 @@ describe('computeSnapshotTaxBreakdown', () => {
 		expect(result.taxableBase).toBe(0);
 		expect(result.taxAmount).toBe(0);
 		expect(result.exemptTotal).toBe(200);
+	});
+});
+
+describe('print reconstruction (discount = raw − total)', () => {
+	it('reproduces the wizard breakdown from persisted rows: 82 + 28, total 60', () => {
+		// Persisted rows as the print pages read them: 82 taxable (16%) + 28 exempt.
+		const taxItems = [
+			{
+				unitPrice: 82,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: true,
+				taxRate: 16
+			},
+			{
+				unitPrice: 28,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: false,
+				taxRate: 16
+			}
+		];
+		const raw = taxItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0); // 110
+		const total = 60; // stored sale.total
+		const discountAmount = Math.max(0, raw - total); // 50
+
+		const r = computeAdjustedTaxBreakdown(taxItems, discountAmount);
+
+		expect(discountAmount).toBe(50);
+		expect(r.subtotalBeforeGlobal).toBeCloseTo(98.69, 2); // 70.69 + 28
+		expect(r.taxableBase).toBeCloseTo(38.56, 2);
+		expect(r.exemptTotal).toBeCloseTo(15.27, 2);
+		expect(r.taxAmount).toBeCloseTo(6.17, 2);
+		expect(r.total).toBeCloseTo(60, 2); // == sale.total
+		// discount-on-base shown in the receipt row:
+		expect(r.subtotalBeforeGlobal - r.taxableBase - r.exemptTotal).toBeCloseTo(44.86, 2);
+	});
+
+	it('is a no-op for sales without discount (matches old gross display)', () => {
+		const taxItems = [
+			{
+				unitPrice: 87,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: true,
+				taxRate: 16
+			},
+			{
+				unitPrice: 35,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: false,
+				taxRate: 16
+			}
+		];
+		const raw = 122;
+		const r = computeAdjustedTaxBreakdown(taxItems, Math.max(0, raw - 122));
+
+		expect(r.subtotalBeforeGlobal).toBeCloseTo(110, 2);
+		expect(r.taxableBase).toBeCloseTo(75, 2);
+		expect(r.exemptTotal).toBeCloseTo(35, 2);
+		expect(r.taxAmount).toBeCloseTo(12, 2);
+		expect(r.total).toBeCloseTo(122, 2);
 	});
 });
 

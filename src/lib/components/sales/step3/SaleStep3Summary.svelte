@@ -382,21 +382,49 @@
 							>{formatPrice(adjustedTaxBreakdown.subtotalBeforeGlobal)}</span
 						>
 					</div>
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-slate-500">Descuento global</span>
-						<span class="font-semibold text-red-500">-{formatPrice(appliedGlobalDiscount)}</span>
-					</div>
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-slate-500">{taxSummaryLabel}</span>
-						<span class="font-semibold text-brand-navy"
-							>{formatPrice(adjustedTaxBreakdown.taxAmount)}</span
-						>
-					</div>
+					{#if appliedGlobalDiscount > 0}
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">Descuento global</span>
+							<span class="font-semibold text-red-500"
+								>-{formatPrice(
+									adjustedTaxBreakdown.subtotalBeforeGlobal -
+										adjustedTaxBreakdown.taxableBase -
+										adjustedTaxBreakdown.exemptTotal
+								)}</span
+							>
+						</div>
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">Subtotal neto</span>
+							<span class="font-semibold text-brand-navy"
+								>{formatPrice(
+									adjustedTaxBreakdown.taxableBase + adjustedTaxBreakdown.exemptTotal
+								)}</span
+							>
+						</div>
+					{/if}
+					<div class="my-1 border-t border-slate-200"></div>
 					{#if adjustedTaxBreakdown.exemptTotal > 0}
 						<div class="flex items-center justify-between text-xs">
-							<span class="text-slate-500">Exento</span>
+							<span class="text-slate-500">Monto exento</span>
 							<span class="font-semibold text-brand-navy"
 								>{formatPrice(adjustedTaxBreakdown.exemptTotal)}</span
+							>
+						</div>
+					{/if}
+					{#if adjustedTaxBreakdown.taxableBase > 0}
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">Base imponible</span>
+							<span class="font-semibold text-brand-navy"
+								>{formatPrice(adjustedTaxBreakdown.taxableBase)}</span
+							>
+						</div>
+					{/if}
+					<div class="my-1 border-t border-slate-200"></div>
+					{#if adjustedTaxBreakdown.taxAmount > 0}
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">{taxSummaryLabel}</span>
+							<span class="font-semibold text-brand-navy"
+								>{formatPrice(adjustedTaxBreakdown.taxAmount)}</span
 							>
 						</div>
 					{/if}

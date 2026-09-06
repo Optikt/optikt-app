@@ -35,12 +35,29 @@
 
 		return discount;
 	});
+
+	// The global discount reduces the taxable/exempt bases proportionally, so the
+	// IVA must be recomputed on the discounted base. We derive the discount ratio
+	// from the gross total (subtotal + gross IVA) vs the final total, then apply it
+	// to each component to show the fiscal breakdown AFTER the discount.
+	const grossTotal = $derived(subtotal + taxBreakdown.taxAmount);
+	const discountRatio = $derived(
+		grossTotal > 0 ? Math.min(Math.max((grossTotal - total) / grossTotal, 0), 1) : 0
+	);
+	const adjustedBase = $derived(taxBreakdown.taxableBase * (1 - discountRatio));
+	const adjustedExempt = $derived(taxBreakdown.exemptTotal * (1 - discountRatio));
+	const adjustedTax = $derived(taxBreakdown.taxAmount * (1 - discountRatio));
+	const netSubtotal = $derived(adjustedBase + adjustedExempt);
+	// Discount applied to the tax-exclusive subtotal (base + exempt).
+	const discountOnBase = $derived(subtotal - netSubtotal);
 </script>
 
 <div class="rounded-[1.5rem] bg-surface-container-low px-6 py-6 shadow-sm">
 	<div class="space-y-4 text-sm text-on-surface-variant">
 		<div class="flex items-center justify-between gap-4">
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Subtotal</span>
+			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+				>Subtotal (antes de IVA)</span
+			>
 			<span class="font-mono text-base font-semibold text-brand-navy">{formatPrice(subtotal)}</span>
 		</div>
 
@@ -53,49 +70,52 @@
 					{/if}
 				</span>
 				<span class="font-mono text-base font-semibold text-error"
-					>-{formatPrice(discountAmount)}</span
+					>-{formatPrice(discountOnBase)}</span
 				>
+			</div>
+			<div class="flex items-center justify-between gap-4">
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+					>Subtotal neto</span
+				>
+				<span class="font-mono text-base font-semibold text-brand-navy">
+					{formatPrice(netSubtotal)}
+				</span>
 			</div>
 		{/if}
 
 		<div class="h-px bg-surface-container-high"></div>
 
-		<div class="flex items-center justify-between gap-4">
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-				>Subtotal neto</span
-			>
-			<span class="font-mono text-base font-semibold text-brand-navy">
-				{formatPrice(subtotal - discountAmount)}
-			</span>
-		</div>
+		{#if adjustedExempt > 0}
+			<div class="flex items-center justify-between gap-4">
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+					>Monto exento</span
+				>
+				<span class="font-mono text-base font-semibold text-brand-navy">
+					{formatPrice(adjustedExempt)}
+				</span>
+			</div>
+		{/if}
 
-		{#if taxBreakdown.taxableBase > 0}
+		{#if adjustedBase > 0}
 			<div class="flex items-center justify-between gap-4">
 				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
 					>Base imponible</span
 				>
 				<span class="font-mono text-base font-semibold text-brand-navy">
-					{formatPrice(taxBreakdown.taxableBase)}
+					{formatPrice(adjustedBase)}
 				</span>
 			</div>
 		{/if}
 
-		{#if taxBreakdown.exemptTotal > 0}
-			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Exento</span>
-				<span class="font-mono text-base font-semibold text-brand-navy">
-					{formatPrice(taxBreakdown.exemptTotal)}
-				</span>
-			</div>
-		{/if}
+		<div class="h-px bg-surface-container-high"></div>
 
-		{#if taxBreakdown.taxAmount > 0}
+		{#if adjustedTax > 0}
 			<div class="flex items-center justify-between gap-4">
 				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
 					>{taxLabel ?? 'IVA'}</span
 				>
 				<span class="font-mono text-base font-semibold text-brand-navy">
-					{formatPrice(taxBreakdown.taxAmount)}
+					{formatPrice(adjustedTax)}
 				</span>
 			</div>
 		{/if}

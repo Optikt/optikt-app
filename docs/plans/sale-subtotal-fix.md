@@ -1,7 +1,7 @@
 ---
 plan name: sale-subtotal-fix
 plan description: Subtotal pre-impuesto en ventas
-plan status: active
+plan status: done
 ---
 
 ## Idea
