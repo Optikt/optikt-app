@@ -52,6 +52,8 @@
 
 **Dificultad:** Alta. **Solución:** (a) Setup de testcontainers con PostgreSQL + migraciones. (b) Tests de integración para los 10-15 comandos más críticos. (c) Incorporar al CI. (d) E2E: flujo completo del wizard óptico de venta/presupuesto (paso 2, confirmación, autosync del tipo de lente), pagos/cancelaciones/reembolsos, reportes. ~1-2 semanas.
 
+**Diferido desde fase 2 DT1 (2026-09-06):** el adapter de pagos de compra (`PurchasePaymentAdapter` en `src/lib/server/payments/`, spec `dt1-payment-strategy`) quedó pendiente a propósito. El cuerpo de `addPurchaseOrderPaymentCmd` (~90 líneas: amortización de deuda nativa, early-payment benefit condicional, recálculo de balance + dueStatus, re-fetch post-transacción) es demasiado grande para moverlo verbatim sin red de integración — un campo cruzado en `amountAppliedToDebtUsdBcvAtOrder` sería corrupción silenciosa en paths de dinero/crédito. El adapter de venta (`server/payments/salePayments.ts`, patrón probado) sirve de plantilla. Al implementar: extraer el cuerpo de la transacción verbatim, input con ~15 campos (purchaseOrder row + normalized + data + userId), remote conserva guards + audit, verificación obligatoria con los tests de integración de este DT antes de mergear.
+
 ---
 
 ### DT10 · Validación de negocio en Zod refinements 🟡
