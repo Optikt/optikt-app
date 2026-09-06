@@ -2,10 +2,12 @@ import type { RequestHandler } from './$types';
 import { getExchangeRatesSnapshot } from '$lib/server/exchangeRates/service';
 import { onRatesUpdated } from '$lib/server/exchangeRates/events';
 
-export const GET: RequestHandler = async ({ locals, request }) => {
+export const GET: RequestHandler = async ({ locals, request, url }) => {
 	if (!locals.user) {
 		return new Response('No autorizado', { status: 401 });
 	}
+
+	const cid = url.searchParams.get('cid')?.trim() || crypto.randomUUID();
 
 	const stream = new ReadableStream({
 		start(controller) {
@@ -13,9 +15,10 @@ export const GET: RequestHandler = async ({ locals, request }) => {
 				controller.enqueue(`data: ${JSON.stringify(snapshot)}\n\n`);
 			}
 
+			controller.enqueue(`event: hello\ndata: ${JSON.stringify({ cid })}\n\n`);
 			send(getExchangeRatesSnapshot());
 
-			const unsubscribe = onRatesUpdated(send);
+			const unsubscribe = onRatesUpdated(cid, send, locals.user?.id ?? null);
 
 			const keepalive = setInterval(() => {
 				controller.enqueue(': keepalive\n\n');

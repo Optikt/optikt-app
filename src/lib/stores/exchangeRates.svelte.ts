@@ -68,10 +68,31 @@ export function getExchangeRatesStore() {
 	};
 }
 
+const SSE_CID_KEY = 'exchangeRatesSseCid';
+let singletonES: EventSource | null = null;
+let singletonPollId: ReturnType<typeof setInterval> | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempts = 0;
+let pollingActive = false;
+
+function getOrCreateCid(): string {
+	try {
+		const existing = sessionStorage.getItem(SSE_CID_KEY);
+		if (existing) return existing;
+		const cid = crypto.randomUUID();
+		sessionStorage.setItem(SSE_CID_KEY, cid);
+		return cid;
+	} catch {
+		return crypto.randomUUID();
+	}
+}
+
 export function initExchangeRatesPolling() {
 	if (!browser) return;
+	if (pollingActive) return () => {};
+	pollingActive = true;
 
-	let eventSource: EventSource | null = null;
+	const cid = getOrCreateCid();
 
 	async function load() {
 		try {
@@ -85,14 +106,33 @@ export function initExchangeRatesPolling() {
 		}
 	}
 
-	function connectSSE() {
-		eventSource = new EventSource(resolve('/api/exchange-rates/stream'));
+	function scheduleReconnect() {
+		if (reconnectTimer) return;
+		const backoff = Math.min(30_000, 1_000 * 2 ** reconnectAttempts + Math.random() * 500);
+		reconnectAttempts += 1;
+		reconnectTimer = setTimeout(() => {
+			reconnectTimer = null;
+			connectSSE();
+		}, backoff);
+	}
 
-		eventSource.onopen = () => {
+	function connectSSE() {
+		if (singletonES && singletonES.readyState <= 1) return;
+		try {
+			singletonES?.close();
+		} catch {
+			// already closed
+		}
+		singletonES = new EventSource(
+			resolve(`/api/exchange-rates/stream?cid=${encodeURIComponent(cid)}`)
+		);
+
+		singletonES.onopen = () => {
 			sseConnected = true;
+			reconnectAttempts = 0;
 		};
 
-		eventSource.onmessage = (event) => {
+		singletonES.onmessage = (event) => {
 			try {
 				const data = JSON.parse(event.data) as ExchangeRatesSnapshot;
 				applySnapshot(data, 'sse');
@@ -102,24 +142,45 @@ export function initExchangeRatesPolling() {
 			}
 		};
 
-		eventSource.onerror = () => {
+		singletonES.onerror = () => {
 			sseConnected = false;
-			// EventSource auto-reconnects by default.
-			// If it stays in CONNECTING state, fall back to polling.
-			if (eventSource?.readyState === EventSource.CONNECTING) {
-				setTimeout(connectSSE, 5_000);
+			try {
+				singletonES?.close();
+			} catch {
+				// already closed
 			}
+			singletonES = null;
+			scheduleReconnect();
 		};
 	}
 
 	void load();
 	connectSSE();
 
-	const pollId = setInterval(load, 60_000);
+	if (!singletonPollId) {
+		singletonPollId = setInterval(load, 60_000);
+	}
 
-	return () => {
-		clearInterval(pollId);
-		eventSource?.close();
+	function cleanup() {
+		if (reconnectTimer) {
+			clearTimeout(reconnectTimer);
+			reconnectTimer = null;
+		}
+		if (singletonPollId) {
+			clearInterval(singletonPollId);
+			singletonPollId = null;
+		}
+		try {
+			singletonES?.close();
+		} catch {
+			// already closed
+		}
+		singletonES = null;
+		pollingActive = false;
 		sseConnected = false;
-	};
+	}
+
+	window.addEventListener('pagehide', cleanup, { once: true });
+
+	return cleanup;
 }

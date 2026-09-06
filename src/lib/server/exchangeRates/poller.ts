@@ -1,5 +1,6 @@
 import {
 	getExchangeRatesPollIntervalMs,
+	getExchangeRatesSnapshot,
 	isExchangeRatesConfigured,
 	refreshExchangeRates
 } from './service';
@@ -14,8 +15,12 @@ async function runExchangeRatesPollCycle() {
 		const snapshot = await refreshExchangeRates({ source: 'poller' });
 		await publishExchangeRatesTransition(snapshot);
 		emitRatesUpdated(snapshot);
+		logger.info(
+			`Poller tasas ok lastFetchedAt=${snapshot.lastFetchedAt} isStale=${snapshot.isStale} lastError=${snapshot.lastError ?? 'none'}`
+		);
 	} catch (error) {
 		logger.error('Error actualizando tasas de cambio', error);
+		emitRatesUpdated(getExchangeRatesSnapshot());
 	}
 }
 
@@ -37,9 +42,13 @@ export function startExchangeRatesPoller() {
 		.then((snapshot) => {
 			syncExchangeRatesHealthState(snapshot);
 			emitRatesUpdated(snapshot);
+			logger.info(
+				`Poller tasas startup ok lastFetchedAt=${snapshot.lastFetchedAt} isStale=${snapshot.isStale} intervalMs=${getExchangeRatesPollIntervalMs()}`
+			);
 		})
 		.catch((error) => {
 			logger.error('Error cargando tasas de cambio al iniciar', error);
+			emitRatesUpdated(getExchangeRatesSnapshot());
 		});
 
 	exchangeRatesPoller = setInterval(() => {
