@@ -2,19 +2,18 @@
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
+	import { ConfirmModal, PaymentReferenceField } from '$lib/components/ui';
 	import {
-		ConfirmModal,
-		PaymentMethodPills,
-		PaymentRateInput,
-		PaymentReferenceField
-	} from '$lib/components/ui';
+		PaymentAmountCard,
+		PaymentPreviewCard,
+		PaymentSelectionStep
+	} from '$lib/components/payments';
 	import { addPayment } from '$lib/remote/sales.remote';
 	import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders.remote';
 	import CasheaCheckbox from './CasheaCheckbox.svelte';
 	import {
 		CurrencyCode,
 		PAYMENT_CURRENCY_GROUPS,
-		PAYMENT_METHOD_ICONS,
 		PAYMENT_METHOD_LABELS,
 		PAYMENT_RAILS_BY_CURRENCY,
 		SALES_RAILS_BY_CURRENCY,
@@ -41,7 +40,7 @@
 	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
-	import { formatCurrency, formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import {
 		calculatePaymentAmountFromUsdBcv,
 		calculateUsdBcvFromPaymentAmount,
@@ -146,7 +145,6 @@
 	let reference = $state('');
 	let notes = $state('');
 	let submitting = $state(false);
-	let amountInputEl = $state<HTMLInputElement | null>(null);
 	let showOverpaymentModal = $state(false);
 	let pendingAddPayload = $state<Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null>(null);
 	let showEarlyPaymentBenefitModal = $state(false);
@@ -437,12 +435,6 @@
 		if (orderRate != null && orderRate > 0) specificRateInput = String(orderRate);
 	});
 
-	// Focus amount input on drawer open (drawer variant)
-	$effect(() => {
-		if (variant !== 'drawer') return;
-		if (rail && amountInputEl) amountInputEl.focus();
-	});
-
 	// ----- Selection handlers -----
 	function selectCurrency(key: string) {
 		if (currencyKey === key) return;
@@ -668,145 +660,42 @@
 </script>
 
 <div class="space-y-4">
-	<!-- Paso 1: moneda / tasa -->
-	<div>
-		<p class="mb-2.5 text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-			Moneda / tasa
-		</p>
-		<PaymentMethodPills
-			methods={PAYMENT_CURRENCY_GROUPS.map((g) => g.key)}
-			labels={Object.fromEntries(PAYMENT_CURRENCY_GROUPS.map((g) => [g.key, g.label]))}
-			selected={currencyKey}
-			onSelect={(key) => selectCurrency(key as string)}
-		/>
-	</div>
-
-	<!-- Paso 2: riel -->
-	{#if currencyKey}
-		<div>
-			<p class="mb-2.5 text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-				Método
-			</p>
-			<PaymentMethodPills
-				methods={railsByCurrency[currencyKey]}
-				labels={PAYMENT_METHOD_LABELS}
-				selected={rail}
-				onSelect={(m) => selectRail(m as PaymentMethod)}
-				icons={PAYMENT_METHOD_ICONS}
-			/>
-		</div>
-	{/if}
+	<PaymentSelectionStep
+		{currencyKey}
+		{rail}
+		{railsByCurrency}
+		onSelectCurrency={(key) => selectCurrency(key)}
+		onSelectRail={(m) => selectRail(m)}
+	/>
 
 	{#if rail}
 		<div class="space-y-3">
-			<!-- Fecha -->
-			<div>
-				<label
-					for="pay-date"
-					class="mb-1.5 block text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-				>
-					Fecha
-				</label>
-				<input
-					id="pay-date"
-					type="date"
-					bind:value={paymentDate}
-					max="9999-12-31"
-					class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-2.5 text-sm font-medium text-on-surface focus:border-brand-blue focus:outline-none"
-				/>
-			</div>
-
-			<!-- Amounts 2 cols -->
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<div class="space-y-1.5">
-					<div class="flex items-center justify-between gap-2">
-						<label
-							for="pay-usd"
-							class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-						>
-							USD BCV
-						</label>
-						{#if kind === 'sale'}
-							<button
-								type="button"
-								onclick={useRemainingBalance}
-								class="shrink-0 text-[10px] font-semibold text-warning transition-colors hover:text-warning"
-							>
-								Usar saldo
-							</button>
-						{/if}
-					</div>
-					<div class="relative">
-						<span
-							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
-							>$</span
-						>
-						<input
-							id="pay-usd"
-							type="number"
-							value={usdFieldValue}
-							oninput={handleUsdInput}
-							placeholder={debtBalanceUsd > 0 ? debtBalanceUsd.toFixed(2) : '0.00'}
-							step="0.01"
-							min="0"
-							class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-2.5 pr-3.5 pl-8 font-mono text-sm font-semibold text-on-surface transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
-						/>
-					</div>
-				</div>
-
-				<div class="flex flex-col space-y-1.5">
-					<label
-						for="pay-native"
-						class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-					>
-						{nativeLabel}
-					</label>
-					<div class="relative">
-						<span
-							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
-							>{nativePrefix}</span
-						>
-						<input
-							id="pay-native"
-							type="number"
-							value={nativeFieldValue}
-							oninput={handleNativeInput}
-							placeholder="0.00"
-							step="0.01"
-							min="0"
-							bind:this={amountInputEl}
-							class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface ring-1 ring-brand-navy/10 transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
-						/>
-					</div>
-				</div>
-			</div>
-
-			{#if resolvedAmountUsd > 0}
-				<p class="text-xs text-on-surface-variant tabular-nums">
-					≈ {resolvedUsdDisplay} USD BCV{#if rateContextLine}
-						<span class="text-on-surface-variant/70"> · {rateContextLine}</span>
-					{/if}
-				</p>
-			{/if}
-
-			<!-- Rates 2 cols -->
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<PaymentRateInput
-					label="Tasa BCV"
-					value={bcvRateInput}
-					oninput={(value) => (bcvRateInput = value)}
-					placeholder={defaultBcvRateInput || '0.00'}
-					class={needsSpecificRate ? '' : 'sm:col-span-2'}
-				/>
-				{#if needsSpecificRate}
-					<PaymentRateInput
-						label={specificRateLabel}
-						value={specificRateInput}
-						oninput={(value) => (specificRateInput = value)}
-						placeholder={autoSpecificRate > 0 ? autoSpecificRate.toFixed(2) : '0.00'}
-					/>
-				{/if}
-			</div>
+			<PaymentAmountCard
+				{kind}
+				{rail}
+				{variant}
+				{paymentDate}
+				{usdFieldValue}
+				{nativeFieldValue}
+				{nativeLabel}
+				{nativePrefix}
+				{debtBalanceUsd}
+				{resolvedAmountUsd}
+				{resolvedUsdDisplay}
+				{rateContextLine}
+				{bcvRateInput}
+				{defaultBcvRateInput}
+				{needsSpecificRate}
+				{specificRateLabel}
+				{specificRateInput}
+				{autoSpecificRate}
+				onDateInput={(value) => (paymentDate = value)}
+				onUsdInput={handleUsdInput}
+				onNativeInput={handleNativeInput}
+				onBcvRateInput={(value) => (bcvRateInput = value)}
+				onSpecificRateInput={(value) => (specificRateInput = value)}
+				onUseRemainingBalance={useRemainingBalance}
+			/>
 
 			<!-- Cashea (sale, solo si la venta es Cashea) -->
 			{#if kind === 'sale' && isCasheaSale && isBsPaymentMethod(rail)}
@@ -839,69 +728,21 @@
 			{/if}
 
 			<!-- Preview -->
-			{#if kind === 'sale'}
-				<div
-					class="flex items-center justify-between rounded-lg bg-surface-container-high/70 px-3 py-2"
-				>
-					<div>
-						<p class="text-[10px] text-on-surface-variant">Restará luego</p>
-						<p class="font-mono text-sm font-bold tabular-nums {restLabelClass}">
-							{formatPrice(pendingAfterPayment)}
-						</p>
-					</div>
-					<div class="text-right">
-						<p class="text-[10px] text-on-surface-variant">Método</p>
-						<p class="text-xs font-semibold text-on-surface">
-							{PAYMENT_METHOD_LABELS[rail as PaymentMethod]}
-						</p>
-					</div>
-				</div>
-			{:else if showPurchasePreview}
-				<div
-					class="rounded-lg bg-surface-container-high px-3 py-2.5 font-mono text-xs {isNativeSettlement &&
-					amountAppliedToDebt != null &&
-					amountAppliedToDebt > 0
-						? 'space-y-1'
-						: ''}"
-				>
-					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-						{#if purchaseNormalized.amountBs > 0}
-							<span class="text-on-surface-variant"
-								>Bs {formatCurrency(purchaseNormalized.amountBs)}</span
-							>
-						{/if}
-						{#if resolvedAmountUsd > 0}
-							<span class="text-outline">·</span>
-							<span class="font-semibold text-brand-navy">{resolvedUsdDisplay}</span>
-						{/if}
-						{#if isNativeSettlement && amountAppliedToDebt != null && amountAppliedToDebt > 0}
-							<span class="text-outline">·</span>
-							<span class="text-on-surface-variant"
-								>Abono {formatCurrency(amountAppliedToDebt)} {settlementSymbol}</span
-							>
-							<span
-								class={exchangeVariance > 0
-									? 'text-success'
-									: exchangeVariance < 0
-										? 'text-error'
-										: 'text-on-surface-variant'}
-							>
-								· {exchangeVariance > 0 ? '+' : ''}{formatPrice(exchangeVariance)}
-							</span>
-						{/if}
-					</div>
-					{#if liveEarlyPaymentSuggestion}
-						<div class="mt-1 flex items-center gap-1.5 text-[10px] text-brand-gold">
-							<span class="font-semibold">Pronto pago</span>
-							<span
-								>· {formatDateOnly(liveEarlyPaymentSuggestion.deadline, {
-									dateStyle: 'short'
-								})} · {formatPrice(liveEarlyPaymentSuggestion.amount)}</span
-							>
-						</div>
-					{/if}
-				</div>
-			{/if}
+			<PaymentPreviewCard
+				{kind}
+				methodLabel={PAYMENT_METHOD_LABELS[rail as PaymentMethod]}
+				{pendingAfterPayment}
+				{restLabelClass}
+				{showPurchasePreview}
+				{purchaseNormalized}
+				{resolvedAmountUsd}
+				{resolvedUsdDisplay}
+				{isNativeSettlement}
+				{amountAppliedToDebt}
+				{settlementSymbol}
+				{exchangeVariance}
+				{liveEarlyPaymentSuggestion}
+			/>
 
 			<button
 				type="button"
