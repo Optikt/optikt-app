@@ -187,6 +187,73 @@ describe('computeSnapshotTaxBreakdown', () => {
 	});
 });
 
+describe('print reconstruction (discount = raw − total)', () => {
+	it('reproduces the wizard breakdown from persisted rows: 82 + 28, total 60', () => {
+		// Persisted rows as the print pages read them: 82 taxable (16%) + 28 exempt.
+		const taxItems = [
+			{
+				unitPrice: 82,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: true,
+				taxRate: 16
+			},
+			{
+				unitPrice: 28,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: false,
+				taxRate: 16
+			}
+		];
+		const raw = taxItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0); // 110
+		const total = 60; // stored sale.total
+		const discountAmount = Math.max(0, raw - total); // 50
+
+		const r = computeAdjustedTaxBreakdown(taxItems, discountAmount);
+
+		expect(discountAmount).toBe(50);
+		expect(r.subtotalBeforeGlobal).toBeCloseTo(98.69, 2); // 70.69 + 28
+		expect(r.taxableBase).toBeCloseTo(38.56, 2);
+		expect(r.exemptTotal).toBeCloseTo(15.27, 2);
+		expect(r.taxAmount).toBeCloseTo(6.17, 2);
+		expect(r.total).toBeCloseTo(60, 2); // == sale.total
+		// discount-on-base shown in the receipt row:
+		expect(r.subtotalBeforeGlobal - r.taxableBase - r.exemptTotal).toBeCloseTo(44.86, 2);
+	});
+
+	it('is a no-op for sales without discount (matches old gross display)', () => {
+		const taxItems = [
+			{
+				unitPrice: 87,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: true,
+				taxRate: 16
+			},
+			{
+				unitPrice: 35,
+				quantity: 1,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				isTaxable: false,
+				taxRate: 16
+			}
+		];
+		const raw = 122;
+		const r = computeAdjustedTaxBreakdown(taxItems, Math.max(0, raw - 122));
+
+		expect(r.subtotalBeforeGlobal).toBeCloseTo(110, 2);
+		expect(r.taxableBase).toBeCloseTo(75, 2);
+		expect(r.exemptTotal).toBeCloseTo(35, 2);
+		expect(r.taxAmount).toBeCloseTo(12, 2);
+		expect(r.total).toBeCloseTo(122, 2);
+	});
+});
+
 describe('getSnapshotTaxLabel', () => {
 	it('formats a single document-level tax rate', () => {
 		expect(getSnapshotTaxLabel(16)).toBe('IVA (16%)');

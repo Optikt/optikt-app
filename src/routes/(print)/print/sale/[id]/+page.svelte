@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { Isotipo } from '$lib/components';
 	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
-	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import { computeAdjustedTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { PaymentMethod, SaleStatus, getPaymentMethodLabel } from '$lib/shared/enums';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
 	import { computeDiscount, formatCurrency, formatDate, formatPrice } from '$lib/utils';
+	import { computeTaxBreakdown, type TaxableItem } from '$lib/shared/tax';
 	import {
 		getPrintItemLabel,
 		getPrintItemLabelClass,
@@ -45,8 +46,23 @@
 		: 'Cliente General';
 	const customerDocument = sale.customer?.idNumber ?? 'No registrado';
 	const customerPhone = sale.customer?.primaryPhone?.trim() || null;
-	const taxBreakdown = computeSnapshotTaxBreakdown(items, sale.snapshotTaxRate);
-	const subtotalForTotals = taxBreakdown.taxableBase + taxBreakdown.exemptTotal;
+	const taxItems: TaxableItem[] = items.map((item) => ({
+		unitPrice: item.unitPrice,
+		quantity: item.quantity,
+		discount: item.discount,
+		discountType: item.discountType as 'FIXED' | 'PERCENTAGE',
+		isTaxable: item.snapshotIsTaxable ?? false,
+		taxRate: sale.snapshotTaxRate
+	}));
+	// Reconstruct the absolute global discount from the stored header totals,
+	// then decompose with the same adjusted-breakdown logic as the wizard so
+	// the printed receipt matches: Subtotal → Descuento → Exento/Base → IVA → Total.
+	const rawSubtotal = computeTaxBreakdown(taxItems).total;
+	const discountAmount = Math.max(0, rawSubtotal - sale.total);
+	const adjusted = computeAdjustedTaxBreakdown(taxItems, discountAmount);
+	const discountOnBase =
+		adjusted.subtotalBeforeGlobal - adjusted.taxableBase - adjusted.exemptTotal;
+	const hasDiscount = sale.discount > 0;
 	const ivaRate = sale.snapshotTaxRate > 0 ? sale.snapshotTaxRate : null;
 	const remainingAmount = Math.max(0, sale.total - sale.paidAmountBcvUsd);
 	const showRemainingAmount = payments.length > 0 && remainingAmount > 0.01;
@@ -329,20 +345,34 @@
 				</p>
 
 				<div class="space-y-[2px] text-[10px] text-slate-700">
-					{#if taxBreakdown.taxableBase > 0}
+					{#if hasDiscount}
+						<div class="flex items-center justify-between gap-3">
+							<span>Subtotal</span>
+							<span class="font-mono text-slate-950 tabular-nums">
+								{formatPrice(adjusted.subtotalBeforeGlobal)}
+							</span>
+						</div>
+						<div class="flex items-center justify-between gap-3">
+							<span>Descuento global</span>
+							<span class="font-mono text-slate-950 tabular-nums">
+								-{formatPrice(discountOnBase)}
+							</span>
+						</div>
+					{/if}
+					{#if adjusted.taxableBase > 0}
 						<div class="flex items-center justify-between gap-3">
 							<span>Base imponible</span>
 							<span class="font-mono text-slate-950 tabular-nums">
-								{formatPrice(taxBreakdown.taxableBase)}
+								{formatPrice(adjusted.taxableBase)}
 							</span>
 						</div>
 					{/if}
 
-					{#if taxBreakdown.exemptTotal > 0}
+					{#if adjusted.exemptTotal > 0}
 						<div class="flex items-center justify-between gap-3">
 							<span>Exento</span>
 							<span class="font-mono text-slate-950 tabular-nums">
-								{formatPrice(taxBreakdown.exemptTotal)}
+								{formatPrice(adjusted.exemptTotal)}
 							</span>
 						</div>
 					{/if}
@@ -350,18 +380,18 @@
 					<div class="flex items-center justify-between gap-3">
 						<span>Subtotal neto</span>
 						<span class="font-mono text-slate-950 tabular-nums"
-							>{formatPrice(subtotalForTotals)}</span
+							>{formatPrice(adjusted.taxableBase + adjusted.exemptTotal)}</span
 						>
 					</div>
 
-					{#if taxBreakdown.taxAmount > 0}
+					{#if adjusted.taxAmount > 0}
 						<div class="flex items-center justify-between gap-3">
 							<span
 								>IVA{#if ivaRate !== null}
 									({formatTaxRate(ivaRate)}%){/if}</span
 							>
 							<span class="font-mono text-slate-950 tabular-nums">
-								{formatPrice(taxBreakdown.taxAmount)}
+								{formatPrice(adjusted.taxAmount)}
 							</span>
 						</div>
 					{/if}

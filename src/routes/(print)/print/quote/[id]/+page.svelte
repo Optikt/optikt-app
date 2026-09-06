@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { Isotipo } from '$lib/components';
 	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
-	import { computeSnapshotTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
+	import { computeAdjustedTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
 	import { untrack } from 'svelte';
 	import { computeDiscount, formatDate, formatPrice } from '$lib/utils';
+	import { computeTaxBreakdown, type TaxableItem } from '$lib/shared/tax';
 	import {
 		getPrintItemLabel,
 		getPrintItemLabelClass,
@@ -37,8 +38,22 @@
 		? `${quote.customer.firstName} ${quote.customer.lastName}`
 		: 'Cliente General';
 	const customerDocument = quote.customer?.idNumber ?? 'No registrado';
-	const taxBreakdown = computeSnapshotTaxBreakdown(items, quote.snapshotTaxRate);
-	const subtotalForTotals = taxBreakdown.taxableBase + taxBreakdown.exemptTotal;
+	const taxItems: TaxableItem[] = items.map((item) => ({
+		unitPrice: item.unitPrice,
+		quantity: item.quantity,
+		discount: item.discount,
+		discountType: item.discountType as 'FIXED' | 'PERCENTAGE',
+		isTaxable: item.snapshotIsTaxable ?? false,
+		taxRate: quote.snapshotTaxRate
+	}));
+	// Same reconstruction as the sale print: discount = raw − total, then the
+	// wizard's adjusted-breakdown logic so the receipt matches the summary card.
+	const rawSubtotal = computeTaxBreakdown(taxItems).total;
+	const discountAmount = Math.max(0, rawSubtotal - quote.total);
+	const adjusted = computeAdjustedTaxBreakdown(taxItems, discountAmount);
+	const discountOnBase =
+		adjusted.subtotalBeforeGlobal - adjusted.taxableBase - adjusted.exemptTotal;
+	const hasDiscount = quote.discount > 0;
 	const ivaRate = quote.snapshotTaxRate > 0 ? quote.snapshotTaxRate : null;
 	const quoteNotes = quote.notes?.trim() || null;
 	const validUntilLabel = quote.validUntil ? formatReceiptDate(quote.validUntil) : null;
@@ -258,39 +273,53 @@
 					</p>
 
 					<div class="space-y-[2px] text-[10px] text-slate-700">
+						{#if hasDiscount}
+							<div class="flex items-center justify-between gap-3">
+								<span>Subtotal</span>
+								<span class="font-mono text-slate-950 tabular-nums">
+									{formatPrice(adjusted.subtotalBeforeGlobal)}
+								</span>
+							</div>
+							<div class="flex items-center justify-between gap-3">
+								<span>Descuento global</span>
+								<span class="font-mono text-slate-950 tabular-nums">
+									-{formatPrice(discountOnBase)}
+								</span>
+							</div>
+						{/if}
 						<div class="flex items-center justify-between gap-3">
 							<span>Subtotal neto</span>
 							<span class="font-mono text-slate-950 tabular-nums">
-								{formatPrice(subtotalForTotals)}
+								{formatPrice(adjusted.taxableBase + adjusted.exemptTotal)}
 							</span>
 						</div>
 
-						{#if taxBreakdown.taxableBase > 0}
+						{#if adjusted.taxableBase > 0}
 							<div class="flex items-center justify-between gap-3">
 								<span>Base imponible</span>
 								<span class="font-mono text-slate-950 tabular-nums">
-									{formatPrice(taxBreakdown.taxableBase)}
+									{formatPrice(adjusted.taxableBase)}
 								</span>
 							</div>
 						{/if}
 
-						{#if taxBreakdown.exemptTotal > 0}
+						{#if adjusted.exemptTotal > 0}
 							<div class="flex items-center justify-between gap-3">
 								<span>Exento</span>
 								<span class="font-mono text-slate-950 tabular-nums">
-									{formatPrice(taxBreakdown.exemptTotal)}
+									{formatPrice(adjusted.exemptTotal)}
 								</span>
 							</div>
 						{/if}
 
-						{#if taxBreakdown.taxAmount > 0}
+						{#if adjusted.taxAmount > 0}
 							<div class="flex items-center justify-between gap-3">
 								<span
 									>IVA{#if ivaRate !== null}
 										({formatTaxRate(ivaRate)}%){/if}</span
 								>
 								<span class="font-mono text-slate-950 tabular-nums">
-									{formatPrice(taxBreakdown.taxAmount)}
+									{formatPrice(adjusted.taxAmount)}
 								</span>
 							</div>
 						{/if}
@@ -314,38 +343,52 @@
 					</p>
 
 					<div class="space-y-[2px] text-[10px] text-slate-700">
-						{#if taxBreakdown.taxableBase > 0}
+						{#if hasDiscount}
+							<div class="flex items-center justify-between gap-3">
+								<span>Subtotal</span>
+								<span class="font-mono text-slate-950 tabular-nums">
+									{formatPrice(adjusted.subtotalBeforeGlobal)}
+								</span>
+							</div>
+							<div class="flex items-center justify-between gap-3">
+								<span>Descuento global</span>
+								<span class="font-mono text-slate-950 tabular-nums">
+									-{formatPrice(discountOnBase)}
+								</span>
+							</div>
+						{/if}
+						{#if adjusted.taxableBase > 0}
 							<div class="flex items-center justify-between gap-3">
 								<span>Base imponible</span>
 								<span class="font-mono text-slate-950 tabular-nums">
-									{formatPrice(taxBreakdown.taxableBase)}
+									{formatPrice(adjusted.taxableBase)}
 								</span>
 							</div>
 						{/if}
 
-						{#if taxBreakdown.exemptTotal > 0}
+						{#if adjusted.exemptTotal > 0}
 							<div class="flex items-center justify-between gap-3">
 								<span>Exento</span>
 								<span class="font-mono text-slate-950 tabular-nums">
-									{formatPrice(taxBreakdown.exemptTotal)}
+									{formatPrice(adjusted.exemptTotal)}
 								</span>
 							</div>
 						{/if}
 						<div class="flex items-center justify-between gap-3">
 							<span>Subtotal neto</span>
 							<span class="font-mono text-slate-950 tabular-nums">
-								{formatPrice(subtotalForTotals)}
+								{formatPrice(adjusted.taxableBase + adjusted.exemptTotal)}
 							</span>
 						</div>
 
-						{#if taxBreakdown.taxAmount > 0}
+						{#if adjusted.taxAmount > 0}
 							<div class="flex items-center justify-between gap-3">
 								<span
 									>IVA{#if ivaRate !== null}
 										({formatTaxRate(ivaRate)}%){/if}</span
 								>
 								<span class="font-mono text-slate-950 tabular-nums">
-									{formatPrice(taxBreakdown.taxAmount)}
+									{formatPrice(adjusted.taxAmount)}
 								</span>
 							</div>
 						{/if}
