@@ -26,7 +26,6 @@ import {
 	getSaleItemsWithDetails,
 	getSalePayments,
 	findPaymentById,
-	addSalePayment,
 	voidSalePayment,
 	recalcSalePaidAmount,
 	updateSale as updateSaleQuery,
@@ -78,6 +77,7 @@ import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { createExpense } from '$lib/server/db/queries/cash';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { inventoryMovements } from '$lib/server/db/schema';
+import { submitSalePayment } from '$lib/server/payments/salePayments';
 import { monthStart, nowISO, toISODate, nowUTC, toUTCString } from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
@@ -538,7 +538,7 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 
 	// All writes in a single transaction: payment + recalc + auto-complete
 	const { payment, paidAmount } = await db.transaction(async (tx) => {
-		const newPayment = await addSalePayment(
+		return submitSalePayment(
 			{
 				saleId: data.saleId,
 				paymentMethod: data.paymentMethod,
@@ -548,16 +548,12 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 				isCasheaPayment: data.isCasheaPayment ?? false,
 				bcvRate: data.bcvRate,
 				paymentDate: data.paymentDate,
-				amountBcvUsd,
+				usdBcvAmount: amountBcvUsd,
 				reference: data.reference ?? null,
 				notes: data.notes ?? null
 			},
 			tx
 		);
-
-		const newPaidAmount = await recalcSalePaidAmount(data.saleId, tx);
-
-		return { payment: newPayment, paidAmount: newPaidAmount };
 	});
 
 	// Audit logs (best-effort, after transaction succeeds)
