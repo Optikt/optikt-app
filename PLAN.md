@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-08-30.
+> Actualizado: 2026-09-06.
 
 ---
 
@@ -110,6 +110,20 @@
 - **`@types/node 22 → 26.4.0`:** runtime es `Node 22.22.2`. Se queda en `^22` a menos que hagamos **bump explícito de Node** (ej. a 24/26). Subir types sin subir runtime no aporta.
 
 **Estado:** Documentado 2026-08-29. No tocar hasta evento que lo desbloquee.
+
+---
+
+### DT20 · Step2 compras topa catálogo en 50 (fallback a caché) 🟢
+
+**Problema:** `PurchaseOrderStep2` carga el set del proveedor vía `searchCatalog({ limit: 50 })` (tope `CatalogSearchSchema.max(50)` en `schemas/catalog.ts:12`). Proveedores con 50+ productos (Inmodeca: 77) dejaban filas como `- Producto` en step2, porque `ItemsList.getItemName/getItemSku` solo buscaban en la lista local. Parche `bddc033`: fallback a la caché global (sembrada con las líneas de la orden vía `getCatalogItemsByIds`).
+
+**Riesgo de no hacerlo (optimización):** Con catálogos grandes el combobox también pierde items; órdenes con 50+ líneas del mismo tipo rompen el seed (`CatalogItemsByIdsSchema.max(50)`).
+
+**Contras:** Traer el catálogo completo pesa en memoria; la búsqueda on-demand requiere debounce + race-guard (patrón ya existe en `SaleStep2SearchBar`).
+
+**Dificultad:** Media (2-3 días). **Solución:** búsqueda por palabras on-demand en el combobox (reusar `searchCatalog?q=`) + seed por chunks si la orden supera 50 líneas por tipo.
+
+**Estado:** Parche aplicado 2026-09-06 (`bddc033`), `TODO(tech-debt)` en `ItemsList.svelte:37`. Optimización pendiente.
 
 ---
 
@@ -583,6 +597,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟢        | NF11 · Código barras           | 2 días                  |
 | ✅        | DT7 · PDF stack                | Completado              |
 | 🟢        | DT18 · Latencia backend        | 1-2 días                |
+| 🟢        | DT20 · Catálogo step2 topado   | 2-3 días                |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT               |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope          |
 | 🟢        | NF8 · Comisiones               | 5 días                  |
