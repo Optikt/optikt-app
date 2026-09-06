@@ -377,7 +377,7 @@
 			<div class="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
 				<div class="space-y-1">
 					<div class="flex items-center justify-between text-xs">
-						<span class="text-slate-500">Subtotal (antes de IVA)</span>
+						<span class="text-slate-500">Subtotal</span>
 						<span class="font-semibold text-brand-navy"
 							>{formatPrice(adjustedTaxBreakdown.subtotalBeforeGlobal)}</span
 						>
