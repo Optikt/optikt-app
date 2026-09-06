@@ -44,30 +44,18 @@
 			<span class="font-mono text-base font-semibold text-brand-navy">{formatPrice(subtotal)}</span>
 		</div>
 
-		{#if discountAmount > 0}
-			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
-					Descuento global
-					{#if discountType === DiscountType.PERCENTAGE}
-						({discount}%)
-					{/if}
-				</span>
-				<span class="font-mono text-base font-semibold text-error"
-					>-{formatPrice(discountAmount)}</span
-				>
-			</div>
-		{/if}
-
 		<div class="h-px bg-surface-container-high"></div>
 
-		<div class="flex items-center justify-between gap-4">
-			<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
-				>Subtotal neto</span
-			>
-			<span class="font-mono text-base font-semibold text-brand-navy">
-				{formatPrice(subtotal - discountAmount)}
-			</span>
-		</div>
+		{#if taxBreakdown.exemptTotal > 0}
+			<div class="flex items-center justify-between gap-4">
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase"
+					>Monto exento</span
+				>
+				<span class="font-mono text-base font-semibold text-brand-navy">
+					{formatPrice(taxBreakdown.exemptTotal)}
+				</span>
+			</div>
+		{/if}
 
 		{#if taxBreakdown.taxableBase > 0}
 			<div class="flex items-center justify-between gap-4">
@@ -80,14 +68,7 @@
 			</div>
 		{/if}
 
-		{#if taxBreakdown.exemptTotal > 0}
-			<div class="flex items-center justify-between gap-4">
-				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Exento</span>
-				<span class="font-mono text-base font-semibold text-brand-navy">
-					{formatPrice(taxBreakdown.exemptTotal)}
-				</span>
-			</div>
-		{/if}
+		<div class="h-px bg-surface-container-high"></div>
 
 		{#if taxBreakdown.taxAmount > 0}
 			<div class="flex items-center justify-between gap-4">
@@ -97,6 +78,20 @@
 				<span class="font-mono text-base font-semibold text-brand-navy">
 					{formatPrice(taxBreakdown.taxAmount)}
 				</span>
+			</div>
+		{/if}
+
+		{#if discountAmount > 0}
+			<div class="flex items-center justify-between gap-4">
+				<span class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">
+					Descuento global
+					{#if discountType === DiscountType.PERCENTAGE}
+						({discount}%)
+					{/if}
+				</span>
+				<span class="font-mono text-base font-semibold text-error"
+					>-{formatPrice(discountAmount)}</span
+				>
 			</div>
 		{/if}
 	</div>

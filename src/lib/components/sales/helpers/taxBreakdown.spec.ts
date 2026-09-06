@@ -68,6 +68,10 @@ describe('computeAdjustedTaxBreakdown', () => {
 		expect(result.taxableBase).toBeCloseTo(75, 2);
 		expect(result.exemptTotal).toBeCloseTo(35, 2);
 		expect(result.taxAmount).toBeCloseTo(12, 2);
+		// Pre-discount breakdown matches (no discount → same as adjusted).
+		expect(result.taxableBaseBeforeDiscount).toBeCloseTo(75, 2);
+		expect(result.exemptTotalBeforeDiscount).toBeCloseTo(35, 2);
+		expect(result.taxAmountBeforeDiscount).toBeCloseTo(12, 2);
 		// Total = BI + Exento + IVA = 75 + 35 + 12 = 122.
 		expect(result.total).toBeCloseTo(122, 2);
 		expect(result.subtotalBeforeGlobal + result.taxAmount).toBeCloseTo(122, 2);
@@ -96,9 +100,20 @@ describe('computeAdjustedTaxBreakdown', () => {
 
 		// Subtotal (pre-discount, tax-exclusive) unchanged: 110.
 		expect(result.subtotalBeforeGlobal).toBeCloseTo(110, 2);
+		// Pre-discount breakdown stays gross: BI 75 / Exento 35 / IVA 12.
+		expect(result.taxableBaseBeforeDiscount).toBeCloseTo(75, 2);
+		expect(result.exemptTotalBeforeDiscount).toBeCloseTo(35, 2);
+		expect(result.taxAmountBeforeDiscount).toBeCloseTo(12, 2);
 		// Total = raw 122 - 12.2 discount = 109.8.
 		expect(result.total).toBeCloseTo(109.8, 2);
 		expect(result.taxAmount).toBeCloseTo(12 * (1 - 0.1), 2);
+		// Consistency: Total = Base + Exento + IVA (pre-discount) − Descuento.
+		expect(
+			result.taxableBaseBeforeDiscount +
+				result.exemptTotalBeforeDiscount +
+				result.taxAmountBeforeDiscount -
+				12.2
+		).toBeCloseTo(result.total, 2);
 	});
 
 	it('stacks per-line discounts then applies the global discount proportionally', () => {

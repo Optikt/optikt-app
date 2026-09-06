@@ -127,6 +127,20 @@
 
 ---
 
+### DT21 · Edición de venta: UX del modal + sin edición por ítem 🟡
+
+**Problema:** El flujo de edición de venta (`EditSaleModal.svelte`) es confuso y con bugs: no permite editar ítems individuales de forma granular (ej. descuento por ítem, precios, notas de línea) — el usuario debe borrar y re-agregar líneas. La experiencia de edición es "super ugly" (QA 2026-09-06). Mencionado durante QA del PR #112.
+
+**Por qué importa:** Las ventas se corrigen a diario (precio mal puesto, descuento de cliente, item equivocado). Sin edición granular, cada corrección es borrar/recrear la venta completa o el modal, riesgo de error.
+
+**Contras:** Rediseñar el modal toca lógica de persistencia (updateSale con replace de items), validación de prescripción y la interacción con tratamientos/free items.
+
+**Dificultad:** Media-Alta (3-5 días). **Solución:** (a) fila editable inline en `SaleItemsTable` dentro del modal (precio, descuento, tipo de descuento, notas por línea con `isDraftItemUserEditingLocked`-style lock si ya hay pago), (b) preview de subtotal/total reactivo ya existente, (c) mantener `payload.items` siempre en updateSale (base raw del descuento global).
+
+**Estado:** TECH_DEBT documentado 2026-09-06. Sin empezar. Aprovechar fase 3 de DT1 (descomposición de `EditSaleModal.svelte` 1440 líneas) para hacerlo.
+
+---
+
 ### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
 **Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.

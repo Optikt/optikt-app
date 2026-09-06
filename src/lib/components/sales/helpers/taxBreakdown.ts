@@ -121,16 +121,29 @@ export function getSnapshotTaxLabel(documentTaxRate: number | null): string | nu
  * taxable lines + full exempt lines) BEFORE the global discount is applied.
  * Used by the Step 3 summary so the "Subtotal" row shows the pre-tax,
  * pre-discount value (e.g. base 75 + exempt 35 = 110 for a $87 frame + $35 lens).
+ *
+ * The `*BeforeDiscount` fields expose the same tax-exclusive breakdown
+ * (base / exempt / IVA) computed on the un-discounted lines, so the card can
+ * render: Subtotal → Base imponible / Exento → IVA → Descuento → Total,
+ * where Total = Base + Exento + IVA − Descuento.
  */
-export type AdjustedTaxBreakdown = TaxBreakdown & { subtotalBeforeGlobal: number };
+export type AdjustedTaxBreakdown = TaxBreakdown & {
+	subtotalBeforeGlobal: number;
+	/** Pre-discount taxable base (IVA excluded). */
+	taxableBaseBeforeDiscount: number;
+	/** Pre-discount exempt total. */
+	exemptTotalBeforeDiscount: number;
+	/** Pre-discount (gross) IVA. */
+	taxAmountBeforeDiscount: number;
+};
 
 /**
  * Compute the tax breakdown of a list of items after applying a global
  * discount proportionally, clamping the discount to the subtotal.
  *
- * `subtotalBeforeGlobal` is the pre-discount tax-exclusive subtotal for
- * display. The discount math itself runs on the raw (tax-inclusive) line
- * totals so the ratio/clamp behavior is unchanged.
+ * `subtotalBeforeGlobal` and the `*BeforeDiscount` fields are the pre-discount
+ * tax-exclusive values for display. The discount math itself runs on the raw
+ * (tax-inclusive) line totals so the ratio/clamp behavior is unchanged.
  */
 export function computeAdjustedTaxBreakdown(
 	itemsForTax: TaxableItem[],
@@ -153,6 +166,9 @@ export function computeAdjustedTaxBreakdown(
 	let exemptTotal = 0;
 	let taxAmount = 0;
 	let subtotalBeforeGlobal = 0;
+	let taxableBaseBeforeDiscount = 0;
+	let exemptTotalBeforeDiscount = 0;
+	let taxAmountBeforeDiscount = 0;
 
 	for (const item of itemsForTax) {
 		const gross = item.unitPrice * item.quantity;
@@ -166,9 +182,16 @@ export function computeAdjustedTaxBreakdown(
 			taxableBase += base;
 			taxAmount += tax;
 			// Pre-discount, tax-exclusive contribution = base of the unadjusted line.
-			subtotalBeforeGlobal += decomposePrice(lineAfterLocalDiscount, item.taxRate).base;
+			const { base: baseBefore, tax: taxBefore } = decomposePrice(
+				lineAfterLocalDiscount,
+				item.taxRate
+			);
+			taxableBaseBeforeDiscount += baseBefore;
+			taxAmountBeforeDiscount += taxBefore;
+			subtotalBeforeGlobal += baseBefore;
 		} else {
 			exemptTotal += adjustedLineTotal;
+			exemptTotalBeforeDiscount += lineAfterLocalDiscount;
 			subtotalBeforeGlobal += lineAfterLocalDiscount;
 		}
 	}
@@ -178,6 +201,9 @@ export function computeAdjustedTaxBreakdown(
 		exemptTotal,
 		taxAmount,
 		total: taxableBase + exemptTotal + taxAmount,
-		subtotalBeforeGlobal
+		subtotalBeforeGlobal,
+		taxableBaseBeforeDiscount,
+		exemptTotalBeforeDiscount,
+		taxAmountBeforeDiscount
 	};
 }

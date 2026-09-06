@@ -382,22 +382,36 @@
 							>{formatPrice(adjustedTaxBreakdown.subtotalBeforeGlobal)}</span
 						>
 					</div>
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-slate-500">Descuento global</span>
-						<span class="font-semibold text-red-500">-{formatPrice(appliedGlobalDiscount)}</span>
-					</div>
-					<div class="flex items-center justify-between text-xs">
-						<span class="text-slate-500">{taxSummaryLabel}</span>
-						<span class="font-semibold text-brand-navy"
-							>{formatPrice(adjustedTaxBreakdown.taxAmount)}</span
-						>
-					</div>
-					{#if adjustedTaxBreakdown.exemptTotal > 0}
+					<div class="my-1 border-t border-slate-200"></div>
+					{#if adjustedTaxBreakdown.exemptTotalBeforeDiscount > 0}
 						<div class="flex items-center justify-between text-xs">
-							<span class="text-slate-500">Exento</span>
+							<span class="text-slate-500">Monto exento</span>
 							<span class="font-semibold text-brand-navy"
-								>{formatPrice(adjustedTaxBreakdown.exemptTotal)}</span
+								>{formatPrice(adjustedTaxBreakdown.exemptTotalBeforeDiscount)}</span
 							>
+						</div>
+					{/if}
+					{#if adjustedTaxBreakdown.taxableBaseBeforeDiscount > 0}
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">Base imponible</span>
+							<span class="font-semibold text-brand-navy"
+								>{formatPrice(adjustedTaxBreakdown.taxableBaseBeforeDiscount)}</span
+							>
+						</div>
+					{/if}
+					<div class="my-1 border-t border-slate-200"></div>
+					{#if adjustedTaxBreakdown.taxAmountBeforeDiscount > 0}
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">{taxSummaryLabel}</span>
+							<span class="font-semibold text-brand-navy"
+								>{formatPrice(adjustedTaxBreakdown.taxAmountBeforeDiscount)}</span
+							>
+						</div>
+					{/if}
+					{#if appliedGlobalDiscount > 0}
+						<div class="flex items-center justify-between text-xs">
+							<span class="text-slate-500">Descuento global</span>
+							<span class="font-semibold text-red-500">-{formatPrice(appliedGlobalDiscount)}</span>
 						</div>
 					{/if}
 				</div>
