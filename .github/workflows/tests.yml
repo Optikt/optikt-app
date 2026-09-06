@@ -46,7 +46,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    continue-on-error: true
     # Only run E2E on main branch or when explicitly requested
     if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main'
 
@@ -92,8 +91,7 @@ jobs:
       - name: Run E2E tests
         run: pnpm test:e2e
         env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci # E2E seeds its own data
-          OPTIKT_RUN_PURCHASE_E2E: 'true'
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Upload test results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
