@@ -48,6 +48,7 @@
 		getDefaultPaymentCalculationMode,
 		roundCurrency
 	} from './paymentFormCalculations';
+	import { getPaymentMethodStrategy } from '$lib/shared/payments/strategies';
 
 	export interface PaymentComposerRequest {
 		token: string;
@@ -327,56 +328,9 @@
 	const overpaymentDisplay = $derived(formatPrice(overpaymentAmount));
 	const pendingAfterPayment = $derived(Math.max(0, debtBalanceUsd - resolvedAmountUsd));
 
-	// ----- Reference config -----
+	// ----- Reference config (from payment method strategy registry) -----
 	const referenceConfig = $derived.by((): ReferenceConfig => {
-		switch (rail) {
-			case PaymentMethod.PAGO_MOVIL_BS:
-				return {
-					label: 'Número de confirmación',
-					required: true,
-					placeholder: 'Secuencia o referencia del pago móvil',
-					helper: 'Obligatorio.'
-				};
-			case PaymentMethod.TRANSFERENCIA_BS:
-				return {
-					label: 'Número de transacción',
-					required: true,
-					placeholder: 'Referencia bancaria',
-					helper: 'Obligatorio.'
-				};
-			case PaymentMethod.PUNTO_VENTA_BS:
-				return {
-					label: 'Número de lote / batch',
-					required: false,
-					placeholder: 'Opcional',
-					helper: 'Si no aplica, se guardará --',
-					fallbackValue: '--'
-				};
-			case PaymentMethod.BINANCE_USDT:
-				return {
-					label: 'ID de transacción',
-					required: true,
-					placeholder: 'ID o confirmación Binance',
-					helper: 'Obligatorio.'
-				};
-			case PaymentMethod.EFECTIVO_BS:
-			case PaymentMethod.EFECTIVO_USD:
-			case PaymentMethod.EFECTIVO_EUR:
-			case PaymentMethod.PAYPAL:
-				return {
-					label: 'Referencia',
-					required: false,
-					placeholder: '--',
-					helper: 'Opcional.'
-				};
-			default:
-				return {
-					label: 'Referencia',
-					required: false,
-					placeholder: '',
-					helper: ''
-				};
-		}
+		return getPaymentMethodStrategy(rail).referenceConfig;
 	});
 	const referenceToSubmit = $derived.by(() => {
 		const trimmed = reference.trim();
@@ -385,33 +339,12 @@
 	});
 	const hasRequiredReference = $derived(!referenceConfig.required || reference.trim().length > 0);
 
-	// ----- Native display -----
+	// ----- Native display (from payment method strategy registry) -----
 	const nativeLabel = $derived.by(() => {
-		switch (rail) {
-			case PaymentMethod.BINANCE_USDT:
-				return 'Monto (USDT)';
-			case PaymentMethod.EFECTIVO_USD:
-				return 'Monto (Efectivo $)';
-			case PaymentMethod.EFECTIVO_EUR:
-				return 'Monto (Efectivo €)';
-			case PaymentMethod.PAYPAL:
-				return 'Monto (PayPal $)';
-			default:
-				return 'Monto (Bs)';
-		}
+		return getPaymentMethodStrategy(rail).nativeLabel;
 	});
 	const nativePrefix = $derived.by(() => {
-		switch (rail) {
-			case PaymentMethod.BINANCE_USDT:
-				return 'USDT';
-			case PaymentMethod.EFECTIVO_EUR:
-				return '€';
-			case PaymentMethod.EFECTIVO_USD:
-			case PaymentMethod.PAYPAL:
-				return '$';
-			default:
-				return 'Bs';
-		}
+		return getPaymentMethodStrategy(rail).nativePrefix;
 	});
 	const rateContextLine = $derived.by(() => {
 		if (resolvedAmountUsd <= 0 || activeBcvRate <= 0) return '';
