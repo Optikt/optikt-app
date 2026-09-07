@@ -65,14 +65,14 @@ export function existingItemToInput(item: SaleItemWithDetails): EditableItem {
 export function buildLensInputFromDraft(
 	editLensTmp: EditableItem,
 	selectedLens: {
-		name?: string;
-		supplier?: { name?: string } | null;
-		pairPurchasePrice?: number;
-		mountingPrice?: number;
-		shippingPrice?: number;
-		salePrice?: number;
-		priceType?: string;
-		isTaxable?: boolean;
+		name?: string | null;
+		supplier?: { name?: string | null } | null;
+		pairPurchasePrice?: number | null;
+		mountingPrice?: number | null;
+		shippingPrice?: number | null;
+		salePrice?: number | null;
+		priceType?: string | null;
+		isTaxable?: boolean | null;
 	} | null
 ): EditableItem {
 	const lensName = selectedLens?.name ?? editLensTmp.snapshotName;
