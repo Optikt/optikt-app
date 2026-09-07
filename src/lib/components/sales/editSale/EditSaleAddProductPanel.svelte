@@ -17,7 +17,7 @@
 	}
 
 	let {
-		showAddProduct,
+		showAddProduct = $bindable(),
 		addProductId = $bindable(),
 		addProductQty = $bindable(),
 		addProductPrice = $bindable(),
