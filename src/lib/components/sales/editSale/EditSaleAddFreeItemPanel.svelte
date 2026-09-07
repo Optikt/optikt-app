@@ -38,7 +38,9 @@
 		<div class="space-y-3">
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label for="add-free-cat" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-free-cat"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Categoría</label
 					>
 					<select
@@ -52,7 +54,9 @@
 					</select>
 				</div>
 				<div>
-					<label for="add-free-price" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-free-price"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Precio venta</label
 					>
 					<input
@@ -66,7 +70,9 @@
 				</div>
 			</div>
 			<div>
-				<label for="add-free-desc" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+				<label
+					for="add-free-desc"
+					class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 					>Descripción</label
 				>
 				<input
@@ -79,7 +85,9 @@
 			</div>
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label for="add-free-discount" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-free-discount"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Descuento</label
 					>
 					<input
@@ -92,7 +100,9 @@
 					/>
 				</div>
 				<div>
-					<label for="add-free-discount-type" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-free-discount-type"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Tipo</label
 					>
 					<select

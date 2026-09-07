@@ -40,7 +40,9 @@
 			<ItemSelect kind="product" value={addProductId} onselect={onSelectProduct} label="Producto" />
 			<div class="grid grid-cols-3 gap-3">
 				<div>
-					<label for="add-prod-qty" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-prod-qty"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Cant.</label
 					>
 					<input
@@ -52,7 +54,9 @@
 					/>
 				</div>
 				<div>
-					<label for="add-prod-price" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-prod-price"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Precio</label
 					>
 					<input
@@ -65,7 +69,9 @@
 					/>
 				</div>
 				<div>
-					<label for="add-prod-discount" class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
+					<label
+						for="add-prod-discount"
+						class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
 						>Desc.</label
 					>
 					<input
