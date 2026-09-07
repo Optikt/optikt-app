@@ -12,8 +12,6 @@
 		isCashea: boolean;
 		discount: number;
 		discountType: string;
-		reason: string;
-		reasonError: string;
 	}
 
 	let {
@@ -22,9 +20,7 @@
 		notes = $bindable(),
 		isCashea = $bindable(),
 		discount = $bindable(),
-		discountType = $bindable(),
-		reason = $bindable(),
-		reasonError
+		discountType = $bindable()
 	}: Props = $props();
 </script>
 
@@ -121,23 +117,3 @@
 		</div>
 	</div>
 </section>
-
-<div>
-	<label
-		for="edit-reason"
-		class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-		>Motivo de la edición *</label
-	>
-	<input
-		id="edit-reason"
-		type="text"
-		bind:value={reason}
-		placeholder="Ej: Corrección de precio, cambio de cristal..."
-		class="w-full rounded-lg border px-3.5 py-2.5 text-sm transition-colors focus:ring-2 focus:outline-none {reasonError
-			? 'border-red-300 bg-red-50 focus:border-red-400 focus:ring-red-200 dark:border-red-600 dark:bg-red-900/20'
-			: 'border-slate-300 bg-white focus:border-brand-blue focus:ring-brand-blue/20 dark:border-slate-600 dark:bg-slate-800'} text-slate-800 dark:text-white"
-	/>
-	{#if reasonError}
-		<p class="mt-1 text-xs text-red-600 dark:text-red-400">{reasonError}</p>
-	{/if}
-</div>
