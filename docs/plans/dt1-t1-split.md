@@ -1,0 +1,25 @@
+---
+plan name: dt1-t1-split
+plan description: Descomponer tres monolitos críticos
+plan status: active
+---
+
+## Idea
+Descomponer los 3 archivos T1 más grandes y de mayor riesgo de DT1 en una sola fase coordinada para desbloquear DTs posteriores y testing eficiente. Patrón base: el POC componentize-purchase-detail (2221→629) con orquestador + secciones + helpers puros. Archivos: EditSaleModal.svelte (1440) — SlideOver con estado multi-panel (header fields, editableItems con flag _removed, editLensTmp, 3 paneles de agregado, preview derivados, 22 handlers/factories); LensCatalogForm.svelte (1473) — RemoteForm con validación bifásica (clientRangeValidations + serverRangeValidations), modo esfera, 20 handlers, estado pending entities y ranges dinámicos, pricing derivado vivo; inventory/count/[id]/+page.svelte (1135) — lifecycle de sesión de conteo con filtros, edición inline, mutaciones de ajuste y modales de aplicar/cancelar. Aplicar patrones pertinentes sin sobre-ingeniería: Factory (createEmptyLensDraft, existingItemToInput, createEmptyOpticalRangeEntry), Builder (buildLensInputFromDraft, expand/collapse ranges), Adapter ya existente (ItemSelect, getCatalogItemsByIds/cached), Strategy NO en este trío (reservar para pagos), Singleton NO (registries inmutables + module-level cache bastan), Context Svelte solo donde prop drilling ≥2 niveles (editar lente con tratamientos; conteo ya usa getInventoryCountContext). Cada extracción mantiene barrel index.ts para compatibilidad y tests espejo para helpers puros.
+
+## Implementation
+- Analizar dependencias cruzadas de los 3 monolitos y congelar contrato de tipos: mapear EditableItem, OpticalRangeFormEntry, InventoryCountLineRow y sus imports compartidos (catalogCache.svelte.ts, opticalRangeForm.ts, inventoryCount.remote, schemas/inventoryCount) para que los helpers extraídos no rompan; documentar isTaxable/defaults y validación de rangos como seam de testing (saleTotals.spec y opticalRangeForm.spec son el harness existente).
+- Descomponer EditSaleModal.svelte (1440 → orquestador ~320): extraer EditSaleHeaderFields.svelte (saleDate/notes/isCashea/discount/reason + validación reasonError), EditSaleItemsSection.svelte (activeItems/mainItems/removedCount/previewTotals + removeItem), EditSaleLensPanel.svelte (editLensTmp + availableTreatments/selectableTreatments + handlers startLensEdit/add/save/cancel + treatment add/remove), EditSaleAddProductPanel.svelte (addProduct* state + handleProductSelect/addNewProduct) y EditSaleAddFreeItemPanel.svelte (addFree* state); mover factories a sales/editSaleDraft.ts (createEmptyLensDraft, existingItemToInput, buildLensInputFromDraft) y validación a sales/editSaleValidation.ts; mantener updateSale(updateSaleInput) intacto; tests: helpers puros con 10-12 casos por concern.
+- Descomponer LensCatalogForm.svelte (1473 → orquestador ~280): extraer LensFormIdentitySection.svelte (name auto, diferenciadores y helper texts), LensFormSelectionSection.svelte (supplier/material/technology selects con creación pending y handleSupplierChange), LensFormRangesSection.svelte (ranges + add/remove/toggleSphereMode + inputs por rango) y LensFormPricingPreview.svelte (livePairPurchasePrice/operationalCost/grossProfit/margin); mover validación a lenses/lensFormRanges.ts (pushUniqueValidationMessage, mergeRangeValidation, getRangeIssueLocation, buildServerRangeValidations) y pendientes a lenses/lensFormPending.ts; pricing derivado a lenses/lensFormPricing.ts; mantener runValidatedSubmit y RemoteForm intactos; tests: validation con 8-10 casos de rango cilíndrico/eje/adición.
+- Descomponer inventory/count/[id]/+page.svelte (1135 → orquestador ~340): extraer CountSessionHeader.svelte (statusLabel, canManage/isReadonly, goBack/openAdjustment), CountSummaryMetrics.svelte (lifecycleSummary + summaryMetrics), CountLinesTable.svelte (DataGrid + filtros search/activeFilter + formatters statusVariant/compactStatClass), CountLineEditRow.svelte (editing state + handleSaveLine/updateLineLocally) y CountActionModals.svelte (apply/cancel con isApplying/Cancelling); mover adjustment toggle a inventory/countAdjustments.ts (toggleAdjustmentCompleted, isAdjustmentStatusUpdating); extender src/lib/context/inventoryCount.ts solo si hace falta exponer session/lines sin prop drilling; mantener upsertCountLine/setLineAdjustmentStatus/applySession/cancelSession intactos; tests: helpers de diff/estado con 6-8 casos.
+- Cerrar fase con gates DT1: pnpm check 0, pnpm lint, pnpm test (helpers nuevos + suites existentes), size gate bash scripts/check-file-size.sh (ningún fuente >500, módulos nuevos ≤300), QA manual por checklist (sale edit, lens create/edit, count lifecycle) + rg imports cero rotos; PR único fase-3 con 3 subcarpetas (sales/editSale, lenses/form, inventory/count) + helpers; actualizar PLAN.md DT1 con avance de fase 3 y registrar deuda de barrels como deuda técnica menor.
+
+## Required Specs
+<!-- SPECS_START -->
+- dt1-patterns
+- dt1-split-protocol
+- dt1-payment-strategy
+- sale-subtotal-semantics
+- public-catalog-arch
+- dt1-t1-acceptance
+<!-- SPECS_END -->
