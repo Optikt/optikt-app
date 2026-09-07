@@ -54,6 +54,8 @@
 
 **Diferido desde fase 2 DT1 (2026-09-06):** el adapter de pagos de compra (`PurchasePaymentAdapter` en `src/lib/server/payments/`, spec `dt1-payment-strategy`) quedó pendiente a propósito. El cuerpo de `addPurchaseOrderPaymentCmd` (~90 líneas: amortización de deuda nativa, early-payment benefit condicional, recálculo de balance + dueStatus, re-fetch post-transacción) es demasiado grande para moverlo verbatim sin red de integración — un campo cruzado en `amountAppliedToDebtUsdBcvAtOrder` sería corrupción silenciosa en paths de dinero/crédito. El adapter de venta (`server/payments/salePayments.ts`, patrón probado) sirve de plantilla. Al implementar: extraer el cuerpo de la transacción verbatim, input con ~15 campos (purchaseOrder row + normalized + data + userId), remote conserva guards + audit, verificación obligatoria con los tests de integración de este DT antes de mergear.
 
+**Diferido desde fase 2 DT1 — PaymentForm state factory (2026-09-06):** `PaymentForm.svelte` quedó en 850 líneas tras extraer los componentes presentacionales (`components/payments/`: SelectionStep, AmountCard, PreviewCard). Lo restante es **lógica reactiva viva** (~15 `$state`, ~40 `$derived` encadenados, `$effects` de reset/composer/foco, submits venta+compra+cashea+early-payment) que solo puede moverse a un factory `paymentFormState.svelte.ts` con red de integración — exactamente el harness de este DT. Hacerlo sin tests es el "refactor peligroso" que este DT existe para prevenir. Al implementar DT9, priorizar: (1) harness testcontainers, (2) tests de `addPayment`/`addPurchaseOrderPaymentCmd` (usan el adapter con seam `executor`), (3) entonces sí extraer el state factory y llevar el orquestador a ≤300.
+
 ---
 
 ### DT10 · Validación de negocio en Zod refinements 🟡
