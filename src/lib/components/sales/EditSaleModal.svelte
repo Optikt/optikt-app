@@ -1,37 +1,33 @@
 <script lang="ts">
-	import { slide } from 'svelte/transition';
 	import { SlideOver } from '$lib/components/ui';
-	import {
-		Package,
-		Eye,
-		Sparkles,
-		FlaskConical,
-		Plus,
-		X,
-		Pen,
-		Pencil,
-		Save,
-		Calculator,
-		User,
-		Tag,
-		CalendarDays
-	} from '@lucide/svelte';
+	import { Package, Plus, X, Pen, Calculator } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales.remote';
-	import { computeDiscount, formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
 	import { SaleItemType, FreeItemCategory, LensType } from '$lib/shared/enums/lensTypes';
-	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
-	import CasheaCheckbox from './CasheaCheckbox.svelte';
-	import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
+	import type { UpdateSaleInput } from '$lib/schemas/sales';
 	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import ItemSelect from './ItemSelect.svelte';
 	import { untrack, onMount } from 'svelte';
 	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
 	import { cacheCatalogItems, getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
 	import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
+	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
+	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
+	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';
+	import EditSaleItemsSection from './editSale/EditSaleItemsSection.svelte';
+	import EditSaleLensPanel from './editSale/EditSaleLensPanel.svelte';
+	import {
+		buildLensInputFromDraft,
+		createEmptyLensDraft,
+		existingItemToInput,
+		hasChangesForSale,
+		previewSubtotalForItems,
+		type EditableItem
+	} from './editSaleDraft';
+	import { validateEditSale } from './editSaleValidation';
 
 	interface Props {
 		open: boolean;
@@ -67,7 +63,6 @@
 	let reasonError = $state('');
 
 	// ── Editable items ─────────────────────────────────────────────────────
-	type EditableItem = SaleItemInput & { _removed?: boolean };
 	let editableItems = $state<EditableItem[]>(untrack(() => items.map(existingItemToInput)));
 
 	// ── Lens editing state ─────────────────────────────────────────────────
@@ -104,34 +99,18 @@
 	let addFreeDiscountType = $state<string>(DiscountType.FIXED);
 	let addFreeNotes = $state('');
 
-	// ── Derived ────────────────────────────────────────────────────────────
+	// ── Derived (via helpers) ────────────────────────────────────────────
 	let hasChanges = $derived(
-		saleDate !== sale.saleDate.slice(0, 10) ||
-			notes !== (sale.notes ?? '') ||
-			discount !== sale.discount ||
-			discountType !== sale.discountType ||
-			editableItems.some((i) => i._removed) ||
-			editableItems.some((i) => !i.id)
+		hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems)
 	);
 
 	let activeItems = $derived(editableItems.filter((i) => !i._removed));
 	let mainItems = $derived(activeItems.filter((i) => i.itemType !== SaleItemType.TREATMENT));
 	let removedCount = $derived(editableItems.filter((i) => i._removed).length);
-	let previewSubtotal = $derived(
-		activeItems.reduce((acc, item) => {
-			const lineTotal = item.unitPrice * item.quantity;
-			const itemDiscount = computeDiscount(
-				item.discount ?? 0,
-				item.discountType ?? DiscountType.FIXED,
-				lineTotal
-			);
-			return acc + lineTotal - itemDiscount;
-		}, 0)
-	);
-	let previewGlobalDiscount = $derived(
-		computeDiscount(discount ?? 0, discountType ?? DiscountType.FIXED, previewSubtotal)
-	);
-	let previewTotal = $derived(Math.max(0, previewSubtotal - previewGlobalDiscount));
+	let previewTotals = $derived(previewSubtotalForItems(activeItems, discount, discountType));
+	let previewSubtotal = $derived(previewTotals.subtotal);
+	let previewGlobalDiscount = $derived(previewTotals.globalDiscount);
+	let previewTotal = $derived(previewTotals.total);
 
 	let availableTreatments = $derived.by(() => {
 		if (!editLensTmp.lensCatalogItemId) return [];
@@ -165,80 +144,7 @@
 		};
 	});
 
-	// ── Helpers ────────────────────────────────────────────────────────────
-
-	function createEmptyLensDraft(): EditableItem {
-		return {
-			itemType: SaleItemType.LENS_PAIR,
-			quantity: 1,
-			unitPrice: 0,
-			discount: 0,
-			discountType: DiscountType.FIXED,
-			_removed: false
-		};
-	}
-
-	function existingItemToInput(item: SaleItemWithDetails): EditableItem {
-		return {
-			id: item.id,
-			itemType: item.itemType,
-			productId: item.productId ?? undefined,
-			lensCatalogItemId: item.lensCatalogItemId ?? undefined,
-			parentSaleItemId: item.parentSaleItemId ?? undefined,
-			supplierTreatmentId: item.supplierTreatmentId ?? undefined,
-			prescriptionId: item.prescriptionId ?? undefined,
-			odSphere: item.odSphere ?? undefined,
-			odCylinder: item.odCylinder ?? undefined,
-			odAxis: item.odAxis ?? undefined,
-			odAddition: item.odAddition ?? undefined,
-			odAltura: item.odAltura ?? undefined,
-			osSphere: item.osSphere ?? undefined,
-			osCylinder: item.osCylinder ?? undefined,
-			osAxis: item.osAxis ?? undefined,
-			osAddition: item.osAddition ?? undefined,
-			osAltura: item.osAltura ?? undefined,
-			quantity: item.quantity,
-			unitPrice: item.unitPrice,
-			discount: item.discount,
-			discountType: item.discountType as DiscountType,
-			snapshotName: item.snapshotName ?? undefined,
-			snapshotSku: item.snapshotSku ?? undefined,
-			snapshotBrand: item.snapshotBrand ?? undefined,
-			snapshotBaseCost: item.snapshotBaseCost ?? undefined,
-			snapshotMountingPrice: item.snapshotMountingPrice ?? undefined,
-			snapshotShippingPrice: item.snapshotShippingPrice ?? undefined,
-			snapshotSalePrice: item.snapshotSalePrice ?? undefined,
-			snapshotPriceType: item.snapshotPriceType ?? undefined,
-			snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? undefined,
-			snapshotIsTaxable: item.snapshotIsTaxable ?? undefined,
-			shippingCostPending: item.shippingCostPending ?? undefined,
-			freeItemCategory: (item.freeDetails?.category as FreeItemCategory) ?? undefined,
-			freeItemDescription: item.freeDetails?.description ?? undefined,
-			freeItemUnitCost: item.freeDetails?.unitCost ?? undefined,
-			freeItemSupplierId: item.freeDetails?.supplierId ?? undefined,
-			freeItemOpticalNotes: item.freeDetails?.opticalNotes ?? undefined,
-			notes: item.notes ?? undefined,
-			_removed: false
-		};
-	}
-
-	function buildLensInputFromDraft(): EditableItem {
-		const lensName = selectedLens?.name ?? editLensTmp.snapshotName;
-		const supplierName = selectedLens?.supplier?.name ?? editLensTmp.snapshotBrand;
-		return {
-			...editLensTmp,
-			snapshotName: lensName,
-			snapshotBrand: supplierName,
-			snapshotBaseCost: selectedLens?.pairPurchasePrice ?? editLensTmp.snapshotBaseCost,
-			snapshotMountingPrice: selectedLens?.mountingPrice ?? editLensTmp.snapshotMountingPrice,
-			snapshotShippingPrice: editLensTmp.shippingCostPending
-				? undefined
-				: (selectedLens?.shippingPrice ?? editLensTmp.snapshotShippingPrice),
-			snapshotSalePrice: selectedLens?.salePrice ?? editLensTmp.snapshotSalePrice,
-			snapshotPriceType: selectedLens?.priceType ?? editLensTmp.snapshotPriceType,
-			snapshotIsTaxable: selectedLens?.isTaxable ?? editLensTmp.snapshotIsTaxable ?? true
-		};
-	}
+	// Helpers moved to ./editSaleDraft.ts — imported above
 
 	// ── Lens editing ───────────────────────────────────────────────────────
 
@@ -316,7 +222,7 @@
 		}
 
 		const lensItemId = editingLensId || crypto.randomUUID();
-		const savedItem = buildLensInputFromDraft();
+		const savedItem = buildLensInputFromDraft(editLensTmp, selectedLens);
 		savedItem.id = lensItemId;
 
 		let updated = editableItems.filter((i) => {
@@ -468,16 +374,12 @@
 
 	// ── Submit ─────────────────────────────────────────────────────────────
 	function validate(): boolean {
-		reasonError = '';
-		if (!reason.trim()) {
-			reasonError = 'El motivo de la modificación es obligatorio';
-			return false;
-		}
-		if (activeItems.length === 0) {
+		const result = validateEditSale(reason, activeItems);
+		reasonError = result.reasonError;
+		if (!result.valid && !reasonError) {
 			toast.error('La venta debe tener al menos un artículo');
-			return false;
 		}
-		return true;
+		return result.valid;
 	}
 
 	async function handleSubmit() {
@@ -535,16 +437,6 @@
 		if (saving) return;
 		open = false;
 	}
-
-	function itemDetail(item: EditableItem): string {
-		const parts: string[] = [];
-		if (item.snapshotSku) parts.push(item.snapshotSku);
-		if (item.snapshotBrand) parts.push(item.snapshotBrand);
-		if (item.itemType === SaleItemType.FREE_ITEM && item.freeItemCategory) {
-			parts.push(item.freeItemCategory);
-		}
-		return parts.join(' · ');
-	}
 </script>
 
 <SlideOver bind:open size="xl" onclose={handleClose}>
@@ -571,101 +463,14 @@
 		</header>
 	{/snippet}
 	<div class="space-y-5">
-		<!-- ── Card: Información General ── -->
-		<section
-			class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
-		>
-			<div class="mb-4 flex items-center gap-2">
-				<CalendarDays class="h-4 w-4 text-brand-blue" />
-				<h3 class="text-sm font-bold text-brand-navy dark:text-white">Información General</h3>
-			</div>
-			<div class="grid gap-4 md:grid-cols-3">
-				<div>
-					<label
-						for="edit-sale-date"
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-						>Fecha de venta</label
-					>
-					<input
-						id="edit-sale-date"
-						type="date"
-						bind:value={saleDate}
-						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-					/>
-				</div>
-				<div>
-					<label
-						for="edit-customer"
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-						>Cliente</label
-					>
-					<div
-						class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-					>
-						<User class="h-4 w-4 text-slate-400" />
-						<span class="truncate">{sale.customer?.firstName} {sale.customer?.lastName}</span>
-					</div>
-				</div>
-				<div>
-					<label
-						for="edit-sale-notes"
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-						>Observaciones</label
-					>
-					<input
-						id="edit-sale-notes"
-						type="text"
-						bind:value={notes}
-						placeholder="Notas opcionales..."
-						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-					/>
-				</div>
-				<CasheaCheckbox bind:isCashea class="mt-2" />
-			</div>
-		</section>
-
-		<!-- ── Card: Descuento ── -->
-		<section
-			class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
-		>
-			<div class="mb-4 flex items-center gap-2">
-				<Tag class="h-4 w-4 text-brand-blue" />
-				<h3 class="text-sm font-bold text-brand-navy dark:text-white">Descuento</h3>
-			</div>
-			<div class="grid gap-4 md:grid-cols-2">
-				<div>
-					<label
-						for="edit-discount-type"
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-						>Tipo</label
-					>
-					<select
-						id="edit-discount-type"
-						bind:value={discountType}
-						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-					>
-						<option value={DiscountType.FIXED}>Monto fijo ($)</option>
-						<option value={DiscountType.PERCENTAGE}>Porcentaje (%)</option>
-					</select>
-				</div>
-				<div>
-					<label
-						for="edit-discount"
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-					>
-						Valor {discountType === DiscountType.PERCENTAGE ? '(%)' : '($)'}
-					</label>
-					<input
-						id="edit-discount"
-						type="number"
-						bind:value={discount}
-						min="0"
-						step="0.01"
-						class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-					/>
-				</div>
-			</div>
-		</section>
+		<EditSaleHeaderFields
+			{sale}
+			bind:saleDate
+			bind:notes
+			bind:isCashea
+			bind:discount
+			bind:discountType
+		/>
 
 		<!-- ── Card: Artículos ── -->
 		<section
@@ -712,634 +517,53 @@
 				</div>
 			</div>
 
-			<!-- Add product form -->
-			{#if showAddProduct}
-				<div
-					transition:slide={{ duration: 180 }}
-					class="mb-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-600 dark:bg-slate-800"
-				>
-					<p class="mb-3 text-xs font-bold text-brand-navy dark:text-white">Agregar producto</p>
-					<div class="space-y-3">
-						<ItemSelect
-							kind="product"
-							value={addProductId}
-							onselect={handleProductSelect}
-							label="Producto"
-						/>
-						<div class="grid grid-cols-3 gap-3">
-							<div>
-								<label
-									for="add-prod-qty"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Cant.</label
-								>
-								<input
-									id="add-prod-qty"
-									type="number"
-									bind:value={addProductQty}
-									min="1"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-							<div>
-								<label
-									for="add-prod-price"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Precio</label
-								>
-								<input
-									id="add-prod-price"
-									type="number"
-									bind:value={addProductPrice}
-									min="0"
-									step="0.01"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-							<div>
-								<label
-									for="add-prod-discount"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Desc.</label
-								>
-								<input
-									id="add-prod-discount"
-									type="number"
-									bind:value={addProductDiscount}
-									min="0"
-									step="0.01"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-						</div>
-						<div class="flex items-center gap-3">
-							<select
-								bind:value={addProductDiscountType}
-								class="w-40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-							>
-								<option value={DiscountType.FIXED}>Fijo ($)</option>
-								<option value={DiscountType.PERCENTAGE}>%</option>
-							</select>
-							<input
-								type="text"
-								bind:value={addProductNotes}
-								placeholder="Notas (opcional)"
-								class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-							/>
-						</div>
-						<div class="flex justify-end gap-2">
-							<button
-								type="button"
-								onclick={resetAddProductForm}
-								class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-								>Cancelar</button
-							>
-							<button
-								type="button"
-								onclick={addNewProduct}
-								disabled={!addProductId}
-								class="rounded-lg bg-brand-navy px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-50"
-								>Agregar</button
-							>
-						</div>
-					</div>
-				</div>
-			{/if}
+			<EditSaleAddProductPanel
+				bind:showAddProduct
+				bind:addProductId
+				bind:addProductQty
+				bind:addProductPrice
+				bind:addProductDiscount
+				bind:addProductDiscountType
+				bind:addProductNotes
+				onSelectProduct={handleProductSelect}
+				onAddProduct={addNewProduct}
+				onCancel={resetAddProductForm}
+			/>
 
-			<!-- Add free item form -->
-			{#if showAddFreeItem}
-				<div
-					transition:slide={{ duration: 180 }}
-					class="mb-3 rounded-lg border border-amber-200 bg-white p-4 dark:border-amber-800 dark:bg-slate-800"
-				>
-					<p class="mb-3 text-xs font-bold text-amber-800 dark:text-amber-300">
-						Agregar ítem libre
-					</p>
-					<div class="space-y-3">
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label
-									for="add-free-cat"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Categoría</label
-								>
-								<select
-									id="add-free-cat"
-									bind:value={addFreeCategory}
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								>
-									{#each ALL_FREE_ITEM_CATEGORIES as cat (cat)}
-										<option value={cat}>{cat}</option>
-									{/each}
-								</select>
-							</div>
-							<div>
-								<label
-									for="add-free-price"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Precio venta</label
-								>
-								<input
-									id="add-free-price"
-									type="number"
-									bind:value={addFreePrice}
-									min="0"
-									step="0.01"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-						</div>
-						<div>
-							<label
-								for="add-free-desc"
-								class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-								>Descripción</label
-							>
-							<input
-								id="add-free-desc"
-								type="text"
-								bind:value={addFreeDescription}
-								placeholder="Ej: Funda antivuelco"
-								class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-							/>
-						</div>
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label
-									for="add-free-discount"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Descuento</label
-								>
-								<input
-									id="add-free-discount"
-									type="number"
-									bind:value={addFreeDiscount}
-									min="0"
-									step="0.01"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-							<div>
-								<label
-									for="add-free-discount-type"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Tipo</label
-								>
-								<select
-									id="add-free-discount-type"
-									bind:value={addFreeDiscountType}
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								>
-									<option value={DiscountType.FIXED}>Fijo ($)</option>
-									<option value={DiscountType.PERCENTAGE}>%</option>
-								</select>
-							</div>
-						</div>
-						<div class="flex justify-end gap-2">
-							<button
-								type="button"
-								onclick={resetAddFreeItemForm}
-								class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-								>Cancelar</button
-							>
-							<button
-								type="button"
-								onclick={addNewFreeItem}
-								disabled={!addFreeDescription.trim() || addFreePrice <= 0}
-								class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
-								>Agregar</button
-							>
-						</div>
-					</div>
-				</div>
-			{/if}
+			<EditSaleAddFreeItemPanel
+				{showAddFreeItem}
+				bind:addFreeCategory
+				bind:addFreeDescription
+				bind:addFreePrice
+				bind:addFreeDiscount
+				bind:addFreeDiscountType
+				bind:addFreeNotes
+				onAddFreeItem={addNewFreeItem}
+				onCancel={resetAddFreeItemForm}
+			/>
 
-			<!-- Add / Edit lens form -->
-			{#if showAddLens || editingLensId}
-				<div
-					transition:slide={{ duration: 180 }}
-					class="mb-3 rounded-lg border border-sky-200 bg-white p-4 dark:border-sky-800 dark:bg-slate-800"
-				>
-					<p class="mb-3 text-xs font-bold text-sky-800 dark:text-sky-300">
-						{editingLensId ? 'Editar cristal' : 'Agregar cristal'}
-					</p>
-					<div class="space-y-3">
-						<ItemSelect
-							kind="lens"
-							value={editLensTmp.lensCatalogItemId ?? ''}
-							onselect={handleLensSelect}
-							label="Cristal"
-						/>
-						<div class="grid grid-cols-4 gap-3">
-							<div>
-								<label
-									for="lens-quantity"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Cant.</label
-								>
-								<input
-									id="lens-quantity"
-									type="number"
-									bind:value={editLensTmp.quantity}
-									min="1"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-							<div>
-								<label
-									for="lens-price"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Precio</label
-								>
-								<input
-									id="lens-price"
-									type="number"
-									bind:value={editLensTmp.unitPrice}
-									min="0"
-									step="0.01"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-							<div>
-								<label
-									for="lens-discount"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Desc.</label
-								>
-								<input
-									id="lens-discount"
-									type="number"
-									bind:value={editLensTmp.discount}
-									min="0"
-									step="0.01"
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								/>
-							</div>
-							<div>
-								<label
-									for="lens-discount-type"
-									class="mb-1 block text-[10px] font-semibold tracking-wider text-slate-500 uppercase"
-									>Tipo desc.</label
-								>
-								<select
-									id="lens-discount-type"
-									bind:value={editLensTmp.discountType}
-									class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-								>
-									<option value={DiscountType.FIXED}>$</option>
-									<option value={DiscountType.PERCENTAGE}>%</option>
-								</select>
-							</div>
-						</div>
-						<!-- Prescription compacta -->
-						<div class="space-y-3">
-							<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
-								Receta Óptica
-							</p>
+			<EditSaleLensPanel
+				{showAddLens}
+				{editingLensId}
+				bind:editLensTmp
+				bind:editLensTreatments
+				{selectableTreatments}
+				{showAddition}
+				onLensSelect={handleLensSelect}
+				onAddTreatment={addTreatmentFromSelect}
+				onRemoveTreatment={removeTreatmentFromEdit}
+				onSave={saveLensEdit}
+				onCancel={cancelLensEdit}
+			/>
 
-							<!-- OD (Ojo Derecho) -->
-							<div class="space-y-1">
-								<span class="text-xs font-semibold text-slate-700 dark:text-slate-300"
-									>OD (Ojo Derecho)</span
-								>
-								<div
-									class="grid gap-2"
-									class:grid-cols-5={showAddition}
-									class:grid-cols-3={!showAddition}
-								>
-									<span class="text-[10px] font-medium text-slate-500">Esf</span>
-									<span class="text-[10px] font-medium text-slate-500">Cil</span>
-									<span class="text-[10px] font-medium text-slate-500">Eje</span>
-									{#if showAddition}
-										<span class="text-[10px] font-medium text-slate-500">Add</span>
-										<span class="text-[10px] font-medium text-slate-500">Alt</span>
-									{/if}
-								</div>
-								<div
-									class="grid gap-2"
-									class:grid-cols-5={showAddition}
-									class:grid-cols-3={!showAddition}
-								>
-									<input
-										type="number"
-										bind:value={editLensTmp.odSphere}
-										step="0.25"
-										placeholder="—"
-										class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-									/>
-									<input
-										type="number"
-										bind:value={editLensTmp.odCylinder}
-										step="0.25"
-										min={-10}
-										max={0}
-										placeholder="—"
-										class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-									/>
-									<input
-										type="number"
-										bind:value={editLensTmp.odAxis}
-										step="1"
-										min={0}
-										max={180}
-										placeholder="—"
-										class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-									/>
-									{#if showAddition}
-										<input
-											type="number"
-											bind:value={editLensTmp.odAddition}
-											step="0.25"
-											min={0}
-											max={5}
-											placeholder="—"
-											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-										/>
-										<input
-											type="number"
-											bind:value={editLensTmp.odAltura}
-											step="1"
-											min={10}
-											max={40}
-											placeholder="—"
-											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-										/>
-									{/if}
-								</div>
-							</div>
-
-							<!-- OI (Ojo Izquierdo) -->
-							<div class="space-y-1">
-								<span class="text-xs font-semibold text-slate-700 dark:text-slate-300"
-									>OI (Ojo Izquierdo)</span
-								>
-								<div
-									class="grid gap-2"
-									class:grid-cols-5={showAddition}
-									class:grid-cols-3={!showAddition}
-								>
-									<span class="text-[10px] font-medium text-slate-500">Esf</span>
-									<span class="text-[10px] font-medium text-slate-500">Cil</span>
-									<span class="text-[10px] font-medium text-slate-500">Eje</span>
-									{#if showAddition}
-										<span class="text-[10px] font-medium text-slate-500">Add</span>
-										<span class="text-[10px] font-medium text-slate-500">Alt</span>
-									{/if}
-								</div>
-								<div
-									class="grid gap-2"
-									class:grid-cols-5={showAddition}
-									class:grid-cols-3={!showAddition}
-								>
-									<input
-										type="number"
-										bind:value={editLensTmp.osSphere}
-										step="0.25"
-										placeholder="—"
-										class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-									/>
-									<input
-										type="number"
-										bind:value={editLensTmp.osCylinder}
-										step="0.25"
-										min={-10}
-										max={0}
-										placeholder="—"
-										class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-									/>
-									<input
-										type="number"
-										bind:value={editLensTmp.osAxis}
-										step="1"
-										min={0}
-										max={180}
-										placeholder="—"
-										class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-									/>
-									{#if showAddition}
-										<input
-											type="number"
-											bind:value={editLensTmp.osAddition}
-											step="0.25"
-											min={0}
-											max={5}
-											placeholder="—"
-											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-										/>
-										<input
-											type="number"
-											bind:value={editLensTmp.osAltura}
-											step="1"
-											min={10}
-											max={40}
-											placeholder="—"
-											class="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 font-mono text-sm focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-										/>
-									{/if}
-								</div>
-							</div>
-						</div>
-						<div>
-							<div class="mb-2 flex items-center justify-between">
-								<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
-									Tratamientos ({editLensTreatments.length})
-								</p>
-								<select
-									value=""
-									disabled={selectableTreatments.length === 0}
-									onchange={(e: Event) => {
-										const target = e.target as HTMLSelectElement;
-										const val = target.value;
-										if (val) {
-											addTreatmentFromSelect(val);
-											target.value = '';
-										}
-									}}
-									class="w-44 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-								>
-									<option value="" disabled
-										>{selectableTreatments.length === 0
-											? 'No hay más disponibles'
-											: 'Agregar tratamiento...'}</option
-									>
-									{#each selectableTreatments as t (t.id)}
-										<option value={t.id}
-											>{t.name} — {formatPrice(t.salePrice ?? t.price)}
-											<span class="text-xs">/ ojo</span></option
-										>
-									{/each}
-								</select>
-							</div>
-							{#if editLensTreatments.length === 0}
-								<p class="text-xs text-slate-400 italic">Sin tratamientos seleccionados</p>
-							{:else}
-								<div class="space-y-1">
-									{#each editLensTreatments as t, idx (t.supplierTreatmentId + idx)}
-										<div
-											class="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs dark:border-slate-600 dark:bg-slate-700"
-										>
-											<FlaskConical class="h-3.5 w-3.5 shrink-0 text-purple-600" />
-											<span class="flex-1 font-medium text-slate-800 dark:text-slate-200"
-												>{t.name}</span
-											>
-											<span class="font-mono text-slate-600 dark:text-slate-400"
-												>{formatPrice(t.salePrice * 2)}</span
-											>
-											<button
-												type="button"
-												onclick={() => removeTreatmentFromEdit(idx)}
-												class="flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30"
-												title="Quitar tratamiento"
-											>
-												<X class="h-3.5 w-3.5" />
-											</button>
-										</div>
-									{/each}
-								</div>
-							{/if}
-						</div>
-						<div class="flex justify-end gap-2 pt-1">
-							<button
-								type="button"
-								onclick={cancelLensEdit}
-								class="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-								>Cancelar</button
-							>
-							<button
-								type="button"
-								onclick={saveLensEdit}
-								disabled={!editLensTmp.lensCatalogItemId || editLensTmp.unitPrice <= 0}
-								class="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-sky-800 disabled:opacity-50"
-							>
-								<Save class="h-3.5 w-3.5" />
-								{editingLensId ? 'Guardar cambios' : 'Agregar cristal'}
-							</button>
-						</div>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Items list -->
-			<div class="space-y-2">
-				{#each mainItems as item, i (item.id || i)}
-					{@const Icon =
-						item.itemType === SaleItemType.LENS_PAIR
-							? Eye
-							: item.itemType === SaleItemType.FREE_ITEM
-								? Sparkles
-								: item.itemType === SaleItemType.TREATMENT
-									? FlaskConical
-									: Package}
-					<div
-						class="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 transition-colors hover:border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-slate-500"
-						class:opacity-50={editingLensId === item.id}
-					>
-						<div
-							class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
-									{item.itemType === SaleItemType.LENS_PAIR
-								? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300'
-								: item.itemType === SaleItemType.FREE_ITEM
-									? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-									: item.itemType === SaleItemType.TREATMENT
-										? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
-										: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}"
-						>
-							<Icon class="h-4 w-4" />
-						</div>
-						<div class="min-w-0 flex-1">
-							<div class="flex items-center gap-2">
-								<span class="truncate text-sm font-semibold text-brand-navy dark:text-white">
-									{item.itemType === SaleItemType.FREE_ITEM
-										? (item.freeItemDescription ?? 'Ítem libre')
-										: (item.snapshotName ?? 'Artículo')}
-								</span>
-								<span
-									class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide uppercase
-											{item.itemType === SaleItemType.LENS_PAIR
-										? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300'
-										: item.itemType === SaleItemType.FREE_ITEM
-											? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-											: item.itemType === SaleItemType.TREATMENT
-												? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
-												: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}"
-								>
-									{item.itemType === SaleItemType.LENS_PAIR
-										? 'Cristal'
-										: item.itemType === SaleItemType.FREE_ITEM
-											? 'Ítem Libre'
-											: item.itemType === SaleItemType.TREATMENT
-												? 'Tratamiento'
-												: 'Producto'}
-								</span>
-								{#if !item.id}
-									<span
-										class="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold tracking-wide text-green-700 uppercase dark:bg-green-900/50 dark:text-green-300"
-										>Nuevo</span
-									>
-								{/if}
-							</div>
-							{#if itemDetail(item)}
-								<p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
-									{itemDetail(item)}
-								</p>
-							{/if}
-						</div>
-						<div class="text-right">
-							<p class="font-mono text-sm font-semibold text-brand-navy dark:text-white">
-								{formatPrice(item.unitPrice)}
-							</p>
-							<p class="text-xs text-slate-500 dark:text-slate-400">x{item.quantity}</p>
-						</div>
-						{#if item.itemType === SaleItemType.LENS_PAIR}
-							<button
-								type="button"
-								onclick={() => startLensEdit(item)}
-								disabled={!!editingLensId || saving}
-								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-cyan-50 hover:text-cyan-600 disabled:opacity-30 dark:hover:bg-cyan-900/30 dark:hover:text-cyan-400"
-								title="Editar cristal"
-							>
-								<Pencil class="h-3.5 w-3.5" />
-							</button>
-						{/if}
-						<button
-							type="button"
-							onclick={() => removeItem(item)}
-							disabled={!!editingLensId || saving}
-							class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-							title="Eliminar"
-						>
-							<X class="h-4 w-4" />
-						</button>
-					</div>
-
-					{#if item.itemType === SaleItemType.LENS_PAIR}
-						{@const childTreatments = activeItems.filter(
-							(ci) => ci.parentSaleItemId === item.id && ci.itemType === SaleItemType.TREATMENT
-						)}
-						{#each childTreatments as treatment (treatment.id)}
-							<div
-								class="ml-8 flex items-center gap-3 rounded-lg border border-dashed border-purple-200 bg-purple-50/40 px-4 py-2 dark:border-purple-800 dark:bg-purple-900/20"
-							>
-								<FlaskConical class="h-3.5 w-3.5 shrink-0 text-purple-500" />
-								<span class="flex-1 text-xs font-medium text-slate-700 dark:text-slate-300"
-									>{treatment.snapshotName ?? 'Tratamiento'}</span
-								>
-								<span class="font-mono text-xs text-slate-500 dark:text-slate-400"
-									>{formatPrice(treatment.unitPrice)}</span
-								>
-							</div>
-						{/each}
-					{/if}
-				{/each}
-
-				{#if mainItems.length === 0}
-					<div
-						class="rounded-lg border border-dashed border-slate-300 py-8 text-center text-sm text-slate-400 dark:border-slate-600"
-					>
-						No hay artículos en esta venta. Agregue al menos uno.
-					</div>
-				{/if}
-			</div>
+			<EditSaleItemsSection
+				{activeItems}
+				{mainItems}
+				{editingLensId}
+				{saving}
+				onEditLens={startLensEdit}
+				onRemoveItem={removeItem}
+			/>
 		</section>
 
 		<!-- ── Card: Resumen ── -->
