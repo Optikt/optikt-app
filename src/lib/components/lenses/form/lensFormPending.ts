@@ -1,28 +1,25 @@
 export interface PendingEntity {
 	pendingId: string;
 	name: string;
+	[key: string]: unknown;
 }
 
-export interface SelectOption {
-	value: string;
-	label: string;
-}
-
-export function createPendingEntity(name: string): PendingEntity {
+export function createPendingEntity(name: string, prefix: string = 'pending'): PendingEntity {
 	return {
-		pendingId: `pending_${crypto.randomUUID()}`,
+		pendingId: `${prefix}_${crypto.randomUUID()}`,
 		name: name.trim()
 	};
 }
 
 export function handleCreatePending(
 	pendingList: PendingEntity[],
-	name: string
-): { updatedList: PendingEntity[]; option: SelectOption } {
-	const entity = createPendingEntity(name);
+	name: string,
+	prefix: string = 'pending'
+): { updatedList: PendingEntity[]; option: { id: string; name: string; isPending: boolean } } {
+	const entity = createPendingEntity(name, prefix);
 	return {
 		updatedList: [...pendingList, entity],
-		option: { value: entity.pendingId, label: entity.name }
+		option: { id: entity.pendingId, name: entity.name, isPending: true }
 	};
 }
 

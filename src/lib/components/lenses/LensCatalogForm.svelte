@@ -18,6 +18,27 @@
 	} from '$lib/components/ui';
 	import { getErrorMessage, logger } from '$lib/utils';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
+	import LensFormIdentitySection from './form/LensFormIdentitySection.svelte';
+	import LensFormPricingPreview from './form/LensFormPricingPreview.svelte';
+	import LensFormRangesSection from './form/LensFormRangesSection.svelte';
+	import LensFormSelectionSection from './form/LensFormSelectionSection.svelte';
+	import {
+		getPendingName as getPendingNameHelper,
+		handleCreatePending
+	} from './form/lensFormPending';
+	import { calculateLensPricing } from './form/lensFormPricing';
+	import {
+		addRange as addRangeHelper,
+		buildServerRangeValidations,
+		getRangeInputClass,
+		getRootRangeIssues,
+		isRenderedRangeIssue,
+		mergeRangeValidation,
+		pushUniqueValidationMessage,
+		removeRange as removeRangeHelper,
+		toastUnboundNonRangeIssues,
+		toggleSphereMode as toggleSphereModeHelper
+	} from './form/lensFormRanges';
 	import {
 		SPHERE_RANGE_MODE,
 		createEmptyOpticalRangeValidation,
@@ -191,36 +212,20 @@
 			});
 	}
 
-	// Live pair purchase price - always the cost of two lenses
-	let livePairPurchasePrice = $derived.by(() => {
-		const base = parseFloat(formData.basePrice) || 0;
-		return formData.priceType === LensPriceType.UNIT ? base * 2 : base;
-	});
-
-	let liveOperationalCost = $derived.by(() => {
-		const mounting = parseFloat(formData.mountingPrice) || 0;
-		const shipping = parseFloat(formData.shippingPrice) || 0;
-		return livePairPurchasePrice + mounting + shipping;
-	});
-
-	let liveGrossProfit = $derived.by(() => {
-		const sale = parseFloat(formData.salePrice) || 0;
-		if (sale <= 0) return null;
-		return sale - liveOperationalCost;
-	});
-
-	// Gross margin over sale price, aligned with the summary card.
-	let liveMarginPercent = $derived.by(() => {
-		const sale = parseFloat(formData.salePrice) || 0;
-		if (sale <= 0 || liveGrossProfit == null) return null;
-		return (liveGrossProfit / sale) * 100;
-	});
-
-	let totalWithTax = $derived.by(() => {
-		const sale = parseFloat(formData.salePrice) || 0;
-		if (sale <= 0) return 0;
-		return sale;
-	});
+	let pricing = $derived(
+		calculateLensPricing({
+			basePrice: formData.basePrice,
+			mountingPrice: formData.mountingPrice,
+			shippingPrice: formData.shippingPrice,
+			salePrice: formData.salePrice,
+			priceType: formData.priceType as LensPriceType
+		})
+	);
+	let livePairPurchasePrice = $derived(pricing.pairPurchasePrice);
+	let liveOperationalCost = $derived(pricing.operationalCost);
+	let liveGrossProfit = $derived(pricing.grossProfit);
+	let liveMarginPercent = $derived(pricing.marginPercent);
+	let totalWithTax = $derived(pricing.totalWithTax);
 
 	// Dynamic optical ranges
 	let ranges = $state<OpticalRangeFormEntry[]>(
@@ -354,125 +359,24 @@
 		}
 	});
 
-	// ── Range helpers ────────────────────────────────────────────
+	// Range helpers — logic moved to ./form/lensFormRanges.ts, wrappers keep $state reactivity
 	function addRange() {
-		ranges = [...ranges, createEmptyOpticalRangeEntry()];
+		ranges = addRangeHelper(ranges);
 	}
 
 	function removeRange(index: number) {
-		ranges = ranges.filter((_, i) => i !== index);
+		ranges = removeRangeHelper(ranges, index);
 	}
 
 	function toggleSphereMode(range: OpticalRangeFormEntry) {
-		if (range.sphereMode === SPHERE_RANGE_MODE.INVERSE_DUPLICATE) {
-			range.sphereMode = SPHERE_RANGE_MODE.CONTINUOUS;
-			const continuousValues = toContinuousSphereValues(range.inverseOuter);
-			range.sphereMin = continuousValues.sphereMin;
-			range.sphereMax = continuousValues.sphereMax;
-			return;
-		}
-
-		range.sphereMode = SPHERE_RANGE_MODE.INVERSE_DUPLICATE;
-		const inverseValues = toInverseDuplicateSphereValues(range.sphereMin, range.sphereMax);
-		range.inverseOuter = inverseValues.inverseOuter;
-		range.inverseInner = inverseValues.inverseInner;
+		toggleSphereModeHelper(range);
 	}
 
 	const serializedRanges = $derived(JSON.stringify(expandOpticalRanges(ranges)));
 
 	type RangeValidationGroup = 'sphere' | 'cylinder' | 'addition';
 
-	function getRangeInputClass(hasError: boolean, extraClass = ''): string {
-		return `${rangeInputBaseClass} ${
-			hasError
-				? 'border border-error/40 ring-1 ring-error/15 focus:border-error focus:ring-error/20'
-				: 'border-0'
-		} ${extraClass}`.trim();
-	}
-
-	function pushUniqueValidationMessage(errors: string[], message: string) {
-		if (!errors.includes(message)) {
-			errors.push(message);
-		}
-	}
-
-	function mergeRangeValidation(
-		clientValidation: OpticalRangeValidation,
-		serverValidation?: OpticalRangeValidation
-	): OpticalRangeValidation {
-		const merged = createEmptyOpticalRangeValidation();
-
-		for (const group of ['sphere', 'cylinder', 'addition'] as const) {
-			for (const message of clientValidation[group]) {
-				pushUniqueValidationMessage(merged[group], message);
-			}
-
-			for (const message of serverValidation?.[group] ?? []) {
-				pushUniqueValidationMessage(merged[group], message);
-			}
-		}
-
-		return merged;
-	}
-
-	function getRangeIssueLocation(
-		issue: RemoteFormIssue
-	): { index?: number; field?: string } | null {
-		if (Array.isArray(issue.path) && issue.path[0] === 'ranges') {
-			return {
-				index: typeof issue.path[1] === 'number' ? issue.path[1] : undefined,
-				field:
-					typeof issue.path[2] === 'string'
-						? issue.path[2]
-						: typeof issue.path[1] === 'string'
-							? issue.path[1]
-							: undefined
-			};
-		}
-
-		return null;
-	}
-
-	function getRangeValidationGroup(field?: string): RangeValidationGroup | null {
-		if (!field) return null;
-		if (field.startsWith('sphere')) return 'sphere';
-		if (field.startsWith('cylinder')) return 'cylinder';
-		if (field.startsWith('addition')) return 'addition';
-		return null;
-	}
-
-	function buildServerRangeValidations(issues: RemoteFormIssue[]): OpticalRangeValidation[] {
-		const validations: OpticalRangeValidation[] = [];
-
-		for (const issue of issues) {
-			const location = getRangeIssueLocation(issue);
-			if (!location || location.index === undefined) continue;
-
-			const group = getRangeValidationGroup(location.field);
-			if (!group) continue;
-
-			const validation = validations[location.index] ?? createEmptyOpticalRangeValidation();
-			pushUniqueValidationMessage(validation[group], issue.message);
-			validations[location.index] = validation;
-		}
-
-		return validations;
-	}
-
-	function getRootRangeIssues(issues: RemoteFormIssue[]): RemoteFormIssue[] {
-		return issues.filter((issue) => {
-			const location = getRangeIssueLocation(issue);
-			return location !== null && location.index === undefined;
-		});
-	}
-
-	function isRenderedRangeIssue(issue: RemoteFormIssue): boolean {
-		return getRangeIssueLocation(issue) !== null;
-	}
-
-	function toastUnboundNonRangeIssues(allIssues: RemoteFormIssue[]) {
-		toastUnboundErrors(allIssues.filter((issue) => !isRenderedRangeIssue(issue)));
-	}
+	// Range validation helpers moved to ./form/lensFormRanges.ts — imported above
 
 	const clientRangeValidations = $derived.by(() =>
 		ranges.map((r) =>
@@ -513,32 +417,25 @@
 	}
 
 	function handleCreatePendingSupplier(name: string): SelectOption {
-		const pendingId = `pending_supplier_${generateUUID()}`;
-		pendingSuppliers = [...pendingSuppliers, { pendingId, name }];
-		return { id: pendingId, name, isPending: true };
+		const result = handleCreatePending(pendingSuppliers, name, 'pending_supplier');
+		pendingSuppliers = result.updatedList;
+		return result.option;
 	}
 
 	function handleCreatePendingMaterial(name: string): SelectOption {
-		const pendingId = `pending_material_${generateUUID()}`;
-		pendingMaterials = [...pendingMaterials, { pendingId, name }];
-		return { id: pendingId, name, isPending: true };
+		const result = handleCreatePending(pendingMaterials, name, 'pending_material');
+		pendingMaterials = result.updatedList;
+		return result.option;
 	}
 
 	function handleCreatePendingTechnology(name: string): SelectOption {
-		const pendingId = `pending_technology_${generateUUID()}`;
-		pendingTechnologies = [...pendingTechnologies, { pendingId, name }];
-		return { id: pendingId, name, isPending: true };
+		const result = handleCreatePending(pendingTechnologies, name, 'pending_technology');
+		pendingTechnologies = result.updatedList;
+		return result.option;
 	}
 
 	function getPendingName(pendingId: string): string | null {
-		if (!pendingId.startsWith('pending_')) return null;
-		const sup = pendingSuppliers.find((s) => s.pendingId === pendingId);
-		if (sup) return sup.name;
-		const mat = pendingMaterials.find((m) => m.pendingId === pendingId);
-		if (mat) return mat.name;
-		const tech = pendingTechnologies.find((t) => t.pendingId === pendingId);
-		if (tech) return tech.name;
-		return null;
+		return getPendingNameHelper(pendingId, pendingSuppliers, pendingMaterials, pendingTechnologies);
 	}
 
 	function handleCreateResult() {
