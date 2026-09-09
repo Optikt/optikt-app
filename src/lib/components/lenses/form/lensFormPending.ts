@@ -42,11 +42,4 @@ export function isPendingId(id: string): boolean {
 	return id.startsWith('pending_');
 }
 
-export function resolvePendingId(
-	formValue: string,
-	pendingList: PendingEntity[]
-): string | undefined {
-	if (!formValue) return undefined;
-	if (!isPendingId(formValue)) return undefined;
-	return formValue;
-}
+

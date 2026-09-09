@@ -13,7 +13,7 @@ import type {
 } from '$lib/utils/opticalRangeForm';
 
 const rangeInputBaseClass =
-	'w-full rounded-lg bg-surface px-3 py-2 text-sm focus:outline-none';
+	'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue font-mono';
 
 export type RangeValidationGroup = 'sphere' | 'cylinder' | 'addition';
 
