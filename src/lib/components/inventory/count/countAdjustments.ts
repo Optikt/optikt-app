@@ -1,7 +1,8 @@
-export function isAdjustmentStatusUpdating(
-	lineId: number,
-	updatingIds: number[]
-): boolean {
+import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount';
+
+export type CountAdjustmentPath = `/products/${string}/adjustments` | `/lenses/${string}/adjustments`;
+
+export function isAdjustmentStatusUpdating(lineId: number, updatingIds: number[]): boolean {
 	return updatingIds.includes(lineId);
 }
 
@@ -16,25 +17,39 @@ export function toggleUpdatingId(
 	return current.filter((id) => id !== lineId);
 }
 
-export function getAdjustmentPath(line: {
-	productId?: string | null;
-	lensCatalogItemId?: string | null;
-}): { type: 'product' | 'lens'; id: string } | null {
-	if (line.productId) return { type: 'product', id: line.productId };
-	if (line.lensCatalogItemId) return { type: 'lens', id: line.lensCatalogItemId };
+export function hasDifference(line: InventoryCountLineRow): boolean {
+	return line.countedStock !== null && (line.difference ?? 0) !== 0;
+}
+
+export function isMatchedLine(line: InventoryCountLineRow): boolean {
+	return line.countedStock !== null && (line.difference ?? 0) === 0;
+}
+
+export function getAdjustmentPath(line: InventoryCountLineRow): CountAdjustmentPath | null {
+	if (!hasDifference(line)) {
+		return null;
+	}
+
+	if (line.itemType === 'PRODUCT' && line.productId) {
+		return `/products/${line.productId}/adjustments`;
+	}
+
+	if (line.itemType === 'LENS' && line.lensCatalogItemId) {
+		return `/lenses/${line.lensCatalogItemId}/adjustments`;
+	}
+
 	return null;
 }
 
 export function formatDifference(difference: number | null): string {
-	if (difference == null) return '—';
-	if (difference === 0) return '0';
-	const sign = difference > 0 ? '+' : '';
-	return `${sign}${difference}`;
+	if (difference === null || difference === 0) return '—';
+	return difference > 0 ? `+${difference}` : `${difference}`;
 }
 
 export function differenceBadgeClass(difference: number | null): string {
-	if (difference == null) return 'bg-slate-100 text-slate-500';
-	if (difference > 0) return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-	if (difference < 0) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
-	return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+	if (difference === null) return 'bg-surface-container text-on-surface-variant';
+	if (difference === 0) return 'bg-surface-container text-on-surface-variant';
+	return difference > 0
+		? 'bg-success-container/70 text-success'
+		: 'bg-error-container/80 text-error';
 }
