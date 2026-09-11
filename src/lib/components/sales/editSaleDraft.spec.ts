@@ -1,14 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { DiscountType } from '$lib/shared/enums';
-import { FreeItemCategory, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { FreeItemCategory, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+import type { SupplierTreatment } from '$lib/server/db/schema';
+import { cacheLensItem } from './catalogCache.svelte';
 import {
+	applyLensEdit,
 	buildLensInputFromDraft,
+	buildUpdateSalePayload,
 	createEmptyLensDraft,
+	createFreeItem,
+	createProductItem,
 	existingItemToInput,
+	getLensEditContext,
 	hasChangesForSale,
 	itemDetail,
+	mapTreatmentsForEdit,
 	previewSubtotalForItems,
+	seedCatalogCacheForItems,
 	type EditableItem
 } from './editSaleDraft';
 
@@ -156,6 +165,212 @@ describe('itemDetail', () => {
 			)
 		).toBe('SERVICE');
 		expect(itemDetail(draft())).toBe('');
+	});
+});
+
+describe('mapTreatmentsForEdit', () => {
+	const lens = draft({ id: 'lens-1', itemType: SaleItemType.LENS_PAIR });
+	const child = draft({
+		id: 't-1',
+		itemType: SaleItemType.TREATMENT,
+		parentSaleItemId: 'lens-1',
+		unitPrice: 20,
+		snapshotBaseCost: 10,
+		snapshotName: 'AR',
+		snapshotIsTaxable: true,
+		snapshotTreatmentCategory: 'COAT'
+	});
+	const other = draft({ id: 'p-1', itemType: SaleItemType.PRODUCT });
+
+	it('maps child treatments with halved prices', () => {
+		const result = mapTreatmentsForEdit([lens, child, other], 'lens-1');
+
+		expect(result).toEqual([
+			{
+				supplierTreatmentId: '',
+				name: 'AR',
+				price: 5,
+				salePrice: 10,
+				isTaxable: true,
+				category: 'COAT',
+				_keep: true
+			}
+		]);
+	});
+
+	it('returns empty without children', () => {
+		expect(mapTreatmentsForEdit([lens, other], 'lens-1')).toEqual([]);
+	});
+});
+
+describe('applyLensEdit', () => {
+	const saved = draft({ id: 'lens-9', itemType: SaleItemType.LENS_PAIR });
+	const treatment = {
+		supplierTreatmentId: 'st-1',
+		name: 'AR',
+		price: 5,
+		salePrice: 10,
+		isTaxable: true,
+		category: 'COAT'
+	};
+
+	it('replaces edited lens with its old children', () => {
+		const old = draft({ id: 'lens-9', itemType: SaleItemType.LENS_PAIR });
+		const oldChild = draft({
+			id: 'old-t',
+			itemType: SaleItemType.TREATMENT,
+			parentSaleItemId: 'lens-9'
+		});
+		const kept = draft({ id: 'p-1', itemType: SaleItemType.PRODUCT });
+
+		const result = applyLensEdit([old, oldChild, kept], 'lens-9', saved, [treatment], 'Sup');
+
+		expect(result.map((i) => i.id)).toEqual(['p-1', 'lens-9', undefined]);
+		expect(result[2]).toMatchObject({
+			itemType: SaleItemType.TREATMENT,
+			parentSaleItemId: 'lens-9',
+			unitPrice: 20,
+			snapshotBaseCost: 10,
+			snapshotBrand: 'Sup'
+		});
+	});
+
+	it('appends new lens keeping removed markers', () => {
+		const removed = draft({ id: 'old', _removed: true });
+
+		const result = applyLensEdit([removed], null, saved, [], undefined);
+
+		expect(result.map((i) => i.id)).toEqual(['old', 'lens-9']);
+	});
+});
+
+describe('createProductItem / createFreeItem', () => {
+	it('snapshots product catalog data', () => {
+		const result = createProductItem(
+			{ name: 'Montura', sku: 'SKU', brand: { name: 'Marca' }, isTaxable: false },
+			{
+				productId: 'p-1',
+				quantity: 2,
+				unitPrice: 50,
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				notes: ''
+			}
+		);
+
+		expect(result).toMatchObject({
+			itemType: SaleItemType.PRODUCT,
+			snapshotName: 'Montura',
+			snapshotSku: 'SKU',
+			snapshotBrand: 'Marca',
+			snapshotIsTaxable: false,
+			_removed: false
+		});
+		expect(result.notes).toBeUndefined();
+	});
+
+	it('trims free item description', () => {
+		const result = createFreeItem({
+			category: FreeItemCategory.SERVICE,
+			description: '  Ajuste  ',
+			price: 10,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			notes: ''
+		});
+
+		expect(result.freeItemDescription).toBe('Ajuste');
+		expect(result.snapshotName).toBe('Ajuste');
+		expect(result.freeItemCategory).toBe(FreeItemCategory.SERVICE);
+	});
+});
+
+describe('buildUpdateSalePayload', () => {
+	const sale = {
+		id: 'sale-1',
+		saleDate: '2026-09-01T10:00:00.000Z',
+		notes: null,
+		isCashea: false,
+		discount: 0,
+		discountType: DiscountType.FIXED
+	};
+	const base = {
+		saleDate: '2026-09-01',
+		notes: '',
+		isCashea: false,
+		discount: 0,
+		discountType: DiscountType.FIXED,
+		reason: 'Corrección',
+		removedCount: 0,
+		activeItems: [draft({ id: '1' })]
+	};
+
+	it('sends only id and reason when nothing changed', () => {
+		expect(buildUpdateSalePayload(sale, base)).toEqual({ id: 'sale-1', reason: 'Corrección' });
+	});
+
+	it('includes items when discount changes', () => {
+		const payload = buildUpdateSalePayload(sale, { ...base, discount: 5 });
+
+		expect(payload.discount).toBe(5);
+		expect(payload.items?.length).toBe(1);
+	});
+
+	it('maps header diffs', () => {
+		const payload = buildUpdateSalePayload(sale, {
+			...base,
+			notes: 'nota',
+			isCashea: true,
+			saleDate: '2026-09-02'
+		});
+
+		expect(payload.notes).toBe('nota');
+		expect(payload.isCashea).toBe(true);
+		expect(typeof payload.saleDate).toBe('string');
+	});
+});
+
+describe('seedCatalogCacheForItems', () => {
+	it('resolves without remote when no lens ids', async () => {
+		await expect(seedCatalogCacheForItems([])).resolves.toBeUndefined();
+		await expect(seedCatalogCacheForItems([{ lensCatalogItemId: null }])).resolves.toBeUndefined();
+	});
+});
+
+describe('getLensEditContext', () => {
+	const treatments = [
+		{ id: 't-1', supplierId: 'sup-1', name: 'AR' },
+		{ id: 't-2', supplierId: 'other', name: 'Blue' }
+	] as SupplierTreatment[];
+
+	it('returns empty context without cached lens', () => {
+		const ctx = getLensEditContext('missing-lens', [], treatments);
+
+		expect(ctx).toEqual({
+			availableTreatments: [],
+			selectableTreatments: [],
+			selectedLens: null,
+			showAddition: true
+		});
+	});
+
+	it('filters treatments by lens supplier and excludes current', () => {
+		cacheLensItem({
+			id: 'lens-ctx-1',
+			type: LensType.PROGRESSIVE,
+			supplier: { id: 'sup-1', name: 'Sup' }
+		} as never);
+
+		const ctx = getLensEditContext(
+			'lens-ctx-1',
+			[{ supplierTreatmentId: 't-1' } as never],
+			treatments
+		);
+
+		expect(ctx.selectedLens?.id).toBe('lens-ctx-1');
+		expect(ctx.availableTreatments.map((t) => t.id)).toEqual(['t-1']);
+		expect(ctx.selectableTreatments).toEqual([]);
+		expect(ctx.showAddition).toBe(true);
 	});
 });
 

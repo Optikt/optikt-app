@@ -1,6 +1,50 @@
-import { getLensTypeLabel } from '$lib/shared/enums';
+import {
+	getLensTypeLabel,
+	LensCatalogSource,
+	LensInventoryMode,
+	LensPriceType,
+	LensType
+} from '$lib/shared/enums';
 import type { PendingEntity } from '$lib/components/ui';
+import type { LensCatalogItem } from '$lib/server/db/schema';
 import type { CatalogLists, LensCatalogFormData } from './lensFormTypes';
+
+export const TECHNOLOGY_HELPER_TEXT =
+	'Selecciona la tecnología de fabricación digital para este lente de laboratorio.';
+
+export function parseCommaList(text: string): string[] {
+	return text
+		.split(',')
+		.map((s) => s.trim())
+		.filter(Boolean);
+}
+
+export function createInitialLensFormData(item: LensCatalogItem | null): LensCatalogFormData {
+	return {
+		source: (item?.source as LensCatalogFormData['source']) ?? LensCatalogSource.LAB,
+		supplierId: item?.supplierId ?? '',
+		name: item?.name ?? '',
+		type: (item?.type as LensType) ?? LensType.MONOFOCAL,
+		technologyId: item?.technologyId ?? '',
+		differentiators: (item?.differentiators as string[]) ?? [],
+		arColors: (item?.arColors as string[]) ?? [],
+		photochromicColors: (item?.photochromicColors as string[]) ?? [],
+		materialId: item?.materialId ?? '',
+		hasAr: item?.hasAr ?? false,
+		hasBluecut: item?.hasBluecut ?? false,
+		isPhotochromic: item?.isPhotochromic ?? false,
+		priceType: (item?.priceType as LensPriceType) ?? LensPriceType.UNIT,
+		basePrice: item?.basePrice?.toString() ?? '0',
+		salePrice: item?.salePrice?.toString() ?? '0',
+		mountingPrice: item?.mountingPrice?.toString() ?? '0',
+		shippingPrice: item?.shippingPrice?.toString() ?? '0',
+		isTaxable: item?.isTaxable ?? false,
+		inventoryMode:
+			(item?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
+		stock: item?.stock != null ? item.stock.toString() : '0',
+		notes: item?.notes ?? ''
+	};
+}
 
 export interface PendingLists {
 	pendingSuppliers: PendingEntity[];
