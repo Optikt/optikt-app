@@ -1,6 +1,6 @@
 /**
  * Construcción del payload del recibo de venta para el agente de impresión
- * (optikt-print-agent) — CONTRATO V3. Módulo puro y testeable.
+ * (optikt-print-agent) — CONTRATO V4. Módulo puro y testeable.
  *
  * Reglas de negocio (convenidas):
  * 1. Items se listan SIN IVA (base imponible / exento); el IVA se suma al final.
@@ -34,7 +34,7 @@ export interface TickeraPaymentInput {
 }
 
 export interface TickeraSaleInput {
-	store: { name: string | null; rif: string | null; address: string | null };
+	store: { name: string | null; rif: string | null; address: string | null; phone: string | null };
 	orderNumber: number;
 	saleDate: string;
 	customerName: string;
@@ -50,7 +50,7 @@ export interface TickeraSaleInput {
 
 export interface TickeraPayload {
 	type: 'SALE';
-	store: { name: string | null; rif: string | null; address: string | null };
+	store: { name: string | null; rif: string | null; address: string | null; phone: string | null };
 	receiptNumber: number;
 	date: string; // dd/mm/yy
 	time: string; // HH:mm
@@ -184,7 +184,8 @@ export function buildTickeraPayload(input: TickeraSaleInput): TickeraPayload {
 		store: {
 			name: store.name ?? null,
 			rif: store.rif ?? null,
-			address: store.address ?? null
+			address: store.address ?? null,
+			phone: store.phone ?? null
 		},
 		receiptNumber: input.orderNumber,
 		date,

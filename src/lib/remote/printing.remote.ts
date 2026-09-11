@@ -12,6 +12,7 @@ import { UserRole, SaleStatus } from '$lib/shared/enums';
 import { PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums/paymentMethods';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { buildTickeraPayload, type TickeraPayload } from '$lib/shared/tickera';
+import { resolveTicketRate } from '$lib/shared/ticketRate';
 import {
 	findSaleByIdWithRelations,
 	getSaleItemsWithDetails,
@@ -72,20 +73,21 @@ export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 		};
 	}
 
-	const bcvRate = await getExchangeRateValue(BCV_CODE);
-	if (bcvRate === null || bcvRate <= 0) {
-		return {
-			success: false as const,
-			error: 'No hay tasa BCV disponible para convertir el recibo a bolívares'
-		};
-	}
-
 	const sale = await findSaleByIdWithRelations(data.saleId);
 	if (!sale) {
 		return { success: false as const, error: 'Venta no encontrada' };
 	}
 	if (sale.status === SaleStatus.CANCELLED) {
 		return { success: false as const, error: 'No se puede imprimir una venta cancelada' };
+	}
+
+	/** Frozen snapshot wins so reprints are identical; pre-feature sales (NULL) use live */
+	const bcvRate = resolveTicketRate(sale.snapshotBcvRate, await getExchangeRateValue(BCV_CODE));
+	if (bcvRate === null) {
+		return {
+			success: false as const,
+			error: 'No hay tasa BCV disponible para convertir el recibo a bolívares'
+		};
 	}
 
 	const [saleItems, payments, settings] = await Promise.all([
@@ -100,7 +102,8 @@ export const printTickeraReceipt = command(PrintTickeraSchema, async (data) => {
 		store: {
 			name: settings.businessName?.trim() || null,
 			rif: settings.businessRif?.trim() || null,
-			address: settings.businessAddress?.trim() || null
+			address: settings.businessAddress?.trim() || null,
+			phone: settings.businessPhone?.trim() || null
 		},
 		orderNumber: sale.orderNumber,
 		saleDate: sale.saleDate,

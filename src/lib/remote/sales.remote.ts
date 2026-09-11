@@ -339,6 +339,10 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 	const total = totals.total;
 	const hasLensItems = data.items.some((item) => item.itemType === SaleItemType.LENS_PAIR);
 
+	// Freeze the live USD BCV rate for future tickera reprints (null when API down — print falls back to live)
+	const liveBcvRate = await getExchangeRateValue('USD');
+	const snapshotBcvRate = liveBcvRate !== null && liveBcvRate > 0 ? liveBcvRate : null;
+
 	// All writes in a single transaction
 	const { sale, newCustomer, prescription } = await db.transaction(async (tx) => {
 		const now = nowISO();
@@ -404,6 +408,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				discount: data.discount,
 				discountType: data.discountType,
 				snapshotTaxRate: data.snapshotTaxRate,
+				/** Frozen USD BCV rate for tickera reprints */
+				snapshotBcvRate,
 				total,
 				paidAmountBcvUsd: 0,
 				isCashea: data.isCashea ?? false,

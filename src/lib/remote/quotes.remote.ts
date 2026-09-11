@@ -67,6 +67,7 @@ import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { monthStart, nowISO, toISODate, nowUTC, toUTCString } from '$lib/dates';
+import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { EmptySchema } from '$lib/schemas/common';
 import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
@@ -676,6 +677,10 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 		idMap.set(item.id, crypto.randomUUID());
 	}
 
+	// Freeze the live USD BCV rate for future tickera reprints (null when API down)
+	const liveBcvRate = await getExchangeRateValue('USD');
+	const snapshotBcvRate = liveBcvRate !== null && liveBcvRate > 0 ? liveBcvRate : null;
+
 	// All writes in a single transaction
 	const { sale, prescription } = await db.transaction(async (tx) => {
 		const now = nowISO();
@@ -706,6 +711,8 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				discount: quote.discount,
 				discountType: quote.discountType,
 				snapshotTaxRate: quote.snapshotTaxRate,
+				/** Frozen USD BCV rate for tickera reprints */
+				snapshotBcvRate,
 				total: totals.total,
 				paidAmountBcvUsd: 0,
 				notes: quote.notes ?? null,
