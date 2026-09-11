@@ -145,6 +145,20 @@
 
 ---
 
+### DT22 · Conteo: diferencia sin lote cuando stock sistema es 0 🟡
+
+**Problema:** En una sesión de conteo (`inventory/count/[id]`), cuando una línea tiene diferencia y `systemStock` es 0, el botón "Ir a ajustar" lleva a adjustments sin lote para actualizar ni manera de aumentar ese stock (no existe flujo de alta/entrada desde la diferencia). Detectado en QA fase 3 DT1 (PR #120).
+
+**Por qué importa:** Un conteo que encuentra stock físico sin registro queda sin resolución dentro del flujo; el ajuste debe hacerse fuera del sistema. El informe de diferencias queda con pendientes imposibles de cerrar.
+
+**Contras:** Toca el dominio de inventario (lotes, movimientos, ajustes): hay que definir si el ajuste crea un movimiento de entrada, si exige lote nuevo, y cómo interactúa con valorización/costos.
+
+**Dificultad:** Media (2-4 días). **Solución:** revisar el flujo de adjustments para soportar alta de stock desde una diferencia (crear lote + movimiento de entrada inicial) o redirigir a una entrada formal (compra/ajuste de inventario); definir regla de costo para stock nacido de conteo.
+
+**Estado:** TECH_DEBT documentado 2026-09-11. Fuera de scope fase 3 DT1. Sin empezar.
+
+---
+
 ### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
 **Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
@@ -616,6 +630,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | ✅        | DT7 · PDF stack                | Completado              |
 | 🟢        | DT18 · Latencia backend        | 1-2 días                |
 | 🟢        | DT20 · Catálogo step2 topado   | 2-3 días                |
+| 🟡        | DT22 · Conteo sin lote stock 0 | 2-4 días                |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT               |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope          |
 | 🟢        | NF8 · Comisiones               | 5 días                  |
