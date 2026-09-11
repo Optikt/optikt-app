@@ -44,6 +44,8 @@ import {
 // ============================================================================
 
 export type SaleWithRelations = Sale & {
+	/** Alias sourced from createdAt (single date truth) — keeps UI domain language. */
+	saleDate: string;
 	customer: {
 		id: string;
 		firstName: string;
@@ -115,9 +117,9 @@ export interface GetSalesOptions extends SaleFilterOptions {
 // INTERNAL HELPERS
 // ============================================================================
 
-/** Column map for orderBy */
+/** Column map for orderBy (saleDate is an alias of createdAt — single date truth) */
 const ORDER_COLUMNS: Record<SaleOrderBy, AnyColumn> = {
-	saleDate: sales.saleDate,
+	saleDate: sales.createdAt,
 	orderNumber: sales.orderNumber,
 	total: sales.total,
 	createdAt: sales.createdAt
@@ -159,11 +161,11 @@ function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 	}
 
 	if (opts.dateFrom) {
-		conditions.push(gte(sales.saleDate, opts.dateFrom));
+		conditions.push(gte(sales.createdAt, opts.dateFrom));
 	}
 
 	if (opts.dateTo) {
-		conditions.push(lte(sales.saleDate, toUTCString(toEndOfDay(fromISODate(opts.dateTo)!))));
+		conditions.push(lte(sales.createdAt, toUTCString(toEndOfDay(fromISODate(opts.dateTo)!))));
 	}
 
 	if (opts.search) {
@@ -261,6 +263,8 @@ export async function getAllSales(options?: GetSalesOptions): Promise<SaleWithRe
 
 	return results.map((r) => ({
 		...r.sale,
+		/** Alias sourced from createdAt (single date truth) */
+		saleDate: r.sale.createdAt,
 		customer: r.customer?.id ? r.customer : null,
 		seller: r.seller?.id ? r.seller : null,
 		cancelledBy: null,
@@ -296,7 +300,7 @@ export async function countSales(options?: SaleFilterOptions): Promise<number> {
 export async function getSalesStats(monthStartIso: string): Promise<SalesStats> {
 	const [row] = await db
 		.select({
-			monthly: sql<number>`count(*) filter (where ${sales.saleDate} >= ${monthStartIso})`.mapWith(
+			monthly: sql<number>`count(*) filter (where ${sales.createdAt} >= ${monthStartIso})`.mapWith(
 				Number
 			),
 			pending: sql<number>`count(*) filter (where ${sales.status} = 'PENDING')`.mapWith(Number),
@@ -360,6 +364,8 @@ export async function findSaleByIdWithRelations(
 
 	return {
 		...result.sale,
+		/** Alias sourced from createdAt (single date truth) */
+		saleDate: result.sale.createdAt,
 		customer: result.customer?.id ? result.customer : null,
 		seller: result.seller?.id ? result.seller : null,
 		cancelledBy: result.cancelledBy?.id ? result.cancelledBy : null,

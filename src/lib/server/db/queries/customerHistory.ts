@@ -118,7 +118,7 @@ export async function getCustomerHistory(customerId: string): Promise<CustomerHi
 		.from(sales)
 		.leftJoin(users, eq(sales.sellerId, users.id))
 		.where(and(eq(sales.customerId, customerId), isNull(sales.deletedAt)))
-		.orderBy(desc(sales.saleDate));
+		.orderBy(desc(sales.createdAt));
 
 	const saleIds = salesRows.map((r) => r.sale.id);
 
@@ -212,7 +212,7 @@ export async function getCustomerHistory(customerId: string): Promise<CustomerHi
 	const historySales: HistorySale[] = salesRows.map((r) => ({
 		id: r.sale.id,
 		orderNumber: r.sale.orderNumber,
-		saleDate: r.sale.saleDate,
+		saleDate: r.sale.createdAt,
 		status: r.sale.status,
 		subtotal: r.sale.subtotal,
 		discount: r.sale.discount,

@@ -76,6 +76,8 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		customerId: 'Cliente',
 		sellerId: 'Vendedor',
 		saleDate: 'Fecha de venta',
+		/** createdAt is the single date truth (saleDate alias maps to it) */
+		createdAt: 'Fecha de venta',
 		status: 'Estado',
 		subtotal: 'Subtotal',
 		discount: 'Descuento',

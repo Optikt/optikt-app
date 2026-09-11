@@ -71,6 +71,11 @@
 	// Audit history drawer
 	let showAuditDrawer = $state(false);
 	let auditHistory = $state(untrack(() => data.auditHistory));
+	/** Load instant comes from the audit create event — sale.createdAt is the business date now. */
+	let saleLoadedAt = $derived(
+		auditHistory.find((e) => e.entityType === 'sale' && e.action === 'create')?.changedAt ??
+			sale.createdAt
+	);
 	let pdfUrl = $derived(resolve(`/api/pdf/sale/${sale.id}`));
 
 	function openStockModal() {
@@ -640,7 +645,7 @@
 				<div class="mt-3">
 					<SaleAuditTimeline
 						{auditHistory}
-						saleCreatedAt={sale.createdAt}
+						saleCreatedAt={saleLoadedAt}
 						saleCreatedBy={sale.seller?.fullName}
 						onViewAudit={() => (showAuditDrawer = true)}
 					/>
@@ -782,6 +787,6 @@
 	open={showAuditDrawer}
 	onclose={() => (showAuditDrawer = false)}
 	{auditHistory}
-	saleCreatedAt={sale.createdAt}
+	saleCreatedAt={saleLoadedAt}
 	saleCreatedBy={sale.seller?.fullName}
 />

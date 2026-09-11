@@ -78,7 +78,14 @@ import { createExpense } from '$lib/server/db/queries/cash';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { inventoryMovements } from '$lib/server/db/schema';
 import { submitSalePayment } from '$lib/server/payments/salePayments';
-import { monthStart, nowISO, toISODate, nowUTC, toUTCString } from '$lib/dates';
+import {
+	monthStart,
+	nowISO,
+	toISODate,
+	nowUTC,
+	toUTCString,
+	composeBusinessTimestamp
+} from '$lib/dates';
 import { EmptySchema } from '$lib/schemas/common';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
@@ -390,7 +397,8 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				orderNumber,
 				customerId,
 				sellerId: context.userId!,
-				saleDate: data.saleDate,
+				/** saleDate alias → createdAt (single date truth): form day + submit time, Caracas */
+				createdAt: composeBusinessTimestamp(data.saleDate),
 				status: SaleStatus.PENDING,
 				subtotal,
 				discount: data.discount,
@@ -400,7 +408,6 @@ export const createSale = command(CreateSaleSchema, async (data) => {
 				paidAmountBcvUsd: 0,
 				isCashea: data.isCashea ?? false,
 				notes: data.notes ?? null,
-				createdAt: now,
 				updatedAt: now
 			})
 			.returning();
@@ -1198,7 +1205,8 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 			};
 
 			if (data.customerId) updateData.customerId = data.customerId;
-			if (data.saleDate) updateData.saleDate = data.saleDate;
+			/** saleDate alias → createdAt (modal already composes day + preserved time) */
+			if (data.saleDate) updateData.createdAt = data.saleDate;
 			if (data.notes !== undefined) updateData.notes = data.notes;
 			if (data.discount !== undefined) updateData.discount = data.discount;
 			if (data.discountType !== undefined) updateData.discountType = data.discountType;
@@ -1219,7 +1227,8 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 			updatedAt: nowISO()
 		};
 		if (data.customerId) headerUpdate.customerId = data.customerId;
-		if (data.saleDate) headerUpdate.saleDate = data.saleDate;
+		/** saleDate alias → createdAt (modal already composes day + preserved time) */
+		if (data.saleDate) headerUpdate.createdAt = data.saleDate;
 		if (data.notes !== undefined) headerUpdate.notes = data.notes;
 		if (data.discount !== undefined) headerUpdate.discount = data.discount;
 		if (data.discountType !== undefined) headerUpdate.discountType = data.discountType;
@@ -1252,7 +1261,7 @@ export const updateSale = command(UpdateSaleSchema, async (data) => {
 		existing,
 		updatedSale,
 		{ ...context, reason: data.reason },
-		{ excludeFields: ['createdAt', 'updatedAt', 'deletedAt'] }
+		{ excludeFields: ['updatedAt', 'deletedAt'] }
 	);
 
 	return { success: true as const, sale: updatedSale };
