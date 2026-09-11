@@ -3,7 +3,12 @@ import { allocateRounded, buildTickeraPayload, r2, type TickeraSaleInput } from 
 
 function baseInput(overrides: Partial<TickeraSaleInput> = {}): TickeraSaleInput {
 	return {
-		store: { name: 'Optikt Monagas C.A', rif: 'J-50736591-3', address: 'Maturin, Monagas' },
+		store: {
+			name: 'Optikt Monagas C.A',
+			rif: 'J-50736591-3',
+			address: 'Maturin, Monagas',
+			phone: null
+		},
 		orderNumber: 152,
 		saleDate: '2026-08-18T18:30:00.000Z',
 		customerName: 'Juan Rodriguez',
@@ -165,14 +170,13 @@ describe('buildTickeraPayload — contrato V3', () => {
 		}
 	});
 
-	it('NO envía campos viejos (cashier, tax, discount, paid, change, phone, website)', () => {
+	it('NO envía campos viejos (cashier, tax, discount, paid, change, website)', () => {
 		const p = buildTickeraPayload(baseInput()) as unknown as Record<string, unknown>;
 		expect(p).not.toHaveProperty('cashier');
 		expect(p.totals).not.toHaveProperty('tax');
 		expect(p.totals).not.toHaveProperty('discount');
 		expect(p.totals).not.toHaveProperty('paid');
 		expect(p.totals).not.toHaveProperty('change');
-		expect(p.store).not.toHaveProperty('phone');
 		expect(p.store).not.toHaveProperty('website');
 	});
 
@@ -187,6 +191,14 @@ describe('buildTickeraPayload — contrato V3', () => {
 		expect(p.store.name).toBe('Optikt Monagas C.A');
 		expect(p.store.rif).toBe('J-50736591-3');
 		expect(p.store.address).toBe('Maturin, Monagas');
+	});
+
+	it('store incluye phone (null si ausente, valor si presente)', () => {
+		expect(buildTickeraPayload(baseInput()).store.phone).toBeNull();
+		const p = buildTickeraPayload(
+			baseInput({ store: { name: 'N', rif: 'R', address: 'A', phone: '0414-1234567' } })
+		);
+		expect(p.store.phone).toBe('0414-1234567');
 	});
 });
 

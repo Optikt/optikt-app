@@ -60,6 +60,8 @@ export const sales = pgTable(
 		discountType: varchar('discount_type').notNull().default('FIXED'),
 		/** Tax rate snapshot at time of sale (e.g. 16) */
 		snapshotTaxRate: doublePrecision('snapshot_tax_rate').notNull(),
+		/** USD BCV rate snapshot at time of sale (null = pre-feature sales, print falls back to live rate) */
+		snapshotBcvRate: doublePrecision('snapshot_bcv_rate'),
 		/** Final total in USD (after discount) */
 		total: doublePrecision().notNull(),
 		/** Sum of all payments converted to BCV USD */
