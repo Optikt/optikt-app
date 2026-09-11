@@ -45,7 +45,7 @@
 		validateOpticalRangeEntry,
 		type OpticalRangeFormEntry
 	} from '$lib/utils/opticalRangeForm';
-	import { LensType, LensCatalogSource, LensPriceType, LensInventoryMode } from '$lib/shared/enums';
+	import { LensType, LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
