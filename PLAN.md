@@ -28,6 +28,8 @@
 
 **Dificultad:** Media (3-5 días por archivo grande). **Solución:** Mismo patrón que `purchase-detail`: extraer sub-componentes y helpers puros. Priorizar los 5 más grandes.
 
+**Decisión 2026-09-11 (fase 3, PR #120):** no más barrels `index.ts` — imports directos al módulo que define. Motivo: Vite dev carga/parsea todo lo re-exportado (startup + HMR lentos); los barrels ocultan peso de dependencias, invitan circulares vía `index` y debilitan Knip. Excepción: barrel temporal como shim de compatibilidad al partir un módulo con importadores legacy, con remoción obligatoria en el PR de migración. Regla en `AGENTS.md`, spec `dt1-split-protocol` enmendado. Deuda menor asociada: los barrels existentes (p. ej. `src/lib/components/ui/index.ts`) quedan como están — no crear nuevos.
+
 ---
 
 ### DT8 · Dashboard sin gráficos 🟡

@@ -22,6 +22,13 @@ Optical store management system built with SvelteKit, Shadcn-Svelte, and Drizzle
 - `src/routes/(auth)/` — Auth routes (login, etc.)
 - `drizzle/` — DB migrations and schema
 
+## Import Policy — No Barrels
+
+- Import directly from the defining module (`./form/lensFormPricing`, `$lib/components/inventory/count/countSummary`). Never add new `index.ts` barrels.
+- Why: Vite dev loads/parses every module re-exported by a barrel (slower startup + HMR); barrels hide dependency weight, invite circular imports through `index`, and weaken Knip dead-code detection. Prod tree-shaking is usually fine with pure ESM, but dev speed and explicit graphs are not.
+- Exception: a barrel may exist **temporarily** as compat shim when splitting a module with legacy importers (see `dt1-split-protocol`); it must be removed in the follow-up migration PR.
+- Precedent: `@lucide/svelte` explicit imports, never barrels (project conventions).
+
 ## Database Transaction Pattern
 
 Query functions in `src/lib/server/db/queries/` accept an optional `executor: DbOrTx = db` parameter (defined in `src/lib/server/db/types.ts`). This allows them to run standalone **or** inside a transaction:

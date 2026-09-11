@@ -14,8 +14,8 @@ Scope: repo
 
 1. **Componente .svelte monstruo:** extraer paneles/secciones a `<dominio>/<componente>/` con props tipadas + context del dominio; helpers puros → utils.
 2. **Página +page.svelte:** patrón POC `componentize-purchase-detail` (2221→629): orquestador ~300-400 líneas + secciones en `components/<dominio>/detail/` + context de página.
-3. **Remote \*.remote.ts:** split por recurso en carpeta `remote/<dominio>/` (`payments.remote.ts`, `items.remote.ts`, `queries.remote.ts`) + barrel `index.ts` re-exportando TODO lo existente → imports legacy siguen vivos; migrar consumidores gradualmente en PR separado.
-4. **Queries server:** split por recurso (`queries/purchaseOrders/orders.ts`, `items.ts`, `payments.ts`, `review.ts`) + barrel. Mantener `executor: DbOrTx = db` en cada función (patrón AGENTS.md — no duplicar lógica inline).
+3. **Remote \*.remote.ts:** split por recurso en carpeta `remote/<dominio>/` (`payments.remote.ts`, `items.ts`, `queries.remote.ts`). Si hay importadores legacy, barrel `index.ts` **temporal** re-exportando lo existente → imports siguen vivos; migrar consumidores en PR separado y **eliminar el barrel** después.
+4. **Queries server:** split por recurso (`queries/purchaseOrders/orders.ts`, `items.ts`, `payments.ts`, `review.ts`) con la misma regla de barrel temporal. Mantener `executor: DbOrTx = db` en cada función (patrón AGENTS.md — no duplicar lógica inline).
 5. **Helpers puros:** split por concern (ej. `saleItemHelpers` → items/pricing/prescription/tax). Tests espejo por módulo.
 6. **Schemas:** `common.ts` (509) → `common/{currency,ids,dates}`; por dominio solo si >400.
 7. **Specs:** espejo del split del fuente; `fifoScenarios.spec.ts` (600) → fixtures por escenario.
@@ -23,7 +23,7 @@ Scope: repo
 ## Disciplina PR
 
 - Un monolito por PR. Refactor puro: cero cambios de UX/comportamiento en el mismo PR.
-- Barrel re-export conserva imports → diffs mínimos en fase 1.
+- Imports directos al módulo que define (política `AGENTS.md` — no barrels nuevos). Barrel solo como shim temporal de compatibilidad, con remoción obligatoria en el PR de migración.
 - Migración de imports de consumidores = PR propio (mecánico, verificable con rg).
 
 ## Gates de verificación (cada PR)
