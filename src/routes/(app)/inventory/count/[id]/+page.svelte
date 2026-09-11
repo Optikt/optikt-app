@@ -22,11 +22,12 @@
 	import { getErrorMessage } from '$lib/utils';
 	import CountSessionHeader from '$lib/components/inventory/count/CountSessionHeader.svelte';
 	import CountSummaryMetrics from '$lib/components/inventory/count/CountSummaryMetrics.svelte';
-	import CountLinesTable, {
+	import CountLinesTable from '$lib/components/inventory/count/CountLinesTable.svelte';
+	import {
 		createEmptyLineEditing,
 		startLineEditing,
 		type CountLineEditing
-	} from '$lib/components/inventory/count/CountLinesTable.svelte';
+	} from '$lib/components/inventory/count/CountLineEditRow.svelte';
 	import CountActionModals from '$lib/components/inventory/count/CountActionModals.svelte';
 	import {
 		buildSummaryMessage,

@@ -1,3 +1,31 @@
+<script lang="ts" module>
+	export interface CountLineEditing {
+		lineId: number | null;
+		count: string;
+		notes: string;
+		showNotes: boolean;
+		isSaving: boolean;
+	}
+
+	export function createEmptyLineEditing(): CountLineEditing {
+		return { lineId: null, count: '', notes: '', showNotes: false, isSaving: false };
+	}
+
+	export function startLineEditing(line: {
+		id: number;
+		countedStock: number | null;
+		notes: string | null;
+	}): CountLineEditing {
+		return {
+			lineId: line.id,
+			count: line.countedStock !== null ? String(line.countedStock) : '',
+			notes: line.notes ?? '',
+			showNotes: Boolean(line.notes),
+			isSaving: false
+		};
+	}
+</script>
+
 <script lang="ts">
 	import { Check } from '@lucide/svelte';
 
