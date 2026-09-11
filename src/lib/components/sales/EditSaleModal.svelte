@@ -1,31 +1,39 @@
 <script lang="ts">
 	import { SlideOver } from '$lib/components/ui';
-	import { Package, Plus, X, Pen, Calculator } from '@lucide/svelte';
+	import { Package, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales.remote';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { getErrorMessage } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
-	import { SaleItemType, FreeItemCategory, LensType } from '$lib/shared/enums/lensTypes';
+	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
-	import type { UpdateSaleInput } from '$lib/schemas/sales';
-	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { untrack, onMount } from 'svelte';
-	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
-	import { cacheCatalogItems, getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
-	import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
+	import { getCachedProducts } from './catalogCache.svelte';
+	import { fromISO } from '$lib/dates';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
 	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
 	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';
 	import EditSaleItemsSection from './editSale/EditSaleItemsSection.svelte';
 	import EditSaleLensPanel from './editSale/EditSaleLensPanel.svelte';
+	import EditSaleSummarySection from './editSale/EditSaleSummarySection.svelte';
+	import EditSaleFooter from './editSale/EditSaleFooter.svelte';
+	import EditSaleModalHeader from './editSale/EditSaleModalHeader.svelte';
 	import {
+		applyLensEdit,
 		buildLensInputFromDraft,
+		buildUpdateSalePayload,
 		createEmptyLensDraft,
+		createFreeItem,
+		createProductItem,
 		existingItemToInput,
+		getLensEditContext,
 		hasChangesForSale,
+		mapTreatmentsForEdit,
 		previewSubtotalForItems,
-		type EditableItem
+		seedCatalogCacheForItems,
+		type EditableItem,
+		type EditLensTreatment
 	} from './editSaleDraft';
 	import { validateEditSale } from './editSaleValidation';
 
@@ -42,11 +50,7 @@
 	// Seed the catalog cache with the lens items already in this sale so
 	// treatment lists and lens type checks work without SSR-loading the catalog.
 	onMount(() => {
-		const lensIds = items.map((i) => i.lensCatalogItemId).filter((id): id is string => Boolean(id));
-		if (lensIds.length === 0) return;
-		void getCatalogItemsByIds({ lensIds }).then((results) =>
-			cacheCatalogItems([], results.lensItems)
-		);
+		void seedCatalogCacheForItems(items);
 	});
 
 	let saving = $state(false);
@@ -68,15 +72,7 @@
 	// ── Lens editing state ─────────────────────────────────────────────────
 	let editingLensId = $state<string | null>(null); // null = adding new
 	let editLensTmp: EditableItem = $state(createEmptyLensDraft());
-	let editLensTreatments: {
-		supplierTreatmentId: string;
-		name: string;
-		price: number;
-		salePrice: number;
-		isTaxable: boolean;
-		category: string;
-		_keep?: boolean;
-	}[] = $state([]);
+	let editLensTreatments: EditLensTreatment[] = $state([]);
 
 	// ── Add forms visibility ───────────────────────────────────────────────
 	let showAddProduct = $state(false);
@@ -112,27 +108,9 @@
 	let previewGlobalDiscount = $derived(previewTotals.globalDiscount);
 	let previewTotal = $derived(previewTotals.total);
 
-	let availableTreatments = $derived.by(() => {
-		if (!editLensTmp.lensCatalogItemId) return [];
-		const lens = getCachedLensItems().find((l) => l.id === editLensTmp.lensCatalogItemId);
-		const supplierId = lens?.supplier?.id;
-		if (!supplierId) return [];
-		return treatments.filter((t) => t.supplierId === supplierId);
-	});
-
-	let selectableTreatments = $derived(
-		availableTreatments.filter(
-			(t) => !editLensTreatments.some((et) => et.supplierTreatmentId === t.id)
-		)
+	let lensEditCtx = $derived(
+		getLensEditContext(editLensTmp.lensCatalogItemId, editLensTreatments, treatments)
 	);
-
-	let selectedLens = $derived(
-		editLensTmp.lensCatalogItemId
-			? (getCachedLensItems().find((l) => l.id === editLensTmp.lensCatalogItemId) ?? null)
-			: null
-	);
-
-	let showAddition = $derived(selectedLens?.type !== LensType.MONOFOCAL);
 
 	// ── Scroll lock when open ──────────────────────────────────────────────
 	$effect(() => {
@@ -151,17 +129,7 @@
 	function startLensEdit(item: EditableItem) {
 		editingLensId = item.id ?? null;
 		editLensTmp = { ...item };
-		editLensTreatments = activeItems
-			.filter((i) => i.parentSaleItemId === item.id && i.itemType === SaleItemType.TREATMENT)
-			.map((t) => ({
-				supplierTreatmentId: t.supplierTreatmentId ?? '',
-				name: t.snapshotName ?? 'Tratamiento',
-				price: (t.snapshotBaseCost ?? t.unitPrice) / 2,
-				salePrice: t.unitPrice / 2,
-				isTaxable: t.snapshotIsTaxable ?? true,
-				category: t.snapshotTreatmentCategory ?? '',
-				_keep: true
-			}));
+		editLensTreatments = mapTreatmentsForEdit(activeItems, item.id);
 		closeAllAddForms();
 	}
 
@@ -190,7 +158,7 @@
 
 	function addTreatmentFromSelect(treatmentId: string) {
 		if (!treatmentId) return;
-		const treatment = availableTreatments.find((t) => t.id === treatmentId);
+		const treatment = lensEditCtx.availableTreatments.find((t) => t.id === treatmentId);
 		if (!treatment) return;
 		const salePrice = treatment.salePrice ?? treatment.price;
 		editLensTreatments = [
@@ -222,38 +190,16 @@
 		}
 
 		const lensItemId = editingLensId || crypto.randomUUID();
-		const savedItem = buildLensInputFromDraft(editLensTmp, selectedLens);
+		const savedItem = buildLensInputFromDraft(editLensTmp, lensEditCtx.selectedLens);
 		savedItem.id = lensItemId;
 
-		let updated = editableItems.filter((i) => {
-			if (i._removed) return true;
-			if (editingLensId && i.id === editingLensId) return false;
-			if (editingLensId && i.parentSaleItemId === editingLensId) return false;
-			return true;
-		});
-
-		updated = [...updated, savedItem];
-
-		for (const t of editLensTreatments) {
-			const treatmentRow: EditableItem = {
-				itemType: SaleItemType.TREATMENT,
-				parentSaleItemId: lensItemId,
-				supplierTreatmentId: t.supplierTreatmentId,
-				quantity: 1,
-				unitPrice: t.salePrice * 2,
-				discount: 0,
-				discountType: DiscountType.FIXED,
-				snapshotName: t.name,
-				snapshotBrand: selectedLens?.supplier?.name ?? editLensTmp.snapshotBrand,
-				snapshotTreatmentCategory: t.category,
-				snapshotIsTaxable: t.isTaxable,
-				snapshotBaseCost: t.price * 2,
-				_removed: false
-			};
-			updated = [...updated, treatmentRow];
-		}
-
-		editableItems = updated;
+		editableItems = applyLensEdit(
+			editableItems,
+			editingLensId,
+			savedItem,
+			editLensTreatments,
+			lensEditCtx.selectedLens?.supplier?.name ?? editLensTmp.snapshotBrand
+		);
 		cancelLensEdit();
 		toast.success(editingLensId ? 'Cristal actualizado' : 'Cristal agregado');
 	}
@@ -291,20 +237,14 @@
 
 		editableItems = [
 			...editableItems,
-			{
-				itemType: SaleItemType.PRODUCT,
+			createProductItem(product, {
 				productId: addProductId,
 				quantity: addProductQty,
 				unitPrice: addProductPrice,
 				discount: addProductDiscount,
-				discountType: addProductDiscountType as DiscountTypeEnum,
-				snapshotName: product.name,
-				snapshotSku: product.sku ?? undefined,
-				snapshotBrand: product.brand?.name ?? undefined,
-				snapshotIsTaxable: product.isTaxable ?? true,
-				notes: addProductNotes || undefined,
-				_removed: false
-			}
+				discountType: addProductDiscountType,
+				notes: addProductNotes
+			})
 		];
 		resetAddProductForm();
 		toast.success('Producto agregado');
@@ -333,18 +273,14 @@
 
 		editableItems = [
 			...editableItems,
-			{
-				itemType: SaleItemType.FREE_ITEM,
-				quantity: 1,
-				unitPrice: addFreePrice,
+			createFreeItem({
+				category: addFreeCategory as FreeItemCategory,
+				description: addFreeDescription,
+				price: addFreePrice,
 				discount: addFreeDiscount,
-				discountType: addFreeDiscountType as DiscountTypeEnum,
-				freeItemCategory: addFreeCategory as FreeItemCategory,
-				freeItemDescription: addFreeDescription.trim(),
-				snapshotName: addFreeDescription.trim(),
-				notes: addFreeNotes || undefined,
-				_removed: false
-			}
+				discountType: addFreeDiscountType,
+				notes: addFreeNotes
+			})
 		];
 		resetAddFreeItemForm();
 		toast.success('Ítem libre agregado');
@@ -386,36 +322,16 @@
 		if (!validate()) return;
 		saving = true;
 
-		const payload: UpdateSaleInput = { id: sale.id, reason: reason.trim() };
-
-		if (saleDate !== sale.saleDate.slice(0, 10)) {
-			const old = fromISO(sale.saleDate);
-			const nd = fromISODate(saleDate)!;
-			const isDateOnly = !sale.saleDate.includes('T');
-			const isMidnightUTC =
-				old.getUTCHours() === 0 &&
-				old.getUTCMinutes() === 0 &&
-				old.getUTCSeconds() === 0 &&
-				old.getUTCMilliseconds() === 0;
-			const src = isDateOnly || isMidnightUTC ? nowUTC() : old;
-			nd.setHours(src.getHours(), src.getMinutes(), src.getSeconds(), src.getMilliseconds());
-			payload.saleDate = toUTCString(nd);
-		}
-		if (notes !== (sale.notes ?? '')) {
-			payload.notes = notes || undefined;
-		}
-		if (isCashea !== (sale.isCashea ?? false)) payload.isCashea = isCashea;
-		if (discount !== sale.discount) payload.discount = discount;
-		if (discountType !== sale.discountType) payload.discountType = discountType as DiscountTypeEnum;
-
-		if (
-			removedCount > 0 ||
-			activeItems.some((i) => !i.id) ||
-			discount !== sale.discount ||
-			discountType !== sale.discountType
-		) {
-			payload.items = activeItems.map(({ _removed, ...input }) => input);
-		}
+		const payload = buildUpdateSalePayload(sale, {
+			saleDate,
+			notes,
+			isCashea,
+			discount,
+			discountType,
+			reason,
+			removedCount,
+			activeItems
+		});
 
 		try {
 			const result = await updateSale(payload);
@@ -440,27 +356,8 @@
 </script>
 
 <SlideOver bind:open size="xl" onclose={handleClose}>
-	{#snippet header({ onclose })}
-		<header
-			class="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700"
-		>
-			<div class="min-w-0 flex-1">
-				<h2 class="truncate text-lg font-bold text-brand-navy dark:text-white">
-					Modificar Orden #{String(sale.orderNumber).padStart(4, '0')}
-				</h2>
-				<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-					Los cambios se registrarán en auditoría. Artículos nuevos consumirán inventario.
-				</p>
-			</div>
-			<button
-				type="button"
-				onclick={onclose}
-				disabled={saving}
-				class="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-40 max-sm:h-10 max-sm:w-10 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-			>
-				<X class="h-5 w-5" />
-			</button>
-		</header>
+	{#snippet header()}
+		<EditSaleModalHeader orderNumber={sale.orderNumber} {saving} onClose={handleClose} />
 	{/snippet}
 	<div class="space-y-5">
 		<EditSaleHeaderFields
@@ -547,8 +444,8 @@
 				{editingLensId}
 				bind:editLensTmp
 				bind:editLensTreatments
-				{selectableTreatments}
-				{showAddition}
+				selectableTreatments={lensEditCtx.selectableTreatments}
+				showAddition={lensEditCtx.showAddition}
 				onLensSelect={handleLensSelect}
 				onAddTreatment={addTreatmentFromSelect}
 				onRemoveTreatment={removeTreatmentFromEdit}
@@ -566,104 +463,22 @@
 			/>
 		</section>
 
-		<!-- ── Card: Resumen ── -->
-		<section
-			class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
-		>
-			<div class="mb-4 flex items-center gap-2">
-				<Calculator class="h-4 w-4 text-brand-blue" />
-				<h3 class="text-sm font-bold text-brand-navy dark:text-white">Resumen</h3>
-			</div>
-			<div class="space-y-2 text-sm">
-				<div class="flex justify-between">
-					<span class="text-slate-600 dark:text-slate-400">Subtotal</span>
-					<span class="font-semibold text-slate-800 dark:text-white">
-						{formatPrice(previewSubtotal)}
-					</span>
-				</div>
-				{#if previewGlobalDiscount > 0}
-					<div class="flex justify-between">
-						<span class="text-slate-600 dark:text-slate-400">Descuento</span>
-						<span class="font-semibold text-slate-800 dark:text-white">
-							-{formatPrice(previewGlobalDiscount)}
-						</span>
-					</div>
-				{/if}
-				<div class="flex justify-between">
-					<span class="font-bold text-slate-800 dark:text-white">Total</span>
-					<span class="font-bold text-slate-800 dark:text-white">
-						{formatPrice(previewTotal)}
-					</span>
-				</div>
-				{#if removedCount > 0}
-					<div class="flex justify-between text-red-600 dark:text-red-400">
-						<span>Artículos eliminados</span>
-						<span class="font-semibold">{removedCount}</span>
-					</div>
-				{/if}
-			</div>
-		</section>
+		<EditSaleSummarySection
+			{previewSubtotal}
+			{previewGlobalDiscount}
+			{previewTotal}
+			{removedCount}
+		/>
 
-		<!-- ═══ FOOTER — Fixed ═══ -->
-		<footer
-			class="shrink-0 border-t border-slate-200 bg-white px-6 py-4 dark:border-slate-700 dark:bg-slate-900"
-		>
-			<div class="space-y-3">
-				<!-- Reason field -->
-				<div>
-					<label
-						for="edit-reason"
-						class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-					>
-						Motivo de la modificación <span class="text-red-500">*</span>
-					</label>
-					<textarea
-						id="edit-reason"
-						bind:value={reason}
-						oninput={() => (reasonError = '')}
-						rows="2"
-						placeholder="Explique por qué está modificando esta venta..."
-						class="w-full resize-none rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-					></textarea>
-					{#if reasonError}<p class="mt-1 text-xs text-red-600">{reasonError}</p>{/if}
-				</div>
-
-				<!-- Actions -->
-				<div class="flex items-center justify-between gap-3">
-					<div class="text-xs text-slate-500 dark:text-slate-400">
-						{#if removedCount > 0}
-							<span class="text-red-600 dark:text-red-400"
-								>{removedCount} artículo(s) eliminado(s)</span
-							>
-						{/if}
-					</div>
-					<div class="flex gap-2">
-						<button
-							type="button"
-							onclick={handleClose}
-							disabled={saving}
-							class="rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800"
-						>
-							Cancelar
-						</button>
-						<button
-							type="button"
-							onclick={handleSubmit}
-							disabled={saving || !hasChanges}
-							class="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-50"
-						>
-							{#if saving}
-								<span
-									class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-								></span>
-								Guardando...
-							{:else}
-								<Pen class="h-4 w-4" /> Guardar cambios
-							{/if}
-						</button>
-					</div>
-				</div>
-			</div>
-		</footer>
+		<EditSaleFooter
+			bind:reason
+			{reasonError}
+			{removedCount}
+			{saving}
+			{hasChanges}
+			onClose={handleClose}
+			onSubmit={handleSubmit}
+			onClearReasonError={() => (reasonError = '')}
+		/>
 	</div>
 </SlideOver>

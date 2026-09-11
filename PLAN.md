@@ -28,6 +28,8 @@
 
 **Dificultad:** Media (3-5 días por archivo grande). **Solución:** Mismo patrón que `purchase-detail`: extraer sub-componentes y helpers puros. Priorizar los 5 más grandes.
 
+**Decisión 2026-09-11 (fase 3, PR #120):** no más barrels `index.ts` — imports directos al módulo que define. Motivo: Vite dev carga/parsea todo lo re-exportado (startup + HMR lentos); los barrels ocultan peso de dependencias, invitan circulares vía `index` y debilitan Knip. Excepción: barrel temporal como shim de compatibilidad al partir un módulo con importadores legacy, con remoción obligatoria en el PR de migración. Regla en `AGENTS.md`, spec `dt1-split-protocol` enmendado. Deuda menor asociada: los barrels existentes (p. ej. `src/lib/components/ui/index.ts`) quedan como están — no crear nuevos.
+
 ---
 
 ### DT8 · Dashboard sin gráficos 🟡
@@ -158,6 +160,20 @@
 **Exclusión explícita:** `cash_expenses.expenseDate` es date-only intencional (plan `date-tz-normalize`, hora jamás se muestra) — no tocar.
 
 **Estado:** TECH_DEBT documentado 2026-09-11. Sin empezar.
+
+---
+
+### DT23 · Conteo: diferencia sin lote cuando stock sistema es 0 🟡
+
+**Problema:** En una sesión de conteo (`inventory/count/[id]`), cuando una línea tiene diferencia y `systemStock` es 0, el botón "Ir a ajustar" lleva a adjustments sin lote para actualizar ni manera de aumentar ese stock (no existe flujo de alta/entrada desde la diferencia). Detectado en QA fase 3 DT1 (PR #120).
+
+**Por qué importa:** Un conteo que encuentra stock físico sin registro queda sin resolución dentro del flujo; el ajuste debe hacerse fuera del sistema. El informe de diferencias queda con pendientes imposibles de cerrar.
+
+**Contras:** Toca el dominio de inventario (lotes, movimientos, ajustes): hay que definir si el ajuste crea un movimiento de entrada, si exige lote nuevo, y cómo interactúa con valorización/costos.
+
+**Dificultad:** Media (2-4 días). **Solución:** revisar el flujo de adjustments para soportar alta de stock desde una diferencia (crear lote + movimiento de entrada inicial) o redirigir a una entrada formal (compra/ajuste de inventario); definir regla de costo para stock nacido de conteo.
+
+**Estado:** TECH_DEBT documentado 2026-09-11. Fuera de scope fase 3 DT1. Sin empezar.
 
 ---
 
@@ -633,6 +649,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟢        | DT18 · Latencia backend        | 1-2 días                |
 | 🟢        | DT20 · Catálogo step2 topado   | 2-3 días                |
 | 🟢        | DT22 · Fechas date-only resto  | 2-3 días                |
+| 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días                |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT               |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope          |
 | 🟢        | NF8 · Comisiones               | 5 días                  |
