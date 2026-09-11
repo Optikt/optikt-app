@@ -27,8 +27,10 @@ export interface DashboardStats {
 
 export type RecentSale = Pick<
 	Sale,
-	'id' | 'orderNumber' | 'total' | 'status' | 'saleDate' | 'paidAmountBcvUsd'
+	'id' | 'orderNumber' | 'total' | 'status' | 'paidAmountBcvUsd'
 > & {
+	/** Alias sourced from createdAt (single date truth) */
+	saleDate: string;
 	customer: { firstName: string; lastName: string } | null;
 };
 
@@ -68,8 +70,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 			.where(
 				and(
 					isNull(sales.deletedAt),
-					gte(sales.saleDate, todayStr),
-					lte(sales.saleDate, endOfDayStr),
+					gte(sales.createdAt, todayStr),
+					lte(sales.createdAt, endOfDayStr),
 					sql`${sales.status} != 'CANCELLED'`
 				)
 			)
@@ -144,7 +146,7 @@ export async function getRecentSales(limit = 5): Promise<RecentSale[]> {
 			orderNumber: sales.orderNumber,
 			total: sales.total,
 			status: sales.status,
-			saleDate: sales.saleDate,
+			saleDate: sales.createdAt,
 			paidAmountBcvUsd: sales.paidAmountBcvUsd,
 			customerFirstName: customers.firstName,
 			customerLastName: customers.lastName

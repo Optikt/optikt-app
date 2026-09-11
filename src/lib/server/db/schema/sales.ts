@@ -51,7 +51,6 @@ export const sales = pgTable(
 		orderNumber: integer('order_number').notNull(),
 		customerId: uuid('customer_id').notNull(),
 		sellerId: uuid('seller_id').notNull(),
-		saleDate: timestamp('sale_date', { withTimezone: true, mode: 'string' }).notNull(),
 		/** PENDING → IN_PROGRESS → READY → COMPLETED → CANCELLED (fully paid no longer auto-completes) */
 		status: saleStatusEnum('status').notNull().default('PENDING'),
 		subtotal: doublePrecision().notNull(),
@@ -87,6 +86,7 @@ export const sales = pgTable(
 		/** Who recorded the refund/retention decision */
 		refundedById: uuid('refunded_by_id'),
 		deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+		/** Single date truth: editable business date (form day + submit time, Caracas). */
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow(),
@@ -97,7 +97,7 @@ export const sales = pgTable(
 	(table) => [
 		index('ix_sales_customer_id').using('btree', table.customerId.asc().nullsLast().op('uuid_ops')),
 		index('ix_sales_id').using('btree', table.id.asc().nullsLast().op('uuid_ops')),
-		index('ix_sales_sale_date').using('btree', table.saleDate.asc().nullsLast()),
+		index('ix_sales_created_at').using('btree', table.createdAt.asc().nullsLast()),
 		index('ix_sales_seller_id').using('btree', table.sellerId.asc().nullsLast().op('uuid_ops')),
 		index('ix_sales_completed_at').using('btree', table.completedAt.asc().nullsLast()),
 		uniqueIndex('ix_sales_order_number').using(

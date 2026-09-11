@@ -699,7 +699,8 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				orderNumber,
 				customerId: quote.customerId!,
 				sellerId: context.userId!,
-				saleDate: toISODate(nowUTC()),
+				/** createdAt is the single date truth: conversion day + time = now */
+				createdAt: now,
 				status: SaleStatus.PENDING,
 				subtotal: totals.subtotal,
 				discount: quote.discount,
@@ -708,7 +709,6 @@ export const convertQuoteToSale = command(ConvertQuoteSchema, async (data) => {
 				total: totals.total,
 				paidAmountBcvUsd: 0,
 				notes: quote.notes ?? null,
-				createdAt: now,
 				updatedAt: now
 			})
 			.returning();
