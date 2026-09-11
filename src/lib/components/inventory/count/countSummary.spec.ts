@@ -87,7 +87,7 @@ describe('filterCountLines', () => {
 		expect(filterCountLines(sampleLines, 'ALL', '').length).toBe(4);
 		expect(filterCountLines(sampleLines, 'PENDING', '').length).toBe(1);
 		expect(filterCountLines(sampleLines, 'WITH_DIFF', '').length).toBe(2);
-		expect(filterCountLines(sampleLines, 'MATCHED', '').length).toBe(1);
+		expect(filterCountLines(sampleLines, 'OK', '').length).toBe(1);
 		expect(filterCountLines(sampleLines, 'ALL', 'cristal').length).toBe(1);
 		expect(filterCountLines(sampleLines, 'ALL', 'L-2').length).toBe(1);
 		expect(filterCountLines(sampleLines, 'PENDING', 'montura').length).toBe(0);

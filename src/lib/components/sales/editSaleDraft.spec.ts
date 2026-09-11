@@ -161,7 +161,7 @@ describe('itemDetail', () => {
 
 describe('hasChangesForSale', () => {
 	const sale = { saleDate: '2026-09-01T10:00:00', notes: null, discount: 0, discountType: 'FIXED' };
-	const clean = [draft({ id: 1 }), draft({ id: 2 })];
+	const clean = [draft({ id: '1' }), draft({ id: '2' })];
 
 	it('detects each change trigger', () => {
 		expect(hasChangesForSale(sale, '2026-09-02', '', 0, 'FIXED', clean)).toBe(true);
@@ -169,7 +169,7 @@ describe('hasChangesForSale', () => {
 		expect(hasChangesForSale(sale, '2026-09-01', '', 5, 'FIXED', clean)).toBe(true);
 		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', clean)).toBe(true);
 		expect(
-			hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft({ id: 1, _removed: true })])
+			hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft({ id: '1', _removed: true })])
 		).toBe(true);
 		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft()])).toBe(true);
 		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', clean)).toBe(false);
