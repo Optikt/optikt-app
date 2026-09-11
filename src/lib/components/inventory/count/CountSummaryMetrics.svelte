@@ -111,10 +111,7 @@
 			<p class="text-[11px] font-semibold tracking-[0.14em] text-outline uppercase">
 				{messageLabel}
 			</p>
-			<p
-				class="mt-0.5 text-sm leading-5 text-on-surface-variant lg:truncate"
-				title={message}
-			>
+			<p class="mt-0.5 text-sm leading-5 text-on-surface-variant lg:truncate" title={message}>
 				{message}
 			</p>
 		</div>

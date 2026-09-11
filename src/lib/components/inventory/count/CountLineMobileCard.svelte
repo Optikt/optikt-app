@@ -2,11 +2,7 @@
 	import { AppBadge } from '$lib/components/ui';
 	import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount';
 	import { formatDate } from '$lib/utils';
-	import {
-		formatDifference,
-		getAdjustmentPath,
-		isMatchedLine
-	} from './countAdjustments';
+	import { formatDifference, getAdjustmentPath, isMatchedLine } from './countAdjustments';
 	import CountLineEditRow, { type CountLineEditing } from './CountLineEditRow.svelte';
 
 	interface Props {
@@ -59,15 +55,11 @@
 
 	<div class="grid grid-cols-2 gap-3 text-sm">
 		<div>
-			<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-				Sistema
-			</p>
+			<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Sistema</p>
 			<p class="mt-1 font-semibold text-brand-navy">{line.systemStock}</p>
 		</div>
 		<div>
-			<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-				Contado
-			</p>
+			<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Contado</p>
 			{#if isEditing}
 				<CountLineEditRow
 					layout="mobile"
@@ -141,9 +133,7 @@
 			{/if}
 		</div>
 	{:else if matched}
-		<div
-			class="rounded-xl bg-success-container/60 px-3 py-3 text-sm font-semibold text-success"
-		>
+		<div class="rounded-xl bg-success-container/60 px-3 py-3 text-sm font-semibold text-success">
 			Conteo OK
 		</div>
 	{:else if !isReadonly}

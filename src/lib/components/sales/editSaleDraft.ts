@@ -5,10 +5,7 @@ import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 import type { SupplierTreatment } from '$lib/server/db/schema';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
-import {
-	cacheCatalogItems,
-	getCachedLensItems
-} from './catalogCache.svelte';
+import { cacheCatalogItems, getCachedLensItems } from './catalogCache.svelte';
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
 import { computeDiscount } from '$lib/utils';
@@ -273,9 +270,7 @@ export function createFreeItem(opts: {
 export async function seedCatalogCacheForItems(
 	items: { lensCatalogItemId?: string | null }[]
 ): Promise<void> {
-	const lensIds = items
-		.map((i) => i.lensCatalogItemId)
-		.filter((id): id is string => Boolean(id));
+	const lensIds = items.map((i) => i.lensCatalogItemId).filter((id): id is string => Boolean(id));
 	if (lensIds.length === 0) return;
 	const results = await getCatalogItemsByIds({ lensIds });
 	cacheCatalogItems([], results.lensItems);
@@ -298,9 +293,7 @@ export function getLensEditContext(
 		: null;
 	const supplierId = selectedLens?.supplier?.id;
 	const availableTreatments =
-		lensCatalogItemId && supplierId
-			? treatments.filter((t) => t.supplierId === supplierId)
-			: [];
+		lensCatalogItemId && supplierId ? treatments.filter((t) => t.supplierId === supplierId) : [];
 	return {
 		availableTreatments,
 		selectableTreatments: availableTreatments.filter(

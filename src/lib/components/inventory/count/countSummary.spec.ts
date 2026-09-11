@@ -32,7 +32,9 @@ function line(overrides: Partial<InventoryCountLineRow> = {}): InventoryCountLin
 	} as InventoryCountLineRow;
 }
 
-function session(overrides: Partial<InventoryCountSessionDetail> = {}): InventoryCountSessionDetail {
+function session(
+	overrides: Partial<InventoryCountSessionDetail> = {}
+): InventoryCountSessionDetail {
 	return {
 		status: 'OPEN',
 		scopeType: 'ALL',
@@ -196,9 +198,9 @@ describe('buildSummaryMessage', () => {
 describe('session labels', () => {
 	it('describes scope, lifecycle and status', () => {
 		expect(scopeLabelFor(session())).toBe('Todo el inventario');
-		expect(
-			scopeLabelFor(session({ scopeType: 'PRODUCT_CATEGORY', scopeValue: 'Monturas' }))
-		).toBe('Solo productos - Monturas');
+		expect(scopeLabelFor(session({ scopeType: 'PRODUCT_CATEGORY', scopeValue: 'Monturas' }))).toBe(
+			'Solo productos - Monturas'
+		);
 		expect(scopeLabelFor(session({ scopeType: 'LENS' }))).toBe('Solo lentes STOCK');
 		expect(openedSummaryFor(session())).toContain('Ana');
 		expect(lifecycleSummaryFor(session())).toBeNull();

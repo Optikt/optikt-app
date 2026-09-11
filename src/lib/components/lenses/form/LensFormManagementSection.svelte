@@ -38,16 +38,14 @@
 					>
 						<div>
 							<p
-								class="text-sm font-semibold {formData.inventoryMode ===
-								LensInventoryMode.STOCK
+								class="text-sm font-semibold {formData.inventoryMode === LensInventoryMode.STOCK
 									? 'text-white'
 									: 'text-on-surface'}"
 							>
 								Stock
 							</p>
 							<p
-								class="mt-1 text-xs leading-5 {formData.inventoryMode ===
-								LensInventoryMode.STOCK
+								class="mt-1 text-xs leading-5 {formData.inventoryMode === LensInventoryMode.STOCK
 									? 'text-white/75'
 									: 'text-on-surface-variant'}"
 							>
@@ -58,16 +56,14 @@
 					<button
 						type="button"
 						aria-pressed={formData.inventoryMode === LensInventoryMode.ON_DEMAND}
-						class="{selectionCardClass} {formData.inventoryMode ===
-						LensInventoryMode.ON_DEMAND
+						class="{selectionCardClass} {formData.inventoryMode === LensInventoryMode.ON_DEMAND
 							? 'border-brand-blue/60 bg-brand-navy text-white shadow-sm shadow-brand-navy/10'
 							: 'border-outline-variant/40 bg-surface-container-low text-on-surface-variant hover:border-brand-blue/30 hover:bg-surface'}"
 						onclick={() => (formData.inventoryMode = LensInventoryMode.ON_DEMAND)}
 					>
 						<div>
 							<p
-								class="text-sm font-semibold {formData.inventoryMode ===
-								LensInventoryMode.ON_DEMAND
+								class="text-sm font-semibold {formData.inventoryMode === LensInventoryMode.ON_DEMAND
 									? 'text-white'
 									: 'text-on-surface'}"
 							>

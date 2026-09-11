@@ -357,11 +357,7 @@
 
 <SlideOver bind:open size="xl" onclose={handleClose}>
 	{#snippet header()}
-		<EditSaleModalHeader
-			orderNumber={sale.orderNumber}
-			{saving}
-			onClose={handleClose}
-		/>
+		<EditSaleModalHeader orderNumber={sale.orderNumber} {saving} onClose={handleClose} />
 	{/snippet}
 	<div class="space-y-5">
 		<EditSaleHeaderFields

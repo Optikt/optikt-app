@@ -41,5 +41,3 @@ export function getPendingName(
 export function isPendingId(id: string): boolean {
 	return id.startsWith('pending_');
 }
-
-

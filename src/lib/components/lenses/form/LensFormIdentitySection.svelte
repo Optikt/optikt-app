@@ -1,11 +1,7 @@
 <script lang="ts">
 	import { Label } from '$lib/components/ui/label';
 	import { CreatableSelect, type SelectOption } from '$lib/components/ui';
-	import {
-		ALL_LENS_TYPES,
-		LensCatalogSource,
-		getLensTypeLabel
-	} from '$lib/shared/enums';
+	import { ALL_LENS_TYPES, LensCatalogSource, getLensTypeLabel } from '$lib/shared/enums';
 	import {
 		fieldLabelClass,
 		formCardClass,
@@ -195,9 +191,7 @@
 		</div>
 
 		<div>
-			<Label for="lc_differentiators" class={fieldLabelClass}
-				>Etiquetas / Diferenciadores</Label
-			>
+			<Label for="lc_differentiators" class={fieldLabelClass}>Etiquetas / Diferenciadores</Label>
 			<input
 				id="lc_differentiators"
 				bind:value={differentiatorsText}
@@ -210,9 +204,7 @@
 		<div class="md:col-span-2">
 			<div class="mb-2 flex items-center justify-between">
 				<Label for="lc_name" class={fieldLabelClass}>Nombre tecnico</Label>
-				<label
-					class="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant"
-				>
+				<label class="flex items-center gap-2 text-[11px] font-medium text-on-surface-variant">
 					<input
 						type="checkbox"
 						bind:checked={autoNameEnabled}
@@ -239,8 +231,8 @@
 				</p>
 			{:else if autoNameEnabled}
 				<p class={helperTextClass}>
-					Se genera automaticamente con proveedor, material, tecnologia, etiqueta,
-					tratamientos y tipo.
+					Se genera automaticamente con proveedor, material, tecnologia, etiqueta, tratamientos y
+					tipo.
 				</p>
 			{/if}
 		</div>

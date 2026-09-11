@@ -129,19 +129,13 @@ export function buildSummaryMetrics(stats: CountStats): SummaryMetric[] {
 			id: 'variance',
 			label: 'Variación',
 			value: stats.varianceLabel,
-			tone:
-				stats.varianceUnits > 0 ? 'success' : stats.varianceUnits < 0 ? 'error' : 'neutral'
+			tone: stats.varianceUnits > 0 ? 'success' : stats.varianceUnits < 0 ? 'error' : 'neutral'
 		},
 		{
 			id: 'adjustments',
 			label: 'Ajustes',
 			value: stats.diffCount === 0 ? '—' : `${stats.completedAdjustments}/${stats.diffCount}`,
-			tone:
-				stats.diffCount === 0
-					? 'neutral'
-					: stats.pendingAdjustments > 0
-						? 'warning'
-						: 'success'
+			tone: stats.diffCount === 0 ? 'neutral' : stats.pendingAdjustments > 0 ? 'warning' : 'success'
 		}
 	];
 }

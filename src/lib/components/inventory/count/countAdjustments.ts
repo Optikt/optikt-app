@@ -1,16 +1,13 @@
 import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount';
 
-export type CountAdjustmentPath = `/products/${string}/adjustments` | `/lenses/${string}/adjustments`;
+export type CountAdjustmentPath =
+	`/products/${string}/adjustments` | `/lenses/${string}/adjustments`;
 
 export function isAdjustmentStatusUpdating(lineId: number, updatingIds: number[]): boolean {
 	return updatingIds.includes(lineId);
 }
 
-export function toggleUpdatingId(
-	current: number[],
-	lineId: number,
-	isAdding: boolean
-): number[] {
+export function toggleUpdatingId(current: number[], lineId: number, isAdding: boolean): number[] {
 	if (isAdding) {
 		return [...current, lineId];
 	}

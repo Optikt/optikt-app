@@ -39,8 +39,7 @@ export function createInitialLensFormData(item: LensCatalogItem | null): LensCat
 		mountingPrice: item?.mountingPrice?.toString() ?? '0',
 		shippingPrice: item?.shippingPrice?.toString() ?? '0',
 		isTaxable: item?.isTaxable ?? false,
-		inventoryMode:
-			(item?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
+		inventoryMode: (item?.inventoryMode as LensInventoryMode) ?? LensInventoryMode.ON_DEMAND,
 		stock: item?.stock != null ? item.stock.toString() : '0',
 		notes: item?.notes ?? ''
 	};

@@ -51,8 +51,7 @@
 		<div class="flex items-center justify-between gap-3">
 			<div class="text-xs text-slate-500 dark:text-slate-400">
 				{#if removedCount > 0}
-					<span class="text-red-600 dark:text-red-400"
-						>{removedCount} artículo(s) eliminado(s)</span
+					<span class="text-red-600 dark:text-red-400">{removedCount} artículo(s) eliminado(s)</span
 					>
 				{/if}
 			</div>
@@ -72,8 +71,7 @@
 					class="inline-flex items-center gap-2 rounded-lg bg-brand-navy px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-navy-dark disabled:opacity-50"
 				>
 					{#if saving}
-						<span
-							class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+						<span class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
 						></span>
 						Guardando...
 					{:else}

@@ -45,12 +45,7 @@
 		validateOpticalRangeEntry,
 		type OpticalRangeFormEntry
 	} from '$lib/utils/opticalRangeForm';
-	import {
-		LensType,
-		LensCatalogSource,
-		LensPriceType,
-		LensInventoryMode
-	} from '$lib/shared/enums';
+	import { LensType, LensCatalogSource, LensPriceType, LensInventoryMode } from '$lib/shared/enums';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
@@ -191,9 +186,7 @@
 	const supplierHelperText = $derived.by(() => supplierHelperTextFor(formData.supplierId));
 	const materialHelperText = $derived.by(() => materialHelperTextFor(formData.materialId));
 	const technologyHelperText = TECHNOLOGY_HELPER_TEXT;
-	const differentiatorHelperText = $derived.by(() =>
-		differentiatorHelperTextFor(differentiators)
-	);
+	const differentiatorHelperText = $derived.by(() => differentiatorHelperTextFor(differentiators));
 
 	// Auto-name generation
 	let autoNameEnabled = $state(true);
@@ -276,7 +269,11 @@
 		kind: 'supplier' | 'material' | 'technology',
 		name: string
 	): SelectOption {
-		const lists = { supplier: pendingSuppliers, material: pendingMaterials, technology: pendingTechnologies };
+		const lists = {
+			supplier: pendingSuppliers,
+			material: pendingMaterials,
+			technology: pendingTechnologies
+		};
 		const result = handleCreatePending(lists[kind], name, `pending_${kind}`);
 		if (kind === 'supplier') pendingSuppliers = result.updatedList;
 		if (kind === 'material') pendingMaterials = result.updatedList;
@@ -410,14 +407,14 @@
 		<div class="space-y-6 lg:col-span-7">
 			<LensFormIdentitySection
 				bind:formData
-				supplierOptions={supplierOptions}
-				materialOptions={materialOptions}
-				supplierTechnologies={supplierTechnologies}
+				{supplierOptions}
+				{materialOptions}
+				{supplierTechnologies}
 				bind:isGlobalTechnology
-				supplierHelperText={supplierHelperText}
-				materialHelperText={materialHelperText}
-				technologyHelperText={technologyHelperText}
-				differentiatorHelperText={differentiatorHelperText}
+				{supplierHelperText}
+				{materialHelperText}
+				{technologyHelperText}
+				{differentiatorHelperText}
 				supplierError={activeForm.fields.supplierId?.issues()
 					? getFormErrorMessage(activeForm.fields.supplierId.issues())
 					: null}
@@ -437,11 +434,11 @@
 				onCreatePendingTechnology={handleCreatePendingTechnology}
 			/>
 			<LensFormRangesSection
-				ranges={ranges}
+				{ranges}
 				clientValidations={clientRangeValidations}
 				serverValidations={serverRangeValidations}
-				rootRangeIssues={rootRangeIssues}
-				showAddition={showAddition}
+				{rootRangeIssues}
+				{showAddition}
 				source={formData.source}
 				onAddRange={addRange}
 				onRemoveRange={removeRange}

@@ -68,17 +68,15 @@
 					</h2>
 					<p class="mt-1 text-sm text-on-surface-variant">
 						Vas a cerrar esta sesión de conteo. Se registrará el informe de diferencias pero NO se
-						aplicará ningún ajuste automático de stock. Los ajustes deben hacerse manualmente
-						desde cada producto o lente usando el botón "Ir a ajustar".
+						aplicará ningún ajuste automático de stock. Los ajustes deben hacerse manualmente desde
+						cada producto o lente usando el botón "Ir a ajustar".
 					</p>
 				</div>
 			</div>
 
 			<div class="mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
 				<div class="rounded-2xl bg-surface-container px-4 py-3">
-					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
-						Contados
-					</p>
+					<p class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">Contados</p>
 					<p class="mt-1 font-semibold text-brand-navy">{countedTotal}</p>
 				</div>
 				<div class="rounded-2xl bg-surface-container px-4 py-3">

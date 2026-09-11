@@ -57,9 +57,9 @@
 				>
 					<p class="mb-1 font-medium">¿Qué son los rangos?</p>
 					<p>
-						Definen qué graduaciones puede cubrir este cristal. La esfera puede ser continua
-						como -4.00 a +4.00, o un duplicado inverso como ±4.00 a ±2.00, que guarda dos
-						rangos espejo y deja libre el centro.
+						Definen qué graduaciones puede cubrir este cristal. La esfera puede ser continua como
+						-4.00 a +4.00, o un duplicado inverso como ±4.00 a ±2.00, que guarda dos rangos espejo y
+						deja libre el centro.
 					</p>
 				</span>
 			</span>

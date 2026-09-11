@@ -156,9 +156,7 @@ describe('previewSubtotalForItems', () => {
 
 describe('itemDetail', () => {
 	it('joins sku, brand and free category', () => {
-		expect(itemDetail(draft({ snapshotSku: 'SKU', snapshotBrand: 'Marca' }))).toBe(
-			'SKU · Marca'
-		);
+		expect(itemDetail(draft({ snapshotSku: 'SKU', snapshotBrand: 'Marca' }))).toBe('SKU · Marca');
 		expect(
 			itemDetail(
 				draft({ itemType: SaleItemType.FREE_ITEM, freeItemCategory: FreeItemCategory.SERVICE })

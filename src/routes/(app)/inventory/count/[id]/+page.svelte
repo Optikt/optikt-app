@@ -59,9 +59,7 @@
 	const canManage = $derived(isAdminRole(currentUser.role));
 	const isReadonly = $derived(session.status !== 'OPEN');
 	const stats = $derived(computeCountStats(lines));
-	const canCloseSession = $derived(
-		canCloseInventoryCountSession(stats.total, stats.counted)
-	);
+	const canCloseSession = $derived(canCloseInventoryCountSession(stats.total, stats.counted));
 	const filteredLines = $derived(filterCountLines(lines, activeFilter, search));
 	const summaryMetrics = $derived(buildSummaryMetrics(stats));
 	const summary = $derived(
@@ -284,7 +282,7 @@
 
 	<CountSummaryMetrics
 		{session}
-		stats={stats}
+		{stats}
 		metrics={summaryMetrics}
 		messageLabel={summary.label}
 		message={summary.message}
@@ -295,7 +293,7 @@
 		totalLines={stats.total}
 		bind:activeFilter
 		bind:search
-		isReadonly={isReadonly}
+		{isReadonly}
 		sessionCancelled={session.status === 'CANCELLED'}
 		bind:editing
 		onStartEditing={startEditing}
