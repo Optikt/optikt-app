@@ -118,6 +118,25 @@ export function daysFromNow(n: number): Date {
 	return addDays(new Date(), n);
 }
 
+/**
+ * Compose a business timestamp: calendar day from the form (YYYY-MM-DD,
+ * editable) + wall-clock time of the submit instant in America/Caracas
+ * (UTC-4, explicit offset — never the server TZ). Returns ISO UTC for DB.
+ * Submit 23:30 VET keeps the VET calendar day even when UTC already
+ * rolled over. `dayISO` may be a full ISO string — only YYYY-MM-DD is used.
+ */
+export function composeBusinessTimestamp(dayISO: string, at: Date = nowUTC()): string {
+	const day = dayISO.slice(0, 10);
+	const time = new Intl.DateTimeFormat('en-GB', {
+		timeZone: 'America/Caracas',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hourCycle: 'h23'
+	}).format(at);
+	return new Date(`${day}T${time}-04:00`).toISOString();
+}
+
 // ---------------------------------------------------------------------------
 // Domain helpers
 // ---------------------------------------------------------------------------

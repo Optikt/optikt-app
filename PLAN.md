@@ -147,7 +147,23 @@
 
 ---
 
-### DT22 · Conteo: diferencia sin lote cuando stock sistema es 0 🟡
+### DT22 · Fechas-negocio date-only con medianoche en otros módulos 🟢
+
+**Problema:** Mismo patrón que originó `sale-createdat-truth`: columnas `timestamptz` que guardan fecha-negocio a medianoche (hora `00:00` fantasma) porque forms envían día + persistencia trunca hora. Ventas ya migradas a `created_at` como única verdad. Pendientes: `quotes.quoteDate` (+ `validUntil`), `purchase_orders.orderDate`, `sale_payments.paymentDate`, `purchase_order_payments.paymentDate` (+ `benefitDate` es `date` real, OK), `prescriptions.prescriptionDate`. Evidencia: `PaymentForm.svelte:144` (`toISODate(nowUTC())`), `NewPurchaseOrderForm.svelte:92`, `prescription-form.ts:42`, `lenses.remote.ts:824`, `quotes.remote.ts:416`, `sales.remote.ts:550`/`purchaseOrders.remote.ts:913` (passthrough directo de `z.iso.date` a `timestamptz`).
+
+**Por qué importa:** Si alguna vista futura muestra hora de esos campos, sale `00:00`. Mismo bug ya visto en tickets de venta.
+
+**Contras:** En pagos/gastos/cotizaciones el desacople fecha-negocio vs `createdAt` es legítimo (backdate, abonos tardíos, validez) — ahí la solución NO es colapsar a `createdAt` como en ventas, sino componer día + hora submit (reusar `composeBusinessTimestamp` de `src/lib/dates.ts`).
+
+**Dificultad:** Baja-Media (2-3 días). **Solución:** por módulo, decidir colapso vs composición, migrar writes, backfill hora donde aplique.
+
+**Exclusión explícita:** `cash_expenses.expenseDate` es date-only intencional (plan `date-tz-normalize`, hora jamás se muestra) — no tocar.
+
+**Estado:** TECH_DEBT documentado 2026-09-11. Sin empezar.
+
+---
+
+### DT23 · Conteo: diferencia sin lote cuando stock sistema es 0 🟡
 
 **Problema:** En una sesión de conteo (`inventory/count/[id]`), cuando una línea tiene diferencia y `systemStock` es 0, el botón "Ir a ajustar" lleva a adjustments sin lote para actualizar ni manera de aumentar ese stock (no existe flujo de alta/entrada desde la diferencia). Detectado en QA fase 3 DT1 (PR #120).
 
@@ -632,7 +648,8 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | ✅        | DT7 · PDF stack                | Completado              |
 | 🟢        | DT18 · Latencia backend        | 1-2 días                |
 | 🟢        | DT20 · Catálogo step2 topado   | 2-3 días                |
-| 🟡        | DT22 · Conteo sin lote stock 0 | 2-4 días                |
+| 🟢        | DT22 · Fechas date-only resto  | 2-3 días                |
+| 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días                |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT               |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope          |
 | 🟢        | NF8 · Comisiones               | 5 días                  |

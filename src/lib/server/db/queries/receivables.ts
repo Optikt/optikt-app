@@ -72,7 +72,7 @@ export async function getReceivables(
 			saleId: sales.id,
 			orderNumber: sales.orderNumber,
 			status: sales.status,
-			saleDate: sales.saleDate,
+			saleDate: sales.createdAt,
 			totalAmount: sales.total,
 			paidAmountBcvUsd: sales.paidAmountBcvUsd,
 			isCashea: sales.isCashea,
