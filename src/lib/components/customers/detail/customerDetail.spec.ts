@@ -55,9 +55,12 @@ describe('toggleExpandedId', () => {
 
 describe('findCurrentPrescription', () => {
 	it('finds current or null', () => {
-		const list = [{ id: '1', isCurrent: false }, { id: '2', isCurrent: true }];
+		const list = [
+			{ id: '1', isCurrent: false },
+			{ id: '2', isCurrent: true }
+		];
 		expect(findCurrentPrescription(list)?.id).toBe('2');
-		expect(findCurrentPrescription([{ id: '1' }])).toBeNull();
+		expect(findCurrentPrescription([{ id: '1', isCurrent: false }])).toBeNull();
 		expect(findCurrentPrescription([])).toBeNull();
 	});
 });
