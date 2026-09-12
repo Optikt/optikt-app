@@ -3,19 +3,23 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import { PriceSuggestionModal } from '$lib/components/purchases';
-	import { ConfirmModal } from '$lib/components/ui';
 	import {
 		PurchaseOrderAsidePanel,
-		PurchaseOrderAuditHistoryDrawer,
 		PurchaseOrderDetailHeader,
 		PurchaseOrderDraftBanner,
 		PurchaseOrderItemsList,
 		PurchaseOrderMovementsSection,
-		PurchaseOrderOverviewCard,
-		PurchaseOrderPaymentsDrawer,
-		PurchaseOrderPaymentsHistoryDrawer
+		PurchaseOrderOverviewCard
 	} from '$lib/components/purchases/detail';
+	import PurchaseOrderModals from '$lib/components/purchases/detail/PurchaseOrderModals.svelte';
+	import PurchaseOrderDrawers from '$lib/components/purchases/detail/PurchaseOrderDrawers.svelte';
+	import {
+		buildPurchaseDetailSummary,
+		buildRevertTarget,
+		buildUnmarkReadyMessage,
+		toggleItemReviewedLocal,
+		type RevertTarget
+	} from '$lib/components/purchases/detail/purchaseDetail';
 	import { setPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
 	import {
 		applyPriceSuggestionsCmd,
@@ -27,7 +31,7 @@
 		type PriceSuggestion
 	} from '$lib/remote/purchaseOrders.remote';
 	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
-	import { PurchaseDiscountType, PurchaseOrderStatus } from '$lib/shared/enums';
+	import { PurchaseOrderStatus } from '$lib/shared/enums';
 	import type {
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
@@ -37,25 +41,14 @@
 	import type {
 		InventoryLot,
 		InventoryMovement,
-		PurchaseOrder,
 		PurchaseOrderEarlyPaymentBenefit
 	} from '$lib/server/db/schema';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
 	} from '$lib/shared/purchaseOrderCredit';
-	import {
-		calculatePurchaseOrderSummary,
-		createPurchaseOrderDraftItemFromExisting,
-		getPurchaseOrderReviewStatus,
-		type PurchaseOrderDiscountInput
-	} from '$lib/components/purchases/purchaseOrderDraft';
-	import {
-		sourceCurrencyRequiresRateToVes,
-		getSourceCurrencySymbol
-	} from '$lib/shared/purchaseOrderCurrencies';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import { itemDisplayName } from '$lib/utils/purchaseOrderDetail';
+	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
+	import { getErrorMessage } from '$lib/utils';
 	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();
@@ -84,7 +77,7 @@
 	let paymentComposerRequest = $state<{ token: string; amount: number } | null>(null);
 	let revertLoading = $state(false);
 	let showRevertModal = $state(false);
-	let revertTarget = $state<{ lotId: string; productName: string; quantity: number } | null>(null);
+	let revertTarget = $state<RevertTarget | null>(null);
 	let showPaymentsDrawer = $state(false);
 	let showPaymentsHistoryDrawer = $state(false);
 	let showAuditHistoryDrawer = $state(false);
@@ -104,46 +97,9 @@
 	const formattedOrderNumber = $derived(`PO-${String(purchaseOrder.orderNumber).padStart(4, '0')}`);
 	const isDraft = $derived(purchaseOrder.status === PurchaseOrderStatus.DRAFT);
 	const isReadyForReview = $derived(Boolean(purchaseOrder.isReadyForReview));
-	const totalUnits = $derived(items.reduce((sum, item) => sum + item.quantity, 0));
 	const reviewStatus = $derived(getPurchaseOrderReviewStatus(items));
-	const reviewedCount = $derived(reviewStatus.reviewedCount);
-	const allItemsReviewed = $derived(reviewStatus.allReviewed);
-	const showReviewColumn = $derived(isDraft && isReadyForReview);
-
-	const settlementDiscount = $derived<PurchaseOrderDiscountInput>({
-		type: (purchaseOrder.settlementDiscountType ??
-			PurchaseDiscountType.NONE) as PurchaseDiscountType,
-		value: Number(purchaseOrder.settlementDiscountValue ?? 0)
-	});
-	const hasSettlementDiscount = $derived(
-		settlementDiscount.type !== PurchaseDiscountType.NONE && settlementDiscount.value > 0
-	);
-	const purchaseSummary = $derived.by(() =>
-		calculatePurchaseOrderSummary(
-			items.map(createPurchaseOrderDraftItemFromExisting),
-			settlementDiscount,
-			purchaseOrder.bcvRate
-		)
-	);
-	const totalPurchase = $derived(purchaseSummary.total);
-	const totalSale = $derived(purchaseSummary.estimatedSale);
-	const totalProfit = $derived(purchaseSummary.estimatedProfit);
-	const settlementDiscountAmount = $derived(purchaseSummary.discountAmount);
-	const netTotalPurchase = $derived(purchaseSummary.netTotal);
-	const netTotalProfit = $derived(purchaseSummary.netEstimatedProfit);
-	const needsSourceRate = $derived(sourceCurrencyRequiresRateToVes(purchaseOrder.sourceCurrency));
-	const srcSymbol = $derived(
-		needsSourceRate ? getSourceCurrencySymbol(purchaseOrder.sourceCurrency) : ''
-	);
-	const settlementDiscountLabel = $derived(
-		settlementDiscount.type === PurchaseDiscountType.PERCENT
-			? `${settlementDiscount.value}%`
-			: settlementDiscount.type === PurchaseDiscountType.AMOUNT
-				? needsSourceRate
-					? `${srcSymbol} ${settlementDiscount.value.toFixed(2)}`
-					: formatPrice(settlementDiscount.value)
-				: 'Sin descuento'
-	);
+	const detailSummary = $derived(buildPurchaseDetailSummary(purchaseOrder, items));
+	const unmarkReadyMessage = $derived(buildUnmarkReadyMessage(reviewStatus.reviewedCount));
 
 	setPurchaseOrderDetailContext({
 		purchaseOrder: () => purchaseOrder,
@@ -158,42 +114,23 @@
 		isCancelled: () => isCancelled,
 		canManagePayments: () => canManagePayments,
 		zeroPriceCount: () => zeroPriceCount,
-		purchaseSummary: () => purchaseSummary,
-		totalUnits: () => totalUnits,
-		totalPurchase: () => totalPurchase,
-		totalSale: () => totalSale,
-		totalProfit: () => totalProfit,
-		netTotalPurchase: () => netTotalPurchase,
-		netTotalProfit: () => netTotalProfit,
-		settlementDiscountAmount: () => settlementDiscountAmount,
-		hasSettlementDiscount: () => hasSettlementDiscount,
-		settlementDiscountLabel: () => settlementDiscountLabel
+		purchaseSummary: () => detailSummary.purchaseSummary,
+		totalUnits: () => detailSummary.totalUnits,
+		totalPurchase: () => detailSummary.totalPurchase,
+		totalSale: () => detailSummary.totalSale,
+		totalProfit: () => detailSummary.totalProfit,
+		netTotalPurchase: () => detailSummary.netTotalPurchase,
+		netTotalProfit: () => detailSummary.netTotalProfit,
+		settlementDiscountAmount: () => detailSummary.settlementDiscountAmount,
+		hasSettlementDiscount: () => detailSummary.hasSettlementDiscount,
+		settlementDiscountLabel: () => detailSummary.settlementDiscountLabel
 	});
 
-	const markReadyMessage =
-		'La orden pasará al flujo de revisión y se bloqueará la edición directa.';
-	const unmarkReadyMessage = $derived(
-		reviewedCount > 0
-			? reviewedCount === 1
-				? 'Al volver a borrador se perderá 1 check de revisión. ¿Estás seguro?'
-				: `Al volver a borrador se perderán los ${reviewedCount} checks de revisión. ¿Estás seguro?`
-			: 'La orden volverá a preparación para poder editarla.'
-	);
-
-	function openEdit() {
-		void goto(resolve(`/purchases/${purchaseOrder.id}/edit`));
-	}
-
 	function openRevertModal(item: PurchaseOrderItemWithProduct) {
-		if (!item.lotId) return;
-		const lot = lotsMap[item.lotId];
-		if (!lot) return;
+		const target = buildRevertTarget(item, lotsMap);
+		if (!target) return;
 
-		revertTarget = {
-			lotId: item.lotId,
-			productName: itemDisplayName(item),
-			quantity: lot.quantityInitial
-		};
+		revertTarget = target;
 		showRevertModal = true;
 	}
 
@@ -222,20 +159,16 @@
 	async function handleToggleItemReviewed(item: PurchaseOrderItemWithProduct) {
 		const previous = item.isReviewed;
 		const next = !previous;
-		items = items.map((entry) => (entry.id === item.id ? { ...entry, isReviewed: next } : entry));
+		items = toggleItemReviewedLocal(items, item.id, next);
 		try {
 			const result = await togglePurchaseOrderItemReviewedCmd({ id: item.id, value: next });
 			if (!result.success) {
-				items = items.map((entry) =>
-					entry.id === item.id ? { ...entry, isReviewed: previous } : entry
-				);
+				items = toggleItemReviewedLocal(items, item.id, previous);
 				toast.error(result.error ?? 'Error actualizando la línea');
 				return;
 			}
 		} catch (error) {
-			items = items.map((entry) =>
-				entry.id === item.id ? { ...entry, isReviewed: previous } : entry
-			);
+			items = toggleItemReviewedLocal(items, item.id, previous);
 			toast.error(getErrorMessage(error, 'Error actualizando la línea'));
 		}
 	}
@@ -299,7 +232,7 @@
 
 	async function handleConfirmAndPay() {
 		actionLoading = true;
-		const paymentAmount = netTotalPurchase;
+		const paymentAmount = detailSummary.netTotalPurchase;
 
 		try {
 			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
@@ -460,11 +393,11 @@
 	<PurchaseOrderDetailHeader
 		{purchaseOrder}
 		{formattedOrderNumber}
-		{reviewedCount}
+		reviewedCount={reviewStatus.reviewedCount}
 		totalItems={items.length}
-		{allItemsReviewed}
+		allItemsReviewed={reviewStatus.allReviewed}
 		{actionLoading}
-		onEdit={openEdit}
+		onEdit={() => goto(resolve(`/purchases/${purchaseOrder.id}/edit`))}
 		onMarkReady={() => (showMarkReadyModal = true)}
 		onUnmarkReady={() => (showUnmarkReadyModal = true)}
 		onConfirm={() => (showConfirmModal = true)}
@@ -486,7 +419,7 @@
 				{purchaseOrder}
 				{items}
 				{lotsMap}
-				{showReviewColumn}
+				showReviewColumn={isDraft && isReadyForReview}
 				onToggleItemReviewed={handleToggleItemReviewed}
 				onRevertLot={openRevertModal}
 			/>
@@ -506,115 +439,44 @@
 	</div>
 </div>
 
-<PurchaseOrderPaymentsDrawer
-	open={showPaymentsDrawer}
-	onclose={() => (showPaymentsDrawer = false)}
-	purchaseOrderId={purchaseOrder.id}
-	status={purchaseOrder.status}
-	defaultBcvRate={purchaseOrder.bcvRate}
+<PurchaseOrderDrawers
+	bind:showPaymentsDrawer
+	bind:showPaymentsHistoryDrawer
+	bind:showAuditHistoryDrawer
+	{purchaseOrder}
 	{payments}
-	purchaseOrder={purchaseOrder as PurchaseOrder}
 	{earlyPaymentBenefits}
-	pendingBalanceUsd={balance.settlementBalance}
-	debtTotalUsd={balance.settlementDebtAmount}
-	isFullyPaid={balance.isSettlementFullyPaid}
-	settlementCurrency={balance.settlementCurrency}
+	{balance}
+	{auditHistory}
 	composerRequest={paymentComposerRequest}
 	onFinanceChanged={handleFinanceChanged}
 />
 
-<PurchaseOrderPaymentsHistoryDrawer
-	open={showPaymentsHistoryDrawer}
-	onclose={() => (showPaymentsHistoryDrawer = false)}
-	purchaseOrderId={purchaseOrder.id}
-	status={purchaseOrder.status}
-	{payments}
-	{earlyPaymentBenefits}
-	settlementCurrency={balance.settlementCurrency}
-	onFinanceChanged={handleFinanceChanged}
-/>
-
-<PurchaseOrderAuditHistoryDrawer
-	open={showAuditHistoryDrawer}
-	onclose={() => (showAuditHistoryDrawer = false)}
-	{auditHistory}
-	{purchaseOrder}
-/>
-
-<ConfirmModal
-	bind:open={showConfirmModal}
-	title="Confirmar Orden de Compra"
-	message="Al confirmar esta orden se crearán los lotes de inventario y se actualizará el stock de los productos. Esta acción no se puede deshacer."
-	confirmLabel="Confirmar Orden"
-	confirmColor="green"
-	loading={actionLoading}
+<PurchaseOrderModals
+	bind:showConfirmModal
+	bind:showConfirmAndPayModal
+	bind:showMarkReadyModal
+	bind:showUnmarkReadyModal
+	bind:showCancelModal
+	bind:showPriceSuggestionModal
+	bind:showRevertModal
+	{actionLoading}
+	{revertLoading}
+	{priceLoading}
+	markReadyMessage="La orden pasará al flujo de revisión y se bloqueará la edición directa."
+	{unmarkReadyMessage}
+	{priceSuggestions}
+	{revertTarget}
+	netTotalPurchase={detailSummary.netTotalPurchase}
 	onConfirm={handleConfirm}
-	onCancel={() => (showConfirmModal = false)}
-/>
-
-<ConfirmModal
-	bind:open={showConfirmAndPayModal}
-	title="Confirmar y registrar pago"
-	message={`Se confirmará la orden y luego se abrirá el formulario de pago con el total neto precargado (${formatPrice(netTotalPurchase)}).`}
-	confirmLabel="Confirmar y continuar"
-	confirmColor="green"
-	loading={actionLoading}
-	onConfirm={handleConfirmAndPay}
-	onCancel={() => (showConfirmAndPayModal = false)}
-/>
-
-<ConfirmModal
-	bind:open={showMarkReadyModal}
-	title="Marcar lista para revisar"
-	message={markReadyMessage}
-	confirmLabel="Marcar lista"
-	confirmColor="yellow"
-	loading={actionLoading}
-	onConfirm={handleMarkReady}
-	onCancel={() => (showMarkReadyModal = false)}
-/>
-
-<ConfirmModal
-	bind:open={showUnmarkReadyModal}
-	title="Volver a borrador"
-	message={unmarkReadyMessage}
-	confirmLabel="Sí, volver a borrador"
-	confirmColor="red"
-	loading={actionLoading}
-	onConfirm={handleUnmarkReady}
-	onCancel={() => (showUnmarkReadyModal = false)}
-/>
-
-<ConfirmModal
-	bind:open={showCancelModal}
-	title="Cancelar Orden de Compra"
-	message="¿Está seguro de cancelar esta orden de compra? Esta acción no se puede deshacer."
-	confirmLabel="Cancelar Orden"
-	confirmColor="red"
-	loading={actionLoading}
-	onConfirm={handleCancel}
-	onCancel={() => (showCancelModal = false)}
-/>
-
-<PriceSuggestionModal
-	bind:open={showPriceSuggestionModal}
-	suggestions={priceSuggestions}
-	loading={priceLoading}
-	onApply={handleApplyPrices}
-	onSkip={handleSkipPrices}
-/>
-
-<ConfirmModal
-	bind:open={showRevertModal}
-	title="Deshacer recepción del lote"
-	message={revertTarget
-		? `¿Está seguro de deshacer la recepción del lote de "${revertTarget.productName}" (${revertTarget.quantity} unidades)? Esto vaciará el lote y reducirá el stock disponible del artículo.`
-		: ''}
-	confirmLabel="Deshacer recepción"
-	confirmColor="red"
-	loading={revertLoading}
-	onConfirm={handleRevertLot}
-	onCancel={() => {
+	onConfirmAndPay={handleConfirmAndPay}
+	onMarkReady={handleMarkReady}
+	onUnmarkReady={handleUnmarkReady}
+	onCancel={handleCancel}
+	onApplyPrices={handleApplyPrices}
+	onSkipPrices={handleSkipPrices}
+	onRevertLot={handleRevertLot}
+	onRevertCancel={() => {
 		showRevertModal = false;
 		revertTarget = null;
 	}}
