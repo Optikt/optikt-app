@@ -2,7 +2,7 @@
  * Sales remote — queries
  * Split from sales.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import type { PaginatedSales, SaleDetail } from './shared';
+import type { PaginatedSales, SaleDetail } from './helpers';
 import { query } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '$lib/schemas/';

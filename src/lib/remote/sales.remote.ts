@@ -4,6 +4,7 @@
  * TODO: migrate legacy importers and remove this barrel.
  */
 export * from './sales/queries.remote';
+export type { PaginatedSales, SaleDetail } from './sales/helpers';
 export * from './sales/commands.remote';
 export * from './sales/payments.remote';
 export * from './sales/lifecycle.remote';
