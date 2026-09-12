@@ -52,8 +52,11 @@ function extractLensMaterial(rawName: string): string {
 		.replace(/\bprogresiv[oa]s?\b/gi, '')
 		.replace(/\bocupacional\b/gi, '')
 		.replace(/\bfotocrom[aá]tic[oa]s?\b/gi, '')
+		.replace(/\bfoto\b/gi, '')
+		.replace(/\bblue\b/gi, '')
 		.replace(/\bblue\s?(?:cut|block)\b/gi, '')
 		.replace(/\bantir?reflej[oa]\b/gi, '')
+		.replace(/anti[\s-]*r?reflej/gi, '')
 		.replace(/\bAR\b/g, '')
 		.replace(/\s+/g, ' ')
 		.trim();
@@ -81,9 +84,14 @@ function inferLensType(rawName: string, catalogType: string | null | undefined):
 function hasInherentDescriptor(rawName: string, type: 'photochromic' | 'ar' | 'blue'): boolean {
 	const normalized = normalizeSearchText(rawName);
 
-	if (type === 'photochromic') return normalized.includes('fotocromat');
-	if (type === 'blue') return /\bblue\s?(cut|block)\b/.test(normalized);
-	return /\bantir?reflej[oa]\b/.test(normalized) || /\bar\b/.test(normalized);
+	if (type === 'photochromic')
+		return normalized.includes('fotocrom') || /\bfoto\b/.test(normalized);
+	if (type === 'blue') return /\bblue/.test(normalized);
+	return (
+		/\bantir?reflej[oa]\b/.test(normalized) ||
+		/anti[\s-]*r?reflej/.test(normalized) ||
+		/\bar\b/.test(normalized)
+	);
 }
 
 function lensLabel(item: PrintDocumentItem): string {
