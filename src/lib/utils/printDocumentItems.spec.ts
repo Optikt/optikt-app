@@ -58,8 +58,7 @@ describe('printDocumentItems', () => {
 
 		const arBlueProgressive = makeItem({
 			itemType: SaleItemType.LENS_PAIR,
-			snapshotName:
-				'Ópticos Autana C.A - CRISTAL - CR39 · Convencional · AR · BLUE · Progresivo'
+			snapshotName: 'Ópticos Autana C.A - CRISTAL - CR39 · Convencional · AR · BLUE · Progresivo'
 		});
 		expect(getPrintItemLabel(arBlueProgressive)).toBe('Cristal CR-39 Progresivo AR BLUE');
 
