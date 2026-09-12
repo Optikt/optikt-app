@@ -104,7 +104,7 @@ function lensLabel(item: PrintDocumentItem): string {
 	}
 
 	if (hasInherentDescriptor(rawName, 'photochromic')) {
-		parts.push('Fotocromático');
+		parts.push('FOTO');
 	}
 
 	if (hasInherentDescriptor(rawName, 'ar')) {
@@ -112,7 +112,7 @@ function lensLabel(item: PrintDocumentItem): string {
 	}
 
 	if (hasInherentDescriptor(rawName, 'blue')) {
-		parts.push('Blueblock');
+		parts.push('BLUE');
 	}
 
 	return parts.filter(Boolean).join(' ');
