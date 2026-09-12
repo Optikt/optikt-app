@@ -2,9 +2,7 @@
  * Purchase order queries — exported types.
  * Split from queries/purchaseOrders.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { type AnyColumn } from 'drizzle-orm';
-
-import { purchaseOrders, type PurchaseOrder, type PurchaseOrderItem } from '$lib/server/db/schema';
+import { type PurchaseOrder, type PurchaseOrderItem } from '$lib/server/db/schema';
 
 import { PurchaseOrderItemType } from '$lib/shared/enums';
 
@@ -76,10 +74,3 @@ export interface GetPurchaseOrdersOptions extends PurchaseOrderFilterOptions {
 	limit?: number;
 	offset?: number;
 }
-
-export const ORDER_COLUMNS: Record<PurchaseOrderOrderBy, AnyColumn> = {
-	orderNumber: purchaseOrders.orderNumber,
-	orderDate: purchaseOrders.orderDate,
-	createdAt: purchaseOrders.createdAt,
-	status: purchaseOrders.status
-};

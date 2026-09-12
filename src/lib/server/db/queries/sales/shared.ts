@@ -1,19 +1,8 @@
 /**
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: internal helpers.
  */
-import type { SaleFilterOptions, SaleOrderBy } from './types';
-import {
-	eq,
-	isNull,
-	and,
-	gte,
-	lte,
-	or,
-	sql,
-	type AnyColumn,
-	type SQL,
-	type SQLWrapper
-} from 'drizzle-orm';
+import type { SaleFilterOptions } from './types';
+import { eq, isNull, and, gte, lte, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 
 import { buildTokenSearchConditions } from '$lib/server/db/search';
 
@@ -23,14 +12,6 @@ import { sales, saleItems, customers, users } from '$lib/server/db/schema';
 // ============================================================================
 // INTERNAL HELPERS
 // ============================================================================
-
-/** Column map for orderBy (saleDate is an alias of createdAt — single date truth) */
-export const ORDER_COLUMNS: Record<SaleOrderBy, AnyColumn> = {
-	saleDate: sales.createdAt,
-	orderNumber: sales.orderNumber,
-	total: sales.total,
-	createdAt: sales.createdAt
-};
 
 /**
  * Build WHERE conditions from filter options.
