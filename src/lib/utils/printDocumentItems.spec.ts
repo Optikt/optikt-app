@@ -45,7 +45,7 @@ describe('printDocumentItems', () => {
 			snapshotName: 'Cristales policarbonato progresivos fotocromáticos antirreflejo'
 		});
 
-		expect(getPrintItemLabel(item)).toBe('Cristal Policarbonato Progresivo Fotocromático AR');
+		expect(getPrintItemLabel(item)).toBe('Cristal Policarbonato Progresivo FOTO AR');
 		expect(getPrintItemLabelClass(item)).toBe('font-normal text-slate-950');
 	});
 
@@ -54,20 +54,20 @@ describe('printDocumentItems', () => {
 			itemType: SaleItemType.LENS_PAIR,
 			snapshotName: 'Nueva Vision - CRISTAL - CR39 · Convencional · FOTO · BLUE · Monofocal'
 		});
-		expect(getPrintItemLabel(fotoBlue)).toBe('Cristal CR-39 Fotocromático Blueblock');
+		expect(getPrintItemLabel(fotoBlue)).toBe('Cristal CR-39 FOTO BLUE');
 
 		const arBlueProgressive = makeItem({
 			itemType: SaleItemType.LENS_PAIR,
 			snapshotName:
 				'Ópticos Autana C.A - CRISTAL - CR39 · Convencional · AR · BLUE · Progresivo'
 		});
-		expect(getPrintItemLabel(arBlueProgressive)).toBe('Cristal CR-39 Progresivo AR Blueblock');
+		expect(getPrintItemLabel(arBlueProgressive)).toBe('Cristal CR-39 Progresivo AR BLUE');
 
 		const fotoAr = makeItem({
 			itemType: SaleItemType.LENS_PAIR,
 			snapshotName: 'Ópticos Autana C.A - CRISTAL - CR39 · FOTO · AR · Monofocal'
 		});
-		expect(getPrintItemLabel(fotoAr)).toBe('Cristal CR-39 Fotocromático AR');
+		expect(getPrintItemLabel(fotoAr)).toBe('Cristal CR-39 FOTO AR');
 	});
 
 	it('formats treatment labels by category', () => {
