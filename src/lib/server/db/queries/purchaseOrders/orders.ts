@@ -6,11 +6,30 @@ import type {
 	GetPurchaseOrdersOptions,
 	PurchaseOrderFilterOptions,
 	PurchaseOrderListStats,
+	PurchaseOrderOrderBy,
 	PurchaseOrderWithRelations
 } from './types';
-import { ORDER_COLUMNS } from './types';
 import { addFinancialMetadata, buildPOConditions, poSearchFields } from './shared';
-import { eq, and, isNull, asc, desc, count, gte, lt, sql, type SQL } from 'drizzle-orm';
+
+const ORDER_COLUMNS: Record<PurchaseOrderOrderBy, AnyColumn> = {
+	orderNumber: purchaseOrders.orderNumber,
+	orderDate: purchaseOrders.orderDate,
+	createdAt: purchaseOrders.createdAt,
+	status: purchaseOrders.status
+};
+import {
+	eq,
+	and,
+	isNull,
+	asc,
+	desc,
+	count,
+	gte,
+	lt,
+	sql,
+	type AnyColumn,
+	type SQL
+} from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
 import { relevanceScoreOrderSql } from '$lib/server/db/search';

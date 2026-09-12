@@ -1,8 +1,14 @@
 /**
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: sale reads.
  */
-import type { GetSalesOptions, SaleFilterOptions, SaleWithRelations, SalesStats } from './types';
-import { buildSaleConditions, ORDER_COLUMNS, saleSearchFields } from './shared';
+import type {
+	GetSalesOptions,
+	SaleFilterOptions,
+	SaleOrderBy,
+	SaleWithRelations,
+	SalesStats
+} from './types';
+import { buildSaleConditions, saleSearchFields } from './shared';
 import { eq, isNull, and, desc, asc, max, count, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '$lib/server/db';
@@ -10,6 +16,15 @@ import { relevanceScoreOrderSql } from '$lib/server/db/search';
 import type { DbOrTx } from '$lib/server/db/types';
 
 import { sales, customers, users, type Sale } from '$lib/server/db/schema';
+import type { AnyColumn } from 'drizzle-orm';
+
+/** Column map for orderBy (saleDate is an alias of createdAt — single date truth) */
+const ORDER_COLUMNS: Record<SaleOrderBy, AnyColumn> = {
+	saleDate: sales.createdAt,
+	orderNumber: sales.orderNumber,
+	total: sales.total,
+	createdAt: sales.createdAt
+};
 
 // ============================================================================
 // SALES
