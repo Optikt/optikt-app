@@ -2,7 +2,7 @@
  * Quotes remote — create + update commands
  * Split from quotes.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { toSaleTotalsLine, buildQuoteItemValues } from './shared';
+import { toSaleTotalsLine, buildQuoteItemValues } from './helpers';
 import { command } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { CreateQuoteSchema, UpdateQuoteSchema } from '$lib/schemas/quotes';
