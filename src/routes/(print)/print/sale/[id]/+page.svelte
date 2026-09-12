@@ -75,35 +75,32 @@
 			showRemainingAmount={vm.showRemainingAmount}
 		/>
 
-		<ReceiptExtraPayments
-			show={vm.showAdditionalPayments}
-			placeholderRows={vm.placeholderRows}
-		/>
+		<ReceiptExtraPayments show={vm.showAdditionalPayments} placeholderRows={vm.placeholderRows} />
 
 		<ReceiptFooter />
 	</div>
 </article>
 
 <style>
-	.sale-receipt {
+	:global(.sale-receipt) {
 		break-inside: avoid-page;
 		page-break-inside: avoid;
 	}
 
 	@media print {
-		.sale-receipt,
-		.receipt-grid,
-		.receipt-box,
-		.receipt-table,
-		.receipt-footer {
+		:global(.sale-receipt),
+		:global(.receipt-grid),
+		:global(.receipt-box),
+		:global(.receipt-table),
+		:global(.receipt-footer) {
 			break-inside: avoid-page;
 			page-break-inside: avoid;
 		}
 
-		.sale-receipt table,
-		.sale-receipt thead,
-		.sale-receipt tbody,
-		.sale-receipt tr {
+		:global(.sale-receipt table),
+		:global(.sale-receipt thead),
+		:global(.sale-receipt tbody),
+		:global(.sale-receipt tr) {
 			break-inside: avoid;
 			page-break-inside: avoid;
 		}
