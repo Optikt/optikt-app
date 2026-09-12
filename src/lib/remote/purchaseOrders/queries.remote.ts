@@ -2,7 +2,7 @@
  * Purchase orders remote — queries
  * Split from purchaseOrders.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import type { PurchaseOrderDetail } from './shared';
+import type { PurchaseOrderDetail } from './helpers';
 import { query } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 

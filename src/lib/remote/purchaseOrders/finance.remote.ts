@@ -2,7 +2,7 @@
  * Purchase orders remote — credit terms + price suggestions
  * Split from purchaseOrders.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { normalizeCreditTermsForWrite } from './shared';
+import { normalizeCreditTermsForWrite } from './helpers';
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { getErrorMessage } from '$lib/utils';

@@ -2,7 +2,7 @@
  * Purchase orders remote — update command
  * Split from purchaseOrders.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { getPurchaseOrderFinanceIssues, normalizeCreditTermsForWrite } from './shared';
+import { getPurchaseOrderFinanceIssues, normalizeCreditTermsForWrite } from './helpers';
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { getErrorMessage } from '$lib/utils';

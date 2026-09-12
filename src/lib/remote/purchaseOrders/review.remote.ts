@@ -2,8 +2,8 @@
  * Purchase orders remote — ready/review/cancel lifecycle
  * Split from purchaseOrders.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import type { PriceSuggestion } from './shared';
-import { getPurchaseOrderReadinessIssues } from './shared';
+import type { PriceSuggestion } from './helpers';
+import { getPurchaseOrderReadinessIssues } from './helpers';
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { getErrorMessage } from '$lib/utils';
