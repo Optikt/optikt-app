@@ -2,7 +2,7 @@
  * Sales remote — update command
  * Split from sales.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { resolveLensSnapshotCosts, toSaleTotalsLine } from './shared';
+import { resolveLensSnapshotCosts, toSaleTotalsLine } from './helpers';
 import { command } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { UpdateSaleSchema } from '$lib/schemas/sales';

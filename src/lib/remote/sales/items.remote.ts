@@ -2,7 +2,7 @@
  * Sales remote — item commands
  * Split from sales.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { resolveLensSnapshotCosts } from './shared';
+import { resolveLensSnapshotCosts } from './helpers';
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { UpdateSaleItemCostsSchema, EnrichFreeItemSchema } from '$lib/schemas/';

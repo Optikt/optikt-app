@@ -3,7 +3,6 @@
  * Import directly from `./sales/<concern>.remote` in new code.
  * TODO: migrate legacy importers and remove this barrel.
  */
-export * from './sales/shared';
 export * from './sales/queries.remote';
 export * from './sales/commands.remote';
 export * from './sales/payments.remote';
