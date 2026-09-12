@@ -49,6 +49,27 @@ describe('printDocumentItems', () => {
 		expect(getPrintItemLabelClass(item)).toBe('font-normal text-slate-950');
 	});
 
+	it('detects standalone FOTO and BLUE tokens from catalog names', () => {
+		const fotoBlue = makeItem({
+			itemType: SaleItemType.LENS_PAIR,
+			snapshotName: 'Nueva Vision - CRISTAL - CR39 · Convencional · FOTO · BLUE · Monofocal'
+		});
+		expect(getPrintItemLabel(fotoBlue)).toBe('Cristal CR-39 Fotocromático Blueblock');
+
+		const arBlueProgressive = makeItem({
+			itemType: SaleItemType.LENS_PAIR,
+			snapshotName:
+				'Ópticos Autana C.A - CRISTAL - CR39 · Convencional · AR · BLUE · Progresivo'
+		});
+		expect(getPrintItemLabel(arBlueProgressive)).toBe('Cristal CR-39 Progresivo AR Blueblock');
+
+		const fotoAr = makeItem({
+			itemType: SaleItemType.LENS_PAIR,
+			snapshotName: 'Ópticos Autana C.A - CRISTAL - CR39 · FOTO · AR · Monofocal'
+		});
+		expect(getPrintItemLabel(fotoAr)).toBe('Cristal CR-39 Fotocromático AR');
+	});
+
 	it('formats treatment labels by category', () => {
 		const item = makeItem({
 			itemType: SaleItemType.TREATMENT,
