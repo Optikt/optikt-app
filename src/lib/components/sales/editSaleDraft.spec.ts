@@ -401,13 +401,9 @@ describe('hasChangesForSale', () => {
 
 	it('detects each change trigger', () => {
 		expect(hasChangesForSale(sale, '2026-09-02', '', 0, 'FIXED', clean, originals)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', 'nota', 0, 'FIXED', clean, originals)).toBe(
-			true
-		);
+		expect(hasChangesForSale(sale, '2026-09-01', 'nota', 0, 'FIXED', clean, originals)).toBe(true);
 		expect(hasChangesForSale(sale, '2026-09-01', '', 5, 'FIXED', clean, originals)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', clean, originals)).toBe(
-			true
-		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', clean, originals)).toBe(true);
 		expect(
 			hasChangesForSale(
 				sale,
@@ -419,9 +415,7 @@ describe('hasChangesForSale', () => {
 				originals
 			)
 		).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft()], originals)).toBe(
-			true
-		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft()], originals)).toBe(true);
 		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', clean, originals)).toBe(false);
 	});
 
