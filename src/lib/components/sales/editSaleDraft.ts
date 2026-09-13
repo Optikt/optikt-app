@@ -130,13 +130,40 @@ export function itemDetail(item: EditableItem): string {
 	return parts.join(' · ');
 }
 
+/** Stable signature of the server-relevant item set (order- and key-order-independent). */
+export function signatureForItems(items: EditableItem[]): string {
+	return items
+		.filter((i) => !i._removed)
+		.map((i) => {
+			const { _removed, ...rest } = i;
+			const ordered: Record<string, unknown> = {};
+			for (const key of Object.keys(rest).sort()) {
+				ordered[key] = (rest as Record<string, unknown>)[key];
+			}
+			return JSON.stringify(ordered);
+		})
+		.sort()
+		.join('|');
+}
+
+/** True when the item set differs from the original (adds, removes, or in-place edits). */
+export function haveItemsChanged(
+	originalItems: SaleItemWithDetails[],
+	currentItems: EditableItem[]
+): boolean {
+	return (
+		signatureForItems(originalItems.map(existingItemToInput)) !== signatureForItems(currentItems)
+	);
+}
+
 export function hasChangesForSale(
 	sale: { saleDate: string; notes: string | null; discount: number; discountType: string },
 	saleDate: string,
 	notes: string,
 	discount: number,
 	discountType: string,
-	editableItems: EditableItem[]
+	editableItems: EditableItem[],
+	originalItems: SaleItemWithDetails[]
 ): boolean {
 	return (
 		saleDate !== sale.saleDate.slice(0, 10) ||
@@ -144,7 +171,8 @@ export function hasChangesForSale(
 		discount !== sale.discount ||
 		discountType !== sale.discountType ||
 		editableItems.some((i) => i._removed) ||
-		editableItems.some((i) => !i.id)
+		editableItems.some((i) => !i.id) ||
+		haveItemsChanged(originalItems, editableItems)
 	);
 }
 
@@ -313,6 +341,7 @@ export interface UpdateSaleDraft {
 	reason: string;
 	removedCount: number;
 	activeItems: EditableItem[];
+	originalItems: SaleItemWithDetails[];
 }
 
 export function buildUpdateSalePayload(
@@ -353,7 +382,8 @@ export function buildUpdateSalePayload(
 		draft.removedCount > 0 ||
 		draft.activeItems.some((i) => !i.id) ||
 		draft.discount !== sale.discount ||
-		draft.discountType !== sale.discountType
+		draft.discountType !== sale.discountType ||
+		haveItemsChanged(draft.originalItems, draft.activeItems)
 	) {
 		payload.items = draft.activeItems.map(({ _removed, ...input }) => input);
 	}

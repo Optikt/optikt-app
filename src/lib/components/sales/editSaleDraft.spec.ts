@@ -32,6 +32,17 @@ function draft(overrides: Partial<EditableItem> = {}): EditableItem {
 	};
 }
 
+function originalFor(d: EditableItem): SaleItemWithDetails {
+	return {
+		id: d.id,
+		itemType: d.itemType,
+		quantity: d.quantity,
+		unitPrice: d.unitPrice,
+		discount: d.discount,
+		discountType: d.discountType
+	} as SaleItemWithDetails;
+}
+
 describe('createEmptyLensDraft', () => {
 	it('creates a blank lens pair draft', () => {
 		expect(createEmptyLensDraft()).toEqual({
@@ -300,11 +311,22 @@ describe('buildUpdateSalePayload', () => {
 		discountType: DiscountType.FIXED,
 		reason: 'Corrección',
 		removedCount: 0,
-		activeItems: [draft({ id: '1' })]
+		activeItems: [draft({ id: '1' })],
+		originalItems: [originalFor(draft({ id: '1' }))]
 	};
 
 	it('sends only id and reason when nothing changed', () => {
 		expect(buildUpdateSalePayload(sale, base)).toEqual({ id: 'sale-1', reason: 'Corrección' });
+	});
+
+	it('includes items when an existing item price changes', () => {
+		const payload = buildUpdateSalePayload(sale, {
+			...base,
+			activeItems: [draft({ id: '1', unitPrice: 150 })]
+		});
+
+		expect(payload.items?.length).toBe(1);
+		expect(payload.items?.[0].unitPrice).toBe(150);
 	});
 
 	it('includes items when discount changes', () => {
@@ -375,16 +397,36 @@ describe('getLensEditContext', () => {
 describe('hasChangesForSale', () => {
 	const sale = { saleDate: '2026-09-01T10:00:00', notes: null, discount: 0, discountType: 'FIXED' };
 	const clean = [draft({ id: '1' }), draft({ id: '2' })];
+	const originals = [originalFor(draft({ id: '1' })), originalFor(draft({ id: '2' }))];
 
 	it('detects each change trigger', () => {
-		expect(hasChangesForSale(sale, '2026-09-02', '', 0, 'FIXED', clean)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', 'nota', 0, 'FIXED', clean)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 5, 'FIXED', clean)).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', clean)).toBe(true);
+		expect(hasChangesForSale(sale, '2026-09-02', '', 0, 'FIXED', clean, originals)).toBe(true);
+		expect(hasChangesForSale(sale, '2026-09-01', 'nota', 0, 'FIXED', clean, originals)).toBe(
+			true
+		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 5, 'FIXED', clean, originals)).toBe(true);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'PERCENTAGE', clean, originals)).toBe(
+			true
+		);
 		expect(
-			hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft({ id: '1', _removed: true })])
+			hasChangesForSale(
+				sale,
+				'2026-09-01',
+				'',
+				0,
+				'FIXED',
+				[draft({ id: '1', _removed: true })],
+				originals
+			)
 		).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft()])).toBe(true);
-		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', clean)).toBe(false);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', [draft()], originals)).toBe(
+			true
+		);
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', clean, originals)).toBe(false);
+	});
+
+	it('detects in-place price edits of existing items', () => {
+		const edited = [draft({ id: '1', unitPrice: 150 }), draft({ id: '2' })];
+		expect(hasChangesForSale(sale, '2026-09-01', '', 0, 'FIXED', edited, originals)).toBe(true);
 	});
 });
