@@ -2,19 +2,15 @@
 	import { untrack, getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import { toast } from 'svelte-sonner';
-	import { Search } from '@lucide/svelte';
-	import { autoAnimate } from '@formkit/auto-animate';
 	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import { LensCatalogSource } from '$lib/shared/enums';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
 	import {
 		getAvailableProductStock,
 		step2ItemLineTotal,
 		validateLensPrescription,
-		hasLensPrescriptionErrors,
 		getEnabledEyeCount
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
@@ -39,11 +35,19 @@
 		type IncludedAccessoryMap
 	} from '../includedAccessories';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
-	import SaleStep2ItemCard from './SaleStep2ItemCard.svelte';
 	import SaleCustomerBanner from '../SaleCustomerBanner.svelte';
 	import SaleStep2Toolbar from './SaleStep2Toolbar.svelte';
 	import SaleStep2SearchBar from './SaleStep2SearchBar.svelte';
 	import SaleTreatmentSlideOver from './SaleTreatmentSlideOver.svelte';
+	import Step2ItemsList from './items/Step2ItemsList.svelte';
+	import Step2ValidationHints from './items/Step2ValidationHints.svelte';
+	import {
+		createIncludedAccessoryItem,
+		type IncludedAccessoryRule
+	} from './items/step2Accessories';
+	import { recalcSuggestedPrice } from './items/step2Pricing';
+	import { copyFirstRxToAll } from './items/step2RxCopy';
+	import { getValidationReasons } from './items/step2Validation';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -83,36 +87,8 @@
 
 	const catalog = getContext<CatalogData>(CATALOG_KEY);
 
-	// ============================================================================
-	// ITEMS MANAGEMENT
-	// ============================================================================
-
-	function createIncludedAccessoryItem(
-		parentItemId: string,
-		accessoryRule: {
-			accessoryProductId: string;
-			priceMode: string;
-			customPrice: number | null;
-			currentProductPrice: number | null;
-			accessory: { id: string; name: string; stock: number };
-		}
-	): SaleItemRow {
-		const price = (() => {
-			switch (accessoryRule.priceMode) {
-				case 'PRODUCT':
-					return accessoryRule.currentProductPrice ?? 0;
-				case 'CUSTOM':
-					return accessoryRule.customPrice ?? 0;
-				default:
-					return 0;
-			}
-		})();
-		return {
-			...createEmptyProductItem(accessoryRule.accessoryProductId),
-			unitPrice: price,
-			isIncludedAccessory: true,
-			includedAccessoryParentItemId: parentItemId
-		} as SaleItemRow;
+	function findLensById(id: string) {
+		return catalog.getLensItems().find((l) => l.id === id);
 	}
 
 	function getAvailableStockForProduct(productId: string, excludeItemId?: string): number | null {
@@ -136,7 +112,7 @@
 		item.lensPair.catalogItemId = option.id;
 		item.productId = option.id;
 
-		const lens = catalog.getLensItems().find((l) => l.id === option.id);
+		const lens = findLensById(option.id);
 		if (lens) {
 			item.costOverrides = {
 				baseCost: lens.pairPurchasePrice,
@@ -146,7 +122,7 @@
 			item.lensPair.lensType = lens.type;
 		}
 
-		recalcSuggestedPrice(item);
+		recalcSuggestedPrice(item, findLensById);
 		return item;
 	}
 
@@ -176,13 +152,7 @@
 			const linkedIds: string[] = [];
 			const accessoryItems: SaleItemRow[] = [];
 
-			for (const accessoryRule of accessories as unknown as Array<{
-				accessoryProductId: string;
-				priceMode: string;
-				customPrice: number | null;
-				currentProductPrice: number | null;
-				accessory: { id: string; name: string; stock: number };
-			}>) {
+			for (const accessoryRule of accessories as unknown as IncludedAccessoryRule[]) {
 				if (accessoryRule.accessory.stock <= 0) {
 					toast.warning(
 						`⚠ ${accessoryRule.accessory.name} no tiene stock disponible y no fue agregado automáticamente.`
@@ -257,10 +227,6 @@
 		items = [...items, item];
 	}
 
-	// ============================================================================
-	// TREATMENTS
-	// ============================================================================
-
 	type QuickAddFilter = 'all' | 'product' | 'lens';
 
 	let quickAddFilter = $state<QuickAddFilter>('all');
@@ -292,7 +258,7 @@
 		const map: Record<string, SupplierTreatment[]> = {};
 		for (const item of items) {
 			if (item.kind !== 'lens') continue;
-			const lens = catalog.getLensItems().find((l) => l.id === item.lensPair.catalogItemId);
+			const lens = findLensById(item.lensPair.catalogItemId);
 			if (lens?.supplier?.id && treatmentCache[lens.supplier.id]) {
 				map[item.id] = treatmentCache[lens.supplier.id];
 			}
@@ -341,7 +307,7 @@
 		if (!activeTreatmentLensId) return;
 		const lensItem = items.find((i) => i.id === activeTreatmentLensId);
 		if (!lensItem || lensItem.kind !== 'lens') return;
-		const lens = catalog.getLensItems().find((l) => l.id === lensItem.lensPair.catalogItemId);
+		const lens = findLensById(lensItem.lensPair.catalogItemId);
 		const brand = lens?.supplier?.name ?? '';
 
 		if (treatment) {
@@ -369,81 +335,13 @@
 		items = items.filter((i) => i.id !== treatmentItemId);
 	}
 
-	// ============================================================================
-	// PRESCRIPTION VALIDATION
-	// ============================================================================
-
-	// ============================================================================
-
-	// VALIDATION REASONS (for "Siguiente" button feedback)
-	// ============================================================================
-
-	function getValidationReasons(): string[] {
-		const reasons: string[] = [];
-		if (items.length === 0) {
-			reasons.push('Agregue al menos un producto o cristal desde la búsqueda superior');
-		}
-
-		for (let i = 0; i < items.length; i++) {
-			const item = items[i];
-			const num = i + 1;
-			if (item.kind === 'product' && item.productId && item.quantity <= 0) {
-				reasons.push(`Ítem #${num}: cantidad debe ser mayor a 0`);
-			}
-			if (item.kind === 'lens') {
-				if (!item.lensPair?.od.enabled && !item.lensPair?.oi.enabled) {
-					reasons.push(`Ítem #${num}: habilite al menos un ojo`);
-				}
-				if (hasLensPrescriptionErrors(item)) {
-					reasons.push(`Ítem #${num}: complete los campos de prescripción requeridos`);
-				}
-			}
-			if (item.kind === 'product' && item.productId) {
-				const availableStock = getAvailableStockForProduct(item.productId, item.id);
-				if (availableStock !== null && (availableStock <= 0 || item.quantity > availableStock)) {
-					reasons.push(`Ítem #${num}: stock insuficiente (disponible: ${availableStock})`);
-				}
-			}
-			if (item.kind === 'free') {
-				if (!item.freeItem?.category) {
-					reasons.push(`Ítem #${num}: seleccione una categoría para el ítem libre`);
-				}
-				if (!item.freeItem?.description || item.freeItem.description.trim().length < 3) {
-					reasons.push(`Ítem #${num}: ingrese una descripción (mínimo 3 caracteres)`);
-				}
-				if (item.unitPrice <= 0) {
-					reasons.push(`Ítem #${num}: el precio de venta debe ser mayor a 0`);
-				}
-			}
-		}
-		return reasons;
+	function handleCopyRxToAll() {
+		copyFirstRxToAll(items);
 	}
 
-	// ============================================================================
-	// LENS COST HELPERS
-	// ============================================================================
-
-	/** Recalculate unitPrice to the suggested sale price for the lens only (excluding treatments).
-	 *  Uses salePrice (sell price) when available, otherwise falls back to basePrice (cost). */
-	function recalcSuggestedPrice(item: SaleItemRow) {
-		if (item.kind !== 'lens') return;
-		const lens = catalog.getLensItems().find((l) => l.id === item.lensPair.catalogItemId);
-		if (!lens) return;
-
-		const eyeCount = getEnabledEyeCount(item);
-		if (eyeCount === 0) return;
-
-		item.unitPrice = lensSalePrice(lens, eyeCount);
-	}
-
-	/** Sale price for the lens - salePrice is always per pair. Falls back to cost (base + mounting + shipping). */
-	function lensSalePrice(lens: LensCatalogItemWithRelations, _eyeCount: number): number {
-		if (lens.salePrice != null && lens.salePrice > 0) {
-			return lens.salePrice;
-		}
-		// Fallback to cost-based price
-		return lens.pairPurchasePrice + lens.mountingPrice + lens.shippingPrice;
-	}
+	const validationReasons = $derived(
+		valid ? [] : getValidationReasons(items, getAvailableStockForProduct)
+	);
 
 	const selectedItemCount = $derived(items.length);
 
@@ -485,26 +383,6 @@
 			)
 	);
 
-	function copyFirstRxToAll() {
-		const firstLens = items.find((i): i is LensSaleItemRow => i.kind === 'lens');
-		if (!firstLens) return;
-		const src = firstLens.lensPair;
-		for (const item of items) {
-			if (item.kind !== 'lens' || !item.lensPair || item.id === firstLens.id) continue;
-			const dest = item.lensPair;
-			dest.od.prescription = { ...src.od.prescription };
-			dest.oi.prescription = { ...src.oi.prescription };
-			dest.od.dp = src.od.dp;
-			dest.od.np = src.od.np;
-			dest.od.altura = src.od.altura;
-			dest.oi.dp = src.oi.dp;
-			dest.oi.np = src.oi.np;
-			dest.oi.altura = src.oi.altura;
-			dest.lensType = src.lensType;
-			dest.doctorName = src.doctorName;
-		}
-	}
-
 	const rxErrorsPerLens = $derived.by((): Record<string, PrescriptionFieldErrors> => {
 		const map: Record<string, PrescriptionFieldErrors> = {};
 		for (const item of items) {
@@ -529,7 +407,7 @@
 			filter={quickAddFilter}
 			onfilterchange={(f) => (quickAddFilter = f)}
 			{canCopyRxToAll}
-			oncopyrx={copyFirstRxToAll}
+			oncopyrx={handleCopyRxToAll}
 			onaddfree={addFreeItem}
 		/>
 	</div>
@@ -552,68 +430,17 @@
 		</div>
 	</div>
 	<!-- Items list -->
-	<div>
-		<div class="space-y-1" use:autoAnimate>
-			{#if items.length === 0}
-				<div
-					class="flex flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant/40 bg-surface-container-lowest px-4 py-8 text-center"
-				>
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue"
-					>
-						<Search class="h-4 w-4" />
-					</div>
-					<h4 class="mt-3 text-sm font-semibold text-brand-navy">
-						Agrega el primer artículo desde la búsqueda
-					</h4>
-				</div>
-			{:else}
-				{#each items as item, _index (item.id)}
-					{#if item.kind === 'treatment'}
-						<div class="ml-4 border-l-2 border-slate-200 pl-3">
-							<SaleStep2ItemCard
-								{item}
-								onremove={() => handleRemoveTreatment(item.id)}
-								eyeCount={0}
-								isIncludedAccessory={false}
-								availableTreatments={[]}
-								currentTreatmentName={item.treatmentName}
-								onopenTreatment={itemTreatmentsMap[item.parentLensItemId]?.length > 0
-									? () => handleOpenTreatmentSelector(item.parentLensItemId)
-									: undefined}
-							/>
-						</div>
-					{:else}
-						{@const ti = item.kind === 'lens' ? (lensTreatmentInfo[item.id] ?? null) : null}
-						<SaleStep2ItemCard
-							{item}
-							rxErrs={item.kind === 'lens' ? (rxErrorsPerLens[item.id] ?? {}) : {}}
-							onremove={() => removeItem(item.id)}
-							eyeCount={item.kind === 'lens' ? getEnabledEyeCount(item) : 0}
-							isIncludedAccessory={item.isIncludedAccessory}
-							availableTreatments={itemTreatmentsMap[item.id] ?? []}
-							currentTreatmentName={ti?.name ?? null}
-							onopenTreatment={item.kind === 'lens' && itemTreatmentsMap[item.id]?.length > 0
-								? () => handleOpenTreatmentSelector(item.id)
-								: undefined}
-						/>
-					{/if}
-				{/each}
-			{/if}
-		</div>
-	</div>
+	<Step2ItemsList
+		{items}
+		{itemTreatmentsMap}
+		{lensTreatmentInfo}
+		{rxErrorsPerLens}
+		onRemoveItem={removeItem}
+		onRemoveTreatment={handleRemoveTreatment}
+		onOpenTreatment={handleOpenTreatmentSelector}
+	/>
 
-	{#if !valid}
-		{@const reasons = getValidationReasons()}
-		{#if reasons.length > 0}
-			<div class="rounded-lg bg-warning-container/60 px-4 py-2.5 text-on-warning-container sm:px-5">
-				<p class="text-[10px] font-semibold tracking-[0.14em] uppercase">Para continuar</p>
-				<ul class="mt-1.5 space-y-0.5 text-xs">
-					{#each reasons as reason, index (index)}<li>{reason}</li>{/each}
-				</ul>
-			</div>
-		{/if}
-	{/if}
+	<Step2ValidationHints {valid} reasons={validationReasons} />
 
 	<SaleWizardFloatingActions
 		showBack={true}
