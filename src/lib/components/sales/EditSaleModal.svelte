@@ -97,7 +97,7 @@
 
 	// ── Derived (via helpers) ────────────────────────────────────────────
 	let hasChanges = $derived(
-		hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems)
+		hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems, items)
 	);
 
 	let activeItems = $derived(editableItems.filter((i) => !i._removed));
@@ -330,7 +330,8 @@
 			discountType,
 			reason,
 			removedCount,
-			activeItems
+			activeItems,
+			originalItems: items
 		});
 
 		try {
