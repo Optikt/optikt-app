@@ -27,9 +27,7 @@
 					/>
 				</svg>
 			</div>
-			<span class="text-xs font-bold tracking-widest text-slate-600 uppercase"
-				>Prescripción</span
-			>
+			<span class="text-xs font-bold tracking-widest text-slate-600 uppercase">Prescripción</span>
 		</div>
 
 		<div class="grid grid-cols-[40px_repeat(5,minmax(50px,1fr))] gap-x-3 gap-y-2">
@@ -44,24 +42,19 @@
 				<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500"></span>
 				<span class="text-[11px] font-bold text-slate-600">OD</span>
 			</div>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.odSphere)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.odCylinder)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.odAxis)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.odAddition)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>—</span
 			>
 
@@ -69,24 +62,19 @@
 				<span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></span>
 				<span class="text-[11px] font-bold text-slate-600">OI</span>
 			</div>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.osSphere)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.osCylinder)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.osAxis)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>{prescriptionValue(item.osAddition)}</span
 			>
-			<span
-				class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
+			<span class="text-center font-mono text-sm font-semibold whitespace-nowrap text-slate-800"
 				>—</span
 			>
 		</div>

@@ -55,9 +55,7 @@
 		{:else}
 			<div class="space-y-4">
 				{#if isReEnriching}
-					<p
-						class="rounded-lg bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant"
-					>
+					<p class="rounded-lg bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant">
 						Editando un ítem ya completado. Los cambios sobreescribirán los valores anteriores.
 					</p>
 				{/if}

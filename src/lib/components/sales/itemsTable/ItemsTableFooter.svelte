@@ -10,8 +10,14 @@
 		totalInternalCost: number;
 	}
 
-	let { subtotal, discount = 0, discountType = 'FIXED', total, hasAnyCost, totalInternalCost }: Props =
-		$props();
+	let {
+		subtotal,
+		discount = 0,
+		discountType = 'FIXED',
+		total,
+		hasAnyCost,
+		totalInternalCost
+	}: Props = $props();
 </script>
 
 <div class="border-t border-gray-200 bg-gray-50/50 px-5 py-4">

@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { ReceiptText, X } from '@lucide/svelte';
 	import { AppBadge, SlideOver } from '$lib/components/ui';
-	import PaymentForm, {
-		type PaymentComposerRequest
-	} from '$lib/components/sales/PaymentForm.svelte';
+	import PaymentForm from '$lib/components/sales/PaymentForm.svelte';
+	import type { PaymentComposerRequest } from '$lib/components/sales/payments/paymentFormDerived';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus

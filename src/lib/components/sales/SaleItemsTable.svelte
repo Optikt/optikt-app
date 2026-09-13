@@ -226,14 +226,7 @@
 		{/each}
 	</div>
 
-	<ItemsTableFooter
-		{subtotal}
-		{discount}
-		{discountType}
-		{total}
-		{hasAnyCost}
-		{totalInternalCost}
-	/>
+	<ItemsTableFooter {subtotal} {discount} {discountType} {total} {hasAnyCost} {totalInternalCost} />
 </section>
 
 {#if enrichingItemId}

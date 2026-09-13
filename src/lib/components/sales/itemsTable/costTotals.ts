@@ -13,9 +13,7 @@ export function computeInternalCostTotal(groups: DisplayGroup[]): number {
 		} else if (group.item.itemType === SaleItemType.LENS_PAIR) {
 			const base = group.item.snapshotBaseCost ?? 0;
 			const mounting = group.item.snapshotMountingPrice ?? 0;
-			const shipping = group.item.shippingCostPending
-				? 0
-				: (group.item.snapshotShippingPrice ?? 0);
+			const shipping = group.item.shippingCostPending ? 0 : (group.item.snapshotShippingPrice ?? 0);
 			total += base + mounting + shipping;
 		} else if (group.item.snapshotCostUnit != null) {
 			total += group.item.snapshotCostUnit * group.quantity;

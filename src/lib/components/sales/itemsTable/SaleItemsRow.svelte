@@ -117,9 +117,7 @@
 							class="mt-2 rounded-lg bg-warning-container/60 px-3 py-2 text-xs text-on-warning-container"
 						>
 							<p class="font-semibold">⚠ Pendiente de completar</p>
-							<p class="mt-0.5 text-on-surface-variant">
-								Costo y proveedor no registrados aún
-							</p>
+							<p class="mt-0.5 text-on-surface-variant">Costo y proveedor no registrados aún</p>
 							{#if allowCostEdit}
 								<button
 									type="button"
@@ -147,9 +145,7 @@
 							</div>
 							{#if fd.unitCost != null}
 								<p>
-									Costo: <span class="font-mono font-semibold"
-										>{formatPrice(fd.unitCost)}</span
-									>
+									Costo: <span class="font-mono font-semibold">{formatPrice(fd.unitCost)}</span>
 									{#if fd.unitCost > 0}
 										· Margen: <span class="font-semibold"
 											>{Math.round(
@@ -189,20 +185,17 @@
 						{@const shipping = group.item.snapshotShippingPrice ?? 0}
 						{@const isPending = group.item.shippingCostPending ?? false}
 						{@const costTotal =
-							group.item.snapshotCostTotal ??
-							baseCost + mounting + (isPending ? 0 : shipping)}
+							group.item.snapshotCostTotal ?? baseCost + mounting + (isPending ? 0 : shipping)}
 						<div
 							class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant"
 						>
 							<span
-								>Cristales: <span class="font-mono text-brand-navy"
-									>{formatPrice(baseCost)}</span
+								>Cristales: <span class="font-mono text-brand-navy">{formatPrice(baseCost)}</span
 								></span
 							>
 							{#if mounting > 0}
 								<span
-									>Montaje: <span class="font-mono text-brand-navy"
-										>{formatPrice(mounting)}</span
+									>Montaje: <span class="font-mono text-brand-navy">{formatPrice(mounting)}</span
 									></span
 								>
 							{/if}
@@ -215,8 +208,7 @@
 								</span>
 							{:else if shipping > 0}
 								<span
-									>Envío: <span class="font-mono text-brand-navy"
-										>{formatPrice(shipping)}</span
+									>Envío: <span class="font-mono text-brand-navy">{formatPrice(shipping)}</span
 									></span
 								>
 							{/if}

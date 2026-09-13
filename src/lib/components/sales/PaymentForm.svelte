@@ -1,62 +1,49 @@
 <script lang="ts">
-	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { nowUTC, toISODate } from '$lib/dates';
-	import { ConfirmModal, PaymentReferenceField } from '$lib/components/ui';
-	import {
-		PaymentAmountCard,
-		PaymentPreviewCard,
-		PaymentSelectionStep
-	} from '$lib/components/payments';
-	import { addPayment } from '$lib/remote/sales.remote';
-	import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders.remote';
-	import CasheaCheckbox from './CasheaCheckbox.svelte';
-	import {
-		CurrencyCode,
-		PAYMENT_CURRENCY_GROUPS,
-		PAYMENT_METHOD_LABELS,
-		PAYMENT_RAILS_BY_CURRENCY,
-		SALES_RAILS_BY_CURRENCY,
-		PaymentMethod,
-		currencyForPurchasePaymentMethod,
-		getExchangeRateLabel,
-		getPaymentMethodCurrency,
-		isBsPaymentMethod,
-		rateTypeForCurrency,
-		rateTypeForRail
-	} from '$lib/shared/enums';
-	import { getCurrencySymbol } from '$lib/shared/enums';
-	import {
-		computePaymentExchangeVariance,
-		denormalizePurchasePaymentAmount,
-		normalizePurchasePaymentAmounts
-	} from '$lib/shared/purchaseOrderPayments';
-	import { getEarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
-	import type {
-		EarlyPaymentDiscountSuggestion,
-		PurchaseOrderBalanceSummary,
-		PurchaseOrderDueStatus
-	} from '$lib/shared/purchaseOrderCredit';
-	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
+	import { formatPrice } from '$lib/utils';
+	import { PaymentMethod } from '$lib/shared/enums';
 	import {
-		calculatePaymentAmountFromUsdBcv,
-		calculateUsdBcvFromPaymentAmount,
-		getDefaultPaymentCalculationMode,
-		roundCurrency
-	} from './paymentFormCalculations';
-	import { getPaymentMethodStrategy } from '$lib/shared/payments/strategies';
-
-	export interface PaymentComposerRequest {
-		token: string;
-		amount?: number;
-		paymentDate?: string;
-		reference?: string;
-		notes?: string;
-		paymentMethod?: PaymentMethod;
-	}
+		computeAutoSpecificRate,
+		computeEffectiveBcvRate,
+		computeHasRequiredReference,
+		computeIsNativeSettlement,
+		computeNativeLabel,
+		computeNativePrefix,
+		computeNeedsSpecificRate,
+		computePurchaseCurrencyCode,
+		computeRailsByCurrency,
+		computeRateContextLine,
+		computeRateType,
+		computeReferenceConfig,
+		computeReferenceToSubmit,
+		computeRestLabelClass,
+		computeSaleForwardUsd,
+		computeSaleReverseNative,
+		computeSelectedCurrency,
+		computeSettlementSymbol,
+		computeSpecificRateLabel,
+		type PaymentComposerRequest,
+		type PaymentFormProps
+	} from './payments/paymentFormDerived';
+	import {
+		computeAmountAppliedToDebt,
+		computeExchangeVariance,
+		computeLiveEarlyPaymentSuggestion,
+		computePurchaseNormalized,
+		computePurchaseReverseNative,
+		computeShowPurchasePreview,
+		createPurchaseSubmitApi,
+		submitPurchasePayment,
+		type PurchaseFlowMutations,
+		type PurchaseSubmitSnapshot
+	} from './payments/purchasePayment';
+	import { submitSalePayment } from './payments/salePaymentSubmit';
+	import { PaymentFormSelection } from './payments/paymentFormSelection.svelte';
+	import PurchasePaymentModals from './payments/PurchasePaymentModals.svelte';
+	import PaymentRailSection from './payments/PaymentRailSection.svelte';
+	import { PaymentSelectionStep } from '$lib/components/payments';
+	import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
 
 	interface ReferenceConfig {
 		label: string;
@@ -64,37 +51,6 @@
 		placeholder: string;
 		helper?: string;
 		fallbackValue?: string;
-	}
-
-	interface Props {
-		kind: 'sale' | 'purchase';
-		// --- sale ---
-		saleId?: string;
-		remainingBcvUsd?: number;
-		onPaymentAdded?: (paidAmount: number) => void;
-		isCasheaSale?: boolean;
-		// --- purchase ---
-		purchaseOrderId?: string;
-		status?: string;
-		defaultBcvRate?: number;
-		purchaseOrder?: PurchaseOrder;
-		payments?: PurchaseOrderPaymentWithUsers[];
-		earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
-		pendingBalanceUsd?: number;
-		debtTotalUsd?: number;
-		isFullyPaid?: boolean;
-		settlementCurrency?: string;
-		composerRequest?: PaymentComposerRequest | null;
-		onFinanceChanged?: (payload: {
-			payments: PurchaseOrderPaymentWithUsers[];
-			earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
-			balance: PurchaseOrderBalanceSummary;
-			dueStatus: PurchaseOrderDueStatus;
-		}) => void;
-		// --- shared ---
-		bcvRate?: number;
-		drawerResetKey?: number;
-		variant?: 'default' | 'drawer';
 	}
 
 	let {
@@ -107,7 +63,7 @@
 		status,
 		defaultBcvRate = 0,
 		purchaseOrder,
-		payments = [],
+		payments: _payments = [],
 		earlyPaymentBenefits = [],
 		pendingBalanceUsd,
 		debtTotalUsd,
@@ -118,7 +74,7 @@
 		bcvRate = 0,
 		drawerResetKey = 0,
 		variant = 'default'
-	}: Props = $props();
+	}: PaymentFormProps = $props();
 
 	const store = getExchangeRatesStore();
 	const storeBcvRate = $derived(store.bcvRate);
@@ -126,27 +82,15 @@
 	const usdtRate = $derived(store.rates.find((r) => r.sourceKey === 'usdt')?.value ?? 0);
 	const paypalRate = $derived(store.rates.find((r) => r.code === 'PAYPAL')?.value ?? 0);
 	const effectiveBcvRate = $derived(
-		(kind === 'purchase' ? defaultBcvRate : bcvRate) > 0
-			? kind === 'purchase'
-				? defaultBcvRate
-				: bcvRate
-			: storeBcvRate
+		computeEffectiveBcvRate(kind, defaultBcvRate, bcvRate, storeBcvRate)
 	);
 	const defaultBcvRateInput = $derived(effectiveBcvRate > 0 ? effectiveBcvRate.toFixed(2) : '');
 
-	let currencyKey = $state<string | null>(null);
-	let rail = $state<PaymentMethod | null>(null);
-	let lastEditedAmount = $state<'native' | 'usd'>('native');
-	let nativeAmountInput = $state('');
-	let usdBcvAmountInput = $state('');
-	let bcvRateInput = $state('');
-	let specificRateInput = $state('');
-	let paymentDate = $state(toISODate(nowUTC()));
-	let reference = $state('');
-	let notes = $state('');
+	const sel = new PaymentFormSelection();
+
 	let submitting = $state(false);
 	let showOverpaymentModal = $state(false);
-	let pendingAddPayload = $state<Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null>(null);
+	let pendingAddPayload = $state<Parameters<typeof submitPurchasePayment>[0] | null>(null);
 	let showEarlyPaymentBenefitModal = $state(false);
 	let pendingBenefitSuggestion = $state<EarlyPaymentDiscountSuggestion | null>(null);
 	let benefitAmountInput = $state('');
@@ -155,53 +99,19 @@
 	const canManagePurchasePayments = $derived(
 		kind === 'purchase' && status === 'CONFIRMED' && !isFullyPaid
 	);
-	const isNativeSettlement = $derived(
-		kind === 'purchase' && settlementCurrency != null && settlementCurrency !== CurrencyCode.USD_BCV
-	);
+	const isNativeSettlement = $derived(computeIsNativeSettlement(kind, settlementCurrency));
 	const settlementSymbol = $derived(
-		isNativeSettlement ? getCurrencySymbol(settlementCurrency!) : ''
+		computeSettlementSymbol(isNativeSettlement, settlementCurrency)
 	);
-	const railsByCurrency = $derived(
-		kind === 'purchase' ? PAYMENT_RAILS_BY_CURRENCY : SALES_RAILS_BY_CURRENCY
+	const railsByCurrency = $derived(computeRailsByCurrency(kind));
+	const selectedCurrency = $derived(computeSelectedCurrency(sel.currencyKey));
+	const rateType = $derived(computeRateType(sel.rail, sel.currencyKey));
+	const purchaseCurrencyCode = $derived(computePurchaseCurrencyCode(sel.rail));
+	const needsSpecificRate = $derived(computeNeedsSpecificRate(sel.rail, sel.currencyKey));
+	const specificRateLabel = $derived(computeSpecificRateLabel(sel.rail, selectedCurrency));
+	const autoSpecificRate = $derived(
+		computeAutoSpecificRate(sel.rail, sel.currencyKey, eurRate, usdtRate, paypalRate)
 	);
-	const selectedCurrency = $derived(
-		PAYMENT_CURRENCY_GROUPS.find((g) => g.key === currencyKey) ?? null
-	);
-	const rateType = $derived.by(() => {
-		if (rail && !isBsPaymentMethod(rail)) return rateTypeForRail(rail);
-		return currencyKey ? rateTypeForCurrency(currencyKey) : null;
-	});
-	const purchaseCurrencyCode = $derived(rail ? getPaymentMethodCurrency(rail) : CurrencyCode.OTHER);
-	const needsSpecificRate = $derived.by(() => {
-		if (!rail || !currencyKey) return false;
-		if (!isBsPaymentMethod(rail)) return true;
-		return (
-			currencyKey === 'EUR_BCV' ||
-			currencyKey === 'USDT' ||
-			currencyKey === 'PAYPAL' ||
-			currencyKey === 'OTHER'
-		);
-	});
-	const specificRateLabel = $derived.by(() => {
-		if (rail && !isBsPaymentMethod(rail)) {
-			const l = getExchangeRateLabel(rail);
-			if (l) return l;
-		}
-		return selectedCurrency?.rateLabel ?? 'Tasa usada (Bs/unidad)';
-	});
-	const autoSpecificRate = $derived.by(() => {
-		if (rail === PaymentMethod.EFECTIVO_USD || rail === PaymentMethod.EFECTIVO_EUR) return 0;
-		switch (currencyKey) {
-			case 'EUR_BCV':
-				return eurRate;
-			case 'USDT':
-				return usdtRate;
-			case 'PAYPAL':
-				return paypalRate;
-			default:
-				return 0;
-		}
-	});
 
 	function inputToNumber(value: string): number {
 		const parsed = Number(value);
@@ -212,192 +122,139 @@
 		return value > 0 ? value.toFixed(2) : '';
 	}
 
-	const activeBcvRate = $derived(inputToNumber(bcvRateInput || defaultBcvRateInput));
-	const specificRateValue = $derived(inputToNumber(specificRateInput));
-	const typedNativeAmount = $derived(inputToNumber(nativeAmountInput));
-	const typedUsdBcvAmount = $derived(inputToNumber(usdBcvAmountInput));
+	const activeBcvRate = $derived(inputToNumber(sel.bcvRateInput || defaultBcvRateInput));
+	const specificRateValue = $derived(inputToNumber(sel.specificRateInput));
+	const typedNativeAmount = $derived(inputToNumber(sel.nativeAmountInput));
+	const typedUsdBcvAmount = $derived(inputToNumber(sel.usdBcvAmountInput));
 
 	// ----- Amount conversions (kind-specific) -----
-	const saleForwardUsd = $derived.by(() => {
-		if (kind !== 'sale' || !rail) return 0;
-		return calculateUsdBcvFromPaymentAmount({
-			method: rail,
-			paymentAmount: typedNativeAmount,
-			bcvRate: activeBcvRate,
-			exchangeRate: specificRateValue
-		});
-	});
-	const saleReverseNative = $derived.by(() => {
-		if (kind !== 'sale' || !rail) return 0;
-		return calculatePaymentAmountFromUsdBcv({
-			method: rail,
-			usdBcvAmount: typedUsdBcvAmount,
-			bcvRate: activeBcvRate,
-			exchangeRate: specificRateValue
-		});
-	});
+	const saleForwardUsd = $derived(
+		computeSaleForwardUsd(kind, sel.rail, typedNativeAmount, activeBcvRate, specificRateValue)
+	);
+	const saleReverseNative = $derived(
+		computeSaleReverseNative(kind, sel.rail, typedUsdBcvAmount, activeBcvRate, specificRateValue)
+	);
 	const purchaseNormalized = $derived(
-		normalizePurchasePaymentAmounts({
-			currencyCode: purchaseCurrencyCode,
-			amount: typedNativeAmount,
-			bcvUsdRate: activeBcvRate,
-			specificRate: needsSpecificRate ? specificRateValue : undefined
+		computePurchaseNormalized({
+			purchaseCurrencyCode,
+			typedNativeAmount,
+			typedUsdBcvAmount,
+			activeBcvRate,
+			specificRateValue,
+			needsSpecificRate
 		})
 	);
 	const purchaseReverseNative = $derived(
-		denormalizePurchasePaymentAmount({
-			currencyCode: purchaseCurrencyCode,
-			amountUsdBcv: typedUsdBcvAmount,
-			bcvUsdRate: activeBcvRate,
-			specificRate: needsSpecificRate ? specificRateValue : undefined
+		computePurchaseReverseNative({
+			purchaseCurrencyCode,
+			typedNativeAmount,
+			typedUsdBcvAmount,
+			activeBcvRate,
+			specificRateValue,
+			needsSpecificRate
 		})
 	);
 
 	const forwardUsd = $derived(kind === 'sale' ? saleForwardUsd : purchaseNormalized.amountUsdBcv);
 	const reverseNative = $derived(kind === 'sale' ? saleReverseNative : purchaseReverseNative);
-	const resolvedAmountUsd = $derived(lastEditedAmount === 'usd' ? typedUsdBcvAmount : forwardUsd);
+	const resolvedAmountUsd = $derived(
+		sel.lastEditedAmount === 'usd' ? typedUsdBcvAmount : forwardUsd
+	);
 	const resolvedNativeAmount = $derived(
-		lastEditedAmount === 'native' ? typedNativeAmount : reverseNative
+		sel.lastEditedAmount === 'native' ? typedNativeAmount : reverseNative
 	);
 	const usdFieldValue = $derived(
-		lastEditedAmount === 'usd' ? usdBcvAmountInput : formatInputValue(forwardUsd)
+		sel.lastEditedAmount === 'usd' ? sel.usdBcvAmountInput : formatInputValue(forwardUsd)
 	);
 	const nativeFieldValue = $derived(
-		lastEditedAmount === 'native' ? nativeAmountInput : formatInputValue(reverseNative)
+		sel.lastEditedAmount === 'native' ? sel.nativeAmountInput : formatInputValue(reverseNative)
 	);
 
 	// ----- Settlement (purchase) -----
-	const amountAppliedToDebt = $derived.by(() => {
-		if (!isNativeSettlement) return undefined;
-		if (purchaseCurrencyCode === CurrencyCode.VES && specificRateValue > 0) {
-			return Math.round((resolvedNativeAmount / specificRateValue) * 100) / 100;
-		}
-		if (purchaseCurrencyCode === settlementCurrency) return resolvedNativeAmount;
-		return undefined;
-	});
+	const amountAppliedToDebt = $derived(
+		computeAmountAppliedToDebt({
+			isNativeSettlement,
+			purchaseCurrencyCode,
+			specificRateValue,
+			settlementCurrency,
+			resolvedNativeAmount
+		})
+	);
 	const exchangeVariance = $derived(
-		isNativeSettlement && (amountAppliedToDebt ?? 0) > 0
-			? computePaymentExchangeVariance(
-					amountAppliedToDebt ?? 0,
-					debtTotalUsd ?? 0,
-					(debtTotalUsd ?? 0) > 0 ? (debtTotalUsd ?? 0) : (amountAppliedToDebt ?? 0),
-					resolvedAmountUsd
-				)
-			: 0
+		computeExchangeVariance({
+			isNativeSettlement,
+			amountAppliedToDebt,
+			debtTotalUsd,
+			resolvedAmountUsd
+		})
 	);
 
 	// ----- Remaining / overpayment -----
 	const debtBalanceUsd = $derived(kind === 'sale' ? remainingBcvUsd : (pendingBalanceUsd ?? 0));
 
 	const overpaymentAmount = $derived(Math.max(0, resolvedAmountUsd - debtBalanceUsd));
-	const restLabelClass = $derived.by(() => {
-		if (overpaymentAmount > 0.01) return 'text-error';
-		if (pendingAfterPayment > 0.01) return 'text-warning';
-		return 'text-success';
-	});
+	const pendingAfterPayment = $derived(Math.max(0, debtBalanceUsd - resolvedAmountUsd));
+	const restLabelClass = $derived(computeRestLabelClass(overpaymentAmount, pendingAfterPayment));
 
 	// ----- Early payment suggestion (purchase) -----
 	const hasActiveEarlyPaymentBenefit = $derived(
 		earlyPaymentBenefits.some((benefit) => !benefit.voidedAt)
 	);
 	const liveEarlyPaymentSuggestion = $derived(
-		kind === 'purchase' &&
-			!hasActiveEarlyPaymentBenefit &&
-			pendingBalanceUsd != null &&
-			debtTotalUsd != null &&
-			purchaseOrder
-			? getEarlyPaymentDiscountSuggestion({
-					terms: purchaseOrder,
-					totalDebt: debtTotalUsd,
-					currentBalance: pendingBalanceUsd,
-					paymentAmount: resolvedAmountUsd,
-					paymentDate
-				})
-			: null
+		computeLiveEarlyPaymentSuggestion({
+			kind,
+			hasActiveEarlyPaymentBenefit,
+			pendingBalanceUsd,
+			debtTotalUsd,
+			purchaseOrder,
+			resolvedAmountUsd,
+			paymentDate: sel.paymentDate
+		})
 	);
 	const showPurchasePreview = $derived(
-		purchaseNormalized.amountBs > 0 ||
-			resolvedAmountUsd > 0 ||
-			(isNativeSettlement && (amountAppliedToDebt ?? 0) > 0) ||
-			!!liveEarlyPaymentSuggestion
+		computeShowPurchasePreview({
+			purchaseNormalizedAmountBs: purchaseNormalized.amountBs,
+			resolvedAmountUsd,
+			isNativeSettlement,
+			amountAppliedToDebt,
+			liveEarlyPaymentSuggestion
+		})
 	);
 
 	const resolvedUsdDisplay = $derived(formatPrice(resolvedAmountUsd));
 	const overpaymentDisplay = $derived(formatPrice(overpaymentAmount));
-	const pendingAfterPayment = $derived(Math.max(0, debtBalanceUsd - resolvedAmountUsd));
 
 	// ----- Reference config (from payment method strategy registry) -----
-	const referenceConfig = $derived.by((): ReferenceConfig => {
-		return getPaymentMethodStrategy(rail).referenceConfig;
-	});
-	const referenceToSubmit = $derived.by(() => {
-		const trimmed = reference.trim();
-		if (trimmed) return trimmed;
-		return referenceConfig.fallbackValue;
-	});
-	const hasRequiredReference = $derived(!referenceConfig.required || reference.trim().length > 0);
+	const referenceConfig: ReferenceConfig = $derived(computeReferenceConfig(sel.rail));
+	const referenceToSubmit = $derived(computeReferenceToSubmit(sel.reference, referenceConfig));
+	const hasRequiredReference = $derived(
+		computeHasRequiredReference(referenceConfig, sel.reference)
+	);
 
 	// ----- Native display (from payment method strategy registry) -----
-	const nativeLabel = $derived.by(() => {
-		return getPaymentMethodStrategy(rail).nativeLabel;
-	});
-	const nativePrefix = $derived.by(() => {
-		return getPaymentMethodStrategy(rail).nativePrefix;
-	});
-	const rateContextLine = $derived.by(() => {
-		if (resolvedAmountUsd <= 0 || activeBcvRate <= 0) return '';
-		if (kind === 'purchase' && purchaseCurrencyCode === CurrencyCode.VES) {
-			return `${activeBcvRate.toFixed(2)} × ${formatPrice(resolvedAmountUsd)}`;
-		}
-		if (kind === 'sale' && rail && isBsPaymentMethod(rail)) {
-			return `${activeBcvRate.toFixed(2)} × ${formatPrice(resolvedAmountUsd)}`;
-		}
-		if (specificRateValue <= 0) return '';
-		return `${formatPrice(resolvedAmountUsd)} × ${activeBcvRate.toFixed(2)} ÷ ${specificRateValue.toFixed(2)}`;
-	});
+	const nativeLabel = $derived(computeNativeLabel(sel.rail));
+	const nativePrefix = $derived(computeNativePrefix(sel.rail));
+	const rateContextLine = $derived(
+		computeRateContextLine({
+			resolvedAmountUsd,
+			activeBcvRate,
+			kind,
+			purchaseCurrencyCode,
+			rail: sel.rail,
+			specificRateValue
+		})
+	);
 
-	// ----- Reset -----
 	function reset() {
-		currencyKey = null;
-		rail = null;
-		lastEditedAmount = 'native';
-		nativeAmountInput = '';
-		usdBcvAmountInput = '';
-		bcvRateInput = '';
-		specificRateInput = '';
-		paymentDate = toISODate(nowUTC());
-		reference = '';
-		notes = '';
+		sel.reset();
 	}
 
 	function partialReset() {
-		nativeAmountInput = '';
-		usdBcvAmountInput = '';
-		bcvRateInput = '';
-		specificRateInput = '';
-		reference = '';
-		notes = '';
+		sel.partialReset();
 	}
 
 	function resetForm(request: PaymentComposerRequest | null = null) {
-		rail = request?.paymentMethod ?? null;
-		currencyKey = rail
-			? currencyForPurchasePaymentMethod(rail) === CurrencyCode.EUR_BCV
-				? 'EUR_BCV'
-				: currencyForPurchasePaymentMethod(rail) === CurrencyCode.USDT
-					? 'USDT'
-					: currencyForPurchasePaymentMethod(rail) === CurrencyCode.USD_PAYPAL
-						? 'PAYPAL'
-						: 'VES'
-			: null;
-		paymentDate = request?.paymentDate ?? toISODate(nowUTC());
-		nativeAmountInput = request?.amount != null ? request.amount.toFixed(2) : '';
-		usdBcvAmountInput = '';
-		lastEditedAmount = 'native';
-		bcvRateInput = '';
-		specificRateInput = '';
-		reference = request?.reference ?? '';
-		notes = request?.notes ?? '';
+		sel.resetFromRequest(request);
 	}
 
 	let prevDrawerResetKey = 0;
@@ -421,7 +278,7 @@
 
 	// Pre-select settlement rate context for native settlements (purchase)
 	$effect(() => {
-		if (kind !== 'purchase' || !isNativeSettlement || currencyKey) return;
+		if (kind !== 'purchase' || !isNativeSettlement || sel.currencyKey) return;
 		const map: Record<string, string> = {
 			EUR_BCV: 'EUR_BCV',
 			USDT: 'USDT',
@@ -429,202 +286,34 @@
 		};
 		const key = map[settlementCurrency!];
 		if (!key) return;
-		currencyKey = key;
-		rail = PaymentMethod.TRANSFERENCIA_BS;
+		sel.currencyKey = key;
+		sel.rail = PaymentMethod.TRANSFERENCIA_BS;
 		const orderRate = purchaseOrder?.sourceRateToVes;
-		if (orderRate != null && orderRate > 0) specificRateInput = String(orderRate);
+		if (orderRate != null && orderRate > 0) sel.specificRateInput = String(orderRate);
 	});
 
 	// ----- Selection handlers -----
 	function selectCurrency(key: string) {
-		if (currencyKey === key) return;
-		currencyKey = key;
-		rail = null;
-		lastEditedAmount = 'native';
-		nativeAmountInput = '';
-		usdBcvAmountInput = '';
-		specificRateInput = '';
+		sel.selectCurrency(key);
 	}
 
 	function selectRail(method: PaymentMethod) {
-		rail = method;
-		lastEditedAmount = getDefaultPaymentCalculationMode(method) === 'target' ? 'usd' : 'native';
-		nativeAmountInput = '';
-		usdBcvAmountInput = '';
-		bcvRateInput = '';
-		const auto = autoSpecificRate;
-		specificRateInput = auto > 0 ? auto.toFixed(2) : '';
-		reference = '';
-		notes = '';
+		sel.selectRail(method, autoSpecificRate);
 	}
 
 	function handleNativeInput(event: Event) {
-		lastEditedAmount = 'native';
-		nativeAmountInput = (event.currentTarget as HTMLInputElement).value;
+		sel.handleNativeInput(event);
 	}
 
 	function handleUsdInput(event: Event) {
-		lastEditedAmount = 'usd';
-		usdBcvAmountInput = (event.currentTarget as HTMLInputElement).value;
+		sel.handleUsdInput(event);
 	}
 
 	function useRemainingBalance() {
-		if (kind !== 'sale' || !rail) return;
-		lastEditedAmount = 'usd';
-		usdBcvAmountInput = formatInputValue(debtBalanceUsd);
+		sel.useRemainingBalance(kind, debtBalanceUsd, formatInputValue);
 	}
 
 	// ----- Submit -----
-	async function submitSalePayment() {
-		if (!saleId || !rail) return;
-		submitting = true;
-		try {
-			const result = await addPayment({
-				saleId,
-				paymentMethod: rail,
-				paymentDate,
-				amount: roundCurrency(resolvedNativeAmount),
-				usdBcvAmount: resolvedAmountUsd,
-				exchangeRate: needsSpecificRate ? specificRateValue : undefined,
-				bcvRate: activeBcvRate,
-				rateType: rateType ?? undefined,
-				isCasheaPayment: isCasheaSale || undefined,
-				reference: referenceToSubmit,
-				notes: notes.trim() || undefined
-			});
-
-			if (!result.success) {
-				toast.error(result.error ?? 'Error registrando pago');
-				return;
-			}
-
-			const remainingAfterSave = Math.max(0, remainingBcvUsd - resolvedAmountUsd);
-			toast.success(
-				remainingAfterSave <= 0.01
-					? 'Pago registrado. La venta quedó cubierta.'
-					: `Pago registrado. Quedan ${formatPrice(remainingAfterSave)} pendientes.`
-			);
-
-			if (pendingAfterPayment <= 0.01) reset();
-			else partialReset();
-			onPaymentAdded?.(result.paidAmount);
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'Error registrando pago'));
-		} finally {
-			submitting = false;
-		}
-	}
-
-	async function submitPurchasePayment(payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0]) {
-		if (!purchaseOrderId || !rail) return;
-		submitting = true;
-		try {
-			const result = await addPurchaseOrderPaymentCmd(payload);
-			if (!result.success) {
-				toast.error(result.error ?? 'Error registrando pago');
-				return;
-			}
-			onFinanceChanged?.({
-				payments: result.payments,
-				earlyPaymentBenefits: result.earlyPaymentBenefits,
-				balance: result.balance,
-				dueStatus: result.dueStatus
-			});
-			toast.success('Pago registrado');
-			partialReset();
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'Error registrando pago'));
-		} finally {
-			submitting = false;
-		}
-	}
-
-	function buildPurchasePayload(): Parameters<typeof addPurchaseOrderPaymentCmd>[0] | null {
-		if (!purchaseOrderId || !rail) return null;
-		return {
-			purchaseOrderId,
-			paymentMethod: rail,
-			paymentDate,
-			amount: resolvedNativeAmount,
-			bcvUsdRate: activeBcvRate,
-			specificRate: needsSpecificRate ? specificRateValue : undefined,
-			amountAppliedToDebt: amountAppliedToDebt ?? undefined,
-			rateType: rateType ?? undefined,
-			reference: referenceToSubmit,
-			notes: notes.trim() || undefined
-		};
-	}
-
-	async function maybeSubmitPurchase() {
-		const payload = buildPurchasePayload();
-		if (!payload) return;
-
-		if (pendingBalanceUsd != null && resolvedAmountUsd > pendingBalanceUsd + 0.01) {
-			pendingAddPayload = payload;
-			showOverpaymentModal = true;
-			return;
-		}
-		if (liveEarlyPaymentSuggestion) {
-			pendingAddPayload = payload;
-			pendingBenefitSuggestion = liveEarlyPaymentSuggestion;
-			benefitAmountInput = liveEarlyPaymentSuggestion.amount.toFixed(2);
-			benefitNoteInput = '';
-			showEarlyPaymentBenefitModal = true;
-			return;
-		}
-		await submitPurchasePayment(payload);
-	}
-
-	async function submitPaymentWithBenefit(appliedToBalance: boolean) {
-		if (!pendingAddPayload || !pendingBenefitSuggestion) return;
-		const amountUsdBcv = Number(benefitAmountInput || 0);
-		if (!Number.isFinite(amountUsdBcv) || amountUsdBcv <= 0) {
-			toast.error('Monto de beneficio inválido');
-			return;
-		}
-		if (amountUsdBcv > pendingBenefitSuggestion.amount + 0.01) {
-			toast.error(`El beneficio no debe superar ${formatPrice(pendingBenefitSuggestion.amount)}`);
-			return;
-		}
-		if (appliedToBalance && amountUsdBcv >= pendingBenefitSuggestion.currentBalance - 0.01) {
-			toast.error('El beneficio aplicado no puede igualar o superar el saldo pendiente');
-			return;
-		}
-
-		let payload: Parameters<typeof addPurchaseOrderPaymentCmd>[0] = {
-			...pendingAddPayload,
-			earlyPaymentBenefit: {
-				amountUsdBcv,
-				amountAppliedToDebt: isNativeSettlement ? amountUsdBcv : undefined,
-				amountAppliedToDebtUsdBcvAtOrder: isNativeSettlement ? amountUsdBcv : undefined,
-				appliedToBalance,
-				note: benefitNoteInput || undefined
-			}
-		};
-
-		if (appliedToBalance) {
-			const adjustedPaymentUsdBcv = Math.max(
-				pendingBenefitSuggestion.currentBalance - amountUsdBcv,
-				0
-			);
-			const adjustedAmount = denormalizePurchasePaymentAmount({
-				currencyCode: purchaseCurrencyCode,
-				amountUsdBcv: adjustedPaymentUsdBcv,
-				bcvUsdRate: activeBcvRate,
-				specificRate: needsSpecificRate ? specificRateValue : undefined
-			});
-			if (!Number.isFinite(adjustedAmount) || adjustedAmount <= 0) {
-				toast.error('No se pudo ajustar el monto del pago con el pronto pago');
-				return;
-			}
-			payload = { ...payload, amount: adjustedAmount };
-		}
-
-		pendingAddPayload = null;
-		resetEarlyPaymentState();
-		await submitPurchasePayment(payload);
-	}
-
 	function resetEarlyPaymentState() {
 		showEarlyPaymentBenefitModal = false;
 		pendingBenefitSuggestion = null;
@@ -632,22 +321,108 @@
 		benefitNoteInput = '';
 	}
 
+	function purchaseCallbacks(): PurchaseFlowMutations {
+		return {
+			setSubmitting: (value) => (submitting = value),
+			onFinanceChanged,
+			partialReset,
+			setPendingAddPayload: (payload) => (pendingAddPayload = payload),
+			setShowOverpaymentModal: (value) => (showOverpaymentModal = value),
+			setPendingBenefitSuggestion: (suggestion) => (pendingBenefitSuggestion = suggestion),
+			setBenefitAmountInput: (value) => (benefitAmountInput = value),
+			setBenefitNoteInput: (value) => (benefitNoteInput = value),
+			setShowEarlyPaymentBenefitModal: (value) => (showEarlyPaymentBenefitModal = value),
+			resetEarlyPaymentState
+		};
+	}
+
+	function purchaseSnapshot(): PurchaseSubmitSnapshot {
+		return {
+			purchaseOrderId,
+			hasRail: sel.rail != null,
+			paymentMethod: sel.rail!,
+			paymentDate: sel.paymentDate,
+			rateType: rateType ?? undefined,
+			referenceToSubmit,
+			notes: sel.notes,
+			pendingBalanceUsd,
+			resolvedAmountUsd,
+			resolvedNativeAmount,
+			liveEarlyPaymentSuggestion,
+			pendingAddPayload,
+			pendingBenefitSuggestion,
+			benefitAmountInput,
+			benefitNoteInput,
+			isNativeSettlement,
+			purchaseCurrencyCode,
+			activeBcvRate,
+			needsSpecificRate,
+			specificRateValue,
+			amountAppliedToDebt
+		};
+	}
+
+	const purchaseApi = $derived(createPurchaseSubmitApi(purchaseSnapshot, purchaseCallbacks()));
+
 	function handleSubmit() {
 		if (kind === 'sale') {
-			void submitSalePayment();
+			void submitSalePayment(
+				{
+					saleId,
+					rail: sel.rail,
+					paymentDate: sel.paymentDate,
+					resolvedNativeAmount,
+					resolvedAmountUsd,
+					needsSpecificRate,
+					specificRateValue,
+					activeBcvRate,
+					rateType: rateType ?? undefined,
+					isCasheaSale,
+					referenceToSubmit,
+					notes: sel.notes,
+					remainingBcvUsd,
+					pendingAfterPayment
+				},
+				{
+					setSubmitting: (value) => (submitting = value),
+					reset,
+					partialReset,
+					onPaymentAdded
+				}
+			);
 		} else {
-			void maybeSubmitPurchase();
+			void purchaseApi.submit();
 		}
+	}
+
+	async function handleConfirmOverpayment() {
+		await purchaseApi.confirmOverpayment();
+	}
+
+	function handleCancelOverpayment() {
+		purchaseApi.cancelOverpayment();
+	}
+
+	function handleBenefitApply() {
+		void purchaseApi.applyBenefit();
+	}
+
+	function handleBenefitNote() {
+		void purchaseApi.noteBenefit();
+	}
+
+	function handleCancelBenefit() {
+		purchaseApi.cancelBenefit();
 	}
 
 	const hasValidAmounts = $derived(resolvedAmountUsd > 0 && resolvedNativeAmount > 0);
 	const hasValidRate = $derived(activeBcvRate > 0 && (!needsSpecificRate || specificRateValue > 0));
 	const canSubmit = $derived(
-		!!rail &&
-			!!currencyKey &&
+		!!sel.rail &&
+			!!sel.currencyKey &&
 			hasValidAmounts &&
 			hasValidRate &&
-			!!paymentDate &&
+			!!sel.paymentDate &&
 			hasRequiredReference &&
 			!submitting
 	);
@@ -661,190 +436,83 @@
 
 <div class="space-y-4">
 	<PaymentSelectionStep
-		{currencyKey}
-		{rail}
+		currencyKey={sel.currencyKey}
+		rail={sel.rail}
 		{railsByCurrency}
 		onSelectCurrency={(key) => selectCurrency(key)}
 		onSelectRail={(m) => selectRail(m)}
 	/>
 
-	{#if rail}
-		<div class="space-y-3">
-			<PaymentAmountCard
-				{kind}
-				{rail}
-				{variant}
-				{paymentDate}
-				{usdFieldValue}
-				{nativeFieldValue}
-				{nativeLabel}
-				{nativePrefix}
-				{debtBalanceUsd}
-				{resolvedAmountUsd}
-				{resolvedUsdDisplay}
-				{rateContextLine}
-				{bcvRateInput}
-				{defaultBcvRateInput}
-				{needsSpecificRate}
-				{specificRateLabel}
-				{specificRateInput}
-				{autoSpecificRate}
-				onDateInput={(value) => (paymentDate = value)}
-				onUsdInput={handleUsdInput}
-				onNativeInput={handleNativeInput}
-				onBcvRateInput={(value) => (bcvRateInput = value)}
-				onSpecificRateInput={(value) => (specificRateInput = value)}
-				onUseRemainingBalance={useRemainingBalance}
-			/>
-
-			<!-- Cashea (sale, solo si la venta es Cashea) -->
-			{#if kind === 'sale' && isCasheaSale && isBsPaymentMethod(rail)}
-				<CasheaCheckbox
-					variant="gold"
-					disabled
-					label="Pago con Cashea"
-					bind:isCashea={isCasheaSale}
-				/>
-			{/if}
-
-			<!-- Referencia + notas -->
-			<PaymentReferenceField
-				{reference}
-				{notes}
-				label={referenceConfig.label}
-				placeholder={referenceConfig.placeholder}
-				required={referenceConfig.required}
-				helper={referenceConfig.helper}
-				onReference={(value) => (reference = value)}
-				onNotes={(value) => (notes = value)}
-			/>
-
-			<!-- Sale: overpayment warning -->
-			{#if kind === 'sale' && overpaymentAmount > 0.01}
-				<div class="rounded-lg bg-error-container/50 px-3 py-2 text-xs text-on-error-container">
-					<p class="font-semibold">El monto supera la deuda.</p>
-					<p>Excedente: {overpaymentDisplay}</p>
-				</div>
-			{/if}
-
-			<!-- Preview -->
-			<PaymentPreviewCard
-				{kind}
-				methodLabel={PAYMENT_METHOD_LABELS[rail as PaymentMethod]}
-				{pendingAfterPayment}
-				{restLabelClass}
-				{showPurchasePreview}
-				{purchaseNormalized}
-				{resolvedAmountUsd}
-				{resolvedUsdDisplay}
-				{isNativeSettlement}
-				{amountAppliedToDebt}
-				{settlementSymbol}
-				{exchangeVariance}
-				{liveEarlyPaymentSuggestion}
-			/>
-
-			<button
-				type="button"
-				onclick={handleSubmit}
-				disabled={!canSubmit}
-				class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-navy px-5 py-3 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:bg-brand-navy/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-			>
-				{variant === 'drawer' ? drawerSubmitLabel : submitLabel}
-			</button>
-		</div>
+	{#if sel.rail}
+		<PaymentRailSection
+			{kind}
+			rail={sel.rail}
+			{variant}
+			paymentDate={sel.paymentDate}
+			{usdFieldValue}
+			{nativeFieldValue}
+			{nativeLabel}
+			{nativePrefix}
+			{debtBalanceUsd}
+			{resolvedAmountUsd}
+			{resolvedUsdDisplay}
+			{rateContextLine}
+			bcvRateInput={sel.bcvRateInput}
+			{defaultBcvRateInput}
+			{needsSpecificRate}
+			{specificRateLabel}
+			specificRateInput={sel.specificRateInput}
+			{autoSpecificRate}
+			bind:isCasheaSale
+			reference={sel.reference}
+			notes={sel.notes}
+			referenceLabel={referenceConfig.label}
+			referencePlaceholder={referenceConfig.placeholder}
+			referenceRequired={referenceConfig.required}
+			referenceHelper={referenceConfig.helper}
+			{overpaymentAmount}
+			{overpaymentDisplay}
+			{pendingAfterPayment}
+			{restLabelClass}
+			{showPurchasePreview}
+			{purchaseNormalized}
+			{isNativeSettlement}
+			{amountAppliedToDebt}
+			{settlementSymbol}
+			{exchangeVariance}
+			{liveEarlyPaymentSuggestion}
+			{canSubmit}
+			{drawerSubmitLabel}
+			{submitLabel}
+			onDateInput={(value) => (sel.paymentDate = value)}
+			onUsdInput={handleUsdInput}
+			onNativeInput={handleNativeInput}
+			onBcvRateInput={(value) => (sel.bcvRateInput = value)}
+			onSpecificRateInput={(value) => (sel.specificRateInput = value)}
+			onUseRemainingBalance={useRemainingBalance}
+			onReference={(value) => (sel.reference = value)}
+			onNotes={(value) => (sel.notes = value)}
+			onSubmit={handleSubmit}
+		/>
 	{/if}
 </div>
 
 {#if kind === 'purchase'}
-	<ConfirmModal
-		bind:open={showOverpaymentModal}
-		title="Pago supera el saldo"
-		message={pendingAddPayload != null
-			? `Este pago de ${resolvedUsdDisplay} supera el saldo pendiente de ${formatPrice(pendingBalanceUsd ?? 0)} en ${overpaymentDisplay}. ¿Registrar de todas formas?`
-			: ''}
-		confirmLabel="Registrar igual"
-		confirmColor="yellow"
-		loading={submitting}
-		onConfirm={async () => {
-			showOverpaymentModal = false;
-			if (pendingAddPayload) await submitPurchasePayment(pendingAddPayload);
-			pendingAddPayload = null;
-		}}
-		onCancel={() => {
-			showOverpaymentModal = false;
-			pendingAddPayload = null;
-		}}
+	<PurchasePaymentModals
+		bind:showOverpaymentModal
+		bind:showEarlyPaymentBenefitModal
+		{pendingAddPayload}
+		{pendingBenefitSuggestion}
+		bind:benefitAmountInput
+		bind:benefitNoteInput
+		{submitting}
+		{resolvedUsdDisplay}
+		{pendingBalanceUsd}
+		{overpaymentDisplay}
+		onConfirmOverpayment={handleConfirmOverpayment}
+		onCancelOverpayment={handleCancelOverpayment}
+		onBenefitApply={handleBenefitApply}
+		onBenefitNote={handleBenefitNote}
+		onCancelBenefit={handleCancelBenefit}
 	/>
-
-	<ConfirmModal
-		bind:open={showEarlyPaymentBenefitModal}
-		title="Pronto pago disponible"
-		size="lg"
-		confirmLabel="Aplicar a esta PO"
-		secondaryLabel="Solo anotarlo"
-		cancelLabel="No registrar todavía"
-		confirmColor="green"
-		secondaryColor="alternative"
-		loading={submitting}
-		onConfirm={() => void submitPaymentWithBenefit(true)}
-		onSecondary={() => void submitPaymentWithBenefit(false)}
-		onCancel={() => {
-			showEarlyPaymentBenefitModal = false;
-			pendingAddPayload = null;
-			resetEarlyPaymentState();
-		}}
-		permanent
-	>
-		{#snippet body()}
-			<div class="space-y-4 text-sm text-on-surface">
-				<p>
-					El pago califica para pronto pago de {pendingBenefitSuggestion?.percent ?? 0}% antes de {pendingBenefitSuggestion?.deadline ??
-						'la fecha límite'}.
-				</p>
-				{#if pendingBenefitSuggestion}
-					<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
-						Si lo aplicas al saldo, el pago se registrará por
-						{formatPrice(pendingBenefitSuggestion.currentBalance - Number(benefitAmountInput || 0))}
-						para completar esta orden sin sobrepagarla.
-						{#if pendingBenefitSuggestion.overpayment > 0.01}
-							El monto actual excede ese pago neto por
-							{formatPrice(pendingBenefitSuggestion.overpayment)}.
-						{/if}
-					</p>
-				{/if}
-				<label class="block space-y-2">
-					<span
-						class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
-					>
-						Monto del beneficio USD
-					</span>
-					<input
-						bind:value={benefitAmountInput}
-						type="number"
-						min="0"
-						step="0.01"
-						class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 font-mono text-sm text-on-surface focus:border-brand-blue focus:outline-none"
-					/>
-				</label>
-				<label class="block space-y-2">
-					<span
-						class="text-[11px] font-semibold tracking-[0.18em] text-on-surface-variant uppercase"
-					>
-						Nota opcional
-					</span>
-					<textarea
-						bind:value={benefitNoteInput}
-						rows="3"
-						class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-3 py-3 text-sm text-on-surface focus:border-brand-blue focus:outline-none"
-						placeholder="Ej. Proveedor aplicó redondeo o dejó crédito para próxima compra"
-					></textarea>
-				</label>
-				<p class="rounded-xl bg-info-container/40 px-3 py-2 text-xs text-on-surface-variant">
-					Aplicar a esta PO reduce el saldo y entra en reportes. Solo anotarlo guarda la decisión
-					sin impacto financiero.
-				</p>
-			</div>
-		{/snippet}
-	</ConfirmModal>
 {/if}
