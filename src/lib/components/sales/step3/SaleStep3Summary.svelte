@@ -1,14 +1,8 @@
 <script lang="ts">
 	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
-	import {
-		calculateSaleSummarySubtotal,
-		buildTaxItemsFromWizard
-	} from '../saleItemHelpers';
+	import { calculateSaleSummarySubtotal, buildTaxItemsFromWizard } from '../saleItemHelpers';
 	import { computeAdjustedTaxBreakdown } from '../helpers/taxBreakdown';
-	import {
-		DiscountType,
-		type DiscountType as DiscountTypeEnum
-	} from '$lib/shared/enums';
+	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { Customer } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';

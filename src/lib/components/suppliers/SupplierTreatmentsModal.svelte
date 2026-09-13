@@ -208,12 +208,7 @@
 									onResult={handleEditResult}
 								/>
 							{:else}
-								<TreatmentRow
-									{treatment}
-									{canManage}
-									onEdit={startEdit}
-									onDelete={openDelete}
-								/>
+								<TreatmentRow {treatment} {canManage} onEdit={startEdit} onDelete={openDelete} />
 							{/if}
 						{/each}
 					</div>
