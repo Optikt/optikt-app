@@ -2,7 +2,18 @@
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: internal helpers.
  */
 import type { SaleFilterOptions } from './types';
-import { eq, isNull, and, gte, lte, or, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import {
+	eq,
+	inArray,
+	isNull,
+	and,
+	gte,
+	lte,
+	or,
+	sql,
+	type SQL,
+	type SQLWrapper
+} from 'drizzle-orm';
 
 import { buildTokenSearchConditions } from '$lib/server/db/search';
 
@@ -36,8 +47,8 @@ export function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 		conditions.push(isNull(sales.deletedAt));
 	}
 
-	if (opts.status) {
-		conditions.push(eq(sales.status, opts.status));
+	if (opts.statuses && opts.statuses.length > 0) {
+		conditions.push(inArray(sales.status, opts.statuses));
 	}
 
 	if (opts.customerId) {

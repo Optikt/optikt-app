@@ -48,8 +48,8 @@ export type SaleOrderBy = 'saleDate' | 'orderNumber' | 'total' | 'createdAt';
 export interface SaleFilterOptions {
 	/** Include soft-deleted sales in results (default: false) */
 	includeDeleted?: boolean;
-	/** Filter by sale status */
-	status?: string;
+	/** Filter by sale statuses (empty/undefined = no filter) */
+	statuses?: string[];
 	/** Filter by customer ID */
 	customerId?: string;
 	/** Filter by seller ID */

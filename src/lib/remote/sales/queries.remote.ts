@@ -44,7 +44,7 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 	const { page, perPage } = data;
 
 	const filterOptions = {
-		status: data.status ?? undefined,
+		statuses: data.statuses ?? undefined,
 		customerId: data.customerId ?? undefined,
 		sellerId: data.sellerId ?? undefined,
 		dateFrom: data.dateFrom ?? undefined,
