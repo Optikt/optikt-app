@@ -33,7 +33,7 @@ const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]]
 // ============================================================================
 
 export const ListSalesSchema = ListPaginationSchema.extend({
-	status: z.enum(ALL_SALE_STATUSES).optional(),
+	statuses: z.array(z.enum(ALL_SALE_STATUSES)).max(5).optional(),
 	customerId: z.uuid().optional(),
 	sellerId: z.uuid().optional(),
 	dateFrom: z.iso.date().optional(),

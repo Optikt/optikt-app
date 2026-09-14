@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { RotateCcw, Search, SlidersHorizontal, Sparkles, Truck } from '@lucide/svelte';
 	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
+	import StatusMultiSelect from './StatusMultiSelect.svelte';
 
 	interface Props {
 		search: string;
-		statusFilter: SaleStatus | '';
+		statusFilter: SaleStatus[];
 		shippingPendingFilter: boolean;
 		hasFreeItemFilter: boolean;
 		hasActiveFilters: boolean;
 		onSearch: (value: string) => void;
-		onStatusChange: (value: string) => void;
+		onStatusChange: (values: SaleStatus[]) => void;
 		onToggleShippingPending: () => void;
 		onToggleFreeItem: () => void;
 		onClearFilters: () => void;
@@ -31,11 +32,13 @@
 	let mobileFiltersOpen = $state(false);
 
 	const activeFilterCount = $derived(
-		(statusFilter !== '' ? 1 : 0) + (shippingPendingFilter ? 1 : 0) + (hasFreeItemFilter ? 1 : 0)
+		(statusFilter.length > 0 ? 1 : 0) +
+			(shippingPendingFilter ? 1 : 0) +
+			(hasFreeItemFilter ? 1 : 0)
 	);
 
-	const selectClass =
-		'rounded-lg border-none bg-surface-container-high px-3 py-2.5 text-sm font-medium text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+	const statusOptions = ALL_SALE_STATUSES.map((s) => ({ value: s, label: SALE_STATUS_LABELS[s] }));
+
 	const inputClass =
 		'w-full rounded-lg border-none bg-surface-container-high p-2.5 pl-11 text-sm text-on-surface transition-colors placeholder:text-outline focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 	const toggleButtonClass = (active: boolean, activeClass: string) =>
@@ -60,18 +63,12 @@
 
 		<!-- Desktop inline filters -->
 		<div class="mt-0 hidden flex-wrap items-center gap-2 lg:flex">
-			<select
-				id="sales-status-filter"
-				name="sales-status-filter"
+			<StatusMultiSelect
+				options={statusOptions}
 				value={statusFilter}
-				onchange={(e) => onStatusChange(e.currentTarget.value)}
-				class="{selectClass} min-w-[10rem] flex-1"
-			>
-				<option value="">Todos los estados</option>
-				{#each ALL_SALE_STATUSES as s (s)}
-					<option value={s}>{SALE_STATUS_LABELS[s]}</option>
-				{/each}
-			</select>
+				labelAll="Todos los estados"
+				onChange={onStatusChange}
+			/>
 
 			<button
 				type="button"
@@ -136,18 +133,12 @@
 	<!-- Mobile collapsible filters -->
 	{#if mobileFiltersOpen}
 		<div class="mt-3 space-y-2 lg:hidden">
-			<select
-				id="sales-status-filter-mobile"
-				name="sales-status-filter-mobile"
+			<StatusMultiSelect
+				options={statusOptions}
 				value={statusFilter}
-				onchange={(e) => onStatusChange(e.currentTarget.value)}
-				class="{selectClass} w-full"
-			>
-				<option value="">Todos los estados</option>
-				{#each ALL_SALE_STATUSES as s (s)}
-					<option value={s}>{SALE_STATUS_LABELS[s]}</option>
-				{/each}
-			</select>
+				labelAll="Todos los estados"
+				onChange={onStatusChange}
+			/>
 
 			<div class="flex flex-wrap gap-2">
 				<button

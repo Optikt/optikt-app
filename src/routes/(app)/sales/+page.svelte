@@ -16,8 +16,9 @@
 	import { listSales, getSalesStats } from '$lib/remote/sales/queries.remote';
 	import { SaleFilterBar, SalesTable, SaleStatsCards } from '$lib/components/sales';
 	import { PageHeader } from '$lib/components/ui';
-	import { canOperate, ALL_SALE_STATUSES } from '$lib/shared/enums';
+	import { canOperate } from '$lib/shared/enums';
 	import type { SaleStatus } from '$lib/shared/enums';
+	import { parseSaleStatuses, serializeSaleStatuses } from '$lib/components/sales/statusFilter';
 	import type { SaleWithRelations, SalesStats } from '$lib/server/db/queries/sales/types';
 	import type { PaginatedSales } from '$lib/remote/sales/helpers';
 	import { untrack } from 'svelte';
@@ -31,11 +32,6 @@
 	const initialStatus = initialQuery.get('status');
 	const initialShippingPending = parseBooleanParam(initialQuery.get('shippingPending'));
 	const initialFreeItem = parseBooleanParam(initialQuery.get('freeItem'));
-
-	function parseSaleStatus(value: string | null): SaleStatus | '' {
-		if (!value) return '';
-		return ALL_SALE_STATUSES.includes(value as SaleStatus) ? (value as SaleStatus) : '';
-	}
 
 	// Data state
 	let salesData = $state<PaginatedSales>({
@@ -51,14 +47,14 @@
 
 	// Filter state
 	let search = $state(initialSearch);
-	let statusFilter = $state<SaleStatus | ''>(parseSaleStatus(initialStatus));
+	let statusFilter = $state<SaleStatus[]>(parseSaleStatuses(initialStatus));
 	let shippingPendingFilter = $state(initialShippingPending);
 	let hasFreeItemFilter = $state(initialFreeItem);
 
 	function syncUrl(nextPage: number): void {
 		replaceUrlSearch(page.url, (params) => {
 			setQueryParam(params, 'q', search.trim());
-			setQueryParam(params, 'status', statusFilter || null);
+			setQueryParam(params, 'status', serializeSaleStatuses(statusFilter));
 			setQueryParam(params, 'shippingPending', shippingPendingFilter ? '1' : null);
 			setQueryParam(params, 'freeItem', hasFreeItemFilter ? '1' : null);
 			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
@@ -73,7 +69,7 @@
 				page,
 				perPage: 10,
 				search: search || undefined,
-				status: statusFilter || undefined,
+				statuses: statusFilter.length > 0 ? statusFilter : undefined,
 				shippingCostPending: shippingPendingFilter || undefined,
 				hasFreeItem: hasFreeItemFilter || undefined
 			});
@@ -101,8 +97,8 @@
 		}, 300);
 	}
 
-	function handleStatusChange(value: string) {
-		statusFilter = parseSaleStatus(value || null);
+	function handleStatusChange(values: SaleStatus[]) {
+		statusFilter = values;
 		void fetchSales(1);
 	}
 
@@ -118,14 +114,17 @@
 
 	function clearFilters() {
 		search = '';
-		statusFilter = '';
+		statusFilter = [];
 		shippingPendingFilter = false;
 		hasFreeItemFilter = false;
 		void fetchSales(1);
 	}
 
 	let hasActiveFilters = $derived(
-		search.trim().length > 0 || statusFilter !== '' || shippingPendingFilter || hasFreeItemFilter
+		search.trim().length > 0 ||
+			statusFilter.length > 0 ||
+			shippingPendingFilter ||
+			hasFreeItemFilter
 	);
 
 	function handleView(sale: SaleWithRelations) {
