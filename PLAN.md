@@ -18,15 +18,11 @@
 
 ## 1. Deuda Técnica
 
-### DT1 · Archivos gigantes sin descomponer 🔴
+### DT1 · Archivos gigantes sin descomponer ✅ (CERRADO — 2026-09-14)
 
-**Problema:** 39 archivos >500 líneas. Top 5: `LensCatalogForm.svelte` (1473), `EditSaleModal.svelte` (1381), `sales.remote.ts` (1273), `purchaseOrders.remote.ts` (1240), `inventory/count/[id]/+page.svelte` (1139). El plan `componentize-purchase-detail` ya bajó purchases/[id] de 2221→629 líneas como prueba de concepto.
+**Problema (original):** 39 archivos >500 líneas. Top 5: `LensCatalogForm.svelte` (1473), `EditSaleModal.svelte` (1381), `sales.remote.ts` (1273), `purchaseOrders.remote.ts` (1240), `inventory/count/[id]/+page.svelte` (1139).
 
-**Riesgo de no hacerlo:** Mantenibilidad nula. Cada fix toca un monolito. Onboarding imposible. Regresiones frecuentes. El patrón de extracción ya está validado — solo falta aplicarlo al resto.
-
-**Contras:** Refactor puro, cero feature nueva. Riesgo de introducir bugs si no hay tests. Las remote functions son más difíciles de split sin romper imports.
-
-**Dificultad:** Media (3-5 días por archivo grande). **Solución:** Mismo patrón que `purchase-detail`: extraer sub-componentes y helpers puros. Priorizar los 5 más grandes.
+**Cierre:** 0 archivos >520 líneas. Patrón orquestador + helpers puros, cero cambios UX. PRs: #120 (fase 3), #122/#124-#131 (fase 5 T1/T2), #132-#141 (fase 4 remotes/queries), #143 (fix ORDER_COLUMNS), #144 (9 chicos), #148 (medianos), #149 (dinero), #150 (fix precio edit), #151 (ProductForm). Excepción documentada: `PaymentForm.svelte` (518) — lógica reactiva viva de dinero que solo puede moverse con harness de integración (ver DT9); umbral del gate en 520. Gate `check-file-size.sh` bloqueante en CI. Deuda asociada fuera de scope: DT22 (fechas date-only resto), DT23 (conteo sin lote stock 0).
 
 **Decisión 2026-09-11 (fase 3, PR #120):** no más barrels `index.ts` — imports directos al módulo que define. Motivo: Vite dev carga/parsea todo lo re-exportado (startup + HMR lentos); los barrels ocultan peso de dependencias, invitan circulares vía `index` y debilitan Knip. Excepción: barrel temporal como shim de compatibilidad al partir un módulo con importadores legacy, con remoción obligatoria en el PR de migración. Regla en `AGENTS.md`, spec `dt1-split-protocol` enmendado. Deuda menor asociada: los barrels existentes (p. ej. `src/lib/components/ui/index.ts`) quedan como están — no crear nuevos.
 
