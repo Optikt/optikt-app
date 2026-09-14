@@ -2,7 +2,7 @@
 	import { slide } from 'svelte/transition';
 	import { CircleCheck, CircleAlert, IdCard, Mail, Phone, UserPlus, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { lookupCustomer } from '$lib/remote/sales.remote';
+	import { lookupCustomer } from '$lib/remote/sales/queries.remote';
 	import { getErrorMessage, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
 	import type { Customer } from '$lib/server/db/schema';
 	import { IdInput } from '$lib/components/ui';

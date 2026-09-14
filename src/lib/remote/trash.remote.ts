@@ -4,7 +4,7 @@
  */
 import { command, query } from '$app/server';
 import { z } from 'zod';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 import { requireUserAdmin } from '$lib/server/guards';
 import { db } from '$lib/server/db';
 import { listTrash, restore, trashLabel } from '$lib/server/db/queries/deletedItems';

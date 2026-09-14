@@ -3,7 +3,7 @@
  * Not a spec file — only factories used to build rows/lenses.
  */
 
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import { DiscountType } from '$lib/shared/enums';
 import {

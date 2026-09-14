@@ -3,7 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ArrowRight, Check } from '@lucide/svelte';
 	import { formatPrice } from '$lib/utils';
-	import type { PriceSuggestion } from '$lib/remote/purchaseOrders.remote';
+	import type { PriceSuggestion } from '$lib/remote/purchaseOrders/helpers';
 
 	interface Props {
 		open: boolean;

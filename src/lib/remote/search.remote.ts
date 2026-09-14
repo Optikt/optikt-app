@@ -7,7 +7,7 @@ import { query } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { UniversalSearchSchema } from '$lib/schemas/search';
 import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
-import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses';
+import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
 /** A product search result */
 export interface ProductResult {

@@ -1,5 +1,5 @@
 import { toast } from 'svelte-sonner';
-import { addPayment } from '$lib/remote/sales.remote';
+import { addPayment } from '$lib/remote/sales/payments.remote';
 import { roundCurrency } from '../paymentFormCalculations';
 import { formatPrice, getErrorMessage } from '$lib/utils';
 import type { PaymentMethod } from '$lib/shared/enums';

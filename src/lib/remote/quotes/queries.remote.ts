@@ -20,7 +20,7 @@ import type {
 
 import { monthStart, toUTCString } from '$lib/dates';
 
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 
 // ============================================================================
 // TYPES

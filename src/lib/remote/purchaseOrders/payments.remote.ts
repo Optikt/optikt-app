@@ -11,10 +11,8 @@ import {
 	VoidPurchaseOrderPaymentSchema
 } from '$lib/schemas/purchaseOrderPayments';
 
-import {
-	findPurchaseOrderById,
-	getPurchaseOrderItems
-} from '$lib/server/db/queries/purchaseOrders';
+import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { findPurchaseOrderById } from '$lib/server/db/queries/purchaseOrders/orders';
 import {
 	createPurchaseOrderPayment,
 	findPurchaseOrderPaymentById,

@@ -14,7 +14,7 @@ import {
 import {
 	getLensCatalogItemsWithRelations,
 	findLensCatalogItemByIdWithRelations
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/catalog';
 
 export const searchCatalog = query(CatalogSearchSchema, async (data) => {
 	requireAuth();

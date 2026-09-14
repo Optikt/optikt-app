@@ -2,18 +2,19 @@ import { describe, expect, it } from 'vitest';
 
 import type { LensOpticalRange } from '$lib/server/db/schema/lenses';
 
+import { SPHERE_RANGE_MODE } from './opticalRange/types';
 import {
-	SPHERE_RANGE_MODE,
 	hasOpticalRangeValidationErrors,
-	collapseOpticalRangesForForm,
 	createEmptyOpticalRangeValidation,
-	createEmptyOpticalRangeEntry,
+	validateOpticalRangeEntry
+} from './opticalRange/validate';
+import { collapseOpticalRangesForForm, createEmptyOpticalRangeEntry } from './opticalRange/collapse';
+import {
 	expandOpticalRanges,
 	getOpticalRangePreview,
 	toContinuousSphereValues,
-	toInverseDuplicateSphereValues,
-	validateOpticalRangeEntry
-} from './opticalRangeForm';
+	toInverseDuplicateSphereValues
+} from './opticalRange/expand';
 
 function lensRange(
 	overrides: Partial<LensOpticalRange> & Pick<LensOpticalRange, 'id'>

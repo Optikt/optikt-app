@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { FileText } from '@lucide/svelte';
 	import { AppBadge } from '$lib/components/ui';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 	import { PurchasePaymentTerms } from '$lib/shared/enums';
 	import {
 		sourceCurrencyRequiresRateToVes,

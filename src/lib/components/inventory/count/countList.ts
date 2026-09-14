@@ -1,6 +1,6 @@
 import { Layers3, PackageSearch, ScanSearch } from '@lucide/svelte';
 import type { InventoryCountScopeType } from '$lib/schemas/inventoryCount';
-import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount';
+import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
 
 export interface CountScopeOption {
 	value: InventoryCountScopeType;

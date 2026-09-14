@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { History } from '@lucide/svelte';
 	import { formatDate } from '$lib/utils';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;

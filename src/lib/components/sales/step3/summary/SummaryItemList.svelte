@@ -17,7 +17,7 @@
 		type TaxDisplayMeta
 	} from './summaryViewModel';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import type { SaleItemRow, TreatmentSaleItemRow } from '../../newSaleTypes';
 	import SaleItemInfo from '../../SaleItemInfo.svelte';
 	import { CATALOG_KEY, type CatalogData } from '../../wizardContext';

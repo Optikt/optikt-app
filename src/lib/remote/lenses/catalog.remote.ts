@@ -10,15 +10,15 @@ import { db } from '$lib/server/db';
 import { lensCatalogItems, lensOpticalRanges } from '$lib/server/db/schema';
 import { CreateLensCatalogItemSchema, ListLensCatalogSchema } from '$lib/schemas/lenses';
 
+import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import {
-	getLensCatalogItemsWithRelations,
 	resolvePendingLensMaterial,
 	resolvePendingTechnology
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/pending';
 
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import type { LensCatalogItem, LensOpticalRange, NewLensCatalogItem } from '$lib/server/db/schema';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { nowISO } from '$lib/dates';
 

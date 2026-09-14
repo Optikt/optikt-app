@@ -5,7 +5,7 @@
 import { command } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { requireUserAdmin } from '$lib/server/guards';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 import { z } from 'zod';
 import {
 	getRecentBackupNotifications,

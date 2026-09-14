@@ -3,15 +3,14 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { EntityIdSchema } from './common/identity';
+import { CoercedNumber, CoercedInteger } from './common/numbers';
 import {
-	CoercedNumber,
-	CoercedInteger,
-	EntityIdSchema,
-	ListPaginationSchema,
 	OptionalSphereSchema,
 	OptionalCylinderSchema,
 	OptionalAdditionSchema
-} from './common';
+} from './common/optical';
+import { ListPaginationSchema } from './common/pagination';
 import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
 import { ALL_QUOTE_STATUSES } from '$lib/shared/contracts/quotes';
 import {

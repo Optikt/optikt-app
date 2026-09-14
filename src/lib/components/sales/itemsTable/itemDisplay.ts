@@ -1,4 +1,4 @@
-import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 
 export interface DisplayGroup {

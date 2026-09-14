@@ -4,7 +4,11 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { ConfirmModal } from '$lib/components/ui';
-	import { cancelQuote, convertQuoteToSale, assignQuoteCustomer } from '$lib/remote/quotes.remote';
+	import {
+		cancelQuote,
+		convertQuoteToSale,
+		assignQuoteCustomer
+	} from '$lib/remote/quotes/lifecycle.remote';
 	import { canOperate } from '$lib/shared/enums';
 	import { getErrorMessage, getBackUrl } from '$lib/utils';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';

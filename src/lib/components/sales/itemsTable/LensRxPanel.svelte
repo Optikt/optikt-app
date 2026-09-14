@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import { prescriptionValue } from './itemDisplay';
 
 	interface Props {

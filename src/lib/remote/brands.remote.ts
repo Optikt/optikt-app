@@ -14,7 +14,7 @@ import {
 	ReactivateBrandSchema
 } from '$lib/schemas/brands';
 import { BrandSupplierRelationSchema } from '$lib/schemas/brandSuppliers';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 import {
 	getAllBrands,
 	findBrandById,

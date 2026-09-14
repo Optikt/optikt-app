@@ -2,11 +2,11 @@
 	import { SlideOver } from '$lib/components/ui';
 	import { Package, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { updateSale } from '$lib/remote/sales.remote';
+	import { updateSale } from '$lib/remote/sales/update.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
 	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
-	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
+	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { untrack, onMount } from 'svelte';
 	import { getCachedProducts } from './catalogCache.svelte';

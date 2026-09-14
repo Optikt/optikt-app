@@ -16,14 +16,16 @@ import {
 } from '$lib/schemas/purchaseOrders';
 
 import {
-	findPurchaseOrderById,
 	getPurchaseOrderItems,
 	setPurchaseOrderReadyForReview,
 	setPurchaseOrderItemReviewed,
-	findPurchaseOrderItemById,
+	findPurchaseOrderItemById
+} from '$lib/server/db/queries/purchaseOrders/items';
+import {
 	confirmPurchaseOrder as confirmPO,
 	cancelPurchaseOrder as cancelPO
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/lifecycle';
+import { findPurchaseOrderById } from '$lib/server/db/queries/purchaseOrders/orders';
 
 import { findProductById } from '$lib/server/db/queries/products';
 

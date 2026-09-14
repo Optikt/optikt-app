@@ -2,7 +2,8 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createSale, getNextOrderNumberCommand } from '$lib/remote/sales.remote';
+	import { createSale } from '$lib/remote/sales/commands.remote';
+	import { getNextOrderNumberCommand } from '$lib/remote/sales/status.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
 	import { isDiscountValueValid } from '$lib/utils';

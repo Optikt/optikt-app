@@ -6,21 +6,21 @@ import type { PaginatedSales, SaleDetail } from './helpers';
 import { query } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '$lib/schemas/';
+import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
+import { getSalePayments } from '$lib/server/db/queries/sales/payments';
 import {
 	getAllSales,
 	countSales,
 	getSalesStats as getSalesStatsQuery,
-	findSaleByIdWithRelations,
-	getSaleItemsWithDetails,
-	getSalePayments
-} from '$lib/server/db/queries/sales';
+	findSaleByIdWithRelations
+} from '$lib/server/db/queries/sales/reads';
 import type { SalesStats } from '$lib/server/db/queries/';
 import { findCustomerByIdNumber } from '$lib/server/db/queries/customers';
 
 import { normalizeIdNumber } from '$lib/utils';
 
 import { monthStart, toUTCString } from '$lib/dates';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 
 // ============================================================================
 // QUERIES

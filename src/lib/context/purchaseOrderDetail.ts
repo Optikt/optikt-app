@@ -5,7 +5,7 @@ import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purch
 import type {
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderWithRelations
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/types';
 import type {
 	PurchaseOrderBalanceSummary,
 	PurchaseOrderDueStatus

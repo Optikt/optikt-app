@@ -3,7 +3,7 @@
 	import { TriangleAlert, Eye, Package, Loader2 } from '@lucide/svelte';
 	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import { formatPrice, logger } from '$lib/utils';
 	import { getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
 	import { searchCatalog, getCatalogItemsByIds } from '$lib/remote/catalog.remote';

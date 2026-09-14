@@ -5,7 +5,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { toast } from 'svelte-sonner';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import { createUserForm, updateUserForm } from '$lib/remote/users.remote';
+	import { createUserForm, updateUserForm } from '$lib/remote/users/forms.remote';
 	import { FormInput, PasswordField } from '$lib/components/ui';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';

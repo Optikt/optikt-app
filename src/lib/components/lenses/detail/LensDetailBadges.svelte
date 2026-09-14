@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Factory, Warehouse, Eye, CircleCheck, CircleX, Clock, Package } from '@lucide/svelte';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import {
 		getLensSourceLabel,
 		getLensTypeLabel,

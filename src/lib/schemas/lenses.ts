@@ -4,19 +4,15 @@
  */
 import { z } from 'zod';
 import { LensType, LensCatalogSource, LensPriceType, LensInventoryMode } from '$lib/shared/enums';
+import { NameSchema, EntityIdSchema, PendingEntitySchema } from './common/identity';
+import { CoercedBoolean, CoercedInteger, CoercedNumber } from './common/numbers';
 import {
-	CoercedBoolean,
-	CoercedInteger,
-	CoercedNumber,
-	NameSchema,
 	RefractiveIndexSchema,
-	EntityIdSchema,
-	PendingEntitySchema,
 	SphereSchema,
 	CylinderSchema,
-	AdditionSchema,
-	ListPaginationSchema
-} from './common';
+	AdditionSchema
+} from './common/optical';
+import { ListPaginationSchema } from './common/pagination';
 
 // ============================================================================
 // LENS MATERIALS

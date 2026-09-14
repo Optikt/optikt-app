@@ -3,7 +3,7 @@
  * No side effects, no reactive state — just formatting, classification, and display logic.
  */
 
-import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
+import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
 import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
 import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
 import {

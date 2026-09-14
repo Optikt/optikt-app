@@ -10,9 +10,9 @@
 		PurchaseStatsCards
 	} from '$lib/components/purchases';
 	import { PageHeader } from '$lib/components/ui';
-	import { listPurchaseOrders } from '$lib/remote/purchaseOrders.remote';
+	import { listPurchaseOrders } from '$lib/remote/purchaseOrders/queries.remote';
 	import { PurchaseOrderStatus, PurchaseOrderUiState } from '$lib/shared/enums';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 	import type { PaginatedResult } from '$lib/types';
 	import {
 		getErrorMessage,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type {
 	InventoryCountLineRow,
 	InventoryCountSessionDetail
-} from '$lib/server/db/queries/inventoryCount';
+} from '$lib/server/db/queries/inventoryCount/types';
 import {
 	buildSummaryMessage,
 	buildSummaryMetrics,

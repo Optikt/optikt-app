@@ -3,7 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { UserCheck, UserX } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { toggleUserActive } from '$lib/remote/users.remote';
+	import { toggleUserActive } from '$lib/remote/users/commands.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import type { UserListItem } from '$lib/types/users';
 

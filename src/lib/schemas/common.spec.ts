@@ -7,10 +7,9 @@ import {
 	RifSchema,
 	OptionalRifSchema,
 	IdNumberSchema,
-	OptionalIdNumberSchema,
-	OptionalCoercedInteger,
-	OptionalCoercedNumber
-} from './common';
+	OptionalIdNumberSchema
+} from './common/contacts';
+import { OptionalCoercedInteger, OptionalCoercedNumber } from './common/numbers';
 
 // =============================================================================
 // Phone Schemas

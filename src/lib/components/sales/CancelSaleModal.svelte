@@ -2,7 +2,7 @@
 	import { AlertTriangle } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { ConfirmModal } from '$lib/components/ui';
-	import { cancelSale } from '$lib/remote/sales.remote';
+	import { cancelSale } from '$lib/remote/sales/lifecycle.remote';
 	import { formatPrice, getErrorMessage } from '$lib/utils';
 	import { RefundStatus } from '$lib/shared/enums';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Eye, Package, Pencil, Sparkles, Truck } from '@lucide/svelte';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import { DiscountType } from '$lib/shared/enums';
 	import { FreeItemEnrichmentStatus, SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';

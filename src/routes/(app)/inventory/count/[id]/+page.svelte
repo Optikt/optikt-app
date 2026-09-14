@@ -18,7 +18,7 @@
 	import type {
 		InventoryCountLineRow,
 		InventoryCountSessionDetail
-	} from '$lib/server/db/queries/inventoryCount';
+	} from '$lib/server/db/queries/inventoryCount/types';
 	import { getErrorMessage } from '$lib/utils';
 	import CountSessionHeader from '$lib/components/inventory/count/CountSessionHeader.svelte';
 	import CountSummaryMetrics from '$lib/components/inventory/count/CountSummaryMetrics.svelte';

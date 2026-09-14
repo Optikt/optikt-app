@@ -5,10 +5,8 @@
 	import { untrack } from 'svelte';
 	import { nowUTC, toISODate } from '$lib/dates';
 	import { WizardHeader } from '$lib/components/ui';
-	import {
-		createPurchaseOrderCmd,
-		savePurchaseOrderDraftCmd
-	} from '$lib/remote/purchaseOrders.remote';
+	import { createPurchaseOrderCmd } from '$lib/remote/purchaseOrders/commands.remote';
+	import { savePurchaseOrderDraftCmd } from '$lib/remote/purchaseOrders/draft.remote';
 	import {
 		PurchaseDiscountType,
 		PurchaseDocumentType,

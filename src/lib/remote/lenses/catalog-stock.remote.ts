@@ -11,7 +11,7 @@ import { softDelete } from '$lib/server/db/queries/deletedItems';
 import { inventoryLots, lensCatalogItems } from '$lib/server/db/schema';
 import { LensIdSchema } from '$lib/schemas/lenses';
 import { ManualLensAdjustmentSchema } from '$lib/schemas/inventory';
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
+import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
 import {
 	createInventoryLot,
 	consumeFromLot,
@@ -20,11 +20,8 @@ import {
 	returnToLot
 } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import {
-	createPurchaseOrder,
-	createPurchaseOrderItem,
-	getNextPONumber
-} from '$lib/server/db/queries/purchaseOrders';
+import { createPurchaseOrderItem } from '$lib/server/db/queries/purchaseOrders/items';
+import { createPurchaseOrder, getNextPONumber } from '$lib/server/db/queries/purchaseOrders/orders';
 
 import { auditService, getAuditContext } from '$lib/server/audit';
 import { nowISO, toISODate, nowUTC } from '$lib/dates';

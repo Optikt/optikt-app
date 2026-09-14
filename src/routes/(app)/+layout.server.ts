@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { getSettings } from '$lib/server/db/queries';
-import { getActiveSession } from '$lib/server/db/queries/inventoryCount';
+import { getActiveSession } from '$lib/server/db/queries/inventoryCount/sessions';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {

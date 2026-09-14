@@ -13,7 +13,7 @@ import {
 } from '$lib/shared/purchaseOrderCredit';
 import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
 import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders.remote';
+import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders/payments.remote';
 import { formatPrice, getErrorMessage } from '$lib/utils';
 import type { PaymentFormKind } from './paymentFormDerived';
 

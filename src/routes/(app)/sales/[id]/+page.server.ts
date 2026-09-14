@@ -1,10 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import {
-	findSaleByIdWithRelations,
-	getSaleItemsWithDetails,
-	getSalePayments
-} from '$lib/server/db/queries/sales';
+import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
+import { getSalePayments } from '$lib/server/db/queries/sales/payments';
+import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
 import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
 import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';

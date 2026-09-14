@@ -4,14 +4,13 @@
  */
 import { z } from 'zod';
 import { LensType } from '$lib/shared/enums/lensTypes';
+import { EntityIdSchema } from './common/identity';
+import { CoercedBoolean, OptionalCoercedInteger } from './common/numbers';
 import {
-	CoercedBoolean,
-	EntityIdSchema,
 	OptionalSphereSchema,
 	OptionalCylinderSchema,
-	OptionalAdditionSchema,
-	OptionalCoercedInteger
-} from './common';
+	OptionalAdditionSchema
+} from './common/optical';
 
 const LensTypeSchema = z
 	.string()

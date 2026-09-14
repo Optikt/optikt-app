@@ -24,7 +24,7 @@ import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 import { auditService, getAuditContext } from '$lib/server/audit';
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
+import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 

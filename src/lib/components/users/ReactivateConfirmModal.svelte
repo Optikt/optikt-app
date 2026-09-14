@@ -3,7 +3,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { reactivateUser } from '$lib/remote/users.remote';
+	import { reactivateUser } from '$lib/remote/users/commands.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import type { UserListItem } from '$lib/types/users';
 	import type { UserRole } from '$lib/shared/enums';

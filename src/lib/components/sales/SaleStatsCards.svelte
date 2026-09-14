@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CircleCheck, CircleX, Clock3 } from '@lucide/svelte';
-	import type { SalesStats } from '$lib/server/db/queries/sales';
+	import type { SalesStats } from '$lib/server/db/queries/sales/types';
 
 	let { stats }: { stats: SalesStats } = $props();
 </script>

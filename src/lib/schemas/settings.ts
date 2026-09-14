@@ -3,13 +3,9 @@
  * Zod schemas for business settings remote functions
  */
 import { z } from 'zod';
-import {
-	OptionalRifSchema,
-	OptionalEmailSchema,
-	NameSchema,
-	PasswordSchema,
-	CoercedNumber
-} from './common';
+import { OptionalRifSchema } from './common/contacts';
+import { OptionalEmailSchema, NameSchema, PasswordSchema } from './common/identity';
+import { CoercedNumber } from './common/numbers';
 
 /**
  * Update business settings schema

@@ -6,7 +6,7 @@
 		getInventoryCountStatusLabel,
 		type InventoryCountScopeType
 	} from '$lib/schemas/inventoryCount';
-	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount';
+	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
 	import { formatDate } from '$lib/utils';
 	import { COUNT_SCOPE_OPTIONS, getCoveragePercent, getScopeLabel } from './countList';
 	import { statusVariant } from './countSummary';

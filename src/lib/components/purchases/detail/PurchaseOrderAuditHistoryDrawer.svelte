@@ -2,7 +2,7 @@
 	import { History, X } from '@lucide/svelte';
 	import { SlideOver } from '$lib/components/ui';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 	import { formatDate } from '$lib/utils';
 	import { classifyAuditEntry, type AuditEvent } from '$lib/utils/purchaseOrderDetail';
 

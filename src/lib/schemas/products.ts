@@ -6,18 +6,20 @@ import { z } from 'zod';
 import { ProductType, ProductStockFilter } from '$lib/shared/enums';
 import { MaterialCategories } from './materials';
 import {
+	NameSchema,
+	EntityIdSchema,
+	OptionalPendingEntitySchema,
+	PendingEntitySchema,
+	ReactivateEntitySchema
+} from './common/identity';
+import {
 	CoercedInteger,
 	CoercedNumber,
 	CoercedBoolean,
-	NameSchema,
-	EntityIdSchema,
 	OptionalCoercedInteger,
-	OptionalCoercedNumber,
-	OptionalPendingEntitySchema,
-	PendingEntitySchema,
-	ListPaginationSchema,
-	ReactivateEntitySchema
-} from './common';
+	OptionalCoercedNumber
+} from './common/numbers';
+import { ListPaginationSchema } from './common/pagination';
 
 // Single source of truth for SKU validation
 // SKU format: only uppercase letters, numbers, hyphens (no spaces, no special chars)

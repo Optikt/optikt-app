@@ -11,7 +11,7 @@ import {
 import { requireAuth, requireRole } from '$lib/server/guards';
 import { db } from '$lib/server/db';
 import { findLotById } from '$lib/server/db/queries/inventoryLots';
-import { findPurchaseOrderIdByLotId } from '$lib/server/db/queries/purchaseOrders';
+import { findPurchaseOrderIdByLotId } from '$lib/server/db/queries/purchaseOrders/items';
 import {
 	createInventoryMovement,
 	getMovementsWithDetails,

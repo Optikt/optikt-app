@@ -2,13 +2,13 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
+import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
+import { getAllLensMaterials } from '$lib/server/db/queries/lenses/materials';
+import { getLensCatalogDistinctValues } from '$lib/server/db/queries/lenses/pending';
 import {
-	findLensCatalogItemById,
-	getAllLensMaterials,
-	getLensCatalogDistinctValues,
 	getTechnologiesBySupplier,
 	findLensTechnologyById
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/technologies';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ params, locals }) => {

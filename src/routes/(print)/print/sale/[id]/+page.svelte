@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
 	import { untrack } from 'svelte';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { buildReceiptViewModel } from '$lib/components/sales/print/receiptData';
 	import ReceiptHeader from '$lib/components/sales/print/ReceiptHeader.svelte';

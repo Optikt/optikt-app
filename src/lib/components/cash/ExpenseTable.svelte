@@ -2,7 +2,7 @@
 	import { Ban } from '@lucide/svelte';
 	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
-	import type { ExpenseListRow } from '$lib/server/db/queries/cash';
+	import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
 
 	interface Props {
 		expenses: ExpenseListRow[];

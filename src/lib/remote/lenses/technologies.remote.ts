@@ -27,7 +27,7 @@ import {
 	getAllDifferentiators,
 	renameDifferentiator,
 	deleteDifferentiator
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/technologies';
 
 import type { LensTechnology } from '$lib/server/db/schema';
 

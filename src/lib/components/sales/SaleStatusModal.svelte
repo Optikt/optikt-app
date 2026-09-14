@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import { AppBadge, ConfirmModal } from '$lib/components/ui';
-	import { setSaleStatus } from '$lib/remote/sales.remote';
+	import { setSaleStatus } from '$lib/remote/sales/status.remote';
 	import { SaleStatus, getSaleStatusBadgeColor, getSaleStatusLabel } from '$lib/shared/enums';
 	import { getErrorMessage } from '$lib/utils';
 

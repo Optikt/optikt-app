@@ -7,7 +7,7 @@
  * `products` / `lensItems` arrays keep working with the same shape.
  */
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
 const state = $state({
 	products: new Map<string, ProductWithRelations>(),

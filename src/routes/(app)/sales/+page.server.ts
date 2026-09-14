@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { monthStart, toUTCString } from '$lib/dates';
-import { getAllSales, countSales, getSalesStats } from '$lib/server/db/queries/sales';
+import { getAllSales, countSales, getSalesStats } from '$lib/server/db/queries/sales/reads';
 import { ALL_SALE_STATUSES, type SaleStatus } from '$lib/shared/enums';
 
 export const load: PageServerLoad = async ({ url }) => {

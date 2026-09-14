@@ -2,10 +2,8 @@ import type { PageServerLoad } from './$types';
 import { error, redirect } from '@sveltejs/kit';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole, PurchaseOrderStatus } from '$lib/shared/enums';
-import {
-	findPurchaseOrderByIdWithRelations,
-	getPurchaseOrderItems
-} from '$lib/server/db/queries/purchaseOrders';
+import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { findPurchaseOrderByIdWithRelations } from '$lib/server/db/queries/purchaseOrders/orders';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ params, locals }) => {

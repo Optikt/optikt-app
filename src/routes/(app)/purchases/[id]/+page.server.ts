@@ -6,10 +6,8 @@ import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus
 } from '$lib/shared/purchaseOrderCredit';
-import {
-	findPurchaseOrderByIdWithRelations,
-	getPurchaseOrderItems
-} from '$lib/server/db/queries/purchaseOrders';
+import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { findPurchaseOrderByIdWithRelations } from '$lib/server/db/queries/purchaseOrders/orders';
 import { getPurchaseOrderPaymentsWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
 import { getPurchaseOrderAuditHistory } from '$lib/server/db/queries/changeHistory';

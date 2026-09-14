@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount';
+import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
 import {
 	COUNT_SCOPE_OPTIONS,
 	getCoveragePercent,

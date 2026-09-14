@@ -6,7 +6,7 @@
 		updateLensTechnologyForm,
 		deleteLensTechnologyById,
 		listTechnologies
-	} from '$lib/remote/lenses.remote';
+	} from '$lib/remote/lenses/technologies.remote';
 	import { listSuppliers } from '$lib/remote/suppliers.remote';
 	import type { LensTechnology } from '$lib/server/db/schema';
 	import type { PaginatedResult } from '$lib/types';

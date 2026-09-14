@@ -16,7 +16,7 @@
 	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import { searchCatalog } from '$lib/remote/catalog.remote';
 	import {
 		cacheCatalogItems,

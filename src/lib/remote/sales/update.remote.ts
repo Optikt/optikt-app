@@ -6,7 +6,7 @@ import { resolveLensSnapshotCosts, toSaleTotalsLine } from './helpers';
 import { command } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { UpdateSaleSchema } from '$lib/schemas/sales';
-import { findSaleById } from '$lib/server/db/queries/sales';
+import { findSaleById } from '$lib/server/db/queries/sales/reads';
 
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';

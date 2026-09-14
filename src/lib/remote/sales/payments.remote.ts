@@ -6,12 +6,12 @@ import { command } from '$app/server';
 import { requireRole } from '$lib/server/guards';
 import { AddPaymentSchema, VoidPaymentSchema } from '$lib/schemas/';
 import {
-	findSaleById,
 	findPaymentById,
 	voidSalePayment,
-	recalcSalePaidAmount,
-	updateSale as updateSaleQuery
-} from '$lib/server/db/queries/sales';
+	recalcSalePaidAmount
+} from '$lib/server/db/queries/sales/payments';
+import { findSaleById } from '$lib/server/db/queries/sales/reads';
+import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writes';
 
 import { db } from '$lib/server/db';
 import {

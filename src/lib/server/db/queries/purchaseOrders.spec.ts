@@ -3,7 +3,7 @@ import { PurchaseOrderItemType } from '$lib/shared/enums';
 import {
 	resolvePurchaseOrderItemReviewedState,
 	resolvePurchaseOrderItemZeroPriceIntentionalState
-} from './purchaseOrders';
+} from './purchaseOrders/items';
 
 const baseItem = {
 	itemType: PurchaseOrderItemType.PRODUCT,

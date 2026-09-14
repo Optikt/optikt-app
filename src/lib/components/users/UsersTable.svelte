@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { SquarePen, Trash2, Power, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteUserById } from '$lib/remote/users.remote';
+	import { deleteUserById } from '$lib/remote/users/commands.remote';
 	import { getErrorMessage } from '$lib/utils';
 	import {
 		DataGrid,

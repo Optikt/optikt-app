@@ -8,12 +8,8 @@ import {
 	ProductType,
 	type MaterialCategory
 } from '$lib/shared/enums/productTypes';
-import {
-	NameSchema,
-	EntityIdSchema,
-	ListPaginationWithDeletedSchema,
-	ReactivateEntitySchema
-} from './common';
+import { NameSchema, EntityIdSchema, ReactivateEntitySchema } from './common/identity';
+import { ListPaginationWithDeletedSchema } from './common/pagination';
 
 export const MaterialCategories = MATERIAL_CATEGORIES;
 export type { MaterialCategory };

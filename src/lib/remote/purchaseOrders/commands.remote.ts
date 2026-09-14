@@ -9,12 +9,12 @@ import { getErrorMessage } from '$lib/utils';
 
 import { CreatePurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
 
+import { createPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
 import {
 	createPurchaseOrder,
-	createPurchaseOrderItems,
 	updatePurchaseOrder,
 	getNextPONumber
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/orders';
 
 import { db } from '$lib/server/db';
 import { PurchaseOrderStatus } from '$lib/shared/enums';

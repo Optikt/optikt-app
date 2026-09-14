@@ -3,7 +3,8 @@
  * Zod schemas for manual inventory adjustments and lot operations
  */
 import { z } from 'zod';
-import { CoercedInteger, ListPaginationSchema } from './common';
+import { CoercedInteger } from './common/numbers';
+import { ListPaginationSchema } from './common/pagination';
 import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
 
 // ============================================================================

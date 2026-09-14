@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
-import { getActiveSession, getSessions } from '$lib/server/db/queries/inventoryCount';
+import { getActiveSession, getSessions } from '$lib/server/db/queries/inventoryCount/sessions';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);

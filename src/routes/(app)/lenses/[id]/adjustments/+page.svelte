@@ -14,7 +14,7 @@
 	} from '$lib/components/products/adjustments/helpers';
 	import { ConfirmModal } from '$lib/components/ui';
 	import { nowUTC } from '$lib/dates';
-	import { adjustLensStock } from '$lib/remote/lenses.remote';
+	import { adjustLensStock } from '$lib/remote/lenses/catalog-stock.remote';
 	import {
 		AdjustmentReason,
 		ADJUSTMENT_REASON_LABELS,

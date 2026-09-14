@@ -2,13 +2,13 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createNewQuote } from '$lib/remote/quotes.remote';
+	import { createNewQuote } from '$lib/remote/quotes/commands.remote';
 	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
 	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
 	import { nowUTC } from '$lib/dates';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
 	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
 	import type { IncludedAccessoryMap } from '$lib/components/sales/includedAccessories';

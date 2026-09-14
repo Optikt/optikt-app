@@ -5,7 +5,7 @@
 		listDifferentiators,
 		renameDifferentiatorForm,
 		deleteDifferentiatorById
-	} from '$lib/remote/lenses.remote';
+	} from '$lib/remote/lenses/technologies.remote';
 	import { ConfirmModal, SlideOver } from '$lib/components/ui';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';

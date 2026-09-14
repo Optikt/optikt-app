@@ -13,12 +13,10 @@ import { PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums/paymentMetho
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { buildTickeraPayload, type TickeraPayload } from '$lib/shared/tickera';
 import { resolveTicketRate } from '$lib/shared/ticketRate';
-import {
-	findSaleByIdWithRelations,
-	getSaleItemsWithDetails,
-	getSalePayments,
-	type SaleItemWithDetails
-} from '$lib/server/db/queries/sales';
+import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
+import { getSalePayments } from '$lib/server/db/queries/sales/payments';
+import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
+import { type SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import { getSettings } from '$lib/server/db/queries/settings';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { getPrintItemLabel } from '$lib/utils/printDocumentItems';

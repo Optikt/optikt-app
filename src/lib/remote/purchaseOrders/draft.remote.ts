@@ -13,11 +13,11 @@ import { getErrorMessage } from '$lib/utils';
 
 import { SavePurchaseOrderDraftSchema } from '$lib/schemas/purchaseOrders';
 
+import { replacePurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
 import {
 	findPurchaseOrderById,
-	replacePurchaseOrderItems,
 	updatePurchaseOrder
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/orders';
 
 import { db } from '$lib/server/db';
 import { PurchaseOrderStatus } from '$lib/shared/enums';

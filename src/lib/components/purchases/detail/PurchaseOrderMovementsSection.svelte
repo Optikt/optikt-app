@@ -2,7 +2,7 @@
 	import { ArrowRightLeft, ChevronDown, PackageX } from '@lucide/svelte';
 	import { AppBadge, EmptyState } from '$lib/components/ui';
 	import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
-	import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
 	import { getInventoryMovementTypeLabel } from '$lib/shared/enums';
 	import { formatDate } from '$lib/utils';
 	import { formatLotCode, movementItemName } from '$lib/utils/purchaseOrderDetail';

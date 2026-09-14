@@ -25,7 +25,7 @@
 	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 	import { computeTaxBreakdown } from '$lib/shared/tax';
 	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
-	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales';
+	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SalePayment } from '$lib/server/db/schema';
 	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
 	import { printTickeraReceipt } from '$lib/remote/printing.remote';

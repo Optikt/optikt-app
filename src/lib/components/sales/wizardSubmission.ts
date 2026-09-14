@@ -1,4 +1,4 @@
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { QuoteItemInput } from '$lib/schemas/quotes';
 import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';

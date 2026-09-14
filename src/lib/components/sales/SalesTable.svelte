@@ -5,7 +5,7 @@
 	import { CancelSaleModal, SalePaymentProgress } from '$lib/components/sales';
 	import { formatPrice, formatDateOnly } from '$lib/utils';
 	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
+	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
 
 	type SaleViewHref = `/sales/${string}`;
 

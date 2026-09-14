@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales';
+import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 export const load: PageServerLoad = async ({ locals }) => {

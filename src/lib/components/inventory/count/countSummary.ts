@@ -4,7 +4,7 @@ import type { InventoryCountUiFilter } from '$lib/schemas/inventoryCount';
 import type {
 	InventoryCountLineRow,
 	InventoryCountSessionDetail
-} from '$lib/server/db/queries/inventoryCount';
+} from '$lib/server/db/queries/inventoryCount/types';
 import { formatDate } from '$lib/utils';
 
 export type SummaryMetricTone = 'neutral' | 'success' | 'warning' | 'error';

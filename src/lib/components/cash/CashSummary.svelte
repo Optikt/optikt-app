@@ -12,7 +12,7 @@
 		mobileSurfaceClass,
 		mobileValueClass
 	} from './cashClasses';
-	import type { CashReport } from '$lib/server/db/queries/cash';
+	import type { CashReport } from '$lib/server/db/queries/cash/report';
 
 	interface Props {
 		report: CashReport;

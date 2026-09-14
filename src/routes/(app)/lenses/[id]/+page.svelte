@@ -14,7 +14,7 @@
 	import LensDetailMobileChrome, {
 		type LensDetailMobileTab
 	} from '$lib/components/lenses/detail/LensDetailMobileChrome.svelte';
-	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
+	import { deleteLensCatalogItemById } from '$lib/remote/lenses/catalog-stock.remote';
 	import { isAdminRole } from '$lib/shared/enums';
 	import { getErrorMessage, formatPrice, getBackUrl } from '$lib/utils';
 	import {
