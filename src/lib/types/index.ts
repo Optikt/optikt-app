@@ -1,6 +1,4 @@
-import type { Icon } from '@lucide/svelte';
-
-export type LucideIcon = typeof Icon;
+export type { LucideIcon } from '@lucide/svelte';
 
 /** Generic paginated result for list queries */
 export interface PaginatedResult<T> {
