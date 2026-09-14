@@ -609,47 +609,47 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 
 ## Resumen de Esfuerzo
 
-| Prioridad | Ítem                           | Esfuerzo                |
-| --------- | ------------------------------ | ----------------------- |
-| ✅        | FP2 · backup-ui                | Completado              |
-| ✅        | FP4 · Estados de venta         | Completado              |
-| ✅        | FP5 · Historial estados venta  | Completado              |
-| ✅        | FP6 · Catálogo lazy + ranking  | Completado              |
-| ✅        | FP7 · Compras multimoneda      | Completado              |
-| ✅        | FP1 · preserve-list-filters    | Completado              |
-| ✅        | DT4 · Console.log en prod      | Completado              |
-| ✅        | DT2 · Errores silenciados      | Completado              |
-| ✅        | DT3 · Validación Zod           | Completado              |
-| ✅        | DT5 · Error pattern duplicado  | Completado              |
-| 🟡        | DT10 · Zod refinements negocio | 5 días                  |
-| ✅        | DT11 · Dead code componentes   | Completado              |
-| ✅        | DT15 · Altura en presupuestos  | Completado              |
-| ✅        | DT12 · Tablas duplicadas       | Completado              |
-| ✅        | DT13 · Enums moneda            | Completado              |
-| ✅        | DT16 · Enums moneda gastos     | Completado              |
-| ✅        | DT14 · Wizard compras SSR      | Completado (FP6)        |
-| ❌        | FP3 · public-catalog-api       | 15 días                 |
-| ✅        | DT1 · Archivos gigantes        | Completado              |
-| 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
-| 🟡        | NF1 · Órdenes laboratorio      | 10 días                 |
-| 🟡        | NF2 · Citas/agenda             | 5 días                  |
-| 🟡        | NF3 · POS rápido               | 5 días                  |
-| 🟡        | NF4 · Garantías                | 5 días                  |
-| 🟡        | NF6 · Upload imágenes          | 5 días                  |
-| ✅        | DT6 · Soft-delete consistente  | Completado              |
-| 🟡        | DT9 · Tests remote funcs       | 10 días                 |
-| 🟢        | NF7 · Visor auditoría          | 2 días                  |
-| 🟢        | NF10 · Export Excel            | 1 día                   |
-| 🟢        | NF11 · Código barras           | 2 días                  |
-| ✅        | DT7 · PDF stack                | Completado              |
-| 🟢        | DT18 · Latencia backend        | 1-2 días                |
-| 🟢        | DT20 · Catálogo step2 topado   | 2-3 días                |
-| 🟢        | DT22 · Fechas date-only resto  | 2-3 días                |
-| 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días                |
-| ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT               |
-| ⚪        | DT19 · Deps fuera de scope     | Fuera de scope          |
-| 🟢        | NF8 · Comisiones               | 5 días                  |
-| ⚪        | NF9 · Multi-sucursal           | 20 días                 |
+| Prioridad | Ítem                           | Esfuerzo         |
+| --------- | ------------------------------ | ---------------- |
+| ✅        | FP2 · backup-ui                | Completado       |
+| ✅        | FP4 · Estados de venta         | Completado       |
+| ✅        | FP5 · Historial estados venta  | Completado       |
+| ✅        | FP6 · Catálogo lazy + ranking  | Completado       |
+| ✅        | FP7 · Compras multimoneda      | Completado       |
+| ✅        | FP1 · preserve-list-filters    | Completado       |
+| ✅        | DT4 · Console.log en prod      | Completado       |
+| ✅        | DT2 · Errores silenciados      | Completado       |
+| ✅        | DT3 · Validación Zod           | Completado       |
+| ✅        | DT5 · Error pattern duplicado  | Completado       |
+| 🟡        | DT10 · Zod refinements negocio | 5 días           |
+| ✅        | DT11 · Dead code componentes   | Completado       |
+| ✅        | DT15 · Altura en presupuestos  | Completado       |
+| ✅        | DT12 · Tablas duplicadas       | Completado       |
+| ✅        | DT13 · Enums moneda            | Completado       |
+| ✅        | DT16 · Enums moneda gastos     | Completado       |
+| ✅        | DT14 · Wizard compras SSR      | Completado (FP6) |
+| ❌        | FP3 · public-catalog-api       | 15 días          |
+| ✅        | DT1 · Archivos gigantes        | Completado       |
+| 🟡        | DT8 · Dashboard gráficos       | 3 días           |
+| 🟡        | NF1 · Órdenes laboratorio      | 10 días          |
+| 🟡        | NF2 · Citas/agenda             | 5 días           |
+| 🟡        | NF3 · POS rápido               | 5 días           |
+| 🟡        | NF4 · Garantías                | 5 días           |
+| 🟡        | NF6 · Upload imágenes          | 5 días           |
+| ✅        | DT6 · Soft-delete consistente  | Completado       |
+| 🟡        | DT9 · Tests remote funcs       | 10 días          |
+| 🟢        | NF7 · Visor auditoría          | 2 días           |
+| 🟢        | NF10 · Export Excel            | 1 día            |
+| 🟢        | NF11 · Código barras           | 2 días           |
+| ✅        | DT7 · PDF stack                | Completado       |
+| 🟢        | DT18 · Latencia backend        | 1-2 días         |
+| 🟢        | DT20 · Catálogo step2 topado   | 2-3 días         |
+| 🟢        | DT22 · Fechas date-only resto  | 2-3 días         |
+| 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
+| ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
+| ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
+| 🟢        | NF8 · Comisiones               | 5 días           |
+| ⚪        | NF9 · Multi-sucursal           | 20 días          |
 
 **Total estimado:** ~115 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
 
