@@ -6,6 +6,7 @@ import { getPurchaseOrderFinanceIssues, normalizeCreditTermsForWrite } from './h
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { getErrorMessage } from '$lib/utils';
+import { composeBusinessTimestamp } from '$lib/dates';
 
 import { UpdatePurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
 
@@ -71,7 +72,7 @@ export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (
 		if (data.invoiceNumber !== undefined) updateData.invoiceNumber = data.invoiceNumber ?? null;
 		if (data.deliveryNoteNumber !== undefined)
 			updateData.deliveryNoteNumber = data.deliveryNoteNumber ?? null;
-		if (data.orderDate) updateData.orderDate = data.orderDate;
+		if (data.orderDate) updateData.orderDate = composeBusinessTimestamp(data.orderDate);
 		if (data.bcvRate !== undefined) updateData.bcvRate = data.bcvRate;
 		if (data.altRate !== undefined) updateData.sourceRateToVes = data.altRate ?? null;
 		if (data.sourceCurrency !== undefined) updateData.sourceCurrency = data.sourceCurrency;
