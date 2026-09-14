@@ -629,7 +629,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | ✅        | DT16 · Enums moneda gastos     | Completado              |
 | ✅        | DT14 · Wizard compras SSR      | Completado (FP6)        |
 | ❌        | FP3 · public-catalog-api       | 15 días                 |
-| 🟡        | DT1 · Archivos gigantes        | 15-20 días (5 archivos) |
+| ✅        | DT1 · Archivos gigantes        | Completado              |
 | 🟡        | DT8 · Dashboard gráficos       | 3 días                  |
 | 🟡        | NF1 · Órdenes laboratorio      | 10 días                 |
 | 🟡        | NF2 · Citas/agenda             | 5 días                  |
