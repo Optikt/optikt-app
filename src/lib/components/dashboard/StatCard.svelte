@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Component } from 'svelte';
+	import type { LucideIcon } from '$lib/types/index.js';
 
 	let {
 		label,
@@ -10,7 +10,7 @@
 	}: {
 		label: string;
 		value: string;
-		icon: Component;
+		icon: LucideIcon;
 		color: 'blue' | 'green' | 'purple' | 'orange';
 		subtitle?: string;
 	} = $props();

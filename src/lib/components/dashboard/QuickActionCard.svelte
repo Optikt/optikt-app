@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { Component } from 'svelte';
+	import type { LucideIcon } from '$lib/types/index.js';
 	import type { StaticRoute } from '$lib/shared/routes';
 
 	let {
@@ -10,7 +10,7 @@
 	}: {
 		label: string;
 		href: StaticRoute;
-		icon: Component;
+		icon: LucideIcon;
 	} = $props();
 </script>
 

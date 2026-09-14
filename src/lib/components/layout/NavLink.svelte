@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import type { Component } from 'svelte';
+	import type { LucideIcon } from '$lib/types/index.js';
 	import type { StaticRoute } from '$lib/shared/routes';
 
 	let {
@@ -16,7 +16,7 @@
 	}: {
 		href: StaticRoute;
 		label: string;
-		icon: Component;
+		icon: LucideIcon;
 		badge?: string;
 		badgeDisplay?: 'text' | 'dot';
 		matchSubPaths?: boolean;
