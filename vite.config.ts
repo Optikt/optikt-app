@@ -10,7 +10,7 @@ export default defineConfig({
 		__APP_VERSION__: JSON.stringify(pkg.version)
 	},
 	server: {
-		allowedHosts: ['elitebook.taild8f0b9.ts.net', 'nanezx-elitebook.taild8f0b9.ts.net'],
+		allowedHosts: ['elitebook.taild8f0b9.ts.net', 'nanezx-elitebook.taild8f0b9.ts.net', 'victor-wsl.taild8f0b9.ts.net'],
 		watch: {
 			ignored: [
 				'**/PLAN.md',
