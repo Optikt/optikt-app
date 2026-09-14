@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { getInventoryModeLabel, getPriceTypeLabel } from '$lib/shared/enums/lensTypes';
 	import { getLensTaxSummary } from '$lib/components/lenses/detail/helpers';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;

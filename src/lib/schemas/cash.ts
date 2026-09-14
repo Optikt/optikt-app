@@ -2,7 +2,7 @@
  * Cash & Expenses validation schemas
  */
 import { z } from 'zod';
-import { CoercedNumber } from './common';
+import { CoercedNumber } from './common/numbers';
 import { ALL_EXPENSE_CATEGORIES, ALL_EXPENSE_CURRENCIES, ALL_RATE_TYPES } from '$lib/shared/enums';
 import {
 	requiresExpenseExchangeRate,

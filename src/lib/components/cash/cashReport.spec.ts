@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DailyBreakdownRow } from '$lib/server/db/queries/cash';
+import type { DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
 import { buildCashCsvRows, CASH_CSV_HEADERS, formatPct } from './cashReport';
 
 describe('formatPct', () => {

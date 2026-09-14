@@ -13,7 +13,7 @@
 		voidExpenseCommand
 	} from '$lib/remote/cash.remote';
 	import { fetchLatestRates } from '$lib/remote/exchangeRates.remote';
-	import type { ExpenseListRow } from '$lib/server/db/queries/cash';
+	import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
 	import ExpenseToolbar from '$lib/components/cash/ExpenseToolbar.svelte';
 	import ExpenseSummary from '$lib/components/cash/ExpenseSummary.svelte';
 	import ExpenseTable from '$lib/components/cash/ExpenseTable.svelte';

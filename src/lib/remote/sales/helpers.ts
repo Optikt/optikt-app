@@ -3,7 +3,7 @@
  * Split from sales.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 
-import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales';
+import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 
 import { type SalePayment } from '$lib/server/db/schema';
 
@@ -24,7 +24,7 @@ export interface PaginatedSales {
 	totalPages: number;
 }
 
-export type { SalesStats } from '$lib/server/db/queries/sales';
+export type { SalesStats } from '$lib/server/db/queries/sales/types';
 
 export interface SaleDetail {
 	sale: SaleWithRelations;

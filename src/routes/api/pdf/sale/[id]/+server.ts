@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { buildPrintUrl, generatePdf } from '$lib/server/pdf';
-import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales';
+import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
 import { SaleStatus } from '$lib/shared/enums';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {

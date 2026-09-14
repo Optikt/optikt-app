@@ -10,7 +10,7 @@
 	} from '$lib/shared/enums';
 	import { getCurrencySymbol } from '$lib/shared/enums';
 	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 
 	type PurchaseViewHref = `/purchases/${string}`;
 

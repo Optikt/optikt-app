@@ -8,7 +8,7 @@ import {
 	type NotificationListItem
 } from '$lib/server/db/queries/notifications';
 import { requireAuth } from '$lib/server/guards';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 
 export const fetchMyNotifications = query(async (): Promise<NotificationListItem[]> => {
 	const user = requireAuth();

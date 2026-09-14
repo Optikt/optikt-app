@@ -3,15 +3,19 @@ import { command, query } from '$app/server';
 import { db } from '$lib/server/db';
 import {
 	deleteBrandAccessory as deleteBrandAccessoryQuery,
+	toggleProductOverride as toggleProductOverrideQuery,
+	upsertBrandAccessory as upsertBrandAccessoryQuery
+} from '$lib/server/db/queries/brandAccessories/writes';
+import {
 	getAccessoriesForProduct as getAccessoriesForProductQuery,
 	getBrandAccessories as getBrandAccessoriesQuery,
-	getProductAccessoryOverride as getProductAccessoryOverrideQuery,
-	toggleProductOverride as toggleProductOverrideQuery,
-	upsertBrandAccessory as upsertBrandAccessoryQuery,
-	type BrandAccessoryRuleRow,
-	type ProductAccessoryOverride,
-	type ResolvedAccessoryRule
-} from '$lib/server/db/queries/brandAccessories';
+	getProductAccessoryOverride as getProductAccessoryOverrideQuery
+} from '$lib/server/db/queries/brandAccessories/reads';
+import type {
+	BrandAccessoryRuleRow,
+	ProductAccessoryOverride,
+	ResolvedAccessoryRule
+} from '$lib/server/db/queries/brandAccessories/types';
 import { requireAdmin, requireAuth } from '$lib/server/guards';
 import {
 	BrandAccessoriesByBrandSchema,

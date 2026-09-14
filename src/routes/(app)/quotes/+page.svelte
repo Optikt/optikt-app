@@ -21,7 +21,7 @@
 		saveReferrerParams,
 		setQueryParam
 	} from '$lib/utils';
-	import { listQuotes, getQuoteStats } from '$lib/remote/quotes.remote';
+	import { listQuotes, getQuoteStats } from '$lib/remote/quotes/queries.remote';
 	import { QuotesTable } from '$lib/components/quotes';
 	import { canOperate } from '$lib/shared/enums';
 	import {
@@ -30,7 +30,8 @@
 		type QuoteStatus
 	} from '$lib/shared/contracts/quotes';
 	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
-	import type { PaginatedQuotes, QuoteStats } from '$lib/remote/quotes.remote';
+	import type { PaginatedQuotes } from '$lib/remote/quotes/queries.remote';
+	import type { QuoteStats } from '$lib/server/db/queries/quotes';
 	import { untrack } from 'svelte';
 
 	// Server data

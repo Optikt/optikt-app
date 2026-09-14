@@ -2,7 +2,7 @@
 	import { CalendarDays, Tag } from '@lucide/svelte';
 	import { DiscountType } from '$lib/shared/enums';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
+	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import { User } from '@lucide/svelte';
 
 	interface Props {

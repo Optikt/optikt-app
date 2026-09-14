@@ -3,7 +3,7 @@
 	import { getSaleStatusLabel } from '$lib/shared/enums';
 	import { formatDateOnly } from '$lib/utils';
 	import { customerIdNumber, customerName } from './saleDetail';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales';
+	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
 
 	interface Props {
 		sale: SaleWithRelations;

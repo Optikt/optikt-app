@@ -11,7 +11,8 @@
 		mobileSurfaceClass,
 		mobileValueClass
 	} from './cashClasses';
-	import type { CashReport, PipelineSnapshot } from '$lib/server/db/queries/cash';
+	import type { CashReport } from '$lib/server/db/queries/cash/report';
+	import type { PipelineSnapshot } from '$lib/server/db/queries/cash/pipeline';
 
 	interface Props {
 		report: CashReport;

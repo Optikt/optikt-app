@@ -4,7 +4,7 @@
  */
 
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { DiscountType } from '$lib/shared/enums';
 import {
 	DEFAULT_TAX_RATE,

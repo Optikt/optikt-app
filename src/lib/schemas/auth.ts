@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PasswordSchema } from './common';
+import { PasswordSchema } from './common/identity';
 
 // ============================================================================
 // LOGIN SCHEMA

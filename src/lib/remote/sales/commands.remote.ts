@@ -6,7 +6,7 @@ import { resolveLensSnapshotCosts, toSaleTotalsLine } from './helpers';
 import { command } from '$app/server';
 import { requireRole } from '$lib/server/guards';
 import { CreateSaleSchema } from '$lib/schemas/sales';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales';
+import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 
 import {
 	findCustomerById,
@@ -29,7 +29,7 @@ import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTy
 
 import { normalizeIdNumber } from '$lib/utils';
 import { auditService, getAuditContext } from '$lib/server/audit';
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses';
+import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';

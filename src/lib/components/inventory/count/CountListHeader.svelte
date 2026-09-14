@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Play, Plus } from '@lucide/svelte';
 	import { formatInventoryCountScope } from '$lib/schemas/inventoryCount';
-	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount';
+	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
 
 	interface Props {
 		recentlyAppliedCount: number;

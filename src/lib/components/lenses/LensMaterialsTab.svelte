@@ -6,7 +6,7 @@
 		deleteLensMaterialById,
 		listLensMaterials,
 		updateLensMaterialForm
-	} from '$lib/remote/lenses.remote';
+	} from '$lib/remote/lenses/materials.remote';
 	import type { LensMaterial } from '$lib/server/db/schema';
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';

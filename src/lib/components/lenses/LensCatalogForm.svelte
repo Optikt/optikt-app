@@ -2,11 +2,9 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import {
-		createLensCatalogItemForm,
-		updateLensCatalogItemForm,
-		listTechnologiesBySupplier
-	} from '$lib/remote/lenses.remote';
+	import { createLensCatalogItemForm } from '$lib/remote/lenses/catalog.remote';
+	import { updateLensCatalogItemForm } from '$lib/remote/lenses/catalog-update.remote';
+	import { listTechnologiesBySupplier } from '$lib/remote/lenses/technologies.remote';
 	import { type SelectOption, type PendingEntity } from '$lib/components/ui';
 	import { getErrorMessage, logger } from '$lib/utils';
 	import FormActions from '$lib/components/ui/FormActions.svelte';
@@ -39,12 +37,14 @@
 	} from './form/lensFormRanges';
 	import {
 		collapseOpticalRangesForForm,
-		createEmptyOpticalRangeEntry,
-		expandOpticalRanges,
+		createEmptyOpticalRangeEntry
+	} from '$lib/utils/opticalRange/collapse';
+	import { expandOpticalRanges } from '$lib/utils/opticalRange/expand';
+	import {
 		hasOpticalRangeValidationErrors,
-		validateOpticalRangeEntry,
-		type OpticalRangeFormEntry
-	} from '$lib/utils/opticalRangeForm';
+		validateOpticalRangeEntry
+	} from '$lib/utils/opticalRange/validate';
+	import type { OpticalRangeFormEntry } from '$lib/utils/opticalRange/types';
 	import { LensType, LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
 	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
 	import { generateUUID } from '$lib/utils/generateUUID';

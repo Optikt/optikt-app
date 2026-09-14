@@ -2,8 +2,8 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { FreeItemCategory, SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales.remote';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales/items.remote';
+	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import { buildPersistedDisplayGroups } from './saleItemHelpers';
 	import { checkHasAnyCost, computeInternalCostTotal } from './itemsTable/costTotals';
 	import type { DisplayGroup } from './itemsTable/itemDisplay';

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import { AppBadge, TreatmentBadge } from '$lib/components/ui';
 	import { getPriceTypeLabel } from '$lib/shared/enums';
 	import { getLensInventorySummary } from './helpers';

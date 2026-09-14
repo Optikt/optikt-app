@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
-import { CoercedBoolean, CoercedNumber, EntityIdSchema } from './common';
+import { EntityIdSchema } from './common/identity';
+import { CoercedBoolean, CoercedNumber } from './common/numbers';
 
 const OptionalUuidOverrideSchema = z.preprocess(
 	(value) => (value === '' || value === null || value === undefined ? null : value),

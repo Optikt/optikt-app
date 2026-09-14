@@ -7,7 +7,7 @@
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
 	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus

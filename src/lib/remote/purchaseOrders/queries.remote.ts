@@ -10,13 +10,13 @@ import { z } from 'zod';
 import { ListPurchaseOrdersSchema, ConfirmPurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
 import { ListPurchaseOrderPaymentsSchema } from '$lib/schemas/purchaseOrderPayments';
 
+import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
 import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
 	getPurchaseOrderListStats as getPurchaseOrderListStatsQuery,
-	findPurchaseOrderByIdWithRelations,
-	getPurchaseOrderItems
-} from '$lib/server/db/queries/purchaseOrders';
+	findPurchaseOrderByIdWithRelations
+} from '$lib/server/db/queries/purchaseOrders/orders';
 import { getPurchaseOrderPayments } from '$lib/server/db/queries/purchaseOrderPayments';
 import { getUpcomingPurchaseOrderDues } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
 import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
@@ -24,7 +24,7 @@ import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/pur
 import type {
 	PurchaseOrderListStats,
 	PurchaseOrderWithRelations
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/types';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 
 import {

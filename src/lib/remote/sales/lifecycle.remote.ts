@@ -19,7 +19,7 @@ import { auditService, getAuditContext } from '$lib/server/audit';
 import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 
-import { createExpense } from '$lib/server/db/queries/cash';
+import { createExpense } from '$lib/server/db/queries/cash/expenses';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { inventoryMovements } from '$lib/server/db/schema';
 

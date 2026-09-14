@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PurchasePaymentTerms } from '$lib/shared/enums';
-import { CoercedNumber } from './common';
+import { CoercedNumber } from './common/numbers';
 
 const PurchaseOrderCreditTermsBaseSchema = z.object({
 	paymentTerms: z

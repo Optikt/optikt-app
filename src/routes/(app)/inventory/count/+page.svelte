@@ -10,7 +10,7 @@
 	} from '$lib/remote/inventoryCount.remote';
 	import type { InventoryCountScopeType } from '$lib/schemas/inventoryCount';
 	import type { ProductType } from '$lib/shared/enums';
-	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount';
+	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
 	import { getErrorMessage } from '$lib/utils';
 	import CountListHeader from '$lib/components/inventory/count/CountListHeader.svelte';
 	import CountListMetrics from '$lib/components/inventory/count/CountListMetrics.svelte';

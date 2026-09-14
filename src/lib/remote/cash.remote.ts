@@ -6,19 +6,16 @@ import { error } from '@sveltejs/kit';
 import { query, command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { db } from '$lib/server/db';
+import { getCashReport, type CashReport } from '$lib/server/db/queries/cash/report';
+import { getDailyBreakdown, type DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
+import { getPipeline, type PipelineSnapshot } from '$lib/server/db/queries/cash/pipeline';
 import {
 	createExpense,
 	findExpenseById,
-	getCashReport,
-	getDailyBreakdown,
-	getPipeline,
 	listExpenses,
 	voidExpense,
-	type CashReport,
-	type DailyBreakdownRow,
-	type ExpenseListRow,
-	type PipelineSnapshot
-} from '$lib/server/db/queries/cash';
+	type ExpenseListRow
+} from '$lib/server/db/queries/cash/expenses';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import {
 	CashReportFiltersSchema,

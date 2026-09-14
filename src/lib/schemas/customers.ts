@@ -3,15 +3,14 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
+import { PhoneSchema, IdNumberSchema } from './common/contacts';
 import {
-	PhoneSchema,
-	IdNumberSchema,
 	NameSchema,
 	OptionalEmailSchema,
-	ListPaginationWithDeletedSchema,
 	EntityIdSchema,
 	ReactivateEntitySchema
-} from './common';
+} from './common/identity';
+import { ListPaginationWithDeletedSchema } from './common/pagination';
 import { PrescriptionFieldsSchema } from './prescriptions';
 
 export const ListCustomersSchema = ListPaginationWithDeletedSchema;

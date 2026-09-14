@@ -1,6 +1,6 @@
 import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
 import type { ExpenseCategory, ExpenseCurrency, RateType } from '$lib/shared/enums';
-import type { ExpenseListRow } from '$lib/server/db/queries/cash';
+import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
 import { formatDateOnly } from '$lib/utils';
 
 export interface ExpenseFormData {

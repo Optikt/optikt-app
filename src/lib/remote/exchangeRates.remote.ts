@@ -1,5 +1,5 @@
 import { command, query } from '$app/server';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 import { publishExchangeRatesTransition } from '$lib/server/exchangeRates/health';
 import { getExchangeRatesSnapshot, refreshExchangeRates } from '$lib/server/exchangeRates/service';
 import { emitRatesUpdated } from '$lib/server/exchangeRates/events';

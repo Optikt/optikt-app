@@ -3,12 +3,13 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Info } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import type { OpticalRangeFormEntry, OpticalRangeValidation } from '$lib/utils/opticalRangeForm';
-	import {
-		SPHERE_RANGE_MODE,
-		createEmptyOpticalRangeValidation,
-		getOpticalRangePreview
-	} from '$lib/utils/opticalRangeForm';
+	import type {
+		OpticalRangeFormEntry,
+		OpticalRangeValidation
+	} from '$lib/utils/opticalRange/types';
+	import { SPHERE_RANGE_MODE } from '$lib/utils/opticalRange/types';
+	import { createEmptyOpticalRangeValidation } from '$lib/utils/opticalRange/validate';
+	import { getOpticalRangePreview } from '$lib/utils/opticalRange/expand';
 	import { LensCatalogSource } from '$lib/shared/enums';
 	import {
 		formCardClass,

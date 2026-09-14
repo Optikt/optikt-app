@@ -13,7 +13,7 @@ import { itemDisplayName } from '$lib/utils/purchaseOrderDetail';
 import type {
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderWithRelations
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/types';
 import type { InventoryLot } from '$lib/server/db/schema';
 
 export function buildSettlementDiscount(

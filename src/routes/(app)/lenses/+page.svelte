@@ -13,7 +13,7 @@
 		setQueryParam,
 		getErrorMessage
 	} from '$lib/utils';
-	import { listLensCatalog } from '$lib/remote/lenses.remote';
+	import { listLensCatalog } from '$lib/remote/lenses/catalog.remote';
 	import {
 		ALL_LENS_SOURCES,
 		ALL_LENS_TYPES,
@@ -23,7 +23,7 @@
 		LensCatalogSource,
 		LensType
 	} from '$lib/shared/enums';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
 

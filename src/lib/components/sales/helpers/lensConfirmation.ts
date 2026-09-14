@@ -4,7 +4,7 @@
  * (range warnings, lens type suggestions) for the sale wizard.
  */
 
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
 
 import type { SaleItemRow, LensSaleItemRow, FreeSaleItemRow } from '../newSaleTypes';

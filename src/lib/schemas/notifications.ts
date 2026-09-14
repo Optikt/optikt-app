@@ -1,3 +1,3 @@
-import { EntityIdSchema } from './common';
+import { EntityIdSchema } from './common/identity';
 
 export const MarkNotificationReadSchema = EntityIdSchema('Notificación');

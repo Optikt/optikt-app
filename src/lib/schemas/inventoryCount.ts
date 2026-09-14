@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CoercedInteger } from './common';
+import { CoercedInteger } from './common/numbers';
 import { ProductType } from '$lib/shared/enums';
 
 export const INVENTORY_COUNT_SESSION_STATUSES = ['OPEN', 'APPLIED', 'CANCELLED'] as const;

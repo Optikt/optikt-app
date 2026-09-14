@@ -5,11 +5,11 @@
 import { z } from 'zod';
 import {
 	NameSchema,
-	ListPaginationWithDeletedSchema,
 	EntityIdSchema,
 	OptionalUrlSchema,
 	ReactivateEntitySchema
-} from './common';
+} from './common/identity';
+import { ListPaginationWithDeletedSchema } from './common/pagination';
 
 export const ListBrandsSchema = ListPaginationWithDeletedSchema;
 

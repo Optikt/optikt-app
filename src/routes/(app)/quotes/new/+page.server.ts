@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
-import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses';
+import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { getNextQuoteNumber } from '$lib/server/db/queries/quotes';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 

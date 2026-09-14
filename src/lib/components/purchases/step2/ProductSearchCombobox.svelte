@@ -3,7 +3,7 @@
 	import { matchesAllTokens } from '$lib/utils/search';
 	import { logger } from '$lib/utils';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
 	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
 	import { getLensSourceLabel } from '$lib/shared/enums/lensTypes';

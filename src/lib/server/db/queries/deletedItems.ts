@@ -23,7 +23,9 @@ import { deleteBrand } from './brands';
 import { deleteCustomer, deletePrescription } from './customers';
 import { deleteSupplier, deleteSupplierTreatment } from './suppliers';
 import { deleteMaterial } from './materials';
-import { deleteLensMaterial, deleteLensTechnology, deleteLensCatalogItem } from './lenses';
+import { deleteLensCatalogItem } from './lenses/catalog';
+import { deleteLensMaterial } from './lenses/materials';
+import { deleteLensTechnology } from './lenses/technologies';
 import { deleteUser } from './users';
 
 type Row = Record<string, unknown>;

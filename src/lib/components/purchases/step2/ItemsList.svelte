@@ -5,7 +5,7 @@
 	import ItemRow from './ItemRow.svelte';
 	import ItemCard from './ItemCard.svelte';
 	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import { getCachedLensItems, getCachedProducts } from '../../sales/catalogCache.svelte';
 
 	interface Props {

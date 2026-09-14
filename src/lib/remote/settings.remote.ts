@@ -4,7 +4,7 @@
  */
 import { query, form } from '$app/server';
 import { requireUserAdmin } from '$lib/server/guards';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 import { UpdateSettingsSchema } from '$lib/schemas/settings';
 import {
 	getSettings as getSettingsQuery,

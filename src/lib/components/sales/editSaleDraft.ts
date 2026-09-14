@@ -1,9 +1,9 @@
 import { DiscountType } from '$lib/shared/enums';
 import { FreeItemCategory, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 import type { SupplierTreatment } from '$lib/server/db/schema';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
 import { cacheCatalogItems, getCachedLensItems } from './catalogCache.svelte';
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';

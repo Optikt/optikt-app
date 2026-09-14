@@ -9,8 +9,8 @@ import { eq, isNull, and, gte, lte, desc, ne, or } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { salePayments, sales, customers } from '$lib/server/db/schema';
 import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
-import { getAllSales } from './sales';
-import { getLensCatalogItemsWithRelations } from './lenses';
+import { getAllSales } from './sales/reads';
+import { getLensCatalogItemsWithRelations } from './lenses/catalog';
 import { RefundStatus } from '$lib/shared/enums';
 
 // ============================================================================

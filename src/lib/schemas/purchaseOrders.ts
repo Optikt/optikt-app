@@ -3,7 +3,8 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { CoercedNumber, CoercedInteger, ListPaginationWithDeletedSchema } from './common';
+import { CoercedNumber, CoercedInteger } from './common/numbers';
+import { ListPaginationWithDeletedSchema } from './common/pagination';
 import {
 	PurchaseOrderItemType,
 	PurchaseDocumentType,

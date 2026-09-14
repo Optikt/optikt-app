@@ -26,7 +26,7 @@ import {
 	createPrescription,
 	unsetCurrentPrescriptions
 } from '$lib/server/db/queries/customers';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales';
+import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 import { db } from '$lib/server/db';
 import {
 	quotes,

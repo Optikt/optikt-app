@@ -1,4 +1,4 @@
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import type { SaleItemRow } from '../../newSaleTypes';
 import { getEnabledEyeCount } from '../../saleItemHelpers';
 

@@ -2,7 +2,7 @@
 	import { Ban, ReceiptText, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { AppBadge, ConfirmModal, SlideOver } from '$lib/components/ui';
-	import { voidPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders.remote';
+	import { voidPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders/payments.remote';
 	import {
 		PURCHASE_PAYMENT_METHOD_LABELS,
 		CurrencyCode,

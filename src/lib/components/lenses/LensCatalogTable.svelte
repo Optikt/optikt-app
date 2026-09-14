@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Layers } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteLensCatalogItemById } from '$lib/remote/lenses.remote';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import { deleteLensCatalogItemById } from '$lib/remote/lenses/catalog-stock.remote';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 	import { getErrorMessage } from '$lib/utils';
 	import { ConfirmModal, DataGrid } from '$lib/components/ui';
 	import LensCatalogMobileCard from './table/LensCatalogMobileCard.svelte';

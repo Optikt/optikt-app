@@ -14,14 +14,18 @@ import {
 	createSession as createInventoryCountSession,
 	getActiveSession as getActiveInventoryCountSession,
 	getSessionById as getInventoryCountSessionById,
+	getSessions as getInventoryCountSessions
+} from '$lib/server/db/queries/inventoryCount/sessions';
+import {
 	getSessionLines as getInventoryCountSessionLines,
-	getSessions as getInventoryCountSessions,
 	setLineAdjustmentStatus as updateInventoryCountLineAdjustmentStatus,
-	upsertCountLine as saveInventoryCountLine,
-	type InventoryCountSessionDetail,
-	type InventoryCountSessionSummary,
-	type InventoryCountLineRow
-} from '$lib/server/db/queries/inventoryCount';
+	upsertCountLine as saveInventoryCountLine
+} from '$lib/server/db/queries/inventoryCount/lines';
+import type {
+	InventoryCountSessionDetail,
+	InventoryCountSessionSummary,
+	InventoryCountLineRow
+} from '$lib/server/db/queries/inventoryCount/types';
 import { requireRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { getErrorMessage } from '$lib/utils';

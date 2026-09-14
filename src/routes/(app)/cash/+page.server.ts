@@ -2,7 +2,9 @@ import type { PageServerLoad } from './$types';
 import { requirePageRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { monthStart, nowUTC, toEndOfDay, toISODate, toUTCString } from '$lib/dates';
-import { getCashReport, getDailyBreakdown, getPipeline } from '$lib/server/db/queries/cash';
+import { getCashReport } from '$lib/server/db/queries/cash/report';
+import { getDailyBreakdown } from '$lib/server/db/queries/cash/daily';
+import { getPipeline } from '$lib/server/db/queries/cash/pipeline';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

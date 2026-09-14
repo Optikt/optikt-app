@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatPrice } from '$lib/utils';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
+	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;

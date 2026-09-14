@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { FlaskConical } from '@lucide/svelte';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales';
+	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 	import { getTreatmentCategoryLabel } from '$lib/shared/enums';
 	import { formatPrice } from '$lib/utils';
 

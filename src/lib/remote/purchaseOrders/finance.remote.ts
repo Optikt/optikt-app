@@ -10,11 +10,11 @@ import { getErrorMessage } from '$lib/utils';
 import { ApplyPriceSuggestionsSchema } from '$lib/schemas/purchaseOrders';
 
 import { SetPurchaseOrderCreditTermsSchema } from '$lib/schemas/purchaseOrderCreditSchedule';
+import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
 import {
 	findPurchaseOrderById,
-	updatePurchaseOrder,
-	getPurchaseOrderItems
-} from '$lib/server/db/queries/purchaseOrders';
+	updatePurchaseOrder
+} from '$lib/server/db/queries/purchaseOrders/orders';
 import { getPurchaseOrderPayments } from '$lib/server/db/queries/purchaseOrderPayments';
 
 import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';

@@ -18,7 +18,7 @@ import {
 	SupplierTreatmentIdSchema
 } from '$lib/schemas/suppliers';
 import { BrandSupplierRelationSchema } from '$lib/schemas/brandSuppliers';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 import {
 	getAllSuppliers,
 	findSupplierById,

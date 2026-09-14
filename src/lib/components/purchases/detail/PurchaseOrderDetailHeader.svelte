@@ -11,7 +11,7 @@
 	} from '@lucide/svelte';
 	import { AppBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
 	import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders';
+	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
 	import { resolve } from '$app/paths';
 	import { peekBackUrl } from '$lib/utils';
 

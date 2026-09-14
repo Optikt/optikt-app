@@ -9,7 +9,10 @@ import { getErrorMessage } from '$lib/utils';
 
 import { UpdatePurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
 
-import { findPurchaseOrderById, updatePurchaseOrder } from '$lib/server/db/queries/purchaseOrders';
+import {
+	findPurchaseOrderById,
+	updatePurchaseOrder
+} from '$lib/server/db/queries/purchaseOrders/orders';
 
 import { db } from '$lib/server/db';
 import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';

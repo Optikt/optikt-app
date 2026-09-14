@@ -7,16 +7,14 @@ import { z } from 'zod';
 import { SavePurchaseOrderDraftSchema } from '$lib/schemas/purchaseOrders';
 
 import { SetPurchaseOrderCreditTermsSchema } from '$lib/schemas/purchaseOrderCreditSchedule';
-import {
-	findPurchaseOrderById,
-	getPurchaseOrderItems
-} from '$lib/server/db/queries/purchaseOrders';
+import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { findPurchaseOrderById } from '$lib/server/db/queries/purchaseOrders/orders';
 
 import type {
 	PurchaseOrderWithRelations,
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderItemDraftInput
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/types';
 
 import { PurchaseOrderItemType, PurchasePaymentTerms } from '$lib/shared/enums';
 

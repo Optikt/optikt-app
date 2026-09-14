@@ -1,12 +1,12 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
+import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
+import { getAllLensMaterials } from '$lib/server/db/queries/lenses/materials';
+import { getLensCatalogDistinctValues } from '$lib/server/db/queries/lenses/pending';
 import {
-	getAllLensMaterials,
-	getLensCatalogDistinctValues,
-	getLensCatalogItemsWithRelations,
 	getAllTechnologies,
 	getAllDifferentiators
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/technologies';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import {
 	ALL_LENS_SOURCES,

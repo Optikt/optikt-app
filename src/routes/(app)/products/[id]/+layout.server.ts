@@ -3,7 +3,7 @@ import { error } from '@sveltejs/kit';
 import {
 	getBrandAccessories,
 	getProductAccessoryOverride
-} from '$lib/server/db/queries/brandAccessories';
+} from '$lib/server/db/queries/brandAccessories/reads';
 import { getBrandSupplierMaps } from '$lib/server/db/queries/brandSuppliers';
 import { findProductByIdWithRelations } from '$lib/server/db/queries/products';
 import { isValidUuid } from '$lib/utils/uuid';

@@ -2,7 +2,7 @@
 	import { ConfirmModal } from '$lib/components/ui';
 	import { PriceSuggestionModal } from '$lib/components/purchases';
 	import { formatPrice } from '$lib/utils';
-	import type { PriceSuggestion } from '$lib/remote/purchaseOrders.remote';
+	import type { PriceSuggestion } from '$lib/remote/purchaseOrders/helpers';
 	import type { RevertTarget } from './purchaseDetail';
 
 	interface Props {

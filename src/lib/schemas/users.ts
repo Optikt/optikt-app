@@ -10,10 +10,10 @@ import {
 	PasswordSchema,
 	OptionalPasswordSchema,
 	NameSchema,
-	ListPaginationWithInactiveSchema,
 	EntityIdSchema,
 	ReactivateEntitySchema
-} from './common';
+} from './common/identity';
+import { ListPaginationWithInactiveSchema } from './common/pagination';
 
 export const ListUsersSchema = ListPaginationWithInactiveSchema.extend({
 	role: z.enum(UserRole).optional()

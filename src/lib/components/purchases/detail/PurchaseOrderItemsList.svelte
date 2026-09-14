@@ -12,7 +12,7 @@
 	import type {
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
-	} from '$lib/server/db/queries/purchaseOrders';
+	} from '$lib/server/db/queries/purchaseOrders/types';
 	import type { InventoryLot } from '$lib/server/db/schema';
 	import { PurchaseOrderStatus } from '$lib/shared/enums';
 	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';

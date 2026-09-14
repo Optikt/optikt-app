@@ -37,8 +37,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci # Dummy for import resolution
 
-      - name: Size gate (DT1, non-blocking)
-        continue-on-error: true
+      - name: Size gate (DT1 closed, blocking >520 lines)
         run: bash scripts/check-file-size.sh
 
   e2e-tests:

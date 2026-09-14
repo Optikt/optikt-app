@@ -3,8 +3,8 @@
  * Pure functions that create/reset draft rows and hydrate defaults.
  */
 
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses';
-import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import {
 	PurchaseDocumentType,

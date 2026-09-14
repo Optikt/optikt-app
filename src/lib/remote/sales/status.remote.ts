@@ -5,11 +5,8 @@
 import { query, command } from '$app/server';
 import { requireAuth } from '$lib/server/guards';
 import { SetSaleStatusSchema } from '$lib/schemas/sales';
-import {
-	findSaleById,
-	updateSale as updateSaleQuery,
-	getNextOrderNumber
-} from '$lib/server/db/queries/sales';
+import { findSaleById, getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
+import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writes';
 
 import { db } from '$lib/server/db';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
@@ -17,7 +14,7 @@ import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 import { nowISO } from '$lib/dates';
-import { EmptySchema } from '$lib/schemas/common';
+import { EmptySchema } from '$lib/schemas/common/dates';
 
 // ============================================================================
 // STATE TRANSITIONS

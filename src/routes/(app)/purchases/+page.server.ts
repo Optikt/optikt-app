@@ -5,7 +5,7 @@ import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
 	getPurchaseOrderListStats
-} from '$lib/server/db/queries/purchaseOrders';
+} from '$lib/server/db/queries/purchaseOrders/orders';
 import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
 import { PurchaseOrderStatus, PurchaseOrderUiState } from '$lib/shared/enums';
 

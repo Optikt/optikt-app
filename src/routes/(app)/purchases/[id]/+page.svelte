@@ -21,21 +21,21 @@
 		type RevertTarget
 	} from '$lib/components/purchases/detail/purchaseDetail';
 	import { setPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
+	import { applyPriceSuggestionsCmd } from '$lib/remote/purchaseOrders/finance.remote';
 	import {
-		applyPriceSuggestionsCmd,
 		cancelPurchaseOrderCmd,
 		confirmPurchaseOrderCmd,
 		markPurchaseOrderReadyCmd,
 		togglePurchaseOrderItemReviewedCmd,
-		unmarkPurchaseOrderReadyCmd,
-		type PriceSuggestion
-	} from '$lib/remote/purchaseOrders.remote';
+		unmarkPurchaseOrderReadyCmd
+	} from '$lib/remote/purchaseOrders/review.remote';
+	import type { PriceSuggestion } from '$lib/remote/purchaseOrders/helpers';
 	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
 	import { PurchaseOrderStatus } from '$lib/shared/enums';
 	import type {
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
-	} from '$lib/server/db/queries/purchaseOrders';
+	} from '$lib/server/db/queries/purchaseOrders/types';
 	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
 	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
 	import type {

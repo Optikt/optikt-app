@@ -15,7 +15,7 @@ import { UpdateLensCatalogItemSchema } from '$lib/schemas/lenses';
 import {
 	resolvePendingLensMaterial,
 	resolvePendingTechnology
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/pending';
 
 import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
 import type { LensCatalogItem, LensOpticalRange, NewLensCatalogItem } from '$lib/server/db/schema';

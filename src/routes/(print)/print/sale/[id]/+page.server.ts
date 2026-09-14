@@ -2,11 +2,9 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getSettings } from '$lib/server/db/queries/settings';
 import { SaleStatus } from '$lib/shared/enums';
-import {
-	findSaleByIdWithRelations,
-	getSaleItemsWithDetails,
-	getSalePayments
-} from '$lib/server/db/queries/sales';
+import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
+import { getSalePayments } from '$lib/server/db/queries/sales/payments';
+import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 
 // TODO: Verify if we should load the BCV rate value of Sale date, or by

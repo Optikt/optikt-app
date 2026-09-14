@@ -5,7 +5,7 @@
 	import { SearchInput, TablePagination } from '$lib/components/ui';
 	import { getErrorMessage } from '$lib/utils';
 	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import { listUsers } from '$lib/remote/users.remote';
+	import { listUsers } from '$lib/remote/users/commands.remote';
 	import { UsersTable, UserFormModal, ReactivateConfirmModal } from '$lib/components/users';
 	import { untrack } from 'svelte';
 	import type { UserListItem, PaginatedUsers } from '$lib/types/users';

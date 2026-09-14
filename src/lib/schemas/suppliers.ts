@@ -9,16 +9,17 @@ import {
 	OptionalPhoneSchema,
 	WhatsAppSchema,
 	InstagramSchema,
-	OptionalRifSchema,
+	OptionalRifSchema
+} from './common/contacts';
+import {
 	NameSchema,
 	OptionalEmailSchema,
 	EntityIdSchema,
-	ListPaginationSchema,
 	OptionalUrlSchema,
-	CoercedNumber,
-	CoercedBoolean,
 	ReactivateEntitySchema
-} from './common';
+} from './common/identity';
+import { CoercedNumber, CoercedBoolean } from './common/numbers';
+import { ListPaginationSchema } from './common/pagination';
 
 export const ListSuppliersSchema = ListPaginationSchema.extend({
 	type: z.enum(SupplierType).optional(),

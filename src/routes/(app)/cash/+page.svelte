@@ -7,11 +7,9 @@
 		getDailyBreakdownQuery,
 		getPipelineQuery
 	} from '$lib/remote/cash.remote';
-	import type {
-		CashReport,
-		DailyBreakdownRow,
-		PipelineSnapshot
-	} from '$lib/server/db/queries/cash';
+	import type { CashReport } from '$lib/server/db/queries/cash/report';
+	import type { DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
+	import type { PipelineSnapshot } from '$lib/server/db/queries/cash/pipeline';
 	import CashToolbar from '$lib/components/cash/CashToolbar.svelte';
 	import CashSummary from '$lib/components/cash/CashSummary.svelte';
 	import CashPipeline from '$lib/components/cash/CashPipeline.svelte';

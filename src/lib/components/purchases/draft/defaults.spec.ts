@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders';
+import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
 import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
 
 import {

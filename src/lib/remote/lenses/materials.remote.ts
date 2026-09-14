@@ -21,7 +21,7 @@ import {
 	findLensMaterialByCode,
 	createLensMaterial,
 	updateLensMaterial
-} from '$lib/server/db/queries/lenses';
+} from '$lib/server/db/queries/lenses/materials';
 
 import type { LensMaterial } from '$lib/server/db/schema';
 

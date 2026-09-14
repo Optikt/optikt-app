@@ -3,7 +3,7 @@ import { error } from '@sveltejs/kit';
 import { requirePageRole } from '$lib/server/guards';
 import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
 import { getActiveLensLotsFifo } from '$lib/server/db/queries/inventoryLots';
-import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses';
+import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import { UserRole } from '$lib/shared/enums';
 import { isValidUuid } from '$lib/utils/uuid';
 

@@ -8,7 +8,7 @@ import { requireRole } from '$lib/server/guards';
 import { UserRole } from '$lib/shared/enums';
 import { getReceivables } from '$lib/server/db/queries/receivables';
 import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
-import { addPayment } from '$lib/remote/sales.remote';
+import { addPayment } from '$lib/remote/sales/payments.remote';
 
 // ============================================================================
 // SCHEMAS

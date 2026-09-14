@@ -5,7 +5,7 @@
 		INVENTORY_COUNT_UI_FILTER_LABELS,
 		type InventoryCountUiFilter
 	} from '$lib/schemas/inventoryCount';
-	import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount';
+	import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount/types';
 	import {
 		differenceBadgeClass,
 		formatDifference,
