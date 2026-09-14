@@ -7,7 +7,7 @@
 -- ---------------------------------------------------------------------------
 UPDATE "sale_payments" SET "payment_date" =
 	date_trunc('day', "payment_date") + make_interval(
-		hrs => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
+		hours => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		mins => (EXTRACT(MINUTE FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		secs => FLOOR(EXTRACT(SECOND FROM "created_at" AT TIME ZONE 'America/Caracas'))::int
 	)
@@ -16,7 +16,7 @@ WHERE date_trunc('day', "payment_date") = "payment_date"
 --> statement-breakpoint
 UPDATE "purchase_orders" SET "order_date" =
 	date_trunc('day', "order_date") + make_interval(
-		hrs => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
+		hours => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		mins => (EXTRACT(MINUTE FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		secs => FLOOR(EXTRACT(SECOND FROM "created_at" AT TIME ZONE 'America/Caracas'))::int
 	)
@@ -25,7 +25,7 @@ WHERE date_trunc('day', "order_date") = "order_date"
 --> statement-breakpoint
 UPDATE "purchase_order_payments" SET "payment_date" =
 	date_trunc('day', "payment_date") + make_interval(
-		hrs => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
+		hours => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		mins => (EXTRACT(MINUTE FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		secs => FLOOR(EXTRACT(SECOND FROM "created_at" AT TIME ZONE 'America/Caracas'))::int
 	)
@@ -34,7 +34,7 @@ WHERE date_trunc('day', "payment_date") = "payment_date"
 --> statement-breakpoint
 UPDATE "quotes" SET "quote_date" =
 	date_trunc('day', "quote_date") + make_interval(
-		hrs => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
+		hours => (EXTRACT(HOUR FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		mins => (EXTRACT(MINUTE FROM "created_at" AT TIME ZONE 'America/Caracas'))::int,
 		secs => FLOOR(EXTRACT(SECOND FROM "created_at" AT TIME ZONE 'America/Caracas'))::int
 	)
