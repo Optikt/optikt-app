@@ -10,6 +10,7 @@ import {
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { getErrorMessage } from '$lib/utils';
+import { composeBusinessTimestamp } from '$lib/dates';
 
 import { SavePurchaseOrderDraftSchema } from '$lib/schemas/purchaseOrders';
 
@@ -79,7 +80,7 @@ export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, a
 					documentType: data.documentType,
 					invoiceNumber: data.invoiceNumber ?? null,
 					deliveryNoteNumber: data.deliveryNoteNumber ?? null,
-					orderDate: data.orderDate,
+					orderDate: composeBusinessTimestamp(data.orderDate),
 					bcvRate: data.bcvRate,
 					sourceRateToVes: data.altRate ?? null,
 					sourceCurrency: data.sourceCurrency,

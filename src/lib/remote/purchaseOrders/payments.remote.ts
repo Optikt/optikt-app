@@ -5,6 +5,7 @@
 import { command } from '$app/server';
 import { requireAdmin } from '$lib/server/guards';
 import { getErrorMessage } from '$lib/utils';
+import { composeBusinessTimestamp } from '$lib/dates';
 
 import {
 	CreatePurchaseOrderPaymentSchema,
@@ -104,7 +105,7 @@ export const addPurchaseOrderPaymentCmd = command(
 						paymentNumber,
 						paymentMethod: data.paymentMethod,
 						currencyCode,
-						paymentDate: data.paymentDate,
+						paymentDate: composeBusinessTimestamp(data.paymentDate),
 						amount: data.amount,
 						bcvUsdRate: data.bcvUsdRate,
 						specificRate: data.specificRate ?? null,

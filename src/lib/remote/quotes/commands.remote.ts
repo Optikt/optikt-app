@@ -28,7 +28,7 @@ import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
 import { eq } from 'drizzle-orm';
 
-import { nowISO } from '$lib/dates';
+import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 
 // ============================================================================
 // COMMANDS
@@ -149,7 +149,7 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 				quoteNumber,
 				customerId: customerId,
 				sellerId: context.userId!,
-				quoteDate: data.quoteDate,
+				quoteDate: composeBusinessTimestamp(data.quoteDate),
 				status: QuoteStatus.DRAFT,
 				subtotal,
 				discount: data.discount,

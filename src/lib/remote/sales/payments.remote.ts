@@ -23,6 +23,7 @@ import {
 } from '$lib/shared/enums';
 
 import { auditService, getAuditContext } from '$lib/server/audit';
+import { composeBusinessTimestamp } from '$lib/dates';
 
 import { submitSalePayment } from '$lib/server/payments/salePayments';
 
@@ -58,7 +59,7 @@ export const addPayment = command(AddPaymentSchema, async (data) => {
 				rateType: data.rateType ?? null,
 				isCasheaPayment: data.isCasheaPayment ?? false,
 				bcvRate: data.bcvRate,
-				paymentDate: data.paymentDate,
+				paymentDate: composeBusinessTimestamp(data.paymentDate),
 				usdBcvAmount: amountBcvUsd,
 				reference: data.reference ?? null,
 				notes: data.notes ?? null
