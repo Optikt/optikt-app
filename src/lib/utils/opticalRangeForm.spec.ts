@@ -8,7 +8,10 @@ import {
 	createEmptyOpticalRangeValidation,
 	validateOpticalRangeEntry
 } from './opticalRange/validate';
-import { collapseOpticalRangesForForm, createEmptyOpticalRangeEntry } from './opticalRange/collapse';
+import {
+	collapseOpticalRangesForForm,
+	createEmptyOpticalRangeEntry
+} from './opticalRange/collapse';
 import {
 	expandOpticalRanges,
 	getOpticalRangePreview,

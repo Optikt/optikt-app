@@ -1,8 +1,5 @@
 import type { DbOrTx } from '$lib/server/db/types';
-import {
-	addSalePayment,
-	recalcSalePaidAmount
-} from '$lib/server/db/queries/sales/payments';
+import { addSalePayment, recalcSalePaidAmount } from '$lib/server/db/queries/sales/payments';
 import type { SalePayment } from '$lib/server/db/schema';
 import type { PaymentMethod } from '$lib/shared/enums/paymentMethods';
 
