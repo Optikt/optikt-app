@@ -159,6 +159,8 @@ export const ConvertQuoteSchema = z.object({
 	id: z.uuid('ID de presupuesto inválido')
 });
 
+export type ConvertQuoteInput = z.infer<typeof ConvertQuoteSchema>;
+
 // ============================================================================
 // ID SCHEMA
 // ============================================================================

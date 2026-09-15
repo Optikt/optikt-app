@@ -80,9 +80,13 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 
 - Tests query-level de `confirmPurchaseOrder`/`cancelPurchaseOrder` (ya son el core) + FIFO de `cancelSaleCore`.
 
-### PR-D4 · Quote/conteo (pendiente)
+### PR-D4 · Quote (1d)
 
-- `convertQuoteToSaleCore`, `inventoryCountApplySessionCore`, path FIFO de `updateSale`.
+- `convertQuoteToSaleCore` extraído + tests de guardas.
+
+### PR-D5 · Cierre de cobertura (opcional)
+
+- Happy path de conversión, FIFO de `updateSale`, `inventoryCount.applySession`.
 
 ### PR-E · Rework del harness E2E (1.5d)
 

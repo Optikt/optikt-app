@@ -57,9 +57,15 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] Factories: `createSaleItem`, `createInventoryMovement`.
 - [ ] Pendiente → PR-D4.
 
-## PR-D4 · Quote/conteo (pendiente)
+## PR-D4 · Quote
 
-- [ ] `convertQuoteToSaleCore`, `inventoryCountApplySessionCore`, path FIFO de `updateSale`.
+- [x] `convertQuoteToSaleCore` extraído (`src/lib/server/quotes/`); `quotes/lifecycle.remote.ts` shell.
+- [x] Tests de guardas: no encontrado, no borrador, sin cliente asignado, sin ítems.
+- [ ] PR-D5 (opcional): happy path de conversión, path FIFO de `updateSale`, `inventoryCount.applySession` (su core ya existe como query).
+
+## PR-D5 · Cierre de cobertura (opcional)
+
+- [ ] Happy path de `convertQuoteToSaleCore`, FIFO de `updateSaleCore`, `applyInventoryCountSession`.
 
 ## PR-E · Rework E2E
 
