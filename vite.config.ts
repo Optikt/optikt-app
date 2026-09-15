@@ -30,6 +30,13 @@ export default defineConfig({
 	test: {
 		expect: { requireAssertions: true },
 
+		coverage: {
+			provider: 'v8',
+			reporter: ['text-summary', 'json-summary', 'html'],
+			reportsDirectory: './coverage',
+			include: ['src/lib/server/**', 'src/lib/remote/**', 'src/lib/shared/**', 'src/lib/schemas/**']
+		},
+
 		projects: [
 			{
 				extends: './vite.config.ts',

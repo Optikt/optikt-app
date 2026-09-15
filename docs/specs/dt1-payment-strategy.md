@@ -30,6 +30,8 @@ Scope: repo
    - `PurchasePaymentAdapter`: submission → `addPurchaseOrderPayment` + recalculo crédito/saldos
 3. Beneficio: UI único de pago; lógica under the hood por dominio. DT9 testea adapters con executor double.
 
+> **Actualización 2026-09-14 (plan `dt9-unit-e2e`):** el `PurchasePaymentAdapter` deja de estar diferido. DT9 extrae `src/lib/server/payments/purchasePayments.ts` del cuerpo de `addPurchaseOrderPaymentCmd` (remote queda shell) y lo testea con `executor: DbOrTx` contra Postgres real (Testcontainers). Ver `docs/plans/dt9-remote-tests.md` y spec `dt9-remote-core`.
+
 ## UI decomposition (después del registry)
 
 `PaymentForm.svelte` (1076) → `components/payments/`:
