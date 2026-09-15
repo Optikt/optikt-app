@@ -25,8 +25,8 @@ Detalle en `docs/specs/dt9-remote-core.md`. Motivo: hace los tests escalables y 
 
 ### 2. DB en tests: real y efímera, nunca mock
 
-- **Integración:** Postgres real por corrida vía Testcontainers. Migraciones una vez en `globalSetup`; `resetDb()` + factories por test; el container muere al final.
-- **E2E:** el mismo container, + seed de fixtures, con `webServer.env.DATABASE_URL`.
+- **Integración:** Postgres real por corrida vía Testcontainers. Migraciones una vez en el wrapper `scripts/run-integration-tests.mjs`; `resetDb()` + factories por test; el container muere al final.
+- **E2E:** el mismo container, + seed de fixtures. El container se gestiona antes de arrancar la app (wrapper), porque SvelteKit inlinea `$env/dynamic/private` al construir/cargar config; pasar `DATABASE_URL` al `webServer` por sí solo no alcanza.
 - **Por qué no mock:** un mock no prueba constraints, transacciones, FIFO ni round-trip de tipos (falso verde).
 - **Por qué no DB persistente (dev/compose):** estado bleed, seeds rotos entre corridas, riesgo de pisar data real, setup manual por máquina.
 
@@ -55,7 +55,7 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 
 ### PR-B · Harness de integración + spike Capa 3 (1.5d)
 
-- Testcontainers `globalSetup`: postgres:16, migraciones de `drizzle/`, `DATABASE_URL`.
+- Testcontainers vía wrapper `scripts/run-integration-tests.mjs`: postgres:16, migraciones de `drizzle/`, `DATABASE_URL` seteado antes de que Vite cargue el config.
 - Proyecto vitest `integration` (`src/**/*.int.spec.ts`, excluido de `server`); `resetDb()`; factories mínimas.
 - Spike (una vez): importar `.remote.ts` en vitest + `with_request_store`. Confirma o descarta Capa 3; Capa 2 no se bloquea.
 - Smoke tests del harness.
@@ -73,7 +73,7 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 
 ### PR-E · Rework del harness E2E (1.5d)
 
-- `globalSetup` de Playwright: container efímero → migraciones + admin (`scripts/bootstrap.js`) → seed fixtures → `webServer.env.DATABASE_URL`.
+- `globalSetup`/wrapper de Playwright: container efímero → migraciones + admin (`scripts/bootstrap.js`) → seed fixtures → env para el `webServer`.
 - `storageState` login ADMIN; `workers: 1`.
 - Quitar `test.skip` y el gating `OPTIKT_RUN_PURCHASE_E2E`; migrar el flujo de compra a crédito.
 - Quitar `services.postgres` del job E2E en CI.
@@ -99,7 +99,8 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 | --- | --- |
 | Spike Capa 3 falla (import `.remote.ts` / transform del plugin) | Capa 2 entrega el grueso; el core es el camino principal |
 | Internals de Kit cambian (`with_request_store`, `RequestState`) | Un solo archivo; pin de versión + test ruidoso |
-| `DATABASE_URL` no se propaga a workers vitest | `provide`/`inject` o archivo temporal de URL |
+| `DATABASE_URL` no se propaga a workers vitest | Wrapper arranca el container antes de Vite; `process.env` pisa `.env` en `loadEnv` |
+| `$env/dynamic/private` inlinea la DB de dev | El wrapper setea `DATABASE_URL` pre-config (resuelto en PR-B; test lo validó) |
 | Factories drift con el schema | Factories mínimas (solo NOT NULL relevantes) |
 | E2E flaky | `workers: 1`, selectores por role/name, sin waits fijos |
 

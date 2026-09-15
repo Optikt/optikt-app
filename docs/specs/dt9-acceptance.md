@@ -21,7 +21,7 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 
 - [ ] `@testcontainers/postgresql` en devDependencies.
 - [ ] Proyecto vitest `integration` (`src/**/*.int.spec.ts`) excluido del proyecto `server`.
-- [ ] `globalSetup`: postgres:16, migraciones de `drizzle/`, `DATABASE_URL` visible a workers.
+- [ ] Wrapper `scripts/run-integration-tests.mjs`: postgres:16 + migraciones + `DATABASE_URL` seteado antes de que Vite cargue el config.
 - [ ] `resetDb()` + factories mínimas.
 - [ ] Spike resuelto: importar `.remote.ts` en vitest + `with_request_store` (Capa 3) — viabilidad documentada.
 - [ ] Smoke test de harness verde.

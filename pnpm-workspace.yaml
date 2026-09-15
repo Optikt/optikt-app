@@ -1,5 +1,8 @@
 allowBuilds:
+  cpu-features: false
   esbuild: true
+  protobufjs: false
+  ssh2: false
 minimumReleaseAgeExclude:
   - '@node-rs/argon2-android-arm-eabi@2.2.0'
   - '@node-rs/argon2-android-arm64@2.2.0'

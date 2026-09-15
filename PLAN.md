@@ -50,9 +50,9 @@
 
 **Arquitectura decidida (2026-09-14):** shell/core. El `.remote.ts` queda como wrapper delgado (auth + validación + audit) y la lógica/transacción vive en `src/lib/server/<dominio>/<accion>.ts` (`<accion>Core(input, ctx)`), testeable sin internals de SvelteKit. Motivo: SvelteKit no tiene test utils oficiales (issue #14796 abierto; PR #15671 sin mergear y rechazado) y testear el wrapper re-testea el framework.
 
-**Sección Unit/Integración (vitest + Postgres real efímero con Testcontainers):** harness `globalSetup` con migraciones + `resetDb()` + factories; cores testeados contra DB real (FIFO, recalc, crédito, rollback); Capa 3 mínima con `with_request_store` (`@sveltejs/kit/internal/server`) para el wiring del wrapper (guards/validación con hook real/audit), sin mockear `$app/server`. Coverage: baseline instrumentado antes (PR-A) + ratchet al cierre.
+**Sección Unit/Integración (vitest + Postgres real efímero con Testcontainers):** wrapper (`scripts/run-integration-tests.mjs`) con container + migraciones + `resetDb()` + factories; cores testeados contra DB real (FIFO, recalc, crédito, rollback); Capa 3 mínima con `with_request_store` (`@sveltejs/kit/internal/server`) para el wiring del wrapper (guards/validación con hook real/audit), sin mockear `$app/server`. Coverage: baseline instrumentado antes (PR-A) + ratchet al cierre.
 
-**Sección E2E (Playwright + DB efímera):** `globalSetup` levanta la DB por corrida, migraciones + admin + fixtures; sin `test.skip` (hoy el job E2E pasa vacío). Flujos: login/guards, venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→aplicar, quote→sale. Corre en main.
+**Sección E2E (Playwright + DB efímera):** wrapper levanta la DB por corrida, migraciones + admin + fixtures; sin `test.skip` (hoy el job E2E pasa vacío). Flujos: login/guards, venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→aplicar, quote→sale. Corre en main.
 
 **Contras:** Testcontainers + migraciones + factories = setup no trivial; Capa 3 depende de internals de Kit (aislada en un archivo). Tiempo significativo.
 
