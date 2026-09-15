@@ -9,6 +9,7 @@ import {
 	products,
 	purchaseOrderItems,
 	purchaseOrders,
+	quotes,
 	saleItems,
 	sales,
 	suppliers,
@@ -234,6 +235,24 @@ export async function createInventoryMovement(
 			referenceType: MovementReferenceType.MANUAL_ADJUSTMENT,
 			referenceId: lotId,
 			createdById,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createQuote(overrides: Partial<typeof quotes.$inferInsert> = {}) {
+	orderCounter += 1;
+	const sellerId = overrides.sellerId ?? (await createUser()).id;
+	const [row] = await db
+		.insert(quotes)
+		.values({
+			quoteNumber: orderCounter,
+			sellerId,
+			quoteDate: new Date().toISOString(),
+			subtotal: 100,
+			snapshotTaxRate: 16,
+			total: 100,
 			...overrides
 		})
 		.returning();
