@@ -76,10 +76,13 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 - `createManualAdjustmentCore`, `revertFullLotCore`.
 - Tests contra DB real + wrapper mínimo.
 
-### PR-D3 · Cores compras/caja/quote + FIFO (2d)
+### PR-D3 · Compras/stock + FIFO (1d)
 
-- `confirmPurchaseOrderCore`, `cancelPurchaseOrderCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`, + paths FIFO de `updateSale`/`cancelSale`.
-- Tests core + wrapper mínimo.
+- Tests query-level de `confirmPurchaseOrder`/`cancelPurchaseOrder` (ya son el core) + FIFO de `cancelSaleCore`.
+
+### PR-D4 · Quote/conteo (pendiente)
+
+- `convertQuoteToSaleCore`, `inventoryCountApplySessionCore`, path FIFO de `updateSale`.
 
 ### PR-E · Rework del harness E2E (1.5d)
 

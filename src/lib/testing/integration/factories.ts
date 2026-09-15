@@ -4,20 +4,25 @@ import {
 	brands,
 	customers,
 	inventoryLots,
+	inventoryMovements,
 	materials,
 	products,
 	purchaseOrderItems,
 	purchaseOrders,
+	saleItems,
 	sales,
 	suppliers,
 	users
 } from '$lib/server/db/schema';
 import {
 	CurrencyCode,
+	InventoryMovementType,
+	MovementReferenceType,
 	PurchaseOrderItemType,
 	PurchaseOrderStatus,
 	UserRole
 } from '$lib/shared/enums';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
 
 function runId(): string {
 	return randomUUID().slice(0, 8);
@@ -191,6 +196,44 @@ export async function createInventoryLot(
 			unitPurchasePrice: 10,
 			unitSalePrice: 20,
 			bcvRateAtPurchase: 40,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createSaleItem(overrides: Partial<typeof saleItems.$inferInsert> = {}) {
+	const saleId = overrides.saleId ?? (await createSale()).id;
+	const [row] = await db
+		.insert(saleItems)
+		.values({
+			saleId,
+			itemType: SaleItemType.PRODUCT,
+			quantity: 1,
+			unitPrice: 20,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createInventoryMovement(
+	overrides: Partial<typeof inventoryMovements.$inferInsert> = {}
+) {
+	const lotId = overrides.lotId ?? (await createInventoryLot()).id;
+	const createdById = overrides.createdById ?? (await createUser()).id;
+	const [row] = await db
+		.insert(inventoryMovements)
+		.values({
+			movementType: InventoryMovementType.ADJUSTMENT_IN,
+			lotId,
+			itemType: 'PRODUCT',
+			quantityDelta: 1,
+			quantityBefore: 0,
+			quantityAfter: 1,
+			referenceType: MovementReferenceType.MANUAL_ADJUSTMENT,
+			referenceId: lotId,
+			createdById,
 			...overrides
 		})
 		.returning();
