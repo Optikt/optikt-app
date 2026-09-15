@@ -66,9 +66,14 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 - Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore`.
 - Tests core contra DB real (recalc, rollback, reglas) + 1-2 de wrapper por command.
 
-### PR-D · Cores compras/caja/inventario (2-3d)
+### PR-D · Cores lifecycle de venta (1d)
 
-- `confirmPurchaseOrderCore`, `addPurchaseOrderPaymentCore`, `voidPurchaseOrderPaymentCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`, `cancelSaleCore`, `updateSaleCore`.
+- `cancelSaleCore`, `updateSaleCore` (movidos desde PR-C).
+- Tests contra DB real (reglas + header-only) + wrapper mínimo.
+
+### PR-D2 · Cores compras/caja/inventario (2-3d)
+
+- `confirmPurchaseOrderCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`, + paths FIFO de `updateSale`/`cancelSale`.
 - Tests core + wrapper mínimo.
 
 ### PR-E · Rework del harness E2E (1.5d)

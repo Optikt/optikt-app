@@ -36,11 +36,18 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [ ] 1-2 tests de wrapper por command (guard 401, validación con hook real, happy path).
 - [ ] Comportamiento y UX intactos (verbatim move).
 
-## PR-D · Cores compras/caja/inventario
+## PR-D · Cores lifecycle de venta
 
-- [ ] Cores: `confirmPurchaseOrderCore`, `addPurchaseOrderPaymentCore`, `voidPurchaseOrderPaymentCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`.
+- [x] Cores: `cancelSaleCore`, `updateSaleCore` (movidos desde PR-C).
+- [x] Tests contra DB real: cancel (happy, permisos, ya cancelada), update header-only (happy, COMPLETED bloqueado, descuento bajo lo cobrado, items vacíos).
+- [x] Wrapper mínimo (`cancelSale`/`updateSale` 401).
+- [ ] Pendiente: path de items de `updateSale` (FIFO) y `cancelSale` con payments/REFUNDED — requieren fixtures de lotes; ver PR-D2.
+
+## PR-D2 · Cores compras/caja/inventario (pendiente)
+
+- [ ] Cores: `confirmPurchaseOrderCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`.
 - [ ] Tests core contra DB real + wrapper mínimo.
-- [ ] FIFO / recalc de saldos / crédito cubiertos.
+- [ ] Path FIFO de `updateSale`/`cancelSale` cubierto.
 
 ## PR-E · Rework E2E
 
