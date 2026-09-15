@@ -90,9 +90,9 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 
 ### PR-E · Rework del harness E2E (1.5d)
 
-- `globalSetup`/wrapper de Playwright: container efímero → migraciones + admin (`scripts/bootstrap.js`) → seed fixtures → env para el `webServer`.
-- `storageState` login ADMIN; `workers: 1`.
-- Quitar `test.skip` y el gating `OPTIKT_RUN_PURCHASE_E2E`; migrar el flujo de compra a crédito.
+- Wrapper `scripts/run-e2e-tests.mjs`: container efímero + `scripts/bootstrap.js` (migraciones + admin) + `playwright test`.
+- Login helper compartido; `workers: 1`.
+- Quitar `test.skip` y el gating `OPTIKT_RUN_PURCHASE_E2E`; migrar el flujo de compra (confirmación) y sumar smoke de login.
 - Quitar `services.postgres` del job E2E en CI.
 
 ### PR-F · Flujos E2E + CI + cierre (2d)
