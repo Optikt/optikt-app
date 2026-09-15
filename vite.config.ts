@@ -62,7 +62,21 @@ export default defineConfig({
 					name: 'server',
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/**/*.int.spec.ts']
+				}
+			},
+
+			{
+				extends: './vite.config.ts',
+
+				test: {
+					name: 'integration',
+					environment: 'node',
+					include: ['src/**/*.int.spec.ts'],
+					pool: 'forks',
+					fileParallelism: false,
+					testTimeout: 30_000,
+					hookTimeout: 120_000
 				}
 			}
 		]

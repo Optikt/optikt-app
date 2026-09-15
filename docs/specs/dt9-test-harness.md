@@ -19,9 +19,12 @@ Contrato reusable de infraestructura de tests. No describe un dominio; describe 
 - Proyecto vitest nuevo `integration`:
   - `environment: 'node'`
   - `include: ['src/**/*.int.spec.ts']`
-  - `globalSetup` que levanta el container, aplica migraciones y expone `DATABASE_URL`.
   - Excluir `**/*.int.spec.ts` del proyecto `server` para no correrlo sin DB.
-  - `fileParallelism: false` para evitar choques de truncate entre archivos.
+  - `pool: 'forks'` y `fileParallelism: false` para evitar choques de truncate entre archivos.
+- El container lo levanta `scripts/run-integration-tests.mjs` (wrapper), **no** un `globalSetup`:
+  - SvelteKit inlinea `$env/dynamic/private` desde `.env` al cargar el Vite config; un `globalSetup` corre después, así que el `db` de la app seguiría apuntando a la DB de dev.
+  - El wrapper arranca postgres:16, aplica migraciones de `drizzle/`, setea `process.env.DATABASE_URL` y recién ahí spawnea `vitest --project=integration` (Vite `loadEnv` deja que `process.env` pise `.env`). Teardown: `container.stop()`.
+  - Entrypoint: `pnpm test:integration` → `node scripts/run-integration-tests.mjs`.
 - Migraciones: reusar `drizzle/` con `drizzle-orm/postgres-js/migrator` (mismo mecanismo que `scripts/bootstrap.js`). No duplicar SQL.
 - Aislamiento por test: `resetDb()` hace `TRUNCATE <tablas de app> RESTART IDENTITY CASCADE` (nunca la tabla de migraciones de drizzle). Factories mínimas con `runId` único.
 - Factories mínimas (solo campos NOT NULL relevantes): `user(role)`, `supplier`, `customer`, `product`, `material`, `sale`. Mantenerlas chicas para que no haya drift con el schema.
