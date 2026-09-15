@@ -3,14 +3,21 @@ import { db } from '$lib/server/db';
 import {
 	brands,
 	customers,
+	inventoryLots,
 	materials,
 	products,
+	purchaseOrderItems,
 	purchaseOrders,
 	sales,
 	suppliers,
 	users
 } from '$lib/server/db/schema';
-import { CurrencyCode, PurchaseOrderStatus, UserRole } from '$lib/shared/enums';
+import {
+	CurrencyCode,
+	PurchaseOrderItemType,
+	PurchaseOrderStatus,
+	UserRole
+} from '$lib/shared/enums';
 
 function runId(): string {
 	return randomUUID().slice(0, 8);
@@ -142,6 +149,48 @@ export async function createPurchaseOrder(
 			settlementDebtAmount: 100,
 			settlementDebtAmountUsdBcvAtOrder: 100,
 			createdById,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createPurchaseOrderItem(
+	overrides: Partial<typeof purchaseOrderItems.$inferInsert> = {}
+) {
+	orderCounter += 1;
+	const purchaseOrderId = overrides.purchaseOrderId ?? (await createPurchaseOrder()).id;
+	const [row] = await db
+		.insert(purchaseOrderItems)
+		.values({
+			purchaseOrderId,
+			lineNumber: orderCounter,
+			itemType: PurchaseOrderItemType.PRODUCT,
+			quantity: 1,
+			unitPurchasePrice: 10,
+			unitSalePrice: 20,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createInventoryLot(
+	overrides: Partial<typeof inventoryLots.$inferInsert> = {}
+) {
+	orderCounter += 1;
+	const purchaseOrderItemId = overrides.purchaseOrderItemId ?? (await createPurchaseOrderItem()).id;
+	const [row] = await db
+		.insert(inventoryLots)
+		.values({
+			lotNumber: orderCounter,
+			purchaseOrderItemId,
+			itemType: 'PRODUCT',
+			quantityInitial: 10,
+			quantityAvailable: 10,
+			unitPurchasePrice: 10,
+			unitSalePrice: 20,
+			bcvRateAtPurchase: 40,
 			...overrides
 		})
 		.returning();

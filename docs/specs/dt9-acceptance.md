@@ -43,10 +43,16 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] Wrapper mínimo (`cancelSale`/`updateSale` 401).
 - [ ] Pendiente: path de items de `updateSale` (FIFO) y `cancelSale` con payments/REFUNDED — requieren fixtures de lotes; ver PR-D2.
 
-## PR-D2 · Cores compras/caja/inventario (pendiente)
+## PR-D2 · Cores inventario
 
-- [ ] Cores: `confirmPurchaseOrderCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`.
-- [ ] Tests core contra DB real + wrapper mínimo.
+- [x] Cores: `createManualAdjustmentCore`, `revertFullLotCore`.
+- [x] Tests contra DB real: outflow/inflow + stock cacheado, stock insuficiente, lote inexistente; revert happy, lote consumido, lote inexistente.
+- [x] Wrapper mínimo (401) + factories `createPurchaseOrderItem`/`createInventoryLot`.
+- [ ] Pendiente → PR-D3.
+
+## PR-D3 · Cores compras/caja/quote + FIFO (pendiente)
+
+- [ ] Cores: `confirmPurchaseOrderCore`, `cancelPurchaseOrderCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`.
 - [ ] Path FIFO de `updateSale`/`cancelSale` cubierto.
 
 ## PR-E · Rework E2E

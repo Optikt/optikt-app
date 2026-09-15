@@ -70,3 +70,6 @@ export const ListInventoryMovementsSchema = ListPaginationSchema.extend({
 export const RevertLotSchema = z.object({
 	lotId: z.uuid('Seleccione un lote')
 });
+
+export type ManualAdjustmentInput = z.infer<typeof ManualAdjustmentSchema>;
+export type RevertLotInput = z.infer<typeof RevertLotSchema>;
