@@ -63,12 +63,12 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 ### PR-C · Adapter pago compras + cores de dinero de venta (3d)
 
 - Extraer `src/lib/server/payments/purchasePayments.ts` del cuerpo de `addPurchaseOrderPaymentCmd` (remote queda shell). Desbloquea lo diferido en `dt1-payment-strategy`.
-- Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore`, `cancelSaleCore`, `updateSaleCore`.
+- Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore`.
 - Tests core contra DB real (recalc, rollback, reglas) + 1-2 de wrapper por command.
 
 ### PR-D · Cores compras/caja/inventario (2-3d)
 
-- `confirmPurchaseOrderCore`, `addPurchaseOrderPaymentCore`, `voidPurchaseOrderPaymentCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`.
+- `confirmPurchaseOrderCore`, `addPurchaseOrderPaymentCore`, `voidPurchaseOrderPaymentCore`, `cancelPurchaseOrderCore`, `createManualAdjustmentCore`, `revertFullLotCore`, `inventoryCountApplySessionCore`, `convertQuoteToSaleCore`, `cancelSaleCore`, `updateSaleCore`.
 - Tests core + wrapper mínimo.
 
 ### PR-E · Rework del harness E2E (1.5d)
