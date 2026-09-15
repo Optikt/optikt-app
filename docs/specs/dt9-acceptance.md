@@ -28,10 +28,12 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 
 ## PR-C · Adapter pago compras + cores venta
 
-- [ ] `src/lib/server/payments/purchasePayments.ts` extraído; `addPurchaseOrderPaymentCmd` es shell.
-- [ ] Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore`, `cancelSaleCore`, `updateSaleCore`.
+- [ ] `src/lib/server/payments/purchasePayments.ts` extraído (`submitPurchaseOrderPayment` + `voidPurchaseOrderPayment`); el remote de pagos de compra es shell.
+- [ ] Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore` (+ `ActionContext`/`getActionContext`).
+- [ ] `cancelSaleCore` y `updateSaleCore` se mueven a PR-D (los dos más grandes: inventario/caja y replace de items).
 - [ ] Tests core contra DB real: recalc, rollback, reglas de estado.
-- [ ] 1-2 tests de wrapper por command (guard, validación con hook real, audit).
+- [ ] Tests de adapter de compra contra DB real: amortización deuda nativa + void.
+- [ ] 1-2 tests de wrapper por command (guard 401, validación con hook real, happy path).
 - [ ] Comportamiento y UX intactos (verbatim move).
 
 ## PR-D · Cores compras/caja/inventario
