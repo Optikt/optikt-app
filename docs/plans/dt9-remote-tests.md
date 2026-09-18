@@ -95,11 +95,15 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 - Quitar `test.skip` y el gating `OPTIKT_RUN_PURCHASE_E2E`; migrar el flujo de compra (confirmación) y sumar smoke de login.
 - Quitar `services.postgres` del job E2E en CI.
 
-### PR-F · Flujos E2E + CI + cierre (2d)
+### PR-F · CI + coverage (1d)
 
-- 5 flujos: login/guards, venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→aplicar, quote→sale.
-- Job `integration-tests` en CI; E2E solo en main.
-- Coverage ratchet bloqueante; reporte de coverage final; cierre de DT9 en `PLAN.md`.
+- Job `integration-tests` en CI; job `Coverage` con thresholds bloqueantes.
+- `test:coverage` sobre todos los proyectos; reporte final `docs/testing/coverage-final.md`.
+
+### PR-F2 · Flujos E2E restantes (pendiente)
+
+- venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→aplicar, quote→sale.
+- Requiere mapear el modal de pago (rails + montos + referencia). Cierra DT9 en `PLAN.md`.
 
 ## Definition of Done
 

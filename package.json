@@ -15,7 +15,7 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest --run --project=server --project=client",
 		"test:integration": "node scripts/run-integration-tests.mjs",
-		"test:coverage": "vitest --run --coverage --project=server --project=client",
+		"test:coverage": "node scripts/run-coverage.mjs",
 		"test": "pnpm run test:unit && pnpm run test:e2e",
 		"test:e2e": "node scripts/run-e2e-tests.mjs",
 		"db:push": "drizzle-kit push",

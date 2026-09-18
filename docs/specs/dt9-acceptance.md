@@ -83,11 +83,19 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
   - Definir aislamiento de datos entre tests E2E (hoy cada test siembra datos únicos).
   - Evaluar `pnpm exec playwright` en vez de `spawn(node_modules/playwright/cli.js)`.
 
-## PR-F · Flujos + CI + cierre
+## PR-F · CI + coverage
 
-- [ ] 5 flujos E2E verdes: login/guards, venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→aplicar, quote→sale.
-- [ ] Job `integration-tests` en CI.
-- [ ] E2E solo en main.
-- [ ] Coverage ratchet bloqueante (floor global −2pts + globs dinero/stock).
-- [ ] `docs/testing/coverage-baseline.md` contrastado con reporte final.
-- [ ] `PLAN.md` DT9 ✅.
+- [x] Job `integration-tests` en CI → corre los 46 tests contra container efímero.
+- [x] Job `Coverage` con thresholds bloqueantes (global + `payments`/`inventory`).
+- [x] `test:coverage` mide todos los proyectos (unit + client + integration).
+- [x] Reporte final: `docs/testing/coverage-final.md` (Lines 18.06% → 26.62%).
+- [x] E2E: smoke de login + redirect de guards + confirmación de PO de crédito.
+
+## PR-F2 · Flujos E2E restantes (pendiente)
+
+- [ ] venta wizard→pago→estado.
+- [ ] compra crédito→pronto pago→caja (re-cubre los asserts del spec viejo).
+- [ ] conteo→aplicar.
+- [ ] quote→sale.
+- [ ] Cierre de DT9 en `PLAN.md`.
+- [ ] Requiere mapear el modal de pago (rails + montos + referencia), keystone de los flujos de dinero.
