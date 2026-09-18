@@ -76,6 +76,12 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] Flujo de compra migrado: confirmación de PO de crédito desde la UI.
 - [x] `services.postgres` + step "Bootstrap database" eliminados del job E2E.
 - [ ] Path de pago UI (rails/montos) y los 5 flujos completos → PR-F.
+- [ ] Deuda menor E2E (a abordar en PR-F/PR-D5):
+  - Re-cubrir los asserts de negocio del spec viejo (abonos parciales, pronto pago, `Desc. compras`/caja).
+  - `reuseExistingServer: !process.env.CI` + documentar el error de puerto 4173 ocupado.
+  - Documentar Docker como requisito de `pnpm test:e2e`.
+  - Definir aislamiento de datos entre tests E2E (hoy cada test siembra datos únicos).
+  - Evaluar `pnpm exec playwright` en vez de `spawn(node_modules/playwright/cli.js)`.
 
 ## PR-F · Flujos + CI + cierre
 
