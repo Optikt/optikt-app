@@ -1,11 +1,11 @@
-import { toSaleTotalsLine, buildQuoteItemValues } from '$lib/remote/quotes/helpers';
+import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
 import { findQuoteById, deleteQuoteItems } from '$lib/server/db/queries/quotes';
 import { db } from '$lib/server/db';
-import { quotes, quoteItems, quoteItemFreeDetails } from '$lib/server/db/schema';
+import { quotes } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { auditService } from '$lib/server/audit';
+import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
 import { eq } from 'drizzle-orm';
 import { nowISO } from '$lib/dates';
 import type { UpdateQuoteInput } from '$lib/schemas/quotes';
@@ -64,28 +64,7 @@ export async function updateExistingQuoteCore(data: UpdateQuoteInput, ctx: Actio
 
 		// Delete existing items and recreate (cascade deletes quoteItemFreeDetails)
 		await deleteQuoteItems(data.id, tx);
-		for (const item of data.items) {
-			const quoteItemId = item.id ?? crypto.randomUUID();
-			await tx
-				.insert(quoteItems)
-				.values(buildQuoteItemValues({ ...item, id: quoteItemId }, data.id, now));
-
-			// For FREE_ITEM: insert the free details row
-			if (item.itemType === SaleItemType.FREE_ITEM) {
-				await tx.insert(quoteItemFreeDetails).values({
-					id: crypto.randomUUID(),
-					quoteItemId,
-					category: item.freeItemCategory!,
-					description: item.freeItemDescription!,
-					enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-					unitCost: item.freeItemUnitCost ?? null,
-					supplierId: item.freeItemSupplierId ?? null,
-					opticalNotes: item.freeItemOpticalNotes ?? null,
-					createdAt: now,
-					updatedAt: now
-				});
-			}
-		}
+		await insertQuoteItems(tx, data.id, data.items, now);
 
 		return updated;
 	});

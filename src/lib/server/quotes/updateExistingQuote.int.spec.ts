@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { createNewQuoteCore } from './createNewQuote';
 import { updateExistingQuoteCore } from './updateExistingQuote';
+import { db } from '$lib/server/db';
+import { quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
 import { resetDb } from '$lib/testing/integration/db';
 import {
 	createMaterial,
@@ -10,7 +13,7 @@ import {
 	createUser
 } from '$lib/testing/integration/factories';
 import { DiscountType, UserRole } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateQuoteInput, QuoteItemInput, UpdateQuoteInput } from '$lib/schemas/quotes';
@@ -89,5 +92,49 @@ describe('updateExistingQuoteCore', () => {
 		const result = await updateExistingQuoteCore(update, ctx(crypto.randomUUID()));
 
 		expect(result).toEqual({ success: false, error: 'Presupuesto no encontrado' });
+	});
+
+	it('replaces items with a FREE_ITEM and stores its free details', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const created = await createNewQuoteCore(
+			{
+				quoteDate: '2026-09-15',
+				discount: 0,
+				discountType: DiscountType.FIXED,
+				snapshotTaxRate: 16,
+				items: [item(product.id)]
+			},
+			ctx(seller.id)
+		);
+		if (!created.success) throw new Error('quote was not created');
+		const update: UpdateQuoteInput = {
+			id: created.quote.id,
+			items: [
+				{
+					itemType: SaleItemType.FREE_ITEM,
+					quantity: 1,
+					unitPrice: 10,
+					discount: 0,
+					discountType: DiscountType.FIXED,
+					freeItemCategory: FreeItemCategory.SERVICE,
+					freeItemDescription: 'Servicio de prueba'
+				}
+			]
+		};
+
+		const result = await updateExistingQuoteCore(update, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		const storedItems = await db
+			.select()
+			.from(quoteItems)
+			.where(eq(quoteItems.quoteId, created.quote.id));
+		const details = await db
+			.select()
+			.from(quoteItemFreeDetails)
+			.where(eq(quoteItemFreeDetails.quoteItemId, storedItems[0].id));
+		expect(storedItems).toHaveLength(1);
+		expect(details).toHaveLength(1);
 	});
 });

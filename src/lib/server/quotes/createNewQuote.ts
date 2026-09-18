@@ -1,4 +1,4 @@
-import { toSaleTotalsLine, buildQuoteItemValues } from '$lib/remote/quotes/helpers';
+import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
 import { getNextQuoteNumber } from '$lib/server/db/queries/quotes';
 import {
 	findCustomerById,
@@ -6,13 +6,13 @@ import {
 	findCustomerByIdNumber
 } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
-import { quotes, quoteItems, quoteItemFreeDetails } from '$lib/server/db/schema';
+import { quotes } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { normalizeIdNumber } from '$lib/utils';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { auditService } from '$lib/server/audit';
+import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import type { CreateQuoteInput } from '$lib/schemas/quotes';
@@ -100,28 +100,7 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 			.returning();
 
 		// Create quote items (no stock changes!)
-		for (const item of data.items) {
-			const quoteItemId = item.id ?? crypto.randomUUID();
-			await tx
-				.insert(quoteItems)
-				.values(buildQuoteItemValues({ ...item, id: quoteItemId }, newQuote.id, now));
-
-			// For FREE_ITEM: insert the free details row
-			if (item.itemType === SaleItemType.FREE_ITEM) {
-				await tx.insert(quoteItemFreeDetails).values({
-					id: crypto.randomUUID(),
-					quoteItemId,
-					category: item.freeItemCategory!,
-					description: item.freeItemDescription!,
-					enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-					unitCost: item.freeItemUnitCost ?? null,
-					supplierId: item.freeItemSupplierId ?? null,
-					opticalNotes: item.freeItemOpticalNotes ?? null,
-					createdAt: now,
-					updatedAt: now
-				});
-			}
-		}
+		await insertQuoteItems(tx, newQuote.id, data.items, now);
 
 		return newQuote;
 	});

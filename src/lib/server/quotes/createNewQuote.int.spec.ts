@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { createNewQuoteCore } from './createNewQuote';
+import { db } from '$lib/server/db';
+import { quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
 import { resetDb } from '$lib/testing/integration/db';
 import {
 	createCustomer,
@@ -9,7 +12,7 @@ import {
 	createUser
 } from '$lib/testing/integration/factories';
 import { DiscountType, UserRole } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateQuoteInput, QuoteItemInput } from '$lib/schemas/quotes';
 
@@ -77,5 +80,86 @@ describe('createNewQuoteCore', () => {
 			success: false,
 			error: 'Ya existe un cliente con ese documento'
 		});
+	});
+
+	it('creates an inline customer inside the transaction', async () => {
+		const seller = await createUser();
+		const product = await seedProduct();
+		const input: CreateQuoteInput = {
+			newCustomer: { firstName: 'Ana', lastName: 'Pérez', idNumber: 'V-11223344' },
+			quoteDate: '2026-09-15',
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotTaxRate: 16,
+			items: [item(product.id)]
+		};
+
+		const result = await createNewQuoteCore(input, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not created');
+		expect(result.quote.customerId).toBeTruthy();
+	});
+
+	it('rejects a TREATMENT item without a parent', async () => {
+		const seller = await createUser();
+		const input: CreateQuoteInput = {
+			quoteDate: '2026-09-15',
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotTaxRate: 16,
+			items: [
+				{
+					itemType: SaleItemType.TREATMENT,
+					quantity: 1,
+					unitPrice: 10,
+					discount: 0,
+					discountType: DiscountType.FIXED,
+					supplierTreatmentId: crypto.randomUUID()
+				}
+			]
+		};
+
+		const result = await createNewQuoteCore(input, ctx(seller.id));
+
+		expect(result).toEqual({
+			success: false,
+			error: 'Tratamiento requiere un ítem de lente padre'
+		});
+	});
+
+	it('creates a FREE_ITEM with its free details row', async () => {
+		const seller = await createUser();
+		const freeItem: QuoteItemInput = {
+			itemType: SaleItemType.FREE_ITEM,
+			quantity: 1,
+			unitPrice: 10,
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			freeItemCategory: FreeItemCategory.SERVICE,
+			freeItemDescription: 'Servicio de prueba'
+		};
+		const input: CreateQuoteInput = {
+			quoteDate: '2026-09-15',
+			discount: 0,
+			discountType: DiscountType.FIXED,
+			snapshotTaxRate: 16,
+			items: [freeItem]
+		};
+
+		const result = await createNewQuoteCore(input, ctx(seller.id));
+
+		expect(result.success).toBe(true);
+		if (!result.success) throw new Error('quote was not created');
+		const [storedItem] = await db
+			.select()
+			.from(quoteItems)
+			.where(eq(quoteItems.quoteId, result.quote.id));
+		const details = await db
+			.select()
+			.from(quoteItemFreeDetails)
+			.where(eq(quoteItemFreeDetails.quoteItemId, storedItem.id));
+		expect(storedItem.itemType).toBe(SaleItemType.FREE_ITEM);
+		expect(details).toHaveLength(1);
 	});
 });
