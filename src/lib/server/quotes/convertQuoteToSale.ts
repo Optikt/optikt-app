@@ -118,13 +118,14 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				? (idMap.get(item.parentQuoteItemId) ?? null)
 				: null;
 
+			const prescriptionId =
+				item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null;
 			await insertSaleItem(tx, {
 				id: newId,
 				saleId: newSale.id,
 				item,
 				parentSaleItemId,
-				prescriptionId:
-					item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null,
+				prescriptionId,
 				userId: ctx.userId!,
 				now
 			});

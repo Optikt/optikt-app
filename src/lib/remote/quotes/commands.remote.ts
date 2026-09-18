@@ -24,8 +24,7 @@ import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 
 import { auditService, getAuditContext } from '$lib/server/audit';
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
-import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
+import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { eq } from 'drizzle-orm';
 
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
@@ -60,53 +59,9 @@ export const createNewQuote = command(CreateQuoteSchema, async (data) => {
 		}
 	}
 
-	// Validate TREATMENT items
-	const lensItemMap = new Map<string, string>();
-	for (const item of data.items) {
-		if (item.itemType === SaleItemType.LENS_PAIR && item.id && item.lensCatalogItemId) {
-			lensItemMap.set(item.id, item.lensCatalogItemId);
-		}
-	}
-
-	for (const item of data.items) {
-		if (item.itemType !== SaleItemType.TREATMENT) continue;
-
-		if (!item.parentQuoteItemId) {
-			return { success: false as const, error: 'Tratamiento requiere un ítem de lente padre' };
-		}
-		const parentLensId = lensItemMap.get(item.parentQuoteItemId);
-		if (!parentLensId) {
-			return {
-				success: false as const,
-				error: 'Tratamiento referencia un ítem padre que no es tipo LENS_PAIR'
-			};
-		}
-
-		if (!item.supplierTreatmentId) {
-			return { success: false as const, error: 'Tratamiento requiere un supplierTreatmentId' };
-		}
-
-		const lens = await findLensCatalogItemById(parentLensId);
-		if (!lens) {
-			return { success: false as const, error: 'Lente padre no encontrado' };
-		}
-		if (lens.source !== 'LAB') {
-			return {
-				success: false as const,
-				error: 'Los tratamientos solo aplican a cristales de tipo LAB'
-			};
-		}
-
-		const treatment = await findSupplierTreatmentById(item.supplierTreatmentId);
-		if (!treatment) {
-			return { success: false as const, error: 'Tratamiento de proveedor no encontrado' };
-		}
-		if (treatment.supplierId !== lens.supplierId) {
-			return {
-				success: false as const,
-				error: 'El tratamiento debe pertenecer al mismo proveedor del cristal'
-			};
-		}
+	const treatmentError = await validateTreatmentItems(data.items);
+	if (treatmentError) {
+		return { success: false as const, error: treatmentError.error };
 	}
 
 	// Calculate totals
