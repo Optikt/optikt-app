@@ -34,7 +34,20 @@ export default defineConfig({
 			provider: 'v8',
 			reporter: ['text-summary', 'json-summary', 'html'],
 			reportsDirectory: './coverage',
-			include: ['src/lib/server/**', 'src/lib/remote/**', 'src/lib/shared/**', 'src/lib/schemas/**']
+			include: [
+				'src/lib/server/**',
+				'src/lib/remote/**',
+				'src/lib/shared/**',
+				'src/lib/schemas/**'
+			],
+			thresholds: {
+				lines: 24,
+				statements: 23,
+				functions: 21,
+				branches: 15,
+				'src/lib/server/payments/**': { lines: 88 },
+				'src/lib/server/inventory/**': { lines: 80 }
+			}
 		},
 
 		projects: [
