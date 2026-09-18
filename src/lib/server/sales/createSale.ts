@@ -1,26 +1,19 @@
-import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
 import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
-import {
-	findCustomerById,
-	findCustomerByIdNumber,
-	createCustomer,
-	createPrescription,
-	unsetCurrentPrescriptions
-} from '$lib/server/db/queries/customers';
+import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import { sales, type Customer, type Prescription } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { SaleStatus, UserRole } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { normalizeIdNumber } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { nowISO, composeBusinessTimestamp } from '$lib/dates';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
+import { computeDocumentTotals } from '$lib/server/documentTotals';
+import { createInlineCustomer, resolveCustomerReference } from '$lib/server/customerReference';
 import type { CreateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -38,23 +31,14 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 	}
 
 	// Validate customer reference (reads only - safe outside transaction)
-	let existingCustomerId: string | null = null;
-
-	if (data.customerId) {
-		const customer = await findCustomerById(data.customerId);
-		if (!customer) {
-			return { success: false as const, error: 'Cliente no encontrado' };
-		}
-		existingCustomerId = customer.id;
-	} else if (!data.newCustomer) {
-		return { success: false as const, error: 'Debe seleccionar o crear un cliente' };
-	} else {
-		const normalizedIdNumber = normalizeIdNumber(data.newCustomer.idNumber);
-		const existing = await findCustomerByIdNumber(normalizedIdNumber);
-		if (existing) {
-			return { success: false as const, error: 'Ya existe un cliente con ese documento' };
-		}
+	const customerResolution = await resolveCustomerReference(data);
+	if ('error' in customerResolution) {
+		return { success: false as const, error: customerResolution.error };
 	}
+	if (!customerResolution.customerId && !data.newCustomer) {
+		return { success: false as const, error: 'Debe seleccionar o crear un cliente' };
+	}
+	const existingCustomerId = customerResolution.customerId;
 
 	const treatmentError = await validateTreatmentItems(data.items);
 	if (treatmentError) {
@@ -62,10 +46,11 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 	}
 
 	// Calculate totals from items (pure computation - safe outside transaction)
-	const totals = computeSaleTotals(
-		data.items.map((item) => toSaleTotalsLine(item, data.snapshotTaxRate ?? DEFAULT_TAX_RATE)),
+	const totals = computeDocumentTotals(
+		data.items,
 		data.discount,
-		data.discountType
+		data.discountType,
+		data.snapshotTaxRate ?? DEFAULT_TAX_RATE
 	);
 	const subtotal = totals.subtotal;
 	const total = totals.total;
@@ -85,20 +70,8 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 		if (existingCustomerId) {
 			customerId = existingCustomerId;
 		} else {
-			const customer = await createCustomer(
-				{
-					firstName: data.newCustomer!.firstName,
-					lastName: data.newCustomer!.lastName,
-					idNumber: normalizeIdNumber(data.newCustomer!.idNumber),
-					primaryPhone: data.newCustomer!.primaryPhone ?? '',
-					email: data.newCustomer!.email || null,
-					address: data.newCustomer!.address || null,
-					notes: data.newCustomer!.notes ?? null
-				},
-				tx
-			);
-			customerId = customer.id;
-			createdCustomer = customer;
+			createdCustomer = await createInlineCustomer(data.newCustomer!, tx);
+			customerId = createdCustomer.id;
 		}
 
 		if (data.prescription && hasLensItems) {

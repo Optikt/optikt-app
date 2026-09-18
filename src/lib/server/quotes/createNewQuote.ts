@@ -1,18 +1,12 @@
-import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
 import { getNextQuoteNumber } from '$lib/server/db/queries/quotes';
-import {
-	findCustomerById,
-	createCustomer,
-	findCustomerByIdNumber
-} from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import { quotes } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { normalizeIdNumber } from '$lib/utils';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
 import { auditService } from '$lib/server/audit';
 import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
+import { computeDocumentTotals } from '$lib/server/documentTotals';
+import { createInlineCustomer, resolveCustomerReference } from '$lib/server/customerReference';
 import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { composeBusinessTimestamp, nowISO } from '$lib/dates';
 import type { CreateQuoteInput } from '$lib/schemas/quotes';
@@ -24,21 +18,11 @@ import type { ActionContext } from '$lib/server/actionContext';
  */
 export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionContext) {
 	// Validate customer if provided
-	let existingCustomerId: string | null = null;
-
-	if (data.customerId) {
-		const customer = await findCustomerById(data.customerId);
-		if (!customer) {
-			return { success: false as const, error: 'Cliente no encontrado' };
-		}
-		existingCustomerId = customer.id;
-	} else if (data.newCustomer) {
-		const normalizedIdNumber = normalizeIdNumber(data.newCustomer.idNumber);
-		const existing = await findCustomerByIdNumber(normalizedIdNumber);
-		if (existing) {
-			return { success: false as const, error: 'Ya existe un cliente con ese documento' };
-		}
+	const customerResolution = await resolveCustomerReference(data);
+	if ('error' in customerResolution) {
+		return { success: false as const, error: customerResolution.error };
 	}
+	const existingCustomerId = customerResolution.customerId;
 
 	const treatmentError = await validateTreatmentItems(data.items);
 	if (treatmentError) {
@@ -46,10 +30,11 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 	}
 
 	// Calculate totals
-	const totals = computeSaleTotals(
-		data.items.map((item) => toSaleTotalsLine(item, data.snapshotTaxRate ?? DEFAULT_TAX_RATE)),
+	const totals = computeDocumentTotals(
+		data.items,
 		data.discount,
-		data.discountType
+		data.discountType,
+		data.snapshotTaxRate ?? DEFAULT_TAX_RATE
 	);
 	const subtotal = totals.subtotal;
 	const total = totals.total;
@@ -62,20 +47,7 @@ export async function createNewQuoteCore(data: CreateQuoteInput, ctx: ActionCont
 		// Create new customer inside transaction if needed
 		let customerId: string | null = existingCustomerId;
 		if (!customerId && data.newCustomer) {
-			const normalizedIdNumber = normalizeIdNumber(data.newCustomer.idNumber);
-			const customer = await createCustomer(
-				{
-					firstName: data.newCustomer.firstName,
-					lastName: data.newCustomer.lastName,
-					idNumber: normalizedIdNumber,
-					primaryPhone: data.newCustomer.primaryPhone ?? '',
-					email: data.newCustomer.email || null,
-					address: data.newCustomer.address || null,
-					notes: data.newCustomer.notes ?? null
-				},
-				tx
-			);
-			customerId = customer.id;
+			customerId = (await createInlineCustomer(data.newCustomer, tx)).id;
 		}
 
 		const [newQuote] = await tx
