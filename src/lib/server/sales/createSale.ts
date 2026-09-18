@@ -1,4 +1,4 @@
-import { resolveLensSnapshotCosts, toSaleTotalsLine } from '$lib/remote/sales/helpers';
+import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
 import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 import {
 	findCustomerById,
@@ -10,7 +10,6 @@ import {
 import { db } from '$lib/server/db';
 import {
 	sales,
-	saleItems,
 	saleItemFreeDetails,
 	type Customer,
 	type Prescription
@@ -22,16 +21,12 @@ import { normalizeIdNumber } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
 import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
-import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { nowISO, composeBusinessTimestamp } from '$lib/dates';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-import {
-	saleItemFreeDetailsInsertValues,
-	saleItemInsertValues
-} from '$lib/server/sales/saleItemInsert';
+import { insertSaleItem, saleItemFreeDetailsInsertValues } from '$lib/server/sales/saleItemInsert';
 import type { CreateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -217,37 +212,18 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 		for (const item of data.items) {
 			const saleItemId = item.id ?? crypto.randomUUID();
 
-			let lotId: string | null = null;
-			let snapshotCostTotal: number | null = null;
-			let snapshotCostUnit: number | null = null;
-			let snapshotLotsCount: number | null = null;
-
-			// FREE_ITEM: no inventory impact — skip FIFO entirely
-			if (item.itemType !== SaleItemType.FREE_ITEM) {
-				// FIFO lot consumption + stock decrement (shared logic)
-				({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
-					await consumeFifoForSaleItem(tx, newSale.id, item, ctx.userId!));
-			}
-
-			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
-
-			await tx.insert(saleItems).values(
-				saleItemInsertValues({
-					id: saleItemId,
-					saleId: newSale.id,
-					item,
-					parentSaleItemId: item.parentSaleItemId ?? null,
-					prescriptionId:
-						item.itemType === SaleItemType.LENS_PAIR
-							? (createdPrescription?.id ?? item.prescriptionId ?? null)
-							: null,
-					lotId,
-					snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-					snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-					snapshotLotsCount,
-					now
-				})
-			);
+			await insertSaleItem(tx, {
+				id: saleItemId,
+				saleId: newSale.id,
+				item,
+				parentSaleItemId: item.parentSaleItemId ?? null,
+				prescriptionId:
+					item.itemType === SaleItemType.LENS_PAIR
+						? (createdPrescription?.id ?? item.prescriptionId ?? null)
+						: null,
+				userId: ctx.userId!,
+				now
+			});
 
 			// For FREE_ITEM: insert the free details row
 			if (item.itemType === SaleItemType.FREE_ITEM) {

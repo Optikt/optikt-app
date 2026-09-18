@@ -1,47 +1,16 @@
-import type { saleItemFreeDetails } from '$lib/server/db/schema';
+import { saleItemFreeDetails, saleItems } from '$lib/server/db/schema';
+import type { DbOrTx } from '$lib/server/db/types';
+import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
+import { resolveLensSnapshotCosts } from '$lib/remote/quotes/helpers';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { saleItemCommonValues, type SaleItemValueSource } from '$lib/shared/saleItemValues';
 
 type FreeDetailsInsert = typeof saleItemFreeDetails.$inferInsert;
-
-type Nullable<T> = T | null | undefined;
-
-/** Structural source: accepts SaleItemInput and quote item details (null-tolerant fields). */
-type SaleItemInsertSource = {
-	itemType: string;
-	productId?: Nullable<string>;
-	lensCatalogItemId?: Nullable<string>;
-	supplierTreatmentId?: Nullable<string>;
-	odSphere?: Nullable<number>;
-	odCylinder?: Nullable<number>;
-	odAxis?: Nullable<number>;
-	odAddition?: Nullable<number>;
-	odAltura?: Nullable<number>;
-	osSphere?: Nullable<number>;
-	osCylinder?: Nullable<number>;
-	osAxis?: Nullable<number>;
-	osAddition?: Nullable<number>;
-	osAltura?: Nullable<number>;
-	quantity: number;
-	unitPrice: number;
-	discount: number;
-	discountType: string;
-	snapshotName?: Nullable<string>;
-	snapshotSku?: Nullable<string>;
-	snapshotBrand?: Nullable<string>;
-	snapshotBaseCost?: Nullable<number>;
-	snapshotMountingPrice?: Nullable<number>;
-	snapshotShippingPrice?: Nullable<number>;
-	snapshotSalePrice?: Nullable<number>;
-	snapshotPriceType?: Nullable<string>;
-	snapshotTreatmentCategory?: Nullable<string>;
-	snapshotIsTaxable?: Nullable<boolean>;
-	shippingCostPending?: Nullable<boolean>;
-	notes?: Nullable<string>;
-};
 
 export interface SaleItemInsertParams {
 	id: string;
 	saleId: string;
-	item: SaleItemInsertSource;
+	item: SaleItemValueSource;
 	parentSaleItemId: string | null;
 	prescriptionId: string | null;
 	lotId: string | null;
@@ -52,61 +21,60 @@ export interface SaleItemInsertParams {
 }
 
 export function saleItemInsertValues(params: SaleItemInsertParams) {
-	const {
-		id,
-		saleId,
-		item,
-		parentSaleItemId,
-		prescriptionId,
-		lotId,
-		snapshotCostTotal,
-		snapshotCostUnit,
-		snapshotLotsCount,
-		now
-	} = params;
-
 	return {
-		id,
-		saleId,
-		itemType: item.itemType,
-		parentSaleItemId,
-		productId: item.productId ?? null,
-		lensCatalogItemId: item.lensCatalogItemId ?? null,
-		supplierTreatmentId: item.supplierTreatmentId ?? null,
-		prescriptionId,
-		lotId,
-		odSphere: item.odSphere ?? null,
-		odCylinder: item.odCylinder ?? null,
-		odAxis: item.odAxis ?? null,
-		odAddition: item.odAddition ?? null,
-		odAltura: item.odAltura ?? null,
-		osSphere: item.osSphere ?? null,
-		osCylinder: item.osCylinder ?? null,
-		osAxis: item.osAxis ?? null,
-		osAddition: item.osAddition ?? null,
-		osAltura: item.osAltura ?? null,
-		quantity: item.quantity,
-		unitPrice: item.unitPrice,
-		discount: item.discount,
-		discountType: item.discountType,
-		snapshotName: item.snapshotName ?? null,
-		snapshotSku: item.snapshotSku ?? null,
-		snapshotBrand: item.snapshotBrand ?? null,
-		snapshotCostTotal,
-		snapshotCostUnit,
-		snapshotLotsCount,
-		snapshotBaseCost: item.snapshotBaseCost ?? null,
-		snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-		snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-		snapshotSalePrice: item.snapshotSalePrice ?? null,
-		snapshotPriceType: item.snapshotPriceType ?? null,
-		snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-		snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-		shippingCostPending: item.shippingCostPending ?? false,
-		notes: item.notes ?? null,
-		createdAt: now,
-		updatedAt: now
+		id: params.id,
+		saleId: params.saleId,
+		parentSaleItemId: params.parentSaleItemId,
+		prescriptionId: params.prescriptionId,
+		lotId: params.lotId,
+		...saleItemCommonValues(params.item),
+		snapshotCostTotal: params.snapshotCostTotal,
+		snapshotCostUnit: params.snapshotCostUnit,
+		snapshotLotsCount: params.snapshotLotsCount,
+		shippingCostPending: params.item.shippingCostPending ?? false,
+		createdAt: params.now,
+		updatedAt: params.now
 	};
+}
+
+export interface InsertSaleItemParams {
+	id: string;
+	saleId: string;
+	item: SaleItemValueSource;
+	parentSaleItemId: string | null;
+	prescriptionId: string | null;
+	userId: string;
+	now: string;
+}
+
+/** FIFO lot consumption + snapshot costs + sale item insert. Caller owns the transaction. */
+export async function insertSaleItem(executor: DbOrTx, params: InsertSaleItemParams) {
+	let lotId: string | null = null;
+	let snapshotCostTotal: number | null = null;
+	let snapshotCostUnit: number | null = null;
+	let snapshotLotsCount: number | null = null;
+
+	if (params.item.itemType !== SaleItemType.FREE_ITEM) {
+		({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
+			await consumeFifoForSaleItem(executor, params.saleId, params.item, params.userId));
+	}
+
+	const lensSnapshotCosts = resolveLensSnapshotCosts(params.item);
+
+	await executor.insert(saleItems).values(
+		saleItemInsertValues({
+			id: params.id,
+			saleId: params.saleId,
+			item: params.item,
+			parentSaleItemId: params.parentSaleItemId,
+			prescriptionId: params.prescriptionId,
+			lotId,
+			snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+			snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
+			snapshotLotsCount,
+			now: params.now
+		})
+	);
 }
 
 export interface SaleItemFreeDetailsInsertParams {

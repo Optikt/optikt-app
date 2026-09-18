@@ -1,4 +1,4 @@
-import { resolveLensSnapshotCosts, toSaleTotalsLine } from '$lib/remote/sales/helpers';
+import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
 import { findSaleById } from '$lib/server/db/queries/sales/reads';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
@@ -18,12 +18,8 @@ import { computeDiscount } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
 import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { nowISO } from '$lib/dates';
-import {
-	saleItemFreeDetailsInsertValues,
-	saleItemInsertValues
-} from '$lib/server/sales/saleItemInsert';
+import { insertSaleItem, saleItemFreeDetailsInsertValues } from '$lib/server/sales/saleItemInsert';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -228,32 +224,15 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 					? (idMap.get(item.parentSaleItemId) ?? null)
 					: null;
 
-				let lotId: string | null = null;
-				let snapshotCostTotal: number | null = null;
-				let snapshotCostUnit: number | null = null;
-				let snapshotLotsCount: number | null = null;
-
-				if (item.itemType !== SaleItemType.FREE_ITEM) {
-					({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
-						await consumeFifoForSaleItem(tx, data.id, item, ctx.userId!));
-				}
-
-				const lensSnapshotCosts = resolveLensSnapshotCosts(item);
-
-				await tx.insert(saleItems).values(
-					saleItemInsertValues({
-						id: saleItemId,
-						saleId: data.id,
-						item,
-						parentSaleItemId: resolvedParentId,
-						prescriptionId: item.prescriptionId ?? null,
-						lotId,
-						snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-						snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-						snapshotLotsCount,
-						now: nowISO()
-					})
-				);
+				await insertSaleItem(tx, {
+					id: saleItemId,
+					saleId: data.id,
+					item,
+					parentSaleItemId: resolvedParentId,
+					prescriptionId: item.prescriptionId ?? null,
+					userId: ctx.userId!,
+					now: nowISO()
+				});
 
 				if (item.itemType === SaleItemType.FREE_ITEM) {
 					await tx.insert(saleItemFreeDetails).values(
