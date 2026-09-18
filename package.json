@@ -17,7 +17,7 @@
 		"test:integration": "node scripts/run-integration-tests.mjs",
 		"test:coverage": "vitest --run --coverage --project=server --project=client",
 		"test": "pnpm run test:unit && pnpm run test:e2e",
-		"test:e2e": "playwright test",
+		"test:e2e": "node scripts/run-e2e-tests.mjs",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
