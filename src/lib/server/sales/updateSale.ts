@@ -1,25 +1,23 @@
-import { resolveLensSnapshotCosts, toSaleTotalsLine } from '$lib/remote/sales/helpers';
+import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
 import { findSaleById } from '$lib/server/db/queries/sales/reads';
 import { findCustomerById } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
 import {
 	sales,
 	saleItems,
-	saleItemFreeDetails,
 	products,
 	lensCatalogItems,
 	inventoryMovements
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { computeDiscount } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
 import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { nowISO } from '$lib/dates';
+import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -224,75 +222,15 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 					? (idMap.get(item.parentSaleItemId) ?? null)
 					: null;
 
-				let lotId: string | null = null;
-				let snapshotCostTotal: number | null = null;
-				let snapshotCostUnit: number | null = null;
-				let snapshotLotsCount: number | null = null;
-
-				if (item.itemType !== SaleItemType.FREE_ITEM) {
-					({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
-						await consumeFifoForSaleItem(tx, data.id, item, ctx.userId!));
-				}
-
-				const lensSnapshotCosts = resolveLensSnapshotCosts(item);
-
-				await tx.insert(saleItems).values({
+				await insertSaleItem(tx, {
 					id: saleItemId,
 					saleId: data.id,
-					itemType: item.itemType,
+					item,
 					parentSaleItemId: resolvedParentId,
-					productId: item.productId ?? null,
-					lensCatalogItemId: item.lensCatalogItemId ?? null,
-					supplierTreatmentId: item.supplierTreatmentId ?? null,
-					lotId,
 					prescriptionId: item.prescriptionId ?? null,
-					odSphere: item.odSphere ?? null,
-					odCylinder: item.odCylinder ?? null,
-					odAxis: item.odAxis ?? null,
-					odAddition: item.odAddition ?? null,
-					odAltura: item.odAltura ?? null,
-					osSphere: item.osSphere ?? null,
-					osCylinder: item.osCylinder ?? null,
-					osAxis: item.osAxis ?? null,
-					osAddition: item.osAddition ?? null,
-					osAltura: item.osAltura ?? null,
-					quantity: item.quantity,
-					unitPrice: item.unitPrice,
-					discount: item.discount,
-					discountType: item.discountType,
-					snapshotName: item.snapshotName ?? null,
-					snapshotSku: item.snapshotSku ?? null,
-					snapshotBrand: item.snapshotBrand ?? null,
-					snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-					snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-					snapshotLotsCount,
-					snapshotBaseCost: item.snapshotBaseCost ?? null,
-					snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-					snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-					snapshotSalePrice: item.snapshotSalePrice ?? null,
-					snapshotPriceType: item.snapshotPriceType ?? null,
-					snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-					snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-					shippingCostPending: item.shippingCostPending ?? false,
-					notes: item.notes ?? null,
-					createdAt: nowISO(),
-					updatedAt: nowISO()
+					userId: ctx.userId!,
+					now: nowISO()
 				});
-
-				if (item.itemType === SaleItemType.FREE_ITEM) {
-					await tx.insert(saleItemFreeDetails).values({
-						id: crypto.randomUUID(),
-						saleItemId,
-						category: item.freeItemCategory!,
-						description: item.freeItemDescription!,
-						enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-						unitCost: item.freeItemUnitCost ?? null,
-						supplierId: item.freeItemSupplierId ?? null,
-						opticalNotes: item.freeItemOpticalNotes ?? null,
-						createdAt: nowISO(),
-						updatedAt: nowISO()
-					});
-				}
 			}
 
 			// ── 5. Recalculate tax snapshot if provided ─────────────────────
