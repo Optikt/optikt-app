@@ -28,6 +28,10 @@ import { nowISO, composeBusinessTimestamp } from '$lib/dates';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+import {
+	saleItemFreeDetailsInsertValues,
+	saleItemInsertValues
+} from '$lib/server/sales/saleItemInsert';
 import type { CreateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -227,66 +231,39 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 
 			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
-			await tx.insert(saleItems).values({
-				id: saleItemId,
-				saleId: newSale.id,
-				itemType: item.itemType,
-				parentSaleItemId: item.parentSaleItemId ?? null,
-				productId: item.productId ?? null,
-				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				supplierTreatmentId: item.supplierTreatmentId ?? null,
-				prescriptionId:
-					item.itemType === SaleItemType.LENS_PAIR
-						? (createdPrescription?.id ?? item.prescriptionId ?? null)
-						: null,
-				lotId,
-				odSphere: item.odSphere ?? null,
-				odCylinder: item.odCylinder ?? null,
-				odAxis: item.odAxis ?? null,
-				odAddition: item.odAddition ?? null,
-				odAltura: item.odAltura ?? null,
-				osSphere: item.osSphere ?? null,
-				osCylinder: item.osCylinder ?? null,
-				osAxis: item.osAxis ?? null,
-				osAddition: item.osAddition ?? null,
-				osAltura: item.osAltura ?? null,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				discount: item.discount,
-				discountType: item.discountType,
-				snapshotName: item.snapshotName ?? null,
-				snapshotSku: item.snapshotSku ?? null,
-				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-				snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-				snapshotLotsCount,
-				snapshotBaseCost: item.snapshotBaseCost ?? null,
-				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-				snapshotSalePrice: item.snapshotSalePrice ?? null,
-				snapshotPriceType: item.snapshotPriceType ?? null,
-				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-				shippingCostPending: item.shippingCostPending ?? false,
-				notes: item.notes ?? null,
-				createdAt: now,
-				updatedAt: now
-			});
+			await tx.insert(saleItems).values(
+				saleItemInsertValues({
+					id: saleItemId,
+					saleId: newSale.id,
+					item,
+					parentSaleItemId: item.parentSaleItemId ?? null,
+					prescriptionId:
+						item.itemType === SaleItemType.LENS_PAIR
+							? (createdPrescription?.id ?? item.prescriptionId ?? null)
+							: null,
+					lotId,
+					snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+					snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
+					snapshotLotsCount,
+					now
+				})
+			);
 
 			// For FREE_ITEM: insert the free details row
 			if (item.itemType === SaleItemType.FREE_ITEM) {
-				await tx.insert(saleItemFreeDetails).values({
-					id: crypto.randomUUID(),
-					saleItemId,
-					category: item.freeItemCategory!,
-					description: item.freeItemDescription!,
-					enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-					unitCost: item.freeItemUnitCost ?? null,
-					supplierId: item.freeItemSupplierId ?? null,
-					opticalNotes: item.freeItemOpticalNotes ?? null,
-					createdAt: now,
-					updatedAt: now
-				});
+				await tx.insert(saleItemFreeDetails).values(
+					saleItemFreeDetailsInsertValues({
+						id: crypto.randomUUID(),
+						saleItemId,
+						category: item.freeItemCategory!,
+						description: item.freeItemDescription!,
+						enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
+						unitCost: item.freeItemUnitCost ?? null,
+						supplierId: item.freeItemSupplierId ?? null,
+						opticalNotes: item.freeItemOpticalNotes ?? null,
+						now
+					})
+				);
 			}
 		}
 

@@ -28,6 +28,10 @@ import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { nowISO, toISODate, nowUTC } from '$lib/dates';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
+import {
+	saleItemFreeDetailsInsertValues,
+	saleItemInsertValues
+} from '$lib/server/sales/saleItemInsert';
 import type { ConvertQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -142,66 +146,40 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 
 			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
-			await tx.insert(saleItems).values({
-				id: newId,
-				saleId: newSale.id,
-				itemType: item.itemType,
-				parentSaleItemId,
-				productId: item.productId ?? null,
-				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				supplierTreatmentId: item.supplierTreatmentId ?? null,
-				lotId,
-				prescriptionId:
-					item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null,
-				odSphere: item.odSphere ?? null,
-				odCylinder: item.odCylinder ?? null,
-				odAxis: item.odAxis ?? null,
-				odAddition: item.odAddition ?? null,
-				odAltura: item.odAltura ?? null,
-				osSphere: item.osSphere ?? null,
-				osCylinder: item.osCylinder ?? null,
-				osAxis: item.osAxis ?? null,
-				osAddition: item.osAddition ?? null,
-				osAltura: item.osAltura ?? null,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				discount: item.discount,
-				discountType: item.discountType,
-				snapshotName: item.snapshotName ?? null,
-				snapshotSku: item.snapshotSku ?? null,
-				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-				snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-				snapshotLotsCount,
-				snapshotBaseCost: item.snapshotBaseCost ?? null,
-				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-				snapshotSalePrice: item.snapshotSalePrice ?? null,
-				snapshotPriceType: item.snapshotPriceType ?? null,
-				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-				notes: item.notes ?? null,
-				createdAt: now,
-				updatedAt: now
-			});
+			await tx.insert(saleItems).values(
+				saleItemInsertValues({
+					id: newId,
+					saleId: newSale.id,
+					item,
+					parentSaleItemId,
+					prescriptionId:
+						item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null,
+					lotId,
+					snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+					snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
+					snapshotLotsCount,
+					now
+				})
+			);
 
 			// FREE_ITEM: copy free details from quote to sale
 			if (item.itemType === SaleItemType.FREE_ITEM && item.freeDetails) {
-				await tx.insert(saleItemFreeDetails).values({
-					id: crypto.randomUUID(),
-					saleItemId: newId,
-					category: item.freeDetails.category,
-					description: item.freeDetails.description,
-					enrichmentStatus: item.freeDetails.enrichmentStatus,
-					unitCost: item.freeDetails.unitCost,
-					supplierId: item.freeDetails.supplierId,
-					opticalNotes: item.freeDetails.opticalNotes,
-					// Preserve enrichment metadata if already enriched
-					enrichedAt: item.freeDetails.enrichedAt,
-					enrichedById: item.freeDetails.enrichedById,
-					createdAt: now,
-					updatedAt: now
-				});
+				await tx.insert(saleItemFreeDetails).values(
+					saleItemFreeDetailsInsertValues({
+						id: crypto.randomUUID(),
+						saleItemId: newId,
+						category: item.freeDetails.category,
+						description: item.freeDetails.description,
+						enrichmentStatus: item.freeDetails.enrichmentStatus,
+						unitCost: item.freeDetails.unitCost,
+						supplierId: item.freeDetails.supplierId,
+						opticalNotes: item.freeDetails.opticalNotes,
+						// Preserve enrichment metadata if already enriched
+						enrichedAt: item.freeDetails.enrichedAt,
+						enrichedById: item.freeDetails.enrichedById,
+						now
+					})
+				);
 			}
 		}
 

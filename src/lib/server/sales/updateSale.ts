@@ -20,6 +20,10 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { nowISO } from '$lib/dates';
+import {
+	saleItemFreeDetailsInsertValues,
+	saleItemInsertValues
+} from '$lib/server/sales/saleItemInsert';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -236,62 +240,35 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 
 				const lensSnapshotCosts = resolveLensSnapshotCosts(item);
 
-				await tx.insert(saleItems).values({
-					id: saleItemId,
-					saleId: data.id,
-					itemType: item.itemType,
-					parentSaleItemId: resolvedParentId,
-					productId: item.productId ?? null,
-					lensCatalogItemId: item.lensCatalogItemId ?? null,
-					supplierTreatmentId: item.supplierTreatmentId ?? null,
-					lotId,
-					prescriptionId: item.prescriptionId ?? null,
-					odSphere: item.odSphere ?? null,
-					odCylinder: item.odCylinder ?? null,
-					odAxis: item.odAxis ?? null,
-					odAddition: item.odAddition ?? null,
-					odAltura: item.odAltura ?? null,
-					osSphere: item.osSphere ?? null,
-					osCylinder: item.osCylinder ?? null,
-					osAxis: item.osAxis ?? null,
-					osAddition: item.osAddition ?? null,
-					osAltura: item.osAltura ?? null,
-					quantity: item.quantity,
-					unitPrice: item.unitPrice,
-					discount: item.discount,
-					discountType: item.discountType,
-					snapshotName: item.snapshotName ?? null,
-					snapshotSku: item.snapshotSku ?? null,
-					snapshotBrand: item.snapshotBrand ?? null,
-					snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-					snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-					snapshotLotsCount,
-					snapshotBaseCost: item.snapshotBaseCost ?? null,
-					snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-					snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-					snapshotSalePrice: item.snapshotSalePrice ?? null,
-					snapshotPriceType: item.snapshotPriceType ?? null,
-					snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-					snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-					shippingCostPending: item.shippingCostPending ?? false,
-					notes: item.notes ?? null,
-					createdAt: nowISO(),
-					updatedAt: nowISO()
-				});
+				await tx.insert(saleItems).values(
+					saleItemInsertValues({
+						id: saleItemId,
+						saleId: data.id,
+						item,
+						parentSaleItemId: resolvedParentId,
+						prescriptionId: item.prescriptionId ?? null,
+						lotId,
+						snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
+						snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
+						snapshotLotsCount,
+						now: nowISO()
+					})
+				);
 
 				if (item.itemType === SaleItemType.FREE_ITEM) {
-					await tx.insert(saleItemFreeDetails).values({
-						id: crypto.randomUUID(),
-						saleItemId,
-						category: item.freeItemCategory!,
-						description: item.freeItemDescription!,
-						enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-						unitCost: item.freeItemUnitCost ?? null,
-						supplierId: item.freeItemSupplierId ?? null,
-						opticalNotes: item.freeItemOpticalNotes ?? null,
-						createdAt: nowISO(),
-						updatedAt: nowISO()
-					});
+					await tx.insert(saleItemFreeDetails).values(
+						saleItemFreeDetailsInsertValues({
+							id: crypto.randomUUID(),
+							saleItemId,
+							category: item.freeItemCategory!,
+							description: item.freeItemDescription!,
+							enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
+							unitCost: item.freeItemUnitCost ?? null,
+							supplierId: item.freeItemSupplierId ?? null,
+							opticalNotes: item.freeItemOpticalNotes ?? null,
+							now: nowISO()
+						})
+					);
 				}
 			}
 
