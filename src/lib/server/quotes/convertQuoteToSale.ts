@@ -7,7 +7,7 @@ import {
 } from '$lib/server/db/queries/customers';
 import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 import { db } from '$lib/server/db';
-import { quotes, saleItemFreeDetails, sales, type Prescription } from '$lib/server/db/schema';
+import { quotes, sales, type Prescription } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { SaleStatus } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
@@ -17,7 +17,7 @@ import { eq } from 'drizzle-orm';
 import { nowISO, toISODate, nowUTC } from '$lib/dates';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
-import { insertSaleItem, saleItemFreeDetailsInsertValues } from '$lib/server/sales/saleItemInsert';
+import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import type { ConvertQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -128,26 +128,6 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				userId: ctx.userId!,
 				now
 			});
-
-			// FREE_ITEM: copy free details from quote to sale
-			if (item.itemType === SaleItemType.FREE_ITEM && item.freeDetails) {
-				await tx.insert(saleItemFreeDetails).values(
-					saleItemFreeDetailsInsertValues({
-						id: crypto.randomUUID(),
-						saleItemId: newId,
-						category: item.freeDetails.category,
-						description: item.freeDetails.description,
-						enrichmentStatus: item.freeDetails.enrichmentStatus,
-						unitCost: item.freeDetails.unitCost,
-						supplierId: item.freeDetails.supplierId,
-						opticalNotes: item.freeDetails.opticalNotes,
-						// Preserve enrichment metadata if already enriched
-						enrichedAt: item.freeDetails.enrichedAt,
-						enrichedById: item.freeDetails.enrichedById,
-						now
-					})
-				);
-			}
 		}
 
 		// Mark quote as converted

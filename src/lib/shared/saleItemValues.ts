@@ -1,4 +1,19 @@
+import type { saleItemFreeDetails } from '$lib/server/db/schema';
+
 type Nullable<T> = T | null | undefined;
+
+type FreeDetailsInsert = typeof saleItemFreeDetails.$inferInsert;
+
+export interface SaleItemFreeDetailsSource {
+	category: FreeDetailsInsert['category'];
+	description: string;
+	enrichmentStatus: FreeDetailsInsert['enrichmentStatus'];
+	unitCost?: Nullable<number>;
+	supplierId?: Nullable<string>;
+	opticalNotes?: Nullable<string>;
+	enrichedAt?: Nullable<string>;
+	enrichedById?: Nullable<string>;
+}
 
 /** Structural source shared by sale items and quote items (null-tolerant fields). */
 export interface SaleItemValueSource {
@@ -32,6 +47,12 @@ export interface SaleItemValueSource {
 	snapshotIsTaxable?: Nullable<boolean>;
 	shippingCostPending?: Nullable<boolean>;
 	notes?: Nullable<string>;
+	freeItemCategory?: Nullable<string>;
+	freeItemDescription?: Nullable<string>;
+	freeItemUnitCost?: Nullable<number>;
+	freeItemSupplierId?: Nullable<string>;
+	freeItemOpticalNotes?: Nullable<string>;
+	freeDetails?: Nullable<SaleItemFreeDetailsSource>;
 }
 
 /** Item columns shared by sale_items and quote_items inserts. */

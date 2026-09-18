@@ -8,15 +8,10 @@ import {
 	unsetCurrentPrescriptions
 } from '$lib/server/db/queries/customers';
 import { db } from '$lib/server/db';
-import {
-	sales,
-	saleItemFreeDetails,
-	type Customer,
-	type Prescription
-} from '$lib/server/db/schema';
+import { sales, type Customer, type Prescription } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { SaleStatus, UserRole } from '$lib/shared/enums';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { normalizeIdNumber } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
 import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
@@ -26,7 +21,7 @@ import { nowISO, composeBusinessTimestamp } from '$lib/dates';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-import { insertSaleItem, saleItemFreeDetailsInsertValues } from '$lib/server/sales/saleItemInsert';
+import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import type { CreateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -224,23 +219,6 @@ export async function createSaleCore(data: CreateSaleInput, ctx: ActionContext) 
 				userId: ctx.userId!,
 				now
 			});
-
-			// For FREE_ITEM: insert the free details row
-			if (item.itemType === SaleItemType.FREE_ITEM) {
-				await tx.insert(saleItemFreeDetails).values(
-					saleItemFreeDetailsInsertValues({
-						id: crypto.randomUUID(),
-						saleItemId,
-						category: item.freeItemCategory!,
-						description: item.freeItemDescription!,
-						enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-						unitCost: item.freeItemUnitCost ?? null,
-						supplierId: item.freeItemSupplierId ?? null,
-						opticalNotes: item.freeItemOpticalNotes ?? null,
-						now
-					})
-				);
-			}
 		}
 
 		return { sale: newSale, newCustomer: createdCustomer, prescription: createdPrescription };

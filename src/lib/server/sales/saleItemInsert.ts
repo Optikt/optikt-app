@@ -2,7 +2,7 @@ import { saleItemFreeDetails, saleItems } from '$lib/server/db/schema';
 import type { DbOrTx } from '$lib/server/db/types';
 import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { resolveLensSnapshotCosts } from '$lib/remote/quotes/helpers';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { saleItemCommonValues, type SaleItemValueSource } from '$lib/shared/saleItemValues';
 
 type FreeDetailsInsert = typeof saleItemFreeDetails.$inferInsert;
@@ -75,6 +75,28 @@ export async function insertSaleItem(executor: DbOrTx, params: InsertSaleItemPar
 			now: params.now
 		})
 	);
+
+	if (params.item.itemType === SaleItemType.FREE_ITEM) {
+		const free = params.item.freeDetails;
+		const category = free?.category ?? params.item.freeItemCategory;
+		if (category) {
+			await executor.insert(saleItemFreeDetails).values(
+				saleItemFreeDetailsInsertValues({
+					id: crypto.randomUUID(),
+					saleItemId: params.id,
+					category,
+					description: free?.description ?? params.item.freeItemDescription ?? '',
+					enrichmentStatus: free?.enrichmentStatus ?? FreeItemEnrichmentStatus.PENDING,
+					unitCost: free?.unitCost ?? params.item.freeItemUnitCost ?? null,
+					supplierId: free?.supplierId ?? params.item.freeItemSupplierId ?? null,
+					opticalNotes: free?.opticalNotes ?? params.item.freeItemOpticalNotes ?? null,
+					enrichedAt: free?.enrichedAt ?? null,
+					enrichedById: free?.enrichedById ?? null,
+					now: params.now
+				})
+			);
+		}
+	}
 }
 
 export interface SaleItemFreeDetailsInsertParams {

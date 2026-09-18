@@ -5,21 +5,19 @@ import { db } from '$lib/server/db';
 import {
 	sales,
 	saleItems,
-	saleItemFreeDetails,
 	products,
 	lensCatalogItems,
 	inventoryMovements
 } from '$lib/server/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
 import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
 import { computeDiscount } from '$lib/utils';
 import { auditService } from '$lib/server/audit';
 import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { nowISO } from '$lib/dates';
-import { insertSaleItem, saleItemFreeDetailsInsertValues } from '$lib/server/sales/saleItemInsert';
+import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -233,22 +231,6 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 					userId: ctx.userId!,
 					now: nowISO()
 				});
-
-				if (item.itemType === SaleItemType.FREE_ITEM) {
-					await tx.insert(saleItemFreeDetails).values(
-						saleItemFreeDetailsInsertValues({
-							id: crypto.randomUUID(),
-							saleItemId,
-							category: item.freeItemCategory!,
-							description: item.freeItemDescription!,
-							enrichmentStatus: FreeItemEnrichmentStatus.PENDING,
-							unitCost: item.freeItemUnitCost ?? null,
-							supplierId: item.freeItemSupplierId ?? null,
-							opticalNotes: item.freeItemOpticalNotes ?? null,
-							now: nowISO()
-						})
-					);
-				}
 			}
 
 			// ── 5. Recalculate tax snapshot if provided ─────────────────────
