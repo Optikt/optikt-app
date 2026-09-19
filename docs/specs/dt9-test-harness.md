@@ -56,6 +56,11 @@ Contrato reusable de infraestructura de tests. No describe un dominio; describe 
 - **Playwright browsers** para E2E/coverage (proyecto `client` en browser): `pnpm exec playwright install chromium`.
 - **Puerto 4173 libre** para `pnpm test:e2e` (preview). Si está ocupado, Playwright falla con un mensaje claro; localmente se reusa el server existente (`reuseExistingServer: !process.env.CI`), en CI nunca se reusa.
 - **Aislamiento de datos E2E**: hoy cada test siembra datos únicos (no hay reset entre tests). Al agregar flujos, mantener ese criterio o definir un reset explícito.
+- **Safe run (laptop compartida)**: los comandos normales (`pnpm test:coverage`, `pnpm test:unit`) usan todo el CPU y pueden congelar la máquina si estás trabajando en paralelo. Para correrlos con CPU capada sin cambiar nada del repo:
+  - `systemd-run --user --scope -p CPUQuota=150% pnpm test:coverage` (preferido)
+  - `taskset -c 0-1 pnpm test:coverage` (fallback portable)
+  - Liviano: `pnpm test:integration` (~30s, secuencial)
+  - El default y CI quedan exactamente igual; esto es solo una opción manual.
 
 ## CI
 
