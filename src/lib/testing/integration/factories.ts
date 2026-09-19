@@ -3,6 +3,8 @@ import { db } from '$lib/server/db';
 import {
 	brands,
 	customers,
+	inventoryCountLines,
+	inventoryCountSessions,
 	inventoryLots,
 	inventoryMovements,
 	materials,
@@ -253,6 +255,40 @@ export async function createQuote(overrides: Partial<typeof quotes.$inferInsert>
 			subtotal: 100,
 			snapshotTaxRate: 16,
 			total: 100,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createInventoryCountSession(
+	overrides: Partial<typeof inventoryCountSessions.$inferInsert> = {}
+) {
+	const openedById = overrides.openedById ?? (await createUser({ role: UserRole.ADMIN })).id;
+	const [row] = await db
+		.insert(inventoryCountSessions)
+		.values({
+			status: 'OPEN',
+			scopeType: 'ALL',
+			openedById,
+			...overrides
+		})
+		.returning();
+	return row;
+}
+
+export async function createInventoryCountLine(
+	overrides: Partial<typeof inventoryCountLines.$inferInsert> = {}
+) {
+	const sessionId = overrides.sessionId ?? (await createInventoryCountSession()).id;
+	const [row] = await db
+		.insert(inventoryCountLines)
+		.values({
+			sessionId,
+			itemType: 'PRODUCT',
+			systemStock: 10,
+			countedStock: 10,
+			difference: 0,
 			...overrides
 		})
 		.returning();

@@ -99,3 +99,8 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [ ] quote→sale.
 - [ ] Cierre de DT9 en `PLAN.md`.
 - [ ] Requiere mapear el modal de pago (rails + montos + referencia), keystone de los flujos de dinero.
+
+## Deuda conocida (transversal)
+
+- `src/lib/testing/integration/factories.ts` usa un contador en memoria (`orderCounter`) para `order_number`/`lot_number`/`quote_number` → con `maxWorkers > 1` dos workers generan el mismo valor y violan el unique index. **Los tests de integración no pueden correr en paralelo.** Fix: numeración DB-backed (`max + 1` dentro del insert) o timestamp + worker id.
+- Safe run documentado en `dt9-test-harness.md` (CPU capada para laptops compartidas).
