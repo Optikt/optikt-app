@@ -62,6 +62,13 @@ Contrato reusable de infraestructura de tests. No describe un dominio; describe 
   - Liviano: `pnpm test:integration` (~30s, secuencial)
   - El default y CI quedan exactamente igual; esto es solo una opción manual.
 
+## Component testing (capa UI)
+
+- Runner: proyecto vitest `client` (`src/**/*.svelte.spec.ts`) con `@vitest/browser-playwright` (chromium real) y `vitest-browser-svelte` (`setupFiles: ['vitest-browser-svelte']`).
+- Alcance: piezas presentacionales y lógica de UI pura. La matemática de dinero vive en módulos sin runas (`paymentFormValues.ts`) con spec en el proyecto `server`.
+- Límite conocido: los `.svelte.ts` con runas que importan `.remote.ts` no se pueden importar en el runner de browser (el plugin remote intenta transformarlos aunque haya `vi.mock`); esos módulos quedan cubiertos por E2E y excluidos de coverage en Sonar como el resto de la capa UI (`**/*.svelte`, `**/*.svelte.ts`).
+- Coverage: `coverage.include` acotado por archivo con threshold propio (p. ej. `paymentFormValues.ts` lines ≥80), sin tocar los globales.
+
 ## CI
 
 - Job `unit-tests`: DB dummy (no toca integración) + size gate.

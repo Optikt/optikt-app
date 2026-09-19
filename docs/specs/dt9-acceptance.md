@@ -91,14 +91,16 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] Reporte final: `docs/testing/coverage-final.md` (Lines 18.06% → 26.62%).
 - [x] E2E: smoke de login + redirect de guards + confirmación de PO de crédito.
 
-## PR-F2 · Flujos E2E restantes (pendiente)
+## PR-F2 · Flujos E2E restantes
 
-- [ ] venta wizard→pago→estado.
-- [ ] compra crédito→pronto pago→caja (re-cubre los asserts del spec viejo).
-- [ ] conteo→aplicar.
-- [ ] quote→sale.
-- [ ] Cierre de DT9 en `PLAN.md`.
-- [ ] Requiere mapear el modal de pago (rails + montos + referencia), keystone de los flujos de dinero.
+- [x] venta wizard→pago→estado (`e2e/sale-payment.test.ts`).
+- [x] compra crédito→pronto pago→caja, con los asserts del spec viejo (`e2e/purchase-payment.test.ts`).
+- [x] conteo→cerrar sesión (`e2e/inventory-count.test.ts`).
+- [x] quote→sale (`e2e/quote-to-sale.test.ts`).
+- [x] `e2e/fixtures.ts` con seeds SQL compartidos + lotes de inventario reales.
+- [x] PaymentForm descompuesto: state factory `paymentFormModel.svelte.ts` (142 en el componente) + `computePaymentFormValues` puro con spec (server) y `PaymentRailSection.svelte.spec.ts` (component test en chromium).
+- [x] Primer component testing del repo (`vitest-browser-svelte` + proyecto `client`); coverage de `paymentFormValues.ts` ≥80.
+- [ ] Cierre de DT9 en `PLAN.md` (PR-8).
 
 ## Deuda conocida (transversal)
 

@@ -100,10 +100,11 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 - Job `integration-tests` en CI; job `Coverage` con thresholds bloqueantes.
 - `test:coverage` sobre todos los proyectos; reporte final `docs/testing/coverage-final.md`.
 
-### PR-F2 · Flujos E2E restantes (pendiente)
+### PR-F2 · Flujos E2E restantes + factory de PaymentForm (hecho)
 
-- venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→aplicar, quote→sale.
-- Requiere mapear el modal de pago (rails + montos + referencia). Cierra DT9 en `PLAN.md`.
+- 4 flujos E2E verdes (venta wizard→pago→estado, compra crédito→pronto pago→caja, conteo→cerrar, quote→sale) con `e2e/fixtures.ts`.
+- `PaymentForm.svelte` 518→142: state factory + `computePaymentFormValues` puro + component tests (primer `*.svelte.spec.ts` del repo).
+- Cierre de DT9 en `PLAN.md` queda para PR-8.
 
 ## Definition of Done
 
