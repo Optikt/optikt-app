@@ -1,8 +1,4 @@
-import {
-	toSaleTotalsLine,
-	resolveLensSnapshotCosts,
-	derivePrescriptionFromQuoteItems
-} from '$lib/remote/quotes/helpers';
+import { toSaleTotalsLine, derivePrescriptionFromQuoteItems } from '$lib/remote/quotes/helpers';
 import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes';
 import {
 	findCustomerById,
@@ -11,23 +7,17 @@ import {
 } from '$lib/server/db/queries/customers';
 import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
 import { db } from '$lib/server/db';
-import {
-	quotes,
-	saleItemFreeDetails,
-	sales,
-	saleItems,
-	type Prescription
-} from '$lib/server/db/schema';
+import { quotes, sales, type Prescription } from '$lib/server/db/schema';
 import { QuoteStatus } from '$lib/shared/contracts/quotes';
 import { SaleStatus } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import { auditService } from '$lib/server/audit';
 import { eq } from 'drizzle-orm';
-import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
 import { nowISO, toISODate, nowUTC } from '$lib/dates';
 import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
 import { toPrescriptionInsert } from '$lib/utils/prescription';
+import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
 import type { ConvertQuoteInput } from '$lib/schemas/quotes';
 import type { ActionContext } from '$lib/server/actionContext';
 
@@ -128,81 +118,17 @@ export async function convertQuoteToSaleCore(data: ConvertQuoteInput, ctx: Actio
 				? (idMap.get(item.parentQuoteItemId) ?? null)
 				: null;
 
-			let lotId: string | null = null;
-			let snapshotCostTotal: number | null = null;
-			let snapshotCostUnit: number | null = null;
-			let snapshotLotsCount: number | null = null;
-
-			// FREE_ITEM: no inventory impact — skip FIFO entirely
-			if (item.itemType !== SaleItemType.FREE_ITEM) {
-				// FIFO lot consumption + stock decrement (shared logic)
-				({ lotId, snapshotCostTotal, snapshotCostUnit, snapshotLotsCount } =
-					await consumeFifoForSaleItem(tx, newSale.id, item, ctx.userId!));
-			}
-
-			const lensSnapshotCosts = resolveLensSnapshotCosts(item);
-
-			await tx.insert(saleItems).values({
+			const prescriptionId =
+				item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null;
+			await insertSaleItem(tx, {
 				id: newId,
 				saleId: newSale.id,
-				itemType: item.itemType,
+				item,
 				parentSaleItemId,
-				productId: item.productId ?? null,
-				lensCatalogItemId: item.lensCatalogItemId ?? null,
-				supplierTreatmentId: item.supplierTreatmentId ?? null,
-				lotId,
-				prescriptionId:
-					item.itemType === SaleItemType.LENS_PAIR ? (createdPrescription?.id ?? null) : null,
-				odSphere: item.odSphere ?? null,
-				odCylinder: item.odCylinder ?? null,
-				odAxis: item.odAxis ?? null,
-				odAddition: item.odAddition ?? null,
-				odAltura: item.odAltura ?? null,
-				osSphere: item.osSphere ?? null,
-				osCylinder: item.osCylinder ?? null,
-				osAxis: item.osAxis ?? null,
-				osAddition: item.osAddition ?? null,
-				osAltura: item.osAltura ?? null,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				discount: item.discount,
-				discountType: item.discountType,
-				snapshotName: item.snapshotName ?? null,
-				snapshotSku: item.snapshotSku ?? null,
-				snapshotBrand: item.snapshotBrand ?? null,
-				snapshotCostTotal: lensSnapshotCosts.snapshotCostTotal ?? snapshotCostTotal,
-				snapshotCostUnit: lensSnapshotCosts.snapshotCostUnit ?? snapshotCostUnit,
-				snapshotLotsCount,
-				snapshotBaseCost: item.snapshotBaseCost ?? null,
-				snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-				snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-				snapshotSalePrice: item.snapshotSalePrice ?? null,
-				snapshotPriceType: item.snapshotPriceType ?? null,
-				snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-				snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-				notes: item.notes ?? null,
-				createdAt: now,
-				updatedAt: now
+				prescriptionId,
+				userId: ctx.userId!,
+				now
 			});
-
-			// FREE_ITEM: copy free details from quote to sale
-			if (item.itemType === SaleItemType.FREE_ITEM && item.freeDetails) {
-				await tx.insert(saleItemFreeDetails).values({
-					id: crypto.randomUUID(),
-					saleItemId: newId,
-					category: item.freeDetails.category,
-					description: item.freeDetails.description,
-					enrichmentStatus: item.freeDetails.enrichmentStatus,
-					unitCost: item.freeDetails.unitCost,
-					supplierId: item.freeDetails.supplierId,
-					opticalNotes: item.freeDetails.opticalNotes,
-					// Preserve enrichment metadata if already enriched
-					enrichedAt: item.freeDetails.enrichedAt,
-					enrichedById: item.freeDetails.enrichedById,
-					createdAt: now,
-					updatedAt: now
-				});
-			}
 		}
 
 		// Mark quote as converted
