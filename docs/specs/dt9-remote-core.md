@@ -66,3 +66,22 @@ Patrón para que la lógica de negocio sea testeable sin depender de los interna
 - Cores testeados contra DB real (Capa 2) cubriendo happy path + reglas + rollback.
 - 1-2 tests de wrapper por command crítico (guard, validación con hook real, rollback, audit).
 - `addPurchaseOrderPaymentCmd` reducido a shell; `purchasePayments.ts` testeado con `DbOrTx` (desbloquea lo diferido en `dt1-payment-strategy`).
+
+## Estado (2026-09-19) — todos migrados
+
+Los 14 commands críticos tienen core en `src/lib/server/**` y test contra Postgres real (`*.int.spec.ts`), con el `.remote.ts` como shell (guards + schema + audit + delegate):
+
+| #     | Core                                                       | Test                                                               |
+| ----- | ---------------------------------------------------------- | ------------------------------------------------------------------ |
+| 1     | `sales/createSale.ts`                                      | `createSale.int.spec.ts`                                           |
+| 2     | `sales/addSalePayment.ts` / `voidSalePayment.ts`           | `addSalePayment.int.spec.ts` / `voidSalePayment.int.spec.ts`       |
+| 3     | `sales/setSaleStatus.ts`                                   | `setSaleStatus.int.spec.ts`                                        |
+| 4     | `sales/cancelSale.ts`                                      | `cancelSale.int.spec.ts` + `cancelSaleFifo.int.spec.ts`            |
+| 5     | `sales/updateSale.ts`                                      | `updateSale.int.spec.ts` + `updateSaleFifo.int.spec.ts`            |
+| 6     | `quotes/createNewQuote.ts` / `updateExistingQuote.ts`      | tests de ramas en `src/lib/server/quotes/`                         |
+| 7     | `quotes/convertQuoteToSale.ts`                             | guardas + happy path                                               |
+| 8-11  | `purchaseOrders/**` (confirm/cancel/pagos)                 | `purchaseOrders/**/*.int.spec.ts` + `payments/purchasePayments.ts` |
+| 12-13 | `inventory/createManualAdjustment.ts` / `revertFullLot.ts` | `inventory/*.int.spec.ts`                                          |
+| 14    | `inventoryCount.applySession`                              | `db/queries/inventoryCount/sessions.int.spec.ts`                   |
+
+Extra: `sales/updateItemCosts.ts` y `sales/enrichFreeItem.ts` (items.remote) + `sales/saleItemInsert.ts` / `shared/saleItemValues.ts` / `server/treatmentValidation.ts` compartidos por ventas y presupuestos.

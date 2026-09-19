@@ -108,12 +108,13 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 
 ## Definition of Done
 
-- [ ] Coverage baseline + reporte final commiteados.
-- [ ] CI: job integration + job e2e (main) + coverage gate.
-- [ ] Cores de los 14 commands críticos testeados contra DB real.
-- [ ] `purchasePayments.ts` extraído + testeado (desbloquea `dt1-payment-strategy`).
-- [ ] 5 flujos E2E verdes en main, sin skips.
-- [ ] Specs + `PLAN.md` DT9 ✅.
+- [x] Coverage baseline + reporte final commiteados.
+- [x] CI: job integration + job e2e (main) + coverage gate.
+- [x] Cores de los 14 commands críticos testeados contra DB real.
+- [x] `purchasePayments.ts` extraído + testeado (desbloquea `dt1-payment-strategy`).
+- [x] Flujos E2E verdes en main, sin skips (7 tests: login/guards + 4 de dinero + confirmación de PO).
+- [x] Specs + `PLAN.md` DT9 ✅.
+- [x] Extra: `PaymentForm` state factory (518→142) + primer component testing del repo.
 
 ## Riesgos
 
