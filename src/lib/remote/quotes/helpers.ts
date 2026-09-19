@@ -13,6 +13,7 @@ import type { QuoteItemInput } from '$lib/schemas/quotes';
 import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
 
 import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
+import { saleItemCommonValues } from '$lib/shared/saleItemValues';
 
 // ============================================================================
 // HELPERS
@@ -43,36 +44,8 @@ export function buildQuoteItemValues(item: QuoteItemInput, quoteId: string, now:
 	return {
 		id: item.id ?? crypto.randomUUID(),
 		quoteId,
-		itemType: item.itemType,
 		parentQuoteItemId: item.parentQuoteItemId ?? null,
-		productId: item.productId ?? null,
-		lensCatalogItemId: item.lensCatalogItemId ?? null,
-		supplierTreatmentId: item.supplierTreatmentId ?? null,
-		odSphere: item.odSphere ?? null,
-		odCylinder: item.odCylinder ?? null,
-		odAxis: item.odAxis ?? null,
-		odAddition: item.odAddition ?? null,
-		odAltura: item.odAltura ?? null,
-		osSphere: item.osSphere ?? null,
-		osCylinder: item.osCylinder ?? null,
-		osAxis: item.osAxis ?? null,
-		osAddition: item.osAddition ?? null,
-		osAltura: item.osAltura ?? null,
-		quantity: item.quantity,
-		unitPrice: item.unitPrice,
-		discount: item.discount,
-		discountType: item.discountType,
-		snapshotName: item.snapshotName ?? null,
-		snapshotSku: item.snapshotSku ?? null,
-		snapshotBrand: item.snapshotBrand ?? null,
-		snapshotBaseCost: item.snapshotBaseCost ?? null,
-		snapshotMountingPrice: item.snapshotMountingPrice ?? null,
-		snapshotShippingPrice: item.snapshotShippingPrice ?? null,
-		snapshotSalePrice: item.snapshotSalePrice ?? null,
-		snapshotPriceType: item.snapshotPriceType ?? null,
-		snapshotTreatmentCategory: item.snapshotTreatmentCategory ?? null,
-		snapshotIsTaxable: item.snapshotIsTaxable ?? null,
-		notes: item.notes ?? null,
+		...saleItemCommonValues(item),
 		createdAt: now,
 		updatedAt: now
 	};
