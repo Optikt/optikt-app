@@ -63,9 +63,11 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] Tests de guardas: no encontrado, no borrador, sin cliente asignado, sin ítems.
 - [ ] PR-D5 (opcional): happy path de conversión, path FIFO de `updateSale`, `inventoryCount.applySession` (su core ya existe como query).
 
-## PR-D5 · Cierre de cobertura (opcional)
+## PR-D5 · Cierre de cobertura
 
-- [ ] Happy path de `convertQuoteToSaleCore`, FIFO de `updateSaleCore`, `applyInventoryCountSession`.
+- [x] Happy path de `convertQuoteToSaleCore` (PR-1).
+- [x] `applyInventoryCountSession` (PR-3).
+- [x] FIFO de `updateSaleCore`: `src/lib/server/sales/updateSaleFifo.int.spec.ts` (revert del lote consumido, re-consumo FIFO entre lotes, swap de producto y rollback por stock insuficiente).
 
 ## PR-E · Rework E2E
 

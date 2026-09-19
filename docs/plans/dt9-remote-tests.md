@@ -84,9 +84,9 @@ Detalle en `docs/specs/dt9-test-harness.md`.
 
 - `convertQuoteToSaleCore` extraído + tests de guardas.
 
-### PR-D5 · Cierre de cobertura (opcional)
+### PR-D5 · Cierre de cobertura (hecho)
 
-- Happy path de conversión, FIFO de `updateSale`, `inventoryCount.applySession`.
+- Happy path de conversión (PR-1), `inventoryCount.applySession` (PR-3), FIFO de `updateSale` (PR-5/6: revert + re-consumo + swap + rollback).
 
 ### PR-E · Rework del harness E2E (1.5d)
 
