@@ -22,7 +22,7 @@
 
 **Problema (original):** 39 archivos >500 líneas. Top 5: `LensCatalogForm.svelte` (1473), `EditSaleModal.svelte` (1381), `sales.remote.ts` (1273), `purchaseOrders.remote.ts` (1240), `inventory/count/[id]/+page.svelte` (1139).
 
-**Cierre:** 0 archivos >520 líneas. Patrón orquestador + helpers puros, cero cambios UX. PRs: #120 (fase 3), #122/#124-#131 (fase 5 T1/T2), #132-#141 (fase 4 remotes/queries), #143 (fix ORDER_COLUMNS), #144 (9 chicos), #148 (medianos), #149 (dinero), #150 (fix precio edit), #151 (ProductForm). Excepción documentada: `PaymentForm.svelte` (518) — lógica reactiva viva de dinero que solo puede moverse con harness de integración (ver DT9); umbral del gate en 520. Gate `check-file-size.sh` bloqueante en CI. Deuda asociada fuera de scope: DT22 (fechas date-only resto), DT23 (conteo sin lote stock 0).
+**Cierre:** 0 archivos >520 líneas. Patrón orquestador + helpers puros, cero cambios UX. PRs: #120 (fase 3), #122/#124-#131 (fase 5 T1/T2), #132-#141 (fase 4 remotes/queries), #143 (fix ORDER_COLUMNS), #144 (9 chicos), #148 (medianos), #149 (dinero), #150 (fix precio edit), #151 (ProductForm). Excepción documentada: `PaymentForm.svelte` (518) → **resuelta en DT9 (PR-5, #171)**: state factory + matemática pura, ahora 142 líneas; umbral del gate en 520. Gate `check-file-size.sh` bloqueante en CI. Deuda asociada fuera de scope: DT22 (fechas date-only resto), DT23 (conteo sin lote stock 0).
 
 **Decisión 2026-09-11 (fase 3, PR #120):** no más barrels `index.ts` — imports directos al módulo que define. Motivo: Vite dev carga/parsea todo lo re-exportado (startup + HMR lentos); los barrels ocultan peso de dependencias, invitan circulares vía `index` y debilitan Knip. Excepción: barrel temporal como shim de compatibilidad al partir un módulo con importadores legacy, con remoción obligatoria en el PR de migración. Regla en `AGENTS.md`, spec `dt1-split-protocol` enmendado. Deuda menor asociada: los barrels existentes (p. ej. `src/lib/components/ui/index.ts`) quedan como están — no crear nuevos.
 
@@ -40,7 +40,7 @@
 
 ---
 
-### DT9 · Sin tests en remote functions 🟡
+### DT9 · Sin tests en remote functions ✅
 
 **Problema:** 58 archivos de test pero **cero** para `*.remote.ts`. La capa de lógica de negocio — donde viven comandos como `createSale`, `addSalePayment`, `confirmPurchaseOrder` — no tiene cobertura de tests unitarios. Los tests existentes cubren schemas, utils, helpers y queries, pero no la orquestación.
 
@@ -58,9 +58,11 @@
 
 **Dificultad:** Alta (~10-11 días, 6 PRs: A baseline+docs, B harness+spike, C adapter compra+cores venta, D cores compras/caja/inventario, E rework E2E, F flujos+CI+cierre).
 
-**Diferido desde fase 2 DT1 (2026-09-06):** el adapter de pagos de compra (`PurchasePaymentAdapter` en `src/lib/server/payments/`, spec `dt1-payment-strategy`) quedó pendiente a propósito. El cuerpo de `addPurchaseOrderPaymentCmd` (~90 líneas: amortización de deuda nativa, early-payment benefit condicional, recálculo de balance + dueStatus, re-fetch post-transacción) es demasiado grande para moverlo verbatim sin red de integración — un campo cruzado en `amountAppliedToDebtUsdBcvAtOrder` sería corrupción silenciosa en paths de dinero/crédito. El adapter de venta (`server/payments/salePayments.ts`, patrón probado) sirve de plantilla. Al implementar: extraer el cuerpo de la transacción verbatim, input con ~15 campos (purchaseOrder row + normalized + data + userId), remote conserva guards + audit, verificación obligatoria con los tests de integración de este DT antes de mergear.
+**Cierre (2026-09-19):** shell/core aplicado a los 14 commands críticos y testeados contra Postgres real (Testcontainers) + Capa 3 para el wiring; E2E con DB efímera sin skips (venta→pago→estado, compra crédito→pronto pago→caja, conteo→cerrar, presupuesto→venta); coverage con ratchet bloqueante (baseline 18.06% → **34.28% lines**, 1036 tests) y primer component testing del repo (`vitest-browser-svelte`). `PaymentForm.svelte` 518→142 y el adapter de pagos de compra extraído. PRs: #156-#172.
 
-**Diferido desde fase 2 DT1 — PaymentForm state factory (2026-09-06):** `PaymentForm.svelte` quedó en 850 líneas tras extraer los componentes presentacionales (`components/payments/`: SelectionStep, AmountCard, PreviewCard). Lo restante es **lógica reactiva viva** (~15 `$state`, ~40 `$derived` encadenados, `$effects` de reset/composer/foco, submits venta+compra+cashea+early-payment) que solo puede moverse a un factory `paymentFormState.svelte.ts` con red de integración — exactamente el harness de este DT. Hacerlo sin tests es el "refactor peligroso" que este DT existe para prevenir. Al implementar DT9, priorizar: (1) harness testcontainers, (2) tests de `addPayment`/`addPurchaseOrderPaymentCmd` (usan el adapter con seam `executor`), (3) entonces sí extraer el state factory y llevar el orquestador a ≤300.
+**Diferido desde fase 2 DT1 (2026-09-06) — ✅ resuelto en DT9 PR-C (#158):** el adapter de pagos de compra (`PurchasePaymentAdapter` en `src/lib/server/payments/`, spec `dt1-payment-strategy`) quedó pendiente a propósito. El cuerpo de `addPurchaseOrderPaymentCmd` (~90 líneas: amortización de deuda nativa, early-payment benefit condicional, recálculo de balance + dueStatus, re-fetch post-transacción) es demasiado grande para moverlo verbatim sin red de integración — un campo cruzado en `amountAppliedToDebtUsdBcvAtOrder` sería corrupción silenciosa en paths de dinero/crédito. El adapter de venta (`server/payments/salePayments.ts`, patrón probado) sirve de plantilla. Al implementar: extraer el cuerpo de la transacción verbatim, input con ~15 campos (purchaseOrder row + normalized + data + userId), remote conserva guards + audit, verificación obligatoria con los tests de integración de este DT antes de mergear.
+
+**✅ Resuelto en DT9 PR-5 (#171) — PaymentForm state factory:** `PaymentForm.svelte` quedó en 850 líneas tras extraer los componentes presentacionales (`components/payments/`: SelectionStep, AmountCard, PreviewCard). Lo restante es **lógica reactiva viva** (~15 `$state`, ~40 `$derived` encadenados, `$effects` de reset/composer/foco, submits venta+compra+cashea+early-payment) que solo puede moverse a un factory `paymentFormState.svelte.ts` con red de integración — exactamente el harness de este DT. Hacerlo sin tests es el "refactor peligroso" que este DT existe para prevenir. Al implementar DT9, priorizar: (1) harness testcontainers, (2) tests de `addPayment`/`addPurchaseOrderPaymentCmd` (usan el adapter con seam `executor`), (3) entonces sí extraer el state factory y llevar el orquestador a ≤300.
 
 ---
 
@@ -617,47 +619,47 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 
 ## Resumen de Esfuerzo
 
-| Prioridad | Ítem                           | Esfuerzo           |
-| --------- | ------------------------------ | ------------------ |
-| ✅        | FP2 · backup-ui                | Completado         |
-| ✅        | FP4 · Estados de venta         | Completado         |
-| ✅        | FP5 · Historial estados venta  | Completado         |
-| ✅        | FP6 · Catálogo lazy + ranking  | Completado         |
-| ✅        | FP7 · Compras multimoneda      | Completado         |
-| ✅        | FP1 · preserve-list-filters    | Completado         |
-| ✅        | DT4 · Console.log en prod      | Completado         |
-| ✅        | DT2 · Errores silenciados      | Completado         |
-| ✅        | DT3 · Validación Zod           | Completado         |
-| ✅        | DT5 · Error pattern duplicado  | Completado         |
-| 🟡        | DT10 · Zod refinements negocio | 5 días             |
-| ✅        | DT11 · Dead code componentes   | Completado         |
-| ✅        | DT15 · Altura en presupuestos  | Completado         |
-| ✅        | DT12 · Tablas duplicadas       | Completado         |
-| ✅        | DT13 · Enums moneda            | Completado         |
-| ✅        | DT16 · Enums moneda gastos     | Completado         |
-| ✅        | DT14 · Wizard compras SSR      | Completado (FP6)   |
-| ❌        | FP3 · public-catalog-api       | 15 días            |
-| ✅        | DT1 · Archivos gigantes        | Completado         |
-| 🟡        | DT8 · Dashboard gráficos       | 3 días             |
-| 🟡        | NF1 · Órdenes laboratorio      | 10 días            |
-| 🟡        | NF2 · Citas/agenda             | 5 días             |
-| 🟡        | NF3 · POS rápido               | 5 días             |
-| 🟡        | NF4 · Garantías                | 5 días             |
-| 🟡        | NF6 · Upload imágenes          | 5 días             |
-| ✅        | DT6 · Soft-delete consistente  | Completado         |
-| 🟡        | DT9 · Tests remote funcs       | 10-11 días (6 PRs) |
-| 🟢        | NF7 · Visor auditoría          | 2 días             |
-| 🟢        | NF10 · Export Excel            | 1 día              |
-| 🟢        | NF11 · Código barras           | 2 días             |
-| ✅        | DT7 · PDF stack                | Completado         |
-| 🟢        | DT18 · Latencia backend        | 1-2 días           |
-| 🟢        | DT20 · Catálogo step2 topado   | 2-3 días           |
-| 🟢        | DT22 · Fechas date-only resto  | 2-3 días           |
-| 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días           |
-| ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT          |
-| ⚪        | DT19 · Deps fuera de scope     | Fuera de scope     |
-| 🟢        | NF8 · Comisiones               | 5 días             |
-| ⚪        | NF9 · Multi-sucursal           | 20 días            |
+| Prioridad | Ítem                           | Esfuerzo         |
+| --------- | ------------------------------ | ---------------- |
+| ✅        | FP2 · backup-ui                | Completado       |
+| ✅        | FP4 · Estados de venta         | Completado       |
+| ✅        | FP5 · Historial estados venta  | Completado       |
+| ✅        | FP6 · Catálogo lazy + ranking  | Completado       |
+| ✅        | FP7 · Compras multimoneda      | Completado       |
+| ✅        | FP1 · preserve-list-filters    | Completado       |
+| ✅        | DT4 · Console.log en prod      | Completado       |
+| ✅        | DT2 · Errores silenciados      | Completado       |
+| ✅        | DT3 · Validación Zod           | Completado       |
+| ✅        | DT5 · Error pattern duplicado  | Completado       |
+| 🟡        | DT10 · Zod refinements negocio | 5 días           |
+| ✅        | DT11 · Dead code componentes   | Completado       |
+| ✅        | DT15 · Altura en presupuestos  | Completado       |
+| ✅        | DT12 · Tablas duplicadas       | Completado       |
+| ✅        | DT13 · Enums moneda            | Completado       |
+| ✅        | DT16 · Enums moneda gastos     | Completado       |
+| ✅        | DT14 · Wizard compras SSR      | Completado (FP6) |
+| ❌        | FP3 · public-catalog-api       | 15 días          |
+| ✅        | DT1 · Archivos gigantes        | Completado       |
+| 🟡        | DT8 · Dashboard gráficos       | 3 días           |
+| 🟡        | NF1 · Órdenes laboratorio      | 10 días          |
+| 🟡        | NF2 · Citas/agenda             | 5 días           |
+| 🟡        | NF3 · POS rápido               | 5 días           |
+| 🟡        | NF4 · Garantías                | 5 días           |
+| 🟡        | NF6 · Upload imágenes          | 5 días           |
+| ✅        | DT6 · Soft-delete consistente  | Completado       |
+| ✅        | DT9 · Tests remote funcs       | Completado       |
+| 🟢        | NF7 · Visor auditoría          | 2 días           |
+| 🟢        | NF10 · Export Excel            | 1 día            |
+| 🟢        | NF11 · Código barras           | 2 días           |
+| ✅        | DT7 · PDF stack                | Completado       |
+| 🟢        | DT18 · Latencia backend        | 1-2 días         |
+| 🟢        | DT20 · Catálogo step2 topado   | 2-3 días         |
+| 🟢        | DT22 · Fechas date-only resto  | 2-3 días         |
+| 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
+| ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
+| ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
+| 🟢        | NF8 · Comisiones               | 5 días           |
+| ⚪        | NF9 · Multi-sucursal           | 20 días          |
 
 **Total estimado:** ~115 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
 

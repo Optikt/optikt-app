@@ -6,62 +6,64 @@ Scope: feature
 
 Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globales aplican a todos: `pnpm check` 0 errores, `pnpm lint`, `pnpm test:unit` verde, `bash scripts/check-file-size.sh`.
 
+> **Estado: cerrado (2026-09-19).** Todas las fases completas. Deuda remanente al final del documento.
+
 ## PR-A · Coverage baseline + docs
 
-- [ ] `@vitest/coverage-v8` en devDependencies, versión alineada a vitest 5.
-- [ ] Script `test:coverage` en `package.json`.
-- [ ] Config de coverage en `vite.config.ts` (`include` server/remote/shared/schemas; reporters text-summary/json-summary/html).
-- [ ] `docs/testing/coverage-baseline.md` con global + por directorio.
-- [ ] Docs: `docs/plans/dt9-remote-tests.md`, `docs/specs/dt9-test-harness.md`, `docs/specs/dt9-remote-core.md`, `docs/specs/dt9-acceptance.md`.
-- [ ] Cross-ref en `docs/specs/dt1-payment-strategy.md` (adapter de compra: "diferido" → "DT9 lo extrae").
-- [ ] `PLAN.md` DT9 en secciones Unit/E2E + links a plan/specs.
-- [ ] Cero tests nuevos; cero cambios en remotes.
+- [x] `@vitest/coverage-v8` en devDependencies, versión alineada a vitest 5.
+- [x] Script `test:coverage` en `package.json`.
+- [x] Config de coverage en `vite.config.ts` (`include` server/remote/shared/schemas; reporters text-summary/json-summary/html).
+- [x] `docs/testing/coverage-baseline.md` con global + por directorio.
+- [x] Docs: `docs/plans/dt9-remote-tests.md`, `docs/specs/dt9-test-harness.md`, `docs/specs/dt9-remote-core.md`, `docs/specs/dt9-acceptance.md`.
+- [x] Cross-ref en `docs/specs/dt1-payment-strategy.md` (adapter de compra: "diferido" → "DT9 lo extrae").
+- [x] `PLAN.md` DT9 en secciones Unit/E2E + links a plan/specs.
+- [x] Cero tests nuevos; cero cambios en remotes.
 
 ## PR-B · Harness de integración + spike
 
-- [ ] `@testcontainers/postgresql` en devDependencies.
-- [ ] Proyecto vitest `integration` (`src/**/*.int.spec.ts`) excluido del proyecto `server`.
-- [ ] Wrapper `scripts/run-integration-tests.mjs`: postgres:16 + migraciones + `DATABASE_URL` seteado antes de que Vite cargue el config.
-- [ ] `resetDb()` + factories mínimas.
-- [ ] Spike resuelto: importar `.remote.ts` en vitest + `with_request_store` (Capa 3) — viabilidad documentada.
-- [ ] Smoke test de harness verde.
+- [x] `@testcontainers/postgresql` en devDependencies.
+- [x] Proyecto vitest `integration` (`src/**/*.int.spec.ts`) excluido del proyecto `server`.
+- [x] Wrapper `scripts/run-integration-tests.mjs`: postgres:16 + migraciones + `DATABASE_URL` seteado antes de que Vite cargue el config.
+- [x] `resetDb()` + factories mínimas.
+- [x] Spike resuelto: importar `.remote.ts` en vitest + `with_request_store` (Capa 3) — viabilidad documentada.
+- [x] Smoke test de harness verde.
 
 ## PR-C · Adapter pago compras + cores venta
 
-- [ ] `src/lib/server/payments/purchasePayments.ts` extraído (`submitPurchaseOrderPayment` + `voidPurchaseOrderPayment`); el remote de pagos de compra es shell.
-- [ ] Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore` (+ `ActionContext`/`getActionContext`).
-- [ ] `cancelSaleCore` y `updateSaleCore` se mueven a PR-D (los dos más grandes: inventario/caja y replace de items).
-- [ ] Tests core contra DB real: recalc, rollback, reglas de estado.
-- [ ] Tests de adapter de compra contra DB real: amortización deuda nativa + void.
-- [ ] 1-2 tests de wrapper por command (guard 401, validación con hook real, happy path).
-- [ ] Comportamiento y UX intactos (verbatim move).
+- [x] `src/lib/server/payments/purchasePayments.ts` extraído (`submitPurchaseOrderPayment` + `voidPurchaseOrderPayment`); el remote de pagos de compra es shell.
+- [x] Cores: `addSalePaymentCore`, `voidSalePaymentCore`, `setSaleStatusCore` (+ `ActionContext`/`getActionContext`).
+- [x] `cancelSaleCore` y `updateSaleCore` se mueven a PR-D (los dos más grandes: inventario/caja y replace de items).
+- [x] Tests core contra DB real: recalc, rollback, reglas de estado.
+- [x] Tests de adapter de compra contra DB real: amortización deuda nativa + void.
+- [x] 1-2 tests de wrapper por command (guard 401, validación con hook real, happy path).
+- [x] Comportamiento y UX intactos (verbatim move).
 
 ## PR-D · Cores lifecycle de venta
 
 - [x] Cores: `cancelSaleCore`, `updateSaleCore` (movidos desde PR-C).
 - [x] Tests contra DB real: cancel (happy, permisos, ya cancelada), update header-only (happy, COMPLETED bloqueado, descuento bajo lo cobrado, items vacíos).
 - [x] Wrapper mínimo (`cancelSale`/`updateSale` 401).
-- [ ] Pendiente: path de items de `updateSale` (FIFO) y `cancelSale` con payments/REFUNDED — requieren fixtures de lotes; ver PR-D2.
+- [x] Pendiente: path de items de `updateSale` (FIFO) y `cancelSale` con payments/REFUNDED — requieren fixtures de lotes; ver PR-D2.
 
 ## PR-D2 · Cores inventario
 
 - [x] Cores: `createManualAdjustmentCore`, `revertFullLotCore`.
 - [x] Tests contra DB real: outflow/inflow + stock cacheado, stock insuficiente, lote inexistente; revert happy, lote consumido, lote inexistente.
 - [x] Wrapper mínimo (401) + factories `createPurchaseOrderItem`/`createInventoryLot`.
-- [ ] Pendiente → PR-D3.
+- [x] Pendiente → PR-D3.
 
 ## PR-D3 · Compras/stock + FIFO
 
 - [x] Tests query-level de `confirmPurchaseOrder`/`cancelPurchaseOrder` (crea lote, mueve stock, guards de estado/revisión).
 - [x] Test FIFO de `cancelSaleCore` (restaura lote consumido + stock cacheado).
 - [x] Factories: `createSaleItem`, `createInventoryMovement`.
-- [ ] Pendiente → PR-D4.
+- [x] Pendiente → PR-D4.
 
 ## PR-D4 · Quote
 
 - [x] `convertQuoteToSaleCore` extraído (`src/lib/server/quotes/`); `quotes/lifecycle.remote.ts` shell.
 - [x] Tests de guardas: no encontrado, no borrador, sin cliente asignado, sin ítems.
-- [ ] PR-D5 (opcional): happy path de conversión, path FIFO de `updateSale`, `inventoryCount.applySession` (su core ya existe como query).
+- [x] PR-D5 (opcional): happy path de conversión, path FIFO de `updateSale`, `inventoryCount.applySession` (su core ya existe como query).
 
 ## PR-D5 · Cierre de cobertura
 
@@ -77,8 +79,8 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] Sin `test.skip` ni gating `OPTIKT_RUN_PURCHASE_E2E`; `demo.test.ts` (skip fijo) → smoke de login real.
 - [x] Flujo de compra migrado: confirmación de PO de crédito desde la UI.
 - [x] `services.postgres` + step "Bootstrap database" eliminados del job E2E.
-- [ ] Path de pago UI (rails/montos) y los 5 flujos completos → PR-F.
-- [ ] Deuda menor E2E (a abordar en PR-F/PR-D5):
+- [x] Path de pago UI (rails/montos) y los 5 flujos completos → PR-F.
+- [x] Deuda menor E2E (a abordar en PR-F/PR-D5):
   - Re-cubrir los asserts de negocio del spec viejo (abonos parciales, pronto pago, `Desc. compras`/caja).
   - `reuseExistingServer: !process.env.CI` + documentar el error de puerto 4173 ocupado.
   - Documentar Docker como requisito de `pnpm test:e2e`.
@@ -102,7 +104,7 @@ Cada fase (PR) se considera cerrada cuando su bloque está completo. Gates globa
 - [x] `e2e/fixtures.ts` con seeds SQL compartidos + lotes de inventario reales.
 - [x] PaymentForm descompuesto: state factory `paymentFormModel.svelte.ts` (142 en el componente) + `computePaymentFormValues` puro con spec (server) y `PaymentRailSection.svelte.spec.ts` (component test en chromium).
 - [x] Primer component testing del repo (`vitest-browser-svelte` + proyecto `client`); coverage de `paymentFormValues.ts` ≥80.
-- [ ] Cierre de DT9 en `PLAN.md` (PR-8).
+- [x] Cierre de DT9 en `PLAN.md` (PR-8).
 
 ## Deuda conocida (transversal)
 
