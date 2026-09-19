@@ -47,14 +47,27 @@ Contrato reusable de infraestructura de tests. No describe un dominio; describe 
 - `@vitest/coverage-v8` (match vitest 5). Script `test:coverage`.
 - `coverage.include`: `src/lib/server/**`, `src/lib/remote/**`, `src/lib/shared/**`, `src/lib/schemas/**`.
 - Reporters: `text-summary`, `json-summary`, `html`.
-- Baseline en `docs/testing/coverage-baseline.md` (antes de tests nuevos).
-- Policy al cierre (ratchet): floor global = medido final −2pts + globs de dinero/stock con barra más alta; bloqueante en CI.
+- Baseline en `docs/testing/coverage-baseline.md` (antes de tests nuevos); final en `docs/testing/coverage-final.md`.
+- Ratchet bloqueante (implementado en `vite.config.ts`): global lines 24 / statements 23 / functions 21 / branches 15, más `src/lib/server/payments/**` lines 88 y `src/lib/server/inventory/**` lines 80.
+
+## Requisitos locales
+
+- **Docker corriendo**: `pnpm test:integration`, `pnpm test:coverage` y `pnpm test:e2e` levantan un Postgres efímero con Testcontainers.
+- **Playwright browsers** para E2E/coverage (proyecto `client` en browser): `pnpm exec playwright install chromium`.
+- **Puerto 4173 libre** para `pnpm test:e2e` (preview). Si está ocupado, Playwright falla con un mensaje claro; localmente se reusa el server existente (`reuseExistingServer: !process.env.CI`), en CI nunca se reusa.
+- **Aislamiento de datos E2E**: hoy cada test siembra datos únicos (no hay reset entre tests). Al agregar flujos, mantener ese criterio o definir un reset explícito.
+- **Safe run (laptop compartida)**: los comandos normales (`pnpm test:coverage`, `pnpm test:unit`) usan todo el CPU y pueden congelar la máquina si estás trabajando en paralelo. Para correrlos con CPU capada sin cambiar nada del repo:
+  - `systemd-run --user --scope -p CPUQuota=150% pnpm test:coverage` (preferido)
+  - `taskset -c 0-1 pnpm test:coverage` (fallback portable)
+  - Liviano: `pnpm test:integration` (~30s, secuencial)
+  - El default y CI quedan exactamente igual; esto es solo una opción manual.
 
 ## CI
 
-- Job `unit-tests`: sigue con DB dummy (no toca integración).
-- Job `integration-tests`: Testcontainers (Docker disponible en `ubuntu-latest`); corre solo `*.int.spec.ts`.
-- Job `e2e-tests` (main only): sin `services.postgres`; el `globalSetup` de Playwright levanta la DB.
+- Job `unit-tests`: DB dummy (no toca integración) + size gate.
+- Job `integration-tests`: Testcontainers (Docker en `ubuntu-latest`); corre `pnpm test:integration`.
+- Job `coverage`: `pnpm test:coverage` sobre unit + client + integration, con thresholds bloqueantes.
+- Job `e2e-tests` (PRs hacia `main` / `main`): sin `services.postgres`; el wrapper `scripts/run-e2e-tests.mjs` levanta la DB, corre `scripts/bootstrap.js` y después Playwright.
 
 ## Restricciones del repo
 
