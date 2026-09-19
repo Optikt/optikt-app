@@ -6,7 +6,7 @@ Scope: feature
 
 ## Objetivo
 
-`SaleItemsTable` 885→246 y `PaymentForm` 850→518 (excepción ≤520 aceptada). Dinero verbatim.
+`SaleItemsTable` 885→246 y `PaymentForm` 850→518 (excepción ≤520 aceptada; resuelta en DT9 PR-5: `PaymentForm` → 142 vía `paymentFormModel.svelte.ts` + `paymentFormValues.ts`). Dinero verbatim.
 
 ## Alcance — Incluido
 

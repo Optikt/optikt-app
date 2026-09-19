@@ -5,16 +5,16 @@ import {
 	closeDatabase,
 	connectDatabase,
 	ensureAdmin,
-	seedCreditPurchaseOrder,
 	seedMaterial,
+	seedOpenCountSession,
 	seedProduct,
 	seedSupplier,
 	uniqueRunId
 } from './fixtures';
 
-test.describe('purchase order confirm', () => {
+test.describe('conteo físico → cerrar sesión', () => {
 	let sql: Sql;
-	let purchaseOrderId = '';
+	let sessionId = 0;
 
 	test.beforeAll(async () => {
 		sql = connectDatabase();
@@ -27,30 +27,32 @@ test.describe('purchase order confirm', () => {
 			supplierId,
 			materialId,
 			name: `Montura E2E ${runId}`,
-			sku: `E2E-PO-${runId}`,
-			stock: 0,
+			sku: `E2E-CNT-${runId}`,
+			stock: 5,
 			purchasePrice: 1000,
 			salePrice: 1500
 		});
-		const order = await seedCreditPurchaseOrder(sql, {
-			createdById: adminId,
-			supplierId,
+
+		sessionId = await seedOpenCountSession(sql, {
+			openedById: adminId,
 			productId,
-			label: `E2E-${runId}`
+			systemStock: 5,
+			countedStock: 5
 		});
-		purchaseOrderId = order.id;
 	});
 
 	test.afterAll(async () => {
 		await closeDatabase(sql);
 	});
 
-	test('confirms a draft credit purchase order from the UI', async ({ page }) => {
+	test('closes an open count session from the UI', async ({ page }) => {
 		await loginAsAdmin(page);
 
-		await page.goto(`/purchases/${purchaseOrderId}`);
-		await page.getByRole('button', { name: /^Confirmar$/ }).click();
-		await page.getByRole('button', { name: /^Confirmar Orden$/ }).click();
-		await expect(page.getByText('Orden confirmada').first()).toBeVisible();
+		await page.goto(`/inventory/count/${sessionId}`);
+		await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+		await page.getByRole('button', { name: 'Cerrar sesión de conteo' }).click();
+
+		await expect(page.getByText('Sesión de conteo cerrada')).toBeVisible();
+		await expect(page.getByText('Informe de conteo físico')).toBeVisible();
 	});
 });

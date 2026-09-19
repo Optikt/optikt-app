@@ -41,7 +41,7 @@ Scope: repo
 - `PaymentAmountCard.svelte` — nativeLabel/nativePrefix/currency del strategy
 - `PaymentConversionCard.svelte` — rate/BCV display
 - `PaymentsContext` (`src/lib/context/payments.ts`): balance, pendingAmount, selección — elimina prop drilling entre cards
-- Orquestador PaymentForm ≤300 líneas
+- Orquestador PaymentForm ≤300 líneas — **cumplido en DT9 PR-5** (`PaymentForm.svelte` 142; state factory `paymentFormModel` + `computePaymentFormValues` puro, con specs).
 
 ## Tests
 

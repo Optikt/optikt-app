@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # DT1 size gate (closed 2026-09-14, blocking in CI).
 # Source files (non-spec) >520 lines fail; >300 lines warn.
-# Exception rationale: PaymentForm.svelte (518) keeps live reactive
-# money logic (~15 $state, ~40 chained $derived) that can only move
-# to a state factory with integration harness (see DT9).
+# The former PaymentForm.svelte exception (518) was resolved in DT9 PR-5:
+# its reactive money logic now lives in payments/paymentFormModel.svelte.ts
+# + payments/paymentFormValues.ts (built on the DT9 test harness).
 # Pass --strict to fail on the warn threshold too.
 set -euo pipefail
 

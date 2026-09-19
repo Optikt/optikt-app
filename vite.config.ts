@@ -38,7 +38,8 @@ export default defineConfig({
 				'src/lib/server/**',
 				'src/lib/remote/**',
 				'src/lib/shared/**',
-				'src/lib/schemas/**'
+				'src/lib/schemas/**',
+				'src/lib/components/sales/payments/paymentFormValues.ts'
 			],
 			thresholds: {
 				lines: 24,
@@ -46,7 +47,8 @@ export default defineConfig({
 				functions: 21,
 				branches: 15,
 				'src/lib/server/payments/**': { lines: 88 },
-				'src/lib/server/inventory/**': { lines: 80 }
+				'src/lib/server/inventory/**': { lines: 80 },
+				'src/lib/components/sales/payments/paymentFormValues.ts': { lines: 80 }
 			}
 		},
 
@@ -62,6 +64,8 @@ export default defineConfig({
 						provider: playwright(),
 						instances: [{ browser: 'chromium', headless: true }]
 					},
+
+					setupFiles: ['vitest-browser-svelte'],
 
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
 					exclude: ['src/lib/server/**']

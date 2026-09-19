@@ -19,7 +19,7 @@ function run(entry, args) {
 let exitCode = 0;
 try {
 	await run('scripts/bootstrap.js', []);
-	await run('node_modules/playwright/cli.js', ['test']);
+	await run('node_modules/playwright/cli.js', ['test', ...process.argv.slice(2)]);
 } catch (error) {
 	console.error(error.message);
 	exitCode = 1;
