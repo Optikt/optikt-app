@@ -364,3 +364,4 @@ export type CustomerLookupInput = z.infer<typeof CustomerLookupSchema>;
 export type EnrichFreeItemInput = z.infer<typeof EnrichFreeItemSchema>;
 export type UpdateSaleInput = z.infer<typeof UpdateSaleSchema>;
 export type SetSaleStatusInput = z.infer<typeof SetSaleStatusSchema>;
+export type UpdateSaleItemCostsInput = z.infer<typeof UpdateSaleItemCostsSchema>;
