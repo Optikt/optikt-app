@@ -48,7 +48,13 @@
 				}}
 			>
 				{#snippet tooltip()}
-					<ChartTooltip labelKey="brand" valueFormatter={(value) => formatPrice(Number(value))} />
+					<ChartTooltip
+						labelKey="brand"
+						valueFormatter={(value) => formatPrice(Number(value))}
+						extraRows={(datum) => [
+							{ label: 'Unidades', value: Number(datum.salesCount ?? 0).toLocaleString('es-VE') }
+						]}
+					/>
 				{/snippet}
 			</BarChart>
 		</ChartContainer>

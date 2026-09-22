@@ -22,6 +22,7 @@
 		valueFormatter = defaultValueFormatter,
 		nameKey,
 		color,
+		extraRows,
 		...restProps
 	}: WithoutChildrenOrChild<WithElementRef<HTMLAttributes<HTMLDivElement>>> & {
 		hideLabel?: boolean;
@@ -33,19 +34,21 @@
 		labelClassName?: string;
 		labelFormatter?: (value: unknown) => string;
 		valueFormatter?: (value: unknown) => string;
+		extraRows?: (datum: Record<string, unknown>) => { label: string; value: string }[];
 	} = $props();
 
 	const chart = useChart();
 	const tooltip = getChartContext().tooltip;
 
 	const rows = $derived(tooltip.series.filter((series) => series.visible));
+	const datum = $derived(tooltip.data as Record<string, unknown> | null);
+	const extras = $derived(extraRows && datum ? extraRows(datum) : []);
 
 	const formattedLabel = $derived.by(() => {
 		if (hideLabel) return null;
 		if (typeof label === 'string') return label;
 		if (!labelKey) return null;
 
-		const datum = tooltip.data as Record<string, unknown> | null;
 		const raw = datum?.[labelKey];
 		if (raw === undefined || raw === null) return null;
 
@@ -53,7 +56,6 @@
 	});
 
 	function rowName(row: TooltipSeries) {
-		const datum = tooltip.data as Record<string, unknown> | null;
 		const raw = nameKey ? datum?.[nameKey] : undefined;
 		return typeof raw === 'string' ? raw : row.label;
 	}
@@ -99,6 +101,12 @@
 							</span>
 						{/if}
 					</div>
+				</div>
+			{/each}
+			{#each extras as extra (extra.label)}
+				<div class="flex w-full items-center justify-between gap-2 leading-none">
+					<span class="text-muted-foreground">{extra.label}</span>
+					<span class="font-mono font-medium text-foreground tabular-nums">{extra.value}</span>
 				</div>
 			{/each}
 		</div>
