@@ -34,12 +34,12 @@ Reusable conventions for any data visualization work in Optikt. Adopted via plan
 ## Data / Aggregation
 
 - Read-only report aggregates live in `src/lib/server/db/queries/reports.ts`; each exports an explicit result type.
-- Brand aggregation uses the denormalized `saleItems.snapshotBrand` (`src/lib/server/db/schema/sales.ts`) — no joins to `products`/`brands` needed. Filter `itemType = 'PRODUCT'` for true brand charts.
+- Brand aggregation groups by the denormalized `saleItems.snapshotBrand` (`src/lib/server/db/schema/sales.ts`) and joins `products` to include only `ProductType.FRAME` and `ProductType.SUNGLASSES` (excludes accessories and contact lenses).
 - Net line value: `max(0, unitPrice * quantity - discount)` where `discount` is `PERCENTAGE`-aware (`gross * discount / 100` for `PERCENTAGE`, flat otherwise). Mirrors `computeSaleTotals` in `src/lib/shared/saleTotals.ts`; never duplicate a divergent formula.
 - Exclude `sales.deletedAt IS NOT NULL` and `sales.status = 'CANCELLED'` unless the chart explicitly reports cancellations.
 - Sale-level global discount is not allocated per line; brand shares are pre-global-discount. Label or document accordingly.
 - Data reaches pages through the existing pattern: `+page.server.ts` load for SSR/initial + remote `query` for refilter. Add fields to the existing result object instead of new round trips.
-- Daily trend series can be derived in JS from the already-loaded sale list; only push aggregation into SQL when row volume requires it (`date_trunc('day', ...)` precedent: `src/lib/server/db/queries/cash/daily.ts`).
+- Daily trend series can be derived in JS from the already-loaded sale list; fill the whole selected date range (zero-fill missing days), never only days with sales. Only push aggregation into SQL when row volume requires it (`date_trunc('day', ...)` precedent: `src/lib/server/db/queries/cash/daily.ts`).
 
 ## SSR / Rendering
 

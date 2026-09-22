@@ -1,29 +1,44 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteDate, SvelteMap } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
+	import SalesTrendChart from '$lib/components/reports/SalesTrendChart.svelte';
+	import SalesByBrandChart from '$lib/components/reports/SalesByBrandChart.svelte';
 	import { SaleStatusBadge } from '$lib/components/ui';
 	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
-	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchSalesReport } from '$lib/remote/reports.remote';
 	import { SALE_STATUS_LABELS } from '$lib/shared/enums';
-	import type { ReportSale, SalesReportSummary } from '$lib/server/db/queries/reports';
+	import type {
+		ReportSale,
+		SalesReportSummary,
+		BrandSalesSlice
+	} from '$lib/server/db/queries/reports';
 
 	type StatusFilter = 'active' | 'cancelled' | 'all';
 
 	let { data } = $props();
-	let { sales: initialSales, summary: initialSummary } = untrack(() => data);
+	let {
+		sales: initialSales,
+		summary: initialSummary,
+		byBrand: initialByBrand,
+		dateFrom: initialDateFrom,
+		dateTo: initialDateTo
+	} = untrack(() => data);
 
 	let sales = $state<ReportSale[]>(initialSales);
 	let summary = $state<SalesReportSummary>(initialSummary);
+	let byBrand = $state<BrandSalesSlice[]>(initialByBrand);
 	let loading = $state(false);
 	let statusFilter = $state<StatusFilter>('active');
 
-	// Date range state - default to current month
-	let dateFrom = $state(toISODate(monthStart()));
-	let dateTo = $state(toISODate(nowUTC()));
+	// Draft range bound to the filter inputs; applied only after "Consultar"
+	let dateFrom = $state(initialDateFrom);
+	let dateTo = $state(initialDateTo);
+	let appliedFrom = $state(initialDateFrom);
+	let appliedTo = $state(initialDateTo);
 
 	const filteredSales = $derived(
 		statusFilter === 'all'
@@ -33,12 +48,39 @@
 				: sales.filter((s) => s.status !== 'CANCELLED')
 	);
 
+	function eachISODay(from: string, to: string) {
+		const days: string[] = [];
+		const start = Date.parse(`${from}T00:00:00Z`);
+		const end = Date.parse(`${to}T00:00:00Z`);
+		for (let ms = start; ms <= end; ms += 86_400_000) {
+			days.push(new SvelteDate(ms).toISOString().slice(0, 10));
+		}
+		return days;
+	}
+
+	const trendPoints = $derived.by(() => {
+		const byDay = new SvelteMap<string, { date: string; total: number; paid: number }>();
+		for (const sale of filteredSales) {
+			const day = sale.saleDate.slice(0, 10);
+			const entry = byDay.get(day) ?? { date: day, total: 0, paid: 0 };
+			entry.total += sale.total;
+			entry.paid += sale.paidAmountBcvUsd;
+			byDay.set(day, entry);
+		}
+		return eachISODay(appliedFrom, appliedTo).map(
+			(day) => byDay.get(day) ?? { date: day, total: 0, paid: 0 }
+		);
+	});
+
 	async function applyFilter() {
 		loading = true;
 		try {
 			const result = await fetchSalesReport({ dateFrom, dateTo });
 			sales = result.sales;
 			summary = result.summary;
+			byBrand = result.byBrand;
+			appliedFrom = dateFrom;
+			appliedTo = dateTo;
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando reporte de ventas'));
 		} finally {
@@ -98,6 +140,14 @@
 				<p class="text-2xl font-bold text-red-500">{summary.cancelledCount}</p>
 				<p class="text-xs text-red-400">{formatPrice(summary.cancelledAmount)} anulado</p>
 			</div>
+		{/if}
+	</div>
+
+	<!-- Charts -->
+	<div class="mb-6 grid gap-4 lg:grid-cols-2">
+		<SalesTrendChart points={trendPoints} />
+		{#if statusFilter !== 'cancelled'}
+			<SalesByBrandChart slices={byBrand} />
 		{/if}
 	</div>
 

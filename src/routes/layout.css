@@ -104,9 +104,23 @@
 	--font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+:root {
+	/* ── Chart series palette (categorical, brand-derived) ──────────────── */
+	--chart-1: #419ebd; /* brand-blue */
+	--chart-2: #152346; /* brand-navy */
+	--chart-3: #fcd01e; /* brand-gold */
+	--chart-4: #12b76a; /* success */
+	--chart-5: #7c3aed; /* purple */
+}
+
 @theme inline {
 	/* ── shadcn-svelte / bits-ui theme ──────────────────────────────────── */
 	--color-background: #ffffff;
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
 	--color-foreground: #1b1b1e;
 	--color-primary: var(--color-brand-blue);
 	--color-primary-foreground: var(--color-on-primary);

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { dateToISODateString, parseISODateToLocal, formatDate, formatDateOnly } from './format';
+import {
+	dateToISODateString,
+	parseISODateToLocal,
+	formatDate,
+	formatDateOnly,
+	formatCompactPrice
+} from './format';
 
 describe('dateToISODateString', () => {
 	it('returns empty string for null input', () => {
@@ -154,6 +160,18 @@ describe('formatDateOnly', () => {
 
 		expect(result).toContain('16');
 		expect(result).toContain('2026');
+	});
+});
+
+describe('formatCompactPrice', () => {
+	it('keeps amounts under one thousand as plain dollars', () => {
+		expect(formatCompactPrice(0)).toBe('$0');
+		expect(formatCompactPrice(450)).toBe('$450');
+	});
+
+	it('compacts thousands', () => {
+		expect(formatCompactPrice(1500)).toMatch(/^\$1,5\s?K$/);
+		expect(formatCompactPrice(12500)).toMatch(/^\$12,5\s?k$/);
 	});
 });
 

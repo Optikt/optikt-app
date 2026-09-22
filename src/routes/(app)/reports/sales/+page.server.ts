@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const dateFrom = toISODate(monthStart());
 	const dateTo = toISODate(nowUTC());
 
-	const { sales, summary } = await getReportSales(dateFrom, dateTo);
+	const { sales, summary, byBrand } = await getReportSales(dateFrom, dateTo);
 
-	return { sales, summary, dateFrom, dateTo };
+	return { sales, summary, byBrand, dateFrom, dateTo };
 };
