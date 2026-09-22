@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getReportSalesByBrand } from './reports';
+import { getReportSales, getReportSalesByBrand } from './reports';
 import { resetDb } from '$lib/testing/integration/db';
 import {
 	createMaterial,
@@ -98,6 +98,23 @@ describe('getReportSalesByBrand', () => {
 		const result = await getReportSalesByBrand(today, today);
 
 		expect(result).toEqual([{ brand: 'Ray-Ban', total: 100, salesCount: 1 }]);
+	});
+
+	it('returns summary and byBrand together from getReportSales', async () => {
+		const productId = await createProductId();
+		const sale = await createSale();
+		await createSaleItem({
+			saleId: sale.id,
+			productId,
+			snapshotBrand: 'Ray-Ban',
+			unitPrice: 100
+		});
+
+		const result = await getReportSales(today, today);
+
+		expect(result.summary.count).toBe(1);
+		expect(result.sales).toHaveLength(1);
+		expect(result.byBrand).toEqual([{ brand: 'Ray-Ban', total: 100, salesCount: 1 }]);
 	});
 
 	it('returns nothing outside the date range', async () => {
