@@ -24,6 +24,10 @@ const decimalFormatter = new Intl.NumberFormat('es-VE', {
 	minimumFractionDigits: 2,
 	maximumFractionDigits: 2
 });
+const compactCurrencyFormatter = new Intl.NumberFormat('es-VE', {
+	notation: 'compact',
+	maximumFractionDigits: 1
+});
 
 /**
  * Format a number as USD currency (es-VE locale)
@@ -31,6 +35,14 @@ const decimalFormatter = new Intl.NumberFormat('es-VE', {
  */
 export function formatPrice(price: number): string {
 	return usdCurrencyFormatter.format(price);
+}
+
+/**
+ * Format a number as compact USD for chart axes
+ * Example: formatCompactPrice(2331.39) → "$2,3 mil"
+ */
+export function formatCompactPrice(value: number): string {
+	return `$${compactCurrencyFormatter.format(value)}`;
 }
 
 /**

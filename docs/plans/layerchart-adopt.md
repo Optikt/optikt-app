@@ -1,7 +1,7 @@
 ---
 plan name: layerchart-adopt
 plan description: Charts LayerChart en reportes
-plan status: active
+plan status: done
 ---
 
 ## Idea

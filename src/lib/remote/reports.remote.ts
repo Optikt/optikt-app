@@ -9,6 +9,7 @@ import { getReportSales, getReportPayments, getInventoryReport } from '$lib/serv
 import type {
 	ReportSale,
 	SalesReportSummary,
+	BrandSalesSlice,
 	ReportPayment,
 	RefundEntry,
 	PaymentsReportSummary,
@@ -23,6 +24,7 @@ import { z } from 'zod';
 export interface SalesReportResult {
 	sales: ReportSale[];
 	summary: SalesReportSummary;
+	byBrand: BrandSalesSlice[];
 }
 
 export interface PaymentsReportResult {

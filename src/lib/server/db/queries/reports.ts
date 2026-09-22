@@ -5,13 +5,13 @@
  * Reuses existing query functions where possible and provides
  * flat projections + aggregation for the reports UI.
  */
-import { eq, isNull, and, gte, lte, desc, ne, or } from 'drizzle-orm';
+import { eq, isNull, and, gte, lte, desc, ne, or, sql, isNotNull, inArray } from 'drizzle-orm';
 import { db } from '$lib/server/db';
-import { salePayments, sales, customers } from '$lib/server/db/schema';
+import { salePayments, sales, customers, saleItems, products } from '$lib/server/db/schema';
 import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
 import { getAllSales } from './sales/reads';
 import { getLensCatalogItemsWithRelations } from './lenses/catalog';
-import { RefundStatus } from '$lib/shared/enums';
+import { DiscountType, ProductType, RefundStatus } from '$lib/shared/enums';
 
 // ============================================================================
 // HELPERS
@@ -46,6 +46,12 @@ export interface SalesReportSummary {
 	totalPaid: number;
 	cancelledCount: number;
 	cancelledAmount: number;
+}
+
+export interface BrandSalesSlice {
+	brand: string;
+	total: number;
+	salesCount: number;
 }
 
 export interface ReportPayment {
@@ -106,12 +112,16 @@ export interface InventoryLensItem {
 /**
  * Get sales within a date range for reporting.
  * Delegates to getAllSales() and flattens the relational result.
+ * Includes product sales grouped by brand (snapshot name at sale time).
  */
 export async function getReportSales(
 	dateFrom: string,
 	dateTo: string
-): Promise<{ sales: ReportSale[]; summary: SalesReportSummary }> {
-	const rows = await getAllSales({ dateFrom, dateTo });
+): Promise<{ sales: ReportSale[]; summary: SalesReportSummary; byBrand: BrandSalesSlice[] }> {
+	const [rows, byBrand] = await Promise.all([
+		getAllSales({ dateFrom, dateTo }),
+		getReportSalesByBrand(dateFrom, dateTo)
+	]);
 
 	const reportSales: ReportSale[] = rows.map((r) => ({
 		id: r.id,
@@ -135,7 +145,52 @@ export async function getReportSales(
 		cancelledAmount: cancelled.reduce((acc, s) => acc + s.total, 0)
 	};
 
-	return { sales: reportSales, summary };
+	return { sales: reportSales, summary, byBrand };
+}
+
+const lineNetTotal = sql<number>`greatest(0, ${saleItems.unitPrice} * ${saleItems.quantity} - case when ${saleItems.discountType} = ${DiscountType.PERCENTAGE} then ${saleItems.unitPrice} * ${saleItems.quantity} * ${saleItems.discount} / 100 else ${saleItems.discount} end)`;
+
+/**
+ * Product sales within a date range grouped by brand snapshot (top brands by net total).
+ * Pre-global-discount: the sale-level global discount is not allocated per line.
+ */
+export async function getReportSalesByBrand(
+	dateFrom: string,
+	dateTo: string,
+	limit = 8
+): Promise<BrandSalesSlice[]> {
+	const toEnd = toUTCString(toEndOfDay(fromISODate(dateTo)!));
+
+	const rows = await db
+		.select({
+			brand: saleItems.snapshotBrand,
+			total: sql<number>`coalesce(sum(${lineNetTotal}), 0)`.mapWith(Number),
+			salesCount: sql<number>`count(distinct ${sales.id})::int`.mapWith(Number)
+		})
+		.from(saleItems)
+		.innerJoin(sales, eq(saleItems.saleId, sales.id))
+		.innerJoin(products, eq(saleItems.productId, products.id))
+		.where(
+			and(
+				eq(saleItems.itemType, 'PRODUCT'),
+				inArray(products.type, [ProductType.FRAME, ProductType.SUNGLASSES]),
+				isNotNull(saleItems.snapshotBrand),
+				isNull(saleItems.deletedAt),
+				isNull(sales.deletedAt),
+				ne(sales.status, 'CANCELLED'),
+				gte(sales.createdAt, dateFrom),
+				lte(sales.createdAt, toEnd)
+			)
+		)
+		.groupBy(saleItems.snapshotBrand)
+		.orderBy(desc(sql`coalesce(sum(${lineNetTotal}), 0)`))
+		.limit(limit);
+
+	return rows.map((r) => ({
+		brand: r.brand ?? 'Sin marca',
+		total: r.total,
+		salesCount: r.salesCount
+	}));
 }
 
 // ============================================================================
