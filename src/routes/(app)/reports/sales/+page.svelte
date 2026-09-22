@@ -9,7 +9,6 @@
 	import SalesByBrandChart from '$lib/components/reports/SalesByBrandChart.svelte';
 	import { SaleStatusBadge } from '$lib/components/ui';
 	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
-	import { monthStart, nowUTC, toISODate } from '$lib/dates';
 	import { fetchSalesReport } from '$lib/remote/reports.remote';
 	import { SALE_STATUS_LABELS } from '$lib/shared/enums';
 	import type {
@@ -24,7 +23,9 @@
 	let {
 		sales: initialSales,
 		summary: initialSummary,
-		byBrand: initialByBrand
+		byBrand: initialByBrand,
+		dateFrom: initialDateFrom,
+		dateTo: initialDateTo
 	} = untrack(() => data);
 
 	let sales = $state<ReportSale[]>(initialSales);
@@ -33,9 +34,11 @@
 	let loading = $state(false);
 	let statusFilter = $state<StatusFilter>('active');
 
-	// Date range state - default to current month
-	let dateFrom = $state(toISODate(monthStart()));
-	let dateTo = $state(toISODate(nowUTC()));
+	// Draft range bound to the filter inputs; applied only after "Consultar"
+	let dateFrom = $state(initialDateFrom);
+	let dateTo = $state(initialDateTo);
+	let appliedFrom = $state(initialDateFrom);
+	let appliedTo = $state(initialDateTo);
 
 	const filteredSales = $derived(
 		statusFilter === 'all'
@@ -64,7 +67,7 @@
 			entry.paid += sale.paidAmountBcvUsd;
 			byDay.set(day, entry);
 		}
-		return eachISODay(dateFrom, dateTo).map(
+		return eachISODay(appliedFrom, appliedTo).map(
 			(day) => byDay.get(day) ?? { date: day, total: 0, paid: 0 }
 		);
 	});
@@ -76,6 +79,8 @@
 			sales = result.sales;
 			summary = result.summary;
 			byBrand = result.byBrand;
+			appliedFrom = dateFrom;
+			appliedTo = dateTo;
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando reporte de ventas'));
 		} finally {
