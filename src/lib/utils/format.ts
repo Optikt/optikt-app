@@ -39,7 +39,7 @@ export function formatPrice(price: number): string {
 
 /**
  * Format a number as compact USD for chart axes
- * Example: formatCompactPrice(2331.39) → "$2,3 mil"
+ * Example: formatCompactPrice(2331.39) → "$2,3 K"
  */
 export function formatCompactPrice(value: number): string {
 	return `$${compactCurrencyFormatter.format(value)}`;
