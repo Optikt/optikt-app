@@ -11,6 +11,7 @@ import {
 } from '$lib/server/db/schema';
 import type { InferSelectedRow, DbOrTx } from '$lib/server/db/types';
 import { nowISO } from '$lib/dates';
+import type { CustomerGender } from '$lib/shared/enums/customerGenders';
 
 // ============================================================================
 // CUSTOMERS
@@ -170,6 +171,8 @@ export async function resolveInlineCustomer(
 		firstName: string;
 		lastName: string;
 		idNumber: string;
+		birthDate?: string;
+		gender?: CustomerGender;
 		primaryPhone?: string;
 		email?: string;
 		address?: string;
@@ -187,6 +190,8 @@ export async function resolveInlineCustomer(
 			firstName: data.firstName,
 			lastName: data.lastName,
 			idNumber: normalizedIdNumber,
+			birthDate: data.birthDate || null,
+			gender: data.gender || null,
 			primaryPhone: data.primaryPhone ?? '',
 			email: data.email || null,
 			address: data.address || null,

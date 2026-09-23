@@ -16,6 +16,7 @@ export type SaleWithRelations = Sale & {
 		firstName: string;
 		lastName: string;
 		idNumber: string | null;
+		birthDate: string | null;
 		primaryPhone: string;
 	} | null;
 	seller: { id: string; fullName: string } | null;

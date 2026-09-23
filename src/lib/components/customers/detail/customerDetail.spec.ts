@@ -21,6 +21,7 @@ describe('buildCustomerEditData', () => {
 			lastName: null,
 			idNumber: 'V-1',
 			birthDate: null,
+			gender: null,
 			primaryPhone: null,
 			email: 'a@x.com',
 			address: null,
@@ -32,9 +33,15 @@ describe('buildCustomerEditData', () => {
 			lastName: '',
 			idNumber: 'V-1',
 			birthDate: undefined,
+			gender: '',
 			primaryPhone: '',
 			email: 'a@x.com'
 		});
+	});
+
+	it('maps gender to its enum value', () => {
+		expect(buildCustomerEditData({ gender: 'FEMENINO' }).gender).toBe('FEMENINO');
+		expect(buildCustomerEditData({ gender: 'MASCULINO' }).gender).toBe('MASCULINO');
 	});
 
 	it('parses birth dates to local', () => {

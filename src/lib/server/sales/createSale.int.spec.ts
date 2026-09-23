@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { createSaleCore } from './createSale';
 import { db } from '$lib/server/db';
 import {
+	customers,
 	inventoryLots,
 	products,
 	saleItemFreeDetails,
@@ -20,6 +21,7 @@ import {
 } from '$lib/testing/integration/factories';
 import { DiscountType, UserRole } from '$lib/shared/enums';
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
+import { CustomerGender } from '$lib/shared/enums/customerGenders';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateSaleInput, SaleItemInput } from '$lib/schemas/sales';
 
@@ -107,7 +109,9 @@ describe('createSaleCore', () => {
 			newCustomer: {
 				firstName: 'Ana',
 				lastName: 'Pérez',
-				idNumber: 'V-12345678'
+				idNumber: 'V-12345678',
+				birthDate: '2000-03-09',
+				gender: CustomerGender.FEMENINO
 			},
 			saleDate: '2026-09-15',
 			discount: 0,
@@ -121,6 +125,13 @@ describe('createSaleCore', () => {
 		expect(result.success).toBe(true);
 		if (!result.success) throw new Error('sale was not created');
 		expect(result.sale.customerId).toBeTruthy();
+
+		const [created] = await db
+			.select()
+			.from(customers)
+			.where(eq(customers.id, result.sale.customerId!));
+		expect(created.birthDate).toContain('2000-03-09');
+		expect(created.gender).toBe('FEMENINO');
 	});
 
 	it('blocks a non-admin from assigning a custom order number', async () => {
