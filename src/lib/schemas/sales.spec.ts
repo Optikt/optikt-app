@@ -195,6 +195,39 @@ describe('CreateSaleSchema', () => {
 		expect(result.success).toBe(true);
 	});
 
+	it('accepts optional birthDate and gender for inline new customer', () => {
+		const result = CreateSaleSchema.safeParse({
+			newCustomer: {
+				firstName: 'Juan',
+				lastName: 'Pérez',
+				idNumber: 'V-87654321',
+				birthDate: '2000-03-09',
+				gender: 'MASCULINO'
+			},
+			saleDate: '2025-01-15',
+			items: [makeProductItem()]
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.newCustomer?.birthDate).toBe('2000-03-09');
+			expect(result.data.newCustomer?.gender).toBe('MASCULINO');
+		}
+	});
+
+	it('rejects an invalid inline customer gender', () => {
+		const result = CreateSaleSchema.safeParse({
+			newCustomer: {
+				firstName: 'Juan',
+				lastName: 'Pérez',
+				idNumber: 'V-87654321',
+				gender: 'OTROS'
+			},
+			saleDate: '2025-01-15',
+			items: [makeProductItem()]
+		});
+		expect(result.success).toBe(false);
+	});
+
 	it('accepts an explicit order number (admin backfill)', () => {
 		const result = CreateSaleSchema.safeParse({
 			...validBase,

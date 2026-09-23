@@ -80,7 +80,7 @@ export const updateCustomerForm = form(
 	async (data, issue): Promise<Customer> => {
 		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
-		const { id, idNumber, birthDate, ...rest } = data;
+		const { id, idNumber, birthDate, gender, ...rest } = data;
 
 		// Check customer exists
 		const existing = await findCustomerById(id);
@@ -100,7 +100,8 @@ export const updateCustomerForm = form(
 		const updated = await updateCustomer(id, {
 			...rest,
 			idNumber: idNumber || null,
-			birthDate: birthDate || null
+			birthDate: birthDate || null,
+			gender: gender || null
 		});
 
 		if (!updated) {
@@ -196,7 +197,7 @@ export const createCustomerWithPrescription = form(
 	async (data, issue): Promise<CreateEntityResult<Customer>> => {
 		requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);
 
-		const { prescription, idNumber, birthDate, ...customerFields } = data;
+		const { prescription, idNumber, birthDate, gender, ...customerFields } = data;
 		const context = getAuditContext();
 
 		// Check for duplicate idNumber
@@ -222,7 +223,8 @@ export const createCustomerWithPrescription = form(
 				{
 					...customerFields,
 					idNumber: idNumber || null,
-					birthDate: birthDate || null
+					birthDate: birthDate || null,
+					gender: gender || null
 				},
 				tx
 			);

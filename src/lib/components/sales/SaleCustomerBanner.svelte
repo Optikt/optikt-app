@@ -2,10 +2,11 @@
 	interface Props {
 		name: string;
 		document: string;
+		age?: number | null;
 		statusLabel: string;
 	}
 
-	let { name, document, statusLabel }: Props = $props();
+	let { name, document, age = null, statusLabel }: Props = $props();
 </script>
 
 <div
@@ -14,6 +15,9 @@
 	<div class="flex flex-wrap items-center gap-2 text-xs font-semibold">
 		<span class="max-w-[12rem] truncate">{name}</span>
 		<span class="font-mono text-[12px] text-white/80">{document}</span>
+		{#if age !== null}
+			<span class="text-[12px] font-normal text-white/70">{age} años</span>
+		{/if}
 	</div>
 	<p
 		class="rounded-full border-2 px-2 text-[10px] font-bold tracking-[0.14em] text-white/80 uppercase"

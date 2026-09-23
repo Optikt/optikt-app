@@ -8,6 +8,7 @@ export const customers = pgTable(
 		lastName: varchar('last_name').notNull(),
 		idNumber: varchar('id_number'),
 		birthDate: timestamp('birth_date', { withTimezone: true, mode: 'string' }),
+		gender: varchar('gender', { length: 20 }),
 		primaryPhone: varchar('primary_phone').notNull(),
 		email: varchar(),
 		address: varchar(),

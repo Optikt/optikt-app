@@ -210,10 +210,20 @@ describe('CreateQuoteSchema', () => {
 	it('accepts a quote with newCustomer instead of customerId', () => {
 		const result = CreateQuoteSchema.safeParse({
 			...validBase,
-			newCustomer: { firstName: 'Ana', lastName: 'Pérez', idNumber: 'V-12345678' },
+			newCustomer: {
+				firstName: 'Ana',
+				lastName: 'Pérez',
+				idNumber: 'V-12345678',
+				birthDate: '1990-05-01',
+				gender: 'FEMENINO'
+			},
 			items: [makeProductItem()]
 		});
 		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.newCustomer?.birthDate).toBe('1990-05-01');
+			expect(result.data.newCustomer?.gender).toBe('FEMENINO');
+		}
 	});
 
 	it('accepts mixed product, lens, and treatment items', () => {

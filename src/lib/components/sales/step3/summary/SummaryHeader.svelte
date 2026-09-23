@@ -6,6 +6,7 @@
 	interface Props {
 		name: string;
 		document: string;
+		age?: number | null;
 		statusLabel: string;
 		isCashea: boolean;
 		notes: string;
@@ -14,6 +15,7 @@
 	let {
 		name,
 		document,
+		age = null,
 		statusLabel,
 		isCashea = $bindable(),
 		notes = $bindable()
@@ -21,7 +23,7 @@
 </script>
 
 <div class="flex shrink-0 items-center gap-3">
-	<SaleCustomerBanner {name} {document} {statusLabel} />
+	<SaleCustomerBanner {name} {document} {age} {statusLabel} />
 	<CasheaCheckbox bind:isCashea />
 	<div
 		class="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 transition-colors duration-150 focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-100 hover:border-slate-400"

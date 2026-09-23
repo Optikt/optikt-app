@@ -6,6 +6,7 @@
 	import { createCustomerWithPrescription, updateCustomerForm } from '$lib/remote/customers.remote';
 	import type { CreateEntityResult } from '$lib/types';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
+	import { Label } from '$lib/components/ui/label';
 	import {
 		scrollToFirstError,
 		toastUnboundErrors,
@@ -15,6 +16,11 @@
 	import { generateUUID } from '$lib/utils/generateUUID';
 	import { nowUTC } from '$lib/dates';
 	import type { Customer } from '$lib/server/db/schema';
+	import {
+		ALL_CUSTOMER_GENDERS,
+		CUSTOMER_GENDER_LABELS,
+		type CustomerGender
+	} from '$lib/shared/enums/customerGenders';
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
 
 	interface Props {
@@ -45,6 +51,7 @@
 		lastName: '',
 		idNumber: '',
 		birthDate: undefined as Date | undefined,
+		gender: '' as CustomerGender | '',
 		primaryPhone: '',
 		email: '',
 		address: '',
@@ -53,6 +60,9 @@
 
 	// Max date for birth date picker (no future dates)
 	const today = nowUTC();
+
+	const genderSelectClass =
+		'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none';
 
 	// Reactivation modal state
 	let showReactivateModal = $state(false);
@@ -77,6 +87,7 @@
 						idNumber: customer.idNumber ?? '',
 						// Convert ISO date string (from DB) to local midnight Date (for Datepicker)
 						birthDate: parseISODateToLocal(customer.birthDate),
+						gender: (customer.gender as CustomerGender | null) ?? '',
 						primaryPhone: customer.primaryPhone ?? '',
 						email: customer.email ?? '',
 						address: customer.address ?? '',
@@ -88,6 +99,7 @@
 						lastName: '',
 						idNumber: '',
 						birthDate: undefined,
+						gender: '',
 						primaryPhone: '',
 						email: '',
 						address: '',
@@ -206,11 +218,27 @@
 					<FormDatepicker
 						name="birthDate"
 						label="Fecha de Nacimiento"
-						required
 						bind:value={formData.birthDate}
 						availableTo={today}
 						error={currentUpdateForm.fields.birthDate?.issues()}
 					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<div>
+						<Label for="update-gender" class="mb-2">Género</Label>
+						<select
+							id="update-gender"
+							name="gender"
+							bind:value={formData.gender}
+							class={genderSelectClass}
+						>
+							<option value="">Sin especificar</option>
+							{#each ALL_CUSTOMER_GENDERS as g (g)}
+								<option value={g}>{CUSTOMER_GENDER_LABELS[g]}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 
 				<div class="grid gap-4 sm:grid-cols-2">
@@ -315,11 +343,27 @@
 					<FormDatepicker
 						name="birthDate"
 						label="Fecha de Nacimiento"
-						required
 						bind:value={formData.birthDate}
 						availableTo={today}
 						error={currentCreateForm.fields.birthDate?.issues()}
 					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<div>
+						<Label for="create-gender" class="mb-2">Género</Label>
+						<select
+							id="create-gender"
+							name="gender"
+							bind:value={formData.gender}
+							class={genderSelectClass}
+						>
+							<option value="">Sin especificar</option>
+							{#each ALL_CUSTOMER_GENDERS as g (g)}
+								<option value={g}>{CUSTOMER_GENDER_LABELS[g]}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 
 				<div class="grid gap-4 sm:grid-cols-2">

@@ -73,3 +73,39 @@ export async function callRemote<A, T = unknown>(
 	const result = with_request_store(store, () => fn(arg));
 	return (await result) as T;
 }
+
+interface RemoteFormInternals {
+	__: {
+		fn: (data: unknown, meta: unknown, formData: FormData | null) => Promise<unknown>;
+	};
+}
+
+/**
+ * Call a remote `form()` function server-side.
+ *
+ * The exported form instance is not directly callable (it only exposes
+ * `for`/`enhance`/`fields`), so tests must go through the internal `__` handler
+ * that Kit itself runs on submission.
+ */
+export async function callRemoteForm<A, T = unknown>(
+	remoteForm: unknown,
+	data: A,
+	options: CallRemoteOptions = {}
+): Promise<T> {
+	const internals = (remoteForm as RemoteFormInternals).__;
+	if (!internals?.fn) {
+		throw new Error('callRemoteForm: argument is not a remote form instance');
+	}
+
+	const store = createTestStore(options);
+	const output = (await with_request_store(store, () => internals.fn(data, {}, null))) as {
+		result?: T;
+		issues?: unknown[];
+	};
+
+	if (output.issues?.length) {
+		throw new Error(`Remote form validation failed: ${JSON.stringify(output.issues)}`);
+	}
+
+	return output.result as T;
+}
