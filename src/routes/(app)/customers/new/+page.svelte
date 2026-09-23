@@ -21,6 +21,11 @@
 	import { nowUTC } from '$lib/dates';
 	import type { CreateEntityResult } from '$lib/types';
 	import type { Customer } from '$lib/server/db/schema';
+	import {
+		ALL_CUSTOMER_GENDERS,
+		CUSTOMER_GENDER_LABELS,
+		type CustomerGender
+	} from '$lib/shared/enums/customerGenders';
 	import CustomerReactivateModal from '$lib/components/customers/CustomerReactivateModal.svelte';
 
 	let formInstanceId = $state(generateUUID());
@@ -34,6 +39,7 @@
 		lastName: '',
 		idNumber: '',
 		birthDate: undefined as Date | undefined,
+		gender: '' as CustomerGender | '',
 		primaryPhone: '',
 		email: '',
 		address: '',
@@ -43,6 +49,9 @@
 	let rxData = $state(createPrescriptionFormData());
 
 	const today = nowUTC();
+
+	const genderSelectClass =
+		'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none';
 
 	let showReactivateModal = $state(false);
 	let reactivationCandidate = $state<Customer | null>(null);
@@ -166,11 +175,27 @@
 					<FormDatepicker
 						name="birthDate"
 						label="Fecha de Nacimiento"
-						required
 						bind:value={customerData.birthDate}
 						availableTo={today}
 						error={currentForm.fields.birthDate?.issues()}
 					/>
+				</div>
+
+				<div class="grid gap-4 sm:grid-cols-2">
+					<div>
+						<label for="gender" class="mb-2 block text-sm font-medium">Género</label>
+						<select
+							id="gender"
+							name="gender"
+							bind:value={customerData.gender}
+							class={genderSelectClass}
+						>
+							<option value="">Sin especificar</option>
+							{#each ALL_CUSTOMER_GENDERS as g (g)}
+								<option value={g}>{CUSTOMER_GENDER_LABELS[g]}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 
 				<div class="grid gap-4 sm:grid-cols-2">

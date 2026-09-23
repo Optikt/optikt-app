@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createNewQuoteCore } from './createNewQuote';
 import { db } from '$lib/server/db';
-import { quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
+import { customers, quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
 import { resetDb } from '$lib/testing/integration/db';
 import {
 	createCustomer,
@@ -13,6 +13,7 @@ import {
 } from '$lib/testing/integration/factories';
 import { DiscountType, UserRole } from '$lib/shared/enums';
 import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
+import { CustomerGender } from '$lib/shared/enums/customerGenders';
 import type { ActionContext } from '$lib/server/actionContext';
 import type { CreateQuoteInput, QuoteItemInput } from '$lib/schemas/quotes';
 
@@ -86,7 +87,13 @@ describe('createNewQuoteCore', () => {
 		const seller = await createUser();
 		const product = await seedProduct();
 		const input: CreateQuoteInput = {
-			newCustomer: { firstName: 'Ana', lastName: 'Pérez', idNumber: 'V-11223344' },
+			newCustomer: {
+				firstName: 'Ana',
+				lastName: 'Pérez',
+				idNumber: 'V-11223344',
+				birthDate: '1990-05-01',
+				gender: CustomerGender.OTRO
+			},
 			quoteDate: '2026-09-15',
 			discount: 0,
 			discountType: DiscountType.FIXED,
@@ -99,6 +106,13 @@ describe('createNewQuoteCore', () => {
 		expect(result.success).toBe(true);
 		if (!result.success) throw new Error('quote was not created');
 		expect(result.quote.customerId).toBeTruthy();
+
+		const [created] = await db
+			.select()
+			.from(customers)
+			.where(eq(customers.id, result.quote.customerId!));
+		expect(created.birthDate).toContain('1990-05-01');
+		expect(created.gender).toBe('OTRO');
 	});
 
 	it('rejects a TREATMENT item without a parent', async () => {

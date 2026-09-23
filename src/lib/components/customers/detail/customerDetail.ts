@@ -1,4 +1,5 @@
 import { parseISODateToLocal } from '$lib/utils';
+import type { CustomerGender } from '$lib/shared/enums/customerGenders';
 
 export interface CustomerNameLike {
 	firstName?: string | null;
@@ -10,6 +11,7 @@ export interface CustomerEditData {
 	lastName: string;
 	idNumber: string;
 	birthDate: Date | undefined;
+	gender: CustomerGender | '';
 	primaryPhone: string;
 	email: string;
 	address: string;
@@ -25,6 +27,7 @@ export function buildCustomerEditData(customer: {
 	lastName?: string | null;
 	idNumber?: string | null;
 	birthDate?: string | null;
+	gender?: string | null;
 	primaryPhone?: string | null;
 	email?: string | null;
 	address?: string | null;
@@ -35,6 +38,7 @@ export function buildCustomerEditData(customer: {
 		lastName: customer.lastName ?? '',
 		idNumber: customer.idNumber ?? '',
 		birthDate: parseISODateToLocal(customer.birthDate),
+		gender: (customer.gender as CustomerGender | null | undefined) ?? '',
 		primaryPhone: customer.primaryPhone ?? '',
 		email: customer.email ?? '',
 		address: customer.address ?? '',

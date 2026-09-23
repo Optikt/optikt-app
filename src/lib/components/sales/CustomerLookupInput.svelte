@@ -3,21 +3,26 @@
 	import { CircleCheck, CircleAlert, IdCard, Mail, Phone, UserPlus, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { lookupCustomer } from '$lib/remote/sales/queries.remote';
-	import { getErrorMessage, ID_NUMBER_RE, type IdDocPrefix } from '$lib/utils';
+	import {
+		getErrorMessage,
+		ID_NUMBER_RE,
+		parseISODateToLocal,
+		dateToISODateString,
+		type IdDocPrefix
+	} from '$lib/utils';
+	import { nowUTC } from '$lib/dates';
 	import type { Customer } from '$lib/server/db/schema';
-	import { IdInput } from '$lib/components/ui';
+	import type { NewCustomerData } from './newSaleTypes';
+	import {
+		ALL_CUSTOMER_GENDERS,
+		CUSTOMER_GENDER_LABELS,
+		type CustomerGender
+	} from '$lib/shared/enums/customerGenders';
+	import { IdInput, FormDatepicker } from '$lib/components/ui';
 
 	interface Props {
 		customerId: string;
-		newCustomer: {
-			firstName: string;
-			lastName: string;
-			idNumber: string;
-			primaryPhone: string;
-			email: string;
-			address: string;
-			notes: string;
-		} | null;
+		newCustomer: NewCustomerData | null;
 		selectedCustomer: Customer | null;
 		creatingCustomer?: boolean;
 		resetKey?: number;
@@ -43,10 +48,14 @@
 
 	let firstName = $state(newCustomer?.firstName ?? '');
 	let lastName = $state(newCustomer?.lastName ?? '');
+	let birthDate = $state<Date | undefined>(parseISODateToLocal(newCustomer?.birthDate));
+	let gender = $state<CustomerGender | ''>(newCustomer?.gender ?? '');
 	let primaryPhone = $state(newCustomer?.primaryPhone ?? '');
 	let email = $state(newCustomer?.email ?? '');
 	let address = $state(newCustomer?.address ?? '');
 	let customerNotes = $state(newCustomer?.notes ?? '');
+
+	const today = nowUTC();
 
 	let touchedFirstName = $state(false);
 	let touchedLastName = $state(false);
@@ -182,6 +191,8 @@
 		newCustomer = null;
 		firstName = '';
 		lastName = '';
+		birthDate = undefined;
+		gender = '';
 		primaryPhone = '';
 		email = '';
 		address = '';
@@ -218,6 +229,8 @@
 				firstName,
 				lastName,
 				idNumber: idValue,
+				birthDate: dateToISODateString(birthDate) || undefined,
+				gender: gender || undefined,
 				primaryPhone,
 				email,
 				address,
@@ -225,6 +238,14 @@
 			};
 		}
 	}
+
+	// FormDatepicker has no change callback — mirror date edits into newCustomer.
+	$effect(() => {
+		const iso = dateToISODateString(birthDate) || undefined;
+		if (mode === 'create' && newCustomer?.birthDate !== iso) {
+			syncNewCustomer();
+		}
+	});
 </script>
 
 <form class="space-y-2" autocomplete="off" onsubmit={(e) => e.preventDefault()}>
@@ -404,6 +425,30 @@
 					placeholder="cliente@ejemplo.com"
 					class="{fieldInputClass} mt-1"
 				/>
+			</div>
+
+			<div class="col-span-2 lg:col-span-3">
+				<FormDatepicker
+					label="Fecha de Nacimiento"
+					bind:value={birthDate}
+					availableTo={today}
+					placeholder="DD/MM/AAAA"
+				/>
+			</div>
+
+			<div class="col-span-2 lg:col-span-3">
+				<label class={fieldLabelClass} for="new-gender">Género</label>
+				<select
+					id="new-gender"
+					bind:value={gender}
+					onchange={syncNewCustomer}
+					class="{fieldInputClass} mt-1"
+				>
+					<option value="">Sin especificar</option>
+					{#each ALL_CUSTOMER_GENDERS as g (g)}
+						<option value={g}>{CUSTOMER_GENDER_LABELS[g]}</option>
+					{/each}
+				</select>
 			</div>
 
 			<div class="col-span-2 lg:col-span-6">

@@ -1,9 +1,15 @@
 <script lang="ts">
 	import { Check, SquarePen, User, X } from '@lucide/svelte';
 	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
+	import { Label } from '$lib/components/ui/label';
 	import { updateCustomerForm } from '$lib/remote/customers.remote';
 	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '$lib/utils';
-	import { formatDate } from '$lib/utils';
+	import { calculateAge } from '$lib/dates';
+	import {
+		ALL_CUSTOMER_GENDERS,
+		CUSTOMER_GENDER_LABELS,
+		type CustomerGender
+	} from '$lib/shared/enums/customerGenders';
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
 	import type { Customer } from '$lib/server/db/schema';
@@ -34,6 +40,14 @@
 		onCancelEdit,
 		onSaved
 	}: Props = $props();
+
+	const age = $derived(calculateAge(customer.birthDate));
+	const genderLabel = $derived(
+		customer.gender ? (CUSTOMER_GENDER_LABELS[customer.gender as CustomerGender] ?? '-') : '-'
+	);
+
+	const genderSelectClass =
+		'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue focus:outline-none';
 </script>
 
 {#if isEditing}
@@ -124,11 +138,26 @@
 					<FormDatepicker
 						name="birthDate"
 						label="Fecha de Nacimiento"
-						required
 						bind:value={editData.birthDate}
 						availableTo={today}
 						error={updateForm.fields.birthDate?.issues()}
 					/>
+				</div>
+				<div class="grid gap-4 sm:grid-cols-2">
+					<div>
+						<Label for="edit-gender" class="mb-2">Género</Label>
+						<select
+							id="edit-gender"
+							name="gender"
+							bind:value={editData.gender}
+							class={genderSelectClass}
+						>
+							<option value="">Sin especificar</option>
+							{#each ALL_CUSTOMER_GENDERS as g (g)}
+								<option value={g}>{CUSTOMER_GENDER_LABELS[g]}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 				<div class="grid gap-4 sm:grid-cols-2">
 					<FormInput
@@ -213,10 +242,18 @@
 			</div>
 			<div>
 				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
-					>Fecha de Nacimiento</span
+					>Edad</span
 				>
 				<p class="mt-0.5 text-sm text-on-surface">
-					{customer.birthDate ? formatDate(customer.birthDate) : '-'}
+					{age !== null ? `${age} años` : '-'}
+				</p>
+			</div>
+			<div>
+				<span class="text-[11px] font-semibold tracking-wider text-on-surface-variant/70 uppercase"
+					>Género</span
+				>
+				<p class="mt-0.5 text-sm text-on-surface">
+					{genderLabel}
 				</p>
 			</div>
 			<div>

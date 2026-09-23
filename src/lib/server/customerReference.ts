@@ -6,11 +6,14 @@ import {
 import { normalizeIdNumber } from '$lib/utils';
 import type { DbOrTx } from '$lib/server/db/types';
 import type { Customer } from '$lib/server/db/schema';
+import type { CustomerGender } from '$lib/shared/enums/customerGenders';
 
 export interface InlineCustomerInput {
 	firstName: string;
 	lastName: string;
 	idNumber: string;
+	birthDate?: string;
+	gender?: CustomerGender;
 	primaryPhone?: string;
 	email?: string;
 	address?: string;
@@ -51,6 +54,8 @@ export async function createInlineCustomer(
 			firstName: input.firstName,
 			lastName: input.lastName,
 			idNumber: normalizeIdNumber(input.idNumber),
+			birthDate: input.birthDate || null,
+			gender: input.gender || null,
 			primaryPhone: input.primaryPhone ?? '',
 			email: input.email || null,
 			address: input.address || null,

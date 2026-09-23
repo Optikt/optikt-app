@@ -1,5 +1,6 @@
 import { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 import { LensType } from '$lib/shared/enums';
+import type { CustomerGender } from '$lib/shared/enums/customerGenders';
 import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
 
 export type ItemKind = 'product' | 'lens' | 'free' | 'treatment';
@@ -184,6 +185,9 @@ export interface NewCustomerData {
 	firstName: string;
 	lastName: string;
 	idNumber: string;
+	/** ISO date-only (YYYY-MM-DD) */
+	birthDate?: string;
+	gender?: CustomerGender;
 	primaryPhone: string;
 	email: string;
 	address: string;

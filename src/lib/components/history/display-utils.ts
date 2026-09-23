@@ -44,6 +44,7 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		lastName: 'Apellido',
 		idNumber: 'Cédula/ID',
 		birthDate: 'Fecha de nacimiento',
+		gender: 'Género',
 		primaryPhone: 'Teléfono principal',
 		email: 'Correo electrónico',
 		address: 'Dirección',
