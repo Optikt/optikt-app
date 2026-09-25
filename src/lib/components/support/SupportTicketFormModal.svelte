@@ -1,0 +1,208 @@
+<script lang="ts">
+	import { X } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
+	import { createSupportTicketCommand } from '$lib/remote/supportTickets.remote';
+	import {
+		ALL_TICKET_CATEGORIES,
+		ALL_TICKET_PRIORITIES,
+		ALL_TICKET_RELATED_TYPES,
+		TICKET_CATEGORY_LABELS,
+		TICKET_PRIORITY_LABELS,
+		TICKET_RELATED_TYPE_LABELS,
+		TicketCategory,
+		TicketPriority,
+		TicketRelatedType
+	} from '$lib/shared/enums';
+	import { getErrorMessage } from '$lib/utils';
+
+	interface Props {
+		open?: boolean;
+		onCreated?: () => void;
+		onClose?: () => void;
+	}
+
+	let { open = $bindable(false), onCreated, onClose }: Props = $props();
+
+	let submitting = $state(false);
+	let title = $state('');
+	let description = $state('');
+	let category = $state<TicketCategory>(TicketCategory.BUG);
+	let priority = $state<TicketPriority>(TicketPriority.MEDIUM);
+	let relatedType = $state<TicketRelatedType | ''>('');
+	let relatedLabel = $state('');
+
+	const labelClass = 'text-[11px] font-semibold tracking-[0.18em] text-outline uppercase';
+	const inputClass =
+		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
+
+	function reset() {
+		title = '';
+		description = '';
+		category = TicketCategory.BUG;
+		priority = TicketPriority.MEDIUM;
+		relatedType = '';
+		relatedLabel = '';
+	}
+
+	function close() {
+		open = false;
+		onClose?.();
+	}
+
+	async function handleSubmit(event: SubmitEvent) {
+		event.preventDefault();
+		if (submitting) return;
+
+		submitting = true;
+		try {
+			await createSupportTicketCommand({
+				title,
+				description,
+				category,
+				priority,
+				relatedType: relatedType || undefined,
+				relatedLabel: relatedLabel || undefined
+			});
+			toast.success('Ticket creado');
+			reset();
+			open = false;
+			onCreated?.();
+		} catch (error) {
+			toast.error(getErrorMessage(error, 'No se pudo crear el ticket'));
+		} finally {
+			submitting = false;
+		}
+	}
+</script>
+
+{#if open}
+	<div
+		class="fixed inset-0 z-50 bg-brand-navy/40 backdrop-blur-sm"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="new-support-ticket-title"
+	>
+		<div class="flex h-full items-end justify-center p-2 sm:items-center sm:p-4">
+			<form
+				onsubmit={handleSubmit}
+				class="flex max-h-[calc(100dvh-0.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.5rem] bg-surface-container-lowest shadow-xl sm:max-h-[90dvh]"
+			>
+				<div class="border-b border-surface-container-high px-4 py-4 sm:px-6">
+					<div class="flex items-start justify-between gap-3">
+						<div class="min-w-0">
+							<p class={labelClass}>Soporte</p>
+							<h2
+								id="new-support-ticket-title"
+								class="mt-1 text-xl font-semibold tracking-[-0.02em] text-brand-navy"
+							>
+								Reportar problema o duda
+							</h2>
+							<p class="mt-1 text-sm text-on-surface-variant">
+								Describe qué pasó o qué necesitas. Queda registrado para no perderle la pista.
+							</p>
+						</div>
+						<button
+							type="button"
+							onclick={close}
+							class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-low text-brand-navy transition hover:bg-surface-container-high"
+							aria-label="Cerrar formulario de ticket"
+						>
+							<X size={18} />
+						</button>
+					</div>
+				</div>
+
+				<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+					<div class="grid gap-4 sm:grid-cols-2">
+						<label class="col-span-full flex flex-col gap-1.5 text-sm">
+							<span class={labelClass}>Título *</span>
+							<input
+								type="text"
+								bind:value={title}
+								required
+								minlength="3"
+								maxlength="120"
+								class={inputClass}
+								placeholder="Ej: Error al confirmar una venta"
+							/>
+						</label>
+
+						<label class="col-span-full flex flex-col gap-1.5 text-sm">
+							<span class={labelClass}>Descripción *</span>
+							<textarea
+								bind:value={description}
+								required
+								minlength="10"
+								maxlength="4000"
+								rows="5"
+								class={inputClass}
+								placeholder="¿Qué intentabas hacer? ¿Qué esperabas y qué pasó?"></textarea>
+						</label>
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class={labelClass}>Categoría *</span>
+							<select bind:value={category} required class={inputClass}>
+								{#each ALL_TICKET_CATEGORIES as c (c)}
+									<option value={c}>{TICKET_CATEGORY_LABELS[c]}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class={labelClass}>Prioridad</span>
+							<select bind:value={priority} class={inputClass}>
+								{#each ALL_TICKET_PRIORITIES as p (p)}
+									<option value={p}>{TICKET_PRIORITY_LABELS[p]}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class={labelClass}>Relacionado con</span>
+							<select bind:value={relatedType} class={inputClass}>
+								<option value="">Sin referencia</option>
+								{#each ALL_TICKET_RELATED_TYPES as t (t)}
+									<option value={t}>{TICKET_RELATED_TYPE_LABELS[t]}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label class="flex flex-col gap-1.5 text-sm">
+							<span class={labelClass}>Referencia</span>
+							<input
+								type="text"
+								bind:value={relatedLabel}
+								maxlength="120"
+								class={inputClass}
+								placeholder="Ej: Venta #123, cliente Juan Pérez"
+								disabled={!relatedType}
+							/>
+						</label>
+					</div>
+				</div>
+
+				<div
+					class="border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:px-6"
+				>
+					<div class="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onclick={close}
+							disabled={submitting}
+							class="rounded-xl bg-surface-container-high px-4 py-3 text-sm font-semibold text-brand-navy transition hover:bg-surface-container-highest disabled:opacity-50"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							disabled={submitting}
+							class="rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark disabled:opacity-50"
+						>
+							{submitting ? 'Enviando...' : 'Crear ticket'}
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}
