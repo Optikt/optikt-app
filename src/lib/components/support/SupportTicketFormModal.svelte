@@ -27,7 +27,7 @@
 	let submitting = $state(false);
 	let title = $state('');
 	let description = $state('');
-	let category = $state<TicketCategory>(TicketCategory.BUG);
+	let category = $state<TicketCategory | ''>('');
 	let priority = $state<TicketPriority>(TicketPriority.MEDIUM);
 	let relatedType = $state<TicketRelatedType | ''>('');
 	let relatedLabel = $state('');
@@ -36,25 +36,22 @@
 	const inputClass =
 		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 
-	const canSubmit = $derived(title.trim().length >= 3 && description.trim().length >= 10);
+	const canSubmit = $derived(
+		title.trim().length >= 3 && description.trim().length >= 10 && category !== ''
+	);
 
 	const missingFields = $derived(
 		[
-			title.trim().length < 3 ? 'título (mínimo 3 caracteres)' : null,
-			description.trim().length < 10 ? 'descripción (mínimo 10 caracteres)' : null
+			title.trim().length < 3 ? 'Título (mínimo 3 caracteres)' : null,
+			description.trim().length < 10 ? 'Descripción (mínimo 10 caracteres)' : null,
+			category === '' ? 'Categoría (elige una opción)' : null
 		].filter((field): field is string => field !== null)
-	);
-
-	const submitTooltip = $derived(
-		missingFields.length > 0
-			? `Falta completar: ${missingFields.join(' y ')}`
-			: 'Todo listo para crear el ticket'
 	);
 
 	function reset() {
 		title = '';
 		description = '';
-		category = TicketCategory.BUG;
+		category = '';
 		priority = TicketPriority.MEDIUM;
 		relatedType = '';
 		relatedLabel = '';
@@ -84,9 +81,10 @@
 		if (submitting) return;
 
 		if (!canSubmit) {
-			toast.error(`Falta completar: ${missingFields.join(' y ')}`);
+			toast.error(`Falta completar: ${missingFields.join(', ')}`);
 			return;
 		}
+		if (category === '') return;
 
 		submitting = true;
 		try {
@@ -163,10 +161,7 @@
 					<div class="grid gap-4 sm:grid-cols-2">
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
 							<span class={labelClass}
-								>Título<span
-									class="ml-0.5 inline-block align-super text-sm leading-none font-bold text-error"
-									>*</span
-								></span
+								>Título<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span></span
 							>
 							<input
 								type="text"
@@ -181,9 +176,7 @@
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
 							<span class={labelClass}
-								>Descripción<span
-									class="ml-0.5 inline-block align-super text-sm leading-none font-bold text-error"
-									>*</span
+								>Descripción<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span
 								></span
 							>
 							<textarea
@@ -198,12 +191,11 @@
 
 						<label class="flex flex-col gap-1.5 text-sm">
 							<span class={labelClass}
-								>Categoría<span
-									class="ml-0.5 inline-block align-super text-sm leading-none font-bold text-error"
-									>*</span
+								>Categoría<span class="ml-0.5 text-sm leading-none font-bold text-error">*</span
 								></span
 							>
 							<select bind:value={category} required class={inputClass}>
+								<option value="" disabled>Seleccionar</option>
 								{#each ALL_TICKET_CATEGORIES as c (c)}
 									<option value={c}>{TICKET_CATEGORY_LABELS[c]}</option>
 								{/each}
@@ -235,8 +227,10 @@
 								type="text"
 								bind:value={relatedLabel}
 								maxlength="120"
-								class={inputClass}
-								placeholder="Ej: Venta #123, cliente Juan Pérez"
+								class={`${inputClass} transition-colors disabled:cursor-not-allowed disabled:bg-surface-container-high disabled:text-slate-400 disabled:opacity-60`}
+								placeholder={relatedType
+									? 'Ej: Venta #123, cliente Juan Pérez'
+									: 'Elige primero "Relacionado con"'}
 								disabled={!relatedType}
 							/>
 						</label>
@@ -262,9 +256,18 @@
 									<Tooltip.Content
 										side="top"
 										sideOffset={6}
-										class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
+										class="z-[70] max-w-72 rounded-xl bg-brand-navy px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-xl"
 									>
-										{submitTooltip}
+										{#if missingFields.length > 0}
+											<p class="font-semibold">Falta completar:</p>
+											<ul class="mt-1 list-disc space-y-0.5 pl-4">
+												{#each missingFields as field (field)}
+													<li>{field}</li>
+												{/each}
+											</ul>
+										{:else}
+											<p>Todo listo para crear el ticket</p>
+										{/if}
 										<Tooltip.Arrow class="fill-brand-navy" />
 									</Tooltip.Content>
 								</Tooltip.Portal>

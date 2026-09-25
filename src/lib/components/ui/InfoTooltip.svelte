@@ -25,7 +25,7 @@
 			<Tooltip.Content
 				{side}
 				sideOffset={6}
-				class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
+				class="z-[70] max-w-64 rounded-xl bg-brand-navy px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-xl"
 			>
 				{text}
 				<Tooltip.Arrow class="fill-brand-navy" />
