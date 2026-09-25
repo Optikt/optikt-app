@@ -56,14 +56,28 @@ export enum TicketRelatedType {
 	SALE = 'SALE',
 	CUSTOMER = 'CUSTOMER',
 	PRODUCT = 'PRODUCT',
+	PURCHASES = 'PURCHASES',
+	CASH = 'CASH',
+	LENSES = 'LENSES',
+	QUOTES = 'QUOTES',
+	USERS = 'USERS',
+	INVENTORY = 'INVENTORY',
+	REPORTS = 'REPORTS',
 	OTHER = 'OTHER'
 }
 
 export const ALL_TICKET_RELATED_TYPES = Object.values(TicketRelatedType);
 
 export const TICKET_RELATED_TYPE_LABELS: Record<TicketRelatedType, string> = {
-	[TicketRelatedType.SALE]: 'Venta',
-	[TicketRelatedType.CUSTOMER]: 'Cliente',
-	[TicketRelatedType.PRODUCT]: 'Producto',
+	[TicketRelatedType.SALE]: 'Ventas',
+	[TicketRelatedType.CUSTOMER]: 'Clientes',
+	[TicketRelatedType.PRODUCT]: 'Productos',
+	[TicketRelatedType.PURCHASES]: 'Compras',
+	[TicketRelatedType.CASH]: 'Caja / Balance',
+	[TicketRelatedType.LENSES]: 'Cristales / Lentes',
+	[TicketRelatedType.QUOTES]: 'Presupuestos',
+	[TicketRelatedType.USERS]: 'Usuarios',
+	[TicketRelatedType.INVENTORY]: 'Conteo físico / Inventario',
+	[TicketRelatedType.REPORTS]: 'Reportes',
 	[TicketRelatedType.OTHER]: 'Otro'
 };

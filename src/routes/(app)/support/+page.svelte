@@ -68,8 +68,9 @@
 		fetchTickets(1);
 	}
 
+	const filterLabelClass = 'text-[11px] font-semibold tracking-[0.18em] text-outline uppercase';
 	const filterSelectClass =
-		'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-brand-blue focus:outline-none sm:w-44';
+		'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-brand-blue focus:outline-none';
 </script>
 
 <svelte:head>
@@ -96,30 +97,55 @@
 	<div
 		class="mt-6 mb-6 grid gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 sm:grid-cols-2 lg:grid-cols-4"
 	>
-		<SearchInput
-			bind:value={search}
-			placeholder="Buscar por #, título o descripción..."
-			oninput={handleSearch}
-			class="sm:col-span-2 lg:col-span-1"
-		/>
-		<select bind:value={statusFilter} onchange={handleFilterChange} class={filterSelectClass}>
-			<option value="">Todos los estados</option>
-			{#each ALL_TICKET_STATUSES as status (status)}
-				<option value={status}>{TICKET_STATUS_LABELS[status]}</option>
-			{/each}
-		</select>
-		<select bind:value={categoryFilter} onchange={handleFilterChange} class={filterSelectClass}>
-			<option value="">Todas las categorías</option>
-			{#each ALL_TICKET_CATEGORIES as category (category)}
-				<option value={category}>{TICKET_CATEGORY_LABELS[category]}</option>
-			{/each}
-		</select>
-		<select bind:value={priorityFilter} onchange={handleFilterChange} class={filterSelectClass}>
-			<option value="">Todas las prioridades</option>
-			{#each ALL_TICKET_PRIORITIES as priority (priority)}
-				<option value={priority}>{TICKET_PRIORITY_LABELS[priority]}</option>
-			{/each}
-		</select>
+		<label class="flex flex-col gap-1 sm:col-span-2 lg:col-span-1">
+			<span class={filterLabelClass} title="Busca por número, título o descripción del ticket">
+				Buscar
+			</span>
+			<SearchInput
+				bind:value={search}
+				placeholder="Buscar por #, título o descripción..."
+				oninput={handleSearch}
+			/>
+		</label>
+		<label class="flex flex-col gap-1">
+			<span
+				class={filterLabelClass}
+				title="Filtra por estado: abierto, en progreso, resuelto o descartado"
+			>
+				Estado
+			</span>
+			<select bind:value={statusFilter} onchange={handleFilterChange} class={filterSelectClass}>
+				<option value="">Todos</option>
+				{#each ALL_TICKET_STATUSES as status (status)}
+					<option value={status}>{TICKET_STATUS_LABELS[status]}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="flex flex-col gap-1">
+			<span
+				class={filterLabelClass}
+				title="Tipo de reporte: error, inconsistencia, duda, mejora u otro"
+			>
+				Categoría
+			</span>
+			<select bind:value={categoryFilter} onchange={handleFilterChange} class={filterSelectClass}>
+				<option value="">Todas</option>
+				{#each ALL_TICKET_CATEGORIES as category (category)}
+					<option value={category}>{TICKET_CATEGORY_LABELS[category]}</option>
+				{/each}
+			</select>
+		</label>
+		<label class="flex flex-col gap-1">
+			<span class={filterLabelClass} title="Urgencia del ticket: baja, media, alta o urgente">
+				Prioridad
+			</span>
+			<select bind:value={priorityFilter} onchange={handleFilterChange} class={filterSelectClass}>
+				<option value="">Todas</option>
+				{#each ALL_TICKET_PRIORITIES as priority (priority)}
+					<option value={priority}>{TICKET_PRIORITY_LABELS[priority]}</option>
+				{/each}
+			</select>
+		</label>
 	</div>
 
 	<SupportTicketsTable

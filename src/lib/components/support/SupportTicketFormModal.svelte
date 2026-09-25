@@ -35,6 +35,8 @@
 	const inputClass =
 		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 
+	const canSubmit = $derived(title.trim().length >= 3 && description.trim().length >= 10);
+
 	function reset() {
 		title = '';
 		description = '';
@@ -49,9 +51,23 @@
 		onClose?.();
 	}
 
+	// Close with Escape only; the backdrop intentionally stays inert.
+	$effect(() => {
+		if (!open) return;
+
+		function onKeyDown(event: KeyboardEvent) {
+			if (event.key === 'Escape') {
+				close();
+			}
+		}
+
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	});
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		if (submitting) return;
+		if (submitting || !canSubmit) return;
 
 		submitting = true;
 		try {
@@ -195,8 +211,8 @@
 						</button>
 						<button
 							type="submit"
-							disabled={submitting}
-							class="rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark disabled:opacity-50"
+							disabled={submitting || !canSubmit}
+							class="rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{submitting ? 'Enviando...' : 'Crear ticket'}
 						</button>
