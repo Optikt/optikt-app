@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
+	import { Tooltip } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
 	import { createSupportTicketCommand } from '$lib/remote/supportTickets.remote';
 	import {
@@ -36,6 +37,19 @@
 		'w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0';
 
 	const canSubmit = $derived(title.trim().length >= 3 && description.trim().length >= 10);
+
+	const missingFields = $derived(
+		[
+			title.trim().length < 3 ? 'título (mínimo 3 caracteres)' : null,
+			description.trim().length < 10 ? 'descripción (mínimo 10 caracteres)' : null
+		].filter((field): field is string => field !== null)
+	);
+
+	const submitTooltip = $derived(
+		missingFields.length > 0
+			? `Falta completar: ${missingFields.join(' y ')}`
+			: 'Todo listo para crear el ticket'
+	);
 
 	function reset() {
 		title = '';
@@ -91,6 +105,17 @@
 	}
 </script>
 
+{#snippet submitTrigger(props: Record<string, unknown>)}
+	<button
+		type="submit"
+		{...props}
+		aria-disabled={submitting || !canSubmit}
+		class="w-full rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+	>
+		{submitting ? 'Enviando...' : 'Crear ticket'}
+	</button>
+{/snippet}
+
 {#if open}
 	<div
 		class="fixed inset-0 z-50 bg-brand-navy/40 backdrop-blur-sm"
@@ -131,7 +156,7 @@
 				<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
 					<div class="grid gap-4 sm:grid-cols-2">
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class={labelClass}>Título *</span>
+							<span class={labelClass}>Título <span class="text-error">*</span></span>
 							<input
 								type="text"
 								bind:value={title}
@@ -144,7 +169,7 @@
 						</label>
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class={labelClass}>Descripción *</span>
+							<span class={labelClass}>Descripción <span class="text-error">*</span></span>
 							<textarea
 								bind:value={description}
 								required
@@ -156,7 +181,7 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class={labelClass}>Categoría *</span>
+							<span class={labelClass}>Categoría <span class="text-error">*</span></span>
 							<select bind:value={category} required class={inputClass}>
 								{#each ALL_TICKET_CATEGORIES as c (c)}
 									<option value={c}>{TICKET_CATEGORY_LABELS[c]}</option>
@@ -209,13 +234,19 @@
 						>
 							Cancelar
 						</button>
-						<button
-							type="submit"
-							disabled={submitting || !canSubmit}
-							class="rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{submitting ? 'Enviando...' : 'Crear ticket'}
-						</button>
+						<Tooltip.Provider delayDuration={150}>
+							<Tooltip.Root>
+								<Tooltip.Trigger child={submitTrigger} />
+								<Tooltip.Content
+									side="top"
+									sideOffset={6}
+									class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
+								>
+									{submitTooltip}
+									<Tooltip.Arrow class="fill-brand-navy" />
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					</div>
 				</div>
 			</form>

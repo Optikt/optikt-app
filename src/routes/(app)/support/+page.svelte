@@ -5,6 +5,7 @@
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import SearchInput from '$lib/components/ui/SearchInput.svelte';
 	import TablePagination from '$lib/components/ui/TablePagination.svelte';
+	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
 	import SupportTicketsTable from '$lib/components/support/SupportTicketsTable.svelte';
 	import SupportTicketFormModal from '$lib/components/support/SupportTicketFormModal.svelte';
 	import { listSupportTicketsQuery } from '$lib/remote/supportTickets.remote';
@@ -98,8 +99,9 @@
 		class="mt-6 mb-6 grid gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 sm:grid-cols-2 lg:grid-cols-4"
 	>
 		<label class="flex flex-col gap-1 sm:col-span-2 lg:col-span-1">
-			<span class={filterLabelClass} title="Busca por número, título o descripción del ticket">
+			<span class={`inline-flex items-center gap-1 ${filterLabelClass}`}>
 				Buscar
+				<InfoTooltip text="Busca por número, título o descripción del ticket" />
 			</span>
 			<SearchInput
 				bind:value={search}
@@ -108,11 +110,9 @@
 			/>
 		</label>
 		<label class="flex flex-col gap-1">
-			<span
-				class={filterLabelClass}
-				title="Filtra por estado: abierto, en progreso, resuelto o descartado"
-			>
+			<span class={`inline-flex items-center gap-1 ${filterLabelClass}`}>
 				Estado
+				<InfoTooltip text="Filtra por estado: abierto, en progreso, resuelto o descartado" />
 			</span>
 			<select bind:value={statusFilter} onchange={handleFilterChange} class={filterSelectClass}>
 				<option value="">Todos</option>
@@ -122,11 +122,9 @@
 			</select>
 		</label>
 		<label class="flex flex-col gap-1">
-			<span
-				class={filterLabelClass}
-				title="Tipo de reporte: error, inconsistencia, duda, mejora u otro"
-			>
+			<span class={`inline-flex items-center gap-1 ${filterLabelClass}`}>
 				Categoría
+				<InfoTooltip text="Tipo de reporte: error, inconsistencia, duda, mejora u otro" />
 			</span>
 			<select bind:value={categoryFilter} onchange={handleFilterChange} class={filterSelectClass}>
 				<option value="">Todas</option>
@@ -136,8 +134,9 @@
 			</select>
 		</label>
 		<label class="flex flex-col gap-1">
-			<span class={filterLabelClass} title="Urgencia del ticket: baja, media, alta o urgente">
+			<span class={`inline-flex items-center gap-1 ${filterLabelClass}`}>
 				Prioridad
+				<InfoTooltip text="Urgencia del ticket: baja, media, alta o urgente" />
 			</span>
 			<select bind:value={priorityFilter} onchange={handleFilterChange} class={filterSelectClass}>
 				<option value="">Todas</option>
