@@ -81,7 +81,12 @@
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		if (submitting || !canSubmit) return;
+		if (submitting) return;
+
+		if (!canSubmit) {
+			toast.error(`Falta completar: ${missingFields.join(' y ')}`);
+			return;
+		}
 
 		submitting = true;
 		try {
@@ -105,7 +110,7 @@
 	}
 </script>
 
-{#snippet submitTrigger(props: Record<string, unknown>)}
+{#snippet submitTrigger({ props }: { props: Record<string, unknown> })}
 	<button
 		type="submit"
 		{...props}
@@ -126,6 +131,7 @@
 		<div class="flex h-full items-end justify-center p-2 sm:items-center sm:p-4">
 			<form
 				onsubmit={handleSubmit}
+				novalidate
 				class="flex max-h-[calc(100dvh-0.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[1.5rem] bg-surface-container-lowest shadow-xl sm:max-h-[90dvh]"
 			>
 				<div class="border-b border-surface-container-high px-4 py-4 sm:px-6">
@@ -156,7 +162,12 @@
 				<div class="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
 					<div class="grid gap-4 sm:grid-cols-2">
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class={labelClass}>Título <span class="text-error">*</span></span>
+							<span class={labelClass}
+								>Título<span
+									class="ml-0.5 inline-block align-super text-sm leading-none font-bold text-error"
+									>*</span
+								></span
+							>
 							<input
 								type="text"
 								bind:value={title}
@@ -169,7 +180,12 @@
 						</label>
 
 						<label class="col-span-full flex flex-col gap-1.5 text-sm">
-							<span class={labelClass}>Descripción <span class="text-error">*</span></span>
+							<span class={labelClass}
+								>Descripción<span
+									class="ml-0.5 inline-block align-super text-sm leading-none font-bold text-error"
+									>*</span
+								></span
+							>
 							<textarea
 								bind:value={description}
 								required
@@ -181,7 +197,12 @@
 						</label>
 
 						<label class="flex flex-col gap-1.5 text-sm">
-							<span class={labelClass}>Categoría <span class="text-error">*</span></span>
+							<span class={labelClass}
+								>Categoría<span
+									class="ml-0.5 inline-block align-super text-sm leading-none font-bold text-error"
+									>*</span
+								></span
+							>
 							<select bind:value={category} required class={inputClass}>
 								{#each ALL_TICKET_CATEGORIES as c (c)}
 									<option value={c}>{TICKET_CATEGORY_LABELS[c]}</option>
@@ -237,14 +258,16 @@
 						<Tooltip.Provider delayDuration={150}>
 							<Tooltip.Root>
 								<Tooltip.Trigger child={submitTrigger} />
-								<Tooltip.Content
-									side="top"
-									sideOffset={6}
-									class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
-								>
-									{submitTooltip}
-									<Tooltip.Arrow class="fill-brand-navy" />
-								</Tooltip.Content>
+								<Tooltip.Portal>
+									<Tooltip.Content
+										side="top"
+										sideOffset={6}
+										class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
+									>
+										{submitTooltip}
+										<Tooltip.Arrow class="fill-brand-navy" />
+									</Tooltip.Content>
+								</Tooltip.Portal>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					</div>

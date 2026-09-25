@@ -21,13 +21,15 @@
 		>
 			<Info size={12} />
 		</Tooltip.Trigger>
-		<Tooltip.Content
-			{side}
-			sideOffset={6}
-			class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
-		>
-			{text}
-			<Tooltip.Arrow class="fill-brand-navy" />
-		</Tooltip.Content>
+		<Tooltip.Portal>
+			<Tooltip.Content
+				{side}
+				sideOffset={6}
+				class="z-[70] max-w-64 rounded-lg bg-brand-navy px-3 py-2 text-xs leading-relaxed text-white shadow-lg"
+			>
+				{text}
+				<Tooltip.Arrow class="fill-brand-navy" />
+			</Tooltip.Content>
+		</Tooltip.Portal>
 	</Tooltip.Root>
 </Tooltip.Provider>
