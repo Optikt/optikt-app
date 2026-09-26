@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
-	import { Tooltip } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
+	import ActionTooltip from '$lib/components/ui/ActionTooltip.svelte';
 	import { createSupportTicketCommand } from '$lib/remote/supportTickets.remote';
 	import {
 		ALL_TICKET_CATEGORIES,
@@ -110,8 +110,8 @@
 
 {#snippet submitTrigger({ props }: { props: Record<string, unknown> })}
 	<button
-		type="submit"
 		{...props}
+		type="submit"
 		aria-disabled={submitting || !canSubmit}
 		class="w-full rounded-xl bg-brand-gold px-4 py-3 text-sm font-bold tracking-[0.12em] text-brand-navy uppercase transition hover:bg-brand-gold-dark aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
 	>
@@ -249,30 +249,12 @@
 						>
 							Cancelar
 						</button>
-						<Tooltip.Provider delayDuration={150}>
-							<Tooltip.Root>
-								<Tooltip.Trigger child={submitTrigger} />
-								<Tooltip.Portal>
-									<Tooltip.Content
-										side="top"
-										sideOffset={6}
-										class="z-[70] max-w-72 rounded-xl bg-brand-navy px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-xl"
-									>
-										{#if missingFields.length > 0}
-											<p class="font-semibold">Falta completar:</p>
-											<ul class="mt-1 list-disc space-y-0.5 pl-4">
-												{#each missingFields as field (field)}
-													<li>{field}</li>
-												{/each}
-											</ul>
-										{:else}
-											<p>Todo listo para crear el ticket</p>
-										{/if}
-										<Tooltip.Arrow class="fill-brand-navy" />
-									</Tooltip.Content>
-								</Tooltip.Portal>
-							</Tooltip.Root>
-						</Tooltip.Provider>
+						<ActionTooltip
+							title={missingFields.length > 0 ? 'Falta completar:' : undefined}
+							items={missingFields}
+							text={missingFields.length > 0 ? undefined : 'Todo listo para crear el ticket'}
+							trigger={submitTrigger}
+						/>
 					</div>
 				</div>
 			</form>

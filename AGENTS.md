@@ -22,6 +22,31 @@ Optical store management system built with SvelteKit, Shadcn-Svelte, and Drizzle
 - `src/routes/(auth)/` — Auth routes (login, etc.)
 - `drizzle/` — DB migrations and schema
 
+## Tooltips (bits-ui)
+
+Two reusable tooltip components. Use them instead of the native `title` attribute.
+
+- `$lib/components/ui/InfoTooltip.svelte` — small info icon next to a label: `<InfoTooltip text="..." />`.
+- `$lib/components/ui/ActionTooltip.svelte` — rich tooltip for actionable elements (submit buttons, links). Supports `title`, `text` and an `items` bullet list (e.g. "tooltip en botón submit" listing missing fields).
+
+```svelte
+{#snippet saveTrigger({ props })}
+	<button {...props} type="submit" aria-disabled={!canSave}>Guardar</button>
+{/snippet}
+
+<ActionTooltip
+	title={missing.length > 0 ? 'Falta completar:' : undefined}
+	items={missing}
+	text={missing.length === 0 ? 'Todo listo para guardar' : undefined}
+	trigger={saveTrigger}
+/>
+```
+
+Rules:
+- The `trigger` snippet receives `{ props }` (not raw props). Always destructure and spread `{...props}` — otherwise the element gets no hover/focus handlers and the tooltip never opens.
+- Never use native `disabled` on a tooltipped trigger: disabled elements do not fire hover/focus, so the tooltip cannot open. Use `aria-disabled` plus a guard in the handler (`if (!canSave) return;`).
+- Put `type="submit"` **after** `{...props}`; bits-ui's trigger defaults to `type="button"` and would override it.
+
 ## Import Policy — No Barrels
 
 - Import directly from the defining module (`./form/lensFormPricing`, `$lib/components/inventory/count/countSummary`). Never add new `index.ts` barrels.
