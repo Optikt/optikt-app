@@ -165,8 +165,4 @@
 	/>
 </div>
 
-<SupportTicketFormModal
-	bind:open={showFormModal}
-	onCreated={handleCreated}
-	onClose={() => (showFormModal = false)}
-/>
+<SupportTicketFormModal bind:open={showFormModal} onCreated={handleCreated} />
