@@ -20,13 +20,20 @@ import {
 	countOpenSupportTickets,
 	createSupportTicket,
 	findSupportTicketById,
+	findSupportTicketForUpdate,
 	listSupportTicketActivity,
 	listSupportTickets,
 	updateSupportTicket
 } from '$lib/server/db/queries/supportTickets';
 import { insertNotification } from '$lib/server/db/queries/notifications';
 import { canManageSupportTickets, canViewSupportTicket } from '$lib/shared/supportTickets';
-import { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
+import {
+	NotificationSeverity,
+	NotificationType,
+	type TicketPriority,
+	type TicketStatus,
+	UserRole
+} from '$lib/shared/enums';
 import { logger } from '$lib/utils/logger';
 import type { SupportTicket } from '$lib/server/db/schema';
 
@@ -141,22 +148,25 @@ export const updateSupportTicketCommand = command(
 	async (data): Promise<SupportTicket> => {
 		const user = requireAdmin();
 
-		const existing = await findSupportTicketById(data.id);
-		if (!existing) {
-			error(404, 'Ticket no encontrado');
-		}
+		const { before, updated } = await db.transaction(async (tx) => {
+			const existing = await findSupportTicketForUpdate(data.id, tx);
+			if (!existing) {
+				error(404, 'Ticket no encontrado');
+			}
 
-		const statusChanged = existing.status !== data.status;
-		const priorityChanged = existing.priority !== data.priority;
-		const comment = data.comment?.trim() || null;
+			const statusChanged = existing.status !== data.status;
+			const priorityChanged = existing.priority !== data.priority;
+			const comment = data.comment?.trim() || null;
 
-		const updated = await db.transaction(async (tx) => {
 			const result = await updateSupportTicket(
 				data.id,
 				{ status: data.status, priority: data.priority },
 				user.id,
 				tx
 			);
+			if (!result) {
+				error(404, 'Ticket no encontrado');
+			}
 
 			if (statusChanged || priorityChanged) {
 				await addSupportTicketChange(
@@ -165,9 +175,14 @@ export const updateSupportTicketCommand = command(
 						authorId: user.id,
 						body: comment,
 						metadata: {
-							...(statusChanged ? { statusFrom: existing.status, statusTo: data.status } : {}),
+							...(statusChanged
+								? { statusFrom: existing.status as TicketStatus, statusTo: data.status }
+								: {}),
 							...(priorityChanged
-								? { priorityFrom: existing.priority, priorityTo: data.priority }
+								? {
+										priorityFrom: existing.priority as TicketPriority,
+										priorityTo: data.priority
+									}
 								: {})
 						}
 					},
@@ -177,20 +192,16 @@ export const updateSupportTicketCommand = command(
 				await addSupportTicketComment({ ticketId: data.id, authorId: user.id, body: comment }, tx);
 			}
 
-			return result;
+			return { before: existing, updated: result };
 		});
-
-		if (!updated) {
-			error(404, 'Ticket no encontrado');
-		}
 
 		await auditService.logCustom(
 			'support_ticket',
 			data.id,
 			'update',
 			{
-				status: { old: existing.status, new: updated.status },
-				priority: { old: existing.priority, new: updated.priority }
+				status: { old: before.status, new: updated.status },
+				priority: { old: before.priority, new: updated.priority }
 			},
 			getAuditContext()
 		);

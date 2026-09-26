@@ -114,9 +114,9 @@
 						<Dialog.Title class="mt-1 text-xl font-semibold tracking-[-0.02em] text-brand-navy">
 							Reportar problema o duda
 						</Dialog.Title>
-						<p class="mt-1 text-sm text-on-surface-variant">
+						<Dialog.Description class="mt-1 text-sm text-on-surface-variant">
 							Describe qué pasó o qué necesitas. Queda registrado para no perderle la pista.
-						</p>
+						</Dialog.Description>
 					</div>
 					<Dialog.Close>
 						{#snippet child({ props })}

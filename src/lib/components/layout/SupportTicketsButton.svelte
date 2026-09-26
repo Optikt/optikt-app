@@ -5,6 +5,7 @@
 	import { LifeBuoy, ListChecks, Plus } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import SupportTicketFormModal from '$lib/components/support/SupportTicketFormModal.svelte';
+	import { SUPPORT_TICKETS_CHANGED_EVENT } from '$lib/shared/supportTickets';
 
 	interface Props {
 		canManage?: boolean;
@@ -26,7 +27,7 @@
 
 	function handleCreated() {
 		createOpen = false;
-		window.dispatchEvent(new CustomEvent('support-tickets-changed'));
+		window.dispatchEvent(new CustomEvent(SUPPORT_TICKETS_CHANGED_EVENT));
 	}
 
 	const itemClass =

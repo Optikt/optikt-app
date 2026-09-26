@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Plus } from '@lucide/svelte';
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
@@ -59,6 +59,7 @@
 		clearTimeout(searchTimeout);
 		searchTimeout = setTimeout(() => fetchTickets(1), 300);
 	}
+	onDestroy(() => clearTimeout(searchTimeout));
 
 	function handleFilterChange() {
 		fetchTickets(1);

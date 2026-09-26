@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { countOpenSupportTicketsQuery } from '$lib/remote/supportTickets.remote';
+	import { SUPPORT_TICKETS_CHANGED_EVENT } from '$lib/shared/supportTickets';
 
 	let openCount = $state(0);
 	const badgeLabel = $derived(openCount > 99 ? '99+' : String(openCount));
@@ -24,13 +25,13 @@
 
 		void loadCount();
 		const interval = window.setInterval(loadCount, 60_000);
-		window.addEventListener('support-tickets-changed', loadCount);
+		window.addEventListener(SUPPORT_TICKETS_CHANGED_EVENT, loadCount);
 		window.addEventListener('focus', loadCount);
 
 		return () => {
 			cancelled = true;
 			window.clearInterval(interval);
-			window.removeEventListener('support-tickets-changed', loadCount);
+			window.removeEventListener(SUPPORT_TICKETS_CHANGED_EVENT, loadCount);
 			window.removeEventListener('focus', loadCount);
 		};
 	});

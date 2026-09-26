@@ -12,10 +12,10 @@ import { OPEN_SUPPORT_TICKET_STATUSES } from '$lib/shared/supportTickets';
 import type { PaginatedResult } from '$lib/types';
 import { db } from '../index';
 import {
-	supportTicketComments,
+	supportTicketActivity,
 	supportTickets,
 	type SupportTicket,
-	type SupportTicketComment,
+	type SupportTicketActivity,
 	type TicketActivityMetadata
 } from '../schema';
 import type { DbOrTx } from '../types';
@@ -45,26 +45,7 @@ const ticketSelection = {
 	updatedAt: supportTickets.updatedAt
 } as const;
 
-type TicketSelectRow = {
-	id: string;
-	number: number;
-	title: string;
-	description: string;
-	category: string;
-	priority: string;
-	status: string;
-	createdById: string;
-	createdByName: string | null;
-	createdByUsername: string;
-	createdByEmail: string;
-	resolvedById: string | null;
-	resolvedByName: string | null;
-	resolvedAt: string | null;
-	relatedType: string | null;
-	relatedLabel: string | null;
-	createdAt: string;
-	updatedAt: string;
-};
+type TicketSelectRow = Awaited<ReturnType<typeof ticketQuery>>[number];
 
 export type SupportTicketRow = Omit<
 	TicketSelectRow,
@@ -162,6 +143,21 @@ export async function findSupportTicketById(
 	return row ? mapTicketRow(row) : null;
 }
 
+/** Row lock used by management updates so the from→to diff cannot go stale. */
+export async function findSupportTicketForUpdate(
+	id: string,
+	executor: DbOrTx = db
+): Promise<SupportTicket | null> {
+	const [ticket] = await executor
+		.select()
+		.from(supportTickets)
+		.where(eq(supportTickets.id, id))
+		.limit(1)
+		.for('update');
+
+	return ticket ?? null;
+}
+
 export interface NewSupportTicketData {
 	title: string;
 	description: string;
@@ -246,19 +242,19 @@ export async function listSupportTicketActivity(
 ): Promise<SupportTicketActivityRow[]> {
 	const rows = await executor
 		.select({
-			id: supportTicketComments.id,
-			ticketId: supportTicketComments.ticketId,
-			authorId: supportTicketComments.authorId,
+			id: supportTicketActivity.id,
+			ticketId: supportTicketActivity.ticketId,
+			authorId: supportTicketActivity.authorId,
 			authorName: users.fullName,
-			kind: supportTicketComments.kind,
-			body: supportTicketComments.body,
-			metadata: supportTicketComments.metadata,
-			createdAt: supportTicketComments.createdAt
+			kind: supportTicketActivity.kind,
+			body: supportTicketActivity.body,
+			metadata: supportTicketActivity.metadata,
+			createdAt: supportTicketActivity.createdAt
 		})
-		.from(supportTicketComments)
-		.innerJoin(users, eq(users.id, supportTicketComments.authorId))
-		.where(eq(supportTicketComments.ticketId, ticketId))
-		.orderBy(supportTicketComments.createdAt);
+		.from(supportTicketActivity)
+		.innerJoin(users, eq(users.id, supportTicketActivity.authorId))
+		.where(eq(supportTicketActivity.ticketId, ticketId))
+		.orderBy(supportTicketActivity.createdAt);
 
 	return rows.map((row) => ({ ...row, kind: row.kind as TicketActivityKind }));
 }
@@ -272,9 +268,9 @@ export interface NewSupportTicketCommentData {
 export async function addSupportTicketComment(
 	data: NewSupportTicketCommentData,
 	executor: DbOrTx = db
-): Promise<SupportTicketComment> {
+): Promise<SupportTicketActivity> {
 	const [comment] = await executor
-		.insert(supportTicketComments)
+		.insert(supportTicketActivity)
 		.values({
 			ticketId: data.ticketId,
 			authorId: data.authorId,
@@ -295,9 +291,9 @@ export interface NewSupportTicketChangeData {
 export async function addSupportTicketChange(
 	data: NewSupportTicketChangeData,
 	executor: DbOrTx = db
-): Promise<SupportTicketComment> {
+): Promise<SupportTicketActivity> {
 	const [entry] = await executor
-		.insert(supportTicketComments)
+		.insert(supportTicketActivity)
 		.values({
 			ticketId: data.ticketId,
 			authorId: data.authorId,

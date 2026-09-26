@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Tooltip } from 'bits-ui';
 	import type { Snippet } from 'svelte';
+	import { cn } from '$lib/utils';
 
 	interface Props {
 		/** Call-to-action element (button/link). bits-ui hands you `{ props }`; spread it. */
@@ -9,9 +10,10 @@
 		text?: string;
 		items?: string[];
 		side?: 'top' | 'right' | 'bottom' | 'left';
+		contentClass?: string;
 	}
 
-	let { trigger, title, text, items = [], side = 'top' }: Props = $props();
+	let { trigger, title, text, items = [], side = 'top', contentClass }: Props = $props();
 </script>
 
 <Tooltip.Provider delayDuration={150}>
@@ -21,7 +23,10 @@
 			<Tooltip.Content
 				{side}
 				sideOffset={6}
-				class="z-[70] max-w-72 rounded-xl bg-brand-navy px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-xl"
+				class={cn(
+					'z-[70] max-w-72 rounded-xl bg-brand-navy px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-xl',
+					contentClass
+				)}
 			>
 				{#if title}
 					<p class="font-semibold">{title}</p>

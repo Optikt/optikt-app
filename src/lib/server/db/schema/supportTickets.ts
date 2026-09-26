@@ -88,8 +88,8 @@ export const supportTickets = pgTable(
  * Ticket activity feed: user comments plus system entries for
  * status/priority changes (kind = CHANGE, details in metadata).
  */
-export const supportTicketComments = pgTable(
-	'support_ticket_comments',
+export const supportTicketActivity = pgTable(
+	'support_ticket_activity',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		ticketId: uuid('ticket_id').notNull(),
@@ -102,21 +102,21 @@ export const supportTicketComments = pgTable(
 			.defaultNow()
 	},
 	(table) => [
-		index('ix_support_ticket_comments_ticket_id').on(table.ticketId, table.createdAt),
+		index('ix_support_ticket_activity_ticket_id').on(table.ticketId, table.createdAt),
 		foreignKey({
 			columns: [table.ticketId],
 			foreignColumns: [supportTickets.id],
-			name: 'support_ticket_comments_ticket_id_fkey'
+			name: 'support_ticket_activity_ticket_id_fkey'
 		}).onDelete('cascade'),
 		foreignKey({
 			columns: [table.authorId],
 			foreignColumns: [users.id],
-			name: 'support_ticket_comments_author_id_fkey'
+			name: 'support_ticket_activity_author_id_fkey'
 		})
 	]
 );
 
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type NewSupportTicket = typeof supportTickets.$inferInsert;
-export type SupportTicketComment = typeof supportTicketComments.$inferSelect;
-export type NewSupportTicketComment = typeof supportTicketComments.$inferInsert;
+export type SupportTicketActivity = typeof supportTicketActivity.$inferSelect;
+export type NewSupportTicketActivity = typeof supportTicketActivity.$inferInsert;

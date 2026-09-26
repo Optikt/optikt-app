@@ -1,5 +1,5 @@
 {
-  "id": "d010e241-636c-4923-8085-d5de395ad5b2",
+  "id": "e4332515-b16c-404d-9b42-f39009930e83",
   "prevId": "1fd62e8c-4fc3-4767-99be-a20196cf8094",
   "version": "7",
   "dialect": "postgresql",
@@ -7215,8 +7215,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.support_ticket_comments": {
-      "name": "support_ticket_comments",
+    "public.support_ticket_activity": {
+      "name": "support_ticket_activity",
       "schema": "",
       "columns": {
         "id": {
@@ -7238,11 +7238,25 @@
           "primaryKey": false,
           "notNull": true
         },
+        "kind": {
+          "name": "kind",
+          "type": "support_ticket_activity_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'COMMENT'"
+        },
         "body": {
           "name": "body",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -7253,8 +7267,8 @@
         }
       },
       "indexes": {
-        "ix_support_ticket_comments_ticket_id": {
-          "name": "ix_support_ticket_comments_ticket_id",
+        "ix_support_ticket_activity_ticket_id": {
+          "name": "ix_support_ticket_activity_ticket_id",
           "columns": [
             {
               "expression": "ticket_id",
@@ -7276,9 +7290,9 @@
         }
       },
       "foreignKeys": {
-        "support_ticket_comments_ticket_id_fkey": {
-          "name": "support_ticket_comments_ticket_id_fkey",
-          "tableFrom": "support_ticket_comments",
+        "support_ticket_activity_ticket_id_fkey": {
+          "name": "support_ticket_activity_ticket_id_fkey",
+          "tableFrom": "support_ticket_activity",
           "tableTo": "support_tickets",
           "columnsFrom": [
             "ticket_id"
@@ -7289,9 +7303,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "support_ticket_comments_author_id_fkey": {
-          "name": "support_ticket_comments_author_id_fkey",
-          "tableFrom": "support_ticket_comments",
+        "support_ticket_activity_author_id_fkey": {
+          "name": "support_ticket_activity_author_id_fkey",
+          "tableFrom": "support_ticket_activity",
           "tableTo": "users",
           "columnsFrom": [
             "author_id"
@@ -7885,6 +7899,14 @@
         "MANUAL_ADJUSTMENT"
       ]
     },
+    "public.support_ticket_activity_kind": {
+      "name": "support_ticket_activity_kind",
+      "schema": "public",
+      "values": [
+        "COMMENT",
+        "CHANGE"
+      ]
+    },
     "public.support_ticket_category": {
       "name": "support_ticket_category",
       "schema": "public",
@@ -7913,6 +7935,13 @@
         "SALE",
         "CUSTOMER",
         "PRODUCT",
+        "PURCHASES",
+        "CASH",
+        "LENSES",
+        "QUOTES",
+        "USERS",
+        "INVENTORY",
+        "REPORTS",
         "OTHER"
       ]
     },

@@ -1,5 +1,8 @@
 import { isAdminRole, TicketStatus, type UserRole } from './enums';
 
+/** Window event fired after a ticket is created, so open counts can refresh. */
+export const SUPPORT_TICKETS_CHANGED_EVENT = 'support-tickets-changed';
+
 /** Statuses considered still open for badge counters and filters. */
 export const OPEN_SUPPORT_TICKET_STATUSES = [TicketStatus.OPEN, TicketStatus.IN_PROGRESS] as const;
 

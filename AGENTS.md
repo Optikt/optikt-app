@@ -7,7 +7,7 @@ Optical store management system built with SvelteKit, Shadcn-Svelte, and Drizzle
 - **Framework:** SvelteKit (Svelte 5 with runes)
 - **Styling:** Tailwind CSS
 - **Icons:** `@lucide/svelte`
-- **ORM:** Drizzle (PostgreSQL) — schema in `drizzle/schema.ts`
+- **ORM:** Drizzle (PostgreSQL) — schema in `src/lib/server/db/schema/`, migrations in `drizzle/`
 - **Validation:** Zod
 - **Toasts:** svelte-sonner
 - **Package Manager:** pnpm
