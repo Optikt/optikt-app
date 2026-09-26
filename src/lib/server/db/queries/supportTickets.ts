@@ -34,6 +34,8 @@ const ticketSelection = {
 	status: supportTickets.status,
 	createdById: supportTickets.createdById,
 	createdByName: createdByUser.fullName,
+	createdByUsername: createdByUser.username,
+	createdByEmail: createdByUser.email,
 	resolvedById: supportTickets.resolvedById,
 	resolvedByName: resolvedByUser.fullName,
 	resolvedAt: supportTickets.resolvedAt,
@@ -53,6 +55,8 @@ type TicketSelectRow = {
 	status: string;
 	createdById: string;
 	createdByName: string | null;
+	createdByUsername: string;
+	createdByEmail: string;
 	resolvedById: string | null;
 	resolvedByName: string | null;
 	resolvedAt: string | null;

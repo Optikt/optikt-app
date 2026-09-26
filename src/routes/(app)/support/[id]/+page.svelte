@@ -107,6 +107,7 @@
 					<p>
 						Reportó:
 						<span class="font-medium text-slate-700">{ticket.createdByName ?? '—'}</span>
+						<span class="text-slate-400">(@{ticket.createdByUsername})</span>
 					</p>
 					<p>
 						Creado:

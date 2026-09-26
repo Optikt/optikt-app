@@ -82,7 +82,10 @@
 								<SupportTicketStatusBadge status={ticket.status} />
 							</td>
 							{#if showReporter}
-								<td class="px-4 py-3 text-xs text-slate-500">{ticket.createdByName ?? '—'}</td>
+								<td class="px-4 py-3">
+									<p class="text-xs font-medium text-slate-700">@{ticket.createdByUsername}</p>
+									<p class="text-[11px] text-slate-400">{ticket.createdByEmail}</p>
+								</td>
 							{/if}
 							<td class="px-4 py-3 text-xs text-slate-500">
 								{formatDateOnly(ticket.createdAt, { dateStyle: 'medium' })}
