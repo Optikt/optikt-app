@@ -183,6 +183,20 @@
 
 ---
 
+### DT24 · Clases de formulario/label duplicadas cross-domain ⚪
+
+**Problema:** Las mismas clases de label (`text-[11px] font-semibold tracking-[0.18em] uppercase`), input (`rounded-xl bg-surface-container-low ... focus:border-l-brand-blue`) y select se repiten literalmente en decenas de componentes de múltiples dominios (p. ej. `SupportTicketFormModal`, `SupportTicketHistory`, `ExpenseCreateModal`, `SaleAuditHistoryDrawer`). Detectado en la review del PR #180: la repetición no es de Soporte, es del repo.
+
+**Por qué importa:** Un cambio de estilo de formularios exige edición masiva manual, con riesgo de inconsistencias entre módulos. Es ruido que dificulta leer los componentes y agranda los diffs.
+
+**Contras:** Extraer estilos compartidos toca muchos archivos a la vez; sin snapshots visuales el "cero cambios de UX" depende de diff review. Conviene hacerlo en PRs mecánicos por lote de dominios.
+
+**Dificultad:** Media (2-3 días). **Solución:** módulo compartido de tokens de estilo (p. ej. `src/lib/components/ui/formStyles.ts` con `FORM_LABEL_CLASS`, `FORM_INPUT_CLASS`, `FORM_SELECT_CLASS`), migración mecánica por dominio y spot-check visual/E2E de cada flujo tocado.
+
+**Estado:** TECH_DEBT documentado 2026-09-27 (review PR #180). Sin empezar.
+
+---
+
 ### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
 **Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
@@ -656,6 +670,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟢        | DT20 · Catálogo step2 topado   | 2-3 días         |
 | 🟢        | DT22 · Fechas date-only resto  | 2-3 días         |
 | 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
+| ⚪        | DT24 · Form classes duplicadas | 2-3 días         |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
 | 🟢        | NF8 · Comisiones               | 5 días           |
