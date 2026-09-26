@@ -2,6 +2,7 @@ import { and, desc, eq, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { nowISO } from '$lib/dates';
 import {
+	TicketActivityKind,
 	type TicketCategory,
 	type TicketPriority,
 	type TicketRelatedType,
@@ -14,7 +15,8 @@ import {
 	supportTicketComments,
 	supportTickets,
 	type SupportTicket,
-	type SupportTicketComment
+	type SupportTicketComment,
+	type TicketActivityMetadata
 } from '../schema';
 import type { DbOrTx } from '../types';
 import { users } from '../schema/users';
@@ -223,32 +225,38 @@ export async function countOpenSupportTickets(executor: DbOrTx = db): Promise<nu
 	return result?.count ?? 0;
 }
 
-export type SupportTicketCommentRow = {
+export type SupportTicketActivityRow = {
 	id: string;
 	ticketId: string;
 	authorId: string;
 	authorName: string | null;
-	body: string;
+	kind: TicketActivityKind;
+	body: string | null;
+	metadata: TicketActivityMetadata | null;
 	createdAt: string;
 };
 
-export async function listSupportTicketComments(
+export async function listSupportTicketActivity(
 	ticketId: string,
 	executor: DbOrTx = db
-): Promise<SupportTicketCommentRow[]> {
-	return executor
+): Promise<SupportTicketActivityRow[]> {
+	const rows = await executor
 		.select({
 			id: supportTicketComments.id,
 			ticketId: supportTicketComments.ticketId,
 			authorId: supportTicketComments.authorId,
 			authorName: users.fullName,
+			kind: supportTicketComments.kind,
 			body: supportTicketComments.body,
+			metadata: supportTicketComments.metadata,
 			createdAt: supportTicketComments.createdAt
 		})
 		.from(supportTicketComments)
 		.innerJoin(users, eq(users.id, supportTicketComments.authorId))
 		.where(eq(supportTicketComments.ticketId, ticketId))
 		.orderBy(supportTicketComments.createdAt);
+
+	return rows.map((row) => ({ ...row, kind: row.kind as TicketActivityKind }));
 }
 
 export interface NewSupportTicketCommentData {
@@ -271,4 +279,29 @@ export async function addSupportTicketComment(
 		.returning();
 
 	return comment;
+}
+
+export interface NewSupportTicketChangeData {
+	ticketId: string;
+	authorId: string;
+	body?: string | null;
+	metadata: TicketActivityMetadata;
+}
+
+export async function addSupportTicketChange(
+	data: NewSupportTicketChangeData,
+	executor: DbOrTx = db
+): Promise<SupportTicketComment> {
+	const [entry] = await executor
+		.insert(supportTicketComments)
+		.values({
+			ticketId: data.ticketId,
+			authorId: data.authorId,
+			kind: TicketActivityKind.CHANGE,
+			body: data.body?.trim() || null,
+			metadata: data.metadata
+		})
+		.returning();
+
+	return entry;
 }

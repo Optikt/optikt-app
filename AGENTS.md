@@ -27,14 +27,14 @@ Optical store management system built with SvelteKit, Shadcn-Svelte, and Drizzle
 Two reusable tooltip components. Use them instead of the native `title` attribute.
 
 - `$lib/components/ui/InfoTooltip.svelte` — small info icon next to a label: `<InfoTooltip text="..." />`.
-- `$lib/components/ui/ActionTooltip.svelte` — rich tooltip for actionable elements (submit buttons, links). Supports `title`, `text` and an `items` bullet list (e.g. "tooltip en botón submit" listing missing fields).
+- `$lib/components/ui/TriggerTooltip.svelte` — rich tooltip for any interactive element you render yourself (submit buttons, links). Supports `title`, `text` and an `items` bullet list (e.g. "tooltip en botón submit" listing missing fields).
 
 ```svelte
 {#snippet saveTrigger({ props })}
 	<button {...props} type="submit" aria-disabled={!canSave}>Guardar</button>
 {/snippet}
 
-<ActionTooltip
+<TriggerTooltip
 	title={missing.length > 0 ? 'Falta completar:' : undefined}
 	items={missing}
 	text={missing.length === 0 ? 'Todo listo para guardar' : undefined}

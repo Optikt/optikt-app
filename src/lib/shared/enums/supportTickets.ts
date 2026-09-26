@@ -52,6 +52,11 @@ export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
 	[TicketStatus.DISMISSED]: 'Descartado'
 };
 
+export enum TicketActivityKind {
+	COMMENT = 'COMMENT',
+	CHANGE = 'CHANGE'
+}
+
 export enum TicketRelatedType {
 	SALE = 'SALE',
 	CUSTOMER = 'CUSTOMER',

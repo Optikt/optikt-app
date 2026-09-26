@@ -5,11 +5,13 @@ import {
 	uuid,
 	timestamp,
 	serial,
+	jsonb,
 	index,
 	uniqueIndex,
 	foreignKey
 } from 'drizzle-orm/pg-core';
 import {
+	TicketActivityKind,
 	TicketCategory,
 	TicketPriority,
 	TicketRelatedType,
@@ -17,6 +19,13 @@ import {
 } from '../../../shared/enums/supportTickets';
 import { enumValues } from './utils';
 import { users } from './users';
+
+export type TicketActivityMetadata = {
+	statusFrom?: TicketStatus;
+	statusTo?: TicketStatus;
+	priorityFrom?: TicketPriority;
+	priorityTo?: TicketPriority;
+};
 
 export const supportTicketCategoryEnum = pgEnum(
 	'support_ticket_category',
@@ -30,6 +39,10 @@ export const supportTicketStatusEnum = pgEnum('support_ticket_status', enumValue
 export const supportTicketRelatedTypeEnum = pgEnum(
 	'support_ticket_related_type',
 	enumValues(TicketRelatedType)
+);
+export const supportTicketActivityKindEnum = pgEnum(
+	'support_ticket_activity_kind',
+	enumValues(TicketActivityKind)
 );
 
 export const supportTickets = pgTable(
@@ -71,13 +84,19 @@ export const supportTickets = pgTable(
 	]
 );
 
+/**
+ * Ticket activity feed: user comments plus system entries for
+ * status/priority changes (kind = CHANGE, details in metadata).
+ */
 export const supportTicketComments = pgTable(
 	'support_ticket_comments',
 	{
 		id: uuid().primaryKey().notNull().defaultRandom(),
 		ticketId: uuid('ticket_id').notNull(),
 		authorId: uuid('author_id').notNull(),
-		body: varchar().notNull(),
+		kind: supportTicketActivityKindEnum().notNull().default(TicketActivityKind.COMMENT),
+		body: varchar(),
+		metadata: jsonb('metadata').$type<TicketActivityMetadata | null>(),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
 			.notNull()
 			.defaultNow()

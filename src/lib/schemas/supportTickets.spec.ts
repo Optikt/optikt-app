@@ -64,6 +64,28 @@ describe('UpdateSupportTicketSchema', () => {
 		});
 		expect(result.success).toBe(true);
 	});
+
+	it('accepts an optional change comment', () => {
+		const result = UpdateSupportTicketSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000000',
+			status: 'RESOLVED',
+			priority: 'LOW',
+			comment: 'Reproducido y corregido'
+		});
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.comment).toBe('Reproducido y corregido');
+	});
+
+	it('normalizes an empty comment to undefined', () => {
+		const result = UpdateSupportTicketSchema.safeParse({
+			id: '00000000-0000-4000-8000-000000000000',
+			status: 'RESOLVED',
+			priority: 'LOW',
+			comment: '   '
+		});
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.comment).toBeUndefined();
+	});
 });
 
 describe('AddSupportTicketCommentSchema', () => {

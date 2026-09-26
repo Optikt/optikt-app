@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import ActionTooltip from '$lib/components/ui/ActionTooltip.svelte';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import { createSupportTicketCommand } from '$lib/remote/supportTickets.remote';
 	import {
 		ALL_TICKET_CATEGORIES,
@@ -249,7 +249,7 @@
 						>
 							Cancelar
 						</button>
-						<ActionTooltip
+						<TriggerTooltip
 							title={missingFields.length > 0 ? 'Falta completar:' : undefined}
 							items={missingFields}
 							text={missingFields.length > 0 ? undefined : 'Todo listo para crear el ticket'}

@@ -4,10 +4,10 @@
 	import PageHeader from '$lib/components/ui/PageHeader.svelte';
 	import SupportTicketPriorityBadge from '$lib/components/support/SupportTicketPriorityBadge.svelte';
 	import SupportTicketStatusBadge from '$lib/components/support/SupportTicketStatusBadge.svelte';
-	import SupportTicketComments from '$lib/components/support/SupportTicketComments.svelte';
+	import SupportTicketHistory from '$lib/components/support/SupportTicketHistory.svelte';
 	import {
 		getSupportTicketQuery,
-		listSupportTicketCommentsQuery,
+		listSupportTicketActivityQuery,
 		updateSupportTicketCommand
 	} from '$lib/remote/supportTickets.remote';
 	import {
@@ -22,7 +22,7 @@
 	} from '$lib/shared/enums';
 	import { formatDateOnly, getErrorMessage } from '$lib/utils';
 	import type {
-		SupportTicketCommentRow,
+		SupportTicketActivityRow,
 		SupportTicketRow
 	} from '$lib/server/db/queries/supportTickets';
 
@@ -32,21 +32,30 @@
 	const currentUserId = untrack(() => data.currentUserId);
 
 	let ticket = $state<SupportTicketRow>(untrack(() => data.ticket));
-	let comments = $state<SupportTicketCommentRow[]>(untrack(() => data.comments));
+	let activity = $state<SupportTicketActivityRow[]>(untrack(() => data.activity));
 
 	let status = $state<TicketStatus>(untrack(() => data.ticket.status));
 	let priority = $state<TicketPriority>(untrack(() => data.ticket.priority));
+	let manageComment = $state('');
 	let saving = $state(false);
 
 	const dirty = $derived(status !== ticket.status || priority !== ticket.priority);
+	const canSave = $derived(dirty || manageComment.trim().length > 0);
 
 	async function saveChanges() {
-		if (!dirty || saving) return;
+		if (!canSave || saving) return;
 
 		saving = true;
 		try {
-			await updateSupportTicketCommand({ id: ticket.id, status, priority });
+			await updateSupportTicketCommand({
+				id: ticket.id,
+				status,
+				priority,
+				comment: manageComment.trim() || undefined
+			});
+			manageComment = '';
 			ticket = await getSupportTicketQuery({ id: ticket.id });
+			await refreshActivity();
 			toast.success('Ticket actualizado');
 		} catch (error) {
 			toast.error(getErrorMessage(error, 'No se pudo actualizar el ticket'));
@@ -55,11 +64,11 @@
 		}
 	}
 
-	async function refreshComments() {
+	async function refreshActivity() {
 		try {
-			comments = await listSupportTicketCommentsQuery({ id: ticket.id });
+			activity = await listSupportTicketActivityQuery({ id: ticket.id });
 		} catch (error) {
-			toast.error(getErrorMessage(error, 'No se pudieron cargar los comentarios'));
+			toast.error(getErrorMessage(error, 'No se pudo cargar el historial'));
 		}
 	}
 
@@ -127,11 +136,11 @@
 				</div>
 			</section>
 
-			<SupportTicketComments
+			<SupportTicketHistory
 				ticketId={ticket.id}
-				{comments}
+				{activity}
 				{currentUserId}
-				onAdded={refreshComments}
+				onAdded={refreshActivity}
 			/>
 		</div>
 
@@ -165,10 +174,22 @@
 						</select>
 					</label>
 
+					<label class="flex flex-col gap-1.5 text-sm">
+						<span class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase">
+							Comentario (opcional)
+						</span>
+						<textarea
+							bind:value={manageComment}
+							maxlength="2000"
+							rows="3"
+							class="w-full rounded-xl border-none bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-slate-400 focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+							placeholder="Ej: Se reinició el módulo de caja"></textarea>
+					</label>
+
 					<button
 						type="button"
 						onclick={saveChanges}
-						disabled={!dirty || saving}
+						disabled={!canSave || saving}
 						class="w-full rounded-xl bg-brand-blue px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{saving ? 'Guardando...' : 'Guardar cambios'}

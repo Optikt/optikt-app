@@ -15,11 +15,12 @@ import { requireAdmin, requireAuth } from '$lib/server/guards';
 import { db } from '$lib/server/db';
 import { auditService, getAuditContext } from '$lib/server/audit';
 import {
+	addSupportTicketChange,
 	addSupportTicketComment,
 	countOpenSupportTickets,
 	createSupportTicket,
 	findSupportTicketById,
-	listSupportTicketComments,
+	listSupportTicketActivity,
 	listSupportTickets,
 	updateSupportTicket
 } from '$lib/server/db/queries/supportTickets';
@@ -62,7 +63,7 @@ export const getSupportTicketQuery = query(SupportTicketIdSchema, async ({ id })
 	return ticket;
 });
 
-export const listSupportTicketCommentsQuery = query(SupportTicketIdSchema, async ({ id }) => {
+export const listSupportTicketActivityQuery = query(SupportTicketIdSchema, async ({ id }) => {
 	const user = requireAuth();
 
 	const ticket = await findSupportTicketById(id);
@@ -73,7 +74,7 @@ export const listSupportTicketCommentsQuery = query(SupportTicketIdSchema, async
 		error(403, 'No tienes permisos para ver este ticket');
 	}
 
-	return listSupportTicketComments(id);
+	return listSupportTicketActivity(id);
 });
 
 export const createSupportTicketCommand = command(
@@ -145,13 +146,38 @@ export const updateSupportTicketCommand = command(
 			error(404, 'Ticket no encontrado');
 		}
 
+		const statusChanged = existing.status !== data.status;
+		const priorityChanged = existing.priority !== data.priority;
+		const comment = data.comment?.trim() || null;
+
 		const updated = await db.transaction(async (tx) => {
-			return updateSupportTicket(
+			const result = await updateSupportTicket(
 				data.id,
 				{ status: data.status, priority: data.priority },
 				user.id,
 				tx
 			);
+
+			if (statusChanged || priorityChanged) {
+				await addSupportTicketChange(
+					{
+						ticketId: data.id,
+						authorId: user.id,
+						body: comment,
+						metadata: {
+							...(statusChanged ? { statusFrom: existing.status, statusTo: data.status } : {}),
+							...(priorityChanged
+								? { priorityFrom: existing.priority, priorityTo: data.priority }
+								: {})
+						}
+					},
+					tx
+				);
+			} else if (comment) {
+				await addSupportTicketComment({ ticketId: data.id, authorId: user.id, body: comment }, tx);
+			}
+
+			return result;
 		});
 
 		if (!updated) {

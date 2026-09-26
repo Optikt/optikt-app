@@ -28,7 +28,13 @@ export const CreateSupportTicketSchema = z.object({
 export const UpdateSupportTicketSchema = z.object({
 	id: z.uuid('Ticket inválido'),
 	status: z.enum(TicketStatus),
-	priority: z.enum(TicketPriority)
+	priority: z.enum(TicketPriority),
+	comment: z
+		.string()
+		.trim()
+		.max(2000, 'Máximo 2000 caracteres')
+		.optional()
+		.transform((value) => value || undefined)
 });
 
 export const AddSupportTicketCommentSchema = z.object({

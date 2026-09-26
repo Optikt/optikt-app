@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import {
 	findSupportTicketById,
-	listSupportTicketComments
+	listSupportTicketActivity
 } from '$lib/server/db/queries/supportTickets';
 import { canManageSupportTickets, canViewSupportTicket } from '$lib/shared/supportTickets';
 
@@ -19,11 +19,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		error(403, 'No tienes permisos para ver este ticket');
 	}
 
-	const comments = await listSupportTicketComments(params.id);
+	const activity = await listSupportTicketActivity(params.id);
 
 	return {
 		ticket,
-		comments,
+		activity,
 		canManage: canManageSupportTickets(locals.user.role),
 		currentUserId: locals.user.id
 	};
