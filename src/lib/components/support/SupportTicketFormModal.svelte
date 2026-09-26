@@ -102,7 +102,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="max-h-[92dvh] w-full max-w-2xl gap-0 p-0 sm:max-w-2xl"
+		class="max-h-[92dvh] w-full max-w-[calc(100%-2rem)] gap-0 p-0 sm:max-w-2xl"
 		showCloseButton={false}
 		interactOutsideBehavior="ignore"
 	>
