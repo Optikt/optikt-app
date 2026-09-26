@@ -277,6 +277,17 @@ export const fieldLabels: Record<EntityType, Record<string, string>> = {
 		createdById: 'Registrado por',
 		voidedAt: 'Anulado',
 		voidedById: 'Anulado por'
+	},
+	support_ticket: {
+		title: 'Título',
+		description: 'Descripción',
+		category: 'Categoría',
+		priority: 'Prioridad',
+		status: 'Estado',
+		relatedType: 'Tipo de referencia',
+		relatedLabel: 'Referencia',
+		resolvedById: 'Resuelto por',
+		resolvedAt: 'Fecha de resolución'
 	}
 };
 

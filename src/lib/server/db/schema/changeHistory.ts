@@ -84,7 +84,8 @@ export const ALL_ENTITY_TYPES = [
 	'purchase_order',
 	'purchase_order_item',
 	'purchase_order_payment',
-	'purchase_order_early_payment_benefit'
+	'purchase_order_early_payment_benefit',
+	'support_ticket'
 ] as const;
 
 export type EntityType = (typeof ALL_ENTITY_TYPES)[number];
