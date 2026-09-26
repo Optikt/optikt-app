@@ -41,6 +41,7 @@ export default defineConfig({
 				'src/lib/schemas/**',
 				'src/lib/components/sales/payments/paymentFormValues.ts',
 				'src/lib/utils/format.ts',
+				'src/lib/utils/index.ts',
 				'src/lib/components/ui/chart/chart-utils.ts'
 			],
 			thresholds: {
