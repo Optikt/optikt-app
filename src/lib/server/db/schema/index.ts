@@ -28,6 +28,9 @@ export * from './inventoryCount';
 // Cash & Finances
 export * from './cashExpenses';
 
+// Support
+export * from './supportTickets';
+
 // Audit / History
 export * from './changeHistory';
 export * from './deletedItems';

@@ -12,3 +12,4 @@ export * from './inventoryTypes';
 export * from './cashTypes';
 export * from './brandAccessoryPriceModes';
 export * from './notificationTypes';
+export * from './supportTickets';

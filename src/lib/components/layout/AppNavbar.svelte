@@ -3,8 +3,10 @@
 	import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings, X } from '@lucide/svelte';
 	import { ImagotipoHorizontal } from '$lib/components';
 	import { logout } from '$lib/remote/auth.remote';
-	import { UserRole } from '$lib/shared/enums';
+	import { isAdminRole, UserRole } from '$lib/shared/enums';
 	import { CommandSearch, ExchangeRates, Notifications } from '$lib/components/layout';
+	import SupportTicketsButton from '$lib/components/layout/SupportTicketsButton.svelte';
+	import SupportTicketsOpenCount from '$lib/components/layout/SupportTicketsOpenCount.svelte';
 	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
 
 	type NavbarProps = {
@@ -24,6 +26,7 @@
 	}: NavbarProps = $props();
 
 	let profileOpen = $state(false);
+	const canManageSupport = $derived(isAdminRole(user.role));
 
 	function getRoleBadgeClass(role: UserRole) {
 		const base =
@@ -96,6 +99,13 @@
 		<div class="ml-auto flex items-center gap-1.5 sm:gap-2">
 			<div class="flex items-center gap-0.5 sm:gap-1">
 				<ExchangeRates />
+				<SupportTicketsButton canManage={canManageSupport}>
+					{#snippet badge()}
+						{#if canManageSupport}
+							<SupportTicketsOpenCount />
+						{/if}
+					{/snippet}
+				</SupportTicketsButton>
 				<Notifications />
 				<div class="mx-1 hidden h-8 w-px bg-white/10 md:block"></div>
 			</div>

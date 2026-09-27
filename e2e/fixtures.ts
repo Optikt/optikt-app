@@ -1,6 +1,6 @@
 import { hash } from '@node-rs/argon2';
 import postgres, { type Sql } from 'postgres';
-import { adminEmail, adminPassword } from './auth';
+import { adminEmail, adminPassword, sellerEmail, sellerPassword } from './auth';
 
 const argonOptions = {
 	memoryCost: 19456,
@@ -30,6 +30,17 @@ export async function ensureAdmin(sql: Sql): Promise<string> {
 		insert into users (email, username, full_name, hashed_password, is_superuser, role)
 		values (${adminEmail}, ${'e2e-admin'}, 'Optikt E2E Admin', ${hashedPassword}, true, 'ADMIN')
 		on conflict (email) do update set role = 'ADMIN'
+		returning id
+	`;
+	return user.id;
+}
+
+export async function ensureSeller(sql: Sql): Promise<string> {
+	const hashedPassword = await hash(sellerPassword, argonOptions);
+	const [user] = await sql<{ id: string }[]>`
+		insert into users (email, username, full_name, hashed_password, is_superuser, role)
+		values (${sellerEmail}, ${'e2e-seller'}, 'Optikt E2E Seller', ${hashedPassword}, false, 'SELLER')
+		on conflict (email) do update set role = 'SELLER'
 		returning id
 	`;
 	return user.id;

@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-09-06.
+> Actualizado: 2026-09-27.
 
 ---
 
@@ -180,6 +180,34 @@
 **Dificultad:** Media (2-4 días). **Solución:** revisar el flujo de adjustments para soportar alta de stock desde una diferencia (crear lote + movimiento de entrada inicial) o redirigir a una entrada formal (compra/ajuste de inventario); definir regla de costo para stock nacido de conteo.
 
 **Estado:** TECH_DEBT documentado 2026-09-11. Fuera de scope fase 3 DT1. Sin empezar.
+
+---
+
+### DT24 · Clases de formulario/label duplicadas cross-domain ⚪
+
+**Problema:** Las mismas clases de label (`text-[11px] font-semibold tracking-[0.18em] uppercase`), input (`rounded-xl bg-surface-container-low ... focus:border-l-brand-blue`) y select se repiten literalmente en decenas de componentes de múltiples dominios (p. ej. `SupportTicketFormModal`, `SupportTicketHistory`, `ExpenseCreateModal`, `SaleAuditHistoryDrawer`). Detectado en la review del PR #180: la repetición no es de Soporte, es del repo.
+
+**Por qué importa:** Un cambio de estilo de formularios exige edición masiva manual, con riesgo de inconsistencias entre módulos. Es ruido que dificulta leer los componentes y agranda los diffs.
+
+**Contras:** Extraer estilos compartidos toca muchos archivos a la vez; sin snapshots visuales el "cero cambios de UX" depende de diff review. Conviene hacerlo en PRs mecánicos por lote de dominios.
+
+**Dificultad:** Media (2-3 días). **Solución:** módulo compartido de tokens de estilo (p. ej. `src/lib/components/ui/formStyles.ts` con `FORM_LABEL_CLASS`, `FORM_INPUT_CLASS`, `FORM_SELECT_CLASS`), migración mecánica por dominio y spot-check visual/E2E de cada flujo tocado.
+
+**Estado:** TECH_DEBT documentado 2026-09-27 (review PR #180). Sin empezar.
+
+---
+
+### DT25 · CSS de pdfjs filtra `color-scheme` global ⚪
+
+**Problema:** `@pdfslick/core/dist/pdf_viewer.css` (importado dinámicamente por `PDFViewerModal`, usado en detalle de venta y de presupuesto) define `:root { color-scheme: light dark; ... }` de forma global y sin capa. Al abrir un PDF en una sesión, con SO en modo oscuro todos los controles nativos (checkbox "Venta con Cashea", selects, date pickers, scrollbars) se renderizan oscuros. Mitigado en PR #180 con `html:root { color-scheme: light; color-scheme: only light; }` unlayered en `layout.css`.
+
+**Por qué importa:** El override parchea el síntoma, no la causa. Si otro CSS sube de especificidad, si un navegador no soporta `only`, o cuando se agregue dark mode, el problema vuelve. Además impide declarar la app como dark-capable sin tocar este archivo.
+
+**Contras:** Aislar el CSS del viewer (iframe, shadow DOM o reemplazar por estilos propios mínimos) es refactor mediano y puede afectar el layout del PDF.
+
+**Dificultad:** Media (1-2 días). **Solución:** cargar `pdf_viewer.css` dentro de un contenedor aislado (iframe/shadow root) o reemplazarlo por un CSS propio acotado al viewer; después retirar el override global de `color-scheme`.
+
+**Estado:** TECH_DEBT documentado 2026-09-27 (review PR #180). Sin empezar.
 
 ---
 
@@ -656,12 +684,14 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟢        | DT20 · Catálogo step2 topado   | 2-3 días         |
 | 🟢        | DT22 · Fechas date-only resto  | 2-3 días         |
 | 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
+| ⚪        | DT24 · Form classes duplicadas | 2-3 días         |
+| ⚪        | DT25 · CSS pdfjs global        | 1-2 días         |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
 | 🟢        | NF8 · Comisiones               | 5 días           |
 | ⚪        | NF9 · Multi-sucursal           | 20 días          |
 
-**Total estimado:** ~115 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
+**Total estimado:** ~118 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
 
 ---
 
