@@ -190,26 +190,20 @@ describe('support ticket remotes', () => {
 		)) as PaginatedResult<SupportTicketRow>;
 		expect(byNumber.items.map((row) => row.id)).toContain(ticket.id);
 
-		const byWildcard = (await callRemote(
-			listSupportTicketsQuery,
-			{ page: 1, perPage: 10, search: '%' },
-			{ user: admin }
-		)) as PaginatedResult<SupportTicketRow>;
-		expect(byWildcard.items).toHaveLength(0);
+		const wildcardCases = [
+			{ search: '%', expected: 0 },
+			{ search: '_', expected: 0 },
+			{ search: '\\', expected: 0 }
+		];
 
-		const byUnderscore = (await callRemote(
-			listSupportTicketsQuery,
-			{ page: 1, perPage: 10, search: '_' },
-			{ user: admin }
-		)) as PaginatedResult<SupportTicketRow>;
-		expect(byUnderscore.items).toHaveLength(0);
-
-		const byBackslash = (await callRemote(
-			listSupportTicketsQuery,
-			{ page: 1, perPage: 10, search: '\\' },
-			{ user: admin }
-		)) as PaginatedResult<SupportTicketRow>;
-		expect(byBackslash.items).toHaveLength(0);
+		for (const { search, expected } of wildcardCases) {
+			const result = (await callRemote(
+				listSupportTicketsQuery,
+				{ page: 1, perPage: 10, search },
+				{ user: admin }
+			)) as PaginatedResult<SupportTicketRow>;
+			expect(result.items, `search "${search}"`).toHaveLength(expected);
+		}
 
 		const byCategory = (await callRemote(
 			listSupportTicketsQuery,

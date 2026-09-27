@@ -197,6 +197,20 @@
 
 ---
 
+### DT25 · CSS de pdfjs filtra `color-scheme` global ⚪
+
+**Problema:** `@pdfslick/core/dist/pdf_viewer.css` (importado dinámicamente por `PDFViewerModal`, usado en detalle de venta y de presupuesto) define `:root { color-scheme: light dark; ... }` de forma global y sin capa. Al abrir un PDF en una sesión, con SO en modo oscuro todos los controles nativos (checkbox "Venta con Cashea", selects, date pickers, scrollbars) se renderizan oscuros. Mitigado en PR #180 con `html:root { color-scheme: light; color-scheme: only light; }` unlayered en `layout.css`.
+
+**Por qué importa:** El override parchea el síntoma, no la causa. Si otro CSS sube de especificidad, si un navegador no soporta `only`, o cuando se agregue dark mode, el problema vuelve. Además impide declarar la app como dark-capable sin tocar este archivo.
+
+**Contras:** Aislar el CSS del viewer (iframe, shadow DOM o reemplazar por estilos propios mínimos) es refactor mediano y puede afectar el layout del PDF.
+
+**Dificultad:** Media (1-2 días). **Solución:** cargar `pdf_viewer.css` dentro de un contenedor aislado (iframe/shadow root) o reemplazarlo por un CSS propio acotado al viewer; después retirar el override global de `color-scheme`.
+
+**Estado:** TECH_DEBT documentado 2026-09-27 (review PR #180). Sin empezar.
+
+---
+
 ### ✅ DT2 · Errores silenciados (COMPLETADO — 2026-08-10)
 
 **Qué se hizo:** Auditar los 182 catch blocks del codebase. Resultado: solo **1** error era verdaderamente silencioso — `exchangeRates/service.ts:170` (fallo de API absorbido en `cache.lastError` sin señal visible). Todo lo demás ya tenía toast, `return {success:false}` o supresión intencional de cleanup.
@@ -671,12 +685,13 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟢        | DT22 · Fechas date-only resto  | 2-3 días         |
 | 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
 | ⚪        | DT24 · Form classes duplicadas | 2-3 días         |
+| ⚪        | DT25 · CSS pdfjs global        | 1-2 días         |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
 | 🟢        | NF8 · Comisiones               | 5 días           |
 | ⚪        | NF9 · Multi-sucursal           | 20 días          |
 
-**Total estimado:** ~117 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
+**Total estimado:** ~118 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
 
 ---
 
