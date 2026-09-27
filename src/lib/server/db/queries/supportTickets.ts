@@ -75,6 +75,11 @@ function mapTicketRow(row: TicketSelectRow): SupportTicketRow {
 	};
 }
 
+/** Escapes LIKE wildcards so user input matches literally (default backslash escape). */
+function escapeLikePattern(value: string): string {
+	return value.replace(/[\\%_]/g, '\\$&');
+}
+
 export interface SupportTicketFilters {
 	status?: TicketStatus;
 	category?: TicketCategory;
@@ -100,7 +105,7 @@ export async function listSupportTickets(
 	if (filters.createdById) conditions.push(eq(supportTickets.createdById, filters.createdById));
 
 	if (filters.search) {
-		const pattern = `%${filters.search}%`;
+		const pattern = `%${escapeLikePattern(filters.search)}%`;
 		const searchCondition = or(
 			ilike(supportTickets.title, pattern),
 			ilike(supportTickets.description, pattern),

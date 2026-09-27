@@ -17,8 +17,8 @@
 		TICKET_PRIORITY_LABELS,
 		TICKET_RELATED_TYPE_LABELS,
 		TICKET_STATUS_LABELS,
-		type TicketPriority,
-		type TicketStatus
+		TicketStatus,
+		type TicketPriority
 	} from '$lib/shared/enums';
 	import { formatDateOnly, getErrorMessage } from '$lib/utils';
 	import type {
@@ -125,7 +125,7 @@
 					{/if}
 					{#if ticket.resolvedAt}
 						<p>
-							{ticket.status === 'DISMISSED' ? 'Descartado' : 'Resuelto'}:
+							{ticket.status === TicketStatus.DISMISSED ? 'Descartado' : 'Resuelto'}:
 							<span class="font-medium text-slate-700">
 								{formatDateOnly(ticket.resolvedAt, { dateStyle: 'medium' })}
 								{#if ticket.resolvedByName}

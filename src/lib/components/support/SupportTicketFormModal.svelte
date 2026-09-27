@@ -57,6 +57,12 @@
 		relatedLabel = '';
 	}
 
+	$effect(() => {
+		if (open) {
+			reset();
+		}
+	});
+
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 		if (submitting) return;

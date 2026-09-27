@@ -25,7 +25,7 @@
 		type="checkbox"
 		bind:checked={isCashea}
 		{disabled}
-		class="h-4 w-4 rounded border-outline-variant/40 bg-surface-container-lowest accent-brand-blue"
+		class="h-4 w-4 shrink-0 accent-brand-blue"
 	/>
 	<CasheaIsotipo class="h-4 w-4 shrink-0" />
 	<span class="font-medium text-on-surface">{label}</span>

@@ -30,6 +30,8 @@ import { canManageSupportTickets, canViewSupportTicket } from '$lib/shared/suppo
 import {
 	NotificationSeverity,
 	NotificationType,
+	TICKET_CATEGORY_LABELS,
+	type TicketCategory,
 	type TicketPriority,
 	type TicketStatus,
 	UserRole
@@ -108,7 +110,7 @@ export const createSupportTicketCommand = command(
 				type: NotificationType.SUPPORT_TICKET_CREATED,
 				severity: NotificationSeverity.INFO,
 				title: `Nuevo ticket #${ticket.number}: ${ticket.title}`,
-				body: `${user.fullName} reportó un incidente`,
+				body: `${user.fullName} reportó: ${TICKET_CATEGORY_LABELS[ticket.category as TicketCategory]}`,
 				metadata: { ticketId: ticket.id, number: ticket.number },
 				targetRoles: [UserRole.ADMIN, UserRole.MANAGER],
 				link: `/support/${ticket.id}`

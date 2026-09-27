@@ -190,6 +190,13 @@ describe('support ticket remotes', () => {
 		)) as PaginatedResult<SupportTicketRow>;
 		expect(byNumber.items.map((row) => row.id)).toContain(ticket.id);
 
+		const byWildcard = (await callRemote(
+			listSupportTicketsQuery,
+			{ page: 1, perPage: 10, search: '%' },
+			{ user: admin }
+		)) as PaginatedResult<SupportTicketRow>;
+		expect(byWildcard.items).toHaveLength(0);
+
 		const byCategory = (await callRemote(
 			listSupportTicketsQuery,
 			{ page: 1, perPage: 10, category: TicketCategory.INCONSISTENCY },

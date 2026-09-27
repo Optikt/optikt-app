@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-09-06.
+> Actualizado: 2026-09-27.
 
 ---
 
@@ -676,7 +676,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟢        | NF8 · Comisiones               | 5 días           |
 | ⚪        | NF9 · Multi-sucursal           | 20 días          |
 
-**Total estimado:** ~115 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
+**Total estimado:** ~117 días-hombre (↓5 días completados). **Quick wins (🟢 bajo esfuerzo):** NF10 (1 día), NF11 (2 días), NF7 (2 días).
 
 ---
 

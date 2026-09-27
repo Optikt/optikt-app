@@ -11,6 +11,10 @@
 @custom-variant direct-children (& > *);
 @custom-variant penultimate (&:nth-last-child(2));
 @custom-variant not-last (&:not(:last-child));
+
+html:root {
+	color-scheme: only light;
+}
 /* ── Optikt Clarity — Design Tokens from Stitch ──────────────────────────── */
 @theme {
 	/* Primary scale — mapped to sky-blue (tertiary) for focus/interactive */

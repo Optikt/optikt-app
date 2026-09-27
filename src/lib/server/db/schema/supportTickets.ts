@@ -117,6 +117,4 @@ export const supportTicketActivity = pgTable(
 );
 
 export type SupportTicket = typeof supportTickets.$inferSelect;
-export type NewSupportTicket = typeof supportTickets.$inferInsert;
 export type SupportTicketActivity = typeof supportTicketActivity.$inferSelect;
-export type NewSupportTicketActivity = typeof supportTicketActivity.$inferInsert;
