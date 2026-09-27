@@ -197,6 +197,20 @@ describe('support ticket remotes', () => {
 		)) as PaginatedResult<SupportTicketRow>;
 		expect(byWildcard.items).toHaveLength(0);
 
+		const byUnderscore = (await callRemote(
+			listSupportTicketsQuery,
+			{ page: 1, perPage: 10, search: '_' },
+			{ user: admin }
+		)) as PaginatedResult<SupportTicketRow>;
+		expect(byUnderscore.items).toHaveLength(0);
+
+		const byBackslash = (await callRemote(
+			listSupportTicketsQuery,
+			{ page: 1, perPage: 10, search: '\\' },
+			{ user: admin }
+		)) as PaginatedResult<SupportTicketRow>;
+		expect(byBackslash.items).toHaveLength(0);
+
 		const byCategory = (await callRemote(
 			listSupportTicketsQuery,
 			{ page: 1, perPage: 10, category: TicketCategory.INCONSISTENCY },

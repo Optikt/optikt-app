@@ -13,6 +13,7 @@
 @custom-variant not-last (&:not(:last-child));
 
 html:root {
+	color-scheme: light;
 	color-scheme: only light;
 }
 /* ── Optikt Clarity — Design Tokens from Stitch ──────────────────────────── */
@@ -204,11 +205,9 @@ html:root {
 		border-color: var(--color-brand-blue);
 	}
 
-	/* Checkbox/radio checked state */
-	input[type='checkbox']:checked,
-	input[type='radio']:checked {
-		background-color: var(--color-brand-blue);
-		border-color: var(--color-brand-blue);
+	/* Brand-blue accent for checkboxes/radios; component classes still win */
+	:where(input[type='checkbox'], input[type='radio']) {
+		accent-color: var(--color-brand-blue);
 	}
 
 	/* disable chrome cancel button */
