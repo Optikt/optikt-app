@@ -330,6 +330,13 @@
       "when": 1790461111921,
       "tag": "0046_public_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1792196567326,
+      "tag": "0047_cooing_caretaker",
+      "breakpoints": true
     }
   ]
 }
