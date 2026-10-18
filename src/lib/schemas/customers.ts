@@ -12,6 +12,7 @@ import {
 } from './common/identity';
 import { ListPaginationWithDeletedSchema } from './common/pagination';
 import { PrescriptionFieldsSchema } from './prescriptions';
+import { ALL_CUSTOMER_GENDERS } from '$lib/shared/enums/customerGenders';
 
 export const ListCustomersSchema = ListPaginationWithDeletedSchema;
 
@@ -21,7 +22,8 @@ export const CreateCustomerSchema = z.object({
 	firstName: NameSchema(),
 	lastName: NameSchema('Apellido requerido'),
 	idNumber: IdNumberSchema,
-	birthDate: z.iso.date('Fecha de nacimiento inválida'),
+	birthDate: z.iso.date('Fecha de nacimiento inválida').or(z.literal('')).optional(),
+	gender: z.enum(ALL_CUSTOMER_GENDERS).or(z.literal('')).optional(),
 	primaryPhone: PhoneSchema,
 	email: OptionalEmailSchema,
 	address: z.string().optional(),

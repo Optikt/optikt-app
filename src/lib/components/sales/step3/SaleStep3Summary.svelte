@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
+	import { calculateAge } from '$lib/dates';
 	import { calculateSaleSummarySubtotal, buildTaxItemsFromWizard } from '../saleItemHelpers';
 	import { computeAdjustedTaxBreakdown } from '../helpers/taxBreakdown';
 	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
@@ -147,12 +148,19 @@
 		if (selectedCustomer?.idNumber) return selectedCustomer.idNumber;
 		return customerFallbackDocument;
 	});
+
+	const displayCustomerAge = $derived.by((): number | null => {
+		if (newCustomer?.birthDate) return calculateAge(newCustomer.birthDate);
+		if (selectedCustomer?.birthDate) return calculateAge(selectedCustomer.birthDate);
+		return null;
+	});
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-2">
 	<SummaryHeader
 		name={displayCustomerName}
 		document={displayCustomerDocument}
+		age={displayCustomerAge}
 		statusLabel={statusMeta.label}
 		bind:isCashea
 		bind:notes

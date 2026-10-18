@@ -1,7 +1,7 @@
 # Optikt App — Plan de Evolución
 
 > Análisis de deuda técnica, features pendientes y features propuestas.
-> Actualizado: 2026-09-27.
+> Actualizado: 2026-10-18.
 
 ---
 
@@ -208,6 +208,20 @@
 **Dificultad:** Media (1-2 días). **Solución:** cargar `pdf_viewer.css` dentro de un contenedor aislado (iframe/shadow root) o reemplazarlo por un CSS propio acotado al viewer; después retirar el override global de `color-scheme`.
 
 **Estado:** TECH_DEBT documentado 2026-09-27 (review PR #180). Sin empezar.
+
+---
+
+### DT26 · Updates reescriben el payload completo (sin diff) ⚪
+
+**Problema:** Los formularios de edición envían **todos** los campos y el remote los persiste siempre, aunque el usuario haya cambiado uno solo. Caso concreto: `updateCustomerForm` (`customers.remote.ts:100-105`) usa `UpdateCustomerSchema = CreateCustomerSchema.partial()` pero fuerza `idNumber: idNumber || null`, `birthDate: birthDate || null`, `gender: gender || null`, así que un update parcial **borra** los campos omitidos (detectado en la review del PR #179: `customers.int.spec.ts` actualiza con solo `{ id, gender }` y de paso anula `idNumber`/`birthDate`). El patrón se repite en los demás `update*Form` (`products`, `suppliers`, `materials`, `users`, `brands`, `lenses`). La query `updateCustomer(id, Partial<Omit<Customer, ...>>)` ya soporta diffs; el problema está en la capa remote/UI, no en las queries.
+
+**Por qué importa:** Cada guardado escribe todos los campos del `UPDATE` (payload y carga de DB innecesarios) y cualquier caller que envíe un subconjunto puede borrar datos en silencio. Los `auditService.logUpdate` también asumen el estado completo.
+
+**Contras:** `FormData` no distingue "campo ausente" de "campo vacío": un `<select>`/input con `name` siempre llega como string (por eso hoy `''` se normaliza a `null`). Migrar a diff requiere calcular el delta en el cliente (solo claves cambiadas) o aceptar sentinelas null-vs-undefined, y revisar la semántica de `partial()` en cada schema de update + los audit logs. No es un cambio de una línea; conviene hacerlo por lote de dominios.
+
+**Dificultad:** Media (3-5 días por lote de dominios). **Solución:** helper de diff de formulario (`buildChangedFields(original, current)` → payload solo con claves modificadas), schemas `partial()` con normalización explícita solo para claves presentes, y dejar de forzar `|| null` para claves ausentes en los remotes de update.
+
+**Estado:** TECH_DEBT documentado 2026-10-18 (review PR #179). Sin empezar.
 
 ---
 
@@ -686,6 +700,7 @@ Plan detallado: `docs/plans/purchase-order-multicurrency-native-debt.md`.
 | 🟡        | DT23 · Conteo sin lote stock 0 | 2-4 días         |
 | ⚪        | DT24 · Form classes duplicadas | 2-3 días         |
 | ⚪        | DT25 · CSS pdfjs global        | 1-2 días         |
+| ⚪        | DT26 · Updates sin diff        | 3-5 días         |
 | ⚪        | DT17 · pdfjs pinneado          | TECH_DEBT        |
 | ⚪        | DT19 · Deps fuera de scope     | Fuera de scope   |
 | 🟢        | NF8 · Comisiones               | 5 días           |
