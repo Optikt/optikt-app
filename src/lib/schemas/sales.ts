@@ -177,8 +177,18 @@ export const InlineCustomerSchema = z.object({
 	firstName: z.string().min(1, 'Nombre requerido'),
 	lastName: z.string().min(1, 'Apellido requerido'),
 	idNumber: z.string().min(1, 'Documento requerido'),
-	birthDate: z.iso.date('Fecha de nacimiento inválida').optional(),
-	gender: z.enum(ALL_CUSTOMER_GENDERS).optional(),
+	// `''` is tolerated and normalized to `undefined` (same convention as `email`):
+	// empty selects/datepickers must clear the value, never fail validation.
+	birthDate: z.iso
+		.date('Fecha de nacimiento inválida')
+		.or(z.literal(''))
+		.transform((v) => v || undefined)
+		.optional(),
+	gender: z
+		.enum(ALL_CUSTOMER_GENDERS)
+		.or(z.literal(''))
+		.transform((v) => v || undefined)
+		.optional(),
 	primaryPhone: z.string().optional(),
 	email: z.string().email('Email inválido').optional().or(z.literal('')),
 	address: z.string().optional(),

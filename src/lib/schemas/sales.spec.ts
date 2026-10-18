@@ -214,6 +214,25 @@ describe('CreateSaleSchema', () => {
 		}
 	});
 
+	it('normalizes empty inline birthDate and gender to undefined', () => {
+		const result = CreateSaleSchema.safeParse({
+			newCustomer: {
+				firstName: 'Juan',
+				lastName: 'Pérez',
+				idNumber: 'V-87654321',
+				birthDate: '',
+				gender: ''
+			},
+			saleDate: '2025-01-15',
+			items: [makeProductItem()]
+		});
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.newCustomer?.birthDate).toBeUndefined();
+			expect(result.data.newCustomer?.gender).toBeUndefined();
+		}
+	});
+
 	it('rejects an invalid inline customer gender', () => {
 		const result = CreateSaleSchema.safeParse({
 			newCustomer: {

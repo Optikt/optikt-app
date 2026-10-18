@@ -181,6 +181,8 @@
 		touchedFirstName = false;
 		touchedLastName = false;
 		touchedIdDigits = false;
+		birthDate = undefined;
+		gender = '';
 		syncNewCustomer();
 		onchange?.();
 	}
