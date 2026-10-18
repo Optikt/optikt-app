@@ -17,8 +17,14 @@ updates:
       # Node: permitir solo minor/patch dentro de v22 (runtime = 22.22.2)
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
-      # TypeScript: bloquear v7 hasta SvelteKit 3 stable + svelte-check TS7
+      # TypeScript: bloquear v7 hasta que svelte-check/typescript-eslint soporten TS7
       - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      # SvelteKit 3 = migración, no bump (config fuera de svelte.config.js, $lib→#lib).
+      # Se hace en branch propio con `npx sv migrate sveltekit-3` — ver PLAN:DT19.
+      - dependency-name: '@sveltejs/kit'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@sveltejs/adapter-node'
         update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions

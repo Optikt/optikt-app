@@ -113,15 +113,16 @@
 
 ---
 
-### DT19 · Dependencias fuera de scope (typescript, pdfjs, types/node) ⚪
+### DT19 · Dependencias fuera de scope (typescript, sveltekit 3, pdfjs, types/node) ⚪
 
-**Contexto:** Tras `chore/deps-2026-08` (Tandas 1-6) + PR-A/C/D/E mergeados a `main`, `pnpm outdated` final deja 3 familias **fuera de scope** (`docs/plans/dependency-update.md` histórico).
+**Contexto:** Tras `chore/deps-2026-08` (Tandas 1-6) + PR-A/C/D/E mergeados a `main`, `pnpm outdated` final deja 4 familias **fuera de scope** (`docs/plans/dependency-update.md` histórico).
 
-- **`typescript 6.0.3 → 7.0.2`:** depende de **SvelteKit 3** stable. Kit 3 aún declara TS6; `svelte-check` y `typescript-eslint` sin soporte TS7. No se toca hasta Kit 3.
+- **`typescript 6.0.3 → 7.0.2`:** Kit 3 ya es stable, pero `svelte-check` y `typescript-eslint` aún no soportan TS7. Se queda en v6 hasta ese soporte.
+- **`@sveltejs/kit 2 → 3`:** **3.1.0 stable** desde 2026-10-14 → el "esperar stable" de §7 caducó; ahora es una **migración**, no un bump de Dependabot. Breakings que aplican: config fuera de `svelte.config.js` (pasa al plugin `sveltekit()` en `vite.config.ts`), `$lib → #lib` con extensiones explícitas (~2.8k imports en ~720 archivos), `$lib`/`files.lib` eliminados, `$app/environment → $app/env`, `goto` (`keepFocus`/`noScroll` → `reset`), `adapter-node` pierde `ORIGIN` (→ `paths.origin`), tipos de `hooks` a `@sveltejs/kit/hooks`. Dependabot ignora el major de `@sveltejs/kit` y `@sveltejs/adapter-node` hasta entonces.
 - **`pdfjs-dist 6.0.227 / @pdfslick/core 4.0.0`:** ver **DT17**. Funciona por ahora (viewer `PDFViewerModal.svelte` + generación `puppeteer` server). Hay que tomar decisión futura: ¿mantener pinneado o buscar otra forma de ver PDFs (visor nativo, `pdf.js` sin `@pdfslick/core`)? Por ahora **no se toca** — funciona.
 - **`@types/node 22 → 26.4.0`:** runtime es `Node 22.22.2`. Se queda en `^22` a menos que hagamos **bump explícito de Node** (ej. a 24/26). Subir types sin subir runtime no aporta.
 
-**Estado:** Documentado 2026-08-29. No tocar hasta evento que lo desbloquee.
+**Estado:** Actualizado 2026-10-18: Kit 3 stable → majors de `@sveltejs/kit`/`@sveltejs/adapter-node` bloqueados en Dependabot; migración pendiente en branch propio (`npx sv migrate sveltekit-3`).
 
 ---
 
