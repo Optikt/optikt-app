@@ -4,6 +4,7 @@ export interface SaleCustomerLike {
 	firstName: string;
 	lastName: string;
 	idNumber?: string | null;
+	primaryPhone?: string | null;
 }
 
 export function customerName(sale: { customer?: SaleCustomerLike | null }): string {
@@ -13,6 +14,10 @@ export function customerName(sale: { customer?: SaleCustomerLike | null }): stri
 
 export function customerIdNumber(sale: { customer?: SaleCustomerLike | null }): string {
 	return sale.customer?.idNumber ?? 'Documento no registrado';
+}
+
+export function customerPhone(sale: { customer?: SaleCustomerLike | null }): string {
+	return sale.customer?.primaryPhone?.trim() || 'Teléfono no registrado';
 }
 
 export function refundCardClasses(refundStatus: string | null | undefined): string {
