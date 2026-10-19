@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { SlideOver } from '$lib/components/ui';
+	import { SlideOver, ConfirmModal } from '$lib/components/ui';
 	import { Package, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales/update.remote';
@@ -8,14 +8,18 @@
 	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import { untrack, onMount } from 'svelte';
-	import { getCachedProducts } from './catalogCache.svelte';
+	import { untrack } from 'svelte';
 	import { fromISO } from '$lib/dates';
+	import ItemSelect from './ItemSelect.svelte';
+	import { getCachedProducts } from './catalogCache.svelte';
+	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
+	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
+	import type { LensEditorDraft } from '$lib/components/documentEditor/types';
+	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
 	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
 	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';
 	import EditSaleItemsSection from './editSale/EditSaleItemsSection.svelte';
-	import EditSaleLensPanel from './editSale/EditSaleLensPanel.svelte';
 	import EditSaleSummarySection from './editSale/EditSaleSummarySection.svelte';
 	import EditSaleFooter from './editSale/EditSaleFooter.svelte';
 	import EditSaleModalHeader from './editSale/EditSaleModalHeader.svelte';
@@ -32,9 +36,13 @@
 		mapTreatmentsForEdit,
 		previewSubtotalForItems,
 		seedCatalogCacheForItems,
-		type EditableItem,
-		type EditLensTreatment
+		type EditableItem
 	} from './editSaleDraft';
+	import {
+		editableItemFromLensEditorDraft,
+		editTreatmentsFromLensEditor,
+		lensEditorDraftFromEditableItem
+	} from './editSale/editSaleLensAdapter';
 	import { validateEditSale } from './editSaleValidation';
 
 	interface Props {
@@ -47,32 +55,28 @@
 
 	let { open = $bindable(), sale, items, treatments = [], onSuccess }: Props = $props();
 
-	// Seed the catalog cache with the lens items already in this sale so
-	// treatment lists and lens type checks work without SSR-loading the catalog.
-	onMount(() => {
-		void seedCatalogCacheForItems(items);
-	});
-
 	let saving = $state(false);
+	let submitError = $state('');
+	let confirmDiscard = $state(false);
 
 	// ── Header fields ──────────────────────────────────────────────────────
-	let saleDate = $state(untrack(() => fromISO(sale.saleDate).toISOString().slice(0, 10)));
-	let notes = $state(untrack(() => sale.notes ?? ''));
-	let isCashea = $state(untrack(() => sale.isCashea ?? false));
-	let discount = $state(untrack(() => sale.discount));
-	let discountType = $state<string>(untrack(() => sale.discountType));
+	let saleDate = $state('');
+	let notes = $state('');
+	let isCashea = $state(false);
+	let discount = $state(0);
+	let discountType = $state<string>(DiscountType.FIXED);
 
 	// ── Reason (mandatory) ──────────────────────────────────────────────────
 	let reason = $state('');
 	let reasonError = $state('');
 
 	// ── Editable items ─────────────────────────────────────────────────────
-	let editableItems = $state<EditableItem[]>(untrack(() => items.map(existingItemToInput)));
+	let editableItems = $state<EditableItem[]>([]);
 
 	// ── Lens editing state ─────────────────────────────────────────────────
 	let editingLensId = $state<string | null>(null); // null = adding new
-	let editLensTmp: EditableItem = $state(createEmptyLensDraft());
-	let editLensTreatments: EditLensTreatment[] = $state([]);
+	let lensBase = $state<EditableItem>(createEmptyLensDraft());
+	let lensDraft = $state<LensEditorDraft>(createEmptyLensEditorDraft());
 
 	// ── Add forms visibility ───────────────────────────────────────────────
 	let showAddProduct = $state(false);
@@ -107,10 +111,41 @@
 	let previewSubtotal = $derived(previewTotals.subtotal);
 	let previewGlobalDiscount = $derived(previewTotals.globalDiscount);
 	let previewTotal = $derived(previewTotals.total);
+	let lensEditing = $derived(showAddLens || editingLensId !== null);
 
 	let lensEditCtx = $derived(
-		getLensEditContext(editLensTmp.lensCatalogItemId, editLensTreatments, treatments)
+		getLensEditContext(
+			lensDraft.lensCatalogItemId,
+			editTreatmentsFromLensEditor(lensDraft.treatments),
+			treatments
+		)
 	);
+
+	// ── Seed state (mount + each open) ─────────────────────────────────────
+	function seedFromProps() {
+		saleDate = fromISO(sale.saleDate).toISOString().slice(0, 10);
+		notes = sale.notes ?? '';
+		isCashea = sale.isCashea ?? false;
+		discount = sale.discount;
+		discountType = sale.discountType;
+		reason = '';
+		reasonError = '';
+		submitError = '';
+		confirmDiscard = false;
+		editableItems = items.map(existingItemToInput);
+		showAddProduct = false;
+		showAddFreeItem = false;
+		cancelLensEdit();
+		void seedCatalogCacheForItems(items);
+	}
+
+	// Reseed local editable state each time the drawer opens (props may have
+	// changed after a previous save). `untrack` keeps prop updates from
+	// clobbering in-progress edits while the drawer stays open.
+	$effect(() => {
+		if (!open) return;
+		untrack(() => seedFromProps());
+	});
 
 	// ── Scroll lock when open ──────────────────────────────────────────────
 	$effect(() => {
@@ -122,37 +157,36 @@
 		};
 	});
 
-	// Helpers moved to ./editSaleDraft.ts — imported above
-
 	// ── Lens editing ───────────────────────────────────────────────────────
 
 	function startLensEdit(item: EditableItem) {
 		editingLensId = item.id ?? null;
-		editLensTmp = { ...item };
-		editLensTreatments = mapTreatmentsForEdit(activeItems, item.id);
+		lensBase = { ...item };
+		const editTreatments = mapTreatmentsForEdit(activeItems, item.id);
+		lensDraft = lensEditorDraftFromEditableItem(item, editTreatments);
 		closeAllAddForms();
 	}
 
 	function startLensAdd() {
 		editingLensId = null;
-		editLensTmp = createEmptyLensDraft();
-		editLensTreatments = [];
+		lensBase = createEmptyLensDraft();
+		lensDraft = createEmptyLensEditorDraft();
 		showAddLens = true;
 		closeAllAddFormsExcept('lens');
 	}
 
 	function cancelLensEdit() {
 		editingLensId = null;
-		editLensTmp = createEmptyLensDraft();
-		editLensTreatments = [];
+		lensBase = createEmptyLensDraft();
+		lensDraft = createEmptyLensEditorDraft();
 		showAddLens = false;
 	}
 
 	function handleLensSelect(id: string, unitPrice: number) {
-		editLensTmp.lensCatalogItemId = id || undefined;
-		if (id && unitPrice > 0) editLensTmp.unitPrice = unitPrice;
+		lensDraft.lensCatalogItemId = id || '';
+		if (id && unitPrice > 0) lensDraft.unitPrice = unitPrice;
 		if (id && !editingLensId) {
-			editLensTreatments = [];
+			lensDraft.treatments = [];
 		}
 	}
 
@@ -161,47 +195,42 @@
 		const treatment = lensEditCtx.availableTreatments.find((t) => t.id === treatmentId);
 		if (!treatment) return;
 		const salePrice = treatment.salePrice ?? treatment.price;
-		editLensTreatments = [
-			...editLensTreatments,
+		lensDraft.treatments = [
+			...lensDraft.treatments,
 			{
 				supplierTreatmentId: treatment.id,
 				name: treatment.name,
 				price: treatment.price,
 				salePrice,
 				isTaxable: treatment.isTaxable,
-				category: treatment.category,
-				_keep: true
+				category: treatment.category
 			}
 		];
 	}
 
 	function removeTreatmentFromEdit(idx: number) {
-		editLensTreatments = editLensTreatments.filter((_, i) => i !== idx);
+		lensDraft.treatments = lensDraft.treatments.filter((_, i) => i !== idx);
 	}
 
-	function saveLensEdit() {
-		if (!editLensTmp.lensCatalogItemId) {
-			toast.error('Seleccione un cristal');
-			return;
-		}
-		if (editLensTmp.unitPrice <= 0) {
-			toast.error('El precio debe ser mayor a 0');
-			return;
-		}
+	function applyLens() {
+		if (!lensDraft.lensCatalogItemId) return;
 
+		const wasEdit = editingLensId !== null;
 		const lensItemId = editingLensId || crypto.randomUUID();
-		const savedItem = buildLensInputFromDraft(editLensTmp, lensEditCtx.selectedLens);
-		savedItem.id = lensItemId;
+		const baseItem = editableItemFromLensEditorDraft(lensBase, lensDraft);
+		baseItem.id = lensItemId;
+
+		const savedItem = buildLensInputFromDraft(baseItem, lensEditCtx.selectedLens);
 
 		editableItems = applyLensEdit(
 			editableItems,
 			editingLensId,
 			savedItem,
-			editLensTreatments,
-			lensEditCtx.selectedLens?.supplier?.name ?? editLensTmp.snapshotBrand
+			editTreatmentsFromLensEditor(lensDraft.treatments),
+			lensEditCtx.selectedLens?.supplier?.name ?? lensBase.snapshotBrand
 		);
 		cancelLensEdit();
-		toast.success(editingLensId ? 'Cristal actualizado' : 'Cristal agregado');
+		toast.success(wasEdit ? 'Cristal actualizado' : 'Cristal agregado');
 	}
 
 	// ── Remove item ────────────────────────────────────────────────────────
@@ -310,7 +339,9 @@
 
 	// ── Submit ─────────────────────────────────────────────────────────────
 	function validate(): boolean {
-		const result = validateEditSale(reason, activeItems);
+		const result = validateEditSale(reason, activeItems, {
+			requireReason: SALE_CAPABILITIES.requiredReason
+		});
 		reasonError = result.reasonError;
 		if (!result.valid && !reasonError) {
 			toast.error('La venta debe tener al menos un artículo');
@@ -319,6 +350,7 @@
 	}
 
 	async function handleSubmit() {
+		submitError = '';
 		if (!validate()) return;
 		saving = true;
 
@@ -338,28 +370,45 @@
 			const result = await updateSale(payload);
 			if (result.success) {
 				toast.success('Venta actualizada');
-				handleClose();
+				confirmDiscard = false;
+				open = false;
 				onSuccess?.();
 			} else {
-				toast.error(result.error ?? 'Error actualizando venta');
+				submitError = result.error ?? 'Error actualizando venta';
+				toast.error(submitError);
 			}
 		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error actualizando venta'));
+			submitError = getErrorMessage(e, 'Error actualizando venta');
+			toast.error(submitError);
 		} finally {
 			saving = false;
 		}
 	}
 
-	function handleClose() {
-		if (saving) return;
+	// ── Close guarding ─────────────────────────────────────────────────────
+	function guardClose(): boolean {
+		if (saving) return false;
+		if (!hasChanges) return true;
+		confirmDiscard = true;
+		return false;
+	}
+
+	function discardAndClose() {
+		confirmDiscard = false;
 		open = false;
 	}
 </script>
 
-<SlideOver bind:open size="xl" onclose={handleClose}>
-	{#snippet header()}
-		<EditSaleModalHeader orderNumber={sale.orderNumber} {saving} onClose={handleClose} />
+<SlideOver bind:open size="xl" closeGuard={guardClose}>
+	{#snippet header({ onclose })}
+		<EditSaleModalHeader
+			orderNumber={sale.orderNumber}
+			{saving}
+			inventoryNotice={SALE_CAPABILITIES.inventory}
+			onClose={onclose}
+		/>
 	{/snippet}
+
 	<div class="space-y-5">
 		<EditSaleHeaderFields
 			{sale}
@@ -440,19 +489,29 @@
 				onCancel={resetAddFreeItemForm}
 			/>
 
-			<EditSaleLensPanel
-				{showAddLens}
-				{editingLensId}
-				bind:editLensTmp
-				bind:editLensTreatments
-				selectableTreatments={lensEditCtx.selectableTreatments}
-				showAddition={lensEditCtx.showAddition}
-				onLensSelect={handleLensSelect}
-				onAddTreatment={addTreatmentFromSelect}
-				onRemoveTreatment={removeTreatmentFromEdit}
-				onSave={saveLensEdit}
-				onCancel={cancelLensEdit}
-			/>
+			{#if lensEditing}
+				{#snippet lensSelector()}
+					<ItemSelect
+						kind="lens"
+						value={lensDraft.lensCatalogItemId}
+						onselect={handleLensSelect}
+						label="Cristal"
+					/>
+				{/snippet}
+
+				<LensEditorPanel
+					mode={editingLensId ? 'edit' : 'add'}
+					bind:draft={lensDraft}
+					lensType={lensEditCtx.selectedLens?.type ?? ''}
+					ranges={lensEditCtx.selectedLens?.ranges ?? []}
+					selectableTreatments={lensEditCtx.selectableTreatments}
+					{lensSelector}
+					onAddTreatment={addTreatmentFromSelect}
+					onRemoveTreatment={removeTreatmentFromEdit}
+					onApply={applyLens}
+					onCancel={cancelLensEdit}
+				/>
+			{/if}
 
 			<EditSaleItemsSection
 				{activeItems}
@@ -474,12 +533,26 @@
 		<EditSaleFooter
 			bind:reason
 			{reasonError}
+			{submitError}
 			{removedCount}
 			{saving}
 			{hasChanges}
-			onClose={handleClose}
+			onClose={() => {
+				if (guardClose()) open = false;
+			}}
 			onSubmit={handleSubmit}
 			onClearReasonError={() => (reasonError = '')}
 		/>
 	</div>
 </SlideOver>
+
+<ConfirmModal
+	bind:open={confirmDiscard}
+	title="Descartar cambios"
+	message="Tienes cambios sin guardar en esta venta. Si cierras ahora se perderán."
+	confirmLabel="Descartar y cerrar"
+	cancelLabel="Seguir editando"
+	confirmColor="red"
+	onConfirm={discardAndClose}
+	onCancel={() => (confirmDiscard = false)}
+/>

@@ -2,9 +2,11 @@ import type { EditableItem } from './editSaleDraft';
 
 export function validateEditSale(
 	reason: string,
-	activeItems: EditableItem[]
+	activeItems: EditableItem[],
+	options: { requireReason?: boolean } = {}
 ): { valid: boolean; reasonError: string } {
-	if (!reason.trim()) {
+	const requireReason = options.requireReason ?? true;
+	if (requireReason && !reason.trim()) {
 		return { valid: false, reasonError: 'El motivo de la modificación es obligatorio' };
 	}
 	if (activeItems.length === 0) {

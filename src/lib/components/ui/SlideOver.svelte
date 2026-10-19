@@ -7,6 +7,7 @@
 	let {
 		open = $bindable(false),
 		onclose,
+		closeGuard,
 		size = 'lg' as Size,
 		direction = 'right' as Direction,
 		children,
@@ -15,6 +16,8 @@
 	}: {
 		open?: boolean;
 		onclose?: () => void;
+		/** Return false to block closing (e.g. unsaved changes). */
+		closeGuard?: () => boolean;
 		size?: Size;
 		direction?: Direction;
 		children: Snippet;
@@ -31,6 +34,7 @@
 	let panel: HTMLDivElement | undefined = $state();
 
 	function handleClose() {
+		if (closeGuard && !closeGuard()) return;
 		open = false;
 		onclose?.();
 	}

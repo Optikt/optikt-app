@@ -1,0 +1,92 @@
+/**
+ * Sale adapter for the shared lens editor.
+ *
+ * Translates between the sale draft shape (`EditableItem` + edit treatments)
+ * and the domain-agnostic `LensEditorDraft` consumed by `LensEditorPanel`.
+ */
+import { DiscountType } from '$lib/shared/enums';
+import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import type { LensEditorDraft, LensEditorTreatment } from '$lib/components/documentEditor/types';
+
+import type { EditableItem, EditLensTreatment } from '../editSaleDraft';
+
+export function lensEditorTreatmentsFromEdit(
+	treatments: EditLensTreatment[]
+): LensEditorTreatment[] {
+	return treatments.map((treatment) => ({
+		supplierTreatmentId: treatment.supplierTreatmentId,
+		name: treatment.name,
+		price: treatment.price,
+		salePrice: treatment.salePrice,
+		isTaxable: treatment.isTaxable,
+		category: treatment.category
+	}));
+}
+
+export function editTreatmentsFromLensEditor(
+	treatments: LensEditorTreatment[]
+): EditLensTreatment[] {
+	return treatments.map((treatment) => ({
+		supplierTreatmentId: treatment.supplierTreatmentId,
+		name: treatment.name,
+		price: treatment.price,
+		salePrice: treatment.salePrice,
+		isTaxable: treatment.isTaxable,
+		category: treatment.category,
+		_keep: true
+	}));
+}
+
+export function lensEditorDraftFromEditableItem(
+	item: EditableItem,
+	treatments: EditLensTreatment[] = []
+): LensEditorDraft {
+	return {
+		lensCatalogItemId: item.lensCatalogItemId ?? '',
+		quantity: item.quantity,
+		unitPrice: item.unitPrice,
+		discount: item.discount ?? 0,
+		discountType: (item.discountType ?? DiscountType.FIXED) as string,
+		od: {
+			sphere: item.odSphere ?? null,
+			cylinder: item.odCylinder ?? null,
+			axis: item.odAxis ?? null,
+			addition: item.odAddition ?? null,
+			altura: item.odAltura ?? null
+		},
+		oi: {
+			sphere: item.osSphere ?? null,
+			cylinder: item.osCylinder ?? null,
+			axis: item.osAxis ?? null,
+			addition: item.osAddition ?? null,
+			altura: item.osAltura ?? null
+		},
+		treatments: lensEditorTreatmentsFromEdit(treatments)
+	};
+}
+
+export function editableItemFromLensEditorDraft(
+	base: EditableItem,
+	draft: LensEditorDraft
+): EditableItem {
+	return {
+		...base,
+		itemType: SaleItemType.LENS_PAIR,
+		lensCatalogItemId: draft.lensCatalogItemId || undefined,
+		quantity: draft.quantity,
+		unitPrice: draft.unitPrice,
+		discount: draft.discount,
+		discountType: draft.discountType as DiscountTypeEnum,
+		odSphere: draft.od.sphere ?? undefined,
+		odCylinder: draft.od.cylinder ?? undefined,
+		odAxis: draft.od.axis ?? undefined,
+		odAddition: draft.od.addition ?? undefined,
+		odAltura: draft.od.altura ?? undefined,
+		osSphere: draft.oi.sphere ?? undefined,
+		osCylinder: draft.oi.cylinder ?? undefined,
+		osAxis: draft.oi.axis ?? undefined,
+		osAddition: draft.oi.addition ?? undefined,
+		osAltura: draft.oi.altura ?? undefined
+	};
+}

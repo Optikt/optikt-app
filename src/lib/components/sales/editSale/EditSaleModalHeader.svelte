@@ -4,10 +4,11 @@
 	interface Props {
 		orderNumber: number;
 		saving: boolean;
+		inventoryNotice?: boolean;
 		onClose: () => void;
 	}
 
-	let { orderNumber, saving, onClose }: Props = $props();
+	let { orderNumber, saving, inventoryNotice = true, onClose }: Props = $props();
 </script>
 
 <header
@@ -18,7 +19,9 @@
 			Modificar Orden #{String(orderNumber).padStart(4, '0')}
 		</h2>
 		<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-			Los cambios se registrarán en auditoría. Artículos nuevos consumirán inventario.
+			Los cambios se registrarán en auditoría.{inventoryNotice
+				? ' Artículos nuevos consumirán inventario.'
+				: ''}
 		</p>
 	</div>
 	<button
