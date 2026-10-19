@@ -3,6 +3,7 @@ import { RefundStatus, SaleStatus } from '$lib/shared/enums';
 import {
 	customerIdNumber,
 	customerName,
+	customerPhone,
 	nextStatusTargets,
 	refundCardClasses,
 	refundDecisionTitle
@@ -17,6 +18,17 @@ describe('customer display', () => {
 			'V-1'
 		);
 		expect(customerIdNumber({ customer: null })).toBe('Documento no registrado');
+	});
+
+	it('shows the stored phone and a fallback', () => {
+		expect(
+			customerPhone({ customer: { firstName: 'A', lastName: 'B', primaryPhone: '0412-1234567' } })
+		).toBe('0412-1234567');
+		expect(customerPhone({ customer: { firstName: 'A', lastName: 'B', primaryPhone: '  ' } })).toBe(
+			'Teléfono no registrado'
+		);
+		expect(customerPhone({ customer: null })).toBe('Teléfono no registrado');
+		expect(customerPhone({})).toBe('Teléfono no registrado');
 	});
 });
 
