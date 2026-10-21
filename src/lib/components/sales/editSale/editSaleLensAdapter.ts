@@ -57,7 +57,7 @@ export function filterCompatibleTreatments(
 
 export function collectLensRangeWarnings(
 	items: EditableItem[],
-	lenses: LensCatalogItemWithRelations[]
+	getLens: (id: string) => LensCatalogItemWithRelations | undefined
 ): Record<string, string[]> {
 	const warnings: Record<string, string[]> = {};
 
@@ -65,7 +65,7 @@ export function collectLensRangeWarnings(
 		if (item.itemType !== SaleItemType.LENS_PAIR || !item.id || !item.lensCatalogItemId) {
 			continue;
 		}
-		const lens = lenses.find((candidate) => candidate.id === item.lensCatalogItemId);
+		const lens = getLens(item.lensCatalogItemId);
 		if (!lens || lens.ranges.length === 0) continue;
 
 		const evaluation = evaluateLensRange(

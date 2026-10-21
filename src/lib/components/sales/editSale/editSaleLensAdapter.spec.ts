@@ -157,16 +157,22 @@ describe('collectLensRangeWarnings', () => {
 	} as unknown as LensCatalogItemWithRelations;
 
 	it('keys warnings by item id', () => {
-		const result = collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], [lens]);
+		const result = collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], (id) =>
+			id === 'lens-1' ? lens : undefined
+		);
 		expect(result['lens-item-1']).toHaveLength(1);
 	});
 
 	it('ignores items without a cached lens or ranges', () => {
-		expect(collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], [])).toEqual({});
+		expect(
+			collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], () => undefined)
+		).toEqual({});
 
 		const noRanges = { id: 'lens-1', ranges: [] } as unknown as LensCatalogItemWithRelations;
 		expect(
-			collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], [noRanges])
+			collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], (id) =>
+				id === 'lens-1' ? noRanges : undefined
+			)
 		).toEqual({});
 	});
 });

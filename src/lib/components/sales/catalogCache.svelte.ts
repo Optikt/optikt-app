@@ -41,3 +41,8 @@ export function getCachedProducts(): ProductWithRelations[] {
 export function getCachedLensItems(): LensCatalogItemWithRelations[] {
 	return [...state.lensItems.values()];
 }
+
+/** O(1) lookup by id; reads the SvelteMap key so derived consumers stay reactive. */
+export function getCachedLensItem(id: string): LensCatalogItemWithRelations | undefined {
+	return state.lensItems.get(id);
+}

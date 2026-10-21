@@ -11,7 +11,7 @@
 	import { untrack } from 'svelte';
 	import { fromISO } from '$lib/dates';
 	import ItemSelect from './ItemSelect.svelte';
-	import { getCachedLensItems } from './catalogCache.svelte';
+	import { getCachedLensItem, getCachedLensItems } from './catalogCache.svelte';
 	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
 	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
 	import { SALE_CAPABILITIES, type LensEditorDraft } from '$lib/components/documentEditor/types';
@@ -106,7 +106,7 @@
 
 	// Advertencias de rango de los cristales ya aplicados al borrador, para que
 	// la excepción confirmada siga visible mientras se guarda la venta.
-	let lensRangeWarnings = $derived(collectLensRangeWarnings(activeItems, getCachedLensItems()));
+	let lensRangeWarnings = $derived(collectLensRangeWarnings(activeItems, getCachedLensItem));
 
 	// ── Seed state (mount + each open) ─────────────────────────────────────
 	function seedFromProps() {
