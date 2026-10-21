@@ -400,9 +400,13 @@
 				</div>
 			</div>
 
-			<EditSaleAddProductSection bind:show={showAddProduct} onAdd={appendItem} />
+			{#key showAddProduct}
+				<EditSaleAddProductSection bind:show={showAddProduct} onAdd={appendItem} />
+			{/key}
 
-			<EditSaleAddFreeItemSection bind:show={showAddFreeItem} onAdd={appendItem} />
+			{#key showAddFreeItem}
+				<EditSaleAddFreeItemSection bind:show={showAddFreeItem} onAdd={appendItem} />
+			{/key}
 
 			{#if lensEditing}
 				{#snippet lensSelector()}
