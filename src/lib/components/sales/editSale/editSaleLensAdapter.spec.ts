@@ -6,6 +6,7 @@ import type { EditableItem, EditLensTreatment } from '../editSaleDraft';
 import {
 	editableItemFromLensEditorDraft,
 	editTreatmentsFromLensEditor,
+	filterCompatibleTreatments,
 	lensEditorDraftFromEditableItem,
 	lensEditorTreatmentsFromEdit
 } from './editSaleLensAdapter';
@@ -116,5 +117,24 @@ describe('treatment adapters', () => {
 			category: 'COAT',
 			_keep: true
 		});
+	});
+});
+
+describe('filterCompatibleTreatments', () => {
+	it('drops treatments that do not belong to the selected lens supplier', () => {
+		const other: EditLensTreatment = { ...treatment, supplierTreatmentId: 't-2', name: 'Blue' };
+
+		const result = filterCompatibleTreatments(
+			lensEditorTreatmentsFromEdit([treatment, other]),
+			[{ id: 't-1' }],
+			true
+		);
+
+		expect(result.map((item) => item.supplierTreatmentId)).toEqual(['t-1']);
+	});
+
+	it('keeps treatments untouched when the supplier is unknown', () => {
+		const source = lensEditorTreatmentsFromEdit([treatment]);
+		expect(filterCompatibleTreatments(source, [], false)).toEqual(source);
 	});
 });

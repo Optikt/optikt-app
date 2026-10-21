@@ -38,6 +38,21 @@ export function editTreatmentsFromLensEditor(
 	}));
 }
 
+/**
+ * Keep only treatments that belong to the selected lens supplier.
+ * `availableForSupplier` is the treatment list already filtered by the lens
+ * supplier. When the supplier is unknown, treatments are left untouched.
+ */
+export function filterCompatibleTreatments(
+	treatments: LensEditorTreatment[],
+	availableForSupplier: { id: string }[],
+	hasKnownSupplier: boolean
+): LensEditorTreatment[] {
+	if (!hasKnownSupplier) return treatments;
+	const allowed = new Set(availableForSupplier.map((treatment) => treatment.id));
+	return treatments.filter((treatment) => allowed.has(treatment.supplierTreatmentId));
+}
+
 export function lensEditorDraftFromEditableItem(
 	item: EditableItem,
 	treatments: EditLensTreatment[] = []

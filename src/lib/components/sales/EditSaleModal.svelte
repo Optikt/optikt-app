@@ -41,6 +41,7 @@
 	import {
 		editableItemFromLensEditorDraft,
 		editTreatmentsFromLensEditor,
+		filterCompatibleTreatments,
 		lensEditorDraftFromEditableItem
 	} from './editSale/editSaleLensAdapter';
 	import { validateEditSale } from './editSaleValidation';
@@ -230,9 +231,19 @@
 	}
 
 	function handleLensSelect(id: string, unitPrice: number) {
+		const lenses = getCachedLensItems();
+		const previousSupplierId = lenses.find((lens) => lens.id === lensDraft.lensCatalogItemId)
+			?.supplier?.id;
+		const nextSupplierId = lenses.find((lens) => lens.id === id)?.supplier?.id;
+		const supplierChanged = previousSupplierId !== nextSupplierId;
+
 		lensDraft.lensCatalogItemId = id || '';
 		if (id && unitPrice > 0) lensDraft.unitPrice = unitPrice;
-		if (id && !editingLensId) {
+
+		if (id && (supplierChanged || !editingLensId)) {
+			if (lensDraft.treatments.length > 0) {
+				toast.warning('Se quitaron los tratamientos porque pertenecen a otro proveedor');
+			}
 			lensDraft.treatments = [];
 		}
 	}
@@ -267,13 +278,23 @@
 		const baseItem = editableItemFromLensEditorDraft(lensBase, lensDraft);
 		baseItem.id = lensItemId;
 
+		const selectedSupplierId = lensEditCtx.selectedLens?.supplier?.id;
+		const compatibleTreatments = filterCompatibleTreatments(
+			lensDraft.treatments,
+			lensEditCtx.availableTreatments,
+			!!selectedSupplierId
+		);
+		if (compatibleTreatments.length !== lensDraft.treatments.length) {
+			toast.warning('Se omitieron tratamientos que no pertenecen al proveedor del cristal');
+		}
+
 		const savedItem = buildLensInputFromDraft(baseItem, lensEditCtx.selectedLens);
 
 		editableItems = applyLensEdit(
 			editableItems,
 			editingLensId,
 			savedItem,
-			editTreatmentsFromLensEditor(lensDraft.treatments),
+			editTreatmentsFromLensEditor(compatibleTreatments),
 			lensEditCtx.selectedLens?.supplier?.name ?? lensBase.snapshotBrand
 		);
 		cancelLensEdit();
