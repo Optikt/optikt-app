@@ -7,7 +7,9 @@
 import { DiscountType } from '$lib/shared/enums';
 import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import type { LensEditorDraft, LensEditorTreatment } from '$lib/components/documentEditor/types';
+import { evaluateLensRange } from '$lib/components/documentEditor/opticalRange';
 
 import type { EditableItem, EditLensTreatment } from '../editSaleDraft';
 
@@ -51,6 +53,51 @@ export function filterCompatibleTreatments(
 	if (!hasKnownSupplier) return treatments;
 	const allowed = new Set(availableForSupplier.map((treatment) => treatment.id));
 	return treatments.filter((treatment) => allowed.has(treatment.supplierTreatmentId));
+}
+
+export function collectLensRangeWarnings(
+	items: EditableItem[],
+	lenses: LensCatalogItemWithRelations[]
+): Record<string, string[]> {
+	const warnings: Record<string, string[]> = {};
+
+	for (const item of items) {
+		if (item.itemType !== SaleItemType.LENS_PAIR || !item.id || !item.lensCatalogItemId) {
+			continue;
+		}
+		const lens = lenses.find((candidate) => candidate.id === item.lensCatalogItemId);
+		if (!lens || lens.ranges.length === 0) continue;
+
+		const evaluation = evaluateLensRange(
+			[
+				{
+					eye: 'OD',
+					values: {
+						sphere: item.odSphere,
+						cylinder: item.odCylinder,
+						axis: item.odAxis,
+						addition: item.odAddition
+					}
+				},
+				{
+					eye: 'OI',
+					values: {
+						sphere: item.osSphere,
+						cylinder: item.osCylinder,
+						axis: item.osAxis,
+						addition: item.osAddition
+					}
+				}
+			],
+			lens.ranges
+		);
+
+		if (evaluation.warnings.length > 0) {
+			warnings[item.id] = evaluation.warnings;
+		}
+	}
+
+	return warnings;
 }
 
 export function lensEditorDraftFromEditableItem(

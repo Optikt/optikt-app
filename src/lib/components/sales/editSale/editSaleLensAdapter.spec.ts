@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { DiscountType } from '$lib/shared/enums';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 import type { EditableItem, EditLensTreatment } from '../editSaleDraft';
 import {
+	collectLensRangeWarnings,
 	editableItemFromLensEditorDraft,
 	editTreatmentsFromLensEditor,
 	filterCompatibleTreatments,
@@ -136,5 +138,35 @@ describe('filterCompatibleTreatments', () => {
 	it('keeps treatments untouched when the supplier is unknown', () => {
 		const source = lensEditorTreatmentsFromEdit([treatment]);
 		expect(filterCompatibleTreatments(source, [], false)).toEqual(source);
+	});
+});
+
+describe('collectLensRangeWarnings', () => {
+	const lens = {
+		id: 'lens-1',
+		ranges: [
+			{
+				sphereMin: -2,
+				sphereMax: 2,
+				cylinderMin: -2,
+				cylinderMax: 0,
+				additionMin: null,
+				additionMax: null
+			}
+		]
+	} as unknown as LensCatalogItemWithRelations;
+
+	it('keys warnings by item id', () => {
+		const result = collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], [lens]);
+		expect(result['lens-item-1']).toHaveLength(1);
+	});
+
+	it('ignores items without a cached lens or ranges', () => {
+		expect(collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], [])).toEqual({});
+
+		const noRanges = { id: 'lens-1', ranges: [] } as unknown as LensCatalogItemWithRelations;
+		expect(
+			collectLensRangeWarnings([item({ id: 'lens-item-1', odSphere: 4 })], [noRanges])
+		).toEqual({});
 	});
 });

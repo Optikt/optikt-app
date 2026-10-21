@@ -5,20 +5,19 @@
 	import { updateSale } from '$lib/remote/sales/update.remote';
 	import { getErrorMessage, logger } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
-	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
+	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
 	import { untrack } from 'svelte';
 	import { fromISO } from '$lib/dates';
 	import ItemSelect from './ItemSelect.svelte';
-	import { getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
+	import { getCachedLensItems } from './catalogCache.svelte';
 	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
 	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
-	import { evaluateLensRange } from '$lib/components/documentEditor/opticalRange';
 	import { SALE_CAPABILITIES, type LensEditorDraft } from '$lib/components/documentEditor/types';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
-	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
-	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';
+	import EditSaleAddFreeItemSection from './editSale/EditSaleAddFreeItemSection.svelte';
+	import EditSaleAddProductSection from './editSale/EditSaleAddProductSection.svelte';
 	import EditSaleItemsSection from './editSale/EditSaleItemsSection.svelte';
 	import EditSaleSummarySection from './editSale/EditSaleSummarySection.svelte';
 	import EditSaleFooter from './editSale/EditSaleFooter.svelte';
@@ -28,8 +27,6 @@
 		buildLensInputFromDraft,
 		buildUpdateSalePayload,
 		createEmptyLensDraft,
-		createFreeItem,
-		createProductItem,
 		existingItemToInput,
 		getLensEditContext,
 		hasChangesForSale,
@@ -39,6 +36,7 @@
 		type EditableItem
 	} from './editSaleDraft';
 	import {
+		collectLensRangeWarnings,
 		editableItemFromLensEditorDraft,
 		editTreatmentsFromLensEditor,
 		filterCompatibleTreatments,
@@ -84,22 +82,6 @@
 	let showAddFreeItem = $state(false);
 	let showAddLens = $state(false);
 
-	// ── Add product form state ─────────────────────────────────────────────
-	let addProductId = $state('');
-	let addProductQty = $state(1);
-	let addProductPrice = $state(0);
-	let addProductDiscount = $state(0);
-	let addProductDiscountType = $state<string>(DiscountType.FIXED);
-	let addProductNotes = $state('');
-
-	// ── Add free item form state ───────────────────────────────────────────
-	let addFreeCategory = $state(FreeItemCategory.CONTACT_LENS_FORMULA);
-	let addFreeDescription = $state('');
-	let addFreePrice = $state(0);
-	let addFreeDiscount = $state(0);
-	let addFreeDiscountType = $state<string>(DiscountType.FIXED);
-	let addFreeNotes = $state('');
-
 	// ── Derived (via helpers) ────────────────────────────────────────────
 	let hasChanges = $derived(
 		hasChangesForSale(sale, saleDate, notes, discount, discountType, editableItems, items)
@@ -124,48 +106,7 @@
 
 	// Advertencias de rango de los cristales ya aplicados al borrador, para que
 	// la excepción confirmada siga visible mientras se guarda la venta.
-	let lensRangeWarnings = $derived.by(() => {
-		const lenses = getCachedLensItems();
-		const warnings: Record<string, string[]> = {};
-
-		for (const item of activeItems) {
-			if (item.itemType !== SaleItemType.LENS_PAIR || !item.id || !item.lensCatalogItemId) {
-				continue;
-			}
-			const lens = lenses.find((candidate) => candidate.id === item.lensCatalogItemId);
-			if (!lens || lens.ranges.length === 0) continue;
-
-			const evaluation = evaluateLensRange(
-				[
-					{
-						eye: 'OD',
-						values: {
-							sphere: item.odSphere,
-							cylinder: item.odCylinder,
-							axis: item.odAxis,
-							addition: item.odAddition
-						}
-					},
-					{
-						eye: 'OI',
-						values: {
-							sphere: item.osSphere,
-							cylinder: item.osCylinder,
-							axis: item.osAxis,
-							addition: item.osAddition
-						}
-					}
-				],
-				lens.ranges
-			);
-
-			if (evaluation.warnings.length > 0) {
-				warnings[item.id] = evaluation.warnings;
-			}
-		}
-
-		return warnings;
-	});
+	let lensRangeWarnings = $derived(collectLensRangeWarnings(activeItems, getCachedLensItems()));
 
 	// ── Seed state (mount + each open) ─────────────────────────────────────
 	function seedFromProps() {
@@ -315,82 +256,9 @@
 		editableItems = [...editableItems];
 	}
 
-	// ── Add product ────────────────────────────────────────────────────────
-	function handleProductSelect(id: string, unitPrice: number) {
-		addProductId = id;
-		if (unitPrice > 0) addProductPrice = unitPrice;
-	}
-
-	function addNewProduct() {
-		if (!addProductId) {
-			toast.error('Seleccione un producto');
-			return;
-		}
-		const product = getCachedProducts().find((p) => p.id === addProductId);
-		if (!product) {
-			toast.error('Producto no encontrado');
-			return;
-		}
-
-		editableItems = [
-			...editableItems,
-			createProductItem(product, {
-				productId: addProductId,
-				quantity: addProductQty,
-				unitPrice: addProductPrice,
-				discount: addProductDiscount,
-				discountType: addProductDiscountType,
-				notes: addProductNotes
-			})
-		];
-		resetAddProductForm();
-		toast.success('Producto agregado');
-	}
-
-	function resetAddProductForm() {
-		showAddProduct = false;
-		addProductId = '';
-		addProductQty = 1;
-		addProductPrice = 0;
-		addProductDiscount = 0;
-		addProductDiscountType = DiscountType.FIXED;
-		addProductNotes = '';
-	}
-
-	// ── Add free item ──────────────────────────────────────────────────────
-	function addNewFreeItem() {
-		if (!addFreeDescription?.trim() || addFreeDescription.trim().length < 3) {
-			toast.error('La descripción debe tener al menos 3 caracteres');
-			return;
-		}
-		if (addFreePrice <= 0) {
-			toast.error('El precio de venta debe ser mayor a 0');
-			return;
-		}
-
-		editableItems = [
-			...editableItems,
-			createFreeItem({
-				category: addFreeCategory as FreeItemCategory,
-				description: addFreeDescription,
-				price: addFreePrice,
-				discount: addFreeDiscount,
-				discountType: addFreeDiscountType,
-				notes: addFreeNotes
-			})
-		];
-		resetAddFreeItemForm();
-		toast.success('Ítem libre agregado');
-	}
-
-	function resetAddFreeItemForm() {
-		showAddFreeItem = false;
-		addFreeCategory = FreeItemCategory.CONTACT_LENS_FORMULA;
-		addFreeDescription = '';
-		addFreePrice = 0;
-		addFreeDiscount = 0;
-		addFreeDiscountType = DiscountType.FIXED;
-		addFreeNotes = '';
+	// ── Add items ──────────────────────────────────────────────────────────
+	function appendItem(item: EditableItem) {
+		editableItems = [...editableItems, item];
 	}
 
 	function closeAllAddForms() {
@@ -532,30 +400,9 @@
 				</div>
 			</div>
 
-			<EditSaleAddProductPanel
-				bind:showAddProduct
-				bind:addProductId
-				bind:addProductQty
-				bind:addProductPrice
-				bind:addProductDiscount
-				bind:addProductDiscountType
-				bind:addProductNotes
-				onSelectProduct={handleProductSelect}
-				onAddProduct={addNewProduct}
-				onCancel={resetAddProductForm}
-			/>
+			<EditSaleAddProductSection bind:show={showAddProduct} onAdd={appendItem} />
 
-			<EditSaleAddFreeItemPanel
-				{showAddFreeItem}
-				bind:addFreeCategory
-				bind:addFreeDescription
-				bind:addFreePrice
-				bind:addFreeDiscount
-				bind:addFreeDiscountType
-				bind:addFreeNotes
-				onAddFreeItem={addNewFreeItem}
-				onCancel={resetAddFreeItemForm}
-			/>
+			<EditSaleAddFreeItemSection bind:show={showAddFreeItem} onAdd={appendItem} />
 
 			{#if lensEditing}
 				{#snippet lensSelector()}
