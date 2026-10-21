@@ -66,14 +66,31 @@
 		acknowledgedSignature !== null && acknowledgedSignature === draftSignature
 	);
 
-	function eyeStatus(eye: 'OD' | 'OI'): string {
-		return rangeEvaluation.eyes.find((result) => result.eye === eye)?.status ?? 'lab-review';
+	function eyeResult(eye: 'OD' | 'OI') {
+		return rangeEvaluation.eyes.find((result) => result.eye === eye);
 	}
 
-	function statusLabel(status: string): string {
+	function eyeHasValues(eye: 'OD' | 'OI'): boolean {
+		const result = eyeResult(eye);
+		return (
+			!!result && (result.sphere !== null || result.cylinder !== null || result.addition !== null)
+		);
+	}
+
+	function eyeLabel(eye: 'OD' | 'OI'): string {
+		if (!eyeHasValues(eye)) return 'Sin receta';
+		const status = eyeResult(eye)?.status ?? 'lab-review';
 		if (status === 'in-range') return 'En rango';
 		if (status === 'out-of-range') return 'Revisar rango';
 		return 'Consultar laboratorio';
+	}
+
+	function eyeColor(eye: 'OD' | 'OI'): string {
+		if (!eyeHasValues(eye)) return 'text-slate-400';
+		const status = eyeResult(eye)?.status ?? 'lab-review';
+		if (status === 'in-range') return 'text-emerald-600';
+		if (status === 'out-of-range') return 'text-amber-600';
+		return 'text-slate-500';
 	}
 
 	function handleApply() {
@@ -203,13 +220,16 @@
 					<span class="text-xs font-semibold text-slate-700 dark:text-slate-300"
 						>OD (Ojo Derecho)</span
 					>
-					<span
-						class="text-[11px] font-medium {eyeStatus('OD') === 'in-range'
-							? 'text-emerald-600'
-							: eyeStatus('OD') === 'out-of-range'
-								? 'text-amber-600'
-								: 'text-slate-400'}">{statusLabel(eyeStatus('OD'))}</span
-					>
+					<span class="text-[11px] font-medium {eyeColor('OD')}">{eyeLabel('OD')}</span>
+				</div>
+				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
+					<span class="text-[10px] font-medium text-slate-500">Esf</span>
+					<span class="text-[10px] font-medium text-slate-500">Cil</span>
+					<span class="text-[10px] font-medium text-slate-500">Eje</span>
+					{#if showAddition}
+						<span class="text-[10px] font-medium text-slate-500">Add</span>
+						<span class="text-[10px] font-medium text-slate-500">Alt</span>
+					{/if}
 				</div>
 				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
 					<input
@@ -265,13 +285,16 @@
 					<span class="text-xs font-semibold text-slate-700 dark:text-slate-300"
 						>OI (Ojo Izquierdo)</span
 					>
-					<span
-						class="text-[11px] font-medium {eyeStatus('OI') === 'in-range'
-							? 'text-emerald-600'
-							: eyeStatus('OI') === 'out-of-range'
-								? 'text-amber-600'
-								: 'text-slate-400'}">{statusLabel(eyeStatus('OI'))}</span
-					>
+					<span class="text-[11px] font-medium {eyeColor('OI')}">{eyeLabel('OI')}</span>
+				</div>
+				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
+					<span class="text-[10px] font-medium text-slate-500">Esf</span>
+					<span class="text-[10px] font-medium text-slate-500">Cil</span>
+					<span class="text-[10px] font-medium text-slate-500">Eje</span>
+					{#if showAddition}
+						<span class="text-[10px] font-medium text-slate-500">Add</span>
+						<span class="text-[10px] font-medium text-slate-500">Alt</span>
+					{/if}
 				</div>
 				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
 					<input

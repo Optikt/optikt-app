@@ -3,7 +3,7 @@
 	import { Package, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales/update.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, logger } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
 	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
@@ -11,11 +11,11 @@
 	import { untrack } from 'svelte';
 	import { fromISO } from '$lib/dates';
 	import ItemSelect from './ItemSelect.svelte';
-	import { getCachedProducts } from './catalogCache.svelte';
+	import { getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
 	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
 	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
-	import type { LensEditorDraft } from '$lib/components/documentEditor/types';
-	import { SALE_CAPABILITIES } from '$lib/components/documentEditor/types';
+	import { evaluateLensRange } from '$lib/components/documentEditor/opticalRange';
+	import { SALE_CAPABILITIES, type LensEditorDraft } from '$lib/components/documentEditor/types';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
 	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
 	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';
@@ -121,6 +121,51 @@
 		)
 	);
 
+	// Advertencias de rango de los cristales ya aplicados al borrador, para que
+	// la excepción confirmada siga visible mientras se guarda la venta.
+	let lensRangeWarnings = $derived.by(() => {
+		const lenses = getCachedLensItems();
+		const warnings: Record<string, string[]> = {};
+
+		for (const item of activeItems) {
+			if (item.itemType !== SaleItemType.LENS_PAIR || !item.id || !item.lensCatalogItemId) {
+				continue;
+			}
+			const lens = lenses.find((candidate) => candidate.id === item.lensCatalogItemId);
+			if (!lens || lens.ranges.length === 0) continue;
+
+			const evaluation = evaluateLensRange(
+				[
+					{
+						eye: 'OD',
+						values: {
+							sphere: item.odSphere,
+							cylinder: item.odCylinder,
+							axis: item.odAxis,
+							addition: item.odAddition
+						}
+					},
+					{
+						eye: 'OI',
+						values: {
+							sphere: item.osSphere,
+							cylinder: item.osCylinder,
+							axis: item.osAxis,
+							addition: item.osAddition
+						}
+					}
+				],
+				lens.ranges
+			);
+
+			if (evaluation.warnings.length > 0) {
+				warnings[item.id] = evaluation.warnings;
+			}
+		}
+
+		return warnings;
+	});
+
 	// ── Seed state (mount + each open) ─────────────────────────────────────
 	function seedFromProps() {
 		saleDate = fromISO(sale.saleDate).toISOString().slice(0, 10);
@@ -136,7 +181,9 @@
 		showAddProduct = false;
 		showAddFreeItem = false;
 		cancelLensEdit();
-		void seedCatalogCacheForItems(items);
+		void seedCatalogCacheForItems(items).catch((error) => {
+			logger.error('No se pudo cargar el catálogo de cristales de la venta', error);
+		});
 	}
 
 	// Reseed local editable state each time the drawer opens (props may have
@@ -518,6 +565,7 @@
 				{mainItems}
 				{editingLensId}
 				{saving}
+				rangeWarnings={lensRangeWarnings}
 				onEditLens={startLensEdit}
 				onRemoveItem={removeItem}
 			/>

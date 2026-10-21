@@ -2,6 +2,7 @@
 	import { Eye, FlaskConical, Package, Pencil, Sparkles, X } from '@lucide/svelte';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
+	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
 	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {
@@ -9,11 +10,20 @@
 		mainItems: EditableItem[];
 		editingLensId: string | null;
 		saving: boolean;
+		rangeWarnings?: Record<string, string[]>;
 		onEditLens: (item: EditableItem) => void;
 		onRemoveItem: (item: EditableItem) => void;
 	}
 
-	let { activeItems, mainItems, editingLensId, saving, onEditLens, onRemoveItem }: Props = $props();
+	let {
+		activeItems,
+		mainItems,
+		editingLensId,
+		saving,
+		rangeWarnings = {},
+		onEditLens,
+		onRemoveItem
+	}: Props = $props();
 
 	function itemDetail(item: EditableItem): string {
 		const parts: string[] = [];
@@ -80,6 +90,13 @@
 							class="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold tracking-wide text-green-700 uppercase dark:bg-green-900/50 dark:text-green-300"
 							>Nuevo</span
 						>{/if}
+					{#if item.id && rangeWarnings[item.id]}
+						<span
+							class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold tracking-wide text-amber-700 uppercase dark:bg-amber-900/50 dark:text-amber-300"
+							>Rango</span
+						>
+						<InfoTooltip text={rangeWarnings[item.id]?.join(' · ') ?? ''} />
+					{/if}
 				</div>
 				{#if itemDetail(item)}<p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
 						{itemDetail(item)}
