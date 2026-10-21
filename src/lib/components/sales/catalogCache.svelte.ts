@@ -6,12 +6,16 @@
  * cached here as they are selected, so existing helpers that consume
  * `products` / `lensItems` arrays keep working with the same shape.
  */
+import { SvelteMap } from 'svelte/reactivity';
+
 import type { ProductWithRelations } from '$lib/server/db/queries/products';
 import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
 
+// SvelteMap (not plain Map) so async catalog seeding invalidates derived
+// consumers such as the lens editor context and range warnings.
 const state = $state({
-	products: new Map<string, ProductWithRelations>(),
-	lensItems: new Map<string, LensCatalogItemWithRelations>()
+	products: new SvelteMap<string, ProductWithRelations>(),
+	lensItems: new SvelteMap<string, LensCatalogItemWithRelations>()
 });
 
 export function cacheCatalogItems(
