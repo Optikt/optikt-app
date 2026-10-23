@@ -85,7 +85,7 @@
 			resetKey={resetCounter}
 		/>
 
-		<CasheaCheckbox bind:isCashea class="mt-2" />
+		<CasheaCheckbox bind:isCashea size="lg" class="mt-3" />
 	</div>
 
 	<SaleWizardFloatingActions
