@@ -66,7 +66,7 @@
 			</div>
 
 			<div class="flex items-end sm:col-span-3">
-				<CasheaCheckbox bind:isCashea />
+				<CasheaCheckbox bind:isCashea compact />
 			</div>
 
 			<div class="sm:col-span-12">
