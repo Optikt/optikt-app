@@ -65,6 +65,8 @@ export interface SaleFilterOptions {
 	shippingCostPending?: boolean;
 	/** Filter sales that have at least one FREE_ITEM */
 	hasFreeItem?: boolean;
+	/** Filter sales flagged as Cashea (buy-now-pay-later channel) */
+	isCashea?: boolean;
 }
 
 /** Options for querying sales with relations */

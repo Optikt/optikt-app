@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { RotateCcw, Search, SlidersHorizontal, Sparkles, Truck } from '@lucide/svelte';
 	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
+	import { CasheaIsotipo } from '$lib/components/branding';
 	import StatusMultiSelect from './StatusMultiSelect.svelte';
 
 	interface Props {
@@ -8,11 +9,13 @@
 		statusFilter: SaleStatus[];
 		shippingPendingFilter: boolean;
 		hasFreeItemFilter: boolean;
+		casheaFilter: boolean;
 		hasActiveFilters: boolean;
 		onSearch: (value: string) => void;
 		onStatusChange: (values: SaleStatus[]) => void;
 		onToggleShippingPending: () => void;
 		onToggleFreeItem: () => void;
+		onToggleCashea: () => void;
 		onClearFilters: () => void;
 	}
 
@@ -21,11 +24,13 @@
 		statusFilter,
 		shippingPendingFilter,
 		hasFreeItemFilter,
+		casheaFilter,
 		hasActiveFilters,
 		onSearch,
 		onStatusChange,
 		onToggleShippingPending,
 		onToggleFreeItem,
+		onToggleCashea,
 		onClearFilters
 	}: Props = $props();
 
@@ -34,7 +39,8 @@
 	const activeFilterCount = $derived(
 		(statusFilter.length > 0 ? 1 : 0) +
 			(shippingPendingFilter ? 1 : 0) +
-			(hasFreeItemFilter ? 1 : 0)
+			(hasFreeItemFilter ? 1 : 0) +
+			(casheaFilter ? 1 : 0)
 	);
 
 	const statusOptions = ALL_SALE_STATUSES.map((s) => ({ value: s, label: SALE_STATUS_LABELS[s] }));
@@ -91,6 +97,16 @@
 			>
 				<Sparkles class="h-4 w-4" />
 				Ítem libre
+			</button>
+
+			<button
+				type="button"
+				onclick={onToggleCashea}
+				class={toggleButtonClass(casheaFilter, 'bg-brand-gold/20 text-brand-navy')}
+				title="Filtrar ventas con Cashea"
+			>
+				<CasheaIsotipo class="h-4 w-4" />
+				Cashea
 			</button>
 		</div>
 
@@ -162,6 +178,16 @@
 				>
 					<Sparkles class="h-4 w-4" />
 					Ítem libre
+				</button>
+
+				<button
+					type="button"
+					onclick={onToggleCashea}
+					class={toggleButtonClass(casheaFilter, 'bg-brand-gold/20 text-brand-navy')}
+					title="Filtrar ventas con Cashea"
+				>
+					<CasheaIsotipo class="h-4 w-4" />
+					Cashea
 				</button>
 			</div>
 		</div>

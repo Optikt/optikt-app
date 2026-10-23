@@ -4,7 +4,8 @@ import {
 	CreateSaleSchema,
 	CancelSaleSchema,
 	UpdateSaleSchema,
-	SetSaleStatusSchema
+	SetSaleStatusSchema,
+	ListSalesSchema
 } from '$lib/schemas/sales';
 import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import { DiscountType, RefundStatus } from '$lib/shared/enums';
@@ -739,6 +740,26 @@ describe('SetSaleStatusSchema', () => {
 			status: 'IN_PROGRESS',
 			reason: 'Iniciando proceso'
 		});
+		expect(result.success).toBe(false);
+	});
+});
+
+// ── ListSalesSchema ────────────────────────────────────────────────────────
+
+describe('ListSalesSchema', () => {
+	it('accepts default pagination without filters', () => {
+		const result = ListSalesSchema.safeParse({ page: 1, perPage: 10 });
+		expect(result.success).toBe(true);
+	});
+
+	it('accepts the isCashea filter', () => {
+		const result = ListSalesSchema.safeParse({ page: 1, perPage: 10, isCashea: true });
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.isCashea).toBe(true);
+	});
+
+	it('rejects a non-boolean isCashea filter', () => {
+		const result = ListSalesSchema.safeParse({ page: 1, perPage: 10, isCashea: '1' });
 		expect(result.success).toBe(false);
 	});
 });

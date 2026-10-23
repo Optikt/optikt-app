@@ -32,6 +32,7 @@
 	const initialStatus = initialQuery.get('status');
 	const initialShippingPending = parseBooleanParam(initialQuery.get('shippingPending'));
 	const initialFreeItem = parseBooleanParam(initialQuery.get('freeItem'));
+	const initialCashea = parseBooleanParam(initialQuery.get('cashea'));
 
 	// Data state
 	let salesData = $state<PaginatedSales>({
@@ -50,6 +51,7 @@
 	let statusFilter = $state<SaleStatus[]>(parseSaleStatuses(initialStatus));
 	let shippingPendingFilter = $state(initialShippingPending);
 	let hasFreeItemFilter = $state(initialFreeItem);
+	let casheaFilter = $state(initialCashea);
 
 	function syncUrl(nextPage: number): void {
 		replaceUrlSearch(page.url, (params) => {
@@ -57,6 +59,7 @@
 			setQueryParam(params, 'status', serializeSaleStatuses(statusFilter));
 			setQueryParam(params, 'shippingPending', shippingPendingFilter ? '1' : null);
 			setQueryParam(params, 'freeItem', hasFreeItemFilter ? '1' : null);
+			setQueryParam(params, 'cashea', casheaFilter ? '1' : null);
 			setQueryParam(params, 'page', nextPage > 1 ? nextPage : null);
 		});
 	}
@@ -71,7 +74,8 @@
 				search: search || undefined,
 				statuses: statusFilter.length > 0 ? statusFilter : undefined,
 				shippingCostPending: shippingPendingFilter || undefined,
-				hasFreeItem: hasFreeItemFilter || undefined
+				hasFreeItem: hasFreeItemFilter || undefined,
+				isCashea: casheaFilter || undefined
 			});
 		} catch (e) {
 			toast.error(getErrorMessage(e, 'Error cargando ventas'));
@@ -112,11 +116,17 @@
 		void fetchSales(1);
 	}
 
+	function toggleCashea() {
+		casheaFilter = !casheaFilter;
+		void fetchSales(1);
+	}
+
 	function clearFilters() {
 		search = '';
 		statusFilter = [];
 		shippingPendingFilter = false;
 		hasFreeItemFilter = false;
+		casheaFilter = false;
 		void fetchSales(1);
 	}
 
@@ -124,7 +134,8 @@
 		search.trim().length > 0 ||
 			statusFilter.length > 0 ||
 			shippingPendingFilter ||
-			hasFreeItemFilter
+			hasFreeItemFilter ||
+			casheaFilter
 	);
 
 	function handleView(sale: SaleWithRelations) {
@@ -169,11 +180,13 @@
 		{statusFilter}
 		{shippingPendingFilter}
 		{hasFreeItemFilter}
+		{casheaFilter}
 		{hasActiveFilters}
 		onSearch={handleSearch}
 		onStatusChange={handleStatusChange}
 		onToggleShippingPending={toggleShippingPending}
 		onToggleFreeItem={toggleFreeItem}
+		onToggleCashea={toggleCashea}
 		onClearFilters={clearFilters}
 	/>
 

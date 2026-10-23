@@ -98,5 +98,9 @@ export function buildSaleConditions(opts: SaleFilterOptions): SQL | undefined {
 		);
 	}
 
+	if (opts.isCashea) {
+		conditions.push(eq(sales.isCashea, true));
+	}
+
 	return conditions.length > 0 ? and(...conditions) : undefined;
 }

@@ -40,7 +40,8 @@ export const ListSalesSchema = ListPaginationSchema.extend({
 	dateFrom: z.iso.date().optional(),
 	dateTo: z.iso.date().optional(),
 	shippingCostPending: z.boolean().optional(),
-	hasFreeItem: z.boolean().optional()
+	hasFreeItem: z.boolean().optional(),
+	isCashea: z.boolean().optional()
 });
 
 // ============================================================================

@@ -51,7 +51,8 @@ export const listSales = query(ListSalesSchema, async (data): Promise<PaginatedS
 		dateTo: data.dateTo ?? undefined,
 		search: data.search ?? undefined,
 		shippingCostPending: data.shippingCostPending ?? undefined,
-		hasFreeItem: data.hasFreeItem ?? undefined
+		hasFreeItem: data.hasFreeItem ?? undefined,
+		isCashea: data.isCashea ?? undefined
 	};
 
 	const [salesPage, total] = await Promise.all([
