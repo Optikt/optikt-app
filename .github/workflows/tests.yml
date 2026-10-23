@@ -98,8 +98,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    # Only run E2E on main branch or when explicitly requested
-    if: github.event.pull_request.base.ref == 'main' || github.ref == 'refs/heads/main'
+    # E2E on main and on phase PRs targeting the SvelteKit 3 integration branch.
+    # Push runs to the integration branch are covered by the pull_request event, so
+    # only main pushes run E2E directly to avoid duplicate runs.
+    if: github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'migrate/sveltekit-v3' || github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
