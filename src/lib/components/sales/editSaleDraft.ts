@@ -1,5 +1,5 @@
 import { DiscountType } from '$lib/shared/enums';
-import { FreeItemCategory, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { FreeItemCategory, SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
 import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
 import type { SupplierTreatment } from '$lib/server/db/schema';
@@ -308,7 +308,6 @@ export interface LensEditContext {
 	availableTreatments: SupplierTreatment[];
 	selectableTreatments: SupplierTreatment[];
 	selectedLens: LensCatalogItemWithRelations | null;
-	showAddition: boolean;
 }
 
 export function getLensEditContext(
@@ -327,8 +326,7 @@ export function getLensEditContext(
 		selectableTreatments: availableTreatments.filter(
 			(t) => !currentTreatments.some((et) => et.supplierTreatmentId === t.id)
 		),
-		selectedLens,
-		showAddition: (selectedLens?.type ?? '') !== LensType.MONOFOCAL
+		selectedLens
 	};
 }
 

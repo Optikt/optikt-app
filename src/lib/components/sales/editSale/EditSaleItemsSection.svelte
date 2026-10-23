@@ -2,6 +2,8 @@
 	import { Eye, FlaskConical, Package, Pencil, Sparkles, X } from '@lucide/svelte';
 	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import { formatPrice } from '$lib/utils';
+	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
+	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
 	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {
@@ -9,11 +11,20 @@
 		mainItems: EditableItem[];
 		editingLensId: string | null;
 		saving: boolean;
+		rangeWarnings?: Record<string, string[]>;
 		onEditLens: (item: EditableItem) => void;
 		onRemoveItem: (item: EditableItem) => void;
 	}
 
-	let { activeItems, mainItems, editingLensId, saving, onEditLens, onRemoveItem }: Props = $props();
+	let {
+		activeItems,
+		mainItems,
+		editingLensId,
+		saving,
+		rangeWarnings = {},
+		onEditLens,
+		onRemoveItem
+	}: Props = $props();
 
 	function itemDetail(item: EditableItem): string {
 		const parts: string[] = [];
@@ -22,6 +33,10 @@
 		if (item.itemType === SaleItemType.FREE_ITEM && item.freeItemCategory)
 			parts.push(item.freeItemCategory);
 		return parts.join(' · ');
+	}
+
+	function canMutate(): boolean {
+		return !editingLensId && !saving;
 	}
 </script>
 
@@ -80,6 +95,13 @@
 							class="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold tracking-wide text-green-700 uppercase dark:bg-green-900/50 dark:text-green-300"
 							>Nuevo</span
 						>{/if}
+					{#if item.id && rangeWarnings[item.id]}
+						<span
+							class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold tracking-wide text-amber-700 uppercase dark:bg-amber-900/50 dark:text-amber-300"
+							>Rango</span
+						>
+						<InfoTooltip text={rangeWarnings[item.id]?.join(' · ') ?? ''} />
+					{/if}
 				</div>
 				{#if itemDetail(item)}<p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
 						{itemDetail(item)}
@@ -92,21 +114,35 @@
 				<p class="text-xs text-slate-500 dark:text-slate-400">x{item.quantity}</p>
 			</div>
 			{#if item.itemType === SaleItemType.LENS_PAIR}
-				<button
-					type="button"
-					onclick={() => onEditLens(item)}
-					disabled={!!editingLensId || saving}
-					class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-cyan-50 hover:text-cyan-600 disabled:opacity-30 dark:hover:bg-cyan-900/30"
-					title="Editar cristal"><Pencil class="h-3.5 w-3.5" /></button
-				>
+				{#snippet editLensTrigger({ props }: { props: Record<string, unknown> })}
+					<button
+						{...props}
+						type="button"
+						onclick={() => {
+							if (canMutate()) onEditLens(item);
+						}}
+						aria-disabled={!canMutate()}
+						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-cyan-50 hover:text-cyan-600 aria-disabled:opacity-30 dark:hover:bg-cyan-900/30"
+					>
+						<Pencil class="h-3.5 w-3.5" />
+					</button>
+				{/snippet}
+				<TriggerTooltip text="Editar cristal" trigger={editLensTrigger} />
 			{/if}
-			<button
-				type="button"
-				onclick={() => onRemoveItem(item)}
-				disabled={!!editingLensId || saving}
-				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 dark:hover:bg-red-900/30"
-				title="Eliminar"><X class="h-4 w-4" /></button
-			>
+			{#snippet removeTrigger({ props }: { props: Record<string, unknown> })}
+				<button
+					{...props}
+					type="button"
+					onclick={() => {
+						if (canMutate()) onRemoveItem(item);
+					}}
+					aria-disabled={!canMutate()}
+					class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 aria-disabled:opacity-30 dark:hover:bg-red-900/30"
+				>
+					<X class="h-4 w-4" />
+				</button>
+			{/snippet}
+			<TriggerTooltip text="Eliminar" trigger={removeTrigger} />
 		</div>
 		{#if item.itemType === SaleItemType.LENS_PAIR}
 			{@const childTreatments = activeItems.filter(
