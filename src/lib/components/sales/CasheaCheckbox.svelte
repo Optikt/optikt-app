@@ -8,16 +8,17 @@
 		hint = 'Financia el saldo a través de Cashea',
 		disabled = false,
 		variant = 'default' as 'default' | 'gold',
-		size = 'sm' as 'sm' | 'lg',
+		size = 'sm' as 'sm' | 'md' | 'lg',
 		class: className = ''
 	}: {
 		isCashea?: boolean;
 		label?: string;
-		/** Supporting line shown only in the `lg` (card) layout */
+		/** Supporting line shown only in the `lg` (option card) layout */
 		hint?: string;
 		disabled?: boolean;
 		variant?: 'default' | 'gold';
-		size?: 'sm' | 'lg';
+		/** sm: payment rail · md: XL chip · lg: full-width option card */
+		size?: 'sm' | 'md' | 'lg';
 		class?: string;
 	} = $props();
 
@@ -50,6 +51,23 @@
 		>
 			<Check class="h-4 w-4" strokeWidth={3} />
 		</span>
+	</label>
+{:else if size === 'md'}
+	<label
+		class="inline-flex cursor-pointer items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand-blue/30 {isCashea
+			? 'bg-brand-gold/15 text-brand-navy ring-1 ring-brand-gold'
+			: 'bg-surface-container/60 text-on-surface hover:bg-surface-container'} {disabled
+			? 'cursor-not-allowed opacity-70'
+			: ''} {className}"
+	>
+		<CasheaIsotipo class="h-6 w-6 shrink-0" />
+		<span>{label}</span>
+		<input
+			type="checkbox"
+			bind:checked={isCashea}
+			{disabled}
+			class="h-4 w-4 shrink-0 accent-brand-blue"
+		/>
 	</label>
 {:else}
 	<label

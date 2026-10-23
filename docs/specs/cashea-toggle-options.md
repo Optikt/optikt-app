@@ -2,6 +2,9 @@
 
 Estado: exploración. Se prueban las 3 variantes en orden; A está implementada primero.
 
+- Combinación elegida por ahora: **A en Step 1** (`size="lg"`) + **B en Step 3** (`size="md"`).
+- C: en evaluación (working tree, sin commit).
+
 ## Problema
 
 En el wizard, el selector "Venta con Cashea" (`CasheaCheckbox.svelte`) es demasiado

@@ -15,7 +15,6 @@
 	import SummaryItemList from './summary/SummaryItemList.svelte';
 	import SummaryTotals from './summary/SummaryTotals.svelte';
 	import SummaryGlobalDiscount from './summary/SummaryGlobalDiscount.svelte';
-	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 
 	interface Props {
 		items: SaleItemRow[];
@@ -163,10 +162,9 @@
 		document={displayCustomerDocument}
 		age={displayCustomerAge}
 		statusLabel={statusMeta.label}
+		bind:isCashea
 		bind:notes
 	/>
-
-	<CasheaCheckbox bind:isCashea size="lg" class="shrink-0" />
 
 	<div class="flex min-h-0 flex-1 gap-3">
 		<SummaryItemList {items} {defaultTaxRate} />
