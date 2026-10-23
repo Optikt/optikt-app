@@ -50,11 +50,11 @@
 		</div>
 
 		<div class="sm:col-span-4">
-			<label
-				for="edit-customer"
+			<p
 				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>Cliente</label
 			>
+				Cliente
+			</p>
 			<div
 				class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
 			>
@@ -67,57 +67,59 @@
 			<CasheaCheckbox bind:isCashea />
 		</div>
 
-		<div class="sm:col-span-12">
+		<div class="sm:col-span-8">
 			<label
 				for="edit-sale-notes"
 				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
 				>Observaciones</label
 			>
-			<input
+			<textarea
 				id="edit-sale-notes"
-				type="text"
 				bind:value={notes}
+				rows="3"
 				placeholder="Notas opcionales..."
-				class={inputClass}
-			/>
+				class="{inputClass} resize-none"></textarea>
 		</div>
-	</div>
 
-	<div class="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
-		<div class="mb-2 flex items-center gap-2">
-			<Tag class="h-3.5 w-3.5 text-brand-blue" />
-			<span
-				class="text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>Descuento</span
-			>
-		</div>
-		<div class="grid gap-3 sm:grid-cols-12">
-			<div class="sm:col-span-3">
-				<label
-					for="edit-discount-type"
-					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-					>Tipo</label
+		<div class="sm:col-span-4">
+			<div class="mb-1.5 flex items-center gap-2">
+				<Tag class="h-3.5 w-3.5 text-brand-blue" />
+				<span
+					class="text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
+					>Descuento</span
 				>
-				<select id="edit-discount-type" bind:value={discountType} class={inputClass}>
-					<option value={DiscountType.FIXED}>Monto fijo ($)</option>
-					<option value={DiscountType.PERCENTAGE}>Porcentaje (%)</option>
-				</select>
 			</div>
-			<div class="sm:col-span-2">
-				<label
-					for="edit-discount"
-					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>
-					Valor {discountType === DiscountType.PERCENTAGE ? '(%)' : '($)'}
-				</label>
-				<input
-					id="edit-discount"
-					type="number"
-					bind:value={discount}
-					min="0"
-					step="0.01"
-					class={inputClass}
-				/>
+			<div class="space-y-2">
+				<div>
+					<label
+						for="edit-discount-type"
+						class="mb-1 block text-[10px] font-medium text-slate-500 uppercase">Tipo</label
+					>
+					<select
+						id="edit-discount-type"
+						bind:value={discountType}
+						class="{inputClass} max-w-[240px]"
+					>
+						<option value={DiscountType.FIXED}>Monto fijo ($)</option>
+						<option value={DiscountType.PERCENTAGE}>Porcentaje (%)</option>
+					</select>
+				</div>
+				<div>
+					<label
+						for="edit-discount"
+						class="mb-1 block text-[10px] font-medium text-slate-500 uppercase"
+					>
+						Valor {discountType === DiscountType.PERCENTAGE ? '(%)' : '($)'}
+					</label>
+					<input
+						id="edit-discount"
+						type="number"
+						bind:value={discount}
+						min="0"
+						step="0.01"
+						class="{inputClass} max-w-[240px]"
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
