@@ -58,12 +58,14 @@ describe('lensEditorDraftFromEditableItem', () => {
 			discountType: DiscountType.FIXED
 		});
 		expect(draft.od).toEqual({
+			enabled: true,
 			sphere: -2,
 			cylinder: -0.5,
 			axis: 90,
 			addition: null,
 			altura: null
 		});
+		expect(draft.oi.enabled).toBe(false);
 		expect(draft.oi.sphere).toBeNull();
 		expect(draft.treatments).toHaveLength(1);
 	});
@@ -75,8 +77,22 @@ describe('editableItemFromLensEditorDraft', () => {
 		const draft = lensEditorDraftFromEditableItem(base);
 		draft.lensCatalogItemId = 'lens-2';
 		draft.unitPrice = 55;
-		draft.od = { sphere: 1.25, cylinder: -1, axis: 180, addition: 2, altura: 18 };
-		draft.oi = { sphere: null, cylinder: null, axis: null, addition: null, altura: null };
+		draft.od = {
+			enabled: true,
+			sphere: 1.25,
+			cylinder: -1,
+			axis: 180,
+			addition: 2,
+			altura: 18
+		};
+		draft.oi = {
+			enabled: false,
+			sphere: 2,
+			cylinder: null,
+			axis: null,
+			addition: null,
+			altura: null
+		};
 
 		const result = editableItemFromLensEditorDraft(base, draft);
 

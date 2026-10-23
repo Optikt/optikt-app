@@ -11,6 +11,7 @@
 		treatmentTotal,
 		validateLensEditorDraft
 	} from './lensEditor';
+	import LensEyeFields from './LensEyeFields.svelte';
 	import type { LensEditorDraft } from './types';
 	import type { OpticalRangeBounds } from './opticalRange';
 
@@ -43,7 +44,8 @@
 	}: Props = $props();
 
 	const showAddition = $derived(lensType !== '' && lensType !== LensType.MONOFOCAL);
-	const errors = $derived(validateLensEditorDraft(draft));
+	const requiresAddition = $derived(showAddition);
+	const errors = $derived(validateLensEditorDraft(draft, { requiresAddition }));
 	const hasErrors = $derived(hasLensEditorErrors(errors));
 	const rangeEvaluation = $derived(evaluateLensEditorRange(draft, ranges));
 
@@ -66,6 +68,10 @@
 		acknowledgedSignature !== null && acknowledgedSignature === draftSignature
 	);
 
+	function eyeEnabled(eye: 'OD' | 'OI'): boolean {
+		return eye === 'OD' ? draft.od.enabled : draft.oi.enabled;
+	}
+
 	function eyeResult(eye: 'OD' | 'OI') {
 		return rangeEvaluation.eyes.find((result) => result.eye === eye);
 	}
@@ -78,6 +84,7 @@
 	}
 
 	function eyeLabel(eye: 'OD' | 'OI'): string {
+		if (!eyeEnabled(eye)) return 'No aplica';
 		if (!eyeHasValues(eye)) return 'Sin receta';
 		const status = eyeResult(eye)?.status ?? 'lab-review';
 		if (status === 'in-range') return 'En rango';
@@ -86,7 +93,8 @@
 	}
 
 	function eyeColor(eye: 'OD' | 'OI'): string {
-		if (!eyeHasValues(eye)) return 'text-slate-400';
+		if (!eyeEnabled(eye)) return 'text-slate-400';
+		if (!eyeHasValues(eye)) return 'text-slate-500';
 		const status = eyeResult(eye)?.status ?? 'lab-review';
 		if (status === 'in-range') return 'text-emerald-600';
 		if (status === 'out-of-range') return 'text-amber-600';
@@ -113,29 +121,32 @@
 		onAddTreatment(select.value);
 		select.value = '';
 	}
-
-	function inputClass(invalid: boolean): string {
-		const base =
-			'w-full rounded-md border bg-white px-2 py-1.5 font-mono text-sm focus:ring-2 focus:outline-none dark:bg-slate-800 dark:text-white ';
-		return invalid
-			? base + 'border-red-400 focus:border-red-400 focus:ring-red-200'
-			: base +
-					'border-slate-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-slate-600';
-	}
 </script>
 
 <div
-	class="mb-3 rounded-lg border border-sky-200 bg-white p-4 dark:border-sky-800 dark:bg-slate-800"
+	class="rounded-xl border border-sky-200 bg-white p-4 shadow-sm dark:border-sky-800 dark:bg-slate-800"
 >
-	<p class="mb-3 text-xs font-bold text-sky-800 dark:text-sky-300">
-		{mode === 'edit' ? 'Editar cristal' : 'Agregar cristal'}
-	</p>
+	<div class="mb-4 flex items-center justify-between gap-2">
+		<div>
+			<p class="text-sm font-bold text-sky-900 dark:text-sky-200">
+				{mode === 'edit' ? 'Editar cristal' : 'Agregar cristal'}
+			</p>
+			<p class="text-[11px] text-slate-500 dark:text-slate-400">
+				Configura el cristal, la receta y los tratamientos antes de aplicarlo.
+			</p>
+		</div>
+	</div>
 
 	<div class="space-y-4">
 		<!-- ── Cristal + precio ── -->
-		<div class="space-y-3">
+		<section
+			class="space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-600 dark:bg-slate-900/30"
+		>
+			<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
+				Cristal y precio
+			</p>
 			{@render lensSelector()}
-			<div class="grid grid-cols-4 gap-3">
+			<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 				<div>
 					<label
 						for="lens-quantity"
@@ -208,142 +219,40 @@
 			{#if errors.lensCatalogItemId}
 				<p class="text-[11px] text-red-600">{errors.lensCatalogItemId}</p>
 			{/if}
-		</div>
+		</section>
 
 		<!-- ── Receta ── -->
-		<div class="space-y-3">
-			<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Receta Óptica</p>
-
-			<!-- OD -->
-			<div class="space-y-1">
-				<div class="flex items-center justify-between">
-					<span class="text-xs font-semibold text-slate-700 dark:text-slate-300"
-						>OD (Ojo Derecho)</span
-					>
-					<span class="text-[11px] font-medium {eyeColor('OD')}">{eyeLabel('OD')}</span>
-				</div>
-				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
-					<span class="text-[10px] font-medium text-slate-500">Esf</span>
-					<span class="text-[10px] font-medium text-slate-500">Cil</span>
-					<span class="text-[10px] font-medium text-slate-500">Eje</span>
-					{#if showAddition}
-						<span class="text-[10px] font-medium text-slate-500">Add</span>
-						<span class="text-[10px] font-medium text-slate-500">Alt</span>
-					{/if}
-				</div>
-				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
-					<input
-						type="number"
-						step="0.25"
-						placeholder="Esf"
-						bind:value={draft.od.sphere}
-						class={inputClass(!!errors.odSphere)}
-					/>
-					<input
-						type="number"
-						step="0.25"
-						placeholder="Cil"
-						bind:value={draft.od.cylinder}
-						class={inputClass(!!errors.odCylinder)}
-					/>
-					<input
-						type="number"
-						step="1"
-						placeholder="Eje"
-						bind:value={draft.od.axis}
-						class={inputClass(!!errors.odAxis)}
-					/>
-					{#if showAddition}
-						<input
-							type="number"
-							step="0.25"
-							placeholder="Add"
-							bind:value={draft.od.addition}
-							class={inputClass(!!errors.odAddition)}
-						/>
-						<input
-							type="number"
-							step="1"
-							placeholder="Alt"
-							bind:value={draft.od.altura}
-							class={inputClass(!!errors.odAltura)}
-						/>
-					{/if}
-				</div>
-				{#if errors.odSphere || errors.odCylinder || errors.odAxis || errors.odAddition || errors.odAltura}
-					<p class="text-[11px] text-red-600">
-						{[errors.odSphere, errors.odCylinder, errors.odAxis, errors.odAddition, errors.odAltura]
-							.filter(Boolean)
-							.join(' · ')}
-					</p>
+		<section class="space-y-3">
+			<div class="flex flex-wrap items-center justify-between gap-2">
+				<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
+					Receta Óptica
+				</p>
+				{#if errors.prescription}
+					<p class="text-[11px] font-medium text-red-600">{errors.prescription}</p>
 				{/if}
 			</div>
 
-			<!-- OI -->
-			<div class="space-y-1">
-				<div class="flex items-center justify-between">
-					<span class="text-xs font-semibold text-slate-700 dark:text-slate-300"
-						>OI (Ojo Izquierdo)</span
-					>
-					<span class="text-[11px] font-medium {eyeColor('OI')}">{eyeLabel('OI')}</span>
-				</div>
-				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
-					<span class="text-[10px] font-medium text-slate-500">Esf</span>
-					<span class="text-[10px] font-medium text-slate-500">Cil</span>
-					<span class="text-[10px] font-medium text-slate-500">Eje</span>
-					{#if showAddition}
-						<span class="text-[10px] font-medium text-slate-500">Add</span>
-						<span class="text-[10px] font-medium text-slate-500">Alt</span>
-					{/if}
-				</div>
-				<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
-					<input
-						type="number"
-						step="0.25"
-						placeholder="Esf"
-						bind:value={draft.oi.sphere}
-						class={inputClass(!!errors.osSphere)}
-					/>
-					<input
-						type="number"
-						step="0.25"
-						placeholder="Cil"
-						bind:value={draft.oi.cylinder}
-						class={inputClass(!!errors.osCylinder)}
-					/>
-					<input
-						type="number"
-						step="1"
-						placeholder="Eje"
-						bind:value={draft.oi.axis}
-						class={inputClass(!!errors.osAxis)}
-					/>
-					{#if showAddition}
-						<input
-							type="number"
-							step="0.25"
-							placeholder="Add"
-							bind:value={draft.oi.addition}
-							class={inputClass(!!errors.osAddition)}
-						/>
-						<input
-							type="number"
-							step="1"
-							placeholder="Alt"
-							bind:value={draft.oi.altura}
-							class={inputClass(!!errors.osAltura)}
-						/>
-					{/if}
-				</div>
-				{#if errors.osSphere || errors.osCylinder || errors.osAxis || errors.osAddition || errors.osAltura}
-					<p class="text-[11px] text-red-600">
-						{[errors.osSphere, errors.osCylinder, errors.osAxis, errors.osAddition, errors.osAltura]
-							.filter(Boolean)
-							.join(' · ')}
-					</p>
-				{/if}
+			<div class="grid gap-3 lg:grid-cols-2">
+				<LensEyeFields
+					title="OD (Ojo Derecho)"
+					bind:eye={draft.od}
+					prefix="od"
+					{showAddition}
+					statusLabel={eyeLabel('OD')}
+					statusClass={eyeColor('OD')}
+					{errors}
+				/>
+				<LensEyeFields
+					title="OI (Ojo Izquierdo)"
+					bind:eye={draft.oi}
+					prefix="os"
+					{showAddition}
+					statusLabel={eyeLabel('OI')}
+					statusClass={eyeColor('OI')}
+					{errors}
+				/>
 			</div>
-		</div>
+		</section>
 
 		<!-- ── Advertencia de rango (no bloquea) ── -->
 		{#if rangeEvaluation.warnings.length > 0}
@@ -367,8 +276,10 @@
 		{/if}
 
 		<!-- ── Tratamientos ── -->
-		<div>
-			<div class="mb-2 flex items-center justify-between">
+		<section
+			class="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-600 dark:bg-slate-900/30"
+		>
+			<div class="mb-2 flex items-center justify-between gap-2">
 				<p class="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">
 					Tratamientos ({draft.treatments.length})
 				</p>
@@ -376,7 +287,7 @@
 					value=""
 					disabled={selectableTreatments.length === 0}
 					onchange={handleAddTreatment}
-					class="w-44 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+					class="w-52 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
 				>
 					<option value="" disabled
 						>{selectableTreatments.length === 0
@@ -419,7 +330,7 @@
 					</p>
 				</div>
 			{/if}
-		</div>
+		</section>
 
 		<!-- ── Confirmación de rango o acciones ── -->
 		{#if confirmingRange}
@@ -457,7 +368,7 @@
 					type="button"
 					onclick={handleApply}
 					aria-disabled={hasErrors}
-					class="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-sky-800 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+					class="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-4 py-2 text-xs font-bold text-white hover:bg-sky-800 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
 				>
 					<Save class="h-3.5 w-3.5" />{mode === 'edit' ? 'Aplicar cambios' : 'Agregar cristal'}
 				</button>

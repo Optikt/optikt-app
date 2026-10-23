@@ -9,6 +9,7 @@
 		onclose,
 		closeGuard,
 		size = 'lg' as Size,
+		widthClass,
 		direction = 'right' as Direction,
 		children,
 		header,
@@ -19,6 +20,8 @@
 		/** Return false to block closing (e.g. unsaved changes). */
 		closeGuard?: () => boolean;
 		size?: Size;
+		/** Overrides the size width (e.g. `w-full lg:w-[min(94vw,1280px)]`). */
+		widthClass?: string;
 		direction?: Direction;
 		children: Snippet;
 		header?: Snippet<[{ onclose: () => void }]>;
@@ -82,9 +85,8 @@
 {:else}
 	<div
 		bind:this={panel}
-		class="fixed top-0 right-0 z-55 flex h-full w-full {maxWidth[
-			size
-		]} flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none"
+		class="fixed top-0 right-0 z-55 flex h-full flex-col bg-surface-container-lowest shadow-2xl transition-transform duration-300 ease-in-out outline-none {widthClass ??
+			`w-full ${maxWidth[size]}`}"
 		class:translate-x-full={!open}
 		class:translate-x-0={open}
 		role="dialog"

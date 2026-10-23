@@ -21,6 +21,7 @@ export const SALE_CAPABILITIES: DocumentCapabilities = {
 };
 
 export interface LensEditorEyeDraft {
+	enabled: boolean;
 	sphere: number | null;
 	cylinder: number | null;
 	axis: number | null;
@@ -49,6 +50,7 @@ export interface LensEditorDraft {
 }
 
 export interface LensEditorFieldErrors {
+	prescription?: string;
 	lensCatalogItemId?: string;
 	unitPrice?: string;
 	quantity?: string;

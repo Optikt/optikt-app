@@ -35,7 +35,13 @@ function firstIssue(result: SchemaResult): string | undefined {
 	return result.error?.issues[0]?.message;
 }
 
-function validateEye(prefix: 'od' | 'os', eye: LensEditorEyeDraft): Partial<LensEditorFieldErrors> {
+function validateEye(
+	prefix: 'od' | 'os',
+	eye: LensEditorEyeDraft,
+	requiresAddition: boolean
+): Partial<LensEditorFieldErrors> {
+	if (!eye.enabled) return {};
+
 	const errors: Partial<LensEditorFieldErrors> = {};
 
 	const sphere = firstIssue(OptionalSphereSchema.safeParse(eye.sphere ?? undefined));
@@ -44,26 +50,44 @@ function validateEye(prefix: 'od' | 'os', eye: LensEditorEyeDraft): Partial<Lens
 	const addition = firstIssue(OptionalAdditionSchema.safeParse(eye.addition ?? undefined));
 	const altura = firstIssue(AlturaSchema.safeParse(eye.altura ?? undefined));
 
+	const hasSphere = eye.sphere != null;
+	const hasCylinder = eye.cylinder != null;
+	const hasAxis = eye.axis != null;
+	const hasSphereOrCylinder = hasSphere || hasCylinder;
+	const missingSphereOrCylinder = !hasSphereOrCylinder;
+	const missingAxis = hasCylinder && eye.cylinder !== 0 && !hasAxis;
+	const missingAddition = requiresAddition && (eye.addition == null || eye.addition === 0);
+
 	if (prefix === 'od') {
 		if (sphere) errors.odSphere = sphere;
 		if (cylinder) errors.odCylinder = cylinder;
 		if (axis) errors.odAxis = axis;
 		if (addition) errors.odAddition = addition;
 		if (altura) errors.odAltura = altura;
+		if (missingSphereOrCylinder) errors.odSphere = 'Esfera o cilindro requerido';
+		if (missingAxis) errors.odAxis = 'Eje requerido con cilindro';
+		if (missingAddition) errors.odAddition = 'Adición requerida';
 	} else {
 		if (sphere) errors.osSphere = sphere;
 		if (cylinder) errors.osCylinder = cylinder;
 		if (axis) errors.osAxis = axis;
 		if (addition) errors.osAddition = addition;
 		if (altura) errors.osAltura = altura;
+		if (missingSphereOrCylinder) errors.osSphere = 'Esfera o cilindro requerido';
+		if (missingAxis) errors.osAxis = 'Eje requerido con cilindro';
+		if (missingAddition) errors.osAddition = 'Adición requerida';
 	}
 
 	return errors;
 }
 
 /** Blocking field errors for a lens draft (mirrors server item constraints). */
-export function validateLensEditorDraft(draft: LensEditorDraft): LensEditorFieldErrors {
+export function validateLensEditorDraft(
+	draft: LensEditorDraft,
+	options: { requiresAddition?: boolean } = {}
+): LensEditorFieldErrors {
 	const errors: LensEditorFieldErrors = {};
+	const requiresAddition = options.requiresAddition ?? false;
 
 	if (!draft.lensCatalogItemId) {
 		errors.lensCatalogItemId = 'Seleccione un cristal';
@@ -74,11 +98,19 @@ export function validateLensEditorDraft(draft: LensEditorDraft): LensEditorField
 	if (!Number.isInteger(draft.quantity) || draft.quantity < 1) {
 		errors.quantity = 'La cantidad debe ser al menos 1';
 	}
-	if (!(draft.discount >= 0)) {
+	if (!((draft.discount ?? 0) >= 0)) {
 		errors.discount = 'El descuento no puede ser negativo';
 	}
 
-	Object.assign(errors, validateEye('od', draft.od), validateEye('os', draft.oi));
+	if (!draft.od.enabled && !draft.oi.enabled) {
+		errors.prescription = 'Selecciona al menos un ojo';
+	}
+
+	Object.assign(
+		errors,
+		validateEye('od', draft.od, requiresAddition),
+		validateEye('os', draft.oi, requiresAddition)
+	);
 
 	return errors;
 }
@@ -96,6 +128,7 @@ export function evaluateLensEditorRange(
 		[
 			{
 				eye: 'OD',
+				enabled: draft.od.enabled,
 				values: {
 					sphere: draft.od.sphere,
 					cylinder: draft.od.cylinder,
@@ -105,6 +138,7 @@ export function evaluateLensEditorRange(
 			},
 			{
 				eye: 'OI',
+				enabled: draft.oi.enabled,
 				values: {
 					sphere: draft.oi.sphere,
 					cylinder: draft.oi.cylinder,
@@ -118,7 +152,14 @@ export function evaluateLensEditorRange(
 }
 
 function createEmptyLensEyeDraft(): LensEditorEyeDraft {
-	return { sphere: null, cylinder: null, axis: null, addition: null, altura: null };
+	return {
+		enabled: true,
+		sphere: null,
+		cylinder: null,
+		axis: null,
+		addition: null,
+		altura: null
+	};
 }
 
 export function createEmptyLensEditorDraft(): LensEditorDraft {

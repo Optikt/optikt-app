@@ -104,6 +104,21 @@ export function lensEditorDraftFromEditableItem(
 	item: EditableItem,
 	treatments: EditLensTreatment[] = []
 ): LensEditorDraft {
+	const odHasValues = [
+		item.odSphere,
+		item.odCylinder,
+		item.odAxis,
+		item.odAddition,
+		item.odAltura
+	].some((value) => value != null);
+	const oiHasValues = [
+		item.osSphere,
+		item.osCylinder,
+		item.osAxis,
+		item.osAddition,
+		item.osAltura
+	].some((value) => value != null);
+
 	return {
 		lensCatalogItemId: item.lensCatalogItemId ?? '',
 		quantity: item.quantity,
@@ -111,6 +126,7 @@ export function lensEditorDraftFromEditableItem(
 		discount: item.discount ?? 0,
 		discountType: (item.discountType ?? DiscountType.FIXED) as string,
 		od: {
+			enabled: odHasValues || !oiHasValues,
 			sphere: item.odSphere ?? null,
 			cylinder: item.odCylinder ?? null,
 			axis: item.odAxis ?? null,
@@ -118,6 +134,7 @@ export function lensEditorDraftFromEditableItem(
 			altura: item.odAltura ?? null
 		},
 		oi: {
+			enabled: oiHasValues || !odHasValues,
 			sphere: item.osSphere ?? null,
 			cylinder: item.osCylinder ?? null,
 			axis: item.osAxis ?? null,
@@ -138,17 +155,17 @@ export function editableItemFromLensEditorDraft(
 		lensCatalogItemId: draft.lensCatalogItemId || undefined,
 		quantity: draft.quantity,
 		unitPrice: draft.unitPrice,
-		discount: draft.discount,
+		discount: draft.discount ?? 0,
 		discountType: draft.discountType as DiscountTypeEnum,
-		odSphere: draft.od.sphere ?? undefined,
-		odCylinder: draft.od.cylinder ?? undefined,
-		odAxis: draft.od.axis ?? undefined,
-		odAddition: draft.od.addition ?? undefined,
-		odAltura: draft.od.altura ?? undefined,
-		osSphere: draft.oi.sphere ?? undefined,
-		osCylinder: draft.oi.cylinder ?? undefined,
-		osAxis: draft.oi.axis ?? undefined,
-		osAddition: draft.oi.addition ?? undefined,
-		osAltura: draft.oi.altura ?? undefined
+		odSphere: draft.od.enabled ? (draft.od.sphere ?? undefined) : undefined,
+		odCylinder: draft.od.enabled ? (draft.od.cylinder ?? undefined) : undefined,
+		odAxis: draft.od.enabled ? (draft.od.axis ?? undefined) : undefined,
+		odAddition: draft.od.enabled ? (draft.od.addition ?? undefined) : undefined,
+		odAltura: draft.od.enabled ? (draft.od.altura ?? undefined) : undefined,
+		osSphere: draft.oi.enabled ? (draft.oi.sphere ?? undefined) : undefined,
+		osCylinder: draft.oi.enabled ? (draft.oi.cylinder ?? undefined) : undefined,
+		osAxis: draft.oi.enabled ? (draft.oi.axis ?? undefined) : undefined,
+		osAddition: draft.oi.enabled ? (draft.oi.addition ?? undefined) : undefined,
+		osAltura: draft.oi.enabled ? (draft.oi.altura ?? undefined) : undefined
 	};
 }

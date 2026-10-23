@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { SlideOver, ConfirmModal } from '$lib/components/ui';
-	import { Package, Plus } from '@lucide/svelte';
+	import { Eye, Package, Sparkles } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales/update.remote';
 	import { getErrorMessage, logger } from '$lib/utils';
@@ -335,7 +335,12 @@
 	}
 </script>
 
-<SlideOver bind:open size="xl" closeGuard={guardClose}>
+<SlideOver
+	bind:open
+	size="xl"
+	closeGuard={guardClose}
+	widthClass="w-full lg:w-[min(94vw,1280px)] lg:min-w-[720px]"
+>
 	{#snippet header({ onclose })}
 		<EditSaleModalHeader
 			orderNumber={sale.orderNumber}
@@ -359,45 +364,82 @@
 		<section
 			class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
 		>
-			<div class="mb-4 flex items-center justify-between">
-				<div class="flex items-center gap-2">
-					<Package class="h-4 w-4 text-brand-blue" />
-					<h3 class="text-sm font-bold text-brand-navy dark:text-white">
-						Artículos ({activeItems.length})
-					</h3>
-				</div>
-				<div class="flex gap-1.5">
-					<button
-						type="button"
-						onclick={() => {
-							closeAllAddFormsExcept('lens');
-							startLensAdd();
-						}}
-						class="inline-flex items-center gap-1 rounded-lg bg-cyan-100 px-2.5 py-1.5 text-[11px] font-bold text-cyan-800 transition-colors hover:bg-cyan-200 dark:bg-cyan-900/50 dark:text-cyan-300 dark:hover:bg-cyan-900"
+			<div class="mb-3 flex items-center gap-2">
+				<Package class="h-4 w-4 text-brand-blue" />
+				<h3 class="text-sm font-bold text-brand-navy dark:text-white">
+					Artículos ({activeItems.length})
+				</h3>
+			</div>
+
+			<div class="mb-4 grid gap-2 sm:grid-cols-3">
+				<button
+					type="button"
+					onclick={() => {
+						closeAllAddFormsExcept('lens');
+						startLensAdd();
+					}}
+					class="flex items-center gap-3 rounded-xl border border-cyan-200 bg-cyan-50/60 px-3 py-2.5 text-left transition-colors hover:border-cyan-300 hover:bg-cyan-50 dark:border-cyan-800 dark:bg-cyan-950/30 dark:hover:border-cyan-700 dark:hover:bg-cyan-900/40"
+				>
+					<span
+						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-900/60 dark:text-cyan-300"
 					>
-						<Plus class="h-3 w-3" /> Cristal
-					</button>
-					<button
-						type="button"
-						onclick={() => {
-							closeAllAddFormsExcept('product');
-							showAddProduct = !showAddProduct;
-						}}
-						class="inline-flex items-center gap-1 rounded-lg bg-brand-navy/10 px-2.5 py-1.5 text-[11px] font-bold text-brand-navy transition-colors hover:bg-brand-navy/20 dark:bg-brand-navy/30 dark:text-white dark:hover:bg-brand-navy/50"
+						<Eye class="h-4 w-4" />
+					</span>
+					<span class="min-w-0">
+						<span class="block text-xs font-bold text-cyan-900 dark:text-cyan-200"
+							>Agregar cristal</span
+						>
+						<span class="block truncate text-[11px] text-cyan-700/80 dark:text-cyan-400/80"
+							>Receta y tratamientos</span
+						>
+					</span>
+				</button>
+
+				<button
+					type="button"
+					onclick={() => {
+						closeAllAddFormsExcept('product');
+						showAddProduct = !showAddProduct;
+					}}
+					class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-brand-blue/40 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-brand-blue/50 dark:hover:bg-slate-700/60"
+				>
+					<span
+						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-navy/10 text-brand-navy dark:bg-slate-700 dark:text-slate-200"
 					>
-						<Plus class="h-3 w-3" /> Producto
-					</button>
-					<button
-						type="button"
-						onclick={() => {
-							closeAllAddFormsExcept('free');
-							showAddFreeItem = !showAddFreeItem;
-						}}
-						class="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 transition-colors hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900"
+						<Package class="h-4 w-4" />
+					</span>
+					<span class="min-w-0">
+						<span class="block text-xs font-bold text-brand-navy dark:text-white"
+							>Agregar producto</span
+						>
+						<span class="block truncate text-[11px] text-slate-500 dark:text-slate-400"
+							>Montura o accesorio</span
+						>
+					</span>
+				</button>
+
+				<button
+					type="button"
+					onclick={() => {
+						closeAllAddFormsExcept('free');
+						showAddFreeItem = !showAddFreeItem;
+					}}
+					class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5 text-left transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 dark:hover:border-amber-700 dark:hover:bg-amber-900/40"
+				>
+					<span
+						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300"
 					>
-						<Plus class="h-3 w-3" /> Ítem libre
-					</button>
-				</div>
+						<Sparkles class="h-4 w-4" />
+					</span>
+					<span class="min-w-0">
+						<span class="block text-xs font-bold text-amber-900 dark:text-amber-200"
+							>Agregar ítem libre</span
+						>
+						<span class="block truncate text-[11px] text-amber-700/80 dark:text-amber-400/80"
+							>Servicio o fórmula</span
+						>
+					</span>
+				</button>
 			</div>
 
 			{#key showAddProduct}
