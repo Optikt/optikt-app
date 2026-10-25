@@ -95,6 +95,8 @@ export const createSaleCommand = command(async ({ data }) => {
 
 El sistema consulta una API externa para obtener tasas en tiempo real. Si la URL no está configurada, el widget del navbar muestra un mensaje de error sin romper la app.
 
+El poller se inicia desde el hook `init` de `src/hooks.server.ts`. No moverlo a `instrumentation.server.ts`: en builds de producción ese módulo se ejecuta **antes** de que SvelteKit cargue `$env/dynamic/private` (`Server.init`), así que `isExchangeRatesConfigured()` ve el env vacío y el poller nunca arranca (las tasas quedan congeladas hasta un refresh manual).
+
 ### Variables de entorno
 
 ```bash

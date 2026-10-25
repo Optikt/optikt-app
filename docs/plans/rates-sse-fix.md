@@ -1,7 +1,7 @@
 ---
 plan name: rates-sse-fix
 plan description: Stabilize live currency feed
-plan status: active
+plan status: done
 ---
 
 ## Idea
@@ -23,3 +23,11 @@ Optikt-app muestra 44 SSE clients para pocos usuarios y tasas congeladas 38min (
 - public-catalog-arch
 - sse-singleton-ids
 <!-- SPECS_END -->
+
+## Resolution (2026-10-25)
+
+Causa raíz real (logs prod Oct 23-25 + build local reproducido): **el poller nunca arrancaba en producción**. `startExchangeRatesPoller()` vivía en `src/instrumentation.server.ts`, cuyo import corre en la línea 1 de `build/index.js` — antes de que `Server.init()` ejecute `set_private_env()` (handler.js). `$env/dynamic/private` estaba vacío en ese momento → `isExchangeRatesConfigured()` falso → early-return silencioso. En dev funcionaba por accidente (instrumentation se cargaba en la primera request, después de inicializar env).
+
+Consecuencia: el cache del servidor solo se refrescaba (a) una vez al boot vía el fetch lazy del GET cuando el cache está vacío, y (b) con el botón Refresh manual (force). Clientes y SSE reflejaban fielmente un cache congelado → ventas/pagos con tasas de hace 24-48h.
+
+Fix: el poller arranca desde el hook `init` de `src/hooks.server.ts` (`ServerInit`, corre una vez por boot después de `set_private_env`, en dev y prod). Se eliminó `instrumentation.server.ts`. Cliente: `pagehide` ya no mata SSE+poll para siempre — `pageshow` los revive (bfcache/móvil). Verificado: `node build` con `EXCHANGE_RATES_POLL_INTERVAL_MS=15000` emite `Poller tasas startup ok` + `Poller tasas ok` cada 15s (antes: cero líneas en 40s). Test de wiring en `src/hooks.server.spec.ts`.

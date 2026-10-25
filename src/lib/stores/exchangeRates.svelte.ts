@@ -74,6 +74,27 @@ let singletonPollId: ReturnType<typeof setInterval> | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempts = 0;
 let pollingActive = false;
+let lifecycleWired = false;
+let tornDownByPageHide = false;
+
+function teardownPolling() {
+	if (reconnectTimer) {
+		clearTimeout(reconnectTimer);
+		reconnectTimer = null;
+	}
+	if (singletonPollId) {
+		clearInterval(singletonPollId);
+		singletonPollId = null;
+	}
+	try {
+		singletonES?.close();
+	} catch {
+		// already closed
+	}
+	singletonES = null;
+	pollingActive = false;
+	sseConnected = false;
+}
 
 function getOrCreateCid(): string {
 	try {
@@ -161,26 +182,23 @@ export function initExchangeRatesPolling() {
 		singletonPollId = setInterval(load, 60_000);
 	}
 
-	function cleanup() {
-		if (reconnectTimer) {
-			clearTimeout(reconnectTimer);
-			reconnectTimer = null;
-		}
-		if (singletonPollId) {
-			clearInterval(singletonPollId);
-			singletonPollId = null;
-		}
-		try {
-			singletonES?.close();
-		} catch {
-			// already closed
-		}
-		singletonES = null;
-		pollingActive = false;
-		sseConnected = false;
+	if (!lifecycleWired) {
+		lifecycleWired = true;
+		// pagehide (bfcache/unload) frees the SSE connection and the 60s poll;
+		// pageshow (back from bfcache) restarts them so the navbar keeps updating
+		// without a manual reload. Re-init only when pagehide caused the teardown,
+		// not when the (app) layout unmounted on in-app navigation.
+		window.addEventListener('pagehide', () => {
+			tornDownByPageHide = true;
+			teardownPolling();
+		});
+		window.addEventListener('pageshow', () => {
+			if (tornDownByPageHide && !pollingActive) {
+				initExchangeRatesPolling();
+			}
+			tornDownByPageHide = false;
+		});
 	}
 
-	window.addEventListener('pagehide', cleanup, { once: true });
-
-	return cleanup;
+	return teardownPolling;
 }
