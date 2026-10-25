@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { SlideOver, ConfirmModal } from '$lib/components/ui';
-	import { Eye, Package, Sparkles } from '@lucide/svelte';
+	import { Package } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales/update.remote';
 	import { getErrorMessage, logger } from '$lib/utils';
@@ -16,6 +16,8 @@
 	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
 	import { SALE_CAPABILITIES, type LensEditorDraft } from '$lib/components/documentEditor/types';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
+	import EditSaleAddMenu from './editSale/EditSaleAddMenu.svelte';
+	import type { AddItemKind } from './editSale/addItemKinds';
 	import EditSaleAddFreeItemSection from './editSale/EditSaleAddFreeItemSection.svelte';
 	import EditSaleAddProductSection from './editSale/EditSaleAddProductSection.svelte';
 	import EditSaleItemsSection from './editSale/EditSaleItemsSection.svelte';
@@ -95,6 +97,10 @@
 	let previewGlobalDiscount = $derived(previewTotals.globalDiscount);
 	let previewTotal = $derived(previewTotals.total);
 	let lensEditing = $derived(showAddLens || editingLensId !== null);
+
+	let activeAddKind = $derived<AddItemKind | null>(
+		showAddLens ? 'lens' : showAddProduct ? 'product' : showAddFreeItem ? 'free' : null
+	);
 
 	let lensEditCtx = $derived(
 		getLensEditContext(
@@ -273,6 +279,26 @@
 		if (keep !== 'lens') showAddLens = false;
 	}
 
+	function selectAddKind(kind: AddItemKind) {
+		if (activeAddKind === kind) return;
+
+		if (kind === 'lens') {
+			if (lensEditing) return;
+			startLensAdd();
+			return;
+		}
+
+		cancelLensEdit();
+		showAddProduct = kind === 'product';
+		showAddFreeItem = kind === 'free';
+	}
+
+	function closeAddForm() {
+		cancelLensEdit();
+		showAddProduct = false;
+		showAddFreeItem = false;
+	}
+
 	// ── Submit ─────────────────────────────────────────────────────────────
 	function validate(): boolean {
 		const result = validateEditSale(reason, activeItems, {
@@ -371,75 +397,13 @@
 				</h3>
 			</div>
 
-			<div class="mb-4 grid gap-2 sm:grid-cols-3">
-				<button
-					type="button"
-					onclick={() => {
-						closeAllAddFormsExcept('lens');
-						startLensAdd();
-					}}
-					class="flex items-center gap-3 rounded-xl border border-cyan-200 bg-cyan-50/60 px-3 py-2.5 text-left transition-colors hover:border-cyan-300 hover:bg-cyan-50 dark:border-cyan-800 dark:bg-cyan-950/30 dark:hover:border-cyan-700 dark:hover:bg-cyan-900/40"
-				>
-					<span
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-900/60 dark:text-cyan-300"
-					>
-						<Eye class="h-4 w-4" />
-					</span>
-					<span class="min-w-0">
-						<span class="block text-xs font-bold text-cyan-900 dark:text-cyan-200"
-							>Agregar cristal</span
-						>
-						<span class="block truncate text-[11px] text-cyan-700/80 dark:text-cyan-400/80"
-							>Receta y tratamientos</span
-						>
-					</span>
-				</button>
-
-				<button
-					type="button"
-					onclick={() => {
-						closeAllAddFormsExcept('product');
-						showAddProduct = !showAddProduct;
-					}}
-					class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-brand-blue/40 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:hover:border-brand-blue/50 dark:hover:bg-slate-700/60"
-				>
-					<span
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-navy/10 text-brand-navy dark:bg-slate-700 dark:text-slate-200"
-					>
-						<Package class="h-4 w-4" />
-					</span>
-					<span class="min-w-0">
-						<span class="block text-xs font-bold text-brand-navy dark:text-white"
-							>Agregar producto</span
-						>
-						<span class="block truncate text-[11px] text-slate-500 dark:text-slate-400"
-							>Montura o accesorio</span
-						>
-					</span>
-				</button>
-
-				<button
-					type="button"
-					onclick={() => {
-						closeAllAddFormsExcept('free');
-						showAddFreeItem = !showAddFreeItem;
-					}}
-					class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5 text-left transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 dark:hover:border-amber-700 dark:hover:bg-amber-900/40"
-				>
-					<span
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300"
-					>
-						<Sparkles class="h-4 w-4" />
-					</span>
-					<span class="min-w-0">
-						<span class="block text-xs font-bold text-amber-900 dark:text-amber-200"
-							>Agregar ítem libre</span
-						>
-						<span class="block truncate text-[11px] text-amber-700/80 dark:text-amber-400/80"
-							>Servicio o fórmula</span
-						>
-					</span>
-				</button>
+			<div class="mb-4">
+				<EditSaleAddMenu
+					activeKind={activeAddKind}
+					showClose={lensEditing || activeAddKind !== null}
+					onSelect={selectAddKind}
+					onClose={closeAddForm}
+				/>
 			</div>
 
 			{#key showAddProduct}
