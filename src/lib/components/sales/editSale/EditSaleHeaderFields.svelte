@@ -82,7 +82,7 @@
 					rows="1"
 					placeholder="Notas opcionales..."
 					use:autosize={{ maxRows: 4 }}
-					class="{inputClass} max-w-[420px] resize-none"></textarea>
+					class="{inputClass} resize-none"></textarea>
 			</div>
 		</div>
 	</section>
