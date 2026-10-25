@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CalendarDays, Tag, User } from '@lucide/svelte';
-	import { autosize } from '$lib/actions/autosize';
+	import { resizeAutosize } from '$lib/utils/autosize';
 	import { DiscountType } from '$lib/shared/enums';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
@@ -25,6 +25,15 @@
 
 	const inputClass =
 		'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light';
+
+	let notesEl = $state<HTMLTextAreaElement | null>(null);
+
+	// The drawer stays mounted while closed, so notes can change without an input
+	// event. Track the value and re-measure after the DOM updates.
+	$effect(() => {
+		void notes;
+		if (notesEl) resizeAutosize(notesEl, { maxRows: 4 });
+	});
 </script>
 
 <div class="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
@@ -78,10 +87,10 @@
 				>
 				<textarea
 					id="edit-sale-notes"
+					bind:this={notesEl}
 					bind:value={notes}
 					rows="1"
 					placeholder="Notas opcionales..."
-					use:autosize={{ maxRows: 4 }}
 					class="{inputClass} resize-none"></textarea>
 			</div>
 		</div>
