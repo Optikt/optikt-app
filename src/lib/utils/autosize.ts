@@ -18,9 +18,12 @@ export function resizeAutosize(node: HTMLTextAreaElement, options: AutosizeOptio
 
 	const style = getComputedStyle(node);
 	const lineHeight =
-		parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4 || DEFAULT_LINE_HEIGHT;
-	const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-	const borders = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+		Number.parseFloat(style.lineHeight) ||
+		Number.parseFloat(style.fontSize) * 1.4 ||
+		DEFAULT_LINE_HEIGHT;
+	const paddingY = Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+	const borders =
+		Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
 
 	node.style.height = 'auto';
 	const contentHeight = Math.max(node.scrollHeight - paddingY, lineHeight * minRows);
