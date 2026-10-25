@@ -25,12 +25,12 @@
 				<div>
 					<p class="text-sm font-medium text-gray-500">Cliente</p>
 					<p class="mt-0.5 text-base font-semibold text-gray-900">{customerName(sale)}</p>
-					<p class="text-xs text-gray-400">{customerIdNumber(sale)}</p>
+					<p class="text-xs text-gray-600">{customerIdNumber(sale)}</p>
 					{#if sale.customer}
-						<p class="text-xs text-gray-400">{customerPhone(sale)}</p>
+						<p class="text-xs text-gray-600">{customerPhone(sale)}</p>
 					{/if}
 					{#if age !== null}
-						<p class="text-xs text-gray-400">{age} años</p>
+						<p class="text-xs text-gray-600">{age} años</p>
 					{/if}
 				</div>
 				{#if sale.customer}

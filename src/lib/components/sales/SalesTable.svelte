@@ -2,6 +2,7 @@
 	import { CircleX, Eye, ReceiptText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { DataGrid, SaleStatusBadge } from '$lib/components/ui';
+	import { CasheaIsotipo } from '$lib/components/branding';
 	import { CancelSaleModal, SalePaymentProgress } from '$lib/components/sales';
 	import { formatPrice, formatDateOnly } from '$lib/utils';
 	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
@@ -87,6 +88,18 @@
 	}
 </script>
 
+{#snippet casheaBadge(sale: SaleWithRelations)}
+	{#if sale.isCashea}
+		<span
+			class="inline-flex shrink-0 items-center rounded bg-surface-container-high p-0.5 ring-1 ring-outline-variant/40"
+			title="Venta con Cashea"
+			aria-label="Venta con Cashea"
+		>
+			<CasheaIsotipo class="h-3.5 w-3.5" />
+		</span>
+	{/if}
+{/snippet}
+
 <DataGrid
 	{columns}
 	items={sales}
@@ -115,7 +128,10 @@
 			onclick={() => onView?.(sale)}
 		>
 			<td class="px-2 py-2.5">
-				<span class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</span>
+				<div class="flex items-center gap-1.5">
+					<span class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</span>
+					{@render casheaBadge(sale)}
+				</div>
 			</td>
 			<td class="max-w-[180px] px-2 py-2.5">
 				<div class="min-w-0">
@@ -204,7 +220,10 @@
 			<a href={resolve(mobileViewHref)} class="block w-full space-y-3 py-1 text-left">
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
-						<p class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</p>
+						<div class="flex items-center gap-1.5">
+							<p class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</p>
+							{@render casheaBadge(sale)}
+						</div>
 						<p class="mt-0.5 truncate text-sm font-medium text-on-surface">
 							{customerName(sale)}
 						</p>
@@ -244,7 +263,10 @@
 			<button type="button" class="w-full space-y-3 py-1 text-left" onclick={() => onView?.(sale)}>
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
-						<p class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</p>
+						<div class="flex items-center gap-1.5">
+							<p class="font-mono text-sm font-semibold text-brand-navy">#{sale.orderNumber}</p>
+							{@render casheaBadge(sale)}
+						</div>
 						<p class="mt-0.5 truncate text-sm font-medium text-on-surface">
 							{customerName(sale)}
 						</p>

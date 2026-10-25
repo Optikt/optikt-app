@@ -13,6 +13,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const statusFilter = statuses.length > 0 ? statuses : undefined;
 	const shippingCostPending = searchParams.get('shippingPending') === '1' ? true : undefined;
 	const hasFreeItem = searchParams.get('freeItem') === '1' ? true : undefined;
+	const isCashea = searchParams.get('cashea') === '1' ? true : undefined;
 	const offset = (page - 1) * perPage;
 
 	const [initialSales, totalCount, stats] = await Promise.all([
@@ -22,9 +23,10 @@ export const load: PageServerLoad = async ({ url }) => {
 			search,
 			statuses: statusFilter,
 			shippingCostPending,
-			hasFreeItem
+			hasFreeItem,
+			isCashea
 		}),
-		countSales({ search, statuses: statusFilter, shippingCostPending, hasFreeItem }),
+		countSales({ search, statuses: statusFilter, shippingCostPending, hasFreeItem, isCashea }),
 		getSalesStats(toUTCString(monthStart()))
 	]);
 
