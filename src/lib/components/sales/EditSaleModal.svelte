@@ -390,20 +390,19 @@
 		<section
 			class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
 		>
-			<div class="mb-3 flex items-center gap-2">
-				<Package class="h-4 w-4 text-brand-blue" />
-				<h3 class="text-sm font-bold text-brand-navy dark:text-white">
+			<div class="mb-4 flex flex-wrap items-center gap-3">
+				<Package class="h-4 w-4 shrink-0 text-brand-blue" />
+				<h3 class="shrink-0 text-sm font-bold text-brand-navy dark:text-white">
 					Artículos ({activeItems.length})
 				</h3>
-			</div>
-
-			<div class="mb-4">
-				<EditSaleAddMenu
-					activeKind={activeAddKind}
-					showClose={lensEditing || activeAddKind !== null}
-					onSelect={selectAddKind}
-					onClose={closeAddForm}
-				/>
+				<div class="ml-auto">
+					<EditSaleAddMenu
+						activeKind={activeAddKind}
+						showClose={lensEditing || activeAddKind !== null}
+						onSelect={selectAddKind}
+						onClose={closeAddForm}
+					/>
+				</div>
 			</div>
 
 			{#key showAddProduct}
