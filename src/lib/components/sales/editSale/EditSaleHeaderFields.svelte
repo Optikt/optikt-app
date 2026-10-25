@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { CalendarDays, Tag, User } from '@lucide/svelte';
+	import { autosize } from '$lib/actions/autosize';
 	import { DiscountType } from '$lib/shared/enums';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
@@ -26,7 +27,7 @@
 		'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light';
 </script>
 
-<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+<div class="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
 	<!-- Información general -->
 	<section
 		class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
@@ -78,9 +79,10 @@
 				<textarea
 					id="edit-sale-notes"
 					bind:value={notes}
-					rows="3"
+					rows="1"
 					placeholder="Notas opcionales..."
-					class="{inputClass} resize-none"></textarea>
+					use:autosize={{ maxRows: 4 }}
+					class="{inputClass} max-w-[420px] resize-none"></textarea>
 			</div>
 		</div>
 	</section>
