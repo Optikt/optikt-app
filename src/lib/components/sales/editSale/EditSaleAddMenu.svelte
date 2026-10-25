@@ -49,13 +49,12 @@
 			{/snippet}
 		</Popover.Trigger>
 
-		<Popover.Content align="start" sideOffset={6} class="w-64 gap-0 p-1">
-			<div role="menu" aria-label="Agregar artículo" class="flex flex-col">
+		<Popover.Content align="start" sideOffset={6} class="z-[60] w-64 gap-0 p-1">
+			<div class="flex flex-col">
 				{#each ADD_ITEM_KINDS as option (option.kind)}
 					{@const Icon = option.icon}
 					<button
 						type="button"
-						role="menuitem"
 						onclick={() => select(option.kind)}
 						class="flex items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-slate-100 focus-visible:bg-slate-100 focus-visible:outline-none dark:hover:bg-slate-700 dark:focus-visible:bg-slate-700"
 					>
