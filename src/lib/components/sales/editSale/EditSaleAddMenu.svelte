@@ -49,7 +49,7 @@
 			{/snippet}
 		</Popover.Trigger>
 
-		<Popover.Content align="start" sideOffset={6} class="z-[60] w-64 gap-0 p-1">
+		<Popover.Content side="left" align="start" sideOffset={6} class="z-[60] w-64 gap-0 p-1">
 			<div class="flex flex-col">
 				{#each ADD_ITEM_KINDS as option (option.kind)}
 					{@const Icon = option.icon}

@@ -36,7 +36,7 @@
 	});
 </script>
 
-<div class="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
 	<!-- Información general -->
 	<section
 		class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
