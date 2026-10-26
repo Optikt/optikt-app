@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { CalendarDays, Tag } from '@lucide/svelte';
+	import { CalendarDays, Tag, User } from '@lucide/svelte';
+	import { resizeAutosize } from '$lib/utils/autosize';
 	import { DiscountType } from '$lib/shared/enums';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
-	import { User } from '@lucide/svelte';
 
 	interface Props {
 		sale: SaleWithRelations;
@@ -22,98 +22,117 @@
 		discount = $bindable(),
 		discountType = $bindable()
 	}: Props = $props();
+
+	const inputClass =
+		'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light';
+
+	let notesEl = $state<HTMLTextAreaElement | null>(null);
+
+	// The drawer stays mounted while closed, so notes can change without an input
+	// event. Track the value and re-measure after the DOM updates.
+	$effect(() => {
+		void notes;
+		if (notesEl) resizeAutosize(notesEl, { maxRows: 4 });
+	});
 </script>
 
-<section
-	class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
->
-	<div class="mb-4 flex items-center gap-2">
-		<CalendarDays class="h-4 w-4 text-brand-blue" />
-		<h3 class="text-sm font-bold text-brand-navy dark:text-white">Información General</h3>
-	</div>
-	<div class="grid gap-4 md:grid-cols-3">
-		<div>
-			<label
-				for="edit-sale-date"
-				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>Fecha de venta</label
-			>
-			<input
-				id="edit-sale-date"
-				type="date"
-				bind:value={saleDate}
-				class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-			/>
+<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+	<!-- Información general -->
+	<section
+		class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+	>
+		<div class="mb-3 flex items-center gap-2">
+			<CalendarDays class="h-4 w-4 text-brand-blue" />
+			<h3 class="text-sm font-bold text-brand-navy dark:text-white">Información general</h3>
 		</div>
-		<div>
-			<label
-				for="edit-customer"
-				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>Cliente</label
-			>
-			<div
-				class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-			>
-				<User class="h-4 w-4 text-slate-400" />
-				<span class="truncate">{sale.customer?.firstName} {sale.customer?.lastName}</span>
+
+		<div class="grid gap-3 sm:grid-cols-12">
+			<div class="sm:col-span-4">
+				<label
+					for="edit-sale-date"
+					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
+					>Fecha de venta</label
+				>
+				<input
+					id="edit-sale-date"
+					type="date"
+					bind:value={saleDate}
+					class="{inputClass} max-w-[190px]"
+				/>
+			</div>
+
+			<div class="sm:col-span-5">
+				<p
+					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
+				>
+					Cliente
+				</p>
+				<div
+					class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+				>
+					<User class="h-4 w-4 shrink-0 text-slate-400" />
+					<span class="truncate">{sale.customer?.firstName} {sale.customer?.lastName}</span>
+				</div>
+			</div>
+
+			<div class="flex items-end sm:col-span-3">
+				<CasheaCheckbox bind:isCashea compact />
+			</div>
+
+			<div class="sm:col-span-12">
+				<label
+					for="edit-sale-notes"
+					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
+					>Observaciones</label
+				>
+				<textarea
+					id="edit-sale-notes"
+					bind:this={notesEl}
+					bind:value={notes}
+					rows="1"
+					placeholder="Notas opcionales..."
+					class="{inputClass} resize-none"></textarea>
 			</div>
 		</div>
-		<div>
-			<label
-				for="edit-sale-notes"
-				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>Observaciones</label
-			>
-			<input
-				id="edit-sale-notes"
-				type="text"
-				bind:value={notes}
-				placeholder="Notas opcionales..."
-				class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors placeholder:text-slate-400 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-			/>
-		</div>
-		<CasheaCheckbox bind:isCashea class="mt-2" />
-	</div>
-</section>
+	</section>
 
-<section
-	class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
->
-	<div class="mb-4 flex items-center gap-2">
-		<Tag class="h-4 w-4 text-brand-blue" />
-		<h3 class="text-sm font-bold text-brand-navy dark:text-white">Descuento</h3>
-	</div>
-	<div class="grid gap-4 md:grid-cols-2">
-		<div>
-			<label
-				for="edit-discount-type"
-				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-				>Tipo</label
-			>
-			<select
-				id="edit-discount-type"
-				bind:value={discountType}
-				class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-			>
-				<option value={DiscountType.FIXED}>Monto fijo ($)</option>
-				<option value={DiscountType.PERCENTAGE}>Porcentaje (%)</option>
-			</select>
+	<!-- Descuento -->
+	<section
+		class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+	>
+		<div class="mb-3 flex items-center gap-2">
+			<Tag class="h-4 w-4 text-brand-blue" />
+			<h3 class="text-sm font-bold text-brand-navy dark:text-white">Descuento</h3>
 		</div>
-		<div>
-			<label
-				for="edit-discount"
-				class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
-			>
-				Valor {discountType === DiscountType.PERCENTAGE ? '(%)' : '($)'}
-			</label>
-			<input
-				id="edit-discount"
-				type="number"
-				bind:value={discount}
-				min="0"
-				step="0.01"
-				class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition-colors focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-brand-blue-light"
-			/>
+
+		<div class="space-y-3">
+			<div>
+				<label
+					for="edit-discount-type"
+					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
+					>Tipo</label
+				>
+				<select id="edit-discount-type" bind:value={discountType} class={inputClass}>
+					<option value={DiscountType.FIXED}>Monto fijo ($)</option>
+					<option value={DiscountType.PERCENTAGE}>Porcentaje (%)</option>
+				</select>
+			</div>
+			<div>
+				<label
+					for="edit-discount"
+					class="mb-1.5 block text-[11px] font-semibold tracking-[0.12em] text-slate-500 uppercase dark:text-slate-400"
+				>
+					Valor {discountType === DiscountType.PERCENTAGE ? '(%)' : '($)'}
+				</label>
+				<input
+					id="edit-discount"
+					type="number"
+					bind:value={discount}
+					min="0"
+					step="0.01"
+					class={inputClass}
+				/>
+			</div>
 		</div>
-	</div>
-</section>
+	</section>
+</div>

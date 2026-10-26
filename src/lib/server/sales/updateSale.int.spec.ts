@@ -3,7 +3,8 @@ import { updateSaleCore } from './updateSale';
 import { findSaleById } from '$lib/server/db/queries/sales/reads';
 import { resetDb } from '$lib/testing/integration/db';
 import { createSale, createUser } from '$lib/testing/integration/factories';
-import { SaleStatus, UserRole } from '$lib/shared/enums';
+import { DiscountType, SaleStatus, UserRole } from '$lib/shared/enums';
+import { SaleItemType } from '$lib/shared/enums/lensTypes';
 import type { ActionContext } from '$lib/server/actionContext';
 
 function ctx(userId: string, role: UserRole = UserRole.ADMIN): ActionContext {
@@ -77,6 +78,35 @@ describe('updateSaleCore', () => {
 		expect(result).toEqual({
 			success: false,
 			error: 'La venta debe tener al menos un artículo'
+		});
+	});
+
+	it('validates treatment items on update', async () => {
+		const seller = await createUser();
+		const sale = await createSale({ sellerId: seller.id });
+
+		const result = await updateSaleCore(
+			{
+				id: sale.id,
+				reason: 'tratamiento inválido',
+				items: [
+					{
+						itemType: SaleItemType.TREATMENT,
+						parentSaleItemId: crypto.randomUUID(),
+						supplierTreatmentId: crypto.randomUUID(),
+						quantity: 1,
+						unitPrice: 10,
+						discount: 0,
+						discountType: DiscountType.FIXED
+					}
+				]
+			},
+			ctx(seller.id)
+		);
+
+		expect(result).toEqual({
+			success: false,
+			error: 'Tratamiento referencia un ítem padre que no es tipo LENS_PAIR'
 		});
 	});
 });

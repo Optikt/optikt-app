@@ -1,21 +1,26 @@
 <script lang="ts">
-	import { SlideOver } from '$lib/components/ui';
-	import { Package, Plus } from '@lucide/svelte';
+	import { SlideOver, ConfirmModal } from '$lib/components/ui';
+	import { Package } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { updateSale } from '$lib/remote/sales/update.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage, logger } from '$lib/utils';
 	import { DiscountType } from '$lib/shared/enums';
-	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
+	import { SaleItemType } from '$lib/shared/enums/lensTypes';
 	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
 	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import { untrack, onMount } from 'svelte';
-	import { getCachedProducts } from './catalogCache.svelte';
+	import { untrack } from 'svelte';
 	import { fromISO } from '$lib/dates';
+	import ItemSelect from './ItemSelect.svelte';
+	import { getCachedLensItem, getCachedLensItems } from './catalogCache.svelte';
+	import LensEditorPanel from '$lib/components/documentEditor/LensEditorPanel.svelte';
+	import { createEmptyLensEditorDraft } from '$lib/components/documentEditor/lensEditor';
+	import { SALE_CAPABILITIES, type LensEditorDraft } from '$lib/components/documentEditor/types';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
-	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
-	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';
+	import EditSaleAddMenu from './editSale/EditSaleAddMenu.svelte';
+	import type { AddItemKind } from './editSale/addItemKinds';
+	import EditSaleAddFreeItemSection from './editSale/EditSaleAddFreeItemSection.svelte';
+	import EditSaleAddProductSection from './editSale/EditSaleAddProductSection.svelte';
 	import EditSaleItemsSection from './editSale/EditSaleItemsSection.svelte';
-	import EditSaleLensPanel from './editSale/EditSaleLensPanel.svelte';
 	import EditSaleSummarySection from './editSale/EditSaleSummarySection.svelte';
 	import EditSaleFooter from './editSale/EditSaleFooter.svelte';
 	import EditSaleModalHeader from './editSale/EditSaleModalHeader.svelte';
@@ -24,17 +29,21 @@
 		buildLensInputFromDraft,
 		buildUpdateSalePayload,
 		createEmptyLensDraft,
-		createFreeItem,
-		createProductItem,
 		existingItemToInput,
 		getLensEditContext,
 		hasChangesForSale,
 		mapTreatmentsForEdit,
 		previewSubtotalForItems,
 		seedCatalogCacheForItems,
-		type EditableItem,
-		type EditLensTreatment
+		type EditableItem
 	} from './editSaleDraft';
+	import {
+		collectLensRangeWarnings,
+		editableItemFromLensEditorDraft,
+		editTreatmentsFromLensEditor,
+		filterCompatibleTreatments,
+		lensEditorDraftFromEditableItem
+	} from './editSale/editSaleLensAdapter';
 	import { validateEditSale } from './editSaleValidation';
 
 	interface Props {
@@ -47,53 +56,33 @@
 
 	let { open = $bindable(), sale, items, treatments = [], onSuccess }: Props = $props();
 
-	// Seed the catalog cache with the lens items already in this sale so
-	// treatment lists and lens type checks work without SSR-loading the catalog.
-	onMount(() => {
-		void seedCatalogCacheForItems(items);
-	});
-
 	let saving = $state(false);
+	let submitError = $state('');
+	let confirmDiscard = $state(false);
 
 	// ── Header fields ──────────────────────────────────────────────────────
-	let saleDate = $state(untrack(() => fromISO(sale.saleDate).toISOString().slice(0, 10)));
-	let notes = $state(untrack(() => sale.notes ?? ''));
-	let isCashea = $state(untrack(() => sale.isCashea ?? false));
-	let discount = $state(untrack(() => sale.discount));
-	let discountType = $state<string>(untrack(() => sale.discountType));
+	let saleDate = $state('');
+	let notes = $state('');
+	let isCashea = $state(false);
+	let discount = $state(0);
+	let discountType = $state<string>(DiscountType.FIXED);
 
 	// ── Reason (mandatory) ──────────────────────────────────────────────────
 	let reason = $state('');
 	let reasonError = $state('');
 
 	// ── Editable items ─────────────────────────────────────────────────────
-	let editableItems = $state<EditableItem[]>(untrack(() => items.map(existingItemToInput)));
+	let editableItems = $state<EditableItem[]>([]);
 
 	// ── Lens editing state ─────────────────────────────────────────────────
 	let editingLensId = $state<string | null>(null); // null = adding new
-	let editLensTmp: EditableItem = $state(createEmptyLensDraft());
-	let editLensTreatments: EditLensTreatment[] = $state([]);
+	let lensBase = $state<EditableItem>(createEmptyLensDraft());
+	let lensDraft = $state<LensEditorDraft>(createEmptyLensEditorDraft());
 
 	// ── Add forms visibility ───────────────────────────────────────────────
 	let showAddProduct = $state(false);
 	let showAddFreeItem = $state(false);
 	let showAddLens = $state(false);
-
-	// ── Add product form state ─────────────────────────────────────────────
-	let addProductId = $state('');
-	let addProductQty = $state(1);
-	let addProductPrice = $state(0);
-	let addProductDiscount = $state(0);
-	let addProductDiscountType = $state<string>(DiscountType.FIXED);
-	let addProductNotes = $state('');
-
-	// ── Add free item form state ───────────────────────────────────────────
-	let addFreeCategory = $state(FreeItemCategory.CONTACT_LENS_FORMULA);
-	let addFreeDescription = $state('');
-	let addFreePrice = $state(0);
-	let addFreeDiscount = $state(0);
-	let addFreeDiscountType = $state<string>(DiscountType.FIXED);
-	let addFreeNotes = $state('');
 
 	// ── Derived (via helpers) ────────────────────────────────────────────
 	let hasChanges = $derived(
@@ -107,10 +96,51 @@
 	let previewSubtotal = $derived(previewTotals.subtotal);
 	let previewGlobalDiscount = $derived(previewTotals.globalDiscount);
 	let previewTotal = $derived(previewTotals.total);
+	let lensEditing = $derived(showAddLens || editingLensId !== null);
+
+	let activeAddKind = $derived<AddItemKind | null>(
+		showAddLens ? 'lens' : showAddProduct ? 'product' : showAddFreeItem ? 'free' : null
+	);
 
 	let lensEditCtx = $derived(
-		getLensEditContext(editLensTmp.lensCatalogItemId, editLensTreatments, treatments)
+		getLensEditContext(
+			lensDraft.lensCatalogItemId,
+			editTreatmentsFromLensEditor(lensDraft.treatments),
+			treatments
+		)
 	);
+
+	// Advertencias de rango de los cristales ya aplicados al borrador, para que
+	// la excepción confirmada siga visible mientras se guarda la venta.
+	let lensRangeWarnings = $derived(collectLensRangeWarnings(activeItems, getCachedLensItem));
+
+	// ── Seed state (mount + each open) ─────────────────────────────────────
+	function seedFromProps() {
+		saleDate = fromISO(sale.saleDate).toISOString().slice(0, 10);
+		notes = sale.notes ?? '';
+		isCashea = sale.isCashea ?? false;
+		discount = sale.discount;
+		discountType = sale.discountType;
+		reason = '';
+		reasonError = '';
+		submitError = '';
+		confirmDiscard = false;
+		editableItems = items.map(existingItemToInput);
+		showAddProduct = false;
+		showAddFreeItem = false;
+		cancelLensEdit();
+		void seedCatalogCacheForItems(items).catch((error) => {
+			logger.error('No se pudo cargar el catálogo de cristales de la venta', error);
+		});
+	}
+
+	// Reseed local editable state each time the drawer opens (props may have
+	// changed after a previous save). `untrack` keeps prop updates from
+	// clobbering in-progress edits while the drawer stays open.
+	$effect(() => {
+		if (!open) return;
+		untrack(() => seedFromProps());
+	});
 
 	// ── Scroll lock when open ──────────────────────────────────────────────
 	$effect(() => {
@@ -122,37 +152,46 @@
 		};
 	});
 
-	// Helpers moved to ./editSaleDraft.ts — imported above
-
 	// ── Lens editing ───────────────────────────────────────────────────────
 
 	function startLensEdit(item: EditableItem) {
 		editingLensId = item.id ?? null;
-		editLensTmp = { ...item };
-		editLensTreatments = mapTreatmentsForEdit(activeItems, item.id);
+		lensBase = { ...item };
+		const editTreatments = mapTreatmentsForEdit(activeItems, item.id);
+		lensDraft = lensEditorDraftFromEditableItem(item, editTreatments);
 		closeAllAddForms();
 	}
 
 	function startLensAdd() {
 		editingLensId = null;
-		editLensTmp = createEmptyLensDraft();
-		editLensTreatments = [];
+		lensBase = createEmptyLensDraft();
+		lensDraft = createEmptyLensEditorDraft();
 		showAddLens = true;
 		closeAllAddFormsExcept('lens');
 	}
 
 	function cancelLensEdit() {
 		editingLensId = null;
-		editLensTmp = createEmptyLensDraft();
-		editLensTreatments = [];
+		lensBase = createEmptyLensDraft();
+		lensDraft = createEmptyLensEditorDraft();
 		showAddLens = false;
 	}
 
 	function handleLensSelect(id: string, unitPrice: number) {
-		editLensTmp.lensCatalogItemId = id || undefined;
-		if (id && unitPrice > 0) editLensTmp.unitPrice = unitPrice;
-		if (id && !editingLensId) {
-			editLensTreatments = [];
+		const lenses = getCachedLensItems();
+		const previousSupplierId = lenses.find((lens) => lens.id === lensDraft.lensCatalogItemId)
+			?.supplier?.id;
+		const nextSupplierId = lenses.find((lens) => lens.id === id)?.supplier?.id;
+		const supplierChanged = previousSupplierId !== nextSupplierId;
+
+		lensDraft.lensCatalogItemId = id || '';
+		if (id && unitPrice > 0) lensDraft.unitPrice = unitPrice;
+
+		if (id && (supplierChanged || !editingLensId)) {
+			if (lensDraft.treatments.length > 0) {
+				toast.warning('Se quitaron los tratamientos porque pertenecen a otro proveedor');
+			}
+			lensDraft.treatments = [];
 		}
 	}
 
@@ -161,47 +200,52 @@
 		const treatment = lensEditCtx.availableTreatments.find((t) => t.id === treatmentId);
 		if (!treatment) return;
 		const salePrice = treatment.salePrice ?? treatment.price;
-		editLensTreatments = [
-			...editLensTreatments,
+		lensDraft.treatments = [
+			...lensDraft.treatments,
 			{
 				supplierTreatmentId: treatment.id,
 				name: treatment.name,
 				price: treatment.price,
 				salePrice,
 				isTaxable: treatment.isTaxable,
-				category: treatment.category,
-				_keep: true
+				category: treatment.category
 			}
 		];
 	}
 
 	function removeTreatmentFromEdit(idx: number) {
-		editLensTreatments = editLensTreatments.filter((_, i) => i !== idx);
+		lensDraft.treatments = lensDraft.treatments.filter((_, i) => i !== idx);
 	}
 
-	function saveLensEdit() {
-		if (!editLensTmp.lensCatalogItemId) {
-			toast.error('Seleccione un cristal');
-			return;
-		}
-		if (editLensTmp.unitPrice <= 0) {
-			toast.error('El precio debe ser mayor a 0');
-			return;
+	function applyLens() {
+		if (!lensDraft.lensCatalogItemId) return;
+
+		const wasEdit = editingLensId !== null;
+		const lensItemId = editingLensId || crypto.randomUUID();
+		const baseItem = editableItemFromLensEditorDraft(lensBase, lensDraft);
+		baseItem.id = lensItemId;
+
+		const selectedSupplierId = lensEditCtx.selectedLens?.supplier?.id;
+		const compatibleTreatments = filterCompatibleTreatments(
+			lensDraft.treatments,
+			lensEditCtx.availableTreatments,
+			!!selectedSupplierId
+		);
+		if (compatibleTreatments.length !== lensDraft.treatments.length) {
+			toast.warning('Se omitieron tratamientos que no pertenecen al proveedor del cristal');
 		}
 
-		const lensItemId = editingLensId || crypto.randomUUID();
-		const savedItem = buildLensInputFromDraft(editLensTmp, lensEditCtx.selectedLens);
-		savedItem.id = lensItemId;
+		const savedItem = buildLensInputFromDraft(baseItem, lensEditCtx.selectedLens);
 
 		editableItems = applyLensEdit(
 			editableItems,
 			editingLensId,
 			savedItem,
-			editLensTreatments,
-			lensEditCtx.selectedLens?.supplier?.name ?? editLensTmp.snapshotBrand
+			editTreatmentsFromLensEditor(compatibleTreatments),
+			lensEditCtx.selectedLens?.supplier?.name ?? lensBase.snapshotBrand
 		);
 		cancelLensEdit();
-		toast.success(editingLensId ? 'Cristal actualizado' : 'Cristal agregado');
+		toast.success(wasEdit ? 'Cristal actualizado' : 'Cristal agregado');
 	}
 
 	// ── Remove item ────────────────────────────────────────────────────────
@@ -218,82 +262,9 @@
 		editableItems = [...editableItems];
 	}
 
-	// ── Add product ────────────────────────────────────────────────────────
-	function handleProductSelect(id: string, unitPrice: number) {
-		addProductId = id;
-		if (unitPrice > 0) addProductPrice = unitPrice;
-	}
-
-	function addNewProduct() {
-		if (!addProductId) {
-			toast.error('Seleccione un producto');
-			return;
-		}
-		const product = getCachedProducts().find((p) => p.id === addProductId);
-		if (!product) {
-			toast.error('Producto no encontrado');
-			return;
-		}
-
-		editableItems = [
-			...editableItems,
-			createProductItem(product, {
-				productId: addProductId,
-				quantity: addProductQty,
-				unitPrice: addProductPrice,
-				discount: addProductDiscount,
-				discountType: addProductDiscountType,
-				notes: addProductNotes
-			})
-		];
-		resetAddProductForm();
-		toast.success('Producto agregado');
-	}
-
-	function resetAddProductForm() {
-		showAddProduct = false;
-		addProductId = '';
-		addProductQty = 1;
-		addProductPrice = 0;
-		addProductDiscount = 0;
-		addProductDiscountType = DiscountType.FIXED;
-		addProductNotes = '';
-	}
-
-	// ── Add free item ──────────────────────────────────────────────────────
-	function addNewFreeItem() {
-		if (!addFreeDescription?.trim() || addFreeDescription.trim().length < 3) {
-			toast.error('La descripción debe tener al menos 3 caracteres');
-			return;
-		}
-		if (addFreePrice <= 0) {
-			toast.error('El precio de venta debe ser mayor a 0');
-			return;
-		}
-
-		editableItems = [
-			...editableItems,
-			createFreeItem({
-				category: addFreeCategory as FreeItemCategory,
-				description: addFreeDescription,
-				price: addFreePrice,
-				discount: addFreeDiscount,
-				discountType: addFreeDiscountType,
-				notes: addFreeNotes
-			})
-		];
-		resetAddFreeItemForm();
-		toast.success('Ítem libre agregado');
-	}
-
-	function resetAddFreeItemForm() {
-		showAddFreeItem = false;
-		addFreeCategory = FreeItemCategory.CONTACT_LENS_FORMULA;
-		addFreeDescription = '';
-		addFreePrice = 0;
-		addFreeDiscount = 0;
-		addFreeDiscountType = DiscountType.FIXED;
-		addFreeNotes = '';
+	// ── Add items ──────────────────────────────────────────────────────────
+	function appendItem(item: EditableItem) {
+		editableItems = [...editableItems, item];
 	}
 
 	function closeAllAddForms() {
@@ -308,9 +279,31 @@
 		if (keep !== 'lens') showAddLens = false;
 	}
 
+	function selectAddKind(kind: AddItemKind) {
+		if (activeAddKind === kind) return;
+
+		if (kind === 'lens') {
+			if (lensEditing) return;
+			startLensAdd();
+			return;
+		}
+
+		cancelLensEdit();
+		showAddProduct = kind === 'product';
+		showAddFreeItem = kind === 'free';
+	}
+
+	function closeAddForm() {
+		cancelLensEdit();
+		showAddProduct = false;
+		showAddFreeItem = false;
+	}
+
 	// ── Submit ─────────────────────────────────────────────────────────────
 	function validate(): boolean {
-		const result = validateEditSale(reason, activeItems);
+		const result = validateEditSale(reason, activeItems, {
+			requireReason: SALE_CAPABILITIES.requiredReason
+		});
 		reasonError = result.reasonError;
 		if (!result.valid && !reasonError) {
 			toast.error('La venta debe tener al menos un artículo');
@@ -319,6 +312,7 @@
 	}
 
 	async function handleSubmit() {
+		submitError = '';
 		if (!validate()) return;
 		saving = true;
 
@@ -338,28 +332,50 @@
 			const result = await updateSale(payload);
 			if (result.success) {
 				toast.success('Venta actualizada');
-				handleClose();
+				confirmDiscard = false;
+				open = false;
 				onSuccess?.();
 			} else {
-				toast.error(result.error ?? 'Error actualizando venta');
+				submitError = result.error ?? 'Error actualizando venta';
+				toast.error(submitError);
 			}
 		} catch (e) {
-			toast.error(getErrorMessage(e, 'Error actualizando venta'));
+			submitError = getErrorMessage(e, 'Error actualizando venta');
+			toast.error(submitError);
 		} finally {
 			saving = false;
 		}
 	}
 
-	function handleClose() {
-		if (saving) return;
+	// ── Close guarding ─────────────────────────────────────────────────────
+	function guardClose(): boolean {
+		if (saving) return false;
+		if (!hasChanges) return true;
+		confirmDiscard = true;
+		return false;
+	}
+
+	function discardAndClose() {
+		confirmDiscard = false;
 		open = false;
 	}
 </script>
 
-<SlideOver bind:open size="xl" onclose={handleClose}>
-	{#snippet header()}
-		<EditSaleModalHeader orderNumber={sale.orderNumber} {saving} onClose={handleClose} />
+<SlideOver
+	bind:open
+	size="xl"
+	closeGuard={guardClose}
+	widthClass="w-full lg:w-[min(94vw,1280px)] lg:min-w-[720px]"
+>
+	{#snippet header({ onclose })}
+		<EditSaleModalHeader
+			orderNumber={sale.orderNumber}
+			{saving}
+			inventoryNotice={SALE_CAPABILITIES.inventory}
+			onClose={onclose}
+		/>
 	{/snippet}
+
 	<div class="space-y-5">
 		<EditSaleHeaderFields
 			{sale}
@@ -374,91 +390,59 @@
 		<section
 			class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50"
 		>
-			<div class="mb-4 flex items-center justify-between">
-				<div class="flex items-center gap-2">
-					<Package class="h-4 w-4 text-brand-blue" />
-					<h3 class="text-sm font-bold text-brand-navy dark:text-white">
-						Artículos ({activeItems.length})
-					</h3>
-				</div>
-				<div class="flex gap-1.5">
-					<button
-						type="button"
-						onclick={() => {
-							closeAllAddFormsExcept('lens');
-							startLensAdd();
-						}}
-						class="inline-flex items-center gap-1 rounded-lg bg-cyan-100 px-2.5 py-1.5 text-[11px] font-bold text-cyan-800 transition-colors hover:bg-cyan-200 dark:bg-cyan-900/50 dark:text-cyan-300 dark:hover:bg-cyan-900"
-					>
-						<Plus class="h-3 w-3" /> Cristal
-					</button>
-					<button
-						type="button"
-						onclick={() => {
-							closeAllAddFormsExcept('product');
-							showAddProduct = !showAddProduct;
-						}}
-						class="inline-flex items-center gap-1 rounded-lg bg-brand-navy/10 px-2.5 py-1.5 text-[11px] font-bold text-brand-navy transition-colors hover:bg-brand-navy/20 dark:bg-brand-navy/30 dark:text-white dark:hover:bg-brand-navy/50"
-					>
-						<Plus class="h-3 w-3" /> Producto
-					</button>
-					<button
-						type="button"
-						onclick={() => {
-							closeAllAddFormsExcept('free');
-							showAddFreeItem = !showAddFreeItem;
-						}}
-						class="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 transition-colors hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:hover:bg-amber-900"
-					>
-						<Plus class="h-3 w-3" /> Ítem libre
-					</button>
+			<div class="mb-4 flex flex-wrap items-center gap-3">
+				<Package class="h-4 w-4 shrink-0 text-brand-blue" />
+				<h3 class="shrink-0 text-sm font-bold text-brand-navy dark:text-white">
+					Artículos ({activeItems.length})
+				</h3>
+				<div class="ml-auto">
+					<EditSaleAddMenu
+						activeKind={activeAddKind}
+						showClose={lensEditing || activeAddKind !== null}
+						onSelect={selectAddKind}
+						onClose={closeAddForm}
+					/>
 				</div>
 			</div>
 
-			<EditSaleAddProductPanel
-				bind:showAddProduct
-				bind:addProductId
-				bind:addProductQty
-				bind:addProductPrice
-				bind:addProductDiscount
-				bind:addProductDiscountType
-				bind:addProductNotes
-				onSelectProduct={handleProductSelect}
-				onAddProduct={addNewProduct}
-				onCancel={resetAddProductForm}
-			/>
+			{#key showAddProduct}
+				<EditSaleAddProductSection bind:show={showAddProduct} onAdd={appendItem} />
+			{/key}
 
-			<EditSaleAddFreeItemPanel
-				{showAddFreeItem}
-				bind:addFreeCategory
-				bind:addFreeDescription
-				bind:addFreePrice
-				bind:addFreeDiscount
-				bind:addFreeDiscountType
-				bind:addFreeNotes
-				onAddFreeItem={addNewFreeItem}
-				onCancel={resetAddFreeItemForm}
-			/>
+			{#key showAddFreeItem}
+				<EditSaleAddFreeItemSection bind:show={showAddFreeItem} onAdd={appendItem} />
+			{/key}
 
-			<EditSaleLensPanel
-				{showAddLens}
-				{editingLensId}
-				bind:editLensTmp
-				bind:editLensTreatments
-				selectableTreatments={lensEditCtx.selectableTreatments}
-				showAddition={lensEditCtx.showAddition}
-				onLensSelect={handleLensSelect}
-				onAddTreatment={addTreatmentFromSelect}
-				onRemoveTreatment={removeTreatmentFromEdit}
-				onSave={saveLensEdit}
-				onCancel={cancelLensEdit}
-			/>
+			{#if lensEditing}
+				{#snippet lensSelector()}
+					<ItemSelect
+						kind="lens"
+						value={lensDraft.lensCatalogItemId}
+						onselect={handleLensSelect}
+						label="Cristal"
+					/>
+				{/snippet}
+
+				<LensEditorPanel
+					mode={editingLensId ? 'edit' : 'add'}
+					bind:draft={lensDraft}
+					lensType={lensEditCtx.selectedLens?.type ?? ''}
+					ranges={lensEditCtx.selectedLens?.ranges ?? []}
+					selectableTreatments={lensEditCtx.selectableTreatments}
+					{lensSelector}
+					onAddTreatment={addTreatmentFromSelect}
+					onRemoveTreatment={removeTreatmentFromEdit}
+					onApply={applyLens}
+					onCancel={cancelLensEdit}
+				/>
+			{/if}
 
 			<EditSaleItemsSection
 				{activeItems}
 				{mainItems}
 				{editingLensId}
 				{saving}
+				rangeWarnings={lensRangeWarnings}
 				onEditLens={startLensEdit}
 				onRemoveItem={removeItem}
 			/>
@@ -474,12 +458,26 @@
 		<EditSaleFooter
 			bind:reason
 			{reasonError}
+			{submitError}
 			{removedCount}
 			{saving}
 			{hasChanges}
-			onClose={handleClose}
+			onClose={() => {
+				if (guardClose()) open = false;
+			}}
 			onSubmit={handleSubmit}
 			onClearReasonError={() => (reasonError = '')}
 		/>
 	</div>
 </SlideOver>
+
+<ConfirmModal
+	bind:open={confirmDiscard}
+	title="Descartar cambios"
+	message="Tienes cambios sin guardar en esta venta. Si cierras ahora se perderán."
+	confirmLabel="Descartar y cerrar"
+	cancelLabel="Seguir editando"
+	confirmColor="red"
+	onConfirm={discardAndClose}
+	onCancel={() => (confirmDiscard = false)}
+/>

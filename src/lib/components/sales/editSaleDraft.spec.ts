@@ -369,8 +369,7 @@ describe('getLensEditContext', () => {
 		expect(ctx).toEqual({
 			availableTreatments: [],
 			selectableTreatments: [],
-			selectedLens: null,
-			showAddition: true
+			selectedLens: null
 		});
 	});
 
@@ -390,7 +389,6 @@ describe('getLensEditContext', () => {
 		expect(ctx.selectedLens?.id).toBe('lens-ctx-1');
 		expect(ctx.availableTreatments.map((t) => t.id)).toEqual(['t-1']);
 		expect(ctx.selectableTreatments).toEqual([]);
-		expect(ctx.showAddition).toBe(true);
 	});
 });
 

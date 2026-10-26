@@ -18,6 +18,7 @@ import { returnToLot } from '$lib/server/db/queries/inventoryLots';
 import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
 import { nowISO } from '$lib/dates';
 import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
+import { validateTreatmentItems } from '$lib/server/treatmentValidation';
 import { computeSaleTotals } from '$lib/shared/saleTotals';
 import type { UpdateSaleInput } from '$lib/schemas/sales';
 import type { ActionContext } from '$lib/server/actionContext';
@@ -94,6 +95,15 @@ export async function updateSaleCore(data: UpdateSaleInput, ctx: ActionContext) 
 	const hasItemChanges = !!data.items && data.items.length > 0;
 	if (data.items && data.items.length === 0) {
 		return { success: false as const, error: 'La venta debe tener al menos un artículo' };
+	}
+
+	// Treatments must belong to the same supplier as their parent lens (same rule
+	// as createSale). This keeps edited sales consistent when the lens changes.
+	if (hasItemChanges) {
+		const treatmentError = await validateTreatmentItems(data.items!);
+		if (treatmentError) {
+			return { success: false as const, error: treatmentError.error };
+		}
 	}
 
 	let newSubtotal = existing.subtotal;
