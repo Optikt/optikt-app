@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
-	import { isAdminRole } from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
-	import { listBrands } from '$lib/remote/brands.remote';
-	import { BrandsTable, BrandFormModal } from '$lib/components/brands';
-	import type { Brand } from '$lib/server/db/schema';
-	import type { PaginatedResult } from '$lib/types';
+	import { SearchInput, TablePagination } from '#lib/components/ui/index.js';
+	import { isAdminRole } from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { listBrands } from '#lib/remote/brands.remote.js';
+	import { BrandsTable, BrandFormModal } from '#lib/components/brands/index.js';
+	import type { Brand } from '#lib/server/db/schema/index.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import { untrack } from 'svelte';
 
 	// Server data

@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { AlertTriangle, DollarSign } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
-	import { PurchaseDiscountType, PurchaseSourceCurrency } from '$lib/shared/enums';
+	import SegmentedToggle from '#lib/components/ui/SegmentedToggle.svelte';
+	import { PurchaseDiscountType, PurchaseSourceCurrency } from '#lib/shared/enums/index.js';
 	import {
 		sourceCurrencyRequiresRateToVes,
 		SOURCE_TO_CURRENCY_CODE
-	} from '$lib/shared/purchaseOrderCurrencies';
+	} from '#lib/shared/purchaseOrderCurrencies.js';
 	import { inputClass } from '../purchaseFieldStyles';
 	import FieldWrapper from './FieldWrapper.svelte';
 

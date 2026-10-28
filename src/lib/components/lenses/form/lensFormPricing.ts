@@ -1,4 +1,4 @@
-import { LensPriceType } from '$lib/shared/enums/lensTypes';
+import { LensPriceType } from '#lib/shared/enums/lensTypes.js';
 
 export interface LensPricingInput {
 	basePrice: string;

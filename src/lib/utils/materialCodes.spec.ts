@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ProductType } from '$lib/shared/enums/productTypes';
+import { ProductType } from '#lib/shared/enums/productTypes.js';
 import {
 	buildMaterialCode,
 	getMaterialCodePrefix,

@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
-import { validateRif, RIF_STRICT_RE, ID_NUMBER_STRICT_RE } from '$lib/utils';
+import { validateRif, RIF_STRICT_RE, ID_NUMBER_STRICT_RE } from '#lib/utils/index.js';
 
 // =============================================================================
 // PHONE SCHEMAS

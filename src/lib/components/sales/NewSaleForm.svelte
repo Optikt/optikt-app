@@ -2,19 +2,19 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { createSale } from '$lib/remote/sales/commands.remote';
-	import { getNextOrderNumberCommand } from '$lib/remote/sales/status.remote';
-	import { getLatestCustomerPrescription } from '$lib/remote/prescriptions.remote';
-	import { getErrorMessage, dateToISODateString, logger } from '$lib/utils';
-	import { isDiscountValueValid } from '$lib/utils';
-	import { nowUTC, fromISODate, toUTCString } from '$lib/dates';
-	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import type { Customer, Prescription, Supplier } from '$lib/server/db/schema';
+	import { createSale } from '#lib/remote/sales/commands.remote.js';
+	import { getNextOrderNumberCommand } from '#lib/remote/sales/status.remote.js';
+	import { getLatestCustomerPrescription } from '#lib/remote/prescriptions.remote.js';
+	import { getErrorMessage, dateToISODateString, logger } from '#lib/utils/index.js';
+	import { isDiscountValueValid } from '#lib/utils/index.js';
+	import { nowUTC, fromISODate, toUTCString } from '#lib/dates.js';
+	import { DiscountType, type DiscountType as DiscountTypeEnum } from '#lib/shared/enums/index.js';
+	import type { Customer, Prescription, Supplier } from '#lib/server/db/schema/index.js';
 	import type { SaleItemRow, NewCustomerData } from './newSaleTypes';
 	import type { IncludedAccessoryMap } from './includedAccessories';
 	import type { Snippet } from 'svelte';
 	import { setContext, untrack } from 'svelte';
-	import { WizardHeader } from '$lib/components/ui';
+	import { WizardHeader } from '#lib/components/ui/index.js';
 	import { CATALOG_KEY } from './wizardContext';
 	import { getCachedProducts, getCachedLensItems } from './catalogCache.svelte';
 	import {
@@ -25,7 +25,7 @@
 		isItemDiscountValid
 	} from './saleItemHelpers';
 	import { buildSaleItemsFromWizard, buildPrescriptionPayload } from './wizardSubmission';
-	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+	import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 	import SaleStep1Info from './step1/SaleStep1Info.svelte';
 	import SaleStep2Items from './step2/SaleStep2Items.svelte';
 	import SaleStep3Summary from './step3/SaleStep3Summary.svelte';

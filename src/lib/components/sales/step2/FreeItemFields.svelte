@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
-	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
-	import { getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { ALL_FREE_ITEM_CATEGORIES } from '#lib/shared/enums/lensTypes.js';
+	import { getFreeItemCategoryLabel } from '#lib/shared/enums/lensTypes.js';
 	import type { FreeItemData } from '../newSaleTypes';
 
 	interface Props {

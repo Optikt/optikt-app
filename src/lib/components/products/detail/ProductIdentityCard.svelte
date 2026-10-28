@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Info, Package } from '@lucide/svelte';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { AppBadge } from '$lib/components/ui';
-	import { formatDate } from '$lib/utils';
-	import { getProductTypeLabel, ProductType } from '$lib/shared/enums';
-	import type { BadgeVariant } from '$lib/shared/badge-variants';
-	import { PRODUCT_GENDER_LABELS, ProductGender } from '$lib/utils/sku';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import { formatDate } from '#lib/utils/index.js';
+	import { getProductTypeLabel, ProductType } from '#lib/shared/enums/index.js';
+	import type { BadgeVariant } from '#lib/shared/badge-variants.js';
+	import { PRODUCT_GENDER_LABELS, ProductGender } from '#lib/utils/sku.js';
 
 	interface Props {
 		product: ProductWithRelations;

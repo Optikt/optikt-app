@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { User, Lock, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { updateProfileForm } from '$lib/remote/profile.remote';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { FormInput } from '$lib/components/ui';
+	import { updateProfileForm } from '#lib/remote/profile.remote.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { FormInput } from '#lib/components/ui/index.js';
 	import ChangePasswordModal from './ChangePasswordModal.svelte';
 	import { untrack } from 'svelte';
-	import type { UserListItem } from '$lib/types';
+	import type { UserListItem } from '#lib/types/index.js';
 
 	interface Props {
 		user: Omit<UserListItem, 'createdAt'>;

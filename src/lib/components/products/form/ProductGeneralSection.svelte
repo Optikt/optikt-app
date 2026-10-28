@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Lock, Package2 } from '@lucide/svelte';
-	import { CreatableSelect, type SelectOption } from '$lib/components/ui';
-	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS } from '$lib/shared/enums';
+	import { CreatableSelect, type SelectOption } from '#lib/components/ui/index.js';
+	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS } from '#lib/shared/enums/index.js';
 	import {
 		errorTextClass,
 		fieldLabelClass,

@@ -1,4 +1,4 @@
-import type { LensOpticalRange } from '$lib/server/db/schema/lenses';
+import type { LensOpticalRange } from '#lib/server/db/schema/lenses.js';
 
 /** Format a diopter value with explicit sign */
 export function formatDiopter(n: number): string {

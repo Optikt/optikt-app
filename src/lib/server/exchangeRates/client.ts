@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { z } from 'zod';
-import type { ExchangeRateApiResponse } from '$lib/shared/exchangeRates';
+import type { ExchangeRateApiResponse } from '#lib/shared/exchangeRates.js';
 
 const ExchangeRateApiFieldSchema = z.object({
 	data_age_seconds: z.number().nonnegative(),

@@ -4,7 +4,7 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PageHeader, SelectInput } from '$lib/components/ui';
+	import { PageHeader, SelectInput } from '#lib/components/ui/index.js';
 	import {
 		getErrorMessage,
 		logger,
@@ -13,13 +13,13 @@
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
+	} from '#lib/utils/index.js';
 	import {
 		getProductInventoryStats,
 		listProducts,
 		type ProductInventoryStats
-	} from '$lib/remote/products.remote';
-	import { ProductsTable } from '$lib/components/products';
+	} from '#lib/remote/products.remote.js';
+	import { ProductsTable } from '#lib/components/products/index.js';
 	import {
 		ALL_PRODUCT_STOCK_FILTERS,
 		ALL_PRODUCT_TYPES,
@@ -28,9 +28,9 @@
 		isAdminRole,
 		type ProductStockFilter,
 		type ProductType
-	} from '$lib/shared/enums';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { PaginatedResult } from '$lib/types';
+	} from '#lib/shared/enums/index.js';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();

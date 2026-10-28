@@ -1,6 +1,5 @@
+import type { RemoteFormIssue } from '$app/server';
 import { describe, expect, it } from 'vitest';
-import type { RemoteFormIssue } from '@sveltejs/kit';
-
 import { getFormErrorMessage, issuePathToFieldNames } from './form';
 
 describe('getFormErrorMessage', () => {

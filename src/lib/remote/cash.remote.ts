@@ -4,31 +4,31 @@
  */
 import { error } from '@sveltejs/kit';
 import { query, command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { db } from '$lib/server/db';
-import { getCashReport, type CashReport } from '$lib/server/db/queries/cash/report';
-import { getDailyBreakdown, type DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
-import { getPipeline, type PipelineSnapshot } from '$lib/server/db/queries/cash/pipeline';
+import { requireAdmin } from '#lib/server/guards.js';
+import { db } from '#lib/server/db/index.js';
+import { getCashReport, type CashReport } from '#lib/server/db/queries/cash/report.js';
+import { getDailyBreakdown, type DailyBreakdownRow } from '#lib/server/db/queries/cash/daily.js';
+import { getPipeline, type PipelineSnapshot } from '#lib/server/db/queries/cash/pipeline.js';
 import {
 	createExpense,
 	findExpenseById,
 	listExpenses,
 	voidExpense,
 	type ExpenseListRow
-} from '$lib/server/db/queries/cash/expenses';
-import { auditService, getAuditContext } from '$lib/server/audit';
+} from '#lib/server/db/queries/cash/expenses.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 import {
 	CashReportFiltersSchema,
 	CreateExpenseSchema,
 	ListExpensesFiltersSchema,
 	VoidExpenseSchema
-} from '$lib/schemas/cash';
-import type { CashExpense } from '$lib/server/db/schema';
+} from '#lib/schemas/cash.js';
+import type { CashExpense } from '#lib/server/db/schema/index.js';
 import {
 	calculateExpenseAmountBcvUsd,
 	requiresExpenseRateType
-} from '$lib/shared/expenseCalculations';
-import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
+} from '#lib/shared/expenseCalculations.js';
+import { fromISODate, toEndOfDay, toUTCString } from '#lib/dates.js';
 
 // ============================================================================
 // HELPERS

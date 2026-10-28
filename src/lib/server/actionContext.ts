@@ -1,5 +1,5 @@
-import { getAuditContext } from '$lib/server/audit';
-import type { UserRole } from '$lib/shared/enums';
+import { getAuditContext } from '#lib/server/audit/index.js';
+import type { UserRole } from '#lib/shared/enums/index.js';
 
 export interface ActionContext {
 	userId: string | null;

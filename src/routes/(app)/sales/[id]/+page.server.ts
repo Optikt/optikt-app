@@ -1,12 +1,12 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
-import { getSalePayments } from '$lib/server/db/queries/sales/payments';
-import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
-import { getEntityHistory } from '$lib/server/db/queries/changeHistory';
-import { getMovementsWithDetails } from '$lib/server/db/queries/inventoryMovements';
-import { getAllSuppliers, getAllTreatments } from '$lib/server/db/queries/suppliers';
-import { MovementReferenceType } from '$lib/shared/enums';
+import { getSaleItemsWithDetails } from '#lib/server/db/queries/sales/items.js';
+import { getSalePayments } from '#lib/server/db/queries/sales/payments.js';
+import { findSaleByIdWithRelations } from '#lib/server/db/queries/sales/reads.js';
+import { getEntityHistory } from '#lib/server/db/queries/changeHistory.js';
+import { getMovementsWithDetails } from '#lib/server/db/queries/inventoryMovements.js';
+import { getAllSuppliers, getAllTreatments } from '#lib/server/db/queries/suppliers.js';
+import { MovementReferenceType } from '#lib/shared/enums/index.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {

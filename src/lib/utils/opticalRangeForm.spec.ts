@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LensOpticalRange } from '$lib/server/db/schema/lenses';
+import type { LensOpticalRange } from '#lib/server/db/schema/lenses.js';
 
 import { SPHERE_RANGE_MODE } from './opticalRange/types';
 import {

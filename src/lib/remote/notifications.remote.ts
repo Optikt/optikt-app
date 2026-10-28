@@ -1,14 +1,14 @@
 import { command, query } from '$app/server';
-import { MarkNotificationReadSchema } from '$lib/schemas/notifications';
+import { MarkNotificationReadSchema } from '#lib/schemas/notifications.js';
 import {
 	countUnreadNotificationsForUser,
 	listNotificationsForUser,
 	markAllNotificationsReadForUser,
 	markNotificationRead,
 	type NotificationListItem
-} from '$lib/server/db/queries/notifications';
-import { requireAuth } from '$lib/server/guards';
-import { EmptySchema } from '$lib/schemas/common/dates';
+} from '#lib/server/db/queries/notifications.js';
+import { requireAuth } from '#lib/server/guards.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 
 export const fetchMyNotifications = query(async (): Promise<NotificationListItem[]> => {
 	const user = requireAuth();

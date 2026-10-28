@@ -2,10 +2,10 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ReportHeader } from '$lib/components/reports';
-	import { formatPrice, downloadCsv } from '$lib/utils';
-	import { getLensTypeLabel, getInventoryModeLabel } from '$lib/shared/enums';
-	import type { InventoryLensItem } from '$lib/server/db/queries/reports';
+	import { ReportHeader } from '#lib/components/reports/index.js';
+	import { formatPrice, downloadCsv } from '#lib/utils/index.js';
+	import { getLensTypeLabel, getInventoryModeLabel } from '#lib/shared/enums/index.js';
+	import type { InventoryLensItem } from '#lib/server/db/queries/reports.js';
 
 	let { data } = $props();
 

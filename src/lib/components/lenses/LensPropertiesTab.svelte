@@ -4,7 +4,7 @@
 	import LensMaterialsTab from './LensMaterialsTab.svelte';
 	import LensTechnologiesTab from './LensTechnologiesTab.svelte';
 	import LensDifferentiatorsTab from './LensDifferentiatorsTab.svelte';
-	import type { LensMaterial, LensTechnology } from '$lib/server/db/schema';
+	import type { LensMaterial, LensTechnology } from '#lib/server/db/schema/index.js';
 
 	type SubTab = 'materials' | 'technologies' | 'differentiators';
 

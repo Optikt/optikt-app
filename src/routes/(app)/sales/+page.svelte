@@ -12,15 +12,15 @@
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
-	import { listSales, getSalesStats } from '$lib/remote/sales/queries.remote';
-	import { SaleFilterBar, SalesTable, SaleStatsCards } from '$lib/components/sales';
-	import { PageHeader } from '$lib/components/ui';
-	import { canOperate } from '$lib/shared/enums';
-	import type { SaleStatus } from '$lib/shared/enums';
-	import { parseSaleStatuses, serializeSaleStatuses } from '$lib/components/sales/statusFilter';
-	import type { SaleWithRelations, SalesStats } from '$lib/server/db/queries/sales/types';
-	import type { PaginatedSales } from '$lib/remote/sales/helpers';
+	} from '#lib/utils/index.js';
+	import { listSales, getSalesStats } from '#lib/remote/sales/queries.remote.js';
+	import { SaleFilterBar, SalesTable, SaleStatsCards } from '#lib/components/sales/index.js';
+	import { PageHeader } from '#lib/components/ui/index.js';
+	import { canOperate } from '#lib/shared/enums/index.js';
+	import type { SaleStatus } from '#lib/shared/enums/index.js';
+	import { parseSaleStatuses, serializeSaleStatuses } from '#lib/components/sales/statusFilter.js';
+	import type { SaleWithRelations, SalesStats } from '#lib/server/db/queries/sales/types.js';
+	import type { PaginatedSales } from '#lib/remote/sales/helpers.js';
 	import { untrack } from 'svelte';
 
 	// Server data

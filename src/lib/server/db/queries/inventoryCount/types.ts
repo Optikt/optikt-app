@@ -2,7 +2,10 @@
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: exported types.
  */
 
-import { type InventoryCountLine, type InventoryCountSession } from '$lib/server/db/schema';
+import {
+	type InventoryCountLine,
+	type InventoryCountSession
+} from '#lib/server/db/schema/index.js';
 
 export const INVENTORY_COUNT_SESSION_STATUSES = ['OPEN', 'APPLIED', 'CANCELLED'] as const;
 export type InventoryCountSessionStatus = (typeof INVENTORY_COUNT_SESSION_STATUSES)[number];

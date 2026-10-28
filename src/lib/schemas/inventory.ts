@@ -5,7 +5,7 @@
 import { z } from 'zod';
 import { CoercedInteger } from './common/numbers';
 import { ListPaginationSchema } from './common/pagination';
-import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
+import { AdjustmentReason, InventoryMovementType } from '#lib/shared/enums/index.js';
 
 // ============================================================================
 // MANUAL ADJUSTMENT

@@ -3,17 +3,17 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { nowUTC, toISODate } from '$lib/dates';
-	import { WizardHeader } from '$lib/components/ui';
-	import { createPurchaseOrderCmd } from '$lib/remote/purchaseOrders/commands.remote';
-	import { savePurchaseOrderDraftCmd } from '$lib/remote/purchaseOrders/draft.remote';
+	import { nowUTC, toISODate } from '#lib/dates.js';
+	import { WizardHeader } from '#lib/components/ui/index.js';
+	import { createPurchaseOrderCmd } from '#lib/remote/purchaseOrders/commands.remote.js';
+	import { savePurchaseOrderDraftCmd } from '#lib/remote/purchaseOrders/draft.remote.js';
 	import {
 		PurchaseDiscountType,
 		PurchaseDocumentType,
 		PurchasePaymentTerms,
 		PurchaseSourceCurrency
-	} from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
+	} from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import PurchaseOrderStep2 from './step2/PurchaseOrderStep2.svelte';
 	import PurchaseStep1Section from './review/PurchaseStep1Section.svelte';
 	import PurchaseReviewItems from './review/PurchaseReviewItems.svelte';
@@ -34,8 +34,8 @@
 		sourceCurrencyRequiresRateToVes,
 		SOURCE_TO_CURRENCY_CODE,
 		sourcePriceToUsdBcv
-	} from '$lib/shared/purchaseOrderCurrencies';
-	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+	} from '#lib/shared/purchaseOrderCurrencies.js';
+	import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 
 	type SupplierOption = {
 		id: string;

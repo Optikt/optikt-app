@@ -1,4 +1,4 @@
-import { LensCatalogSource, LensType } from '$lib/shared/enums/lensTypes';
+import { LensCatalogSource, LensType } from '#lib/shared/enums/lensTypes.js';
 
 /**
  * The exact prescription values a physical lens was ordered/ground with.

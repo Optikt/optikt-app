@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
-	import { DiscountType } from '$lib/shared/enums';
+	import { DiscountType } from '#lib/shared/enums/index.js';
 	import ItemSelect from '../ItemSelect.svelte';
 
 	interface Props {

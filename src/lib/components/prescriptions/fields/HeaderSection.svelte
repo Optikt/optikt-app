@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LENS_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
+	import { LENS_TYPE_LABELS } from '#lib/shared/enums/lensTypes.js';
 	import type { PrescriptionFieldIssues, PrescriptionFormData } from '../prescription-form';
 	import { fieldName, getIssues, hasFieldError } from './prescriptionFieldUtils';
 	import FieldError from './FieldError.svelte';

@@ -1,4 +1,4 @@
-import { CurrencyCode } from '$lib/shared/enums';
+import { CurrencyCode } from '#lib/shared/enums/index.js';
 
 export interface NormalizePurchasePaymentInput {
 	currencyCode: CurrencyCode;

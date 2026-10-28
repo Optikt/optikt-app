@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { findQuoteByIdWithRelations } from '$lib/server/db/queries/quotes';
-import { buildPrintUrl, generatePdf } from '$lib/server/pdf';
+import { findQuoteByIdWithRelations } from '#lib/server/db/queries/quotes.js';
+import { buildPrintUrl, generatePdf } from '#lib/server/pdf.js';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 	if (!locals.user) {

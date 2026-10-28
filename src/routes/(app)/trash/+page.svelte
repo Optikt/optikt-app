@@ -2,8 +2,8 @@
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { RotateCcw, Trash2 } from '@lucide/svelte';
-	import { restoreItemCmd } from '$lib/remote/trash.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { restoreItemCmd } from '#lib/remote/trash.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

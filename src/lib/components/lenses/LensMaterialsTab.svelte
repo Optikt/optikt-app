@@ -6,11 +6,11 @@
 		deleteLensMaterialById,
 		listLensMaterials,
 		updateLensMaterialForm
-	} from '$lib/remote/lenses/materials.remote';
-	import type { LensMaterial } from '$lib/server/db/schema';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { ConfirmModal, SlideOver } from '$lib/components/ui';
+	} from '#lib/remote/lenses/materials.remote.js';
+	import type { LensMaterial } from '#lib/server/db/schema/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { ConfirmModal, SlideOver } from '#lib/components/ui/index.js';
 	import { untrack } from 'svelte';
 
 	interface Props {

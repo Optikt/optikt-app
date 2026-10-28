@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addPayment } from './payments.remote';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { resetDb } from '$lib/testing/integration/db';
-import { createSale, createUser } from '$lib/testing/integration/factories';
-import { callRemote } from '$lib/testing/remoteHarness';
-import { PaymentMethod } from '$lib/shared/enums';
-import type { AddPaymentInput } from '$lib/schemas/sales';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createSale, createUser } from '#lib/testing/integration/factories.js';
+import { callRemote } from '#lib/testing/remoteHarness.js';
+import { PaymentMethod } from '#lib/shared/enums/index.js';
+import type { AddPaymentInput } from '#lib/schemas/sales.js';
 
 function payment(saleId: string): AddPaymentInput {
 	return {

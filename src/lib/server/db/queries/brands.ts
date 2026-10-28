@@ -1,9 +1,9 @@
 import { eq, isNull, isNotNull, and, ilike, count, asc, desc, type AnyColumn } from 'drizzle-orm';
 import type { SelectedFields } from 'drizzle-orm/pg-core';
-import { db } from '$lib/server/db';
-import { brands, products, type Brand, type NewBrand } from '$lib/server/db/schema';
-import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
+import { db } from '#lib/server/db/index.js';
+import { brands, products, type Brand, type NewBrand } from '#lib/server/db/schema/index.js';
+import type { DbOrTx, InferSelectedRow } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
 
 /** Sortable brand columns */
 export type BrandOrderBy = 'name' | 'createdAt' | 'updatedAt' | 'country';

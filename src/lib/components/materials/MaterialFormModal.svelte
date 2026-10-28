@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { createMaterialForm, updateMaterialForm } from '$lib/remote/materials.remote';
-	import { FormInput, FormTextarea } from '$lib/components/ui';
+	import { createMaterialForm, updateMaterialForm } from '#lib/remote/materials.remote.js';
+	import { FormInput, FormTextarea } from '#lib/components/ui/index.js';
 	import MaterialReactivateModal from './MaterialReactivateModal.svelte';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { toastUnboundErrors } from '$lib/utils';
-	import type { Material } from '$lib/server/db/schema';
-	import type { CreateEntityResult } from '$lib/types';
-	import { MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS } from '$lib/shared/enums/productTypes';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { toastUnboundErrors } from '#lib/utils/index.js';
+	import type { Material } from '#lib/server/db/schema/index.js';
+	import type { CreateEntityResult } from '#lib/types/index.js';
+	import { MATERIAL_CATEGORIES, MATERIAL_CATEGORY_LABELS } from '#lib/shared/enums/productTypes.js';
 
 	interface Props {
 		open: boolean;

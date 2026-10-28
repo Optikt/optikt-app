@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { CalendarDays, Tag } from '@lucide/svelte';
-	import { DiscountType } from '$lib/shared/enums';
+	import { DiscountType } from '#lib/shared/enums/index.js';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import type { SaleWithRelations } from '#lib/server/db/queries/sales/types.js';
 	import { User } from '@lucide/svelte';
 
 	interface Props {

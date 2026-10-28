@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { AlertTriangle, Package } from '@lucide/svelte';
-	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
+	import { EXPENSE_CATEGORY_LABELS } from '#lib/shared/enums/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { formatPct } from './cashReport';
 	import {
 		desktopLabelClass,
@@ -11,8 +11,8 @@
 		mobileSurfaceClass,
 		mobileValueClass
 	} from './cashClasses';
-	import type { CashReport } from '$lib/server/db/queries/cash/report';
-	import type { PipelineSnapshot } from '$lib/server/db/queries/cash/pipeline';
+	import type { CashReport } from '#lib/server/db/queries/cash/report.js';
+	import type { PipelineSnapshot } from '#lib/server/db/queries/cash/pipeline.js';
 
 	interface Props {
 		report: CashReport;

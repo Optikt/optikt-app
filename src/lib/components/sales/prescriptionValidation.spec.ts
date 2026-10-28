@@ -4,7 +4,7 @@ import {
 	hasPrescriptionErrors,
 	getRequiredEyes
 } from './saleItemHelpers';
-import { DiscountType } from '$lib/shared/enums';
+import { DiscountType } from '#lib/shared/enums/index.js';
 import { createEmptyLensPair } from './newSaleTypes';
 import type { LensSaleItemRow, SelectedTreatment } from './newSaleTypes';
 

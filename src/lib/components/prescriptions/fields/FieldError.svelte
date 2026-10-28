@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getFormErrorMessage } from '$lib/utils';
-	import type { RemoteFormIssue } from '@sveltejs/kit';
+	import type { RemoteFormIssue } from '$app/server';
+	import { getFormErrorMessage } from '#lib/utils/index.js';
 
 	interface Props {
 		issues: RemoteFormIssue[] | undefined;

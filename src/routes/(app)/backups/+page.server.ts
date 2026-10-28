@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getRecentBackupNotifications } from '$lib/server/db/queries/notifications';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getRecentBackupNotifications } from '#lib/server/db/queries/notifications.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN);

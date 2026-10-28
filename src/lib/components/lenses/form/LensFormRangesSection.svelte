@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Label } from '$lib/components/ui/label';
+	import type { RemoteFormIssue } from '$app/server';
+	import { Label } from '#lib/components/ui/label/index.js';
 	import { Info } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import type {
 		OpticalRangeFormEntry,
 		OpticalRangeValidation
-	} from '$lib/utils/opticalRange/types';
-	import { SPHERE_RANGE_MODE } from '$lib/utils/opticalRange/types';
-	import { createEmptyOpticalRangeValidation } from '$lib/utils/opticalRange/validate';
-	import { getOpticalRangePreview } from '$lib/utils/opticalRange/expand';
-	import { LensCatalogSource } from '$lib/shared/enums';
+	} from '#lib/utils/opticalRange/types.js';
+	import { SPHERE_RANGE_MODE } from '#lib/utils/opticalRange/types.js';
+	import { createEmptyOpticalRangeValidation } from '#lib/utils/opticalRange/validate.js';
+	import { getOpticalRangePreview } from '#lib/utils/opticalRange/expand.js';
+	import { LensCatalogSource } from '#lib/shared/enums/index.js';
 	import {
 		formCardClass,
 		sectionTitleClass,

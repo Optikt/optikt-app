@@ -3,15 +3,15 @@
  * No side effects, no reactive state — just formatting, classification, and display logic.
  */
 
-import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
-import type { InventoryLot, InventoryMovement } from '$lib/server/db/schema';
-import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
+import type { PurchaseOrderItemWithProduct } from '#lib/server/db/queries/purchaseOrders/types.js';
+import type { InventoryLot, InventoryMovement } from '#lib/server/db/schema/index.js';
+import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
 import {
 	createPurchaseOrderDraftItemFromExisting,
 	calculateDraftItemTotalAlt
-} from '$lib/components/purchases/purchaseOrderDraft';
-import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
-import { getPurchaseOrderItemTypeLabel, PurchaseDocumentType } from '$lib/shared/enums';
+} from '#lib/components/purchases/purchaseOrderDraft.js';
+import { getSourceCurrencySymbol } from '#lib/shared/purchaseOrderCurrencies.js';
+import { getPurchaseOrderItemTypeLabel, PurchaseDocumentType } from '#lib/shared/enums/index.js';
 
 // =============================================================================
 // Types

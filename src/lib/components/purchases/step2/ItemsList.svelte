@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { autoAnimate } from '@formkit/auto-animate';
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import EmptyState from '#lib/components/ui/EmptyState.svelte';
 	import ItemRow from './ItemRow.svelte';
 	import ItemCard from './ItemCard.svelte';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 	import { getCachedLensItems, getCachedProducts } from '../../sales/catalogCache.svelte';
 
 	interface Props {

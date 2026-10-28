@@ -1,5 +1,5 @@
-import type { ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
-import { logger } from '$lib/utils/logger';
+import type { ExchangeRatesSnapshot } from '#lib/shared/exchangeRates.js';
+import { logger } from '#lib/utils/logger.js';
 
 type Listener = (snapshot: ExchangeRatesSnapshot) => void;
 

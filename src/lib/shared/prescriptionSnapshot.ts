@@ -1,4 +1,4 @@
-import { formatAxis, formatOpticalValue } from '$lib/utils';
+import { formatAxis, formatOpticalValue } from '#lib/utils/index.js';
 
 interface PrescriptionSnapshotSource {
 	odSphere?: number | null;

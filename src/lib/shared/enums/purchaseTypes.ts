@@ -3,7 +3,7 @@
  * Status workflow and item types for the purchase/inventory module
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 import { CurrencyCode } from './currencyTypes';
 import {
 	PAYMENT_METHOD_CURRENCY,

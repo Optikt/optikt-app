@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { reactivateSupplier } from '$lib/remote/suppliers.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { reactivateSupplier } from '#lib/remote/suppliers.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 
 	interface Props {
 		open: boolean;

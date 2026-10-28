@@ -1,14 +1,14 @@
 import { alias } from 'drizzle-orm/pg-core';
 import { and, desc, eq, isNull, max, sum } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { nowISO } from '$lib/dates';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import { nowISO } from '#lib/dates.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	purchaseOrderPayments,
 	users,
 	type NewPurchaseOrderPayment,
 	type PurchaseOrderPayment
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
 export type PurchaseOrderPaymentWithUsers = PurchaseOrderPayment & {
 	createdByName: string;

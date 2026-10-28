@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { render } from 'vitest-browser-svelte';
-import { PaymentMethod } from '$lib/shared/enums';
+import { PaymentMethod } from '#lib/shared/enums/index.js';
 import PaymentRailSection from './PaymentRailSection.svelte';
 
 function props(overrides: Record<string, unknown> = {}) {

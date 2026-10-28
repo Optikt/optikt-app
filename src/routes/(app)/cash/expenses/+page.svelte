@@ -1,30 +1,30 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { downloadCsv, getErrorMessage } from '$lib/utils';
-	import { EXPENSE_CATEGORY_LABELS, type ExpenseCategory } from '$lib/shared/enums';
+	import { downloadCsv, getErrorMessage } from '#lib/utils/index.js';
+	import { EXPENSE_CATEGORY_LABELS, type ExpenseCategory } from '#lib/shared/enums/index.js';
 	import {
 		requiresExpenseExchangeRate,
 		requiresExpenseRateType
-	} from '$lib/shared/expenseCalculations';
+	} from '#lib/shared/expenseCalculations.js';
 	import {
 		listExpensesQuery,
 		createExpenseCommand,
 		voidExpenseCommand
-	} from '$lib/remote/cash.remote';
-	import { fetchLatestRates } from '$lib/remote/exchangeRates.remote';
-	import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
-	import ExpenseToolbar from '$lib/components/cash/ExpenseToolbar.svelte';
-	import ExpenseSummary from '$lib/components/cash/ExpenseSummary.svelte';
-	import ExpenseTable from '$lib/components/cash/ExpenseTable.svelte';
-	import ExpenseCreateModal from '$lib/components/cash/ExpenseCreateModal.svelte';
+	} from '#lib/remote/cash.remote.js';
+	import { fetchLatestRates } from '#lib/remote/exchangeRates.remote.js';
+	import type { ExpenseListRow } from '#lib/server/db/queries/cash/expenses.js';
+	import ExpenseToolbar from '#lib/components/cash/ExpenseToolbar.svelte';
+	import ExpenseSummary from '#lib/components/cash/ExpenseSummary.svelte';
+	import ExpenseTable from '#lib/components/cash/ExpenseTable.svelte';
+	import ExpenseCreateModal from '#lib/components/cash/ExpenseCreateModal.svelte';
 	import {
 		EXPENSE_CSV_HEADERS,
 		buildExpenseCsvRows,
 		emptyExpenseForm,
 		validateVoidReason,
 		type ExpenseFormData
-	} from '$lib/components/cash/expenseForm';
+	} from '#lib/components/cash/expenseForm.js';
 
 	let { data } = $props();
 	const initial = untrack(() => data);

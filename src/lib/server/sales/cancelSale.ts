@@ -1,18 +1,23 @@
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writes';
-import { db } from '$lib/server/db';
-import { saleItems, products, lensCatalogItems, inventoryMovements } from '$lib/server/db/schema';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { updateSale as updateSaleQuery } from '#lib/server/db/queries/sales/writes.js';
+import { db } from '#lib/server/db/index.js';
+import {
+	saleItems,
+	products,
+	lensCatalogItems,
+	inventoryMovements
+} from '#lib/server/db/schema/index.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import { SaleStatus, RefundStatus, canManageSaleByOwner } from '$lib/shared/enums';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
-import { auditService } from '$lib/server/audit';
-import { returnToLot } from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { createExpense } from '$lib/server/db/queries/cash/expenses';
-import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
-import { nowISO, toISODate, nowUTC } from '$lib/dates';
-import type { CancelSaleInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { SaleStatus, RefundStatus, canManageSaleByOwner } from '#lib/shared/enums/index.js';
+import { InventoryMovementType, MovementReferenceType } from '#lib/shared/enums/index.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { returnToLot } from '#lib/server/db/queries/inventoryLots.js';
+import { createInventoryMovement } from '#lib/server/db/queries/inventoryMovements.js';
+import { createExpense } from '#lib/server/db/queries/cash/expenses.js';
+import { getExchangeRateValue } from '#lib/server/exchangeRates/service.js';
+import { nowISO, toISODate, nowUTC } from '#lib/dates.js';
+import type { CancelSaleInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 export async function cancelSaleCore(data: CancelSaleInput, ctx: ActionContext) {
 	const existing = await findSaleById(data.id);

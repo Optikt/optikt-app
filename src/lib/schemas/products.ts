@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { ProductType, ProductStockFilter } from '$lib/shared/enums';
+import { ProductType, ProductStockFilter } from '#lib/shared/enums/index.js';
 import { MaterialCategories } from './materials';
 import {
 	NameSchema,

@@ -8,9 +8,9 @@
  *   used by createSale/updateSale, so money amounts never change.
  */
 
-import { DiscountType } from '$lib/shared/enums';
-import { decomposePrice } from '$lib/shared/tax';
-import { computeDiscount } from '$lib/utils';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { decomposePrice } from '#lib/shared/tax.js';
+import { computeDiscount } from '#lib/utils/index.js';
 
 export interface SaleTotalsLine {
 	unitPrice: number;

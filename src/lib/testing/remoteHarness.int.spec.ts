@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { listBrands } from '$lib/remote/brands.remote';
-import type { Brand } from '$lib/server/db/schema';
-import type { PaginatedResult } from '$lib/types';
-import { UserRole } from '$lib/shared/enums';
+import { listBrands } from '#lib/remote/brands.remote.js';
+import type { Brand } from '#lib/server/db/schema/index.js';
+import type { PaginatedResult } from '#lib/types/index.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 import { resetDb } from './integration/db';
 import { createBrand, createUser } from './integration/factories';
 import { callRemote } from './remoteHarness';

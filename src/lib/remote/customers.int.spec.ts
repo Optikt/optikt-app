@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createCustomerWithPrescription, updateCustomerForm } from './customers.remote';
-import { callRemoteForm } from '$lib/testing/remoteHarness';
-import { resetDb } from '$lib/testing/integration/db';
-import { createCustomer, createUser } from '$lib/testing/integration/factories';
-import { CustomerGender, UserRole } from '$lib/shared/enums';
-import type { Customer } from '$lib/server/db/schema';
+import { callRemoteForm } from '#lib/testing/remoteHarness.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createCustomer, createUser } from '#lib/testing/integration/factories.js';
+import { CustomerGender, UserRole } from '#lib/shared/enums/index.js';
+import type { Customer } from '#lib/server/db/schema/index.js';
 
 describe('customers remotes (Capa 3)', () => {
 	beforeEach(async () => {

@@ -5,10 +5,10 @@
 		listDifferentiators,
 		renameDifferentiatorForm,
 		deleteDifferentiatorById
-	} from '$lib/remote/lenses/technologies.remote';
-	import { ConfirmModal, SlideOver } from '$lib/components/ui';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { generateUUID } from '$lib/utils/generateUUID';
+	} from '#lib/remote/lenses/technologies.remote.js';
+	import { ConfirmModal, SlideOver } from '#lib/components/ui/index.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
 
 	interface Props {
 		initialDifferentiators: string[];

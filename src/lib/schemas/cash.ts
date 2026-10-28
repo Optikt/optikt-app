@@ -3,11 +3,15 @@
  */
 import { z } from 'zod';
 import { CoercedNumber } from './common/numbers';
-import { ALL_EXPENSE_CATEGORIES, ALL_EXPENSE_CURRENCIES, ALL_RATE_TYPES } from '$lib/shared/enums';
+import {
+	ALL_EXPENSE_CATEGORIES,
+	ALL_EXPENSE_CURRENCIES,
+	ALL_RATE_TYPES
+} from '#lib/shared/enums/index.js';
 import {
 	requiresExpenseExchangeRate,
 	requiresExpenseRateType
-} from '$lib/shared/expenseCalculations';
+} from '#lib/shared/expenseCalculations.js';
 
 export const ExpenseCategoryEnum = z.enum(ALL_EXPENSE_CATEGORIES);
 export const ExpenseCurrencyEnum = z.enum(ALL_EXPENSE_CURRENCIES);

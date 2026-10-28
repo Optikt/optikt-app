@@ -1,26 +1,29 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { createCustomerWithPrescription, updateCustomerForm } from '$lib/remote/customers.remote';
-	import type { CreateEntityResult } from '$lib/types';
-	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
-	import { Label } from '$lib/components/ui/label';
+	import {
+		createCustomerWithPrescription,
+		updateCustomerForm
+	} from '#lib/remote/customers.remote.js';
+	import type { CreateEntityResult } from '#lib/types/index.js';
+	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '#lib/components/ui/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
 	import {
 		scrollToFirstError,
 		toastUnboundErrors,
 		getErrorMessage,
 		parseISODateToLocal
-	} from '$lib/utils';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { nowUTC } from '$lib/dates';
-	import type { Customer } from '$lib/server/db/schema';
+	} from '#lib/utils/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { nowUTC } from '#lib/dates.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import {
 		ALL_CUSTOMER_GENDERS,
 		CUSTOMER_GENDER_LABELS,
 		type CustomerGender
-	} from '$lib/shared/enums/customerGenders';
+	} from '#lib/shared/enums/customerGenders.js';
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
 
 	interface Props {

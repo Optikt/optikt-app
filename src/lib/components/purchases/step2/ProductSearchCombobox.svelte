@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { Plus, Glasses, Package, Loader2 } from '@lucide/svelte';
-	import { matchesAllTokens } from '$lib/utils/search';
-	import { logger } from '$lib/utils';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
-	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
-	import { getLensSourceLabel } from '$lib/shared/enums/lensTypes';
-	import { searchCatalog } from '$lib/remote/catalog.remote';
+	import { matchesAllTokens } from '#lib/utils/search.js';
+	import { logger } from '#lib/utils/index.js';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import SegmentedToggle from '#lib/components/ui/SegmentedToggle.svelte';
+	import SearchCombobox from '#lib/components/ui/SearchCombobox.svelte';
+	import { getLensSourceLabel } from '#lib/shared/enums/lensTypes.js';
+	import { searchCatalog } from '#lib/remote/catalog.remote.js';
 	import { cacheCatalogItems } from '../../sales/catalogCache.svelte';
 
 	type SearchOption = {

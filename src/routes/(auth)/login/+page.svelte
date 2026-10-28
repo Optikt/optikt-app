@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { ImagotipoVertical, Isotipo } from '$lib/components';
-	import { LoginForm } from '$lib/components/forms';
+	import { ImagotipoVertical, Isotipo } from '#lib/components/index.js';
+	import { LoginForm } from '#lib/components/forms/index.js';
 
 	const appVersion = __APP_VERSION__;
 </script>

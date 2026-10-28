@@ -3,20 +3,23 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { getInventoryCountContext } from '$lib/context';
+	import { getInventoryCountContext } from '#lib/context/index.js';
 	import {
 		createSession,
 		getSessions as getSessionsQuery
-	} from '$lib/remote/inventoryCount.remote';
-	import type { InventoryCountScopeType } from '$lib/schemas/inventoryCount';
-	import type { ProductType } from '$lib/shared/enums';
-	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
-	import { getErrorMessage } from '$lib/utils';
-	import CountListHeader from '$lib/components/inventory/count/CountListHeader.svelte';
-	import CountListMetrics from '$lib/components/inventory/count/CountListMetrics.svelte';
-	import CountHistoryTable from '$lib/components/inventory/count/CountHistoryTable.svelte';
-	import CountCreateModal from '$lib/components/inventory/count/CountCreateModal.svelte';
-	import { isWithinLastDays, mergeCreatedSession } from '$lib/components/inventory/count/countList';
+	} from '#lib/remote/inventoryCount.remote.js';
+	import type { InventoryCountScopeType } from '#lib/schemas/inventoryCount.js';
+	import type { ProductType } from '#lib/shared/enums/index.js';
+	import type { InventoryCountSessionSummary } from '#lib/server/db/queries/inventoryCount/types.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import CountListHeader from '#lib/components/inventory/count/CountListHeader.svelte';
+	import CountListMetrics from '#lib/components/inventory/count/CountListMetrics.svelte';
+	import CountHistoryTable from '#lib/components/inventory/count/CountHistoryTable.svelte';
+	import CountCreateModal from '#lib/components/inventory/count/CountCreateModal.svelte';
+	import {
+		isWithinLastDays,
+		mergeCreatedSession
+	} from '#lib/components/inventory/count/countList.js';
 
 	let { data } = $props();
 	const inventoryCountContext = getInventoryCountContext();

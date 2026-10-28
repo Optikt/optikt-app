@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { NewPurchaseOrderForm } from '$lib/components/purchases';
+	import { NewPurchaseOrderForm } from '#lib/components/purchases/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Target } from '@lucide/svelte';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { AppBadge } from '$lib/components/ui';
-	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import { formatDate } from '$lib/utils';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import { collapseRangesForDisplay } from '#lib/utils/opticalRange.js';
+	import { formatDate } from '#lib/utils/index.js';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;

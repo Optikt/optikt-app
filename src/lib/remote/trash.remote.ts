@@ -4,11 +4,11 @@
  */
 import { command, query } from '$app/server';
 import { z } from 'zod';
-import { EmptySchema } from '$lib/schemas/common/dates';
-import { requireUserAdmin } from '$lib/server/guards';
-import { db } from '$lib/server/db';
-import { listTrash, restore, trashLabel } from '$lib/server/db/queries/deletedItems';
-import type { DeletedEntityType } from '$lib/server/db/schema';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
+import { requireUserAdmin } from '#lib/server/guards.js';
+import { db } from '#lib/server/db/index.js';
+import { listTrash, restore, trashLabel } from '#lib/server/db/queries/deletedItems.js';
+import type { DeletedEntityType } from '#lib/server/db/schema/index.js';
 
 /** List all trashed records (newest first), with a human-readable label. */
 export const listTrashCmd = query(EmptySchema, async () => {

@@ -3,7 +3,7 @@
  * Status workflow, labels, and badge colors
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 export enum QuoteStatus {
 	DRAFT = 'DRAFT',

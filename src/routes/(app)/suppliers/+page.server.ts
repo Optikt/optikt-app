@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
-import { db } from '$lib/server/db';
-import { suppliers } from '$lib/server/db/schema';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
+import { db } from '#lib/server/db/index.js';
+import { suppliers } from '#lib/server/db/schema/index.js';
 import { isNull, count } from 'drizzle-orm';
 
 /**

@@ -1,5 +1,5 @@
-import { db } from '$lib/server/db';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	getBrandAccessoryRows,
 	getHostProduct,

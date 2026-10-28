@@ -3,14 +3,14 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { CustomerPrescriptionEditor } from '$lib/components/prescriptions';
+	import { CustomerPrescriptionEditor } from '#lib/components/prescriptions/index.js';
 	import {
 		prescriptionToFormData,
 		type PrescriptionFieldIssues
-	} from '$lib/components/prescriptions/prescription-form';
-	import { updatePrescriptionForm } from '$lib/remote/prescriptions.remote';
-	import type { Customer, Prescription } from '$lib/server/db/schema';
-	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '$lib/utils';
+	} from '#lib/components/prescriptions/prescription-form.js';
+	import { updatePrescriptionForm } from '#lib/remote/prescriptions.remote.js';
+	import type { Customer, Prescription } from '#lib/server/db/schema/index.js';
+	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '#lib/utils/index.js';
 
 	let { data } = $props();
 	const customer = untrack(() => data.customer) as Customer;

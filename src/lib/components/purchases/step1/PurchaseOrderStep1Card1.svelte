@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { FileText, Settings } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import SegmentedToggle from '$lib/components/ui/SegmentedToggle.svelte';
-	import { PurchaseDocumentType, PurchasePaymentTerms } from '$lib/shared/enums';
+	import SegmentedToggle from '#lib/components/ui/SegmentedToggle.svelte';
+	import { PurchaseDocumentType, PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 	import { inputClass } from '../purchaseFieldStyles';
 	import FieldWrapper from './FieldWrapper.svelte';
 	import PurchaseOrderCreditDrawer from './PurchaseOrderCreditDrawer.svelte';

@@ -1,10 +1,13 @@
 import { command, query } from '$app/server';
-import { EmptySchema } from '$lib/schemas/common/dates';
-import { publishExchangeRatesTransition } from '$lib/server/exchangeRates/health';
-import { getExchangeRatesSnapshot, refreshExchangeRates } from '$lib/server/exchangeRates/service';
-import { emitRatesUpdated } from '$lib/server/exchangeRates/events';
-import { requireAuth } from '$lib/server/guards';
-import type { ExchangeRateEntry, ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
+import { publishExchangeRatesTransition } from '#lib/server/exchangeRates/health.js';
+import {
+	getExchangeRatesSnapshot,
+	refreshExchangeRates
+} from '#lib/server/exchangeRates/service.js';
+import { emitRatesUpdated } from '#lib/server/exchangeRates/events.js';
+import { requireAuth } from '#lib/server/guards.js';
+import type { ExchangeRateEntry, ExchangeRatesSnapshot } from '#lib/shared/exchangeRates.js';
 
 export type LatestExchangeRate = {
 	id: string;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { CheckCircle2, ClipboardCheck, Coins, FileClock } from '@lucide/svelte';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface PurchaseStats {
 		confirmed: number;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { Package, Eye } from '@lucide/svelte';
-	import type { LowStockItem } from '$lib/server/db/queries/dashboard';
+	import type { LowStockItem } from '#lib/server/db/queries/dashboard.js';
 
 	let { items }: { items: LowStockItem[] } = $props();
 </script>

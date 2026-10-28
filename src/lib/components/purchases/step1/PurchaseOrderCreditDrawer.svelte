@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import SlideOver from '$lib/components/ui/SlideOver.svelte';
+	import SlideOver from '#lib/components/ui/SlideOver.svelte';
 	import FieldWrapper from './FieldWrapper.svelte';
 
 	interface Props {

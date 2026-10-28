@@ -3,10 +3,10 @@
  * Split from queries/lenses.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 import { eq, isNull, and, desc, inArray } from 'drizzle-orm';
-import { computeRelevanceScore, matchesAllTokens } from '$lib/utils/search';
-import { db } from '$lib/server/db';
-import { LensType, LensCatalogSource, getLensSourceLabel } from '$lib/shared/enums';
-import type { DbOrTx } from '$lib/server/db/types';
+import { computeRelevanceScore, matchesAllTokens } from '#lib/utils/search.js';
+import { db } from '#lib/server/db/index.js';
+import { LensType, LensCatalogSource, getLensSourceLabel } from '#lib/shared/enums/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	lensMaterials,
 	lensCatalogItems,
@@ -17,8 +17,8 @@ import {
 	type NewLensCatalogItem,
 	type LensOpticalRange,
 	type NewLensOpticalRange
-} from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import { nowISO } from '#lib/dates.js';
 
 // ============================================================================
 // LENS MATERIALS

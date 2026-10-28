@@ -3,7 +3,7 @@ import { error } from '@sveltejs/kit';
 import {
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails
-} from '$lib/server/db/queries/quotes';
+} from '#lib/server/db/queries/quotes.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {

@@ -3,11 +3,11 @@
  * Shell: auth + delegate. Logic lives in src/lib/server/sales/createSale.ts.
  */
 import { command } from '$app/server';
-import { requireRole } from '$lib/server/guards';
-import { CreateSaleSchema } from '$lib/schemas/sales';
-import { UserRole } from '$lib/shared/enums';
-import { getActionContext } from '$lib/server/actionContext';
-import { createSaleCore } from '$lib/server/sales/createSale';
+import { requireRole } from '#lib/server/guards.js';
+import { CreateSaleSchema } from '#lib/schemas/sales.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getActionContext } from '#lib/server/actionContext.js';
+import { createSaleCore } from '#lib/server/sales/createSale.js';
 
 /**
  * Create a new sale with items in a single transaction.

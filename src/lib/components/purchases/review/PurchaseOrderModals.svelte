@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { AlertTriangle } from '@lucide/svelte';
-	import { ConfirmModal } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { getPurchaseOrderReviewStatus } from '../purchaseOrderDraft';
 	import type {
 		PurchaseOrderDraftItem,

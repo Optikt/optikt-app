@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Disclosure } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import { Disclosure } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import type { CostOverrides } from '../newSaleTypes';
 
 	interface Props {

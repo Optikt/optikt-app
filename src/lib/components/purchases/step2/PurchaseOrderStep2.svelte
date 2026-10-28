@@ -7,23 +7,23 @@
 		calculateDraftItemTotalAlt,
 		calculateOrderSubtotal
 	} from '../purchaseOrderDraft';
-	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+	import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 	import {
 		PurchaseDocumentType,
 		PurchaseSourceCurrency,
 		getCurrencyLabel
-	} from '$lib/shared/enums';
-	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	} from '#lib/shared/enums/index.js';
+	import { getSourceCurrencySymbol } from '#lib/shared/purchaseOrderCurrencies.js';
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { searchCatalog } from '$lib/remote/catalog.remote';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { searchCatalog } from '#lib/remote/catalog.remote.js';
 	import {
 		cacheCatalogItems,
 		getCachedProducts,
 		getCachedLensItems
 	} from '../../sales/catalogCache.svelte';
-	import { logger } from '$lib/utils';
+	import { logger } from '#lib/utils/index.js';
 	import ItemsContextHeader from './ItemsContextHeader.svelte';
 	import ProductSearchCombobox from './ProductSearchCombobox.svelte';
 	import ItemsList from './ItemsList.svelte';

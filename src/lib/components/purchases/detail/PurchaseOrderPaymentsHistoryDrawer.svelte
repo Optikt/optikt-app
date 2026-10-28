@@ -1,22 +1,22 @@
 <script lang="ts">
 	import { Ban, ReceiptText, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { AppBadge, ConfirmModal, SlideOver } from '$lib/components/ui';
-	import { voidPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders/payments.remote';
+	import { AppBadge, ConfirmModal, SlideOver } from '#lib/components/ui/index.js';
+	import { voidPurchaseOrderPaymentCmd } from '#lib/remote/purchaseOrders/payments.remote.js';
 	import {
 		PURCHASE_PAYMENT_METHOD_LABELS,
 		CurrencyCode,
 		PurchaseOrderStatus,
 		PurchasePaymentMethod
-	} from '$lib/shared/enums';
-	import { getCurrencySymbol } from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
+	import { getCurrencySymbol } from '#lib/shared/enums/index.js';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
-	} from '$lib/shared/purchaseOrderCredit';
-	import type { PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-	import { formatDateOnly, formatPrice, getErrorMessage } from '$lib/utils';
+	} from '#lib/shared/purchaseOrderCredit.js';
+	import type { PurchaseOrderEarlyPaymentBenefit } from '#lib/server/db/schema/index.js';
+	import type { PurchaseOrderPaymentWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
+	import { formatDateOnly, formatPrice, getErrorMessage } from '#lib/utils/index.js';
 
 	interface Props {
 		open: boolean;

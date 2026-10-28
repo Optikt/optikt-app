@@ -19,11 +19,11 @@
 		Wallet,
 		Trash2
 	} from '@lucide/svelte';
-	import { getInventoryCountContext } from '$lib/context';
-	import { isAdminRole, UserRole } from '$lib/shared/enums';
-	import { NAV_ITEMS, ADMIN_ITEMS, SUPER_ADMIN_ITEMS } from '$lib/shared/routes';
-	import type { LucideIcon } from '$lib/types/index.js';
-	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
+	import { getInventoryCountContext } from '#lib/context/index.js';
+	import { isAdminRole, UserRole } from '#lib/shared/enums/index.js';
+	import { NAV_ITEMS, ADMIN_ITEMS, SUPER_ADMIN_ITEMS } from '#lib/shared/routes.js';
+	import type { LucideIcon } from '#lib/types/index.js';
+	import type { SessionWithUser } from '#lib/server/db/queries/sessions.js';
 	import NavLink from './NavLink.svelte';
 
 	type SidebarProps = {

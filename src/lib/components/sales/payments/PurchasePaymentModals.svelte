@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { ConfirmModal } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
-	import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import type { EarlyPaymentDiscountSuggestion } from '#lib/shared/purchaseOrderCredit.js';
 	import type { PurchasePaymentPayload } from './purchasePayment';
 
 	interface Props {

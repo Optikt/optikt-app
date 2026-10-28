@@ -1,6 +1,6 @@
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
-import { findSupplierTreatmentById } from '$lib/server/db/queries/suppliers';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { findLensCatalogItemById } from '#lib/server/db/queries/lenses/catalog.js';
+import { findSupplierTreatmentById } from '#lib/server/db/queries/suppliers.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
 export interface TreatmentValidationItem {
 	id?: string | null;

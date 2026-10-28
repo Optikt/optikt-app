@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Eye, FlaskConical, Package, Pencil, Sparkles, X } from '@lucide/svelte';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { formatPrice } from '$lib/utils';
+	import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {

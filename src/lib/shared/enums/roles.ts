@@ -3,7 +3,7 @@
  * Shared between client and server for type safety
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 export enum UserRole {
 	ADMIN = 'ADMIN',

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { X, CircleCheck, CircleAlert, AlertTriangle, Sparkles } from '@lucide/svelte';
 	import { fade, fly } from 'svelte/transition';
-	import { getLensTypeLabel } from '$lib/shared/enums/lensTypes';
-	import { formatPrice } from '$lib/utils';
-	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
+	import { getLensTypeLabel } from '#lib/shared/enums/lensTypes.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import EyeSummary from '#lib/components/ui/EyeSummary.svelte';
 	import type { Step2PrescriptionConfirmation } from './saleItemHelpers';
 
 	interface Props {

@@ -4,23 +4,23 @@
  */
 import { getPurchaseOrderFinanceIssues, normalizeCreditTermsForWrite } from './helpers';
 import { command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { getErrorMessage } from '$lib/utils';
-import { composeBusinessTimestamp } from '$lib/dates';
+import { requireAdmin } from '#lib/server/guards.js';
+import { getErrorMessage } from '#lib/utils/index.js';
+import { composeBusinessTimestamp } from '#lib/dates.js';
 
-import { UpdatePurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
+import { UpdatePurchaseOrderSchema } from '#lib/schemas/purchaseOrders.js';
 
 import {
 	findPurchaseOrderById,
 	updatePurchaseOrder
-} from '$lib/server/db/queries/purchaseOrders/orders';
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
 
-import { db } from '$lib/server/db';
-import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
+import { db } from '#lib/server/db/index.js';
+import { PurchaseOrderStatus, PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
-import type { PurchaseOrder } from '$lib/server/db/schema';
+import type { PurchaseOrder } from '#lib/server/db/schema/index.js';
 
 export const updatePurchaseOrderCmd = command(UpdatePurchaseOrderSchema, async (data) => {
 	requireAdmin();

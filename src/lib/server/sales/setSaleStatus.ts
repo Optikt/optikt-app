@@ -1,11 +1,11 @@
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writes';
-import { db } from '$lib/server/db';
-import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-import { auditService } from '$lib/server/audit';
-import { nowISO } from '$lib/dates';
-import type { SetSaleStatusInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { updateSale as updateSaleQuery } from '#lib/server/db/queries/sales/writes.js';
+import { db } from '#lib/server/db/index.js';
+import { SaleStatus, UserRole, canManageSaleByOwner } from '#lib/shared/enums/index.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { nowISO } from '#lib/dates.js';
+import type { SetSaleStatusInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /** Forward order used to decide whether a transition goes backwards. */
 const SALE_STATUS_FLOW: SaleStatus[] = [

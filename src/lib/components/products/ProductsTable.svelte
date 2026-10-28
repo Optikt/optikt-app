@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Package } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { deleteProductById } from '$lib/remote/products.remote';
-	import { ConfirmModal, DataGrid } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import { deleteProductById } from '#lib/remote/products.remote.js';
+	import { ConfirmModal, DataGrid } from '#lib/components/ui/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import ProductReactivateModal from './ProductReactivateModal.svelte';
 	import ProductTableMobileCard from './table/ProductTableMobileCard.svelte';
 	import ProductTableRow from './table/ProductTableRow.svelte';

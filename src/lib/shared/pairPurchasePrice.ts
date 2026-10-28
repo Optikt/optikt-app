@@ -1,4 +1,4 @@
-import { LensPriceType } from '$lib/shared/enums';
+import { LensPriceType } from '#lib/shared/enums/index.js';
 
 /**
  * Precio de compra siempre por par.

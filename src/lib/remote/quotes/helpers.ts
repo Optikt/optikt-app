@@ -3,17 +3,20 @@
  * Split from quotes.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 
-import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+import type { QuoteItemWithDetails } from '#lib/server/db/queries/quotes.js';
 
-import { ALL_LENS_TYPES, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { ALL_LENS_TYPES, LensType, SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
-import { type SaleTotalsLine } from '$lib/shared/saleTotals';
+import { type SaleTotalsLine } from '#lib/shared/saleTotals.js';
 
-import type { QuoteItemInput } from '$lib/schemas/quotes';
-import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
+import type { QuoteItemInput } from '#lib/schemas/quotes.js';
+import type { PrescriptionFieldsInput } from '#lib/schemas/prescriptions.js';
 
-import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
-import { saleItemCommonValues } from '$lib/shared/saleItemValues';
+import {
+	computeLensSnapshotCostTotal,
+	computeSnapshotCostUnit
+} from '#lib/shared/saleItemCosts.js';
+import { saleItemCommonValues } from '#lib/shared/saleItemValues.js';
 
 // ============================================================================
 // HELPERS

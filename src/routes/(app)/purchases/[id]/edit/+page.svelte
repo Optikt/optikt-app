@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { untrack, onMount } from 'svelte';
-	import { NewPurchaseOrderForm } from '$lib/components/purchases';
+	import { NewPurchaseOrderForm } from '#lib/components/purchases/index.js';
 	import {
 		createPurchaseOrderDraftItemFromExisting,
 		type PurchaseOrderDraftInitialValues
-	} from '$lib/components/purchases/purchaseOrderDraft';
-	import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
-	import { cacheCatalogItems } from '$lib/components/sales/catalogCache.svelte';
+	} from '#lib/components/purchases/purchaseOrderDraft.js';
+	import { getCatalogItemsByIds } from '#lib/remote/catalog.remote.js';
+	import { cacheCatalogItems } from '#lib/components/sales/catalogCache.svelte.js';
 	import {
 		PurchaseDiscountType,
 		PurchaseDocumentType,
 		PurchasePaymentTerms
-	} from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

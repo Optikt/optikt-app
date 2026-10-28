@@ -3,14 +3,17 @@
  * Split from sales.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 
-import type { SaleWithRelations, SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
+import type { SaleWithRelations, SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
 
-import { type SalePayment } from '$lib/server/db/schema';
+import { type SalePayment } from '#lib/server/db/schema/index.js';
 
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
-import { computeLensSnapshotCostTotal, computeSnapshotCostUnit } from '$lib/shared/saleItemCosts';
-import { type SaleTotalsLine } from '$lib/shared/saleTotals';
+import {
+	computeLensSnapshotCostTotal,
+	computeSnapshotCostUnit
+} from '#lib/shared/saleItemCosts.js';
+import { type SaleTotalsLine } from '#lib/shared/saleTotals.js';
 
 // ============================================================================
 // TYPES
@@ -24,7 +27,7 @@ export interface PaginatedSales {
 	totalPages: number;
 }
 
-export type { SalesStats } from '$lib/server/db/queries/sales/types';
+export type { SalesStats } from '#lib/server/db/queries/sales/types.js';
 
 export interface SaleDetail {
 	sale: SaleWithRelations;

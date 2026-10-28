@@ -1,16 +1,19 @@
 <script lang="ts">
-	import { SlideOver } from '$lib/components/ui';
+	import { SlideOver } from '#lib/components/ui/index.js';
 	import { Package, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { updateSale } from '$lib/remote/sales/update.remote';
-	import { getErrorMessage } from '$lib/utils';
-	import { DiscountType } from '$lib/shared/enums';
-	import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
-	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import { updateSale } from '#lib/remote/sales/update.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { DiscountType } from '#lib/shared/enums/index.js';
+	import { SaleItemType, FreeItemCategory } from '#lib/shared/enums/lensTypes.js';
+	import type {
+		SaleItemWithDetails,
+		SaleWithRelations
+	} from '#lib/server/db/queries/sales/types.js';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 	import { untrack, onMount } from 'svelte';
 	import { getCachedProducts } from './catalogCache.svelte';
-	import { fromISO } from '$lib/dates';
+	import { fromISO } from '#lib/dates.js';
 	import EditSaleHeaderFields from './editSale/EditSaleHeaderFields.svelte';
 	import EditSaleAddFreeItemPanel from './editSale/EditSaleAddFreeItemPanel.svelte';
 	import EditSaleAddProductPanel from './editSale/EditSaleAddProductPanel.svelte';

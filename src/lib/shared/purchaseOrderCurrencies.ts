@@ -1,4 +1,4 @@
-import { CurrencyCode, PurchaseSourceCurrency } from '$lib/shared/enums';
+import { CurrencyCode, PurchaseSourceCurrency } from '#lib/shared/enums/index.js';
 
 // ============================================================================
 // SOURCE-TO-CODE MAPPING

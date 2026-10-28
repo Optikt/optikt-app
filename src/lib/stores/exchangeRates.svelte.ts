@@ -1,8 +1,8 @@
 import { browser } from '$app/environment';
 import { resolve } from '$app/paths';
-import { refreshExchangeRatesCommand } from '$lib/remote/exchangeRates.remote';
-import type { ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
-import { getErrorMessage } from '$lib/utils';
+import { refreshExchangeRatesCommand } from '#lib/remote/exchangeRates.remote.js';
+import type { ExchangeRatesSnapshot } from '#lib/shared/exchangeRates.js';
+import { getErrorMessage } from '#lib/utils/index.js';
 
 let snapshot = $state<ExchangeRatesSnapshot | null>(null);
 let loading = $state(true);

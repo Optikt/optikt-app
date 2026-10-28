@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Search } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 	import type { PrescriptionFieldErrors } from '../../saleItemHelpers';
 	import { getEnabledEyeCount } from '../../saleItemHelpers';
 	import type { SaleItemRow } from '../../newSaleTypes';

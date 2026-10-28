@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	brands,
 	customers,
@@ -16,7 +16,7 @@ import {
 	sales,
 	suppliers,
 	users
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 import {
 	CurrencyCode,
 	InventoryMovementType,
@@ -24,8 +24,8 @@ import {
 	PurchaseOrderItemType,
 	PurchaseOrderStatus,
 	UserRole
-} from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+} from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
 function runId(): string {
 	return randomUUID().slice(0, 8);

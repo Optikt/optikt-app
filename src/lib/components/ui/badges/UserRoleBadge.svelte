@@ -1,6 +1,6 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import { UserRole, getUserRoleBadgeColor } from '$lib/shared/enums';
+	import { UserRole, getUserRoleBadgeColor } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		/** The user role value */

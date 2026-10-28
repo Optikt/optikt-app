@@ -1,6 +1,6 @@
-import { CurrencyCode, isBaseCurrency } from '$lib/shared/enums/currencyTypes';
-import type { ExpenseCurrency } from '$lib/shared/enums/cashTypes';
-import { EXPENSE_TO_CURRENCY_CODE } from '$lib/shared/enums/cashTypes';
+import { CurrencyCode, isBaseCurrency } from '#lib/shared/enums/currencyTypes.js';
+import type { ExpenseCurrency } from '#lib/shared/enums/cashTypes.js';
+import { EXPENSE_TO_CURRENCY_CODE } from '#lib/shared/enums/cashTypes.js';
 
 interface CalculateExpenseAmountBcvUsdParams {
 	currency: ExpenseCurrency;

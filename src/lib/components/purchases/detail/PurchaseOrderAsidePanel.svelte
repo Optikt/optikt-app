@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
+	import { getPurchaseOrderDetailContext } from '#lib/context/purchaseOrderDetail.js';
 	import PurchaseOrderAuditTimeline from './PurchaseOrderAuditTimeline.svelte';
 	import PurchaseOrderFinancialCard from './PurchaseOrderFinancialCard.svelte';
 	import PurchaseOrderReviewProgressCard from './PurchaseOrderReviewProgressCard.svelte';

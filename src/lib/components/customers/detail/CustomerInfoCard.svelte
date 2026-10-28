@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { Check, SquarePen, User, X } from '@lucide/svelte';
-	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '$lib/components/ui';
-	import { Label } from '$lib/components/ui/label';
-	import { updateCustomerForm } from '$lib/remote/customers.remote';
-	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '$lib/utils';
-	import { calculateAge } from '$lib/dates';
+	import { FormInput, FormTextarea, FormDatepicker, IdInput } from '#lib/components/ui/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { updateCustomerForm } from '#lib/remote/customers.remote.js';
+	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '#lib/utils/index.js';
+	import { calculateAge } from '#lib/dates.js';
 	import {
 		ALL_CUSTOMER_GENDERS,
 		CUSTOMER_GENDER_LABELS,
 		type CustomerGender
-	} from '$lib/shared/enums/customerGenders';
+	} from '#lib/shared/enums/customerGenders.js';
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
-	import type { Customer } from '$lib/server/db/schema';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import type { CustomerEditData } from './customerDetail';
 
 	interface Props {

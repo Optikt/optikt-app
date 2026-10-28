@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Minus, Plus } from '@lucide/svelte';
-	import type { ManualAdjustmentType } from '$lib/components/products/adjustments/helpers';
-	import { AppBadge, FormInput } from '$lib/components/ui';
-	import { InventoryMovementType } from '$lib/shared/enums';
-	import type { InventoryLot } from '$lib/server/db/schema';
+	import type { ManualAdjustmentType } from '#lib/components/products/adjustments/helpers.js';
+	import { AppBadge, FormInput } from '#lib/components/ui/index.js';
+	import { InventoryMovementType } from '#lib/shared/enums/index.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
 	import type { ReasonOption } from './adjustmentView';
 
 	interface Props {

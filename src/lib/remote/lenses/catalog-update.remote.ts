@@ -4,26 +4,35 @@
  */
 import { toRangeSemantic, rangesAreEqual, summarizeRanges } from './shared';
 import { form } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
+import { requireAdmin } from '#lib/server/guards.js';
 import { invalid } from '@sveltejs/kit';
 import { eq, and, isNull } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
-import { lensCatalogItems, lensOpticalRanges } from '$lib/server/db/schema';
-import { UpdateLensCatalogItemSchema } from '$lib/schemas/lenses';
+import { lensCatalogItems, lensOpticalRanges } from '#lib/server/db/schema/index.js';
+import { UpdateLensCatalogItemSchema } from '#lib/schemas/lenses.js';
 
 import {
 	resolvePendingLensMaterial,
 	resolvePendingTechnology
-} from '$lib/server/db/queries/lenses/pending';
+} from '#lib/server/db/queries/lenses/pending.js';
 
-import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
-import type { LensCatalogItem, LensOpticalRange, NewLensCatalogItem } from '$lib/server/db/schema';
+import { resolvePendingSupplier } from '#lib/server/db/queries/suppliers.js';
+import type {
+	LensCatalogItem,
+	LensOpticalRange,
+	NewLensCatalogItem
+} from '#lib/server/db/schema/index.js';
 
-import { auditService, getAuditContext, calculateDiff, hasChanges } from '$lib/server/audit';
-import { nowISO } from '$lib/dates';
+import {
+	auditService,
+	getAuditContext,
+	calculateDiff,
+	hasChanges
+} from '#lib/server/audit/index.js';
+import { nowISO } from '#lib/dates.js';
 
-import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
+import { computePairPurchasePrice } from '#lib/shared/pairPurchasePrice.js';
 export const updateLensCatalogItemForm = form(
 	UpdateLensCatalogItemSchema,
 	async (data): Promise<LensCatalogItem & { ranges: LensOpticalRange[] }> => {

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Coins } from '@lucide/svelte';
-	import { TaxToggle } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
-	import type { Product } from '$lib/server/db/schema';
+	import { TaxToggle } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import type { Product } from '#lib/server/db/schema/index.js';
 	import { noteCardClass, sectionClass, statCardClass } from './productFormClasses';
 	import type { ProductFormData } from './productFormTypes';
 

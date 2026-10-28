@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
-import { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
-import { isNotificationLink, type NotificationLink } from '$lib/shared/notifications';
+import { NotificationSeverity, NotificationType, UserRole } from '#lib/shared/enums/index.js';
+import { isNotificationLink, type NotificationLink } from '#lib/shared/notifications.js';
 import { db } from '../index';
 import {
 	notificationReads,

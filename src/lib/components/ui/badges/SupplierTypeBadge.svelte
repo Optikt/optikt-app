@@ -1,6 +1,10 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import { SupplierType, getSupplierTypeBadgeColor, getSupplierTypeLabel } from '$lib/shared/enums';
+	import {
+		SupplierType,
+		getSupplierTypeBadgeColor,
+		getSupplierTypeLabel
+	} from '#lib/shared/enums/index.js';
 
 	interface Props {
 		/** The supplier type value */

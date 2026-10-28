@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '#lib/utils/index.js';
 	import type { AdjustedTaxBreakdown } from '../../helpers/taxBreakdown';
 
 	interface Props {

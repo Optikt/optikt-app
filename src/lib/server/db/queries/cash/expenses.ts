@@ -20,8 +20,8 @@ import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
 import { db } from '../../index';
 import { cashExpenses, users, type CashExpense, type NewCashExpense } from '../../schema';
 import type { DbOrTx } from '../../types';
-import { nowISO } from '$lib/dates';
-import { type ExpenseCategory } from '$lib/shared/enums';
+import { nowISO } from '#lib/dates.js';
+import { type ExpenseCategory } from '#lib/shared/enums/index.js';
 
 // ============================================================================
 // CASH EXPENSE: CRUD

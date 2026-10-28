@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { countOpenSupportTicketsQuery } from '$lib/remote/supportTickets.remote';
-	import { SUPPORT_TICKETS_CHANGED_EVENT } from '$lib/shared/supportTickets';
+	import { countOpenSupportTicketsQuery } from '#lib/remote/supportTickets.remote.js';
+	import { SUPPORT_TICKETS_CHANGED_EVENT } from '#lib/shared/supportTickets.js';
 
 	let openCount = $state(0);
 	const badgeLabel = $derived(openCount > 99 ? '99+' : String(openCount));

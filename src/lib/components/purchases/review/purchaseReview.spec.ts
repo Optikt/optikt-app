@@ -5,7 +5,7 @@ import {
 	PurchaseOrderItemType,
 	PurchasePaymentTerms,
 	PurchaseSourceCurrency
-} from '$lib/shared/enums';
+} from '#lib/shared/enums/index.js';
 import { cacheCatalogItems } from '../../sales/catalogCache.svelte';
 import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
 import {

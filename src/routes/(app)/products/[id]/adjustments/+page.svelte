@@ -3,9 +3,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
-	import AdjustmentImpactCard from '$lib/components/products/adjustments/AdjustmentImpactCard.svelte';
-	import AdjustmentLotSelectionCard from '$lib/components/products/adjustments/AdjustmentLotSelectionCard.svelte';
-	import AdjustmentStepRail from '$lib/components/products/adjustments/AdjustmentStepRail.svelte';
+	import AdjustmentImpactCard from '#lib/components/products/adjustments/AdjustmentImpactCard.svelte';
+	import AdjustmentLotSelectionCard from '#lib/components/products/adjustments/AdjustmentLotSelectionCard.svelte';
+	import AdjustmentStepRail from '#lib/components/products/adjustments/AdjustmentStepRail.svelte';
 	import {
 		buildAdjustmentSteps,
 		getAllowedAdjustmentTypes,
@@ -13,21 +13,21 @@
 		getNotesRemaining,
 		getProjectedLotQuantity,
 		type ManualAdjustmentType
-	} from '$lib/components/products/adjustments/helpers';
-	import AdjustDetailsForm from '$lib/components/products/adjust/AdjustDetailsForm.svelte';
-	import AdjustEmptyState from '$lib/components/products/adjust/AdjustEmptyState.svelte';
-	import AdjustHeader from '$lib/components/products/adjust/AdjustHeader.svelte';
-	import AdjustInfoTrio from '$lib/components/products/adjust/AdjustInfoTrio.svelte';
-	import AdjustSummaryCard from '$lib/components/products/adjust/AdjustSummaryCard.svelte';
+	} from '#lib/components/products/adjustments/helpers.js';
+	import AdjustDetailsForm from '#lib/components/products/adjust/AdjustDetailsForm.svelte';
+	import AdjustEmptyState from '#lib/components/products/adjust/AdjustEmptyState.svelte';
+	import AdjustHeader from '#lib/components/products/adjust/AdjustHeader.svelte';
+	import AdjustInfoTrio from '#lib/components/products/adjust/AdjustInfoTrio.svelte';
+	import AdjustSummaryCard from '#lib/components/products/adjust/AdjustSummaryCard.svelte';
 	import {
 		buildReasonOptions,
 		findLastManualAdjustment,
 		getDirectionHint,
 		getQuantityError
-	} from '$lib/components/products/adjust/adjustmentView';
-	import { ConfirmModal } from '$lib/components/ui';
-	import { nowUTC } from '$lib/dates';
-	import { createManualAdjustmentCmd } from '$lib/remote/inventory.remote';
+	} from '#lib/components/products/adjust/adjustmentView.js';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { nowUTC } from '#lib/dates.js';
+	import { createManualAdjustmentCmd } from '#lib/remote/inventory.remote.js';
 	import {
 		AdjustmentReason,
 		ADJUSTMENT_REASON_LABELS,
@@ -35,9 +35,9 @@
 		InventoryMovementType,
 		LOSS_REASONS,
 		MovementReferenceType
-	} from '$lib/shared/enums';
-	import type { InventoryLot } from '$lib/server/db/schema';
-	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
+	} from '#lib/shared/enums/index.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
+	import { formatDate, formatPrice, getErrorMessage } from '#lib/utils/index.js';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);

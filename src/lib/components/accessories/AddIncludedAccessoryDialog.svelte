@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Plus, X } from '@lucide/svelte';
-	import { SelectInput } from '$lib/components/ui';
-	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
+	import { SelectInput } from '#lib/components/ui/index.js';
+	import { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
 
 	interface AccessoryOption {
 		id: string;

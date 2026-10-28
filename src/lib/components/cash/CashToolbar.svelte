@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ArrowRight, Download, Printer } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { Button } from '$lib/components/ui/button';
-	import { formatPrice } from '$lib/utils';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import {
 		desktopLabelClass,
 		desktopToolbarInputClass,

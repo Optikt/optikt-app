@@ -9,7 +9,7 @@ import type {
 } from './types';
 import { and, asc, eq, inArray, isNotNull, isNull, sql, type SQL } from 'drizzle-orm';
 
-import type { DbOrTx } from '$lib/server/db/types';
+import type { DbOrTx } from '#lib/server/db/types.js';
 
 import {
 	inventoryCountLines,
@@ -18,9 +18,9 @@ import {
 	products,
 	users,
 	type InventoryCountSession
-} from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
-import { UserRole } from '$lib/shared/enums';
+} from '#lib/server/db/schema/index.js';
+import { nowISO } from '#lib/dates.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 export type InventoryCountUserRow = {
 	id: string;

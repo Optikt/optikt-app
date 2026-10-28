@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { DiscountType } from '$lib/shared/enums';
-import type { TaxableItem } from '$lib/shared/tax';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import type { TaxableItem } from '#lib/shared/tax.js';
 
 import {
 	buildTaxItemsFromWizard,

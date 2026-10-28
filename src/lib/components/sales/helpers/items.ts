@@ -3,9 +3,9 @@
  * Pure functions that operate on SaleItemRow + data arrays.
  */
 
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { computeDiscount } from '$lib/utils';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { computeDiscount } from '#lib/utils/index.js';
 
 import type { SaleItemRow } from '../newSaleTypes';
 

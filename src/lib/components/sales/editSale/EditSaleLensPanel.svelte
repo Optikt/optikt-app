@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { FlaskConical, Save, X } from '@lucide/svelte';
-	import { DiscountType } from '$lib/shared/enums';
+	import { DiscountType } from '#lib/shared/enums/index.js';
 	import ItemSelect from '../ItemSelect.svelte';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '#lib/utils/index.js';
 	import type { EditableItem } from '../editSaleDraft';
 
 	interface Props {

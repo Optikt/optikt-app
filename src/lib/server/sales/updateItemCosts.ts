@@ -1,11 +1,11 @@
-import { resolveLensSnapshotCosts } from '$lib/remote/sales/helpers';
-import { updateSaleItemCosts } from '$lib/server/db/queries/';
-import { db } from '$lib/server/db';
-import { saleItems } from '$lib/server/db/schema';
+import { resolveLensSnapshotCosts } from '#lib/remote/sales/helpers.js';
+import { updateSaleItemCosts } from '#lib/server/db/queries//index.js';
+import { db } from '#lib/server/db/index.js';
+import { saleItems } from '#lib/server/db/schema/index.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import { auditService } from '$lib/server/audit';
-import type { UpdateSaleItemCostsInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { auditService } from '#lib/server/audit/index.js';
+import type { UpdateSaleItemCostsInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 export async function updateItemCostsCore(data: UpdateSaleItemCostsInput, ctx: ActionContext) {
 	// Fetch the existing item for audit comparison

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { reactivateUser } from '$lib/remote/users/commands.remote';
-	import { getErrorMessage } from '$lib/utils';
-	import type { UserListItem } from '$lib/types/users';
-	import type { UserRole } from '$lib/shared/enums';
+	import { reactivateUser } from '#lib/remote/users/commands.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import type { UserListItem } from '#lib/types/users.js';
+	import type { UserRole } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		open: boolean;

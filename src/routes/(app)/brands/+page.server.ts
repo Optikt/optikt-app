@@ -1,9 +1,9 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { brands } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { brands } from '#lib/server/db/schema/index.js';
 import { isNull, count } from 'drizzle-orm';
-import { getAllBrands } from '$lib/server/db/queries/brands';
+import { getAllBrands } from '#lib/server/db/queries/brands.js';
 
 /**
  * Load initial brands data for SSR

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { NewQuoteForm } from '$lib/components/quotes';
+	import { NewQuoteForm } from '#lib/components/quotes/index.js';
 
 	let { data } = $props();
 </script>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PurchaseDiscountType, PurchasePaymentTerms } from '$lib/shared/enums';
+import { PurchaseDiscountType, PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 import {
 	calculatePurchaseOrderDebtTotal,
 	computePurchaseOrderBalance,

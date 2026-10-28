@@ -13,9 +13,9 @@
  * 7. Cashea: si la venta es financiada se agrega {method:"Cashea"} por la
  *    parte NO cobrada, de modo que Σ payments == total.
  */
-import { decomposePrice } from '$lib/shared/tax';
-import { computeDiscount } from '$lib/utils';
-import { fromISO } from '$lib/dates';
+import { decomposePrice } from '#lib/shared/tax.js';
+import { computeDiscount } from '#lib/utils/index.js';
+import { fromISO } from '#lib/dates.js';
 
 export interface TickeraRowInput {
 	description: string;

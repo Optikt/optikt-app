@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CoercedInteger } from './common/numbers';
-import { ProductType } from '$lib/shared/enums';
+import { ProductType } from '#lib/shared/enums/index.js';
 
 export const INVENTORY_COUNT_SESSION_STATUSES = ['OPEN', 'APPLIED', 'CANCELLED'] as const;
 export type InventoryCountSessionStatus = (typeof INVENTORY_COUNT_SESSION_STATUSES)[number];

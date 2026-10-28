@@ -2,9 +2,9 @@
 	import { Glasses, Plus, Star } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { LensTypeBadge } from '$lib/components/ui/badges';
-	import { formatDate, formatDpNp, formatOpticalValue } from '$lib/utils';
-	import type { Prescription } from '$lib/server/db/schema';
+	import { LensTypeBadge } from '#lib/components/ui/badges/index.js';
+	import { formatDate, formatDpNp, formatOpticalValue } from '#lib/utils/index.js';
+	import type { Prescription } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		prescription: Prescription | null;

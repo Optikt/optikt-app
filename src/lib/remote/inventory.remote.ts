@@ -8,18 +8,18 @@ import {
 	ManualAdjustmentSchema,
 	ListInventoryMovementsSchema,
 	RevertLotSchema
-} from '$lib/schemas/inventory';
-import { requireAuth, requireRole } from '$lib/server/guards';
+} from '#lib/schemas/inventory.js';
+import { requireAuth, requireRole } from '#lib/server/guards.js';
 import {
 	getMovementsWithDetails,
 	countInventoryMovements
-} from '$lib/server/db/queries/inventoryMovements';
-import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
-import { UserRole } from '$lib/shared/enums';
-import type { PaginatedResult } from '$lib/types';
-import { getActionContext } from '$lib/server/actionContext';
-import { createManualAdjustmentCore } from '$lib/server/inventory/createManualAdjustment';
-import { revertFullLotCore } from '$lib/server/inventory/revertFullLot';
+} from '#lib/server/db/queries/inventoryMovements.js';
+import type { MovementWithDetails } from '#lib/server/db/queries/inventoryMovements.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import type { PaginatedResult } from '#lib/types/index.js';
+import { getActionContext } from '#lib/server/actionContext.js';
+import { createManualAdjustmentCore } from '#lib/server/inventory/createManualAdjustment.js';
+import { revertFullLotCore } from '#lib/server/inventory/revertFullLot.js';
 
 // ============================================================================
 // QUERIES

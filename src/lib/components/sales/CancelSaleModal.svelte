@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { AlertTriangle } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { ConfirmModal } from '$lib/components/ui';
-	import { cancelSale } from '$lib/remote/sales/lifecycle.remote';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import { RefundStatus } from '$lib/shared/enums';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { cancelSale } from '#lib/remote/sales/lifecycle.remote.js';
+	import { formatPrice, getErrorMessage } from '#lib/utils/index.js';
+	import { RefundStatus } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		open: boolean;

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { RefreshCw, Play, HardDrive } from '@lucide/svelte';
-	import { getErrorMessage } from '$lib/utils';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import { untrack } from 'svelte';
 	import {
 		listBackupHistory,
@@ -10,8 +10,8 @@
 		runBackup,
 		type BackupHistoryItem,
 		type BackupStatus
-	} from '$lib/remote/backups.remote';
-	import { BackupsStatusBadge, BackupsTable } from '$lib/components/backups';
+	} from '#lib/remote/backups.remote.js';
+	import { BackupsStatusBadge, BackupsTable } from '#lib/components/backups/index.js';
 
 	let { data } = $props();
 	let { initialHistory, initialStatus } = untrack(() => data);

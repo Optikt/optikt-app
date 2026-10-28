@@ -1,6 +1,6 @@
-import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
-import type { DiscountType } from '$lib/shared/enums';
+import { toSaleTotalsLine } from '#lib/remote/quotes/helpers.js';
+import { computeSaleTotals } from '#lib/shared/saleTotals.js';
+import type { DiscountType } from '#lib/shared/enums/index.js';
 
 interface DocumentTotalsItem {
 	unitPrice: number;

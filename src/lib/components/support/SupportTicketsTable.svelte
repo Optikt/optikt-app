@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import EmptyState from '$lib/components/ui/EmptyState.svelte';
+	import EmptyState from '#lib/components/ui/EmptyState.svelte';
 	import SupportTicketPriorityBadge from './SupportTicketPriorityBadge.svelte';
 	import SupportTicketStatusBadge from './SupportTicketStatusBadge.svelte';
-	import { TICKET_CATEGORY_LABELS } from '$lib/shared/enums';
-	import { formatDateOnly } from '$lib/utils';
-	import type { SupportTicketRow } from '$lib/server/db/queries/supportTickets';
+	import { TICKET_CATEGORY_LABELS } from '#lib/shared/enums/index.js';
+	import { formatDateOnly } from '#lib/utils/index.js';
+	import type { SupportTicketRow } from '#lib/server/db/queries/supportTickets.js';
 
 	interface Props {
 		tickets: SupportTicketRow[];

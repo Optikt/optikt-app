@@ -2,12 +2,12 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import { createLensCatalogItemForm } from '$lib/remote/lenses/catalog.remote';
-	import { updateLensCatalogItemForm } from '$lib/remote/lenses/catalog-update.remote';
-	import { listTechnologiesBySupplier } from '$lib/remote/lenses/technologies.remote';
-	import { type SelectOption, type PendingEntity } from '$lib/components/ui';
-	import { getErrorMessage, logger } from '$lib/utils';
-	import FormActions from '$lib/components/ui/FormActions.svelte';
+	import { createLensCatalogItemForm } from '#lib/remote/lenses/catalog.remote.js';
+	import { updateLensCatalogItemForm } from '#lib/remote/lenses/catalog-update.remote.js';
+	import { listTechnologiesBySupplier } from '#lib/remote/lenses/technologies.remote.js';
+	import { type SelectOption, type PendingEntity } from '#lib/components/ui/index.js';
+	import { getErrorMessage, logger } from '#lib/utils/index.js';
+	import FormActions from '#lib/components/ui/FormActions.svelte';
 	import LensFormIdentitySection from './form/LensFormIdentitySection.svelte';
 	import LensFormCostSection from './form/LensFormCostSection.svelte';
 	import LensFormManagementSection from './form/LensFormManagementSection.svelte';
@@ -38,17 +38,17 @@
 	import {
 		collapseOpticalRangesForForm,
 		createEmptyOpticalRangeEntry
-	} from '$lib/utils/opticalRange/collapse';
-	import { expandOpticalRanges } from '$lib/utils/opticalRange/expand';
+	} from '#lib/utils/opticalRange/collapse.js';
+	import { expandOpticalRanges } from '#lib/utils/opticalRange/expand.js';
 	import {
 		hasOpticalRangeValidationErrors,
 		validateOpticalRangeEntry
-	} from '$lib/utils/opticalRange/validate';
-	import type { OpticalRangeFormEntry } from '$lib/utils/opticalRange/types';
-	import { LensType, LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
-	import { scrollToFirstError, getFormErrorMessage } from '$lib/utils';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import type { LensCatalogItem, LensOpticalRange } from '$lib/server/db/schema';
+	} from '#lib/utils/opticalRange/validate.js';
+	import type { OpticalRangeFormEntry } from '#lib/utils/opticalRange/types.js';
+	import { LensType, LensCatalogSource, LensInventoryMode } from '#lib/shared/enums/index.js';
+	import { scrollToFirstError, getFormErrorMessage } from '#lib/utils/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import type { LensCatalogItem, LensOpticalRange } from '#lib/server/db/schema/index.js';
 	import { resolve } from '$app/paths';
 
 	type Props = {

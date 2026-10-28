@@ -1,13 +1,16 @@
-import { createEmptyOpticalRangeEntry } from '$lib/utils/opticalRange/collapse';
-import { createEmptyOpticalRangeValidation } from '$lib/utils/opticalRange/validate';
+import type { RemoteFormIssue } from '$app/server';
+import { createEmptyOpticalRangeEntry } from '#lib/utils/opticalRange/collapse.js';
+import { createEmptyOpticalRangeValidation } from '#lib/utils/opticalRange/validate.js';
 import {
 	toContinuousSphereValues,
 	toInverseDuplicateSphereValues
-} from '$lib/utils/opticalRange/expand';
-import { SPHERE_RANGE_MODE } from '$lib/utils/opticalRange/types';
-import { toastUnboundErrors } from '$lib/utils';
-import type { RemoteFormIssue } from '@sveltejs/kit';
-import type { OpticalRangeFormEntry, OpticalRangeValidation } from '$lib/utils/opticalRange/types';
+} from '#lib/utils/opticalRange/expand.js';
+import { SPHERE_RANGE_MODE } from '#lib/utils/opticalRange/types.js';
+import { toastUnboundErrors } from '#lib/utils/index.js';
+import type {
+	OpticalRangeFormEntry,
+	OpticalRangeValidation
+} from '#lib/utils/opticalRange/types.js';
 
 const rangeInputBaseClass =
 	'block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue font-mono';

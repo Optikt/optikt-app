@@ -1,9 +1,9 @@
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 
-import { nowISO } from '$lib/dates';
-import { db } from '$lib/server/db';
-import { brandSuppliers, brands, products, suppliers } from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
+import { nowISO } from '#lib/dates.js';
+import { db } from '#lib/server/db/index.js';
+import { brandSuppliers, brands, products, suppliers } from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 
 export interface NamedRelationOption {
 	id: string;

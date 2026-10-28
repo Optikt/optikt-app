@@ -1,12 +1,12 @@
-import { PaymentMethod } from '$lib/shared/enums';
-import { SaleStatus } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
-import type { SalePayment } from '$lib/server/db/schema';
-import { computeDiscount, formatCurrency, formatDate, formatPrice } from '$lib/utils';
-import { computeTaxBreakdown, type TaxableItem } from '$lib/shared/tax';
-import { computeAdjustedTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
-import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
+import { PaymentMethod } from '#lib/shared/enums/index.js';
+import { SaleStatus } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import type { SaleItemWithDetails, SaleWithRelations } from '#lib/server/db/queries/sales/types.js';
+import type { SalePayment } from '#lib/server/db/schema/index.js';
+import { computeDiscount, formatCurrency, formatDate, formatPrice } from '#lib/utils/index.js';
+import { computeTaxBreakdown, type TaxableItem } from '#lib/shared/tax.js';
+import { computeAdjustedTaxBreakdown } from '#lib/components/sales/saleItemHelpers.js';
+import { hasHalfLetterReceiptOverflowRisk } from '#lib/utils/printDocumentItems.js';
 
 export interface RenderedRow {
 	key: string;

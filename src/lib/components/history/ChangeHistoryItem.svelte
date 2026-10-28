@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { ChangeRecord, EntityType, ActionType } from '$lib/server/db/schema';
+	import type { ChangeRecord, EntityType, ActionType } from '#lib/server/db/schema/index.js';
 	import { actionLabels, actionIcons } from './display-utils';
 	import ChangesDiff from './ChangesDiff.svelte';
-	import { formatDate } from '$lib/utils';
+	import { formatDate } from '#lib/utils/index.js';
 
 	interface Props {
 		entityType: EntityType;

@@ -1,5 +1,5 @@
-import type { PrescriptionTreatments, NewPrescription } from '$lib/server/db/schema';
-import type { PrescriptionFieldsInput } from '$lib/schemas/prescriptions';
+import type { PrescriptionTreatments, NewPrescription } from '#lib/server/db/schema/index.js';
+import type { PrescriptionFieldsInput } from '#lib/schemas/prescriptions.js';
 
 /**
  * Normalize optical values for storage.

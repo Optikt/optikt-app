@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { FlaskConical } from '@lucide/svelte';
 	import { getContext } from 'svelte';
-	import { formatPrice } from '$lib/utils';
-	import { DiscountType, TreatmentCategory, getTreatmentCategoryLabel } from '$lib/shared/enums';
+	import { formatPrice } from '#lib/utils/index.js';
+	import {
+		DiscountType,
+		TreatmentCategory,
+		getTreatmentCategoryLabel
+	} from '#lib/shared/enums/index.js';
 	import {
 		findLensItem,
 		findProduct,
@@ -16,12 +20,12 @@
 		getDiscountToggleButtonClass,
 		type TaxDisplayMeta
 	} from './summaryViewModel';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 	import type { SaleItemRow, TreatmentSaleItemRow } from '../../newSaleTypes';
 	import SaleItemInfo from '../../SaleItemInfo.svelte';
 	import { CATALOG_KEY, type CatalogData } from '../../wizardContext';
-	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+	import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 
 	interface Props {
 		items: SaleItemRow[];

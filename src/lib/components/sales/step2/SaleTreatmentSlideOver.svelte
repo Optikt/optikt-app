@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { X, Check } from '@lucide/svelte';
-	import { SlideOver } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
-	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
-	import { TreatmentCategory } from '$lib/shared/enums';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import { SlideOver } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { getTreatmentCategoryLabel } from '#lib/shared/enums/lensTypes.js';
+	import { TreatmentCategory } from '#lib/shared/enums/index.js';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		open: boolean;

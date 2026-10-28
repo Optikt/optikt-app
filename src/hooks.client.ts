@@ -1,5 +1,5 @@
-import type { HandleClientError } from '@sveltejs/kit';
-import { reportClientError } from '$lib/utils';
+import type { HandleClientError } from '@sveltejs/kit/hooks';
+import { reportClientError } from '#lib/utils/index.js';
 
 const clientHandleError: HandleClientError = ({ error, event, status, message }) => {
 	reportClientError('hooks.client', error, {

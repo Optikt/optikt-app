@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { UserRole } from '$lib/shared/enums';
+import { UserRole } from '#lib/shared/enums/index.js';
 import { isManagerDeletingProtectedRole, isLastAdmin } from './user-deletion-rules';
 
 describe('isManagerDeletingProtectedRole', () => {

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
-	import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+	import { formatCurrency, formatDateOnly, formatPrice } from '#lib/utils/index.js';
+	import type { EarlyPaymentDiscountSuggestion } from '#lib/shared/purchaseOrderCredit.js';
 
 	interface PurchaseNormalized {
 		amountBs: number;

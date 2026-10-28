@@ -1,19 +1,19 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { getAllLensMaterials } from '$lib/server/db/queries/lenses/materials';
-import { getLensCatalogDistinctValues } from '$lib/server/db/queries/lenses/pending';
+import { getLensCatalogItemsWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { getAllLensMaterials } from '#lib/server/db/queries/lenses/materials.js';
+import { getLensCatalogDistinctValues } from '#lib/server/db/queries/lenses/pending.js';
 import {
 	getAllTechnologies,
 	getAllDifferentiators
-} from '$lib/server/db/queries/lenses/technologies';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+} from '#lib/server/db/queries/lenses/technologies.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
 import {
 	ALL_LENS_SOURCES,
 	ALL_LENS_TYPES,
 	type LensCatalogSource,
 	type LensType
-} from '$lib/shared/enums';
+} from '#lib/shared/enums/index.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {

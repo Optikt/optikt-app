@@ -1,23 +1,27 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import { Label } from '$lib/components/ui/label';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { createSupplierForm, updateSupplierForm } from '$lib/remote/suppliers.remote';
-	import { SupplierType, ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS } from '$lib/shared/enums';
+	import { createSupplierForm, updateSupplierForm } from '#lib/remote/suppliers.remote.js';
+	import {
+		SupplierType,
+		ALL_SUPPLIER_TYPES,
+		SUPPLIER_TYPE_LABELS
+	} from '#lib/shared/enums/index.js';
 	import {
 		FormInput,
 		FormTextarea,
 		RifInput,
 		WhatsAppInput,
 		InstagramInput
-	} from '$lib/components/ui';
-	import { scrollToFirstError, toastUnboundErrors } from '$lib/utils';
-	import type { Supplier } from '$lib/server/db/schema';
-	import { generateUUID } from '$lib/utils/generateUUID';
+	} from '#lib/components/ui/index.js';
+	import { scrollToFirstError, toastUnboundErrors } from '#lib/utils/index.js';
+	import type { Supplier } from '#lib/server/db/schema/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
 	import SupplierReactivateModal from './SupplierReactivateModal.svelte';
-	import type { CreateEntityResult } from '$lib/types';
+	import type { CreateEntityResult } from '#lib/types/index.js';
 
 	interface Props {
 		open: boolean;

@@ -3,31 +3,31 @@
  * Shell: auth + validation + audit. Logic lives in src/lib/server/payments/purchasePayments.ts.
  */
 import { command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { getErrorMessage } from '$lib/utils';
-import { composeBusinessTimestamp } from '$lib/dates';
+import { requireAdmin } from '#lib/server/guards.js';
+import { getErrorMessage } from '#lib/utils/index.js';
+import { composeBusinessTimestamp } from '#lib/dates.js';
 
 import {
 	CreatePurchaseOrderPaymentSchema,
 	VoidPurchaseOrderPaymentSchema
-} from '$lib/schemas/purchaseOrderPayments';
+} from '#lib/schemas/purchaseOrderPayments.js';
 
-import { findPurchaseOrderById } from '$lib/server/db/queries/purchaseOrders/orders';
+import { findPurchaseOrderById } from '#lib/server/db/queries/purchaseOrders/orders.js';
 import {
 	findPurchaseOrderPaymentById,
 	getPurchaseOrderPaymentsWithUsers
-} from '$lib/server/db/queries/purchaseOrderPayments';
+} from '#lib/server/db/queries/purchaseOrderPayments.js';
 
-import { db } from '$lib/server/db';
-import { PurchaseOrderStatus, currencyForPurchasePaymentMethod } from '$lib/shared/enums';
+import { db } from '#lib/server/db/index.js';
+import { PurchaseOrderStatus, currencyForPurchasePaymentMethod } from '#lib/shared/enums/index.js';
 
-import { normalizePurchasePaymentAmounts } from '$lib/shared/purchaseOrderPayments';
+import { normalizePurchasePaymentAmounts } from '#lib/shared/purchaseOrderPayments.js';
 
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 import {
 	submitPurchaseOrderPayment,
 	voidPurchaseOrderPayment
-} from '$lib/server/payments/purchasePayments';
+} from '#lib/server/payments/purchasePayments.js';
 
 export const addPurchaseOrderPaymentCmd = command(
 	CreatePurchaseOrderPaymentSchema,

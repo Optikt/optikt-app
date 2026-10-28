@@ -4,8 +4,8 @@
 	import { DropdownMenu } from 'bits-ui';
 	import { LifeBuoy, ListChecks, Plus } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
-	import SupportTicketFormModal from '$lib/components/support/SupportTicketFormModal.svelte';
-	import { SUPPORT_TICKETS_CHANGED_EVENT } from '$lib/shared/supportTickets';
+	import SupportTicketFormModal from '#lib/components/support/SupportTicketFormModal.svelte';
+	import { SUPPORT_TICKETS_CHANGED_EVENT } from '#lib/shared/supportTickets.js';
 
 	interface Props {
 		canManage?: boolean;

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { submitPurchaseOrderPayment, voidPurchaseOrderPayment } from './purchasePayments';
-import { db } from '$lib/server/db';
-import { resetDb } from '$lib/testing/integration/db';
-import { createPurchaseOrder, createUser } from '$lib/testing/integration/factories';
-import { CurrencyCode, PaymentMethod, UserRole } from '$lib/shared/enums';
-import type { PurchaseOrder } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createPurchaseOrder, createUser } from '#lib/testing/integration/factories.js';
+import { CurrencyCode, PaymentMethod, UserRole } from '#lib/shared/enums/index.js';
+import type { PurchaseOrder } from '#lib/server/db/schema/index.js';
 import type { PurchaseOrderPaymentSubmission } from './purchasePayments';
 
 function submission(purchaseOrder: PurchaseOrder, userId: string): PurchaseOrderPaymentSubmission {

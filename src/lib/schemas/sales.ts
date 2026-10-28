@@ -19,13 +19,13 @@ import {
 	DiscountType,
 	RefundStatus,
 	SaleStatus
-} from '$lib/shared/enums';
-import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
-import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
-import { ALL_CUSTOMER_GENDERS } from '$lib/shared/enums/customerGenders';
-import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
-import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+} from '#lib/shared/enums/index.js';
+import { SaleItemType, FreeItemCategory } from '#lib/shared/enums/lensTypes.js';
+import { ALL_FREE_ITEM_CATEGORIES } from '#lib/shared/enums/lensTypes.js';
+import { ALL_CUSTOMER_GENDERS } from '#lib/shared/enums/customerGenders.js';
+import { AxisSchema, AlturaSchema } from '#lib/schemas/prescriptions.js';
+import { PrescriptionFieldsSchema } from '#lib/schemas/prescriptions.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 

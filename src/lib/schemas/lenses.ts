@@ -3,7 +3,12 @@
  * Zod schemas for lens materials and catalog items
  */
 import { z } from 'zod';
-import { LensType, LensCatalogSource, LensPriceType, LensInventoryMode } from '$lib/shared/enums';
+import {
+	LensType,
+	LensCatalogSource,
+	LensPriceType,
+	LensInventoryMode
+} from '#lib/shared/enums/index.js';
 import { NameSchema, EntityIdSchema, PendingEntitySchema } from './common/identity';
 import { CoercedBoolean, CoercedInteger, CoercedNumber } from './common/numbers';
 import {

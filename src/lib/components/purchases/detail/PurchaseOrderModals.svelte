@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { ConfirmModal } from '$lib/components/ui';
-	import { PriceSuggestionModal } from '$lib/components/purchases';
-	import { formatPrice } from '$lib/utils';
-	import type { PriceSuggestion } from '$lib/remote/purchaseOrders/helpers';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { PriceSuggestionModal } from '#lib/components/purchases/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import type { PriceSuggestion } from '#lib/remote/purchaseOrders/helpers.js';
 	import type { RevertTarget } from './purchaseDetail';
 
 	interface Props {

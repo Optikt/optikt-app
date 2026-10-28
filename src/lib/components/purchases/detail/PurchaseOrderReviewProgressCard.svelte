@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { AlertTriangle } from '@lucide/svelte';
-	import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
-	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
+	import type { PurchaseOrderItemWithProduct } from '#lib/server/db/queries/purchaseOrders/types.js';
+	import { getPurchaseOrderReviewStatus } from '#lib/components/purchases/purchaseOrderDraft.js';
 
 	interface Props {
 		items: PurchaseOrderItemWithProduct[];

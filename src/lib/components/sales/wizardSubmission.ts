@@ -1,9 +1,9 @@
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import type { QuoteItemInput } from '$lib/schemas/quotes';
-import { PrescriptionFieldsSchema } from '$lib/schemas/prescriptions';
-import type { SaleItemInput } from '$lib/schemas/sales';
-import { LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+import type { QuoteItemInput } from '#lib/schemas/quotes.js';
+import { PrescriptionFieldsSchema } from '#lib/schemas/prescriptions.js';
+import type { SaleItemInput } from '#lib/schemas/sales.js';
+import { LensType, SaleItemType } from '#lib/shared/enums/lensTypes.js';
 import type { z } from 'zod';
 
 import type { LensSaleItemRow, SaleItemRow } from './newSaleTypes';

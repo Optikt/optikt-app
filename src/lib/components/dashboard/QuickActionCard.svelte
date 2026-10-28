@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { LucideIcon } from '$lib/types/index.js';
-	import type { StaticRoute } from '$lib/shared/routes';
+	import type { LucideIcon } from '#lib/types/index.js';
+	import type { StaticRoute } from '#lib/shared/routes.js';
 
 	let {
 		label,

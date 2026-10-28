@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { downloadCsv, getErrorMessage } from '$lib/utils';
+	import { downloadCsv, getErrorMessage } from '#lib/utils/index.js';
 	import {
 		getCashReportQuery,
 		getDailyBreakdownQuery,
 		getPipelineQuery
-	} from '$lib/remote/cash.remote';
-	import type { CashReport } from '$lib/server/db/queries/cash/report';
-	import type { DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
-	import type { PipelineSnapshot } from '$lib/server/db/queries/cash/pipeline';
-	import CashToolbar from '$lib/components/cash/CashToolbar.svelte';
-	import CashSummary from '$lib/components/cash/CashSummary.svelte';
-	import CashPipeline from '$lib/components/cash/CashPipeline.svelte';
-	import CashDailyTable from '$lib/components/cash/CashDailyTable.svelte';
-	import { buildCashCsvRows, CASH_CSV_HEADERS } from '$lib/components/cash/cashReport';
+	} from '#lib/remote/cash.remote.js';
+	import type { CashReport } from '#lib/server/db/queries/cash/report.js';
+	import type { DailyBreakdownRow } from '#lib/server/db/queries/cash/daily.js';
+	import type { PipelineSnapshot } from '#lib/server/db/queries/cash/pipeline.js';
+	import CashToolbar from '#lib/components/cash/CashToolbar.svelte';
+	import CashSummary from '#lib/components/cash/CashSummary.svelte';
+	import CashPipeline from '#lib/components/cash/CashPipeline.svelte';
+	import CashDailyTable from '#lib/components/cash/CashDailyTable.svelte';
+	import { buildCashCsvRows, CASH_CSV_HEADERS } from '#lib/components/cash/cashReport.js';
 
 	let { data } = $props();
 	const initial = untrack(() => data);

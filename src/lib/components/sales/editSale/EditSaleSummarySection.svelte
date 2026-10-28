@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Calculator } from '@lucide/svelte';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		previewSubtotal: number;

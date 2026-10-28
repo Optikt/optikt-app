@@ -12,7 +12,7 @@ import {
 } from './common/identity';
 import { ListPaginationWithDeletedSchema } from './common/pagination';
 import { PrescriptionFieldsSchema } from './prescriptions';
-import { ALL_CUSTOMER_GENDERS } from '$lib/shared/enums/customerGenders';
+import { ALL_CUSTOMER_GENDERS } from '#lib/shared/enums/customerGenders.js';
 
 export const ListCustomersSchema = ListPaginationWithDeletedSchema;
 

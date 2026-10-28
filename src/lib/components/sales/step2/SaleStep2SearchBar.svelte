@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { Search, X, Package, Eye, Loader2 } from '@lucide/svelte';
-	import { formatPrice, logger } from '$lib/utils';
-	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { formatPrice, logger } from '#lib/utils/index.js';
+	import { getLensSourceLabel, getLensTypeLabel } from '#lib/shared/enums/lensTypes.js';
 	import { allowsDuplicateProductLines } from '../includedAccessories';
-	import { searchCatalog } from '$lib/remote/catalog.remote';
+	import { searchCatalog } from '#lib/remote/catalog.remote.js';
 	import { cacheCatalogItems } from '../catalogCache.svelte';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 
 	interface QuickAddOption {
 		key: string;

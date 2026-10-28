@@ -2,11 +2,11 @@
 	import { Plus } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ConfirmModal } from '$lib/components/ui';
-	import CustomerSalesHistory from '$lib/components/customers/CustomerSalesHistory.svelte';
-	import CustomerQuotesHistory from '$lib/components/customers/CustomerQuotesHistory.svelte';
-	import type { HistoryQuote, HistorySale } from '$lib/server/db/queries/customerHistory';
-	import type { Prescription } from '$lib/server/db/schema';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import CustomerSalesHistory from '#lib/components/customers/CustomerSalesHistory.svelte';
+	import CustomerQuotesHistory from '#lib/components/customers/CustomerQuotesHistory.svelte';
+	import type { HistoryQuote, HistorySale } from '#lib/server/db/queries/customerHistory.js';
+	import type { Prescription } from '#lib/server/db/schema/index.js';
 	import CustomerPrescriptionTable from './CustomerPrescriptionTable.svelte';
 
 	export type CustomerHistoryTab = 'prescriptions' | 'sales' | 'quotes';

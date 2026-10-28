@@ -7,20 +7,20 @@
  */
 import { command } from '$app/server';
 import { env } from '$env/dynamic/private';
-import { requireRole } from '$lib/server/guards';
-import { UserRole, SaleStatus } from '$lib/shared/enums';
-import { PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums/paymentMethods';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { buildTickeraPayload, type TickeraPayload } from '$lib/shared/tickera';
-import { resolveTicketRate } from '$lib/shared/ticketRate';
-import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
-import { getSalePayments } from '$lib/server/db/queries/sales/payments';
-import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
-import { type SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-import { getSettings } from '$lib/server/db/queries/settings';
-import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
-import { getPrintItemLabel } from '$lib/utils/printDocumentItems';
-import { PrintTickeraSchema } from '$lib/schemas/printing';
+import { requireRole } from '#lib/server/guards.js';
+import { UserRole, SaleStatus } from '#lib/shared/enums/index.js';
+import { PaymentMethod, isBsPaymentMethod } from '#lib/shared/enums/paymentMethods.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import { buildTickeraPayload, type TickeraPayload } from '#lib/shared/tickera.js';
+import { resolveTicketRate } from '#lib/shared/ticketRate.js';
+import { getSaleItemsWithDetails } from '#lib/server/db/queries/sales/items.js';
+import { getSalePayments } from '#lib/server/db/queries/sales/payments.js';
+import { findSaleByIdWithRelations } from '#lib/server/db/queries/sales/reads.js';
+import { type SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
+import { getSettings } from '#lib/server/db/queries/settings.js';
+import { getExchangeRateValue } from '#lib/server/exchangeRates/service.js';
+import { getPrintItemLabel } from '#lib/utils/printDocumentItems.js';
+import { PrintTickeraSchema } from '#lib/schemas/printing.js';
 
 const AGENT_TIMEOUT_MS = 10_000;
 const BCV_CODE = 'USD'; // tasa usada para convertir todo el recibo a Bs

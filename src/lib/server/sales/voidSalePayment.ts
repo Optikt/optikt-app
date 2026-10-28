@@ -2,14 +2,14 @@ import {
 	findPaymentById,
 	voidSalePayment,
 	recalcSalePaidAmount
-} from '$lib/server/db/queries/sales/payments';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { updateSale as updateSaleQuery } from '$lib/server/db/queries/sales/writes';
-import { db } from '$lib/server/db';
-import { SaleStatus, canManageSaleByOwner } from '$lib/shared/enums';
-import { auditService } from '$lib/server/audit';
-import type { VoidPaymentInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+} from '#lib/server/db/queries/sales/payments.js';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { updateSale as updateSaleQuery } from '#lib/server/db/queries/sales/writes.js';
+import { db } from '#lib/server/db/index.js';
+import { SaleStatus, canManageSaleByOwner } from '#lib/shared/enums/index.js';
+import { auditService } from '#lib/server/audit/index.js';
+import type { VoidPaymentInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Void a payment and recalculate paid amount.

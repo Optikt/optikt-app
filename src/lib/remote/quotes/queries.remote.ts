@@ -3,24 +3,24 @@
  * Split from quotes.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { ListQuotesSchema, QuoteIdSchema } from '$lib/schemas/quotes';
+import { requireAuth } from '#lib/server/guards.js';
+import { ListQuotesSchema, QuoteIdSchema } from '#lib/schemas/quotes.js';
 import {
 	getAllQuotes,
 	countQuotes,
 	getQuoteStats as getQuoteStatsQuery,
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails
-} from '$lib/server/db/queries/quotes';
+} from '#lib/server/db/queries/quotes.js';
 import type {
 	QuoteWithRelations,
 	QuoteItemWithDetails,
 	QuoteStats
-} from '$lib/server/db/queries/quotes';
+} from '#lib/server/db/queries/quotes.js';
 
-import { monthStart, toUTCString } from '$lib/dates';
+import { monthStart, toUTCString } from '#lib/dates.js';
 
-import { EmptySchema } from '$lib/schemas/common/dates';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 
 // ============================================================================
 // TYPES
@@ -39,7 +39,7 @@ export interface QuoteDetail {
 	items: QuoteItemWithDetails[];
 }
 
-export type { QuoteStats } from '$lib/server/db/queries/quotes';
+export type { QuoteStats } from '#lib/server/db/queries/quotes.js';
 
 // ============================================================================
 // QUERIES

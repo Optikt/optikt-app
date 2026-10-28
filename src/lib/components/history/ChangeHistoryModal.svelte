@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
-	import type { EntityType } from '$lib/server/db/schema';
-	import { getHistory } from '$lib/remote/history.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import type { EntityType } from '#lib/server/db/schema/index.js';
+	import { getHistory } from '#lib/remote/history.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import ChangeHistoryList, { type HistoryEntry } from './ChangeHistoryList.svelte';
 
 	interface Props {

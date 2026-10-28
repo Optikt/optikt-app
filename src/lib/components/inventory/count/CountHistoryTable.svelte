@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { ArrowRight, CalendarDays, RotateCcw } from '@lucide/svelte';
-	import { AppBadge, DataGrid } from '$lib/components/ui';
+	import { AppBadge, DataGrid } from '#lib/components/ui/index.js';
 	import {
 		formatInventoryCountScope,
 		getInventoryCountStatusLabel,
 		type InventoryCountScopeType
-	} from '$lib/schemas/inventoryCount';
-	import type { InventoryCountSessionSummary } from '$lib/server/db/queries/inventoryCount/types';
-	import { formatDate } from '$lib/utils';
+	} from '#lib/schemas/inventoryCount.js';
+	import type { InventoryCountSessionSummary } from '#lib/server/db/queries/inventoryCount/types.js';
+	import { formatDate } from '#lib/utils/index.js';
 	import { COUNT_SCOPE_OPTIONS, getCoveragePercent, getScopeLabel } from './countList';
 	import { statusVariant } from './countSummary';
 

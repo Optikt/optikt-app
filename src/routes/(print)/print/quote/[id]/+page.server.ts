@@ -1,10 +1,10 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getSettings } from '$lib/server/db/queries/settings';
+import { getSettings } from '#lib/server/db/queries/settings.js';
 import {
 	findQuoteByIdWithRelations,
 	getQuoteItemsWithDetails
-} from '$lib/server/db/queries/quotes';
+} from '#lib/server/db/queries/quotes.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {

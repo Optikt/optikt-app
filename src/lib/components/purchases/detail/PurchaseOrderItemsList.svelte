@@ -7,16 +7,16 @@
 		Search,
 		SearchX
 	} from '@lucide/svelte';
-	import { AppBadge, EmptyState } from '$lib/components/ui';
-	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
+	import { AppBadge, EmptyState } from '#lib/components/ui/index.js';
+	import { getPurchaseOrderReviewStatus } from '#lib/components/purchases/purchaseOrderDraft.js';
 	import type {
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
-	} from '$lib/server/db/queries/purchaseOrders/types';
-	import type { InventoryLot } from '$lib/server/db/schema';
-	import { PurchaseOrderStatus } from '$lib/shared/enums';
-	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
-	import { formatCurrency, formatPrice } from '$lib/utils';
+	} from '#lib/server/db/queries/purchaseOrders/types.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
+	import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
+	import { getSourceCurrencySymbol } from '#lib/shared/purchaseOrderCurrencies.js';
+	import { formatCurrency, formatPrice } from '#lib/utils/index.js';
 	import {
 		ITEM_REVIEW_FILTER_OPTIONS,
 		canRevertLot,
@@ -28,7 +28,7 @@
 		purchaseLineTotal,
 		purchaseLineTotalAlt,
 		type ItemReviewFilter
-	} from '$lib/utils/purchaseOrderDetail';
+	} from '#lib/utils/purchaseOrderDetail.js';
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;

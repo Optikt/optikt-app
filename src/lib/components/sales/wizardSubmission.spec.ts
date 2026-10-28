@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { DiscountType } from '$lib/shared/enums';
-import { LensPriceType, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { LensPriceType, LensType, SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
 import {
 	buildPrescriptionPayload,

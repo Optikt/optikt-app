@@ -1,4 +1,4 @@
-import { ProductType } from '$lib/shared/enums/productTypes';
+import { ProductType } from '#lib/shared/enums/productTypes.js';
 
 import type { SaleItemRow } from './newSaleTypes';
 

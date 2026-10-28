@@ -1,4 +1,4 @@
-import { isBsPaymentMethod, PaymentMethod } from '$lib/shared/enums';
+import { isBsPaymentMethod, PaymentMethod } from '#lib/shared/enums/index.js';
 
 export type PaymentCalculationMode = 'target' | 'native';
 

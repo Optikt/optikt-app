@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RefundStatus, SaleStatus } from '$lib/shared/enums';
+import { RefundStatus, SaleStatus } from '#lib/shared/enums/index.js';
 import {
 	customerIdNumber,
 	customerName,

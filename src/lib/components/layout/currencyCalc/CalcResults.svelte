@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { fromISO, toRelative, toRelativeShort } from '$lib/dates';
-	import type { ExchangeRateEntry } from '$lib/shared/exchangeRates';
+	import { fromISO, toRelative, toRelativeShort } from '#lib/dates.js';
+	import type { ExchangeRateEntry } from '#lib/shared/exchangeRates.js';
 	import {
 		buttonLabel,
 		formatValue,

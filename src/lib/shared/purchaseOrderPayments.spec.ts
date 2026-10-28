@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CurrencyCode } from '$lib/shared/enums';
+import { CurrencyCode } from '#lib/shared/enums/index.js';
 import {
 	denormalizePurchasePaymentAmount,
 	getPurchasePaymentSpecificRateLabel,

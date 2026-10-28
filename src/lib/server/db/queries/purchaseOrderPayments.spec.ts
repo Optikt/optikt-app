@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	computePaymentExchangeVariance,
 	computeTotalExchangeVariance
-} from '$lib/shared/purchaseOrderPayments';
+} from '#lib/shared/purchaseOrderPayments.js';
 
 describe('computePaymentExchangeVariance', () => {
 	it('returns 0 when settlementDebtAmount is 0 (legacy guard)', () => {

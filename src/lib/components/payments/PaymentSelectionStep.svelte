@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { PaymentMethodPills } from '$lib/components/ui';
+	import { PaymentMethodPills } from '#lib/components/ui/index.js';
 	import {
 		PAYMENT_CURRENCY_GROUPS,
 		PAYMENT_METHOD_ICONS,
 		PAYMENT_METHOD_LABELS,
 		type PaymentMethod
-	} from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
 
 	interface Props {
 		currencyKey: string | null;

@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import PageHeader from '$lib/components/ui/PageHeader.svelte';
-	import SupportTicketPriorityBadge from '$lib/components/support/SupportTicketPriorityBadge.svelte';
-	import SupportTicketStatusBadge from '$lib/components/support/SupportTicketStatusBadge.svelte';
-	import SupportTicketHistory from '$lib/components/support/SupportTicketHistory.svelte';
+	import PageHeader from '#lib/components/ui/PageHeader.svelte';
+	import SupportTicketPriorityBadge from '#lib/components/support/SupportTicketPriorityBadge.svelte';
+	import SupportTicketStatusBadge from '#lib/components/support/SupportTicketStatusBadge.svelte';
+	import SupportTicketHistory from '#lib/components/support/SupportTicketHistory.svelte';
 	import {
 		getSupportTicketQuery,
 		listSupportTicketActivityQuery,
 		updateSupportTicketCommand
-	} from '$lib/remote/supportTickets.remote';
+	} from '#lib/remote/supportTickets.remote.js';
 	import {
 		ALL_TICKET_PRIORITIES,
 		ALL_TICKET_STATUSES,
@@ -19,12 +19,12 @@
 		TICKET_STATUS_LABELS,
 		TicketStatus,
 		type TicketPriority
-	} from '$lib/shared/enums';
-	import { formatDateOnly, getErrorMessage } from '$lib/utils';
+	} from '#lib/shared/enums/index.js';
+	import { formatDateOnly, getErrorMessage } from '#lib/utils/index.js';
 	import type {
 		SupportTicketActivityRow,
 		SupportTicketRow
-	} from '$lib/server/db/queries/supportTickets';
+	} from '#lib/server/db/queries/supportTickets.js';
 
 	let { data } = $props();
 

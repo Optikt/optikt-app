@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { ManualAdjustmentType } from '$lib/components/products/adjustments/helpers';
-	import type { InventoryLot } from '$lib/server/db/schema';
+	import type { ManualAdjustmentType } from '#lib/components/products/adjustments/helpers.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		productId: string;

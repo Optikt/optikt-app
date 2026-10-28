@@ -1,6 +1,6 @@
 import { eq, ne, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'drizzle-orm';
 import type { SelectedFields } from 'drizzle-orm/pg-core';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	customers,
 	prescriptions,
@@ -8,10 +8,10 @@ import {
 	type NewCustomer,
 	type Prescription,
 	type NewPrescription
-} from '$lib/server/db/schema';
-import type { InferSelectedRow, DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
-import type { CustomerGender } from '$lib/shared/enums/customerGenders';
+} from '#lib/server/db/schema/index.js';
+import type { InferSelectedRow, DbOrTx } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
+import type { CustomerGender } from '#lib/shared/enums/customerGenders.js';
 
 // ============================================================================
 // CUSTOMERS

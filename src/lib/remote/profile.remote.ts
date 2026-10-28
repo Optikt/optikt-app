@@ -5,10 +5,10 @@
 import { form } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { hash, verify } from '@node-rs/argon2';
-import { UpdateProfileSchema, ChangePasswordSchema } from '$lib/schemas/settings';
-import { updateUser, findUserByEmail, findUserById } from '$lib/server/db/queries';
-import { requireAuth } from '$lib/server/guards';
-import type { User } from '$lib/server/db/schema';
+import { UpdateProfileSchema, ChangePasswordSchema } from '#lib/schemas/settings.js';
+import { updateUser, findUserByEmail, findUserById } from '#lib/server/db/queries/index.js';
+import { requireAuth } from '#lib/server/guards.js';
+import type { User } from '#lib/server/db/schema/index.js';
 
 /**
  * Update own profile (fullName/email)

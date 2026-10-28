@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { convertQuoteToSaleCore } from './convertQuoteToSale';
-import { db } from '$lib/server/db';
-import { quoteItems, quotes, saleItems } from '$lib/server/db/schema';
-import { buildQuoteItemValues } from '$lib/remote/quotes/helpers';
-import { resetDb } from '$lib/testing/integration/db';
+import { db } from '#lib/server/db/index.js';
+import { quoteItems, quotes, saleItems } from '#lib/server/db/schema/index.js';
+import { buildQuoteItemValues } from '#lib/remote/quotes/helpers.js';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createCustomer,
 	createInventoryLot,
@@ -13,12 +13,12 @@ import {
 	createQuote,
 	createSupplier,
 	createUser
-} from '$lib/testing/integration/factories';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { DiscountType, UserRole } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { nowISO } from '$lib/dates';
-import type { ActionContext } from '$lib/server/actionContext';
+} from '#lib/testing/integration/factories.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+import { DiscountType, UserRole } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import { nowISO } from '#lib/dates.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 function ctx(userId: string): ActionContext {
 	return { userId, role: UserRole.SELLER, ipAddress: '127.0.0.1', userAgent: null };

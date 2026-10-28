@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { AppBadge } from '$lib/components/ui';
-	import type { InventoryCountSessionDetail } from '$lib/server/db/queries/inventoryCount/types';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import type { InventoryCountSessionDetail } from '#lib/server/db/queries/inventoryCount/types.js';
 	import {
 		compactStatClass,
 		lifecycleSummaryFor,

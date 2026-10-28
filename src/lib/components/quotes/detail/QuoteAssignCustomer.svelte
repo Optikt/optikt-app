@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Save, UserPlus } from '@lucide/svelte';
-	import CustomerLookupInput from '$lib/components/sales/CustomerLookupInput.svelte';
-	import type { Customer } from '$lib/server/db/schema';
-	import type { NewCustomerData } from '$lib/components/sales/newSaleTypes';
+	import CustomerLookupInput from '#lib/components/sales/CustomerLookupInput.svelte';
+	import type { Customer } from '#lib/server/db/schema/index.js';
+	import type { NewCustomerData } from '#lib/components/sales/newSaleTypes.js';
 	import { canSubmitAssignCustomer } from './quoteDetail';
 
 	interface Props {

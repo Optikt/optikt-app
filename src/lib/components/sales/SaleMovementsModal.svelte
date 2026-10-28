@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Minus, Plus, X, Clock, User } from '@lucide/svelte';
-	import { formatDate } from '$lib/utils';
-	import { getInventoryMovementTypeLabel, InventoryMovementType } from '$lib/shared/enums';
-	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
+	import { formatDate } from '#lib/utils/index.js';
+	import { getInventoryMovementTypeLabel, InventoryMovementType } from '#lib/shared/enums/index.js';
+	import type { MovementWithDetails } from '#lib/server/db/queries/inventoryMovements.js';
 
 	interface Props {
 		movements: MovementWithDetails[];

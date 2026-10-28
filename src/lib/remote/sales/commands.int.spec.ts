@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createSale } from './commands.remote';
-import { callRemote } from '$lib/testing/remoteHarness';
-import { DiscountType, UserRole } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { CreateSaleInput } from '$lib/schemas/sales';
+import { callRemote } from '#lib/testing/remoteHarness.js';
+import { DiscountType, UserRole } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import type { CreateSaleInput } from '#lib/schemas/sales.js';
 
 function input(): CreateSaleInput {
 	return {

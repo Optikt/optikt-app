@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { setSaleStatusCore } from './setSaleStatus';
-import { resetDb } from '$lib/testing/integration/db';
-import { createSale, createUser } from '$lib/testing/integration/factories';
-import { SaleStatus, UserRole } from '$lib/shared/enums';
-import type { ActionContext } from '$lib/server/actionContext';
-import type { SetSaleStatusInput } from '$lib/schemas/sales';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createSale, createUser } from '#lib/testing/integration/factories.js';
+import { SaleStatus, UserRole } from '#lib/shared/enums/index.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
+import type { SetSaleStatusInput } from '#lib/schemas/sales.js';
 
 function ctx(userId: string, role: UserRole): ActionContext {
 	return { userId, role, ipAddress: '127.0.0.1', userAgent: null };

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
+	import type { EntityType, ActionType, ChangeRecord } from '#lib/server/db/schema/index.js';
 	import ChangeHistoryItem from './ChangeHistoryItem.svelte';
 
 	export interface HistoryEntry {

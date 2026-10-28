@@ -4,23 +4,23 @@
  */
 import type { PaginatedSales, SaleDetail } from './helpers';
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '$lib/schemas/';
-import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
-import { getSalePayments } from '$lib/server/db/queries/sales/payments';
+import { requireAuth } from '#lib/server/guards.js';
+import { ListSalesSchema, SaleIdSchema, CustomerLookupSchema } from '#lib/schemas//index.js';
+import { getSaleItemsWithDetails } from '#lib/server/db/queries/sales/items.js';
+import { getSalePayments } from '#lib/server/db/queries/sales/payments.js';
 import {
 	getAllSales,
 	countSales,
 	getSalesStats as getSalesStatsQuery,
 	findSaleByIdWithRelations
-} from '$lib/server/db/queries/sales/reads';
-import type { SalesStats } from '$lib/server/db/queries/';
-import { findCustomerByIdNumber } from '$lib/server/db/queries/customers';
+} from '#lib/server/db/queries/sales/reads.js';
+import type { SalesStats } from '#lib/server/db/queries//index.js';
+import { findCustomerByIdNumber } from '#lib/server/db/queries/customers.js';
 
-import { normalizeIdNumber } from '$lib/utils';
+import { normalizeIdNumber } from '#lib/utils/index.js';
 
-import { monthStart, toUTCString } from '$lib/dates';
-import { EmptySchema } from '$lib/schemas/common/dates';
+import { monthStart, toUTCString } from '#lib/dates.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 
 // ============================================================================
 // QUERIES

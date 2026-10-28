@@ -2,8 +2,8 @@
 	import { BadgeDollarSign, Check, Pencil, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { updateSalePriceCmd } from '$lib/remote/products.remote';
-	import { formatPrice, getErrorMessage, getProfitMargin } from '$lib/utils';
+	import { updateSalePriceCmd } from '#lib/remote/products.remote.js';
+	import { formatPrice, getErrorMessage, getProfitMargin } from '#lib/utils/index.js';
 
 	interface Props {
 		productId: string;

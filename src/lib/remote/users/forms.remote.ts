@@ -5,10 +5,10 @@
 import { error, invalid } from '@sveltejs/kit';
 import { form } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import { requireUserAdmin } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { requireUserAdmin } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { db } from '#lib/server/db/index.js';
+import { users } from '#lib/server/db/schema/index.js';
 import {
 	findUserByEmail,
 	findUserByUsername,
@@ -16,13 +16,13 @@ import {
 	findDeletedUserByEmail,
 	findDeletedUserByUsername,
 	updateUser as dbUpdateUser
-} from '$lib/server/db/queries/users';
+} from '#lib/server/db/queries/users.js';
 
 // Import schemas
-import { CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
+import { CreateUserSchema, UpdateUserSchema } from '#lib/schemas/users.js';
 
-import type { UserListItem, CreateUserResult } from '$lib/types/users';
-import { nowISO } from '$lib/dates';
+import type { UserListItem, CreateUserResult } from '#lib/types/users.js';
+import { nowISO } from '#lib/dates.js';
 // ============================================================================
 // FORM REMOTE FUNCTIONS
 // For form submissions with validation and field-level errors

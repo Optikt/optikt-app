@@ -1,7 +1,11 @@
 <script lang="ts">
-	import { PaymentMethod, PAYMENT_METHOD_LABELS, isBsPaymentMethod } from '$lib/shared/enums';
-	import { formatDateOnly, formatPrice } from '$lib/utils';
-	import type { SalePayment } from '$lib/server/db/schema';
+	import {
+		PaymentMethod,
+		PAYMENT_METHOD_LABELS,
+		isBsPaymentMethod
+	} from '#lib/shared/enums/index.js';
+	import { formatDateOnly, formatPrice } from '#lib/utils/index.js';
+	import type { SalePayment } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		payments: SalePayment[];

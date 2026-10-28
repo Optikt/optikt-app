@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
-import { monthStart, toUTCString } from '$lib/dates';
-import { getAllSales, countSales, getSalesStats } from '$lib/server/db/queries/sales/reads';
-import { parseSaleStatuses } from '$lib/components/sales/statusFilter';
+import { monthStart, toUTCString } from '#lib/dates.js';
+import { getAllSales, countSales, getSalesStats } from '#lib/server/db/queries/sales/reads.js';
+import { parseSaleStatuses } from '#lib/components/sales/statusFilter.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const searchParams = url.searchParams;

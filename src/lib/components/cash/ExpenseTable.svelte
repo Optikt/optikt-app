@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Ban } from '@lucide/svelte';
-	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
-	import { formatDateOnly, formatPrice } from '$lib/utils';
-	import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
+	import { EXPENSE_CATEGORY_LABELS } from '#lib/shared/enums/index.js';
+	import { formatDateOnly, formatPrice } from '#lib/utils/index.js';
+	import type { ExpenseListRow } from '#lib/server/db/queries/cash/expenses.js';
 
 	interface Props {
 		expenses: ExpenseListRow[];

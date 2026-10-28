@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { CircleX, Eye, ReceiptText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { DataGrid, SaleStatusBadge } from '$lib/components/ui';
-	import { CancelSaleModal, SalePaymentProgress } from '$lib/components/sales';
-	import { formatPrice, formatDateOnly } from '$lib/utils';
-	import { SaleStatus, type UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import { DataGrid, SaleStatusBadge } from '#lib/components/ui/index.js';
+	import { CancelSaleModal, SalePaymentProgress } from '#lib/components/sales/index.js';
+	import { formatPrice, formatDateOnly } from '#lib/utils/index.js';
+	import { SaleStatus, type UserRole, canManageSaleByOwner } from '#lib/shared/enums/index.js';
+	import type { SaleWithRelations } from '#lib/server/db/queries/sales/types.js';
 
 	type SaleViewHref = `/sales/${string}`;
 

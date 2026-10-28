@@ -3,9 +3,13 @@
  * Server-side functions for report data
  */
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { DateRangeSchema } from '$lib/schemas/reports';
-import { getReportSales, getReportPayments, getInventoryReport } from '$lib/server/db/queries';
+import { requireAuth } from '#lib/server/guards.js';
+import { DateRangeSchema } from '#lib/schemas/reports.js';
+import {
+	getReportSales,
+	getReportPayments,
+	getInventoryReport
+} from '#lib/server/db/queries/index.js';
 import type {
 	ReportSale,
 	SalesReportSummary,
@@ -14,7 +18,7 @@ import type {
 	RefundEntry,
 	PaymentsReportSummary,
 	InventoryLensItem
-} from '$lib/server/db/queries/reports';
+} from '#lib/server/db/queries/reports.js';
 import { z } from 'zod';
 
 // ============================================================================

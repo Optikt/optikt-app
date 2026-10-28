@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Copy, Eye, RotateCcw, SquarePen, Trash2 } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { AppBadge, ProductTypeBadge } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import { AppBadge, ProductTypeBadge } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { stockBadgeVariant, stockLabel } from './productTableDisplay';
 
 	type ProductViewHref = `/products/${string}`;

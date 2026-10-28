@@ -1,15 +1,15 @@
 import { eq, and, asc, desc, gt, count, sql, type SQL, type AnyColumn } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	inventoryLots,
 	inventoryMovements,
 	products,
 	type InventoryLot,
 	type NewInventoryLot
-} from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { InventoryMovementType, MovementReferenceType } from '#lib/shared/enums/index.js';
+import { nowISO } from '#lib/dates.js';
 
 // ---------------------------------------------------------------------------
 // Types

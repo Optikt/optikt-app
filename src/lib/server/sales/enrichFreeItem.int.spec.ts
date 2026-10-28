@@ -1,18 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { enrichFreeItemCore } from './enrichFreeItem';
-import { db } from '$lib/server/db';
-import { saleItemFreeDetails } from '$lib/server/db/schema';
-import { resetDb } from '$lib/testing/integration/db';
-import { createSaleItem, createUser } from '$lib/testing/integration/factories';
+import { db } from '#lib/server/db/index.js';
+import { saleItemFreeDetails } from '#lib/server/db/schema/index.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createSaleItem, createUser } from '#lib/testing/integration/factories.js';
 import {
 	FreeItemCategory,
 	FreeItemEnrichmentStatus,
 	SaleItemType
-} from '$lib/shared/enums/lensTypes';
-import { UserRole } from '$lib/shared/enums';
-import { nowISO } from '$lib/dates';
-import type { ActionContext } from '$lib/server/actionContext';
+} from '#lib/shared/enums/lensTypes.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { nowISO } from '#lib/dates.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 function ctx(userId: string): ActionContext {
 	return { userId, role: UserRole.ADMIN, ipAddress: '127.0.0.1', userAgent: null };

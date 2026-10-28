@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
-	import { CreatableSelect, type SelectOption } from '$lib/components/ui';
-	import { ALL_LENS_TYPES, LensCatalogSource, getLensTypeLabel } from '$lib/shared/enums';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { CreatableSelect, type SelectOption } from '#lib/components/ui/index.js';
+	import { ALL_LENS_TYPES, LensCatalogSource, getLensTypeLabel } from '#lib/shared/enums/index.js';
 	import {
 		fieldLabelClass,
 		formCardClass,

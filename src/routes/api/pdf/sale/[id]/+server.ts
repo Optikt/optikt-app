@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { buildPrintUrl, generatePdf } from '$lib/server/pdf';
-import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
-import { SaleStatus } from '$lib/shared/enums';
+import { buildPrintUrl, generatePdf } from '#lib/server/pdf.js';
+import { findSaleByIdWithRelations } from '#lib/server/db/queries/sales/reads.js';
+import { SaleStatus } from '#lib/shared/enums/index.js';
 
 export const GET: RequestHandler = async ({ params, locals, request, url }) => {
 	if (!locals.user) {

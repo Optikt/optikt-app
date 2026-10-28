@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import { getRequestEvent } from '$app/server';
 import {
 	changeHistory,
@@ -6,7 +6,7 @@ import {
 	type ActionType,
 	type ChangeRecord,
 	type NewChangeHistory
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 import type { AuditContext } from './types';
 import {
 	calculateDiff,
@@ -14,7 +14,7 @@ import {
 	createChangeRecordForDelete,
 	hasChanges
 } from './utils';
-import { nowISO } from '$lib/dates';
+import { nowISO } from '#lib/dates.js';
 
 // ============================================================================
 // AUDIT SERVICE
@@ -39,7 +39,7 @@ export function getAuditContext(): AuditContext {
  *
  * Usage:
  * ```typescript
- * import { auditService } from '$lib/server/audit';
+ * import { auditService } from '#lib/server/audit/index.js';
  *
  * // In your update function:
  * const oldProduct = await findProductById(id);

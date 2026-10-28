@@ -2,20 +2,20 @@
 	import { Paperclip, Plus, RefreshCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
-	import AddIncludedAccessoryDialog from '$lib/components/accessories/AddIncludedAccessoryDialog.svelte';
-	import IncludedAccessoryRuleList from '$lib/components/accessories/IncludedAccessoryRuleList.svelte';
+	import AddIncludedAccessoryDialog from '#lib/components/accessories/AddIncludedAccessoryDialog.svelte';
+	import IncludedAccessoryRuleList from '#lib/components/accessories/IncludedAccessoryRuleList.svelte';
 	import {
 		getBrandAccessories,
 		getProductAccessoryOverride,
 		upsertBrandAccessory,
 		deleteBrandAccessory,
 		toggleProductOverride
-	} from '$lib/remote/brandAccessories.remote';
-	import { listProducts } from '$lib/remote/products.remote';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
-	import { ProductType } from '$lib/shared/enums/productTypes';
-	import { getErrorMessage } from '$lib/utils';
+	} from '#lib/remote/brandAccessories.remote.js';
+	import { listProducts } from '#lib/remote/products.remote.js';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
+	import { ProductType } from '#lib/shared/enums/productTypes.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 
 	interface AccessoryRule {
 		id: number;

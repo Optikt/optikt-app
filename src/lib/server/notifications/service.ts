@@ -1,16 +1,16 @@
-import { NotificationSeverity, NotificationType, UserRole } from '$lib/shared/enums';
-import type { NotificationLink } from '$lib/shared/notifications';
+import { NotificationSeverity, NotificationType, UserRole } from '#lib/shared/enums/index.js';
+import type { NotificationLink } from '#lib/shared/notifications.js';
 import {
 	getExchangeRatesStaleThresholdMs,
 	getExchangeRatesPollIntervalMs
-} from '$lib/server/exchangeRates/service';
+} from '#lib/server/exchangeRates/service.js';
 import {
 	hasRecentNotificationOfType,
 	insertNotification
-} from '$lib/server/db/queries/notifications';
-import type { Notification } from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { logger } from '$lib/utils/logger';
+} from '#lib/server/db/queries/notifications.js';
+import type { Notification } from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { logger } from '#lib/utils/logger.js';
 
 type PublishNotificationInput = {
 	type: NotificationType;

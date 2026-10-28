@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePurchaseOrderBalance } from '$lib/shared/purchaseOrderCredit';
+import { computePurchaseOrderBalance } from '#lib/shared/purchaseOrderCredit.js';
 
 describe('getUpcomingPurchaseOrderDues settlement contract', () => {
 	it('computePurchaseOrderBalance returns native fields when settlement is provided', () => {

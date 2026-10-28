@@ -8,7 +8,7 @@ import {
 	removeItemWithIncludedAccessories,
 	type IncludedAccessoryMap
 } from './includedAccessories';
-import { DiscountType } from '$lib/shared/enums';
+import { DiscountType } from '#lib/shared/enums/index.js';
 import type { ProductSaleItemRow } from './newSaleTypes';
 
 function createProductRow(

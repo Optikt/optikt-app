@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { History, X } from '@lucide/svelte';
-	import { SlideOver } from '$lib/components/ui';
-	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-	import { formatDate } from '$lib/utils';
-	import { classifySaleAuditEntry, type AuditEvent } from '$lib/utils/saleDetail';
+	import { SlideOver } from '#lib/components/ui/index.js';
+	import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
+	import { formatDate } from '#lib/utils/index.js';
+	import { classifySaleAuditEntry, type AuditEvent } from '#lib/utils/saleDetail.js';
 
 	interface Props {
 		open: boolean;

@@ -3,18 +3,18 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
-	import AdjustmentImpactCard from '$lib/components/products/adjustments/AdjustmentImpactCard.svelte';
-	import AdjustmentStepRail from '$lib/components/products/adjustments/AdjustmentStepRail.svelte';
+	import AdjustmentImpactCard from '#lib/components/products/adjustments/AdjustmentImpactCard.svelte';
+	import AdjustmentStepRail from '#lib/components/products/adjustments/AdjustmentStepRail.svelte';
 	import {
 		buildAdjustmentSteps,
 		getAllowedAdjustmentTypes,
 		getNotesRemaining,
 		getProjectedLotQuantity,
 		type ManualAdjustmentType
-	} from '$lib/components/products/adjustments/helpers';
-	import { ConfirmModal } from '$lib/components/ui';
-	import { nowUTC } from '$lib/dates';
-	import { adjustLensStock } from '$lib/remote/lenses/catalog-stock.remote';
+	} from '#lib/components/products/adjustments/helpers.js';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { nowUTC } from '#lib/dates.js';
+	import { adjustLensStock } from '#lib/remote/lenses/catalog-stock.remote.js';
 	import {
 		AdjustmentReason,
 		ADJUSTMENT_REASON_LABELS,
@@ -23,14 +23,14 @@
 		InventoryMovementType,
 		LOSS_REASONS,
 		MovementReferenceType
-	} from '$lib/shared/enums';
-	import type { InventoryLot } from '$lib/server/db/schema';
-	import { formatDate, formatPrice, getErrorMessage } from '$lib/utils';
-	import LensAdjustDetails from '$lib/components/lenses/adjust/LensAdjustDetails.svelte';
-	import LensAdjustFootnotes from '$lib/components/lenses/adjust/LensAdjustFootnotes.svelte';
-	import LensAdjustHeader from '$lib/components/lenses/adjust/LensAdjustHeader.svelte';
-	import LensAdjustSummary from '$lib/components/lenses/adjust/LensAdjustSummary.svelte';
-	import LensLotContext from '$lib/components/lenses/adjust/LensLotContext.svelte';
+	} from '#lib/shared/enums/index.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
+	import { formatDate, formatPrice, getErrorMessage } from '#lib/utils/index.js';
+	import LensAdjustDetails from '#lib/components/lenses/adjust/LensAdjustDetails.svelte';
+	import LensAdjustFootnotes from '#lib/components/lenses/adjust/LensAdjustFootnotes.svelte';
+	import LensAdjustHeader from '#lib/components/lenses/adjust/LensAdjustHeader.svelte';
+	import LensAdjustSummary from '#lib/components/lenses/adjust/LensAdjustSummary.svelte';
+	import LensLotContext from '#lib/components/lenses/adjust/LensLotContext.svelte';
 
 	let { data } = $props();
 	const item = untrack(() => data.item);

@@ -5,28 +5,34 @@
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { slide } from 'svelte/transition';
-	import { FormInput, FormTextarea, FormDatepicker, IdInput, PageHeader } from '$lib/components/ui';
-	import PrescriptionFormFields from '$lib/components/prescriptions/PrescriptionFormFields.svelte';
+	import {
+		FormInput,
+		FormTextarea,
+		FormDatepicker,
+		IdInput,
+		PageHeader
+	} from '#lib/components/ui/index.js';
+	import PrescriptionFormFields from '#lib/components/prescriptions/PrescriptionFormFields.svelte';
 	import {
 		createPrescriptionFormData,
 		type PrescriptionFieldIssues
-	} from '$lib/components/prescriptions/prescription-form';
-	import { createCustomerWithPrescription } from '$lib/remote/customers.remote';
+	} from '#lib/components/prescriptions/prescription-form.js';
+	import { createCustomerWithPrescription } from '#lib/remote/customers.remote.js';
 	import {
 		scrollToFirstError,
 		getErrorMessage,
 		toastUnboundErrors,
 		generateUUID
-	} from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
-	import type { CreateEntityResult } from '$lib/types';
-	import type { Customer } from '$lib/server/db/schema';
+	} from '#lib/utils/index.js';
+	import { nowUTC } from '#lib/dates.js';
+	import type { CreateEntityResult } from '#lib/types/index.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import {
 		ALL_CUSTOMER_GENDERS,
 		CUSTOMER_GENDER_LABELS,
 		type CustomerGender
-	} from '$lib/shared/enums/customerGenders';
-	import CustomerReactivateModal from '$lib/components/customers/CustomerReactivateModal.svelte';
+	} from '#lib/shared/enums/customerGenders.js';
+	import CustomerReactivateModal from '#lib/components/customers/CustomerReactivateModal.svelte';
 
 	let formInstanceId = $state(generateUUID());
 	const currentForm = $derived(createCustomerWithPrescription.for(formInstanceId));

@@ -1,5 +1,5 @@
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { isLowStock } from '$lib/utils/products';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+import { isLowStock } from '#lib/utils/products.js';
 
 export const productTableColumns = [
 	{ key: 'product', label: 'Producto' },

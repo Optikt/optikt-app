@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DiscountType } from '$lib/shared/enums';
+import { DiscountType } from '#lib/shared/enums/index.js';
 
 import type { SaleItemRow, LensSaleItemRow } from '../newSaleTypes';
 import {

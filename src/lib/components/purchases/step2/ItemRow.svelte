@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Check, Trash2, Glasses, Package, AlertTriangle } from '@lucide/svelte';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
 	import { calculateDraftItemTotalAlt } from '../purchaseOrderDraft';
-	import { PurchaseOrderItemType, PurchaseSourceCurrency } from '$lib/shared/enums';
-	import { sourcePriceToUsdBcv } from '$lib/shared/purchaseOrderCurrencies';
+	import { PurchaseOrderItemType, PurchaseSourceCurrency } from '#lib/shared/enums/index.js';
+	import { sourcePriceToUsdBcv } from '#lib/shared/purchaseOrderCurrencies.js';
 	import PricePair from '../PricePair.svelte';
 
 	interface Props {

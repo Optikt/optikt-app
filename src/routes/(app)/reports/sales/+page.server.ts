@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getReportSales } from '$lib/server/db/queries';
-import { monthStart, nowUTC, toISODate } from '$lib/dates';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getReportSales } from '#lib/server/db/queries/index.js';
+import { monthStart, nowUTC, toISODate } from '#lib/dates.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

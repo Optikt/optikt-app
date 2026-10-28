@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { CheckCircle2, X } from '@lucide/svelte';
-	import { ALL_PRODUCT_TYPES, PRODUCT_TYPE_LABELS, type ProductType } from '$lib/shared/enums';
-	import type { InventoryCountScopeType } from '$lib/schemas/inventoryCount';
+	import {
+		ALL_PRODUCT_TYPES,
+		PRODUCT_TYPE_LABELS,
+		type ProductType
+	} from '#lib/shared/enums/index.js';
+	import type { InventoryCountScopeType } from '#lib/schemas/inventoryCount.js';
 	import { COUNT_SCOPE_OPTIONS, getScopeLabel } from './countList';
 
 	interface Props {

@@ -4,24 +4,24 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
-	import { ChangeHistoryModal } from '$lib/components/history';
-	import { ConfirmModal, PageHeader } from '$lib/components/ui';
-	import LensDetailOpticalPanel from '$lib/components/lenses/detail/LensDetailOpticalPanel.svelte';
-	import LensDetailTags from '$lib/components/lenses/detail/LensDetailTags.svelte';
-	import LensDetailSpecs from '$lib/components/lenses/detail/LensDetailSpecs.svelte';
-	import LensDetailCostCard from '$lib/components/lenses/detail/LensDetailCostCard.svelte';
-	import LensDetailHistory from '$lib/components/lenses/detail/LensDetailHistory.svelte';
+	import { ChangeHistoryModal } from '#lib/components/history/index.js';
+	import { ConfirmModal, PageHeader } from '#lib/components/ui/index.js';
+	import LensDetailOpticalPanel from '#lib/components/lenses/detail/LensDetailOpticalPanel.svelte';
+	import LensDetailTags from '#lib/components/lenses/detail/LensDetailTags.svelte';
+	import LensDetailSpecs from '#lib/components/lenses/detail/LensDetailSpecs.svelte';
+	import LensDetailCostCard from '#lib/components/lenses/detail/LensDetailCostCard.svelte';
+	import LensDetailHistory from '#lib/components/lenses/detail/LensDetailHistory.svelte';
 	import LensDetailMobileChrome, {
 		type LensDetailMobileTab
-	} from '$lib/components/lenses/detail/LensDetailMobileChrome.svelte';
-	import { deleteLensCatalogItemById } from '$lib/remote/lenses/catalog-stock.remote';
-	import { isAdminRole } from '$lib/shared/enums';
-	import { getErrorMessage, formatPrice, getBackUrl } from '$lib/utils';
+	} from '#lib/components/lenses/detail/LensDetailMobileChrome.svelte';
+	import { deleteLensCatalogItemById } from '#lib/remote/lenses/catalog-stock.remote.js';
+	import { isAdminRole } from '#lib/shared/enums/index.js';
+	import { getErrorMessage, formatPrice, getBackUrl } from '#lib/utils/index.js';
 	import {
 		getLensMarginPercent,
 		getLensTotalCost,
 		getLensInventorySummary
-	} from '$lib/components/lenses/detail/helpers';
+	} from '#lib/components/lenses/detail/helpers.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();

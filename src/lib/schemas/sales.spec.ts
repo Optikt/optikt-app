@@ -5,9 +5,9 @@ import {
 	CancelSaleSchema,
 	UpdateSaleSchema,
 	SetSaleStatusSchema
-} from '$lib/schemas/sales';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { DiscountType, RefundStatus } from '$lib/shared/enums';
+} from '#lib/schemas/sales.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import { DiscountType, RefundStatus } from '#lib/shared/enums/index.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -524,12 +524,12 @@ describe('SaleItemSchema — FREE_ITEM', () => {
 
 describe('EnrichFreeItemSchema', () => {
 	it('imports from schemas correctly', async () => {
-		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const { EnrichFreeItemSchema } = await import('#lib/schemas/sales.js');
 		expect(EnrichFreeItemSchema).toBeDefined();
 	});
 
 	it('accepts valid enrichment data', async () => {
-		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const { EnrichFreeItemSchema } = await import('#lib/schemas/sales.js');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
 			category: 'CONTACT_LENS_FORMULA',
@@ -539,7 +539,7 @@ describe('EnrichFreeItemSchema', () => {
 	});
 
 	it('rejects enrichment with zero cost for non-SERVICE category', async () => {
-		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const { EnrichFreeItemSchema } = await import('#lib/schemas/sales.js');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
 			category: 'CONTACT_LENS_FORMULA',
@@ -549,7 +549,7 @@ describe('EnrichFreeItemSchema', () => {
 	});
 
 	it('accepts enrichment with zero cost for SERVICE category', async () => {
-		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const { EnrichFreeItemSchema } = await import('#lib/schemas/sales.js');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
 			category: 'SERVICE',
@@ -559,7 +559,7 @@ describe('EnrichFreeItemSchema', () => {
 	});
 
 	it('rejects enrichment with negative cost', async () => {
-		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const { EnrichFreeItemSchema } = await import('#lib/schemas/sales.js');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
 			category: 'CONTACT_LENS_FORMULA',
@@ -569,7 +569,7 @@ describe('EnrichFreeItemSchema', () => {
 	});
 
 	it('accepts optional optical notes', async () => {
-		const { EnrichFreeItemSchema } = await import('$lib/schemas/sales');
+		const { EnrichFreeItemSchema } = await import('#lib/schemas/sales.js');
 		const result = EnrichFreeItemSchema.safeParse({
 			saleItemId: crypto.randomUUID(),
 			category: 'CONTACT_LENS_FORMULA',

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { formatPrice } from '$lib/utils';
+	import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import {
 		getPrintItemLabel,
 		getPrintItemLabelClass,
 		getPrintLensRxSummary
-	} from '$lib/utils/printDocumentItems';
+	} from '#lib/utils/printDocumentItems.js';
 	import type { RenderedRow } from './receiptData';
 
 	interface Props {

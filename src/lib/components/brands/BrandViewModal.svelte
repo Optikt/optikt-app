@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Globe, FileText, MapPin, Plus, Truck, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -8,11 +8,11 @@
 		listSupplierRelationOptions,
 		listSuppliersForBrand,
 		removeSupplierFromBrand
-	} from '$lib/remote/brands.remote';
-	import BrandIncludedAccessoriesSection from '$lib/components/brands/BrandIncludedAccessoriesSection.svelte';
-	import type { Brand } from '$lib/server/db/schema';
-	import { getErrorMessage } from '$lib/utils';
-	import { getAvailableRelationOptions } from '$lib/utils/brandSupplierRelations';
+	} from '#lib/remote/brands.remote.js';
+	import BrandIncludedAccessoriesSection from '#lib/components/brands/BrandIncludedAccessoriesSection.svelte';
+	import type { Brand } from '#lib/server/db/schema/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { getAvailableRelationOptions } from '#lib/utils/brandSupplierRelations.js';
 
 	type RelatedSupplier = {
 		id: string;

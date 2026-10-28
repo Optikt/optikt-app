@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
-	import { isAdminRole } from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
-	import { listMaterials } from '$lib/remote/materials.remote';
-	import { MaterialFormModal, MaterialsTable } from '$lib/components/materials';
+	import { SearchInput, TablePagination } from '#lib/components/ui/index.js';
+	import { isAdminRole } from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { listMaterials } from '#lib/remote/materials.remote.js';
+	import { MaterialFormModal, MaterialsTable } from '#lib/components/materials/index.js';
 	import {
 		MATERIAL_CATEGORIES,
 		MATERIAL_CATEGORY_LABELS,
 		type MaterialCategory
-	} from '$lib/shared/enums/productTypes';
-	import type { Material } from '$lib/server/db/schema';
-	import type { PaginatedResult } from '$lib/types';
+	} from '#lib/shared/enums/productTypes.js';
+	import type { Material } from '#lib/server/db/schema/index.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import { untrack } from 'svelte';
 
 	// Server data

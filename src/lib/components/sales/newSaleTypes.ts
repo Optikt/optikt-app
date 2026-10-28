@@ -1,7 +1,7 @@
-import { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-import { LensType } from '$lib/shared/enums';
-import type { CustomerGender } from '$lib/shared/enums/customerGenders';
-import type { LensOrderedPrescription } from '$lib/shared/contracts/lenses';
+import { DiscountType as DiscountTypeEnum } from '#lib/shared/enums/index.js';
+import { LensType } from '#lib/shared/enums/index.js';
+import type { CustomerGender } from '#lib/shared/enums/customerGenders.js';
+import type { LensOrderedPrescription } from '#lib/shared/contracts/lenses.js';
 
 export type ItemKind = 'product' | 'lens' | 'free' | 'treatment';
 

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Eye, Package, Pencil, Sparkles, Truck } from '@lucide/svelte';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-	import { DiscountType } from '$lib/shared/enums';
-	import { FreeItemEnrichmentStatus, SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { formatPrice } from '$lib/utils';
-	import { hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
+	import type { SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
+	import { DiscountType } from '#lib/shared/enums/index.js';
+	import { FreeItemEnrichmentStatus, SaleItemType } from '#lib/shared/enums/lensTypes.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { hasPrescriptionSnapshot } from '#lib/shared/prescriptionSnapshot.js';
 	import {
 		iconContainerClasses,
 		itemBadge,

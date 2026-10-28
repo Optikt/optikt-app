@@ -3,7 +3,7 @@
  * Server-side functions for brand management
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { requireAuth, requireAdmin } from '#lib/server/guards.js';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListBrandsSchema,
@@ -12,9 +12,9 @@ import {
 	BrandIdSchema,
 	QuickCreateBrandSchema,
 	ReactivateBrandSchema
-} from '$lib/schemas/brands';
-import { BrandSupplierRelationSchema } from '$lib/schemas/brandSuppliers';
-import { EmptySchema } from '$lib/schemas/common/dates';
+} from '#lib/schemas/brands.js';
+import { BrandSupplierRelationSchema } from '#lib/schemas/brandSuppliers.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 import {
 	getAllBrands,
 	findBrandById,
@@ -23,7 +23,7 @@ import {
 	updateBrand,
 	restoreBrand,
 	countProductsByBrand
-} from '$lib/server/db/queries/brands';
+} from '#lib/server/db/queries/brands.js';
 import {
 	countProductsByBrandSupplier,
 	getActiveSupplierOptions,
@@ -31,13 +31,13 @@ import {
 	removeBrandSupplierLink,
 	upsertBrandSupplierLink,
 	type NamedRelationOption
-} from '$lib/server/db/queries/brandSuppliers';
-import { db } from '$lib/server/db';
-import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
-import type { Brand } from '$lib/server/db/schema';
-import type { PaginatedResult, CreateEntityResult } from '$lib/types';
-import { auditService, getAuditContext } from '$lib/server/audit';
-import { formatRelationUnlinkBlockedMessage } from '$lib/utils/brandSupplierRelations';
+} from '#lib/server/db/queries/brandSuppliers.js';
+import { db } from '#lib/server/db/index.js';
+import { softDelete, restore } from '#lib/server/db/queries/deletedItems.js';
+import type { Brand } from '#lib/server/db/schema/index.js';
+import type { PaginatedResult, CreateEntityResult } from '#lib/types/index.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import { formatRelationUnlinkBlockedMessage } from '#lib/utils/brandSupplierRelations.js';
 
 // Types for delete check
 export interface BrandDeleteCheck {

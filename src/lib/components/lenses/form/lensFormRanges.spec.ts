@@ -1,8 +1,8 @@
+import type { RemoteFormIssue } from '$app/server';
 import { describe, expect, it } from 'vitest';
-import type { RemoteFormIssue } from '@sveltejs/kit';
-import { createEmptyOpticalRangeEntry } from '$lib/utils/opticalRange/collapse';
-import { createEmptyOpticalRangeValidation } from '$lib/utils/opticalRange/validate';
-import { SPHERE_RANGE_MODE } from '$lib/utils/opticalRange/types';
+import { createEmptyOpticalRangeEntry } from '#lib/utils/opticalRange/collapse.js';
+import { createEmptyOpticalRangeValidation } from '#lib/utils/opticalRange/validate.js';
+import { SPHERE_RANGE_MODE } from '#lib/utils/opticalRange/types.js';
 import {
 	addRange,
 	buildServerRangeValidations,

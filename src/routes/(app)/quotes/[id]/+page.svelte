@@ -1,40 +1,40 @@
 <script lang="ts">
-	import { PDFViewerModal } from '$lib/components/pdf';
+	import { PDFViewerModal } from '#lib/components/pdf/index.js';
 	import { toast } from 'svelte-sonner';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ConfirmModal } from '$lib/components/ui';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
 	import {
 		cancelQuote,
 		convertQuoteToSale,
 		assignQuoteCustomer
-	} from '$lib/remote/quotes/lifecycle.remote';
-	import { canOperate } from '$lib/shared/enums';
-	import { getErrorMessage, getBackUrl } from '$lib/utils';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { QuoteStatus } from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations, QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
-	import type { Customer } from '$lib/server/db/schema';
-	import type { NewCustomerData } from '$lib/components/sales/newSaleTypes';
+	} from '#lib/remote/quotes/lifecycle.remote.js';
+	import { canOperate } from '#lib/shared/enums/index.js';
+	import { getErrorMessage, getBackUrl } from '#lib/utils/index.js';
+	import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+	import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+	import type { QuoteWithRelations, QuoteItemWithDetails } from '#lib/server/db/queries/quotes.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
+	import type { NewCustomerData } from '#lib/components/sales/newSaleTypes.js';
 	import {
 		buildPersistedDisplayGroups,
 		computeSnapshotTaxBreakdown,
 		getSnapshotTaxLabel
-	} from '$lib/components/sales/saleItemHelpers';
+	} from '#lib/components/sales/saleItemHelpers.js';
 	import { untrack } from 'svelte';
-	import QuoteDetailHeader from '$lib/components/quotes/detail/QuoteDetailHeader.svelte';
-	import QuoteDetailMeta from '$lib/components/quotes/detail/QuoteDetailMeta.svelte';
-	import QuoteDetailNotices from '$lib/components/quotes/detail/QuoteDetailNotices.svelte';
-	import QuoteAssignCustomer from '$lib/components/quotes/detail/QuoteAssignCustomer.svelte';
+	import QuoteDetailHeader from '#lib/components/quotes/detail/QuoteDetailHeader.svelte';
+	import QuoteDetailMeta from '#lib/components/quotes/detail/QuoteDetailMeta.svelte';
+	import QuoteDetailNotices from '#lib/components/quotes/detail/QuoteDetailNotices.svelte';
+	import QuoteAssignCustomer from '#lib/components/quotes/detail/QuoteAssignCustomer.svelte';
 	import QuoteItemsTable, {
 		type QuoteDisplayGroup
-	} from '$lib/components/quotes/detail/QuoteItemsTable.svelte';
-	import QuoteDetailSummary from '$lib/components/quotes/detail/QuoteDetailSummary.svelte';
+	} from '#lib/components/quotes/detail/QuoteItemsTable.svelte';
+	import QuoteDetailSummary from '#lib/components/quotes/detail/QuoteDetailSummary.svelte';
 	import {
 		quoteCustomerName,
 		canSubmitAssignCustomer,
 		coerceNewCustomer
-	} from '$lib/components/quotes/detail/quoteDetail';
+	} from '#lib/components/quotes/detail/quoteDetail.js';
 
 	let { data } = $props();
 	let quote = $state<QuoteWithRelations>(untrack(() => data.quote));

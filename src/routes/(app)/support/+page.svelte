@@ -2,13 +2,13 @@
 	import { onDestroy, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Plus } from '@lucide/svelte';
-	import PageHeader from '$lib/components/ui/PageHeader.svelte';
-	import SearchInput from '$lib/components/ui/SearchInput.svelte';
-	import TablePagination from '$lib/components/ui/TablePagination.svelte';
-	import InfoTooltip from '$lib/components/ui/InfoTooltip.svelte';
-	import SupportTicketsTable from '$lib/components/support/SupportTicketsTable.svelte';
-	import SupportTicketFormModal from '$lib/components/support/SupportTicketFormModal.svelte';
-	import { listSupportTicketsQuery } from '$lib/remote/supportTickets.remote';
+	import PageHeader from '#lib/components/ui/PageHeader.svelte';
+	import SearchInput from '#lib/components/ui/SearchInput.svelte';
+	import TablePagination from '#lib/components/ui/TablePagination.svelte';
+	import InfoTooltip from '#lib/components/ui/InfoTooltip.svelte';
+	import SupportTicketsTable from '#lib/components/support/SupportTicketsTable.svelte';
+	import SupportTicketFormModal from '#lib/components/support/SupportTicketFormModal.svelte';
+	import { listSupportTicketsQuery } from '#lib/remote/supportTickets.remote.js';
 	import {
 		ALL_TICKET_CATEGORIES,
 		ALL_TICKET_PRIORITIES,
@@ -19,10 +19,10 @@
 		type TicketCategory,
 		type TicketPriority,
 		type TicketStatus
-	} from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
-	import type { PaginatedResult } from '$lib/types';
-	import type { SupportTicketRow } from '$lib/server/db/queries/supportTickets';
+	} from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
+	import type { SupportTicketRow } from '#lib/server/db/queries/supportTickets.js';
 
 	let { data } = $props();
 	const canManage = untrack(() => data.canManage);

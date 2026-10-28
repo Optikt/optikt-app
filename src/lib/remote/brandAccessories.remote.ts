@@ -1,22 +1,22 @@
 import { command, query } from '$app/server';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	deleteBrandAccessory as deleteBrandAccessoryQuery,
 	toggleProductOverride as toggleProductOverrideQuery,
 	upsertBrandAccessory as upsertBrandAccessoryQuery
-} from '$lib/server/db/queries/brandAccessories/writes';
+} from '#lib/server/db/queries/brandAccessories/writes.js';
 import {
 	getAccessoriesForProduct as getAccessoriesForProductQuery,
 	getBrandAccessories as getBrandAccessoriesQuery,
 	getProductAccessoryOverride as getProductAccessoryOverrideQuery
-} from '$lib/server/db/queries/brandAccessories/reads';
+} from '#lib/server/db/queries/brandAccessories/reads.js';
 import type {
 	BrandAccessoryRuleRow,
 	ProductAccessoryOverride,
 	ResolvedAccessoryRule
-} from '$lib/server/db/queries/brandAccessories/types';
-import { requireAdmin, requireAuth } from '$lib/server/guards';
+} from '#lib/server/db/queries/brandAccessories/types.js';
+import { requireAdmin, requireAuth } from '#lib/server/guards.js';
 import {
 	BrandAccessoriesByBrandSchema,
 	BrandAccessoryIdSchema,
@@ -24,7 +24,7 @@ import {
 	ProductAccessoryOverrideSchema,
 	ToggleProductOverrideSchema,
 	UpsertBrandAccessorySchema
-} from '$lib/schemas/brandAccessories';
+} from '#lib/schemas/brandAccessories.js';
 
 export const getAccessoriesForProduct = query(
 	GetAccessoriesForProductSchema,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { prescriptionToFormData } from './prescription-form';
-import type { Prescription } from '$lib/server/db/schema';
+import type { Prescription } from '#lib/server/db/schema/index.js';
 
 describe('prescriptionToFormData', () => {
 	it('preserves the calendar date from an ISO timestamp string', () => {

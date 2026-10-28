@@ -5,16 +5,16 @@
  * SSR-loading the full catalog.
  */
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { CatalogSearchSchema, CatalogItemsByIdsSchema } from '$lib/schemas/catalog';
+import { requireAuth } from '#lib/server/guards.js';
+import { CatalogSearchSchema, CatalogItemsByIdsSchema } from '#lib/schemas/catalog.js';
 import {
 	getAllProductsWithRelations,
 	findProductByIdWithRelations
-} from '$lib/server/db/queries/products';
+} from '#lib/server/db/queries/products.js';
 import {
 	getLensCatalogItemsWithRelations,
 	findLensCatalogItemByIdWithRelations
-} from '$lib/server/db/queries/lenses/catalog';
+} from '#lib/server/db/queries/lenses/catalog.js';
 
 export const searchCatalog = query(CatalogSearchSchema, async (data) => {
 	requireAuth();

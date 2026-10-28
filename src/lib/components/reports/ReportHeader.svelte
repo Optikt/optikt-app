@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Download, Printer } from '@lucide/svelte';
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 
 	let {
 		title,

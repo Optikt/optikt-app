@@ -6,7 +6,7 @@ import { findPurchaseOrderById } from './orders';
 import { computeSettlementDiscountFactor, roundCurrency } from './shared';
 import { eq, sql } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
 import {
 	purchaseOrders,
@@ -16,13 +16,13 @@ import {
 	products,
 	lensCatalogItems,
 	type PurchaseOrder
-} from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { PurchaseOrderStatus, PurchaseOrderItemType } from '$lib/shared/enums';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { PurchaseOrderStatus, PurchaseOrderItemType } from '#lib/shared/enums/index.js';
+import { InventoryMovementType, MovementReferenceType } from '#lib/shared/enums/index.js';
 
 import { getNextLotNumber, getNextFifoCost } from '../inventoryLots';
-import { nowISO } from '$lib/dates';
+import { nowISO } from '#lib/dates.js';
 
 // ---------------------------------------------------------------------------
 // Types

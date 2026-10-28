@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PurchaseDiscountType, PurchaseOrderItemType } from '$lib/shared/enums';
+import { PurchaseDiscountType, PurchaseOrderItemType } from '#lib/shared/enums/index.js';
 
 import {
 	applyLensDefaults,

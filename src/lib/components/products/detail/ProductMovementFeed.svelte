@@ -12,8 +12,8 @@
 		getInventoryMovementTypeLabel,
 		getMovementReferenceTypeLabel,
 		InventoryMovementType
-	} from '$lib/shared/enums/inventoryTypes';
-	import { formatDate } from '$lib/utils';
+	} from '#lib/shared/enums/inventoryTypes.js';
+	import { formatDate } from '#lib/utils/index.js';
 	import { formatQuantityDelta } from './helpers';
 
 	interface MovementItem {

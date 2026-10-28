@@ -2,7 +2,7 @@
  * Split from parent query module (DT1 phase 4) — logic unchanged, verbatim move: exported types.
  */
 
-import { type Sale, type SaleItem, type SaleItemFreeDetails } from '$lib/server/db/schema';
+import { type Sale, type SaleItem, type SaleItemFreeDetails } from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // TYPES

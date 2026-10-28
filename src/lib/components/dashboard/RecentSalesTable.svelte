@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { formatPrice, formatDateOnly } from '$lib/utils';
-	import { SaleStatusBadge } from '$lib/components/ui';
-	import type { RecentSale } from '$lib/server/db/queries/dashboard';
+	import { formatPrice, formatDateOnly } from '#lib/utils/index.js';
+	import { SaleStatusBadge } from '#lib/components/ui/index.js';
+	import type { RecentSale } from '#lib/server/db/queries/dashboard.js';
 
 	let { sales }: { sales: RecentSale[] } = $props();
 

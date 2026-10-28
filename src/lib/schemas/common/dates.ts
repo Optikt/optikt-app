@@ -3,7 +3,7 @@
  * Split from schemas/common.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 import { z } from 'zod';
-import { fromISODate, fromISO } from '$lib/dates';
+import { fromISODate, fromISO } from '#lib/dates.js';
 
 export const EmptySchema = z.object({});
 

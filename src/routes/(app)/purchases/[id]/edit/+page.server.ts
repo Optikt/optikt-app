@@ -1,10 +1,10 @@
 import type { PageServerLoad } from './$types';
 import { error, redirect } from '@sveltejs/kit';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole, PurchaseOrderStatus } from '$lib/shared/enums';
-import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
-import { findPurchaseOrderByIdWithRelations } from '$lib/server/db/queries/purchaseOrders/orders';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole, PurchaseOrderStatus } from '#lib/shared/enums/index.js';
+import { getPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
+import { findPurchaseOrderByIdWithRelations } from '#lib/server/db/queries/purchaseOrders/orders.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

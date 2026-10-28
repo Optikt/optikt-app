@@ -7,15 +7,15 @@
 		EXPENSE_CATEGORY_LABELS,
 		EXPENSE_TO_CURRENCY_CODE,
 		RATE_TYPE_LABELS
-	} from '$lib/shared/enums';
-	import { getCurrencyLabel } from '$lib/shared/enums/currencyTypes';
+	} from '#lib/shared/enums/index.js';
+	import { getCurrencyLabel } from '#lib/shared/enums/currencyTypes.js';
 	import {
 		calculateExpenseAmountBcvUsd,
 		getExpenseExchangeRateLabel,
 		requiresExpenseExchangeRate,
 		requiresExpenseRateType
-	} from '$lib/shared/expenseCalculations';
-	import { formatPrice } from '$lib/utils';
+	} from '#lib/shared/expenseCalculations.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import type { ExpenseFormData } from './expenseForm';
 
 	interface Props {

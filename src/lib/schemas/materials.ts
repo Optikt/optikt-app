@@ -7,7 +7,7 @@ import {
 	MATERIAL_CATEGORIES,
 	ProductType,
 	type MaterialCategory
-} from '$lib/shared/enums/productTypes';
+} from '#lib/shared/enums/productTypes.js';
 import { NameSchema, EntityIdSchema, ReactivateEntitySchema } from './common/identity';
 import { ListPaginationWithDeletedSchema } from './common/pagination';
 

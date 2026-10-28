@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { History } from '@lucide/svelte';
-	import { AppBadge } from '$lib/components/ui';
-	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
-	import { formatDate } from '$lib/utils';
-	import { classifyAuditEntry, type AuditEvent } from '$lib/utils/purchaseOrderDetail';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
+	import type { PurchaseOrderWithRelations } from '#lib/server/db/queries/purchaseOrders/types.js';
+	import { formatDate } from '#lib/utils/index.js';
+	import { classifyAuditEntry, type AuditEvent } from '#lib/utils/purchaseOrderDetail.js';
 
 	interface Props {
 		auditHistory: ChangeHistoryWithUser[];

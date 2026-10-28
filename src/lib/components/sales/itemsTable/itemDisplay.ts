@@ -1,5 +1,5 @@
-import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import type { SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
 export interface DisplayGroup {
 	key: string;

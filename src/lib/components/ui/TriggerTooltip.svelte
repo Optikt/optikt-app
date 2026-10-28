@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Tooltip } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import { cn } from '$lib/utils';
+	import { cn } from '#lib/utils/index.js';
 
 	interface Props {
 		/** Call-to-action element (button/link). bits-ui hands you `{ props }`; spread it. */

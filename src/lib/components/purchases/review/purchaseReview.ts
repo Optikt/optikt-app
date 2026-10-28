@@ -5,7 +5,7 @@ import {
 	PurchasePaymentTerms,
 	PurchaseSourceCurrency,
 	type CurrencyCode
-} from '$lib/shared/enums';
+} from '#lib/shared/enums/index.js';
 import { getCachedLensItems, getCachedProducts } from '../../sales/catalogCache.svelte';
 import {
 	canPersistPurchaseOrderDraft,
@@ -17,7 +17,7 @@ import type {
 	PurchaseOrderDraftItem,
 	PurchaseOrderDraftZeroValueField
 } from '../purchaseOrderDraft';
-import { sourceCurrencyRequiresRateToVes } from '$lib/shared/purchaseOrderCurrencies';
+import { sourceCurrencyRequiresRateToVes } from '#lib/shared/purchaseOrderCurrencies.js';
 
 export interface ZeroValueWarningLine {
 	id: string;

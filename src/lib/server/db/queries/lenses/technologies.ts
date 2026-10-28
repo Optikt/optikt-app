@@ -4,16 +4,16 @@
  */
 import { eq, isNull, and, or, ilike, sql } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
-import type { DbOrTx } from '$lib/server/db/types';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	lensCatalogItems,
 	lensTechnologies,
 	type LensTechnology,
 	type NewLensTechnology
-} from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import { nowISO } from '#lib/dates.js';
 
 // ============================================================================
 // LENS MATERIALS

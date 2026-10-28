@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { formatDate, formatPrice } from '$lib/utils';
+	import { formatDate, formatPrice } from '#lib/utils/index.js';
 	import { mobileInsetClass, mobileLabelClass } from './cashClasses';
-	import type { DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
+	import type { DailyBreakdownRow } from '#lib/server/db/queries/cash/daily.js';
 
 	interface Props {
 		daily: DailyBreakdownRow[];

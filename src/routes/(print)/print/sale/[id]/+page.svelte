@@ -1,14 +1,14 @@
 <script lang="ts">
-	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
+	import ImagotipoHorizontal from '#lib/components/branding/ImagotipoHorizontal.svelte';
 	import { untrack } from 'svelte';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-	import type { SalePayment } from '$lib/server/db/schema';
-	import { buildReceiptViewModel } from '$lib/components/sales/print/receiptData';
-	import ReceiptHeader from '$lib/components/sales/print/ReceiptHeader.svelte';
-	import ReceiptItemsTable from '$lib/components/sales/print/ReceiptItemsTable.svelte';
-	import ReceiptSummaryGrid from '$lib/components/sales/print/ReceiptSummaryGrid.svelte';
-	import ReceiptExtraPayments from '$lib/components/sales/print/ReceiptExtraPayments.svelte';
-	import ReceiptFooter from '$lib/components/sales/print/ReceiptFooter.svelte';
+	import type { SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
+	import type { SalePayment } from '#lib/server/db/schema/index.js';
+	import { buildReceiptViewModel } from '#lib/components/sales/print/receiptData.js';
+	import ReceiptHeader from '#lib/components/sales/print/ReceiptHeader.svelte';
+	import ReceiptItemsTable from '#lib/components/sales/print/ReceiptItemsTable.svelte';
+	import ReceiptSummaryGrid from '#lib/components/sales/print/ReceiptSummaryGrid.svelte';
+	import ReceiptExtraPayments from '#lib/components/sales/print/ReceiptExtraPayments.svelte';
+	import ReceiptFooter from '#lib/components/sales/print/ReceiptFooter.svelte';
 
 	let { data } = $props();
 

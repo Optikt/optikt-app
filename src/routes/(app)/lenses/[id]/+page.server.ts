@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { findLensCatalogItemByIdWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { isValidUuid } from '$lib/utils/uuid';
+import { findLensCatalogItemByIdWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { isValidUuid } from '#lib/utils/uuid.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {

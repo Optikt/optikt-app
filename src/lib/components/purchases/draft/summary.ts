@@ -3,7 +3,7 @@
  * Pure functions that compute gross/net totals, settlement discounts and profit.
  */
 
-import { PurchaseDiscountType } from '$lib/shared/enums';
+import { PurchaseDiscountType } from '#lib/shared/enums/index.js';
 
 import type { PurchaseOrderDraftItem } from './defaults';
 import { round2 } from './defaults';

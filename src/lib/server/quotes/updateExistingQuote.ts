@@ -1,15 +1,15 @@
-import { toSaleTotalsLine } from '$lib/remote/quotes/helpers';
-import { findQuoteById, deleteQuoteItems } from '$lib/server/db/queries/quotes';
-import { db } from '$lib/server/db';
-import { quotes } from '$lib/server/db/schema';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
-import { auditService } from '$lib/server/audit';
-import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
+import { toSaleTotalsLine } from '#lib/remote/quotes/helpers.js';
+import { findQuoteById, deleteQuoteItems } from '#lib/server/db/queries/quotes.js';
+import { db } from '#lib/server/db/index.js';
+import { quotes } from '#lib/server/db/schema/index.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+import { computeSaleTotals } from '#lib/shared/saleTotals.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { insertQuoteItems } from '#lib/server/quotes/quoteItemInsert.js';
 import { eq } from 'drizzle-orm';
-import { nowISO } from '$lib/dates';
-import type { UpdateQuoteInput } from '$lib/schemas/quotes';
-import type { ActionContext } from '$lib/server/actionContext';
+import { nowISO } from '#lib/dates.js';
+import type { UpdateQuoteInput } from '#lib/schemas/quotes.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Update a quote (only DRAFT quotes can be edited).

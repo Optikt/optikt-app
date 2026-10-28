@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { BackupStatus } from '$lib/remote/backups.remote';
-	import { formatDate } from '$lib/utils';
+	import type { BackupStatus } from '#lib/remote/backups.remote.js';
+	import { formatDate } from '#lib/utils/index.js';
 
 	interface Props {
 		status: BackupStatus;

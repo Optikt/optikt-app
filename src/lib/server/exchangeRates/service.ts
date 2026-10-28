@@ -1,12 +1,12 @@
 import { env } from '$env/dynamic/private';
-import { fromISO, nowISO } from '$lib/dates';
+import { fromISO, nowISO } from '#lib/dates.js';
 import type {
 	ExchangeRateApiResponse,
 	ExchangeRateEntry,
 	ExchangeRatesSnapshot
-} from '$lib/shared/exchangeRates';
+} from '#lib/shared/exchangeRates.js';
 import { fetchExchangeRatesFromApi, getExchangeRatesApiUrl } from './client';
-import { logger } from '$lib/utils/logger';
+import { logger } from '#lib/utils/logger.js';
 
 type RefreshSource = 'manual' | 'poller' | 'startup' | 'lazy';
 

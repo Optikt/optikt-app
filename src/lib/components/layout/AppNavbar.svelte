@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings, X } from '@lucide/svelte';
-	import { ImagotipoHorizontal } from '$lib/components';
-	import { logout } from '$lib/remote/auth.remote';
-	import { isAdminRole, UserRole } from '$lib/shared/enums';
-	import { CommandSearch, ExchangeRates, Notifications } from '$lib/components/layout';
-	import SupportTicketsButton from '$lib/components/layout/SupportTicketsButton.svelte';
-	import SupportTicketsOpenCount from '$lib/components/layout/SupportTicketsOpenCount.svelte';
-	import type { SessionWithUser } from '$lib/server/db/queries/sessions.js';
+	import { ImagotipoHorizontal } from '#lib/components/index.js';
+	import { logout } from '#lib/remote/auth.remote.js';
+	import { isAdminRole, UserRole } from '#lib/shared/enums/index.js';
+	import { CommandSearch, ExchangeRates, Notifications } from '#lib/components/layout/index.js';
+	import SupportTicketsButton from '#lib/components/layout/SupportTicketsButton.svelte';
+	import SupportTicketsOpenCount from '#lib/components/layout/SupportTicketsOpenCount.svelte';
+	import type { SessionWithUser } from '#lib/server/db/queries/sessions.js';
 
 	type NavbarProps = {
 		user: SessionWithUser['user'];

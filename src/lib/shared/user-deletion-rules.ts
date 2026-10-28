@@ -1,4 +1,4 @@
-import { UserRole } from '$lib/shared/enums';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 /**
  * Returns true if a MANAGER is trying to delete an ADMIN or another MANAGER.

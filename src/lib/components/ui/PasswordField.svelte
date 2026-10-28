@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Label } from '$lib/components/ui/label';
+	import type { RemoteFormIssue } from '$app/server';
+	import { Label } from '#lib/components/ui/label/index.js';
 	import { Eye, EyeOff } from '@lucide/svelte';
-	import { getFormErrorMessage } from '$lib/utils';
+	import { getFormErrorMessage } from '#lib/utils/index.js';
 
 	interface Props {
 		value: string;

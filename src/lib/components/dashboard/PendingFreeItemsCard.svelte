@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Sparkles, ArrowRight } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import type { PendingFreeItemSale } from '$lib/server/db/queries/dashboard';
+	import type { PendingFreeItemSale } from '#lib/server/db/queries/dashboard.js';
 
 	let { sales }: { sales: PendingFreeItemSale[] } = $props();
 

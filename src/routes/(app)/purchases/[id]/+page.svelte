@@ -10,45 +10,45 @@
 		PurchaseOrderItemsList,
 		PurchaseOrderMovementsSection,
 		PurchaseOrderOverviewCard
-	} from '$lib/components/purchases/detail';
-	import PurchaseOrderModals from '$lib/components/purchases/detail/PurchaseOrderModals.svelte';
-	import PurchaseOrderDrawers from '$lib/components/purchases/detail/PurchaseOrderDrawers.svelte';
+	} from '#lib/components/purchases/detail/index.js';
+	import PurchaseOrderModals from '#lib/components/purchases/detail/PurchaseOrderModals.svelte';
+	import PurchaseOrderDrawers from '#lib/components/purchases/detail/PurchaseOrderDrawers.svelte';
 	import {
 		buildPurchaseDetailSummary,
 		buildRevertTarget,
 		buildUnmarkReadyMessage,
 		toggleItemReviewedLocal,
 		type RevertTarget
-	} from '$lib/components/purchases/detail/purchaseDetail';
-	import { setPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
-	import { applyPriceSuggestionsCmd } from '$lib/remote/purchaseOrders/finance.remote';
+	} from '#lib/components/purchases/detail/purchaseDetail.js';
+	import { setPurchaseOrderDetailContext } from '#lib/context/purchaseOrderDetail.js';
+	import { applyPriceSuggestionsCmd } from '#lib/remote/purchaseOrders/finance.remote.js';
 	import {
 		cancelPurchaseOrderCmd,
 		confirmPurchaseOrderCmd,
 		markPurchaseOrderReadyCmd,
 		togglePurchaseOrderItemReviewedCmd,
 		unmarkPurchaseOrderReadyCmd
-	} from '$lib/remote/purchaseOrders/review.remote';
-	import type { PriceSuggestion } from '$lib/remote/purchaseOrders/helpers';
-	import { revertFullLotCmd } from '$lib/remote/inventory.remote';
-	import { PurchaseOrderStatus } from '$lib/shared/enums';
+	} from '#lib/remote/purchaseOrders/review.remote.js';
+	import type { PriceSuggestion } from '#lib/remote/purchaseOrders/helpers.js';
+	import { revertFullLotCmd } from '#lib/remote/inventory.remote.js';
+	import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
 	import type {
 		PurchaseOrderItemWithProduct,
 		PurchaseOrderWithRelations
-	} from '$lib/server/db/queries/purchaseOrders/types';
-	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
+	} from '#lib/server/db/queries/purchaseOrders/types.js';
+	import type { PurchaseOrderPaymentWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
+	import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
 	import type {
 		InventoryLot,
 		InventoryMovement,
 		PurchaseOrderEarlyPaymentBenefit
-	} from '$lib/server/db/schema';
+	} from '#lib/server/db/schema/index.js';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
-	} from '$lib/shared/purchaseOrderCredit';
-	import { getPurchaseOrderReviewStatus } from '$lib/components/purchases/purchaseOrderDraft';
-	import { getErrorMessage } from '$lib/utils';
+	} from '#lib/shared/purchaseOrderCredit.js';
+	import { getPurchaseOrderReviewStatus } from '#lib/components/purchases/purchaseOrderDraft.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import { tick, untrack } from 'svelte';
 
 	let { data } = $props();

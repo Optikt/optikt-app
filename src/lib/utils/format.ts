@@ -3,15 +3,18 @@
  * Single source of truth for price, currency, and date formatting across the app
  */
 
-import type { Customer, Prescription } from '$lib/server/db/schema';
-import { LENS_TYPE_LABELS, LensType } from '$lib/shared/enums';
-import { fromISO, fromISODate, toISODate } from '$lib/dates';
+import type { Customer, Prescription } from '#lib/server/db/schema/index.js';
+import { LENS_TYPE_LABELS, LensType } from '#lib/shared/enums/index.js';
+import { fromISO, fromISODate, toISODate } from '#lib/dates.js';
 
 // =============================================================================
 // DATE-ONLY UTILITIES - re-exported from $lib/dates (canonical source)
 // =============================================================================
 
-export { toISODate as dateToISODateString, fromISODate as parseISODateToLocal } from '$lib/dates';
+export {
+	toISODate as dateToISODateString,
+	fromISODate as parseISODateToLocal
+} from '#lib/dates.js';
 
 // Cached Intl formatters (module-level) to avoid re-instantiating on every call.
 const usdCurrencyFormatter = new Intl.NumberFormat('es-VE', {

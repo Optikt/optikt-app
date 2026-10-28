@@ -1,11 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { getAllBrands } from '$lib/server/db/queries/brands';
-import { getBrandSupplierMaps } from '$lib/server/db/queries/brandSuppliers';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
-import { getAllMaterials } from '$lib/server/db/queries/materials';
-import { brands, suppliers, materials } from '$lib/server/db/schema';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { getAllBrands } from '#lib/server/db/queries/brands.js';
+import { getBrandSupplierMaps } from '#lib/server/db/queries/brandSuppliers.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
+import { getAllMaterials } from '#lib/server/db/queries/materials.js';
+import { brands, suppliers, materials } from '#lib/server/db/schema/index.js';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

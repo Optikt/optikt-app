@@ -1,4 +1,4 @@
-import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+import type { EarlyPaymentDiscountSuggestion } from '#lib/shared/purchaseOrderCredit.js';
 import type { PurchasePaymentPayload } from './purchasePayment';
 
 /**

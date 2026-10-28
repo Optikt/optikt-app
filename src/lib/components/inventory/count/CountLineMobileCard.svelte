@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { AppBadge } from '$lib/components/ui';
-	import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount/types';
-	import { formatDate } from '$lib/utils';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import type { InventoryCountLineRow } from '#lib/server/db/queries/inventoryCount/types.js';
+	import { formatDate } from '#lib/utils/index.js';
 	import { formatDifference, getAdjustmentPath, isMatchedLine } from './countAdjustments';
 	import CountLineEditRow, { type CountLineEditing } from './CountLineEditRow.svelte';
 

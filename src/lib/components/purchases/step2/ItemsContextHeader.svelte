@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getSourceCurrencySymbol } from '$lib/shared/purchaseOrderCurrencies';
+	import { getSourceCurrencySymbol } from '#lib/shared/purchaseOrderCurrencies.js';
 	import PricePair from '../PricePair.svelte';
 
 	interface Props {

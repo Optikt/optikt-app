@@ -4,31 +4,31 @@
  */
 
 import { z } from 'zod';
-import { SavePurchaseOrderDraftSchema } from '$lib/schemas/purchaseOrders';
+import { SavePurchaseOrderDraftSchema } from '#lib/schemas/purchaseOrders.js';
 
-import { SetPurchaseOrderCreditTermsSchema } from '$lib/schemas/purchaseOrderCreditSchedule';
-import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
-import { findPurchaseOrderById } from '$lib/server/db/queries/purchaseOrders/orders';
+import { SetPurchaseOrderCreditTermsSchema } from '#lib/schemas/purchaseOrderCreditSchedule.js';
+import { getPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
+import { findPurchaseOrderById } from '#lib/server/db/queries/purchaseOrders/orders.js';
 
 import type {
 	PurchaseOrderWithRelations,
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderItemDraftInput
-} from '$lib/server/db/queries/purchaseOrders/types';
+} from '#lib/server/db/queries/purchaseOrders/types.js';
 
-import { PurchaseOrderItemType, PurchasePaymentTerms } from '$lib/shared/enums';
+import { PurchaseOrderItemType, PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 
-import { validatePurchaseOrderDraftReadiness } from '$lib/shared/purchaseOrderRules';
+import { validatePurchaseOrderDraftReadiness } from '#lib/shared/purchaseOrderRules.js';
 import {
 	type PurchaseOrderBalanceSummary,
 	type PurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
 import type {
 	PurchaseOrder,
 	PurchaseOrderEarlyPaymentBenefit,
 	PurchaseOrderPayment
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // TYPES

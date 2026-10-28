@@ -1,6 +1,6 @@
-import type { RemoteFormIssue } from '@sveltejs/kit';
-import { getFormErrorMessage } from '$lib/utils';
-import { ProductGender, PRODUCT_GENDER_LABELS } from '$lib/utils/sku';
+import type { RemoteFormIssue } from '$app/server';
+import { getFormErrorMessage } from '#lib/utils/index.js';
+import { ProductGender, PRODUCT_GENDER_LABELS } from '#lib/utils/sku.js';
 
 export const sectionClass = 'glass-card bg-surface-container-lowest p-6';
 export const noteCardClass = 'rounded-xl bg-surface-container-low p-4';

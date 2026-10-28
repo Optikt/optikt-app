@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
+import { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
 import { EntityIdSchema } from './common/identity';
 import { CoercedBoolean, CoercedNumber } from './common/numbers';
 

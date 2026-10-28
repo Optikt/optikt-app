@@ -3,26 +3,30 @@
  * Split from lenses.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 import { query, form } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { requireAuth, requireAdmin } from '#lib/server/guards.js';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
-import { lensCatalogItems, lensOpticalRanges } from '$lib/server/db/schema';
-import { CreateLensCatalogItemSchema, ListLensCatalogSchema } from '$lib/schemas/lenses';
+import { lensCatalogItems, lensOpticalRanges } from '#lib/server/db/schema/index.js';
+import { CreateLensCatalogItemSchema, ListLensCatalogSchema } from '#lib/schemas/lenses.js';
 
-import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
+import { getLensCatalogItemsWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 import {
 	resolvePendingLensMaterial,
 	resolvePendingTechnology
-} from '$lib/server/db/queries/lenses/pending';
+} from '#lib/server/db/queries/lenses/pending.js';
 
-import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
-import type { LensCatalogItem, LensOpticalRange, NewLensCatalogItem } from '$lib/server/db/schema';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { auditService, getAuditContext } from '$lib/server/audit';
-import { nowISO } from '$lib/dates';
+import { resolvePendingSupplier } from '#lib/server/db/queries/suppliers.js';
+import type {
+	LensCatalogItem,
+	LensOpticalRange,
+	NewLensCatalogItem
+} from '#lib/server/db/schema/index.js';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import { nowISO } from '#lib/dates.js';
 
-import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
+import { computePairPurchasePrice } from '#lib/shared/pairPurchasePrice.js';
 // LENS CATALOG ITEMS
 // ============================================================================
 

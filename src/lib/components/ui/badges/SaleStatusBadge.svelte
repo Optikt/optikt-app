@@ -1,6 +1,6 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import { getSaleStatusLabel, getSaleStatusBadgeColor } from '$lib/shared/enums';
+	import { getSaleStatusLabel, getSaleStatusBadgeColor } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		status: string;

@@ -1,18 +1,18 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
-import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
-import { findPurchaseOrderByIdWithRelations } from '$lib/server/db/queries/purchaseOrders/orders';
-import { getPurchaseOrderPaymentsWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
-import { getPurchaseOrderAuditHistory } from '$lib/server/db/queries/changeHistory';
-import { getPurchaseOrderRelatedMovements } from '$lib/server/db/queries/inventoryMovements';
-import { findLotById } from '$lib/server/db/queries/inventoryLots';
+} from '#lib/shared/purchaseOrderCredit.js';
+import { getPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
+import { findPurchaseOrderByIdWithRelations } from '#lib/server/db/queries/purchaseOrders/orders.js';
+import { getPurchaseOrderPaymentsWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
+import { getPurchaseOrderEarlyPaymentBenefits } from '#lib/server/db/queries/purchaseOrderEarlyPaymentBenefits.js';
+import { getPurchaseOrderAuditHistory } from '#lib/server/db/queries/changeHistory.js';
+import { getPurchaseOrderRelatedMovements } from '#lib/server/db/queries/inventoryMovements.js';
+import { findLotById } from '#lib/server/db/queries/inventoryLots.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

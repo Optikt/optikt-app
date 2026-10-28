@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Tag, TriangleAlert, Eye, SquarePen, Trash2, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteMaterialById } from '$lib/remote/materials.remote';
-	import { getErrorMessage } from '$lib/utils';
-	import { DataGrid, StatusBadge } from '$lib/components/ui';
-	import MaterialReactivateModal from '$lib/components/materials/MaterialReactivateModal.svelte';
-	import type { Material } from '$lib/server/db/schema';
-	import { MATERIAL_CATEGORY_LABELS } from '$lib/shared/enums/productTypes';
-	import type { MaterialCategory } from '$lib/shared/enums/productTypes';
+	import { deleteMaterialById } from '#lib/remote/materials.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { DataGrid, StatusBadge } from '#lib/components/ui/index.js';
+	import MaterialReactivateModal from '#lib/components/materials/MaterialReactivateModal.svelte';
+	import type { Material } from '#lib/server/db/schema/index.js';
+	import { MATERIAL_CATEGORY_LABELS } from '#lib/shared/enums/productTypes.js';
+	import type { MaterialCategory } from '#lib/shared/enums/productTypes.js';
 
 	interface Props {
 		materials: Material[];

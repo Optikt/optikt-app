@@ -11,16 +11,16 @@ import {
 	OptionalAdditionSchema
 } from './common/optical';
 import { ListPaginationSchema } from './common/pagination';
-import { ALL_DISCOUNT_TYPES, DiscountType } from '$lib/shared/enums';
-import { ALL_QUOTE_STATUSES } from '$lib/shared/contracts/quotes';
+import { ALL_DISCOUNT_TYPES, DiscountType } from '#lib/shared/enums/index.js';
+import { ALL_QUOTE_STATUSES } from '#lib/shared/contracts/quotes.js';
 import {
 	SaleItemType,
 	ALL_FREE_ITEM_CATEGORIES,
 	FreeItemCategory
-} from '$lib/shared/enums/lensTypes';
-import { AxisSchema, AlturaSchema } from '$lib/schemas/prescriptions';
-import { InlineCustomerSchema } from '$lib/schemas/sales';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+} from '#lib/shared/enums/lensTypes.js';
+import { AxisSchema, AlturaSchema } from '#lib/schemas/prescriptions.js';
+import { InlineCustomerSchema } from '#lib/schemas/sales.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 
 const ALL_SALE_ITEM_TYPES = Object.values(SaleItemType) as [string, ...string[]];
 

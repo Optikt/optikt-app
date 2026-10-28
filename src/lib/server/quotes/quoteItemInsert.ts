@@ -1,8 +1,8 @@
-import { quoteItems, quoteItemFreeDetails } from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { buildQuoteItemValues } from '$lib/remote/quotes/helpers';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
-import type { QuoteItemInput } from '$lib/schemas/quotes';
+import { quoteItems, quoteItemFreeDetails } from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { buildQuoteItemValues } from '#lib/remote/quotes/helpers.js';
+import { SaleItemType, FreeItemEnrichmentStatus } from '#lib/shared/enums/lensTypes.js';
+import type { QuoteItemInput } from '#lib/schemas/quotes.js';
 
 /** Insert quote items (+ FREE_ITEM details). Caller owns the transaction. */
 export async function insertQuoteItems(

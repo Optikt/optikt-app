@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { RotateCcw, Search, SlidersHorizontal, Sparkles, Truck } from '@lucide/svelte';
-	import { ALL_SALE_STATUSES, SALE_STATUS_LABELS, type SaleStatus } from '$lib/shared/enums';
+	import {
+		ALL_SALE_STATUSES,
+		SALE_STATUS_LABELS,
+		type SaleStatus
+	} from '#lib/shared/enums/index.js';
 	import StatusMultiSelect from './StatusMultiSelect.svelte';
 
 	interface Props {

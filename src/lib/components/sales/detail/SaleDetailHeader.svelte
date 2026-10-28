@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowLeft, CircleX, FileText, Pen, Play, Printer, ReceiptText } from '@lucide/svelte';
-	import { CasheaIsotipo } from '$lib/components/branding';
+	import { CasheaIsotipo } from '#lib/components/branding/index.js';
 
 	interface Props {
 		formattedOrderNumber: string;

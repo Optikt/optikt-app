@@ -18,12 +18,12 @@
 		RecentSalesTable,
 		PendingFreeItemsCard,
 		UpcomingPurchasePaymentsWidget
-	} from '$lib/components/dashboard';
-	import { canOperate, isAdminRole } from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
+	} from '#lib/components/dashboard/index.js';
+	import { canOperate, isAdminRole } from '#lib/shared/enums/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { resolve } from '$app/paths';
-	import type { LucideIcon } from '$lib/types/index.js';
-	import type { StaticRoute } from '$lib/shared/routes.js';
+	import type { LucideIcon } from '#lib/types/index.js';
+	import type { StaticRoute } from '#lib/shared/routes.js';
 
 	let { data } = $props();
 

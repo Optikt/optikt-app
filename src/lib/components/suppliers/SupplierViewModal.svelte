@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import {
 		Phone,
 		Mail,
@@ -15,16 +15,16 @@
 		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SupplierTypeBadge } from '$lib/components/ui';
+	import { SupplierTypeBadge } from '#lib/components/ui/index.js';
 	import {
 		addBrandToSupplier,
 		listBrandRelationOptions,
 		listBrandsForSupplier,
 		removeBrandFromSupplier
-	} from '$lib/remote/suppliers.remote';
-	import type { Supplier } from '$lib/server/db/schema';
-	import { formatPhone, getErrorMessage } from '$lib/utils';
-	import { getAvailableRelationOptions } from '$lib/utils/brandSupplierRelations';
+	} from '#lib/remote/suppliers.remote.js';
+	import type { Supplier } from '#lib/server/db/schema/index.js';
+	import { formatPhone, getErrorMessage } from '#lib/utils/index.js';
+	import { getAvailableRelationOptions } from '#lib/utils/brandSupplierRelations.js';
 
 	type RelatedBrand = {
 		id: string;

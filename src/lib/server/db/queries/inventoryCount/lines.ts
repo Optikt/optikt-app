@@ -12,8 +12,8 @@ import { requireOpenSession, buildSessionLineFilter, normalizeSessionNotes } fro
 import { getSessionById } from './sessions';
 import { and, asc, eq, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { db } from '$lib/server/db';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 
 import {
 	inventoryCountLines,
@@ -21,8 +21,8 @@ import {
 	lensCatalogItems,
 	products,
 	users
-} from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import { nowISO } from '#lib/dates.js';
 
 export async function getSessionLines(
 	sessionId: number,

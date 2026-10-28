@@ -1,18 +1,18 @@
-import { db } from '$lib/server/db';
-import { findLotById } from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { inventoryLots, products } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { findLotById } from '#lib/server/db/queries/inventoryLots.js';
+import { createInventoryMovement } from '#lib/server/db/queries/inventoryMovements.js';
+import { inventoryLots, products } from '#lib/server/db/schema/index.js';
 import { eq, sql } from 'drizzle-orm';
 import {
 	InventoryMovementType,
 	MovementReferenceType,
 	AdjustmentReason,
 	ADJUSTMENT_REPORT_CATEGORIES
-} from '$lib/shared/enums';
-import { getErrorMessage } from '$lib/utils';
-import { nowISO } from '$lib/dates';
-import type { ManualAdjustmentInput } from '$lib/schemas/inventory';
-import type { ActionContext } from '$lib/server/actionContext';
+} from '#lib/shared/enums/index.js';
+import { getErrorMessage } from '#lib/utils/index.js';
+import { nowISO } from '#lib/dates.js';
+import type { ManualAdjustmentInput } from '#lib/schemas/inventory.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 export async function createManualAdjustmentCore(data: ManualAdjustmentInput, ctx: ActionContext) {
 	const { lotId, adjustmentType, quantity, reason, notes } = data;

@@ -1,4 +1,4 @@
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 export interface InventoryLotSummary {
 	quantityAvailable: number;

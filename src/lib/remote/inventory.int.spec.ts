@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createManualAdjustmentCmd, revertFullLotCmd } from './inventory.remote';
-import { callRemote } from '$lib/testing/remoteHarness';
-import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
+import { callRemote } from '#lib/testing/remoteHarness.js';
+import { AdjustmentReason, InventoryMovementType } from '#lib/shared/enums/index.js';
 
 describe('inventory remotes (Capa 3)', () => {
 	it('createManualAdjustmentCmd rejects an unauthenticated caller with 401', async () => {

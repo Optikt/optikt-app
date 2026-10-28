@@ -2,14 +2,14 @@
  * Purchase order queries — exported types.
  * Split from queries/purchaseOrders.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import { type PurchaseOrder, type PurchaseOrderItem } from '$lib/server/db/schema';
+import { type PurchaseOrder, type PurchaseOrderItem } from '#lib/server/db/schema/index.js';
 
-import { PurchaseOrderItemType } from '$lib/shared/enums';
+import { PurchaseOrderItemType } from '#lib/shared/enums/index.js';
 
 import {
 	type PurchaseOrderBalanceSummary,
 	type PurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
 // ---------------------------------------------------------------------------
 // Types

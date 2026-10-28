@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowLeft, Boxes } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import type { InventoryLot } from '$lib/server/db/schema';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		itemId: string;

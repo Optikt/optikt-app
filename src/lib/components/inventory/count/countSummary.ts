@@ -1,11 +1,11 @@
-import { getInventoryCountStatusLabel } from '$lib/schemas/inventoryCount';
-import type { BadgeVariant } from '$lib/shared/badge-variants';
-import type { InventoryCountUiFilter } from '$lib/schemas/inventoryCount';
+import { getInventoryCountStatusLabel } from '#lib/schemas/inventoryCount.js';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
+import type { InventoryCountUiFilter } from '#lib/schemas/inventoryCount.js';
 import type {
 	InventoryCountLineRow,
 	InventoryCountSessionDetail
-} from '$lib/server/db/queries/inventoryCount/types';
-import { formatDate } from '$lib/utils';
+} from '#lib/server/db/queries/inventoryCount/types.js';
+import { formatDate } from '#lib/utils/index.js';
 
 export type SummaryMetricTone = 'neutral' | 'success' | 'warning' | 'error';
 

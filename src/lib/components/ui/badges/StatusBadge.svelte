@@ -1,6 +1,6 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import type { BadgeVariant } from '$lib/shared/badge-variants';
+	import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 	interface Props {
 		/** Whether the item is active */

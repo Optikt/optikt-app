@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	import { getLensSourceLabel, getLensTypeLabel } from '#lib/shared/enums/lensTypes.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;

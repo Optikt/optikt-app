@@ -3,7 +3,7 @@
 	import {
 		getPurchaseOrderUiStateLabel,
 		getPurchaseOrderUiStateBadgeColor
-	} from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
 
 	interface Props {
 		status: string;

@@ -12,8 +12,8 @@ import {
 	PurchasePaymentTerms,
 	PurchaseSourceCurrency,
 	ALL_PURCHASE_PAYMENT_CURRENCY_CODES
-} from '$lib/shared/enums';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+} from '#lib/shared/enums/index.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 import {
 	PurchaseOrderCreditTermsSchema,
 	validatePurchaseOrderCreditTerms

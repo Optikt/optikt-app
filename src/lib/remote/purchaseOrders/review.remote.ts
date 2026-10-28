@@ -5,34 +5,34 @@
 import type { PriceSuggestion } from './helpers';
 import { getPurchaseOrderReadinessIssues } from './helpers';
 import { command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { getErrorMessage } from '$lib/utils';
+import { requireAdmin } from '#lib/server/guards.js';
+import { getErrorMessage } from '#lib/utils/index.js';
 
 import {
 	ConfirmPurchaseOrderSchema,
 	CancelPurchaseOrderSchema,
 	MarkPurchaseOrderReadySchema,
 	TogglePurchaseOrderItemReviewedSchema
-} from '$lib/schemas/purchaseOrders';
+} from '#lib/schemas/purchaseOrders.js';
 
 import {
 	getPurchaseOrderItems,
 	setPurchaseOrderReadyForReview,
 	setPurchaseOrderItemReviewed,
 	findPurchaseOrderItemById
-} from '$lib/server/db/queries/purchaseOrders/items';
+} from '#lib/server/db/queries/purchaseOrders/items.js';
 import {
 	confirmPurchaseOrder as confirmPO,
 	cancelPurchaseOrder as cancelPO
-} from '$lib/server/db/queries/purchaseOrders/lifecycle';
-import { findPurchaseOrderById } from '$lib/server/db/queries/purchaseOrders/orders';
+} from '#lib/server/db/queries/purchaseOrders/lifecycle.js';
+import { findPurchaseOrderById } from '#lib/server/db/queries/purchaseOrders/orders.js';
 
-import { findProductById } from '$lib/server/db/queries/products';
+import { findProductById } from '#lib/server/db/queries/products.js';
 
-import { db } from '$lib/server/db';
-import { PurchaseOrderStatus } from '$lib/shared/enums';
+import { db } from '#lib/server/db/index.js';
+import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
 
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
 export const markPurchaseOrderReadyCmd = command(MarkPurchaseOrderReadySchema, async (data) => {
 	requireAdmin();

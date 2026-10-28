@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ArrowRightCircle, CircleX, FileText, Printer } from '@lucide/svelte';
-	import { PageHeader } from '$lib/components/ui';
+	import { PageHeader } from '#lib/components/ui/index.js';
 	import { actionButtonClasses } from './quoteDetail';
 
 	interface Props {

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { LensCatalogForm } from '$lib/components/lenses';
-	import { PageHeader } from '$lib/components/ui';
+	import { LensCatalogForm } from '#lib/components/lenses/index.js';
+	import { PageHeader } from '#lib/components/ui/index.js';
 
 	let { data } = $props();
 </script>
