@@ -22,7 +22,7 @@ Nota: el detalle de presupuesto no renderiza la Rx (confirmado — no hay muestr
 
 3. **Zod** `src/lib/schemas/quotes.ts` — `QuoteItemSchema`:
    - `odAltura: AlturaSchema.optional()` y `osAltura: AlturaSchema.optional()` (tras `osAddition`)
-   - Import `AlturaSchema` desde `$lib/schemas/prescriptions` (ya se usa así en `schemas/sales.ts`)
+   - Import `AlturaSchema` desde `#lib/schemas/prescriptions` (ya se usa así en `schemas/sales.ts`)
 
 4. **Builder** `src/lib/components/sales/wizardSubmission.ts` — rama lens de `buildQuoteItemsFromWizard` (tras ~línea 210):
    - `odAltura: item.lensPair.od.enabled ? (item.lensPair.od.altura ?? undefined) : undefined`

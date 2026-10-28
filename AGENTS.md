@@ -26,8 +26,8 @@ Optical store management system built with SvelteKit, Shadcn-Svelte, and Drizzle
 
 Two reusable tooltip components. Use them instead of the native `title` attribute.
 
-- `$lib/components/ui/InfoTooltip.svelte` — small info icon next to a label: `<InfoTooltip text="..." />`.
-- `$lib/components/ui/TriggerTooltip.svelte` — rich tooltip for any interactive element you render yourself (submit buttons, links). Supports `title`, `text` and an `items` bullet list (e.g. "tooltip en botón submit" listing missing fields).
+- `#lib/components/ui/InfoTooltip.svelte` — small info icon next to a label: `<InfoTooltip text="..." />`.
+- `#lib/components/ui/TriggerTooltip.svelte` — rich tooltip for any interactive element you render yourself (submit buttons, links). Supports `title`, `text` and an `items` bullet list (e.g. "tooltip en botón submit" listing missing fields).
 
 ```svelte
 {#snippet saveTrigger({ props })}
@@ -49,7 +49,7 @@ Rules:
 
 ## Import Policy — No Barrels
 
-- Import directly from the defining module (`./form/lensFormPricing`, `$lib/components/inventory/count/countSummary`). Never add new `index.ts` barrels.
+- Import directly from the defining module (`./form/lensFormPricing`, `#lib/components/inventory/count/countSummary`). Never add new `index.ts` barrels.
 - Why: Vite dev loads/parses every module re-exported by a barrel (slower startup + HMR); barrels hide dependency weight, invite circular imports through `index`, and weaken Knip dead-code detection. Prod tree-shaking is usually fine with pure ESM, but dev speed and explicit graphs are not.
 - Exception: a barrel may exist **temporarily** as compat shim when splitting a module with legacy importers (see `dt1-split-protocol`); it must be removed in the follow-up migration PR.
 - Precedent: `@lucide/svelte` explicit imports, never barrels (project conventions).

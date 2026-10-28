@@ -69,7 +69,7 @@ Remains as orchestrator (~400 lines):
 - `$state()` / `$derived()` / `$derived.by()` for reactive state
 - Tailwind CSS only — no `<style>` blocks (except page-level global animations)
 - Lucide icons imported individually
-- Path aliases: `$lib/...`
+- Path aliases: `#lib/...`
 - No barrel export needed for detail components (imported directly by page)
 
 ## Acceptance Criteria
