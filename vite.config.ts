@@ -1,3 +1,5 @@
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
@@ -5,10 +7,19 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import pkg from './package.json' with { type: 'json' };
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
-	define: {
-		__APP_VERSION__: JSON.stringify(pkg.version)
-	},
+	plugins: [
+		tailwindcss(),
+		sveltekit({
+			preprocess: vitePreprocess(),
+			compilerOptions: { experimental: { async: true } },
+			adapter: adapter(),
+			csrf: {
+				trustedOrigins: ['https://nanezx-elitebook.taild8f0b9.ts.net']
+			},
+			experimental: { remoteFunctions: true }
+		})
+	],
+	define: { __APP_VERSION__: JSON.stringify(pkg.version) },
 	server: {
 		allowedHosts: [
 			'elitebook.taild8f0b9.ts.net',
