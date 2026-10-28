@@ -1,4 +1,4 @@
-import { FreeItemEnrichmentStatus, SaleItemType } from '$lib/shared/enums/lensTypes';
+import { FreeItemEnrichmentStatus, SaleItemType } from '#lib/shared/enums/lensTypes.js';
 import type { DisplayGroup } from './itemDisplay';
 
 export function computeInternalCostTotal(groups: DisplayGroup[]): number {

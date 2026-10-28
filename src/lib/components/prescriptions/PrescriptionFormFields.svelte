@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { LensType } from '$lib/shared/enums/lensTypes';
-	import { dateToISODateString } from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
+	import { LensType } from '#lib/shared/enums/lensTypes.js';
+	import { dateToISODateString } from '#lib/utils/index.js';
+	import { nowUTC } from '#lib/dates.js';
 	import type { PrescriptionFieldIssues, PrescriptionFormData } from './prescription-form';
 	import DistancesSection from './fields/DistancesSection.svelte';
 	import EyeCard from './fields/EyeCard.svelte';

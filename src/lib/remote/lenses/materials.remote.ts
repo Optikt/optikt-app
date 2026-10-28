@@ -3,16 +3,16 @@
  * Split from lenses.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { requireAuth, requireAdmin } from '#lib/server/guards.js';
 import { invalid } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { softDelete } from '$lib/server/db/queries/deletedItems';
+import { db } from '#lib/server/db/index.js';
+import { softDelete } from '#lib/server/db/queries/deletedItems.js';
 
 import {
 	CreateLensMaterialSchema,
 	UpdateLensMaterialSchema,
 	LensIdSchema
-} from '$lib/schemas/lenses';
+} from '#lib/schemas/lenses.js';
 
 import {
 	getAllLensMaterials,
@@ -21,11 +21,11 @@ import {
 	findLensMaterialByCode,
 	createLensMaterial,
 	updateLensMaterial
-} from '$lib/server/db/queries/lenses/materials';
+} from '#lib/server/db/queries/lenses/materials.js';
 
-import type { LensMaterial } from '$lib/server/db/schema';
+import type { LensMaterial } from '#lib/server/db/schema/index.js';
 
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
 // LENS MATERIALS
 // ============================================================================

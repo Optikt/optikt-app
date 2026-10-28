@@ -4,11 +4,11 @@
  */
 import { z } from 'zod';
 import { query } from '$app/server';
-import { requireRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getReceivables } from '$lib/server/db/queries/receivables';
-import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
-import { addPayment } from '$lib/remote/sales/payments.remote';
+import { requireRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getReceivables } from '#lib/server/db/queries/receivables.js';
+import type { ReceivableRow, ReceivablesSummary } from '#lib/server/db/queries/receivables.js';
+import { addPayment } from '#lib/remote/sales/payments.remote.js';
 
 // ============================================================================
 // SCHEMAS
@@ -22,7 +22,7 @@ const GetReceivablesSchema = z.object({
 // TYPES
 // ============================================================================
 
-export type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
+export type { ReceivableRow, ReceivablesSummary } from '#lib/server/db/queries/receivables.js';
 
 export interface ReceivablesData {
 	rows: ReceivableRow[];

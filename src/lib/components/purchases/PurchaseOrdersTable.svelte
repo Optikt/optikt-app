@@ -1,16 +1,20 @@
 <script lang="ts">
 	import { ClipboardList, Eye } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { DataGrid, PurchaseOrderDueBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
+	import {
+		DataGrid,
+		PurchaseOrderDueBadge,
+		PurchaseOrderStatusBadge
+	} from '#lib/components/ui/index.js';
 	import {
 		getPurchaseDocumentTypeLabel,
 		PurchaseDiscountType,
 		PurchaseDocumentType,
 		CurrencyCode
-	} from '$lib/shared/enums';
-	import { getCurrencySymbol } from '$lib/shared/enums';
-	import { formatCurrency, formatDateOnly, formatPrice } from '$lib/utils';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
+	} from '#lib/shared/enums/index.js';
+	import { getCurrencySymbol } from '#lib/shared/enums/index.js';
+	import { formatCurrency, formatDateOnly, formatPrice } from '#lib/utils/index.js';
+	import type { PurchaseOrderWithRelations } from '#lib/server/db/queries/purchaseOrders/types.js';
 
 	type PurchaseViewHref = `/purchases/${string}`;
 

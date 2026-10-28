@@ -3,11 +3,11 @@
  * Server-side functions for fetching entity change history
  */
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
+import { requireAuth } from '#lib/server/guards.js';
 import { z } from 'zod';
-import { getEntityHistory, getEntityHistoryCount } from '$lib/server/db/queries/changeHistory';
-import { ALL_ENTITY_TYPES } from '$lib/server/db/schema';
-import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
+import { getEntityHistory, getEntityHistoryCount } from '#lib/server/db/queries/changeHistory.js';
+import { ALL_ENTITY_TYPES } from '#lib/server/db/schema/index.js';
+import type { EntityType, ActionType, ChangeRecord } from '#lib/server/db/schema/index.js';
 
 // Schema for fetching entity history
 const GetEntityHistorySchema = z.object({

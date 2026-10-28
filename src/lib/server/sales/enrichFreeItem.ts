@@ -1,12 +1,12 @@
-import { db } from '$lib/server/db';
-import { saleItems, saleItemFreeDetails } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { saleItems, saleItemFreeDetails } from '#lib/server/db/schema/index.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
-import { auditService } from '$lib/server/audit';
-import { findSupplierById } from '$lib/server/db/queries/suppliers';
-import { nowISO } from '$lib/dates';
-import type { EnrichFreeItemInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { SaleItemType, FreeItemEnrichmentStatus } from '#lib/shared/enums/lensTypes.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { findSupplierById } from '#lib/server/db/queries/suppliers.js';
+import { nowISO } from '#lib/dates.js';
+import type { EnrichFreeItemInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Enrich or re-enrich a FREE_ITEM sale item with confirmed cost, supplier, and optical notes.

@@ -3,9 +3,9 @@
  * Not a spec file — only factories used to build products/lenses.
  */
 
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { LensPriceType, LensType } from '$lib/shared/enums/lensTypes';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+import { LensPriceType, LensType } from '#lib/shared/enums/lensTypes.js';
 
 export function makeProduct(overrides: Partial<ProductWithRelations> = {}): ProductWithRelations {
 	return {

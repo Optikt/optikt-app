@@ -3,43 +3,43 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { getInventoryCountContext } from '$lib/context';
+	import { getInventoryCountContext } from '#lib/context/index.js';
 	import {
 		applySession,
 		cancelSession,
 		setLineAdjustmentStatus,
 		upsertCountLine
-	} from '$lib/remote/inventoryCount.remote';
+	} from '#lib/remote/inventoryCount.remote.js';
 	import {
 		canCloseInventoryCountSession,
 		type InventoryCountUiFilter
-	} from '$lib/schemas/inventoryCount';
-	import { isAdminRole } from '$lib/shared/enums';
+	} from '#lib/schemas/inventoryCount.js';
+	import { isAdminRole } from '#lib/shared/enums/index.js';
 	import type {
 		InventoryCountLineRow,
 		InventoryCountSessionDetail
-	} from '$lib/server/db/queries/inventoryCount/types';
-	import { getErrorMessage } from '$lib/utils';
-	import CountSessionHeader from '$lib/components/inventory/count/CountSessionHeader.svelte';
-	import CountSummaryMetrics from '$lib/components/inventory/count/CountSummaryMetrics.svelte';
-	import CountLinesTable from '$lib/components/inventory/count/CountLinesTable.svelte';
+	} from '#lib/server/db/queries/inventoryCount/types.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import CountSessionHeader from '#lib/components/inventory/count/CountSessionHeader.svelte';
+	import CountSummaryMetrics from '#lib/components/inventory/count/CountSummaryMetrics.svelte';
+	import CountLinesTable from '#lib/components/inventory/count/CountLinesTable.svelte';
 	import {
 		createEmptyLineEditing,
 		startLineEditing,
 		type CountLineEditing
-	} from '$lib/components/inventory/count/CountLineEditRow.svelte';
-	import CountActionModals from '$lib/components/inventory/count/CountActionModals.svelte';
+	} from '#lib/components/inventory/count/CountLineEditRow.svelte';
+	import CountActionModals from '#lib/components/inventory/count/CountActionModals.svelte';
 	import {
 		buildSummaryMessage,
 		buildSummaryMetrics,
 		computeCountStats,
 		filterCountLines
-	} from '$lib/components/inventory/count/countSummary';
+	} from '#lib/components/inventory/count/countSummary.js';
 	import {
 		getAdjustmentPath,
 		isAdjustmentStatusUpdating,
 		toggleUpdatingId
-	} from '$lib/components/inventory/count/countAdjustments';
+	} from '#lib/components/inventory/count/countAdjustments.js';
 
 	let { data } = $props();
 	const inventoryCountContext = getInventoryCountContext();

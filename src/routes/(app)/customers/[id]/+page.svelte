@@ -1,25 +1,28 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
-	import { listPrescriptions, deletePrescriptionCommand } from '$lib/remote/prescriptions.remote';
-	import { updateCustomerForm } from '$lib/remote/customers.remote';
-	import { getErrorMessage, getFullName, peekBackUrl } from '$lib/utils';
-	import { canOperate } from '$lib/shared/enums';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { nowUTC } from '$lib/dates';
-	import type { Prescription, Customer } from '$lib/server/db/schema';
+	import {
+		listPrescriptions,
+		deletePrescriptionCommand
+	} from '#lib/remote/prescriptions.remote.js';
+	import { updateCustomerForm } from '#lib/remote/customers.remote.js';
+	import { getErrorMessage, getFullName, peekBackUrl } from '#lib/utils/index.js';
+	import { canOperate } from '#lib/shared/enums/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { nowUTC } from '#lib/dates.js';
+	import type { Prescription, Customer } from '#lib/server/db/schema/index.js';
 	import { untrack } from 'svelte';
-	import CustomerDetailHeader from '$lib/components/customers/detail/CustomerDetailHeader.svelte';
-	import CustomerInfoCard from '$lib/components/customers/detail/CustomerInfoCard.svelte';
-	import ActivePrescriptionCard from '$lib/components/customers/detail/ActivePrescriptionCard.svelte';
+	import CustomerDetailHeader from '#lib/components/customers/detail/CustomerDetailHeader.svelte';
+	import CustomerInfoCard from '#lib/components/customers/detail/CustomerInfoCard.svelte';
+	import ActivePrescriptionCard from '#lib/components/customers/detail/ActivePrescriptionCard.svelte';
 	import CustomerHistorySection, {
 		type CustomerHistoryTab
-	} from '$lib/components/customers/detail/CustomerHistorySection.svelte';
+	} from '#lib/components/customers/detail/CustomerHistorySection.svelte';
 	import {
 		buildCustomerEditData,
 		findCurrentPrescription,
 		toggleExpandedId,
 		type CustomerEditData
-	} from '$lib/components/customers/detail/customerDetail';
+	} from '#lib/components/customers/detail/customerDetail.js';
 
 	// Server data
 	let { data } = $props();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ProductType, ProductStockFilter } from '$lib/shared/enums';
+import { ProductType, ProductStockFilter } from '#lib/shared/enums/index.js';
 import { MaterialCategories } from './materials';
 import { CreateProductSchema, UpdateProductSchema, ListProductsSchema } from './products';
 

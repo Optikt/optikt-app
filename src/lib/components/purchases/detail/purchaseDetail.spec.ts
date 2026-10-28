@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PurchaseDiscountType, PurchaseSourceCurrency } from '$lib/shared/enums';
+import { PurchaseDiscountType, PurchaseSourceCurrency } from '#lib/shared/enums/index.js';
 import {
 	buildPurchaseDetailSummary,
 	buildRevertTarget,

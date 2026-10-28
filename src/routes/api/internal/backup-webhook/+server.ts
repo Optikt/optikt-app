@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { notifyBackupCreated, notifyBackupFailed } from '$lib/server/notifications/service';
+import { notifyBackupCreated, notifyBackupFailed } from '#lib/server/notifications/service.js';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request }) => {

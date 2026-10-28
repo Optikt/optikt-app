@@ -2,8 +2,8 @@
  * User-related types
  */
 import type { z } from 'zod';
-import type { ListUsersSchema, CreateUserSchema, UpdateUserSchema } from '$lib/schemas/users';
-import type { UserRole } from '$lib/shared/enums';
+import type { ListUsersSchema, CreateUserSchema, UpdateUserSchema } from '#lib/schemas/users.js';
+import type { UserRole } from '#lib/shared/enums/index.js';
 
 // Inferred input types from schemas
 export type ListUsersInput = z.infer<typeof ListUsersSchema>;

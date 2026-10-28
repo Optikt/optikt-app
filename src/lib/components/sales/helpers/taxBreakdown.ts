@@ -3,16 +3,16 @@
  * Pure functions that build tax inputs and compute tax breakdowns.
  */
 
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { DiscountType } from '$lib/shared/enums';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { DiscountType } from '#lib/shared/enums/index.js';
 import {
 	DEFAULT_TAX_RATE,
 	decomposePrice,
 	type TaxBreakdown,
 	type TaxableItem
-} from '$lib/shared/tax';
-import { computeDiscount } from '$lib/utils';
+} from '#lib/shared/tax.js';
+import { computeDiscount } from '#lib/utils/index.js';
 
 import type { SaleItemRow } from '../newSaleTypes';
 

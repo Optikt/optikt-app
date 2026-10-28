@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Calendar, CheckCircle2, Save, User } from '@lucide/svelte';
-	import PageHeader from '$lib/components/ui/PageHeader.svelte';
-	import { formatDate, getFullName, parseISODateToLocal } from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
-	import type { Customer } from '$lib/server/db/schema';
+	import PageHeader from '#lib/components/ui/PageHeader.svelte';
+	import { formatDate, getFullName, parseISODateToLocal } from '#lib/utils/index.js';
+	import { nowUTC } from '#lib/dates.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import PrescriptionFormFields from './PrescriptionFormFields.svelte';
 	import type { PrescriptionFieldIssues, PrescriptionFormData } from './prescription-form';
 

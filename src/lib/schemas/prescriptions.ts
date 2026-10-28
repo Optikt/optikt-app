@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { LensType } from '$lib/shared/enums/lensTypes';
+import { LensType } from '#lib/shared/enums/lensTypes.js';
 import { EntityIdSchema } from './common/identity';
 import { CoercedBoolean, OptionalCoercedInteger } from './common/numbers';
 import {

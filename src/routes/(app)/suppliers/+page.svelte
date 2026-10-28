@@ -1,15 +1,19 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
-	import { isAdminRole } from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
-	import { listSuppliers } from '$lib/remote/suppliers.remote';
-	import { SuppliersTable, SupplierFormModal } from '$lib/components/suppliers';
-	import { ALL_SUPPLIER_TYPES, SUPPLIER_TYPE_LABELS, SupplierType } from '$lib/shared/enums';
-	import type { Supplier } from '$lib/server/db/schema';
-	import type { PaginatedResult } from '$lib/types';
+	import { SearchInput, TablePagination } from '#lib/components/ui/index.js';
+	import { isAdminRole } from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { listSuppliers } from '#lib/remote/suppliers.remote.js';
+	import { SuppliersTable, SupplierFormModal } from '#lib/components/suppliers/index.js';
+	import {
+		ALL_SUPPLIER_TYPES,
+		SUPPLIER_TYPE_LABELS,
+		SupplierType
+	} from '#lib/shared/enums/index.js';
+	import type { Supplier } from '#lib/server/db/schema/index.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import { untrack } from 'svelte';
 
 	// Server data

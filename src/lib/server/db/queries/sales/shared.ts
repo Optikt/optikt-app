@@ -15,10 +15,10 @@ import {
 	type SQLWrapper
 } from 'drizzle-orm';
 
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { buildTokenSearchConditions } from '#lib/server/db/search.js';
 
-import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
-import { sales, saleItems, customers, users } from '$lib/server/db/schema';
+import { fromISODate, toEndOfDay, toUTCString } from '#lib/dates.js';
+import { sales, saleItems, customers, users } from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // INTERNAL HELPERS

@@ -1,8 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import { getSettings } from '$lib/server/db/queries';
-import { getActiveSession } from '$lib/server/db/queries/inventoryCount/sessions';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+import { getSettings } from '#lib/server/db/queries/index.js';
+import { getActiveSession } from '#lib/server/db/queries/inventoryCount/sessions.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 	// Protect all routes under (app) - redirect to login if not authenticated

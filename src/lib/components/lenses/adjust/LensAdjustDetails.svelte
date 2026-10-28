@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Minus, Plus } from '@lucide/svelte';
-	import { AppBadge } from '$lib/components/ui';
-	import { FormInput } from '$lib/components/ui';
-	import type { ManualAdjustmentType } from '$lib/components/products/adjustments/helpers';
-	import type { InventoryLot } from '$lib/server/db/schema';
-	import { InventoryMovementType } from '$lib/shared/enums';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import { FormInput } from '#lib/components/ui/index.js';
+	import type { ManualAdjustmentType } from '#lib/components/products/adjustments/helpers.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
+	import { InventoryMovementType } from '#lib/shared/enums/index.js';
 
 	interface ReasonOption {
 		value: string;

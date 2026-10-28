@@ -2,11 +2,11 @@
 	import { Eye, Trash2, RotateCcw, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
-	import { deleteCustomerById } from '$lib/remote/customers.remote';
-	import { getErrorMessage, getFullName } from '$lib/utils';
-	import { ConfirmModal, DataGrid, StatusBadge } from '$lib/components/ui';
+	import { deleteCustomerById } from '#lib/remote/customers.remote.js';
+	import { getErrorMessage, getFullName } from '#lib/utils/index.js';
+	import { ConfirmModal, DataGrid, StatusBadge } from '#lib/components/ui/index.js';
 	import CustomerReactivateModal from './CustomerReactivateModal.svelte';
-	import type { Customer } from '$lib/server/db/schema';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 
 	type CustomerViewHref = `/customers/${string}`;
 

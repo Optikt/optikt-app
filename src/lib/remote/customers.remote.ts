@@ -3,9 +3,9 @@
  * Server-side functions for customer management
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
-import { computeRelevanceScore, matchesAllTokens } from '$lib/utils/search';
-import { UserRole } from '$lib/shared/enums';
+import { requireAuth, requireRole, requireAdmin } from '#lib/server/guards.js';
+import { computeRelevanceScore, matchesAllTokens } from '#lib/utils/search.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListCustomersSchema,
@@ -13,7 +13,7 @@ import {
 	UpdateCustomerSchema,
 	CustomerIdSchema,
 	ReactivateCustomerSchema
-} from '$lib/schemas/customers';
+} from '#lib/schemas/customers.js';
 import {
 	getAllCustomers,
 	findCustomerById,
@@ -22,13 +22,13 @@ import {
 	createPrescription,
 	updateCustomer,
 	restoreCustomer
-} from '$lib/server/db/queries/customers';
-import type { Customer } from '$lib/server/db/schema';
-import type { PaginatedResult, CreateEntityResult } from '$lib/types';
-import { auditService, getAuditContext } from '$lib/server/audit';
-import { db } from '$lib/server/db';
-import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
-import { toPrescriptionInsert } from '$lib/utils/prescription';
+} from '#lib/server/db/queries/customers.js';
+import type { Customer } from '#lib/server/db/schema/index.js';
+import type { PaginatedResult, CreateEntityResult } from '#lib/types/index.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import { db } from '#lib/server/db/index.js';
+import { softDelete, restore } from '#lib/server/db/queries/deletedItems.js';
+import { toPrescriptionInsert } from '#lib/utils/prescription.js';
 
 /**
  * List customers with pagination and search

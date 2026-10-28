@@ -1,4 +1,4 @@
-import type { DailyBreakdownRow } from '$lib/server/db/queries/cash/daily';
+import type { DailyBreakdownRow } from '#lib/server/db/queries/cash/daily.js';
 
 export function formatPct(value: number): string {
 	return `${value.toFixed(1)}%`;

@@ -4,10 +4,10 @@ import {
 	getRecentSales,
 	getLowStockItems,
 	getPendingFreeItemSales
-} from '$lib/server/db/queries';
-import { getUpcomingPurchaseOrderDues } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
-import { daysAgo, daysFromNow, toISODate } from '$lib/dates';
-import { isAdminRole } from '$lib/shared/enums';
+} from '#lib/server/db/queries/index.js';
+import { getUpcomingPurchaseOrderDues } from '#lib/server/db/queries/purchaseOrderCreditSchedule.js';
+import { daysAgo, daysFromNow, toISODate } from '#lib/dates.js';
+import { isAdminRole } from '#lib/shared/enums/index.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const canSeePurchaseDue = isAdminRole(locals.user?.role);

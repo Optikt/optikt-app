@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { desc, eq, inArray } from 'drizzle-orm';
-import type { SupportTicket } from '$lib/server/db/schema';
-import { db } from '$lib/server/db';
-import { notifications, supportTickets, users } from '$lib/server/db/schema';
-import { callRemote } from '$lib/testing/remoteHarness';
+import type { SupportTicket } from '#lib/server/db/schema/index.js';
+import { db } from '#lib/server/db/index.js';
+import { notifications, supportTickets, users } from '#lib/server/db/schema/index.js';
+import { callRemote } from '#lib/testing/remoteHarness.js';
 import type {
 	SupportTicketActivityRow,
 	SupportTicketRow
-} from '$lib/server/db/queries/supportTickets';
-import type { PaginatedResult } from '$lib/types';
+} from '#lib/server/db/queries/supportTickets.js';
+import type { PaginatedResult } from '#lib/types/index.js';
 import {
 	NotificationType,
 	TicketActivityKind,
@@ -17,7 +17,7 @@ import {
 	TicketRelatedType,
 	TicketStatus,
 	UserRole
-} from '$lib/shared/enums';
+} from '#lib/shared/enums/index.js';
 import {
 	addSupportTicketCommentCommand,
 	countOpenSupportTicketsQuery,

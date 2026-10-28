@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { SvelteMap } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import { FreeItemCategory, SaleItemType } from '$lib/shared/enums/lensTypes';
-	import { updateItemCosts, enrichFreeItem } from '$lib/remote/sales/items.remote';
-	import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
+	import { FreeItemCategory, SaleItemType } from '#lib/shared/enums/lensTypes.js';
+	import { updateItemCosts, enrichFreeItem } from '#lib/remote/sales/items.remote.js';
+	import type { SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
 	import { buildPersistedDisplayGroups } from './saleItemHelpers';
 	import { checkHasAnyCost, computeInternalCostTotal } from './itemsTable/costTotals';
 	import type { DisplayGroup } from './itemsTable/itemDisplay';

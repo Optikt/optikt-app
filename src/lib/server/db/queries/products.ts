@@ -13,12 +13,18 @@ import {
 	type SQL,
 	type SQLWrapper
 } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
-import { ProductStockFilter } from '$lib/shared/enums';
-import { products, brands, suppliers, materials, type Product } from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
+import { db } from '#lib/server/db/index.js';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '#lib/server/db/search.js';
+import { ProductStockFilter } from '#lib/shared/enums/index.js';
+import {
+	products,
+	brands,
+	suppliers,
+	materials,
+	type Product
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
 
 // Product with related brand and supplier data
 export type ProductWithRelations = Product & {

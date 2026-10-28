@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CasheaIsotipo } from '$lib/components/branding';
+	import { CasheaIsotipo } from '#lib/components/branding/index.js';
 
 	let {
 		isCashea = $bindable(false),

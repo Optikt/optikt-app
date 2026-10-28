@@ -1,9 +1,9 @@
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getAllLensMaterials } from '$lib/server/db/queries/lenses/materials';
-import { getLensCatalogDistinctValues } from '$lib/server/db/queries/lenses/pending';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getAllLensMaterials } from '#lib/server/db/queries/lenses/materials.js';
+import { getLensCatalogDistinctValues } from '#lib/server/db/queries/lenses/pending.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

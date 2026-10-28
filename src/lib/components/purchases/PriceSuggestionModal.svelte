@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { ArrowRight, Check } from '@lucide/svelte';
-	import { formatPrice } from '$lib/utils';
-	import type { PriceSuggestion } from '$lib/remote/purchaseOrders/helpers';
+	import { formatPrice } from '#lib/utils/index.js';
+	import type { PriceSuggestion } from '#lib/remote/purchaseOrders/helpers.js';
 
 	interface Props {
 		open: boolean;

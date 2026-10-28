@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { findCustomerById, getCustomerPrescriptions } from '$lib/server/db/queries/customers';
-import { getCustomerHistory } from '$lib/server/db/queries/customerHistory';
+import { findCustomerById, getCustomerPrescriptions } from '#lib/server/db/queries/customers.js';
+import { getCustomerHistory } from '#lib/server/db/queries/customerHistory.js';
 
 /**
  * Load customer detail with prescriptions, sales, quotes, and payments

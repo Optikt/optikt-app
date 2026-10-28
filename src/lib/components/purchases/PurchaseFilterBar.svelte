@@ -13,7 +13,7 @@
 		PURCHASE_ORDER_UI_STATE_LABELS,
 		PurchaseOrderStatus,
 		PurchaseOrderUiState
-	} from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
 
 	type PurchaseOrderStatusFilter =
 		| PurchaseOrderStatus

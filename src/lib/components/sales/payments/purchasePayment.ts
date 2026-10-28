@@ -1,20 +1,23 @@
 import { toast } from 'svelte-sonner';
-import { CurrencyCode } from '$lib/shared/enums';
+import { CurrencyCode } from '#lib/shared/enums/index.js';
 import {
 	computePaymentExchangeVariance,
 	denormalizePurchasePaymentAmount,
 	normalizePurchasePaymentAmounts
-} from '$lib/shared/purchaseOrderPayments';
+} from '#lib/shared/purchaseOrderPayments.js';
 import {
 	getEarlyPaymentDiscountSuggestion,
 	type EarlyPaymentDiscountSuggestion,
 	type PurchaseOrderBalanceSummary,
 	type PurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
-import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-import { addPurchaseOrderPaymentCmd } from '$lib/remote/purchaseOrders/payments.remote';
-import { formatPrice, getErrorMessage } from '$lib/utils';
+} from '#lib/shared/purchaseOrderCredit.js';
+import type {
+	PurchaseOrder,
+	PurchaseOrderEarlyPaymentBenefit
+} from '#lib/server/db/schema/index.js';
+import type { PurchaseOrderPaymentWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
+import { addPurchaseOrderPaymentCmd } from '#lib/remote/purchaseOrders/payments.remote.js';
+import { formatPrice, getErrorMessage } from '#lib/utils/index.js';
 import type { PaymentFormKind } from './paymentFormDerived';
 
 export type PurchasePaymentPayload = Parameters<typeof addPurchaseOrderPaymentCmd>[0];

@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { listSupportTickets } from '$lib/server/db/queries/supportTickets';
-import { canManageSupportTickets } from '$lib/shared/supportTickets';
+import { listSupportTickets } from '#lib/server/db/queries/supportTickets.js';
+import { canManageSupportTickets } from '#lib/shared/supportTickets.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {

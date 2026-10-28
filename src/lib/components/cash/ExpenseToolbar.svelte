@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Download, Plus, Printer } from '@lucide/svelte';
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import {
 		ALL_EXPENSE_CATEGORIES,
 		EXPENSE_CATEGORY_LABELS,
 		type ExpenseCategory
-	} from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
 
 	interface Props {
 		dateFrom: string;

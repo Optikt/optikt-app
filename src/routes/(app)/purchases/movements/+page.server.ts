@@ -1,11 +1,11 @@
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 import {
 	getMovementsWithDetails,
 	countInventoryMovements
-} from '$lib/server/db/queries/inventoryMovements';
-import { daysAgo, nowUTC, toISODate } from '$lib/dates';
+} from '#lib/server/db/queries/inventoryMovements.js';
+import { daysAgo, nowUTC, toISODate } from '#lib/dates.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

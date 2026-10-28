@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { FileText } from '@lucide/svelte';
-	import { AppBadge } from '$lib/components/ui';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
-	import { PurchasePaymentTerms } from '$lib/shared/enums';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import type { PurchaseOrderWithRelations } from '#lib/server/db/queries/purchaseOrders/types.js';
+	import { PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 	import {
 		sourceCurrencyRequiresRateToVes,
 		getSourceCurrencySymbol
-	} from '$lib/shared/purchaseOrderCurrencies';
-	import { formatDateOnly } from '$lib/utils';
+	} from '#lib/shared/purchaseOrderCurrencies.js';
+	import { formatDateOnly } from '#lib/utils/index.js';
 	import {
 		getDocumentNumber,
 		getSupplementalDeliveryNoteNumber
-	} from '$lib/utils/purchaseOrderDetail';
+	} from '#lib/utils/purchaseOrderDetail.js';
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;

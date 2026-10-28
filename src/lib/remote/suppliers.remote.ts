@@ -3,7 +3,7 @@
  * Server-side functions for supplier management
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { requireAuth, requireAdmin } from '#lib/server/guards.js';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListSuppliersSchema,
@@ -16,9 +16,9 @@ import {
 	CreateSupplierTreatmentSchema,
 	UpdateSupplierTreatmentSchema,
 	SupplierTreatmentIdSchema
-} from '$lib/schemas/suppliers';
-import { BrandSupplierRelationSchema } from '$lib/schemas/brandSuppliers';
-import { EmptySchema } from '$lib/schemas/common/dates';
+} from '#lib/schemas/suppliers.js';
+import { BrandSupplierRelationSchema } from '#lib/schemas/brandSuppliers.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 import {
 	getAllSuppliers,
 	findSupplierById,
@@ -32,7 +32,7 @@ import {
 	findSupplierTreatmentByName,
 	createSupplierTreatment,
 	updateSupplierTreatment
-} from '$lib/server/db/queries/suppliers';
+} from '#lib/server/db/queries/suppliers.js';
 import {
 	countProductsByBrandSupplier,
 	getActiveBrandOptions,
@@ -40,13 +40,13 @@ import {
 	removeBrandSupplierLink,
 	upsertBrandSupplierLink,
 	type NamedRelationOption
-} from '$lib/server/db/queries/brandSuppliers';
-import { db } from '$lib/server/db';
-import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
-import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
-import type { PaginatedResult, CreateEntityResult } from '$lib/types';
-import { auditService, getAuditContext } from '$lib/server/audit';
-import { formatRelationUnlinkBlockedMessage } from '$lib/utils/brandSupplierRelations';
+} from '#lib/server/db/queries/brandSuppliers.js';
+import { db } from '#lib/server/db/index.js';
+import { softDelete, restore } from '#lib/server/db/queries/deletedItems.js';
+import type { Supplier, SupplierTreatment } from '#lib/server/db/schema/index.js';
+import type { PaginatedResult, CreateEntityResult } from '#lib/types/index.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import { formatRelationUnlinkBlockedMessage } from '#lib/utils/brandSupplierRelations.js';
 
 /**
  * List suppliers with pagination, search, and type filter

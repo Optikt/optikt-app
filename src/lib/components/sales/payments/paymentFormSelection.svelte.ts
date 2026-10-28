@@ -1,5 +1,9 @@
-import { nowUTC, toISODate } from '$lib/dates';
-import { CurrencyCode, PaymentMethod, currencyForPurchasePaymentMethod } from '$lib/shared/enums';
+import { nowUTC, toISODate } from '#lib/dates.js';
+import {
+	CurrencyCode,
+	PaymentMethod,
+	currencyForPurchasePaymentMethod
+} from '#lib/shared/enums/index.js';
 import { getDefaultPaymentCalculationMode } from '../paymentFormCalculations';
 import type { PaymentComposerRequest, PaymentFormKind } from './paymentFormDerived';
 

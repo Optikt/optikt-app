@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { EconomicBreakdownCard } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import { EconomicBreakdownCard } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		subtotal: number;

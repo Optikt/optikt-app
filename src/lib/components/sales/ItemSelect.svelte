@@ -1,12 +1,12 @@
 <script lang="ts">
-	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import SearchCombobox from '#lib/components/ui/SearchCombobox.svelte';
 	import { TriangleAlert, Eye, Package, Loader2 } from '@lucide/svelte';
-	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { formatPrice, logger } from '$lib/utils';
-	import { getProductTypeBadgeHex } from '$lib/shared/enums/productTypes';
-	import { searchCatalog, getCatalogItemsByIds } from '$lib/remote/catalog.remote';
+	import { getProductTypeIcon } from '#lib/components/ui/productTypeIcons.js';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { formatPrice, logger } from '#lib/utils/index.js';
+	import { getProductTypeBadgeHex } from '#lib/shared/enums/productTypes.js';
+	import { searchCatalog, getCatalogItemsByIds } from '#lib/remote/catalog.remote.js';
 	import { cacheCatalogItems } from './catalogCache.svelte';
 
 	const LENS_BADGE = { bg: '#eff6ff', text: '#3b82f6' } as const;

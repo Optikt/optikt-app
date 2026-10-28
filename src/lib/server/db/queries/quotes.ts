@@ -13,10 +13,10 @@ import {
 	type SQL,
 	type SQLWrapper
 } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
-import type { DbOrTx } from '$lib/server/db/types';
-import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
+import { db } from '#lib/server/db/index.js';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '#lib/server/db/search.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { fromISODate, nowISO, toEndOfDay, toUTCString } from '#lib/dates.js';
 import {
 	quotes,
 	quoteItems,
@@ -31,7 +31,7 @@ import {
 	type QuoteItem,
 	type NewQuoteItem,
 	type QuoteItemFreeDetails
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // TYPES

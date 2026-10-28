@@ -1,15 +1,15 @@
 import { and, desc, eq, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { nowISO } from '$lib/dates';
+import { nowISO } from '#lib/dates.js';
 import {
 	TicketActivityKind,
 	type TicketCategory,
 	type TicketPriority,
 	type TicketRelatedType,
 	type TicketStatus
-} from '$lib/shared/enums';
-import { OPEN_SUPPORT_TICKET_STATUSES } from '$lib/shared/supportTickets';
-import type { PaginatedResult } from '$lib/types';
+} from '#lib/shared/enums/index.js';
+import { OPEN_SUPPORT_TICKET_STATUSES } from '#lib/shared/supportTickets.js';
+import type { PaginatedResult } from '#lib/types/index.js';
 import { db } from '../index';
 import {
 	supportTicketActivity,

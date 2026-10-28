@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addSalePaymentCore } from './addSalePayment';
 import { voidSalePaymentCore } from './voidSalePayment';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { resetDb } from '$lib/testing/integration/db';
-import { createSale, createUser } from '$lib/testing/integration/factories';
-import { PaymentMethod, SaleStatus, UserRole } from '$lib/shared/enums';
-import type { ActionContext } from '$lib/server/actionContext';
-import type { AddPaymentInput } from '$lib/schemas/sales';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createSale, createUser } from '#lib/testing/integration/factories.js';
+import { PaymentMethod, SaleStatus, UserRole } from '#lib/shared/enums/index.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
+import type { AddPaymentInput } from '#lib/schemas/sales.js';
 
 function ctx(userId: string): ActionContext {
 	return { userId, role: UserRole.MANAGER, ipAddress: '127.0.0.1', userAgent: null };

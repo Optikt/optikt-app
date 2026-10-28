@@ -3,11 +3,11 @@
  * Shell: auth + delegate. Logic lives in src/lib/server/quotes/.
  */
 import { command } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { CreateQuoteSchema, UpdateQuoteSchema } from '$lib/schemas/quotes';
-import { getActionContext } from '$lib/server/actionContext';
-import { createNewQuoteCore } from '$lib/server/quotes/createNewQuote';
-import { updateExistingQuoteCore } from '$lib/server/quotes/updateExistingQuote';
+import { requireAuth } from '#lib/server/guards.js';
+import { CreateQuoteSchema, UpdateQuoteSchema } from '#lib/schemas/quotes.js';
+import { getActionContext } from '#lib/server/actionContext.js';
+import { createNewQuoteCore } from '#lib/server/quotes/createNewQuote.js';
+import { updateExistingQuoteCore } from '#lib/server/quotes/updateExistingQuote.js';
 
 /**
  * Create a new quote with items in a single transaction.

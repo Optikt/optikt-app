@@ -6,13 +6,13 @@
 		updateLensTechnologyForm,
 		deleteLensTechnologyById,
 		listTechnologies
-	} from '$lib/remote/lenses/technologies.remote';
-	import { listSuppliers } from '$lib/remote/suppliers.remote';
-	import type { LensTechnology } from '$lib/server/db/schema';
-	import type { PaginatedResult } from '$lib/types';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { ConfirmModal, SlideOver } from '$lib/components/ui';
+	} from '#lib/remote/lenses/technologies.remote.js';
+	import { listSuppliers } from '#lib/remote/suppliers.remote.js';
+	import type { LensTechnology } from '#lib/server/db/schema/index.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { ConfirmModal, SlideOver } from '#lib/components/ui/index.js';
 
 	interface Props {
 		initialTechnologies: LensTechnology[];

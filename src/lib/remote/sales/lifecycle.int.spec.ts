@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { cancelSale } from './lifecycle.remote';
 import { updateSale } from './update.remote';
-import { callRemote } from '$lib/testing/remoteHarness';
-import { RefundStatus } from '$lib/shared/enums';
-import type { CancelSaleInput, UpdateSaleInput } from '$lib/schemas/sales';
+import { callRemote } from '#lib/testing/remoteHarness.js';
+import { RefundStatus } from '#lib/shared/enums/index.js';
+import type { CancelSaleInput, UpdateSaleInput } from '#lib/schemas/sales.js';
 
 describe('sales lifecycle remotes (Capa 3)', () => {
 	it('cancelSale rejects an unauthenticated caller with 401', async () => {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import type { BadgeVariant } from '$lib/shared/badge-variants';
-	import type { PurchaseOrderDueStatus } from '$lib/shared/purchaseOrderCredit';
+	import type { BadgeVariant } from '#lib/shared/badge-variants.js';
+	import type { PurchaseOrderDueStatus } from '#lib/shared/purchaseOrderCredit.js';
 
 	interface Props {
 		dueStatus?: PurchaseOrderDueStatus | null;

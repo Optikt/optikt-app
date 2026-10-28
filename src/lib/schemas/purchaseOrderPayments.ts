@@ -1,7 +1,10 @@
 import { z } from 'zod';
-import { ALL_PURCHASE_PAYMENT_METHODS, currencyForPurchasePaymentMethod } from '$lib/shared/enums';
+import {
+	ALL_PURCHASE_PAYMENT_METHODS,
+	currencyForPurchasePaymentMethod
+} from '#lib/shared/enums/index.js';
 import { CoercedNumber } from './common/numbers';
-import { requiresPurchasePaymentSpecificRate } from '$lib/shared/purchaseOrderPayments';
+import { requiresPurchasePaymentSpecificRate } from '#lib/shared/purchaseOrderPayments.js';
 
 export const ListPurchaseOrderPaymentsSchema = z.object({
 	purchaseOrderId: z.uuid('ID de orden de compra requerido'),

@@ -1,4 +1,4 @@
-import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
+import { ProductType, toMaterialCategory } from '#lib/shared/enums/productTypes.js';
 
 const MATERIAL_CODE_PREFIXES: Record<string, string> = {
 	[ProductType.FRAME]: 'MO',

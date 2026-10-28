@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount/types';
+import type { InventoryCountLineRow } from '#lib/server/db/queries/inventoryCount/types.js';
 import {
 	differenceBadgeClass,
 	formatDifference,

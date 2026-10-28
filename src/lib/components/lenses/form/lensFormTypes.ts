@@ -3,7 +3,7 @@ import type {
 	LensInventoryMode,
 	LensPriceType,
 	LensType
-} from '$lib/shared/enums';
+} from '#lib/shared/enums/index.js';
 
 export interface CatalogListEntry {
 	id: string;

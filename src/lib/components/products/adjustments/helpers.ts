@@ -1,4 +1,4 @@
-import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
+import { AdjustmentReason, InventoryMovementType } from '#lib/shared/enums/index.js';
 
 export type AdjustmentStepStatus = 'current' | 'complete' | 'upcoming';
 

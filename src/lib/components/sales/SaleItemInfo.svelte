@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { Package, Eye, Sparkles } from '@lucide/svelte';
-	import { getLensSourceLabel, getLensTypeLabel } from '$lib/shared/enums/lensTypes';
+	import { getLensSourceLabel, getLensTypeLabel } from '#lib/shared/enums/lensTypes.js';
 	import { findProduct, findLensItem } from './saleItemHelpers';
 	import type { SaleItemRow } from './newSaleTypes';
 	import { CATALOG_KEY, type CatalogData } from './wizardContext';
-	import EyeSummary from '$lib/components/ui/EyeSummary.svelte';
-	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
-	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
-	import { ProductType } from '$lib/shared/enums/productTypes';
+	import EyeSummary from '#lib/components/ui/EyeSummary.svelte';
+	import { getTreatmentCategoryLabel } from '#lib/shared/enums/lensTypes.js';
+	import { getProductTypeIcon } from '#lib/components/ui/productTypeIcons.js';
+	import { ProductType } from '#lib/shared/enums/productTypes.js';
 
 	interface Props {
 		item: SaleItemRow;

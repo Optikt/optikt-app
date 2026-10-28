@@ -1,4 +1,4 @@
-import { RefundStatus, SaleStatus } from '$lib/shared/enums';
+import { RefundStatus, SaleStatus } from '#lib/shared/enums/index.js';
 
 export interface SaleCustomerLike {
 	firstName: string;

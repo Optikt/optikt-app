@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { cancelPurchaseOrder, confirmPurchaseOrder } from './lifecycle';
-import { db } from '$lib/server/db';
-import { inventoryLots, products } from '$lib/server/db/schema';
-import { resetDb } from '$lib/testing/integration/db';
+import { db } from '#lib/server/db/index.js';
+import { inventoryLots, products } from '#lib/server/db/schema/index.js';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createMaterial,
 	createProduct,
@@ -11,8 +11,8 @@ import {
 	createPurchaseOrderItem,
 	createSupplier,
 	createUser
-} from '$lib/testing/integration/factories';
-import { PurchaseOrderStatus, UserRole } from '$lib/shared/enums';
+} from '#lib/testing/integration/factories.js';
+import { PurchaseOrderStatus, UserRole } from '#lib/shared/enums/index.js';
 
 async function seedDraftPo(
 	options: { reviewed?: boolean; ready?: boolean; quantity?: number } = {}

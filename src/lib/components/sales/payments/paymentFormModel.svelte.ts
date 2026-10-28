@@ -1,8 +1,8 @@
 import { untrack } from 'svelte';
-import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
-import { formatPrice } from '$lib/utils';
-import { PaymentMethod } from '$lib/shared/enums';
-import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+import { getExchangeRatesStore } from '#lib/stores/exchangeRates.svelte.js';
+import { formatPrice } from '#lib/utils/index.js';
+import { PaymentMethod } from '#lib/shared/enums/index.js';
+import type { EarlyPaymentDiscountSuggestion } from '#lib/shared/purchaseOrderCredit.js';
 import { PaymentFormSelection } from './paymentFormSelection.svelte';
 import { PurchaseFlowState } from './purchaseFlowState.svelte';
 import { computePaymentFormValues, type PaymentFormValues } from './paymentFormValues';

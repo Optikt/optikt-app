@@ -1,4 +1,4 @@
-import { ALL_SALE_STATUSES, type SaleStatus } from '$lib/shared/enums';
+import { ALL_SALE_STATUSES, type SaleStatus } from '#lib/shared/enums/index.js';
 
 /** Parse comma-separated statuses from URL (?status=PENDING,READY). Invalid values are ignored. */
 export function parseSaleStatuses(value: string | null): SaleStatus[] {

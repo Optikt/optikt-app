@@ -2,11 +2,11 @@
 	import { Eye, CircleX, ClipboardList } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { resolve } from '$app/paths';
-	import { DataGrid, QuoteStatusBadge, ConfirmModal } from '$lib/components/ui';
-	import { formatPrice, formatDateOnly, getErrorMessage } from '$lib/utils';
-	import { cancelQuote } from '$lib/remote/quotes/lifecycle.remote';
-	import { QuoteStatus } from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import { DataGrid, QuoteStatusBadge, ConfirmModal } from '#lib/components/ui/index.js';
+	import { formatPrice, formatDateOnly, getErrorMessage } from '#lib/utils/index.js';
+	import { cancelQuote } from '#lib/remote/quotes/lifecycle.remote.js';
+	import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+	import type { QuoteWithRelations } from '#lib/server/db/queries/quotes.js';
 
 	type QuoteViewHref = `/quotes/${string}`;
 

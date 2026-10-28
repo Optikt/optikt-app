@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ArrowRightCircle, CircleX, FileText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '#lib/server/db/queries/quotes.js';
 
 	interface Props {
 		quote: QuoteWithRelations;

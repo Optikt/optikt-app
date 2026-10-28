@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { cancelSaleCore } from './cancelSale';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { resetDb } from '$lib/testing/integration/db';
-import { createSale, createUser } from '$lib/testing/integration/factories';
-import { RefundStatus, SaleStatus, UserRole } from '$lib/shared/enums';
-import type { ActionContext } from '$lib/server/actionContext';
-import type { CancelSaleInput } from '$lib/schemas/sales';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createSale, createUser } from '#lib/testing/integration/factories.js';
+import { RefundStatus, SaleStatus, UserRole } from '#lib/shared/enums/index.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
+import type { CancelSaleInput } from '#lib/schemas/sales.js';
 
 function ctx(userId: string, role: UserRole): ActionContext {
 	return { userId, role, ipAddress: '127.0.0.1', userAgent: null };

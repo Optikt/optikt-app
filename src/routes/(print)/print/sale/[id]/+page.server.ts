@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getSettings } from '$lib/server/db/queries/settings';
-import { SaleStatus } from '$lib/shared/enums';
-import { getSaleItemsWithDetails } from '$lib/server/db/queries/sales/items';
-import { getSalePayments } from '$lib/server/db/queries/sales/payments';
-import { findSaleByIdWithRelations } from '$lib/server/db/queries/sales/reads';
-import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
+import { getSettings } from '#lib/server/db/queries/settings.js';
+import { SaleStatus } from '#lib/shared/enums/index.js';
+import { getSaleItemsWithDetails } from '#lib/server/db/queries/sales/items.js';
+import { getSalePayments } from '#lib/server/db/queries/sales/payments.js';
+import { findSaleByIdWithRelations } from '#lib/server/db/queries/sales/reads.js';
+import { getExchangeRateValue } from '#lib/server/exchangeRates/service.js';
 
 // TODO: Verify if we should load the BCV rate value of Sale date, or by
 // payment or we do not need it at all

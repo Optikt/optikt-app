@@ -3,9 +3,9 @@
  * Handles business configuration settings (singleton row)
  */
 import { eq } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { settings, type Settings } from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+import { db } from '#lib/server/db/index.js';
+import { settings, type Settings } from '#lib/server/db/schema/index.js';
+import { nowISO } from '#lib/dates.js';
 
 /**
  * Get business settings (always returns the first/only row)

@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import { getExchangeRatesSnapshot } from '$lib/server/exchangeRates/service';
-import { onRatesUpdated } from '$lib/server/exchangeRates/events';
+import { getExchangeRatesSnapshot } from '#lib/server/exchangeRates/service.js';
+import { onRatesUpdated } from '#lib/server/exchangeRates/events.js';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	if (!locals.user) {

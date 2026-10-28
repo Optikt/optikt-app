@@ -2,10 +2,10 @@
 	import { ChevronDown, FileText, ExternalLink } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
-	import { QuoteStatusBadge } from '$lib/components/ui/badges';
-	import { formatDateOnly, formatCurrency } from '$lib/utils';
-	import { SALE_ITEM_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
-	import type { HistoryQuote } from '$lib/server/db/queries/customerHistory';
+	import { QuoteStatusBadge } from '#lib/components/ui/badges/index.js';
+	import { formatDateOnly, formatCurrency } from '#lib/utils/index.js';
+	import { SALE_ITEM_TYPE_LABELS } from '#lib/shared/enums/lensTypes.js';
+	import type { HistoryQuote } from '#lib/server/db/queries/customerHistory.js';
 
 	interface Props {
 		quotes: HistoryQuote[];

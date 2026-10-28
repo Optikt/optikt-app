@@ -3,11 +3,11 @@ import {
 	getAllProductsWithRelations,
 	countProducts,
 	getProductInventoryStats
-} from '$lib/server/db/queries/products';
-import { getAllBrands } from '$lib/server/db/queries/brands';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
-import { brands, suppliers } from '$lib/server/db/schema';
-import { ProductStockFilter } from '$lib/shared/enums';
+} from '#lib/server/db/queries/products.js';
+import { getAllBrands } from '#lib/server/db/queries/brands.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
+import { brands, suppliers } from '#lib/server/db/schema/index.js';
+import { ProductStockFilter } from '#lib/shared/enums/index.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const searchParams = url.searchParams;

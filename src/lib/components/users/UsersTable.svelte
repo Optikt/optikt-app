@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { SquarePen, Trash2, Power, Users } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteUserById } from '$lib/remote/users/commands.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { deleteUserById } from '#lib/remote/users/commands.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import {
 		DataGrid,
 		ActionButton,
 		ConfirmModal,
 		UserRoleBadge,
 		StatusBadge
-	} from '$lib/components/ui';
-	import { ToggleActiveModal } from '$lib/components/users';
-	import type { UserListItem } from '$lib/types';
+	} from '#lib/components/ui/index.js';
+	import { ToggleActiveModal } from '#lib/components/users/index.js';
+	import type { UserListItem } from '#lib/types/index.js';
 
 	interface Props {
 		users: UserListItem[];

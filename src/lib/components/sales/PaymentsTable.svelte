@@ -9,11 +9,11 @@
 	} from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import { toast } from 'svelte-sonner';
-	import { ConfirmModal } from '$lib/components/ui';
-	import { voidPayment } from '$lib/remote/sales/payments.remote';
-	import { formatPrice, formatDate, formatDateOnly, getErrorMessage } from '$lib/utils';
-	import { getPaymentMethodLabel, PaymentMethod } from '$lib/shared/enums';
-	import type { SalePayment } from '$lib/server/db/schema';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import { voidPayment } from '#lib/remote/sales/payments.remote.js';
+	import { formatPrice, formatDate, formatDateOnly, getErrorMessage } from '#lib/utils/index.js';
+	import { getPaymentMethodLabel, PaymentMethod } from '#lib/shared/enums/index.js';
+	import type { SalePayment } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		payments: SalePayment[];

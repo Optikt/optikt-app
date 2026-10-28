@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SaleStatus } from '$lib/shared/enums';
+import { SaleStatus } from '#lib/shared/enums/index.js';
 import { parseSaleStatuses, serializeSaleStatuses } from './statusFilter';
 
 describe('parseSaleStatuses', () => {

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ArrowRightLeft, Layers3 } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { AppBadge } from '$lib/components/ui';
-	import { formatDate, formatPrice } from '$lib/utils';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import { formatDate, formatPrice } from '#lib/utils/index.js';
 
 	interface ActiveLot {
 		id: string;

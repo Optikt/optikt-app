@@ -2,11 +2,11 @@
 	import { untrack, getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import { toast } from 'svelte-sonner';
-	import { getAccessoriesForProduct } from '$lib/remote/brandAccessories.remote';
-	import { formatPrice, getErrorMessage } from '$lib/utils';
-	import { LensCatalogSource } from '$lib/shared/enums';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import { listSupplierTreatments } from '$lib/remote/suppliers.remote';
+	import { getAccessoriesForProduct } from '#lib/remote/brandAccessories.remote.js';
+	import { formatPrice, getErrorMessage } from '#lib/utils/index.js';
+	import { LensCatalogSource } from '#lib/shared/enums/index.js';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
+	import { listSupplierTreatments } from '#lib/remote/suppliers.remote.js';
 	import {
 		getAvailableProductStock,
 		step2ItemLineTotal,
@@ -14,7 +14,7 @@
 		getEnabledEyeCount
 	} from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
-	import type { Customer, Prescription } from '$lib/server/db/schema';
+	import type { Customer, Prescription } from '#lib/server/db/schema/index.js';
 	import type {
 		SaleItemRow,
 		NewCustomerData,

@@ -3,13 +3,13 @@
  * Pure functions that check readiness, credit terms and review status.
  */
 
-import { PurchasePaymentTerms } from '$lib/shared/enums';
+import { PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 import {
 	isPurchaseOrderDraftReady,
 	validatePurchaseOrderDraftReadiness,
 	type PurchaseOrderDraftHeaderRulesInput,
 	type PurchaseOrderDraftReadinessResult
-} from '$lib/shared/purchaseOrderRules';
+} from '#lib/shared/purchaseOrderRules.js';
 
 import type { PurchaseOrderDraftItem } from './defaults';
 

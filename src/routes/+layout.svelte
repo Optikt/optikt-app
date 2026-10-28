@@ -2,7 +2,7 @@
 	import './layout.css';
 	import { Toaster } from 'svelte-sonner';
 	import { toast } from 'svelte-sonner';
-	import { getErrorMessage, reportClientError } from '$lib/utils';
+	import { getErrorMessage, reportClientError } from '#lib/utils/index.js';
 
 	let { children } = $props();
 

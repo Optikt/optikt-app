@@ -2,23 +2,23 @@
 	import { slide } from 'svelte/transition';
 	import { CircleCheck, CircleAlert, IdCard, Mail, Phone, UserPlus, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { lookupCustomer } from '$lib/remote/sales/queries.remote';
+	import { lookupCustomer } from '#lib/remote/sales/queries.remote.js';
 	import {
 		getErrorMessage,
 		ID_NUMBER_RE,
 		parseISODateToLocal,
 		dateToISODateString,
 		type IdDocPrefix
-	} from '$lib/utils';
-	import { nowUTC } from '$lib/dates';
-	import type { Customer } from '$lib/server/db/schema';
+	} from '#lib/utils/index.js';
+	import { nowUTC } from '#lib/dates.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import type { NewCustomerData } from './newSaleTypes';
 	import {
 		ALL_CUSTOMER_GENDERS,
 		CUSTOMER_GENDER_LABELS,
 		type CustomerGender
-	} from '$lib/shared/enums/customerGenders';
-	import { IdInput, FormDatepicker } from '$lib/components/ui';
+	} from '#lib/shared/enums/customerGenders.js';
+	import { IdInput, FormDatepicker } from '#lib/components/ui/index.js';
 
 	interface Props {
 		customerId: string;

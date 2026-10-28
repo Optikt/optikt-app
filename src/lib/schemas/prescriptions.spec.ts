@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AxisSchema, CreatePrescriptionSchema } from './prescriptions';
-import { LensType } from '$lib/shared/enums/lensTypes';
+import { LensType } from '#lib/shared/enums/lensTypes.js';
 
 // =============================================================================
 // Axis Schema

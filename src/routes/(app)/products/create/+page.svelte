@@ -2,8 +2,8 @@
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ProductForm } from '$lib/components/products';
-	import { PageHeader } from '$lib/components/ui';
+	import { ProductForm } from '#lib/components/products/index.js';
+	import { PageHeader } from '#lib/components/ui/index.js';
 
 	let { data } = $props();
 	const { brands, suppliers, materials, brandSupplierMap, supplierBrandMap } = untrack(() => data);

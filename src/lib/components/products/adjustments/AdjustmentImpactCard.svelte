@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { AlertTriangle, Coins, ShieldCheck } from '@lucide/svelte';
-	import { AppBadge } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		enabled: boolean;

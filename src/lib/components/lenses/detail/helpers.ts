@@ -1,5 +1,5 @@
-import type { BadgeVariant } from '$lib/shared/badge-variants';
-import { LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
+import { LensCatalogSource, LensInventoryMode } from '#lib/shared/enums/index.js';
 
 export function getLensSourceVariant(source: string): BadgeVariant {
 	return source === LensCatalogSource.FINISHED ? 'info' : 'warning';

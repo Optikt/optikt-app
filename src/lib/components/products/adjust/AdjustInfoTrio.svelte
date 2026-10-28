@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Coins, History, ShieldCheck } from '@lucide/svelte';
-	import { formatDate, formatPrice } from '$lib/utils';
+	import { formatDate, formatPrice } from '#lib/utils/index.js';
 
 	interface ManualMovement {
 		createdAt: string;

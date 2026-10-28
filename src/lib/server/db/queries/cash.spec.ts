@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computePaymentExchangeVariance } from '$lib/shared/purchaseOrderPayments';
+import { computePaymentExchangeVariance } from '#lib/shared/purchaseOrderPayments.js';
 
 describe('exchange settlement variance', () => {
 	it('computes variance for a single payment', () => {

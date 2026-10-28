@@ -3,7 +3,7 @@
  * Pure functions that validate Rx fields on lens pairs.
  */
 
-import { LensType } from '$lib/shared/enums/lensTypes';
+import { LensType } from '#lib/shared/enums/lensTypes.js';
 
 import type { SaleItemRow, LensPairEntry } from '../newSaleTypes';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SelectInput from './SelectInput.svelte';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { normalizeSingleSelectValue } from '$lib/utils';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { normalizeSingleSelectValue } from '#lib/utils/index.js';
 
 	export type SelectOption = {
 		id: string;

@@ -1,14 +1,14 @@
-import { DiscountType } from '$lib/shared/enums';
-import { FreeItemCategory, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-import type { SaleItemInput, UpdateSaleInput } from '$lib/schemas/sales';
-import type { SupplierTreatment } from '$lib/server/db/schema';
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { getCatalogItemsByIds } from '$lib/remote/catalog.remote';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { FreeItemCategory, LensType, SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import type { SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
+import type { SaleItemInput, UpdateSaleInput } from '#lib/schemas/sales.js';
+import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { getCatalogItemsByIds } from '#lib/remote/catalog.remote.js';
 import { cacheCatalogItems, getCachedLensItems } from './catalogCache.svelte';
-import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-import { fromISO, fromISODate, nowUTC, toUTCString } from '$lib/dates';
-import { computeDiscount } from '$lib/utils';
+import type { DiscountType as DiscountTypeEnum } from '#lib/shared/enums/index.js';
+import { fromISO, fromISODate, nowUTC, toUTCString } from '#lib/dates.js';
+import { computeDiscount } from '#lib/utils/index.js';
 
 export type EditableItem = SaleItemInput & { _removed?: boolean };
 

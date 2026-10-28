@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Plus, FlaskConical } from '@lucide/svelte';
 	import TreatmentRow from './treatments/TreatmentRow.svelte';
 	import TreatmentEditForm from './treatments/TreatmentEditForm.svelte';
@@ -12,10 +12,10 @@
 		createSupplierTreatmentForm,
 		updateSupplierTreatmentForm,
 		deleteSupplierTreatmentById
-	} from '$lib/remote/suppliers.remote';
-	import { getErrorMessage, generateUUID, toastUnboundErrors } from '$lib/utils';
-	import { ConfirmModal } from '$lib/components/ui';
-	import type { Supplier, SupplierTreatment } from '$lib/server/db/schema';
+	} from '#lib/remote/suppliers.remote.js';
+	import { getErrorMessage, generateUUID, toastUnboundErrors } from '#lib/utils/index.js';
+	import { ConfirmModal } from '#lib/components/ui/index.js';
+	import type { Supplier, SupplierTreatment } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		open: boolean;

@@ -1,21 +1,21 @@
 <script lang="ts">
 	import { Truck, Eye, SquarePen, Trash2, RotateCcw, FlaskConical } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteSupplierById } from '$lib/remote/suppliers.remote';
-	import { getErrorMessage } from '$lib/utils';
+	import { deleteSupplierById } from '#lib/remote/suppliers.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 	import {
 		DataGrid,
 		ConfirmModal,
 		SupplierTypeBadge,
 		StatusBadge,
 		ActionButton
-	} from '$lib/components/ui';
+	} from '#lib/components/ui/index.js';
 	import {
 		SupplierViewModal,
 		SupplierReactivateModal,
 		SupplierTreatmentsModal
-	} from '$lib/components/suppliers';
-	import type { Supplier } from '$lib/server/db/schema';
+	} from '#lib/components/suppliers/index.js';
+	import type { Supplier } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		suppliers: Supplier[];

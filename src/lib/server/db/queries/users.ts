@@ -1,9 +1,9 @@
 import { eq, or, and, isNull, isNotNull, count } from 'drizzle-orm';
-import { UserRole } from '$lib/shared/enums';
-import { db } from '$lib/server/db';
-import { users, type User, type NewUser } from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { db } from '#lib/server/db/index.js';
+import { users, type User, type NewUser } from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
 
 /**
  * Find a user by their email or username (case-insensitive)

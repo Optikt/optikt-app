@@ -7,7 +7,7 @@ import {
 	SetInventoryCountLineAdjustmentStatusSchema,
 	SessionIdSchema,
 	UpsertInventoryCountLineSchema
-} from '$lib/schemas/inventoryCount';
+} from '#lib/schemas/inventoryCount.js';
 import {
 	applySession as applyInventoryCountSession,
 	cancelSession as cancelInventoryCountSession,
@@ -15,20 +15,20 @@ import {
 	getActiveSession as getActiveInventoryCountSession,
 	getSessionById as getInventoryCountSessionById,
 	getSessions as getInventoryCountSessions
-} from '$lib/server/db/queries/inventoryCount/sessions';
+} from '#lib/server/db/queries/inventoryCount/sessions.js';
 import {
 	getSessionLines as getInventoryCountSessionLines,
 	setLineAdjustmentStatus as updateInventoryCountLineAdjustmentStatus,
 	upsertCountLine as saveInventoryCountLine
-} from '$lib/server/db/queries/inventoryCount/lines';
+} from '#lib/server/db/queries/inventoryCount/lines.js';
 import type {
 	InventoryCountSessionDetail,
 	InventoryCountSessionSummary,
 	InventoryCountLineRow
-} from '$lib/server/db/queries/inventoryCount/types';
-import { requireRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getErrorMessage } from '$lib/utils';
+} from '#lib/server/db/queries/inventoryCount/types.js';
+import { requireRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getErrorMessage } from '#lib/utils/index.js';
 
 export const getActiveSession = query((async () => {
 	requireRole(UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);

@@ -4,9 +4,9 @@ import {
 	LensInventoryMode,
 	LensPriceType,
 	LensType
-} from '$lib/shared/enums';
-import type { PendingEntity } from '$lib/components/ui';
-import type { LensCatalogItem } from '$lib/server/db/schema';
+} from '#lib/shared/enums/index.js';
+import type { PendingEntity } from '#lib/components/ui/index.js';
+import type { LensCatalogItem } from '#lib/server/db/schema/index.js';
 import type { CatalogLists, LensCatalogFormData } from './lensFormTypes';
 
 export const TECHNOLOGY_HELPER_TEXT =

@@ -3,7 +3,7 @@
  * Shared across ItemSelect, SaleStep3Summary, CommandSearch.
  */
 import { Glasses, Sun, Eye, Package, Microscope } from '@lucide/svelte';
-import { ProductType } from '$lib/shared/enums/productTypes';
+import { ProductType } from '#lib/shared/enums/productTypes.js';
 import type { Component } from 'svelte';
 
 const PRODUCT_TYPE_ICONS: Record<string, Component> = {

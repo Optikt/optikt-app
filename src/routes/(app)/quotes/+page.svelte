@@ -12,7 +12,7 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PageHeader } from '$lib/components/ui';
+	import { PageHeader } from '#lib/components/ui/index.js';
 	import {
 		getErrorMessage,
 		logger,
@@ -20,18 +20,18 @@
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
-	import { listQuotes, getQuoteStats } from '$lib/remote/quotes/queries.remote';
-	import { QuotesTable } from '$lib/components/quotes';
-	import { canOperate } from '$lib/shared/enums';
+	} from '#lib/utils/index.js';
+	import { listQuotes, getQuoteStats } from '#lib/remote/quotes/queries.remote.js';
+	import { QuotesTable } from '#lib/components/quotes/index.js';
+	import { canOperate } from '#lib/shared/enums/index.js';
 	import {
 		ALL_QUOTE_STATUSES,
 		QUOTE_STATUS_LABELS,
 		type QuoteStatus
-	} from '$lib/shared/contracts/quotes';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
-	import type { PaginatedQuotes } from '$lib/remote/quotes/queries.remote';
-	import type { QuoteStats } from '$lib/server/db/queries/quotes';
+	} from '#lib/shared/contracts/quotes.js';
+	import type { QuoteWithRelations } from '#lib/server/db/queries/quotes.js';
+	import type { PaginatedQuotes } from '#lib/remote/quotes/queries.remote.js';
+	import type { QuoteStats } from '#lib/server/db/queries/quotes.js';
 	import { untrack } from 'svelte';
 
 	// Server data

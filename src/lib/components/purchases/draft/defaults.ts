@@ -3,17 +3,17 @@
  * Pure functions that create/reset draft rows and hydrate defaults.
  */
 
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import type { PurchaseOrderItemWithProduct } from '#lib/server/db/queries/purchaseOrders/types.js';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
 import {
 	PurchaseDocumentType,
 	PurchaseOrderItemType,
 	PurchasePaymentTerms
-} from '$lib/shared/enums';
-import { LensPriceType } from '$lib/shared/enums/lensTypes';
-import type { PurchaseOrderDraftHeaderRulesInput } from '$lib/shared/purchaseOrderRules';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+} from '#lib/shared/enums/index.js';
+import { LensPriceType } from '#lib/shared/enums/lensTypes.js';
+import type { PurchaseOrderDraftHeaderRulesInput } from '#lib/shared/purchaseOrderRules.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 
 import type { PurchaseOrderDiscountInput } from './summary';
 

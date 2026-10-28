@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Copy, X, Check } from '@lucide/svelte';
-	import { SlideOver } from '$lib/components/ui';
-	import { getLensTypeLabel, LensType } from '$lib/shared/enums/lensTypes';
+	import { SlideOver } from '#lib/components/ui/index.js';
+	import { getLensTypeLabel, LensType } from '#lib/shared/enums/lensTypes.js';
 	import type { LensPairEntry } from '../newSaleTypes';
 	import { validateLensPair, type PrescriptionFieldErrors } from '../saleItemHelpers';
 	import { SvelteSet } from 'svelte/reactivity';

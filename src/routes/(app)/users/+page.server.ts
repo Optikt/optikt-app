@@ -1,9 +1,9 @@
 import type { PageServerLoad } from './$types';
-import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { users } from '#lib/server/db/schema/index.js';
 import { isNull, desc, count } from 'drizzle-orm';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 /**
  * Load initial users data for SSR

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
+import type { ExpenseListRow } from '#lib/server/db/queries/cash/expenses.js';
 import {
 	buildExpenseCsvRows,
 	emptyExpenseForm,

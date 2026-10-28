@@ -1,5 +1,5 @@
-import type { ChangeRecord } from '$lib/server/db/schema';
-import { toUTCString } from '$lib/dates';
+import type { ChangeRecord } from '#lib/server/db/schema/index.js';
+import { toUTCString } from '#lib/dates.js';
 
 // ============================================================================
 // DIFF UTILITIES

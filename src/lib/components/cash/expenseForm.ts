@@ -1,7 +1,7 @@
-import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
-import type { ExpenseCategory, ExpenseCurrency, RateType } from '$lib/shared/enums';
-import type { ExpenseListRow } from '$lib/server/db/queries/cash/expenses';
-import { formatDateOnly } from '$lib/utils';
+import { EXPENSE_CATEGORY_LABELS } from '#lib/shared/enums/index.js';
+import type { ExpenseCategory, ExpenseCurrency, RateType } from '#lib/shared/enums/index.js';
+import type { ExpenseListRow } from '#lib/server/db/queries/cash/expenses.js';
+import { formatDateOnly } from '#lib/utils/index.js';
 
 export interface ExpenseFormData {
 	category: ExpenseCategory;

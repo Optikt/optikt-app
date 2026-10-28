@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { History, Send } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { addSupportTicketCommentCommand } from '$lib/remote/supportTickets.remote';
+	import { addSupportTicketCommentCommand } from '#lib/remote/supportTickets.remote.js';
 	import {
 		TICKET_PRIORITY_LABELS,
 		TICKET_STATUS_LABELS,
 		TicketActivityKind
-	} from '$lib/shared/enums';
-	import { formatDateOnly, getErrorMessage } from '$lib/utils';
-	import type { SupportTicketActivityRow } from '$lib/server/db/queries/supportTickets';
+	} from '#lib/shared/enums/index.js';
+	import { formatDateOnly, getErrorMessage } from '#lib/utils/index.js';
+	import type { SupportTicketActivityRow } from '#lib/server/db/queries/supportTickets.js';
 
 	interface Props {
 		ticketId: string;

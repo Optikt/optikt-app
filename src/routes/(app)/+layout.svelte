@@ -4,9 +4,13 @@
 	import { untrack } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { fade } from 'svelte/transition';
-	import { setInventoryCountContext, setUiConfig, type InventoryCountContext } from '$lib/context';
-	import { AppNavbar, Sidebar } from '$lib/components/layout';
-	import { initExchangeRatesPolling } from '$lib/stores/exchangeRates.svelte';
+	import {
+		setInventoryCountContext,
+		setUiConfig,
+		type InventoryCountContext
+	} from '#lib/context/index.js';
+	import { AppNavbar, Sidebar } from '#lib/components/layout/index.js';
+	import { initExchangeRatesPolling } from '#lib/stores/exchangeRates.svelte.js';
 
 	let { children, data } = $props();
 

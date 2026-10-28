@@ -1,4 +1,4 @@
-import { LensType } from '$lib/shared/enums/lensTypes';
+import { LensType } from '#lib/shared/enums/lensTypes.js';
 import { PatientEye } from './common';
 
 export enum SearchScope {

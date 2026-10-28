@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getSessionById } from '$lib/server/db/queries/inventoryCount/sessions';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getSessionById } from '#lib/server/db/queries/inventoryCount/sessions.js';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);

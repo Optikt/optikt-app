@@ -3,7 +3,7 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { UserRole } from '$lib/shared/enums';
+import { UserRole } from '#lib/shared/enums/index.js';
 import {
 	EmailSchema,
 	UsernameSchema,

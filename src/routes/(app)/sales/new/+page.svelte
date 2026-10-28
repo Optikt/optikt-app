@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { NewSaleForm } from '$lib/components/sales';
+	import { NewSaleForm } from '#lib/components/sales/index.js';
 
 	let { data } = $props();
 </script>

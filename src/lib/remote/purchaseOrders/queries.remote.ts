@@ -4,36 +4,39 @@
  */
 import type { PurchaseOrderDetail } from './helpers';
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
+import { requireAuth } from '#lib/server/guards.js';
 
 import { z } from 'zod';
-import { ListPurchaseOrdersSchema, ConfirmPurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
-import { ListPurchaseOrderPaymentsSchema } from '$lib/schemas/purchaseOrderPayments';
+import {
+	ListPurchaseOrdersSchema,
+	ConfirmPurchaseOrderSchema
+} from '#lib/schemas/purchaseOrders.js';
+import { ListPurchaseOrderPaymentsSchema } from '#lib/schemas/purchaseOrderPayments.js';
 
-import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { getPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
 import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
 	getPurchaseOrderListStats as getPurchaseOrderListStatsQuery,
 	findPurchaseOrderByIdWithRelations
-} from '$lib/server/db/queries/purchaseOrders/orders';
-import { getPurchaseOrderPayments } from '$lib/server/db/queries/purchaseOrderPayments';
-import { getUpcomingPurchaseOrderDues } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
-import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
+import { getPurchaseOrderPayments } from '#lib/server/db/queries/purchaseOrderPayments.js';
+import { getUpcomingPurchaseOrderDues } from '#lib/server/db/queries/purchaseOrderCreditSchedule.js';
+import { getPurchaseOrderEarlyPaymentBenefits } from '#lib/server/db/queries/purchaseOrderEarlyPaymentBenefits.js';
 
 import type {
 	PurchaseOrderListStats,
 	PurchaseOrderWithRelations
-} from '$lib/server/db/queries/purchaseOrders/types';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+} from '#lib/server/db/queries/purchaseOrders/types.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
 
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
-import type { PaginatedResult } from '$lib/types';
-import type { PurchaseOrderPayment, Supplier } from '$lib/server/db/schema';
+import type { PaginatedResult } from '#lib/types/index.js';
+import type { PurchaseOrderPayment, Supplier } from '#lib/server/db/schema/index.js';
 
 export const listPurchaseOrders = query(
 	ListPurchaseOrdersSchema,

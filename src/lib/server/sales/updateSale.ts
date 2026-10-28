@@ -1,26 +1,26 @@
-import { toSaleTotalsLine } from '$lib/remote/sales/helpers';
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { findCustomerById } from '$lib/server/db/queries/customers';
-import { db } from '$lib/server/db';
+import { toSaleTotalsLine } from '#lib/remote/sales/helpers.js';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { findCustomerById } from '#lib/server/db/queries/customers.js';
+import { db } from '#lib/server/db/index.js';
 import {
 	sales,
 	saleItems,
 	products,
 	lensCatalogItems,
 	inventoryMovements
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import { SaleStatus, UserRole, canManageSaleByOwner } from '$lib/shared/enums';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
-import { computeDiscount } from '$lib/utils';
-import { auditService } from '$lib/server/audit';
-import { returnToLot } from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { nowISO } from '$lib/dates';
-import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
-import type { UpdateSaleInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { SaleStatus, UserRole, canManageSaleByOwner } from '#lib/shared/enums/index.js';
+import { InventoryMovementType, MovementReferenceType } from '#lib/shared/enums/index.js';
+import { computeDiscount } from '#lib/utils/index.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { returnToLot } from '#lib/server/db/queries/inventoryLots.js';
+import { createInventoryMovement } from '#lib/server/db/queries/inventoryMovements.js';
+import { nowISO } from '#lib/dates.js';
+import { insertSaleItem } from '#lib/server/sales/saleItemInsert.js';
+import { computeSaleTotals } from '#lib/shared/saleTotals.js';
+import type { UpdateSaleInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Edit an existing sale: update header fields and/or replace items.

@@ -4,10 +4,10 @@
 import type { SaleItemWithDetails } from './types';
 import { eq, isNull, and } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
-import type { DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
 import {
 	saleItems,
 	saleItemFreeDetails,
@@ -16,7 +16,7 @@ import {
 	supplierTreatments,
 	type SaleItem,
 	type NewSaleItem
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // SALE ITEMS

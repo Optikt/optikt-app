@@ -1,6 +1,6 @@
 import { DollarSign, Euro, Pen } from '@lucide/svelte';
 import type { Component } from 'svelte';
-import type { ExchangeRateEntry } from '$lib/shared/exchangeRates';
+import type { ExchangeRateEntry } from '#lib/shared/exchangeRates.js';
 
 export const CUSTOM_SOURCE_KEY = '__custom__';
 export const SIX_HOURS_MS = 6 * 60 * 60 * 1000;

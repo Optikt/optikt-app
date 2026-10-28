@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { computeDiscount, formatPrice } from '$lib/utils';
+	import { computeDiscount, formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		subtotal: number;

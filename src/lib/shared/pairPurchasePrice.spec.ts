@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { LensPriceType } from '$lib/shared/enums';
-import { computePairPurchasePrice } from '$lib/shared/pairPurchasePrice';
+import { LensPriceType } from '#lib/shared/enums/index.js';
+import { computePairPurchasePrice } from '#lib/shared/pairPurchasePrice.js';
 
 // ── Tests ────────────────────────────────────────────────────────────────
 

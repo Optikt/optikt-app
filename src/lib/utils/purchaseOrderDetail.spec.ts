@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-import type { ChangeRecord } from '$lib/server/db/schema';
+import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
+import type { ChangeRecord } from '#lib/server/db/schema/index.js';
 import { classifyAuditEntry } from './purchaseOrderDetail';
 
 function makeEntry(

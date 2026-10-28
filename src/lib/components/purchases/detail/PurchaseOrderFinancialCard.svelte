@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { CalendarClock, CirclePlus, Landmark, PiggyBank } from '@lucide/svelte';
-	import { AppBadge, PurchaseOrderDueBadge } from '$lib/components/ui';
-	import { getPurchaseOrderDetailContext } from '$lib/context/purchaseOrderDetail';
+	import { AppBadge, PurchaseOrderDueBadge } from '#lib/components/ui/index.js';
+	import { getPurchaseOrderDetailContext } from '#lib/context/purchaseOrderDetail.js';
 	import {
 		CurrencyCode,
 		PURCHASE_PAYMENT_METHOD_LABELS,
 		PurchasePaymentMethod,
 		PurchaseSourceCurrency,
 		getPurchasePaymentTermsLabel
-	} from '$lib/shared/enums';
-	import { getCurrencySymbol } from '$lib/shared/enums';
-	import { formatDateOnly, formatPrice } from '$lib/utils';
-	import { formatAltAmount } from '$lib/utils/purchaseOrderDetail';
+	} from '#lib/shared/enums/index.js';
+	import { getCurrencySymbol } from '#lib/shared/enums/index.js';
+	import { formatDateOnly, formatPrice } from '#lib/utils/index.js';
+	import { formatAltAmount } from '#lib/utils/purchaseOrderDetail.js';
 
 	interface Props {
 		onRegisterPayment?: () => void;

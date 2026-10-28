@@ -3,15 +3,18 @@
 		PurchaseOrderAuditHistoryDrawer,
 		PurchaseOrderPaymentsDrawer,
 		PurchaseOrderPaymentsHistoryDrawer
-	} from '$lib/components/purchases/detail';
-	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-	import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
+	} from '#lib/components/purchases/detail/index.js';
+	import type { PurchaseOrderPaymentWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
+	import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
+	import type {
+		PurchaseOrder,
+		PurchaseOrderEarlyPaymentBenefit
+	} from '#lib/server/db/schema/index.js';
+	import type { PurchaseOrderWithRelations } from '#lib/server/db/queries/purchaseOrders/types.js';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
-	} from '$lib/shared/purchaseOrderCredit';
+	} from '#lib/shared/purchaseOrderCredit.js';
 
 	interface Props {
 		showPaymentsDrawer: boolean;

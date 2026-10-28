@@ -29,7 +29,7 @@ import {
 } from '../../schema';
 import type { DbOrTx } from '../../types';
 
-import { PurchaseOrderStatus, type ExpenseCategory } from '$lib/shared/enums';
+import { PurchaseOrderStatus, type ExpenseCategory } from '#lib/shared/enums/index.js';
 
 interface PurchaseDiscountEarnedRow {
 	date: string;

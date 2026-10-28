@@ -1,16 +1,16 @@
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
 
-import { nowISO } from '$lib/dates';
-import { db } from '$lib/server/db';
+import { nowISO } from '#lib/dates.js';
+import { db } from '#lib/server/db/index.js';
 import {
 	brandAccessories,
 	products,
 	type BrandAccessory,
 	type NewBrandAccessory
-} from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
-import { ProductType } from '$lib/shared/enums/productTypes';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
+import { ProductType } from '#lib/shared/enums/productTypes.js';
 import type {
 	AccessoryProductSummary,
 	BrandAccessoryRuleRow,

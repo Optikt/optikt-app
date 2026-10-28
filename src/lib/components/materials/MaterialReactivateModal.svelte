@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { TriangleAlert } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { reactivateMaterial } from '$lib/remote/materials.remote';
-	import { getErrorMessage } from '$lib/utils';
-	import type { MaterialCategory } from '$lib/shared/enums/productTypes';
-	import { MATERIAL_CATEGORY_LABELS } from '$lib/shared/enums/productTypes';
-	import type { Material } from '$lib/server/db/schema';
+	import { reactivateMaterial } from '#lib/remote/materials.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import type { MaterialCategory } from '#lib/shared/enums/productTypes.js';
+	import { MATERIAL_CATEGORY_LABELS } from '#lib/shared/enums/productTypes.js';
+	import type { Material } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		open: boolean;

@@ -10,13 +10,13 @@ import {
 	isBsPaymentMethod,
 	rateTypeForCurrency,
 	rateTypeForRail
-} from '$lib/shared/enums';
+} from '#lib/shared/enums/index.js';
 import {
 	calculatePaymentAmountFromUsdBcv,
 	calculateUsdBcvFromPaymentAmount
 } from '../paymentFormCalculations';
-import { getPaymentMethodStrategy } from '$lib/shared/payments/strategies';
-import { formatPrice } from '$lib/utils';
+import { getPaymentMethodStrategy } from '#lib/shared/payments/strategies.js';
+import { formatPrice } from '#lib/utils/index.js';
 
 export type PaymentFormKind = 'sale' | 'purchase';
 
@@ -40,19 +40,19 @@ export interface PaymentFormProps {
 	purchaseOrderId?: string;
 	status?: string;
 	defaultBcvRate?: number;
-	purchaseOrder?: import('$lib/server/db/schema').PurchaseOrder;
-	payments?: import('$lib/server/db/queries/purchaseOrderPayments').PurchaseOrderPaymentWithUsers[];
-	earlyPaymentBenefits?: import('$lib/server/db/schema').PurchaseOrderEarlyPaymentBenefit[];
+	purchaseOrder?: import('#lib/server/db/schema/index.js').PurchaseOrder;
+	payments?: import('#lib/server/db/queries/purchaseOrderPayments.js').PurchaseOrderPaymentWithUsers[];
+	earlyPaymentBenefits?: import('#lib/server/db/schema/index.js').PurchaseOrderEarlyPaymentBenefit[];
 	pendingBalanceUsd?: number;
 	debtTotalUsd?: number;
 	isFullyPaid?: boolean;
 	settlementCurrency?: string;
 	composerRequest?: PaymentComposerRequest | null;
 	onFinanceChanged?: (payload: {
-		payments: import('$lib/server/db/queries/purchaseOrderPayments').PurchaseOrderPaymentWithUsers[];
-		earlyPaymentBenefits?: import('$lib/server/db/schema').PurchaseOrderEarlyPaymentBenefit[];
-		balance: import('$lib/shared/purchaseOrderCredit').PurchaseOrderBalanceSummary;
-		dueStatus: import('$lib/shared/purchaseOrderCredit').PurchaseOrderDueStatus;
+		payments: import('#lib/server/db/queries/purchaseOrderPayments.js').PurchaseOrderPaymentWithUsers[];
+		earlyPaymentBenefits?: import('#lib/server/db/schema/index.js').PurchaseOrderEarlyPaymentBenefit[];
+		balance: import('#lib/shared/purchaseOrderCredit.js').PurchaseOrderBalanceSummary;
+		dueStatus: import('#lib/shared/purchaseOrderCredit.js').PurchaseOrderDueStatus;
 	}) => void;
 	// --- shared ---
 	bcvRate?: number;

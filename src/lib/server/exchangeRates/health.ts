@@ -1,5 +1,5 @@
-import type { ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
-import { notifyRateOutdated, notifyRatesUpdated } from '$lib/server/notifications/service';
+import type { ExchangeRatesSnapshot } from '#lib/shared/exchangeRates.js';
+import { notifyRateOutdated, notifyRatesUpdated } from '#lib/server/notifications/service.js';
 
 export type ExchangeRatesTransition = 'became_stale' | 'recovered' | null;
 

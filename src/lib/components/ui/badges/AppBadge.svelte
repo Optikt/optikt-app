@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { BadgeVariant } from '$lib/shared/badge-variants';
+	import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 	interface Props {
 		variant?: BadgeVariant;

@@ -2,11 +2,11 @@ import {
 	findCustomerById,
 	findCustomerByIdNumber,
 	createCustomer
-} from '$lib/server/db/queries/customers';
-import { normalizeIdNumber } from '$lib/utils';
-import type { DbOrTx } from '$lib/server/db/types';
-import type { Customer } from '$lib/server/db/schema';
-import type { CustomerGender } from '$lib/shared/enums/customerGenders';
+} from '#lib/server/db/queries/customers.js';
+import { normalizeIdNumber } from '#lib/utils/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import type { Customer } from '#lib/server/db/schema/index.js';
+import type { CustomerGender } from '#lib/shared/enums/customerGenders.js';
 
 export interface InlineCustomerInput {
 	firstName: string;

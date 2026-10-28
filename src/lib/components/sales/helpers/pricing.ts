@@ -3,7 +3,7 @@
  * Pure functions that operate on SaleItemRow.
  */
 
-import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '$lib/utils';
+import { clampDiscountValue, computeDiscount, isDiscountValueValid } from '#lib/utils/index.js';
 
 import type { SaleItemRow } from '../newSaleTypes';
 import { getEnabledEyeCount } from './items';

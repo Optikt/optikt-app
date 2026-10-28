@@ -1,9 +1,9 @@
-import { saleItemFreeDetails, saleItems } from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { consumeFifoForSaleItem } from '$lib/server/db/queries/fifoConsumption';
-import { resolveLensSnapshotCosts } from '$lib/remote/quotes/helpers';
-import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
-import { saleItemCommonValues, type SaleItemValueSource } from '$lib/shared/saleItemValues';
+import { saleItemFreeDetails, saleItems } from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { consumeFifoForSaleItem } from '#lib/server/db/queries/fifoConsumption.js';
+import { resolveLensSnapshotCosts } from '#lib/remote/quotes/helpers.js';
+import { SaleItemType, FreeItemEnrichmentStatus } from '#lib/shared/enums/lensTypes.js';
+import { saleItemCommonValues, type SaleItemValueSource } from '#lib/shared/saleItemValues.js';
 
 type FreeDetailsInsert = typeof saleItemFreeDetails.$inferInsert;
 

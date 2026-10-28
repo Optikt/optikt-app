@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applySession } from './sessions';
-import { resetDb } from '$lib/testing/integration/db';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createInventoryCountLine,
 	createInventoryCountSession,
 	createUser
-} from '$lib/testing/integration/factories';
-import { UserRole } from '$lib/shared/enums';
+} from '#lib/testing/integration/factories.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 describe('applyInventoryCountSession', () => {
 	beforeEach(async () => {

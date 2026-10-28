@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SearchCombobox from '$lib/components/ui/SearchCombobox.svelte';
+	import SearchCombobox from '#lib/components/ui/SearchCombobox.svelte';
 
 	type SupplierOption = {
 		id: string;

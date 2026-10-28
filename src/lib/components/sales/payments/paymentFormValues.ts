@@ -1,6 +1,6 @@
-import { PaymentMethod, type CurrencyCode } from '$lib/shared/enums';
-import type { PurchaseOrder } from '$lib/server/db/schema';
-import { formatPrice } from '$lib/utils';
+import { PaymentMethod, type CurrencyCode } from '#lib/shared/enums/index.js';
+import type { PurchaseOrder } from '#lib/server/db/schema/index.js';
+import { formatPrice } from '#lib/utils/index.js';
 import {
 	computeAmountAppliedToDebt,
 	computeExchangeVariance,

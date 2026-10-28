@@ -9,11 +9,11 @@
 		CircleX,
 		ArrowLeft
 	} from '@lucide/svelte';
-	import { AppBadge, PurchaseOrderStatusBadge } from '$lib/components/ui';
-	import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
+	import { AppBadge, PurchaseOrderStatusBadge } from '#lib/components/ui/index.js';
+	import { PurchaseOrderStatus, PurchasePaymentTerms } from '#lib/shared/enums/index.js';
+	import type { PurchaseOrderWithRelations } from '#lib/server/db/queries/purchaseOrders/types.js';
 	import { resolve } from '$app/paths';
-	import { peekBackUrl } from '$lib/utils';
+	import { peekBackUrl } from '#lib/utils/index.js';
 
 	interface Props {
 		purchaseOrder: PurchaseOrderWithRelations;

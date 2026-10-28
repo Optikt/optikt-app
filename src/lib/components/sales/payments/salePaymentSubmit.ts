@@ -1,8 +1,8 @@
 import { toast } from 'svelte-sonner';
-import { addPayment } from '$lib/remote/sales/payments.remote';
+import { addPayment } from '#lib/remote/sales/payments.remote.js';
 import { roundCurrency } from '../paymentFormCalculations';
-import { formatPrice, getErrorMessage } from '$lib/utils';
-import type { PaymentMethod } from '$lib/shared/enums';
+import { formatPrice, getErrorMessage } from '#lib/utils/index.js';
+import type { PaymentMethod } from '#lib/shared/enums/index.js';
 
 export interface SalePaymentInput {
 	saleId?: string;

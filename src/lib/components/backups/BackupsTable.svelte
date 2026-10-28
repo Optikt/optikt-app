@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { HardDrive } from '@lucide/svelte';
-	import { DataGrid, AppBadge } from '$lib/components/ui';
-	import { formatDate } from '$lib/utils';
-	import type { BackupHistoryItem } from '$lib/remote/backups.remote';
+	import { DataGrid, AppBadge } from '#lib/components/ui/index.js';
+	import { formatDate } from '#lib/utils/index.js';
+	import type { BackupHistoryItem } from '#lib/remote/backups.remote.js';
 
 	interface Props {
 		items: BackupHistoryItem[];

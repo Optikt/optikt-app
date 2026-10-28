@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ArrowLeft } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { getFullName } from '$lib/utils';
+	import { getFullName } from '#lib/utils/index.js';
 	import { getInitials } from './customerDetail';
-	import type { Customer } from '$lib/server/db/schema';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		customer: Customer;

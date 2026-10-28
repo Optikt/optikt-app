@@ -1,10 +1,10 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getAllCustomers } from '$lib/server/db/queries/customers';
-import { db } from '$lib/server/db';
-import { customers, sales } from '$lib/server/db/schema';
+import { getAllCustomers } from '#lib/server/db/queries/customers.js';
+import { db } from '#lib/server/db/index.js';
+import { customers, sales } from '#lib/server/db/schema/index.js';
 import { isNull, count, countDistinct, gte, and, eq } from 'drizzle-orm';
-import { monthStart, toUTCString } from '$lib/dates';
+import { monthStart, toUTCString } from '#lib/dates.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {

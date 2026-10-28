@@ -1,20 +1,20 @@
 import { and, asc, eq, gte, inArray, isNotNull, isNull, lte } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	purchaseOrderEarlyPaymentBenefits,
 	purchaseOrderItems,
 	purchaseOrderPayments,
 	purchaseOrders,
 	suppliers
-} from '$lib/server/db/schema';
-import { PurchaseOrderStatus, PurchasePaymentTerms } from '$lib/shared/enums';
+} from '#lib/server/db/schema/index.js';
+import { PurchaseOrderStatus, PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus,
 	type PurchaseOrderBalanceSummary,
 	type PurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
 export interface UpcomingPurchaseOrderDue {
 	id: string;

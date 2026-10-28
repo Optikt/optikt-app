@@ -1,8 +1,8 @@
 import { eq, and } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { userSessions, users, type Session } from '$lib/server/db/schema';
-import { UserRole } from '$lib/shared/enums';
-import { nowISO } from '$lib/dates';
+import { db } from '#lib/server/db/index.js';
+import { userSessions, users, type Session } from '#lib/server/db/schema/index.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { nowISO } from '#lib/dates.js';
 
 // Session validation result type
 export type SessionWithUser = {

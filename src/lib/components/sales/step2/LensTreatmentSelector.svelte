@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { FlaskConical } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
-	import { formatPrice } from '$lib/utils';
-	import { TreatmentCategory } from '$lib/shared/enums';
-	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { TreatmentCategory } from '#lib/shared/enums/index.js';
+	import { getTreatmentCategoryLabel } from '#lib/shared/enums/lensTypes.js';
 	import type { SelectedTreatment } from '../newSaleTypes';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		treatments: SelectedTreatment[];

@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { Isotipo } from '$lib/components';
-	import ImagotipoHorizontal from '$lib/components/branding/ImagotipoHorizontal.svelte';
-	import { computeAdjustedTaxBreakdown } from '$lib/components/sales/saleItemHelpers';
-	import { SaleItemType } from '$lib/shared/enums/lensTypes';
-	import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+	import { Isotipo } from '#lib/components/index.js';
+	import ImagotipoHorizontal from '#lib/components/branding/ImagotipoHorizontal.svelte';
+	import { computeAdjustedTaxBreakdown } from '#lib/components/sales/saleItemHelpers.js';
+	import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+	import type { QuoteItemWithDetails } from '#lib/server/db/queries/quotes.js';
 	import { untrack } from 'svelte';
-	import { computeDiscount, formatDate, formatPrice } from '$lib/utils';
-	import { computeTaxBreakdown, type TaxableItem } from '$lib/shared/tax';
+	import { computeDiscount, formatDate, formatPrice } from '#lib/utils/index.js';
+	import { computeTaxBreakdown, type TaxableItem } from '#lib/shared/tax.js';
 	import {
 		getPrintItemLabel,
 		getPrintItemLabelClass,
 		getPrintLensRxSummary
-	} from '$lib/utils/printDocumentItems';
+	} from '#lib/utils/printDocumentItems.js';
 
 	interface RenderedRow {
 		key: string;

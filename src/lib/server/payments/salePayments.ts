@@ -1,7 +1,7 @@
-import type { DbOrTx } from '$lib/server/db/types';
-import { addSalePayment, recalcSalePaidAmount } from '$lib/server/db/queries/sales/payments';
-import type { SalePayment } from '$lib/server/db/schema';
-import type { PaymentMethod } from '$lib/shared/enums/paymentMethods';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { addSalePayment, recalcSalePaidAmount } from '#lib/server/db/queries/sales/payments.js';
+import type { SalePayment } from '#lib/server/db/schema/index.js';
+import type { PaymentMethod } from '#lib/shared/enums/paymentMethods.js';
 
 export interface SalePaymentSubmission {
 	saleId: string;

@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { ClipboardList, Eye, FlaskConical, Package, Sparkles } from '@lucide/svelte';
-	import { DiscountType, getTreatmentCategoryLabel } from '$lib/shared/enums';
-	import { SaleItemType, getFreeItemCategoryLabel } from '$lib/shared/enums/lensTypes';
-	import { formatPrice } from '$lib/utils';
-	import { formatPrescriptionEye, hasPrescriptionSnapshot } from '$lib/shared/prescriptionSnapshot';
-	import type { QuoteItemWithDetails } from '$lib/server/db/queries/quotes';
+	import { DiscountType, getTreatmentCategoryLabel } from '#lib/shared/enums/index.js';
+	import { SaleItemType, getFreeItemCategoryLabel } from '#lib/shared/enums/lensTypes.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import {
+		formatPrescriptionEye,
+		hasPrescriptionSnapshot
+	} from '#lib/shared/prescriptionSnapshot.js';
+	import type { QuoteItemWithDetails } from '#lib/server/db/queries/quotes.js';
 
 	export interface QuoteDisplayGroup {
 		key: string;

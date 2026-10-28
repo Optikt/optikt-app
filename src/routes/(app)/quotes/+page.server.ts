@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
-import { getAllQuotes, countQuotes, getQuoteStats } from '$lib/server/db/queries/quotes';
-import { monthStart, toUTCString } from '$lib/dates';
-import { ALL_QUOTE_STATUSES, type QuoteStatus } from '$lib/shared/contracts/quotes';
+import { getAllQuotes, countQuotes, getQuoteStats } from '#lib/server/db/queries/quotes.js';
+import { monthStart, toUTCString } from '#lib/dates.js';
+import { ALL_QUOTE_STATUSES, type QuoteStatus } from '#lib/shared/contracts/quotes.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const searchParams = url.searchParams;

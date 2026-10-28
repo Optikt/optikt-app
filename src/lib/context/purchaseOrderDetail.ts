@@ -1,15 +1,15 @@
 import { getContext, setContext } from 'svelte';
-import type { PurchaseOrderSummary } from '$lib/components/purchases/purchaseOrderDraft';
-import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
+import type { PurchaseOrderSummary } from '#lib/components/purchases/purchaseOrderDraft.js';
+import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
+import type { PurchaseOrderPaymentWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
 import type {
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderWithRelations
-} from '$lib/server/db/queries/purchaseOrders/types';
+} from '#lib/server/db/queries/purchaseOrders/types.js';
 import type {
 	PurchaseOrderBalanceSummary,
 	PurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
 export type PurchaseOrderDetailContext = {
 	purchaseOrder: () => PurchaseOrderWithRelations;

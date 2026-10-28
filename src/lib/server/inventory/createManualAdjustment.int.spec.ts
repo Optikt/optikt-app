@@ -1,19 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createManualAdjustmentCore } from './createManualAdjustment';
-import { db } from '$lib/server/db';
-import { inventoryLots, products } from '$lib/server/db/schema';
-import { resetDb } from '$lib/testing/integration/db';
+import { db } from '#lib/server/db/index.js';
+import { inventoryLots, products } from '#lib/server/db/schema/index.js';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createInventoryLot,
 	createMaterial,
 	createProduct,
 	createSupplier,
 	createUser
-} from '$lib/testing/integration/factories';
-import { AdjustmentReason, InventoryMovementType, UserRole } from '$lib/shared/enums';
-import type { ActionContext } from '$lib/server/actionContext';
-import type { ManualAdjustmentInput } from '$lib/schemas/inventory';
+} from '#lib/testing/integration/factories.js';
+import { AdjustmentReason, InventoryMovementType, UserRole } from '#lib/shared/enums/index.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
+import type { ManualAdjustmentInput } from '#lib/schemas/inventory.js';
 
 function ctx(userId: string): ActionContext {
 	return { userId, role: UserRole.ADMIN, ipAddress: '127.0.0.1', userAgent: null };

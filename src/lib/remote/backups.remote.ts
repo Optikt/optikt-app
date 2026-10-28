@@ -4,13 +4,13 @@
  */
 import { command } from '$app/server';
 import { env } from '$env/dynamic/private';
-import { requireUserAdmin } from '$lib/server/guards';
-import { EmptySchema } from '$lib/schemas/common/dates';
+import { requireUserAdmin } from '#lib/server/guards.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 import { z } from 'zod';
 import {
 	getRecentBackupNotifications,
 	type BackupNotificationListItem
-} from '$lib/server/db/queries/notifications';
+} from '#lib/server/db/queries/notifications.js';
 
 const ListBackupHistorySchema = z.object({
 	limit: z.number().int().min(1).max(100).optional().default(50)

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import { ProductType, getProductTypeBadgeColor, getProductTypeLabel } from '$lib/shared/enums';
+	import {
+		ProductType,
+		getProductTypeBadgeColor,
+		getProductTypeLabel
+	} from '#lib/shared/enums/index.js';
 
 	interface Props {
 		/** The product type value */

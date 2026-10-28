@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Check, X } from '@lucide/svelte';
-	import { ALL_TREATMENT_CATEGORIES, TREATMENT_CATEGORY_LABELS } from '$lib/shared/enums';
-	import { getFormErrorMessage } from '$lib/utils';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
-	import type { updateSupplierTreatmentForm } from '$lib/remote/suppliers.remote';
+	import { ALL_TREATMENT_CATEGORIES, TREATMENT_CATEGORY_LABELS } from '#lib/shared/enums/index.js';
+	import { getFormErrorMessage } from '#lib/utils/index.js';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
+	import type { updateSupplierTreatmentForm } from '#lib/remote/suppliers.remote.js';
 
 	interface Props {
 		treatment: SupplierTreatment;

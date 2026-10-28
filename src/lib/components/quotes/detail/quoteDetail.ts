@@ -1,4 +1,4 @@
-import type { NewCustomerData } from '$lib/components/sales/newSaleTypes';
+import type { NewCustomerData } from '#lib/components/sales/newSaleTypes.js';
 
 export type QuoteActionVariant = 'neutral' | 'danger';
 

@@ -1,5 +1,5 @@
 import { eq, isNull, and, gt, gte, lte, count, sum, sql, desc } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	sales,
 	saleItems,
@@ -9,8 +9,8 @@ import {
 	lensCatalogItems,
 	customers,
 	type Sale
-} from '$lib/server/db/schema';
-import { todayEnd, todayStart, toUTCString } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import { todayEnd, todayStart, toUTCString } from '#lib/dates.js';
 
 // ============================================================================
 // TYPES

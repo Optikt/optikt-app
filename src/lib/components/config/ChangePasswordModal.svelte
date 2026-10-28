@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Lock } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { changePasswordForm } from '$lib/remote/profile.remote';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { PasswordField } from '$lib/components/ui';
+	import { changePasswordForm } from '#lib/remote/profile.remote.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { PasswordField } from '#lib/components/ui/index.js';
 	import { untrack } from 'svelte';
-	import { generateUUID } from '$lib/utils/generateUUID';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
 
 	interface Props {
 		open: boolean;

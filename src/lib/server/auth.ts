@@ -1,10 +1,10 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { createHash } from 'node:crypto';
 import { encodeBase64url } from '@oslojs/encoding';
-import * as sessionQueries from '$lib/server/db/queries/sessions';
-import * as userQueries from '$lib/server/db/queries/users';
+import * as sessionQueries from '#lib/server/db/queries/sessions.js';
+import * as userQueries from '#lib/server/db/queries/users.js';
 import { dev } from '$app/environment';
-import { fromISO, toUTCString, daysFromNow } from '$lib/dates';
+import { fromISO, toUTCString, daysFromNow } from '#lib/dates.js';
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 

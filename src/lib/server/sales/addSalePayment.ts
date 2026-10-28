@@ -1,11 +1,11 @@
-import { findSaleById } from '$lib/server/db/queries/sales/reads';
-import { db } from '$lib/server/db';
-import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '$lib/shared/enums';
-import { auditService } from '$lib/server/audit';
-import { composeBusinessTimestamp } from '$lib/dates';
-import { submitSalePayment } from '$lib/server/payments/salePayments';
-import type { AddPaymentInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { findSaleById } from '#lib/server/db/queries/sales/reads.js';
+import { db } from '#lib/server/db/index.js';
+import { SaleStatus, isBsPaymentMethod, type PaymentMethod } from '#lib/shared/enums/index.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { composeBusinessTimestamp } from '#lib/dates.js';
+import { submitSalePayment } from '#lib/server/payments/salePayments.js';
+import type { AddPaymentInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 export async function addSalePaymentCore(data: AddPaymentInput, ctx: ActionContext) {
 	const sale = await findSaleById(data.saleId);

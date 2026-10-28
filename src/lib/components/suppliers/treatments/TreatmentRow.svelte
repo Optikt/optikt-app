@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Pencil, Trash2 } from '@lucide/svelte';
-	import { getTreatmentCategoryLabel } from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
+	import { getTreatmentCategoryLabel } from '#lib/shared/enums/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { treatmentCategoryBadgeClass } from './treatmentBadges';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		treatment: SupplierTreatment;

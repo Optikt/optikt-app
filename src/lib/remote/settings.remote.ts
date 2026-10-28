@@ -3,14 +3,14 @@
  * Handles business settings get/update (ADMIN only)
  */
 import { query, form } from '$app/server';
-import { requireUserAdmin } from '$lib/server/guards';
-import { EmptySchema } from '$lib/schemas/common/dates';
-import { UpdateSettingsSchema } from '$lib/schemas/settings';
+import { requireUserAdmin } from '#lib/server/guards.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
+import { UpdateSettingsSchema } from '#lib/schemas/settings.js';
 import {
 	getSettings as getSettingsQuery,
 	updateSettings as updateSettingsQuery
-} from '$lib/server/db/queries';
-import type { Settings } from '$lib/server/db/schema';
+} from '#lib/server/db/queries/index.js';
+import type { Settings } from '#lib/server/db/schema/index.js';
 
 // Empty schema for getting settings (no params needed)
 

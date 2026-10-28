@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DiscountType } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 import { validateActiveItemsNotEmpty, validateEditSale } from './editSaleValidation';
 import type { EditableItem } from './editSaleDraft';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { LucideIcon } from '$lib/types/index.js';
+	import type { LucideIcon } from '#lib/types/index.js';
 
 	let {
 		label,

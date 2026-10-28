@@ -3,22 +3,22 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
-	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
+	import { ReportHeader, DateRangeFilter } from '#lib/components/reports/index.js';
 	import {
 		formatPrice,
 		formatDate,
 		formatDateOnly,
 		downloadCsv,
 		getErrorMessage
-	} from '$lib/utils';
-	import { monthStart, nowUTC, toISODate } from '$lib/dates';
-	import { fetchPaymentsReport } from '$lib/remote/reports.remote';
-	import { getPaymentMethodLabel } from '$lib/shared/enums';
+	} from '#lib/utils/index.js';
+	import { monthStart, nowUTC, toISODate } from '#lib/dates.js';
+	import { fetchPaymentsReport } from '#lib/remote/reports.remote.js';
+	import { getPaymentMethodLabel } from '#lib/shared/enums/index.js';
 	import type {
 		ReportPayment,
 		RefundEntry,
 		PaymentsReportSummary
-	} from '$lib/server/db/queries/reports';
+	} from '#lib/server/db/queries/reports.js';
 
 	let { data } = $props();
 	let {

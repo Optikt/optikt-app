@@ -2,7 +2,7 @@
  * Optical range collapse/expand for form state.
  * Split from utils/opticalRangeForm.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import type { LensOpticalRange } from '$lib/server/db/schema';
+import type { LensOpticalRange } from '#lib/server/db/schema/index.js';
 import { formatOptional } from './parse';
 import { SPHERE_RANGE_MODE } from './types';
 import type { OpticalRangeFormEntry } from './types';

@@ -3,8 +3,8 @@ import { error } from '@sveltejs/kit';
 import {
 	findSupportTicketById,
 	listSupportTicketActivity
-} from '$lib/server/db/queries/supportTickets';
-import { canManageSupportTickets, canViewSupportTicket } from '$lib/shared/supportTickets';
+} from '#lib/server/db/queries/supportTickets.js';
+import { canManageSupportTickets, canViewSupportTicket } from '#lib/shared/supportTickets.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {

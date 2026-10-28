@@ -3,8 +3,8 @@ import {
 	ALL_ADJUSTMENT_REASONS,
 	InventoryMovementType,
 	type AdjustmentReason
-} from '$lib/shared/enums';
-import type { ManualAdjustmentType } from '$lib/components/products/adjustments/helpers';
+} from '#lib/shared/enums/index.js';
+import type { ManualAdjustmentType } from '#lib/components/products/adjustments/helpers.js';
 
 export interface ReasonOption {
 	value: AdjustmentReason;

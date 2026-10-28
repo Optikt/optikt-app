@@ -1,4 +1,8 @@
-import { CurrencyCode, PurchaseDiscountType, PurchasePaymentTerms } from '$lib/shared/enums';
+import {
+	CurrencyCode,
+	PurchaseDiscountType,
+	PurchasePaymentTerms
+} from '#lib/shared/enums/index.js';
 
 export interface PurchaseOrderFinancialItem {
 	quantity: number;

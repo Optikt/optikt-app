@@ -13,8 +13,8 @@ import {
 	type SQLWrapper,
 	type AnyColumn
 } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { buildTokenSearchConditions, relevanceScoreOrderSql } from '$lib/server/db/search';
+import { db } from '#lib/server/db/index.js';
+import { buildTokenSearchConditions, relevanceScoreOrderSql } from '#lib/server/db/search.js';
 import {
 	inventoryMovements,
 	inventoryLots,
@@ -24,10 +24,10 @@ import {
 	sales,
 	users,
 	type NewInventoryMovement
-} from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { MovementReferenceType } from '$lib/shared/enums';
-import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { MovementReferenceType } from '#lib/shared/enums/index.js';
+import { fromISODate, toEndOfDay, toUTCString } from '#lib/dates.js';
 
 // ---------------------------------------------------------------------------
 // Types

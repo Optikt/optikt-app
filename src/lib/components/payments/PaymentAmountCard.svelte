@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { PaymentRateInput } from '$lib/components/ui';
-	import type { PaymentMethod } from '$lib/shared/enums';
+	import { PaymentRateInput } from '#lib/components/ui/index.js';
+	import type { PaymentMethod } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		kind: 'sale' | 'purchase';

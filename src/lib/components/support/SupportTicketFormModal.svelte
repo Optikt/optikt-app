@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import TriggerTooltip from '$lib/components/ui/TriggerTooltip.svelte';
-	import { createSupportTicketCommand } from '$lib/remote/supportTickets.remote';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
+	import TriggerTooltip from '#lib/components/ui/TriggerTooltip.svelte';
+	import { createSupportTicketCommand } from '#lib/remote/supportTickets.remote.js';
 	import {
 		ALL_TICKET_CATEGORIES,
 		ALL_TICKET_PRIORITIES,
@@ -14,8 +14,8 @@
 		TicketCategory,
 		TicketPriority,
 		TicketRelatedType
-	} from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
+	} from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 
 	interface Props {
 		open?: boolean;

@@ -2,10 +2,10 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
-	import { ProductForm } from '$lib/components/products';
-	import ProductIncludedAccessoriesCard from '$lib/components/products/detail/ProductIncludedAccessoriesCard.svelte';
-	import { PageHeader } from '$lib/components/ui';
-	import { isAdminRole, ProductType } from '$lib/shared/enums';
+	import { ProductForm } from '#lib/components/products/index.js';
+	import ProductIncludedAccessoriesCard from '#lib/components/products/detail/ProductIncludedAccessoriesCard.svelte';
+	import { PageHeader } from '#lib/components/ui/index.js';
+	import { isAdminRole, ProductType } from '#lib/shared/enums/index.js';
 
 	let { data } = $props();
 	const { product, brands, suppliers, materials, brandSupplierMap, supplierBrandMap } = untrack(

@@ -3,15 +3,19 @@
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
-	import { createProductForm, updateProductForm } from '$lib/remote/products.remote';
-	import type { PendingEntity, SelectOption } from '$lib/components/ui';
-	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '$lib/utils';
-	import { buildProductNameSuggestion } from '$lib/utils/productName';
-	import { sortOptionsBySuggested } from '$lib/utils/sortOptionsBySuggested';
-	import { ProductType, requiresStockTracking, toMaterialCategory } from '$lib/shared/enums';
-	import type { Product } from '$lib/server/db/schema';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import { generateSku, ProductGender } from '$lib/utils/sku';
+	import { createProductForm, updateProductForm } from '#lib/remote/products.remote.js';
+	import type { PendingEntity, SelectOption } from '#lib/components/ui/index.js';
+	import { getErrorMessage, scrollToFirstError, toastUnboundErrors } from '#lib/utils/index.js';
+	import { buildProductNameSuggestion } from '#lib/utils/productName.js';
+	import { sortOptionsBySuggested } from '#lib/utils/sortOptionsBySuggested.js';
+	import {
+		ProductType,
+		requiresStockTracking,
+		toMaterialCategory
+	} from '#lib/shared/enums/index.js';
+	import type { Product } from '#lib/server/db/schema/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import { generateSku, ProductGender } from '#lib/utils/sku.js';
 	import { getIssueText } from './form/productFormClasses';
 	import {
 		getPendingMaterialCategory as resolvePendingMaterialCategory,

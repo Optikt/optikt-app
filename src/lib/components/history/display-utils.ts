@@ -4,9 +4,9 @@
  * These functions can be safely imported into Svelte components.
  */
 
-import type { EntityType, ActionType, ChangeRecord } from '$lib/server/db/schema';
-import { fromISO, fromISODate } from '$lib/dates';
-import { formatDate } from '$lib/utils';
+import type { EntityType, ActionType, ChangeRecord } from '#lib/server/db/schema/index.js';
+import { fromISO, fromISODate } from '#lib/dates.js';
+import { formatDate } from '#lib/utils/index.js';
 
 // Re-export types for convenience (they are just types so it's okay)
 export type { EntityType, ActionType, ChangeRecord };

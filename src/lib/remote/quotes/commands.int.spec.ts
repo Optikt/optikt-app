@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createNewQuote, updateExistingQuote } from './commands.remote';
-import { callRemote } from '$lib/testing/remoteHarness';
-import { DiscountType } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+import { callRemote } from '#lib/testing/remoteHarness.js';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
 function item() {
 	return {

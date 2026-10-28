@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { AppBadge, TreatmentBadge } from '$lib/components/ui';
-	import { getPriceTypeLabel } from '$lib/shared/enums';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { AppBadge, TreatmentBadge } from '#lib/components/ui/index.js';
+	import { getPriceTypeLabel } from '#lib/shared/enums/index.js';
 	import { getLensInventorySummary } from './helpers';
 
 	interface Props {

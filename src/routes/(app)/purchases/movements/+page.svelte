@@ -3,10 +3,10 @@
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { MovementsTable } from '$lib/components/purchases';
-	import { PageHeader } from '$lib/components/ui';
-	import { listInventoryMovements } from '$lib/remote/inventory.remote';
-	import { downloadCsv, formatDate, formatPrice, getErrorMessage } from '$lib/utils';
+	import { MovementsTable } from '#lib/components/purchases/index.js';
+	import { PageHeader } from '#lib/components/ui/index.js';
+	import { listInventoryMovements } from '#lib/remote/inventory.remote.js';
+	import { downloadCsv, formatDate, formatPrice, getErrorMessage } from '#lib/utils/index.js';
 	import {
 		ALL_INVENTORY_MOVEMENT_TYPES,
 		ALL_MOVEMENT_REFERENCE_TYPES,
@@ -16,9 +16,9 @@
 		getMovementReferenceTypeLabel,
 		type InventoryMovementType as InventoryMovementTypeValue,
 		type MovementReferenceType as MovementReferenceTypeValue
-	} from '$lib/shared/enums';
-	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
-	import type { PaginatedResult } from '$lib/types';
+	} from '#lib/shared/enums/index.js';
+	import type { MovementWithDetails } from '#lib/server/db/queries/inventoryMovements.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();

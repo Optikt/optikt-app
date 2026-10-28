@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Isotipo } from '$lib/components';
+	import { Isotipo } from '#lib/components/index.js';
 
 	interface Props {
 		businessName: string;

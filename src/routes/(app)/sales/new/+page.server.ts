@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { getNextOrderNumber } from '#lib/server/db/queries/sales/reads.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER, UserRole.SELLER);

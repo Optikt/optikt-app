@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PurchasePaymentTerms } from '$lib/shared/enums';
+import { PurchasePaymentTerms } from '#lib/shared/enums/index.js';
 
 import { createEmptyPurchaseOrderDraftItem } from './defaults';
 import {

@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { Factory, Warehouse, Eye, CircleCheck, CircleX, Clock, Package } from '@lucide/svelte';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 	import {
 		getLensSourceLabel,
 		getLensTypeLabel,
 		getLensTypeBadgeColor,
 		LensCatalogSource
-	} from '$lib/shared/enums';
-	import { AppBadge } from '$lib/components/ui';
+	} from '#lib/shared/enums/index.js';
+	import { AppBadge } from '#lib/components/ui/index.js';
 	import {
 		getLensInventorySummary,
 		getLensInventoryVariant,

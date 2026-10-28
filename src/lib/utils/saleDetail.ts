@@ -3,8 +3,8 @@
  * No side effects, no reactive state — just classification and display logic.
  */
 
-import type { ChangeHistoryWithUser } from '$lib/server/db/queries/changeHistory';
-import { getSaleStatusLabel } from '$lib/shared/enums';
+import type { ChangeHistoryWithUser } from '#lib/server/db/queries/changeHistory.js';
+import { getSaleStatusLabel } from '#lib/shared/enums/index.js';
 
 // =============================================================================
 // Types

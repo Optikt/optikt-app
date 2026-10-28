@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ArrowRightLeft, Package } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { AppBadge, StatusBadge, TreatmentBadge } from '$lib/components/ui';
-	import { getInventoryModeLabel, getPriceTypeLabel } from '$lib/shared/enums';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { AppBadge, StatusBadge, TreatmentBadge } from '#lib/components/ui/index.js';
+	import { getInventoryModeLabel, getPriceTypeLabel } from '#lib/shared/enums/index.js';
 	import { getLensInventorySummary, getLensTaxSummary } from './helpers';
 
 	interface Props {

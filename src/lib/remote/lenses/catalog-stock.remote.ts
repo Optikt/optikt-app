@@ -3,28 +3,31 @@
  * Split from lenses.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
 import { command } from '$app/server';
-import { requireAdmin, requireRole } from '$lib/server/guards';
+import { requireAdmin, requireRole } from '#lib/server/guards.js';
 import { eq, desc, sql } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
-import { softDelete } from '$lib/server/db/queries/deletedItems';
-import { inventoryLots, lensCatalogItems } from '$lib/server/db/schema';
-import { LensIdSchema } from '$lib/schemas/lenses';
-import { ManualLensAdjustmentSchema } from '$lib/schemas/inventory';
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
+import { db } from '#lib/server/db/index.js';
+import { softDelete } from '#lib/server/db/queries/deletedItems.js';
+import { inventoryLots, lensCatalogItems } from '#lib/server/db/schema/index.js';
+import { LensIdSchema } from '#lib/schemas/lenses.js';
+import { ManualLensAdjustmentSchema } from '#lib/schemas/inventory.js';
+import { findLensCatalogItemById } from '#lib/server/db/queries/lenses/catalog.js';
 import {
 	createInventoryLot,
 	consumeFromLot,
 	getActiveLensLotsFifo,
 	getNextLotNumber,
 	returnToLot
-} from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { createPurchaseOrderItem } from '$lib/server/db/queries/purchaseOrders/items';
-import { createPurchaseOrder, getNextPONumber } from '$lib/server/db/queries/purchaseOrders/orders';
+} from '#lib/server/db/queries/inventoryLots.js';
+import { createInventoryMovement } from '#lib/server/db/queries/inventoryMovements.js';
+import { createPurchaseOrderItem } from '#lib/server/db/queries/purchaseOrders/items.js';
+import {
+	createPurchaseOrder,
+	getNextPONumber
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
 
-import { auditService, getAuditContext } from '$lib/server/audit';
-import { nowISO, toISODate, nowUTC } from '$lib/dates';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import { nowISO, toISODate, nowUTC } from '#lib/dates.js';
 import {
 	ADJUSTMENT_REPORT_CATEGORIES,
 	AdjustmentReason,
@@ -34,8 +37,8 @@ import {
 	PurchaseOrderItemType,
 	PurchaseOrderStatus,
 	UserRole
-} from '$lib/shared/enums';
-import { getErrorMessage } from '$lib/utils';
+} from '#lib/shared/enums/index.js';
+import { getErrorMessage } from '#lib/utils/index.js';
 
 export const deleteLensCatalogItemById = command(LensIdSchema, async (data): Promise<void> => {
 	requireAdmin();

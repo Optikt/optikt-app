@@ -4,10 +4,10 @@
  * (best matches first — same search used by /lenses and the wizards).
  */
 import { query } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { UniversalSearchSchema } from '$lib/schemas/search';
-import { getAllProductsWithRelations } from '$lib/server/db/queries/products';
-import { getLensCatalogItemsWithRelations } from '$lib/server/db/queries/lenses/catalog';
+import { requireAuth } from '#lib/server/guards.js';
+import { UniversalSearchSchema } from '#lib/schemas/search.js';
+import { getAllProductsWithRelations } from '#lib/server/db/queries/products.js';
+import { getLensCatalogItemsWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 
 /** A product search result */
 export interface ProductResult {

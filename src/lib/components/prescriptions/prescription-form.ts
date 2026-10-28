@@ -1,6 +1,6 @@
-import type { RemoteFormIssue } from '@sveltejs/kit';
-import type { Prescription } from '$lib/server/db/schema';
-import { fromISODate, nowUTC, toISODate } from '$lib/dates';
+import type { RemoteFormIssue } from '$app/server';
+import type { Prescription } from '#lib/server/db/schema/index.js';
+import { fromISODate, nowUTC, toISODate } from '#lib/dates.js';
 
 export interface PrescriptionFormData {
 	prescriptionDate: string;

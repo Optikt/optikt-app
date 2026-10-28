@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ExchangeRatesSnapshot } from '$lib/shared/exchangeRates';
+	import type { ExchangeRatesSnapshot } from '#lib/shared/exchangeRates.js';
 	import CalcHeader from './currencyCalc/CalcHeader.svelte';
 	import CalcResults from './currencyCalc/CalcResults.svelte';
 	import CustomRateSection from './currencyCalc/CustomRateSection.svelte';

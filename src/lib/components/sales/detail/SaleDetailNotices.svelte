@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { CircleX, FileText } from '@lucide/svelte';
-	import { RefundStatus } from '$lib/shared/enums';
-	import { formatDate, formatPrice } from '$lib/utils';
+	import { RefundStatus } from '#lib/shared/enums/index.js';
+	import { formatDate, formatPrice } from '#lib/utils/index.js';
 	import { refundCardClasses, refundDecisionTitle } from './saleDetail';
 
 	interface Props {

@@ -4,7 +4,7 @@ import {
 	ManualLensAdjustmentSchema,
 	ListInventoryMovementsSchema
 } from './inventory';
-import { InventoryMovementType, AdjustmentReason } from '$lib/shared/enums';
+import { InventoryMovementType, AdjustmentReason } from '#lib/shared/enums/index.js';
 
 describe('ManualAdjustmentSchema', () => {
 	it('accepts a valid positive adjustment', () => {

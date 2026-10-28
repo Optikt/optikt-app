@@ -1,7 +1,7 @@
 <script lang="ts">
-	import AppBadge from '$lib/components/ui/badges/AppBadge.svelte';
-	import type { BadgeVariant } from '$lib/shared/badge-variants';
-	import { TICKET_PRIORITY_LABELS, TicketPriority } from '$lib/shared/enums';
+	import AppBadge from '#lib/components/ui/badges/AppBadge.svelte';
+	import type { BadgeVariant } from '#lib/shared/badge-variants.js';
+	import { TICKET_PRIORITY_LABELS, TicketPriority } from '#lib/shared/enums/index.js';
 
 	let { priority }: { priority: TicketPriority } = $props();
 

@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getReportSales, getReportSalesByBrand } from './reports';
-import { resetDb } from '$lib/testing/integration/db';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createMaterial,
 	createProduct,
 	createSale,
 	createSaleItem,
 	createSupplier
-} from '$lib/testing/integration/factories';
-import { DiscountType, ProductType, SaleStatus } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
+} from '#lib/testing/integration/factories.js';
+import { DiscountType, ProductType, SaleStatus } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
 
 const today = new Date().toISOString().slice(0, 10);
 

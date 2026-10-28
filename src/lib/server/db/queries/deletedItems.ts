@@ -1,6 +1,6 @@
 import { and, eq, desc } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	deletedItems,
 	products,
@@ -16,8 +16,8 @@ import {
 	users,
 	type DeletedEntityType,
 	type DeletedItem
-} from '$lib/server/db/schema';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import { nowISO } from '#lib/dates.js';
 import { deleteProduct } from './products';
 import { deleteBrand } from './brands';
 import { deleteCustomer, deletePrescription } from './customers';

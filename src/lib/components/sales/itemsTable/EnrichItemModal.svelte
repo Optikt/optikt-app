@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FreeItemCategory } from '$lib/shared/enums/lensTypes';
+	import { FreeItemCategory } from '#lib/shared/enums/lensTypes.js';
 
 	interface SupplierOption {
 		id: string;

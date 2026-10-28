@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { getAllMaterials, countMaterials } from '$lib/server/db/queries/materials';
+import { getAllMaterials, countMaterials } from '#lib/server/db/queries/materials.js';
 
 /**
  * Load initial materials data for SSR

@@ -4,16 +4,16 @@
 	import { page } from '$app/state';
 	import { Plus, RotateCcw, Search } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { LensCatalogTable, LensPropertiesTab } from '$lib/components/lenses';
-	import { PageHeader, SelectInput } from '$lib/components/ui';
+	import { LensCatalogTable, LensPropertiesTab } from '#lib/components/lenses/index.js';
+	import { PageHeader, SelectInput } from '#lib/components/ui/index.js';
 	import {
 		parsePageParam,
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam,
 		getErrorMessage
-	} from '$lib/utils';
-	import { listLensCatalog } from '$lib/remote/lenses/catalog.remote';
+	} from '#lib/utils/index.js';
+	import { listLensCatalog } from '#lib/remote/lenses/catalog.remote.js';
 	import {
 		ALL_LENS_SOURCES,
 		ALL_LENS_TYPES,
@@ -22,8 +22,8 @@
 		isAdminRole,
 		LensCatalogSource,
 		LensType
-	} from '$lib/shared/enums';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	} from '#lib/shared/enums/index.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
 

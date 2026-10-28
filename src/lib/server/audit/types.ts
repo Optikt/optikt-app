@@ -2,7 +2,7 @@
  * Server-side Audit Types
  * Types used by the audit service for logging changes.
  */
-import type { ActionType } from '$lib/server/db/schema';
+import type { ActionType } from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // AUDIT CONTEXT

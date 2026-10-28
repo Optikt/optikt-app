@@ -6,12 +6,18 @@
  * flat projections + aggregation for the reports UI.
  */
 import { eq, isNull, and, gte, lte, desc, ne, or, sql, isNotNull, inArray } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { salePayments, sales, customers, saleItems, products } from '$lib/server/db/schema';
-import { fromISODate, toEndOfDay, toUTCString } from '$lib/dates';
+import { db } from '#lib/server/db/index.js';
+import {
+	salePayments,
+	sales,
+	customers,
+	saleItems,
+	products
+} from '#lib/server/db/schema/index.js';
+import { fromISODate, toEndOfDay, toUTCString } from '#lib/dates.js';
 import { getAllSales } from './sales/reads';
 import { getLensCatalogItemsWithRelations } from './lenses/catalog';
-import { DiscountType, ProductType, RefundStatus } from '$lib/shared/enums';
+import { DiscountType, ProductType, RefundStatus } from '#lib/shared/enums/index.js';
 
 // ============================================================================
 // HELPERS

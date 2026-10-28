@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Eye } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { copyOnLongPress } from '$lib/actions/copyOnLongPress';
-	import type { ProductWithRelations } from '$lib/server/db/queries/products';
-	import { AppBadge, ProductTypeBadge } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import { copyOnLongPress } from '#lib/actions/copyOnLongPress.js';
+	import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+	import { AppBadge, ProductTypeBadge } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { stockBadgeVariant, stockCountClasses, stockLabel } from './productTableDisplay';
 
 	type ProductViewHref = `/products/${string}`;

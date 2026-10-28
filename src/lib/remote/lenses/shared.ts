@@ -6,7 +6,7 @@
  * Shared optical-range helpers for lens catalog remotes.
  * Split from lenses.remote.ts (DT1 phase 4) — logic unchanged, verbatim move.
  */
-import type { LensOpticalRange } from '$lib/server/db/schema';
+import type { LensOpticalRange } from '#lib/server/db/schema/index.js';
 
 /**
  * Semantic representation of an optical range (without DB-specific fields).

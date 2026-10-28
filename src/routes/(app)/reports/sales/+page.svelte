@@ -4,18 +4,18 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
-	import { ReportHeader, DateRangeFilter } from '$lib/components/reports';
-	import SalesTrendChart from '$lib/components/reports/SalesTrendChart.svelte';
-	import SalesByBrandChart from '$lib/components/reports/SalesByBrandChart.svelte';
-	import { SaleStatusBadge } from '$lib/components/ui';
-	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '$lib/utils';
-	import { fetchSalesReport } from '$lib/remote/reports.remote';
-	import { SALE_STATUS_LABELS } from '$lib/shared/enums';
+	import { ReportHeader, DateRangeFilter } from '#lib/components/reports/index.js';
+	import SalesTrendChart from '#lib/components/reports/SalesTrendChart.svelte';
+	import SalesByBrandChart from '#lib/components/reports/SalesByBrandChart.svelte';
+	import { SaleStatusBadge } from '#lib/components/ui/index.js';
+	import { formatPrice, formatDateOnly, downloadCsv, getErrorMessage } from '#lib/utils/index.js';
+	import { fetchSalesReport } from '#lib/remote/reports.remote.js';
+	import { SALE_STATUS_LABELS } from '#lib/shared/enums/index.js';
 	import type {
 		ReportSale,
 		SalesReportSummary,
 		BrandSalesSlice
-	} from '$lib/server/db/queries/reports';
+	} from '#lib/server/db/queries/reports.js';
 
 	type StatusFilter = 'active' | 'cancelled' | 'all';
 

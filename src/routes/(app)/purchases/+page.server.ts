@@ -1,13 +1,13 @@
 import type { PageServerLoad } from './$types';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 import {
 	getAllPurchaseOrders,
 	countPurchaseOrders,
 	getPurchaseOrderListStats
-} from '$lib/server/db/queries/purchaseOrders/orders';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
-import { PurchaseOrderStatus, PurchaseOrderUiState } from '$lib/shared/enums';
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
+import { PurchaseOrderStatus, PurchaseOrderUiState } from '#lib/shared/enums/index.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

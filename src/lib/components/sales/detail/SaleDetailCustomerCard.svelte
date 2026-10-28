@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { ExternalLink } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { SaleStatusBadge } from '$lib/components/ui';
-	import { getSaleStatusLabel } from '$lib/shared/enums';
-	import { formatDateOnly } from '$lib/utils';
-	import { calculateAge } from '$lib/dates';
+	import { SaleStatusBadge } from '#lib/components/ui/index.js';
+	import { getSaleStatusLabel } from '#lib/shared/enums/index.js';
+	import { formatDateOnly } from '#lib/utils/index.js';
+	import { calculateAge } from '#lib/dates.js';
 	import { customerIdNumber, customerName, customerPhone } from './saleDetail';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import type { SaleWithRelations } from '#lib/server/db/queries/sales/types.js';
 
 	interface Props {
 		sale: SaleWithRelations;

@@ -1,6 +1,6 @@
-import type { PendingEntity, SelectOption } from '$lib/components/ui';
-import { generateUUID } from '$lib/utils/generateUUID';
-import { ProductType, toMaterialCategory } from '$lib/shared/enums';
+import type { PendingEntity, SelectOption } from '#lib/components/ui/index.js';
+import { generateUUID } from '#lib/utils/generateUUID.js';
+import { ProductType, toMaterialCategory } from '#lib/shared/enums/index.js';
 
 export function handleCreatePendingBrand(
 	pendingBrands: PendingEntity[],

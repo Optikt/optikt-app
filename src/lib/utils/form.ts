@@ -1,14 +1,13 @@
+import type { RemoteFormIssue } from '$app/server';
+
 /**
  * Form utility functions
  */
-
-import type { RemoteFormIssue } from '@sveltejs/kit';
 import { toast } from 'svelte-sonner';
 import { logger } from './logger';
 
 const ERROR_FIELD_SELECTORS =
 	'[aria-invalid="true"], [data-field-error="true"], .border-red-500, [class*="border-red"], [class*="ring-red"]';
-
 const ERROR_MESSAGE_SELECTORS =
 	'.form-field-error, .text-error, .text-red-500, .text-red-600, .text-red-700, .border-red-500';
 

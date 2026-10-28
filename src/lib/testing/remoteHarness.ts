@@ -1,6 +1,6 @@
 import { with_request_store } from '@sveltejs/kit/internal/server';
-import type { User } from '$lib/server/db/schema';
-import { buildValidationMessage, type ValidationIssue } from '$lib/utils/validationError';
+import type { User } from '#lib/server/db/schema/index.js';
+import { buildValidationMessage, type ValidationIssue } from '#lib/utils/validationError.js';
 
 export type SessionUser = Pick<User, 'id' | 'role'> & Partial<User>;
 

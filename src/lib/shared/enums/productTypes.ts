@@ -3,7 +3,7 @@
  * Defines the types of products in inventory
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 export enum ProductType {
 	/** Eyeglass frames */

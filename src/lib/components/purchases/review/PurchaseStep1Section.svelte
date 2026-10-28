@@ -3,7 +3,7 @@
 		PurchaseDiscountType,
 		PurchaseDocumentType,
 		PurchasePaymentTerms
-	} from '$lib/shared/enums';
+	} from '#lib/shared/enums/index.js';
 	import PurchaseOrderStep1Card1 from '../step1/PurchaseOrderStep1Card1.svelte';
 	import PurchaseOrderStep1Card2 from '../step1/PurchaseOrderStep1Card2.svelte';
 

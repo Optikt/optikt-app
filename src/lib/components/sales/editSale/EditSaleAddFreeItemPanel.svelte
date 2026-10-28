@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
-	import { DiscountType } from '$lib/shared/enums';
-	import { ALL_FREE_ITEM_CATEGORIES } from '$lib/shared/enums/lensTypes';
-	import type { FreeItemCategory } from '$lib/shared/enums/lensTypes';
+	import { DiscountType } from '#lib/shared/enums/index.js';
+	import { ALL_FREE_ITEM_CATEGORIES } from '#lib/shared/enums/lensTypes.js';
+	import type { FreeItemCategory } from '#lib/shared/enums/lensTypes.js';
 
 	interface Props {
 		showAddFreeItem: boolean;

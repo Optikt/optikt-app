@@ -2,7 +2,12 @@
  * Support ticket validation schemas
  */
 import { z } from 'zod';
-import { TicketCategory, TicketPriority, TicketRelatedType, TicketStatus } from '$lib/shared/enums';
+import {
+	TicketCategory,
+	TicketPriority,
+	TicketRelatedType,
+	TicketStatus
+} from '#lib/shared/enums/index.js';
 import { EntityIdSchema } from './common/identity';
 import { ListPaginationSchema } from './common/pagination';
 

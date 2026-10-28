@@ -4,22 +4,25 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
-	import { ChangeHistoryModal } from '$lib/components/history';
-	import { AppBadge, ConfirmModal, StatusBadge } from '$lib/components/ui';
-	import { deleteProductById } from '$lib/remote/products.remote';
-	import { getErrorMessage, getBackUrl, peekBackUrl } from '$lib/utils';
+	import { ChangeHistoryModal } from '#lib/components/history/index.js';
+	import { AppBadge, ConfirmModal, StatusBadge } from '#lib/components/ui/index.js';
+	import { deleteProductById } from '#lib/remote/products.remote.js';
+	import { getErrorMessage, getBackUrl, peekBackUrl } from '#lib/utils/index.js';
 	import {
 		getProductTypeLabel,
 		isAdminRole,
 		ProductType,
 		requiresStockTracking
-	} from '$lib/shared/enums';
-	import ProductEconomyCard from '$lib/components/products/detail/ProductEconomyCard.svelte';
-	import ProductIdentityCard from '$lib/components/products/detail/ProductIdentityCard.svelte';
-	import ProductIncludedAccessoriesCard from '$lib/components/products/detail/ProductIncludedAccessoriesCard.svelte';
-	import ProductLotsCard from '$lib/components/products/detail/ProductLotsCard.svelte';
-	import ProductMovementFeed from '$lib/components/products/detail/ProductMovementFeed.svelte';
-	import { getInventoryValuation, getStockHealth } from '$lib/components/products/detail/helpers';
+	} from '#lib/shared/enums/index.js';
+	import ProductEconomyCard from '#lib/components/products/detail/ProductEconomyCard.svelte';
+	import ProductIdentityCard from '#lib/components/products/detail/ProductIdentityCard.svelte';
+	import ProductIncludedAccessoriesCard from '#lib/components/products/detail/ProductIncludedAccessoriesCard.svelte';
+	import ProductLotsCard from '#lib/components/products/detail/ProductLotsCard.svelte';
+	import ProductMovementFeed from '#lib/components/products/detail/ProductMovementFeed.svelte';
+	import {
+		getInventoryValuation,
+		getStockHealth
+	} from '#lib/components/products/detail/helpers.js';
 
 	let { data } = $props();
 	const product = untrack(() => data.product);

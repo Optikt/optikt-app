@@ -1,4 +1,4 @@
-import type { InventoryCountLineRow } from '$lib/server/db/queries/inventoryCount/types';
+import type { InventoryCountLineRow } from '#lib/server/db/queries/inventoryCount/types.js';
 
 export type CountAdjustmentPath =
 	`/products/${string}/adjustments` | `/lenses/${string}/adjustments`;

@@ -2,21 +2,21 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createNewQuoteCore } from './createNewQuote';
 import { updateExistingQuoteCore } from './updateExistingQuote';
-import { db } from '$lib/server/db';
-import { quoteItemFreeDetails, quoteItems } from '$lib/server/db/schema';
-import { resetDb } from '$lib/testing/integration/db';
+import { db } from '#lib/server/db/index.js';
+import { quoteItemFreeDetails, quoteItems } from '#lib/server/db/schema/index.js';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createMaterial,
 	createProduct,
 	createQuote,
 	createSupplier,
 	createUser
-} from '$lib/testing/integration/factories';
-import { DiscountType, UserRole } from '$lib/shared/enums';
-import { SaleItemType, FreeItemCategory } from '$lib/shared/enums/lensTypes';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import type { ActionContext } from '$lib/server/actionContext';
-import type { CreateQuoteInput, QuoteItemInput, UpdateQuoteInput } from '$lib/schemas/quotes';
+} from '#lib/testing/integration/factories.js';
+import { DiscountType, UserRole } from '#lib/shared/enums/index.js';
+import { SaleItemType, FreeItemCategory } from '#lib/shared/enums/lensTypes.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
+import type { CreateQuoteInput, QuoteItemInput, UpdateQuoteInput } from '#lib/schemas/quotes.js';
 
 function ctx(userId: string): ActionContext {
 	return { userId, role: UserRole.SELLER, ipAddress: '127.0.0.1', userAgent: null };

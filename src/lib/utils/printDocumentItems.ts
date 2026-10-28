@@ -3,7 +3,7 @@ import {
 	LensType,
 	SaleItemType,
 	TreatmentCategory
-} from '$lib/shared/enums/lensTypes';
+} from '#lib/shared/enums/lensTypes.js';
 
 export interface PrintDocumentItem {
 	itemType: string;

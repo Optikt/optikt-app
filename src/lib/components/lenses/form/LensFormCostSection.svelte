@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
-	import { TaxToggle } from '$lib/components/ui';
-	import { LensPriceType, getPriceTypeLabel } from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { TaxToggle } from '#lib/components/ui/index.js';
+	import { LensPriceType, getPriceTypeLabel } from '#lib/shared/enums/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import {
 		fieldLabelClass,
 		formCardClass,

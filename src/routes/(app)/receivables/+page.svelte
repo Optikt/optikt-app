@@ -13,12 +13,12 @@
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { PageHeader, SaleStatusBadge } from '$lib/components/ui';
-	import { PaymentForm } from '$lib/components/sales';
-	import { formatPrice, formatDate, replaceUrlSearch, setQueryParam } from '$lib/utils';
-	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
-	import type { ReceivableRow, ReceivablesSummary } from '$lib/server/db/queries/receivables';
-	import { getPaymentMethodLabel } from '$lib/shared/enums';
+	import { PageHeader, SaleStatusBadge } from '#lib/components/ui/index.js';
+	import { PaymentForm } from '#lib/components/sales/index.js';
+	import { formatPrice, formatDate, replaceUrlSearch, setQueryParam } from '#lib/utils/index.js';
+	import { getExchangeRatesStore } from '#lib/stores/exchangeRates.svelte.js';
+	import type { ReceivableRow, ReceivablesSummary } from '#lib/server/db/queries/receivables.js';
+	import { getPaymentMethodLabel } from '#lib/shared/enums/index.js';
 	import { untrack } from 'svelte';
 
 	let { data } = $props();

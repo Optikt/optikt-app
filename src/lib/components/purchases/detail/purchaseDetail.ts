@@ -1,4 +1,4 @@
-import { PurchaseDiscountType } from '$lib/shared/enums';
+import { PurchaseDiscountType } from '#lib/shared/enums/index.js';
 import {
 	calculatePurchaseOrderSummary,
 	createPurchaseOrderDraftItemFromExisting,
@@ -7,14 +7,14 @@ import {
 import {
 	getSourceCurrencySymbol,
 	sourceCurrencyRequiresRateToVes
-} from '$lib/shared/purchaseOrderCurrencies';
-import { formatPrice } from '$lib/utils';
-import { itemDisplayName } from '$lib/utils/purchaseOrderDetail';
+} from '#lib/shared/purchaseOrderCurrencies.js';
+import { formatPrice } from '#lib/utils/index.js';
+import { itemDisplayName } from '#lib/utils/purchaseOrderDetail.js';
 import type {
 	PurchaseOrderItemWithProduct,
 	PurchaseOrderWithRelations
-} from '$lib/server/db/queries/purchaseOrders/types';
-import type { InventoryLot } from '$lib/server/db/schema';
+} from '#lib/server/db/queries/purchaseOrders/types.js';
+import type { InventoryLot } from '#lib/server/db/schema/index.js';
 
 export function buildSettlementDiscount(
 	purchaseOrder: Partial<

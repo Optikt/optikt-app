@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { SquarePen, Trash2, Tag, TriangleAlert, Eye, RotateCcw } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteBrandById, checkBrandCanDelete } from '$lib/remote/brands.remote';
-	import { getErrorMessage } from '$lib/utils';
-	import { DataGrid, StatusBadge } from '$lib/components/ui';
-	import { BrandViewModal, BrandReactivateModal } from '$lib/components/brands';
-	import type { Brand } from '$lib/server/db/schema';
+	import { deleteBrandById, checkBrandCanDelete } from '#lib/remote/brands.remote.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { DataGrid, StatusBadge } from '#lib/components/ui/index.js';
+	import { BrandViewModal, BrandReactivateModal } from '#lib/components/brands/index.js';
+	import type { Brand } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		brands: Brand[];

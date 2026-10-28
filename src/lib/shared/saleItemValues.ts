@@ -1,4 +1,4 @@
-import type { saleItemFreeDetails } from '$lib/server/db/schema';
+import type { saleItemFreeDetails } from '#lib/server/db/schema/index.js';
 
 type Nullable<T> = T | null | undefined;
 

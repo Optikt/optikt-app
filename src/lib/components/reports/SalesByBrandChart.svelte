@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { BarChart } from 'layerchart';
-	import { cn, formatPrice, formatCompactPrice } from '$lib/utils';
-	import ChartContainer from '$lib/components/ui/chart/chart-container.svelte';
-	import ChartTooltip from '$lib/components/ui/chart/chart-tooltip.svelte';
-	import type { ChartConfig } from '$lib/components/ui/chart/chart-utils';
-	import type { BrandSalesSlice } from '$lib/server/db/queries/reports';
+	import { cn, formatPrice, formatCompactPrice } from '#lib/utils/index.js';
+	import ChartContainer from '#lib/components/ui/chart/chart-container.svelte';
+	import ChartTooltip from '#lib/components/ui/chart/chart-tooltip.svelte';
+	import type { ChartConfig } from '#lib/components/ui/chart/chart-utils.js';
+	import type { BrandSalesSlice } from '#lib/server/db/queries/reports.js';
 
 	let {
 		slices,

@@ -3,7 +3,7 @@
  * Server-side functions for unified materials management
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { requireAuth, requireAdmin } from '#lib/server/guards.js';
 import { invalid } from '@sveltejs/kit';
 import {
 	ListMaterialsSchema,
@@ -12,7 +12,7 @@ import {
 	UpdateMaterialSchema,
 	QuickCreateMaterialSchema,
 	ReactivateMaterialSchema
-} from '$lib/schemas/materials';
+} from '#lib/schemas/materials.js';
 import {
 	getAllMaterials,
 	countMaterials,
@@ -23,12 +23,12 @@ import {
 	updateMaterial,
 	restoreMaterial,
 	generateUniqueMaterialCode
-} from '$lib/server/db/queries/materials';
-import type { Material } from '$lib/server/db/schema';
-import type { PaginatedResult, CreateEntityResult } from '$lib/types';
-import { db } from '$lib/server/db';
-import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
-import { auditService, getAuditContext } from '$lib/server/audit';
+} from '#lib/server/db/queries/materials.js';
+import type { Material } from '#lib/server/db/schema/index.js';
+import type { PaginatedResult, CreateEntityResult } from '#lib/types/index.js';
+import { db } from '#lib/server/db/index.js';
+import { softDelete, restore } from '#lib/server/db/queries/deletedItems.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
 /**
  * List all materials, optionally including deleted ones

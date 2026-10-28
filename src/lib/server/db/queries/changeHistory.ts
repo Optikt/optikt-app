@@ -1,5 +1,5 @@
 import { eq, and, desc, asc, inArray, or, sql } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	changeHistory,
 	purchaseOrderPayments,
@@ -7,8 +7,8 @@ import {
 	type EntityType,
 	type ActionType,
 	type ChangeHistory
-} from '$lib/server/db/schema';
-import type { ChangeHistoryOptions } from '$lib/server/audit';
+} from '#lib/server/db/schema/index.js';
+import type { ChangeHistoryOptions } from '#lib/server/audit/index.js';
 
 // ============================================================================
 // CHANGE HISTORY QUERIES

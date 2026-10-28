@@ -8,23 +8,23 @@ import {
 	toPurchaseOrderItemDraftInput
 } from './helpers';
 import { command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { getErrorMessage } from '$lib/utils';
-import { composeBusinessTimestamp } from '$lib/dates';
+import { requireAdmin } from '#lib/server/guards.js';
+import { getErrorMessage } from '#lib/utils/index.js';
+import { composeBusinessTimestamp } from '#lib/dates.js';
 
-import { SavePurchaseOrderDraftSchema } from '$lib/schemas/purchaseOrders';
+import { SavePurchaseOrderDraftSchema } from '#lib/schemas/purchaseOrders.js';
 
-import { replacePurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { replacePurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
 import {
 	findPurchaseOrderById,
 	updatePurchaseOrder
-} from '$lib/server/db/queries/purchaseOrders/orders';
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
 
-import { db } from '$lib/server/db';
-import { PurchaseOrderStatus } from '$lib/shared/enums';
+import { db } from '#lib/server/db/index.js';
+import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
 
-import { SOURCE_TO_CURRENCY_CODE } from '$lib/shared/purchaseOrderCurrencies';
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { SOURCE_TO_CURRENCY_CODE } from '#lib/shared/purchaseOrderCurrencies.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
 export const savePurchaseOrderDraftCmd = command(SavePurchaseOrderDraftSchema, async (data) => {
 	requireAdmin();

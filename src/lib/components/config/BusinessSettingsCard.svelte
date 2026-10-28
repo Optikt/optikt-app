@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Building2, Save } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { updateSettingsForm } from '$lib/remote/settings.remote';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { FormInput, FormTextarea, RifInput } from '$lib/components/ui';
-	import type { Settings } from '$lib/server/db/schema';
+	import { updateSettingsForm } from '#lib/remote/settings.remote.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { FormInput, FormTextarea, RifInput } from '#lib/components/ui/index.js';
+	import type { Settings } from '#lib/server/db/schema/index.js';
 	import { untrack } from 'svelte';
-	import { generateUUID } from '$lib/utils/generateUUID';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
 
 	interface Props {
 		settings: Settings;

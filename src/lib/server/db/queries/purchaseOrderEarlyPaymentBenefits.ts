@@ -1,12 +1,12 @@
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { nowISO } from '$lib/dates';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import { nowISO } from '#lib/dates.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 import {
 	purchaseOrderEarlyPaymentBenefits,
 	type NewPurchaseOrderEarlyPaymentBenefit,
 	type PurchaseOrderEarlyPaymentBenefit
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
 export async function getPurchaseOrderEarlyPaymentBenefits(
 	purchaseOrderId: string,

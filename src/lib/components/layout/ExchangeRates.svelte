@@ -11,10 +11,10 @@
 	} from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
-	import { fromISO, toRelative, toRelativeShort } from '$lib/dates';
-	import { getErrorMessage } from '$lib/utils';
-	import type { ExchangeRateEntry } from '$lib/shared/exchangeRates';
+	import { getExchangeRatesStore } from '#lib/stores/exchangeRates.svelte.js';
+	import { fromISO, toRelative, toRelativeShort } from '#lib/dates.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import type { ExchangeRateEntry } from '#lib/shared/exchangeRates.js';
 	import CurrencyCalculatorModal from './CurrencyCalculatorModal.svelte';
 
 	const store = getExchangeRatesStore();

@@ -1,5 +1,5 @@
 import { eq, isNull, and, desc } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	sales,
 	saleItems,
@@ -13,7 +13,7 @@ import {
 	saleItemFreeDetails,
 	quoteItemFreeDetails,
 	type SalePayment
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
 // ============================================================================
 // TYPES

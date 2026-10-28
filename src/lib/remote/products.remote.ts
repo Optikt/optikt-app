@@ -3,7 +3,7 @@
  * Server-side functions for product management
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireAdmin } from '$lib/server/guards';
+import { requireAuth, requireAdmin } from '#lib/server/guards.js';
 import { invalid } from '@sveltejs/kit';
 import { eq, isNull, and } from 'drizzle-orm';
 import { z } from 'zod';
@@ -14,7 +14,7 @@ import {
 	ProductIdSchema,
 	ReactivateProductSchema,
 	UpdateSalePriceSchema
-} from '$lib/schemas/products';
+} from '#lib/schemas/products.js';
 import {
 	getAllProductsWithRelations,
 	countProducts,
@@ -22,19 +22,19 @@ import {
 	findProductById,
 	findProductBySku,
 	updateProduct
-} from '$lib/server/db/queries/products';
-import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
-import { upsertBrandSupplierLink } from '$lib/server/db/queries/brandSuppliers';
-import { ProductType, toMaterialCategory } from '$lib/shared/enums/productTypes';
-import { db } from '$lib/server/db';
-import { products, type Product } from '$lib/server/db/schema';
-import type { ProductWithRelations } from '$lib/server/db/queries/products';
-import { resolvePendingSupplier } from '$lib/server/db/queries/suppliers';
-import { resolvePendingMaterial } from '$lib/server/db/queries/materials';
-import { resolvePendingBrand } from '$lib/server/db/queries/brands';
-import { auditService, getAuditContext } from '$lib/server/audit';
-import type { CreateEntityResult, PaginatedResult } from '$lib/types';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/queries/products.js';
+import { softDelete, restore } from '#lib/server/db/queries/deletedItems.js';
+import { upsertBrandSupplierLink } from '#lib/server/db/queries/brandSuppliers.js';
+import { ProductType, toMaterialCategory } from '#lib/shared/enums/productTypes.js';
+import { db } from '#lib/server/db/index.js';
+import { products, type Product } from '#lib/server/db/schema/index.js';
+import type { ProductWithRelations } from '#lib/server/db/queries/products.js';
+import { resolvePendingSupplier } from '#lib/server/db/queries/suppliers.js';
+import { resolvePendingMaterial } from '#lib/server/db/queries/materials.js';
+import { resolvePendingBrand } from '#lib/server/db/queries/brands.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import type { CreateEntityResult, PaginatedResult } from '#lib/types/index.js';
+import { nowISO } from '#lib/dates.js';
 
 // Types for paginated response
 export interface PaginatedProducts {

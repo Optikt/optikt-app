@@ -1,16 +1,16 @@
-import { getNextQuoteNumber } from '$lib/server/db/queries/quotes';
-import { db } from '$lib/server/db';
-import { quotes } from '$lib/server/db/schema';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-import { auditService } from '$lib/server/audit';
-import { insertQuoteItems } from '$lib/server/quotes/quoteItemInsert';
-import { computeDocumentTotals } from '$lib/server/documentTotals';
-import { createInlineCustomer, resolveCustomerReference } from '$lib/server/customerReference';
-import { validateTreatmentItems } from '$lib/server/treatmentValidation';
-import { composeBusinessTimestamp, nowISO } from '$lib/dates';
-import type { CreateQuoteInput } from '$lib/schemas/quotes';
-import type { ActionContext } from '$lib/server/actionContext';
+import { getNextQuoteNumber } from '#lib/server/db/queries/quotes.js';
+import { db } from '#lib/server/db/index.js';
+import { quotes } from '#lib/server/db/schema/index.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { insertQuoteItems } from '#lib/server/quotes/quoteItemInsert.js';
+import { computeDocumentTotals } from '#lib/server/documentTotals.js';
+import { createInlineCustomer, resolveCustomerReference } from '#lib/server/customerReference.js';
+import { validateTreatmentItems } from '#lib/server/treatmentValidation.js';
+import { composeBusinessTimestamp, nowISO } from '#lib/dates.js';
+import type { CreateQuoteInput } from '#lib/schemas/quotes.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Create a new quote with items in a single transaction.

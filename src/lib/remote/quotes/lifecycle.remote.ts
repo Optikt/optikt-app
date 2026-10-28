@@ -3,19 +3,19 @@
  * Shell: auth + delegate. convertQuoteToSale logic lives in src/lib/server/quotes/.
  */
 import { command } from '$app/server';
-import { requireAuth, requireRole } from '$lib/server/guards';
+import { requireAuth, requireRole } from '#lib/server/guards.js';
 import {
 	AssignQuoteCustomerSchema,
 	CancelQuoteSchema,
 	ConvertQuoteSchema
-} from '$lib/schemas/quotes';
-import { findQuoteById, updateQuote } from '$lib/server/db/queries/quotes';
-import { findCustomerById, resolveInlineCustomer } from '$lib/server/db/queries/customers';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { UserRole } from '$lib/shared/enums';
-import { auditService, getAuditContext } from '$lib/server/audit';
-import { getActionContext } from '$lib/server/actionContext';
-import { convertQuoteToSaleCore } from '$lib/server/quotes/convertQuoteToSale';
+} from '#lib/schemas/quotes.js';
+import { findQuoteById, updateQuote } from '#lib/server/db/queries/quotes.js';
+import { findCustomerById, resolveInlineCustomer } from '#lib/server/db/queries/customers.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
+import { getActionContext } from '#lib/server/actionContext.js';
+import { convertQuoteToSaleCore } from '#lib/server/quotes/convertQuoteToSale.js';
 
 /**
  * Assign a customer to a DRAFT quote (existing customer or create new inline).

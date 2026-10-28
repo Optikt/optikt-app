@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
 	import { Trash2, FlaskConical } from '@lucide/svelte';
-	import { Label } from '$lib/components/ui/label';
-	import { formatPrice } from '$lib/utils';
-	import { getTreatmentCategoryLabel } from '$lib/shared/enums/lensTypes';
-	import { TreatmentCategory } from '$lib/shared/enums';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { getTreatmentCategoryLabel } from '#lib/shared/enums/lensTypes.js';
+	import { TreatmentCategory } from '#lib/shared/enums/index.js';
 	import { findLensItem, step2ItemLineTotal } from '../saleItemHelpers';
 	import type { PrescriptionFieldErrors } from '../saleItemHelpers';
 	import type { SaleItemRow, TreatmentSaleItemRow } from '../newSaleTypes';
-	import type { SupplierTreatment } from '$lib/server/db/schema';
+	import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
 	import SaleItemInfo from '../SaleItemInfo.svelte';
 	import SaleFormulaSlideOver from './SaleFormulaSlideOver.svelte';

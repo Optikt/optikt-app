@@ -6,14 +6,14 @@
  * snapshot fields on sale_items.
  */
 import { eq, and, isNull } from 'drizzle-orm';
-import { products, lensCatalogItems, supplierTreatments } from '$lib/server/db/schema';
-import { getActiveLotsFifo, consumeFromLot } from '$lib/server/db/queries/inventoryLots';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { planFifoConsumption } from '$lib/utils/inventory';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
+import { products, lensCatalogItems, supplierTreatments } from '#lib/server/db/schema/index.js';
+import { getActiveLotsFifo, consumeFromLot } from '#lib/server/db/queries/inventoryLots.js';
+import { createInventoryMovement } from '#lib/server/db/queries/inventoryMovements.js';
+import { planFifoConsumption } from '#lib/utils/inventory.js';
+import { InventoryMovementType, MovementReferenceType } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
 
 // ---------------------------------------------------------------------------
 // Types

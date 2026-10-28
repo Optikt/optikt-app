@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { assignQuoteCustomer } from './lifecycle.remote';
-import { callRemote } from '$lib/testing/remoteHarness';
-import { resetDb } from '$lib/testing/integration/db';
-import { createQuote, createUser } from '$lib/testing/integration/factories';
-import { db } from '$lib/server/db';
-import { customers } from '$lib/server/db/schema';
-import { CustomerGender, UserRole } from '$lib/shared/enums';
+import { callRemote } from '#lib/testing/remoteHarness.js';
+import { resetDb } from '#lib/testing/integration/db.js';
+import { createQuote, createUser } from '#lib/testing/integration/factories.js';
+import { db } from '#lib/server/db/index.js';
+import { customers } from '#lib/server/db/schema/index.js';
+import { CustomerGender, UserRole } from '#lib/shared/enums/index.js';
 
 describe('quotes lifecycle remotes (Capa 3)', () => {
 	beforeEach(async () => {

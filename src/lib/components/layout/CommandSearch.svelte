@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Search, Package, Microscope, X } from '@lucide/svelte';
-	import { getProductTypeIcon } from '$lib/components/ui/productTypeIcons';
-	import { universalSearch } from '$lib/remote/search.remote';
-	import type { SearchResults } from '$lib/remote/search.remote';
-	import { getLensTypeLabel } from '$lib/shared/enums';
-	import { getProductTypeLabel } from '$lib/shared/enums/productTypes';
-	import { formatPrice, logger } from '$lib/utils';
+	import { getProductTypeIcon } from '#lib/components/ui/productTypeIcons.js';
+	import { universalSearch } from '#lib/remote/search.remote.js';
+	import type { SearchResults } from '#lib/remote/search.remote.js';
+	import { getLensTypeLabel } from '#lib/shared/enums/index.js';
+	import { getProductTypeLabel } from '#lib/shared/enums/productTypes.js';
+	import { formatPrice, logger } from '#lib/utils/index.js';
 	import { resolve } from '$app/paths';
 
 	const PRODUCT_TYPE_ICON_CLASSES: Record<string, string> = {

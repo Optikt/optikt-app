@@ -1,4 +1,4 @@
-import { TreatmentCategory } from '$lib/shared/enums';
+import { TreatmentCategory } from '#lib/shared/enums/index.js';
 
 export function treatmentCategoryBadgeClass(category: string): string {
 	return category === TreatmentCategory.AR

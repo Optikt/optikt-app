@@ -1,14 +1,18 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
+	import { Button } from '#lib/components/ui/button/index.js';
 	import { Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { SearchInput, TablePagination } from '$lib/components/ui';
-	import { getErrorMessage } from '$lib/utils';
-	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import { listUsers } from '$lib/remote/users/commands.remote';
-	import { UsersTable, UserFormModal, ReactivateConfirmModal } from '$lib/components/users';
+	import { SearchInput, TablePagination } from '#lib/components/ui/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { ALL_ROLES, UserRole } from '#lib/shared/enums/index.js';
+	import { listUsers } from '#lib/remote/users/commands.remote.js';
+	import {
+		UsersTable,
+		UserFormModal,
+		ReactivateConfirmModal
+	} from '#lib/components/users/index.js';
 	import { untrack } from 'svelte';
-	import type { UserListItem, PaginatedUsers } from '$lib/types/users';
+	import type { UserListItem, PaginatedUsers } from '#lib/types/users.js';
 
 	// SSR initial data (untrack since is initial data)
 	let { data } = $props();

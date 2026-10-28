@@ -2,11 +2,11 @@
 	import { ArrowRight, CalendarClock, CircleDollarSign } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { PurchaseOrderDueBadge } from '$lib/components/ui';
-	import { CurrencyCode } from '$lib/shared/enums';
-	import { getCurrencySymbol } from '$lib/shared/enums';
-	import type { UpcomingPurchaseOrderDue } from '$lib/server/db/queries/purchaseOrderCreditSchedule';
-	import { formatDateOnly } from '$lib/utils';
+	import { PurchaseOrderDueBadge } from '#lib/components/ui/index.js';
+	import { CurrencyCode } from '#lib/shared/enums/index.js';
+	import { getCurrencySymbol } from '#lib/shared/enums/index.js';
+	import type { UpcomingPurchaseOrderDue } from '#lib/server/db/queries/purchaseOrderCreditSchedule.js';
+	import { formatDateOnly } from '#lib/utils/index.js';
 
 	interface Props {
 		dues: UpcomingPurchaseOrderDue[];

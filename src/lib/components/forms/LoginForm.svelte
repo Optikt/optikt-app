@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { login } from '$lib/remote/auth.remote';
+	import { login } from '#lib/remote/auth.remote.js';
 	import { ArrowRight, CircleAlert, Eye, EyeOff, Lock, Mail } from '@lucide/svelte';
 
 	const isLoading = $derived(login.pending > 0);

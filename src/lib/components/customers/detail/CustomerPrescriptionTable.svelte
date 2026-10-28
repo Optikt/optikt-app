@@ -3,9 +3,9 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
-	import { AppBadge, LensTypeBadge, TreatmentBadge } from '$lib/components/ui/badges';
-	import { formatAxis, formatDate, formatDpNp, formatOpticalValue } from '$lib/utils';
-	import type { Prescription } from '$lib/server/db/schema';
+	import { AppBadge, LensTypeBadge, TreatmentBadge } from '#lib/components/ui/badges/index.js';
+	import { formatAxis, formatDate, formatDpNp, formatOpticalValue } from '#lib/utils/index.js';
+	import type { Prescription } from '#lib/server/db/schema/index.js';
 	import PrescriptionEyeDetail from './PrescriptionEyeDetail.svelte';
 
 	interface Props {

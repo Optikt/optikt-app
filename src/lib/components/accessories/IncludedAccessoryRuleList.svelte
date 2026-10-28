@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Package2, Paperclip, Trash2 } from '@lucide/svelte';
-	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
-	import { formatPrice } from '$lib/utils';
+	import { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface AccessoryRule {
 		id: number;

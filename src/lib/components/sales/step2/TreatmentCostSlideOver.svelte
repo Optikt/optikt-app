@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { X, Check } from '@lucide/svelte';
-	import { SlideOver } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
+	import { SlideOver } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { untrack } from 'svelte';
 
 	interface Props {

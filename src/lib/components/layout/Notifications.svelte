@@ -9,11 +9,11 @@
 		fetchUnreadNotificationsCount,
 		markAllNotificationsReadCommand,
 		markNotificationReadCommand
-	} from '$lib/remote/notifications.remote';
-	import { fromISO, nowISO, toRelative } from '$lib/dates';
-	import type { NotificationListItem } from '$lib/server/db/queries/notifications';
-	import { NotificationSeverity } from '$lib/shared/enums';
-	import { getErrorMessage } from '$lib/utils';
+	} from '#lib/remote/notifications.remote.js';
+	import { fromISO, nowISO, toRelative } from '#lib/dates.js';
+	import type { NotificationListItem } from '#lib/server/db/queries/notifications.js';
+	import { NotificationSeverity } from '#lib/shared/enums/index.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 
 	let open = $state(false);
 	let loading = $state(false);

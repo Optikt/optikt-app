@@ -5,10 +5,10 @@ import {
 	UpdateQuoteSchema,
 	ListQuotesSchema,
 	AssignQuoteCustomerSchema
-} from '$lib/schemas/quotes';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { DiscountType } from '$lib/shared/enums';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
+} from '#lib/schemas/quotes.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 

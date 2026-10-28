@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { ReceiptText, X } from '@lucide/svelte';
-	import { AppBadge, SlideOver } from '$lib/components/ui';
-	import { PaymentForm } from '$lib/components/sales';
-	import { formatPrice } from '$lib/utils';
+	import { AppBadge, SlideOver } from '#lib/components/ui/index.js';
+	import { PaymentForm } from '#lib/components/sales/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		open: boolean;

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { ArrowRightLeft } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { getInventoryModeLabel, getPriceTypeLabel } from '$lib/shared/enums/lensTypes';
-	import { getLensTaxSummary } from '$lib/components/lenses/detail/helpers';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
+	import { getInventoryModeLabel, getPriceTypeLabel } from '#lib/shared/enums/lensTypes.js';
+	import { getLensTaxSummary } from '#lib/components/lenses/detail/helpers.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
 
 	interface Props {
 		item: LensCatalogItemWithRelations;

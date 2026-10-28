@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import type { LucideIcon } from '$lib/types/index.js';
-	import type { StaticRoute } from '$lib/shared/routes';
+	import type { LucideIcon } from '#lib/types/index.js';
+	import type { StaticRoute } from '#lib/shared/routes.js';
 
 	let {
 		href,

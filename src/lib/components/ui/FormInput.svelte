@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Label } from '$lib/components/ui/label';
-	import { getFormErrorMessage } from '$lib/utils';
+	import type { RemoteFormIssue } from '$app/server';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { getFormErrorMessage } from '#lib/utils/index.js';
 	import type { ClassValue } from 'svelte/elements';
 
 	interface Props {

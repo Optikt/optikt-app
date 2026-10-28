@@ -1,14 +1,14 @@
-import { db } from '$lib/server/db';
-import { findLotById } from '$lib/server/db/queries/inventoryLots';
-import { findPurchaseOrderIdByLotId } from '$lib/server/db/queries/purchaseOrders/items';
-import { createInventoryMovement } from '$lib/server/db/queries/inventoryMovements';
-import { inventoryLots, products } from '$lib/server/db/schema';
+import { db } from '#lib/server/db/index.js';
+import { findLotById } from '#lib/server/db/queries/inventoryLots.js';
+import { findPurchaseOrderIdByLotId } from '#lib/server/db/queries/purchaseOrders/items.js';
+import { createInventoryMovement } from '#lib/server/db/queries/inventoryMovements.js';
+import { inventoryLots, products } from '#lib/server/db/schema/index.js';
 import { eq, sql } from 'drizzle-orm';
-import { InventoryMovementType, MovementReferenceType } from '$lib/shared/enums';
-import { getErrorMessage } from '$lib/utils';
-import { nowISO } from '$lib/dates';
-import type { RevertLotInput } from '$lib/schemas/inventory';
-import type { ActionContext } from '$lib/server/actionContext';
+import { InventoryMovementType, MovementReferenceType } from '#lib/shared/enums/index.js';
+import { getErrorMessage } from '#lib/utils/index.js';
+import { nowISO } from '#lib/dates.js';
+import type { RevertLotInput } from '#lib/schemas/inventory.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 export async function revertFullLotCore(data: RevertLotInput, ctx: ActionContext) {
 	const lot = await findLotById(data.lotId);

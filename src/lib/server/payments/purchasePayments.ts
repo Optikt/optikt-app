@@ -1,24 +1,24 @@
-import type { DbOrTx } from '$lib/server/db/types';
-import type { PurchaseOrder } from '$lib/server/db/schema';
-import type { PurchasePaymentMethod, CurrencyCode } from '$lib/shared/enums';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import type { PurchaseOrder } from '#lib/server/db/schema/index.js';
+import type { PurchasePaymentMethod, CurrencyCode } from '#lib/shared/enums/index.js';
 
-import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { getPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
 import {
 	createPurchaseOrderPayment,
 	getNextPurchaseOrderPaymentNumber,
 	getPurchaseOrderPayments,
 	voidPurchaseOrderPayment as voidPurchaseOrderPaymentQuery
-} from '$lib/server/db/queries/purchaseOrderPayments';
+} from '#lib/server/db/queries/purchaseOrderPayments.js';
 import {
 	createPurchaseOrderEarlyPaymentBenefit,
 	getPurchaseOrderEarlyPaymentBenefits,
 	voidPurchaseOrderEarlyPaymentBenefitsByPayment
-} from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
+} from '#lib/server/db/queries/purchaseOrderEarlyPaymentBenefits.js';
 
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
 export interface PurchaseOrderEarlyPaymentBenefitSubmission {
 	amountUsdBcv: number;

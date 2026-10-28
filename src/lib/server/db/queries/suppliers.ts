@@ -1,6 +1,6 @@
 import { eq, isNull, isNotNull, and, ilike, asc, desc, type AnyColumn } from 'drizzle-orm';
 import type { SelectedFields } from 'drizzle-orm/pg-core';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 import {
 	suppliers,
 	supplierTreatments,
@@ -8,9 +8,9 @@ import {
 	type NewSupplier,
 	type SupplierTreatment,
 	type NewSupplierTreatment
-} from '$lib/server/db/schema';
-import type { DbOrTx, InferSelectedRow } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx, InferSelectedRow } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
 
 /** Sortable supplier columns */
 export type SupplierOrderBy = 'name' | 'type' | 'createdAt' | 'updatedAt';

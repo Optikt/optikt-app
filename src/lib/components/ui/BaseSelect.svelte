@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Svelecte from 'svelecte';
-	import { Label } from '$lib/components/ui/label';
+	import { Label } from '#lib/components/ui/label/index.js';
 	import type { ComponentProps, Snippet } from 'svelte';
 
 	type SvelecteProps = ComponentProps<typeof Svelecte>;

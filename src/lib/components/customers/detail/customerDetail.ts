@@ -1,5 +1,5 @@
-import { parseISODateToLocal } from '$lib/utils';
-import type { CustomerGender } from '$lib/shared/enums/customerGenders';
+import { parseISODateToLocal } from '#lib/utils/index.js';
+import type { CustomerGender } from '#lib/shared/enums/customerGenders.js';
 
 export interface CustomerNameLike {
 	firstName?: string | null;

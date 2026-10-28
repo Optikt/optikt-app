@@ -31,8 +31,8 @@ import {
 	type SQL
 } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { db } from '$lib/server/db';
-import { relevanceScoreOrderSql } from '$lib/server/db/search';
+import { db } from '#lib/server/db/index.js';
+import { relevanceScoreOrderSql } from '#lib/server/db/search.js';
 import {
 	purchaseOrders,
 	purchaseOrderItems,
@@ -40,11 +40,11 @@ import {
 	users,
 	type PurchaseOrder,
 	type NewPurchaseOrder
-} from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
-import { PurchaseOrderStatus } from '$lib/shared/enums';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
 
-import { nowISO } from '$lib/dates';
+import { nowISO } from '#lib/dates.js';
 
 // ---------------------------------------------------------------------------
 // Types

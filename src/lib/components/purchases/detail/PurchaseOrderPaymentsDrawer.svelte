@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { ReceiptText, X } from '@lucide/svelte';
-	import { AppBadge, SlideOver } from '$lib/components/ui';
-	import PaymentForm from '$lib/components/sales/PaymentForm.svelte';
-	import type { PaymentComposerRequest } from '$lib/components/sales/payments/paymentFormDerived';
+	import { AppBadge, SlideOver } from '#lib/components/ui/index.js';
+	import PaymentForm from '#lib/components/sales/PaymentForm.svelte';
+	import type { PaymentComposerRequest } from '#lib/components/sales/payments/paymentFormDerived.js';
 	import type {
 		PurchaseOrderBalanceSummary,
 		PurchaseOrderDueStatus
-	} from '$lib/shared/purchaseOrderCredit';
-	import type { PurchaseOrder, PurchaseOrderEarlyPaymentBenefit } from '$lib/server/db/schema';
-	import type { PurchaseOrderPaymentWithUsers } from '$lib/server/db/queries/purchaseOrderPayments';
-	import { formatPrice } from '$lib/utils';
+	} from '#lib/shared/purchaseOrderCredit.js';
+	import type {
+		PurchaseOrder,
+		PurchaseOrderEarlyPaymentBenefit
+	} from '#lib/server/db/schema/index.js';
+	import type { PurchaseOrderPaymentWithUsers } from '#lib/server/db/queries/purchaseOrderPayments.js';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		open: boolean;

@@ -11,11 +11,11 @@ import type {
 import { buildSaleConditions, saleSearchFields } from './shared';
 import { eq, isNull, and, desc, asc, max, count, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { db } from '$lib/server/db';
-import { relevanceScoreOrderSql } from '$lib/server/db/search';
-import type { DbOrTx } from '$lib/server/db/types';
+import { db } from '#lib/server/db/index.js';
+import { relevanceScoreOrderSql } from '#lib/server/db/search.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 
-import { sales, customers, users, type Sale } from '$lib/server/db/schema';
+import { sales, customers, users, type Sale } from '#lib/server/db/schema/index.js';
 import type { AnyColumn } from 'drizzle-orm';
 
 /** Column map for orderBy (saleDate is an alias of createdAt — single date truth) */

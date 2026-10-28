@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { AlertTriangle } from '@lucide/svelte';
-	import { EXPENSE_CATEGORY_LABELS } from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
+	import { EXPENSE_CATEGORY_LABELS } from '#lib/shared/enums/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
 	import { formatPct } from './cashReport';
 	import {
 		desktopLabelClass,
@@ -12,7 +12,7 @@
 		mobileSurfaceClass,
 		mobileValueClass
 	} from './cashClasses';
-	import type { CashReport } from '$lib/server/db/queries/cash/report';
+	import type { CashReport } from '#lib/server/db/queries/cash/report.js';
 
 	interface Props {
 		report: CashReport;

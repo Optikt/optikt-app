@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PurchaseOrderItemType } from '$lib/shared/enums';
+import { PurchaseOrderItemType } from '#lib/shared/enums/index.js';
 import {
 	resolvePurchaseOrderItemReviewedState,
 	resolvePurchaseOrderItemZeroPriceIntentionalState

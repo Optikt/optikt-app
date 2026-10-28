@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { Eye, SquarePen, Trash2 } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { LensCatalogSource } from '$lib/shared/enums';
-	import { collapseRangesForDisplay } from '$lib/utils/opticalRange';
-	import { formatPrice } from '$lib/utils';
-	import { AppBadge } from '$lib/components/ui';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { LensCatalogSource } from '#lib/shared/enums/index.js';
+	import { collapseRangesForDisplay } from '#lib/utils/opticalRange.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { AppBadge } from '#lib/components/ui/index.js';
 	import {
 		sourceMicroBadgeClass,
 		sourceMicroBadgeLabel,

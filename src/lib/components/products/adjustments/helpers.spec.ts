@@ -7,7 +7,7 @@ import {
 	getNotesRemaining,
 	getProjectedLotQuantity
 } from './helpers';
-import { AdjustmentReason, InventoryMovementType } from '$lib/shared/enums';
+import { AdjustmentReason, InventoryMovementType } from '#lib/shared/enums/index.js';
 
 describe('product adjustment helpers', () => {
 	it('builds the initial step state before a lot is selected', () => {

@@ -3,7 +3,7 @@
 	import CustomerLookupInput from '../CustomerLookupInput.svelte';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
-	import type { Customer } from '$lib/server/db/schema';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import type { NewCustomerData } from '../newSaleTypes';
 
 	interface Props {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn, type WithElementRef, type WithoutChildrenOrChild } from '$lib/utils';
+	import { cn, type WithElementRef, type WithoutChildrenOrChild } from '#lib/utils/index.js';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { getChartContext, Tooltip as TooltipPrimitive } from 'layerchart';
 	import type { TooltipSeries } from 'layerchart';

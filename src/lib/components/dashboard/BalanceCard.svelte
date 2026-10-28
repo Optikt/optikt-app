@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Wallet, ArrowRight } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	let { amount, count }: { amount: number; count: number } = $props();
 </script>

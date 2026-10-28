@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { formatPrice } from '$lib/utils';
-	import { DiscountType } from '$lib/shared/enums';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { DiscountType } from '#lib/shared/enums/index.js';
 
 	interface TaxBreakdown {
 		taxableBase: number;

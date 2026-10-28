@@ -1,4 +1,4 @@
-import type { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
+import type { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
 
 export interface AccessoryProductSummary {
 	id: string;

@@ -11,13 +11,13 @@
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
-	import { listCustomers } from '$lib/remote/customers.remote';
-	import { CustomersTable } from '$lib/components/customers';
-	import { PageHeader } from '$lib/components/ui';
-	import { canOperate } from '$lib/shared/enums';
-	import type { Customer } from '$lib/server/db/schema';
-	import type { PaginatedResult } from '$lib/types';
+	} from '#lib/utils/index.js';
+	import { listCustomers } from '#lib/remote/customers.remote.js';
+	import { CustomersTable } from '#lib/components/customers/index.js';
+	import { PageHeader } from '#lib/components/ui/index.js';
+	import { canOperate } from '#lib/shared/enums/index.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import { untrack } from 'svelte';
 
 	// Server data

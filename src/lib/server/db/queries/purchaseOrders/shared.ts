@@ -5,22 +5,26 @@
 import type { PurchaseOrderFilterOptions, PurchaseOrderWithRelations } from './types';
 import { eq, and, isNull, inArray, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
-import { buildTokenSearchConditions } from '$lib/server/db/search';
+import { db } from '#lib/server/db/index.js';
+import { buildTokenSearchConditions } from '#lib/server/db/search.js';
 import {
 	purchaseOrders,
 	purchaseOrderItems,
 	purchaseOrderPayments,
 	purchaseOrderEarlyPaymentBenefits,
 	suppliers
-} from '$lib/server/db/schema';
+} from '#lib/server/db/schema/index.js';
 
-import { PurchaseOrderStatus, PurchaseDiscountType, PurchasePaymentTerms } from '$lib/shared/enums';
+import {
+	PurchaseOrderStatus,
+	PurchaseDiscountType,
+	PurchasePaymentTerms
+} from '#lib/shared/enums/index.js';
 
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
 // ---------------------------------------------------------------------------
 // Types

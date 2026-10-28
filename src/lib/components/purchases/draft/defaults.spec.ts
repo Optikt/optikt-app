@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PurchaseOrderItemWithProduct } from '$lib/server/db/queries/purchaseOrders/types';
-import { PurchaseDocumentType, PurchaseOrderItemType } from '$lib/shared/enums';
+import type { PurchaseOrderItemWithProduct } from '#lib/server/db/queries/purchaseOrders/types.js';
+import { PurchaseDocumentType, PurchaseOrderItemType } from '#lib/shared/enums/index.js';
 
 import {
 	applyLensDefaults,

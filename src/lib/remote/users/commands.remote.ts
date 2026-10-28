@@ -5,11 +5,11 @@
 import { error } from '@sveltejs/kit';
 import { command } from '$app/server';
 import { hash } from '@node-rs/argon2';
-import { getCurrentUser, requireAdmin, requireUserAdmin } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { isManagerDeletingProtectedRole, isLastAdmin } from '$lib/shared/user-deletion-rules';
-import { db } from '$lib/server/db';
-import { users } from '$lib/server/db/schema';
+import { getCurrentUser, requireAdmin, requireUserAdmin } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { isManagerDeletingProtectedRole, isLastAdmin } from '#lib/shared/user-deletion-rules.js';
+import { db } from '#lib/server/db/index.js';
+import { users } from '#lib/server/db/schema/index.js';
 import {
 	findUserByEmail,
 	findUserByUsername,
@@ -19,8 +19,8 @@ import {
 	updateUser as dbUpdateUser,
 	restoreUser as dbRestoreUser,
 	countActiveAdmins
-} from '$lib/server/db/queries/users';
-import { softDelete, restore } from '$lib/server/db/queries/deletedItems';
+} from '#lib/server/db/queries/users.js';
+import { softDelete, restore } from '#lib/server/db/queries/deletedItems.js';
 import { eq, or, ilike, and, isNull, count, desc } from 'drizzle-orm';
 
 // Import schemas
@@ -30,10 +30,10 @@ import {
 	UpdateUserSchema,
 	UserIdSchema,
 	ReactivateUserSchema
-} from '$lib/schemas/users';
+} from '#lib/schemas/users.js';
 
-import type { UserListItem, PaginatedUsers, CreateUserResult } from '$lib/types/users';
-import { nowISO } from '$lib/dates';
+import type { UserListItem, PaginatedUsers, CreateUserResult } from '#lib/types/users.js';
+import { nowISO } from '#lib/dates.js';
 
 /**
  * List users with pagination, search, and filtering

@@ -8,12 +8,12 @@
 		PurchaseFilterBar,
 		PurchaseOrdersTable,
 		PurchaseStatsCards
-	} from '$lib/components/purchases';
-	import { PageHeader } from '$lib/components/ui';
-	import { listPurchaseOrders } from '$lib/remote/purchaseOrders/queries.remote';
-	import { PurchaseOrderStatus, PurchaseOrderUiState } from '$lib/shared/enums';
-	import type { PurchaseOrderWithRelations } from '$lib/server/db/queries/purchaseOrders/types';
-	import type { PaginatedResult } from '$lib/types';
+	} from '#lib/components/purchases/index.js';
+	import { PageHeader } from '#lib/components/ui/index.js';
+	import { listPurchaseOrders } from '#lib/remote/purchaseOrders/queries.remote.js';
+	import { PurchaseOrderStatus, PurchaseOrderUiState } from '#lib/shared/enums/index.js';
+	import type { PurchaseOrderWithRelations } from '#lib/server/db/queries/purchaseOrders/types.js';
+	import type { PaginatedResult } from '#lib/types/index.js';
 	import {
 		getErrorMessage,
 		parseBooleanParam,
@@ -21,7 +21,7 @@
 		replaceUrlSearch,
 		saveReferrerParams,
 		setQueryParam
-	} from '$lib/utils';
+	} from '#lib/utils/index.js';
 	import type { PageData } from './$types';
 	import { untrack } from 'svelte';
 

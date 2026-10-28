@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatPrice } from '$lib/utils';
+	import { formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		total: number;

@@ -1,8 +1,9 @@
-import type { Handle, HandleServerError, HandleValidationError } from '@sveltejs/kit';
-import * as auth from '$lib/server/auth';
-import { registerPdfBrowserShutdown } from '$lib/server/pdf';
-import { logger } from '$lib/utils/logger';
-import { buildValidationMessage } from '$lib/utils/validationError';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
+import type { HandleValidationError } from '@sveltejs/kit';
+import * as auth from '#lib/server/auth.js';
+import { registerPdfBrowserShutdown } from '#lib/server/pdf.js';
+import { logger } from '#lib/utils/logger.js';
+import { buildValidationMessage } from '#lib/utils/validationError.js';
 
 registerPdfBrowserShutdown();
 

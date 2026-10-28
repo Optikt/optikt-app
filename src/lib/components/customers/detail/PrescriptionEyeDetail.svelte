@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatAxis, formatOpticalValue } from '$lib/utils';
+	import { formatAxis, formatOpticalValue } from '#lib/utils/index.js';
 
 	interface Props {
 		side: 'OD' | 'OS';

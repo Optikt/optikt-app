@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LensType } from '$lib/shared/enums/lensTypes';
+import { LensType } from '#lib/shared/enums/lensTypes.js';
 
 import { createEmptyLensPair } from '../newSaleTypes';
 import {

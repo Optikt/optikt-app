@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SaleItemType, TreatmentCategory } from '$lib/shared/enums/lensTypes';
+import { SaleItemType, TreatmentCategory } from '#lib/shared/enums/lensTypes.js';
 import {
 	getPrintItemLabel,
 	getPrintItemLabelClass,

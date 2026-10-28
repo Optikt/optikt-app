@@ -2,8 +2,8 @@
 	import { ClipboardList } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { AppBadge, DataGrid } from '$lib/components/ui';
-	import { formatDate } from '$lib/utils';
+	import { AppBadge, DataGrid } from '#lib/components/ui/index.js';
+	import { formatDate } from '#lib/utils/index.js';
 	import {
 		getAdjustmentReasonLabel,
 		getInventoryMovementTypeLabel,
@@ -11,8 +11,8 @@
 		AdjustmentReason,
 		InventoryMovementType,
 		MovementReferenceType
-	} from '$lib/shared/enums';
-	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
+	} from '#lib/shared/enums/index.js';
+	import type { MovementWithDetails } from '#lib/server/db/queries/inventoryMovements.js';
 
 	interface Props {
 		movements: MovementWithDetails[];

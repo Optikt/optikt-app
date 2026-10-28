@@ -3,7 +3,7 @@
  * Defines the types of suppliers in the optical business
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 export enum SupplierType {
 	/** Distribuidor de productos terminados (monturas, lentes terminados, accesorios) */

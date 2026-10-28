@@ -3,7 +3,7 @@
  * Status workflow, payment methods, and discount types for the sales module
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 import { PaymentMethod } from './paymentMethods';
 
 export {

@@ -3,7 +3,11 @@
  * Zod schemas for validation in remote functions
  */
 import { z } from 'zod';
-import { SupplierType, ALL_CURRENCY_CODES, ALL_TREATMENT_CATEGORIES } from '$lib/shared/enums';
+import {
+	SupplierType,
+	ALL_CURRENCY_CODES,
+	ALL_TREATMENT_CATEGORIES
+} from '#lib/shared/enums/index.js';
 import {
 	PhoneSchema,
 	OptionalPhoneSchema,

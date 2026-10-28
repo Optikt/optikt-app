@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { formatPrice } from '$lib/utils';
-	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { DiscountType, type DiscountType as DiscountTypeEnum } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		discount: number;

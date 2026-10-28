@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { DiscountType } from '$lib/shared/enums';
-import { FreeItemCategory, LensType, SaleItemType } from '$lib/shared/enums/lensTypes';
-import type { SaleItemWithDetails } from '$lib/server/db/queries/sales/types';
-import type { SupplierTreatment } from '$lib/server/db/schema';
+import { DiscountType } from '#lib/shared/enums/index.js';
+import { FreeItemCategory, LensType, SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import type { SaleItemWithDetails } from '#lib/server/db/queries/sales/types.js';
+import type { SupplierTreatment } from '#lib/server/db/schema/index.js';
 import { cacheLensItem } from './catalogCache.svelte';
 import {
 	applyLensEdit,

@@ -4,7 +4,7 @@ import {
 	calculateUsdBcvFromPaymentAmount,
 	getDefaultPaymentCalculationMode
 } from './paymentFormCalculations';
-import { PaymentMethod } from '$lib/shared/enums';
+import { PaymentMethod } from '#lib/shared/enums/index.js';
 
 describe('getDefaultPaymentCalculationMode', () => {
 	it('defaults bolivar methods to target mode', () => {

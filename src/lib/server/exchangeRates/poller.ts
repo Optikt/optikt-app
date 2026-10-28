@@ -6,7 +6,7 @@ import {
 } from './service';
 import { emitRatesUpdated } from './events';
 import { publishExchangeRatesTransition, syncExchangeRatesHealthState } from './health';
-import { logger } from '$lib/utils/logger';
+import { logger } from '#lib/utils/logger.js';
 
 let exchangeRatesPoller: ReturnType<typeof setInterval> | null = null;
 

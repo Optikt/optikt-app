@@ -1,15 +1,15 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { requirePageRole } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
-import { findLensCatalogItemById } from '$lib/server/db/queries/lenses/catalog';
-import { getAllLensMaterials } from '$lib/server/db/queries/lenses/materials';
-import { getLensCatalogDistinctValues } from '$lib/server/db/queries/lenses/pending';
+import { requirePageRole } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import { findLensCatalogItemById } from '#lib/server/db/queries/lenses/catalog.js';
+import { getAllLensMaterials } from '#lib/server/db/queries/lenses/materials.js';
+import { getLensCatalogDistinctValues } from '#lib/server/db/queries/lenses/pending.js';
 import {
 	getTechnologiesBySupplier,
 	findLensTechnologyById
-} from '$lib/server/db/queries/lenses/technologies';
-import { getAllSuppliers } from '$lib/server/db/queries/suppliers';
+} from '#lib/server/db/queries/lenses/technologies.js';
+import { getAllSuppliers } from '#lib/server/db/queries/suppliers.js';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	requirePageRole(locals, UserRole.ADMIN, UserRole.MANAGER);

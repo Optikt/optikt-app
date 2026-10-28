@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { AppBadge } from '$lib/components/ui';
-	import type { InventoryLot } from '$lib/server/db/schema';
-	import { formatDate, formatPrice } from '$lib/utils';
+	import { AppBadge } from '#lib/components/ui/index.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
+	import { formatDate, formatPrice } from '#lib/utils/index.js';
 
 	interface Props {
 		activeLots: InventoryLot[];

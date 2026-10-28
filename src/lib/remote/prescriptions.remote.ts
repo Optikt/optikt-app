@@ -3,8 +3,8 @@
  * Server-side functions for prescription management
  */
 import { query, form, command } from '$app/server';
-import { requireAuth, requireRole, requireAdmin } from '$lib/server/guards';
-import { UserRole } from '$lib/shared/enums';
+import { requireAuth, requireRole, requireAdmin } from '#lib/server/guards.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 import { invalid } from '@sveltejs/kit';
 import {
 	CreatePrescriptionSchema,
@@ -13,7 +13,7 @@ import {
 	CustomerIdForPrescriptionSchema,
 	SetCurrentPrescriptionSchema,
 	type PrescriptionFieldsInput
-} from '$lib/schemas/prescriptions';
+} from '#lib/schemas/prescriptions.js';
 import {
 	getCustomerPrescriptions,
 	getLatestPrescription,
@@ -22,16 +22,16 @@ import {
 	updatePrescription,
 	findCustomerById,
 	unsetCurrentPrescriptions
-} from '$lib/server/db/queries/customers';
-import type { Prescription } from '$lib/server/db/schema';
-import { auditService, getAuditContext } from '$lib/server/audit';
+} from '#lib/server/db/queries/customers.js';
+import type { Prescription } from '#lib/server/db/schema/index.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 import {
 	normalizeOpticalValue,
 	buildTreatments,
 	toPrescriptionInsert
-} from '$lib/utils/prescription';
-import { db } from '$lib/server/db';
-import { softDelete } from '$lib/server/db/queries/deletedItems';
+} from '#lib/utils/prescription.js';
+import { db } from '#lib/server/db/index.js';
+import { softDelete } from '#lib/server/db/queries/deletedItems.js';
 
 /**
  * List all prescriptions for a customer

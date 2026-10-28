@@ -1,15 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Label } from '$lib/components/ui/label';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { toast } from 'svelte-sonner';
-	import { ALL_ROLES, UserRole } from '$lib/shared/enums';
-	import { createUserForm, updateUserForm } from '$lib/remote/users/forms.remote';
-	import { FormInput, PasswordField } from '$lib/components/ui';
-	import { getErrorMessage, toastUnboundErrors } from '$lib/utils';
-	import { generateUUID } from '$lib/utils/generateUUID';
-	import type { UserListItem, CreateUserResult } from '$lib/types/users';
+	import { ALL_ROLES, UserRole } from '#lib/shared/enums/index.js';
+	import { createUserForm, updateUserForm } from '#lib/remote/users/forms.remote.js';
+	import { FormInput, PasswordField } from '#lib/components/ui/index.js';
+	import { getErrorMessage, toastUnboundErrors } from '#lib/utils/index.js';
+	import { generateUUID } from '#lib/utils/generateUUID.js';
+	import type { UserListItem, CreateUserResult } from '#lib/types/users.js';
 
 	interface Props {
 		open: boolean;

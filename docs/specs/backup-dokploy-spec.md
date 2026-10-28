@@ -112,7 +112,7 @@ Cambios:
 Nuevo handler:
 
 ```ts
-import { notifyBackupCreated, notifyBackupFailed } from '$lib/server/notifications/service';
+import { notifyBackupCreated, notifyBackupFailed } from '#lib/server/notifications/service.js';
 
 // ... auth checks igual que antes ...
 
@@ -189,10 +189,10 @@ export async function getRecentBackupNotifications(limit = 50, executor?: DbOrTx
 **Archivo:** `src/lib/remote/backups.remote.ts` (nuevo)
 
 ```ts
-import { command } from '$lib/remote';
+import { command } from '#lib/remote/index.js';
 import { z } from 'zod';
-import { requireUserAdmin } from '$lib/server/guards';
-import { getRecentBackupNotifications } from '$lib/server/db/queries/notifications';
+import { requireUserAdmin } from '#lib/server/guards.js';
+import { getRecentBackupNotifications } from '#lib/server/db/queries/notifications.js';
 import { env } from '$env/dynamic/private';
 
 // Schemas
@@ -305,8 +305,8 @@ export const getBackupStatus = command(GetBackupStatusSchema, async (_input, ctx
 **Archivo:** `src/routes/(app)/backups/+page.server.ts` (nuevo)
 
 ```ts
-import { requireUserAdmin } from '$lib/server/guards';
-import { listBackupHistory } from '$lib/remote/backups.remote';
+import { requireUserAdmin } from '#lib/server/guards.js';
+import { listBackupHistory } from '#lib/remote/backups.remote.js';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {

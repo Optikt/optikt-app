@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LensPriceType } from '$lib/shared/enums/lensTypes';
+import { LensPriceType } from '#lib/shared/enums/lensTypes.js';
 import { calculateLensPricing, type LensPricingInput } from './lensFormPricing';
 
 function input(overrides: Partial<LensPricingInput> = {}): LensPricingInput {

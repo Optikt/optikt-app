@@ -1,8 +1,11 @@
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getExchangeRatesSnapshot, refreshExchangeRates } from '$lib/server/exchangeRates/service';
-import { emitRatesUpdated } from '$lib/server/exchangeRates/events';
-import { publishExchangeRatesTransition } from '$lib/server/exchangeRates/health';
+import {
+	getExchangeRatesSnapshot,
+	refreshExchangeRates
+} from '#lib/server/exchangeRates/service.js';
+import { emitRatesUpdated } from '#lib/server/exchangeRates/events.js';
+import { publishExchangeRatesTransition } from '#lib/server/exchangeRates/health.js';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	if (!locals.user) {

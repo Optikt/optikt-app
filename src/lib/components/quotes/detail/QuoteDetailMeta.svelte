@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { QuoteStatusBadge } from '$lib/components/ui';
-	import { formatDateOnly } from '$lib/utils';
+	import { QuoteStatusBadge } from '#lib/components/ui/index.js';
+	import { formatDateOnly } from '#lib/utils/index.js';
 	import { quoteCustomerIdNumber, quoteCustomerName } from './quoteDetail';
-	import type { QuoteWithRelations } from '$lib/server/db/queries/quotes';
+	import type { QuoteWithRelations } from '#lib/server/db/queries/quotes.js';
 
 	interface Props {
 		quote: QuoteWithRelations;

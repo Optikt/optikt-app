@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import SaleStep3Summary from '$lib/components/sales/step3/SaleStep3Summary.svelte';
-	import type { SaleItemRow, NewCustomerData } from '$lib/components/sales/newSaleTypes';
-	import type { DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import type { Customer } from '$lib/server/db/schema';
+	import SaleStep3Summary from '#lib/components/sales/step3/SaleStep3Summary.svelte';
+	import type { SaleItemRow, NewCustomerData } from '#lib/components/sales/newSaleTypes.js';
+	import type { DiscountType as DiscountTypeEnum } from '#lib/shared/enums/index.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 
 	interface Props {
 		items: SaleItemRow[];

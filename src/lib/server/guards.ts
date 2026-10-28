@@ -4,7 +4,7 @@
  */
 import { error, redirect } from '@sveltejs/kit';
 import { getRequestEvent } from '$app/server';
-import { UserRole } from '$lib/shared/enums';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 // ============================================================================
 // PAGE-LEVEL GUARDS (for +page.server.ts / +layout.server.ts load functions)

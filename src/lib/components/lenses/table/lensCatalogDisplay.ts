@@ -1,5 +1,5 @@
-import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-import { LensCatalogSource, LensInventoryMode } from '$lib/shared/enums';
+import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+import { LensCatalogSource, LensInventoryMode } from '#lib/shared/enums/index.js';
 
 export const lensCatalogColumns = [
 	{ key: 'lens', label: 'Lente' },

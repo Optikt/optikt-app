@@ -1,6 +1,6 @@
 <script lang="ts">
 	import AppBadge from './AppBadge.svelte';
-	import { LensType, getLensTypeBadgeColor, getLensTypeLabel } from '$lib/shared/enums';
+	import { LensType, getLensTypeBadgeColor, getLensTypeLabel } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		/** The lens type value */

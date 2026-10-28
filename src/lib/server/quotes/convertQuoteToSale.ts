@@ -1,25 +1,25 @@
-import { toSaleTotalsLine, derivePrescriptionFromQuoteItems } from '$lib/remote/quotes/helpers';
-import { findQuoteById, getQuoteItemsWithDetails } from '$lib/server/db/queries/quotes';
+import { toSaleTotalsLine, derivePrescriptionFromQuoteItems } from '#lib/remote/quotes/helpers.js';
+import { findQuoteById, getQuoteItemsWithDetails } from '#lib/server/db/queries/quotes.js';
 import {
 	findCustomerById,
 	createPrescription,
 	unsetCurrentPrescriptions
-} from '$lib/server/db/queries/customers';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
-import { db } from '$lib/server/db';
-import { quotes, sales, type Prescription } from '$lib/server/db/schema';
-import { QuoteStatus } from '$lib/shared/contracts/quotes';
-import { SaleStatus } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { computeSaleTotals } from '$lib/shared/saleTotals';
-import { auditService } from '$lib/server/audit';
+} from '#lib/server/db/queries/customers.js';
+import { getNextOrderNumber } from '#lib/server/db/queries/sales/reads.js';
+import { db } from '#lib/server/db/index.js';
+import { quotes, sales, type Prescription } from '#lib/server/db/schema/index.js';
+import { QuoteStatus } from '#lib/shared/contracts/quotes.js';
+import { SaleStatus } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import { computeSaleTotals } from '#lib/shared/saleTotals.js';
+import { auditService } from '#lib/server/audit/index.js';
 import { eq } from 'drizzle-orm';
-import { nowISO, toISODate, nowUTC } from '$lib/dates';
-import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
-import { toPrescriptionInsert } from '$lib/utils/prescription';
-import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
-import type { ConvertQuoteInput } from '$lib/schemas/quotes';
-import type { ActionContext } from '$lib/server/actionContext';
+import { nowISO, toISODate, nowUTC } from '#lib/dates.js';
+import { getExchangeRateValue } from '#lib/server/exchangeRates/service.js';
+import { toPrescriptionInsert } from '#lib/utils/prescription.js';
+import { insertSaleItem } from '#lib/server/sales/saleItemInsert.js';
+import type { ConvertQuoteInput } from '#lib/schemas/quotes.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Convert a DRAFT quote to a sale.

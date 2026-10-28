@@ -1,9 +1,13 @@
 <script lang="ts">
-	import { PAYMENT_METHOD_LABELS, PaymentMethod, isBsPaymentMethod } from '$lib/shared/enums';
-	import { PaymentAmountCard, PaymentPreviewCard } from '$lib/components/payments';
-	import { PaymentReferenceField } from '$lib/components/ui';
+	import {
+		PAYMENT_METHOD_LABELS,
+		PaymentMethod,
+		isBsPaymentMethod
+	} from '#lib/shared/enums/index.js';
+	import { PaymentAmountCard, PaymentPreviewCard } from '#lib/components/payments/index.js';
+	import { PaymentReferenceField } from '#lib/components/ui/index.js';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
-	import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+	import type { EarlyPaymentDiscountSuggestion } from '#lib/shared/purchaseOrderCredit.js';
 	import type { PaymentFormKind } from './paymentFormDerived';
 
 	interface Props {

@@ -4,31 +4,31 @@
  */
 import { normalizeCreditTermsForWrite } from './helpers';
 import { command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { getErrorMessage } from '$lib/utils';
+import { requireAdmin } from '#lib/server/guards.js';
+import { getErrorMessage } from '#lib/utils/index.js';
 
-import { ApplyPriceSuggestionsSchema } from '$lib/schemas/purchaseOrders';
+import { ApplyPriceSuggestionsSchema } from '#lib/schemas/purchaseOrders.js';
 
-import { SetPurchaseOrderCreditTermsSchema } from '$lib/schemas/purchaseOrderCreditSchedule';
-import { getPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { SetPurchaseOrderCreditTermsSchema } from '#lib/schemas/purchaseOrderCreditSchedule.js';
+import { getPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
 import {
 	findPurchaseOrderById,
 	updatePurchaseOrder
-} from '$lib/server/db/queries/purchaseOrders/orders';
-import { getPurchaseOrderPayments } from '$lib/server/db/queries/purchaseOrderPayments';
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
+import { getPurchaseOrderPayments } from '#lib/server/db/queries/purchaseOrderPayments.js';
 
-import { getPurchaseOrderEarlyPaymentBenefits } from '$lib/server/db/queries/purchaseOrderEarlyPaymentBenefits';
-import { updateProduct, findProductById } from '$lib/server/db/queries/products';
+import { getPurchaseOrderEarlyPaymentBenefits } from '#lib/server/db/queries/purchaseOrderEarlyPaymentBenefits.js';
+import { updateProduct, findProductById } from '#lib/server/db/queries/products.js';
 
-import { db } from '$lib/server/db';
-import { PurchaseOrderStatus } from '$lib/shared/enums';
+import { db } from '#lib/server/db/index.js';
+import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
 
 import {
 	computePurchaseOrderBalance,
 	getPurchaseOrderDueStatus
-} from '$lib/shared/purchaseOrderCredit';
+} from '#lib/shared/purchaseOrderCredit.js';
 
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
 export const setPurchaseOrderCreditTermsCmd = command(
 	SetPurchaseOrderCreditTermsSchema,

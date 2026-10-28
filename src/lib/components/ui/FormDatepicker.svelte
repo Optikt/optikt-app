@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { RemoteFormIssue } from '@sveltejs/kit';
-	import { Label } from '$lib/components/ui/label';
-	import { getFormErrorMessage, dateToISODateString } from '$lib/utils';
+	import type { RemoteFormIssue } from '$app/server';
+	import { Label } from '#lib/components/ui/label/index.js';
+	import { getFormErrorMessage, dateToISODateString } from '#lib/utils/index.js';
 
 	interface Props {
 		value: Date | undefined;

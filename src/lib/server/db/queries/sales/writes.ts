@@ -3,11 +3,11 @@
  */
 import { eq } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
-import type { DbOrTx } from '$lib/server/db/types';
-import { nowISO } from '$lib/dates';
-import { sales, type Sale, type NewSale } from '$lib/server/db/schema';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { nowISO } from '#lib/dates.js';
+import { sales, type Sale, type NewSale } from '#lib/server/db/schema/index.js';
 
 /**
  * Create a new sale

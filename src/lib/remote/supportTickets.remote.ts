@@ -10,10 +10,10 @@ import {
 	ListSupportTicketsSchema,
 	SupportTicketIdSchema,
 	UpdateSupportTicketSchema
-} from '$lib/schemas/supportTickets';
-import { requireAdmin, requireAuth } from '$lib/server/guards';
-import { db } from '$lib/server/db';
-import { auditService, getAuditContext } from '$lib/server/audit';
+} from '#lib/schemas/supportTickets.js';
+import { requireAdmin, requireAuth } from '#lib/server/guards.js';
+import { db } from '#lib/server/db/index.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 import {
 	addSupportTicketChange,
 	addSupportTicketComment,
@@ -24,9 +24,9 @@ import {
 	listSupportTicketActivity,
 	listSupportTickets,
 	updateSupportTicket
-} from '$lib/server/db/queries/supportTickets';
-import { insertNotification } from '$lib/server/db/queries/notifications';
-import { canManageSupportTickets, canViewSupportTicket } from '$lib/shared/supportTickets';
+} from '#lib/server/db/queries/supportTickets.js';
+import { insertNotification } from '#lib/server/db/queries/notifications.js';
+import { canManageSupportTickets, canViewSupportTicket } from '#lib/shared/supportTickets.js';
 import {
 	NotificationSeverity,
 	NotificationType,
@@ -35,9 +35,9 @@ import {
 	type TicketPriority,
 	type TicketStatus,
 	UserRole
-} from '$lib/shared/enums';
-import { logger } from '$lib/utils/logger';
-import type { SupportTicket } from '$lib/server/db/schema';
+} from '#lib/shared/enums/index.js';
+import { logger } from '#lib/utils/logger.js';
+import type { SupportTicket } from '#lib/server/db/schema/index.js';
 
 export const listSupportTicketsQuery = query(ListSupportTicketsSchema, async (filters) => {
 	const user = requireAuth();

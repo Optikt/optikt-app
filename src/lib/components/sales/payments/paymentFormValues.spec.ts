@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PaymentMethod } from '$lib/shared/enums';
+import { PaymentMethod } from '#lib/shared/enums/index.js';
 import {
 	computePaymentFormValues,
 	type PaymentFormSelectionValues,

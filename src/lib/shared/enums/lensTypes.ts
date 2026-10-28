@@ -2,7 +2,7 @@
  * Lens related enums
  */
 
-import type { BadgeVariant } from '$lib/shared/badge-variants';
+import type { BadgeVariant } from '#lib/shared/badge-variants.js';
 
 export enum LensType {
 	MONOFOCAL = 'MONOFOCAL',

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChangeRecord, EntityType } from '$lib/server/db/schema';
+	import type { ChangeRecord, EntityType } from '#lib/server/db/schema/index.js';
 	import { getFieldLabel, formatChangeValue } from './display-utils';
 
 	interface Props {

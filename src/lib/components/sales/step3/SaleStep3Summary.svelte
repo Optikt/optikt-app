@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '$lib/utils';
-	import { calculateAge } from '$lib/dates';
+	import { formatPrice, getDiscountValueMax, isDiscountValueValid } from '#lib/utils/index.js';
+	import { calculateAge } from '#lib/dates.js';
 	import { calculateSaleSummarySubtotal, buildTaxItemsFromWizard } from '../saleItemHelpers';
 	import { computeAdjustedTaxBreakdown } from '../helpers/taxBreakdown';
-	import { DiscountType, type DiscountType as DiscountTypeEnum } from '$lib/shared/enums';
-	import type { Customer } from '$lib/server/db/schema';
+	import { DiscountType, type DiscountType as DiscountTypeEnum } from '#lib/shared/enums/index.js';
+	import type { Customer } from '#lib/server/db/schema/index.js';
 	import type { SaleItemRow, NewCustomerData } from '../newSaleTypes';
 	import SaleWizardFloatingActions from '../SaleWizardFloatingActions.svelte';
 	import { getContext } from 'svelte';
 	import { CATALOG_KEY, type CatalogData } from '../wizardContext';
-	import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
+	import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
 	import { formatTaxRate } from './summary/summaryViewModel';
 	import SummaryHeader from './summary/SummaryHeader.svelte';
 	import SummaryItemList from './summary/SummaryItemList.svelte';

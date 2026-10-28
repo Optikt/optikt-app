@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
-	import { UserRole } from '$lib/shared/enums';
+	import { UserRole } from '#lib/shared/enums/index.js';
 	import ProfileSettingsCard from './ProfileSettingsCard.svelte';
 	import BusinessSettingsCard from './BusinessSettingsCard.svelte';
 	import { untrack } from 'svelte';

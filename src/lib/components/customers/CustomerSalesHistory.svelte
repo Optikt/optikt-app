@@ -2,11 +2,11 @@
 	import { ChevronDown, CreditCard, ExternalLink } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
 	import { slide } from 'svelte/transition';
-	import { SaleStatusBadge } from '$lib/components/ui/badges';
-	import { formatDateOnly, formatCurrency } from '$lib/utils';
-	import { getPaymentMethodLabel } from '$lib/shared/enums/salesTypes';
-	import { SALE_ITEM_TYPE_LABELS } from '$lib/shared/enums/lensTypes';
-	import type { HistorySale } from '$lib/server/db/queries/customerHistory';
+	import { SaleStatusBadge } from '#lib/components/ui/badges/index.js';
+	import { formatDateOnly, formatCurrency } from '#lib/utils/index.js';
+	import { getPaymentMethodLabel } from '#lib/shared/enums/salesTypes.js';
+	import { SALE_ITEM_TYPE_LABELS } from '#lib/shared/enums/lensTypes.js';
+	import type { HistorySale } from '#lib/server/db/queries/customerHistory.js';
 
 	interface Props {
 		sales: HistorySale[];

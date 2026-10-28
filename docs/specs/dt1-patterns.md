@@ -23,7 +23,7 @@ Definir qué patrón aplicar en cada contexto de la descomposición DT1. Regla: 
 
 - **(a) DB executor:** `DbOrTx` (`src/lib/server/db/types.ts`) ya es seam de inyección (`executor: DbOrTx = db`). Formalizar interface `QueryExecutor` para que tests inyecten double en memoria. Habilitante de DT9.
 - **(b) Pagos entre dominios:** `PaymentSubmissionInput` (monto, método, moneda, referencia, rate) + adapters `SalePaymentAdapter` / `PurchasePaymentAdapter` → mapean a `addSalePayment`+`recalcSalePaidAmount` vs `addPurchaseOrderPayment`+recalculo crédito/saldos. UI deja de saber a qué dominio paga.
-- **(c) Transporte remote:** `query()`/`command()` de `$lib/remote` ya adaptan transporte SvelteKit — mantener wrapper, no reimplementar.
+- **(c) Transporte remote:** `query()`/`command()` de `#lib/remote/index.js` ya adaptan transporte SvelteKit — mantener wrapper, no reimplementar.
 
 ## 3. Factory — funciones puras, no clases
 

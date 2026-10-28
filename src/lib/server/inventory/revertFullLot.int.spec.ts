@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { revertFullLotCore } from './revertFullLot';
-import { db } from '$lib/server/db';
-import { inventoryLots, products } from '$lib/server/db/schema';
-import { resetDb } from '$lib/testing/integration/db';
+import { db } from '#lib/server/db/index.js';
+import { inventoryLots, products } from '#lib/server/db/schema/index.js';
+import { resetDb } from '#lib/testing/integration/db.js';
 import {
 	createInventoryLot,
 	createMaterial,
@@ -12,9 +12,9 @@ import {
 	createPurchaseOrderItem,
 	createSupplier,
 	createUser
-} from '$lib/testing/integration/factories';
-import { UserRole } from '$lib/shared/enums';
-import type { ActionContext } from '$lib/server/actionContext';
+} from '#lib/testing/integration/factories.js';
+import { UserRole } from '#lib/shared/enums/index.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 function ctx(userId: string): ActionContext {
 	return { userId, role: UserRole.ADMIN, ipAddress: '127.0.0.1', userAgent: null };

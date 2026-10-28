@@ -4,25 +4,25 @@
  */
 import { getPurchaseOrderFinanceIssues, normalizeCreditTermsForWrite } from './helpers';
 import { command } from '$app/server';
-import { requireAdmin } from '$lib/server/guards';
-import { getErrorMessage } from '$lib/utils';
-import { composeBusinessTimestamp } from '$lib/dates';
+import { requireAdmin } from '#lib/server/guards.js';
+import { getErrorMessage } from '#lib/utils/index.js';
+import { composeBusinessTimestamp } from '#lib/dates.js';
 
-import { CreatePurchaseOrderSchema } from '$lib/schemas/purchaseOrders';
+import { CreatePurchaseOrderSchema } from '#lib/schemas/purchaseOrders.js';
 
-import { createPurchaseOrderItems } from '$lib/server/db/queries/purchaseOrders/items';
+import { createPurchaseOrderItems } from '#lib/server/db/queries/purchaseOrders/items.js';
 import {
 	createPurchaseOrder,
 	updatePurchaseOrder,
 	getNextPONumber
-} from '$lib/server/db/queries/purchaseOrders/orders';
+} from '#lib/server/db/queries/purchaseOrders/orders.js';
 
-import { db } from '$lib/server/db';
-import { PurchaseOrderStatus } from '$lib/shared/enums';
-import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
+import { db } from '#lib/server/db/index.js';
+import { PurchaseOrderStatus } from '#lib/shared/enums/index.js';
+import { assignPurchaseOrderLineNumbers } from '#lib/shared/purchaseOrderLineNumbers.js';
 
-import { SOURCE_TO_CURRENCY_CODE } from '$lib/shared/purchaseOrderCurrencies';
-import { auditService, getAuditContext } from '$lib/server/audit';
+import { SOURCE_TO_CURRENCY_CODE } from '#lib/shared/purchaseOrderCurrencies.js';
+import { auditService, getAuditContext } from '#lib/server/audit/index.js';
 
 export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (data) => {
 	requireAdmin();

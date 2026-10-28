@@ -5,7 +5,7 @@
 import type { PurchaseOrderItemDraftInput, PurchaseOrderItemWithProduct } from './types';
 import { eq, asc } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db/index.js';
 
 import {
 	purchaseOrders,
@@ -16,12 +16,12 @@ import {
 	type PurchaseOrder,
 	type PurchaseOrderItem,
 	type NewPurchaseOrderItem
-} from '$lib/server/db/schema';
-import type { DbOrTx } from '$lib/server/db/types';
+} from '#lib/server/db/schema/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
 
-import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
+import { assignPurchaseOrderLineNumbers } from '#lib/shared/purchaseOrderLineNumbers.js';
 
-import { nowISO } from '$lib/dates';
+import { nowISO } from '#lib/dates.js';
 
 // ---------------------------------------------------------------------------
 // Types

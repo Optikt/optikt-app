@@ -2,7 +2,7 @@
 	import { PaymentFormModel } from './payments/paymentFormModel.svelte';
 	import PurchasePaymentModals from './payments/PurchasePaymentModals.svelte';
 	import PaymentRailSection from './payments/PaymentRailSection.svelte';
-	import { PaymentSelectionStep } from '$lib/components/payments';
+	import { PaymentSelectionStep } from '#lib/components/payments/index.js';
 	import type { PaymentFormProps } from './payments/paymentFormDerived';
 
 	let {

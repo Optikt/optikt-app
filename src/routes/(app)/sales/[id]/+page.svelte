@@ -8,32 +8,35 @@
 		SaleItemsTable,
 		SaleMovementsModal,
 		SaleStatusModal
-	} from '$lib/components/sales';
-	import { SaleAuditTimeline, SaleAuditHistoryDrawer } from '$lib/components/sales/detail';
-	import SaleDetailHeader from '$lib/components/sales/detail/SaleDetailHeader.svelte';
-	import SaleDetailNotices from '$lib/components/sales/detail/SaleDetailNotices.svelte';
-	import SaleDetailCustomerCard from '$lib/components/sales/detail/SaleDetailCustomerCard.svelte';
-	import SaleDetailSummary from '$lib/components/sales/detail/SaleDetailSummary.svelte';
-	import SaleDetailPayments from '$lib/components/sales/detail/SaleDetailPayments.svelte';
-	import SalePaymentDrawer from '$lib/components/sales/detail/SalePaymentDrawer.svelte';
-	import { PDFViewerModal } from '$lib/components/pdf';
-	import { canOperate, canManageSaleByOwner } from '$lib/shared/enums';
-	import { computeDiscount, formatDate, formatPrice, getBackUrl } from '$lib/utils';
-	import { getErrorMessage } from '$lib/utils/errors';
-	import { RefundStatus, SaleStatus, UserRole } from '$lib/shared/enums';
-	import { getExchangeRatesStore } from '$lib/stores/exchangeRates.svelte';
-	import { SaleItemType, FreeItemEnrichmentStatus } from '$lib/shared/enums/lensTypes';
-	import { computeTaxBreakdown } from '$lib/shared/tax';
-	import type { MovementWithDetails } from '$lib/server/db/queries/inventoryMovements';
-	import type { SaleItemWithDetails, SaleWithRelations } from '$lib/server/db/queries/sales/types';
-	import type { SalePayment } from '$lib/server/db/schema';
-	import { hasHalfLetterReceiptOverflowRisk } from '$lib/utils/printDocumentItems';
-	import { printTickeraReceipt } from '$lib/remote/printing.remote';
+	} from '#lib/components/sales/index.js';
+	import { SaleAuditTimeline, SaleAuditHistoryDrawer } from '#lib/components/sales/detail/index.js';
+	import SaleDetailHeader from '#lib/components/sales/detail/SaleDetailHeader.svelte';
+	import SaleDetailNotices from '#lib/components/sales/detail/SaleDetailNotices.svelte';
+	import SaleDetailCustomerCard from '#lib/components/sales/detail/SaleDetailCustomerCard.svelte';
+	import SaleDetailSummary from '#lib/components/sales/detail/SaleDetailSummary.svelte';
+	import SaleDetailPayments from '#lib/components/sales/detail/SaleDetailPayments.svelte';
+	import SalePaymentDrawer from '#lib/components/sales/detail/SalePaymentDrawer.svelte';
+	import { PDFViewerModal } from '#lib/components/pdf/index.js';
+	import { canOperate, canManageSaleByOwner } from '#lib/shared/enums/index.js';
+	import { computeDiscount, formatDate, formatPrice, getBackUrl } from '#lib/utils/index.js';
+	import { getErrorMessage } from '#lib/utils/errors.js';
+	import { RefundStatus, SaleStatus, UserRole } from '#lib/shared/enums/index.js';
+	import { getExchangeRatesStore } from '#lib/stores/exchangeRates.svelte.js';
+	import { SaleItemType, FreeItemEnrichmentStatus } from '#lib/shared/enums/lensTypes.js';
+	import { computeTaxBreakdown } from '#lib/shared/tax.js';
+	import type { MovementWithDetails } from '#lib/server/db/queries/inventoryMovements.js';
+	import type {
+		SaleItemWithDetails,
+		SaleWithRelations
+	} from '#lib/server/db/queries/sales/types.js';
+	import type { SalePayment } from '#lib/server/db/schema/index.js';
+	import { hasHalfLetterReceiptOverflowRisk } from '#lib/utils/printDocumentItems.js';
+	import { printTickeraReceipt } from '#lib/remote/printing.remote.js';
 	import {
 		customerName,
 		nextStatusTargets,
 		refundDecisionTitle
-	} from '$lib/components/sales/detail/saleDetail';
+	} from '#lib/components/sales/detail/saleDetail.js';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 

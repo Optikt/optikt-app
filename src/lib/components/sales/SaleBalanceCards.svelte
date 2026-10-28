@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { EconomicBreakdownCard } from '$lib/components/ui';
-	import { formatPrice } from '$lib/utils';
-	import { RefundStatus } from '$lib/shared/enums';
+	import { EconomicBreakdownCard } from '#lib/components/ui/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { RefundStatus } from '#lib/shared/enums/index.js';
 
 	interface TaxBreakdown {
 		taxableBase: number;

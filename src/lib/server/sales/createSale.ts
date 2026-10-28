@@ -1,21 +1,21 @@
-import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
-import { createPrescription, unsetCurrentPrescriptions } from '$lib/server/db/queries/customers';
-import { db } from '$lib/server/db';
-import { sales, type Customer, type Prescription } from '$lib/server/db/schema';
+import { getNextOrderNumber } from '#lib/server/db/queries/sales/reads.js';
+import { createPrescription, unsetCurrentPrescriptions } from '#lib/server/db/queries/customers.js';
+import { db } from '#lib/server/db/index.js';
+import { sales, type Customer, type Prescription } from '#lib/server/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { SaleStatus, UserRole } from '$lib/shared/enums';
-import { SaleItemType } from '$lib/shared/enums/lensTypes';
-import { auditService } from '$lib/server/audit';
-import { validateTreatmentItems } from '$lib/server/treatmentValidation';
-import { getExchangeRateValue } from '$lib/server/exchangeRates/service';
-import { nowISO, composeBusinessTimestamp } from '$lib/dates';
-import { toPrescriptionInsert } from '$lib/utils/prescription';
-import { DEFAULT_TAX_RATE } from '$lib/shared/tax';
-import { insertSaleItem } from '$lib/server/sales/saleItemInsert';
-import { computeDocumentTotals } from '$lib/server/documentTotals';
-import { createInlineCustomer, resolveCustomerReference } from '$lib/server/customerReference';
-import type { CreateSaleInput } from '$lib/schemas/sales';
-import type { ActionContext } from '$lib/server/actionContext';
+import { SaleStatus, UserRole } from '#lib/shared/enums/index.js';
+import { SaleItemType } from '#lib/shared/enums/lensTypes.js';
+import { auditService } from '#lib/server/audit/index.js';
+import { validateTreatmentItems } from '#lib/server/treatmentValidation.js';
+import { getExchangeRateValue } from '#lib/server/exchangeRates/service.js';
+import { nowISO, composeBusinessTimestamp } from '#lib/dates.js';
+import { toPrescriptionInsert } from '#lib/utils/prescription.js';
+import { DEFAULT_TAX_RATE } from '#lib/shared/tax.js';
+import { insertSaleItem } from '#lib/server/sales/saleItemInsert.js';
+import { computeDocumentTotals } from '#lib/server/documentTotals.js';
+import { createInlineCustomer, resolveCustomerReference } from '#lib/server/customerReference.js';
+import type { CreateSaleInput } from '#lib/schemas/sales.js';
+import type { ActionContext } from '#lib/server/actionContext.js';
 
 /**
  * Create a new sale with items in a single transaction.

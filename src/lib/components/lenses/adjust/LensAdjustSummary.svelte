@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { ManualAdjustmentType } from '$lib/components/products/adjustments/helpers';
-	import type { InventoryLot } from '$lib/server/db/schema';
-	import { InventoryMovementType } from '$lib/shared/enums';
+	import type { ManualAdjustmentType } from '#lib/components/products/adjustments/helpers.js';
+	import type { InventoryLot } from '#lib/server/db/schema/index.js';
+	import { InventoryMovementType } from '#lib/shared/enums/index.js';
 
 	interface Props {
 		adjustmentType: ManualAdjustmentType | null;

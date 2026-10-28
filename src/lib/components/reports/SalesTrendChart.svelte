@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { LineChart } from 'layerchart';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { cn, formatPrice, formatDateOnly, formatCompactPrice } from '$lib/utils';
-	import ChartContainer from '$lib/components/ui/chart/chart-container.svelte';
-	import ChartTooltip from '$lib/components/ui/chart/chart-tooltip.svelte';
-	import type { ChartConfig } from '$lib/components/ui/chart/chart-utils';
+	import { cn, formatPrice, formatDateOnly, formatCompactPrice } from '#lib/utils/index.js';
+	import ChartContainer from '#lib/components/ui/chart/chart-container.svelte';
+	import ChartTooltip from '#lib/components/ui/chart/chart-tooltip.svelte';
+	import type { ChartConfig } from '#lib/components/ui/chart/chart-utils.js';
 
 	interface SalesTrendPoint {
 		date: string;

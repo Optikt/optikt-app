@@ -2,18 +2,18 @@
 	import { Paperclip, Plus } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 
-	import AddIncludedAccessoryDialog from '$lib/components/accessories/AddIncludedAccessoryDialog.svelte';
-	import IncludedAccessoryRuleList from '$lib/components/accessories/IncludedAccessoryRuleList.svelte';
+	import AddIncludedAccessoryDialog from '#lib/components/accessories/AddIncludedAccessoryDialog.svelte';
+	import IncludedAccessoryRuleList from '#lib/components/accessories/IncludedAccessoryRuleList.svelte';
 	import {
 		deleteBrandAccessory,
 		getBrandAccessories,
 		upsertBrandAccessory
-	} from '$lib/remote/brandAccessories.remote';
-	import { listProducts } from '$lib/remote/products.remote';
-	import type { Brand } from '$lib/server/db/schema';
-	import { BrandAccessoryPriceMode } from '$lib/shared/enums/brandAccessoryPriceModes';
-	import { ProductType } from '$lib/shared/enums/productTypes';
-	import { getErrorMessage } from '$lib/utils';
+	} from '#lib/remote/brandAccessories.remote.js';
+	import { listProducts } from '#lib/remote/products.remote.js';
+	import type { Brand } from '#lib/server/db/schema/index.js';
+	import { BrandAccessoryPriceMode } from '#lib/shared/enums/brandAccessoryPriceModes.js';
+	import { ProductType } from '#lib/shared/enums/productTypes.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
 
 	interface AccessoryRule {
 		id: number;

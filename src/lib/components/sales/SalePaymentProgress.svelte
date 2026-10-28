@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { formatPrice } from '$lib/utils';
-	import type { SaleWithRelations } from '$lib/server/db/queries/sales/types';
+	import { formatPrice } from '#lib/utils/index.js';
+	import type { SaleWithRelations } from '#lib/server/db/queries/sales/types.js';
 
 	interface Props {
 		sale: SaleWithRelations;

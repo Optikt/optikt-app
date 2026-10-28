@@ -4,9 +4,9 @@
 		PurchaseDiscountType,
 		PurchaseDocumentType,
 		PurchaseSourceCurrency
-	} from '$lib/shared/enums';
-	import { formatPrice } from '$lib/utils';
-	import { formatAltAmount } from '$lib/utils/purchaseOrderDetail';
+	} from '#lib/shared/enums/index.js';
+	import { formatPrice } from '#lib/utils/index.js';
+	import { formatAltAmount } from '#lib/utils/purchaseOrderDetail.js';
 	import { calculatePurchaseOrderSummary } from '../purchaseOrderDraft';
 	import type { PurchaseOrderDraftItem } from '../purchaseOrderDraft';
 	import PricePair from '../PricePair.svelte';

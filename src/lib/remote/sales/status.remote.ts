@@ -3,12 +3,12 @@
  * Shell: auth + delegate. Logic lives in src/lib/server/sales/setSaleStatus.ts.
  */
 import { query, command } from '$app/server';
-import { requireAuth } from '$lib/server/guards';
-import { SetSaleStatusSchema } from '$lib/schemas/sales';
-import { getNextOrderNumber } from '$lib/server/db/queries/sales/reads';
-import { getActionContext } from '$lib/server/actionContext';
-import { setSaleStatusCore } from '$lib/server/sales/setSaleStatus';
-import { EmptySchema } from '$lib/schemas/common/dates';
+import { requireAuth } from '#lib/server/guards.js';
+import { SetSaleStatusSchema } from '#lib/schemas/sales.js';
+import { getNextOrderNumber } from '#lib/server/db/queries/sales/reads.js';
+import { getActionContext } from '#lib/server/actionContext.js';
+import { setSaleStatusCore } from '#lib/server/sales/setSaleStatus.js';
+import { EmptySchema } from '#lib/schemas/common/dates.js';
 
 /**
  * Set the sale status (manual transition, forward or backward).

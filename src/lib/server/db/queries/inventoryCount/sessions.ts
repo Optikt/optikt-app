@@ -17,12 +17,12 @@ import {
 import { getSessionLines } from './lines';
 import { and, desc, eq, gte, lte, type SQL } from 'drizzle-orm';
 
-import { db } from '$lib/server/db';
-import type { DbOrTx } from '$lib/server/db/types';
-import { canCloseInventoryCountSession } from '$lib/schemas/inventoryCount';
-import { inventoryCountLines, inventoryCountSessions, users } from '$lib/server/db/schema';
-import { fromISODate, nowISO, toEndOfDay, toUTCString } from '$lib/dates';
-import { UserRole } from '$lib/shared/enums';
+import { db } from '#lib/server/db/index.js';
+import type { DbOrTx } from '#lib/server/db/types.js';
+import { canCloseInventoryCountSession } from '#lib/schemas/inventoryCount.js';
+import { inventoryCountLines, inventoryCountSessions, users } from '#lib/server/db/schema/index.js';
+import { fromISODate, nowISO, toEndOfDay, toUTCString } from '#lib/dates.js';
+import { UserRole } from '#lib/shared/enums/index.js';
 
 export async function getActiveSession(
 	executor: DbOrTx = db

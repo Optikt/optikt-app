@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { Layers } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { deleteLensCatalogItemById } from '$lib/remote/lenses/catalog-stock.remote';
-	import type { LensCatalogItemWithRelations } from '$lib/server/db/queries/lenses/catalog';
-	import { getErrorMessage } from '$lib/utils';
-	import { ConfirmModal, DataGrid } from '$lib/components/ui';
+	import { deleteLensCatalogItemById } from '#lib/remote/lenses/catalog-stock.remote.js';
+	import type { LensCatalogItemWithRelations } from '#lib/server/db/queries/lenses/catalog.js';
+	import { getErrorMessage } from '#lib/utils/index.js';
+	import { ConfirmModal, DataGrid } from '#lib/components/ui/index.js';
 	import LensCatalogMobileCard from './table/LensCatalogMobileCard.svelte';
 	import LensCatalogRow from './table/LensCatalogRow.svelte';
 	import { lensCatalogColumns } from './table/lensCatalogDisplay';
