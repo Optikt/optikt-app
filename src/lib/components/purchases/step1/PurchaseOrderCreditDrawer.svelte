@@ -2,13 +2,20 @@
 	import { X } from '@lucide/svelte';
 	import { autoAnimate } from '@formkit/auto-animate';
 	import SlideOver from '$lib/components/ui/SlideOver.svelte';
+	import { PurchasePaymentTerms } from '$lib/shared/enums';
 	import FieldWrapper from './FieldWrapper.svelte';
 
 	interface Props {
 		open: boolean;
+		paymentTerms?: PurchasePaymentTerms;
 		creditDueDate: string | null;
 		earlyPaymentDiscountPercent: number | null;
 		earlyPaymentDiscountDeadline: string | null;
+		onSave?: (terms: {
+			creditDueDate: string | null;
+			earlyPaymentDiscountPercent: number | null;
+			earlyPaymentDiscountDeadline: string | null;
+		}) => void;
 		onCreditDueDateChange?: (value: string | null) => void;
 		onEarlyPaymentDiscountPercentChange?: (value: number | null) => void;
 		onEarlyPaymentDiscountDeadlineChange?: (value: string | null) => void;
@@ -17,14 +24,18 @@
 
 	let {
 		open = $bindable(false),
+		paymentTerms = PurchasePaymentTerms.CREDIT,
 		creditDueDate,
 		earlyPaymentDiscountPercent,
 		earlyPaymentDiscountDeadline,
+		onSave,
 		onCreditDueDateChange,
 		onEarlyPaymentDiscountPercentChange,
 		onEarlyPaymentDiscountDeadlineChange,
 		onclose
 	}: Props = $props();
+
+	const isCredit = $derived(paymentTerms === PurchasePaymentTerms.CREDIT);
 
 	let tempDueDate = $state<string | null>(null);
 	let tempEarlyPercent = $state<number | null>(null);
@@ -41,7 +52,8 @@
 	});
 
 	const canSave = $derived(
-		!!tempDueDate && (!hasEarlyPayment || (tempEarlyDeadline && tempEarlyPercent! > 0))
+		(!isCredit || !!tempDueDate) &&
+			(!hasEarlyPayment || (!!tempEarlyDeadline && (tempEarlyPercent ?? 0) > 0))
 	);
 
 	function handleToggleEarlyPayment() {
@@ -53,9 +65,17 @@
 	}
 
 	function handleSave() {
-		onCreditDueDateChange?.(tempDueDate);
-		onEarlyPaymentDiscountPercentChange?.(tempEarlyPercent);
-		onEarlyPaymentDiscountDeadlineChange?.(tempEarlyDeadline);
+		const dueDate = isCredit ? tempDueDate : null;
+		const percent = hasEarlyPayment ? tempEarlyPercent : null;
+		const deadline = hasEarlyPayment ? tempEarlyDeadline : null;
+		onSave?.({
+			creditDueDate: dueDate,
+			earlyPaymentDiscountPercent: percent,
+			earlyPaymentDiscountDeadline: deadline
+		});
+		onCreditDueDateChange?.(dueDate);
+		onEarlyPaymentDiscountPercentChange?.(percent);
+		onEarlyPaymentDiscountDeadlineChange?.(deadline);
 		open = false;
 	}
 
@@ -89,13 +109,15 @@
 	{/snippet}
 
 	<div class="space-y-5">
-		<FieldWrapper label="Fecha de vencimiento del crédito" required>
-			<input
-				type="date"
-				bind:value={tempDueDate}
-				class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
-			/>
-		</FieldWrapper>
+		{#if isCredit}
+			<FieldWrapper label="Fecha de vencimiento del crédito" required>
+				<input
+					type="date"
+					bind:value={tempDueDate}
+					class="w-full rounded-lg border-none bg-surface-container-high px-3 py-2 text-sm text-on-surface transition-colors focus:border-l-2 focus:border-l-brand-blue focus:bg-surface-container-highest focus:ring-0"
+				/>
+			</FieldWrapper>
+		{/if}
 
 		<label class="flex cursor-pointer items-center gap-2 select-none">
 			<input

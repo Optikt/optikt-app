@@ -45,6 +45,16 @@ export const CreatePurchaseOrderPaymentSchema = z
 		}
 	});
 
+/** Standalone pronto pago benefit, registered outside a payment (retroactive). */
+export const RegisterPurchaseOrderEarlyPaymentBenefitSchema = z.object({
+	purchaseOrderId: z.uuid('ID de orden de compra requerido'),
+	/** Benefit amount in the order's settlement currency. */
+	amount: CoercedNumber.positive('El monto del beneficio debe ser positivo'),
+	benefitDate: z.iso.date('La fecha del beneficio es requerida'),
+	appliedToBalance: z.boolean().default(true),
+	note: z.string().trim().max(500).optional()
+});
+
 export const VoidPurchaseOrderPaymentSchema = z.object({
 	id: z.uuid('ID de pago requerido'),
 	purchaseOrderId: z.uuid('ID de orden de compra requerido')

@@ -90,8 +90,22 @@ export function computePurchaseCurrencyCode(rail: PaymentMethod | null) {
 	return rail ? getPaymentMethodCurrency(rail) : CurrencyCode.OTHER;
 }
 
-export function computeNeedsSpecificRate(rail: PaymentMethod | null, currencyKey: string | null) {
+export function computeNeedsSpecificRate(
+	kind: PaymentFormKind,
+	rail: PaymentMethod | null,
+	currencyKey: string | null,
+	settlementCurrency?: string
+) {
 	if (!rail || !currencyKey) return false;
+	// Native settlements need the debt-currency rate even when paying with Bs or
+	// USD BCV, otherwise the applied-to-debt amount is computed in the wrong unit.
+	if (
+		kind === 'purchase' &&
+		computeIsNativeSettlement(kind, settlementCurrency) &&
+		settlementCurrency !== CurrencyCode.VES
+	) {
+		return true;
+	}
 	if (!isBsPaymentMethod(rail)) return true;
 	return (
 		currencyKey === 'EUR_BCV' ||
@@ -102,9 +116,22 @@ export function computeNeedsSpecificRate(rail: PaymentMethod | null, currencyKey
 }
 
 export function computeSpecificRateLabel(
+	kind: PaymentFormKind,
 	rail: PaymentMethod | null,
-	selectedCurrency: { rateLabel?: string } | null
+	currencyKey: string | null,
+	selectedCurrency: { rateLabel?: string } | null,
+	settlementCurrency?: string
 ) {
+	// When paying Bs/USD against a native debt, the single rate field is the
+	// settlement rate (e.g. Bs per EUR), not a USD rate.
+	if (
+		kind === 'purchase' &&
+		computeIsNativeSettlement(kind, settlementCurrency) &&
+		(currencyKey === 'VES' || currencyKey === 'USD_BCV') &&
+		settlementCurrency
+	) {
+		return getSettlementRateLabel(settlementCurrency);
+	}
 	if (rail && !isBsPaymentMethod(rail)) {
 		const l = getExchangeRateLabel(rail);
 		if (l) return l;
@@ -113,13 +140,24 @@ export function computeSpecificRateLabel(
 }
 
 export function computeAutoSpecificRate(
+	kind: PaymentFormKind,
 	rail: PaymentMethod | null,
 	currencyKey: string | null,
+	settlementCurrency: string | undefined,
 	eurRate: number,
 	usdtRate: number,
 	paypalRate: number
 ) {
-	if (rail === PaymentMethod.EFECTIVO_USD || rail === PaymentMethod.EFECTIVO_EUR) return 0;
+	const nativeSettlement =
+		kind === 'purchase' && computeIsNativeSettlement(kind, settlementCurrency);
+	if (
+		nativeSettlement &&
+		settlementCurrency &&
+		(currencyKey === 'VES' || currencyKey === 'USD_BCV')
+	) {
+		return getSettlementRateValue(settlementCurrency, eurRate, usdtRate, paypalRate);
+	}
+	if (rail === PaymentMethod.EFECTIVO_USD) return 0;
 	switch (currencyKey) {
 		case 'EUR_BCV':
 			return eurRate;
@@ -130,6 +168,73 @@ export function computeAutoSpecificRate(
 		default:
 			return 0;
 	}
+}
+
+function getSettlementRateValue(
+	settlementCurrency: string,
+	eurRate: number,
+	usdtRate: number,
+	paypalRate: number
+) {
+	switch (settlementCurrency) {
+		case CurrencyCode.EUR_BCV:
+			return eurRate;
+		case CurrencyCode.USDT:
+			return usdtRate;
+		case CurrencyCode.USD_PAYPAL:
+			return paypalRate;
+		default:
+			return 0;
+	}
+}
+
+function getSettlementRateLabel(settlementCurrency: string) {
+	switch (settlementCurrency) {
+		case CurrencyCode.EUR_BCV:
+			return 'Tasa EUR (Bs/€)';
+		case CurrencyCode.USDT:
+			return 'Tasa USDT (Bs/USDT)';
+		case CurrencyCode.USD_PAYPAL:
+			return 'Tasa USD PayPal (Bs/$)';
+		default:
+			return 'Tasa de la deuda (Bs/unidad)';
+	}
+}
+
+export function computeSettlementRateToVes(args: {
+	kind: PaymentFormKind;
+	settlementCurrency?: string;
+	purchaseCurrencyCode: CurrencyCode;
+	specificRateValue: number;
+	bcvRate: number;
+	eurRate: number;
+	usdtRate: number;
+	paypalRate: number;
+}) {
+	const {
+		settlementCurrency,
+		purchaseCurrencyCode,
+		specificRateValue,
+		bcvRate,
+		eurRate,
+		usdtRate,
+		paypalRate
+	} = args;
+	if (!settlementCurrency || settlementCurrency === CurrencyCode.USD_BCV) return bcvRate;
+	if (settlementCurrency === CurrencyCode.VES) return 1;
+
+	if (purchaseCurrencyCode === settlementCurrency && specificRateValue > 0) {
+		return specificRateValue;
+	}
+	// Bs/USD deliveries use the visible field as the settlement rate.
+	if (
+		(purchaseCurrencyCode === CurrencyCode.VES || purchaseCurrencyCode === CurrencyCode.USD_BCV) &&
+		specificRateValue > 0
+	) {
+		return specificRateValue;
+	}
+
+	return getSettlementRateValue(settlementCurrency, eurRate, usdtRate, paypalRate);
 }
 
 export function computeSaleForwardUsd(

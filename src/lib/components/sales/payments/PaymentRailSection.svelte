@@ -4,6 +4,8 @@
 	import { PaymentReferenceField } from '$lib/components/ui';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
+	import type { ProntoPagoInfo } from './purchasePayment';
+	import { formatDateOnly, formatPrice } from '$lib/utils';
 	import type { PaymentFormKind } from './paymentFormDerived';
 
 	interface Props {
@@ -15,6 +17,8 @@
 		nativeFieldValue: string;
 		nativeLabel: string;
 		nativePrefix: string;
+		isNativeSettlement: boolean;
+		settlementSymbol: string;
 		debtBalanceUsd: number;
 		resolvedAmountUsd: number;
 		resolvedUsdDisplay: string;
@@ -38,11 +42,10 @@
 		restLabelClass: string;
 		showPurchasePreview: boolean;
 		purchaseNormalized: { amountBs: number; amountUsdBcv: number };
-		isNativeSettlement: boolean;
 		amountAppliedToDebt?: number;
-		settlementSymbol: string;
 		exchangeVariance: number;
 		liveEarlyPaymentSuggestion: EarlyPaymentDiscountSuggestion | null;
+		prontoPagoInfo?: ProntoPagoInfo | null;
 		canSubmit: boolean;
 		drawerSubmitLabel: string;
 		submitLabel: string;
@@ -52,6 +55,7 @@
 		onBcvRateInput: (value: string) => void;
 		onSpecificRateInput: (value: string) => void;
 		onUseRemainingBalance: () => void;
+		onApplyProntoPago?: () => void;
 		onReference: (value: string) => void;
 		onNotes: (value: string) => void;
 		onSubmit: () => void;
@@ -66,6 +70,8 @@
 		nativeFieldValue,
 		nativeLabel,
 		nativePrefix,
+		isNativeSettlement,
+		settlementSymbol,
 		debtBalanceUsd,
 		resolvedAmountUsd,
 		resolvedUsdDisplay,
@@ -89,11 +95,10 @@
 		restLabelClass,
 		showPurchasePreview,
 		purchaseNormalized,
-		isNativeSettlement,
 		amountAppliedToDebt,
-		settlementSymbol,
 		exchangeVariance,
 		liveEarlyPaymentSuggestion,
+		prontoPagoInfo = null,
 		canSubmit,
 		drawerSubmitLabel,
 		submitLabel,
@@ -103,10 +108,15 @@
 		onBcvRateInput,
 		onSpecificRateInput,
 		onUseRemainingBalance,
+		onApplyProntoPago,
 		onReference,
 		onNotes,
 		onSubmit
 	}: Props = $props();
+
+	function formatProntoPagoAmount(value: number): string {
+		return isNativeSettlement ? `${value.toFixed(2)} ${settlementSymbol}` : formatPrice(value);
+	}
 </script>
 
 <div class="space-y-3">
@@ -119,6 +129,8 @@
 		{nativeFieldValue}
 		{nativeLabel}
 		{nativePrefix}
+		{isNativeSettlement}
+		{settlementSymbol}
 		{debtBalanceUsd}
 		{resolvedAmountUsd}
 		{resolvedUsdDisplay}
@@ -160,6 +172,39 @@
 			<p class="font-semibold">El monto supera la deuda.</p>
 			<p>Excedente: {overpaymentDisplay}</p>
 		</div>
+	{/if}
+
+	<!-- Pronto pago: aviso + botón (solo compras) -->
+	{#if kind === 'purchase' && prontoPagoInfo}
+		{#if prontoPagoInfo.withinWindow}
+			<div
+				class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-success-container/40 px-3 py-2 text-xs text-on-surface"
+			>
+				<p>
+					<span class="font-semibold">Pronto pago {prontoPagoInfo.percent}%</span>
+					· hasta {formatDateOnly(prontoPagoInfo.deadline, { dateStyle: 'short' })}
+					· neto sugerido
+					<strong>{formatProntoPagoAmount(prontoPagoInfo.recommendedPayment)}</strong>
+				</p>
+				<button
+					type="button"
+					onclick={onApplyProntoPago}
+					class="shrink-0 rounded-lg bg-brand-navy px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-brand-navy/90"
+				>
+					Aplicar pronto pago
+				</button>
+			</div>
+		{:else}
+			<div class="rounded-lg bg-warning-container/40 px-3 py-2 text-xs text-on-surface">
+				<p>
+					<span class="font-semibold">Fuera del plazo de pronto pago.</span>
+					La fecha de pago ({formatDateOnly(paymentDate, { dateStyle: 'short' })}) es posterior al
+					límite ({formatDateOnly(prontoPagoInfo.deadline, { dateStyle: 'short' })}). Si el pago se
+					hizo dentro del plazo, corrige la fecha para poder aplicar el
+					{prontoPagoInfo.percent}%.
+				</p>
+			</div>
+		{/if}
 	{/if}
 
 	<!-- Preview -->

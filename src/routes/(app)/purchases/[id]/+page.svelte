@@ -12,6 +12,7 @@
 		PurchaseOrderOverviewCard
 	} from '$lib/components/purchases/detail';
 	import PurchaseOrderModals from '$lib/components/purchases/detail/PurchaseOrderModals.svelte';
+	import PurchaseOrderCreditTermsDrawer from '$lib/components/purchases/detail/PurchaseOrderCreditTermsDrawer.svelte';
 	import PurchaseOrderDrawers from '$lib/components/purchases/detail/PurchaseOrderDrawers.svelte';
 	import {
 		buildPurchaseDetailSummary,
@@ -81,6 +82,7 @@
 	let showPaymentsDrawer = $state(false);
 	let showPaymentsHistoryDrawer = $state(false);
 	let showAuditHistoryDrawer = $state(false);
+	let showCreditTermsDrawer = $state(false);
 
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
@@ -105,6 +107,7 @@
 		purchaseOrder: () => purchaseOrder,
 		items: () => items,
 		payments: () => payments,
+		earlyPaymentBenefits: () => earlyPaymentBenefits,
 		balance: () => balance,
 		dueStatus: () => dueStatus,
 		auditHistory: () => auditHistory,
@@ -232,7 +235,10 @@
 
 	async function handleConfirmAndPay() {
 		actionLoading = true;
-		const paymentAmount = detailSummary.netTotalPurchase;
+		const isNativeSettlement = balance.settlementCurrency !== 'USD_BCV';
+		const paymentAmount = isNativeSettlement
+			? balance.settlementBalance
+			: detailSummary.netTotalPurchase;
 
 		try {
 			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
@@ -371,6 +377,29 @@
 		}
 	}
 
+	function handleCreditTermsUpdated(payload: {
+		purchaseOrder: PurchaseOrderWithRelations;
+		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
+		balance: PurchaseOrderBalanceSummary;
+		dueStatus: PurchaseOrderDueStatus;
+	}) {
+		purchaseOrder = payload.purchaseOrder;
+		earlyPaymentBenefits = payload.earlyPaymentBenefits;
+		balance = payload.balance;
+		dueStatus = payload.dueStatus;
+		showCreditTermsDrawer = false;
+	}
+
+	function handleBenefitRegistered(payload: {
+		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
+		balance: PurchaseOrderBalanceSummary;
+		dueStatus: PurchaseOrderDueStatus;
+	}) {
+		earlyPaymentBenefits = payload.earlyPaymentBenefits;
+		balance = payload.balance;
+		dueStatus = payload.dueStatus;
+	}
+
 	function handleFinanceChanged(payload: {
 		payments: PurchaseOrderPaymentWithUsers[];
 		earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
@@ -413,7 +442,10 @@
 		class="gap-2 space-y-2 md:grid md:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)] md:space-y-0"
 	>
 		<div class="space-y-2">
-			<PurchaseOrderOverviewCard {purchaseOrder} />
+			<PurchaseOrderOverviewCard
+				{purchaseOrder}
+				onEditCreditTerms={() => (showCreditTermsDrawer = true)}
+			/>
 
 			<PurchaseOrderItemsList
 				{purchaseOrder}
@@ -434,6 +466,7 @@
 				onRegisterPayment={() => (showPaymentsDrawer = true)}
 				onViewPayments={() => (showPaymentsHistoryDrawer = true)}
 				onViewAudit={() => (showAuditHistoryDrawer = true)}
+				onBenefitRegistered={handleBenefitRegistered}
 			/>
 		</aside>
 	</div>
@@ -450,6 +483,12 @@
 	{auditHistory}
 	composerRequest={paymentComposerRequest}
 	onFinanceChanged={handleFinanceChanged}
+/>
+
+<PurchaseOrderCreditTermsDrawer
+	bind:open={showCreditTermsDrawer}
+	{purchaseOrder}
+	onUpdated={handleCreditTermsUpdated}
 />
 
 <PurchaseOrderModals

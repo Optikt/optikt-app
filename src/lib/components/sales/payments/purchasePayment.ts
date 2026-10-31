@@ -1,5 +1,5 @@
 import { toast } from 'svelte-sonner';
-import { CurrencyCode } from '$lib/shared/enums';
+import { CurrencyCode, PurchasePaymentTerms } from '$lib/shared/enums';
 import {
 	computePaymentExchangeVariance,
 	denormalizePurchasePaymentAmount,
@@ -46,43 +46,97 @@ export function computePurchaseReverseNative(input: PurchaseAmountInput) {
 	});
 }
 
+/**
+ * Debt amortized by a payment, expressed in the order's settlement currency.
+ * The delivered amount is always converted through Bs first:
+ *   appliedDebt = deliveredBs / settlementRateToVes
+ * which works for Bs, USD-BCV, EUR, USDT and PayPal deliveries.
+ */
 export function computeAmountAppliedToDebt(args: {
 	isNativeSettlement: boolean;
-	purchaseCurrencyCode: string;
-	specificRateValue: number;
-	settlementCurrency?: string;
-	resolvedNativeAmount: number;
+	purchaseNormalizedAmountBs: number;
+	settlementRateToVes: number;
 }) {
-	const {
-		isNativeSettlement,
-		purchaseCurrencyCode,
-		specificRateValue,
-		settlementCurrency,
-		resolvedNativeAmount
-	} = args;
-	if (!isNativeSettlement) return undefined;
-	if (purchaseCurrencyCode === CurrencyCode.VES && specificRateValue > 0) {
-		return Math.round((resolvedNativeAmount / specificRateValue) * 100) / 100;
-	}
-	if (purchaseCurrencyCode === settlementCurrency) return resolvedNativeAmount;
-	return undefined;
+	const { isNativeSettlement, purchaseNormalizedAmountBs, settlementRateToVes } = args;
+	if (!isNativeSettlement || settlementRateToVes <= 0) return undefined;
+	return Math.round((purchaseNormalizedAmountBs / settlementRateToVes) * 100) / 100;
 }
 
 export function computeExchangeVariance(args: {
 	isNativeSettlement: boolean;
 	amountAppliedToDebt?: number;
-	debtTotalUsd?: number;
+	settlementDebtAmount?: number;
+	settlementDebtAmountUsdBcvAtOrder?: number;
 	resolvedAmountUsd: number;
 }) {
-	const { isNativeSettlement, amountAppliedToDebt, debtTotalUsd, resolvedAmountUsd } = args;
-	return isNativeSettlement && (amountAppliedToDebt ?? 0) > 0
+	const {
+		isNativeSettlement,
+		amountAppliedToDebt,
+		settlementDebtAmount,
+		settlementDebtAmountUsdBcvAtOrder,
+		resolvedAmountUsd
+	} = args;
+	return isNativeSettlement && (amountAppliedToDebt ?? 0) > 0 && (settlementDebtAmount ?? 0) > 0
 		? computePaymentExchangeVariance(
 				amountAppliedToDebt ?? 0,
-				debtTotalUsd ?? 0,
-				(debtTotalUsd ?? 0) > 0 ? (debtTotalUsd ?? 0) : (amountAppliedToDebt ?? 0),
+				settlementDebtAmount ?? 0,
+				settlementDebtAmountUsdBcvAtOrder ?? 0,
 				resolvedAmountUsd
 			)
 		: 0;
+}
+
+export interface ProntoPagoInfo {
+	percent: number;
+	deadline: string;
+	discountAmount: number;
+	recommendedPayment: number;
+	/** The form's payment date is still within the pronto pago window. */
+	withinWindow: boolean;
+}
+
+/**
+ * Pronto pago terms available on the order, regardless of the amount typed so
+ * far. Used to render the "Aplicar pronto pago" button and the out-of-window
+ * warning while registering a payment.
+ */
+export function computeProntoPagoInfo(args: {
+	kind: PaymentFormKind;
+	hasActiveEarlyPaymentBenefit: boolean;
+	isFullyPaid?: boolean;
+	pendingBalanceUsd?: number;
+	debtTotalUsd?: number;
+	purchaseOrder?: PurchaseOrder;
+	paymentDate: string;
+}): ProntoPagoInfo | null {
+	const {
+		kind,
+		hasActiveEarlyPaymentBenefit,
+		isFullyPaid,
+		pendingBalanceUsd,
+		debtTotalUsd,
+		purchaseOrder,
+		paymentDate
+	} = args;
+	if (kind !== 'purchase' || hasActiveEarlyPaymentBenefit || isFullyPaid) return null;
+	if (pendingBalanceUsd == null || debtTotalUsd == null || !purchaseOrder) return null;
+	if (purchaseOrder.paymentTerms !== PurchasePaymentTerms.CREDIT) return null;
+	const percent = Number(purchaseOrder.earlyPaymentDiscountPercent ?? 0);
+	const deadline = purchaseOrder.earlyPaymentDiscountDeadline;
+	if (percent <= 0 || !deadline) return null;
+
+	const currentBalance = Math.max(Number(pendingBalanceUsd || 0), 0);
+	const discountAmount = Number(
+		Math.min((Number(debtTotalUsd) * percent) / 100, currentBalance).toFixed(2)
+	);
+	const withinWindow = paymentDate.slice(0, 10) <= deadline;
+	return {
+		percent,
+		deadline,
+		discountAmount,
+		recommendedPayment: Number(Math.max(currentBalance - discountAmount, 0).toFixed(2)),
+		withinWindow
+	};
 }
 
 export function computeLiveEarlyPaymentSuggestion(args: {
@@ -91,7 +145,7 @@ export function computeLiveEarlyPaymentSuggestion(args: {
 	pendingBalanceUsd?: number;
 	debtTotalUsd?: number;
 	purchaseOrder?: PurchaseOrder;
-	resolvedAmountUsd: number;
+	paymentAmount: number;
 	paymentDate: string;
 }) {
 	const {
@@ -100,7 +154,7 @@ export function computeLiveEarlyPaymentSuggestion(args: {
 		pendingBalanceUsd,
 		debtTotalUsd,
 		purchaseOrder,
-		resolvedAmountUsd,
+		paymentAmount,
 		paymentDate
 	} = args;
 	return kind === 'purchase' &&
@@ -112,7 +166,7 @@ export function computeLiveEarlyPaymentSuggestion(args: {
 				terms: purchaseOrder,
 				totalDebt: debtTotalUsd,
 				currentBalance: pendingBalanceUsd,
-				paymentAmount: resolvedAmountUsd,
+				paymentAmount,
 				paymentDate
 			})
 		: null;
@@ -233,6 +287,10 @@ export interface PurchaseFlowState {
 	activeBcvRate: number;
 	needsSpecificRate: boolean;
 	specificRateValue: number;
+	settlementRateToVes: number;
+	settlementDebtAmount: number;
+	settlementDebtAmountUsdBcvAtOrder: number;
+	comparisonAmount: number;
 }
 
 export interface PurchaseSubmitSnapshot extends PurchaseFlowState {
@@ -314,7 +372,8 @@ export async function maybeSubmitPurchase(
 ) {
 	if (!payload) return;
 
-	if (state.pendingBalanceUsd != null && state.resolvedAmountUsd > state.pendingBalanceUsd + 0.01) {
+	const appliedAmount = state.isNativeSettlement ? state.comparisonAmount : state.resolvedAmountUsd;
+	if (state.pendingBalanceUsd != null && appliedAmount > state.pendingBalanceUsd + 0.01) {
 		mutations.setPendingAddPayload(payload);
 		mutations.setShowOverpaymentModal(true);
 		return;
@@ -336,41 +395,60 @@ export async function submitPaymentWithBenefit(
 	mutations: PurchaseFlowMutations
 ) {
 	if (!state.pendingAddPayload || !state.pendingBenefitSuggestion) return;
-	const amountUsdBcv = Number(state.benefitAmountInput || 0);
-	if (!Number.isFinite(amountUsdBcv) || amountUsdBcv <= 0) {
+	const benefitAmount = Number(state.benefitAmountInput || 0);
+	if (!Number.isFinite(benefitAmount) || benefitAmount <= 0) {
 		toast.error('Monto de beneficio inválido');
 		return;
 	}
-	if (amountUsdBcv > state.pendingBenefitSuggestion.amount + 0.01) {
+	if (benefitAmount > state.pendingBenefitSuggestion.amount + 0.01) {
 		toast.error(
 			`El beneficio no debe superar ${formatPrice(state.pendingBenefitSuggestion.amount)}`
 		);
 		return;
 	}
-	if (appliedToBalance && amountUsdBcv >= state.pendingBenefitSuggestion.currentBalance - 0.01) {
+	if (appliedToBalance && benefitAmount >= state.pendingBenefitSuggestion.currentBalance - 0.01) {
 		toast.error('El beneficio aplicado no puede igualar o superar el saldo pendiente');
 		return;
 	}
+
+	const amountUsdBcv = toUsdBcv(
+		benefitAmount,
+		state.isNativeSettlement,
+		state.settlementRateToVes,
+		state.activeBcvRate
+	);
 
 	let payload: PurchasePaymentPayload = {
 		...state.pendingAddPayload,
 		earlyPaymentBenefit: {
 			amountUsdBcv,
-			amountAppliedToDebt: state.isNativeSettlement ? amountUsdBcv : undefined,
-			amountAppliedToDebtUsdBcvAtOrder: state.isNativeSettlement ? amountUsdBcv : undefined,
+			amountAppliedToDebt: state.isNativeSettlement ? benefitAmount : undefined,
+			amountAppliedToDebtUsdBcvAtOrder: state.isNativeSettlement
+				? toOrderUsdBcv(
+						benefitAmount,
+						state.settlementDebtAmount,
+						state.settlementDebtAmountUsdBcvAtOrder
+					)
+				: undefined,
 			appliedToBalance,
 			note: state.benefitNoteInput || undefined
 		}
 	};
 
 	if (appliedToBalance) {
-		const adjustedPaymentUsdBcv = Math.max(
-			state.pendingBenefitSuggestion.currentBalance - amountUsdBcv,
+		const adjustedBenefit = Math.max(
+			state.pendingBenefitSuggestion.currentBalance - benefitAmount,
 			0
+		);
+		const adjustedUsdBcv = toUsdBcv(
+			adjustedBenefit,
+			state.isNativeSettlement,
+			state.settlementRateToVes,
+			state.activeBcvRate
 		);
 		const adjustedAmount = denormalizePurchasePaymentAmount({
 			currencyCode: state.purchaseCurrencyCode,
-			amountUsdBcv: adjustedPaymentUsdBcv,
+			amountUsdBcv: adjustedUsdBcv,
 			bcvUsdRate: state.activeBcvRate,
 			specificRate: state.needsSpecificRate ? state.specificRateValue : undefined
 		});
@@ -384,4 +462,28 @@ export async function submitPaymentWithBenefit(
 	mutations.setPendingAddPayload(null);
 	mutations.resetEarlyPaymentState();
 	await submitPurchasePayment(payload, mutations);
+}
+
+function toUsdBcv(
+	amount: number,
+	isNativeSettlement: boolean,
+	settlementRateToVes: number,
+	bcvRate: number
+) {
+	if (!isNativeSettlement) return amount;
+	if (settlementRateToVes <= 0 || bcvRate <= 0) return amount;
+	return Math.round(((amount * settlementRateToVes) / bcvRate) * 100) / 100;
+}
+
+function toOrderUsdBcv(
+	amountAppliedToDebt: number,
+	settlementDebtAmount: number,
+	settlementDebtAmountUsdBcvAtOrder: number
+) {
+	if (settlementDebtAmount <= 0) return amountAppliedToDebt;
+	return (
+		Math.round(
+			(amountAppliedToDebt / settlementDebtAmount) * settlementDebtAmountUsdBcvAtOrder * 100
+		) / 100
+	);
 }

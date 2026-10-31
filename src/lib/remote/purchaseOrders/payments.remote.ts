@@ -9,6 +9,7 @@ import { composeBusinessTimestamp } from '$lib/dates';
 
 import {
 	CreatePurchaseOrderPaymentSchema,
+	RegisterPurchaseOrderEarlyPaymentBenefitSchema,
 	VoidPurchaseOrderPaymentSchema
 } from '$lib/schemas/purchaseOrderPayments';
 
@@ -25,6 +26,7 @@ import { normalizePurchasePaymentAmounts } from '$lib/shared/purchaseOrderPaymen
 
 import { auditService, getAuditContext } from '$lib/server/audit';
 import {
+	registerPurchaseOrderEarlyPaymentBenefit,
 	submitPurchaseOrderPayment,
 	voidPurchaseOrderPayment
 } from '$lib/server/payments/purchasePayments';
@@ -179,3 +181,70 @@ export const voidPurchaseOrderPaymentCmd = command(VoidPurchaseOrderPaymentSchem
 		};
 	}
 });
+
+export const registerPurchaseOrderEarlyPaymentBenefitCmd = command(
+	RegisterPurchaseOrderEarlyPaymentBenefitSchema,
+	async (data) => {
+		requireAdmin();
+
+		const context = getAuditContext();
+		if (!context.userId) {
+			return { success: false as const, error: 'No autorizado' };
+		}
+
+		const purchaseOrder = await findPurchaseOrderById(data.purchaseOrderId);
+		if (!purchaseOrder) {
+			return { success: false as const, error: 'Orden de compra no encontrada' };
+		}
+		if (purchaseOrder.status !== PurchaseOrderStatus.CONFIRMED) {
+			return {
+				success: false as const,
+				error: 'Solo se puede registrar pronto pago en órdenes confirmadas'
+			};
+		}
+		if (Number(purchaseOrder.earlyPaymentDiscountPercent ?? 0) <= 0) {
+			return {
+				success: false as const,
+				error: 'La orden no tiene un descuento de pronto pago configurado'
+			};
+		}
+
+		const userId = context.userId;
+
+		try {
+			const result = await db.transaction(async (tx) =>
+				registerPurchaseOrderEarlyPaymentBenefit(
+					{
+						purchaseOrder,
+						amount: data.amount,
+						benefitDate: data.benefitDate,
+						appliedToBalance: data.appliedToBalance,
+						note: data.note ?? null,
+						userId
+					},
+					tx
+				)
+			);
+
+			await auditService.logCreate(
+				'purchase_order_early_payment_benefit',
+				result.benefit,
+				context,
+				{ excludeFields: ['createdAt', 'updatedAt'] }
+			);
+
+			return {
+				success: true as const,
+				benefit: result.benefit,
+				earlyPaymentBenefits: result.earlyPaymentBenefits,
+				balance: result.balance,
+				dueStatus: result.dueStatus
+			};
+		} catch (e) {
+			return {
+				success: false as const,
+				error: getErrorMessage(e, 'Error registrando pronto pago')
+			};
+		}
+	}
+);

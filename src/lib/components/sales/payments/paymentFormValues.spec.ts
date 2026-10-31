@@ -22,15 +22,17 @@ const emptySelection: PaymentFormSelectionValues = {
 function inputs(
 	props: Partial<PaymentFormProps>,
 	selection: Partial<PaymentFormSelectionValues> = {},
-	rates: Partial<Pick<PaymentFormValueInputs, 'storeBcvRate'>> = {}
+	rates: Partial<
+		Pick<PaymentFormValueInputs, 'storeBcvRate' | 'eurRate' | 'usdtRate' | 'paypalRate'>
+	> = {}
 ): PaymentFormValueInputs {
 	return {
 		props: { kind: 'sale', ...props } as PaymentFormProps,
 		selection: { ...emptySelection, ...selection },
 		storeBcvRate: rates.storeBcvRate ?? 0,
-		eurRate: 0,
-		usdtRate: 0,
-		paypalRate: 0
+		eurRate: rates.eurRate ?? 0,
+		usdtRate: rates.usdtRate ?? 0,
+		paypalRate: rates.paypalRate ?? 0
 	};
 }
 
@@ -175,5 +177,189 @@ describe('computePaymentFormValues · purchase', () => {
 		expect(values.isNativeSettlement).toBe(true);
 		expect(values.settlementSymbol).toBe('€');
 		expect(values.needsSpecificRate).toBe(false);
+	});
+
+	it('applies a EUR delivery to the debt one-to-one', () => {
+		const values = computePaymentFormValues(
+			inputs(
+				{
+					kind: 'purchase',
+					status: 'CONFIRMED',
+					defaultBcvRate: 200,
+					pendingBalanceUsd: 13.5,
+					debtTotalUsd: 13.5,
+					settlementCurrency: 'EUR_BCV',
+					purchaseOrder: { settlementDebtAmount: 13.5 } as never
+				},
+				{
+					currencyKey: 'EUR_BCV',
+					rail: PaymentMethod.EFECTIVO_EUR,
+					lastEditedAmount: 'native',
+					nativeAmountInput: '13.50',
+					bcvRateInput: '200',
+					specificRateInput: '978.17'
+				}
+			)
+		);
+
+		expect(values.amountAppliedToDebt).toBe(13.5);
+		expect(values.pendingAfterPayment).toBe(0);
+		expect(values.overpaymentAmount).toBe(0);
+	});
+
+	it('converts a Bs delivery into the EUR debt using the settlement rate', () => {
+		const values = computePaymentFormValues(
+			inputs(
+				{
+					kind: 'purchase',
+					status: 'CONFIRMED',
+					defaultBcvRate: 200,
+					pendingBalanceUsd: 13.5,
+					debtTotalUsd: 13.5,
+					settlementCurrency: 'EUR_BCV',
+					purchaseOrder: { settlementDebtAmount: 13.5 } as never
+				},
+				{
+					currencyKey: 'VES',
+					rail: PaymentMethod.TRANSFERENCIA_BS,
+					lastEditedAmount: 'native',
+					nativeAmountInput: '13205.30',
+					bcvRateInput: '200',
+					specificRateInput: '978.17'
+				}
+			)
+		);
+
+		expect(values.needsSpecificRate).toBe(true);
+		expect(values.specificRateLabel).toBe('Tasa EUR (Bs/€)');
+		expect(values.amountAppliedToDebt).toBe(13.5);
+		expect(values.pendingAfterPayment).toBe(0);
+	});
+
+	it('converts a USD delivery into the EUR debt through Bs', () => {
+		const values = computePaymentFormValues(
+			inputs(
+				{
+					kind: 'purchase',
+					status: 'CONFIRMED',
+					defaultBcvRate: 200,
+					pendingBalanceUsd: 13.5,
+					debtTotalUsd: 13.5,
+					settlementCurrency: 'EUR_BCV',
+					purchaseOrder: { settlementDebtAmount: 13.5 } as never
+				},
+				{
+					currencyKey: 'USD_BCV',
+					rail: PaymentMethod.EFECTIVO_USD,
+					lastEditedAmount: 'native',
+					nativeAmountInput: '66.03',
+					bcvRateInput: '200'
+				},
+				{ eurRate: 978.17 }
+			)
+		);
+
+		expect(values.amountAppliedToDebt).toBe(13.5);
+		expect(values.pendingAfterPayment).toBe(0);
+	});
+
+	it('exposes pronto pago terms within the window even before typing an amount', () => {
+		const values = computePaymentFormValues(
+			inputs(
+				{
+					kind: 'purchase',
+					status: 'CONFIRMED',
+					defaultBcvRate: 40,
+					pendingBalanceUsd: 345,
+					debtTotalUsd: 345,
+					settlementCurrency: 'USD_BCV',
+					purchaseOrder: {
+						paymentTerms: 'CREDIT',
+						earlyPaymentDiscountPercent: 5,
+						earlyPaymentDiscountDeadline: '2026-10-11'
+					} as never
+				},
+				{ paymentDate: '2026-10-09' }
+			)
+		);
+
+		expect(values.prontoPagoInfo).toMatchObject({
+			percent: 5,
+			discountAmount: 17.25,
+			recommendedPayment: 327.75,
+			withinWindow: true
+		});
+	});
+
+	it('flags a payment date outside the pronto pago window', () => {
+		const values = computePaymentFormValues(
+			inputs(
+				{
+					kind: 'purchase',
+					status: 'CONFIRMED',
+					defaultBcvRate: 40,
+					pendingBalanceUsd: 345,
+					debtTotalUsd: 345,
+					settlementCurrency: 'USD_BCV',
+					purchaseOrder: {
+						paymentTerms: 'CREDIT',
+						earlyPaymentDiscountPercent: 5,
+						earlyPaymentDiscountDeadline: '2026-10-11'
+					} as never
+				},
+				{ paymentDate: '2026-10-15' }
+			)
+		);
+
+		expect(values.prontoPagoInfo?.withinWindow).toBe(false);
+	});
+
+	it('hides the pronto pago notice once a benefit is applied', () => {
+		const values = computePaymentFormValues(
+			inputs({
+				kind: 'purchase',
+				status: 'CONFIRMED',
+				defaultBcvRate: 40,
+				pendingBalanceUsd: 327.75,
+				debtTotalUsd: 345,
+				settlementCurrency: 'USD_BCV',
+				earlyPaymentBenefits: [{ voidedAt: null } as never],
+				purchaseOrder: {
+					paymentTerms: 'CREDIT',
+					earlyPaymentDiscountPercent: 5,
+					earlyPaymentDiscountDeadline: '2026-10-11'
+				} as never
+			})
+		);
+
+		expect(values.prontoPagoInfo).toBeNull();
+	});
+
+	it('flags native overpayment in the settlement currency', () => {
+		const values = computePaymentFormValues(
+			inputs(
+				{
+					kind: 'purchase',
+					status: 'CONFIRMED',
+					defaultBcvRate: 200,
+					pendingBalanceUsd: 10,
+					debtTotalUsd: 13.5,
+					settlementCurrency: 'EUR_BCV',
+					purchaseOrder: { settlementDebtAmount: 13.5 } as never
+				},
+				{
+					currencyKey: 'EUR_BCV',
+					rail: PaymentMethod.EFECTIVO_EUR,
+					lastEditedAmount: 'native',
+					nativeAmountInput: '13.50',
+					bcvRateInput: '200',
+					specificRateInput: '978.17'
+				}
+			)
+		);
+
+		expect(values.overpaymentAmount).toBe(3.5);
+		expect(values.appliedDisplay).toBe('13.50 €');
+		expect(values.pendingDisplay).toBe('10.00 €');
 	});
 });
