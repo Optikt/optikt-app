@@ -191,6 +191,7 @@
 
 <PurchaseOrderCreditDrawer
 	bind:open={creditDrawerOpen}
+	{paymentTerms}
 	{creditDueDate}
 	{earlyPaymentDiscountPercent}
 	{earlyPaymentDiscountDeadline}

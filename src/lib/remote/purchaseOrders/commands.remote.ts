@@ -21,7 +21,10 @@ import { db } from '$lib/server/db';
 import { PurchaseOrderStatus } from '$lib/shared/enums';
 import { assignPurchaseOrderLineNumbers } from '$lib/shared/purchaseOrderLineNumbers';
 
-import { SOURCE_TO_CURRENCY_CODE } from '$lib/shared/purchaseOrderCurrencies';
+import {
+	SOURCE_TO_CURRENCY_CODE,
+	calculateSettlementGrossAmount
+} from '$lib/shared/purchaseOrderCurrencies';
 import { auditService, getAuditContext } from '$lib/server/audit';
 
 export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (data) => {
@@ -107,15 +110,7 @@ export const createPurchaseOrderCmd = command(CreatePurchaseOrderSchema, async (
 
 			// Compute and persist settlement amounts from items
 			const isNativeSettlement = settlementCurrency !== 'USD_BCV';
-			const gross = itemsData.reduce(
-				(sum, item) =>
-					sum +
-					(isNativeSettlement
-						? Number(item.unitPurchasePriceAlt ?? item.unitPurchasePrice ?? 0)
-						: Number(item.unitPurchasePrice || 0)) *
-						Number(item.quantity || 0),
-				0
-			);
+			const gross = calculateSettlementGrossAmount(itemsData, isNativeSettlement);
 			const usdBcvGross = itemsData.reduce(
 				(sum, item) => sum + Number(item.unitPurchasePrice || 0) * Number(item.quantity || 0),
 				0

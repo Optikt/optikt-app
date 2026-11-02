@@ -12,6 +12,7 @@
 		PurchaseOrderOverviewCard
 	} from '$lib/components/purchases/detail';
 	import PurchaseOrderModals from '$lib/components/purchases/detail/PurchaseOrderModals.svelte';
+	import PurchaseOrderCreditTermsDrawer from '$lib/components/purchases/detail/PurchaseOrderCreditTermsDrawer.svelte';
 	import PurchaseOrderDrawers from '$lib/components/purchases/detail/PurchaseOrderDrawers.svelte';
 	import {
 		buildPurchaseDetailSummary,
@@ -81,6 +82,7 @@
 	let showPaymentsDrawer = $state(false);
 	let showPaymentsHistoryDrawer = $state(false);
 	let showAuditHistoryDrawer = $state(false);
+	let showCreditTermsDrawer = $state(false);
 
 	function syncFromData() {
 		purchaseOrder = data.purchaseOrder;
@@ -105,6 +107,7 @@
 		purchaseOrder: () => purchaseOrder,
 		items: () => items,
 		payments: () => payments,
+		earlyPaymentBenefits: () => earlyPaymentBenefits,
 		balance: () => balance,
 		dueStatus: () => dueStatus,
 		auditHistory: () => auditHistory,
@@ -173,31 +176,47 @@
 		}
 	}
 
-	async function handleConfirm() {
+	async function handleConfirmFlow(confirmAndPay: boolean) {
 		actionLoading = true;
+		const isNativeSettlement = balance.settlementCurrency !== 'USD_BCV';
+		const paymentAmount = isNativeSettlement
+			? balance.settlementBalance
+			: detailSummary.netTotalPurchase;
 
 		try {
 			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
-			if (result.success) {
-				showConfirmModal = false;
-				purchaseOrder = {
-					...purchaseOrder,
-					status: PurchaseOrderStatus.CONFIRMED,
-					isReadyForReview: false
-				};
-
-				if (result.priceSuggestions && result.priceSuggestions.length > 0) {
-					priceSuggestions = result.priceSuggestions;
-					await tick();
-					showPriceSuggestionModal = true;
-					toast.success('Orden confirmada. Revisa las sugerencias de precio.');
-				} else {
-					toast.success('Orden de compra confirmada. Inventario actualizado.');
-					await invalidateAll();
-					syncFromData();
-				}
-			} else {
+			if (!result.success) {
 				toast.error(result.error ?? 'Error confirmando la orden');
+				return;
+			}
+			if (confirmAndPay) showConfirmAndPayModal = false;
+			else showConfirmModal = false;
+			purchaseOrder = {
+				...purchaseOrder,
+				status: PurchaseOrderStatus.CONFIRMED,
+				isReadyForReview: false
+			};
+
+			const suggestions = result.priceSuggestions ?? [];
+			if (suggestions.length > 0) {
+				if (confirmAndPay) pendingPaymentComposerAmount = paymentAmount;
+				priceSuggestions = suggestions;
+				await tick();
+				showPriceSuggestionModal = true;
+				toast.success(
+					confirmAndPay
+						? 'Orden confirmada. Revisa las sugerencias y luego registra el pago.'
+						: 'Orden confirmada. Revisa las sugerencias de precio.'
+				);
+			} else if (confirmAndPay) {
+				toast.success('Orden confirmada. Completa el pago de contado.');
+				await invalidateAll();
+				syncFromData();
+				await openPaymentComposer(paymentAmount);
+			} else {
+				toast.success('Orden de compra confirmada. Inventario actualizado.');
+				await invalidateAll();
+				syncFromData();
 			}
 		} catch (error) {
 			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
@@ -228,42 +247,6 @@
 		const amount = pendingPaymentComposerAmount;
 		pendingPaymentComposerAmount = null;
 		await openPaymentComposer(amount);
-	}
-
-	async function handleConfirmAndPay() {
-		actionLoading = true;
-		const paymentAmount = detailSummary.netTotalPurchase;
-
-		try {
-			const result = await confirmPurchaseOrderCmd({ id: purchaseOrder.id });
-			if (result.success) {
-				showConfirmAndPayModal = false;
-				purchaseOrder = {
-					...purchaseOrder,
-					status: PurchaseOrderStatus.CONFIRMED,
-					isReadyForReview: false
-				};
-
-				if (result.priceSuggestions && result.priceSuggestions.length > 0) {
-					pendingPaymentComposerAmount = paymentAmount;
-					priceSuggestions = result.priceSuggestions;
-					await tick();
-					showPriceSuggestionModal = true;
-					toast.success('Orden confirmada. Revisa las sugerencias y luego registra el pago.');
-				} else {
-					toast.success('Orden confirmada. Completa el pago de contado.');
-					await invalidateAll();
-					syncFromData();
-					await openPaymentComposer(paymentAmount);
-				}
-			} else {
-				toast.error(result.error ?? 'Error confirmando la orden');
-			}
-		} catch (error) {
-			toast.error(getErrorMessage(error, 'Error confirmando orden de compra'));
-		} finally {
-			actionLoading = false;
-		}
 	}
 
 	async function handleMarkReady() {
@@ -371,6 +354,29 @@
 		}
 	}
 
+	function handleCreditTermsUpdated(payload: {
+		purchaseOrder: PurchaseOrderWithRelations;
+		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
+		balance: PurchaseOrderBalanceSummary;
+		dueStatus: PurchaseOrderDueStatus;
+	}) {
+		purchaseOrder = payload.purchaseOrder;
+		earlyPaymentBenefits = payload.earlyPaymentBenefits;
+		balance = payload.balance;
+		dueStatus = payload.dueStatus;
+		showCreditTermsDrawer = false;
+	}
+
+	function handleBenefitRegistered(payload: {
+		earlyPaymentBenefits: PurchaseOrderEarlyPaymentBenefit[];
+		balance: PurchaseOrderBalanceSummary;
+		dueStatus: PurchaseOrderDueStatus;
+	}) {
+		earlyPaymentBenefits = payload.earlyPaymentBenefits;
+		balance = payload.balance;
+		dueStatus = payload.dueStatus;
+	}
+
 	function handleFinanceChanged(payload: {
 		payments: PurchaseOrderPaymentWithUsers[];
 		earlyPaymentBenefits?: PurchaseOrderEarlyPaymentBenefit[];
@@ -413,7 +419,10 @@
 		class="gap-2 space-y-2 md:grid md:grid-cols-[minmax(0,1.72fr)_minmax(17rem,0.78fr)] md:space-y-0"
 	>
 		<div class="space-y-2">
-			<PurchaseOrderOverviewCard {purchaseOrder} />
+			<PurchaseOrderOverviewCard
+				{purchaseOrder}
+				onEditCreditTerms={() => (showCreditTermsDrawer = true)}
+			/>
 
 			<PurchaseOrderItemsList
 				{purchaseOrder}
@@ -434,6 +443,7 @@
 				onRegisterPayment={() => (showPaymentsDrawer = true)}
 				onViewPayments={() => (showPaymentsHistoryDrawer = true)}
 				onViewAudit={() => (showAuditHistoryDrawer = true)}
+				onBenefitRegistered={handleBenefitRegistered}
 			/>
 		</aside>
 	</div>
@@ -452,6 +462,12 @@
 	onFinanceChanged={handleFinanceChanged}
 />
 
+<PurchaseOrderCreditTermsDrawer
+	bind:open={showCreditTermsDrawer}
+	{purchaseOrder}
+	onUpdated={handleCreditTermsUpdated}
+/>
+
 <PurchaseOrderModals
 	bind:showConfirmModal
 	bind:showConfirmAndPayModal
@@ -468,8 +484,8 @@
 	{priceSuggestions}
 	{revertTarget}
 	netTotalPurchase={detailSummary.netTotalPurchase}
-	onConfirm={handleConfirm}
-	onConfirmAndPay={handleConfirmAndPay}
+	onConfirm={() => handleConfirmFlow(false)}
+	onConfirmAndPay={() => handleConfirmFlow(true)}
 	onMarkReady={handleMarkReady}
 	onUnmarkReady={handleUnmarkReady}
 	onCancel={handleCancel}

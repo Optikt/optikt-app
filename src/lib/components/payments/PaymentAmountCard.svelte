@@ -11,6 +11,8 @@
 		nativeFieldValue: string;
 		nativeLabel: string;
 		nativePrefix: string;
+		isNativeSettlement?: boolean;
+		settlementSymbol?: string;
 		debtBalanceUsd: number;
 		resolvedAmountUsd: number;
 		resolvedUsdDisplay: string;
@@ -38,6 +40,8 @@
 		nativeFieldValue,
 		nativeLabel,
 		nativePrefix,
+		isNativeSettlement = false,
+		settlementSymbol = '',
 		debtBalanceUsd,
 		resolvedAmountUsd,
 		resolvedUsdDisplay,
@@ -84,66 +88,121 @@
 		</div>
 
 		<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-			<div class="space-y-1.5">
-				<div class="flex items-center justify-between gap-2">
+			{#if isNativeSettlement}
+				<div class="flex flex-col space-y-1.5">
+					<label
+						for="pay-native"
+						class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+					>
+						{nativeLabel}
+					</label>
+					<div class="relative">
+						<span
+							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
+							>{nativePrefix}</span
+						>
+						<input
+							id="pay-native"
+							type="number"
+							value={nativeFieldValue}
+							oninput={onNativeInput}
+							placeholder="0.00"
+							step="0.01"
+							min="0"
+							bind:this={amountInputEl}
+							class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface ring-1 ring-brand-navy/10 transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
+						/>
+					</div>
+					<p class="text-[10px] text-on-surface-variant">
+						Monto entregado. El abono a la deuda se calcula en {settlementSymbol ||
+							'la moneda de la orden'}.
+					</p>
+				</div>
+				<div class="space-y-1.5">
 					<label
 						for="pay-usd"
 						class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
 					>
-						USD BCV
+						Equivalente USD BCV
 					</label>
-					{#if kind === 'sale'}
-						<button
-							type="button"
-							onclick={onUseRemainingBalance}
-							class="shrink-0 text-[10px] font-semibold text-warning transition-colors hover:text-warning"
+					<div class="relative">
+						<span
+							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
+							>$</span
 						>
-							Usar saldo
-						</button>
-					{/if}
+						<input
+							id="pay-usd"
+							type="number"
+							value={usdFieldValue}
+							readonly
+							tabindex="-1"
+							class="w-full cursor-not-allowed rounded-xl border border-outline-variant/20 bg-surface-container/60 py-2.5 pr-3.5 pl-8 font-mono text-sm text-on-surface-variant focus:outline-none"
+						/>
+					</div>
 				</div>
-				<div class="relative">
-					<span class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
-						>$</span
-					>
-					<input
-						id="pay-usd"
-						type="number"
-						value={usdFieldValue}
-						oninput={onUsdInput}
-						placeholder={debtBalanceUsd > 0 ? debtBalanceUsd.toFixed(2) : '0.00'}
-						step="0.01"
-						min="0"
-						class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-2.5 pr-3.5 pl-8 font-mono text-sm font-semibold text-on-surface transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
-					/>
+			{:else}
+				<div class="space-y-1.5">
+					<div class="flex items-center justify-between gap-2">
+						<label
+							for="pay-usd"
+							class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
+						>
+							USD BCV
+						</label>
+						{#if kind === 'sale'}
+							<button
+								type="button"
+								onclick={onUseRemainingBalance}
+								class="shrink-0 text-[10px] font-semibold text-warning transition-colors hover:text-warning"
+							>
+								Usar saldo
+							</button>
+						{/if}
+					</div>
+					<div class="relative">
+						<span
+							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-base text-outline"
+							>$</span
+						>
+						<input
+							id="pay-usd"
+							type="number"
+							value={usdFieldValue}
+							oninput={onUsdInput}
+							placeholder={debtBalanceUsd > 0 ? debtBalanceUsd.toFixed(2) : '0.00'}
+							step="0.01"
+							min="0"
+							class="w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-2.5 pr-3.5 pl-8 font-mono text-sm font-semibold text-on-surface transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
+						/>
+					</div>
 				</div>
-			</div>
 
-			<div class="flex flex-col space-y-1.5">
-				<label
-					for="pay-native"
-					class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
-				>
-					{nativeLabel}
-				</label>
-				<div class="relative">
-					<span
-						class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
-						>{nativePrefix}</span
+				<div class="flex flex-col space-y-1.5">
+					<label
+						for="pay-native"
+						class="text-[11px] font-semibold tracking-[0.18em] text-outline uppercase"
 					>
-					<input
-						id="pay-native"
-						type="number"
-						value={nativeFieldValue}
-						oninput={onNativeInput}
-						placeholder="0.00"
-						step="0.01"
-						min="0"
-						bind:this={amountInputEl}
-						class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface ring-1 ring-brand-navy/10 transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
-					/>
+						{nativeLabel}
+					</label>
+					<div class="relative">
+						<span
+							class="absolute top-1/2 left-3.5 -translate-y-1/2 font-mono text-sm font-semibold text-outline"
+							>{nativePrefix}</span
+						>
+						<input
+							id="pay-native"
+							type="number"
+							value={nativeFieldValue}
+							oninput={onNativeInput}
+							placeholder="0.00"
+							step="0.01"
+							min="0"
+							bind:this={amountInputEl}
+							class="w-full rounded-xl border border-brand-navy/20 bg-surface-container-low py-2.5 pr-3.5 pl-16 font-mono text-sm font-semibold text-on-surface ring-1 ring-brand-navy/10 transition-all duration-200 placeholder:text-outline focus:border-brand-blue focus:outline-none"
+						/>
+					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 
 		{#if resolvedAmountUsd > 0}
