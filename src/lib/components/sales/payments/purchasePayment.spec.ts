@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CurrencyCode, PaymentMethod, PurchasePaymentTerms } from '$lib/shared/enums';
 import type { PurchaseOrder } from '$lib/server/db/schema';
 import {
@@ -6,9 +6,20 @@ import {
 	computeDeliveryAmountForAppliedDebt,
 	computeProntoPagoInfo,
 	maybeSubmitPurchase,
+	submitPurchasePayment,
+	submitPaymentWithBenefit,
 	type PurchaseFlowState,
 	type PurchaseFlowMutations
 } from './purchasePayment';
+
+vi.mock('svelte-sonner', () => ({
+	toast: { success: vi.fn(), error: vi.fn() }
+}));
+
+const addPaymentCmd = vi.hoisted(() => vi.fn());
+vi.mock('$lib/remote/purchaseOrders/payments.remote', () => ({
+	addPurchaseOrderPaymentCmd: addPaymentCmd
+}));
 
 describe('computeAmountAppliedToDebt', () => {
 	it('returns undefined for USD-BCV settlement or missing rate', () => {
@@ -234,6 +245,7 @@ describe('computeProntoPagoInfo', () => {
 function mutations(): PurchaseFlowMutations {
 	return {
 		setSubmitting: vi.fn(),
+		onFinanceChanged: vi.fn(),
 		partialReset: vi.fn(),
 		setPendingAddPayload: vi.fn(),
 		setShowOverpaymentModal: vi.fn(),
@@ -308,5 +320,142 @@ describe('maybeSubmitPurchase', () => {
 		expect(mut.setShowEarlyPaymentBenefitModal).toHaveBeenCalledWith(true);
 		expect(mut.setBenefitAmountInput).toHaveBeenCalledWith('5.00');
 		expect(mut.setSubmitting).not.toHaveBeenCalled();
+	});
+
+	it('submits directly when there is no overpayment nor benefit suggestion', async () => {
+		addPaymentCmd.mockResolvedValueOnce({ success: true });
+		const mut = mutations();
+
+		await maybeSubmitPurchase(
+			{ purchaseOrderId: 'po-1' } as never,
+			flowState({ pendingBalanceUsd: undefined }),
+			mut
+		);
+
+		expect(addPaymentCmd).toHaveBeenCalledTimes(1);
+		expect(mut.setSubmitting).toHaveBeenLastCalledWith(false);
+		expect(mut.partialReset).toHaveBeenCalled();
+	});
+});
+
+describe('submitPurchasePayment', () => {
+	beforeEach(() => {
+		addPaymentCmd.mockReset();
+	});
+
+	it('relays the finance payload and resets on success', async () => {
+		addPaymentCmd.mockResolvedValueOnce({
+			success: true,
+			payments: [],
+			earlyPaymentBenefits: [],
+			balance: { settlementBalance: 0 },
+			dueStatus: { kind: 'PAID', date: null, daysUntil: 0 }
+		});
+		const mut = mutations();
+
+		await submitPurchasePayment({ purchaseOrderId: 'po-1' } as never, mut);
+
+		expect(addPaymentCmd).toHaveBeenCalledTimes(1);
+		expect(mut.onFinanceChanged).toHaveBeenCalledTimes(1);
+		expect(mut.partialReset).toHaveBeenCalled();
+	});
+
+	it('surfaces the command error and keeps state on failure', async () => {
+		addPaymentCmd.mockResolvedValueOnce({ success: false, error: 'boom' });
+		const mut = mutations();
+
+		await submitPurchasePayment({ purchaseOrderId: 'po-1' } as never, mut);
+
+		expect(mut.onFinanceChanged).not.toHaveBeenCalled();
+		expect(mut.partialReset).not.toHaveBeenCalled();
+
+		const { toast } = await import('svelte-sonner');
+		expect(toast.error).toHaveBeenCalledWith('boom');
+	});
+});
+
+describe('submitPaymentWithBenefit', () => {
+	const suggestion = {
+		amount: 5,
+		percent: 5,
+		deadline: '2026-10-11',
+		currentBalance: 100,
+		recommendedPayment: 95,
+		overpayment: 0,
+		residualAfterPayment: 0
+	};
+
+	beforeEach(() => {
+		addPaymentCmd.mockReset();
+	});
+
+	it('attaches the benefit and adjusts the paid amount to the discounted balance', async () => {
+		addPaymentCmd.mockResolvedValueOnce({ success: true });
+		const state = flowState({
+			pendingAddPayload: {
+				purchaseOrderId: 'po-1',
+				paymentMethod: PaymentMethod.EFECTIVO_BS,
+				amount: 4000
+			} as never,
+			pendingBenefitSuggestion: suggestion as never,
+			benefitAmountInput: '5',
+			benefitNoteInput: 'descuento'
+		});
+
+		await submitPaymentWithBenefit(true, state, mutations());
+
+		const payload = addPaymentCmd.mock.calls[0][0];
+		// USD-BCV settlement: 100 balance − 5 benefit = 95 USD
+		expect(payload.amount).toBe(95);
+		expect(payload.earlyPaymentBenefit).toMatchObject({
+			amountUsdBcv: 5,
+			appliedToBalance: true,
+			note: 'descuento'
+		});
+	});
+
+	it('keeps the paid amount and records a note-only benefit', async () => {
+		addPaymentCmd.mockResolvedValueOnce({ success: true });
+		const state = flowState({
+			pendingAddPayload: { purchaseOrderId: 'po-1', amount: 4000 } as never,
+			pendingBenefitSuggestion: suggestion as never,
+			benefitAmountInput: '5'
+		});
+
+		await submitPaymentWithBenefit(false, state, mutations());
+
+		const payload = addPaymentCmd.mock.calls[0][0];
+		expect(payload.amount).toBe(4000);
+		expect(payload.earlyPaymentBenefit).toMatchObject({
+			amountUsdBcv: 5,
+			appliedToBalance: false
+		});
+	});
+
+	it('rejects an invalid benefit amount', async () => {
+		const mut = mutations();
+		const state = flowState({
+			pendingAddPayload: { purchaseOrderId: 'po-1', amount: 4000 } as never,
+			pendingBenefitSuggestion: suggestion as never,
+			benefitAmountInput: '0'
+		});
+
+		await submitPaymentWithBenefit(true, state, mut);
+
+		expect(addPaymentCmd).not.toHaveBeenCalled();
+		expect(mut.setPendingAddPayload).not.toHaveBeenCalled();
+	});
+
+	it('rejects a benefit above the suggested discount', async () => {
+		const mut = mutations();
+		const state = flowState({
+			pendingAddPayload: { purchaseOrderId: 'po-1', amount: 4000 } as never,
+			pendingBenefitSuggestion: suggestion as never,
+			benefitAmountInput: '6'
+		});
+
+		await submitPaymentWithBenefit(true, state, mut);
+
+		expect(addPaymentCmd).not.toHaveBeenCalled();
 	});
 });
