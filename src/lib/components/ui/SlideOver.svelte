@@ -11,6 +11,7 @@
 		size = 'lg' as Size,
 		widthClass,
 		direction = 'right' as Direction,
+		bodyClass = 'px-6 py-4',
 		children,
 		header,
 		footer
@@ -23,6 +24,8 @@
 		/** Overrides the size width (e.g. `w-full lg:w-[min(94vw,1280px)]`). */
 		widthClass?: string;
 		direction?: Direction;
+		/** Classes for the scrollable body (default `px-6 py-4`). */
+		bodyClass?: string;
 		children: Snippet;
 		header?: Snippet<[{ onclose: () => void }]>;
 		footer?: Snippet;
@@ -75,7 +78,7 @@
 		{#if header}
 			{@render header({ onclose: handleClose })}
 		{/if}
-		<div class="flex-1 overflow-y-auto px-6 py-4">
+		<div class="flex-1 overflow-y-auto {bodyClass}">
 			{@render children()}
 		</div>
 		{#if footer}
@@ -96,7 +99,7 @@
 		{#if header}
 			{@render header({ onclose: handleClose })}
 		{/if}
-		<div class="flex-1 overflow-y-auto px-6 py-4">
+		<div class="flex-1 overflow-y-auto {bodyClass}">
 			{@render children()}
 		</div>
 		{#if footer}

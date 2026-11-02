@@ -2,7 +2,6 @@
 	import type { LensEditorEyeDraft, LensEditorFieldErrors } from './types';
 
 	interface Props {
-		title: string;
 		eye: LensEditorEyeDraft;
 		prefix: 'od' | 'os';
 		showAddition: boolean;
@@ -12,7 +11,6 @@
 	}
 
 	let {
-		title,
 		eye = $bindable(),
 		prefix,
 		showAddition,
@@ -20,6 +18,9 @@
 		statusClass,
 		errors
 	}: Props = $props();
+
+	const eyeLabel = $derived(prefix === 'od' ? 'OD · derecho' : 'OI · izquierdo');
+	const dotClass = $derived(prefix === 'od' ? 'bg-brand-blue' : 'bg-brand-navy');
 
 	const eyeErrors = $derived(
 		[
@@ -31,87 +32,131 @@
 		].filter((message): message is string => Boolean(message))
 	);
 
-	function inputClass(invalid: boolean): string {
-		const base =
-			'w-full rounded-md border bg-white px-2 py-1.5 font-mono text-sm focus:ring-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-white ';
-		return invalid
-			? base + 'border-red-400 focus:border-red-400 focus:ring-red-200'
-			: base +
-					'border-slate-300 focus:border-brand-blue focus:ring-brand-blue/20 dark:border-slate-600';
+	function invalid(field: 'sphere' | 'cylinder' | 'axis' | 'addition' | 'altura'): boolean {
+		const map = {
+			sphere: prefix === 'od' ? errors.odSphere : errors.osSphere,
+			cylinder: prefix === 'od' ? errors.odCylinder : errors.osCylinder,
+			axis: prefix === 'od' ? errors.odAxis : errors.osAxis,
+			addition: prefix === 'od' ? errors.odAddition : errors.osAddition,
+			altura: prefix === 'od' ? errors.odAltura : errors.osAltura
+		};
+		return Boolean(map[field]);
 	}
+
+	const inputBase =
+		'flex h-8 items-center gap-1 rounded-md border bg-white px-2 transition focus-within:border-brand-blue focus-within:ring-2 focus-within:ring-brand-blue/20 dark:bg-slate-800';
+	const inputOk = 'border-outline-variant/70 dark:border-slate-600';
+	const inputBad = 'border-red-400';
 </script>
 
 <div
-	class="space-y-2 rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-600 dark:bg-slate-900/30"
+	class="rounded-[10px] border border-outline-variant/60 bg-white p-2.5 dark:border-slate-600 dark:bg-slate-800"
+	class:opacity-90={!eye.enabled}
 >
-	<div class="flex items-center justify-between gap-2">
-		<label class="inline-flex cursor-pointer items-center gap-2">
+	<div class="mb-2 flex items-center justify-between gap-2">
+		<span class="flex items-center gap-1.5 text-xs font-bold text-brand-navy dark:text-white">
+			<span class="h-2 w-2 rounded-full {dotClass}"></span>
+			{eyeLabel}
+			<span class="text-[10px] font-medium {statusClass}">{statusLabel}</span>
+		</span>
+		<label
+			class="flex cursor-pointer items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"
+		>
 			<input
 				type="checkbox"
 				bind:checked={eye.enabled}
-				class="h-3.5 w-3.5 rounded border-slate-300 text-brand-blue focus:ring-brand-blue"
+				class="h-3.5 w-3.5 rounded border-slate-300 accent-brand-blue focus:ring-brand-blue"
 			/>
-			<span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{title}</span>
+			Con receta
 		</label>
-		<span class="text-[11px] font-medium {statusClass}">{statusLabel}</span>
 	</div>
 
-	<div class={['space-y-1', { 'opacity-50': !eye.enabled }]}>
-		<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
-			<span class="text-[10px] font-medium text-slate-500">Esf</span>
-			<span class="text-[10px] font-medium text-slate-500">Cil</span>
-			<span class="text-[10px] font-medium text-slate-500">Eje</span>
-			{#if showAddition}
-				<span class="text-[10px] font-medium text-slate-500">Add</span>
-				<span class="text-[10px] font-medium text-slate-500">Alt</span>
-			{/if}
+	<div class={['space-y-1.5', { 'pointer-events-none opacity-45': !eye.enabled }]}>
+		<div class="grid grid-cols-3 gap-1.5">
+			<label class="flex flex-col gap-0.5">
+				<span class="text-[9.5px] font-bold tracking-[0.04em] text-slate-400 uppercase">Esf</span>
+				<span class="{inputBase} {invalid('sphere') ? inputBad : inputOk}">
+					<input
+						type="number"
+						step="0.25"
+						placeholder="—"
+						aria-label="{eyeLabel} esfera"
+						bind:value={eye.sphere}
+						disabled={!eye.enabled}
+						class="w-full bg-transparent text-center text-[13px] text-brand-navy tabular-nums outline-none disabled:cursor-not-allowed dark:text-white"
+					/>
+				</span>
+			</label>
+			<label class="flex flex-col gap-0.5">
+				<span class="text-[9.5px] font-bold tracking-[0.04em] text-slate-400 uppercase">Cil</span>
+				<span class="{inputBase} {invalid('cylinder') ? inputBad : inputOk}">
+					<input
+						type="number"
+						step="0.25"
+						placeholder="—"
+						aria-label="{eyeLabel} cilindro"
+						bind:value={eye.cylinder}
+						disabled={!eye.enabled}
+						class="w-full bg-transparent text-center text-[13px] text-brand-navy tabular-nums outline-none disabled:cursor-not-allowed dark:text-white"
+					/>
+				</span>
+			</label>
+			<label class="flex flex-col gap-0.5">
+				<span class="text-[9.5px] font-bold tracking-[0.04em] text-slate-400 uppercase">Eje</span>
+				<span class="{inputBase} {invalid('axis') ? inputBad : inputOk}">
+					<input
+						type="number"
+						step="1"
+						placeholder="—"
+						aria-label="{eyeLabel} eje"
+						bind:value={eye.axis}
+						disabled={!eye.enabled}
+						class="w-full bg-transparent text-center text-[13px] text-brand-navy tabular-nums outline-none disabled:cursor-not-allowed dark:text-white"
+					/>
+					<span class="text-[11px] text-slate-400">°</span>
+				</span>
+			</label>
 		</div>
-		<div class={['grid gap-2', { 'grid-cols-5': showAddition, 'grid-cols-3': !showAddition }]}>
-			<input
-				type="number"
-				step="0.25"
-				placeholder="Esf"
-				bind:value={eye.sphere}
-				disabled={!eye.enabled}
-				class={inputClass(!!(prefix === 'od' ? errors.odSphere : errors.osSphere))}
-			/>
-			<input
-				type="number"
-				step="0.25"
-				placeholder="Cil"
-				bind:value={eye.cylinder}
-				disabled={!eye.enabled}
-				class={inputClass(!!(prefix === 'od' ? errors.odCylinder : errors.osCylinder))}
-			/>
-			<input
-				type="number"
-				step="1"
-				placeholder="Eje"
-				bind:value={eye.axis}
-				disabled={!eye.enabled}
-				class={inputClass(!!(prefix === 'od' ? errors.odAxis : errors.osAxis))}
-			/>
-			{#if showAddition}
-				<input
-					type="number"
-					step="0.25"
-					placeholder="Add"
-					bind:value={eye.addition}
-					disabled={!eye.enabled}
-					class={inputClass(!!(prefix === 'od' ? errors.odAddition : errors.osAddition))}
-				/>
-				<input
-					type="number"
-					step="1"
-					placeholder="Alt"
-					bind:value={eye.altura}
-					disabled={!eye.enabled}
-					class={inputClass(!!(prefix === 'od' ? errors.odAltura : errors.osAltura))}
-				/>
-			{/if}
-		</div>
+
+		{#if showAddition}
+			<div class="grid grid-cols-2 gap-1.5">
+				<label class="flex flex-col gap-0.5">
+					<span class="text-[9.5px] font-bold tracking-[0.04em] text-slate-400 uppercase"
+						>Adición</span
+					>
+					<span class="{inputBase} {invalid('addition') ? inputBad : inputOk}">
+						<input
+							type="number"
+							step="0.25"
+							placeholder="—"
+							aria-label="{eyeLabel} adición"
+							bind:value={eye.addition}
+							disabled={!eye.enabled}
+							class="w-full bg-transparent text-center text-[13px] text-brand-navy tabular-nums outline-none disabled:cursor-not-allowed dark:text-white"
+						/>
+					</span>
+				</label>
+				<label class="flex flex-col gap-0.5">
+					<span class="text-[9.5px] font-bold tracking-[0.04em] text-slate-400 uppercase"
+						>Altura</span
+					>
+					<span class="{inputBase} {invalid('altura') ? inputBad : inputOk}">
+						<input
+							type="number"
+							step="1"
+							placeholder="—"
+							aria-label="{eyeLabel} altura"
+							bind:value={eye.altura}
+							disabled={!eye.enabled}
+							class="w-full bg-transparent text-center text-[13px] text-brand-navy tabular-nums outline-none disabled:cursor-not-allowed dark:text-white"
+						/>
+					</span>
+				</label>
+			</div>
+		{/if}
+
 		{#if eyeErrors.length > 0}
-			<p class="text-[11px] text-red-600">{eyeErrors.join(' · ')}</p>
+			<p class="text-[10.5px] text-red-600 dark:text-red-400">{eyeErrors.join(' · ')}</p>
 		{/if}
 	</div>
 </div>

@@ -1,29 +1,26 @@
-import { Eye, Package, Sparkles } from '@lucide/svelte';
+import { Eye, Glasses, Tag } from '@lucide/svelte';
 
 export const ADD_ITEM_KINDS = [
 	{
 		kind: 'lens',
 		label: 'Cristal',
-		actionLabel: 'Agregar cristal',
 		hint: 'Receta y tratamientos',
 		icon: Eye,
-		tone: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/60 dark:text-cyan-300'
+		tone: 'bg-brand-blue/15 text-brand-blue-dark dark:bg-brand-blue/25 dark:text-brand-blue-light'
 	},
 	{
 		kind: 'product',
 		label: 'Producto',
-		actionLabel: 'Agregar producto',
-		hint: 'Montura o accesorio',
-		icon: Package,
-		tone: 'bg-brand-navy/10 text-brand-navy dark:bg-slate-700 dark:text-slate-200'
+		hint: 'Montura o accesorio del inventario',
+		icon: Glasses,
+		tone: 'bg-brand-gold/25 text-brand-navy dark:bg-brand-gold/20 dark:text-brand-gold-light'
 	},
 	{
 		kind: 'free',
 		label: 'Ítem libre',
-		actionLabel: 'Agregar ítem libre',
-		hint: 'Servicio o fórmula',
-		icon: Sparkles,
-		tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300'
+		hint: 'Servicio o fórmula, sin inventario',
+		icon: Tag,
+		tone: 'bg-surface-container-high text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'
 	}
 ] as const;
 

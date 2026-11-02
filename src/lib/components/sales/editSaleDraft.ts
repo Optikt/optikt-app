@@ -210,32 +210,44 @@ export function applyLensEdit(
 	treatments: EditLensTreatment[],
 	brandName: string | undefined
 ): EditableItem[] {
-	let updated = editableItems.filter((i) => {
-		if (i._removed) return true;
-		if (editingLensId && i.id === editingLensId) return false;
-		if (editingLensId && i.parentSaleItemId === editingLensId) return false;
-		return true;
-	});
+	const updated: EditableItem[] = [];
+	let insertAt = -1;
 
-	updated = [...updated, savedItem];
+	for (const item of editableItems) {
+		if (
+			!item._removed &&
+			editingLensId &&
+			(item.id === editingLensId || item.parentSaleItemId === editingLensId)
+		) {
+			if (insertAt === -1 && item.id === editingLensId) insertAt = updated.length;
+			continue;
+		}
+		updated.push(item);
+	}
 
-	for (const t of treatments) {
-		const treatmentRow: EditableItem = {
+	const rows: EditableItem[] = [savedItem];
+	for (const treatment of treatments) {
+		rows.push({
 			itemType: SaleItemType.TREATMENT,
 			parentSaleItemId: savedItem.id,
-			supplierTreatmentId: t.supplierTreatmentId,
+			supplierTreatmentId: treatment.supplierTreatmentId,
 			quantity: 1,
-			unitPrice: t.salePrice * 2,
+			unitPrice: treatment.salePrice * 2,
 			discount: 0,
 			discountType: DiscountType.FIXED,
-			snapshotName: t.name,
+			snapshotName: treatment.name,
 			snapshotBrand: brandName,
-			snapshotTreatmentCategory: t.category,
-			snapshotIsTaxable: t.isTaxable,
-			snapshotBaseCost: t.price * 2,
+			snapshotTreatmentCategory: treatment.category,
+			snapshotIsTaxable: treatment.isTaxable,
+			snapshotBaseCost: treatment.price * 2,
 			_removed: false
-		};
-		updated = [...updated, treatmentRow];
+		});
+	}
+
+	if (insertAt >= 0) {
+		updated.splice(insertAt, 0, ...rows);
+	} else {
+		updated.push(...rows);
 	}
 
 	return updated;
@@ -280,10 +292,11 @@ export function createFreeItem(opts: {
 	discount: number;
 	discountType: string;
 	notes: string;
+	quantity?: number;
 }): EditableItem {
 	return {
 		itemType: SaleItemType.FREE_ITEM,
-		quantity: 1,
+		quantity: opts.quantity ?? 1,
 		unitPrice: opts.price,
 		discount: opts.discount,
 		discountType: opts.discountType as DiscountTypeEnum,

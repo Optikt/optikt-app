@@ -234,8 +234,8 @@ describe('applyLensEdit', () => {
 
 		const result = applyLensEdit([old, oldChild, kept], 'lens-9', saved, [treatment], 'Sup');
 
-		expect(result.map((i) => i.id)).toEqual(['p-1', 'lens-9', undefined]);
-		expect(result[2]).toMatchObject({
+		expect(result.map((i) => i.id)).toEqual(['lens-9', undefined, 'p-1']);
+		expect(result[1]).toMatchObject({
 			itemType: SaleItemType.TREATMENT,
 			parentSaleItemId: 'lens-9',
 			unitPrice: 20,
