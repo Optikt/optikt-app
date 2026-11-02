@@ -130,6 +130,17 @@ export async function submitPurchaseOrderPayment(
 			settlementBenefitsApplied: preBalance.settlementBenefitsApplied,
 			settlementBalance: preBalance.settlementBalance
 		});
+		// Native deliveries must report the benefit in the order's currency: the
+		// USD-BCV amount is a different unit and must not fall back into the cap
+		// comparison nor persist as settlement units.
+		if (
+			purchaseOrder.settlementCurrency !== 'USD_BCV' &&
+			!earlyPaymentBenefit.amountAppliedToDebt
+		) {
+			throw new Error(
+				'El beneficio requiere el monto aplicado a la deuda en la moneda de la orden'
+			);
+		}
 		const nativeApplied = Number(
 			earlyPaymentBenefit.amountAppliedToDebt ?? earlyPaymentBenefit.amountUsdBcv ?? 0
 		);

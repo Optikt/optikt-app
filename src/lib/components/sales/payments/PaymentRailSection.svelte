@@ -4,7 +4,7 @@
 	import { PaymentReferenceField } from '$lib/components/ui';
 	import CasheaCheckbox from '../CasheaCheckbox.svelte';
 	import type { EarlyPaymentDiscountSuggestion } from '$lib/shared/purchaseOrderCredit';
-	import type { ProntoPagoInfo } from './purchasePayment';
+	import type { ProntoPagoInfo } from './purchaseOrderProntoPago';
 	import { formatDateOnly, formatPrice } from '$lib/utils';
 	import type { PaymentFormKind } from './paymentFormDerived';
 

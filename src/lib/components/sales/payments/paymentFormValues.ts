@@ -4,12 +4,14 @@ import { formatPrice } from '$lib/utils';
 import {
 	computeAmountAppliedToDebt,
 	computeExchangeVariance,
-	computeLiveEarlyPaymentSuggestion,
-	computeProntoPagoInfo,
 	computePurchaseNormalized,
 	computePurchaseReverseNative,
 	computeShowPurchasePreview
 } from './purchasePayment';
+import {
+	computeLiveEarlyPaymentSuggestion,
+	computeProntoPagoInfo
+} from './purchaseOrderProntoPago';
 import {
 	computeAutoSpecificRate,
 	computeEffectiveBcvRate,

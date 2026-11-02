@@ -157,7 +157,7 @@ export function computeAutoSpecificRate(
 	) {
 		return getSettlementRateValue(settlementCurrency, eurRate, usdtRate, paypalRate);
 	}
-	if (rail === PaymentMethod.EFECTIVO_USD) return 0;
+	if (rail === PaymentMethod.EFECTIVO_USD || rail === PaymentMethod.EFECTIVO_EUR) return 0;
 	switch (currencyKey) {
 		case 'EUR_BCV':
 			return eurRate;

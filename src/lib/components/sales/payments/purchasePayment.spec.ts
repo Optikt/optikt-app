@@ -4,13 +4,13 @@ import type { PurchaseOrder } from '$lib/server/db/schema';
 import {
 	computeAmountAppliedToDebt,
 	computeDeliveryAmountForAppliedDebt,
-	computeProntoPagoInfo,
 	maybeSubmitPurchase,
 	submitPurchasePayment,
 	submitPaymentWithBenefit,
 	type PurchaseFlowState,
 	type PurchaseFlowMutations
 } from './purchasePayment';
+import { computeProntoPagoInfo } from './purchaseOrderProntoPago';
 
 vi.mock('svelte-sonner', () => ({
 	toast: { success: vi.fn(), error: vi.fn() }
@@ -412,6 +412,32 @@ describe('submitPaymentWithBenefit', () => {
 			appliedToBalance: true,
 			note: 'descuento'
 		});
+	});
+
+	it('re-computes the native amortization as balance minus benefit', async () => {
+		addPaymentCmd.mockResolvedValueOnce({ success: true });
+		const state = flowState({
+			pendingAddPayload: {
+				purchaseOrderId: 'po-1',
+				paymentMethod: PaymentMethod.EFECTIVO_EUR,
+				amount: 4000,
+				amountAppliedToDebt: 100
+			} as never,
+			pendingBenefitSuggestion: suggestion as never,
+			benefitAmountInput: '1',
+			isNativeSettlement: true,
+			settlementRateToVes: 5800,
+			purchaseCurrencyCode: CurrencyCode.EUR_BCV,
+			needsSpecificRate: true,
+			specificRateValue: 5800
+		});
+
+		await submitPaymentWithBenefit(true, state, mutations());
+
+		const payload = addPaymentCmd.mock.calls[0][0];
+		// 100 balance − 1 benefit = 99 settlement units amortized, not the pre-benefit 100
+		expect(payload.amountAppliedToDebt).toBe(99);
+		expect(payload.earlyPaymentBenefit.amountAppliedToDebt).toBe(1);
 	});
 
 	it('keeps the paid amount and records a note-only benefit', async () => {

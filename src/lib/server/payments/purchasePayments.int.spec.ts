@@ -363,4 +363,30 @@ describe('submitPurchaseOrderPayment · early payment benefit guard', () => {
 			)
 		).rejects.toThrow('no puede superar 7.25');
 	});
+
+	it('rejects a benefit without the applied-debt amount on native settlement', async () => {
+		const admin = await createUser({ role: UserRole.ADMIN });
+		const purchaseOrder = await createPurchaseOrder({
+			settlementCurrency: CurrencyCode.EUR_BCV,
+			paymentTerms: PurchasePaymentTerms.CREDIT,
+			creditDueDate: '2026-11-11',
+			earlyPaymentDiscountPercent: 5,
+			earlyPaymentDiscountDeadline: '2026-10-11',
+			settlementGrossAmount: 345,
+			settlementDebtAmount: 345,
+			settlementDebtAmountUsdBcvAtOrder: 345
+		});
+
+		await expect(
+			db.transaction((tx) =>
+				submitPurchaseOrderPayment(
+					submission(purchaseOrder, admin.id, {
+						benefitDate: '2026-10-09',
+						earlyPaymentBenefit: { amountUsdBcv: 17.25, appliedToBalance: true }
+					}),
+					tx
+				)
+			)
+		).rejects.toThrow('moneda de la orden');
+	});
 });
